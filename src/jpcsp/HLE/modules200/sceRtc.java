@@ -108,48 +108,12 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
             cpu.gpr[2] = -1;
         }
 	}
-	@HLEFunction(nid = 0x203CEB0D, version = 200)
-	public final HLEModuleFunction sceRtcGetLastReincarnatedTimeFunction = new HLEModuleFunction("sceRtc", "sceRtcGetLastReincarnatedTime") {
-		@Override
-		public final void execute(Processor processor) {
-			sceRtcGetLastReincarnatedTime(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcGetLastReincarnatedTime(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x62685E98, version = 200)
-	public final HLEModuleFunction sceRtcGetLastAdjustedTimeFunction = new HLEModuleFunction("sceRtc", "sceRtcGetLastAdjustedTime") {
-		@Override
-		public final void execute(Processor processor) {
-			sceRtcGetLastAdjustedTime(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcGetLastAdjustedTime(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x1909C99B, version = 200)
-	public final HLEModuleFunction sceRtcSetTime64_tFunction = new HLEModuleFunction("sceRtc", "sceRtcSetTime64_t") {
-		@Override
-		public final void execute(Processor processor) {
-			sceRtcSetTime64_t(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcSetTime64_t(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xE1C93E47, version = 200)
-	public final HLEModuleFunction sceRtcGetTime64_tFunction = new HLEModuleFunction("sceRtc", "sceRtcGetTime64_t") {
-		@Override
-		public final void execute(Processor processor) {
-			sceRtcGetTime64_t(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcGetTime64_t(processor);";
-		}
-	};
+	@HLEFunction(nid = 0x203CEB0D, version = 200) public HLEModuleFunction sceRtcGetLastReincarnatedTimeFunction;
+
+	@HLEFunction(nid = 0x62685E98, version = 200) public HLEModuleFunction sceRtcGetLastAdjustedTimeFunction;
+
+	@HLEFunction(nid = 0x1909C99B, version = 200) public HLEModuleFunction sceRtcSetTime64_tFunction;
+
+	@HLEFunction(nid = 0xE1C93E47, version = 200) public HLEModuleFunction sceRtcGetTime64_tFunction;
+
 }

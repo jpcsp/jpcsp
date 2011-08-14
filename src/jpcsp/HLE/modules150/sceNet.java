@@ -291,160 +291,28 @@ public class sceNet implements HLEModule {
         }
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0x39AF39A6, version = 150)
-    public final HLEModuleFunction sceNetInitFunction = new HLEModuleFunction("sceNet", "sceNetInit") {
+    @HLEFunction(nid = 0x39AF39A6, version = 150) public HLEModuleFunction sceNetInitFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNetInit(processor);
-        }
+    @HLEFunction(nid = 0x281928A9, version = 150) public HLEModuleFunction sceNetTermFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetModule.sceNetInit(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x281928A9, version = 150)
-    public final HLEModuleFunction sceNetTermFunction = new HLEModuleFunction("sceNet", "sceNetTerm") {
+    @HLEFunction(nid = 0x50647530, version = 150) public HLEModuleFunction sceNetFreeThreadinfoFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNetTerm(processor);
-        }
+    @HLEFunction(nid = 0xAD6844c6, version = 150) public HLEModuleFunction sceNetThreadAbortFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetModule.sceNetTerm(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x50647530, version = 150)
-    public final HLEModuleFunction sceNetFreeThreadinfoFunction = new HLEModuleFunction("sceNet", "sceNetFreeThreadinfo") {
+    @HLEFunction(nid = 0x89360950, version = 150) public HLEModuleFunction sceNetEtherNtostrFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNetFreeThreadinfo(processor);
-        }
+    @HLEFunction(nid = 0xD27961C9, version = 150) public HLEModuleFunction sceNetEtherStrtonFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetModule.sceNetFreeThreadinfo(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xAD6844c6, version = 150)
-    public final HLEModuleFunction sceNetThreadAbortFunction = new HLEModuleFunction("sceNet", "sceNetThreadAbort") {
+    @HLEFunction(nid = 0xF5805EFE, version = 150) public HLEModuleFunction sceNetHtonlFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNetThreadAbort(processor);
-        }
+    @HLEFunction(nid = 0x39C1BF02, version = 150) public HLEModuleFunction sceNetHtonsFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetModule.sceNetThreadAbort(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x89360950, version = 150)
-    public final HLEModuleFunction sceNetEtherNtostrFunction = new HLEModuleFunction("sceNet", "sceNetEtherNtostr") {
+    @HLEFunction(nid = 0x93C4AF7E, version = 150) public HLEModuleFunction sceNetNtohlFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNetEtherNtostr(processor);
-        }
+    @HLEFunction(nid = 0x4CE03207, version = 150) public HLEModuleFunction sceNetNtohsFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetModule.sceNetEtherNtostr(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xD27961C9, version = 150)
-    public final HLEModuleFunction sceNetEtherStrtonFunction = new HLEModuleFunction("sceNet", "sceNetEtherStrton") {
+    @HLEFunction(nid = 0x0BF0A3AE, version = 150) public HLEModuleFunction sceNetGetLocalEtherAddrFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNetEtherStrton(processor);
-        }
+    @HLEFunction(nid = 0xCC393E48, version = 150) public HLEModuleFunction sceNetGetMallocStatFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetModule.sceNetEtherStrton(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xF5805EFE, version = 150)
-    public final HLEModuleFunction sceNetHtonlFunction = new HLEModuleFunction("sceNet", "sceNetHtonl") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetHtonl(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetModule.sceNetHtonl(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x39C1BF02, version = 150)
-    public final HLEModuleFunction sceNetHtonsFunction = new HLEModuleFunction("sceNet", "sceNetHtons") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetHtons(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetModule.sceNetHtons(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x93C4AF7E, version = 150)
-    public final HLEModuleFunction sceNetNtohlFunction = new HLEModuleFunction("sceNet", "sceNetNtohl") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetNtohl(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetModule.sceNetNtohl(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x4CE03207, version = 150)
-    public final HLEModuleFunction sceNetNtohsFunction = new HLEModuleFunction("sceNet", "sceNetNtohs") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetNtohs(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetModule.sceNetNtohs(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x0BF0A3AE, version = 150)
-    public final HLEModuleFunction sceNetGetLocalEtherAddrFunction = new HLEModuleFunction("sceNet", "sceNetGetLocalEtherAddr") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetGetLocalEtherAddr(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetModule.sceNetGetLocalEtherAddr(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xCC393E48, version = 150)
-    public final HLEModuleFunction sceNetGetMallocStatFunction = new HLEModuleFunction("sceNet", "sceNetGetMallocStat") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetGetMallocStat(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetModule.sceNetGetMallocStat(processor);";
-        }
-    };
 }

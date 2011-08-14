@@ -1822,221 +1822,23 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     		this.pixelFormat = pixelFormat;
     	}
     }
-    @HLEFunction(nid = 0x0E20F177, version = 150)
-    public final HLEModuleFunction sceDisplaySetModeFunction = new HLEModuleFunction("sceDisplay", "sceDisplaySetMode") {
+    @HLEFunction(nid = 0x0E20F177, version = 150) public HLEModuleFunction sceDisplaySetModeFunction;
+    @HLEFunction(nid = 0xDEA197D4, version = 150) public HLEModuleFunction sceDisplayGetModeFunction;
+    @HLEFunction(nid = 0xDBA6C4C4, version = 150) public HLEModuleFunction sceDisplayGetFramePerSecFunction;
+    @HLEFunction(nid = 0x7ED59BC4, version = 150) public HLEModuleFunction sceDisplaySetHoldModeFunction;
+    @HLEFunction(nid = 0xA544C486, version = 150) public HLEModuleFunction sceDisplaySetResumeModeFunction;
+    @HLEFunction(nid = 0x289D82FE, version = 150) public HLEModuleFunction sceDisplaySetFrameBufFunction;
+    @HLEFunction(nid = 0xEEDA2E54, version = 150) public HLEModuleFunction sceDisplayGetFrameBufFunction;
+    @HLEFunction(nid = 0xB4F378FA, version = 150) public HLEModuleFunction sceDisplayIsForegroundFunction;
+    @HLEFunction(nid = 0x31C4BAA8, version = 150) public HLEModuleFunction sceDisplayGetBrightnessFunction;
+    @HLEFunction(nid = 0x9C6EAAD7, version = 150) public HLEModuleFunction sceDisplayGetVcountFunction;
+    @HLEFunction(nid = 0x4D4E10EC, version = 150) public HLEModuleFunction sceDisplayIsVblankFunction;
+    @HLEFunction(nid = 0x36CDFADE, version = 150) public HLEModuleFunction sceDisplayWaitVblankFunction;
+    @HLEFunction(nid = 0x8EB9EC49, version = 150) public HLEModuleFunction sceDisplayWaitVblankCBFunction;
+    @HLEFunction(nid = 0x984C27E7, version = 150) public HLEModuleFunction sceDisplayWaitVblankStartFunction;
+    @HLEFunction(nid = 0x46F186C3, version = 150) public HLEModuleFunction sceDisplayWaitVblankStartCBFunction;
+    @HLEFunction(nid = 0x773DD3A3, version = 150) public HLEModuleFunction sceDisplayGetCurrentHcountFunction;
+    @HLEFunction(nid = 0x210EAB3A, version = 150) public HLEModuleFunction sceDisplayGetAccumulatedHcountFunction;
+    @HLEFunction(nid = 0xA83EF139, version = 150) public HLEModuleFunction sceDisplayAdjustAccumulatedHcountFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceDisplaySetMode(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplaySetMode(processor);";
-        }
-    };    @HLEFunction(nid = 0xDEA197D4, version = 150)
-    public final HLEModuleFunction sceDisplayGetModeFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetMode") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceDisplayGetMode(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetMode(processor);";
-        }
-    };    @HLEFunction(nid = 0xDBA6C4C4, version = 150)
-    public final HLEModuleFunction sceDisplayGetFramePerSecFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetFramePerSec") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceDisplayGetFramePerSec(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetFramePerSec(processor);";
-        }
-    };    @HLEFunction(nid = 0x7ED59BC4, version = 150)
-    public final HLEModuleFunction sceDisplaySetHoldModeFunction = new HLEModuleFunction("sceDisplay", "sceDisplaySetHoldMode") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceDisplaySetHoldMode(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplaySetHoldMode(processor);";
-        }
-    };    @HLEFunction(nid = 0xA544C486, version = 150)
-    public final HLEModuleFunction sceDisplaySetResumeModeFunction = new HLEModuleFunction("sceDisplay", "sceDisplaySetResumeMode") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceDisplaySetResumeMode(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplaySetResumeMode(processor);";
-        }
-    };    @HLEFunction(nid = 0x289D82FE, version = 150)
-    public final HLEModuleFunction sceDisplaySetFrameBufFunction = new HLEModuleFunction("sceDisplay", "sceDisplaySetFrameBuf") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceDisplaySetFrameBuf(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplaySetFrameBuf(processor);";
-        }
-    };    @HLEFunction(nid = 0xEEDA2E54, version = 150)
-    public final HLEModuleFunction sceDisplayGetFrameBufFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetFrameBuf") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceDisplayGetFrameBuf(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetFrameBuf(processor);";
-        }
-    };    @HLEFunction(nid = 0xB4F378FA, version = 150)
-    public final HLEModuleFunction sceDisplayIsForegroundFunction = new HLEModuleFunction("sceDisplay", "sceDisplayIsForeground") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceDisplayIsForeground(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayIsForeground(processor);";
-        }
-    };    @HLEFunction(nid = 0x31C4BAA8, version = 150)
-    public final HLEModuleFunction sceDisplayGetBrightnessFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetBrightness") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceDisplayGetBrightness(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetBrightness(processor);";
-        }
-    };    @HLEFunction(nid = 0x9C6EAAD7, version = 150)
-    public final HLEModuleFunction sceDisplayGetVcountFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetVcount") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceDisplayGetVcount(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetVcount(processor);";
-        }
-    };    @HLEFunction(nid = 0x4D4E10EC, version = 150)
-    public final HLEModuleFunction sceDisplayIsVblankFunction = new HLEModuleFunction("sceDisplay", "sceDisplayIsVblank") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceDisplayIsVblank(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayIsVblank(processor);";
-        }
-    };    @HLEFunction(nid = 0x36CDFADE, version = 150)
-    public final HLEModuleFunction sceDisplayWaitVblankFunction = new HLEModuleFunction("sceDisplay", "sceDisplayWaitVblank") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceDisplayWaitVblank(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayWaitVblank(processor);";
-        }
-    };    @HLEFunction(nid = 0x8EB9EC49, version = 150)
-    public final HLEModuleFunction sceDisplayWaitVblankCBFunction = new HLEModuleFunction("sceDisplay", "sceDisplayWaitVblankCB") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceDisplayWaitVblankCB(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayWaitVblankCB(processor);";
-        }
-    };    @HLEFunction(nid = 0x984C27E7, version = 150)
-    public final HLEModuleFunction sceDisplayWaitVblankStartFunction = new HLEModuleFunction("sceDisplay", "sceDisplayWaitVblankStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceDisplayWaitVblankStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayWaitVblankStart(processor);";
-        }
-    };    @HLEFunction(nid = 0x46F186C3, version = 150)
-    public final HLEModuleFunction sceDisplayWaitVblankStartCBFunction = new HLEModuleFunction("sceDisplay", "sceDisplayWaitVblankStartCB") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceDisplayWaitVblankStartCB(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayWaitVblankStartCB(processor);";
-        }
-    };    @HLEFunction(nid = 0x773DD3A3, version = 150)
-    public final HLEModuleFunction sceDisplayGetCurrentHcountFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetCurrentHcount") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceDisplayGetCurrentHcount(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetCurrentHcount(processor);";
-        }
-    };    @HLEFunction(nid = 0x210EAB3A, version = 150)
-    public final HLEModuleFunction sceDisplayGetAccumulatedHcountFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetAccumulatedHcount") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceDisplayGetAccumulatedHcount(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetAccumulatedHcount(processor);";
-        }
-    };    @HLEFunction(nid = 0xA83EF139, version = 150)
-    public final HLEModuleFunction sceDisplayAdjustAccumulatedHcountFunction = new HLEModuleFunction("sceDisplay", "sceDisplayAdjustAccumulatedHcount") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceDisplayAdjustAccumulatedHcount(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayAdjustAccumulatedHcount(processor);";
-        }
-    };
 }

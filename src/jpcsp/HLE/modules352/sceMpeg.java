@@ -46,17 +46,6 @@ public class sceMpeg extends jpcsp.HLE.modules150.sceMpeg {
 
         cpu.gpr[2] = getPacketsFromSize(memorySize);
     }
-    @HLEFunction(nid = 0x769BEBB6, version = 352)
-    public final HLEModuleFunction sceMpegRingbufferQueryPackNumFunction = new HLEModuleFunction("sceMpeg", "sceMpegRingbufferQueryPackNum") {
+    @HLEFunction(nid = 0x769BEBB6, version = 352) public HLEModuleFunction sceMpegRingbufferQueryPackNumFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-        	sceMpegRingbufferQueryPackNum(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegRingbufferQueryPackNum(processor);";
-        }
-    };
 }

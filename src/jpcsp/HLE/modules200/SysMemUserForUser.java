@@ -86,48 +86,12 @@ public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-	@HLEFunction(nid = 0xFC114573, version = 200)
-	public final HLEModuleFunction sceKernelGetCompiledSdkVersionFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelGetCompiledSdkVersion") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelGetCompiledSdkVersion(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelGetCompiledSdkVersion(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x7591C7DB, version = 200)
-	public final HLEModuleFunction sceKernelSetCompiledSdkVersionFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelSetCompiledSdkVersion") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelSetCompiledSdkVersion(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelSetCompiledSdkVersion(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xF77D77CB, version = 200)
-	public final HLEModuleFunction sceKernelSetCompilerVersionFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelSetCompilerVersion") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelSetCompilerVersion(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelSetCompilerVersion(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xA6848DF8, version = 200)
-	public final HLEModuleFunction SysMemUserForUser_A6848DF8Function = new HLEModuleFunction("SysMemUserForUser", "SysMemUserForUser_A6848DF8") {
-		@Override
-		public final void execute(Processor processor) {
-			SysMemUserForUser_A6848DF8(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.SysMemUserForUserModule.SysMemUserForUser_A6848DF8(processor);";
-		}
-	};
+	@HLEFunction(nid = 0xFC114573, version = 200) public HLEModuleFunction sceKernelGetCompiledSdkVersionFunction;
+
+	@HLEFunction(nid = 0x7591C7DB, version = 200) public HLEModuleFunction sceKernelSetCompiledSdkVersionFunction;
+
+	@HLEFunction(nid = 0xF77D77CB, version = 200) public HLEModuleFunction sceKernelSetCompilerVersionFunction;
+
+	@HLEFunction(nid = 0xA6848DF8, version = 200) public HLEModuleFunction SysMemUserForUser_A6848DF8Function;
+
 }

@@ -255,69 +255,14 @@ public class sceVaudio implements HLEModule, HLEStartModule {
         }
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0x67585DFD, version = 150)
-    public final HLEModuleFunction sceVaudioChReleaseFunction = new HLEModuleFunction("sceVaudio", "sceVaudioChRelease") {
+    @HLEFunction(nid = 0x67585DFD, version = 150) public HLEModuleFunction sceVaudioChReleaseFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceVaudioChRelease(processor);
-        }
+    @HLEFunction(nid = 0x03B6807D, version = 150) public HLEModuleFunction sceVaudioChReserveFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceVaudioModule.sceVaudioChRelease(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x03B6807D, version = 150)
-    public final HLEModuleFunction sceVaudioChReserveFunction = new HLEModuleFunction("sceVaudio", "sceVaudioChReserve") {
+    @HLEFunction(nid = 0x8986295E, version = 150) public HLEModuleFunction sceVaudioOutputBlockingFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceVaudioChReserve(processor);
-        }
+    @HLEFunction(nid = 0x346FBE94, version = 150) public HLEModuleFunction sceVaudioSetEffectTypeFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceVaudioModule.sceVaudioChReserve(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x8986295E, version = 150)
-    public final HLEModuleFunction sceVaudioOutputBlockingFunction = new HLEModuleFunction("sceVaudio", "sceVaudioOutputBlocking") {
+    @HLEFunction(nid = 0xCBD4AC51, version = 150) public HLEModuleFunction sceVaudioSetAlcModeFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceVaudioOutputBlocking(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceVaudioModule.sceVaudioOutputBlocking(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x346FBE94, version = 150)
-    public final HLEModuleFunction sceVaudioSetEffectTypeFunction = new HLEModuleFunction("sceVaudio", "sceVaudioSetEffectType") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceVaudioSetEffectType(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceVaudioModule.sceVaudioSetEffectType(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xCBD4AC51, version = 150)
-    public final HLEModuleFunction sceVaudioSetAlcModeFunction = new HLEModuleFunction("sceVaudio", "sceVaudioSetAlcMode") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceVaudioSetAlcMode(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceVaudioModule.sceVaudioSetAlcMode(processor);";
-        }
-    };
 }

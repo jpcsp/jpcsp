@@ -775,173 +775,19 @@ public class ModuleMgrForUser implements HLEModule {
             log.warn("sceKernelGetModuleIdByAddress(addr=0x" + Integer.toHexString(addr) + ") module not found");
             cpu.gpr[2] = -1;
         }
-    }    @HLEFunction(nid = 0xB7F46618, version = 150)
-    public final HLEModuleFunction sceKernelLoadModuleByIDFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelLoadModuleByID") {
+    }    @HLEFunction(nid = 0xB7F46618, version = 150) public HLEModuleFunction sceKernelLoadModuleByIDFunction;
+    @HLEFunction(nid = 0x977DE386, version = 150) public HLEModuleFunction sceKernelLoadModuleFunction;
+    @HLEFunction(nid = 0x710F61B5, version = 150) public HLEModuleFunction sceKernelLoadModuleMsFunction;
+    @HLEFunction(nid = 0xF9275D98, version = 150) public HLEModuleFunction sceKernelLoadModuleBufferUsbWlanFunction;
+    @HLEFunction(nid = 0x50F0C1EC, version = 150) public HLEModuleFunction sceKernelStartModuleFunction;
+    @HLEFunction(nid = 0xD1FF982A, version = 150) public HLEModuleFunction sceKernelStopModuleFunction;
+    @HLEFunction(nid = 0x2E0911AA, version = 150) public HLEModuleFunction sceKernelUnloadModuleFunction;
+    @HLEFunction(nid = 0xD675EBB8, version = 150) public HLEModuleFunction sceKernelSelfStopUnloadModuleFunction;
+    @HLEFunction(nid = 0xCC1D3699, version = 150) public HLEModuleFunction sceKernelStopUnloadSelfModuleFunction;
+    @HLEFunction(nid = 0x644395E2, version = 150) public HLEModuleFunction sceKernelGetModuleIdListFunction;
+    @HLEFunction(nid = 0x748CBED9, version = 150) public HLEModuleFunction sceKernelQueryModuleInfoFunction;
+    @HLEFunction(nid = 0xF0A26395, version = 150) public HLEModuleFunction sceKernelGetModuleIdFunction;
+    @HLEFunction(nid = 0xD8B73127, version = 150) public HLEModuleFunction sceKernelGetModuleIdByAddressFunction;
+    @HLEFunction(nid = 0x8f2df740, version = 150) public HLEModuleFunction sceKernelStopUnloadSelfModuleWithStatusFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelLoadModuleByID(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelLoadModuleByID(processor);";
-        }
-    };    @HLEFunction(nid = 0x977DE386, version = 150)
-    public final HLEModuleFunction sceKernelLoadModuleFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelLoadModule") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelLoadModule(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelLoadModule(processor);";
-        }
-    };    @HLEFunction(nid = 0x710F61B5, version = 150)
-    public final HLEModuleFunction sceKernelLoadModuleMsFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelLoadModuleMs") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelLoadModuleMs(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelLoadModuleMs(processor);";
-        }
-    };    @HLEFunction(nid = 0xF9275D98, version = 150)
-    public final HLEModuleFunction sceKernelLoadModuleBufferUsbWlanFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelLoadModuleBufferUsbWlan") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelLoadModuleBufferUsbWlan(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelLoadModuleBufferUsbWlan(processor);";
-        }
-    };    @HLEFunction(nid = 0x50F0C1EC, version = 150)
-    public final HLEModuleFunction sceKernelStartModuleFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelStartModule") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelStartModule(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelStartModule(processor);";
-        }
-    };    @HLEFunction(nid = 0xD1FF982A, version = 150)
-    public final HLEModuleFunction sceKernelStopModuleFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelStopModule") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelStopModule(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelStopModule(processor);";
-        }
-    };    @HLEFunction(nid = 0x2E0911AA, version = 150)
-    public final HLEModuleFunction sceKernelUnloadModuleFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelUnloadModule") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelUnloadModule(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelUnloadModule(processor);";
-        }
-    };    @HLEFunction(nid = 0xD675EBB8, version = 150)
-    public final HLEModuleFunction sceKernelSelfStopUnloadModuleFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelSelfStopUnloadModule") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelSelfStopUnloadModule(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelSelfStopUnloadModule(processor);";
-        }
-    };    @HLEFunction(nid = 0xCC1D3699, version = 150)
-    public final HLEModuleFunction sceKernelStopUnloadSelfModuleFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelStopUnloadSelfModule") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelStopUnloadSelfModule(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelStopUnloadSelfModule(processor);";
-        }
-    };    @HLEFunction(nid = 0x644395E2, version = 150)
-    public final HLEModuleFunction sceKernelGetModuleIdListFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelGetModuleIdList") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelGetModuleIdList(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelGetModuleIdList(processor);";
-        }
-    };    @HLEFunction(nid = 0x748CBED9, version = 150)
-    public final HLEModuleFunction sceKernelQueryModuleInfoFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelQueryModuleInfo") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelQueryModuleInfo(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelQueryModuleInfo(processor);";
-        }
-    };    @HLEFunction(nid = 0xF0A26395, version = 150)
-    public final HLEModuleFunction sceKernelGetModuleIdFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelGetModuleId") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelGetModuleId(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelGetModuleId(processor);";
-        }
-    };    @HLEFunction(nid = 0xD8B73127, version = 150)
-    public final HLEModuleFunction sceKernelGetModuleIdByAddressFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelGetModuleIdByAddress") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelGetModuleIdByAddress(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelGetModuleIdByAddress(processor);";
-        }
-    };    @HLEFunction(nid = 0x8f2df740, version = 150)
-    public final HLEModuleFunction sceKernelStopUnloadSelfModuleWithStatusFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelStopUnloadSelfModuleWithStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelStopUnloadSelfModuleWithStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelStopUnloadSelfModuleWithStatus(processor);";
-        }
-    };
 }

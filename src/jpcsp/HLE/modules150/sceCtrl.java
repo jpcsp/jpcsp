@@ -551,197 +551,21 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         log.warn("Unimplemented NID function sceCtrlSetRapidFire [0x6841BE1A]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-    }    @HLEFunction(nid = 0x6A2774F3, version = 150)
-    public final HLEModuleFunction sceCtrlSetSamplingCycleFunction = new HLEModuleFunction("sceCtrl", "sceCtrlSetSamplingCycle") {
+    }    @HLEFunction(nid = 0x6A2774F3, version = 150) public HLEModuleFunction sceCtrlSetSamplingCycleFunction;
+    @HLEFunction(nid = 0x02BAAD91, version = 150) public HLEModuleFunction sceCtrlGetSamplingCycleFunction;
+    @HLEFunction(nid = 0x1F4011E6, version = 150) public HLEModuleFunction sceCtrlSetSamplingModeFunction;
+    @HLEFunction(nid = 0xDA6B76A1, version = 150) public HLEModuleFunction sceCtrlGetSamplingModeFunction;
+    @HLEFunction(nid = 0x3A622550, version = 150) public HLEModuleFunction sceCtrlPeekBufferPositiveFunction;
+    @HLEFunction(nid = 0xC152080A, version = 150) public HLEModuleFunction sceCtrlPeekBufferNegativeFunction;
+    @HLEFunction(nid = 0x1F803938, version = 150) public HLEModuleFunction sceCtrlReadBufferPositiveFunction;
+    @HLEFunction(nid = 0x60B81F86, version = 150) public HLEModuleFunction sceCtrlReadBufferNegativeFunction;
+    @HLEFunction(nid = 0xB1D0E5CD, version = 150) public HLEModuleFunction sceCtrlPeekLatchFunction;
+    @HLEFunction(nid = 0x0B588501, version = 150) public HLEModuleFunction sceCtrlReadLatchFunction;
+    @HLEFunction(nid = 0xA7144800, version = 150) public HLEModuleFunction sceCtrlSetIdleCancelThresholdFunction;
+    @HLEFunction(nid = 0x687660FA, version = 150) public HLEModuleFunction sceCtrlGetIdleCancelThresholdFunction;
+    @HLEFunction(nid = 0x348D99D4, version = 150) public HLEModuleFunction sceCtrl_348D99D4Function;
+    @HLEFunction(nid = 0xAF5960F3, version = 150) public HLEModuleFunction sceCtrl_AF5960F3Function;
+    @HLEFunction(nid = 0xA68FD260, version = 150) public HLEModuleFunction sceCtrlClearRapidFireFunction;
+    @HLEFunction(nid = 0x6841BE1A, version = 150) public HLEModuleFunction sceCtrlSetRapidFireFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceCtrlSetSamplingCycle(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlSetSamplingCycle(processor);";
-        }
-    };    @HLEFunction(nid = 0x02BAAD91, version = 150)
-    public final HLEModuleFunction sceCtrlGetSamplingCycleFunction = new HLEModuleFunction("sceCtrl", "sceCtrlGetSamplingCycle") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceCtrlGetSamplingCycle(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlGetSamplingCycle(processor);";
-        }
-    };    @HLEFunction(nid = 0x1F4011E6, version = 150)
-    public final HLEModuleFunction sceCtrlSetSamplingModeFunction = new HLEModuleFunction("sceCtrl", "sceCtrlSetSamplingMode") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceCtrlSetSamplingMode(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlSetSamplingMode(processor);";
-        }
-    };    @HLEFunction(nid = 0xDA6B76A1, version = 150)
-    public final HLEModuleFunction sceCtrlGetSamplingModeFunction = new HLEModuleFunction("sceCtrl", "sceCtrlGetSamplingMode") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceCtrlGetSamplingMode(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlGetSamplingMode(processor);";
-        }
-    };    @HLEFunction(nid = 0x3A622550, version = 150)
-    public final HLEModuleFunction sceCtrlPeekBufferPositiveFunction = new HLEModuleFunction("sceCtrl", "sceCtrlPeekBufferPositive") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceCtrlPeekBufferPositive(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlPeekBufferPositive(processor);";
-        }
-    };    @HLEFunction(nid = 0xC152080A, version = 150)
-    public final HLEModuleFunction sceCtrlPeekBufferNegativeFunction = new HLEModuleFunction("sceCtrl", "sceCtrlPeekBufferNegative") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceCtrlPeekBufferNegative(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlPeekBufferNegative(processor);";
-        }
-    };    @HLEFunction(nid = 0x1F803938, version = 150)
-    public final HLEModuleFunction sceCtrlReadBufferPositiveFunction = new HLEModuleFunction("sceCtrl", "sceCtrlReadBufferPositive") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceCtrlReadBufferPositive(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlReadBufferPositive(processor);";
-        }
-    };    @HLEFunction(nid = 0x60B81F86, version = 150)
-    public final HLEModuleFunction sceCtrlReadBufferNegativeFunction = new HLEModuleFunction("sceCtrl", "sceCtrlReadBufferNegative") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceCtrlReadBufferNegative(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlReadBufferNegative(processor);";
-        }
-    };    @HLEFunction(nid = 0xB1D0E5CD, version = 150)
-    public final HLEModuleFunction sceCtrlPeekLatchFunction = new HLEModuleFunction("sceCtrl", "sceCtrlPeekLatch") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceCtrlPeekLatch(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlPeekLatch(processor);";
-        }
-    };    @HLEFunction(nid = 0x0B588501, version = 150)
-    public final HLEModuleFunction sceCtrlReadLatchFunction = new HLEModuleFunction("sceCtrl", "sceCtrlReadLatch") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceCtrlReadLatch(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlReadLatch(processor);";
-        }
-    };    @HLEFunction(nid = 0xA7144800, version = 150)
-    public final HLEModuleFunction sceCtrlSetIdleCancelThresholdFunction = new HLEModuleFunction("sceCtrl", "sceCtrlSetIdleCancelThreshold") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceCtrlSetIdleCancelThreshold(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlSetIdleCancelThreshold(processor);";
-        }
-    };    @HLEFunction(nid = 0x687660FA, version = 150)
-    public final HLEModuleFunction sceCtrlGetIdleCancelThresholdFunction = new HLEModuleFunction("sceCtrl", "sceCtrlGetIdleCancelThreshold") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceCtrlGetIdleCancelThreshold(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlGetIdleCancelThreshold(processor);";
-        }
-    };    @HLEFunction(nid = 0x348D99D4, version = 150)
-    public final HLEModuleFunction sceCtrl_348D99D4Function = new HLEModuleFunction("sceCtrl", "sceCtrl_348D99D4") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceCtrl_348D99D4(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrl_348D99D4(processor);";
-        }
-    };    @HLEFunction(nid = 0xAF5960F3, version = 150)
-    public final HLEModuleFunction sceCtrl_AF5960F3Function = new HLEModuleFunction("sceCtrl", "sceCtrl_AF5960F3") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceCtrl_AF5960F3(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrl_AF5960F3(processor);";
-        }
-    };    @HLEFunction(nid = 0xA68FD260, version = 150)
-    public final HLEModuleFunction sceCtrlClearRapidFireFunction = new HLEModuleFunction("sceCtrl", "sceCtrlClearRapidFire") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceCtrlClearRapidFire(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlClearRapidFire(processor);";
-        }
-    };    @HLEFunction(nid = 0x6841BE1A, version = 150)
-    public final HLEModuleFunction sceCtrlSetRapidFireFunction = new HLEModuleFunction("sceCtrl", "sceCtrlSetRapidFire") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceCtrlSetRapidFire(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlSetRapidFire(processor);";
-        }
-    };
 }

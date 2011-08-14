@@ -88,30 +88,8 @@ public class sceNpService implements HLEModule {
         }
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0x0F8F5821, version = 150)
-    public final HLEModuleFunction sceNpService_0F8F5821Function = new HLEModuleFunction("sceNpService", "sceNpService_0F8F5821") {
+    @HLEFunction(nid = 0x0F8F5821, version = 150) public HLEModuleFunction sceNpService_0F8F5821Function;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNpService_0F8F5821(processor);
-        }
+    @HLEFunction(nid = 0x00ACFAC3, version = 150) public HLEModuleFunction sceNpService_00ACFAC3Function;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpServiceModule.sceNpService_0F8F5821(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x00ACFAC3, version = 150)
-    public final HLEModuleFunction sceNpService_00ACFAC3Function = new HLEModuleFunction("sceNpService", "sceNpService_00ACFAC3") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpService_00ACFAC3(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpServiceModule.sceNpService_00ACFAC3(processor);";
-        }
-    };
 }

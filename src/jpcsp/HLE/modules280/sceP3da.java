@@ -89,37 +89,10 @@ public class sceP3da implements HLEModule {
 
 		cpu.gpr[2] = 0;
 	}
-	@HLEFunction(nid = 0x374500A5, version = 280)
-	public final HLEModuleFunction sceP3daBridgeInitFunction = new HLEModuleFunction("sceP3da", "sceP3daBridgeInit") {
-		@Override
-		public final void execute(Processor processor) {
-			sceP3daBridgeInit(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceP3da.sceP3daBridgeInit(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x43F756A2, version = 280)
-	public final HLEModuleFunction sceP3daBridgeExitFunction = new HLEModuleFunction("sceP3da", "sceP3daBridgeExit") {
-		@Override
-		public final void execute(Processor processor) {
-			sceP3daBridgeExit(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceP3da.sceP3daBridgeExit(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x013016F3, version = 280)
-	public final HLEModuleFunction sceP3daBridgeCoreFunction = new HLEModuleFunction("sceP3da", "sceP3daBridgeCore") {
-		@Override
-		public final void execute(Processor processor) {
-			sceP3daBridgeCore(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceP3da.sceP3daBridgeCore(processor);";
-		}
-	};
+	@HLEFunction(nid = 0x374500A5, version = 280) public HLEModuleFunction sceP3daBridgeInitFunction;
+
+	@HLEFunction(nid = 0x43F756A2, version = 280) public HLEModuleFunction sceP3daBridgeExitFunction;
+
+	@HLEFunction(nid = 0x013016F3, version = 280) public HLEModuleFunction sceP3daBridgeCoreFunction;
+
 }

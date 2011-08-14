@@ -982,554 +982,104 @@ public class sceUsbCam implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
 
-	@HLEFunction(nid = 0x99D86281, version = 271)
-	public final HLEModuleFunction sceUsbCamReadVideoFrameFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamReadVideoFrame") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamReadVideoFrame(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamReadVideoFrame(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x17F7B2FB, version = 271)
-	public final HLEModuleFunction sceUsbCamSetupVideoFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamSetupVideo") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamSetupVideo(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamSetupVideo(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xF93C4669, version = 271)
-	public final HLEModuleFunction sceUsbCamAutoImageReverseSWFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamAutoImageReverseSW") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamAutoImageReverseSW(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamAutoImageReverseSW(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x574A8C3F, version = 271)
-	public final HLEModuleFunction sceUsbCamStartVideoFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamStartVideo") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamStartVideo(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamStartVideo(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x6CF32CB9, version = 271)
-	public final HLEModuleFunction sceUsbCamStopVideoFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamStopVideo") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamStopVideo(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamStopVideo(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x03ED7A82, version = 271)
-	public final HLEModuleFunction sceUsbCamSetupMicFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamSetupMic") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamSetupMic(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamSetupMic(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x82A64030, version = 271)
-	public final HLEModuleFunction sceUsbCamStartMicFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamStartMic") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamStartMic(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamStartMic(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x41E73E95, version = 271)
-	public final HLEModuleFunction sceUsbCamPollReadVideoFrameEndFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamPollReadVideoFrameEnd") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamPollReadVideoFrameEnd(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamPollReadVideoFrameEnd(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x7DAC0C71, version = 271)
-	public final HLEModuleFunction sceUsbCamReadVideoFrameBlockingFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamReadVideoFrameBlocking") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamReadVideoFrameBlocking(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamReadVideoFrameBlocking(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xF90B2293, version = 271)
-	public final HLEModuleFunction sceUsbCamWaitReadVideoFrameEndFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamWaitReadVideoFrameEnd") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamWaitReadVideoFrameEnd(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamWaitReadVideoFrameEnd(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xD4876173, version = 271)
-	public final HLEModuleFunction sceUsbCamSetImageEffectModeFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamSetImageEffectMode") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamSetImageEffectMode(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamSetImageEffectMode(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x4C34F553, version = 271)
-	public final HLEModuleFunction sceUsbCamGetLensDirectionFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamGetLensDirection") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamGetLensDirection(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamGetLensDirection(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x08AEE98A, version = 271)
-	public final HLEModuleFunction sceUsbCamSetMicGainFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamSetMicGain") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamSetMicGain(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamSetMicGain(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x09C26C7E, version = 271)
-	public final HLEModuleFunction sceUsbCamSetContrastFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamSetContrast") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamSetContrast(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamSetContrast(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x0A41A298, version = 271)
-	public final HLEModuleFunction sceUsbCamSetupStillExFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamSetupStillEx") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamSetupStillEx(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamSetupStillEx(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x11A1F128, version = 271)
-	public final HLEModuleFunction sceUsbCamGetAutoImageReverseStateFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamGetAutoImageReverseState") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamGetAutoImageReverseState(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamGetAutoImageReverseState(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x1A46CFE7, version = 271)
-	public final HLEModuleFunction sceUsbCamStillPollInputEndFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamStillPollInputEnd") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamStillPollInputEnd(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamStillPollInputEnd(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x1D686870, version = 271)
-	public final HLEModuleFunction sceUsbCamSetEvLevelFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamSetEvLevel") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamSetEvLevel(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamSetEvLevel(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x2BCD50C0, version = 271)
-	public final HLEModuleFunction sceUsbCamGetEvLevelFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamGetEvLevel") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamGetEvLevel(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamGetEvLevel(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x2E930264, version = 271)
-	public final HLEModuleFunction sceUsbCamSetupMicExFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamSetupMicEx") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamSetupMicEx(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamSetupMicEx(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x36636925, version = 271)
-	public final HLEModuleFunction sceUsbCamReadMicBlockingFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamReadMicBlocking") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamReadMicBlocking(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamReadMicBlocking(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x383E9FA8, version = 271)
-	public final HLEModuleFunction sceUsbCamGetSaturationFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamGetSaturation") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamGetSaturation(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamGetSaturation(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x3DC0088E, version = 271)
-	public final HLEModuleFunction sceUsbCamReadMicFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamReadMic") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamReadMic(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamReadMic(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x3F0CF289, version = 271)
-	public final HLEModuleFunction sceUsbCamSetupStillFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamSetupStill") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamSetupStill(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamSetupStill(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x41EE8797, version = 271)
-	public final HLEModuleFunction sceUsbCamUnregisterLensRotationCallbackFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamUnregisterLensRotationCallback") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamUnregisterLensRotationCallback(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamUnregisterLensRotationCallback(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x4F3D84D5, version = 271)
-	public final HLEModuleFunction sceUsbCamSetBrightnessFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamSetBrightness") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamSetBrightness(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamSetBrightness(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x5145868A, version = 271)
-	public final HLEModuleFunction sceUsbCamStopMicFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamStopMic") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamStopMic(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamStopMic(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x5778B452, version = 271)
-	public final HLEModuleFunction sceUsbCamGetMicDataLengthFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamGetMicDataLength") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamGetMicDataLength(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamGetMicDataLength(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x61BE5CAC, version = 271)
-	public final HLEModuleFunction sceUsbCamStillInputBlockingFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamStillInputBlocking") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamStillInputBlocking(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamStillInputBlocking(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x622F83CC, version = 271)
-	public final HLEModuleFunction sceUsbCamSetSharpnessFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamSetSharpness") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamSetSharpness(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamSetSharpness(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x6784E6A8, version = 271)
-	public final HLEModuleFunction sceUsbCamSetAntiFlickerFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamSetAntiFlicker") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamSetAntiFlicker(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamSetAntiFlicker(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x6E205974, version = 271)
-	public final HLEModuleFunction sceUsbCamSetSaturationFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamSetSaturation") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamSetSaturation(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamSetSaturation(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x70F522C5, version = 271)
-	public final HLEModuleFunction sceUsbCamGetBrightnessFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamGetBrightness") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamGetBrightness(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamGetBrightness(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x7563AFA1, version = 271)
-	public final HLEModuleFunction sceUsbCamStillWaitInputEndFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamStillWaitInputEnd") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamStillWaitInputEnd(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamStillWaitInputEnd(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x951BEDF5, version = 271)
-	public final HLEModuleFunction sceUsbCamSetReverseModeFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamSetReverseMode") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamSetReverseMode(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamSetReverseMode(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x994471E0, version = 271)
-	public final HLEModuleFunction sceUsbCamGetImageEffectModeFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamGetImageEffectMode") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamGetImageEffectMode(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamGetImageEffectMode(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x9E8AAF8D, version = 271)
-	public final HLEModuleFunction sceUsbCamGetZoomFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamGetZoom") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamGetZoom(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamGetZoom(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xA063A957, version = 271)
-	public final HLEModuleFunction sceUsbCamGetContrastFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamGetContrast") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamGetContrast(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamGetContrast(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xA720937C, version = 271)
-	public final HLEModuleFunction sceUsbCamStillCancelInputFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamStillCancelInput") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamStillCancelInput(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamStillCancelInput(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xAA7D94BA, version = 271)
-	public final HLEModuleFunction sceUsbCamGetAntiFlickerFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamGetAntiFlicker") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamGetAntiFlicker(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamGetAntiFlicker(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xB048A67D, version = 271)
-	public final HLEModuleFunction sceUsbCamWaitReadMicEndFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamWaitReadMicEnd") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamWaitReadMicEnd(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamWaitReadMicEnd(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xC484901F, version = 271)
-	public final HLEModuleFunction sceUsbCamSetZoomFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamSetZoom") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamSetZoom(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamSetZoom(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xCFE9E999, version = 271)
-	public final HLEModuleFunction sceUsbCamSetupVideoExFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamSetupVideoEx") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamSetupVideoEx(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamSetupVideoEx(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xD293A100, version = 271)
-	public final HLEModuleFunction sceUsbCamRegisterLensRotationCallbackFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamRegisterLensRotationCallback") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamRegisterLensRotationCallback(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamRegisterLensRotationCallback(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xD5279339, version = 271)
-	public final HLEModuleFunction sceUsbCamGetReverseModeFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamGetReverseMode") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamGetReverseMode(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamGetReverseMode(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xDF9D0C92, version = 271)
-	public final HLEModuleFunction sceUsbCamGetReadVideoFrameSizeFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamGetReadVideoFrameSize") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamGetReadVideoFrameSize(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamGetReadVideoFrameSize(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xE5959C36, version = 271)
-	public final HLEModuleFunction sceUsbCamStillGetInputLengthFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamStillGetInputLength") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamStillGetInputLength(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamStillGetInputLength(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xF8847F60, version = 271)
-	public final HLEModuleFunction sceUsbCamPollReadMicEndFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamPollReadMicEnd") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamPollReadMicEnd(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamPollReadMicEnd(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xFB0A6C5D, version = 271)
-	public final HLEModuleFunction sceUsbCamStillInputFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamStillInput") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamStillInput(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamStillInput(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xFDB68C23, version = 271)
-	public final HLEModuleFunction sceUsbCamGetSharpnessFunction = new HLEModuleFunction("sceUsbCam", "sceUsbCamGetSharpness") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUsbCamGetSharpness(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUsbCamModule.sceUsbCamGetSharpness(processor);";
-		}
-	};
+	@HLEFunction(nid = 0x99D86281, version = 271) public HLEModuleFunction sceUsbCamReadVideoFrameFunction;
+
+	@HLEFunction(nid = 0x17F7B2FB, version = 271) public HLEModuleFunction sceUsbCamSetupVideoFunction;
+
+	@HLEFunction(nid = 0xF93C4669, version = 271) public HLEModuleFunction sceUsbCamAutoImageReverseSWFunction;
+
+	@HLEFunction(nid = 0x574A8C3F, version = 271) public HLEModuleFunction sceUsbCamStartVideoFunction;
+
+	@HLEFunction(nid = 0x6CF32CB9, version = 271) public HLEModuleFunction sceUsbCamStopVideoFunction;
+
+	@HLEFunction(nid = 0x03ED7A82, version = 271) public HLEModuleFunction sceUsbCamSetupMicFunction;
+
+	@HLEFunction(nid = 0x82A64030, version = 271) public HLEModuleFunction sceUsbCamStartMicFunction;
+
+	@HLEFunction(nid = 0x41E73E95, version = 271) public HLEModuleFunction sceUsbCamPollReadVideoFrameEndFunction;
+
+	@HLEFunction(nid = 0x7DAC0C71, version = 271) public HLEModuleFunction sceUsbCamReadVideoFrameBlockingFunction;
+
+	@HLEFunction(nid = 0xF90B2293, version = 271) public HLEModuleFunction sceUsbCamWaitReadVideoFrameEndFunction;
+
+	@HLEFunction(nid = 0xD4876173, version = 271) public HLEModuleFunction sceUsbCamSetImageEffectModeFunction;
+
+	@HLEFunction(nid = 0x4C34F553, version = 271) public HLEModuleFunction sceUsbCamGetLensDirectionFunction;
+
+	@HLEFunction(nid = 0x08AEE98A, version = 271) public HLEModuleFunction sceUsbCamSetMicGainFunction;
+
+	@HLEFunction(nid = 0x09C26C7E, version = 271) public HLEModuleFunction sceUsbCamSetContrastFunction;
+
+	@HLEFunction(nid = 0x0A41A298, version = 271) public HLEModuleFunction sceUsbCamSetupStillExFunction;
+
+	@HLEFunction(nid = 0x11A1F128, version = 271) public HLEModuleFunction sceUsbCamGetAutoImageReverseStateFunction;
+
+	@HLEFunction(nid = 0x1A46CFE7, version = 271) public HLEModuleFunction sceUsbCamStillPollInputEndFunction;
+
+	@HLEFunction(nid = 0x1D686870, version = 271) public HLEModuleFunction sceUsbCamSetEvLevelFunction;
+
+	@HLEFunction(nid = 0x2BCD50C0, version = 271) public HLEModuleFunction sceUsbCamGetEvLevelFunction;
+
+	@HLEFunction(nid = 0x2E930264, version = 271) public HLEModuleFunction sceUsbCamSetupMicExFunction;
+
+	@HLEFunction(nid = 0x36636925, version = 271) public HLEModuleFunction sceUsbCamReadMicBlockingFunction;
+
+	@HLEFunction(nid = 0x383E9FA8, version = 271) public HLEModuleFunction sceUsbCamGetSaturationFunction;
+
+	@HLEFunction(nid = 0x3DC0088E, version = 271) public HLEModuleFunction sceUsbCamReadMicFunction;
+
+	@HLEFunction(nid = 0x3F0CF289, version = 271) public HLEModuleFunction sceUsbCamSetupStillFunction;
+
+	@HLEFunction(nid = 0x41EE8797, version = 271) public HLEModuleFunction sceUsbCamUnregisterLensRotationCallbackFunction;
+
+	@HLEFunction(nid = 0x4F3D84D5, version = 271) public HLEModuleFunction sceUsbCamSetBrightnessFunction;
+
+	@HLEFunction(nid = 0x5145868A, version = 271) public HLEModuleFunction sceUsbCamStopMicFunction;
+
+	@HLEFunction(nid = 0x5778B452, version = 271) public HLEModuleFunction sceUsbCamGetMicDataLengthFunction;
+
+	@HLEFunction(nid = 0x61BE5CAC, version = 271) public HLEModuleFunction sceUsbCamStillInputBlockingFunction;
+
+	@HLEFunction(nid = 0x622F83CC, version = 271) public HLEModuleFunction sceUsbCamSetSharpnessFunction;
+
+	@HLEFunction(nid = 0x6784E6A8, version = 271) public HLEModuleFunction sceUsbCamSetAntiFlickerFunction;
+
+	@HLEFunction(nid = 0x6E205974, version = 271) public HLEModuleFunction sceUsbCamSetSaturationFunction;
+
+	@HLEFunction(nid = 0x70F522C5, version = 271) public HLEModuleFunction sceUsbCamGetBrightnessFunction;
+
+	@HLEFunction(nid = 0x7563AFA1, version = 271) public HLEModuleFunction sceUsbCamStillWaitInputEndFunction;
+
+	@HLEFunction(nid = 0x951BEDF5, version = 271) public HLEModuleFunction sceUsbCamSetReverseModeFunction;
+
+	@HLEFunction(nid = 0x994471E0, version = 271) public HLEModuleFunction sceUsbCamGetImageEffectModeFunction;
+
+	@HLEFunction(nid = 0x9E8AAF8D, version = 271) public HLEModuleFunction sceUsbCamGetZoomFunction;
+
+	@HLEFunction(nid = 0xA063A957, version = 271) public HLEModuleFunction sceUsbCamGetContrastFunction;
+
+	@HLEFunction(nid = 0xA720937C, version = 271) public HLEModuleFunction sceUsbCamStillCancelInputFunction;
+
+	@HLEFunction(nid = 0xAA7D94BA, version = 271) public HLEModuleFunction sceUsbCamGetAntiFlickerFunction;
+
+	@HLEFunction(nid = 0xB048A67D, version = 271) public HLEModuleFunction sceUsbCamWaitReadMicEndFunction;
+
+	@HLEFunction(nid = 0xC484901F, version = 271) public HLEModuleFunction sceUsbCamSetZoomFunction;
+
+	@HLEFunction(nid = 0xCFE9E999, version = 271) public HLEModuleFunction sceUsbCamSetupVideoExFunction;
+
+	@HLEFunction(nid = 0xD293A100, version = 271) public HLEModuleFunction sceUsbCamRegisterLensRotationCallbackFunction;
+
+	@HLEFunction(nid = 0xD5279339, version = 271) public HLEModuleFunction sceUsbCamGetReverseModeFunction;
+
+	@HLEFunction(nid = 0xDF9D0C92, version = 271) public HLEModuleFunction sceUsbCamGetReadVideoFrameSizeFunction;
+
+	@HLEFunction(nid = 0xE5959C36, version = 271) public HLEModuleFunction sceUsbCamStillGetInputLengthFunction;
+
+	@HLEFunction(nid = 0xF8847F60, version = 271) public HLEModuleFunction sceUsbCamPollReadMicEndFunction;
+
+	@HLEFunction(nid = 0xFB0A6C5D, version = 271) public HLEModuleFunction sceUsbCamStillInputFunction;
+
+	@HLEFunction(nid = 0xFDB68C23, version = 271) public HLEModuleFunction sceUsbCamGetSharpnessFunction;
+
 }

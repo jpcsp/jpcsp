@@ -221,82 +221,16 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
     public void sceUtilityInstallGetStatus(Processor processor) {
     	installState.executeGetStatus(processor);
     }
-    @HLEFunction(nid = 0x1579A159, version = 200)
-    public final HLEModuleFunction sceUtilityLoadNetModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityLoadNetModule") {
+    @HLEFunction(nid = 0x1579A159, version = 200) public HLEModuleFunction sceUtilityLoadNetModuleFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityLoadNetModule(processor);
-        }
+    @HLEFunction(nid = 0x64D50C56, version = 200) public HLEModuleFunction sceUtilityUnloadNetModuleFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityLoadNetModule(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x64D50C56, version = 200)
-    public final HLEModuleFunction sceUtilityUnloadNetModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityUnloadNetModule") {
+    @HLEFunction(nid = 0xC4700FA3, version = 200) public HLEModuleFunction sceUtilityInstallGetStatusFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityUnloadNetModule(processor);
-        }
+    @HLEFunction(nid = 0x1281DA8E, version = 200) public HLEModuleFunction sceUtilityInstallInitStartFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityUnloadNetModule(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xC4700FA3, version = 200)
-    public final HLEModuleFunction sceUtilityInstallGetStatusFunction = new HLEModuleFunction("sceUtility", "sceUtilityInstallGetStatus") {
+    @HLEFunction(nid = 0x5EF1C24A, version = 200) public HLEModuleFunction sceUtilityInstallShutdownStartFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-        	sceUtilityInstallGetStatus(processor);
-        }
+    @HLEFunction(nid = 0xA03D29BA, version = 200) public HLEModuleFunction sceUtilityInstallUpdateFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityInstallGetStatus(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x1281DA8E, version = 200)
-    public final HLEModuleFunction sceUtilityInstallInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityInstallInitStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-        	sceUtilityInstallInitStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityInstallInitStart(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x5EF1C24A, version = 200)
-    public final HLEModuleFunction sceUtilityInstallShutdownStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityInstallShutdownStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-        	sceUtilityInstallShutdownStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityInstallShutdownStart(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xA03D29BA, version = 200)
-    public final HLEModuleFunction sceUtilityInstallUpdateFunction = new HLEModuleFunction("sceUtility", "sceUtilityInstallUpdate") {
-
-        @Override
-        public final void execute(Processor processor) {
-        	sceUtilityInstallUpdate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityInstallUpdate(processor);";
-        }
-    };
 }

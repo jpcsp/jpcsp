@@ -414,149 +414,17 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         } else {
             cpu.gpr[2] = -1;
         }
-    }    @HLEFunction(nid = 0x46EBB729, version = 150)
-    public final HLEModuleFunction sceUmdCheckMediumFunction = new HLEModuleFunction("sceUmdUser", "sceUmdCheckMedium") {
+    }    @HLEFunction(nid = 0x46EBB729, version = 150) public HLEModuleFunction sceUmdCheckMediumFunction;
+    @HLEFunction(nid = 0xC6183D47, version = 150) public HLEModuleFunction sceUmdActivateFunction;
+    @HLEFunction(nid = 0xE83742BA, version = 150) public HLEModuleFunction sceUmdDeactivateFunction;
+    @HLEFunction(nid = 0x8EF08FCE, version = 150) public HLEModuleFunction sceUmdWaitDriveStatFunction;
+    @HLEFunction(nid = 0x56202973, version = 150) public HLEModuleFunction sceUmdWaitDriveStatWithTimerFunction;
+    @HLEFunction(nid = 0x4A9E5E29, version = 150) public HLEModuleFunction sceUmdWaitDriveStatCBFunction;
+    @HLEFunction(nid = 0x6AF9B50A, version = 150) public HLEModuleFunction sceUmdCancelWaitDriveStatFunction;
+    @HLEFunction(nid = 0x6B4A146C, version = 150) public HLEModuleFunction sceUmdGetDriveStatFunction;
+    @HLEFunction(nid = 0x20628E6F, version = 150) public HLEModuleFunction sceUmdGetErrorStatFunction;
+    @HLEFunction(nid = 0x340B7686, version = 150) public HLEModuleFunction sceUmdGetDiscInfoFunction;
+    @HLEFunction(nid = 0xAEE7404D, version = 150) public HLEModuleFunction sceUmdRegisterUMDCallBackFunction;
+    @HLEFunction(nid = 0xBD2BDE07, version = 150) public HLEModuleFunction sceUmdUnRegisterUMDCallBackFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceUmdCheckMedium(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdCheckMedium(processor);";
-        }
-    };    @HLEFunction(nid = 0xC6183D47, version = 150)
-    public final HLEModuleFunction sceUmdActivateFunction = new HLEModuleFunction("sceUmdUser", "sceUmdActivate") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUmdActivate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdActivate(processor);";
-        }
-    };    @HLEFunction(nid = 0xE83742BA, version = 150)
-    public final HLEModuleFunction sceUmdDeactivateFunction = new HLEModuleFunction("sceUmdUser", "sceUmdDeactivate") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUmdDeactivate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdDeactivate(processor);";
-        }
-    };    @HLEFunction(nid = 0x8EF08FCE, version = 150)
-    public final HLEModuleFunction sceUmdWaitDriveStatFunction = new HLEModuleFunction("sceUmdUser", "sceUmdWaitDriveStat") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUmdWaitDriveStat(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdWaitDriveStat(processor);";
-        }
-    };    @HLEFunction(nid = 0x56202973, version = 150)
-    public final HLEModuleFunction sceUmdWaitDriveStatWithTimerFunction = new HLEModuleFunction("sceUmdUser", "sceUmdWaitDriveStatWithTimer") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUmdWaitDriveStatWithTimer(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdWaitDriveStatWithTimer(processor);";
-        }
-    };    @HLEFunction(nid = 0x4A9E5E29, version = 150)
-    public final HLEModuleFunction sceUmdWaitDriveStatCBFunction = new HLEModuleFunction("sceUmdUser", "sceUmdWaitDriveStatCB") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUmdWaitDriveStatCB(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdWaitDriveStatCB(processor);";
-        }
-    };    @HLEFunction(nid = 0x6AF9B50A, version = 150)
-    public final HLEModuleFunction sceUmdCancelWaitDriveStatFunction = new HLEModuleFunction("sceUmdUser", "sceUmdCancelWaitDriveStat") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUmdCancelWaitDriveStat(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdCancelWaitDriveStat(processor);";
-        }
-    };    @HLEFunction(nid = 0x6B4A146C, version = 150)
-    public final HLEModuleFunction sceUmdGetDriveStatFunction = new HLEModuleFunction("sceUmdUser", "sceUmdGetDriveStat") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUmdGetDriveStat(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdGetDriveStat(processor);";
-        }
-    };    @HLEFunction(nid = 0x20628E6F, version = 150)
-    public final HLEModuleFunction sceUmdGetErrorStatFunction = new HLEModuleFunction("sceUmdUser", "sceUmdGetErrorStat") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUmdGetErrorStat(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdGetErrorStat(processor);";
-        }
-    };    @HLEFunction(nid = 0x340B7686, version = 150)
-    public final HLEModuleFunction sceUmdGetDiscInfoFunction = new HLEModuleFunction("sceUmdUser", "sceUmdGetDiscInfo") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUmdGetDiscInfo(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdGetDiscInfo(processor);";
-        }
-    };    @HLEFunction(nid = 0xAEE7404D, version = 150)
-    public final HLEModuleFunction sceUmdRegisterUMDCallBackFunction = new HLEModuleFunction("sceUmdUser", "sceUmdRegisterUMDCallBack") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUmdRegisterUMDCallBack(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdRegisterUMDCallBack(processor);";
-        }
-    };    @HLEFunction(nid = 0xBD2BDE07, version = 150)
-    public final HLEModuleFunction sceUmdUnRegisterUMDCallBackFunction = new HLEModuleFunction("sceUmdUser", "sceUmdUnRegisterUMDCallBack") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUmdUnRegisterUMDCallBack(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdUnRegisterUMDCallBack(processor);";
-        }
-    };
 }

@@ -53,38 +53,11 @@ public class SysMemUserForUser extends jpcsp.HLE.modules200.SysMemUserForUser {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-        	@HLEFunction(nid = 0x2A3E5280, version = 280)
-	public final HLEModuleFunction sceKernelQueryMemoryInfoFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelQueryMemoryInfo") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelQueryMemoryInfo(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelQueryMemoryInfo(processor);";
-		}
-	};
-    	@HLEFunction(nid = 0x39F49610, version = 280)
-	public final HLEModuleFunction sceKernelGetPTRIGFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelGetPTRIG") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelGetPTRIG(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelGetPTRIG(processor);";
-		}
-	};
-        	@HLEFunction(nid = 0x6231A71D, version = 280)
-	public final HLEModuleFunction sceKernelSetPTRIGFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelSetPTRIG") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelSetPTRIG(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelSetPTRIG(processor);";
-		}
-	};
+        	@HLEFunction(nid = 0x2A3E5280, version = 280) public HLEModuleFunction sceKernelQueryMemoryInfoFunction;
+
+    	@HLEFunction(nid = 0x39F49610, version = 280) public HLEModuleFunction sceKernelGetPTRIGFunction;
+
+        	@HLEFunction(nid = 0x6231A71D, version = 280) public HLEModuleFunction sceKernelSetPTRIGFunction;
+
 
 }

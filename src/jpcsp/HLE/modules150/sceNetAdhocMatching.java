@@ -171,212 +171,36 @@ public class sceNetAdhocMatching implements HLEModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-    @HLEFunction(nid = 0x2A2A1E07, version = 150)
-    public final HLEModuleFunction sceNetAdhocMatchingInitFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingInit") {
+    @HLEFunction(nid = 0x2A2A1E07, version = 150) public HLEModuleFunction sceNetAdhocMatchingInitFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocMatchingInit(processor);
-        }
+    @HLEFunction(nid = 0x7945ECDA, version = 150) public HLEModuleFunction sceNetAdhocMatchingTermFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingInit(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x7945ECDA, version = 150)
-    public final HLEModuleFunction sceNetAdhocMatchingTermFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingTerm") {
+    @HLEFunction(nid = 0xCA5EDA6F, version = 150) public HLEModuleFunction sceNetAdhocMatchingCreateFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocMatchingTerm(processor);
-        }
+    @HLEFunction(nid = 0x93EF3843, version = 150) public HLEModuleFunction sceNetAdhocMatchingStartFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingTerm(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xCA5EDA6F, version = 150)
-    public final HLEModuleFunction sceNetAdhocMatchingCreateFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingCreate") {
+    @HLEFunction(nid = 0x32B156B3, version = 150) public HLEModuleFunction sceNetAdhocMatchingStopFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocMatchingCreate(processor);
-        }
+    @HLEFunction(nid = 0xF16EAF4F, version = 150) public HLEModuleFunction sceNetAdhocMatchingDeleteFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingCreate(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x93EF3843, version = 150)
-    public final HLEModuleFunction sceNetAdhocMatchingStartFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingStart") {
+    @HLEFunction(nid = 0xF79472D7, version = 150) public HLEModuleFunction sceNetAdhocMatchingSendDataFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocMatchingStart(processor);
-        }
+    @HLEFunction(nid = 0xEC19337D, version = 150) public HLEModuleFunction sceNetAdhocMatchingAbortSendDataFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingStart(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x32B156B3, version = 150)
-    public final HLEModuleFunction sceNetAdhocMatchingStopFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingStop") {
+    @HLEFunction(nid = 0x5E3D4B79, version = 150) public HLEModuleFunction sceNetAdhocMatchingSelectTargetFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocMatchingStop(processor);
-        }
+    @HLEFunction(nid = 0xEA3C6108, version = 150) public HLEModuleFunction sceNetAdhocMatchingCancelTargetFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingStop(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xF16EAF4F, version = 150)
-    public final HLEModuleFunction sceNetAdhocMatchingDeleteFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingDelete") {
+    @HLEFunction(nid = 0x8F58BEDF, version = 150) public HLEModuleFunction sceNetAdhocMatchingCancelTargetWithOptFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocMatchingDelete(processor);
-        }
+    @HLEFunction(nid = 0xB5D96C2A, version = 150) public HLEModuleFunction sceNetAdhocMatchingGetHelloOptFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingDelete(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xF79472D7, version = 150)
-    public final HLEModuleFunction sceNetAdhocMatchingSendDataFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingSendData") {
+    @HLEFunction(nid = 0xB58E61B7, version = 150) public HLEModuleFunction sceNetAdhocMatchingSetHelloOptFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocMatchingSendData(processor);
-        }
+    @HLEFunction(nid = 0xC58BCD9E, version = 150) public HLEModuleFunction sceNetAdhocMatchingGetMembersFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingSendData(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xEC19337D, version = 150)
-    public final HLEModuleFunction sceNetAdhocMatchingAbortSendDataFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingAbortSendData") {
+    @HLEFunction(nid = 0x9C5CFB7D, version = 150) public HLEModuleFunction sceNetAdhocMatchingGetPoolStatFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocMatchingAbortSendData(processor);
-        }
+    @HLEFunction(nid = 0x40F8F435, version = 150) public HLEModuleFunction sceNetAdhocMatchingGetPoolMaxAllocFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingAbortSendData(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x5E3D4B79, version = 150)
-    public final HLEModuleFunction sceNetAdhocMatchingSelectTargetFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingSelectTarget") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocMatchingSelectTarget(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingSelectTarget(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xEA3C6108, version = 150)
-    public final HLEModuleFunction sceNetAdhocMatchingCancelTargetFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingCancelTarget") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocMatchingCancelTarget(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingCancelTarget(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x8F58BEDF, version = 150)
-    public final HLEModuleFunction sceNetAdhocMatchingCancelTargetWithOptFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingCancelTargetWithOpt") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocMatchingCancelTargetWithOpt(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingCancelTargetWithOpt(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xB5D96C2A, version = 150)
-    public final HLEModuleFunction sceNetAdhocMatchingGetHelloOptFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingGetHelloOpt") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocMatchingGetHelloOpt(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingGetHelloOpt(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xB58E61B7, version = 150)
-    public final HLEModuleFunction sceNetAdhocMatchingSetHelloOptFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingSetHelloOpt") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocMatchingSetHelloOpt(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingSetHelloOpt(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xC58BCD9E, version = 150)
-    public final HLEModuleFunction sceNetAdhocMatchingGetMembersFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingGetMembers") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocMatchingGetMembers(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingGetMembers(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x9C5CFB7D, version = 150)
-    public final HLEModuleFunction sceNetAdhocMatchingGetPoolStatFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingGetPoolStat") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocMatchingGetPoolStat(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingGetPoolStat(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x40F8F435, version = 150)
-    public final HLEModuleFunction sceNetAdhocMatchingGetPoolMaxAllocFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingGetPoolMaxAlloc") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocMatchingGetPoolMaxAlloc(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingGetPoolMaxAlloc(processor);";
-        }
-    };
 }

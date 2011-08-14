@@ -496,81 +496,18 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 
         cpu.gpr[2] = devkitVersion;
 	}
-	@HLEFunction(nid = 0xA291F107, version = 150)
-	public final HLEModuleFunction sceKernelMaxFreeMemSizeFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelMaxFreeMemSize") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelMaxFreeMemSize(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelMaxFreeMemSize(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xF919F628, version = 150)
-	public final HLEModuleFunction sceKernelTotalFreeMemSizeFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelTotalFreeMemSize") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelTotalFreeMemSize(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelTotalFreeMemSize(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x237DBD4F, version = 150)
-	public final HLEModuleFunction sceKernelAllocPartitionMemoryFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelAllocPartitionMemory") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelAllocPartitionMemory(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelAllocPartitionMemory(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xB6D61D02, version = 150)
-	public final HLEModuleFunction sceKernelFreePartitionMemoryFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelFreePartitionMemory") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelFreePartitionMemory(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelFreePartitionMemory(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x9D9A5BA1, version = 150)
-	public final HLEModuleFunction sceKernelGetBlockHeadAddrFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelGetBlockHeadAddr") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelGetBlockHeadAddr(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelGetBlockHeadAddr(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x13A5ABEF, version = 150)
-	public final HLEModuleFunction sceKernelPrintfFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelPrintf") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelPrintf(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelPrintf(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x3FC9AE6A, version = 150)
-	public final HLEModuleFunction sceKernelDevkitVersionFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelDevkitVersion") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelDevkitVersion(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelDevkitVersion(processor);";
-		}
-	};
+	@HLEFunction(nid = 0xA291F107, version = 150) public HLEModuleFunction sceKernelMaxFreeMemSizeFunction;
+
+	@HLEFunction(nid = 0xF919F628, version = 150) public HLEModuleFunction sceKernelTotalFreeMemSizeFunction;
+
+	@HLEFunction(nid = 0x237DBD4F, version = 150) public HLEModuleFunction sceKernelAllocPartitionMemoryFunction;
+
+	@HLEFunction(nid = 0xB6D61D02, version = 150) public HLEModuleFunction sceKernelFreePartitionMemoryFunction;
+
+	@HLEFunction(nid = 0x9D9A5BA1, version = 150) public HLEModuleFunction sceKernelGetBlockHeadAddrFunction;
+
+	@HLEFunction(nid = 0x13A5ABEF, version = 150) public HLEModuleFunction sceKernelPrintfFunction;
+
+	@HLEFunction(nid = 0x3FC9AE6A, version = 150) public HLEModuleFunction sceKernelDevkitVersionFunction;
+
 }

@@ -38,17 +38,6 @@ public class sceUtility extends jpcsp.HLE.modules303.sceUtility {
 
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0x180F7B62, version = 600)
-    public final HLEModuleFunction sceUtilityGamedataInstallAbortFunction = new HLEModuleFunction("sceUtility", "sceUtilityGamedataInstallAbort") {
+    @HLEFunction(nid = 0x180F7B62, version = 600) public HLEModuleFunction sceUtilityGamedataInstallAbortFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityGamedataInstallAbort(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGamedataInstallAbort(processor);";
-        }
-    };
 }

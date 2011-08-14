@@ -843,209 +843,22 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         cpu.gpr[2] = loopNum;
     }
-    @HLEFunction(nid = 0x07EC321A, version = 150)
-    public final HLEModuleFunction sceMp3ReserveMp3HandleFunction = new HLEModuleFunction("sceMp3", "sceMp3ReserveMp3Handle") {
+    @HLEFunction(nid = 0x07EC321A, version = 150) public HLEModuleFunction sceMp3ReserveMp3HandleFunction;
+    @HLEFunction(nid = 0x0DB149F4, version = 150) public HLEModuleFunction sceMp3NotifyAddStreamDataFunction;
+    @HLEFunction(nid = 0x2A368661, version = 150) public HLEModuleFunction sceMp3ResetPlayPositionFunction;
+    @HLEFunction(nid = 0x35750070, version = 150) public HLEModuleFunction sceMp3InitResourceFunction;
+    @HLEFunction(nid = 0x3C2FA058, version = 150) public HLEModuleFunction sceMp3TermResourceFunction;
+    @HLEFunction(nid = 0x3CEF484F, version = 150) public HLEModuleFunction sceMp3SetLoopNumFunction;
+    @HLEFunction(nid = 0x44E07129, version = 150) public HLEModuleFunction sceMp3InitFunction;
+    @HLEFunction(nid = 0x7F696782, version = 150) public HLEModuleFunction sceMp3GetMp3ChannelNumFunction;
+    @HLEFunction(nid = 0x8F450998, version = 150) public HLEModuleFunction sceMp3GetSamplingRateFunction;
+    @HLEFunction(nid = 0xA703FE0F, version = 150) public HLEModuleFunction sceMp3GetInfoToAddStreamDataFunction;
+    @HLEFunction(nid = 0xD021C0FB, version = 150) public HLEModuleFunction sceMp3DecodeFunction;
+    @HLEFunction(nid = 0xD0A56296, version = 150) public HLEModuleFunction sceMp3CheckStreamDataNeededFunction;
+    @HLEFunction(nid = 0xF5478233, version = 150) public HLEModuleFunction sceMp3ReleaseMp3HandleFunction;
+    @HLEFunction(nid = 0x354D27EA, version = 150) public HLEModuleFunction sceMp3GetSumDecodedSampleFunction;
+    @HLEFunction(nid = 0x87677E40, version = 150) public HLEModuleFunction sceMp3GetBitRateFunction;
+    @HLEFunction(nid = 0x87C263D1, version = 150) public HLEModuleFunction sceMp3GetMaxOutputSampleFunction;
+    @HLEFunction(nid = 0xD8F54A51, version = 150) public HLEModuleFunction sceMp3GetLoopNumFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceMp3ReserveMp3Handle(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp3Module.sceMp3ReserveMp3Handle(processor);";
-        }
-    };    @HLEFunction(nid = 0x0DB149F4, version = 150)
-    public final HLEModuleFunction sceMp3NotifyAddStreamDataFunction = new HLEModuleFunction("sceMp3", "sceMp3NotifyAddStreamData") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceMp3NotifyAddStreamData(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp3Module.sceMp3NotifyAddStreamData(processor);";
-        }
-    };    @HLEFunction(nid = 0x2A368661, version = 150)
-    public final HLEModuleFunction sceMp3ResetPlayPositionFunction = new HLEModuleFunction("sceMp3", "sceMp3ResetPlayPosition") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceMp3ResetPlayPosition(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp3Module.sceMp3ResetPlayPosition(processor);";
-        }
-    };    @HLEFunction(nid = 0x35750070, version = 150)
-    public final HLEModuleFunction sceMp3InitResourceFunction = new HLEModuleFunction("sceMp3", "sceMp3InitResource") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceMp3InitResource(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp3Module.sceMp3InitResource(processor);";
-        }
-    };    @HLEFunction(nid = 0x3C2FA058, version = 150)
-    public final HLEModuleFunction sceMp3TermResourceFunction = new HLEModuleFunction("sceMp3", "sceMp3TermResource") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceMp3TermResource(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp3Module.sceMp3TermResource(processor);";
-        }
-    };    @HLEFunction(nid = 0x3CEF484F, version = 150)
-    public final HLEModuleFunction sceMp3SetLoopNumFunction = new HLEModuleFunction("sceMp3", "sceMp3SetLoopNum") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceMp3SetLoopNum(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp3Module.sceMp3SetLoopNum(processor);";
-        }
-    };    @HLEFunction(nid = 0x44E07129, version = 150)
-    public final HLEModuleFunction sceMp3InitFunction = new HLEModuleFunction("sceMp3", "sceMp3Init") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceMp3Init(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp3Module.sceMp3Init(processor);";
-        }
-    };    @HLEFunction(nid = 0x7F696782, version = 150)
-    public final HLEModuleFunction sceMp3GetMp3ChannelNumFunction = new HLEModuleFunction("sceMp3", "sceMp3GetMp3ChannelNum") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceMp3GetMp3ChannelNum(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp3Module.sceMp3GetMp3ChannelNum(processor);";
-        }
-    };    @HLEFunction(nid = 0x8F450998, version = 150)
-    public final HLEModuleFunction sceMp3GetSamplingRateFunction = new HLEModuleFunction("sceMp3", "sceMp3GetSamplingRate") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceMp3GetSamplingRate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp3Module.sceMp3GetSamplingRate(processor);";
-        }
-    };    @HLEFunction(nid = 0xA703FE0F, version = 150)
-    public final HLEModuleFunction sceMp3GetInfoToAddStreamDataFunction = new HLEModuleFunction("sceMp3", "sceMp3GetInfoToAddStreamData") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceMp3GetInfoToAddStreamData(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp3Module.sceMp3GetInfoToAddStreamData(processor);";
-        }
-    };    @HLEFunction(nid = 0xD021C0FB, version = 150)
-    public final HLEModuleFunction sceMp3DecodeFunction = new HLEModuleFunction("sceMp3", "sceMp3Decode") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceMp3Decode(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp3Module.sceMp3Decode(processor);";
-        }
-    };    @HLEFunction(nid = 0xD0A56296, version = 150)
-    public final HLEModuleFunction sceMp3CheckStreamDataNeededFunction = new HLEModuleFunction("sceMp3", "sceMp3CheckStreamDataNeeded") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceMp3CheckStreamDataNeeded(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp3Module.sceMp3CheckStreamDataNeeded(processor);";
-        }
-    };    @HLEFunction(nid = 0xF5478233, version = 150)
-    public final HLEModuleFunction sceMp3ReleaseMp3HandleFunction = new HLEModuleFunction("sceMp3", "sceMp3ReleaseMp3Handle") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceMp3ReleaseMp3Handle(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp3Module.sceMp3ReleaseMp3Handle(processor);";
-        }
-    };    @HLEFunction(nid = 0x354D27EA, version = 150)
-    public final HLEModuleFunction sceMp3GetSumDecodedSampleFunction = new HLEModuleFunction("sceMp3", "sceMp3GetSumDecodedSample") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceMp3GetSumDecodedSample(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp3Module.sceMp3GetSumDecodedSample(processor);";
-        }
-    };    @HLEFunction(nid = 0x87677E40, version = 150)
-    public final HLEModuleFunction sceMp3GetBitRateFunction = new HLEModuleFunction("sceMp3", "sceMp3GetBitRate") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceMp3GetBitRate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp3Module.sceMp3GetBitRate(processor);";
-        }
-    };    @HLEFunction(nid = 0x87C263D1, version = 150)
-    public final HLEModuleFunction sceMp3GetMaxOutputSampleFunction = new HLEModuleFunction("sceMp3", "sceMp3GetMaxOutputSample") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceMp3GetMaxOutputSample(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp3Module.sceMp3GetMaxOutputSample(processor);";
-        }
-    };    @HLEFunction(nid = 0xD8F54A51, version = 150)
-    public final HLEModuleFunction sceMp3GetLoopNumFunction = new HLEModuleFunction("sceMp3", "sceMp3GetLoopNum") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceMp3GetLoopNum(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp3Module.sceMp3GetLoopNum(processor);";
-        }
-    };
 }

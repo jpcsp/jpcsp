@@ -726,389 +726,37 @@ public class sceAudio implements HLEModule, HLEStartModule {
             return;
         }
         cpu.gpr[2] = hleAudioGetChannelRestLen(pspPCMChannels[channel]);
-    }    @HLEFunction(nid = 0x80F1F7E0, version = 150)
-    public final HLEModuleFunction sceAudioInitFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioInit") {
+    }    @HLEFunction(nid = 0x80F1F7E0, version = 150, moduleName = "sceAudio_driver") public HLEModuleFunction sceAudioInitFunction;
+    @HLEFunction(nid = 0x210567F7, version = 150, moduleName = "sceAudio_driver") public HLEModuleFunction sceAudioEndFunction;
+    @HLEFunction(nid = 0xA2BEAA6C, version = 150, moduleName = "sceAudio_driver") public HLEModuleFunction sceAudioSetFrequencyFunction;
+    @HLEFunction(nid = 0xB61595C0, version = 150, moduleName = "sceAudio_driver") public HLEModuleFunction sceAudioLoopbackTestFunction;
+    @HLEFunction(nid = 0x927AC32B, version = 150, moduleName = "sceAudio_driver") public HLEModuleFunction sceAudioSetVolumeOffsetFunction;
+    @HLEFunction(nid = 0x8C1009B2, version = 150) public HLEModuleFunction sceAudioOutputFunction;
+    @HLEFunction(nid = 0x136CAF51, version = 150) public HLEModuleFunction sceAudioOutputBlockingFunction;
+    @HLEFunction(nid = 0xE2D56B2D, version = 150) public HLEModuleFunction sceAudioOutputPannedFunction;
+    @HLEFunction(nid = 0x13F592BC, version = 150) public HLEModuleFunction sceAudioOutputPannedBlockingFunction;
+    @HLEFunction(nid = 0x5EC81C55, version = 150) public HLEModuleFunction sceAudioChReserveFunction;
+    @HLEFunction(nid = 0x41EFADE7, version = 150) public HLEModuleFunction sceAudioOneshotOutputFunction;
+    @HLEFunction(nid = 0x6FC46853, version = 150) public HLEModuleFunction sceAudioChReleaseFunction;
+    @HLEFunction(nid = 0xB011922F, version = 150) public HLEModuleFunction sceAudioGetChannelRestLengthFunction;
+    @HLEFunction(nid = 0xCB2E439E, version = 150) public HLEModuleFunction sceAudioSetChannelDataLenFunction;
+    @HLEFunction(nid = 0x95FD0C2D, version = 150) public HLEModuleFunction sceAudioChangeChannelConfigFunction;
+    @HLEFunction(nid = 0xB7E1D8E7, version = 150) public HLEModuleFunction sceAudioChangeChannelVolumeFunction;
+    @HLEFunction(nid = 0x01562BA3, version = 150) public HLEModuleFunction sceAudioOutput2ReserveFunction;
+    @HLEFunction(nid = 0x43196845, version = 150) public HLEModuleFunction sceAudioOutput2ReleaseFunction;
+    @HLEFunction(nid = 0x2D53F36E, version = 150) public HLEModuleFunction sceAudioOutput2OutputBlockingFunction;
+    @HLEFunction(nid = 0x647CEF33, version = 150) public HLEModuleFunction sceAudioOutput2GetRestSampleFunction;
+    @HLEFunction(nid = 0x63F2889C, version = 150) public HLEModuleFunction sceAudioOutput2ChangeLengthFunction;
+    @HLEFunction(nid = 0x38553111, version = 150) public HLEModuleFunction sceAudioSRCChReserveFunction;
+    @HLEFunction(nid = 0x5C37C0AE, version = 150) public HLEModuleFunction sceAudioSRCChReleaseFunction;
+    @HLEFunction(nid = 0xE0727056, version = 150) public HLEModuleFunction sceAudioSRCOutputBlockingFunction;
+    @HLEFunction(nid = 0x086E5895, version = 150) public HLEModuleFunction sceAudioInputBlockingFunction;
+    @HLEFunction(nid = 0x6D4BEC68, version = 150) public HLEModuleFunction sceAudioInputFunction;
+    @HLEFunction(nid = 0xA708C6A6, version = 150) public HLEModuleFunction sceAudioGetInputLengthFunction;
+    @HLEFunction(nid = 0x87B2E651, version = 150) public HLEModuleFunction sceAudioWaitInputEndFunction;
+    @HLEFunction(nid = 0x7DE61688, version = 150) public HLEModuleFunction sceAudioInputInitFunction;
+    @HLEFunction(nid = 0xE926D3FB, version = 150) public HLEModuleFunction sceAudioInputInitExFunction;
+    @HLEFunction(nid = 0xA633048E, version = 150) public HLEModuleFunction sceAudioPollInputEndFunction;
+    @HLEFunction(nid = 0xE9D97901, version = 150) public HLEModuleFunction sceAudioGetChannelRestLenFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioInit(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudio_driverModule.sceAudioInit(processor);";
-        }
-    };    @HLEFunction(nid = 0x210567F7, version = 150)
-    public final HLEModuleFunction sceAudioEndFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioEnd") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioEnd(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudio_driverModule.sceAudioEnd(processor);";
-        }
-    };    @HLEFunction(nid = 0xA2BEAA6C, version = 150)
-    public final HLEModuleFunction sceAudioSetFrequencyFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioSetFrequency") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioSetFrequency(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudio_driverModule.sceAudioSetFrequency(processor);";
-        }
-    };    @HLEFunction(nid = 0xB61595C0, version = 150)
-    public final HLEModuleFunction sceAudioLoopbackTestFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioLoopbackTest") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioLoopbackTest(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudio_driverModule.sceAudioLoopbackTest(processor);";
-        }
-    };    @HLEFunction(nid = 0x927AC32B, version = 150)
-    public final HLEModuleFunction sceAudioSetVolumeOffsetFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioSetVolumeOffset") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioSetVolumeOffset(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudio_driverModule.sceAudioSetVolumeOffset(processor);";
-        }
-    };    @HLEFunction(nid = 0x8C1009B2, version = 150)
-    public final HLEModuleFunction sceAudioOutputFunction = new HLEModuleFunction("sceAudio", "sceAudioOutput") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioOutput(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutput(processor);";
-        }
-    };    @HLEFunction(nid = 0x136CAF51, version = 150)
-    public final HLEModuleFunction sceAudioOutputBlockingFunction = new HLEModuleFunction("sceAudio", "sceAudioOutputBlocking") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioOutputBlocking(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutputBlocking(processor);";
-        }
-    };    @HLEFunction(nid = 0xE2D56B2D, version = 150)
-    public final HLEModuleFunction sceAudioOutputPannedFunction = new HLEModuleFunction("sceAudio", "sceAudioOutputPanned") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioOutputPanned(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutputPanned(processor);";
-        }
-    };    @HLEFunction(nid = 0x13F592BC, version = 150)
-    public final HLEModuleFunction sceAudioOutputPannedBlockingFunction = new HLEModuleFunction("sceAudio", "sceAudioOutputPannedBlocking") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioOutputPannedBlocking(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutputPannedBlocking(processor);";
-        }
-    };    @HLEFunction(nid = 0x5EC81C55, version = 150)
-    public final HLEModuleFunction sceAudioChReserveFunction = new HLEModuleFunction("sceAudio", "sceAudioChReserve") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioChReserve(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioChReserve(processor);";
-        }
-    };    @HLEFunction(nid = 0x41EFADE7, version = 150)
-    public final HLEModuleFunction sceAudioOneshotOutputFunction = new HLEModuleFunction("sceAudio", "sceAudioOneshotOutput") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioOneshotOutput(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOneshotOutput(processor);";
-        }
-    };    @HLEFunction(nid = 0x6FC46853, version = 150)
-    public final HLEModuleFunction sceAudioChReleaseFunction = new HLEModuleFunction("sceAudio", "sceAudioChRelease") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioChRelease(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioChRelease(processor);";
-        }
-    };    @HLEFunction(nid = 0xB011922F, version = 150)
-    public final HLEModuleFunction sceAudioGetChannelRestLengthFunction = new HLEModuleFunction("sceAudio", "sceAudioGetChannelRestLength") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioGetChannelRestLength(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioGetChannelRestLength(processor);";
-        }
-    };    @HLEFunction(nid = 0xCB2E439E, version = 150)
-    public final HLEModuleFunction sceAudioSetChannelDataLenFunction = new HLEModuleFunction("sceAudio", "sceAudioSetChannelDataLen") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioSetChannelDataLen(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioSetChannelDataLen(processor);";
-        }
-    };    @HLEFunction(nid = 0x95FD0C2D, version = 150)
-    public final HLEModuleFunction sceAudioChangeChannelConfigFunction = new HLEModuleFunction("sceAudio", "sceAudioChangeChannelConfig") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioChangeChannelConfig(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioChangeChannelConfig(processor);";
-        }
-    };    @HLEFunction(nid = 0xB7E1D8E7, version = 150)
-    public final HLEModuleFunction sceAudioChangeChannelVolumeFunction = new HLEModuleFunction("sceAudio", "sceAudioChangeChannelVolume") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioChangeChannelVolume(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioChangeChannelVolume(processor);";
-        }
-    };    @HLEFunction(nid = 0x01562BA3, version = 150)
-    public final HLEModuleFunction sceAudioOutput2ReserveFunction = new HLEModuleFunction("sceAudio", "sceAudioOutput2Reserve") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioOutput2Reserve(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutput2Reserve(processor);";
-        }
-    };    @HLEFunction(nid = 0x43196845, version = 150)
-    public final HLEModuleFunction sceAudioOutput2ReleaseFunction = new HLEModuleFunction("sceAudio", "sceAudioOutput2Release") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioOutput2Release(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutput2Release(processor);";
-        }
-    };    @HLEFunction(nid = 0x2D53F36E, version = 150)
-    public final HLEModuleFunction sceAudioOutput2OutputBlockingFunction = new HLEModuleFunction("sceAudio", "sceAudioOutput2OutputBlocking") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioOutput2OutputBlocking(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutput2OutputBlocking(processor);";
-        }
-    };    @HLEFunction(nid = 0x647CEF33, version = 150)
-    public final HLEModuleFunction sceAudioOutput2GetRestSampleFunction = new HLEModuleFunction("sceAudio", "sceAudioOutput2GetRestSample") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioOutput2GetRestSample(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutput2GetRestSample(processor);";
-        }
-    };    @HLEFunction(nid = 0x63F2889C, version = 150)
-    public final HLEModuleFunction sceAudioOutput2ChangeLengthFunction = new HLEModuleFunction("sceAudio", "sceAudioOutput2ChangeLength") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioOutput2ChangeLength(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutput2ChangeLength(processor);";
-        }
-    };    @HLEFunction(nid = 0x38553111, version = 150)
-    public final HLEModuleFunction sceAudioSRCChReserveFunction = new HLEModuleFunction("sceAudio", "sceAudioSRCChReserve") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioSRCChReserve(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioSRCChReserve(processor);";
-        }
-    };    @HLEFunction(nid = 0x5C37C0AE, version = 150)
-    public final HLEModuleFunction sceAudioSRCChReleaseFunction = new HLEModuleFunction("sceAudio", "sceAudioSRCChRelease") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioSRCChRelease(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioSRCChRelease(processor);";
-        }
-    };    @HLEFunction(nid = 0xE0727056, version = 150)
-    public final HLEModuleFunction sceAudioSRCOutputBlockingFunction = new HLEModuleFunction("sceAudio", "sceAudioSRCOutputBlocking") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioSRCOutputBlocking(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioSRCOutputBlocking(processor);";
-        }
-    };    @HLEFunction(nid = 0x086E5895, version = 150)
-    public final HLEModuleFunction sceAudioInputBlockingFunction = new HLEModuleFunction("sceAudio", "sceAudioInputBlocking") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioInputBlocking(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioInputBlocking(processor);";
-        }
-    };    @HLEFunction(nid = 0x6D4BEC68, version = 150)
-    public final HLEModuleFunction sceAudioInputFunction = new HLEModuleFunction("sceAudio", "sceAudioInput") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioInput(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioInput(processor);";
-        }
-    };    @HLEFunction(nid = 0xA708C6A6, version = 150)
-    public final HLEModuleFunction sceAudioGetInputLengthFunction = new HLEModuleFunction("sceAudio", "sceAudioGetInputLength") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioGetInputLength(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioGetInputLength(processor);";
-        }
-    };    @HLEFunction(nid = 0x87B2E651, version = 150)
-    public final HLEModuleFunction sceAudioWaitInputEndFunction = new HLEModuleFunction("sceAudio", "sceAudioWaitInputEnd") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioWaitInputEnd(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioWaitInputEnd(processor);";
-        }
-    };    @HLEFunction(nid = 0x7DE61688, version = 150)
-    public final HLEModuleFunction sceAudioInputInitFunction = new HLEModuleFunction("sceAudio", "sceAudioInputInit") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioInputInit(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioInputInit(processor);";
-        }
-    };    @HLEFunction(nid = 0xE926D3FB, version = 150)
-    public final HLEModuleFunction sceAudioInputInitExFunction = new HLEModuleFunction("sceAudio", "sceAudioInputInitEx") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioInputInitEx(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioInputInitEx(processor);";
-        }
-    };    @HLEFunction(nid = 0xA633048E, version = 150)
-    public final HLEModuleFunction sceAudioPollInputEndFunction = new HLEModuleFunction("sceAudio", "sceAudioPollInputEnd") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioPollInputEnd(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioPollInputEnd(processor);";
-        }
-    };    @HLEFunction(nid = 0xE9D97901, version = 150)
-    public final HLEModuleFunction sceAudioGetChannelRestLenFunction = new HLEModuleFunction("sceAudio", "sceAudioGetChannelRestLen") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAudioGetChannelRestLen(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioGetChannelRestLen(processor);";
-        }
-    };
 }

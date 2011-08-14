@@ -55,17 +55,6 @@ public class SysMemForKernel extends jpcsp.HLE.modules150.SysMemForKernel implem
 
         cpu.gpr[2] = result;
 	}
-    @HLEFunction(nid = 0x6373995D, version = 280)
-    public final HLEModuleFunction sceKernelGetModelFunction = new HLEModuleFunction("SysMemForKernel", "sceKernelGetModel") {
+    @HLEFunction(nid = 0x6373995D, version = 280) public HLEModuleFunction sceKernelGetModelFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelGetModel(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelGetModel(processor);";
-        }
-    };
 }

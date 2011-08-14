@@ -186,136 +186,28 @@ public class sceDeflt implements HLEModule {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-    	@HLEFunction(nid = 0x2EE39A64, version = 150)
-	public final HLEModuleFunction sceZlibAdler32Function = new HLEModuleFunction("sceDeflt", "sceZlibAdler32") {
-		@Override
-		public final void execute(Processor processor) {
-			sceZlibAdler32(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceDefltModule.sceZlibAdler32(processor);";
-		}
-	};
-    	@HLEFunction(nid = 0x44054E03, version = 150)
-	public final HLEModuleFunction sceDeflateDecompressFunction = new HLEModuleFunction("sceDeflt", "sceDeflateDecompress") {
-		@Override
-		public final void execute(Processor processor) {
-			sceDeflateDecompress(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceDefltModule.sceDeflateDecompress(processor);";
-		}
-	};
-    	@HLEFunction(nid = 0x6DBCF897, version = 150)
-	public final HLEModuleFunction sceGzipDecompressFunction = new HLEModuleFunction("sceDeflt", "sceGzipDecompress") {
-		@Override
-		public final void execute(Processor processor) {
-			sceGzipDecompress(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceDefltModule.sceGzipDecompress(processor);";
-		}
-	};
-    	@HLEFunction(nid = 0xB767F9A0, version = 150)
-	public final HLEModuleFunction sceGzipGetCommentFunction = new HLEModuleFunction("sceDeflt", "sceGzipGetComment") {
-		@Override
-		public final void execute(Processor processor) {
-			sceGzipGetComment(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceDefltModule.sceGzipGetComment(processor);";
-		}
-	};
-    	@HLEFunction(nid = 0x0BA3B9CC, version = 150)
-	public final HLEModuleFunction sceGzipGetCompressedDataFunction = new HLEModuleFunction("sceDeflt", "sceGzipGetCompressedData") {
-		@Override
-		public final void execute(Processor processor) {
-			sceGzipGetCompressedData(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceDefltModule.sceGzipGetCompressedData(processor);";
-		}
-	};
-    	@HLEFunction(nid = 0x8AA82C92, version = 150)
-	public final HLEModuleFunction sceGzipGetInfoFunction = new HLEModuleFunction("sceDeflt", "sceGzipGetInfo") {
-		@Override
-		public final void execute(Processor processor) {
-			sceGzipGetInfo(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceDefltModule.sceGzipGetInfo(processor);";
-		}
-	};
-    	@HLEFunction(nid = 0x106A3552, version = 150)
-	public final HLEModuleFunction sceGzipGetNameFunction = new HLEModuleFunction("sceDeflt", "sceGzipGetName") {
-		@Override
-		public final void execute(Processor processor) {
-			sceGzipGetName(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceDefltModule.sceGzipGetName(processor);";
-		}
-	};
-    	@HLEFunction(nid = 0x1B5B82BC, version = 150)
-	public final HLEModuleFunction sceGzipIsValidFunction = new HLEModuleFunction("sceDeflt", "sceGzipIsValid") {
-		@Override
-		public final void execute(Processor processor) {
-			sceGzipIsValid(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceDefltModule.sceGzipIsValid(processor);";
-		}
-	};
-    	@HLEFunction(nid = 0xA9E4FB28, version = 150)
-	public final HLEModuleFunction sceZlibDecompressFunction = new HLEModuleFunction("sceDeflt", "sceZlibDecompress") {
-		@Override
-		public final void execute(Processor processor) {
-			sceZlibDecompress(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceDefltModule.sceZlibDecompress(processor);";
-		}
-	};
-    	@HLEFunction(nid = 0x6A548477, version = 150)
-	public final HLEModuleFunction sceZlibGetCompressedDataFunction = new HLEModuleFunction("sceDeflt", "sceZlibGetCompressedData") {
-		@Override
-		public final void execute(Processor processor) {
-			sceZlibGetCompressedData(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceDefltModule.sceZlibGetCompressedData(processor);";
-		}
-	};
-    	@HLEFunction(nid = 0xAFE01FD3, version = 150)
-	public final HLEModuleFunction sceZlibGetInfoFunction = new HLEModuleFunction("sceDeflt", "sceZlibGetInfo") {
-		@Override
-		public final void execute(Processor processor) {
-			sceZlibGetInfo(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceDefltModule.sceZlibGetInfo(processor);";
-		}
-	};
-    	@HLEFunction(nid = 0xE46EB986, version = 150)
-	public final HLEModuleFunction sceZlibIsValidFunction = new HLEModuleFunction("sceDeflt", "sceZlibIsValid") {
-		@Override
-		public final void execute(Processor processor) {
-			sceZlibIsValid(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceDefltModule.sceZlibIsValid(processor);";
-		}
-	};   
+    	@HLEFunction(nid = 0x2EE39A64, version = 150) public HLEModuleFunction sceZlibAdler32Function;
+
+    	@HLEFunction(nid = 0x44054E03, version = 150) public HLEModuleFunction sceDeflateDecompressFunction;
+
+    	@HLEFunction(nid = 0x6DBCF897, version = 150) public HLEModuleFunction sceGzipDecompressFunction;
+
+    	@HLEFunction(nid = 0xB767F9A0, version = 150) public HLEModuleFunction sceGzipGetCommentFunction;
+
+    	@HLEFunction(nid = 0x0BA3B9CC, version = 150) public HLEModuleFunction sceGzipGetCompressedDataFunction;
+
+    	@HLEFunction(nid = 0x8AA82C92, version = 150) public HLEModuleFunction sceGzipGetInfoFunction;
+
+    	@HLEFunction(nid = 0x106A3552, version = 150) public HLEModuleFunction sceGzipGetNameFunction;
+
+    	@HLEFunction(nid = 0x1B5B82BC, version = 150) public HLEModuleFunction sceGzipIsValidFunction;
+
+    	@HLEFunction(nid = 0xA9E4FB28, version = 150) public HLEModuleFunction sceZlibDecompressFunction;
+
+    	@HLEFunction(nid = 0x6A548477, version = 150) public HLEModuleFunction sceZlibGetCompressedDataFunction;
+
+    	@HLEFunction(nid = 0xAFE01FD3, version = 150) public HLEModuleFunction sceZlibGetInfoFunction;
+
+    	@HLEFunction(nid = 0xE46EB986, version = 150) public HLEModuleFunction sceZlibIsValidFunction;
+   
 }

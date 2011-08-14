@@ -106,43 +106,10 @@ public class sceWlan implements HLEModule {
 
         cpu.gpr[2] = Wlan.getSwitchState();
     }
-    @HLEFunction(nid = 0x0C622081, version = 150)
-    public final HLEModuleFunction sceWlanGetEtherAddrFunction = new HLEModuleFunction("sceWlan", "sceWlanGetEtherAddr") {
+    @HLEFunction(nid = 0x0C622081, version = 150) public HLEModuleFunction sceWlanGetEtherAddrFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceWlanGetEtherAddr(processor);
-        }
+    @HLEFunction(nid = 0xD7763699, version = 150) public HLEModuleFunction sceWlanGetSwitchStateFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceWlanModule.sceWlanGetEtherAddr(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xD7763699, version = 150)
-    public final HLEModuleFunction sceWlanGetSwitchStateFunction = new HLEModuleFunction("sceWlan", "sceWlanGetSwitchState") {
+    @HLEFunction(nid = 0x93440B11, version = 150) public HLEModuleFunction sceWlanDevIsPowerOnFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceWlanGetSwitchState(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceWlanModule.sceWlanGetSwitchState(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x93440B11, version = 150)
-    public final HLEModuleFunction sceWlanDevIsPowerOnFunction = new HLEModuleFunction("sceWlan", "sceWlanDevIsPowerOn") {
-
-        @Override
-        public final void execute(Processor processor) {
-        	sceWlanDevIsPowerOn(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceWlanModule.sceWlanDevIsPowerOn(processor);";
-        }
-    };
 }

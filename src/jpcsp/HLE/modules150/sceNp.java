@@ -54,17 +54,6 @@ public class sceNp implements HLEModule {
         }
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0x857B47D3, version = 150)
-    public final HLEModuleFunction sceNp_857B47D3Function = new HLEModuleFunction("sceNp", "sceNp_857B47D3") {
+    @HLEFunction(nid = 0x857B47D3, version = 150) public HLEModuleFunction sceNp_857B47D3Function;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNp_857B47D3(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpModule.sceNp_857B47D3(processor);";
-        }
-    };
 }

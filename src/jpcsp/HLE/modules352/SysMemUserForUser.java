@@ -117,48 +117,12 @@ public class SysMemUserForUser extends jpcsp.HLE.modules280.SysMemUserForUser {
             }
         }
 	}
-	@HLEFunction(nid = 0x50F61D8A, version = 352)
-	public final HLEModuleFunction SysMemUserForUser_50F61D8AFunction = new HLEModuleFunction("SysMemUserForUser", "SysMemUserForUser_50F61D8A") {
-		@Override
-		public final void execute(Processor processor) {
-			SysMemUserForUser_50F61D8A(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.SysMemUserForUserModule.SysMemUserForUser_50F61D8A(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xACBD88CA, version = 352)
-	public final HLEModuleFunction SysMemUserForUser_ACBD88CAFunction = new HLEModuleFunction("SysMemUserForUser", "SysMemUserForUser_ACBD88CA") {
-		@Override
-		public final void execute(Processor processor) {
-			SysMemUserForUser_ACBD88CA(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.SysMemUserForUserModule.SysMemUserForUser_ACBD88CA(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xDB83A952, version = 352)
-	public final HLEModuleFunction SysMemUserForUser_DB83A952Function = new HLEModuleFunction("SysMemUserForUser", "SysMemUserForUser_DB83A952") {
-		@Override
-		public final void execute(Processor processor) {
-			SysMemUserForUser_DB83A952(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.SysMemUserForUserModule.SysMemUserForUser_DB83A952(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xFE707FDF, version = 352)
-	public final HLEModuleFunction SysMemUserForUser_FE707FDFFunction = new HLEModuleFunction("SysMemUserForUser", "SysMemUserForUser_FE707FDF") {
-		@Override
-		public final void execute(Processor processor) {
-			SysMemUserForUser_FE707FDF(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.SysMemUserForUserModule.SysMemUserForUser_FE707FDF(processor);";
-		}
-	};
+	@HLEFunction(nid = 0x50F61D8A, version = 352) public HLEModuleFunction SysMemUserForUser_50F61D8AFunction;
+
+	@HLEFunction(nid = 0xACBD88CA, version = 352) public HLEModuleFunction SysMemUserForUser_ACBD88CAFunction;
+
+	@HLEFunction(nid = 0xDB83A952, version = 352) public HLEModuleFunction SysMemUserForUser_DB83A952Function;
+
+	@HLEFunction(nid = 0xFE707FDF, version = 352) public HLEModuleFunction SysMemUserForUser_FE707FDFFunction;
+
 }

@@ -2520,785 +2520,70 @@ public class sceUtility implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_NETPARAM_BAD_PARAM;
         }
     }
-    @HLEFunction(nid = 0xC492F751, version = 150)
-    public final HLEModuleFunction sceUtilityGameSharingInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityGameSharingInitStart") {
+    @HLEFunction(nid = 0xC492F751, version = 150) public HLEModuleFunction sceUtilityGameSharingInitStartFunction;
+    @HLEFunction(nid = 0xEFC6F80F, version = 150) public HLEModuleFunction sceUtilityGameSharingShutdownStartFunction;
+    @HLEFunction(nid = 0x7853182D, version = 150) public HLEModuleFunction sceUtilityGameSharingUpdateFunction;
+    @HLEFunction(nid = 0x946963F3, version = 150) public HLEModuleFunction sceUtilityGameSharingGetStatusFunction;
+    @HLEFunction(nid = 0x3AD50AE7, version = 150) public HLEModuleFunction sceNetplayDialogInitStartFunction;
+    @HLEFunction(nid = 0xBC6B6296, version = 150) public HLEModuleFunction sceNetplayDialogShutdownStartFunction;
+    @HLEFunction(nid = 0x417BED54, version = 150) public HLEModuleFunction sceNetplayDialogUpdateFunction;
+    @HLEFunction(nid = 0xB6CEE597, version = 150) public HLEModuleFunction sceNetplayDialogGetStatusFunction;
+    @HLEFunction(nid = 0x4DB1E739, version = 150) public HLEModuleFunction sceUtilityNetconfInitStartFunction;
+    @HLEFunction(nid = 0xF88155F6, version = 150) public HLEModuleFunction sceUtilityNetconfShutdownStartFunction;
+    @HLEFunction(nid = 0x91E70E35, version = 150) public HLEModuleFunction sceUtilityNetconfUpdateFunction;
+    @HLEFunction(nid = 0x6332AA39, version = 150) public HLEModuleFunction sceUtilityNetconfGetStatusFunction;
+    @HLEFunction(nid = 0x50C4CD57, version = 150) public HLEModuleFunction sceUtilitySavedataInitStartFunction;
+    @HLEFunction(nid = 0x9790B33C, version = 150) public HLEModuleFunction sceUtilitySavedataShutdownStartFunction;
+    @HLEFunction(nid = 0xD4B95FFB, version = 150) public HLEModuleFunction sceUtilitySavedataUpdateFunction;
+    @HLEFunction(nid = 0x8874DBE0, version = 150) public HLEModuleFunction sceUtilitySavedataGetStatusFunction;
+    @HLEFunction(nid = 0x2995D020, version = 150) public HLEModuleFunction sceUtilitySavedataErrInitStartFunction;
+    @HLEFunction(nid = 0xB62A4061, version = 150) public HLEModuleFunction sceUtilitySavedataErrShutdownStartFunction;
+    @HLEFunction(nid = 0xED0FAD38, version = 150) public HLEModuleFunction sceUtilitySavedataErrUpdateFunction;
+    @HLEFunction(nid = 0x88BC7406, version = 150) public HLEModuleFunction sceUtilitySavedataErrGetStatusFunction;
+    @HLEFunction(nid = 0x2AD8E239, version = 150) public HLEModuleFunction sceUtilityMsgDialogInitStartFunction;
+    @HLEFunction(nid = 0x67AF3428, version = 150) public HLEModuleFunction sceUtilityMsgDialogShutdownStartFunction;
+    @HLEFunction(nid = 0x95FC253B, version = 150) public HLEModuleFunction sceUtilityMsgDialogUpdateFunction;
+    @HLEFunction(nid = 0x9A1C91D7, version = 150) public HLEModuleFunction sceUtilityMsgDialogGetStatusFunction;
+    @HLEFunction(nid = 0xF6269B82, version = 150) public HLEModuleFunction sceUtilityOskInitStartFunction;
+    @HLEFunction(nid = 0x3DFAEBA9, version = 150) public HLEModuleFunction sceUtilityOskShutdownStartFunction;
+    @HLEFunction(nid = 0x4B85C861, version = 150) public HLEModuleFunction sceUtilityOskUpdateFunction;
+    @HLEFunction(nid = 0xF3F76017, version = 150) public HLEModuleFunction sceUtilityOskGetStatusFunction;
+    @HLEFunction(nid = 0x45C18506, version = 150) public HLEModuleFunction sceUtilitySetSystemParamIntFunction;
+    @HLEFunction(nid = 0x41E30674, version = 150) public HLEModuleFunction sceUtilitySetSystemParamStringFunction;
+    @HLEFunction(nid = 0xA5DA2406, version = 150) public HLEModuleFunction sceUtilityGetSystemParamIntFunction;
+    @HLEFunction(nid = 0x34B78343, version = 150) public HLEModuleFunction sceUtilityGetSystemParamStringFunction;
+    @HLEFunction(nid = 0x5EEE6548, version = 150) public HLEModuleFunction sceUtilityCheckNetParamFunction;
+    @HLEFunction(nid = 0x434D4B3A, version = 150) public HLEModuleFunction sceUtilityGetNetParamFunction;
+    @HLEFunction(nid = 0x16D02AF0, version = 150) public HLEModuleFunction sceUtilityNpSigninInitStartFunction;
+    @HLEFunction(nid = 0xE19C97D6, version = 150) public HLEModuleFunction sceUtilityNpSigninShutdownStartFunction;
+    @HLEFunction(nid = 0xF3FBC572, version = 150) public HLEModuleFunction sceUtilityNpSigninUpdateFunction;
+    @HLEFunction(nid = 0x86ABDB1B, version = 150) public HLEModuleFunction sceUtilityNpSigninGetStatusFunction;
+    @HLEFunction(nid = 0x42071A83, version = 150) public HLEModuleFunction sceUtilityPS3ScanInitStartFunction;
+    @HLEFunction(nid = 0xD17A0573, version = 150) public HLEModuleFunction sceUtilityPS3ScanShutdownStartFunction;
+    @HLEFunction(nid = 0xD852CDCE, version = 150) public HLEModuleFunction sceUtilityPS3ScanUpdateFunction;
+    @HLEFunction(nid = 0x89317C8F, version = 150) public HLEModuleFunction sceUtilityPS3ScanGetStatusFunction;
+    @HLEFunction(nid = 0x81c44706, version = 150) public HLEModuleFunction sceUtilityRssReaderInitStartFunction;
+    @HLEFunction(nid = 0xB0FB7FF5, version = 150) public HLEModuleFunction sceUtilityRssReaderContStartFunction;
+    @HLEFunction(nid = 0xE7B778D8, version = 150) public HLEModuleFunction sceUtilityRssReaderShutdownStartFunction;
+    @HLEFunction(nid = 0x6F56F9CF, version = 150) public HLEModuleFunction sceUtilityRssReaderUpdateFunction;
+    @HLEFunction(nid = 0x8326AB05, version = 150) public HLEModuleFunction sceUtilityRssReaderGetStatusFunction;
+    @HLEFunction(nid = 0x4B0A8FE5, version = 150) public HLEModuleFunction sceUtilityRssSubscriberInitStartFunction;
+    @HLEFunction(nid = 0x06A48659, version = 150) public HLEModuleFunction sceUtilityRssSubscriberShutdownStartFunction;
+    @HLEFunction(nid = 0xA084E056, version = 150) public HLEModuleFunction sceUtilityRssSubscriberUpdateFunction;
+    @HLEFunction(nid = 0x2B96173B, version = 150) public HLEModuleFunction sceUtilityRssSubscriberGetStatusFunction;
+    @HLEFunction(nid = 0x0251B134, version = 150) public HLEModuleFunction sceUtilityScreenshotInitStartFunction;
+    @HLEFunction(nid = 0x86A03A27, version = 150) public HLEModuleFunction sceUtilityScreenshotContStartFunction;
+    @HLEFunction(nid = 0xF9E0008C, version = 150) public HLEModuleFunction sceUtilityScreenshotShutdownStartFunction;
+    @HLEFunction(nid = 0xAB083EA9, version = 150) public HLEModuleFunction sceUtilityScreenshotUpdateFunction;
+    @HLEFunction(nid = 0xD81957B7, version = 150) public HLEModuleFunction sceUtilityScreenshotGetStatusFunction;
+    @HLEFunction(nid = 0xCDC3AA41, version = 150) public HLEModuleFunction sceUtilityHtmlViewerInitStartFunction;
+    @HLEFunction(nid = 0xF5CE1134, version = 150) public HLEModuleFunction sceUtilityHtmlViewerShutdownStartFunction;
+    @HLEFunction(nid = 0x05AFB9E4, version = 150) public HLEModuleFunction sceUtilityHtmlViewerUpdateFunction;
+    @HLEFunction(nid = 0xBDA7D894, version = 150) public HLEModuleFunction sceUtilityHtmlViewerGetStatusFunction;
+    @HLEFunction(nid = 0x24AC31EB, version = 150) public HLEModuleFunction sceUtilityGamedataInstallInitStartFunction;
+    @HLEFunction(nid = 0x32E32DCB, version = 150) public HLEModuleFunction sceUtilityGamedataInstallShutdownStartFunction;
+    @HLEFunction(nid = 0x4AECD179, version = 150) public HLEModuleFunction sceUtilityGamedataInstallUpdateFunction;
+    @HLEFunction(nid = 0xB57E95D9, version = 150) public HLEModuleFunction sceUtilityGamedataInstallGetStatusFunction;
+    @HLEFunction(nid = 0x4FED24D8, version = 150) public HLEModuleFunction sceUtilityGetNetParamLatestIDFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityGameSharingInitStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGameSharingInitStart(processor);";
-        }
-    };    @HLEFunction(nid = 0xEFC6F80F, version = 150)
-    public final HLEModuleFunction sceUtilityGameSharingShutdownStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityGameSharingShutdownStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityGameSharingShutdownStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGameSharingShutdownStart(processor);";
-        }
-    };    @HLEFunction(nid = 0x7853182D, version = 150)
-    public final HLEModuleFunction sceUtilityGameSharingUpdateFunction = new HLEModuleFunction("sceUtility", "sceUtilityGameSharingUpdate") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityGameSharingUpdate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGameSharingUpdate(processor);";
-        }
-    };    @HLEFunction(nid = 0x946963F3, version = 150)
-    public final HLEModuleFunction sceUtilityGameSharingGetStatusFunction = new HLEModuleFunction("sceUtility", "sceUtilityGameSharingGetStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityGameSharingGetStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGameSharingGetStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x3AD50AE7, version = 150)
-    public final HLEModuleFunction sceNetplayDialogInitStartFunction = new HLEModuleFunction("sceUtility", "sceNetplayDialogInitStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetplayDialogInitStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceNetplayDialogInitStart(processor);";
-        }
-    };    @HLEFunction(nid = 0xBC6B6296, version = 150)
-    public final HLEModuleFunction sceNetplayDialogShutdownStartFunction = new HLEModuleFunction("sceUtility", "sceNetplayDialogShutdownStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetplayDialogShutdownStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceNetplayDialogShutdownStart(processor);";
-        }
-    };    @HLEFunction(nid = 0x417BED54, version = 150)
-    public final HLEModuleFunction sceNetplayDialogUpdateFunction = new HLEModuleFunction("sceUtility", "sceNetplayDialogUpdate") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetplayDialogUpdate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceNetplayDialogUpdate(processor);";
-        }
-    };    @HLEFunction(nid = 0xB6CEE597, version = 150)
-    public final HLEModuleFunction sceNetplayDialogGetStatusFunction = new HLEModuleFunction("sceUtility", "sceNetplayDialogGetStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetplayDialogGetStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceNetplayDialogGetStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x4DB1E739, version = 150)
-    public final HLEModuleFunction sceUtilityNetconfInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityNetconfInitStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityNetconfInitStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityNetconfInitStart(processor);";
-        }
-    };    @HLEFunction(nid = 0xF88155F6, version = 150)
-    public final HLEModuleFunction sceUtilityNetconfShutdownStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityNetconfShutdownStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityNetconfShutdownStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityNetconfShutdownStart(processor);";
-        }
-    };    @HLEFunction(nid = 0x91E70E35, version = 150)
-    public final HLEModuleFunction sceUtilityNetconfUpdateFunction = new HLEModuleFunction("sceUtility", "sceUtilityNetconfUpdate") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityNetconfUpdate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityNetconfUpdate(processor);";
-        }
-    };    @HLEFunction(nid = 0x6332AA39, version = 150)
-    public final HLEModuleFunction sceUtilityNetconfGetStatusFunction = new HLEModuleFunction("sceUtility", "sceUtilityNetconfGetStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityNetconfGetStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityNetconfGetStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x50C4CD57, version = 150)
-    public final HLEModuleFunction sceUtilitySavedataInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilitySavedataInitStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilitySavedataInitStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySavedataInitStart(processor);";
-        }
-    };    @HLEFunction(nid = 0x9790B33C, version = 150)
-    public final HLEModuleFunction sceUtilitySavedataShutdownStartFunction = new HLEModuleFunction("sceUtility", "sceUtilitySavedataShutdownStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilitySavedataShutdownStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySavedataShutdownStart(processor);";
-        }
-    };    @HLEFunction(nid = 0xD4B95FFB, version = 150)
-    public final HLEModuleFunction sceUtilitySavedataUpdateFunction = new HLEModuleFunction("sceUtility", "sceUtilitySavedataUpdate") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilitySavedataUpdate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySavedataUpdate(processor);";
-        }
-    };    @HLEFunction(nid = 0x8874DBE0, version = 150)
-    public final HLEModuleFunction sceUtilitySavedataGetStatusFunction = new HLEModuleFunction("sceUtility", "sceUtilitySavedataGetStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilitySavedataGetStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySavedataGetStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x2995D020, version = 150)
-    public final HLEModuleFunction sceUtilitySavedataErrInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilitySavedataErrInitStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilitySavedataErrInitStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySavedataErrInitStart(processor);";
-        }
-    };    @HLEFunction(nid = 0xB62A4061, version = 150)
-    public final HLEModuleFunction sceUtilitySavedataErrShutdownStartFunction = new HLEModuleFunction("sceUtility", "sceUtilitySavedataErrShutdownStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilitySavedataErrShutdownStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySavedataErrShutdownStart(processor);";
-        }
-    };    @HLEFunction(nid = 0xED0FAD38, version = 150)
-    public final HLEModuleFunction sceUtilitySavedataErrUpdateFunction = new HLEModuleFunction("sceUtility", "sceUtilitySavedataErrUpdate") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilitySavedataErrUpdate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySavedataErrUpdate(processor);";
-        }
-    };    @HLEFunction(nid = 0x88BC7406, version = 150)
-    public final HLEModuleFunction sceUtilitySavedataErrGetStatusFunction = new HLEModuleFunction("sceUtility", "sceUtilitySavedataErrGetStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilitySavedataErrGetStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySavedataErrGetStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x2AD8E239, version = 150)
-    public final HLEModuleFunction sceUtilityMsgDialogInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityMsgDialogInitStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityMsgDialogInitStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityMsgDialogInitStart(processor);";
-        }
-    };    @HLEFunction(nid = 0x67AF3428, version = 150)
-    public final HLEModuleFunction sceUtilityMsgDialogShutdownStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityMsgDialogShutdownStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityMsgDialogShutdownStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityMsgDialogShutdownStart(processor);";
-        }
-    };    @HLEFunction(nid = 0x95FC253B, version = 150)
-    public final HLEModuleFunction sceUtilityMsgDialogUpdateFunction = new HLEModuleFunction("sceUtility", "sceUtilityMsgDialogUpdate") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityMsgDialogUpdate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityMsgDialogUpdate(processor);";
-        }
-    };    @HLEFunction(nid = 0x9A1C91D7, version = 150)
-    public final HLEModuleFunction sceUtilityMsgDialogGetStatusFunction = new HLEModuleFunction("sceUtility", "sceUtilityMsgDialogGetStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityMsgDialogGetStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityMsgDialogGetStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0xF6269B82, version = 150)
-    public final HLEModuleFunction sceUtilityOskInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityOskInitStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityOskInitStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityOskInitStart(processor);";
-        }
-    };    @HLEFunction(nid = 0x3DFAEBA9, version = 150)
-    public final HLEModuleFunction sceUtilityOskShutdownStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityOskShutdownStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityOskShutdownStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityOskShutdownStart(processor);";
-        }
-    };    @HLEFunction(nid = 0x4B85C861, version = 150)
-    public final HLEModuleFunction sceUtilityOskUpdateFunction = new HLEModuleFunction("sceUtility", "sceUtilityOskUpdate") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityOskUpdate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityOskUpdate(processor);";
-        }
-    };    @HLEFunction(nid = 0xF3F76017, version = 150)
-    public final HLEModuleFunction sceUtilityOskGetStatusFunction = new HLEModuleFunction("sceUtility", "sceUtilityOskGetStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityOskGetStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityOskGetStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x45C18506, version = 150)
-    public final HLEModuleFunction sceUtilitySetSystemParamIntFunction = new HLEModuleFunction("sceUtility", "sceUtilitySetSystemParamInt") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilitySetSystemParamInt(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySetSystemParamInt(processor);";
-        }
-    };    @HLEFunction(nid = 0x41E30674, version = 150)
-    public final HLEModuleFunction sceUtilitySetSystemParamStringFunction = new HLEModuleFunction("sceUtility", "sceUtilitySetSystemParamString") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilitySetSystemParamString(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySetSystemParamString(processor);";
-        }
-    };    @HLEFunction(nid = 0xA5DA2406, version = 150)
-    public final HLEModuleFunction sceUtilityGetSystemParamIntFunction = new HLEModuleFunction("sceUtility", "sceUtilityGetSystemParamInt") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityGetSystemParamInt(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGetSystemParamInt(processor);";
-        }
-    };    @HLEFunction(nid = 0x34B78343, version = 150)
-    public final HLEModuleFunction sceUtilityGetSystemParamStringFunction = new HLEModuleFunction("sceUtility", "sceUtilityGetSystemParamString") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityGetSystemParamString(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGetSystemParamString(processor);";
-        }
-    };    @HLEFunction(nid = 0x5EEE6548, version = 150)
-    public final HLEModuleFunction sceUtilityCheckNetParamFunction = new HLEModuleFunction("sceUtility", "sceUtilityCheckNetParam") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityCheckNetParam(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityCheckNetParam(processor);";
-        }
-    };    @HLEFunction(nid = 0x434D4B3A, version = 150)
-    public final HLEModuleFunction sceUtilityGetNetParamFunction = new HLEModuleFunction("sceUtility", "sceUtilityGetNetParam") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityGetNetParam(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGetNetParam(processor);";
-        }
-    };    @HLEFunction(nid = 0x16D02AF0, version = 150)
-    public final HLEModuleFunction sceUtilityNpSigninInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityNpSigninInitStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityNpSigninInitStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityNpSigninInitStart(processor);";
-        }
-    };    @HLEFunction(nid = 0xE19C97D6, version = 150)
-    public final HLEModuleFunction sceUtilityNpSigninShutdownStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityNpSigninShutdownStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityNpSigninShutdownStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityNpSigninShutdownStart(processor);";
-        }
-    };    @HLEFunction(nid = 0xF3FBC572, version = 150)
-    public final HLEModuleFunction sceUtilityNpSigninUpdateFunction = new HLEModuleFunction("sceUtility", "sceUtilityNpSigninUpdate") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityNpSigninUpdate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityNpSigninUpdate(processor);";
-        }
-    };    @HLEFunction(nid = 0x86ABDB1B, version = 150)
-    public final HLEModuleFunction sceUtilityNpSigninGetStatusFunction = new HLEModuleFunction("sceUtility", "sceUtilityNpSigninGetStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityNpSigninGetStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityNpSigninGetStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x42071A83, version = 150)
-    public final HLEModuleFunction sceUtilityPS3ScanInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityPS3ScanInitStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityPS3ScanInitStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityPS3ScanInitStart(processor);";
-        }
-    };    @HLEFunction(nid = 0xD17A0573, version = 150)
-    public final HLEModuleFunction sceUtilityPS3ScanShutdownStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityPS3ScanShutdownStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityPS3ScanShutdownStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityPS3ScanShutdownStart(processor);";
-        }
-    };    @HLEFunction(nid = 0xD852CDCE, version = 150)
-    public final HLEModuleFunction sceUtilityPS3ScanUpdateFunction = new HLEModuleFunction("sceUtility", "sceUtilityPS3ScanUpdate") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityPS3ScanUpdate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityPS3ScanUpdate(processor);";
-        }
-    };    @HLEFunction(nid = 0x89317C8F, version = 150)
-    public final HLEModuleFunction sceUtilityPS3ScanGetStatusFunction = new HLEModuleFunction("sceUtility", "sceUtilityPS3ScanGetStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityPS3ScanGetStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityPS3ScanGetStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x81c44706, version = 150)
-    public final HLEModuleFunction sceUtilityRssReaderInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityRssReaderInitStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityRssReaderInitStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityRssReaderInitStart(processor);";
-        }
-    };    @HLEFunction(nid = 0xB0FB7FF5, version = 150)
-    public final HLEModuleFunction sceUtilityRssReaderContStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityRssReaderContStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityRssReaderContStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityRssReaderContStart(processor);";
-        }
-    };    @HLEFunction(nid = 0xE7B778D8, version = 150)
-    public final HLEModuleFunction sceUtilityRssReaderShutdownStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityRssReaderShutdownStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityRssReaderShutdownStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityRssReaderShutdownStart(processor);";
-        }
-    };    @HLEFunction(nid = 0x6F56F9CF, version = 150)
-    public final HLEModuleFunction sceUtilityRssReaderUpdateFunction = new HLEModuleFunction("sceUtility", "sceUtilityRssReaderUpdate") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityRssReaderUpdate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityRssReaderUpdate(processor);";
-        }
-    };    @HLEFunction(nid = 0x8326AB05, version = 150)
-    public final HLEModuleFunction sceUtilityRssReaderGetStatusFunction = new HLEModuleFunction("sceUtility", "sceUtilityRssReaderGetStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityRssReaderGetStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityRssReaderGetStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x4B0A8FE5, version = 150)
-    public final HLEModuleFunction sceUtilityRssSubscriberInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityRssSubscriberInitStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityRssSubscriberInitStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityRssSubscriberInitStart(processor);";
-        }
-    };    @HLEFunction(nid = 0x06A48659, version = 150)
-    public final HLEModuleFunction sceUtilityRssSubscriberShutdownStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityRssSubscriberShutdownStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityRssSubscriberShutdownStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityRssSubscriberShutdownStart(processor);";
-        }
-    };    @HLEFunction(nid = 0xA084E056, version = 150)
-    public final HLEModuleFunction sceUtilityRssSubscriberUpdateFunction = new HLEModuleFunction("sceUtility", "sceUtilityRssSubscriberUpdate") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityRssSubscriberUpdate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityRssSubscriberUpdate(processor);";
-        }
-    };    @HLEFunction(nid = 0x2B96173B, version = 150)
-    public final HLEModuleFunction sceUtilityRssSubscriberGetStatusFunction = new HLEModuleFunction("sceUtility", "sceUtilityRssSubscriberGetStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityRssSubscriberGetStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityRssSubscriberGetStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x0251B134, version = 150)
-    public final HLEModuleFunction sceUtilityScreenshotInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityScreenshotInitStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityScreenshotInitStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityScreenshotInitStart(processor);";
-        }
-    };    @HLEFunction(nid = 0x86A03A27, version = 150)
-    public final HLEModuleFunction sceUtilityScreenshotContStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityScreenshotContStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityScreenshotContStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityScreenshotContStart(processor);";
-        }
-    };    @HLEFunction(nid = 0xF9E0008C, version = 150)
-    public final HLEModuleFunction sceUtilityScreenshotShutdownStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityScreenshotShutdownStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityScreenshotShutdownStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityScreenshotShutdownStart(processor);";
-        }
-    };    @HLEFunction(nid = 0xAB083EA9, version = 150)
-    public final HLEModuleFunction sceUtilityScreenshotUpdateFunction = new HLEModuleFunction("sceUtility", "sceUtilityScreenshotUpdate") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityScreenshotUpdate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityScreenshotUpdate(processor);";
-        }
-    };    @HLEFunction(nid = 0xD81957B7, version = 150)
-    public final HLEModuleFunction sceUtilityScreenshotGetStatusFunction = new HLEModuleFunction("sceUtility", "sceUtilityScreenshotGetStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityScreenshotGetStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityScreenshotGetStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0xCDC3AA41, version = 150)
-    public final HLEModuleFunction sceUtilityHtmlViewerInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityHtmlViewerInitStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityHtmlViewerInitStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityHtmlViewerInitStart(processor);";
-        }
-    };    @HLEFunction(nid = 0xF5CE1134, version = 150)
-    public final HLEModuleFunction sceUtilityHtmlViewerShutdownStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityHtmlViewerShutdownStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityHtmlViewerShutdownStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityHtmlViewerShutdownStart(processor);";
-        }
-    };    @HLEFunction(nid = 0x05AFB9E4, version = 150)
-    public final HLEModuleFunction sceUtilityHtmlViewerUpdateFunction = new HLEModuleFunction("sceUtility", "sceUtilityHtmlViewerUpdate") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityHtmlViewerUpdate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityHtmlViewerUpdate(processor);";
-        }
-    };    @HLEFunction(nid = 0xBDA7D894, version = 150)
-    public final HLEModuleFunction sceUtilityHtmlViewerGetStatusFunction = new HLEModuleFunction("sceUtility", "sceUtilityHtmlViewerGetStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityHtmlViewerGetStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityHtmlViewerGetStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x24AC31EB, version = 150)
-    public final HLEModuleFunction sceUtilityGamedataInstallInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityGamedataInstallInitStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityGamedataInstallInitStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGamedataInstallInitStart(processor);";
-        }
-    };    @HLEFunction(nid = 0x32E32DCB, version = 150)
-    public final HLEModuleFunction sceUtilityGamedataInstallShutdownStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityGamedataInstallShutdownStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityGamedataInstallShutdownStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGamedataInstallShutdownStart(processor);";
-        }
-    };    @HLEFunction(nid = 0x4AECD179, version = 150)
-    public final HLEModuleFunction sceUtilityGamedataInstallUpdateFunction = new HLEModuleFunction("sceUtility", "sceUtilityGamedataInstallUpdate") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityGamedataInstallUpdate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGamedataInstallUpdate(processor);";
-        }
-    };    @HLEFunction(nid = 0xB57E95D9, version = 150)
-    public final HLEModuleFunction sceUtilityGamedataInstallGetStatusFunction = new HLEModuleFunction("sceUtility", "sceUtilityGamedataInstallGetStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityGamedataInstallGetStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGamedataInstallGetStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x4FED24D8, version = 150)
-    public final HLEModuleFunction sceUtilityGetNetParamLatestIDFunction = new HLEModuleFunction("sceUtility", "sceUtilityGetNetParamLatestID") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityGetNetParamLatestID(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGetNetParamLatestID(processor);";
-        }
-    };
 }

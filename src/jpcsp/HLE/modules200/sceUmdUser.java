@@ -59,29 +59,7 @@ public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
         umdAllowReplace = true;
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0x87533940, version = 200)
-    public final HLEModuleFunction sceUmdReplaceProhibitFunction = new HLEModuleFunction("sceUmdUser", "sceUmdReplaceProhibit") {
+    @HLEFunction(nid = 0x87533940, version = 200) public HLEModuleFunction sceUmdReplaceProhibitFunction;
+    @HLEFunction(nid = 0xCBE9F02A, version = 200) public HLEModuleFunction sceUmdReplacePermitFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceUmdReplaceProhibit(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdReplaceProhibit(processor);";
-        }
-    };    @HLEFunction(nid = 0xCBE9F02A, version = 200)
-    public final HLEModuleFunction sceUmdReplacePermitFunction = new HLEModuleFunction("sceUmdUser", "sceUmdReplacePermit") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUmdReplacePermit(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdReplacePermit(processor);";
-        }
-    };
 }

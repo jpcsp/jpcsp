@@ -64,37 +64,10 @@ public class sceDisplay extends jpcsp.HLE.modules150.sceDisplay {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-    	@HLEFunction(nid = 0xBF79F646, version = 200)
-	public final HLEModuleFunction sceDisplayGetResumeModeFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetResumeMode") {
-		@Override
-		public final void execute(Processor processor) {
-			sceDisplayGetResumeMode(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetResumeMode(processor);";
-		}
-	};
-    	@HLEFunction(nid = 0x69B53541, version = 200)
-	public final HLEModuleFunction sceDisplayGetVblankRestFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetVblankRest") {
-		@Override
-		public final void execute(Processor processor) {
-			sceDisplayGetVblankRest(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetVblankRest(processor);";
-		}
-	};
-    	@HLEFunction(nid = 0x21038913, version = 200)
-	public final HLEModuleFunction sceDisplayIsVsyncFunction = new HLEModuleFunction("sceDisplay", "sceDisplayIsVsync") {
-		@Override
-		public final void execute(Processor processor) {
-			sceDisplayIsVsync(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayIsVsync(processor);";
-		}
-	};
+    	@HLEFunction(nid = 0xBF79F646, version = 200) public HLEModuleFunction sceDisplayGetResumeModeFunction;
+
+    	@HLEFunction(nid = 0x69B53541, version = 200) public HLEModuleFunction sceDisplayGetVblankRestFunction;
+
+    	@HLEFunction(nid = 0x21038913, version = 200) public HLEModuleFunction sceDisplayIsVsyncFunction;
+
 }

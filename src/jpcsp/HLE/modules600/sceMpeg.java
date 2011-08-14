@@ -61,56 +61,12 @@ public class sceMpeg extends jpcsp.HLE.modules352.sceMpeg {
 
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0x63B9536A, version = 600)
-    public final HLEModuleFunction sceMpegAvcResourceGetAvcDecTopAddrFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcResourceGetAvcDecTopAddr") {
+    @HLEFunction(nid = 0x63B9536A, version = 600) public HLEModuleFunction sceMpegAvcResourceGetAvcDecTopAddrFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceMpegAvcResourceGetAvcDecTopAddr(processor);
-        }
+    @HLEFunction(nid = 0x8160A2FE, version = 600) public HLEModuleFunction sceMpegAvcResourceFinishFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcResourceGetAvcDecTopAddr(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x8160A2FE, version = 600)
-    public final HLEModuleFunction sceMpegAvcResourceFinishFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcResourceFinish") {
+    @HLEFunction(nid = 0xAF26BB01, version = 600) public HLEModuleFunction sceMpegAvcResourceGetAvcEsBufFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceMpegAvcResourceFinish(processor);
-        }
+    @HLEFunction(nid = 0xFCBDB5AD, version = 600) public HLEModuleFunction sceMpegAvcResourceInitFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcResourceFinish(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xAF26BB01, version = 600)
-    public final HLEModuleFunction sceMpegAvcResourceGetAvcEsBufFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcResourceGetAvcEsBuf") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceMpegAvcResourceGetAvcEsBuf(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcResourceGetAvcEsBuf(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xFCBDB5AD, version = 600)
-    public final HLEModuleFunction sceMpegAvcResourceInitFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcResourceInit") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceMpegAvcResourceInit(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcResourceInit(processor);";
-        }
-    };
 }

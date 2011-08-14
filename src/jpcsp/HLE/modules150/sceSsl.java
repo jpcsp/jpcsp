@@ -186,160 +186,28 @@ public class sceSsl implements HLEModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-    @HLEFunction(nid = 0x957ECBE2, version = 150)
-    public final HLEModuleFunction sceSslInitFunction = new HLEModuleFunction("sceSsl", "sceSslInit") {
+    @HLEFunction(nid = 0x957ECBE2, version = 150) public HLEModuleFunction sceSslInitFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceSslInit(processor);
-        }
+    @HLEFunction(nid = 0x191CDEFF, version = 150) public HLEModuleFunction sceSslEndFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSslModule.sceSslInit(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x191CDEFF, version = 150)
-    public final HLEModuleFunction sceSslEndFunction = new HLEModuleFunction("sceSsl", "sceSslEnd") {
+    @HLEFunction(nid = 0x5BFB6B61, version = 150) public HLEModuleFunction sceSslGetNotAfterFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceSslEnd(processor);
-        }
+    @HLEFunction(nid = 0x17A10DCC, version = 150) public HLEModuleFunction sceSslGetNotBeforeFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSslModule.sceSslEnd(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x5BFB6B61, version = 150)
-    public final HLEModuleFunction sceSslGetNotAfterFunction = new HLEModuleFunction("sceSsl", "sceSslGetNotAfter") {
+    @HLEFunction(nid = 0x3DD5E023, version = 150) public HLEModuleFunction sceSslGetSubjectNameFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceSslGetNotAfter(processor);
-        }
+    @HLEFunction(nid = 0x1B7C8191, version = 150) public HLEModuleFunction sceSslGetIssuerNameFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSslModule.sceSslGetNotAfter(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x17A10DCC, version = 150)
-    public final HLEModuleFunction sceSslGetNotBeforeFunction = new HLEModuleFunction("sceSsl", "sceSslGetNotBefore") {
+    @HLEFunction(nid = 0xCC0919B0, version = 150) public HLEModuleFunction sceSslGetSerialNumberFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceSslGetNotBefore(processor);
-        }
+    @HLEFunction(nid = 0x058D21C0, version = 150) public HLEModuleFunction sceSslGetNameEntryCountFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSslModule.sceSslGetNotBefore(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x3DD5E023, version = 150)
-    public final HLEModuleFunction sceSslGetSubjectNameFunction = new HLEModuleFunction("sceSsl", "sceSslGetSubjectName") {
+    @HLEFunction(nid = 0xD6D097B4, version = 150) public HLEModuleFunction sceSslGetNameEntryInfoFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceSslGetSubjectName(processor);
-        }
+    @HLEFunction(nid = 0xB99EDE6A, version = 150) public HLEModuleFunction sceSslGetUsedMemoryMaxFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSslModule.sceSslGetSubjectName(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x1B7C8191, version = 150)
-    public final HLEModuleFunction sceSslGetIssuerNameFunction = new HLEModuleFunction("sceSsl", "sceSslGetIssuerName") {
+    @HLEFunction(nid = 0x0EB43B06, version = 150) public HLEModuleFunction sceSslGetUsedMemoryCurrentFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceSslGetIssuerName(processor);
-        }
+    @HLEFunction(nid = 0xF57765D3, version = 150) public HLEModuleFunction sceSslGetKeyUsageFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSslModule.sceSslGetIssuerName(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xCC0919B0, version = 150)
-    public final HLEModuleFunction sceSslGetSerialNumberFunction = new HLEModuleFunction("sceSsl", "sceSslGetSerialNumber") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceSslGetSerialNumber(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSslModule.sceSslGetSerialNumber(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x058D21C0, version = 150)
-    public final HLEModuleFunction sceSslGetNameEntryCountFunction = new HLEModuleFunction("sceSsl", "sceSslGetNameEntryCount") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceSslGetNameEntryCount(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSslModule.sceSslGetNameEntryCount(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xD6D097B4, version = 150)
-    public final HLEModuleFunction sceSslGetNameEntryInfoFunction = new HLEModuleFunction("sceSsl", "sceSslGetNameEntryInfo") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceSslGetNameEntryInfo(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSslModule.sceSslGetNameEntryInfo(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xB99EDE6A, version = 150)
-    public final HLEModuleFunction sceSslGetUsedMemoryMaxFunction = new HLEModuleFunction("sceSsl", "sceSslGetUsedMemoryMax") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceSslGetUsedMemoryMax(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSslModule.sceSslGetUsedMemoryMax(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x0EB43B06, version = 150)
-    public final HLEModuleFunction sceSslGetUsedMemoryCurrentFunction = new HLEModuleFunction("sceSsl", "sceSslGetUsedMemoryCurrent") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceSslGetUsedMemoryCurrent(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSslModule.sceSslGetUsedMemoryCurrent(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xF57765D3, version = 150)
-    public final HLEModuleFunction sceSslGetKeyUsageFunction = new HLEModuleFunction("sceSsl", "sceSslGetKeyUsage") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceSslGetKeyUsage(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSslModule.sceSslGetKeyUsage(processor);";
-        }
-    };
 }

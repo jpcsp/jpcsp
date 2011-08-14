@@ -88,30 +88,8 @@ public class sceNpAuth implements HLEModule {
         }
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0xA1DE86F8, version = 150)
-    public final HLEModuleFunction sceNpAuth_A1DE86F8Function = new HLEModuleFunction("sceNpAuth", "sceNpAuth_A1DE86F8") {
+    @HLEFunction(nid = 0xA1DE86F8, version = 150) public HLEModuleFunction sceNpAuth_A1DE86F8Function;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNpAuth_A1DE86F8(processor);
-        }
+    @HLEFunction(nid = 0xCD86A656, version = 150) public HLEModuleFunction sceNpAuth_CD86A656Function;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpAuthModule.sceNpAuth_A1DE86F8(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xCD86A656, version = 150)
-    public final HLEModuleFunction sceNpAuth_CD86A656Function = new HLEModuleFunction("sceNpAuth", "sceNpAuth_CD86A656") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpAuth_CD86A656(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpAuthModule.sceNpAuth_CD86A656(processor);";
-        }
-    };
 }

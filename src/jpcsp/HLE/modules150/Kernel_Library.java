@@ -136,65 +136,10 @@ public class Kernel_Library implements HLEModule {
         	cpu.gpr[2] = 0;
         }
     }
-    @HLEFunction(nid = 0x092968F4, version = 150)
-    public final HLEModuleFunction sceKernelCpuSuspendIntrFunction = new HLEModuleFunction("Kernel_Library", "sceKernelCpuSuspendIntr") {
+    @HLEFunction(nid = 0x092968F4, version = 150) public HLEModuleFunction sceKernelCpuSuspendIntrFunction;
+    @HLEFunction(nid = 0x5F10D406, version = 150) public HLEModuleFunction sceKernelCpuResumeIntrFunction;
+    @HLEFunction(nid = 0x3B84732D, version = 150) public HLEModuleFunction sceKernelCpuResumeIntrWithSyncFunction;
+    @HLEFunction(nid = 0x47A0B729, version = 150) public HLEModuleFunction sceKernelIsCpuIntrSuspendedFunction;
+    @HLEFunction(nid = 0xB55249D2, version = 150) public HLEModuleFunction sceKernelIsCpuIntrEnableFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCpuSuspendIntr(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.Kernel_LibraryModule.sceKernelCpuSuspendIntr(processor);";
-        }
-    };    @HLEFunction(nid = 0x5F10D406, version = 150)
-    public final HLEModuleFunction sceKernelCpuResumeIntrFunction = new HLEModuleFunction("Kernel_Library", "sceKernelCpuResumeIntr") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCpuResumeIntr(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.Kernel_LibraryModule.sceKernelCpuResumeIntr(processor);";
-        }
-    };    @HLEFunction(nid = 0x3B84732D, version = 150)
-    public final HLEModuleFunction sceKernelCpuResumeIntrWithSyncFunction = new HLEModuleFunction("Kernel_Library", "sceKernelCpuResumeIntrWithSync") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCpuResumeIntrWithSync(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.Kernel_LibraryModule.sceKernelCpuResumeIntrWithSync(processor);";
-        }
-    };    @HLEFunction(nid = 0x47A0B729, version = 150)
-    public final HLEModuleFunction sceKernelIsCpuIntrSuspendedFunction = new HLEModuleFunction("Kernel_Library", "sceKernelIsCpuIntrSuspended") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelIsCpuIntrSuspended(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.Kernel_LibraryModule.sceKernelIsCpuIntrSuspended(processor);";
-        }
-    };    @HLEFunction(nid = 0xB55249D2, version = 150)
-    public final HLEModuleFunction sceKernelIsCpuIntrEnableFunction = new HLEModuleFunction("Kernel_Library", "sceKernelIsCpuIntrEnable") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelIsCpuIntrEnable(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.Kernel_LibraryModule.sceKernelIsCpuIntrEnable(processor);";
-        }
-    };
 }

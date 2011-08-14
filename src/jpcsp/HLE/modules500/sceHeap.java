@@ -309,134 +309,24 @@ public class sceHeap implements HLEModule {
             cpu.gpr[2] = 0;
         }
     }
-    @HLEFunction(nid = 0x0E875980, version = 500)
-    public final HLEModuleFunction sceHeapReallocHeapMemoryFunction = new HLEModuleFunction("sceHeap", "sceHeapReallocHeapMemory") {
+    @HLEFunction(nid = 0x0E875980, version = 500) public HLEModuleFunction sceHeapReallocHeapMemoryFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-        	sceHeapReallocHeapMemory(processor);
-        }
+    @HLEFunction(nid = 0x1C84B58D, version = 500) public HLEModuleFunction sceHeapReallocHeapMemoryWithOptionFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceHeapModule.sceHeapReallocHeapMemory(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x1C84B58D, version = 500)
-    public final HLEModuleFunction sceHeapReallocHeapMemoryWithOptionFunction = new HLEModuleFunction("sceHeap", "sceHeapReallocHeapMemoryWithOption") {
+    @HLEFunction(nid = 0x2ABADC63, version = 500) public HLEModuleFunction sceHeapFreeHeapMemoryFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-        	sceHeapReallocHeapMemoryWithOption(processor);
-        }
+    @HLEFunction(nid = 0x2A0C2009, version = 500) public HLEModuleFunction sceHeapGetMallinfoFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceHeapModule.sceHeapReallocHeapMemoryWithOption(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x2ABADC63, version = 500)
-    public final HLEModuleFunction sceHeapFreeHeapMemoryFunction = new HLEModuleFunction("sceHeap", "sceHeapFreeHeapMemory") {
+    @HLEFunction(nid = 0x2B7299D8, version = 500) public HLEModuleFunction sceHeapAllocHeapMemoryWithOptionFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-        	sceHeapFreeHeapMemory(processor);
-        }
+    @HLEFunction(nid = 0x4929B40D, version = 500) public HLEModuleFunction sceHeapGetTotalFreeSizeFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceHeapModule.sceHeapFreeHeapMemory(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x2A0C2009, version = 500)
-    public final HLEModuleFunction sceHeapGetMallinfoFunction = new HLEModuleFunction("sceHeap", "sceHeapGetMallinfo") {
+    @HLEFunction(nid = 0x7012BBDD, version = 500) public HLEModuleFunction sceHeapIsAllocatedHeapMemoryFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-        	sceHeapGetMallinfo(processor);
-        }
+    @HLEFunction(nid = 0x70210B73, version = 500) public HLEModuleFunction sceHeapDeleteHeapFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceHeapModule.sceHeapGetMallinfo(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x2B7299D8, version = 500)
-    public final HLEModuleFunction sceHeapAllocHeapMemoryWithOptionFunction = new HLEModuleFunction("sceHeap", "sceHeapAllocHeapMemoryWithOption") {
+    @HLEFunction(nid = 0x7DE281C2, version = 500) public HLEModuleFunction sceHeapCreateHeapFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-        	sceHeapAllocHeapMemoryWithOption(processor);
-        }
+    @HLEFunction(nid = 0xA8E102A0, version = 500) public HLEModuleFunction sceHeapAllocHeapMemoryFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceHeapModule.sceHeapAllocHeapMemoryWithOption(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x4929B40D, version = 500)
-    public final HLEModuleFunction sceHeapGetTotalFreeSizeFunction = new HLEModuleFunction("sceHeap", "sceHeapGetTotalFreeSize") {
-
-        @Override
-        public final void execute(Processor processor) {
-        	sceHeapGetTotalFreeSize(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceHeapModule.sceHeapGetTotalFreeSize(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x7012BBDD, version = 500)
-    public final HLEModuleFunction sceHeapIsAllocatedHeapMemoryFunction = new HLEModuleFunction("sceHeap", "sceHeapIsAllocatedHeapMemory") {
-
-        @Override
-        public final void execute(Processor processor) {
-        	sceHeapIsAllocatedHeapMemory(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceHeapModule.sceHeapIsAllocatedHeapMemory(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x70210B73, version = 500)
-    public final HLEModuleFunction sceHeapDeleteHeapFunction = new HLEModuleFunction("sceHeap", "sceHeapDeleteHeap") {
-
-        @Override
-        public final void execute(Processor processor) {
-        	sceHeapDeleteHeap(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceHeapModule.sceHeapDeleteHeap(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x7DE281C2, version = 500)
-    public final HLEModuleFunction sceHeapCreateHeapFunction = new HLEModuleFunction("sceHeap", "sceHeapCreateHeap") {
-
-        @Override
-        public final void execute(Processor processor) {
-        	sceHeapCreateHeap(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceHeapModule.sceHeapCreateHeap(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xA8E102A0, version = 500)
-    public final HLEModuleFunction sceHeapAllocHeapMemoryFunction = new HLEModuleFunction("sceHeap", "sceHeapAllocHeapMemory") {
-
-        @Override
-        public final void execute(Processor processor) {
-        	sceHeapAllocHeapMemory(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceHeapModule.sceHeapAllocHeapMemory(processor);";
-        }
-    };
 }

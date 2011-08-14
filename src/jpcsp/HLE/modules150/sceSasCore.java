@@ -865,341 +865,33 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
         }
-    }    @HLEFunction(nid = 0x019B25EB, version = 150)
-    public final HLEModuleFunction __sceSasSetADSRFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetADSR") {
+    }    @HLEFunction(nid = 0x019B25EB, version = 150) public HLEModuleFunction __sceSasSetADSRFunction;
+    @HLEFunction(nid = 0x267A6DD2, version = 150) public HLEModuleFunction __sceSasRevParamFunction;
+    @HLEFunction(nid = 0x2C8E6AB3, version = 150) public HLEModuleFunction __sceSasGetPauseFlagFunction;
+    @HLEFunction(nid = 0x33D4AB37, version = 150) public HLEModuleFunction __sceSasRevTypeFunction;
+    @HLEFunction(nid = 0x42778A9F, version = 150) public HLEModuleFunction __sceSasInitFunction;
+    @HLEFunction(nid = 0x440CA7D8, version = 150) public HLEModuleFunction __sceSasSetVolumeFunction;
+    @HLEFunction(nid = 0x50A14DFC, version = 150) public HLEModuleFunction __sceSasCoreWithMixFunction;
+    @HLEFunction(nid = 0x5F9529F6, version = 150) public HLEModuleFunction __sceSasSetSLFunction;
+    @HLEFunction(nid = 0x68A46B95, version = 150) public HLEModuleFunction __sceSasGetEndFlagFunction;
+    @HLEFunction(nid = 0x74AE582A, version = 150) public HLEModuleFunction __sceSasGetEnvelopeHeightFunction;
+    @HLEFunction(nid = 0x76F01ACA, version = 150) public HLEModuleFunction __sceSasSetKeyOnFunction;
+    @HLEFunction(nid = 0x787D04D5, version = 150) public HLEModuleFunction __sceSasSetPauseFunction;
+    @HLEFunction(nid = 0x99944089, version = 150) public HLEModuleFunction __sceSasSetVoiceFunction;
+    @HLEFunction(nid = 0x9EC3676A, version = 150) public HLEModuleFunction __sceSasSetADSRmodeFunction;
+    @HLEFunction(nid = 0xA0CF2FA4, version = 150) public HLEModuleFunction __sceSasSetKeyOffFunction;
+    @HLEFunction(nid = 0xA232CBE6, version = 150) public HLEModuleFunction __sceSasSetTrianglarWaveFunction;
+    @HLEFunction(nid = 0xA3589D81, version = 150) public HLEModuleFunction __sceSasCoreFunction;
+    @HLEFunction(nid = 0xAD84D37F, version = 150) public HLEModuleFunction __sceSasSetPitchFunction;
+    @HLEFunction(nid = 0xB7660A23, version = 150) public HLEModuleFunction __sceSasSetNoiseFunction;
+    @HLEFunction(nid = 0xBD11B7C2, version = 150) public HLEModuleFunction __sceSasGetGrainFunction;
+    @HLEFunction(nid = 0xCBCD4F79, version = 150) public HLEModuleFunction __sceSasSetSimpleADSRFunction;
+    @HLEFunction(nid = 0xD1E0A01E, version = 150) public HLEModuleFunction __sceSasSetGrainFunction;
+    @HLEFunction(nid = 0xD5A229C9, version = 150) public HLEModuleFunction __sceSasRevEVOLFunction;
+    @HLEFunction(nid = 0xD5EBBBCD, version = 150) public HLEModuleFunction __sceSasSetSteepWaveFunction;
+    @HLEFunction(nid = 0xE175EF66, version = 150) public HLEModuleFunction __sceSasGetOutputmodeFunction;
+    @HLEFunction(nid = 0xE855BF76, version = 150) public HLEModuleFunction __sceSasSetOutputmodeFunction;
+    @HLEFunction(nid = 0xF983B186, version = 150) public HLEModuleFunction __sceSasRevVONFunction;
+    @HLEFunction(nid = 0x07F58C24, version = 150) public HLEModuleFunction __sceSasGetAllEnvelopeHeightsFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasSetADSR(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetADSR(processor);";
-        }
-    };    @HLEFunction(nid = 0x267A6DD2, version = 150)
-    public final HLEModuleFunction __sceSasRevParamFunction = new HLEModuleFunction("sceSasCore", "__sceSasRevParam") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasRevParam(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasRevParam(processor);";
-        }
-    };    @HLEFunction(nid = 0x2C8E6AB3, version = 150)
-    public final HLEModuleFunction __sceSasGetPauseFlagFunction = new HLEModuleFunction("sceSasCore", "__sceSasGetPauseFlag") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasGetPauseFlag(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasGetPauseFlag(processor);";
-        }
-    };    @HLEFunction(nid = 0x33D4AB37, version = 150)
-    public final HLEModuleFunction __sceSasRevTypeFunction = new HLEModuleFunction("sceSasCore", "__sceSasRevType") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasRevType(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasRevType(processor);";
-        }
-    };    @HLEFunction(nid = 0x42778A9F, version = 150)
-    public final HLEModuleFunction __sceSasInitFunction = new HLEModuleFunction("sceSasCore", "__sceSasInit") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasInit(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasInit(processor);";
-        }
-    };    @HLEFunction(nid = 0x440CA7D8, version = 150)
-    public final HLEModuleFunction __sceSasSetVolumeFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetVolume") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasSetVolume(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetVolume(processor);";
-        }
-    };    @HLEFunction(nid = 0x50A14DFC, version = 150)
-    public final HLEModuleFunction __sceSasCoreWithMixFunction = new HLEModuleFunction("sceSasCore", "__sceSasCoreWithMix") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasCoreWithMix(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasCoreWithMix(processor);";
-        }
-    };    @HLEFunction(nid = 0x5F9529F6, version = 150)
-    public final HLEModuleFunction __sceSasSetSLFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetSL") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasSetSL(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetSL(processor);";
-        }
-    };    @HLEFunction(nid = 0x68A46B95, version = 150)
-    public final HLEModuleFunction __sceSasGetEndFlagFunction = new HLEModuleFunction("sceSasCore", "__sceSasGetEndFlag") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasGetEndFlag(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasGetEndFlag(processor);";
-        }
-    };    @HLEFunction(nid = 0x74AE582A, version = 150)
-    public final HLEModuleFunction __sceSasGetEnvelopeHeightFunction = new HLEModuleFunction("sceSasCore", "__sceSasGetEnvelopeHeight") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasGetEnvelopeHeight(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasGetEnvelopeHeight(processor);";
-        }
-    };    @HLEFunction(nid = 0x76F01ACA, version = 150)
-    public final HLEModuleFunction __sceSasSetKeyOnFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetKeyOn") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasSetKeyOn(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetKeyOn(processor);";
-        }
-    };    @HLEFunction(nid = 0x787D04D5, version = 150)
-    public final HLEModuleFunction __sceSasSetPauseFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetPause") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasSetPause(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetPause(processor);";
-        }
-    };    @HLEFunction(nid = 0x99944089, version = 150)
-    public final HLEModuleFunction __sceSasSetVoiceFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetVoice") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasSetVoice(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetVoice(processor);";
-        }
-    };    @HLEFunction(nid = 0x9EC3676A, version = 150)
-    public final HLEModuleFunction __sceSasSetADSRmodeFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetADSRmode") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasSetADSRmode(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetADSRmode(processor);";
-        }
-    };    @HLEFunction(nid = 0xA0CF2FA4, version = 150)
-    public final HLEModuleFunction __sceSasSetKeyOffFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetKeyOff") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasSetKeyOff(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetKeyOff(processor);";
-        }
-    };    @HLEFunction(nid = 0xA232CBE6, version = 150)
-    public final HLEModuleFunction __sceSasSetTrianglarWaveFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetTrianglarWave") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasSetTrianglarWave(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetTrianglarWave(processor);";
-        }
-    };    @HLEFunction(nid = 0xA3589D81, version = 150)
-    public final HLEModuleFunction __sceSasCoreFunction = new HLEModuleFunction("sceSasCore", "__sceSasCore") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasCore(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasCore(processor);";
-        }
-    };    @HLEFunction(nid = 0xAD84D37F, version = 150)
-    public final HLEModuleFunction __sceSasSetPitchFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetPitch") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasSetPitch(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetPitch(processor);";
-        }
-    };    @HLEFunction(nid = 0xB7660A23, version = 150)
-    public final HLEModuleFunction __sceSasSetNoiseFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetNoise") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasSetNoise(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetNoise(processor);";
-        }
-    };    @HLEFunction(nid = 0xBD11B7C2, version = 150)
-    public final HLEModuleFunction __sceSasGetGrainFunction = new HLEModuleFunction("sceSasCore", "__sceSasGetGrain") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasGetGrain(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasGetGrain(processor);";
-        }
-    };    @HLEFunction(nid = 0xCBCD4F79, version = 150)
-    public final HLEModuleFunction __sceSasSetSimpleADSRFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetSimpleADSR") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasSetSimpleADSR(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetSimpleADSR(processor);";
-        }
-    };    @HLEFunction(nid = 0xD1E0A01E, version = 150)
-    public final HLEModuleFunction __sceSasSetGrainFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetGrain") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasSetGrain(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetGrain(processor);";
-        }
-    };    @HLEFunction(nid = 0xD5A229C9, version = 150)
-    public final HLEModuleFunction __sceSasRevEVOLFunction = new HLEModuleFunction("sceSasCore", "__sceSasRevEVOL") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasRevEVOL(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasRevEVOL(processor);";
-        }
-    };    @HLEFunction(nid = 0xD5EBBBCD, version = 150)
-    public final HLEModuleFunction __sceSasSetSteepWaveFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetSteepWave") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasSetSteepWave(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetSteepWave(processor);";
-        }
-    };    @HLEFunction(nid = 0xE175EF66, version = 150)
-    public final HLEModuleFunction __sceSasGetOutputmodeFunction = new HLEModuleFunction("sceSasCore", "__sceSasGetOutputmode") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasGetOutputmode(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasGetOutputmode(processor);";
-        }
-    };    @HLEFunction(nid = 0xE855BF76, version = 150)
-    public final HLEModuleFunction __sceSasSetOutputmodeFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetOutputmode") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasSetOutputmode(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetOutputmode(processor);";
-        }
-    };    @HLEFunction(nid = 0xF983B186, version = 150)
-    public final HLEModuleFunction __sceSasRevVONFunction = new HLEModuleFunction("sceSasCore", "__sceSasRevVON") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasRevVON(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasRevVON(processor);";
-        }
-    };    @HLEFunction(nid = 0x07F58C24, version = 150)
-    public final HLEModuleFunction __sceSasGetAllEnvelopeHeightsFunction = new HLEModuleFunction("sceSasCore", "__sceSasGetAllEnvelopeHeights") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasGetAllEnvelopeHeights(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasGetAllEnvelopeHeights(processor);";
-        }
-    };
 }
