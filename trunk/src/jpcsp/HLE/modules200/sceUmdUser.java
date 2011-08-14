@@ -33,6 +33,7 @@ public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
+    @HLEFunction(nid = 0x87533940, version = 200)
     public void sceUmdReplaceProhibit(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -49,6 +50,7 @@ public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
         }
     }
 
+    @HLEFunction(nid = 0xCBE9F02A, version = 200)
     public void sceUmdReplacePermit(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -59,7 +61,5 @@ public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
         umdAllowReplace = true;
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0x87533940, version = 200) public HLEModuleFunction sceUmdReplaceProhibitFunction;
-    @HLEFunction(nid = 0xCBE9F02A, version = 200) public HLEModuleFunction sceUmdReplacePermitFunction;
 
 }

@@ -469,6 +469,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 		}
     }
 
+    @HLEFunction(nid = 0x07EC321A, version = 150)
     public void sceMp3ReserveMp3Handle(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -489,6 +490,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         cpu.gpr[2] = streamHandle;
     }
 
+    @HLEFunction(nid = 0x0DB149F4, version = 150)
     public void sceMp3NotifyAddStreamData(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -511,6 +513,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x2A368661, version = 150)
     public void sceMp3ResetPlayPosition(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -531,6 +534,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x35750070, version = 150)
     public void sceMp3InitResource(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -546,6 +550,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x3C2FA058, version = 150)
     public void sceMp3TermResource(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -561,6 +566,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x3CEF484F, version = 150)
     public void sceMp3SetLoopNum(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -582,6 +588,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x44E07129, version = 150)
     public void sceMp3Init(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -607,6 +614,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x7F696782, version = 150)
     public void sceMp3GetMp3ChannelNum(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -628,6 +636,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         cpu.gpr[2] = chNum;
     }
 
+    @HLEFunction(nid = 0x8F450998, version = 150)
     public void sceMp3GetSamplingRate(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -649,6 +658,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         cpu.gpr[2] = sampleRate;
     }
 
+    @HLEFunction(nid = 0xA703FE0F, version = 150)
     public void sceMp3GetInfoToAddStreamData(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -686,6 +696,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xD021C0FB, version = 150)
     public void sceMp3Decode(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -716,6 +727,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         cpu.gpr[2] = pcmSamples;
     }
 
+    @HLEFunction(nid = 0xD0A56296, version = 150)
     public void sceMp3CheckStreamDataNeeded(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -740,6 +752,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         cpu.gpr[2] = needsData ? 1 : 0;
     }
 
+    @HLEFunction(nid = 0xF5478233, version = 150)
     public void sceMp3ReleaseMp3Handle(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -760,6 +773,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x354D27EA, version = 150)
     public void sceMp3GetSumDecodedSample(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -781,6 +795,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         cpu.gpr[2] = samples;
     }
 
+    @HLEFunction(nid = 0x87677E40, version = 150)
     public void sceMp3GetBitRate(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -802,6 +817,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         cpu.gpr[2] = bitRate;
     }
 
+    @HLEFunction(nid = 0x87C263D1, version = 150)
     public void sceMp3GetMaxOutputSample(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -823,6 +839,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         cpu.gpr[2] = maxSamples;
     }
 
+    @HLEFunction(nid = 0xD8F54A51, version = 150)
     public void sceMp3GetLoopNum(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -843,22 +860,5 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         cpu.gpr[2] = loopNum;
     }
-    @HLEFunction(nid = 0x07EC321A, version = 150) public HLEModuleFunction sceMp3ReserveMp3HandleFunction;
-    @HLEFunction(nid = 0x0DB149F4, version = 150) public HLEModuleFunction sceMp3NotifyAddStreamDataFunction;
-    @HLEFunction(nid = 0x2A368661, version = 150) public HLEModuleFunction sceMp3ResetPlayPositionFunction;
-    @HLEFunction(nid = 0x35750070, version = 150) public HLEModuleFunction sceMp3InitResourceFunction;
-    @HLEFunction(nid = 0x3C2FA058, version = 150) public HLEModuleFunction sceMp3TermResourceFunction;
-    @HLEFunction(nid = 0x3CEF484F, version = 150) public HLEModuleFunction sceMp3SetLoopNumFunction;
-    @HLEFunction(nid = 0x44E07129, version = 150) public HLEModuleFunction sceMp3InitFunction;
-    @HLEFunction(nid = 0x7F696782, version = 150) public HLEModuleFunction sceMp3GetMp3ChannelNumFunction;
-    @HLEFunction(nid = 0x8F450998, version = 150) public HLEModuleFunction sceMp3GetSamplingRateFunction;
-    @HLEFunction(nid = 0xA703FE0F, version = 150) public HLEModuleFunction sceMp3GetInfoToAddStreamDataFunction;
-    @HLEFunction(nid = 0xD021C0FB, version = 150) public HLEModuleFunction sceMp3DecodeFunction;
-    @HLEFunction(nid = 0xD0A56296, version = 150) public HLEModuleFunction sceMp3CheckStreamDataNeededFunction;
-    @HLEFunction(nid = 0xF5478233, version = 150) public HLEModuleFunction sceMp3ReleaseMp3HandleFunction;
-    @HLEFunction(nid = 0x354D27EA, version = 150) public HLEModuleFunction sceMp3GetSumDecodedSampleFunction;
-    @HLEFunction(nid = 0x87677E40, version = 150) public HLEModuleFunction sceMp3GetBitRateFunction;
-    @HLEFunction(nid = 0x87C263D1, version = 150) public HLEModuleFunction sceMp3GetMaxOutputSampleFunction;
-    @HLEFunction(nid = 0xD8F54A51, version = 150) public HLEModuleFunction sceMp3GetLoopNumFunction;
 
 }

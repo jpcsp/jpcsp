@@ -122,6 +122,7 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
         }
     }
 
+    @HLEFunction(nid = 0x2A2B3DE0, version = 303)
     public void sceUtilityLoadModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -143,6 +144,7 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
         cpu.gpr[2] = result;
     }
 
+    @HLEFunction(nid = 0xE49BFE92, version = 303)
     public void sceUtilityUnloadModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -159,8 +161,5 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
 
         cpu.gpr[2] = hleUtilityUnloadModule(module);
     }
-    @HLEFunction(nid = 0x2A2B3DE0, version = 303) public HLEModuleFunction sceUtilityLoadModuleFunction;
-
-    @HLEFunction(nid = 0xE49BFE92, version = 303) public HLEModuleFunction sceUtilityUnloadModuleFunction;
 
 }

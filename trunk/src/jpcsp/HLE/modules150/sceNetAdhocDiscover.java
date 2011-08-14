@@ -41,6 +41,7 @@ public class sceNetAdhocDiscover implements HLEModule {
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
+    @HLEFunction(nid = 0x941B3877, version = 150)
     public void sceNetAdhocDiscoverInitStart(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -49,6 +50,7 @@ public class sceNetAdhocDiscover implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x52DE1B97, version = 150)
     public void sceNetAdhocDiscoverUpdate(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -57,6 +59,7 @@ public class sceNetAdhocDiscover implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x944DDBC6, version = 150)
     public void sceNetAdhocDiscoverGetStatus(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -65,6 +68,7 @@ public class sceNetAdhocDiscover implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xA2246614, version = 150)
     public void sceNetAdhocDiscoverTerm(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -73,6 +77,7 @@ public class sceNetAdhocDiscover implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xF7D13214, version = 150)
     public void sceNetAdhocDiscoverStop(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -81,6 +86,7 @@ public class sceNetAdhocDiscover implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xA423A21B, version = 150)
     public void sceNetAdhocDiscoverRequestSuspend(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -88,16 +94,5 @@ public class sceNetAdhocDiscover implements HLEModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-    @HLEFunction(nid = 0x941B3877, version = 150) public HLEModuleFunction sceNetAdhocDiscoverInitStartFunction;
-
-    @HLEFunction(nid = 0x52DE1B97, version = 150) public HLEModuleFunction sceNetAdhocDiscoverUpdateFunction;
-
-    @HLEFunction(nid = 0x944DDBC6, version = 150) public HLEModuleFunction sceNetAdhocDiscoverGetStatusFunction;
-
-    @HLEFunction(nid = 0xA2246614, version = 150) public HLEModuleFunction sceNetAdhocDiscoverTermFunction;
-
-    @HLEFunction(nid = 0xF7D13214, version = 150) public HLEModuleFunction sceNetAdhocDiscoverStopFunction;
-
-    @HLEFunction(nid = 0xA423A21B, version = 150) public HLEModuleFunction sceNetAdhocDiscoverRequestSuspendFunction;
 
 }

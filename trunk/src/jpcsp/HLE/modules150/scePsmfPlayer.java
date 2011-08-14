@@ -261,6 +261,7 @@ public class scePsmfPlayer implements HLEModule {
     	}
     }
 
+    @HLEFunction(nid = 0x235D8787, version = 150)
     public void scePsmfPlayerCreate(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -295,6 +296,7 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x9B71A274, version = 150)
     public void scePsmfPlayerDelete(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -325,6 +327,7 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x3D6D25A9, version = 150)
     public void scePsmfPlayerSetPsmf(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -362,6 +365,7 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x58B83577, version = 150)
     public void scePsmfPlayerSetPsmfCB(Processor processor) {
         if (log.isDebugEnabled()) {
             log.debug("scePsmfPlayerSetPsmfCB redirecting to scePsmfPlayerSetPsmf");
@@ -370,6 +374,7 @@ public class scePsmfPlayer implements HLEModule {
         Modules.ThreadManForUserModule.hleRescheduleCurrentThread(true);
     }
 
+    @HLEFunction(nid = 0xE792CD94, version = 150)
     public void scePsmfPlayerReleasePsmf(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -401,6 +406,7 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x95A84EE5, version = 150)
     public void scePsmfPlayerStart(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -445,6 +451,7 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x3EA82A4B, version = 150)
     public void scePsmfPlayerGetAudioOutSize(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -461,6 +468,7 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = audioSamplesBytes;
     }
 
+    @HLEFunction(nid = 0x1078C008, version = 150)
     public void scePsmfPlayerStop(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -491,6 +499,7 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xA0B8CA55, version = 150)
     public void scePsmfPlayerUpdate(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -512,6 +521,7 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x46F61F8B, version = 150)
     public void scePsmfPlayerGetVideoData(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -592,6 +602,7 @@ public class scePsmfPlayer implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xB9848A74, version = 150)
     public void scePsmfPlayerGetAudioData(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -649,6 +660,7 @@ public class scePsmfPlayer implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xF8EF08A6, version = 150)
     public void scePsmfPlayerGetCurrentStatus(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -667,6 +679,7 @@ public class scePsmfPlayer implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xDF089680, version = 150)
     public void scePsmfPlayerGetPsmfInfo(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -692,6 +705,7 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x1E57A8E7, version = 150)
     public void scePsmfPlayerConfigPlayer(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -717,6 +731,7 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xA3D81169, version = 150)
     public void scePsmfPlayerChangePlayMode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -737,6 +752,7 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x68F07175, version = 150)
     public void scePsmfPlayerGetCurrentAudioStream(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -762,6 +778,7 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xF3EFAA91, version = 150)
     public void scePsmfPlayerGetCurrentPlayMode(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -787,6 +804,7 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x3ED62233, version = 150)
     public void scePsmfPlayerGetCurrentPts(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -809,6 +827,7 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x9FF2B2E7, version = 150)
     public void scePsmfPlayerGetCurrentVideoStream(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -834,6 +853,7 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x2BEB1569, version = 150)
     public void scePsmfPlayerBreak(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -845,6 +865,7 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x76C0F4AE, version = 150)
     public void scePsmfPlayerSetPsmfOffset(Processor processor) {
         if (log.isDebugEnabled()) {
             log.debug("scePsmfPlayerSetPsmfOffset redirecting to scePsmfPlayerSetPsmf");
@@ -852,6 +873,7 @@ public class scePsmfPlayer implements HLEModule {
         scePsmfPlayerSetPsmf(processor);
     }
 
+    @HLEFunction(nid = 0xA72DB4F9, version = 150)
     public void scePsmfPlayerSetPsmfOffsetCB(Processor processor) {
         if (log.isDebugEnabled()) {
             log.debug("scePsmfPlayerSetPsmfOffsetCB redirecting to scePsmfPlayerSetPsmfCB");
@@ -859,6 +881,7 @@ public class scePsmfPlayer implements HLEModule {
         scePsmfPlayerSetPsmfCB(processor);
     }
 
+    @HLEFunction(nid = 0x2D0E4E0A, version = 150)
     public void scePsmfPlayerSetTempBuf(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -873,6 +896,7 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x75F03FA2, version = 150)
     public void scePsmfPlayerSelectSpecificVideo(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -893,6 +917,7 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x85461EFF, version = 150)
     public void scePsmfPlayerSelectSpecificAudio(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -913,6 +938,7 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x8A9EBDCD, version = 150)
     public void scePsmfPlayerSelectVideo(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -931,6 +957,7 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xB8D10C56, version = 150)
     public void scePsmfPlayerSelectAudio(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -948,32 +975,5 @@ public class scePsmfPlayer implements HLEModule {
         audioStreamNum++;
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0x235D8787, version = 150) public HLEModuleFunction scePsmfPlayerCreateFunction;
-    @HLEFunction(nid = 0x9B71A274, version = 150) public HLEModuleFunction scePsmfPlayerDeleteFunction;
-    @HLEFunction(nid = 0x3D6D25A9, version = 150) public HLEModuleFunction scePsmfPlayerSetPsmfFunction;
-    @HLEFunction(nid = 0x58B83577, version = 150) public HLEModuleFunction scePsmfPlayerSetPsmfCBFunction;
-    @HLEFunction(nid = 0xE792CD94, version = 150) public HLEModuleFunction scePsmfPlayerReleasePsmfFunction;
-    @HLEFunction(nid = 0x95A84EE5, version = 150) public HLEModuleFunction scePsmfPlayerStartFunction;
-    @HLEFunction(nid = 0x3EA82A4B, version = 150) public HLEModuleFunction scePsmfPlayerGetAudioOutSizeFunction;
-    @HLEFunction(nid = 0x1078C008, version = 150) public HLEModuleFunction scePsmfPlayerStopFunction;
-    @HLEFunction(nid = 0xA0B8CA55, version = 150) public HLEModuleFunction scePsmfPlayerUpdateFunction;
-    @HLEFunction(nid = 0x46F61F8B, version = 150) public HLEModuleFunction scePsmfPlayerGetVideoDataFunction;
-    @HLEFunction(nid = 0xB9848A74, version = 150) public HLEModuleFunction scePsmfPlayerGetAudioDataFunction;
-    @HLEFunction(nid = 0xF8EF08A6, version = 150) public HLEModuleFunction scePsmfPlayerGetCurrentStatusFunction;
-    @HLEFunction(nid = 0xDF089680, version = 150) public HLEModuleFunction scePsmfPlayerGetPsmfInfoFunction;
-    @HLEFunction(nid = 0x1E57A8E7, version = 150) public HLEModuleFunction scePsmfPlayerConfigPlayerFunction;
-    @HLEFunction(nid = 0xA3D81169, version = 150) public HLEModuleFunction scePsmfPlayerChangePlayModeFunction;
-    @HLEFunction(nid = 0x68F07175, version = 150) public HLEModuleFunction scePsmfPlayerGetCurrentAudioStreamFunction;
-    @HLEFunction(nid = 0xF3EFAA91, version = 150) public HLEModuleFunction scePsmfPlayerGetCurrentPlayModeFunction;
-    @HLEFunction(nid = 0x3ED62233, version = 150) public HLEModuleFunction scePsmfPlayerGetCurrentPtsFunction;
-    @HLEFunction(nid = 0x9FF2B2E7, version = 150) public HLEModuleFunction scePsmfPlayerGetCurrentVideoStreamFunction;
-    @HLEFunction(nid = 0x2BEB1569, version = 150) public HLEModuleFunction scePsmfPlayerBreakFunction;
-    @HLEFunction(nid = 0x76C0F4AE, version = 150) public HLEModuleFunction scePsmfPlayerSetPsmfOffsetFunction;
-    @HLEFunction(nid = 0xA72DB4F9, version = 150) public HLEModuleFunction scePsmfPlayerSetPsmfOffsetCBFunction;
-    @HLEFunction(nid = 0x2D0E4E0A, version = 150) public HLEModuleFunction scePsmfPlayerSetTempBufFunction;
-    @HLEFunction(nid = 0x75F03FA2, version = 150) public HLEModuleFunction scePsmfPlayerSelectSpecificVideoFunction;
-    @HLEFunction(nid = 0x85461EFF, version = 150) public HLEModuleFunction scePsmfPlayerSelectSpecificAudioFunction;
-    @HLEFunction(nid = 0x8A9EBDCD, version = 150) public HLEModuleFunction scePsmfPlayerSelectVideoFunction;
-    @HLEFunction(nid = 0xB8D10C56, version = 150) public HLEModuleFunction scePsmfPlayerSelectAudioFunction;
 
 }

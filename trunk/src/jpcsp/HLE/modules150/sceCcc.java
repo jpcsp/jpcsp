@@ -117,6 +117,7 @@ public class sceCcc implements HLEModule {
 		memoryWriter.flush();
 	}
 
+	@HLEFunction(nid = 0xC6A8BEE2, version = 150)
 	public void sceCccDecodeUTF8(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -133,6 +134,7 @@ public class sceCcc implements HLEModule {
 		cpu.gpr[2] = codePoint;
 	}
     
+	@HLEFunction(nid = 0x8406F469, version = 150)
 	public void sceCccEncodeUTF16(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -141,6 +143,7 @@ public class sceCcc implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
     
+	@HLEFunction(nid = 0xB4D1CBBF, version = 150)
 	public void sceCccSetTable(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -149,6 +152,7 @@ public class sceCcc implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0xE0CF8091, version = 150)
 	public void sceCccDecodeUTF16(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -157,6 +161,7 @@ public class sceCcc implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
     
+	@HLEFunction(nid = 0xBEB47224, version = 150)
 	public void sceCccSJIStoUTF16(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -165,6 +170,7 @@ public class sceCcc implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
     
+	@HLEFunction(nid = 0xD9392CCB, version = 150)
 	public void sceCccStrlenSJIS(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -173,6 +179,7 @@ public class sceCcc implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
     
+	@HLEFunction(nid = 0xF1B73D12, version = 150)
 	public void sceCccUTF16toSJIS(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -181,6 +188,7 @@ public class sceCcc implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
     
+	@HLEFunction(nid = 0x00D1378F, version = 150)
 	public void sceCccUTF8toUTF16(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -189,6 +197,7 @@ public class sceCcc implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0xB7D3C112, version = 150)
 	public void sceCccStrlenUTF8(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -197,6 +206,7 @@ public class sceCcc implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
     
+	@HLEFunction(nid = 0x4BDEB2A8, version = 150)
 	public void sceCccStrlenUTF16(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -205,6 +215,7 @@ public class sceCcc implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
     
+	@HLEFunction(nid = 0x41B724A5, version = 150)
 	public void sceCccUTF16toUTF8(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -225,37 +236,4 @@ public class sceCcc implements HLEModule {
 
 		cpu.gpr[2] = dstBytes.length;
 	}
-
-	@HLEFunction(nid = 0xC6A8BEE2, version = 150)
-	public HLEModuleFunction sceCccDecodeUTF8Function;
-    
-	@HLEFunction(nid = 0x8406F469, version = 150)
-	public HLEModuleFunction sceCccEncodeUTF16Function;
-    
-	@HLEFunction(nid = 0xB4D1CBBF, version = 150)
-	public HLEModuleFunction sceCccSetTableFunction;
-
-	@HLEFunction(nid = 0xE0CF8091, version = 150)
-	public HLEModuleFunction sceCccDecodeUTF16Function;
-    
-	@HLEFunction(nid = 0xBEB47224, version = 150)
-	public HLEModuleFunction sceCccSJIStoUTF16Function;
-    
-	@HLEFunction(nid = 0xD9392CCB, version = 150)
-	public HLEModuleFunction sceCccStrlenSJISFunction;
-    
-	@HLEFunction(nid = 0xF1B73D12, version = 150)
-	public HLEModuleFunction sceCccUTF16toSJISFunction;
-    
-	@HLEFunction(nid = 0x00D1378F, version = 150)
-	public HLEModuleFunction sceCccUTF8toUTF16Function;
-
-	@HLEFunction(nid = 0xB7D3C112, version = 150)
-	public HLEModuleFunction sceCccStrlenUTF8Function;
-    
-	@HLEFunction(nid = 0x4BDEB2A8, version = 150)
-	public HLEModuleFunction sceCccStrlenUTF16Function;
-    
-	@HLEFunction(nid = 0x41B724A5, version = 150)
-	public HLEModuleFunction sceCccUTF16toUTF8Function;
 }

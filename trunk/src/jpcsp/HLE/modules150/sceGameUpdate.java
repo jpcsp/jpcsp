@@ -41,6 +41,7 @@ public class sceGameUpdate implements HLEModule {
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
+    @HLEFunction(nid = 0xCBE69FB3, version = 150)
     public void sceGameUpdateInit(Processor processor) {
         CpuState cpu = processor.cpu;
         
@@ -49,6 +50,7 @@ public class sceGameUpdate implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xBB4B68DE, version = 150)
     public void sceGameUpdateTerm(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -57,6 +59,7 @@ public class sceGameUpdate implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x596AD78C, version = 150)
     public void sceGameUpdateRun(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -65,6 +68,7 @@ public class sceGameUpdate implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x5F5D98A6, version = 150)
     public void sceGameUpdateAbort(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -72,12 +76,5 @@ public class sceGameUpdate implements HLEModule {
 
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0xCBE69FB3, version = 150) public HLEModuleFunction sceGameUpdateInitFunction;
-
-    @HLEFunction(nid = 0xBB4B68DE, version = 150) public HLEModuleFunction sceGameUpdateTermFunction;
-
-    @HLEFunction(nid = 0x596AD78C, version = 150) public HLEModuleFunction sceGameUpdateRunFunction;
-
-    @HLEFunction(nid = 0x5F5D98A6, version = 150) public HLEModuleFunction sceGameUpdateAbortFunction;
 
 }

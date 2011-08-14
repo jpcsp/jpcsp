@@ -385,6 +385,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xA291F107, version = 150)
     public void sceKernelMaxFreeMemSize(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -399,6 +400,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = maxFreeMemSize;
 	}
 
+	@HLEFunction(nid = 0xF919F628, version = 150)
 	public void sceKernelTotalFreeMemSize(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -410,6 +412,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = totalFreeMemSize;
 	}
 
+	@HLEFunction(nid = 0x237DBD4F, version = 150)
 	public void sceKernelAllocPartitionMemory(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -438,6 +441,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         }
 	}
 
+	@HLEFunction(nid = 0xB6D61D02, version = 150)
 	public void sceKernelFreePartitionMemory(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -457,6 +461,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         }
 	}
 
+	@HLEFunction(nid = 0x9D9A5BA1, version = 150)
 	public void sceKernelGetBlockHeadAddr(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -475,6 +480,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         }
 	}
 
+	@HLEFunction(nid = 0x13A5ABEF, version = 150)
 	public void sceKernelPrintf(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -483,6 +489,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x3FC9AE6A, version = 150)
 	public void sceKernelDevkitVersion(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -496,18 +503,5 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 
         cpu.gpr[2] = devkitVersion;
 	}
-	@HLEFunction(nid = 0xA291F107, version = 150) public HLEModuleFunction sceKernelMaxFreeMemSizeFunction;
-
-	@HLEFunction(nid = 0xF919F628, version = 150) public HLEModuleFunction sceKernelTotalFreeMemSizeFunction;
-
-	@HLEFunction(nid = 0x237DBD4F, version = 150) public HLEModuleFunction sceKernelAllocPartitionMemoryFunction;
-
-	@HLEFunction(nid = 0xB6D61D02, version = 150) public HLEModuleFunction sceKernelFreePartitionMemoryFunction;
-
-	@HLEFunction(nid = 0x9D9A5BA1, version = 150) public HLEModuleFunction sceKernelGetBlockHeadAddrFunction;
-
-	@HLEFunction(nid = 0x13A5ABEF, version = 150) public HLEModuleFunction sceKernelPrintfFunction;
-
-	@HLEFunction(nid = 0x3FC9AE6A, version = 150) public HLEModuleFunction sceKernelDevkitVersionFunction;
 
 }

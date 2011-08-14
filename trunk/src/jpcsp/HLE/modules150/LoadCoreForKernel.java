@@ -44,6 +44,7 @@ public class LoadCoreForKernel implements HLEModule {
 	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
 
+	@HLEFunction(nid = 0xACE23476, version = 150)
 	public void sceKernelCheckPspConfig(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -52,6 +53,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x7BE1421C, version = 150)
 	public void sceKernelCheckExecFile(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -60,6 +62,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0xBF983EF2, version = 150)
 	public void sceKernelProbeExecutableObject(Processor processor) {
 		CpuState cpu = processor.cpu; 
 
@@ -68,6 +71,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x7068E6BA, version = 150)
 	public void sceKernelLoadExecutableObject(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -76,6 +80,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0xB4D6FECC, version = 150)
 	public void sceKernelApplyElfRelSection(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -84,6 +89,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x54AB2675, version = 150)
 	public void sceKernelApplyPspRelSection(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -92,6 +98,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x2952F5AC, version = 150)
 	public void sceKernelDcacheWBinvAll(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -100,6 +107,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+    @HLEFunction(nid = 0xD8779AC6, version = 150)
     public void sceKernelIcacheClearAll(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -108,6 +116,7 @@ public class LoadCoreForKernel implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+	@HLEFunction(nid = 0x99A695F0, version = 150)
 	public void sceKernelRegisterLibrary(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -116,6 +125,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x5873A31F, version = 150)
 	public void sceKernelRegisterLibraryForUser(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -124,6 +134,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x0B464512, version = 150)
 	public void sceKernelReleaseLibrary(Processor processor) {
 		CpuState cpu = processor.cpu; 
 
@@ -132,6 +143,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x9BAF90F6, version = 150)
 	public void sceKernelCanReleaseLibrary(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -140,6 +152,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x0E760DBA, version = 150)
 	public void sceKernelLinkLibraryEntries(Processor processor) {
 		CpuState cpu = processor.cpu; 
 
@@ -148,6 +161,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x0DE1F600, version = 150)
 	public void sceKernelLinkLibraryEntriesForUser(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -156,6 +170,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0xDA1B09AA, version = 150)
 	public void sceKernelUnLinkLibraryEntries(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -164,6 +179,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0xC99DD47A, version = 150)
 	public void sceKernelQueryLoadCoreCB(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -172,6 +188,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x616FCCCD, version = 150)
 	public void sceKernelSetBootCallbackLevel(Processor processor) {
 		CpuState cpu = processor.cpu; 
 
@@ -180,6 +197,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x52A86C21, version = 150)
 	public void sceKernelGetModuleFromUID(Processor processor) {
 		CpuState cpu = processor.cpu; 
 
@@ -188,6 +206,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0xCD0F3BAC, version = 150)
 	public void sceKernelCreateModule(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -196,6 +215,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x6B2371C2, version = 150)
 	public void sceKernelDeleteModule(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -204,6 +224,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x8D8A8ACE, version = 150)
 	public void sceKernelAssignModule(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -212,6 +233,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0xAFF947D4, version = 150)
 	public void sceKernelCreateAssignModule(Processor processor) {
 		CpuState cpu = processor.cpu; 
 
@@ -220,6 +242,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0xAE7C6E76, version = 150)
 	public void sceKernelRegisterModule(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -228,6 +251,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x74CF001A, version = 150)
 	public void sceKernelReleaseModule(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -236,6 +260,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+    @HLEFunction(nid = 0xCF8A41B1, version = 150)
     public void sceKernelFindModuleByName(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -259,6 +284,7 @@ public class LoadCoreForKernel implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xFB8AE27D, version = 150)
     public void sceKernelFindModuleByAddress(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -282,6 +308,7 @@ public class LoadCoreForKernel implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xCCE4A157, version = 150)
     public void sceKernelFindModuleByUID(Processor processor) {
         CpuState cpu = processor.cpu; 
 
@@ -305,6 +332,7 @@ public class LoadCoreForKernel implements HLEModule {
         }
     }
 
+	@HLEFunction(nid = 0x929B5C69, version = 150)
 	public void sceKernelGetModuleListWithAlloc(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -313,6 +341,7 @@ public class LoadCoreForKernel implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x05D915DB, version = 150)
 	public void sceKernelGetModuleIdListForKernel(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -320,62 +349,5 @@ public class LoadCoreForKernel implements HLEModule {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-	@HLEFunction(nid = 0xACE23476, version = 150) public HLEModuleFunction sceKernelCheckPspConfigFunction;
-
-	@HLEFunction(nid = 0x7BE1421C, version = 150) public HLEModuleFunction sceKernelCheckExecFileFunction;
-
-	@HLEFunction(nid = 0xBF983EF2, version = 150) public HLEModuleFunction sceKernelProbeExecutableObjectFunction;
-
-	@HLEFunction(nid = 0x7068E6BA, version = 150) public HLEModuleFunction sceKernelLoadExecutableObjectFunction;
-
-	@HLEFunction(nid = 0xB4D6FECC, version = 150) public HLEModuleFunction sceKernelApplyElfRelSectionFunction;
-
-	@HLEFunction(nid = 0x54AB2675, version = 150) public HLEModuleFunction sceKernelApplyPspRelSectionFunction;
-
-	@HLEFunction(nid = 0x2952F5AC, version = 150) public HLEModuleFunction sceKernelDcacheWBinvAllFunction;
-
-	@HLEFunction(nid = 0xD8779AC6, version = 150) public HLEModuleFunction sceKernelIcacheClearAllFunction;
-
-	@HLEFunction(nid = 0x99A695F0, version = 150) public HLEModuleFunction sceKernelRegisterLibraryFunction;
-
-	@HLEFunction(nid = 0x5873A31F, version = 150) public HLEModuleFunction sceKernelRegisterLibraryForUserFunction;
-
-	@HLEFunction(nid = 0x0B464512, version = 150) public HLEModuleFunction sceKernelReleaseLibraryFunction;
-
-	@HLEFunction(nid = 0x9BAF90F6, version = 150) public HLEModuleFunction sceKernelCanReleaseLibraryFunction;
-
-	@HLEFunction(nid = 0x0E760DBA, version = 150) public HLEModuleFunction sceKernelLinkLibraryEntriesFunction;
-
-	@HLEFunction(nid = 0x0DE1F600, version = 150) public HLEModuleFunction sceKernelLinkLibraryEntriesForUserFunction;
-
-	@HLEFunction(nid = 0xDA1B09AA, version = 150) public HLEModuleFunction sceKernelUnLinkLibraryEntriesFunction;
-
-	@HLEFunction(nid = 0xC99DD47A, version = 150) public HLEModuleFunction sceKernelQueryLoadCoreCBFunction;
-
-	@HLEFunction(nid = 0x616FCCCD, version = 150) public HLEModuleFunction sceKernelSetBootCallbackLevelFunction;
-
-	@HLEFunction(nid = 0x52A86C21, version = 150) public HLEModuleFunction sceKernelGetModuleFromUIDFunction;
-
-	@HLEFunction(nid = 0xCD0F3BAC, version = 150) public HLEModuleFunction sceKernelCreateModuleFunction;
-
-	@HLEFunction(nid = 0x6B2371C2, version = 150) public HLEModuleFunction sceKernelDeleteModuleFunction;
-
-	@HLEFunction(nid = 0x8D8A8ACE, version = 150) public HLEModuleFunction sceKernelAssignModuleFunction;
-
-	@HLEFunction(nid = 0xAFF947D4, version = 150) public HLEModuleFunction sceKernelCreateAssignModuleFunction;
-
-	@HLEFunction(nid = 0xAE7C6E76, version = 150) public HLEModuleFunction sceKernelRegisterModuleFunction;
-
-	@HLEFunction(nid = 0x74CF001A, version = 150) public HLEModuleFunction sceKernelReleaseModuleFunction;
-
-	@HLEFunction(nid = 0xCF8A41B1, version = 150) public HLEModuleFunction sceKernelFindModuleByNameFunction;
-
-	@HLEFunction(nid = 0xFB8AE27D, version = 150) public HLEModuleFunction sceKernelFindModuleByAddressFunction;
-
-	@HLEFunction(nid = 0xCCE4A157, version = 150) public HLEModuleFunction sceKernelFindModuleByUIDFunction;
-
-	@HLEFunction(nid = 0x929B5C69, version = 150) public HLEModuleFunction sceKernelGetModuleListWithAllocFunction;
-
-	@HLEFunction(nid = 0x05D915DB, version = 150) public HLEModuleFunction sceKernelGetModuleIdListForKernelFunction;
 
 }

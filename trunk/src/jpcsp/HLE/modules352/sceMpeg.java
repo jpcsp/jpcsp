@@ -35,6 +35,7 @@ public class sceMpeg extends jpcsp.HLE.modules150.sceMpeg {
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
+    @HLEFunction(nid = 0x769BEBB6, version = 352)
     public void sceMpegRingbufferQueryPackNum(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -46,6 +47,5 @@ public class sceMpeg extends jpcsp.HLE.modules150.sceMpeg {
 
         cpu.gpr[2] = getPacketsFromSize(memorySize);
     }
-    @HLEFunction(nid = 0x769BEBB6, version = 352) public HLEModuleFunction sceMpegRingbufferQueryPackNumFunction;
 
 }

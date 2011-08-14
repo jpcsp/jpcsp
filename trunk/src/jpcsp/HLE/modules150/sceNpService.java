@@ -48,6 +48,7 @@ public class sceNpService implements HLEModule {
     private int npManagerMaxMemSize;  // Maximum memory used by the NP Manager utility.
     private int npManagerFreeMemSize;        // Free memory available to use by the NP Manager utility.
 
+    @HLEFunction(nid = 0x0F8F5821, version = 150)
     public void sceNpService_0F8F5821(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -69,6 +70,7 @@ public class sceNpService implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x00ACFAC3, version = 150)
     public void sceNpService_00ACFAC3(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -88,8 +90,5 @@ public class sceNpService implements HLEModule {
         }
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0x0F8F5821, version = 150) public HLEModuleFunction sceNpService_0F8F5821Function;
-
-    @HLEFunction(nid = 0x00ACFAC3, version = 150) public HLEModuleFunction sceNpService_00ACFAC3Function;
 
 }

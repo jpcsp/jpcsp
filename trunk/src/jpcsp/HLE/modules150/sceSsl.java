@@ -47,6 +47,7 @@ public class sceSsl implements HLEModule {
     private int maxMemSize;
     private int currentMemSize;
 
+    @HLEFunction(nid = 0x957ECBE2, version = 150)
     public void sceSslInit(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -66,6 +67,7 @@ public class sceSsl implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x191CDEFF, version = 150)
     public void sceSslEnd(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -79,6 +81,7 @@ public class sceSsl implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x5BFB6B61, version = 150)
     public void sceSslGetNotAfter(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -91,6 +94,7 @@ public class sceSsl implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x17A10DCC, version = 150)
     public void sceSslGetNotBefore(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -103,6 +107,7 @@ public class sceSsl implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x3DD5E023, version = 150)
     public void sceSslGetSubjectName(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -111,6 +116,7 @@ public class sceSsl implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x1B7C8191, version = 150)
     public void sceSslGetIssuerName(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -119,6 +125,7 @@ public class sceSsl implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xCC0919B0, version = 150)
     public void sceSslGetSerialNumber(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -127,6 +134,7 @@ public class sceSsl implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x058D21C0, version = 150)
     public void sceSslGetNameEntryCount(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -135,6 +143,7 @@ public class sceSsl implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xD6D097B4, version = 150)
     public void sceSslGetNameEntryInfo(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -143,6 +152,7 @@ public class sceSsl implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xB99EDE6A, version = 150)
     public void sceSslGetUsedMemoryMax(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -161,6 +171,7 @@ public class sceSsl implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x0EB43B06, version = 150)
     public void sceSslGetUsedMemoryCurrent(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -179,6 +190,7 @@ public class sceSsl implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xF57765D3, version = 150)
     public void sceSslGetKeyUsage(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -186,28 +198,5 @@ public class sceSsl implements HLEModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-    @HLEFunction(nid = 0x957ECBE2, version = 150) public HLEModuleFunction sceSslInitFunction;
-
-    @HLEFunction(nid = 0x191CDEFF, version = 150) public HLEModuleFunction sceSslEndFunction;
-
-    @HLEFunction(nid = 0x5BFB6B61, version = 150) public HLEModuleFunction sceSslGetNotAfterFunction;
-
-    @HLEFunction(nid = 0x17A10DCC, version = 150) public HLEModuleFunction sceSslGetNotBeforeFunction;
-
-    @HLEFunction(nid = 0x3DD5E023, version = 150) public HLEModuleFunction sceSslGetSubjectNameFunction;
-
-    @HLEFunction(nid = 0x1B7C8191, version = 150) public HLEModuleFunction sceSslGetIssuerNameFunction;
-
-    @HLEFunction(nid = 0xCC0919B0, version = 150) public HLEModuleFunction sceSslGetSerialNumberFunction;
-
-    @HLEFunction(nid = 0x058D21C0, version = 150) public HLEModuleFunction sceSslGetNameEntryCountFunction;
-
-    @HLEFunction(nid = 0xD6D097B4, version = 150) public HLEModuleFunction sceSslGetNameEntryInfoFunction;
-
-    @HLEFunction(nid = 0xB99EDE6A, version = 150) public HLEModuleFunction sceSslGetUsedMemoryMaxFunction;
-
-    @HLEFunction(nid = 0x0EB43B06, version = 150) public HLEModuleFunction sceSslGetUsedMemoryCurrentFunction;
-
-    @HLEFunction(nid = 0xF57765D3, version = 150) public HLEModuleFunction sceSslGetKeyUsageFunction;
 
 }

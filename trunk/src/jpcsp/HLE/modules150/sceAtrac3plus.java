@@ -702,6 +702,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         return 0; // Unknown Codec
     }
 
+    @HLEFunction(nid = 0xD1F59FDB, version = 150)
     public void sceAtracStartEntry(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -710,6 +711,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xD5C28CC0, version = 150)
     public void sceAtracEndEntry(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -718,6 +720,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x780F88D1, version = 150)
     public void sceAtracGetAtracID(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -734,6 +737,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         cpu.gpr[2] = hleCreateAtracID(codecType);
     }
 
+    @HLEFunction(nid = 0x61EB33F5, version = 150)
     public void sceAtracReleaseAtracID(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -760,6 +764,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x0E2A73AB, version = 150)
     public void sceAtracSetData(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -784,6 +789,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x3F6E26B5, version = 150)
     public void sceAtracSetHalfwayBuffer(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -809,6 +815,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x7A20E7AF, version = 150)
     public void sceAtracSetDataAndGetID(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -834,6 +841,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         cpu.gpr[2] = atID;
     }
 
+    @HLEFunction(nid = 0x0FAE370E, version = 150)
     public void sceAtracSetHalfwayBufferAndGetID(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -859,6 +867,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         cpu.gpr[2] = atID;
     }
 
+    @HLEFunction(nid = 0x6A8C3CD5, version = 150)
     public void sceAtracDecodeData(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -967,6 +976,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x9AE849A7, version = 150)
     public void sceAtracGetRemainFrame(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -998,6 +1008,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x5D268707, version = 150)
     public void sceAtracGetStreamDataInfo(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1037,6 +1048,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x7DB31251, version = 150)
     public void sceAtracAddStreamData(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1063,6 +1075,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x83E85EA0, version = 150)
     public void sceAtracGetSecondBufferInfo(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1095,6 +1108,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x83BF7AFD, version = 150)
     public void sceAtracSetSecondBuffer(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1119,6 +1133,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xE23E3A35, version = 150)
     public void sceAtracGetNextDecodePosition(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1149,6 +1164,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xA2BBA8BE, version = 150)
     public void sceAtracGetSoundSample(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1187,6 +1203,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x31668BAA, version = 150)
     public void sceAtracGetChannel(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1211,6 +1228,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xD6A5F2F7, version = 150)
     public void sceAtracGetMaxSample(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1237,6 +1255,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x36FAABFB, version = 150)
     public void sceAtracGetNextSample(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1268,6 +1287,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xA554A158, version = 150)
     public void sceAtracGetBitrate(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1292,6 +1312,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xFAA4F89B, version = 150)
     public void sceAtracGetLoopStatus(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1322,6 +1343,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x868120B5, version = 150)
     public void sceAtracSetLoopNum(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1346,6 +1368,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xCA3CA3D2, version = 150)
     public void sceAtracGetBufferInfoForReseting(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1370,6 +1393,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x644E5607, version = 150)
     public void sceAtracResetPlayPosition(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1396,6 +1420,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xE88F759B, version = 150)
     public void sceAtracGetInternalErrorInfo(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1418,30 +1443,6 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             mem.write32(errorAddr, atracIDs.get(atID).getInternalErrorInfo());
             cpu.gpr[2] = 0;
         }
-    }    @HLEFunction(nid = 0xD1F59FDB, version = 150) public HLEModuleFunction sceAtracStartEntryFunction;
-    @HLEFunction(nid = 0xD5C28CC0, version = 150) public HLEModuleFunction sceAtracEndEntryFunction;
-    @HLEFunction(nid = 0x780F88D1, version = 150) public HLEModuleFunction sceAtracGetAtracIDFunction;
-    @HLEFunction(nid = 0x61EB33F5, version = 150) public HLEModuleFunction sceAtracReleaseAtracIDFunction;
-    @HLEFunction(nid = 0x0E2A73AB, version = 150) public HLEModuleFunction sceAtracSetDataFunction;
-    @HLEFunction(nid = 0x3F6E26B5, version = 150) public HLEModuleFunction sceAtracSetHalfwayBufferFunction;
-    @HLEFunction(nid = 0x7A20E7AF, version = 150) public HLEModuleFunction sceAtracSetDataAndGetIDFunction;
-    @HLEFunction(nid = 0x0FAE370E, version = 150) public HLEModuleFunction sceAtracSetHalfwayBufferAndGetIDFunction;
-    @HLEFunction(nid = 0x6A8C3CD5, version = 150) public HLEModuleFunction sceAtracDecodeDataFunction;
-    @HLEFunction(nid = 0x9AE849A7, version = 150) public HLEModuleFunction sceAtracGetRemainFrameFunction;
-    @HLEFunction(nid = 0x5D268707, version = 150) public HLEModuleFunction sceAtracGetStreamDataInfoFunction;
-    @HLEFunction(nid = 0x7DB31251, version = 150) public HLEModuleFunction sceAtracAddStreamDataFunction;
-    @HLEFunction(nid = 0x83E85EA0, version = 150) public HLEModuleFunction sceAtracGetSecondBufferInfoFunction;
-    @HLEFunction(nid = 0x83BF7AFD, version = 150) public HLEModuleFunction sceAtracSetSecondBufferFunction;
-    @HLEFunction(nid = 0xE23E3A35, version = 150) public HLEModuleFunction sceAtracGetNextDecodePositionFunction;
-    @HLEFunction(nid = 0xA2BBA8BE, version = 150) public HLEModuleFunction sceAtracGetSoundSampleFunction;
-    @HLEFunction(nid = 0x31668BAA, version = 150) public HLEModuleFunction sceAtracGetChannelFunction;
-    @HLEFunction(nid = 0xD6A5F2F7, version = 150) public HLEModuleFunction sceAtracGetMaxSampleFunction;
-    @HLEFunction(nid = 0x36FAABFB, version = 150) public HLEModuleFunction sceAtracGetNextSampleFunction;
-    @HLEFunction(nid = 0xA554A158, version = 150) public HLEModuleFunction sceAtracGetBitrateFunction;
-    @HLEFunction(nid = 0xFAA4F89B, version = 150) public HLEModuleFunction sceAtracGetLoopStatusFunction;
-    @HLEFunction(nid = 0x868120B5, version = 150) public HLEModuleFunction sceAtracSetLoopNumFunction;
-    @HLEFunction(nid = 0xCA3CA3D2, version = 150) public HLEModuleFunction sceAtracGetBufferInfoForResetingFunction;
-    @HLEFunction(nid = 0x644E5607, version = 150) public HLEModuleFunction sceAtracResetPlayPositionFunction;
-    @HLEFunction(nid = 0xE88F759B, version = 150) public HLEModuleFunction sceAtracGetInternalErrorInfoFunction;
+    }
 
 }

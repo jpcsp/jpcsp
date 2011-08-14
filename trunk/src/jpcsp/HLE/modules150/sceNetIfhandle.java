@@ -47,6 +47,7 @@ public class sceNetIfhandle implements HLEModule {
     private int netDropRate;
     private int netDropDuration;
 
+    @HLEFunction(nid = 0xC80181A2, version = 150)
     public void sceNetGetDropRate(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -68,6 +69,7 @@ public class sceNetIfhandle implements HLEModule {
         cpu.gpr[2] = 0;
     }
     
+    @HLEFunction(nid = 0xFD8585E1, version = 150)
     public void sceNetSetDropRate(Processor processor) {
         CpuState cpu = processor.cpu;
         
@@ -85,8 +87,5 @@ public class sceNetIfhandle implements HLEModule {
         netDropDuration = dropDuration;
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0xC80181A2, version = 150) public HLEModuleFunction sceNetGetDropRateFunction;
-
-    @HLEFunction(nid = 0xFD8585E1, version = 150) public HLEModuleFunction sceNetSetDropRateFunction;
 
 }

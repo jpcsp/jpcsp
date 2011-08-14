@@ -172,6 +172,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x46EBB729, version = 150)
     public void sceUmdCheckMedium(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -182,6 +183,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = (iso != null) ? 1 : 0;
     }
 
+    @HLEFunction(nid = 0xC6183D47, version = 150)
     public void sceUmdActivate(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -211,6 +213,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
     	checkWaitingThreads();
     }
 
+    @HLEFunction(nid = 0xE83742BA, version = 150)
     public void sceUmdDeactivate(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -259,6 +262,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         threadMan.hleRescheduleCurrentThread(doCallbacks);
     }
 
+    @HLEFunction(nid = 0x8EF08FCE, version = 150)
     public void sceUmdWaitDriveStat(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -275,6 +279,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         hleUmdWaitDriveStat(processor, wantedStat, false, false, 0);
     }
 
+    @HLEFunction(nid = 0x56202973, version = 150)
     public void sceUmdWaitDriveStatWithTimer(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -293,6 +298,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         hleUmdWaitDriveStat(processor, wantedStat, false, true, timeout);
     }
 
+    @HLEFunction(nid = 0x4A9E5E29, version = 150)
     public void sceUmdWaitDriveStatCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -311,6 +317,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         hleUmdWaitDriveStat(processor, wantedStat, true, true, timeout);
     }
 
+    @HLEFunction(nid = 0x6AF9B50A, version = 150)
     public void sceUmdCancelWaitDriveStat(Processor processor) {
         CpuState cpu = processor.cpu;
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
@@ -333,6 +340,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x6B4A146C, version = 150)
     public void sceUmdGetDriveStat(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -343,6 +351,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = getUmdStat();
     }
 
+    @HLEFunction(nid = 0x20628E6F, version = 150)
     public void sceUmdGetErrorStat(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -353,6 +362,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x340B7686, version = 150)
     public void sceUmdGetDiscInfo(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -378,6 +388,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xAEE7404D, version = 150)
     public void sceUmdRegisterUMDCallBack(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -399,6 +410,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xBD2BDE07, version = 150)
     public void sceUmdUnRegisterUMDCallBack(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -414,17 +426,6 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         } else {
             cpu.gpr[2] = -1;
         }
-    }    @HLEFunction(nid = 0x46EBB729, version = 150) public HLEModuleFunction sceUmdCheckMediumFunction;
-    @HLEFunction(nid = 0xC6183D47, version = 150) public HLEModuleFunction sceUmdActivateFunction;
-    @HLEFunction(nid = 0xE83742BA, version = 150) public HLEModuleFunction sceUmdDeactivateFunction;
-    @HLEFunction(nid = 0x8EF08FCE, version = 150) public HLEModuleFunction sceUmdWaitDriveStatFunction;
-    @HLEFunction(nid = 0x56202973, version = 150) public HLEModuleFunction sceUmdWaitDriveStatWithTimerFunction;
-    @HLEFunction(nid = 0x4A9E5E29, version = 150) public HLEModuleFunction sceUmdWaitDriveStatCBFunction;
-    @HLEFunction(nid = 0x6AF9B50A, version = 150) public HLEModuleFunction sceUmdCancelWaitDriveStatFunction;
-    @HLEFunction(nid = 0x6B4A146C, version = 150) public HLEModuleFunction sceUmdGetDriveStatFunction;
-    @HLEFunction(nid = 0x20628E6F, version = 150) public HLEModuleFunction sceUmdGetErrorStatFunction;
-    @HLEFunction(nid = 0x340B7686, version = 150) public HLEModuleFunction sceUmdGetDiscInfoFunction;
-    @HLEFunction(nid = 0xAEE7404D, version = 150) public HLEModuleFunction sceUmdRegisterUMDCallBackFunction;
-    @HLEFunction(nid = 0xBD2BDE07, version = 150) public HLEModuleFunction sceUmdUnRegisterUMDCallBackFunction;
+    }
 
 }

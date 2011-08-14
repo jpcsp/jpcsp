@@ -1440,6 +1440,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         setViewportResizeScaleFactor(getWidth(), getHeight());
     }
 
+    @HLEFunction(nid = 0x0E20F177, version = 150)
     public void sceDisplaySetMode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1477,6 +1478,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         }
     }
 
+    @HLEFunction(nid = 0xDEA197D4, version = 150)
     public void sceDisplayGetMode(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory memory = Processor.memory;
@@ -1498,6 +1500,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         }
     }
 
+    @HLEFunction(nid = 0xDBA6C4C4, version = 150)
     public void sceDisplayGetFramePerSec(Processor processor) {
         CpuState cpu = processor.cpu;
         // Return float value in $f0
@@ -1507,6 +1510,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     	}
     }
 
+    @HLEFunction(nid = 0x7ED59BC4, version = 150)
     public void sceDisplaySetHoldMode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1521,6 +1525,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xA544C486, version = 150)
     public void sceDisplaySetResumeMode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1535,6 +1540,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x289D82FE, version = 150)
     public void sceDisplaySetFrameBuf(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1643,6 +1649,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         return SceKernelErrors.ERROR_INVALID_POINTER;
 	}
 
+    @HLEFunction(nid = 0xEEDA2E54, version = 150)
     public void sceDisplayGetFrameBuf(Processor processor) {
         CpuState cpu = processor.cpu;
     	Memory mem = Memory.getInstance();
@@ -1671,6 +1678,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         }
     }
 
+    @HLEFunction(nid = 0xB4F378FA, version = 150)
     public void sceDisplayIsForeground(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1680,6 +1688,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         cpu.gpr[2] = isFbShowing ? 1 : 0;
     }
 
+    @HLEFunction(nid = 0x31C4BAA8, version = 150)
     public void sceDisplayGetBrightness(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1692,12 +1701,14 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x9C6EAAD7, version = 150)
     public void sceDisplayGetVcount(Processor processor) {
         CpuState cpu = processor.cpu;
         // 60 units per second
         cpu.gpr[2] = vcount;
     }
 
+    @HLEFunction(nid = 0x4D4E10EC, version = 150)
     public void sceDisplayIsVblank(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1708,6 +1719,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         }
     }
 
+    @HLEFunction(nid = 0x36CDFADE, version = 150)
     public void sceDisplayWaitVblank(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1725,6 +1737,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     	}
     }
 
+    @HLEFunction(nid = 0x8EB9EC49, version = 150)
     public void sceDisplayWaitVblankCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1742,6 +1755,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         }
     }
 
+    @HLEFunction(nid = 0x984C27E7, version = 150)
     public void sceDisplayWaitVblankStart(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1757,6 +1771,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         blockCurrentThreadOnVblank(1, false);
     }
 
+    @HLEFunction(nid = 0x46F186C3, version = 150)
     public void sceDisplayWaitVblankStartCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1772,6 +1787,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         blockCurrentThreadOnVblank(1, true);
     }
 
+    @HLEFunction(nid = 0x773DD3A3, version = 150)
     public void sceDisplayGetCurrentHcount(Processor processor) {
         CpuState cpu = processor.cpu;
         int currentHcount = getCurrentHcount();
@@ -1783,6 +1799,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         cpu.gpr[2] = currentHcount;
     }
 
+    @HLEFunction(nid = 0x210EAB3A, version = 150)
     public void sceDisplayGetAccumulatedHcount(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1798,6 +1815,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         cpu.gpr[2] = accumulatedHcount;
     }
 
+    @HLEFunction(nid = 0xA83EF139, version = 150)
     public void sceDisplayAdjustAccumulatedHcount(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1822,23 +1840,5 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     		this.pixelFormat = pixelFormat;
     	}
     }
-    @HLEFunction(nid = 0x0E20F177, version = 150) public HLEModuleFunction sceDisplaySetModeFunction;
-    @HLEFunction(nid = 0xDEA197D4, version = 150) public HLEModuleFunction sceDisplayGetModeFunction;
-    @HLEFunction(nid = 0xDBA6C4C4, version = 150) public HLEModuleFunction sceDisplayGetFramePerSecFunction;
-    @HLEFunction(nid = 0x7ED59BC4, version = 150) public HLEModuleFunction sceDisplaySetHoldModeFunction;
-    @HLEFunction(nid = 0xA544C486, version = 150) public HLEModuleFunction sceDisplaySetResumeModeFunction;
-    @HLEFunction(nid = 0x289D82FE, version = 150) public HLEModuleFunction sceDisplaySetFrameBufFunction;
-    @HLEFunction(nid = 0xEEDA2E54, version = 150) public HLEModuleFunction sceDisplayGetFrameBufFunction;
-    @HLEFunction(nid = 0xB4F378FA, version = 150) public HLEModuleFunction sceDisplayIsForegroundFunction;
-    @HLEFunction(nid = 0x31C4BAA8, version = 150) public HLEModuleFunction sceDisplayGetBrightnessFunction;
-    @HLEFunction(nid = 0x9C6EAAD7, version = 150) public HLEModuleFunction sceDisplayGetVcountFunction;
-    @HLEFunction(nid = 0x4D4E10EC, version = 150) public HLEModuleFunction sceDisplayIsVblankFunction;
-    @HLEFunction(nid = 0x36CDFADE, version = 150) public HLEModuleFunction sceDisplayWaitVblankFunction;
-    @HLEFunction(nid = 0x8EB9EC49, version = 150) public HLEModuleFunction sceDisplayWaitVblankCBFunction;
-    @HLEFunction(nid = 0x984C27E7, version = 150) public HLEModuleFunction sceDisplayWaitVblankStartFunction;
-    @HLEFunction(nid = 0x46F186C3, version = 150) public HLEModuleFunction sceDisplayWaitVblankStartCBFunction;
-    @HLEFunction(nid = 0x773DD3A3, version = 150) public HLEModuleFunction sceDisplayGetCurrentHcountFunction;
-    @HLEFunction(nid = 0x210EAB3A, version = 150) public HLEModuleFunction sceDisplayGetAccumulatedHcountFunction;
-    @HLEFunction(nid = 0xA83EF139, version = 150) public HLEModuleFunction sceDisplayAdjustAccumulatedHcountFunction;
 
 }

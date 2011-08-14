@@ -435,6 +435,8 @@ public class HLEModuleManager {
 	public HLEModuleFunction getSyscallFunction(int code) {
 		return allSyscallCodes.get(code);
 	}
+	
+	private HashMap<HLEModule, List<HLEModuleFunction>> installedHLEModuleFunctionByModule = new HashMap<HLEModule, List<HLEModuleFunction>>();
 
 	/**
 	 * Iterates over an object fields searching for HLEFunction annotations and if the specified
@@ -449,6 +451,40 @@ public class HLEModuleManager {
 			String defaultModuleName = objectClass.getName();
 			defaultModuleName = defaultModuleName.substring(defaultModuleName.lastIndexOf('.') + 1);
 			
+			LinkedList<HLEModuleFunction> hleModuleFunctions = new LinkedList<HLEModuleFunction>();
+			
+			installedHLEModuleFunctionByModule.put(hleModule, hleModuleFunctions);
+			
+			for (Method method : objectClass.getMethods()) {
+				HLEFunction hleFunction = method.getAnnotation(HLEFunction.class);
+				if (hleFunction != null) {
+					if (version >= hleFunction.version()) {
+						String moduleName = hleFunction.moduleName();
+						String functionName = hleFunction.functionName();
+						
+						if (moduleName.length() == 0) {
+							moduleName = defaultModuleName;
+						}
+
+						if (functionName.length() == 0) {
+							functionName = method.getName();
+						}
+						
+						HLEModuleFunction hleModuleFunction = new HLEModuleFunctionReflection(moduleName, functionName, hleModule, method.getName());
+						
+						hleModuleFunctions.add(hleModuleFunction);
+						
+						if (hleFunction.syscall() != 0) {
+							this.addHLEFunction(hleModuleFunction);
+						} else {
+							this.addFunction(hleFunction.nid(), hleModuleFunction);
+						}
+					}
+				}
+			}
+
+			// Fields
+			// @deprecated NOTE: Still used on ThreadManForUser. It has references to *Function fields. First we should remove those references.
 			for (Field field : objectClass.getFields()) {
 				HLEFunction hleFunction = field.getAnnotation(HLEFunction.class);
 				if (hleFunction != null) {
@@ -475,6 +511,8 @@ public class HLEModuleManager {
 						
 						//System.console().printf("%s :: %s\n", moduleName, functionName);
 
+						hleModuleFunctions.add((HLEModuleFunction)field.get(hleModule));
+
 						if (hleFunction.syscall() != 0) {
 							this.addHLEFunction((HLEModuleFunction)field.get(hleModule));
 						} else {
@@ -496,13 +534,8 @@ public class HLEModuleManager {
 	 */
 	public void uninstallModuleWithAnnotations(HLEModule hleModule, int version) {
 		try {
-			for (Field field : hleModule.getClass().getFields()) {
-				HLEFunction hleFunction = field.getAnnotation(HLEFunction.class);
-				if (hleFunction != null) {
-					if (version >= hleFunction.version()) {
-						this.removeFunction((HLEModuleFunction)field.get(hleModule));
-					}
-				}
+			for (HLEModuleFunction hleModuleFunction : installedHLEModuleFunctionByModule.get(hleModule)) {
+				this.removeFunction(hleModuleFunction);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

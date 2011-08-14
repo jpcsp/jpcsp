@@ -32,6 +32,7 @@ public class ModuleMgrForUser extends jpcsp.HLE.modules150.ModuleMgrForUser {
 
     // Export functions
 
+    @HLEFunction(nid = 0xFEF27DC1, version = 271)
     public void ModuleMgrForUser_FEF27DC1(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -40,6 +41,5 @@ public class ModuleMgrForUser extends jpcsp.HLE.modules150.ModuleMgrForUser {
 
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0xFEF27DC1, version = 271) public HLEModuleFunction ModuleMgrForUser_FEF27DC1Function;
 
 }

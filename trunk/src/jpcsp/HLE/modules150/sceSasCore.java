@@ -164,6 +164,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
     	delayThread(startMicros, delayMicros);
     }
 
+    @HLEFunction(nid = 0x019B25EB, version = 150)
     public void __sceSasSetADSR(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -203,6 +204,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x267A6DD2, version = 150)
     public void __sceSasRevParam(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -228,6 +230,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x2C8E6AB3, version = 150)
     public void __sceSasGetPauseFlag(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -254,6 +257,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x33D4AB37, version = 150)
     public void __sceSasRevType(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -277,6 +281,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x42778A9F, version = 150)
     public void __sceSasInit(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -306,6 +311,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x440CA7D8, version = 150)
     public void __sceSasSetVolume(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -331,6 +337,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x50A14DFC, version = 150)
     public void __sceSasCoreWithMix(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -357,6 +364,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x5F9529F6, version = 150)
     public void __sceSasSetSL(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -380,6 +388,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x68A46B95, version = 150)
     public void __sceSasGetEndFlag(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -405,6 +414,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x74AE582A, version = 150)
     public void __sceSasGetEnvelopeHeight(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -426,6 +436,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x76F01ACA, version = 150)
     public void __sceSasSetKeyOn(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -449,6 +460,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x787D04D5, version = 150)
     public void __sceSasSetPause(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -477,6 +489,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x99944089, version = 150)
     public void __sceSasSetVoice(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -506,6 +519,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x9EC3676A, version = 150)
     public void __sceSasSetADSRmode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -545,6 +559,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xA0CF2FA4, version = 150)
     public void __sceSasSetKeyOff(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -568,6 +583,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xA232CBE6, version = 150)
     public void __sceSasSetTrianglarWave(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -580,6 +596,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xA3589D81, version = 150)
     public void __sceSasCore(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -604,6 +621,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xAD84D37F, version = 150)
     public void __sceSasSetPitch(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -628,6 +646,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xB7660A23, version = 150)
     public void __sceSasSetNoise(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -652,6 +671,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xBD11B7C2, version = 150)
     public void __sceSasGetGrain(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -672,6 +692,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xCBCD4F79, version = 150)
     public void __sceSasSetSimpleADSR(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -711,6 +732,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xD1E0A01E, version = 150)
     public void __sceSasSetGrain(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -733,6 +755,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xD5A229C9, version = 150)
     public void __sceSasRevEVOL(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -758,6 +781,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xD5EBBBCD, version = 150)
     public void __sceSasSetSteepWave(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -770,6 +794,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xE175EF66, version = 150)
     public void __sceSasGetOutputmode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -790,6 +815,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xE855BF76, version = 150)
     public void __sceSasSetOutputmode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -812,6 +838,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xF983B186, version = 150)
     public void __sceSasRevVON(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -837,6 +864,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x07F58C24, version = 150)
     public void __sceSasGetAllEnvelopeHeights(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -865,33 +893,6 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
         }
-    }    @HLEFunction(nid = 0x019B25EB, version = 150) public HLEModuleFunction __sceSasSetADSRFunction;
-    @HLEFunction(nid = 0x267A6DD2, version = 150) public HLEModuleFunction __sceSasRevParamFunction;
-    @HLEFunction(nid = 0x2C8E6AB3, version = 150) public HLEModuleFunction __sceSasGetPauseFlagFunction;
-    @HLEFunction(nid = 0x33D4AB37, version = 150) public HLEModuleFunction __sceSasRevTypeFunction;
-    @HLEFunction(nid = 0x42778A9F, version = 150) public HLEModuleFunction __sceSasInitFunction;
-    @HLEFunction(nid = 0x440CA7D8, version = 150) public HLEModuleFunction __sceSasSetVolumeFunction;
-    @HLEFunction(nid = 0x50A14DFC, version = 150) public HLEModuleFunction __sceSasCoreWithMixFunction;
-    @HLEFunction(nid = 0x5F9529F6, version = 150) public HLEModuleFunction __sceSasSetSLFunction;
-    @HLEFunction(nid = 0x68A46B95, version = 150) public HLEModuleFunction __sceSasGetEndFlagFunction;
-    @HLEFunction(nid = 0x74AE582A, version = 150) public HLEModuleFunction __sceSasGetEnvelopeHeightFunction;
-    @HLEFunction(nid = 0x76F01ACA, version = 150) public HLEModuleFunction __sceSasSetKeyOnFunction;
-    @HLEFunction(nid = 0x787D04D5, version = 150) public HLEModuleFunction __sceSasSetPauseFunction;
-    @HLEFunction(nid = 0x99944089, version = 150) public HLEModuleFunction __sceSasSetVoiceFunction;
-    @HLEFunction(nid = 0x9EC3676A, version = 150) public HLEModuleFunction __sceSasSetADSRmodeFunction;
-    @HLEFunction(nid = 0xA0CF2FA4, version = 150) public HLEModuleFunction __sceSasSetKeyOffFunction;
-    @HLEFunction(nid = 0xA232CBE6, version = 150) public HLEModuleFunction __sceSasSetTrianglarWaveFunction;
-    @HLEFunction(nid = 0xA3589D81, version = 150) public HLEModuleFunction __sceSasCoreFunction;
-    @HLEFunction(nid = 0xAD84D37F, version = 150) public HLEModuleFunction __sceSasSetPitchFunction;
-    @HLEFunction(nid = 0xB7660A23, version = 150) public HLEModuleFunction __sceSasSetNoiseFunction;
-    @HLEFunction(nid = 0xBD11B7C2, version = 150) public HLEModuleFunction __sceSasGetGrainFunction;
-    @HLEFunction(nid = 0xCBCD4F79, version = 150) public HLEModuleFunction __sceSasSetSimpleADSRFunction;
-    @HLEFunction(nid = 0xD1E0A01E, version = 150) public HLEModuleFunction __sceSasSetGrainFunction;
-    @HLEFunction(nid = 0xD5A229C9, version = 150) public HLEModuleFunction __sceSasRevEVOLFunction;
-    @HLEFunction(nid = 0xD5EBBBCD, version = 150) public HLEModuleFunction __sceSasSetSteepWaveFunction;
-    @HLEFunction(nid = 0xE175EF66, version = 150) public HLEModuleFunction __sceSasGetOutputmodeFunction;
-    @HLEFunction(nid = 0xE855BF76, version = 150) public HLEModuleFunction __sceSasSetOutputmodeFunction;
-    @HLEFunction(nid = 0xF983B186, version = 150) public HLEModuleFunction __sceSasRevVONFunction;
-    @HLEFunction(nid = 0x07F58C24, version = 150) public HLEModuleFunction __sceSasGetAllEnvelopeHeightsFunction;
+    }
 
 }

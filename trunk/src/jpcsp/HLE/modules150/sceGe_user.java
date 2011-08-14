@@ -352,16 +352,19 @@ public class sceGe_user implements HLEModule, HLEStartModule {
 		}
     }
 
+    @HLEFunction(nid = 0x1F6752AD, version = 150)
     public void sceGeEdramGetSize(Processor processor) {
         CpuState cpu = processor.cpu;
         cpu.gpr[2] = MemoryMap.SIZE_VRAM;
     }
 
+    @HLEFunction(nid = 0xE47E40E4, version = 150)
     public void sceGeEdramGetAddr(Processor processor) {
     	CpuState cpu = processor.cpu;
         cpu.gpr[2] = MemoryMap.START_VRAM;
     }
 
+    @HLEFunction(nid = 0xB77905EA, version = 150)
     public void sceGeEdramSetAddrTranslation(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -374,6 +377,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         cpu.gpr[2] = previousWidth;
     }
 
+    @HLEFunction(nid = 0xDC93CFEF, version = 150)
     public void sceGeGetCmd(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -387,6 +391,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         cpu.gpr[2] = arg;
     }
 
+    @HLEFunction(nid = 0x57C8945B, version = 150)
     public void sceGeGetMtx(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -408,6 +413,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x438A385A, version = 150)
     public void sceGeSaveContext(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -422,6 +428,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
     	cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x0BF608FB, version = 150)
     public void sceGeRestoreContext(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -436,6 +443,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
     	cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xAB49E76A, version = 150)
     public void sceGeListEnQueue(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -476,6 +484,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
 		}
     }
 
+    @HLEFunction(nid = 0x1C0D95A6, version = 150)
     public void sceGeListEnQueueHead(Processor processor) {
     	CpuState cpu = processor.cpu;
 
@@ -516,6 +525,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
 		}
     }
 
+    @HLEFunction(nid = 0x5FB86AB0, version = 150)
     public void sceGeListDeQueue(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -539,6 +549,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xE0D68148, version = 150)
     public void sceGeListUpdateStallAddr(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -565,6 +576,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x03444EB4, version = 150)
     public void sceGeListSync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -609,6 +621,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xB287BD61, version = 150)
     public void sceGeDrawSync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -653,6 +666,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xB448EC0D, version = 150)
     public void sceGeBreak(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -687,6 +701,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x4C06E472, version = 150)
     public void sceGeContinue(Processor processor) {
         CpuState cpu = processor.cpu;
     	Memory mem = Processor.memory;
@@ -711,6 +726,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xA4FC06A4, version = 150)
     public void sceGeSetCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -743,6 +759,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x05DB22CE, version = 150)
     public void sceGeUnsetCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -767,22 +784,6 @@ public class sceGe_user implements HLEModule, HLEStartModule {
             }
             cpu.gpr[2] = 0;
         }
-    }    @HLEFunction(nid = 0x1F6752AD, version = 150) public HLEModuleFunction sceGeEdramGetSizeFunction;
-    @HLEFunction(nid = 0xE47E40E4, version = 150) public HLEModuleFunction sceGeEdramGetAddrFunction;
-    @HLEFunction(nid = 0xB77905EA, version = 150) public HLEModuleFunction sceGeEdramSetAddrTranslationFunction;
-    @HLEFunction(nid = 0xDC93CFEF, version = 150) public HLEModuleFunction sceGeGetCmdFunction;
-    @HLEFunction(nid = 0x57C8945B, version = 150) public HLEModuleFunction sceGeGetMtxFunction;
-    @HLEFunction(nid = 0x438A385A, version = 150) public HLEModuleFunction sceGeSaveContextFunction;
-    @HLEFunction(nid = 0x0BF608FB, version = 150) public HLEModuleFunction sceGeRestoreContextFunction;
-    @HLEFunction(nid = 0xAB49E76A, version = 150) public HLEModuleFunction sceGeListEnQueueFunction;
-    @HLEFunction(nid = 0x1C0D95A6, version = 150) public HLEModuleFunction sceGeListEnQueueHeadFunction;
-    @HLEFunction(nid = 0x5FB86AB0, version = 150) public HLEModuleFunction sceGeListDeQueueFunction;
-    @HLEFunction(nid = 0xE0D68148, version = 150) public HLEModuleFunction sceGeListUpdateStallAddrFunction;
-    @HLEFunction(nid = 0x03444EB4, version = 150) public HLEModuleFunction sceGeListSyncFunction;
-    @HLEFunction(nid = 0xB287BD61, version = 150) public HLEModuleFunction sceGeDrawSyncFunction;
-    @HLEFunction(nid = 0xB448EC0D, version = 150) public HLEModuleFunction sceGeBreakFunction;
-    @HLEFunction(nid = 0x4C06E472, version = 150) public HLEModuleFunction sceGeContinueFunction;
-    @HLEFunction(nid = 0xA4FC06A4, version = 150) public HLEModuleFunction sceGeSetCallbackFunction;
-    @HLEFunction(nid = 0x05DB22CE, version = 150) public HLEModuleFunction sceGeUnsetCallbackFunction;
+    }
 
 }

@@ -68,6 +68,7 @@ public class LoadExecForUser implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xBD2F1094, version = 150)
     public void sceKernelLoadExec(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -126,6 +127,7 @@ public class LoadExecForUser implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x2AC9954B, version = 150)
     public void sceKernelExitGameWithStatus(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -141,6 +143,7 @@ public class LoadExecForUser implements HLEModule {
         Modules.ThreadManForUserModule.stop();
     }
 
+    @HLEFunction(nid = 0x05572A5F, version = 150)
     public void sceKernelExitGame(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -154,6 +157,7 @@ public class LoadExecForUser implements HLEModule {
         Modules.ThreadManForUserModule.stop();
     }
 
+    @HLEFunction(nid = 0x4AC57943, version = 150)
     public void sceKernelRegisterExitCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -171,9 +175,6 @@ public class LoadExecForUser implements HLEModule {
         exitCbThread = threadMan.getCurrentThread();
 
         cpu.gpr[2] = 0;
-    }    @HLEFunction(nid = 0xBD2F1094, version = 150) public HLEModuleFunction sceKernelLoadExecFunction;
-    @HLEFunction(nid = 0x2AC9954B, version = 150) public HLEModuleFunction sceKernelExitGameWithStatusFunction;
-    @HLEFunction(nid = 0x05572A5F, version = 150) public HLEModuleFunction sceKernelExitGameFunction;
-    @HLEFunction(nid = 0x4AC57943, version = 150) public HLEModuleFunction sceKernelRegisterExitCallbackFunction;
+    }
 
 }

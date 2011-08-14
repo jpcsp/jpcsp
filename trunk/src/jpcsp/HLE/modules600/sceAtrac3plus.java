@@ -34,6 +34,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules250.sceAtrac3plus {
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
+    @HLEFunction(nid = 0x231FC6B7, version = 600)
     public void _sceAtracGetContextAddress(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -48,6 +49,5 @@ public class sceAtrac3plus extends jpcsp.HLE.modules250.sceAtrac3plus {
         // Always returns 0, but it may change the internal context address (at3IDNum).
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0x231FC6B7, version = 600) public HLEModuleFunction _sceAtracGetContextAddressFunction;
 
 }

@@ -52,6 +52,7 @@ public class sceMp4 implements HLEModule, HLEStartModule {
 	public void stop() {
 	}
 
+    @HLEFunction(nid = 0x68651CBC, version = 150)
     public void sceMp4Init(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -68,6 +69,7 @@ public class sceMp4 implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x9042B257, version = 150)
     public void sceMp4Finish(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -80,6 +82,7 @@ public class sceMp4 implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xB1221EE7, version = 150)
     public void sceMp4Create(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -92,6 +95,7 @@ public class sceMp4 implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x538C2057, version = 150)
     public void sceMp4Delete(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -103,12 +107,5 @@ public class sceMp4 implements HLEModule, HLEStartModule {
         }
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0x68651CBC, version = 150) public HLEModuleFunction sceMp4InitFunction;
-
-    @HLEFunction(nid = 0x9042B257, version = 150) public HLEModuleFunction sceMp4FinishFunction;
-
-    @HLEFunction(nid = 0xB1221EE7, version = 150) public HLEModuleFunction sceMp4CreateFunction;
-
-    @HLEFunction(nid = 0x538C2057, version = 150) public HLEModuleFunction sceMp4DeleteFunction;
 
 }

@@ -419,6 +419,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xC22C8327, version = 150)
     public void scePsmfSetPsmf(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -461,6 +462,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xC7DB3A5B, version = 150)
     public void scePsmfGetCurrentStreamType(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -489,6 +491,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x28240568, version = 150)
     public void scePsmfGetCurrentStreamNumber(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -510,6 +513,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x1E6D9013, version = 150)
     public void scePsmfSpecifyStreamWithStreamType(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -534,6 +538,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x4BC9BDE0, version = 150)
     public void scePsmfSpecifyStream(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -557,6 +562,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x76D3AEBA, version = 150)
     public void scePsmfGetPresentationStartTime(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -586,6 +592,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xBD8AE0D8, version = 150)
     public void scePsmfGetPresentationEndTime(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -615,6 +622,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xEAED89CD, version = 150)
     public void scePsmfGetNumberOfStreams(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -636,6 +644,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x7491C438, version = 150)
     public void scePsmfGetNumberOfEPentries(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -657,6 +666,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x0BA514E5, version = 150)
     public void scePsmfGetVideoInfo(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -684,6 +694,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xA83F7113, version = 150)
     public void scePsmfGetAudioInfo(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -711,6 +722,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x971A3A90, version = 150)
     public void scePsmfCheckEPmap(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -732,6 +744,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x4E624A34, version = 150)
     public void scePsmfGetEPWithId(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -769,6 +782,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x7C0E7AC3, version = 150)
     public void scePsmfGetEPWithTimestamp(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -810,6 +824,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x5F457515, version = 150)
     public void scePsmfGetEPidWithTimestamp(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -841,6 +856,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x5B70FCC1, version = 150)
     public void scePsmfQueryStreamOffset(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -865,6 +881,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x9553CC91, version = 150)
     public void scePsmfQueryStreamSize(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -892,6 +909,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         Modules.sceMpegModule.analyseMpeg(buffer_addr);
     }
 
+    @HLEFunction(nid = 0x68D42328, version = 150)
     public void scePsmfGetNumberOfSpecificStreams(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -917,6 +935,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x0C120E1D, version = 150)
     public void scePsmfSpecifyStreamWithStreamTypeNumber(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -941,6 +960,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x2673646B, version = 150)
     public void scePsmfVerifyPsmf(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -967,6 +987,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xB78EB9E9, version = 150)
     public void scePsmfGetHeaderSize(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -992,6 +1013,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xA5EBFE81, version = 150)
     public void scePsmfGetStreamSize(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1017,6 +1039,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xE1283895, version = 150)
     public void scePsmfGetPsmfVersion(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1037,28 +1060,5 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
         }
     }
-    @HLEFunction(nid = 0xC22C8327, version = 150) public HLEModuleFunction scePsmfSetPsmfFunction;
-    @HLEFunction(nid = 0xC7DB3A5B, version = 150) public HLEModuleFunction scePsmfGetCurrentStreamTypeFunction;
-    @HLEFunction(nid = 0x28240568, version = 150) public HLEModuleFunction scePsmfGetCurrentStreamNumberFunction;
-    @HLEFunction(nid = 0x1E6D9013, version = 150) public HLEModuleFunction scePsmfSpecifyStreamWithStreamTypeFunction;
-    @HLEFunction(nid = 0x4BC9BDE0, version = 150) public HLEModuleFunction scePsmfSpecifyStreamFunction;
-    @HLEFunction(nid = 0x76D3AEBA, version = 150) public HLEModuleFunction scePsmfGetPresentationStartTimeFunction;
-    @HLEFunction(nid = 0xBD8AE0D8, version = 150) public HLEModuleFunction scePsmfGetPresentationEndTimeFunction;
-    @HLEFunction(nid = 0xEAED89CD, version = 150) public HLEModuleFunction scePsmfGetNumberOfStreamsFunction;
-    @HLEFunction(nid = 0x7491C438, version = 150) public HLEModuleFunction scePsmfGetNumberOfEPentriesFunction;
-    @HLEFunction(nid = 0x0BA514E5, version = 150) public HLEModuleFunction scePsmfGetVideoInfoFunction;
-    @HLEFunction(nid = 0xA83F7113, version = 150) public HLEModuleFunction scePsmfGetAudioInfoFunction;
-    @HLEFunction(nid = 0x971A3A90, version = 150) public HLEModuleFunction scePsmfCheckEPmapFunction;
-    @HLEFunction(nid = 0x4E624A34, version = 150) public HLEModuleFunction scePsmfGetEPWithIdFunction;
-    @HLEFunction(nid = 0x7C0E7AC3, version = 150) public HLEModuleFunction scePsmfGetEPWithTimestampFunction;
-    @HLEFunction(nid = 0x5F457515, version = 150) public HLEModuleFunction scePsmfGetEPidWithTimestampFunction;
-    @HLEFunction(nid = 0x5B70FCC1, version = 150) public HLEModuleFunction scePsmfQueryStreamOffsetFunction;
-    @HLEFunction(nid = 0x9553CC91, version = 150) public HLEModuleFunction scePsmfQueryStreamSizeFunction;
-    @HLEFunction(nid = 0x68D42328, version = 150) public HLEModuleFunction scePsmfGetNumberOfSpecificStreamsFunction;
-    @HLEFunction(nid = 0x0C120E1D, version = 150) public HLEModuleFunction scePsmfSpecifyStreamWithStreamTypeNumberFunction;
-    @HLEFunction(nid = 0x2673646B, version = 150) public HLEModuleFunction scePsmfVerifyPsmfFunction;
-    @HLEFunction(nid = 0xB78EB9E9, version = 150) public HLEModuleFunction scePsmfGetHeaderSizeFunction;
-    @HLEFunction(nid = 0xA5EBFE81, version = 150) public HLEModuleFunction scePsmfGetStreamSizeFunction;
-    @HLEFunction(nid = 0xE1283895, version = 150) public HLEModuleFunction scePsmfGetPsmfVersionFunction;
 
 }

@@ -43,6 +43,7 @@ public class sceNp implements HLEModule {
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
+    @HLEFunction(nid = 0x857B47D3, version = 150)
     public void sceNp_857B47D3(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -54,6 +55,5 @@ public class sceNp implements HLEModule {
         }
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0x857B47D3, version = 150) public HLEModuleFunction sceNp_857B47D3Function;
 
 }

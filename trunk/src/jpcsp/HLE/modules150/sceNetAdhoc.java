@@ -48,6 +48,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return 0 on success, < 0 on error
      */
+    @HLEFunction(nid = 0xE1D621D7, version = 150)
     public void sceNetAdhocInit(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -65,6 +66,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return 0 on success, < 0 on error
      */
+    @HLEFunction(nid = 0xA62C6F57, version = 150)
     public void sceNetAdhocTerm(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -77,6 +79,7 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x7A662D6B, version = 150)
     public void sceNetAdhocPollSocket(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -85,6 +88,7 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x73BFD52D, version = 150)
     public void sceNetAdhocSetSocketAlert(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -93,6 +97,7 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x4D2CE199, version = 150)
     public void sceNetAdhocGetSocketAlert(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -111,6 +116,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return The ID of the PDP object (< 0 on error)
      */
+    @HLEFunction(nid = 0x6F92741B, version = 150)
     public void sceNetAdhocPdpCreate(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -132,6 +138,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return Bytes sent, < 0 on error
      */
+    @HLEFunction(nid = 0xABED3790, version = 150)
     public void sceNetAdhocPdpSend(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -153,6 +160,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return Number of bytes received, < 0 on error.
      */
+    @HLEFunction(nid = 0xDFE53E03, version = 150)
     public void sceNetAdhocPdpRecv(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -169,6 +177,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return 0 on success, < 0 on error
      */
+    @HLEFunction(nid = 0x7F27BB5E, version = 150)
     public void sceNetAdhocPdpDelete(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -194,6 +203,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return 0 on success, < 0 on error
      */
+    @HLEFunction(nid = 0xC7C1FC57, version = 150)
     public void sceNetAdhocGetPdpStat(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -216,6 +226,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return A socket ID on success, < 0 on error.
      */
+    @HLEFunction(nid = 0x877F6D66, version = 150)
     public void sceNetAdhocPtpOpen(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -233,6 +244,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return 0 on success, < 0 on error.
      */
+    @HLEFunction(nid = 0xFC6FC07B, version = 150)
     public void sceNetAdhocPtpConnect(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -254,6 +266,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return A socket ID on success, < 0 on error.
      */
+    @HLEFunction(nid = 0xE08BDAC1, version = 150)
     public void sceNetAdhocPtpListen(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -273,6 +286,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return 0 on success, < 0 on error.
      */
+    @HLEFunction(nid = 0x9DF81198, version = 150)
     public void sceNetAdhocPtpAccept(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -292,6 +306,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return 0 success, < 0 on error.
      */
+    @HLEFunction(nid = 0x4DA4C788, version = 150)
     public void sceNetAdhocPtpSend(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -311,6 +326,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return 0 on success, < 0 on error.
      */
+    @HLEFunction(nid = 0x8BEA2B3E, version = 150)
     public void sceNetAdhocPtpRecv(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -328,6 +344,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return A socket ID on success, < 0 on error.
      */
+    @HLEFunction(nid = 0x9AC2EEAC, version = 150)
     public void sceNetAdhocPtpFlush(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -344,6 +361,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return A socket ID on success, < 0 on error.
      */
+    @HLEFunction(nid = 0x157E6225, version = 150)
     public void sceNetAdhocPtpClose(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -373,6 +391,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return 0 on success, < 0 on error
      */
+    @HLEFunction(nid = 0xB9685118, version = 150)
     public void sceNetAdhocGetPtpStat(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -389,6 +408,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return 0 on success, < 0 on error.
      */
+    @HLEFunction(nid = 0x7F75C338, version = 150)
     public void sceNetAdhocGameModeCreateMaster(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -406,6 +426,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return The id of the replica on success, < 0 on error.
      */
+    @HLEFunction(nid = 0x3278AB0C, version = 150)
     public void sceNetAdhocGameModeCreateReplica(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -419,6 +440,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return 0 on success, < 0 on error.
      */
+    @HLEFunction(nid = 0x98C204C8, version = 150)
     public void sceNetAdhocGameModeUpdateMaster(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -435,6 +457,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return 0 on success, < 0 on error.
      */
+    @HLEFunction(nid = 0xFA324B4E, version = 150)
     public void sceNetAdhocGameModeUpdateReplica(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -448,6 +471,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return 0 on success, < 0 on error.
      */
+    @HLEFunction(nid = 0xA0229362, version = 150)
     public void sceNetAdhocGameModeDeleteMaster(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -463,6 +487,7 @@ public class sceNetAdhoc implements HLEModule {
      *
      * @return 0 on success, < 0 on error.
      */
+    @HLEFunction(nid = 0x0B2228E9, version = 150)
     public void sceNetAdhocGameModeDeleteReplica(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -470,54 +495,5 @@ public class sceNetAdhoc implements HLEModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-    @HLEFunction(nid = 0xE1D621D7, version = 150) public HLEModuleFunction sceNetAdhocInitFunction;
-
-    @HLEFunction(nid = 0xA62C6F57, version = 150) public HLEModuleFunction sceNetAdhocTermFunction;
-
-    @HLEFunction(nid = 0x7A662D6B, version = 150) public HLEModuleFunction sceNetAdhocPollSocketFunction;
-
-    @HLEFunction(nid = 0x73BFD52D, version = 150) public HLEModuleFunction sceNetAdhocSetSocketAlertFunction;
-
-    @HLEFunction(nid = 0x4D2CE199, version = 150) public HLEModuleFunction sceNetAdhocGetSocketAlertFunction;
-
-    @HLEFunction(nid = 0x6F92741B, version = 150) public HLEModuleFunction sceNetAdhocPdpCreateFunction;
-
-    @HLEFunction(nid = 0xABED3790, version = 150) public HLEModuleFunction sceNetAdhocPdpSendFunction;
-
-    @HLEFunction(nid = 0xDFE53E03, version = 150) public HLEModuleFunction sceNetAdhocPdpRecvFunction;
-
-    @HLEFunction(nid = 0x7F27BB5E, version = 150) public HLEModuleFunction sceNetAdhocPdpDeleteFunction;
-
-    @HLEFunction(nid = 0xC7C1FC57, version = 150) public HLEModuleFunction sceNetAdhocGetPdpStatFunction;
-
-    @HLEFunction(nid = 0x877F6D66, version = 150) public HLEModuleFunction sceNetAdhocPtpOpenFunction;
-
-    @HLEFunction(nid = 0xFC6FC07B, version = 150) public HLEModuleFunction sceNetAdhocPtpConnectFunction;
-
-    @HLEFunction(nid = 0xE08BDAC1, version = 150) public HLEModuleFunction sceNetAdhocPtpListenFunction;
-
-    @HLEFunction(nid = 0x9DF81198, version = 150) public HLEModuleFunction sceNetAdhocPtpAcceptFunction;
-
-    @HLEFunction(nid = 0x4DA4C788, version = 150) public HLEModuleFunction sceNetAdhocPtpSendFunction;
-
-    @HLEFunction(nid = 0x8BEA2B3E, version = 150) public HLEModuleFunction sceNetAdhocPtpRecvFunction;
-
-    @HLEFunction(nid = 0x9AC2EEAC, version = 150) public HLEModuleFunction sceNetAdhocPtpFlushFunction;
-
-    @HLEFunction(nid = 0x157E6225, version = 150) public HLEModuleFunction sceNetAdhocPtpCloseFunction;
-
-    @HLEFunction(nid = 0xB9685118, version = 150) public HLEModuleFunction sceNetAdhocGetPtpStatFunction;
-
-    @HLEFunction(nid = 0x7F75C338, version = 150) public HLEModuleFunction sceNetAdhocGameModeCreateMasterFunction;
-
-    @HLEFunction(nid = 0x3278AB0C, version = 150) public HLEModuleFunction sceNetAdhocGameModeCreateReplicaFunction;
-
-    @HLEFunction(nid = 0x98C204C8, version = 150) public HLEModuleFunction sceNetAdhocGameModeUpdateMasterFunction;
-
-    @HLEFunction(nid = 0xFA324B4E, version = 150) public HLEModuleFunction sceNetAdhocGameModeUpdateReplicaFunction;
-
-    @HLEFunction(nid = 0xA0229362, version = 150) public HLEModuleFunction sceNetAdhocGameModeDeleteMasterFunction;
-
-    @HLEFunction(nid = 0x0B2228E9, version = 150) public HLEModuleFunction sceNetAdhocGameModeDeleteReplicaFunction;
 
 }

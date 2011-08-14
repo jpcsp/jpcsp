@@ -41,6 +41,7 @@ public class sceDisplay extends jpcsp.HLE.modules150.sceDisplay {
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 	
+	@HLEFunction(nid = 0xBF79F646, version = 200)
 	public void sceDisplayGetResumeMode(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -49,6 +50,7 @@ public class sceDisplay extends jpcsp.HLE.modules150.sceDisplay {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
     
+	@HLEFunction(nid = 0x69B53541, version = 200)
 	public void sceDisplayGetVblankRest(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -57,6 +59,7 @@ public class sceDisplay extends jpcsp.HLE.modules150.sceDisplay {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
     
+	@HLEFunction(nid = 0x21038913, version = 200)
 	public void sceDisplayIsVsync(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -64,10 +67,5 @@ public class sceDisplay extends jpcsp.HLE.modules150.sceDisplay {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-    	@HLEFunction(nid = 0xBF79F646, version = 200) public HLEModuleFunction sceDisplayGetResumeModeFunction;
-
-    	@HLEFunction(nid = 0x69B53541, version = 200) public HLEModuleFunction sceDisplayGetVblankRestFunction;
-
-    	@HLEFunction(nid = 0x21038913, version = 200) public HLEModuleFunction sceDisplayIsVsyncFunction;
 
 }

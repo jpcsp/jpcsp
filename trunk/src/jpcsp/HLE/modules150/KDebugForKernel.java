@@ -42,6 +42,7 @@ public class KDebugForKernel implements HLEModule {
 	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 	
 	
+	@HLEFunction(nid = 0xE7A3874D, version = 150)
 	public void sceKernelRegisterAssertHandler(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -50,6 +51,7 @@ public class KDebugForKernel implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
     
+	@HLEFunction(nid = 0x2FF4E9F9, version = 150)
 	public void sceKernelAssert(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -58,6 +60,7 @@ public class KDebugForKernel implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
     
+	@HLEFunction(nid = 0x9B868276, version = 150)
 	public void sceKernelGetDebugPutchar(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -66,6 +69,7 @@ public class KDebugForKernel implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
     
+	@HLEFunction(nid = 0xE146606D, version = 150)
 	public void sceKernelRegisterDebugPutchar(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -74,6 +78,7 @@ public class KDebugForKernel implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
     
+	@HLEFunction(nid = 0x7CEB2C09, version = 150)
 	public void sceKernelRegisterKprintfHandler(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -82,6 +87,7 @@ public class KDebugForKernel implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
     
+	@HLEFunction(nid = 0x84F370BC, version = 150)
 	public void Kprintf(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -90,6 +96,7 @@ public class KDebugForKernel implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
     
+	@HLEFunction(nid = 0x5CE9838B, version = 150)
 	public void sceKernelDebugWrite(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -98,6 +105,7 @@ public class KDebugForKernel implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
     
+	@HLEFunction(nid = 0x66253C4E, version = 150)
 	public void sceKernelRegisterDebugWrite(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -106,6 +114,7 @@ public class KDebugForKernel implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
     
+	@HLEFunction(nid = 0xDBB5597F, version = 150)
 	public void sceKernelDebugRead(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -114,6 +123,7 @@ public class KDebugForKernel implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
     
+	@HLEFunction(nid = 0xE6554FDA, version = 150)
 	public void sceKernelRegisterDebugRead(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -122,6 +132,7 @@ public class KDebugForKernel implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
     
+	@HLEFunction(nid = 0xB9C643C9, version = 150)
 	public void sceKernelDebugEcho(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -130,6 +141,7 @@ public class KDebugForKernel implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
     
+	@HLEFunction(nid = 0x7D1C74F0, version = 150)
 	public void sceKernelDebugEchoSet(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -138,6 +150,7 @@ public class KDebugForKernel implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
     
+	@HLEFunction(nid = 0x24C32559, version = 150)
 	public void sceKernelDipsw(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -146,6 +159,7 @@ public class KDebugForKernel implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
     
+	@HLEFunction(nid = 0xD636B827, version = 150)
 	public void sceKernelDipswAll(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -154,6 +168,7 @@ public class KDebugForKernel implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
     
+	@HLEFunction(nid = 0x5282DD5E, version = 150)
 	public void sceKernelDipswSet(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -162,6 +177,7 @@ public class KDebugForKernel implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
     
+	@HLEFunction(nid = 0xEE75658D, version = 150)
 	public void sceKernelDipswClear(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -170,6 +186,7 @@ public class KDebugForKernel implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
     
+	@HLEFunction(nid = 0x9F8703E4, version = 150)
 	public void KDebugForKernel_9F8703E4(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -178,6 +195,7 @@ public class KDebugForKernel implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
     
+	@HLEFunction(nid = 0x333DCEC7, version = 150)
 	public void KDebugForKernel_333DCEC7(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -186,6 +204,7 @@ public class KDebugForKernel implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
     
+	@HLEFunction(nid = 0xE892D9A1, version = 150)
 	public void KDebugForKernel_E892D9A1(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -194,6 +213,7 @@ public class KDebugForKernel implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
     
+	@HLEFunction(nid = 0xA126F497, version = 150)
 	public void KDebugForKernel_A126F497(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -202,6 +222,7 @@ public class KDebugForKernel implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0xB7251823, version = 150)
 	public void KDebugForKernel_B7251823(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -209,46 +230,5 @@ public class KDebugForKernel implements HLEModule {
 
 		cpu.gpr[2] = 0;
 	}
-	@HLEFunction(nid = 0xE7A3874D, version = 150) public HLEModuleFunction sceKernelRegisterAssertHandlerFunction;
-
-	@HLEFunction(nid = 0x2FF4E9F9, version = 150) public HLEModuleFunction sceKernelAssertFunction;
-
-	@HLEFunction(nid = 0x9B868276, version = 150) public HLEModuleFunction sceKernelGetDebugPutcharFunction;
-
-	@HLEFunction(nid = 0xE146606D, version = 150) public HLEModuleFunction sceKernelRegisterDebugPutcharFunction;
-
-	@HLEFunction(nid = 0x7CEB2C09, version = 150) public HLEModuleFunction sceKernelRegisterKprintfHandlerFunction;
-
-	@HLEFunction(nid = 0x84F370BC, version = 150) public HLEModuleFunction KprintfFunction;
-
-	@HLEFunction(nid = 0x5CE9838B, version = 150) public HLEModuleFunction sceKernelDebugWriteFunction;
-
-	@HLEFunction(nid = 0x66253C4E, version = 150) public HLEModuleFunction sceKernelRegisterDebugWriteFunction;
-
-	@HLEFunction(nid = 0xDBB5597F, version = 150) public HLEModuleFunction sceKernelDebugReadFunction;
-
-	@HLEFunction(nid = 0xE6554FDA, version = 150) public HLEModuleFunction sceKernelRegisterDebugReadFunction;
-
-	@HLEFunction(nid = 0xB9C643C9, version = 150) public HLEModuleFunction sceKernelDebugEchoFunction;
-
-	@HLEFunction(nid = 0x7D1C74F0, version = 150) public HLEModuleFunction sceKernelDebugEchoSetFunction;
-
-	@HLEFunction(nid = 0x24C32559, version = 150) public HLEModuleFunction sceKernelDipswFunction;
-
-	@HLEFunction(nid = 0xD636B827, version = 150) public HLEModuleFunction sceKernelDipswAllFunction;
-
-	@HLEFunction(nid = 0x5282DD5E, version = 150) public HLEModuleFunction sceKernelDipswSetFunction;
-
-	@HLEFunction(nid = 0xEE75658D, version = 150) public HLEModuleFunction sceKernelDipswClearFunction;
-
-	@HLEFunction(nid = 0x9F8703E4, version = 150) public HLEModuleFunction KDebugForKernel_9F8703E4Function;
-
-	@HLEFunction(nid = 0x333DCEC7, version = 150) public HLEModuleFunction KDebugForKernel_333DCEC7Function;
-
-	@HLEFunction(nid = 0xE892D9A1, version = 150) public HLEModuleFunction KDebugForKernel_E892D9A1Function;
-
-	@HLEFunction(nid = 0xA126F497, version = 150) public HLEModuleFunction KDebugForKernel_A126F497Function;
-
-	@HLEFunction(nid = 0xB7251823, version = 150) public HLEModuleFunction KDebugForKernel_B7251823Function;
 
 };

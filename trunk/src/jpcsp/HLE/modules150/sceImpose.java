@@ -77,6 +77,7 @@ public class sceImpose implements HLEModule, HLEStartModule {
 
     private int backlightOffTime;
 
+	@HLEFunction(nid = 0x381BD9E7, version = 150)
 	public void sceImposeHomeButton(Processor processor) {
 	    CpuState cpu = processor.cpu;
 
@@ -85,6 +86,7 @@ public class sceImpose implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x5595A71A, version = 150)
 	public void sceImposeSetHomePopup(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -93,6 +95,7 @@ public class sceImpose implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x0F341BE4, version = 150)
 	public void sceImposeGetHomePopup(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -101,6 +104,7 @@ public class sceImpose implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x72189C48, version = 150)
 	public void sceImposeSetUMDPopup(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -113,6 +117,7 @@ public class sceImpose implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0xE0887BC8, version = 150)
 	public void sceImposeGetUMDPopup(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -121,6 +126,7 @@ public class sceImpose implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = umdPopupStatus;
 	}
 
+	@HLEFunction(nid = 0x36AA6E91, version = 150)
 	public void sceImposeSetLanguageMode(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -144,6 +150,7 @@ public class sceImpose implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0;
 	}
 
+    @HLEFunction(nid = 0x24FD7BCF, version = 150)
     public void sceImposeGetLanguageMode(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -166,6 +173,7 @@ public class sceImpose implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+	@HLEFunction(nid = 0x8C943191, version = 150)
 	public void sceImposeGetBatteryIconStatus(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -187,6 +195,7 @@ public class sceImpose implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0;
 	}
 
+    @HLEFunction(nid = 0x8F6E3518, version = 150)
     public void sceImposeGetBacklightOffTime(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -195,6 +204,7 @@ public class sceImpose implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = backlightOffTime;
 	}
 
+    @HLEFunction(nid = 0x967F6D4A, version = 150)
     public void sceImposeSetBacklightOffTime(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -206,24 +216,5 @@ public class sceImpose implements HLEModule, HLEStartModule {
 
 		cpu.gpr[2] = 0;
 	}
-	@HLEFunction(nid = 0x381BD9E7, version = 150) public HLEModuleFunction sceImposeHomeButtonFunction;
-
-	@HLEFunction(nid = 0x5595A71A, version = 150) public HLEModuleFunction sceImposeSetHomePopupFunction;
-
-	@HLEFunction(nid = 0x0F341BE4, version = 150) public HLEModuleFunction sceImposeGetHomePopupFunction;
-
-	@HLEFunction(nid = 0x72189C48, version = 150) public HLEModuleFunction sceImposeSetUMDPopupFunction;
-
-	@HLEFunction(nid = 0xE0887BC8, version = 150) public HLEModuleFunction sceImposeGetUMDPopupFunction;
-
-	@HLEFunction(nid = 0x36AA6E91, version = 150) public HLEModuleFunction sceImposeSetLanguageModeFunction;
-
-	@HLEFunction(nid = 0x24FD7BCF, version = 150) public HLEModuleFunction sceImposeGetLanguageModeFunction;
-
-	@HLEFunction(nid = 0x8C943191, version = 150) public HLEModuleFunction sceImposeGetBatteryIconStatusFunction;
-
-    @HLEFunction(nid = 0x8F6E3518, version = 150) public HLEModuleFunction sceImposeGetBacklightOffTimeFunction;
-
-    @HLEFunction(nid = 0x967F6D4A, version = 150) public HLEModuleFunction sceImposeSetBacklightOffTimeFunction;
 
 }

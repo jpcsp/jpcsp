@@ -80,6 +80,7 @@ public class sceNetResolver implements HLEModule {
 	 *
 	 * @return 0 on sucess, < 0 on error.
 	 */
+	@HLEFunction(nid = 0xF3370E61, version = 150)
 	public void sceNetResolverInit(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -95,6 +96,7 @@ public class sceNetResolver implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x6138194A, version = 150)
 	public void sceNetResolverTerm(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -114,6 +116,7 @@ public class sceNetResolver implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x244172AF, version = 150)
 	public void sceNetResolverCreate(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -141,6 +144,7 @@ public class sceNetResolver implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x94523E09, version = 150)
 	public void sceNetResolverDelete(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -164,6 +168,7 @@ public class sceNetResolver implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x224C5F44, version = 150)
 	public void sceNetResolverStartNtoA(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -207,6 +212,7 @@ public class sceNetResolver implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x629E2FB7, version = 150)
 	public void sceNetResolverStartAtoN(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -244,6 +250,7 @@ public class sceNetResolver implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x808F6063, version = 150)
 	public void sceNetResolverStop(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -266,6 +273,7 @@ public class sceNetResolver implements HLEModule {
         }
 	}
 
+    @HLEFunction(nid = 0x14C17EF9, version = 150)
     public void sceNetResolverStartNtoAAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -274,6 +282,7 @@ public class sceNetResolver implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xAAC09184, version = 150)
     public void sceNetResolverStartAtoNAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -282,6 +291,7 @@ public class sceNetResolver implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x4EE99358, version = 150)
     public void sceNetResolverPollAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -290,6 +300,7 @@ public class sceNetResolver implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x12748EB9, version = 150)
     public void sceNetResolverWaitAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -297,26 +308,5 @@ public class sceNetResolver implements HLEModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-	@HLEFunction(nid = 0xF3370E61, version = 150) public HLEModuleFunction sceNetResolverInitFunction;
-
-	@HLEFunction(nid = 0x6138194A, version = 150) public HLEModuleFunction sceNetResolverTermFunction;
-
-	@HLEFunction(nid = 0x244172AF, version = 150) public HLEModuleFunction sceNetResolverCreateFunction;
-
-	@HLEFunction(nid = 0x94523E09, version = 150) public HLEModuleFunction sceNetResolverDeleteFunction;
-
-	@HLEFunction(nid = 0x224C5F44, version = 150) public HLEModuleFunction sceNetResolverStartNtoAFunction;
-
-	@HLEFunction(nid = 0x629E2FB7, version = 150) public HLEModuleFunction sceNetResolverStartAtoNFunction;
-
-	@HLEFunction(nid = 0x808F6063, version = 150) public HLEModuleFunction sceNetResolverStopFunction;
-
-    @HLEFunction(nid = 0x14C17EF9, version = 150) public HLEModuleFunction sceNetResolverStartNtoAAsyncFunction;
-
-    @HLEFunction(nid = 0xAAC09184, version = 150) public HLEModuleFunction sceNetResolverStartAtoNAsyncFunction;
-
-    @HLEFunction(nid = 0x4EE99358, version = 150) public HLEModuleFunction sceNetResolverPollAsyncFunction;
-
-    @HLEFunction(nid = 0x12748EB9, version = 150) public HLEModuleFunction sceNetResolverWaitAsyncFunction;
 
 };

@@ -46,6 +46,7 @@ public class sceOpenPSID implements HLEModule {
 
     protected int[] dummyOpenPSID = {0x10, 0x02, 0xA3, 0x44, 0x13, 0xF5, 0x93, 0xB0, 0xCC, 0x6E, 0xD1, 0x32, 0x27, 0x85, 0x0F, 0x9D};
 
+    @HLEFunction(nid = 0xC69BEBCE, version = 150)
     public void sceOpenPSIDGetOpenPSID(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -67,6 +68,5 @@ public class sceOpenPSID implements HLEModule {
         }
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0xC69BEBCE, version = 150) public HLEModuleFunction sceOpenPSIDGetOpenPSIDFunction;
 
 }

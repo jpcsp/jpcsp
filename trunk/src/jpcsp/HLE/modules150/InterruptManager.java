@@ -40,26 +40,31 @@ public class InterruptManager implements HLEModule {
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 	
+	@HLEFunction(nid = 0xCA04A2B9, version = 150)
 	public void sceKernelRegisterSubIntrHandler(Processor processor) {
 		int[] gpr = processor.cpu.gpr;
 		gpr[2] = Managers.intr.sceKernelRegisterSubIntrHandler(gpr[4], gpr[5], gpr[6], gpr[7]);
 	}
     
+	@HLEFunction(nid = 0xD61E6961, version = 150)
 	public void sceKernelReleaseSubIntrHandler(Processor processor) {
 		int[] gpr = processor.cpu.gpr;
 		gpr[2] = Managers.intr.sceKernelReleaseSubIntrHandler(gpr[4], gpr[5]);
 	}
     
+	@HLEFunction(nid = 0xFB8E22EC, version = 150)
 	public void sceKernelEnableSubIntr(Processor processor) {
 		int[] gpr = processor.cpu.gpr;
 		gpr[2] = Managers.intr.sceKernelEnableSubIntr(gpr[4], gpr[5]);
 	}
     
+	@HLEFunction(nid = 0x8A389411, version = 150)
 	public void sceKernelDisableSubIntr(Processor processor) {
 		int[] gpr = processor.cpu.gpr;
 		gpr[2] = Managers.intr.sceKernelDisableSubIntr(gpr[4], gpr[5]);
 	}
     
+	@HLEFunction(nid = 0x5CB5A78B, version = 150)
 	public void sceKernelSuspendSubIntr(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -68,6 +73,7 @@ public class InterruptManager implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
     
+	@HLEFunction(nid = 0x7860E0DC, version = 150)
 	public void sceKernelResumeSubIntr(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -76,6 +82,7 @@ public class InterruptManager implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
     
+	@HLEFunction(nid = 0xFC4374B8, version = 150)
 	public void sceKernelIsSubInterruptOccurred(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -84,6 +91,7 @@ public class InterruptManager implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
     
+	@HLEFunction(nid = 0xD2E8363F, version = 150)
 	public void QueryIntrHandlerInfo(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -92,6 +100,7 @@ public class InterruptManager implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
     
+	@HLEFunction(nid = 0xEEE43F47, version = 150)
 	public void sceKernelRegisterUserSpaceIntrStack(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -99,22 +108,5 @@ public class InterruptManager implements HLEModule {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-	@HLEFunction(nid = 0xCA04A2B9, version = 150) public HLEModuleFunction sceKernelRegisterSubIntrHandlerFunction;
-
-	@HLEFunction(nid = 0xD61E6961, version = 150) public HLEModuleFunction sceKernelReleaseSubIntrHandlerFunction;
-
-	@HLEFunction(nid = 0xFB8E22EC, version = 150) public HLEModuleFunction sceKernelEnableSubIntrFunction;
-
-	@HLEFunction(nid = 0x8A389411, version = 150) public HLEModuleFunction sceKernelDisableSubIntrFunction;
-
-	@HLEFunction(nid = 0x5CB5A78B, version = 150) public HLEModuleFunction sceKernelSuspendSubIntrFunction;
-
-	@HLEFunction(nid = 0x7860E0DC, version = 150) public HLEModuleFunction sceKernelResumeSubIntrFunction;
-
-	@HLEFunction(nid = 0xFC4374B8, version = 150) public HLEModuleFunction sceKernelIsSubInterruptOccurredFunction;
-
-	@HLEFunction(nid = 0xD2E8363F, version = 150) public HLEModuleFunction QueryIntrHandlerInfoFunction;
-
-	@HLEFunction(nid = 0xEEE43F47, version = 150) public HLEModuleFunction sceKernelRegisterUserSpaceIntrStackFunction;
 
 }

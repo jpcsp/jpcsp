@@ -116,6 +116,7 @@ public class sceNetAdhocctl implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xE26F226E, version = 150)
     public void sceNetAdhocctlInit(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -138,6 +139,7 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x9D689E13, version = 150)
     public void sceNetAdhocctlTerm(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -150,6 +152,7 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x0AD043ED, version = 150)
     public void sceNetAdhocctlConnect(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -171,6 +174,7 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xEC0635C1, version = 150)
     public void sceNetAdhocctlCreate(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -192,6 +196,7 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x5E7F79C9, version = 150)
     public void sceNetAdhocctlJoin(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -222,6 +227,7 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x08FFF7A0, version = 150)
     public void sceNetAdhocctlScan(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -236,6 +242,7 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x34401D65, version = 150)
     public void sceNetAdhocctlDisconnect(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -250,6 +257,7 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x20B317A0, version = 150)
     public void sceNetAdhocctlAddHandler(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -268,6 +276,7 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = handle;
     }
 
+    @HLEFunction(nid = 0x6402490B, version = 150)
     public void sceNetAdhocctlDelHandler(Processor processor) {
        CpuState cpu = processor.cpu;
 
@@ -283,6 +292,7 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x75ECD386, version = 150)
     public void sceNetAdhocctlGetState(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -301,6 +311,7 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x362CBE8F, version = 150)
     public void sceNetAdhocctlGetAdhocId(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -309,6 +320,7 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xE162CB14, version = 150)
     public void sceNetAdhocctlGetPeerList(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -317,6 +329,7 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x8DB83FDC, version = 150)
     public void sceNetAdhocctlGetPeerInfo(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -325,6 +338,7 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x99560ABE, version = 150)
     public void sceNetAdhocctlGetAddrByName(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -333,6 +347,7 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x8916C003, version = 150)
     public void sceNetAdhocctlGetNameByAddr(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -341,6 +356,7 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xDED9D28E, version = 150)
     public void sceNetAdhocctlGetParameter(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -349,6 +365,7 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x81AEE1BE, version = 150)
     public void sceNetAdhocctlGetScanInfo(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -357,6 +374,7 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xA5C055CE, version = 150)
     public void sceNetAdhocctlCreateEnterGameMode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -365,6 +383,7 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xB0B80E80, version = 150)
     public void sceNetAdhocctlCreateEnterGameModeMin(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -373,6 +392,7 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x1FF89745, version = 150)
     public void sceNetAdhocctlJoinEnterGameMode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -381,6 +401,7 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xCF8E084D, version = 150)
     public void sceNetAdhocctlExitGameMode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -389,33 +410,13 @@ public class sceNetAdhocctl implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x5A014CE0, version = 150)
     public void sceNetAdhocctlGetGameModeInfo(Processor processor) {
         CpuState cpu = processor.cpu;
 
         log.warn("UNIMPLEMENTED: sceNetAdhocctlGetGameModeInfo");
 
         cpu.gpr[2] = 0xDEADC0DE;
-    }    @HLEFunction(nid = 0xE26F226E, version = 150) public HLEModuleFunction sceNetAdhocctlInitFunction;
-    @HLEFunction(nid = 0x9D689E13, version = 150) public HLEModuleFunction sceNetAdhocctlTermFunction;
-    @HLEFunction(nid = 0x0AD043ED, version = 150) public HLEModuleFunction sceNetAdhocctlConnectFunction;
-    @HLEFunction(nid = 0xEC0635C1, version = 150) public HLEModuleFunction sceNetAdhocctlCreateFunction;
-    @HLEFunction(nid = 0x5E7F79C9, version = 150) public HLEModuleFunction sceNetAdhocctlJoinFunction;
-    @HLEFunction(nid = 0x08FFF7A0, version = 150) public HLEModuleFunction sceNetAdhocctlScanFunction;
-    @HLEFunction(nid = 0x34401D65, version = 150) public HLEModuleFunction sceNetAdhocctlDisconnectFunction;
-    @HLEFunction(nid = 0x20B317A0, version = 150) public HLEModuleFunction sceNetAdhocctlAddHandlerFunction;
-    @HLEFunction(nid = 0x6402490B, version = 150) public HLEModuleFunction sceNetAdhocctlDelHandlerFunction;
-    @HLEFunction(nid = 0x75ECD386, version = 150) public HLEModuleFunction sceNetAdhocctlGetStateFunction;
-    @HLEFunction(nid = 0x362CBE8F, version = 150) public HLEModuleFunction sceNetAdhocctlGetAdhocIdFunction;
-    @HLEFunction(nid = 0xE162CB14, version = 150) public HLEModuleFunction sceNetAdhocctlGetPeerListFunction;
-    @HLEFunction(nid = 0x8DB83FDC, version = 150) public HLEModuleFunction sceNetAdhocctlGetPeerInfoFunction;
-    @HLEFunction(nid = 0x99560ABE, version = 150) public HLEModuleFunction sceNetAdhocctlGetAddrByNameFunction;
-    @HLEFunction(nid = 0x8916C003, version = 150) public HLEModuleFunction sceNetAdhocctlGetNameByAddrFunction;
-    @HLEFunction(nid = 0xDED9D28E, version = 150) public HLEModuleFunction sceNetAdhocctlGetParameterFunction;
-    @HLEFunction(nid = 0x81AEE1BE, version = 150) public HLEModuleFunction sceNetAdhocctlGetScanInfoFunction;
-    @HLEFunction(nid = 0xA5C055CE, version = 150) public HLEModuleFunction sceNetAdhocctlCreateEnterGameModeFunction;
-    @HLEFunction(nid = 0xB0B80E80, version = 150) public HLEModuleFunction sceNetAdhocctlCreateEnterGameModeMinFunction;
-    @HLEFunction(nid = 0x1FF89745, version = 150) public HLEModuleFunction sceNetAdhocctlJoinEnterGameModeFunction;
-    @HLEFunction(nid = 0xCF8E084D, version = 150) public HLEModuleFunction sceNetAdhocctlExitGameModeFunction;
-    @HLEFunction(nid = 0x5A014CE0, version = 150) public HLEModuleFunction sceNetAdhocctlGetGameModeInfoFunction;
+    }
 
 }

@@ -56,6 +56,7 @@ public class sceHeap implements HLEModule {
     private HashMap<Integer, SysMemInfo> heapMap = new HashMap<Integer, SysMemInfo>();
     private HashMap<Integer, SysMemInfo> heapMemMap = new HashMap<Integer, SysMemInfo>();
 
+    @HLEFunction(nid = 0x0E875980, version = 500)
     public void sceHeapReallocHeapMemory(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -75,6 +76,7 @@ public class sceHeap implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x1C84B58D, version = 500)
     public void sceHeapReallocHeapMemoryWithOption(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -96,6 +98,7 @@ public class sceHeap implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x2ABADC63, version = 500)
     public void sceHeapFreeHeapMemory(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -122,6 +125,7 @@ public class sceHeap implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x2A0C2009, version = 500)
     public void sceHeapGetMallinfo(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -139,6 +143,7 @@ public class sceHeap implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x2B7299D8, version = 500)
     public void sceHeapAllocHeapMemoryWithOption(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -183,6 +188,7 @@ public class sceHeap implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x4929B40D, version = 500)
     public void sceHeapGetTotalFreeSize(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -198,6 +204,7 @@ public class sceHeap implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x7012BBDD, version = 500)
     public void sceHeapIsAllocatedHeapMemory(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -215,6 +222,7 @@ public class sceHeap implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x70210B73, version = 500)
     public void sceHeapDeleteHeap(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -236,6 +244,7 @@ public class sceHeap implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x7DE281C2, version = 500)
     public void sceHeapCreateHeap(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -280,6 +289,7 @@ public class sceHeap implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xA8E102A0, version = 500)
     public void sceHeapAllocHeapMemory(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -309,24 +319,5 @@ public class sceHeap implements HLEModule {
             cpu.gpr[2] = 0;
         }
     }
-    @HLEFunction(nid = 0x0E875980, version = 500) public HLEModuleFunction sceHeapReallocHeapMemoryFunction;
-
-    @HLEFunction(nid = 0x1C84B58D, version = 500) public HLEModuleFunction sceHeapReallocHeapMemoryWithOptionFunction;
-
-    @HLEFunction(nid = 0x2ABADC63, version = 500) public HLEModuleFunction sceHeapFreeHeapMemoryFunction;
-
-    @HLEFunction(nid = 0x2A0C2009, version = 500) public HLEModuleFunction sceHeapGetMallinfoFunction;
-
-    @HLEFunction(nid = 0x2B7299D8, version = 500) public HLEModuleFunction sceHeapAllocHeapMemoryWithOptionFunction;
-
-    @HLEFunction(nid = 0x4929B40D, version = 500) public HLEModuleFunction sceHeapGetTotalFreeSizeFunction;
-
-    @HLEFunction(nid = 0x7012BBDD, version = 500) public HLEModuleFunction sceHeapIsAllocatedHeapMemoryFunction;
-
-    @HLEFunction(nid = 0x70210B73, version = 500) public HLEModuleFunction sceHeapDeleteHeapFunction;
-
-    @HLEFunction(nid = 0x7DE281C2, version = 500) public HLEModuleFunction sceHeapCreateHeapFunction;
-
-    @HLEFunction(nid = 0xA8E102A0, version = 500) public HLEModuleFunction sceHeapAllocHeapMemoryFunction;
 
 }

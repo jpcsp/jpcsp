@@ -190,6 +190,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x17F7B2FB, version = 271)
 	public void sceUsbCamSetupVideo(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -227,6 +228,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0xF93C4669, version = 271)
 	public void sceUsbCamAutoImageReverseSW(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -244,6 +246,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x574A8C3F, version = 271)
 	public void sceUsbCamStartVideo(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -259,6 +262,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	*/
+	@HLEFunction(nid = 0x6CF32CB9, version = 271)
 	public void sceUsbCamStopVideo(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -269,6 +273,7 @@ public class sceUsbCam implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x03ED7A82, version = 271)
 	public void sceUsbCamSetupMic(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -277,6 +282,7 @@ public class sceUsbCam implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x82A64030, version = 271)
 	public void sceUsbCamStartMic(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -296,6 +302,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return size of acquired frame on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x7DAC0C71, version = 271)
 	public void sceUsbCamReadVideoFrameBlocking(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -320,6 +327,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x99D86281, version = 271)
 	public void sceUsbCamReadVideoFrame(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -340,6 +348,7 @@ public class sceUsbCam implements HLEModule {
 	 * @return the size of the acquired frame if it has been read,
 	 * 0 if the frame has not yet been read, < 0 on error.
 	 */
+	@HLEFunction(nid = 0x41E73E95, version = 271)
 	public void sceUsbCamPollReadVideoFrameEnd(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -353,6 +362,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return the size of the acquired frame on sucess, < 0 on error
 	 */
+	@HLEFunction(nid = 0xF90B2293, version = 271)
 	public void sceUsbCamWaitReadVideoFrameEnd(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -367,6 +377,7 @@ public class sceUsbCam implements HLEModule {
 	 * @return 1 if the camera is "looking to you", 0 if the camera
 	 * is "looking to the other side".
 	 */
+	@HLEFunction(nid = 0x4C34F553, version = 271)
 	public void sceUsbCamGetLensDirection(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -382,6 +393,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x3F0CF289, version = 271)
 	public void sceUsbCamSetupStill(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -402,6 +414,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x0A41A298, version = 271)
 	public void sceUsbCamSetupStillEx(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -424,6 +437,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return size of acquired image on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x61BE5CAC, version = 271)
 	public void sceUsbCamStillInputBlocking(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -445,6 +459,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0xFB0A6C5D, version = 271)
 	public void sceUsbCamStillInput(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -461,6 +476,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return the size of the acquired image on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x7563AFA1, version = 271)
 	public void sceUsbCamStillWaitInputEnd(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -475,6 +491,7 @@ public class sceUsbCam implements HLEModule {
 	 * @return the size of the acquired image if still input has ended,
 	 * 0 if the input has not ended, < 0 on error.
 	 */
+	@HLEFunction(nid = 0x1A46CFE7, version = 271)
 	public void sceUsbCamStillPollInputEnd(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -488,6 +505,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0xA720937C, version = 271)
 	public void sceUsbCamStillCancelInput(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -501,6 +519,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return the size of the acquired image on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0xE5959C36, version = 271)
 	public void sceUsbCamStillGetInputLength(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -518,6 +537,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0xCFE9E999, version = 271)
 	public void sceUsbCamSetupVideoEx(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -552,6 +572,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return the size of the acquired frame on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0xDF9D0C92, version = 271)
 	public void sceUsbCamGetReadVideoFrameSize(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -567,6 +588,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x6E205974, version = 271)
 	public void sceUsbCamSetSaturation(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -586,6 +608,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x4F3D84D5, version = 271)
 	public void sceUsbCamSetBrightness(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -605,6 +628,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x09C26C7E, version = 271)
 	public void sceUsbCamSetContrast(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -624,6 +648,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x622F83CC, version = 271)
 	public void sceUsbCamSetSharpness(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -643,6 +668,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0xD4876173, version = 271)
 	public void sceUsbCamSetImageEffectMode(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -662,6 +688,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x1D686870, version = 271)
 	public void sceUsbCamSetEvLevel(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -681,6 +708,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x951BEDF5, version = 271)
 	public void sceUsbCamSetReverseMode(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -701,6 +729,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @returns 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0xC484901F, version = 271)
 	public void sceUsbCamSetZoom(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -720,6 +749,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x383E9FA8, version = 271)
 	public void sceUsbCamGetSaturation(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -739,6 +769,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x70F522C5, version = 271)
 	public void sceUsbCamGetBrightness(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -758,6 +789,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0xA063A957, version = 271)
 	public void sceUsbCamGetContrast(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -777,6 +809,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0xFDB68C23, version = 271)
 	public void sceUsbCamGetSharpness(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -796,6 +829,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x994471E0, version = 271)
 	public void sceUsbCamGetImageEffectMode(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -815,6 +849,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x2BCD50C0, version = 271)
 	public void sceUsbCamGetEvLevel(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -834,6 +869,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0xD5279339, version = 271)
 	public void sceUsbCamGetReverseMode(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -861,6 +897,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x9E8AAF8D, version = 271)
 	public void sceUsbCamGetZoom(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -878,6 +915,7 @@ public class sceUsbCam implements HLEModule {
 	 *
 	 * @return 1 if it is set to automatic, 0 otherwise
 	 */
+	@HLEFunction(nid = 0x11A1F128, version = 271)
 	public void sceUsbCamGetAutoImageReverseState(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -886,6 +924,7 @@ public class sceUsbCam implements HLEModule {
 		cpu.gpr[2] = autoImageReverseSW ? 1 : 0;
 	}
 
+	@HLEFunction(nid = 0x08AEE98A, version = 271)
 	public void sceUsbCamSetMicGain(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -894,6 +933,7 @@ public class sceUsbCam implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x2E930264, version = 271)
 	public void sceUsbCamSetupMicEx(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -902,6 +942,7 @@ public class sceUsbCam implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x36636925, version = 271)
 	public void sceUsbCamReadMicBlocking(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -910,6 +951,7 @@ public class sceUsbCam implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x3DC0088E, version = 271)
 	public void sceUsbCamReadMic(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -918,6 +960,7 @@ public class sceUsbCam implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x41EE8797, version = 271)
 	public void sceUsbCamUnregisterLensRotationCallback(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -926,6 +969,7 @@ public class sceUsbCam implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x5145868A, version = 271)
 	public void sceUsbCamStopMic(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -934,6 +978,7 @@ public class sceUsbCam implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x5778B452, version = 271)
 	public void sceUsbCamGetMicDataLength(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -942,6 +987,7 @@ public class sceUsbCam implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x6784E6A8, version = 271)
 	public void sceUsbCamSetAntiFlicker(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -950,6 +996,7 @@ public class sceUsbCam implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0xAA7D94BA, version = 271)
 	public void sceUsbCamGetAntiFlicker(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -958,6 +1005,7 @@ public class sceUsbCam implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0xB048A67D, version = 271)
 	public void sceUsbCamWaitReadMicEnd(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -966,6 +1014,7 @@ public class sceUsbCam implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0xD293A100, version = 271)
 	public void sceUsbCamRegisterLensRotationCallback(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -974,6 +1023,7 @@ public class sceUsbCam implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0xF8847F60, version = 271)
 	public void sceUsbCamPollReadMicEnd(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -981,105 +1031,5 @@ public class sceUsbCam implements HLEModule {
 
 		cpu.gpr[2] = 0;
 	}
-
-	@HLEFunction(nid = 0x99D86281, version = 271) public HLEModuleFunction sceUsbCamReadVideoFrameFunction;
-
-	@HLEFunction(nid = 0x17F7B2FB, version = 271) public HLEModuleFunction sceUsbCamSetupVideoFunction;
-
-	@HLEFunction(nid = 0xF93C4669, version = 271) public HLEModuleFunction sceUsbCamAutoImageReverseSWFunction;
-
-	@HLEFunction(nid = 0x574A8C3F, version = 271) public HLEModuleFunction sceUsbCamStartVideoFunction;
-
-	@HLEFunction(nid = 0x6CF32CB9, version = 271) public HLEModuleFunction sceUsbCamStopVideoFunction;
-
-	@HLEFunction(nid = 0x03ED7A82, version = 271) public HLEModuleFunction sceUsbCamSetupMicFunction;
-
-	@HLEFunction(nid = 0x82A64030, version = 271) public HLEModuleFunction sceUsbCamStartMicFunction;
-
-	@HLEFunction(nid = 0x41E73E95, version = 271) public HLEModuleFunction sceUsbCamPollReadVideoFrameEndFunction;
-
-	@HLEFunction(nid = 0x7DAC0C71, version = 271) public HLEModuleFunction sceUsbCamReadVideoFrameBlockingFunction;
-
-	@HLEFunction(nid = 0xF90B2293, version = 271) public HLEModuleFunction sceUsbCamWaitReadVideoFrameEndFunction;
-
-	@HLEFunction(nid = 0xD4876173, version = 271) public HLEModuleFunction sceUsbCamSetImageEffectModeFunction;
-
-	@HLEFunction(nid = 0x4C34F553, version = 271) public HLEModuleFunction sceUsbCamGetLensDirectionFunction;
-
-	@HLEFunction(nid = 0x08AEE98A, version = 271) public HLEModuleFunction sceUsbCamSetMicGainFunction;
-
-	@HLEFunction(nid = 0x09C26C7E, version = 271) public HLEModuleFunction sceUsbCamSetContrastFunction;
-
-	@HLEFunction(nid = 0x0A41A298, version = 271) public HLEModuleFunction sceUsbCamSetupStillExFunction;
-
-	@HLEFunction(nid = 0x11A1F128, version = 271) public HLEModuleFunction sceUsbCamGetAutoImageReverseStateFunction;
-
-	@HLEFunction(nid = 0x1A46CFE7, version = 271) public HLEModuleFunction sceUsbCamStillPollInputEndFunction;
-
-	@HLEFunction(nid = 0x1D686870, version = 271) public HLEModuleFunction sceUsbCamSetEvLevelFunction;
-
-	@HLEFunction(nid = 0x2BCD50C0, version = 271) public HLEModuleFunction sceUsbCamGetEvLevelFunction;
-
-	@HLEFunction(nid = 0x2E930264, version = 271) public HLEModuleFunction sceUsbCamSetupMicExFunction;
-
-	@HLEFunction(nid = 0x36636925, version = 271) public HLEModuleFunction sceUsbCamReadMicBlockingFunction;
-
-	@HLEFunction(nid = 0x383E9FA8, version = 271) public HLEModuleFunction sceUsbCamGetSaturationFunction;
-
-	@HLEFunction(nid = 0x3DC0088E, version = 271) public HLEModuleFunction sceUsbCamReadMicFunction;
-
-	@HLEFunction(nid = 0x3F0CF289, version = 271) public HLEModuleFunction sceUsbCamSetupStillFunction;
-
-	@HLEFunction(nid = 0x41EE8797, version = 271) public HLEModuleFunction sceUsbCamUnregisterLensRotationCallbackFunction;
-
-	@HLEFunction(nid = 0x4F3D84D5, version = 271) public HLEModuleFunction sceUsbCamSetBrightnessFunction;
-
-	@HLEFunction(nid = 0x5145868A, version = 271) public HLEModuleFunction sceUsbCamStopMicFunction;
-
-	@HLEFunction(nid = 0x5778B452, version = 271) public HLEModuleFunction sceUsbCamGetMicDataLengthFunction;
-
-	@HLEFunction(nid = 0x61BE5CAC, version = 271) public HLEModuleFunction sceUsbCamStillInputBlockingFunction;
-
-	@HLEFunction(nid = 0x622F83CC, version = 271) public HLEModuleFunction sceUsbCamSetSharpnessFunction;
-
-	@HLEFunction(nid = 0x6784E6A8, version = 271) public HLEModuleFunction sceUsbCamSetAntiFlickerFunction;
-
-	@HLEFunction(nid = 0x6E205974, version = 271) public HLEModuleFunction sceUsbCamSetSaturationFunction;
-
-	@HLEFunction(nid = 0x70F522C5, version = 271) public HLEModuleFunction sceUsbCamGetBrightnessFunction;
-
-	@HLEFunction(nid = 0x7563AFA1, version = 271) public HLEModuleFunction sceUsbCamStillWaitInputEndFunction;
-
-	@HLEFunction(nid = 0x951BEDF5, version = 271) public HLEModuleFunction sceUsbCamSetReverseModeFunction;
-
-	@HLEFunction(nid = 0x994471E0, version = 271) public HLEModuleFunction sceUsbCamGetImageEffectModeFunction;
-
-	@HLEFunction(nid = 0x9E8AAF8D, version = 271) public HLEModuleFunction sceUsbCamGetZoomFunction;
-
-	@HLEFunction(nid = 0xA063A957, version = 271) public HLEModuleFunction sceUsbCamGetContrastFunction;
-
-	@HLEFunction(nid = 0xA720937C, version = 271) public HLEModuleFunction sceUsbCamStillCancelInputFunction;
-
-	@HLEFunction(nid = 0xAA7D94BA, version = 271) public HLEModuleFunction sceUsbCamGetAntiFlickerFunction;
-
-	@HLEFunction(nid = 0xB048A67D, version = 271) public HLEModuleFunction sceUsbCamWaitReadMicEndFunction;
-
-	@HLEFunction(nid = 0xC484901F, version = 271) public HLEModuleFunction sceUsbCamSetZoomFunction;
-
-	@HLEFunction(nid = 0xCFE9E999, version = 271) public HLEModuleFunction sceUsbCamSetupVideoExFunction;
-
-	@HLEFunction(nid = 0xD293A100, version = 271) public HLEModuleFunction sceUsbCamRegisterLensRotationCallbackFunction;
-
-	@HLEFunction(nid = 0xD5279339, version = 271) public HLEModuleFunction sceUsbCamGetReverseModeFunction;
-
-	@HLEFunction(nid = 0xDF9D0C92, version = 271) public HLEModuleFunction sceUsbCamGetReadVideoFrameSizeFunction;
-
-	@HLEFunction(nid = 0xE5959C36, version = 271) public HLEModuleFunction sceUsbCamStillGetInputLengthFunction;
-
-	@HLEFunction(nid = 0xF8847F60, version = 271) public HLEModuleFunction sceUsbCamPollReadMicEndFunction;
-
-	@HLEFunction(nid = 0xFB0A6C5D, version = 271) public HLEModuleFunction sceUsbCamStillInputFunction;
-
-	@HLEFunction(nid = 0xFDB68C23, version = 271) public HLEModuleFunction sceUsbCamGetSharpnessFunction;
 
 }

@@ -171,6 +171,7 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
         }
     }
 
+    @HLEFunction(nid = 0x1579A159, version = 200)
     public void sceUtilityLoadNetModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -192,6 +193,7 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
         cpu.gpr[2] = result;
     }
 
+    @HLEFunction(nid = 0x64D50C56, version = 200)
     public void sceUtilityUnloadNetModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -208,31 +210,24 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
         cpu.gpr[2] = hleUtilityUnloadNetModule(module);
     }
 
+    @HLEFunction(nid = 0x1281DA8E, version = 200)
     public void sceUtilityInstallInitStart(Processor processor) {
         installState.executeInitStart(processor);
     }
 
+    @HLEFunction(nid = 0x5EF1C24A, version = 200)
     public void sceUtilityInstallShutdownStart(Processor processor) {
     	installState.executeShutdownStart(processor);
     }
 
+    @HLEFunction(nid = 0xA03D29BA, version = 200)
     public void sceUtilityInstallUpdate(Processor processor) {
     	installState.executeUpdate(processor);
     }
 
+    @HLEFunction(nid = 0xC4700FA3, version = 200)
     public void sceUtilityInstallGetStatus(Processor processor) {
     	installState.executeGetStatus(processor);
     }
-    @HLEFunction(nid = 0x1579A159, version = 200) public HLEModuleFunction sceUtilityLoadNetModuleFunction;
-
-    @HLEFunction(nid = 0x64D50C56, version = 200) public HLEModuleFunction sceUtilityUnloadNetModuleFunction;
-
-    @HLEFunction(nid = 0xC4700FA3, version = 200) public HLEModuleFunction sceUtilityInstallGetStatusFunction;
-
-    @HLEFunction(nid = 0x1281DA8E, version = 200) public HLEModuleFunction sceUtilityInstallInitStartFunction;
-
-    @HLEFunction(nid = 0x5EF1C24A, version = 200) public HLEModuleFunction sceUtilityInstallShutdownStartFunction;
-
-    @HLEFunction(nid = 0xA03D29BA, version = 200) public HLEModuleFunction sceUtilityInstallUpdateFunction;
 
 }

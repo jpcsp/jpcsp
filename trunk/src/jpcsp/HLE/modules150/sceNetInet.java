@@ -2425,6 +2425,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	}
 
 	// int sceNetInetInit(void);
+	@HLEFunction(nid = 0x17943399, version = 150)
 	public void sceNetInetInit(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -2435,6 +2436,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	}
 
 	// int sceNetInetTerm(void);
+	@HLEFunction(nid = 0xA9ED66B9, version = 150)
 	public void sceNetInetTerm(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -2445,6 +2447,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	}
 
 	// int     sceNetInetAccept(int s, struct sockaddr *addr, socklen_t *addrlen);
+	@HLEFunction(nid = 0xDB094E1B, version = 150)
 	public void sceNetInetAccept(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -2486,6 +2489,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	}
 
 	// int     sceNetInetBind(int socket, const struct sockaddr *address, socklen_t address_len);
+	@HLEFunction(nid = 0x1A33F9AE, version = 150)
 	public void sceNetInetBind(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -2526,6 +2530,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	}
 
 	// int sceNetInetClose(int s);
+	@HLEFunction(nid = 0x8D7284EA, version = 150)
 	public void sceNetInetClose(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -2546,6 +2551,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		}
 	}
 
+	@HLEFunction(nid = 0x805502DD, version = 150)
 	public void sceNetInetCloseWithRST(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -2555,6 +2561,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	}
 
 	// int     sceNetInetConnect(int socket, const struct sockaddr *serv_addr, socklen_t addrlen);
+	@HLEFunction(nid = 0x410B34AA, version = 150)
 	public void sceNetInetConnect(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -2601,6 +2608,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		}
 	}
 
+	@HLEFunction(nid = 0xE247B6D6, version = 150)
 	public void sceNetInetGetpeername(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -2633,6 +2641,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		}
 	}
 
+	@HLEFunction(nid = 0x162E6FD5, version = 150)
 	public void sceNetInetGetsockname(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -2665,6 +2674,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		}
 	}
 
+	@HLEFunction(nid = 0x4A114C7C, version = 150)
 	public void sceNetInetGetsockopt(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -2738,6 +2748,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	}
 
 	// int     sceNetInetListen(int s, int backlog);
+	@HLEFunction(nid = 0xD10A1A7A, version = 150)
 	public void sceNetInetListen(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -2822,6 +2833,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	 *             any events occurred, poll() returns 0. Otherwise, poll() returns
 	 *             the number of file descriptors for which revents is non-zero.
 	 */
+	@HLEFunction(nid = 0xFAABB1DD, version = 150)
 	public void sceNetInetPoll(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -2903,6 +2915,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	}
 
 	// size_t  sceNetInetRecv(int s, void *buf, size_t len, int flags);
+	@HLEFunction(nid = 0xCDA85C99, version = 150)
 	public void sceNetInetRecv(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -2928,6 +2941,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	}
 
 	// size_t  sceNetInetRecvfrom(int socket, void *buffer, size_t bufferLength, int flags, struct sockaddr *from, socklen_t *fromlen);
+	@HLEFunction(nid = 0xC91142E4, version = 150)
 	public void sceNetInetRecvfrom(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -2964,6 +2978,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		}
 	}
 
+	@HLEFunction(nid = 0xEECE61D2, version = 150)
 	public void sceNetInetRecvmsg(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -2972,6 +2987,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x5BE8D595, version = 150)
 	public void sceNetInetSelect(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -3041,6 +3057,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	}
 
 	// size_t  sceNetInetSend(int socket, const void *buffer, size_t bufferLength, int flags);
+	@HLEFunction(nid = 0x7AA671BC, version = 150)
 	public void sceNetInetSend(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -3066,6 +3083,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	}
 
 	// size_t  sceNetInetSendto(int socket, const void *buffer, size_t bufferLength, int flags, const struct sockaddr *to, socklen_t tolen);
+	@HLEFunction(nid = 0x05038FC7, version = 150)
 	public void sceNetInetSendto(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -3106,6 +3124,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		}
 	}
 
+	@HLEFunction(nid = 0x774E36F4, version = 150)
 	public void sceNetInetSendmsg(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -3115,6 +3134,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	}
 
 	// int     sceNetInetSetsockopt(int socket, int level, int optname, const void *optval, socklen_t optlen);
+	@HLEFunction(nid = 0x2FE71FE7, version = 150)
 	public void sceNetInetSetsockopt(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -3181,6 +3201,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	}
 
 	// int     sceNetInetShutdown(int s, int how);
+	@HLEFunction(nid = 0x4CFE4E56, version = 150)
 	public void sceNetInetShutdown(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -3204,6 +3225,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	}
 
 	// int     sceNetInetSocket(int domain, int type, int protocol);
+	@HLEFunction(nid = 0x8B7B220F, version = 150)
 	public void sceNetInetSocket(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -3230,6 +3252,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		}
 	}
 
+	@HLEFunction(nid = 0x80A21ABD, version = 150)
 	public void sceNetInetSocketAbort(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -3238,6 +3261,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0xFBABE411, version = 150)
 	public void sceNetInetGetErrno(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -3248,6 +3272,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = getErrno();
 	}
 
+	@HLEFunction(nid = 0xB3888AD4, version = 150)
 	public void sceNetInetGetTcpcbstat(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -3256,6 +3281,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x39B0C7D3, version = 150)
 	public void sceNetInetGetUdpcbstat(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -3264,6 +3290,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0xB75D5B0A, version = 150)
 	public void sceNetInetInetAddr(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -3287,6 +3314,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		}
 	}
 
+	@HLEFunction(nid = 0x1BDF5D13, version = 150)
 	public void sceNetInetInetAton(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -3315,6 +3343,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		}
 	}
 
+	@HLEFunction(nid = 0xD0792666, version = 150)
 	public void sceNetInetInetNtop(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -3342,6 +3371,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		}
 	}
 
+	@HLEFunction(nid = 0xE30B8C19, version = 150)
 	public void sceNetInetInetPton(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -3373,64 +3403,5 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			}
 		}
 	}
-	@HLEFunction(nid = 0x17943399, version = 150) public HLEModuleFunction sceNetInetInitFunction;
-
-	@HLEFunction(nid = 0xA9ED66B9, version = 150) public HLEModuleFunction sceNetInetTermFunction;
-
-	@HLEFunction(nid = 0xDB094E1B, version = 150) public HLEModuleFunction sceNetInetAcceptFunction;
-
-	@HLEFunction(nid = 0x1A33F9AE, version = 150) public HLEModuleFunction sceNetInetBindFunction;
-
-	@HLEFunction(nid = 0x8D7284EA, version = 150) public HLEModuleFunction sceNetInetCloseFunction;
-
-	@HLEFunction(nid = 0x805502DD, version = 150) public HLEModuleFunction sceNetInetCloseWithRSTFunction;
-
-	@HLEFunction(nid = 0x410B34AA, version = 150) public HLEModuleFunction sceNetInetConnectFunction;
-
-	@HLEFunction(nid = 0xE247B6D6, version = 150) public HLEModuleFunction sceNetInetGetpeernameFunction;
-
-	@HLEFunction(nid = 0x162E6FD5, version = 150) public HLEModuleFunction sceNetInetGetsocknameFunction;
-
-	@HLEFunction(nid = 0x4A114C7C, version = 150) public HLEModuleFunction sceNetInetGetsockoptFunction;
-
-	@HLEFunction(nid = 0xD10A1A7A, version = 150) public HLEModuleFunction sceNetInetListenFunction;
-
-	@HLEFunction(nid = 0xFAABB1DD, version = 150) public HLEModuleFunction sceNetInetPollFunction;
-
-	@HLEFunction(nid = 0xCDA85C99, version = 150) public HLEModuleFunction sceNetInetRecvFunction;
-
-	@HLEFunction(nid = 0xC91142E4, version = 150) public HLEModuleFunction sceNetInetRecvfromFunction;
-
-	@HLEFunction(nid = 0xEECE61D2, version = 150) public HLEModuleFunction sceNetInetRecvmsgFunction;
-
-	@HLEFunction(nid = 0x5BE8D595, version = 150) public HLEModuleFunction sceNetInetSelectFunction;
-
-	@HLEFunction(nid = 0x7AA671BC, version = 150) public HLEModuleFunction sceNetInetSendFunction;
-
-	@HLEFunction(nid = 0x05038FC7, version = 150) public HLEModuleFunction sceNetInetSendtoFunction;
-
-	@HLEFunction(nid = 0x774E36F4, version = 150) public HLEModuleFunction sceNetInetSendmsgFunction;
-
-	@HLEFunction(nid = 0x2FE71FE7, version = 150) public HLEModuleFunction sceNetInetSetsockoptFunction;
-
-	@HLEFunction(nid = 0x4CFE4E56, version = 150) public HLEModuleFunction sceNetInetShutdownFunction;
-
-	@HLEFunction(nid = 0x8B7B220F, version = 150) public HLEModuleFunction sceNetInetSocketFunction;
-
-	@HLEFunction(nid = 0x80A21ABD, version = 150) public HLEModuleFunction sceNetInetSocketAbortFunction;
-
-	@HLEFunction(nid = 0xFBABE411, version = 150) public HLEModuleFunction sceNetInetGetErrnoFunction;
-
-	@HLEFunction(nid = 0xB3888AD4, version = 150) public HLEModuleFunction sceNetInetGetTcpcbstatFunction;
-
-	@HLEFunction(nid = 0x39B0C7D3, version = 150) public HLEModuleFunction sceNetInetGetUdpcbstatFunction;
-
-	@HLEFunction(nid = 0xB75D5B0A, version = 150) public HLEModuleFunction sceNetInetInetAddrFunction;
-
-	@HLEFunction(nid = 0x1BDF5D13, version = 150) public HLEModuleFunction sceNetInetInetAtonFunction;
-
-	@HLEFunction(nid = 0xD0792666, version = 150) public HLEModuleFunction sceNetInetInetNtopFunction;
-
-	@HLEFunction(nid = 0xE30B8C19, version = 150) public HLEModuleFunction sceNetInetInetPtonFunction;
 
 };

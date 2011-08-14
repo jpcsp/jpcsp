@@ -548,6 +548,7 @@ public class sceFont implements HLEModule, HLEStartModule {
     	return true;
     }
 
+    @HLEFunction(nid = 0x67F17ED7, version = 150)
     public void sceFontNewLib(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -576,6 +577,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         cpu.gpr[2] = libHandle;
     }
 
+    @HLEFunction(nid = 0x57FCB733, version = 150)
     public void sceFontOpenUserFile(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -615,6 +617,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xBB8E7FE6, version = 150)
     public void sceFontOpenUserMemory(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -653,6 +656,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x0DA7535E, version = 150)
     public void sceFontGetFontInfo(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -733,6 +737,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xDCC80C2F, version = 150)
     public void sceFontGetCharInfo(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -771,6 +776,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x980F4895, version = 150)
     public void sceFontGetCharGlyphImage(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -825,6 +831,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x099EF33C, version = 150)
     public void sceFontFindOptimumFont(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -867,6 +874,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x3AEA8CB6, version = 150)
     public void sceFontClose(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -888,6 +896,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x574B6FBC, version = 150)
     public void sceFontDoneLib(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -916,6 +925,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xA834319D, version = 150)
     public void sceFontOpen(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -948,6 +958,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         cpu.gpr[2] = fontHandle;
     }
 
+    @HLEFunction(nid = 0xCA1E6945, version = 150)
     public void sceFontGetCharGlyphImage_Clip(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1012,6 +1023,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x27F6E642, version = 150)
     public void sceFontGetNumFontList(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1043,6 +1055,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xBC75D85B, version = 150)
     public void sceFontGetFontList(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1079,6 +1092,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xEE232411, version = 150)
     public void sceFontSetAltCharacterCode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1103,6 +1117,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x5C3E4A9E, version = 150)
     public void sceFontGetCharImageRect(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1126,6 +1141,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x472694CD, version = 150)
     public void sceFontPointToPixelH(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1152,6 +1168,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         mem.write32(errorCodeAddr, errorCode);
     }
 
+    @HLEFunction(nid = 0x5333322D, version = 150)
     public void sceFontGetFontInfoByIndexNumber(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1237,6 +1254,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x48293280, version = 150)
     public void sceFontSetResolution(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1263,6 +1281,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x02D7F94B, version = 150)
     public void sceFontFlush(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1279,6 +1298,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x681E61A7, version = 150)
     public void sceFontFindFont(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1322,6 +1342,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x3C4B7E82, version = 150)
     public void sceFontPointToPixelV(Processor processor) {
         CpuState cpu = processor.cpu;
     	Memory mem = Processor.memory;
@@ -1348,6 +1369,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         mem.write32(errorCodeAddr, errorCode);
     }
 
+    @HLEFunction(nid = 0x74B21701, version = 150)
     public void sceFontPixelToPointH(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1374,6 +1396,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         mem.write32(errorCodeAddr, errorCode);
     }
 
+    @HLEFunction(nid = 0xF8F0752E, version = 150)
     public void sceFontPixelToPointV(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1400,6 +1423,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         mem.write32(errorCodeAddr, errorCode);
     }
 
+    @HLEFunction(nid = 0x2F67356A, version = 150)
     public void sceFontCalcMemorySize(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -1408,6 +1432,7 @@ public class sceFont implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+    @HLEFunction(nid = 0x48B06520, version = 150)
     public void sceFontGetShadowImageRect(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -1416,6 +1441,7 @@ public class sceFont implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+    @HLEFunction(nid = 0x568BE516, version = 150)
     public void sceFontGetShadowGlyphImage(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -1424,6 +1450,7 @@ public class sceFont implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+    @HLEFunction(nid = 0x5DCF6858, version = 150)
     public void sceFontGetShadowGlyphImage_Clip(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -1432,6 +1459,7 @@ public class sceFont implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+    @HLEFunction(nid = 0xAA3DE7B5, version = 150)
     public void sceFontGetShadowInfo(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -1439,33 +1467,5 @@ public class sceFont implements HLEModule, HLEStartModule {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-    @HLEFunction(nid = 0x099EF33C, version = 150) public HLEModuleFunction sceFontFindOptimumFontFunction;
-    @HLEFunction(nid = 0x0DA7535E, version = 150) public HLEModuleFunction sceFontGetFontInfoFunction;
-    @HLEFunction(nid = 0x3AEA8CB6, version = 150) public HLEModuleFunction sceFontCloseFunction;
-    @HLEFunction(nid = 0x574B6FBC, version = 150) public HLEModuleFunction sceFontDoneLibFunction;
-    @HLEFunction(nid = 0x67F17ED7, version = 150) public HLEModuleFunction sceFontNewLibFunction;
-    @HLEFunction(nid = 0xA834319D, version = 150) public HLEModuleFunction sceFontOpenFunction;
-    @HLEFunction(nid = 0xCA1E6945, version = 150) public HLEModuleFunction sceFontGetCharGlyphImage_ClipFunction;
-    @HLEFunction(nid = 0xDCC80C2F, version = 150) public HLEModuleFunction sceFontGetCharInfoFunction;
-    @HLEFunction(nid = 0x980F4895, version = 150) public HLEModuleFunction sceFontGetCharGlyphImageFunction;
-    @HLEFunction(nid = 0x27F6E642, version = 150) public HLEModuleFunction sceFontGetNumFontListFunction;
-    @HLEFunction(nid = 0xBC75D85B, version = 150) public HLEModuleFunction sceFontGetFontListFunction;
-    @HLEFunction(nid = 0xBB8E7FE6, version = 150) public HLEModuleFunction sceFontOpenUserMemoryFunction;
-    @HLEFunction(nid = 0xEE232411, version = 150) public HLEModuleFunction sceFontSetAltCharacterCodeFunction;
-    @HLEFunction(nid = 0x5C3E4A9E, version = 150) public HLEModuleFunction sceFontGetCharImageRectFunction;
-    @HLEFunction(nid = 0x472694CD, version = 150) public HLEModuleFunction sceFontPointToPixelHFunction;
-    @HLEFunction(nid = 0x5333322D, version = 150) public HLEModuleFunction sceFontGetFontInfoByIndexNumberFunction;
-    @HLEFunction(nid = 0x48293280, version = 150) public HLEModuleFunction sceFontSetResolutionFunction;
-    @HLEFunction(nid = 0x02D7F94B, version = 150) public HLEModuleFunction sceFontFlushFunction;
-    @HLEFunction(nid = 0x57FCB733, version = 150) public HLEModuleFunction sceFontOpenUserFileFunction;
-    @HLEFunction(nid = 0x681E61A7, version = 150) public HLEModuleFunction sceFontFindFontFunction;
-    @HLEFunction(nid = 0x3C4B7E82, version = 150) public HLEModuleFunction sceFontPointToPixelVFunction;
-    @HLEFunction(nid = 0x74B21701, version = 150) public HLEModuleFunction sceFontPixelToPointHFunction;
-    @HLEFunction(nid = 0xF8F0752E, version = 150) public HLEModuleFunction sceFontPixelToPointVFunction;
-    @HLEFunction(nid = 0x2F67356A, version = 150) public HLEModuleFunction sceFontCalcMemorySizeFunction;
-    @HLEFunction(nid = 0x48B06520, version = 150) public HLEModuleFunction sceFontGetShadowImageRectFunction;
-    @HLEFunction(nid = 0x568BE516, version = 150) public HLEModuleFunction sceFontGetShadowGlyphImageFunction;
-    @HLEFunction(nid = 0x5DCF6858, version = 150) public HLEModuleFunction sceFontGetShadowGlyphImage_ClipFunction;
-    @HLEFunction(nid = 0xAA3DE7B5, version = 150) public HLEModuleFunction sceFontGetShadowInfoFunction;
 
 }
