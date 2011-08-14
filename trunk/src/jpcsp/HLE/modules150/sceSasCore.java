@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -44,74 +45,10 @@ public class sceSasCore implements HLEModule, HLEStartModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0x019B25EB, __sceSasSetADSRFunction);
-            mm.addFunction(0x267A6DD2, __sceSasRevParamFunction);
-            mm.addFunction(0x2C8E6AB3, __sceSasGetPauseFlagFunction);
-            mm.addFunction(0x33D4AB37, __sceSasRevTypeFunction);
-            mm.addFunction(0x42778A9F, __sceSasInitFunction);
-            mm.addFunction(0x440CA7D8, __sceSasSetVolumeFunction);
-            mm.addFunction(0x50A14DFC, __sceSasCoreWithMixFunction);
-            mm.addFunction(0x5F9529F6, __sceSasSetSLFunction);
-            mm.addFunction(0x68A46B95, __sceSasGetEndFlagFunction);
-            mm.addFunction(0x74AE582A, __sceSasGetEnvelopeHeightFunction);
-            mm.addFunction(0x76F01ACA, __sceSasSetKeyOnFunction);
-            mm.addFunction(0x787D04D5, __sceSasSetPauseFunction);
-            mm.addFunction(0x99944089, __sceSasSetVoiceFunction);
-            mm.addFunction(0x9EC3676A, __sceSasSetADSRmodeFunction);
-            mm.addFunction(0xA0CF2FA4, __sceSasSetKeyOffFunction);
-            mm.addFunction(0xA232CBE6, __sceSasSetTrianglarWaveFunction);
-            mm.addFunction(0xA3589D81, __sceSasCoreFunction);
-            mm.addFunction(0xAD84D37F, __sceSasSetPitchFunction);
-            mm.addFunction(0xB7660A23, __sceSasSetNoiseFunction);
-            mm.addFunction(0xBD11B7C2, __sceSasGetGrainFunction);
-            mm.addFunction(0xCBCD4F79, __sceSasSetSimpleADSRFunction);
-            mm.addFunction(0xD1E0A01E, __sceSasSetGrainFunction);
-            mm.addFunction(0xD5A229C9, __sceSasRevEVOLFunction);
-            mm.addFunction(0xD5EBBBCD, __sceSasSetSteepWaveFunction);
-            mm.addFunction(0xE175EF66, __sceSasGetOutputmodeFunction);
-            mm.addFunction(0xE855BF76, __sceSasSetOutputmodeFunction);
-            mm.addFunction(0xF983B186, __sceSasRevVONFunction);
-            mm.addFunction(0x07F58C24, __sceSasGetAllEnvelopeHeightsFunction);
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(__sceSasSetADSRFunction);
-            mm.removeFunction(__sceSasRevParamFunction);
-            mm.removeFunction(__sceSasGetPauseFlagFunction);
-            mm.removeFunction(__sceSasRevTypeFunction);
-            mm.removeFunction(__sceSasInitFunction);
-            mm.removeFunction(__sceSasSetVolumeFunction);
-            mm.removeFunction(__sceSasCoreWithMixFunction);
-            mm.removeFunction(__sceSasSetSLFunction);
-            mm.removeFunction(__sceSasGetEndFlagFunction);
-            mm.removeFunction(__sceSasGetEnvelopeHeightFunction);
-            mm.removeFunction(__sceSasSetKeyOnFunction);
-            mm.removeFunction(__sceSasSetPauseFunction);
-            mm.removeFunction(__sceSasSetVoiceFunction);
-            mm.removeFunction(__sceSasSetADSRmodeFunction);
-            mm.removeFunction(__sceSasSetKeyOffFunction);
-            mm.removeFunction(__sceSasSetTrianglarWaveFunction);
-            mm.removeFunction(__sceSasCoreFunction);
-            mm.removeFunction(__sceSasSetPitchFunction);
-            mm.removeFunction(__sceSasSetNoiseFunction);
-            mm.removeFunction(__sceSasGetGrainFunction);
-            mm.removeFunction(__sceSasSetSimpleADSRFunction);
-            mm.removeFunction(__sceSasSetGrainFunction);
-            mm.removeFunction(__sceSasRevEVOLFunction);
-            mm.removeFunction(__sceSasSetSteepWaveFunction);
-            mm.removeFunction(__sceSasGetOutputmodeFunction);
-            mm.removeFunction(__sceSasSetOutputmodeFunction);
-            mm.removeFunction(__sceSasRevVONFunction);
-            mm.removeFunction(__sceSasGetAllEnvelopeHeightsFunction);
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     @Override
     public void start() {
@@ -928,7 +865,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
         }
-    }
+    }    @HLEFunction(nid = 0x019B25EB, version = 150)
     public final HLEModuleFunction __sceSasSetADSRFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetADSR") {
 
         @Override
@@ -940,7 +877,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetADSR(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x267A6DD2, version = 150)
     public final HLEModuleFunction __sceSasRevParamFunction = new HLEModuleFunction("sceSasCore", "__sceSasRevParam") {
 
         @Override
@@ -952,7 +889,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasRevParam(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x2C8E6AB3, version = 150)
     public final HLEModuleFunction __sceSasGetPauseFlagFunction = new HLEModuleFunction("sceSasCore", "__sceSasGetPauseFlag") {
 
         @Override
@@ -964,7 +901,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasGetPauseFlag(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x33D4AB37, version = 150)
     public final HLEModuleFunction __sceSasRevTypeFunction = new HLEModuleFunction("sceSasCore", "__sceSasRevType") {
 
         @Override
@@ -976,7 +913,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasRevType(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x42778A9F, version = 150)
     public final HLEModuleFunction __sceSasInitFunction = new HLEModuleFunction("sceSasCore", "__sceSasInit") {
 
         @Override
@@ -988,7 +925,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasInit(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x440CA7D8, version = 150)
     public final HLEModuleFunction __sceSasSetVolumeFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetVolume") {
 
         @Override
@@ -1000,7 +937,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetVolume(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x50A14DFC, version = 150)
     public final HLEModuleFunction __sceSasCoreWithMixFunction = new HLEModuleFunction("sceSasCore", "__sceSasCoreWithMix") {
 
         @Override
@@ -1012,7 +949,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasCoreWithMix(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x5F9529F6, version = 150)
     public final HLEModuleFunction __sceSasSetSLFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetSL") {
 
         @Override
@@ -1024,7 +961,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetSL(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x68A46B95, version = 150)
     public final HLEModuleFunction __sceSasGetEndFlagFunction = new HLEModuleFunction("sceSasCore", "__sceSasGetEndFlag") {
 
         @Override
@@ -1036,7 +973,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasGetEndFlag(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x74AE582A, version = 150)
     public final HLEModuleFunction __sceSasGetEnvelopeHeightFunction = new HLEModuleFunction("sceSasCore", "__sceSasGetEnvelopeHeight") {
 
         @Override
@@ -1048,7 +985,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasGetEnvelopeHeight(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x76F01ACA, version = 150)
     public final HLEModuleFunction __sceSasSetKeyOnFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetKeyOn") {
 
         @Override
@@ -1060,7 +997,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetKeyOn(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x787D04D5, version = 150)
     public final HLEModuleFunction __sceSasSetPauseFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetPause") {
 
         @Override
@@ -1072,7 +1009,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetPause(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x99944089, version = 150)
     public final HLEModuleFunction __sceSasSetVoiceFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetVoice") {
 
         @Override
@@ -1084,7 +1021,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetVoice(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x9EC3676A, version = 150)
     public final HLEModuleFunction __sceSasSetADSRmodeFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetADSRmode") {
 
         @Override
@@ -1096,7 +1033,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetADSRmode(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA0CF2FA4, version = 150)
     public final HLEModuleFunction __sceSasSetKeyOffFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetKeyOff") {
 
         @Override
@@ -1108,7 +1045,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetKeyOff(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA232CBE6, version = 150)
     public final HLEModuleFunction __sceSasSetTrianglarWaveFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetTrianglarWave") {
 
         @Override
@@ -1120,7 +1057,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetTrianglarWave(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA3589D81, version = 150)
     public final HLEModuleFunction __sceSasCoreFunction = new HLEModuleFunction("sceSasCore", "__sceSasCore") {
 
         @Override
@@ -1132,7 +1069,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasCore(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xAD84D37F, version = 150)
     public final HLEModuleFunction __sceSasSetPitchFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetPitch") {
 
         @Override
@@ -1144,7 +1081,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetPitch(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB7660A23, version = 150)
     public final HLEModuleFunction __sceSasSetNoiseFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetNoise") {
 
         @Override
@@ -1156,7 +1093,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetNoise(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xBD11B7C2, version = 150)
     public final HLEModuleFunction __sceSasGetGrainFunction = new HLEModuleFunction("sceSasCore", "__sceSasGetGrain") {
 
         @Override
@@ -1168,7 +1105,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasGetGrain(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xCBCD4F79, version = 150)
     public final HLEModuleFunction __sceSasSetSimpleADSRFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetSimpleADSR") {
 
         @Override
@@ -1180,7 +1117,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetSimpleADSR(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xD1E0A01E, version = 150)
     public final HLEModuleFunction __sceSasSetGrainFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetGrain") {
 
         @Override
@@ -1192,7 +1129,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetGrain(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xD5A229C9, version = 150)
     public final HLEModuleFunction __sceSasRevEVOLFunction = new HLEModuleFunction("sceSasCore", "__sceSasRevEVOL") {
 
         @Override
@@ -1204,7 +1141,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasRevEVOL(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xD5EBBBCD, version = 150)
     public final HLEModuleFunction __sceSasSetSteepWaveFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetSteepWave") {
 
         @Override
@@ -1216,7 +1153,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetSteepWave(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xE175EF66, version = 150)
     public final HLEModuleFunction __sceSasGetOutputmodeFunction = new HLEModuleFunction("sceSasCore", "__sceSasGetOutputmode") {
 
         @Override
@@ -1228,7 +1165,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasGetOutputmode(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xE855BF76, version = 150)
     public final HLEModuleFunction __sceSasSetOutputmodeFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetOutputmode") {
 
         @Override
@@ -1240,7 +1177,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetOutputmode(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xF983B186, version = 150)
     public final HLEModuleFunction __sceSasRevVONFunction = new HLEModuleFunction("sceSasCore", "__sceSasRevVON") {
 
         @Override
@@ -1252,7 +1189,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasRevVON(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x07F58C24, version = 150)
     public final HLEModuleFunction __sceSasGetAllEnvelopeHeightsFunction = new HLEModuleFunction("sceSasCore", "__sceSasGetAllEnvelopeHeights") {
 
         @Override

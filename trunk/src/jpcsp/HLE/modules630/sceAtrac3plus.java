@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules630;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -26,24 +27,10 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
     public String getName() { return "sceAtrac3plus"; }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-    	super.installModule(mm, version);
-
-    	if (version >= 630) {
-            mm.addFunction(0x0C116E1B, sceAtracLowLevelDecodeFunction);
-            mm.addFunction(0x1575D64B, sceAtracLowLevelInitDecoderFunction);
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-    	super.uninstallModule(mm, version);
-
-    	if (version >= 630) {
-            mm.removeFunction(sceAtracLowLevelDecodeFunction);
-            mm.removeFunction(sceAtracLowLevelInitDecoderFunction);
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     public void sceAtracLowLevelDecode(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -60,7 +47,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-
+    @HLEFunction(nid = 0x0C116E1B, version = 630)
     public final HLEModuleFunction sceAtracLowLevelDecodeFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracLowLevelDecode") {
         @Override
         public final void execute(Processor processor) {
@@ -71,7 +58,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracLowLevelDecode(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x1575D64B, version = 630)
     public final HLEModuleFunction sceAtracLowLevelInitDecoderFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracLowLevelInitDecoder") {
         @Override
         public final void execute(Processor processor) {

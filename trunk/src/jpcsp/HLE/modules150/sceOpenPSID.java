@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
@@ -38,22 +39,10 @@ public class sceOpenPSID implements HLEModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0xC69BEBCE, sceOpenPSIDGetOpenPSIDFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceOpenPSIDGetOpenPSIDFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     protected int[] dummyOpenPSID = {0x10, 0x02, 0xA3, 0x44, 0x13, 0xF5, 0x93, 0xB0, 0xCC, 0x6E, 0xD1, 0x32, 0x27, 0x85, 0x0F, 0x9D};
 
@@ -78,7 +67,7 @@ public class sceOpenPSID implements HLEModule {
         }
         cpu.gpr[2] = 0;
     }
-
+    @HLEFunction(nid = 0xC69BEBCE, version = 150)
     public final HLEModuleFunction sceOpenPSIDGetOpenPSIDFunction = new HLEModuleFunction("sceOpenPSID", "sceOpenPSIDGetOpenPSID") {
 
         @Override

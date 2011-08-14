@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
@@ -35,38 +36,10 @@ public class StdioForUser implements HLEModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0x3054D478, sceKernelStdioReadFunction);
-            mm.addFunction(0x0CBB0571, sceKernelStdioLseekFunction);
-            mm.addFunction(0xA46785C9, sceKernelStdioSendCharFunction);
-            mm.addFunction(0xA3B931DB, sceKernelStdioWriteFunction);
-            mm.addFunction(0x9D061C19, sceKernelStdioCloseFunction);
-            mm.addFunction(0x924ABA61, sceKernelStdioOpenFunction);
-            mm.addFunction(0x172D316E, sceKernelStdinFunction);
-            mm.addFunction(0xA6BAB2E9, sceKernelStdoutFunction);
-            mm.addFunction(0xF78BA90A, sceKernelStderrFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceKernelStdioReadFunction);
-            mm.removeFunction(sceKernelStdioLseekFunction);
-            mm.removeFunction(sceKernelStdioSendCharFunction);
-            mm.removeFunction(sceKernelStdioWriteFunction);
-            mm.removeFunction(sceKernelStdioCloseFunction);
-            mm.removeFunction(sceKernelStdioOpenFunction);
-            mm.removeFunction(sceKernelStdinFunction);
-            mm.removeFunction(sceKernelStdoutFunction);
-            mm.removeFunction(sceKernelStderrFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     public void sceKernelStdioRead(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -133,7 +106,7 @@ public class StdioForUser implements HLEModule {
 
         cpu.gpr[2] = IoFileMgrForUser.STDERR_ID;
     }
-
+    @HLEFunction(nid = 0x3054D478, version = 150)
     public final HLEModuleFunction sceKernelStdioReadFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioRead") {
 
         @Override
@@ -145,7 +118,7 @@ public class StdioForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdioRead(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x0CBB0571, version = 150)
     public final HLEModuleFunction sceKernelStdioLseekFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioLseek") {
 
         @Override
@@ -157,7 +130,7 @@ public class StdioForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdioLseek(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA46785C9, version = 150)
     public final HLEModuleFunction sceKernelStdioSendCharFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioSendChar") {
 
         @Override
@@ -169,7 +142,7 @@ public class StdioForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdioSendChar(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA3B931DB, version = 150)
     public final HLEModuleFunction sceKernelStdioWriteFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioWrite") {
 
         @Override
@@ -181,7 +154,7 @@ public class StdioForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdioWrite(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x9D061C19, version = 150)
     public final HLEModuleFunction sceKernelStdioCloseFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioClose") {
 
         @Override
@@ -193,7 +166,7 @@ public class StdioForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdioClose(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x924ABA61, version = 150)
     public final HLEModuleFunction sceKernelStdioOpenFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioOpen") {
 
         @Override
@@ -205,7 +178,7 @@ public class StdioForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdioOpen(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x172D316E, version = 150)
     public final HLEModuleFunction sceKernelStdinFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdin") {
 
         @Override
@@ -217,7 +190,7 @@ public class StdioForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdin(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA6BAB2E9, version = 150)
     public final HLEModuleFunction sceKernelStdoutFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdout") {
 
         @Override
@@ -229,7 +202,7 @@ public class StdioForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdout(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xF78BA90A, version = 150)
     public final HLEModuleFunction sceKernelStderrFunction = new HLEModuleFunction("StdioForUser", "sceKernelStderr") {
 
         @Override

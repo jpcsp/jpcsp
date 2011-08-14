@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules500;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.managers.IntrManager;
@@ -26,22 +27,10 @@ import jpcsp.HLE.modules.HLEModuleManager;
 public class sceSasCore extends jpcsp.HLE.modules150.sceSasCore {
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
-
-        if (version >= 500) {
-            mm.addFunction(0xE1CD9561, __sceSasSetVoicePCMFunction);
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        super.uninstallModule(mm, version);
-
-        if (version >= 500) {
-            mm.removeFunction(__sceSasSetVoicePCMFunction);
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     /** Identical to __sceSasSetVoice, but for raw PCM data (VAG/ADPCM is not allowed). */
     public void __sceSasSetVoicePCM(Processor processor) {
@@ -72,7 +61,7 @@ public class sceSasCore extends jpcsp.HLE.modules150.sceSasCore {
             cpu.gpr[2] = 0;
         }
     }
-
+    @HLEFunction(nid = 0xE1CD9561, version = 500)
     public final HLEModuleFunction __sceSasSetVoicePCMFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetVoicePCM") {
 
         @Override

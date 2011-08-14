@@ -19,6 +19,7 @@ package jpcsp.HLE.modules150;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_FILE_NOT_FOUND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_UNKNOWN_MODULE;
 
+import jpcsp.HLE.HLEFunction;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -75,46 +76,10 @@ public class ModuleMgrForUser implements HLEModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0xB7F46618, sceKernelLoadModuleByIDFunction);
-            mm.addFunction(0x977DE386, sceKernelLoadModuleFunction);
-            mm.addFunction(0x710F61B5, sceKernelLoadModuleMsFunction);
-            mm.addFunction(0xF9275D98, sceKernelLoadModuleBufferUsbWlanFunction);
-            mm.addFunction(0x50F0C1EC, sceKernelStartModuleFunction);
-            mm.addFunction(0xD1FF982A, sceKernelStopModuleFunction);
-            mm.addFunction(0x2E0911AA, sceKernelUnloadModuleFunction);
-            mm.addFunction(0xD675EBB8, sceKernelSelfStopUnloadModuleFunction);
-            mm.addFunction(0xCC1D3699, sceKernelStopUnloadSelfModuleFunction);
-            mm.addFunction(0x644395E2, sceKernelGetModuleIdListFunction);
-            mm.addFunction(0x748CBED9, sceKernelQueryModuleInfoFunction);
-            mm.addFunction(0xF0A26395, sceKernelGetModuleIdFunction);
-            mm.addFunction(0xD8B73127, sceKernelGetModuleIdByAddressFunction);
-            mm.addFunction(0x8f2df740, sceKernelStopUnloadSelfModuleWithStatusFunction);
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceKernelLoadModuleByIDFunction);
-            mm.removeFunction(sceKernelLoadModuleFunction);
-            mm.removeFunction(sceKernelLoadModuleMsFunction);
-            mm.removeFunction(sceKernelLoadModuleBufferUsbWlanFunction);
-            mm.removeFunction(sceKernelStartModuleFunction);
-            mm.removeFunction(sceKernelStopModuleFunction);
-            mm.removeFunction(sceKernelUnloadModuleFunction);
-            mm.removeFunction(sceKernelSelfStopUnloadModuleFunction);
-            mm.removeFunction(sceKernelStopUnloadSelfModuleFunction);
-            mm.removeFunction(sceKernelGetModuleIdListFunction);
-            mm.removeFunction(sceKernelQueryModuleInfoFunction);
-            mm.removeFunction(sceKernelGetModuleIdFunction);
-            mm.removeFunction(sceKernelGetModuleIdByAddressFunction);
-            mm.removeFunction(sceKernelStopUnloadSelfModuleWithStatusFunction);
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     //
     // When an HLE module is loaded using sector syntax, with no file corresponding to the
@@ -810,7 +775,7 @@ public class ModuleMgrForUser implements HLEModule {
             log.warn("sceKernelGetModuleIdByAddress(addr=0x" + Integer.toHexString(addr) + ") module not found");
             cpu.gpr[2] = -1;
         }
-    }
+    }    @HLEFunction(nid = 0xB7F46618, version = 150)
     public final HLEModuleFunction sceKernelLoadModuleByIDFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelLoadModuleByID") {
 
         @Override
@@ -822,7 +787,7 @@ public class ModuleMgrForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelLoadModuleByID(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x977DE386, version = 150)
     public final HLEModuleFunction sceKernelLoadModuleFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelLoadModule") {
 
         @Override
@@ -834,7 +799,7 @@ public class ModuleMgrForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelLoadModule(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x710F61B5, version = 150)
     public final HLEModuleFunction sceKernelLoadModuleMsFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelLoadModuleMs") {
 
         @Override
@@ -846,7 +811,7 @@ public class ModuleMgrForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelLoadModuleMs(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xF9275D98, version = 150)
     public final HLEModuleFunction sceKernelLoadModuleBufferUsbWlanFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelLoadModuleBufferUsbWlan") {
 
         @Override
@@ -858,7 +823,7 @@ public class ModuleMgrForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelLoadModuleBufferUsbWlan(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x50F0C1EC, version = 150)
     public final HLEModuleFunction sceKernelStartModuleFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelStartModule") {
 
         @Override
@@ -870,7 +835,7 @@ public class ModuleMgrForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelStartModule(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xD1FF982A, version = 150)
     public final HLEModuleFunction sceKernelStopModuleFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelStopModule") {
 
         @Override
@@ -882,7 +847,7 @@ public class ModuleMgrForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelStopModule(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x2E0911AA, version = 150)
     public final HLEModuleFunction sceKernelUnloadModuleFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelUnloadModule") {
 
         @Override
@@ -894,7 +859,7 @@ public class ModuleMgrForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelUnloadModule(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xD675EBB8, version = 150)
     public final HLEModuleFunction sceKernelSelfStopUnloadModuleFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelSelfStopUnloadModule") {
 
         @Override
@@ -906,7 +871,7 @@ public class ModuleMgrForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelSelfStopUnloadModule(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xCC1D3699, version = 150)
     public final HLEModuleFunction sceKernelStopUnloadSelfModuleFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelStopUnloadSelfModule") {
 
         @Override
@@ -918,7 +883,7 @@ public class ModuleMgrForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelStopUnloadSelfModule(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x644395E2, version = 150)
     public final HLEModuleFunction sceKernelGetModuleIdListFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelGetModuleIdList") {
 
         @Override
@@ -930,7 +895,7 @@ public class ModuleMgrForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelGetModuleIdList(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x748CBED9, version = 150)
     public final HLEModuleFunction sceKernelQueryModuleInfoFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelQueryModuleInfo") {
 
         @Override
@@ -942,7 +907,7 @@ public class ModuleMgrForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelQueryModuleInfo(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xF0A26395, version = 150)
     public final HLEModuleFunction sceKernelGetModuleIdFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelGetModuleId") {
 
         @Override
@@ -954,7 +919,7 @@ public class ModuleMgrForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelGetModuleId(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xD8B73127, version = 150)
     public final HLEModuleFunction sceKernelGetModuleIdByAddressFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelGetModuleIdByAddress") {
 
         @Override
@@ -966,7 +931,7 @@ public class ModuleMgrForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelGetModuleIdByAddress(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x8f2df740, version = 150)
     public final HLEModuleFunction sceKernelStopUnloadSelfModuleWithStatusFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelStopUnloadSelfModuleWithStatus") {
 
         @Override

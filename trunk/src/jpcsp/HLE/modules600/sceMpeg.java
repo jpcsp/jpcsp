@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules600;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -24,28 +25,10 @@ import jpcsp.HLE.modules.HLEModuleManager;
 public class sceMpeg extends jpcsp.HLE.modules352.sceMpeg {
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
-
-        if (version >= 600) {
-            mm.addFunction(0x63B9536A, sceMpegAvcResourceGetAvcDecTopAddrFunction);
-            mm.addFunction(0x8160A2FE, sceMpegAvcResourceFinishFunction);
-            mm.addFunction(0xAF26BB01, sceMpegAvcResourceGetAvcEsBufFunction);
-            mm.addFunction(0xFCBDB5AD, sceMpegAvcResourceInitFunction);
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        super.uninstallModule(mm, version);
-
-        if (version >= 600) {
-            mm.removeFunction(sceMpegAvcResourceGetAvcDecTopAddrFunction);
-            mm.removeFunction(sceMpegAvcResourceFinishFunction);
-            mm.removeFunction(sceMpegAvcResourceGetAvcEsBufFunction);
-            mm.removeFunction(sceMpegAvcResourceInitFunction);
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     public void sceMpegAvcResourceGetAvcDecTopAddr(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -78,7 +61,7 @@ public class sceMpeg extends jpcsp.HLE.modules352.sceMpeg {
 
         cpu.gpr[2] = 0;
     }
-
+    @HLEFunction(nid = 0x63B9536A, version = 600)
     public final HLEModuleFunction sceMpegAvcResourceGetAvcDecTopAddrFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcResourceGetAvcDecTopAddr") {
 
         @Override
@@ -91,7 +74,7 @@ public class sceMpeg extends jpcsp.HLE.modules352.sceMpeg {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcResourceGetAvcDecTopAddr(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x8160A2FE, version = 600)
     public final HLEModuleFunction sceMpegAvcResourceFinishFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcResourceFinish") {
 
         @Override
@@ -104,7 +87,7 @@ public class sceMpeg extends jpcsp.HLE.modules352.sceMpeg {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcResourceFinish(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xAF26BB01, version = 600)
     public final HLEModuleFunction sceMpegAvcResourceGetAvcEsBufFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcResourceGetAvcEsBuf") {
 
         @Override
@@ -117,7 +100,7 @@ public class sceMpeg extends jpcsp.HLE.modules352.sceMpeg {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcResourceGetAvcEsBuf(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xFCBDB5AD, version = 600)
     public final HLEModuleFunction sceMpegAvcResourceInitFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcResourceInit") {
 
         @Override

@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules380;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Processor;
 import jpcsp.HLE.kernel.Managers;
@@ -27,38 +28,10 @@ import jpcsp.HLE.modules.HLEModuleManager;
 
 public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
-
-		if (version >= 380) {
-
-			mm.addFunction(0x15B6446B, sceKernelUnlockLwMutexFunction);
-			mm.addFunction(0x1FC64E09, sceKernelLockLwMutexCBFunction);
-			mm.addFunction(0xBEA46419, sceKernelLockLwMutexFunction);
-			mm.addFunction(0xC1734599, sceKernelReferLwMutexStatusFunction);
-			mm.addFunction(0xDC692EE3, sceKernelTryLockLwMutexFunction);
-            mm.addFunction(0x37431849, sceKernelTryLockLwMutex_600Function);
-            mm.addFunction(0x1839852A, sceKernelMemcpyFunction);
-
-		}
-	}
+	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
 	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.uninstallModule(mm, version);
-
-		if (version >= 380) {
-
-			mm.removeFunction(sceKernelUnlockLwMutexFunction);
-			mm.removeFunction(sceKernelLockLwMutexCBFunction);
-			mm.removeFunction(sceKernelLockLwMutexFunction);
-			mm.removeFunction(sceKernelReferLwMutexStatusFunction);
-			mm.removeFunction(sceKernelTryLockLwMutexFunction);
-            mm.removeFunction(sceKernelTryLockLwMutex_600Function);
-            mm.removeFunction(sceKernelMemcpyFunction);
-
-		}
-	}
+	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
 	public void sceKernelUnlockLwMutex(Processor processor) {
 		int[] gpr = processor.cpu.gpr;
@@ -126,7 +99,7 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 
 		cpu.gpr[2] = dst;
 	}
-
+	@HLEFunction(nid = 0x15B6446B, version = 380)
 	public final HLEModuleFunction sceKernelUnlockLwMutexFunction = new HLEModuleFunction("Kernel_Library", "sceKernelUnlockLwMutex") {
 		@Override
 		public final void execute(Processor processor) {
@@ -137,7 +110,7 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 			return "jpcsp.HLE.Modules.Kernel_LibraryModule.sceKernelUnlockLwMutex(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x1FC64E09, version = 380)
 	public final HLEModuleFunction sceKernelLockLwMutexCBFunction = new HLEModuleFunction("Kernel_Library", "sceKernelLockLwMutexCB") {
 		@Override
 		public final void execute(Processor processor) {
@@ -148,7 +121,7 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 			return "jpcsp.HLE.Modules.Kernel_LibraryModule.sceKernelLockLwMutexCB(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xBEA46419, version = 380)
 	public final HLEModuleFunction sceKernelLockLwMutexFunction = new HLEModuleFunction("Kernel_Library", "sceKernelLockLwMutex") {
 		@Override
 		public final void execute(Processor processor) {
@@ -159,7 +132,7 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 			return "jpcsp.HLE.Modules.Kernel_LibraryModule.sceKernelLockLwMutex(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xC1734599, version = 380)
 	public final HLEModuleFunction sceKernelReferLwMutexStatusFunction = new HLEModuleFunction("Kernel_Library", "sceKernelReferLwMutexStatus") {
 		@Override
 		public final void execute(Processor processor) {
@@ -170,7 +143,7 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 			return "jpcsp.HLE.Modules.Kernel_LibraryModule.sceKernelReferLwMutexStatus(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xDC692EE3, version = 380)
 	public final HLEModuleFunction sceKernelTryLockLwMutexFunction = new HLEModuleFunction("Kernel_Library", "sceKernelTryLockLwMutex") {
 		@Override
 		public final void execute(Processor processor) {
@@ -181,7 +154,7 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 			return "jpcsp.HLE.Modules.Kernel_LibraryModule.sceKernelTryLockLwMutex(processor);";
 		}
 	};
-
+    @HLEFunction(nid = 0x37431849, version = 380)
     public final HLEModuleFunction sceKernelTryLockLwMutex_600Function = new HLEModuleFunction("Kernel_Library", "sceKernelTryLockLwMutex_600") {
 		@Override
 		public final void execute(Processor processor) {
@@ -192,7 +165,7 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 			return "jpcsp.HLE.Modules.Kernel_LibraryModule.sceKernelTryLockLwMutex_600(processor);";
 		}
 	};
-
+    @HLEFunction(nid = 0x1839852A, version = 380)
     public final HLEModuleFunction sceKernelMemcpyFunction = new HLEModuleFunction("Kernel_Library", "sceKernelMemcpy") {
 		@Override
 		public final void execute(Processor processor) {

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
@@ -45,38 +46,10 @@ public class sceNetResolver implements HLEModule {
 	}
 	
 	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-			mm.addFunction(sceNetResolverInitFunction, 0xF3370E61);
-			mm.addFunction(sceNetResolverTermFunction, 0x6138194A);
-			mm.addFunction(sceNetResolverCreateFunction, 0x244172AF);
-			mm.addFunction(sceNetResolverDeleteFunction, 0x94523E09);
-			mm.addFunction(sceNetResolverStartNtoAFunction, 0x224C5F44);
-            mm.addFunction(sceNetResolverStartNtoAAsyncFunction, 0x14C17EF9);
-			mm.addFunction(sceNetResolverStartAtoNFunction, 0x629E2FB7);
-            mm.addFunction(sceNetResolverStartAtoNAsyncFunction, 0xAAC09184);
-            mm.addFunction(sceNetResolverPollAsyncFunction, 0x4EE99358);
-            mm.addFunction(sceNetResolverWaitAsyncFunction, 0x12748EB9);
-			mm.addFunction(sceNetResolverStopFunction, 0x808F6063);
-		}
-	}
+	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 	
 	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-			mm.removeFunction(sceNetResolverInitFunction);
-			mm.removeFunction(sceNetResolverTermFunction);
-			mm.removeFunction(sceNetResolverCreateFunction);
-			mm.removeFunction(sceNetResolverDeleteFunction);
-			mm.removeFunction(sceNetResolverStartNtoAFunction);
-            mm.removeFunction(sceNetResolverStartNtoAAsyncFunction);
-			mm.removeFunction(sceNetResolverStartAtoNFunction);
-            mm.removeFunction(sceNetResolverStartAtoNAsyncFunction);
-            mm.removeFunction(sceNetResolverPollAsyncFunction);
-            mm.removeFunction(sceNetResolverWaitAsyncFunction);
-			mm.removeFunction(sceNetResolverStopFunction);
-		}
-	}
+	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     protected static class ResolverID {
         private int id;
@@ -324,7 +297,7 @@ public class sceNetResolver implements HLEModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-
+	@HLEFunction(nid = 0xF3370E61, version = 150)
 	public final HLEModuleFunction sceNetResolverInitFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverInit") {
 		@Override
 		public final void execute(Processor processor) {
@@ -335,7 +308,7 @@ public class sceNetResolver implements HLEModule {
 			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverInit(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x6138194A, version = 150)
 	public final HLEModuleFunction sceNetResolverTermFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverTerm") {
 		@Override
 		public final void execute(Processor processor) {
@@ -346,7 +319,7 @@ public class sceNetResolver implements HLEModule {
 			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverTerm(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x244172AF, version = 150)
 	public final HLEModuleFunction sceNetResolverCreateFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverCreate") {
 		@Override
 		public final void execute(Processor processor) {
@@ -357,7 +330,7 @@ public class sceNetResolver implements HLEModule {
 			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverCreate(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x94523E09, version = 150)
 	public final HLEModuleFunction sceNetResolverDeleteFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverDelete") {
 		@Override
 		public final void execute(Processor processor) {
@@ -368,7 +341,7 @@ public class sceNetResolver implements HLEModule {
 			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverDelete(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x224C5F44, version = 150)
 	public final HLEModuleFunction sceNetResolverStartNtoAFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverStartNtoA") {
 		@Override
 		public final void execute(Processor processor) {
@@ -379,7 +352,7 @@ public class sceNetResolver implements HLEModule {
 			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverStartNtoA(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x629E2FB7, version = 150)
 	public final HLEModuleFunction sceNetResolverStartAtoNFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverStartAtoN") {
 		@Override
 		public final void execute(Processor processor) {
@@ -390,7 +363,7 @@ public class sceNetResolver implements HLEModule {
 			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverStartAtoN(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x808F6063, version = 150)
 	public final HLEModuleFunction sceNetResolverStopFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverStop") {
 		@Override
 		public final void execute(Processor processor) {
@@ -401,7 +374,7 @@ public class sceNetResolver implements HLEModule {
 			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverStop(processor);";
 		}
 	};
-
+    @HLEFunction(nid = 0x14C17EF9, version = 150)
     public final HLEModuleFunction sceNetResolverStartNtoAAsyncFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverStartNtoAAsync") {
 		@Override
 		public final void execute(Processor processor) {
@@ -412,7 +385,7 @@ public class sceNetResolver implements HLEModule {
 			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverStartNtoAAsync(processor);";
 		}
 	};
-
+    @HLEFunction(nid = 0xAAC09184, version = 150)
     public final HLEModuleFunction sceNetResolverStartAtoNAsyncFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverStartAtoNAsync") {
 		@Override
 		public final void execute(Processor processor) {
@@ -423,7 +396,7 @@ public class sceNetResolver implements HLEModule {
 			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverStartAtoNAsync(processor);";
 		}
 	};
-
+    @HLEFunction(nid = 0x4EE99358, version = 150)
     public final HLEModuleFunction sceNetResolverPollAsyncFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverPollAsync") {
 		@Override
 		public final void execute(Processor processor) {
@@ -434,7 +407,7 @@ public class sceNetResolver implements HLEModule {
 			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverPollAsync(processor);";
 		}
 	};
-
+    @HLEFunction(nid = 0x12748EB9, version = 150)
     public final HLEModuleFunction sceNetResolverWaitAsyncFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverWaitAsync") {
 		@Override
 		public final void execute(Processor processor) {

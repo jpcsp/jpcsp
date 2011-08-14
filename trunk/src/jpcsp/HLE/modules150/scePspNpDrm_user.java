@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -38,36 +39,10 @@ public class scePspNpDrm_user implements HLEModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0xA1336091, sceNpDrmSetLicenseeKeyFunction);
-            mm.addFunction(0x9B745542, sceNpDrmClearLicenseeKeyFunction);
-            mm.addFunction(0x275987D1, sceNpDrmRenameCheckFunction);
-            mm.addFunction(0x08D98894, sceNpDrmEdataSetupKeyFunction);
-            mm.addFunction(0x219EF5CC, sceNpDrmEdataGetDataSizeFunction);
-            mm.addFunction(0x2BAA4294, sceNpDrmOpenFunction);
-            mm.addFunction(0xC618D0B1, sceKernelLoadModuleNpDrmFunction);
-            mm.addFunction(0xAA5FC85B, sceKernelLoadExecNpDrmFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceNpDrmSetLicenseeKeyFunction);
-            mm.removeFunction(sceNpDrmClearLicenseeKeyFunction);
-            mm.removeFunction(sceNpDrmRenameCheckFunction);
-            mm.removeFunction(sceNpDrmEdataSetupKeyFunction);
-            mm.removeFunction(sceNpDrmEdataGetDataSizeFunction);
-            mm.removeFunction(sceNpDrmOpenFunction);
-            mm.removeFunction(sceKernelLoadModuleNpDrmFunction);
-            mm.removeFunction(sceKernelLoadExecNpDrmFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     public static final int PSP_NPDRM_KEY_LENGHT = 16;
     private int npDrmKey[] = new int[PSP_NPDRM_KEY_LENGHT];
@@ -157,7 +132,7 @@ public class scePspNpDrm_user implements HLEModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-
+    @HLEFunction(nid = 0xA1336091, version = 150)
     public final HLEModuleFunction sceNpDrmSetLicenseeKeyFunction = new HLEModuleFunction("scePspNpDrm_user", "sceNpDrmSetLicenseeKey") {
 
         @Override
@@ -170,7 +145,7 @@ public class scePspNpDrm_user implements HLEModule {
             return "jpcsp.HLE.Modules.scePspNpDrm_userModule.sceNpDrmSetLicenseeKey(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x9B745542, version = 150)
     public final HLEModuleFunction sceNpDrmClearLicenseeKeyFunction = new HLEModuleFunction("scePspNpDrm_user", "sceNpDrmClearLicenseeKey") {
 
         @Override
@@ -183,7 +158,7 @@ public class scePspNpDrm_user implements HLEModule {
             return "jpcsp.HLE.Modules.scePspNpDrm_userModule.sceNpDrmClearLicenseeKey(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x275987D1, version = 150)
     public final HLEModuleFunction sceNpDrmRenameCheckFunction = new HLEModuleFunction("scePspNpDrm_user", "sceNpDrmRenameCheck") {
 
         @Override
@@ -196,7 +171,7 @@ public class scePspNpDrm_user implements HLEModule {
             return "jpcsp.HLE.Modules.scePspNpDrm_userModule.sceNpDrmRenameCheck(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x08D98894, version = 150)
     public final HLEModuleFunction sceNpDrmEdataSetupKeyFunction = new HLEModuleFunction("scePspNpDrm_user", "sceNpDrmEdataSetupKey") {
 
         @Override
@@ -209,7 +184,7 @@ public class scePspNpDrm_user implements HLEModule {
             return "jpcsp.HLE.Modules.scePspNpDrm_userModule.sceNpDrmEdataSetupKey(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x219EF5CC, version = 150)
     public final HLEModuleFunction sceNpDrmEdataGetDataSizeFunction = new HLEModuleFunction("scePspNpDrm_user", "sceNpDrmEdataGetDataSize") {
 
         @Override
@@ -222,7 +197,7 @@ public class scePspNpDrm_user implements HLEModule {
             return "jpcsp.HLE.Modules.scePspNpDrm_userModule.sceNpDrmEdataGetDataSize(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x2BAA4294, version = 150)
     public final HLEModuleFunction sceNpDrmOpenFunction = new HLEModuleFunction("scePspNpDrm_user", "sceNpDrmOpen") {
 
         @Override
@@ -235,7 +210,7 @@ public class scePspNpDrm_user implements HLEModule {
             return "jpcsp.HLE.Modules.scePspNpDrm_userModule.sceNpDrmOpen(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xC618D0B1, version = 150)
     public final HLEModuleFunction sceKernelLoadModuleNpDrmFunction = new HLEModuleFunction("scePspNpDrm_user", "sceKernelLoadModuleNpDrm") {
 
         @Override
@@ -248,7 +223,7 @@ public class scePspNpDrm_user implements HLEModule {
             return "jpcsp.HLE.Modules.scePspNpDrm_userModule.sceKernelLoadModuleNpDrm(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xAA5FC85B, version = 150)
     public final HLEModuleFunction sceKernelLoadExecNpDrmFunction = new HLEModuleFunction("scePspNpDrm_user", "sceKernelLoadExecNpDrm") {
 
         @Override

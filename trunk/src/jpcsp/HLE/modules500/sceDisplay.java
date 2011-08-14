@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules500;
 
+import jpcsp.HLE.HLEFunction;
 import org.lwjgl.LWJGLException;
 
 import jpcsp.Processor;
@@ -37,28 +38,10 @@ public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
 	public String getName() { return "sceDisplay"; }
 
 	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
-
-		if (version >= 500) {
-
-			mm.addFunction(0x40F1469C, sceDisplayWaitVblankStartMultiFunction);
-			mm.addFunction(0x77ED8B3A, sceDisplayWaitVblankStartMultiCBFunction);
-
-		}
-	}
+	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
 	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.uninstallModule(mm, version);
-
-		if (version >= 500) {
-
-			mm.removeFunction(sceDisplayWaitVblankStartMultiFunction);
-			mm.removeFunction(sceDisplayWaitVblankStartMultiCBFunction);
-
-		}
-	}
+	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
 
 	public void sceDisplayWaitVblankStartMulti(Processor processor) {
@@ -94,7 +77,7 @@ public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
         cpu.gpr[2] = 0;
         blockCurrentThreadOnVblank(cycleNum, true);
 	}
-
+	@HLEFunction(nid = 0x40F1469C, version = 500)
 	public final HLEModuleFunction sceDisplayWaitVblankStartMultiFunction = new HLEModuleFunction("sceDisplay", "sceDisplayWaitVblankStartMulti") {
 		@Override
 		public final void execute(Processor processor) {
@@ -105,7 +88,7 @@ public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
 			return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayWaitVblankStartMulti(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x77ED8B3A, version = 500)
 	public final HLEModuleFunction sceDisplayWaitVblankStartMultiCBFunction = new HLEModuleFunction("sceDisplay", "sceDisplayWaitVblankStartMultiCB") {
 		@Override
 		public final void execute(Processor processor) {

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -123,54 +124,10 @@ public class sceGe_user implements HLEModule, HLEStartModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0x1F6752AD, sceGeEdramGetSizeFunction);
-            mm.addFunction(0xE47E40E4, sceGeEdramGetAddrFunction);
-            mm.addFunction(0xB77905EA, sceGeEdramSetAddrTranslationFunction);
-            mm.addFunction(0xDC93CFEF, sceGeGetCmdFunction);
-            mm.addFunction(0x57C8945B, sceGeGetMtxFunction);
-            mm.addFunction(0x438A385A, sceGeSaveContextFunction);
-            mm.addFunction(0x0BF608FB, sceGeRestoreContextFunction);
-            mm.addFunction(0xAB49E76A, sceGeListEnQueueFunction);
-            mm.addFunction(0x1C0D95A6, sceGeListEnQueueHeadFunction);
-            mm.addFunction(0x5FB86AB0, sceGeListDeQueueFunction);
-            mm.addFunction(0xE0D68148, sceGeListUpdateStallAddrFunction);
-            mm.addFunction(0x03444EB4, sceGeListSyncFunction);
-            mm.addFunction(0xB287BD61, sceGeDrawSyncFunction);
-            mm.addFunction(0xB448EC0D, sceGeBreakFunction);
-            mm.addFunction(0x4C06E472, sceGeContinueFunction);
-            mm.addFunction(0xA4FC06A4, sceGeSetCallbackFunction);
-            mm.addFunction(0x05DB22CE, sceGeUnsetCallbackFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceGeEdramGetSizeFunction);
-            mm.removeFunction(sceGeEdramGetAddrFunction);
-            mm.removeFunction(sceGeEdramSetAddrTranslationFunction);
-            mm.removeFunction(sceGeGetCmdFunction);
-            mm.removeFunction(sceGeGetMtxFunction);
-            mm.removeFunction(sceGeSaveContextFunction);
-            mm.removeFunction(sceGeRestoreContextFunction);
-            mm.removeFunction(sceGeListEnQueueFunction);
-            mm.removeFunction(sceGeListEnQueueHeadFunction);
-            mm.removeFunction(sceGeListDeQueueFunction);
-            mm.removeFunction(sceGeListUpdateStallAddrFunction);
-            mm.removeFunction(sceGeListSyncFunction);
-            mm.removeFunction(sceGeDrawSyncFunction);
-            mm.removeFunction(sceGeBreakFunction);
-            mm.removeFunction(sceGeContinueFunction);
-            mm.removeFunction(sceGeSetCallbackFunction);
-            mm.removeFunction(sceGeUnsetCallbackFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     @Override
     public void start() {
@@ -810,7 +767,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
             }
             cpu.gpr[2] = 0;
         }
-    }
+    }    @HLEFunction(nid = 0x1F6752AD, version = 150)
     public final HLEModuleFunction sceGeEdramGetSizeFunction = new HLEModuleFunction("sceGe_user", "sceGeEdramGetSize") {
 
         @Override
@@ -822,7 +779,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceGe_userModule.sceGeEdramGetSize(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xE47E40E4, version = 150)
     public final HLEModuleFunction sceGeEdramGetAddrFunction = new HLEModuleFunction("sceGe_user", "sceGeEdramGetAddr") {
 
         @Override
@@ -834,7 +791,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceGe_userModule.sceGeEdramGetAddr(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB77905EA, version = 150)
     public final HLEModuleFunction sceGeEdramSetAddrTranslationFunction = new HLEModuleFunction("sceGe_user", "sceGeEdramSetAddrTranslation") {
 
         @Override
@@ -846,7 +803,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceGe_userModule.sceGeEdramSetAddrTranslation(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xDC93CFEF, version = 150)
     public final HLEModuleFunction sceGeGetCmdFunction = new HLEModuleFunction("sceGe_user", "sceGeGetCmd") {
 
         @Override
@@ -858,7 +815,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceGe_userModule.sceGeGetCmd(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x57C8945B, version = 150)
     public final HLEModuleFunction sceGeGetMtxFunction = new HLEModuleFunction("sceGe_user", "sceGeGetMtx") {
 
         @Override
@@ -870,7 +827,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceGe_userModule.sceGeGetMtx(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x438A385A, version = 150)
     public final HLEModuleFunction sceGeSaveContextFunction = new HLEModuleFunction("sceGe_user", "sceGeSaveContext") {
 
         @Override
@@ -882,7 +839,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceGe_userModule.sceGeSaveContext(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x0BF608FB, version = 150)
     public final HLEModuleFunction sceGeRestoreContextFunction = new HLEModuleFunction("sceGe_user", "sceGeRestoreContext") {
 
         @Override
@@ -894,7 +851,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceGe_userModule.sceGeRestoreContext(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xAB49E76A, version = 150)
     public final HLEModuleFunction sceGeListEnQueueFunction = new HLEModuleFunction("sceGe_user", "sceGeListEnQueue") {
 
         @Override
@@ -906,7 +863,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceGe_userModule.sceGeListEnQueue(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x1C0D95A6, version = 150)
     public final HLEModuleFunction sceGeListEnQueueHeadFunction = new HLEModuleFunction("sceGe_user", "sceGeListEnQueueHead") {
 
         @Override
@@ -918,7 +875,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceGe_userModule.sceGeListEnQueueHead(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x5FB86AB0, version = 150)
     public final HLEModuleFunction sceGeListDeQueueFunction = new HLEModuleFunction("sceGe_user", "sceGeListDeQueue") {
 
         @Override
@@ -930,7 +887,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceGe_userModule.sceGeListDeQueue(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xE0D68148, version = 150)
     public final HLEModuleFunction sceGeListUpdateStallAddrFunction = new HLEModuleFunction("sceGe_user", "sceGeListUpdateStallAddr") {
 
         @Override
@@ -942,7 +899,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceGe_userModule.sceGeListUpdateStallAddr(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x03444EB4, version = 150)
     public final HLEModuleFunction sceGeListSyncFunction = new HLEModuleFunction("sceGe_user", "sceGeListSync") {
 
         @Override
@@ -954,7 +911,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceGe_userModule.sceGeListSync(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB287BD61, version = 150)
     public final HLEModuleFunction sceGeDrawSyncFunction = new HLEModuleFunction("sceGe_user", "sceGeDrawSync") {
 
         @Override
@@ -966,7 +923,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceGe_userModule.sceGeDrawSync(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB448EC0D, version = 150)
     public final HLEModuleFunction sceGeBreakFunction = new HLEModuleFunction("sceGe_user", "sceGeBreak") {
 
         @Override
@@ -978,7 +935,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceGe_userModule.sceGeBreak(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x4C06E472, version = 150)
     public final HLEModuleFunction sceGeContinueFunction = new HLEModuleFunction("sceGe_user", "sceGeContinue") {
 
         @Override
@@ -990,7 +947,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceGe_userModule.sceGeContinue(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA4FC06A4, version = 150)
     public final HLEModuleFunction sceGeSetCallbackFunction = new HLEModuleFunction("sceGe_user", "sceGeSetCallback") {
 
         @Override
@@ -1002,7 +959,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceGe_userModule.sceGeSetCallback(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x05DB22CE, version = 150)
     public final HLEModuleFunction sceGeUnsetCallbackFunction = new HLEModuleFunction("sceGe_user", "sceGeUnsetCallback") {
 
         @Override

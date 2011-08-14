@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -38,24 +39,10 @@ public class sceNetIfhandle implements HLEModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0xC80181A2, sceNetGetDropRateFunction);
-            mm.addFunction(0xFD8585E1, sceNetSetDropRateFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceNetGetDropRateFunction);
-            mm.removeFunction(sceNetSetDropRateFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     private int netDropRate;
     private int netDropDuration;
@@ -98,7 +85,7 @@ public class sceNetIfhandle implements HLEModule {
         netDropDuration = dropDuration;
         cpu.gpr[2] = 0;
     }
-
+    @HLEFunction(nid = 0xC80181A2, version = 150)
     public final HLEModuleFunction sceNetGetDropRateFunction = new HLEModuleFunction("sceNetIfhandle", "sceNetGetDropRate") {
 
         @Override
@@ -111,7 +98,7 @@ public class sceNetIfhandle implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetIfhandleModule.sceNetGetDropRate(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xFD8585E1, version = 150)
     public final HLEModuleFunction sceNetSetDropRateFunction = new HLEModuleFunction("sceNetIfhandle", "sceNetSetDropRate") {
 
         @Override

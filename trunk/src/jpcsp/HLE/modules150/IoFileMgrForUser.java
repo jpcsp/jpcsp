@@ -34,6 +34,7 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
 import static jpcsp.util.Utilities.readStringNZ;
 import static jpcsp.util.Utilities.readStringZ;
 
+import jpcsp.HLE.HLEFunction;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
@@ -474,94 +475,10 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0x3251EA56, sceIoPollAsyncFunction);
-            mm.addFunction(0xE23EEC33, sceIoWaitAsyncFunction);
-            mm.addFunction(0x35DBD746, sceIoWaitAsyncCBFunction);
-            mm.addFunction(0xCB05F8D6, sceIoGetAsyncStatFunction);
-            mm.addFunction(0xB293727F, sceIoChangeAsyncPriorityFunction);
-            mm.addFunction(0xA12A0514, sceIoSetAsyncCallbackFunction);
-            mm.addFunction(0x810C4BC3, sceIoCloseFunction);
-            mm.addFunction(0xFF5940B6, sceIoCloseAsyncFunction);
-            mm.addFunction(0x109F50BC, sceIoOpenFunction);
-            mm.addFunction(0x89AA9906, sceIoOpenAsyncFunction);
-            mm.addFunction(0x6A638D83, sceIoReadFunction);
-            mm.addFunction(0xA0B5A7C2, sceIoReadAsyncFunction);
-            mm.addFunction(0x42EC03AC, sceIoWriteFunction);
-            mm.addFunction(0x0FACAB19, sceIoWriteAsyncFunction);
-            mm.addFunction(0x27EB27B8, sceIoLseekFunction);
-            mm.addFunction(0x71B19E77, sceIoLseekAsyncFunction);
-            mm.addFunction(0x68963324, sceIoLseek32Function);
-            mm.addFunction(0x1B385D8F, sceIoLseek32AsyncFunction);
-            mm.addFunction(0x63632449, sceIoIoctlFunction);
-            mm.addFunction(0xE95A012B, sceIoIoctlAsyncFunction);
-            mm.addFunction(0xB29DDF9C, sceIoDopenFunction);
-            mm.addFunction(0xE3EB004C, sceIoDreadFunction);
-            mm.addFunction(0xEB092469, sceIoDcloseFunction);
-            mm.addFunction(0xF27A9C51, sceIoRemoveFunction);
-            mm.addFunction(0x06A70004, sceIoMkdirFunction);
-            mm.addFunction(0x1117C65F, sceIoRmdirFunction);
-            mm.addFunction(0x55F4717D, sceIoChdirFunction);
-            mm.addFunction(0xAB96437F, sceIoSyncFunction);
-            mm.addFunction(0xACE946E8, sceIoGetstatFunction);
-            mm.addFunction(0xB8A740F4, sceIoChstatFunction);
-            mm.addFunction(0x779103A0, sceIoRenameFunction);
-            mm.addFunction(0x54F5FB11, sceIoDevctlFunction);
-            mm.addFunction(0x08BD7374, sceIoGetDevTypeFunction);
-            mm.addFunction(0xB2A628C1, sceIoAssignFunction);
-            mm.addFunction(0x6D08A871, sceIoUnassignFunction);
-            mm.addFunction(0xE8BC6571, sceIoCancelFunction);
-            mm.addFunction(0x5C2BE2CC, sceIoGetFdListFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceIoPollAsyncFunction);
-            mm.removeFunction(sceIoWaitAsyncFunction);
-            mm.removeFunction(sceIoWaitAsyncCBFunction);
-            mm.removeFunction(sceIoGetAsyncStatFunction);
-            mm.removeFunction(sceIoChangeAsyncPriorityFunction);
-            mm.removeFunction(sceIoSetAsyncCallbackFunction);
-            mm.removeFunction(sceIoCloseFunction);
-            mm.removeFunction(sceIoCloseAsyncFunction);
-            mm.removeFunction(sceIoOpenFunction);
-            mm.removeFunction(sceIoOpenAsyncFunction);
-            mm.removeFunction(sceIoReadFunction);
-            mm.removeFunction(sceIoReadAsyncFunction);
-            mm.removeFunction(sceIoWriteFunction);
-            mm.removeFunction(sceIoWriteAsyncFunction);
-            mm.removeFunction(sceIoLseekFunction);
-            mm.removeFunction(sceIoLseekAsyncFunction);
-            mm.removeFunction(sceIoLseek32Function);
-            mm.removeFunction(sceIoLseek32AsyncFunction);
-            mm.removeFunction(sceIoIoctlFunction);
-            mm.removeFunction(sceIoIoctlAsyncFunction);
-            mm.removeFunction(sceIoDopenFunction);
-            mm.removeFunction(sceIoDreadFunction);
-            mm.removeFunction(sceIoDcloseFunction);
-            mm.removeFunction(sceIoRemoveFunction);
-            mm.removeFunction(sceIoMkdirFunction);
-            mm.removeFunction(sceIoRmdirFunction);
-            mm.removeFunction(sceIoChdirFunction);
-            mm.removeFunction(sceIoSyncFunction);
-            mm.removeFunction(sceIoGetstatFunction);
-            mm.removeFunction(sceIoChstatFunction);
-            mm.removeFunction(sceIoRenameFunction);
-            mm.removeFunction(sceIoDevctlFunction);
-            mm.removeFunction(sceIoGetDevTypeFunction);
-            mm.removeFunction(sceIoAssignFunction);
-            mm.removeFunction(sceIoUnassignFunction);
-            mm.removeFunction(sceIoCancelFunction);
-            mm.removeFunction(sceIoGetFdListFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     @Override
     public void start() {
@@ -3469,7 +3386,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
         cpu.gpr[2] = count;
     }
-
+    @HLEFunction(nid = 0x3251EA56, version = 150)
     public final HLEModuleFunction sceIoPollAsyncFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoPollAsync") {
 
         @Override
@@ -3481,7 +3398,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoPollAsync(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xE23EEC33, version = 150)
     public final HLEModuleFunction sceIoWaitAsyncFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoWaitAsync") {
 
         @Override
@@ -3493,7 +3410,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoWaitAsync(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x35DBD746, version = 150)
     public final HLEModuleFunction sceIoWaitAsyncCBFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoWaitAsyncCB") {
 
         @Override
@@ -3505,7 +3422,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoWaitAsyncCB(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xCB05F8D6, version = 150)
     public final HLEModuleFunction sceIoGetAsyncStatFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoGetAsyncStat") {
 
         @Override
@@ -3517,7 +3434,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoGetAsyncStat(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB293727F, version = 150)
     public final HLEModuleFunction sceIoChangeAsyncPriorityFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoChangeAsyncPriority") {
 
         @Override
@@ -3529,7 +3446,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoChangeAsyncPriority(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA12A0514, version = 150)
     public final HLEModuleFunction sceIoSetAsyncCallbackFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoSetAsyncCallback") {
 
         @Override
@@ -3541,7 +3458,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoSetAsyncCallback(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x810C4BC3, version = 150)
     public final HLEModuleFunction sceIoCloseFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoClose") {
 
         @Override
@@ -3553,7 +3470,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoClose(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xFF5940B6, version = 150)
     public final HLEModuleFunction sceIoCloseAsyncFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoCloseAsync") {
 
         @Override
@@ -3565,7 +3482,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoCloseAsync(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x109F50BC, version = 150)
     public final HLEModuleFunction sceIoOpenFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoOpen") {
 
         @Override
@@ -3577,7 +3494,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoOpen(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x89AA9906, version = 150)
     public final HLEModuleFunction sceIoOpenAsyncFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoOpenAsync") {
 
         @Override
@@ -3589,7 +3506,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoOpenAsync(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x6A638D83, version = 150)
     public final HLEModuleFunction sceIoReadFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoRead") {
 
         @Override
@@ -3601,7 +3518,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoRead(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA0B5A7C2, version = 150)
     public final HLEModuleFunction sceIoReadAsyncFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoReadAsync") {
 
         @Override
@@ -3613,7 +3530,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoReadAsync(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x42EC03AC, version = 150)
     public final HLEModuleFunction sceIoWriteFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoWrite") {
 
         @Override
@@ -3625,7 +3542,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoWrite(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x0FACAB19, version = 150)
     public final HLEModuleFunction sceIoWriteAsyncFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoWriteAsync") {
 
         @Override
@@ -3637,7 +3554,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoWriteAsync(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x27EB27B8, version = 150)
     public final HLEModuleFunction sceIoLseekFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoLseek") {
 
         @Override
@@ -3649,7 +3566,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoLseek(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x71B19E77, version = 150)
     public final HLEModuleFunction sceIoLseekAsyncFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoLseekAsync") {
 
         @Override
@@ -3661,7 +3578,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoLseekAsync(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x68963324, version = 150)
     public final HLEModuleFunction sceIoLseek32Function = new HLEModuleFunction("IoFileMgrForUser", "sceIoLseek32") {
 
         @Override
@@ -3673,7 +3590,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoLseek32(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x1B385D8F, version = 150)
     public final HLEModuleFunction sceIoLseek32AsyncFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoLseek32Async") {
 
         @Override
@@ -3685,7 +3602,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoLseek32Async(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x63632449, version = 150)
     public final HLEModuleFunction sceIoIoctlFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoIoctl") {
 
         @Override
@@ -3697,7 +3614,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoIoctl(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xE95A012B, version = 150)
     public final HLEModuleFunction sceIoIoctlAsyncFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoIoctlAsync") {
 
         @Override
@@ -3709,7 +3626,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoIoctlAsync(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB29DDF9C, version = 150)
     public final HLEModuleFunction sceIoDopenFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoDopen") {
 
         @Override
@@ -3721,7 +3638,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoDopen(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xE3EB004C, version = 150)
     public final HLEModuleFunction sceIoDreadFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoDread") {
 
         @Override
@@ -3733,7 +3650,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoDread(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xEB092469, version = 150)
     public final HLEModuleFunction sceIoDcloseFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoDclose") {
 
         @Override
@@ -3745,7 +3662,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoDclose(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xF27A9C51, version = 150)
     public final HLEModuleFunction sceIoRemoveFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoRemove") {
 
         @Override
@@ -3757,7 +3674,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoRemove(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x06A70004, version = 150)
     public final HLEModuleFunction sceIoMkdirFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoMkdir") {
 
         @Override
@@ -3769,7 +3686,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoMkdir(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x1117C65F, version = 150)
     public final HLEModuleFunction sceIoRmdirFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoRmdir") {
 
         @Override
@@ -3781,7 +3698,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoRmdir(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x55F4717D, version = 150)
     public final HLEModuleFunction sceIoChdirFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoChdir") {
 
         @Override
@@ -3793,7 +3710,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoChdir(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xAB96437F, version = 150)
     public final HLEModuleFunction sceIoSyncFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoSync") {
 
         @Override
@@ -3805,7 +3722,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoSync(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xACE946E8, version = 150)
     public final HLEModuleFunction sceIoGetstatFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoGetstat") {
 
         @Override
@@ -3817,7 +3734,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoGetstat(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB8A740F4, version = 150)
     public final HLEModuleFunction sceIoChstatFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoChstat") {
 
         @Override
@@ -3829,7 +3746,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoChstat(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x779103A0, version = 150)
     public final HLEModuleFunction sceIoRenameFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoRename") {
 
         @Override
@@ -3841,7 +3758,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoRename(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x54F5FB11, version = 150)
     public final HLEModuleFunction sceIoDevctlFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoDevctl") {
 
         @Override
@@ -3853,7 +3770,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoDevctl(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x08BD7374, version = 150)
     public final HLEModuleFunction sceIoGetDevTypeFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoGetDevType") {
 
         @Override
@@ -3865,7 +3782,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoGetDevType(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB2A628C1, version = 150)
     public final HLEModuleFunction sceIoAssignFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoAssign") {
 
         @Override
@@ -3877,7 +3794,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoAssign(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x6D08A871, version = 150)
     public final HLEModuleFunction sceIoUnassignFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoUnassign") {
 
         @Override
@@ -3889,7 +3806,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoUnassign(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xE8BC6571, version = 150)
     public final HLEModuleFunction sceIoCancelFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoCancel") {
 
         @Override
@@ -3901,7 +3818,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.IoFileMgrForUserModule.sceIoCancel(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x5C2BE2CC, version = 150)
     public final HLEModuleFunction sceIoGetFdListFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoGetFdList") {
 
         @Override

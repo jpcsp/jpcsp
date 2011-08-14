@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import java.util.zip.CRC32;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
@@ -43,44 +44,10 @@ public class sceDeflt implements HLEModule {
 	public String getName() { return "sceDeflt"; }
 	
 	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-		
-			mm.addFunction(0x2EE39A64, sceZlibAdler32Function);
-			mm.addFunction(0x44054E03, sceDeflateDecompressFunction);
-			mm.addFunction(0x6DBCF897, sceGzipDecompressFunction);
-			mm.addFunction(0xB767F9A0, sceGzipGetCommentFunction);
-			mm.addFunction(0x0BA3B9CC, sceGzipGetCompressedDataFunction);
-			mm.addFunction(0x8AA82C92, sceGzipGetInfoFunction);
-			mm.addFunction(0x106A3552, sceGzipGetNameFunction);
-			mm.addFunction(0x1B5B82BC, sceGzipIsValidFunction);
-			mm.addFunction(0xA9E4FB28, sceZlibDecompressFunction);
-			mm.addFunction(0x6A548477, sceZlibGetCompressedDataFunction);
-			mm.addFunction(0xAFE01FD3, sceZlibGetInfoFunction);
-			mm.addFunction(0xE46EB986, sceZlibIsValidFunction);
-			
-		}
-	}
+	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 	
 	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-		
-			mm.removeFunction(sceZlibAdler32Function);
-			mm.removeFunction(sceDeflateDecompressFunction);
-			mm.removeFunction(sceGzipDecompressFunction);
-			mm.removeFunction(sceGzipGetCommentFunction);
-			mm.removeFunction(sceGzipGetCompressedDataFunction);
-			mm.removeFunction(sceGzipGetInfoFunction);
-			mm.removeFunction(sceGzipGetNameFunction);
-			mm.removeFunction(sceGzipIsValidFunction);
-			mm.removeFunction(sceZlibDecompressFunction);
-			mm.removeFunction(sceZlibGetCompressedDataFunction);
-			mm.removeFunction(sceZlibGetInfoFunction);
-			mm.removeFunction(sceZlibIsValidFunction);
-			
-		}
-	}
+	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 		
 	public void sceZlibAdler32(Processor processor) {
 		CpuState cpu = processor.cpu;
@@ -219,7 +186,7 @@ public class sceDeflt implements HLEModule {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-    
+    	@HLEFunction(nid = 0x2EE39A64, version = 150)
 	public final HLEModuleFunction sceZlibAdler32Function = new HLEModuleFunction("sceDeflt", "sceZlibAdler32") {
 		@Override
 		public final void execute(Processor processor) {
@@ -230,7 +197,7 @@ public class sceDeflt implements HLEModule {
 			return "jpcsp.HLE.Modules.sceDefltModule.sceZlibAdler32(processor);";
 		}
 	};
-    
+    	@HLEFunction(nid = 0x44054E03, version = 150)
 	public final HLEModuleFunction sceDeflateDecompressFunction = new HLEModuleFunction("sceDeflt", "sceDeflateDecompress") {
 		@Override
 		public final void execute(Processor processor) {
@@ -241,7 +208,7 @@ public class sceDeflt implements HLEModule {
 			return "jpcsp.HLE.Modules.sceDefltModule.sceDeflateDecompress(processor);";
 		}
 	};
-    
+    	@HLEFunction(nid = 0x6DBCF897, version = 150)
 	public final HLEModuleFunction sceGzipDecompressFunction = new HLEModuleFunction("sceDeflt", "sceGzipDecompress") {
 		@Override
 		public final void execute(Processor processor) {
@@ -252,7 +219,7 @@ public class sceDeflt implements HLEModule {
 			return "jpcsp.HLE.Modules.sceDefltModule.sceGzipDecompress(processor);";
 		}
 	};
-    
+    	@HLEFunction(nid = 0xB767F9A0, version = 150)
 	public final HLEModuleFunction sceGzipGetCommentFunction = new HLEModuleFunction("sceDeflt", "sceGzipGetComment") {
 		@Override
 		public final void execute(Processor processor) {
@@ -263,7 +230,7 @@ public class sceDeflt implements HLEModule {
 			return "jpcsp.HLE.Modules.sceDefltModule.sceGzipGetComment(processor);";
 		}
 	};
-    
+    	@HLEFunction(nid = 0x0BA3B9CC, version = 150)
 	public final HLEModuleFunction sceGzipGetCompressedDataFunction = new HLEModuleFunction("sceDeflt", "sceGzipGetCompressedData") {
 		@Override
 		public final void execute(Processor processor) {
@@ -274,7 +241,7 @@ public class sceDeflt implements HLEModule {
 			return "jpcsp.HLE.Modules.sceDefltModule.sceGzipGetCompressedData(processor);";
 		}
 	};
-    
+    	@HLEFunction(nid = 0x8AA82C92, version = 150)
 	public final HLEModuleFunction sceGzipGetInfoFunction = new HLEModuleFunction("sceDeflt", "sceGzipGetInfo") {
 		@Override
 		public final void execute(Processor processor) {
@@ -285,7 +252,7 @@ public class sceDeflt implements HLEModule {
 			return "jpcsp.HLE.Modules.sceDefltModule.sceGzipGetInfo(processor);";
 		}
 	};
-    
+    	@HLEFunction(nid = 0x106A3552, version = 150)
 	public final HLEModuleFunction sceGzipGetNameFunction = new HLEModuleFunction("sceDeflt", "sceGzipGetName") {
 		@Override
 		public final void execute(Processor processor) {
@@ -296,7 +263,7 @@ public class sceDeflt implements HLEModule {
 			return "jpcsp.HLE.Modules.sceDefltModule.sceGzipGetName(processor);";
 		}
 	};
-    
+    	@HLEFunction(nid = 0x1B5B82BC, version = 150)
 	public final HLEModuleFunction sceGzipIsValidFunction = new HLEModuleFunction("sceDeflt", "sceGzipIsValid") {
 		@Override
 		public final void execute(Processor processor) {
@@ -307,7 +274,7 @@ public class sceDeflt implements HLEModule {
 			return "jpcsp.HLE.Modules.sceDefltModule.sceGzipIsValid(processor);";
 		}
 	};
-    
+    	@HLEFunction(nid = 0xA9E4FB28, version = 150)
 	public final HLEModuleFunction sceZlibDecompressFunction = new HLEModuleFunction("sceDeflt", "sceZlibDecompress") {
 		@Override
 		public final void execute(Processor processor) {
@@ -318,7 +285,7 @@ public class sceDeflt implements HLEModule {
 			return "jpcsp.HLE.Modules.sceDefltModule.sceZlibDecompress(processor);";
 		}
 	};
-    
+    	@HLEFunction(nid = 0x6A548477, version = 150)
 	public final HLEModuleFunction sceZlibGetCompressedDataFunction = new HLEModuleFunction("sceDeflt", "sceZlibGetCompressedData") {
 		@Override
 		public final void execute(Processor processor) {
@@ -329,7 +296,7 @@ public class sceDeflt implements HLEModule {
 			return "jpcsp.HLE.Modules.sceDefltModule.sceZlibGetCompressedData(processor);";
 		}
 	};
-    
+    	@HLEFunction(nid = 0xAFE01FD3, version = 150)
 	public final HLEModuleFunction sceZlibGetInfoFunction = new HLEModuleFunction("sceDeflt", "sceZlibGetInfo") {
 		@Override
 		public final void execute(Processor processor) {
@@ -340,7 +307,7 @@ public class sceDeflt implements HLEModule {
 			return "jpcsp.HLE.Modules.sceDefltModule.sceZlibGetInfo(processor);";
 		}
 	};
-    
+    	@HLEFunction(nid = 0xE46EB986, version = 150)
 	public final HLEModuleFunction sceZlibIsValidFunction = new HLEModuleFunction("sceDeflt", "sceZlibIsValid") {
 		@Override
 		public final void execute(Processor processor) {

@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules200;
 
+import jpcsp.HLE.HLEFunction;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -40,35 +41,10 @@ import jpcsp.filesystems.SeekableDataInput;
 
 public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
-
-        if (version >= 200) {
-            mm.addFunction(0x1579A159, sceUtilityLoadNetModuleFunction);
-            mm.addFunction(0x64D50C56, sceUtilityUnloadNetModuleFunction);
-            mm.addFunction(0xC4700FA3, sceUtilityInstallGetStatusFunction);
-            mm.addFunction(0x1281DA8E, sceUtilityInstallInitStartFunction);
-            mm.addFunction(0x5EF1C24A, sceUtilityInstallShutdownStartFunction);
-            mm.addFunction(0xA03D29BA, sceUtilityInstallUpdateFunction);
-
-            loadedNetModules = new HashMap<Integer, SceModule>();
-            waitingNetModules = new HashMap<Integer, String>();
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        super.uninstallModule(mm, version);
-
-        if (version >= 200) {
-            mm.removeFunction(sceUtilityLoadNetModuleFunction);
-            mm.removeFunction(sceUtilityUnloadNetModuleFunction);
-            mm.removeFunction(sceUtilityInstallGetStatusFunction);
-            mm.removeFunction(sceUtilityInstallInitStartFunction);
-            mm.removeFunction(sceUtilityInstallShutdownStartFunction);
-            mm.removeFunction(sceUtilityInstallUpdateFunction);
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     protected static class InstallUtilityDialogState extends UtilityDialogState {
 		protected SceUtilityInstallParams installParams;
@@ -245,7 +221,7 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
     public void sceUtilityInstallGetStatus(Processor processor) {
     	installState.executeGetStatus(processor);
     }
-
+    @HLEFunction(nid = 0x1579A159, version = 200)
     public final HLEModuleFunction sceUtilityLoadNetModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityLoadNetModule") {
 
         @Override
@@ -258,7 +234,7 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
             return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityLoadNetModule(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x64D50C56, version = 200)
     public final HLEModuleFunction sceUtilityUnloadNetModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityUnloadNetModule") {
 
         @Override
@@ -271,7 +247,7 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
             return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityUnloadNetModule(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xC4700FA3, version = 200)
     public final HLEModuleFunction sceUtilityInstallGetStatusFunction = new HLEModuleFunction("sceUtility", "sceUtilityInstallGetStatus") {
 
         @Override
@@ -284,7 +260,7 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
             return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityInstallGetStatus(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x1281DA8E, version = 200)
     public final HLEModuleFunction sceUtilityInstallInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityInstallInitStart") {
 
         @Override
@@ -297,7 +273,7 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
             return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityInstallInitStart(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x5EF1C24A, version = 200)
     public final HLEModuleFunction sceUtilityInstallShutdownStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityInstallShutdownStart") {
 
         @Override
@@ -310,7 +286,7 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
             return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityInstallShutdownStart(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xA03D29BA, version = 200)
     public final HLEModuleFunction sceUtilityInstallUpdateFunction = new HLEModuleFunction("sceUtility", "sceUtilityInstallUpdate") {
 
         @Override

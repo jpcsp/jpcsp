@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules280;
 
+import jpcsp.HLE.HLEFunction;
 import org.apache.log4j.Logger;
 
 import jpcsp.Processor;
@@ -35,22 +36,10 @@ public class sceP3da implements HLEModule {
 	}
 
 	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		if (version >= 280) {
-			mm.addFunction(0x374500A5, sceP3daBridgeInitFunction);
-			mm.addFunction(0x43F756A2, sceP3daBridgeExitFunction);
-			mm.addFunction(0x013016F3, sceP3daBridgeCoreFunction);
-		}
-	}
+	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 	
 	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		if (version >= 280) {
-			mm.removeFunction(sceP3daBridgeInitFunction);
-			mm.removeFunction(sceP3daBridgeExitFunction);
-			mm.removeFunction(sceP3daBridgeCoreFunction);
-		}
-	}
+	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
     public static final int PSP_P3DA_SAMPLES_NUM_STEP = 32;
     public static final int PSP_P3DA_SAMPLES_NUM_MIN = 64;
     public static final int PSP_P3DA_SAMPLES_NUM_DEFAULT = 256;
@@ -100,7 +89,7 @@ public class sceP3da implements HLEModule {
 
 		cpu.gpr[2] = 0;
 	}
-
+	@HLEFunction(nid = 0x374500A5, version = 280)
 	public final HLEModuleFunction sceP3daBridgeInitFunction = new HLEModuleFunction("sceP3da", "sceP3daBridgeInit") {
 		@Override
 		public final void execute(Processor processor) {
@@ -111,7 +100,7 @@ public class sceP3da implements HLEModule {
 			return "jpcsp.HLE.Modules.sceP3da.sceP3daBridgeInit(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x43F756A2, version = 280)
 	public final HLEModuleFunction sceP3daBridgeExitFunction = new HLEModuleFunction("sceP3da", "sceP3daBridgeExit") {
 		@Override
 		public final void execute(Processor processor) {
@@ -122,7 +111,7 @@ public class sceP3da implements HLEModule {
 			return "jpcsp.HLE.Modules.sceP3da.sceP3daBridgeExit(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x013016F3, version = 280)
 	public final HLEModuleFunction sceP3daBridgeCoreFunction = new HLEModuleFunction("sceP3da", "sceP3daBridgeCore") {
 		@Override
 		public final void execute(Processor processor) {

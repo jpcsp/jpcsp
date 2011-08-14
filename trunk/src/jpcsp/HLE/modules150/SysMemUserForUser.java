@@ -20,6 +20,7 @@ package jpcsp.HLE.modules150;
 import static jpcsp.util.Utilities.readStringNZ;
 import static jpcsp.util.Utilities.readStringZ;
 
+import jpcsp.HLE.HLEFunction;
 import java.util.HashMap;
 import java.util.Iterator;
 
@@ -76,34 +77,10 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 	public String getName() { return "SysMemUserForUser"; }
 
 	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-
-			mm.addFunction(0xA291F107, sceKernelMaxFreeMemSizeFunction);
-			mm.addFunction(0xF919F628, sceKernelTotalFreeMemSizeFunction);
-			mm.addFunction(0x237DBD4F, sceKernelAllocPartitionMemoryFunction);
-			mm.addFunction(0xB6D61D02, sceKernelFreePartitionMemoryFunction);
-			mm.addFunction(0x9D9A5BA1, sceKernelGetBlockHeadAddrFunction);
-			mm.addFunction(0x13A5ABEF, sceKernelPrintfFunction);
-			mm.addFunction(0x3FC9AE6A, sceKernelDevkitVersionFunction);
-
-		}
-	}
+	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
 	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-
-			mm.removeFunction(sceKernelMaxFreeMemSizeFunction);
-			mm.removeFunction(sceKernelTotalFreeMemSizeFunction);
-			mm.removeFunction(sceKernelAllocPartitionMemoryFunction);
-			mm.removeFunction(sceKernelFreePartitionMemoryFunction);
-			mm.removeFunction(sceKernelGetBlockHeadAddrFunction);
-			mm.removeFunction(sceKernelPrintfFunction);
-			mm.removeFunction(sceKernelDevkitVersionFunction);
-
-		}
-	}
+	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
 	protected boolean started = false;
 
@@ -519,7 +496,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 
         cpu.gpr[2] = devkitVersion;
 	}
-
+	@HLEFunction(nid = 0xA291F107, version = 150)
 	public final HLEModuleFunction sceKernelMaxFreeMemSizeFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelMaxFreeMemSize") {
 		@Override
 		public final void execute(Processor processor) {
@@ -530,7 +507,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelMaxFreeMemSize(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xF919F628, version = 150)
 	public final HLEModuleFunction sceKernelTotalFreeMemSizeFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelTotalFreeMemSize") {
 		@Override
 		public final void execute(Processor processor) {
@@ -541,7 +518,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelTotalFreeMemSize(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x237DBD4F, version = 150)
 	public final HLEModuleFunction sceKernelAllocPartitionMemoryFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelAllocPartitionMemory") {
 		@Override
 		public final void execute(Processor processor) {
@@ -552,7 +529,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelAllocPartitionMemory(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xB6D61D02, version = 150)
 	public final HLEModuleFunction sceKernelFreePartitionMemoryFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelFreePartitionMemory") {
 		@Override
 		public final void execute(Processor processor) {
@@ -563,7 +540,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelFreePartitionMemory(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x9D9A5BA1, version = 150)
 	public final HLEModuleFunction sceKernelGetBlockHeadAddrFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelGetBlockHeadAddr") {
 		@Override
 		public final void execute(Processor processor) {
@@ -574,7 +551,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelGetBlockHeadAddr(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x13A5ABEF, version = 150)
 	public final HLEModuleFunction sceKernelPrintfFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelPrintf") {
 		@Override
 		public final void execute(Processor processor) {
@@ -585,7 +562,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelPrintf(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x3FC9AE6A, version = 150)
 	public final HLEModuleFunction sceKernelDevkitVersionFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelDevkitVersion") {
 		@Override
 		public final void execute(Processor processor) {

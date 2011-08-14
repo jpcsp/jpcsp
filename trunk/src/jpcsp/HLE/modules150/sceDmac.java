@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -34,24 +35,10 @@ public class sceDmac implements HLEModule {
 	public String getName() { return "sceDmac"; }
 
 	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-
-			mm.addFunction(0x617F3FE6, sceDmacMemcpyFunction);
-			mm.addFunction(0xD97F94D8, sceDmacTryMemcpyFunction);
-
-		}
-	}
+	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
 	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-
-			mm.removeFunction(sceDmacMemcpyFunction);
-			mm.removeFunction(sceDmacTryMemcpyFunction);
-
-		}
-	}
+	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
 
     public void sceDmacMemcpy(Processor processor) {
@@ -87,7 +74,7 @@ public class sceDmac implements HLEModule {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-
+	@HLEFunction(nid = 0x617F3FE6, version = 150)
 	public final HLEModuleFunction sceDmacMemcpyFunction = new HLEModuleFunction("sceDmac", "sceDmacMemcpy") {
 		@Override
 		public final void execute(Processor processor) {
@@ -98,7 +85,7 @@ public class sceDmac implements HLEModule {
 			return "jpcsp.HLE.Modules.sceDmacModule.sceDmacMemcpy(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xD97F94D8, version = 150)
 	public final HLEModuleFunction sceDmacTryMemcpyFunction = new HLEModuleFunction("sceDmac", "sceDmacTryMemcpy") {
 		@Override
 		public final void execute(Processor processor) {

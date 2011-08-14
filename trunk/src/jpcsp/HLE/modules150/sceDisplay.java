@@ -20,6 +20,7 @@ import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
 import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
 
+import jpcsp.HLE.HLEFunction;
 import java.awt.Dimension;
 import java.awt.event.ComponentEvent;
 import java.awt.image.BufferedImage;
@@ -281,56 +282,10 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0x0E20F177, sceDisplaySetModeFunction);
-            mm.addFunction(0xDEA197D4, sceDisplayGetModeFunction);
-            mm.addFunction(0xDBA6C4C4, sceDisplayGetFramePerSecFunction);
-            mm.addFunction(0x7ED59BC4, sceDisplaySetHoldModeFunction);
-            mm.addFunction(0xA544C486, sceDisplaySetResumeModeFunction);
-            mm.addFunction(0x289D82FE, sceDisplaySetFrameBufFunction);
-            mm.addFunction(0xEEDA2E54, sceDisplayGetFrameBufFunction);
-            mm.addFunction(0xB4F378FA, sceDisplayIsForegroundFunction);
-            mm.addFunction(0x31C4BAA8, sceDisplayGetBrightnessFunction);
-            mm.addFunction(0x9C6EAAD7, sceDisplayGetVcountFunction);
-            mm.addFunction(0x4D4E10EC, sceDisplayIsVblankFunction);
-            mm.addFunction(0x36CDFADE, sceDisplayWaitVblankFunction);
-            mm.addFunction(0x8EB9EC49, sceDisplayWaitVblankCBFunction);
-            mm.addFunction(0x984C27E7, sceDisplayWaitVblankStartFunction);
-            mm.addFunction(0x46F186C3, sceDisplayWaitVblankStartCBFunction);
-            mm.addFunction(0x773DD3A3, sceDisplayGetCurrentHcountFunction);
-            mm.addFunction(0x210EAB3A, sceDisplayGetAccumulatedHcountFunction);
-            mm.addFunction(0xA83EF139, sceDisplayAdjustAccumulatedHcountFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceDisplaySetModeFunction);
-            mm.removeFunction(sceDisplayGetModeFunction);
-            mm.removeFunction(sceDisplayGetFramePerSecFunction);
-            mm.removeFunction(sceDisplaySetHoldModeFunction);
-            mm.removeFunction(sceDisplaySetResumeModeFunction);
-            mm.removeFunction(sceDisplaySetFrameBufFunction);
-            mm.removeFunction(sceDisplayGetFrameBufFunction);
-            mm.removeFunction(sceDisplayIsForegroundFunction);
-            mm.removeFunction(sceDisplayGetBrightnessFunction);
-            mm.removeFunction(sceDisplayGetVcountFunction);
-            mm.removeFunction(sceDisplayIsVblankFunction);
-            mm.removeFunction(sceDisplayWaitVblankFunction);
-            mm.removeFunction(sceDisplayWaitVblankCBFunction);
-            mm.removeFunction(sceDisplayWaitVblankStartFunction);
-            mm.removeFunction(sceDisplayWaitVblankStartCBFunction);
-            mm.removeFunction(sceDisplayGetCurrentHcountFunction);
-            mm.removeFunction(sceDisplayGetAccumulatedHcountFunction);
-            mm.removeFunction(sceDisplayAdjustAccumulatedHcountFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     public sceDisplay() throws LWJGLException {
     	super(null, new PixelFormat().withBitsPerPixel(8).withAlphaBits(8).withStencilBits(8).withSamples(antiAliasSamplesNum), null, new ContextAttribs().withDebug(useDebugGL));
@@ -1867,7 +1822,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     		this.pixelFormat = pixelFormat;
     	}
     }
-
+    @HLEFunction(nid = 0x0E20F177, version = 150)
     public final HLEModuleFunction sceDisplaySetModeFunction = new HLEModuleFunction("sceDisplay", "sceDisplaySetMode") {
 
         @Override
@@ -1879,7 +1834,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplaySetMode(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xDEA197D4, version = 150)
     public final HLEModuleFunction sceDisplayGetModeFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetMode") {
 
         @Override
@@ -1891,7 +1846,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetMode(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xDBA6C4C4, version = 150)
     public final HLEModuleFunction sceDisplayGetFramePerSecFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetFramePerSec") {
 
         @Override
@@ -1903,7 +1858,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetFramePerSec(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x7ED59BC4, version = 150)
     public final HLEModuleFunction sceDisplaySetHoldModeFunction = new HLEModuleFunction("sceDisplay", "sceDisplaySetHoldMode") {
 
         @Override
@@ -1915,7 +1870,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplaySetHoldMode(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA544C486, version = 150)
     public final HLEModuleFunction sceDisplaySetResumeModeFunction = new HLEModuleFunction("sceDisplay", "sceDisplaySetResumeMode") {
 
         @Override
@@ -1927,7 +1882,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplaySetResumeMode(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x289D82FE, version = 150)
     public final HLEModuleFunction sceDisplaySetFrameBufFunction = new HLEModuleFunction("sceDisplay", "sceDisplaySetFrameBuf") {
 
         @Override
@@ -1939,7 +1894,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplaySetFrameBuf(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xEEDA2E54, version = 150)
     public final HLEModuleFunction sceDisplayGetFrameBufFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetFrameBuf") {
 
         @Override
@@ -1951,7 +1906,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetFrameBuf(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB4F378FA, version = 150)
     public final HLEModuleFunction sceDisplayIsForegroundFunction = new HLEModuleFunction("sceDisplay", "sceDisplayIsForeground") {
 
         @Override
@@ -1963,7 +1918,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayIsForeground(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x31C4BAA8, version = 150)
     public final HLEModuleFunction sceDisplayGetBrightnessFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetBrightness") {
 
         @Override
@@ -1975,7 +1930,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetBrightness(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x9C6EAAD7, version = 150)
     public final HLEModuleFunction sceDisplayGetVcountFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetVcount") {
 
         @Override
@@ -1987,7 +1942,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetVcount(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x4D4E10EC, version = 150)
     public final HLEModuleFunction sceDisplayIsVblankFunction = new HLEModuleFunction("sceDisplay", "sceDisplayIsVblank") {
 
         @Override
@@ -1999,7 +1954,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayIsVblank(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x36CDFADE, version = 150)
     public final HLEModuleFunction sceDisplayWaitVblankFunction = new HLEModuleFunction("sceDisplay", "sceDisplayWaitVblank") {
 
         @Override
@@ -2011,7 +1966,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayWaitVblank(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x8EB9EC49, version = 150)
     public final HLEModuleFunction sceDisplayWaitVblankCBFunction = new HLEModuleFunction("sceDisplay", "sceDisplayWaitVblankCB") {
 
         @Override
@@ -2023,7 +1978,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayWaitVblankCB(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x984C27E7, version = 150)
     public final HLEModuleFunction sceDisplayWaitVblankStartFunction = new HLEModuleFunction("sceDisplay", "sceDisplayWaitVblankStart") {
 
         @Override
@@ -2035,7 +1990,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayWaitVblankStart(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x46F186C3, version = 150)
     public final HLEModuleFunction sceDisplayWaitVblankStartCBFunction = new HLEModuleFunction("sceDisplay", "sceDisplayWaitVblankStartCB") {
 
         @Override
@@ -2047,7 +2002,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayWaitVblankStartCB(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x773DD3A3, version = 150)
     public final HLEModuleFunction sceDisplayGetCurrentHcountFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetCurrentHcount") {
 
         @Override
@@ -2059,7 +2014,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetCurrentHcount(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x210EAB3A, version = 150)
     public final HLEModuleFunction sceDisplayGetAccumulatedHcountFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetAccumulatedHcount") {
 
         @Override
@@ -2071,7 +2026,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetAccumulatedHcount(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA83EF139, version = 150)
     public final HLEModuleFunction sceDisplayAdjustAccumulatedHcountFunction = new HLEModuleFunction("sceDisplay", "sceDisplayAdjustAccumulatedHcount") {
 
         @Override

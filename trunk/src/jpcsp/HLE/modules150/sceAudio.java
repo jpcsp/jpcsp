@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -46,82 +47,10 @@ public class sceAudio implements HLEModule, HLEStartModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0x8C1009B2, sceAudioOutputFunction);
-            mm.addFunction(0x136CAF51, sceAudioOutputBlockingFunction);
-            mm.addFunction(0xE2D56B2D, sceAudioOutputPannedFunction);
-            mm.addFunction(0x13F592BC, sceAudioOutputPannedBlockingFunction);
-            mm.addFunction(0x5EC81C55, sceAudioChReserveFunction);
-            mm.addFunction(0x41EFADE7, sceAudioOneshotOutputFunction);
-            mm.addFunction(0x6FC46853, sceAudioChReleaseFunction);
-            mm.addFunction(0xB011922F, sceAudioGetChannelRestLengthFunction);
-            mm.addFunction(0xCB2E439E, sceAudioSetChannelDataLenFunction);
-            mm.addFunction(0x95FD0C2D, sceAudioChangeChannelConfigFunction);
-            mm.addFunction(0xB7E1D8E7, sceAudioChangeChannelVolumeFunction);
-            mm.addFunction(0x01562BA3, sceAudioOutput2ReserveFunction);
-            mm.addFunction(0x43196845, sceAudioOutput2ReleaseFunction);
-            mm.addFunction(0x2D53F36E, sceAudioOutput2OutputBlockingFunction);
-            mm.addFunction(0x647CEF33, sceAudioOutput2GetRestSampleFunction);
-            mm.addFunction(0x63F2889C, sceAudioOutput2ChangeLengthFunction);
-            mm.addFunction(0x38553111, sceAudioSRCChReserveFunction);
-            mm.addFunction(0x5C37C0AE, sceAudioSRCChReleaseFunction);
-            mm.addFunction(0xE0727056, sceAudioSRCOutputBlockingFunction);
-            mm.addFunction(0x086E5895, sceAudioInputBlockingFunction);
-            mm.addFunction(0x6D4BEC68, sceAudioInputFunction);
-            mm.addFunction(0xA708C6A6, sceAudioGetInputLengthFunction);
-            mm.addFunction(0x87B2E651, sceAudioWaitInputEndFunction);
-            mm.addFunction(0x7DE61688, sceAudioInputInitFunction);
-            mm.addFunction(0xE926D3FB, sceAudioInputInitExFunction);
-            mm.addFunction(0xA633048E, sceAudioPollInputEndFunction);
-            mm.addFunction(0xE9D97901, sceAudioGetChannelRestLenFunction);
-            mm.addFunction(0x80F1F7E0, sceAudioInitFunction);
-            mm.addFunction(0x210567F7, sceAudioEndFunction);
-            mm.addFunction(0xA2BEAA6C, sceAudioSetFrequencyFunction);
-            mm.addFunction(0xB61595C0, sceAudioLoopbackTestFunction);
-            mm.addFunction(0x927AC32B, sceAudioSetVolumeOffsetFunction);
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-        	mm.removeFunction(sceAudioOutputFunction);
-            mm.removeFunction(sceAudioOutputBlockingFunction);
-            mm.removeFunction(sceAudioOutputPannedFunction);
-            mm.removeFunction(sceAudioOutputPannedBlockingFunction);
-            mm.removeFunction(sceAudioChReserveFunction);
-            mm.removeFunction(sceAudioOneshotOutputFunction);
-            mm.removeFunction(sceAudioChReleaseFunction);
-            mm.removeFunction(sceAudioGetChannelRestLengthFunction);
-            mm.removeFunction(sceAudioSetChannelDataLenFunction);
-            mm.removeFunction(sceAudioChangeChannelConfigFunction);
-            mm.removeFunction(sceAudioChangeChannelVolumeFunction);
-            mm.removeFunction(sceAudioOutput2ReserveFunction);
-            mm.removeFunction(sceAudioOutput2ReleaseFunction);
-            mm.removeFunction(sceAudioOutput2OutputBlockingFunction);
-            mm.removeFunction(sceAudioOutput2GetRestSampleFunction);
-            mm.removeFunction(sceAudioOutput2ChangeLengthFunction);
-            mm.removeFunction(sceAudioSRCChReserveFunction);
-            mm.removeFunction(sceAudioSRCChReleaseFunction);
-            mm.removeFunction(sceAudioSRCOutputBlockingFunction);
-            mm.removeFunction(sceAudioInputBlockingFunction);
-            mm.removeFunction(sceAudioInputFunction);
-            mm.removeFunction(sceAudioGetInputLengthFunction);
-            mm.removeFunction(sceAudioWaitInputEndFunction);
-            mm.removeFunction(sceAudioInputInitFunction);
-            mm.removeFunction(sceAudioInputInitExFunction);
-            mm.removeFunction(sceAudioPollInputEndFunction);
-            mm.removeFunction(sceAudioGetChannelRestLenFunction);
-            mm.removeFunction(sceAudioInitFunction);
-            mm.removeFunction(sceAudioEndFunction);
-            mm.removeFunction(sceAudioSetFrequencyFunction);
-            mm.removeFunction(sceAudioLoopbackTestFunction);
-            mm.removeFunction(sceAudioSetVolumeOffsetFunction);
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
 	@Override
 	public void start() {
@@ -797,7 +726,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
             return;
         }
         cpu.gpr[2] = hleAudioGetChannelRestLen(pspPCMChannels[channel]);
-    }
+    }    @HLEFunction(nid = 0x80F1F7E0, version = 150)
     public final HLEModuleFunction sceAudioInitFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioInit") {
 
         @Override
@@ -809,7 +738,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudio_driverModule.sceAudioInit(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x210567F7, version = 150)
     public final HLEModuleFunction sceAudioEndFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioEnd") {
 
         @Override
@@ -821,7 +750,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudio_driverModule.sceAudioEnd(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA2BEAA6C, version = 150)
     public final HLEModuleFunction sceAudioSetFrequencyFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioSetFrequency") {
 
         @Override
@@ -833,7 +762,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudio_driverModule.sceAudioSetFrequency(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB61595C0, version = 150)
     public final HLEModuleFunction sceAudioLoopbackTestFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioLoopbackTest") {
 
         @Override
@@ -845,7 +774,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudio_driverModule.sceAudioLoopbackTest(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x927AC32B, version = 150)
     public final HLEModuleFunction sceAudioSetVolumeOffsetFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioSetVolumeOffset") {
 
         @Override
@@ -857,7 +786,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudio_driverModule.sceAudioSetVolumeOffset(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x8C1009B2, version = 150)
     public final HLEModuleFunction sceAudioOutputFunction = new HLEModuleFunction("sceAudio", "sceAudioOutput") {
 
         @Override
@@ -869,7 +798,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutput(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x136CAF51, version = 150)
     public final HLEModuleFunction sceAudioOutputBlockingFunction = new HLEModuleFunction("sceAudio", "sceAudioOutputBlocking") {
 
         @Override
@@ -881,7 +810,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutputBlocking(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xE2D56B2D, version = 150)
     public final HLEModuleFunction sceAudioOutputPannedFunction = new HLEModuleFunction("sceAudio", "sceAudioOutputPanned") {
 
         @Override
@@ -893,7 +822,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutputPanned(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x13F592BC, version = 150)
     public final HLEModuleFunction sceAudioOutputPannedBlockingFunction = new HLEModuleFunction("sceAudio", "sceAudioOutputPannedBlocking") {
 
         @Override
@@ -905,7 +834,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutputPannedBlocking(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x5EC81C55, version = 150)
     public final HLEModuleFunction sceAudioChReserveFunction = new HLEModuleFunction("sceAudio", "sceAudioChReserve") {
 
         @Override
@@ -917,7 +846,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioChReserve(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x41EFADE7, version = 150)
     public final HLEModuleFunction sceAudioOneshotOutputFunction = new HLEModuleFunction("sceAudio", "sceAudioOneshotOutput") {
 
         @Override
@@ -929,7 +858,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOneshotOutput(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x6FC46853, version = 150)
     public final HLEModuleFunction sceAudioChReleaseFunction = new HLEModuleFunction("sceAudio", "sceAudioChRelease") {
 
         @Override
@@ -941,7 +870,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioChRelease(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB011922F, version = 150)
     public final HLEModuleFunction sceAudioGetChannelRestLengthFunction = new HLEModuleFunction("sceAudio", "sceAudioGetChannelRestLength") {
 
         @Override
@@ -953,7 +882,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioGetChannelRestLength(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xCB2E439E, version = 150)
     public final HLEModuleFunction sceAudioSetChannelDataLenFunction = new HLEModuleFunction("sceAudio", "sceAudioSetChannelDataLen") {
 
         @Override
@@ -965,7 +894,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioSetChannelDataLen(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x95FD0C2D, version = 150)
     public final HLEModuleFunction sceAudioChangeChannelConfigFunction = new HLEModuleFunction("sceAudio", "sceAudioChangeChannelConfig") {
 
         @Override
@@ -977,7 +906,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioChangeChannelConfig(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB7E1D8E7, version = 150)
     public final HLEModuleFunction sceAudioChangeChannelVolumeFunction = new HLEModuleFunction("sceAudio", "sceAudioChangeChannelVolume") {
 
         @Override
@@ -989,7 +918,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioChangeChannelVolume(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x01562BA3, version = 150)
     public final HLEModuleFunction sceAudioOutput2ReserveFunction = new HLEModuleFunction("sceAudio", "sceAudioOutput2Reserve") {
 
         @Override
@@ -1001,7 +930,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutput2Reserve(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x43196845, version = 150)
     public final HLEModuleFunction sceAudioOutput2ReleaseFunction = new HLEModuleFunction("sceAudio", "sceAudioOutput2Release") {
 
         @Override
@@ -1013,7 +942,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutput2Release(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x2D53F36E, version = 150)
     public final HLEModuleFunction sceAudioOutput2OutputBlockingFunction = new HLEModuleFunction("sceAudio", "sceAudioOutput2OutputBlocking") {
 
         @Override
@@ -1025,7 +954,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutput2OutputBlocking(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x647CEF33, version = 150)
     public final HLEModuleFunction sceAudioOutput2GetRestSampleFunction = new HLEModuleFunction("sceAudio", "sceAudioOutput2GetRestSample") {
 
         @Override
@@ -1037,7 +966,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutput2GetRestSample(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x63F2889C, version = 150)
     public final HLEModuleFunction sceAudioOutput2ChangeLengthFunction = new HLEModuleFunction("sceAudio", "sceAudioOutput2ChangeLength") {
 
         @Override
@@ -1049,7 +978,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutput2ChangeLength(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x38553111, version = 150)
     public final HLEModuleFunction sceAudioSRCChReserveFunction = new HLEModuleFunction("sceAudio", "sceAudioSRCChReserve") {
 
         @Override
@@ -1061,7 +990,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioSRCChReserve(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x5C37C0AE, version = 150)
     public final HLEModuleFunction sceAudioSRCChReleaseFunction = new HLEModuleFunction("sceAudio", "sceAudioSRCChRelease") {
 
         @Override
@@ -1073,7 +1002,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioSRCChRelease(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xE0727056, version = 150)
     public final HLEModuleFunction sceAudioSRCOutputBlockingFunction = new HLEModuleFunction("sceAudio", "sceAudioSRCOutputBlocking") {
 
         @Override
@@ -1085,7 +1014,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioSRCOutputBlocking(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x086E5895, version = 150)
     public final HLEModuleFunction sceAudioInputBlockingFunction = new HLEModuleFunction("sceAudio", "sceAudioInputBlocking") {
 
         @Override
@@ -1097,7 +1026,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioInputBlocking(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x6D4BEC68, version = 150)
     public final HLEModuleFunction sceAudioInputFunction = new HLEModuleFunction("sceAudio", "sceAudioInput") {
 
         @Override
@@ -1109,7 +1038,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioInput(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA708C6A6, version = 150)
     public final HLEModuleFunction sceAudioGetInputLengthFunction = new HLEModuleFunction("sceAudio", "sceAudioGetInputLength") {
 
         @Override
@@ -1121,7 +1050,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioGetInputLength(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x87B2E651, version = 150)
     public final HLEModuleFunction sceAudioWaitInputEndFunction = new HLEModuleFunction("sceAudio", "sceAudioWaitInputEnd") {
 
         @Override
@@ -1133,7 +1062,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioWaitInputEnd(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x7DE61688, version = 150)
     public final HLEModuleFunction sceAudioInputInitFunction = new HLEModuleFunction("sceAudio", "sceAudioInputInit") {
 
         @Override
@@ -1145,7 +1074,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioInputInit(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xE926D3FB, version = 150)
     public final HLEModuleFunction sceAudioInputInitExFunction = new HLEModuleFunction("sceAudio", "sceAudioInputInitEx") {
 
         @Override
@@ -1157,7 +1086,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioInputInitEx(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA633048E, version = 150)
     public final HLEModuleFunction sceAudioPollInputEndFunction = new HLEModuleFunction("sceAudio", "sceAudioPollInputEnd") {
 
         @Override
@@ -1169,7 +1098,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioPollInputEnd(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xE9D97901, version = 150)
     public final HLEModuleFunction sceAudioGetChannelRestLenFunction = new HLEModuleFunction("sceAudio", "sceAudioGetChannelRestLen") {
 
         @Override

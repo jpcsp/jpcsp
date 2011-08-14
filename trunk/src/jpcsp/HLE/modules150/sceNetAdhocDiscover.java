@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
@@ -35,32 +36,10 @@ public class sceNetAdhocDiscover implements HLEModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0x941B3877, sceNetAdhocDiscoverInitStartFunction);
-            mm.addFunction(0x52DE1B97, sceNetAdhocDiscoverUpdateFunction);
-            mm.addFunction(0x944DDBC6, sceNetAdhocDiscoverGetStatusFunction);
-            mm.addFunction(0xA2246614, sceNetAdhocDiscoverTermFunction);
-            mm.addFunction(0xF7D13214, sceNetAdhocDiscoverStopFunction);
-            mm.addFunction(0xA423A21B, sceNetAdhocDiscoverRequestSuspendFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceNetAdhocDiscoverInitStartFunction);
-            mm.removeFunction(sceNetAdhocDiscoverUpdateFunction);
-            mm.removeFunction(sceNetAdhocDiscoverGetStatusFunction);
-            mm.removeFunction(sceNetAdhocDiscoverTermFunction);
-            mm.removeFunction(sceNetAdhocDiscoverStopFunction);
-            mm.removeFunction(sceNetAdhocDiscoverRequestSuspendFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     public void sceNetAdhocDiscoverInitStart(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -109,7 +88,7 @@ public class sceNetAdhocDiscover implements HLEModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-
+    @HLEFunction(nid = 0x941B3877, version = 150)
     public final HLEModuleFunction sceNetAdhocDiscoverInitStartFunction = new HLEModuleFunction("sceNetAdhocDiscover", "sceNetAdhocDiscoverInitStart") {
 
         @Override
@@ -122,7 +101,7 @@ public class sceNetAdhocDiscover implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocDiscoverModule.sceNetAdhocDiscoverInitStart(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x52DE1B97, version = 150)
     public final HLEModuleFunction sceNetAdhocDiscoverUpdateFunction = new HLEModuleFunction("sceNetAdhocDiscover", "sceNetAdhocDiscoverUpdate") {
 
         @Override
@@ -135,7 +114,7 @@ public class sceNetAdhocDiscover implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocDiscoverModule.sceNetAdhocDiscoverUpdate(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x944DDBC6, version = 150)
     public final HLEModuleFunction sceNetAdhocDiscoverGetStatusFunction = new HLEModuleFunction("sceNetAdhocDiscover", "sceNetAdhocDiscoverGetStatus") {
 
         @Override
@@ -148,7 +127,7 @@ public class sceNetAdhocDiscover implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocDiscoverModule.sceNetAdhocDiscoverGetStatus(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xA2246614, version = 150)
     public final HLEModuleFunction sceNetAdhocDiscoverTermFunction = new HLEModuleFunction("sceNetAdhocDiscover", "sceNetAdhocDiscoverTerm") {
 
         @Override
@@ -161,7 +140,7 @@ public class sceNetAdhocDiscover implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocDiscoverModule.sceNetAdhocDiscoverTerm(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xF7D13214, version = 150)
     public final HLEModuleFunction sceNetAdhocDiscoverStopFunction = new HLEModuleFunction("sceNetAdhocDiscover", "sceNetAdhocDiscoverStop") {
 
         @Override
@@ -174,7 +153,7 @@ public class sceNetAdhocDiscover implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocDiscoverModule.sceNetAdhocDiscoverStop(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xA423A21B, version = 150)
     public final HLEModuleFunction sceNetAdhocDiscoverRequestSuspendFunction = new HLEModuleFunction("sceNetAdhocDiscover", "sceNetAdhocDiscoverRequestSuspend") {
 
         @Override

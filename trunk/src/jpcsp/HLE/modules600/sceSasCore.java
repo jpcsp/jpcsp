@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules600;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.managers.IntrManager;
@@ -26,26 +27,10 @@ import jpcsp.HLE.modules.HLEModuleManager;
 public class sceSasCore extends jpcsp.HLE.modules500.sceSasCore {
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
-
-        if (version >= 600) {
-            mm.addFunction(0x4AA9EAD6, __sceSasSetVoiceATRAC3Function);
-            mm.addFunction(0x7497EA85, __sceSasConcatenateATRAC3Function);
-            mm.addFunction(0xF6107F00, __sceSasUnsetATRAC3Function);
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        super.uninstallModule(mm, version);
-
-        if (version >= 600) {
-            mm.removeFunction(__sceSasSetVoiceATRAC3Function);
-            mm.removeFunction(__sceSasConcatenateATRAC3Function);
-            mm.removeFunction(__sceSasUnsetATRAC3Function);
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     public void __sceSasSetVoiceATRAC3(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -102,7 +87,7 @@ public class sceSasCore extends jpcsp.HLE.modules500.sceSasCore {
         }
         cpu.gpr[2] = 0;
     }
-
+    @HLEFunction(nid = 0x4AA9EAD6, version = 600)
     public final HLEModuleFunction __sceSasSetVoiceATRAC3Function = new HLEModuleFunction("sceSasCore", "__sceSasSetVoiceATRAC3") {
 
         @Override
@@ -115,7 +100,7 @@ public class sceSasCore extends jpcsp.HLE.modules500.sceSasCore {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetVoiceATRAC3(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x7497EA85, version = 600)
     public final HLEModuleFunction __sceSasConcatenateATRAC3Function = new HLEModuleFunction("sceSasCore", "__sceSasConcatenateATRAC3") {
 
         @Override
@@ -128,7 +113,7 @@ public class sceSasCore extends jpcsp.HLE.modules500.sceSasCore {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasConcatenateATRAC3(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xF6107F00, version = 600)
     public final HLEModuleFunction __sceSasUnsetATRAC3Function = new HLEModuleFunction("sceSasCore", "__sceSasUnsetATRAC3") {
 
         @Override

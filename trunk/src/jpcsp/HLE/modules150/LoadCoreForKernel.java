@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Emulator;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -37,78 +38,10 @@ public class LoadCoreForKernel implements HLEModule {
 	public String getName() { return "LoadCoreForKernel"; }
 
 	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-
-			mm.addFunction(0xACE23476, sceKernelCheckPspConfigFunction);
-			mm.addFunction(0x7BE1421C, sceKernelCheckExecFileFunction);
-			mm.addFunction(0xBF983EF2, sceKernelProbeExecutableObjectFunction);
-			mm.addFunction(0x7068E6BA, sceKernelLoadExecutableObjectFunction);
-			mm.addFunction(0xB4D6FECC, sceKernelApplyElfRelSectionFunction);
-			mm.addFunction(0x54AB2675, sceKernelApplyPspRelSectionFunction);
-			mm.addFunction(0x2952F5AC, sceKernelDcacheWBinvAllFunction);
-			mm.addFunction(0xD8779AC6, sceKernelIcacheClearAllFunction);
-			mm.addFunction(0x99A695F0, sceKernelRegisterLibraryFunction);
-			mm.addFunction(0x5873A31F, sceKernelRegisterLibraryForUserFunction);
-			mm.addFunction(0x0B464512, sceKernelReleaseLibraryFunction);
-			mm.addFunction(0x9BAF90F6, sceKernelCanReleaseLibraryFunction);
-			mm.addFunction(0x0E760DBA, sceKernelLinkLibraryEntriesFunction);
-			mm.addFunction(0x0DE1F600, sceKernelLinkLibraryEntriesForUserFunction);
-			mm.addFunction(0xDA1B09AA, sceKernelUnLinkLibraryEntriesFunction);
-			mm.addFunction(0xC99DD47A, sceKernelQueryLoadCoreCBFunction);
-			mm.addFunction(0x616FCCCD, sceKernelSetBootCallbackLevelFunction);
-			mm.addFunction(0x52A86C21, sceKernelGetModuleFromUIDFunction);
-			mm.addFunction(0xCD0F3BAC, sceKernelCreateModuleFunction);
-			mm.addFunction(0x6B2371C2, sceKernelDeleteModuleFunction);
-			mm.addFunction(0x8D8A8ACE, sceKernelAssignModuleFunction);
-			mm.addFunction(0xAFF947D4, sceKernelCreateAssignModuleFunction);
-			mm.addFunction(0xAE7C6E76, sceKernelRegisterModuleFunction);
-			mm.addFunction(0x74CF001A, sceKernelReleaseModuleFunction);
-			mm.addFunction(0xCF8A41B1, sceKernelFindModuleByNameFunction);
-			mm.addFunction(0xFB8AE27D, sceKernelFindModuleByAddressFunction);
-			mm.addFunction(0xCCE4A157, sceKernelFindModuleByUIDFunction);
-			mm.addFunction(0x929B5C69, sceKernelGetModuleListWithAllocFunction);
-			mm.addFunction(0x05D915DB, sceKernelGetModuleIdListForKernelFunction);
-
-		}
-	}
+	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
 	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-
-			mm.removeFunction(sceKernelCheckPspConfigFunction);
-			mm.removeFunction(sceKernelCheckExecFileFunction);
-			mm.removeFunction(sceKernelProbeExecutableObjectFunction);
-			mm.removeFunction(sceKernelLoadExecutableObjectFunction);
-			mm.removeFunction(sceKernelApplyElfRelSectionFunction);
-			mm.removeFunction(sceKernelApplyPspRelSectionFunction);
-			mm.removeFunction(sceKernelDcacheWBinvAllFunction);
-			mm.removeFunction(sceKernelIcacheClearAllFunction);
-			mm.removeFunction(sceKernelRegisterLibraryFunction);
-			mm.removeFunction(sceKernelRegisterLibraryForUserFunction);
-			mm.removeFunction(sceKernelReleaseLibraryFunction);
-			mm.removeFunction(sceKernelCanReleaseLibraryFunction);
-			mm.removeFunction(sceKernelLinkLibraryEntriesFunction);
-			mm.removeFunction(sceKernelLinkLibraryEntriesForUserFunction);
-			mm.removeFunction(sceKernelUnLinkLibraryEntriesFunction);
-			mm.removeFunction(sceKernelQueryLoadCoreCBFunction);
-			mm.removeFunction(sceKernelSetBootCallbackLevelFunction);
-			mm.removeFunction(sceKernelGetModuleFromUIDFunction);
-			mm.removeFunction(sceKernelCreateModuleFunction);
-			mm.removeFunction(sceKernelDeleteModuleFunction);
-			mm.removeFunction(sceKernelAssignModuleFunction);
-			mm.removeFunction(sceKernelCreateAssignModuleFunction);
-			mm.removeFunction(sceKernelRegisterModuleFunction);
-			mm.removeFunction(sceKernelReleaseModuleFunction);
-			mm.removeFunction(sceKernelFindModuleByNameFunction);
-			mm.removeFunction(sceKernelFindModuleByAddressFunction);
-			mm.removeFunction(sceKernelFindModuleByUIDFunction);
-			mm.removeFunction(sceKernelGetModuleListWithAllocFunction);
-			mm.removeFunction(sceKernelGetModuleIdListForKernelFunction);
-
-		}
-	}
+	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
 
 	public void sceKernelCheckPspConfig(Processor processor) {
@@ -387,7 +320,7 @@ public class LoadCoreForKernel implements HLEModule {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-
+	@HLEFunction(nid = 0xACE23476, version = 150)
 	public final HLEModuleFunction sceKernelCheckPspConfigFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelCheckPspConfig") {
 		@Override
 		public final void execute(Processor processor) {
@@ -398,7 +331,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelCheckPspConfig(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x7BE1421C, version = 150)
 	public final HLEModuleFunction sceKernelCheckExecFileFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelCheckExecFile") {
 		@Override
 		public final void execute(Processor processor) {
@@ -409,7 +342,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelCheckExecFile(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xBF983EF2, version = 150)
 	public final HLEModuleFunction sceKernelProbeExecutableObjectFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelProbeExecutableObject") {
 		@Override
 		public final void execute(Processor processor) {
@@ -420,7 +353,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelProbeExecutableObject(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x7068E6BA, version = 150)
 	public final HLEModuleFunction sceKernelLoadExecutableObjectFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelLoadExecutableObject") {
 		@Override
 		public final void execute(Processor processor) {
@@ -431,7 +364,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelLoadExecutableObject(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xB4D6FECC, version = 150)
 	public final HLEModuleFunction sceKernelApplyElfRelSectionFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelApplyElfRelSection") {
 		@Override
 		public final void execute(Processor processor) {
@@ -442,7 +375,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelApplyElfRelSection(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x54AB2675, version = 150)
 	public final HLEModuleFunction sceKernelApplyPspRelSectionFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelApplyPspRelSection") {
 		@Override
 		public final void execute(Processor processor) {
@@ -453,7 +386,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelApplyPspRelSection(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x2952F5AC, version = 150)
 	public final HLEModuleFunction sceKernelDcacheWBinvAllFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelDcacheWBinvAll") {
 		@Override
 		public final void execute(Processor processor) {
@@ -464,7 +397,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelDcacheWBinvAll(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xD8779AC6, version = 150)
 	public final HLEModuleFunction sceKernelIcacheClearAllFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelIcacheClearAll") {
 		@Override
 		public final void execute(Processor processor) {
@@ -475,7 +408,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelIcacheClearAll(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x99A695F0, version = 150)
 	public final HLEModuleFunction sceKernelRegisterLibraryFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelRegisterLibrary") {
 		@Override
 		public final void execute(Processor processor) {
@@ -486,7 +419,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelRegisterLibrary(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x5873A31F, version = 150)
 	public final HLEModuleFunction sceKernelRegisterLibraryForUserFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelRegisterLibraryForUser") {
 		@Override
 		public final void execute(Processor processor) {
@@ -497,7 +430,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelRegisterLibraryForUser(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x0B464512, version = 150)
 	public final HLEModuleFunction sceKernelReleaseLibraryFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelReleaseLibrary") {
 		@Override
 		public final void execute(Processor processor) {
@@ -508,7 +441,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelReleaseLibrary(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x9BAF90F6, version = 150)
 	public final HLEModuleFunction sceKernelCanReleaseLibraryFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelCanReleaseLibrary") {
 		@Override
 		public final void execute(Processor processor) {
@@ -519,7 +452,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelCanReleaseLibrary(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x0E760DBA, version = 150)
 	public final HLEModuleFunction sceKernelLinkLibraryEntriesFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelLinkLibraryEntries") {
 		@Override
 		public final void execute(Processor processor) {
@@ -530,7 +463,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelLinkLibraryEntries(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x0DE1F600, version = 150)
 	public final HLEModuleFunction sceKernelLinkLibraryEntriesForUserFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelLinkLibraryEntriesForUser") {
 		@Override
 		public final void execute(Processor processor) {
@@ -541,7 +474,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelLinkLibraryEntriesForUser(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xDA1B09AA, version = 150)
 	public final HLEModuleFunction sceKernelUnLinkLibraryEntriesFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelUnLinkLibraryEntries") {
 		@Override
 		public final void execute(Processor processor) {
@@ -552,7 +485,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelUnLinkLibraryEntries(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xC99DD47A, version = 150)
 	public final HLEModuleFunction sceKernelQueryLoadCoreCBFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelQueryLoadCoreCB") {
 		@Override
 		public final void execute(Processor processor) {
@@ -563,7 +496,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelQueryLoadCoreCB(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x616FCCCD, version = 150)
 	public final HLEModuleFunction sceKernelSetBootCallbackLevelFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelSetBootCallbackLevel") {
 		@Override
 		public final void execute(Processor processor) {
@@ -574,7 +507,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelSetBootCallbackLevel(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x52A86C21, version = 150)
 	public final HLEModuleFunction sceKernelGetModuleFromUIDFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelGetModuleFromUID") {
 		@Override
 		public final void execute(Processor processor) {
@@ -585,7 +518,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelGetModuleFromUID(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xCD0F3BAC, version = 150)
 	public final HLEModuleFunction sceKernelCreateModuleFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelCreateModule") {
 		@Override
 		public final void execute(Processor processor) {
@@ -596,7 +529,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelCreateModule(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x6B2371C2, version = 150)
 	public final HLEModuleFunction sceKernelDeleteModuleFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelDeleteModule") {
 		@Override
 		public final void execute(Processor processor) {
@@ -607,7 +540,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelDeleteModule(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x8D8A8ACE, version = 150)
 	public final HLEModuleFunction sceKernelAssignModuleFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelAssignModule") {
 		@Override
 		public final void execute(Processor processor) {
@@ -618,7 +551,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelAssignModule(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xAFF947D4, version = 150)
 	public final HLEModuleFunction sceKernelCreateAssignModuleFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelCreateAssignModule") {
 		@Override
 		public final void execute(Processor processor) {
@@ -629,7 +562,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelCreateAssignModule(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xAE7C6E76, version = 150)
 	public final HLEModuleFunction sceKernelRegisterModuleFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelRegisterModule") {
 		@Override
 		public final void execute(Processor processor) {
@@ -640,7 +573,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelRegisterModule(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x74CF001A, version = 150)
 	public final HLEModuleFunction sceKernelReleaseModuleFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelReleaseModule") {
 		@Override
 		public final void execute(Processor processor) {
@@ -651,7 +584,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelReleaseModule(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xCF8A41B1, version = 150)
 	public final HLEModuleFunction sceKernelFindModuleByNameFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelFindModuleByName") {
 		@Override
 		public final void execute(Processor processor) {
@@ -662,7 +595,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelFindModuleByName(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xFB8AE27D, version = 150)
 	public final HLEModuleFunction sceKernelFindModuleByAddressFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelFindModuleByAddress") {
 		@Override
 		public final void execute(Processor processor) {
@@ -673,7 +606,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelFindModuleByAddress(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xCCE4A157, version = 150)
 	public final HLEModuleFunction sceKernelFindModuleByUIDFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelFindModuleByUID") {
 		@Override
 		public final void execute(Processor processor) {
@@ -684,7 +617,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelFindModuleByUID(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x929B5C69, version = 150)
 	public final HLEModuleFunction sceKernelGetModuleListWithAllocFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelGetModuleListWithAlloc") {
 		@Override
 		public final void execute(Processor processor) {
@@ -695,7 +628,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelGetModuleListWithAlloc(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x05D915DB, version = 150)
 	public final HLEModuleFunction sceKernelGetModuleIdListForKernelFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelGetModuleIdListForKernel") {
 		@Override
 		public final void execute(Processor processor) {

@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -35,38 +36,10 @@ public class sceHprm implements HLEModule, HLEStartModule {
     public String getName() { return "sceHprm"; }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0xC7154136, sceHprmRegisterCallbackFunction);
-            mm.addFunction(0x444ED0B7, sceHprmUnregisterCallbackFunction);
-            mm.addFunction(0x71B5FB67, sceHprmGetHpDetectFunction);
-            mm.addFunction(0x208DB1BD, sceHprmIsRemoteExistFunction);
-            mm.addFunction(0x7E69EDA4, sceHprmIsHeadphoneExistFunction);
-            mm.addFunction(0x219C58F1, sceHprmIsMicrophoneExistFunction);
-            mm.addFunction(0x1910B327, sceHprmPeekCurrentKeyFunction);
-            mm.addFunction(0x2BCEC83E, sceHprmPeekLatchFunction);
-            mm.addFunction(0x40D2F9F0, sceHprmReadLatchFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceHprmRegisterCallbackFunction);
-            mm.removeFunction(sceHprmUnregisterCallbackFunction);
-            mm.removeFunction(sceHprmGetHpDetectFunction);
-            mm.removeFunction(sceHprmIsRemoteExistFunction);
-            mm.removeFunction(sceHprmIsHeadphoneExistFunction);
-            mm.removeFunction(sceHprmIsMicrophoneExistFunction);
-            mm.removeFunction(sceHprmPeekCurrentKeyFunction);
-            mm.removeFunction(sceHprmPeekLatchFunction);
-            mm.removeFunction(sceHprmReadLatchFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
     
     @Override
     public void start() {
@@ -190,7 +163,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
 
         cpu.gpr[2] = 0;
     }
-
+    @HLEFunction(nid = 0xC7154136, version = 150)
     public final HLEModuleFunction sceHprmRegisterCallbackFunction = new HLEModuleFunction("sceHprm", "sceHprmRegisterCallback") {
         @Override
         public final void execute(Processor processor) {
@@ -201,7 +174,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
             return "jpcsp.HLE.Modules.sceHprmModule.sceHprmRegisterCallback(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x444ED0B7, version = 150)
     public final HLEModuleFunction sceHprmUnregisterCallbackFunction = new HLEModuleFunction("sceHprm", "sceHprmUnregisterCallback") {
         @Override
         public final void execute(Processor processor) {
@@ -212,7 +185,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
             return "jpcsp.HLE.Modules.sceHprmModule.sceHprmUnregisterCallback(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x71B5FB67, version = 150)
     public final HLEModuleFunction sceHprmGetHpDetectFunction = new HLEModuleFunction("sceHprm", "sceHprmGetHpDetect") {
         @Override
         public final void execute(Processor processor) {
@@ -223,7 +196,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
             return "jpcsp.HLE.Modules.sceHprmModule.sceHprmGetHpDetect(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x208DB1BD, version = 150)
     public final HLEModuleFunction sceHprmIsRemoteExistFunction = new HLEModuleFunction("sceHprm", "sceHprmIsRemoteExist") {
         @Override
         public final void execute(Processor processor) {
@@ -234,7 +207,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
             return "jpcsp.HLE.Modules.sceHprmModule.sceHprmIsRemoteExist(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x7E69EDA4, version = 150)
     public final HLEModuleFunction sceHprmIsHeadphoneExistFunction = new HLEModuleFunction("sceHprm", "sceHprmIsHeadphoneExist") {
         @Override
         public final void execute(Processor processor) {
@@ -245,7 +218,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
             return "jpcsp.HLE.Modules.sceHprmModule.sceHprmIsHeadphoneExist(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x219C58F1, version = 150)
     public final HLEModuleFunction sceHprmIsMicrophoneExistFunction = new HLEModuleFunction("sceHprm", "sceHprmIsMicrophoneExist") {
         @Override
         public final void execute(Processor processor) {
@@ -256,7 +229,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
             return "jpcsp.HLE.Modules.sceHprmModule.sceHprmIsMicrophoneExist(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x1910B327, version = 150)
     public final HLEModuleFunction sceHprmPeekCurrentKeyFunction = new HLEModuleFunction("sceHprm", "sceHprmPeekCurrentKey") {
         @Override
         public final void execute(Processor processor) {
@@ -267,7 +240,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
             return "jpcsp.HLE.Modules.sceHprmModule.sceHprmPeekCurrentKey(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x2BCEC83E, version = 150)
     public final HLEModuleFunction sceHprmPeekLatchFunction = new HLEModuleFunction("sceHprm", "sceHprmPeekLatch") {
         @Override
         public final void execute(Processor processor) {
@@ -278,7 +251,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
             return "jpcsp.HLE.Modules.sceHprmModule.sceHprmPeekLatch(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x40D2F9F0, version = 150)
     public final HLEModuleFunction sceHprmReadLatchFunction = new HLEModuleFunction("sceHprm", "sceHprmReadLatch") {
         @Override
         public final void execute(Processor processor) {

@@ -19,6 +19,7 @@ package jpcsp.HLE.modules150;
 import static jpcsp.util.Utilities.endianSwap32;
 import static jpcsp.util.Utilities.readUnaligned32;
 
+import jpcsp.HLE.HLEFunction;
 import java.util.HashMap;
 
 import jpcsp.Memory;
@@ -45,66 +46,10 @@ public class scePsmf implements HLEModule, HLEStartModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0xC22C8327, scePsmfSetPsmfFunction);
-            mm.addFunction(0xC7DB3A5B, scePsmfGetCurrentStreamTypeFunction);
-            mm.addFunction(0x28240568, scePsmfGetCurrentStreamNumberFunction);
-            mm.addFunction(0x1E6D9013, scePsmfSpecifyStreamWithStreamTypeFunction);
-            mm.addFunction(0x4BC9BDE0, scePsmfSpecifyStreamFunction);
-            mm.addFunction(0x76D3AEBA, scePsmfGetPresentationStartTimeFunction);
-            mm.addFunction(0xBD8AE0D8, scePsmfGetPresentationEndTimeFunction);
-            mm.addFunction(0xEAED89CD, scePsmfGetNumberOfStreamsFunction);
-            mm.addFunction(0x7491C438, scePsmfGetNumberOfEPentriesFunction);
-            mm.addFunction(0x0BA514E5, scePsmfGetVideoInfoFunction);
-            mm.addFunction(0xA83F7113, scePsmfGetAudioInfoFunction);
-            mm.addFunction(0x971A3A90, scePsmfCheckEPmapFunction);
-            mm.addFunction(0x4E624A34, scePsmfGetEPWithIdFunction);
-            mm.addFunction(0x7C0E7AC3, scePsmfGetEPWithTimestampFunction);
-            mm.addFunction(0x5F457515, scePsmfGetEPidWithTimestampFunction);
-            mm.addFunction(0x5B70FCC1, scePsmfQueryStreamOffsetFunction);
-            mm.addFunction(0x9553CC91, scePsmfQueryStreamSizeFunction);
-            mm.addFunction(0x68D42328, scePsmfGetNumberOfSpecificStreamsFunction);
-            mm.addFunction(0x0C120E1D, scePsmfSpecifyStreamWithStreamTypeNumberFunction);
-            mm.addFunction(0x2673646B, scePsmfVerifyPsmfFunction);
-            mm.addFunction(0xB78EB9E9, scePsmfGetHeaderSizeFunction);
-            mm.addFunction(0xA5EBFE81, scePsmfGetStreamSizeFunction);
-            mm.addFunction(0xE1283895, scePsmfGetPsmfVersionFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(scePsmfSetPsmfFunction);
-            mm.removeFunction(scePsmfGetCurrentStreamTypeFunction);
-            mm.removeFunction(scePsmfGetCurrentStreamNumberFunction);
-            mm.removeFunction(scePsmfSpecifyStreamWithStreamTypeFunction);
-            mm.removeFunction(scePsmfSpecifyStreamFunction);
-            mm.removeFunction(scePsmfGetPresentationStartTimeFunction);
-            mm.removeFunction(scePsmfGetPresentationEndTimeFunction);
-            mm.removeFunction(scePsmfGetNumberOfStreamsFunction);
-            mm.removeFunction(scePsmfGetNumberOfEPentriesFunction);
-            mm.removeFunction(scePsmfGetVideoInfoFunction);
-            mm.removeFunction(scePsmfGetAudioInfoFunction);
-            mm.removeFunction(scePsmfCheckEPmapFunction);
-            mm.removeFunction(scePsmfGetEPWithIdFunction);
-            mm.removeFunction(scePsmfGetEPWithTimestampFunction);
-            mm.removeFunction(scePsmfGetEPidWithTimestampFunction);
-            mm.removeFunction(scePsmfQueryStreamOffsetFunction);
-            mm.removeFunction(scePsmfQueryStreamSizeFunction);
-            mm.removeFunction(scePsmfGetNumberOfSpecificStreamsFunction);
-            mm.removeFunction(scePsmfSpecifyStreamWithStreamTypeNumberFunction);
-            mm.removeFunction(scePsmfVerifyPsmfFunction);
-            mm.removeFunction(scePsmfGetHeaderSizeFunction);
-            mm.removeFunction(scePsmfGetStreamSizeFunction);
-            mm.removeFunction(scePsmfGetPsmfVersionFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     @Override
     public void start() {
@@ -1092,7 +1037,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
         }
     }
-
+    @HLEFunction(nid = 0xC22C8327, version = 150)
     public final HLEModuleFunction scePsmfSetPsmfFunction = new HLEModuleFunction("scePsmf", "scePsmfSetPsmf") {
 
         @Override
@@ -1104,7 +1049,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfSetPsmf(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xC7DB3A5B, version = 150)
     public final HLEModuleFunction scePsmfGetCurrentStreamTypeFunction = new HLEModuleFunction("scePsmf", "scePsmfGetCurrentStreamType") {
 
         @Override
@@ -1116,7 +1061,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfGetCurrentStreamType(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x28240568, version = 150)
     public final HLEModuleFunction scePsmfGetCurrentStreamNumberFunction = new HLEModuleFunction("scePsmf", "scePsmfGetCurrentStreamNumber") {
 
         @Override
@@ -1128,7 +1073,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfGetCurrentStreamNumber(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x1E6D9013, version = 150)
     public final HLEModuleFunction scePsmfSpecifyStreamWithStreamTypeFunction = new HLEModuleFunction("scePsmf", "scePsmfSpecifyStreamWithStreamType") {
 
         @Override
@@ -1140,7 +1085,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfSpecifyStreamWithStreamType(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x4BC9BDE0, version = 150)
     public final HLEModuleFunction scePsmfSpecifyStreamFunction = new HLEModuleFunction("scePsmf", "scePsmfSpecifyStream") {
 
         @Override
@@ -1152,7 +1097,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfSpecifyStream(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x76D3AEBA, version = 150)
     public final HLEModuleFunction scePsmfGetPresentationStartTimeFunction = new HLEModuleFunction("scePsmf", "scePsmfGetPresentationStartTime") {
 
         @Override
@@ -1164,7 +1109,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfGetPresentationStartTime(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xBD8AE0D8, version = 150)
     public final HLEModuleFunction scePsmfGetPresentationEndTimeFunction = new HLEModuleFunction("scePsmf", "scePsmfGetPresentationEndTime") {
 
         @Override
@@ -1176,7 +1121,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfGetPresentationEndTime(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xEAED89CD, version = 150)
     public final HLEModuleFunction scePsmfGetNumberOfStreamsFunction = new HLEModuleFunction("scePsmf", "scePsmfGetNumberOfStreams") {
 
         @Override
@@ -1188,7 +1133,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfGetNumberOfStreams(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x7491C438, version = 150)
     public final HLEModuleFunction scePsmfGetNumberOfEPentriesFunction = new HLEModuleFunction("scePsmf", "scePsmfGetNumberOfEPentries") {
 
         @Override
@@ -1200,7 +1145,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfGetNumberOfEPentries(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x0BA514E5, version = 150)
     public final HLEModuleFunction scePsmfGetVideoInfoFunction = new HLEModuleFunction("scePsmf", "scePsmfGetVideoInfo") {
 
         @Override
@@ -1212,7 +1157,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfGetVideoInfo(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA83F7113, version = 150)
     public final HLEModuleFunction scePsmfGetAudioInfoFunction = new HLEModuleFunction("scePsmf", "scePsmfGetAudioInfo") {
 
         @Override
@@ -1224,7 +1169,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfGetAudioInfo(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x971A3A90, version = 150)
     public final HLEModuleFunction scePsmfCheckEPmapFunction = new HLEModuleFunction("scePsmf", "scePsmfCheckEPmap") {
 
         @Override
@@ -1236,7 +1181,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfCheckEPmap(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x4E624A34, version = 150)
     public final HLEModuleFunction scePsmfGetEPWithIdFunction = new HLEModuleFunction("scePsmf", "scePsmfGetEPWithId") {
 
         @Override
@@ -1248,7 +1193,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfGetEPWithId(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x7C0E7AC3, version = 150)
     public final HLEModuleFunction scePsmfGetEPWithTimestampFunction = new HLEModuleFunction("scePsmf", "scePsmfGetEPWithTimestamp") {
 
         @Override
@@ -1260,7 +1205,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfGetEPWithTimestamp(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x5F457515, version = 150)
     public final HLEModuleFunction scePsmfGetEPidWithTimestampFunction = new HLEModuleFunction("scePsmf", "scePsmfGetEPidWithTimestamp") {
 
         @Override
@@ -1272,7 +1217,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfGetEPidWithTimestamp(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x5B70FCC1, version = 150)
     public final HLEModuleFunction scePsmfQueryStreamOffsetFunction = new HLEModuleFunction("scePsmf", "scePsmfQueryStreamOffset") {
 
         @Override
@@ -1284,7 +1229,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfQueryStreamOffset(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x9553CC91, version = 150)
     public final HLEModuleFunction scePsmfQueryStreamSizeFunction = new HLEModuleFunction("scePsmf", "scePsmfQueryStreamSize") {
 
         @Override
@@ -1296,7 +1241,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfQueryStreamSize(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x68D42328, version = 150)
     public final HLEModuleFunction scePsmfGetNumberOfSpecificStreamsFunction = new HLEModuleFunction("scePsmf", "scePsmfGetNumberOfSpecificStreams") {
 
         @Override
@@ -1308,7 +1253,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfGetNumberOfSpecificStreams(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x0C120E1D, version = 150)
     public final HLEModuleFunction scePsmfSpecifyStreamWithStreamTypeNumberFunction = new HLEModuleFunction("scePsmf", "scePsmfSpecifyStreamWithStreamTypeNumber") {
 
         @Override
@@ -1320,7 +1265,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfSpecifyStreamWithStreamTypeNumber(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x2673646B, version = 150)
     public final HLEModuleFunction scePsmfVerifyPsmfFunction = new HLEModuleFunction("scePsmf", "scePsmfVerifyPsmf") {
 
         @Override
@@ -1332,7 +1277,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfVerifyPsmf(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB78EB9E9, version = 150)
     public final HLEModuleFunction scePsmfGetHeaderSizeFunction = new HLEModuleFunction("scePsmf", "scePsmfGetHeaderSize") {
 
         @Override
@@ -1344,7 +1289,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfGetHeaderSize(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA5EBFE81, version = 150)
     public final HLEModuleFunction scePsmfGetStreamSizeFunction = new HLEModuleFunction("scePsmf", "scePsmfGetStreamSize") {
 
         @Override
@@ -1356,7 +1301,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfGetStreamSize(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xE1283895, version = 150)
     public final HLEModuleFunction scePsmfGetPsmfVersionFunction = new HLEModuleFunction("scePsmf", "scePsmfGetPsmfVersion") {
 
         @Override

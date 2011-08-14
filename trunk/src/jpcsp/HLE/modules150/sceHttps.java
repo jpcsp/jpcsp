@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import java.util.HashMap;
 
 import jpcsp.Memory;
@@ -40,38 +41,10 @@ public class sceHttps implements HLEModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0xE4D21302, sceHttpsInitFunction);
-            mm.addFunction(0x68AB0F86, sceHttpsInitWithPathFunction);
-            mm.addFunction(0xF9D8EB63, sceHttpsEndFunction);
-            mm.addFunction(0x87797BDD, sceHttpsLoadDefaultCertFunction);
-            mm.addFunction(0xAB1540D5, sceHttpsGetSslErrorFunction);
-            mm.addFunction(0xBAC31BF1, sceHttpsEnableOptionFunction);
-            mm.addFunction(0xB3FAF831, sceHttpsDisableOptionFunction);
-            mm.addFunction(0xD11DAB01, sceHttpsGetCaListFunction);
-            mm.addFunction(0x569A1481, sceHttpsSetSslCallbackFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceHttpsInitFunction);
-            mm.removeFunction(sceHttpsInitWithPathFunction);
-            mm.removeFunction(sceHttpsEndFunction);
-            mm.removeFunction(sceHttpsLoadDefaultCertFunction);
-            mm.removeFunction(sceHttpsGetSslErrorFunction);
-            mm.removeFunction(sceHttpsEnableOptionFunction);
-            mm.removeFunction(sceHttpsDisableOptionFunction);
-            mm.removeFunction(sceHttpsGetCaListFunction);
-            mm.removeFunction(sceHttpsSetSslCallbackFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
     // Certificate related statics (guessed from a PSP's certificates' list).
     // The PSP currently handles certificates for the following issuers:
     //   - RSA: 2 certificates (resolved);
@@ -355,7 +328,7 @@ public class sceHttps implements HLEModule {
             cpu.gpr[2] = 0;
         }
     }
-
+    @HLEFunction(nid = 0xE4D21302, version = 150)
     public final HLEModuleFunction sceHttpsInitFunction = new HLEModuleFunction("sceHttps", "sceHttpsInit") {
 
         @Override
@@ -368,7 +341,7 @@ public class sceHttps implements HLEModule {
             return "jpcsp.HLE.Modules.sceHttpsModule.sceHttpsInit(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x68AB0F86, version = 150)
     public final HLEModuleFunction sceHttpsInitWithPathFunction = new HLEModuleFunction("sceHttps", "sceHttpsInitWithPath") {
 
         @Override
@@ -381,7 +354,7 @@ public class sceHttps implements HLEModule {
             return "jpcsp.HLE.Modules.sceHttpsModule.sceHttpsInitWithPath(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xF9D8EB63, version = 150)
     public final HLEModuleFunction sceHttpsEndFunction = new HLEModuleFunction("sceHttps", "sceHttpsEnd") {
 
         @Override
@@ -394,7 +367,7 @@ public class sceHttps implements HLEModule {
             return "jpcsp.HLE.Modules.sceHttpsModule.sceHttpsEnd(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x87797BDD, version = 150)
     public final HLEModuleFunction sceHttpsLoadDefaultCertFunction = new HLEModuleFunction("sceHttps", "sceHttpsLoadDefaultCert") {
 
         @Override
@@ -407,7 +380,7 @@ public class sceHttps implements HLEModule {
             return "jpcsp.HLE.Modules.sceHttpsModule.sceHttpsLoadDefaultCert(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xAB1540D5, version = 150)
     public final HLEModuleFunction sceHttpsGetSslErrorFunction = new HLEModuleFunction("sceHttps", "sceHttpsGetSslError") {
 
         @Override
@@ -420,7 +393,7 @@ public class sceHttps implements HLEModule {
             return "jpcsp.HLE.Modules.sceHttpsModule.sceHttpsGetSslError(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xBAC31BF1, version = 150)
     public final HLEModuleFunction sceHttpsEnableOptionFunction = new HLEModuleFunction("sceHttps", "sceHttpsEnableOption") {
 
         @Override
@@ -433,7 +406,7 @@ public class sceHttps implements HLEModule {
             return "jpcsp.HLE.Modules.sceHttpsModule.sceHttpsEnableOption(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xB3FAF831, version = 150)
     public final HLEModuleFunction sceHttpsDisableOptionFunction = new HLEModuleFunction("sceHttps", "sceHttpsDisableOption") {
 
         @Override
@@ -446,7 +419,7 @@ public class sceHttps implements HLEModule {
             return "jpcsp.HLE.Modules.sceHttpsModule.sceHttpsDisableOption(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xD11DAB01, version = 150)
     public final HLEModuleFunction sceHttpsGetCaListFunction = new HLEModuleFunction("sceHttps", "sceHttpsGetCaList") {
 
         @Override
@@ -459,7 +432,7 @@ public class sceHttps implements HLEModule {
             return "jpcsp.HLE.Modules.sceHttpsModule.sceHttpsGetCaList(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x569A1481, version = 150)
     public final HLEModuleFunction sceHttpsSetSslCallbackFunction = new HLEModuleFunction("sceHttps", "sceHttpsSetSslCallback") {
 
         @Override

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
@@ -35,52 +36,10 @@ public class sceNetAdhocMatching implements HLEModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0x2A2A1E07, sceNetAdhocMatchingInitFunction);
-            mm.addFunction(0x7945ECDA, sceNetAdhocMatchingTermFunction);
-            mm.addFunction(0xCA5EDA6F, sceNetAdhocMatchingCreateFunction);
-            mm.addFunction(0x93EF3843, sceNetAdhocMatchingStartFunction);
-            mm.addFunction(0x32B156B3, sceNetAdhocMatchingStopFunction);
-            mm.addFunction(0xF16EAF4F, sceNetAdhocMatchingDeleteFunction);
-            mm.addFunction(0xF79472D7, sceNetAdhocMatchingSendDataFunction);
-            mm.addFunction(0xEC19337D, sceNetAdhocMatchingAbortSendDataFunction);
-            mm.addFunction(0x5E3D4B79, sceNetAdhocMatchingSelectTargetFunction);
-            mm.addFunction(0xEA3C6108, sceNetAdhocMatchingCancelTargetFunction);
-            mm.addFunction(0x8F58BEDF, sceNetAdhocMatchingCancelTargetWithOptFunction);
-            mm.addFunction(0xB5D96C2A, sceNetAdhocMatchingGetHelloOptFunction);
-            mm.addFunction(0xB58E61B7, sceNetAdhocMatchingSetHelloOptFunction);
-            mm.addFunction(0xC58BCD9E, sceNetAdhocMatchingGetMembersFunction);
-            mm.addFunction(0x9C5CFB7D, sceNetAdhocMatchingGetPoolStatFunction);
-            mm.addFunction(0x40F8F435, sceNetAdhocMatchingGetPoolMaxAllocFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceNetAdhocMatchingInitFunction);
-            mm.removeFunction(sceNetAdhocMatchingTermFunction);
-            mm.removeFunction(sceNetAdhocMatchingCreateFunction);
-            mm.removeFunction(sceNetAdhocMatchingStartFunction);
-            mm.removeFunction(sceNetAdhocMatchingStopFunction);
-            mm.removeFunction(sceNetAdhocMatchingDeleteFunction);
-            mm.removeFunction(sceNetAdhocMatchingSendDataFunction);
-            mm.removeFunction(sceNetAdhocMatchingAbortSendDataFunction);
-            mm.removeFunction(sceNetAdhocMatchingSelectTargetFunction);
-            mm.removeFunction(sceNetAdhocMatchingCancelTargetFunction);
-            mm.removeFunction(sceNetAdhocMatchingCancelTargetWithOptFunction);
-            mm.removeFunction(sceNetAdhocMatchingGetHelloOptFunction);
-            mm.removeFunction(sceNetAdhocMatchingSetHelloOptFunction);
-            mm.removeFunction(sceNetAdhocMatchingGetMembersFunction);
-            mm.removeFunction(sceNetAdhocMatchingGetPoolStatFunction);
-            mm.removeFunction(sceNetAdhocMatchingGetPoolMaxAllocFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     public void sceNetAdhocMatchingInit(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -212,7 +171,7 @@ public class sceNetAdhocMatching implements HLEModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-
+    @HLEFunction(nid = 0x2A2A1E07, version = 150)
     public final HLEModuleFunction sceNetAdhocMatchingInitFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingInit") {
 
         @Override
@@ -225,7 +184,7 @@ public class sceNetAdhocMatching implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingInit(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x7945ECDA, version = 150)
     public final HLEModuleFunction sceNetAdhocMatchingTermFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingTerm") {
 
         @Override
@@ -238,7 +197,7 @@ public class sceNetAdhocMatching implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingTerm(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xCA5EDA6F, version = 150)
     public final HLEModuleFunction sceNetAdhocMatchingCreateFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingCreate") {
 
         @Override
@@ -251,7 +210,7 @@ public class sceNetAdhocMatching implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingCreate(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x93EF3843, version = 150)
     public final HLEModuleFunction sceNetAdhocMatchingStartFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingStart") {
 
         @Override
@@ -264,7 +223,7 @@ public class sceNetAdhocMatching implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingStart(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x32B156B3, version = 150)
     public final HLEModuleFunction sceNetAdhocMatchingStopFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingStop") {
 
         @Override
@@ -277,7 +236,7 @@ public class sceNetAdhocMatching implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingStop(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xF16EAF4F, version = 150)
     public final HLEModuleFunction sceNetAdhocMatchingDeleteFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingDelete") {
 
         @Override
@@ -290,7 +249,7 @@ public class sceNetAdhocMatching implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingDelete(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xF79472D7, version = 150)
     public final HLEModuleFunction sceNetAdhocMatchingSendDataFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingSendData") {
 
         @Override
@@ -303,7 +262,7 @@ public class sceNetAdhocMatching implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingSendData(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xEC19337D, version = 150)
     public final HLEModuleFunction sceNetAdhocMatchingAbortSendDataFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingAbortSendData") {
 
         @Override
@@ -316,7 +275,7 @@ public class sceNetAdhocMatching implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingAbortSendData(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x5E3D4B79, version = 150)
     public final HLEModuleFunction sceNetAdhocMatchingSelectTargetFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingSelectTarget") {
 
         @Override
@@ -329,7 +288,7 @@ public class sceNetAdhocMatching implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingSelectTarget(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xEA3C6108, version = 150)
     public final HLEModuleFunction sceNetAdhocMatchingCancelTargetFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingCancelTarget") {
 
         @Override
@@ -342,7 +301,7 @@ public class sceNetAdhocMatching implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingCancelTarget(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x8F58BEDF, version = 150)
     public final HLEModuleFunction sceNetAdhocMatchingCancelTargetWithOptFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingCancelTargetWithOpt") {
 
         @Override
@@ -355,7 +314,7 @@ public class sceNetAdhocMatching implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingCancelTargetWithOpt(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xB5D96C2A, version = 150)
     public final HLEModuleFunction sceNetAdhocMatchingGetHelloOptFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingGetHelloOpt") {
 
         @Override
@@ -368,7 +327,7 @@ public class sceNetAdhocMatching implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingGetHelloOpt(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xB58E61B7, version = 150)
     public final HLEModuleFunction sceNetAdhocMatchingSetHelloOptFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingSetHelloOpt") {
 
         @Override
@@ -381,7 +340,7 @@ public class sceNetAdhocMatching implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingSetHelloOpt(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xC58BCD9E, version = 150)
     public final HLEModuleFunction sceNetAdhocMatchingGetMembersFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingGetMembers") {
 
         @Override
@@ -394,7 +353,7 @@ public class sceNetAdhocMatching implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingGetMembers(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x9C5CFB7D, version = 150)
     public final HLEModuleFunction sceNetAdhocMatchingGetPoolStatFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingGetPoolStat") {
 
         @Override
@@ -407,7 +366,7 @@ public class sceNetAdhocMatching implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocMatchingModule.sceNetAdhocMatchingGetPoolStat(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x40F8F435, version = 150)
     public final HLEModuleFunction sceNetAdhocMatchingGetPoolMaxAllocFunction = new HLEModuleFunction("sceNetAdhocMatching", "sceNetAdhocMatchingGetPoolMaxAlloc") {
 
         @Override

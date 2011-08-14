@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
@@ -35,24 +36,10 @@ public class sceGameUpdate implements HLEModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-            mm.addFunction(0xCBE69FB3, sceGameUpdateInitFunction);
-            mm.addFunction(0xBB4B68DE, sceGameUpdateTermFunction);
-            mm.addFunction(0x596AD78C, sceGameUpdateRunFunction);
-            mm.addFunction(0x5F5D98A6, sceGameUpdateAbortFunction);
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-            mm.removeFunction(sceGameUpdateInitFunction);
-            mm.removeFunction(sceGameUpdateTermFunction);
-            mm.removeFunction(sceGameUpdateRunFunction);
-            mm.removeFunction(sceGameUpdateAbortFunction);
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     public void sceGameUpdateInit(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -85,7 +72,7 @@ public class sceGameUpdate implements HLEModule {
 
         cpu.gpr[2] = 0;
     }
-
+    @HLEFunction(nid = 0xCBE69FB3, version = 150)
     public final HLEModuleFunction sceGameUpdateInitFunction = new HLEModuleFunction("sceGameUpdate", "sceGameUpdateInit") {
 
         @Override
@@ -98,7 +85,7 @@ public class sceGameUpdate implements HLEModule {
             return "jpcsp.HLE.Modules.sceGameUpdateModule.sceGameUpdateInit(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xBB4B68DE, version = 150)
     public final HLEModuleFunction sceGameUpdateTermFunction = new HLEModuleFunction("sceGameUpdate", "sceGameUpdateTerm") {
 
         @Override
@@ -111,7 +98,7 @@ public class sceGameUpdate implements HLEModule {
             return "jpcsp.HLE.Modules.sceGameUpdateModule.sceGameUpdateTerm(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x596AD78C, version = 150)
     public final HLEModuleFunction sceGameUpdateRunFunction = new HLEModuleFunction("sceGameUpdate", "sceGameUpdateRun") {
 
         @Override
@@ -124,7 +111,7 @@ public class sceGameUpdate implements HLEModule {
             return "jpcsp.HLE.Modules.sceGameUpdateModule.sceGameUpdateRun(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x5F5D98A6, version = 150)
     public final HLEModuleFunction sceGameUpdateAbortFunction = new HLEModuleFunction("sceGameUpdate", "sceGameUpdateAbort") {
 
         @Override
