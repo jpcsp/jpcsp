@@ -56,6 +56,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
 
     private boolean hprmWarningLogged;
 
+    @HLEFunction(nid = 0xC7154136, version = 150)
     public void sceHprmRegisterCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -64,6 +65,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x444ED0B7, version = 150)
     public void sceHprmUnregisterCallback(Processor processor) {
         CpuState cpu = processor.cpu; 
 
@@ -72,6 +74,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x71B5FB67, version = 150)
     public void sceHprmGetHpDetect(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -80,6 +83,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x208DB1BD, version = 150)
     public void sceHprmIsRemoteExist(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -89,6 +93,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
         cpu.gpr[2] = result;
     }
 
+    @HLEFunction(nid = 0x7E69EDA4, version = 150)
     public void sceHprmIsHeadphoneExist(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -98,6 +103,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
         cpu.gpr[2] = result;
     }
 
+    @HLEFunction(nid = 0x219C58F1, version = 150)
     public void sceHprmIsMicrophoneExist(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -107,6 +113,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
         cpu.gpr[2] = result;
     }
 
+    @HLEFunction(nid = 0x1910B327, version = 150)
     public void sceHprmPeekCurrentKey(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -130,6 +137,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x2BCEC83E, version = 150)
     public void sceHprmPeekLatch(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -147,6 +155,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x40D2F9F0, version = 150)
     public void sceHprmReadLatch(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -163,22 +172,5 @@ public class sceHprm implements HLEModule, HLEStartModule {
 
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0xC7154136, version = 150) public HLEModuleFunction sceHprmRegisterCallbackFunction;
-
-    @HLEFunction(nid = 0x444ED0B7, version = 150) public HLEModuleFunction sceHprmUnregisterCallbackFunction;
-
-    @HLEFunction(nid = 0x71B5FB67, version = 150) public HLEModuleFunction sceHprmGetHpDetectFunction;
-
-    @HLEFunction(nid = 0x208DB1BD, version = 150) public HLEModuleFunction sceHprmIsRemoteExistFunction;
-
-    @HLEFunction(nid = 0x7E69EDA4, version = 150) public HLEModuleFunction sceHprmIsHeadphoneExistFunction;
-
-    @HLEFunction(nid = 0x219C58F1, version = 150) public HLEModuleFunction sceHprmIsMicrophoneExistFunction;
-
-    @HLEFunction(nid = 0x1910B327, version = 150) public HLEModuleFunction sceHprmPeekCurrentKeyFunction;
-
-    @HLEFunction(nid = 0x2BCEC83E, version = 150) public HLEModuleFunction sceHprmPeekLatchFunction;
-
-    @HLEFunction(nid = 0x40D2F9F0, version = 150) public HLEModuleFunction sceHprmReadLatchFunction;
 
 }

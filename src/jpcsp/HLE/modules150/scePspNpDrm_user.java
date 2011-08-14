@@ -47,6 +47,7 @@ public class scePspNpDrm_user implements HLEModule {
     public static final int PSP_NPDRM_KEY_LENGHT = 16;
     private int npDrmKey[] = new int[PSP_NPDRM_KEY_LENGHT];
 
+    @HLEFunction(nid = 0xA1336091, version = 150)
     public void sceNpDrmSetLicenseeKey(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -70,6 +71,7 @@ public class scePspNpDrm_user implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x9B745542, version = 150)
     public void sceNpDrmClearLicenseeKey(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -85,6 +87,7 @@ public class scePspNpDrm_user implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x275987D1, version = 150)
     public void sceNpDrmRenameCheck(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -93,6 +96,7 @@ public class scePspNpDrm_user implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x08D98894, version = 150)
     public void sceNpDrmEdataSetupKey(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -101,6 +105,7 @@ public class scePspNpDrm_user implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x219EF5CC, version = 150)
     public void sceNpDrmEdataGetDataSize(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -109,6 +114,7 @@ public class scePspNpDrm_user implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x2BAA4294, version = 150)
     public void sceNpDrmOpen(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -117,6 +123,7 @@ public class scePspNpDrm_user implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xC618D0B1, version = 150)
     public void sceKernelLoadModuleNpDrm(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -125,6 +132,7 @@ public class scePspNpDrm_user implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xAA5FC85B, version = 150)
     public void sceKernelLoadExecNpDrm(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -132,20 +140,5 @@ public class scePspNpDrm_user implements HLEModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-    @HLEFunction(nid = 0xA1336091, version = 150) public HLEModuleFunction sceNpDrmSetLicenseeKeyFunction;
-
-    @HLEFunction(nid = 0x9B745542, version = 150) public HLEModuleFunction sceNpDrmClearLicenseeKeyFunction;
-
-    @HLEFunction(nid = 0x275987D1, version = 150) public HLEModuleFunction sceNpDrmRenameCheckFunction;
-
-    @HLEFunction(nid = 0x08D98894, version = 150) public HLEModuleFunction sceNpDrmEdataSetupKeyFunction;
-
-    @HLEFunction(nid = 0x219EF5CC, version = 150) public HLEModuleFunction sceNpDrmEdataGetDataSizeFunction;
-
-    @HLEFunction(nid = 0x2BAA4294, version = 150) public HLEModuleFunction sceNpDrmOpenFunction;
-
-    @HLEFunction(nid = 0xC618D0B1, version = 150) public HLEModuleFunction sceKernelLoadModuleNpDrmFunction;
-
-    @HLEFunction(nid = 0xAA5FC85B, version = 150) public HLEModuleFunction sceKernelLoadExecNpDrmFunction;
 
 }

@@ -92,6 +92,7 @@ public class scePower implements HLEModule {
     protected int busClock = 111;
     protected static final int backlightMaximum = 4;
 
+    @HLEFunction(nid = 0x2B51FE2F, version = 150)
     public void scePower_2B51FE2F(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -100,6 +101,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x442BFBAC, version = 150)
     public void scePowerGetBacklightMaximum(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -108,6 +110,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = backlightMaximum;
     }
 
+    @HLEFunction(nid = 0xEFD3C963, version = 150)
     public void scePowerTick(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -116,6 +119,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xEDC13FE5, version = 150)
     public void scePowerGetIdleTimer(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -124,6 +128,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x7F30B3B1, version = 150)
     public void scePowerIdleTimerEnable(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -132,6 +137,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x972CE941, version = 150)
     public void scePowerIdleTimerDisable(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -140,6 +146,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x27F3292C, version = 150)
     public void scePowerBatteryUpdateInfo(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -148,6 +155,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xE8E4E204, version = 150)
     public void scePowerGetForceSuspendCapacity(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -157,6 +165,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = forceSuspendCapacity;
     }
 
+    @HLEFunction(nid = 0xB999184C, version = 150)
     public void scePowerGetLowBatteryCapacity(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -166,6 +175,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = lowBatteryCapacity;
     }
 
+    @HLEFunction(nid = 0x87440F5E, version = 150)
     public void scePowerIsPowerOnline(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -174,6 +184,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = Battery.isPluggedIn() ? 1 : 0;
     }
 
+    @HLEFunction(nid = 0x0AFD0D8B, version = 150)
     public void scePowerIsBatteryExist(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -182,6 +193,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = Battery.isPresent() ? 1 : 0;
     }
 
+    @HLEFunction(nid = 0x1E490401, version = 150)
     public void scePowerIsBatteryCharging(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -190,6 +202,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = Battery.isCharging() ? 1 : 0;
     }
 
+    @HLEFunction(nid = 0xB4432BC8, version = 150)
     public void scePowerGetBatteryChargingStatus(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -210,6 +223,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = status;
     }
 
+    @HLEFunction(nid = 0xD3075926, version = 150)
     public void scePowerIsLowBattery(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -228,6 +242,7 @@ public class scePower implements HLEModule {
      *
      * @return 1 if suspend is requided, otherwise 0
      */
+    @HLEFunction(nid = 0x78A1A796, version = 150)
     public void scePowerIsSuspendRequired(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -237,6 +252,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = isSuspendRequired;
     }
 
+    @HLEFunction(nid = 0x94F5A53F, version = 150)
     public void scePowerGetBatteryRemainCapacity(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -246,6 +262,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = batteryRemainCapacity;
     }
 
+    @HLEFunction(nid = 0xFD18A0FF, version = 150)
     public void scePowerGetBatteryFullCapacity(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -254,6 +271,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = Battery.getFullCapacity();
     }
 
+    @HLEFunction(nid = 0x2085D15D, version = 150)
     public void scePowerGetBatteryLifePercent(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -262,6 +280,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = Battery.getCurrentPowerPercent();
     }
 
+    @HLEFunction(nid = 0x8EFB3FA2, version = 150)
     public void scePowerGetBatteryLifeTime(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -270,6 +289,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = Battery.getLifeTime();
     }
 
+    @HLEFunction(nid = 0x28E12023, version = 150)
     public void scePowerGetBatteryTemp(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -278,6 +298,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = Battery.getTemperature();
     }
 
+    @HLEFunction(nid = 0x862AE1A6, version = 150)
     public void scePowerGetBatteryElec(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -286,6 +307,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x483CE86B, version = 150)
     public void scePowerGetBatteryVolt(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -294,6 +316,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = Battery.getVoltage();
     }
 
+    @HLEFunction(nid = 0x23436A4A, version = 150)
     public void scePower_23436A4A(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -302,6 +325,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x0CD21B1F, version = 150)
     public void scePowerSetPowerSwMode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -310,6 +334,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x165CE085, version = 150)
     public void scePowerGetPowerSwMode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -318,6 +343,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x23C31FFE, version = 150)
     public void scePowerVolatileMemLock(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -326,6 +352,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xFA97A599, version = 150)
     public void scePowerVolatileMemTryLock(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -334,6 +361,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xB3EDD801, version = 150)
     public void scePowerVolatileMemUnlock(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -342,6 +370,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xD6D016EF, version = 150)
     public void scePowerLock(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -350,6 +379,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xCA3D34C1, version = 150)
     public void scePowerUnlock(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -358,6 +388,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xDB62C9CF, version = 150)
     public void scePowerCancelRequest(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -366,6 +397,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x7FA406DD, version = 150)
     public void scePowerIsRequest(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -374,6 +406,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x2B7C7CF4, version = 150)
     public void scePowerRequestStandby(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -382,6 +415,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xAC32C9CC, version = 150)
     public void scePowerRequestSuspend(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -390,6 +424,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x2875994B, version = 150)
     public void scePower_2875994B(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -398,6 +433,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x3951AF53, version = 150)
     public void scePowerWaitRequestCompletion(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -406,6 +442,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x0074EF9B, version = 150)
     public void scePowerGetResumeCount(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -414,6 +451,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x04B7766E, version = 150)
     public void scePowerRegisterCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -458,6 +496,7 @@ public class scePower implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xDFA8BAF8, version = 150)
     public void scePowerUnregisterCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -477,6 +516,7 @@ public class scePower implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xDB9D28DD, version = 150)
     public void scePowerUnregitserCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -485,6 +525,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x843FBF43, version = 150)
     public void scePowerSetCpuClockFrequency(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -499,6 +540,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xB8D7B3FB, version = 150)
     public void scePowerSetBusClockFrequency(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -513,6 +555,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xFEE03A2F, version = 150)
     public void scePowerGetCpuClockFrequency(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -521,6 +564,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = cpuClock;
     }
 
+    @HLEFunction(nid = 0x478FE6F5, version = 150)
     public void scePowerGetBusClockFrequency(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -529,6 +573,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = busClock;
     }
 
+    @HLEFunction(nid = 0xFDB5BFE9, version = 150)
     public void scePowerGetCpuClockFrequencyInt(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -537,6 +582,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = cpuClock;
     }
 
+    @HLEFunction(nid = 0xBD681969, version = 150)
     public void scePowerGetBusClockFrequencyInt(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -545,6 +591,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = busClock;
     }
 
+    @HLEFunction(nid = 0x34F9C463, version = 150)
     public void scePowerGetPllClockFrequencyInt(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -553,6 +600,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = pllClock;
     }
 
+    @HLEFunction(nid = 0xB1A52C83, version = 150)
     public void scePowerGetCpuClockFrequencyFloat(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -562,6 +610,7 @@ public class scePower implements HLEModule {
         cpu.fpr[0] = cpuClock;
     }
 
+    @HLEFunction(nid = 0x9BADB3EB, version = 150)
     public void scePowerGetBusClockFrequencyFloat(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -571,6 +620,7 @@ public class scePower implements HLEModule {
         cpu.fpr[0] = busClock;
     }
 
+    @HLEFunction(nid = 0xEA382A27, version = 150)
     public void scePowerGetPllClockFrequencyFloat(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -580,6 +630,7 @@ public class scePower implements HLEModule {
         cpu.fpr[0] = pllClock;
     }
 
+    @HLEFunction(nid = 0x737486F2, version = 150)
     public void scePowerSetClockFrequency(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -592,6 +643,7 @@ public class scePower implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xEBD177D6, version = 150)
     public void scePower_EBD177D6(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -603,57 +655,6 @@ public class scePower implements HLEModule {
         log.debug("scePower_EBD177D6 pll:" + pllClock + " cpu:" + cpuClock + " bus:" + busClock);
 
         cpu.gpr[2] = 0;
-    }    @HLEFunction(nid = 0x2B51FE2F, version = 150) public HLEModuleFunction scePower_2B51FE2FFunction;
-    @HLEFunction(nid = 0x442BFBAC, version = 150) public HLEModuleFunction scePowerGetBacklightMaximumFunction;
-    @HLEFunction(nid = 0xEFD3C963, version = 150) public HLEModuleFunction scePowerTickFunction;
-    @HLEFunction(nid = 0xEDC13FE5, version = 150) public HLEModuleFunction scePowerGetIdleTimerFunction;
-    @HLEFunction(nid = 0x7F30B3B1, version = 150) public HLEModuleFunction scePowerIdleTimerEnableFunction;
-    @HLEFunction(nid = 0x972CE941, version = 150) public HLEModuleFunction scePowerIdleTimerDisableFunction;
-    @HLEFunction(nid = 0x27F3292C, version = 150) public HLEModuleFunction scePowerBatteryUpdateInfoFunction;
-    @HLEFunction(nid = 0xE8E4E204, version = 150) public HLEModuleFunction scePowerGetForceSuspendCapacityFunction;
-    @HLEFunction(nid = 0xB999184C, version = 150) public HLEModuleFunction scePowerGetLowBatteryCapacityFunction;
-    @HLEFunction(nid = 0x87440F5E, version = 150) public HLEModuleFunction scePowerIsPowerOnlineFunction;
-    @HLEFunction(nid = 0x0AFD0D8B, version = 150) public HLEModuleFunction scePowerIsBatteryExistFunction;
-    @HLEFunction(nid = 0x1E490401, version = 150) public HLEModuleFunction scePowerIsBatteryChargingFunction;
-    @HLEFunction(nid = 0xB4432BC8, version = 150) public HLEModuleFunction scePowerGetBatteryChargingStatusFunction;
-    @HLEFunction(nid = 0xD3075926, version = 150) public HLEModuleFunction scePowerIsLowBatteryFunction;
-    @HLEFunction(nid = 0x78A1A796, version = 150) public HLEModuleFunction scePowerIsSuspendRequiredFunction;
-    @HLEFunction(nid = 0x94F5A53F, version = 150) public HLEModuleFunction scePowerGetBatteryRemainCapacityFunction;
-    @HLEFunction(nid = 0xFD18A0FF, version = 150) public HLEModuleFunction scePowerGetBatteryFullCapacityFunction;
-    @HLEFunction(nid = 0x2085D15D, version = 150) public HLEModuleFunction scePowerGetBatteryLifePercentFunction;
-    @HLEFunction(nid = 0x8EFB3FA2, version = 150) public HLEModuleFunction scePowerGetBatteryLifeTimeFunction;
-    @HLEFunction(nid = 0x28E12023, version = 150) public HLEModuleFunction scePowerGetBatteryTempFunction;
-    @HLEFunction(nid = 0x862AE1A6, version = 150) public HLEModuleFunction scePowerGetBatteryElecFunction;
-    @HLEFunction(nid = 0x483CE86B, version = 150) public HLEModuleFunction scePowerGetBatteryVoltFunction;
-    @HLEFunction(nid = 0x23436A4A, version = 150) public HLEModuleFunction scePower_23436A4AFunction;
-    @HLEFunction(nid = 0x0CD21B1F, version = 150) public HLEModuleFunction scePowerSetPowerSwModeFunction;
-    @HLEFunction(nid = 0x165CE085, version = 150) public HLEModuleFunction scePowerGetPowerSwModeFunction;
-    @HLEFunction(nid = 0x23C31FFE, version = 150) public HLEModuleFunction scePowerVolatileMemLockFunction;
-    @HLEFunction(nid = 0xFA97A599, version = 150) public HLEModuleFunction scePowerVolatileMemTryLockFunction;
-    @HLEFunction(nid = 0xB3EDD801, version = 150) public HLEModuleFunction scePowerVolatileMemUnlockFunction;
-    @HLEFunction(nid = 0xD6D016EF, version = 150) public HLEModuleFunction scePowerLockFunction;
-    @HLEFunction(nid = 0xCA3D34C1, version = 150) public HLEModuleFunction scePowerUnlockFunction;
-    @HLEFunction(nid = 0xDB62C9CF, version = 150) public HLEModuleFunction scePowerCancelRequestFunction;
-    @HLEFunction(nid = 0x7FA406DD, version = 150) public HLEModuleFunction scePowerIsRequestFunction;
-    @HLEFunction(nid = 0x2B7C7CF4, version = 150) public HLEModuleFunction scePowerRequestStandbyFunction;
-    @HLEFunction(nid = 0xAC32C9CC, version = 150) public HLEModuleFunction scePowerRequestSuspendFunction;
-    @HLEFunction(nid = 0x2875994B, version = 150) public HLEModuleFunction scePower_2875994BFunction;
-    @HLEFunction(nid = 0x3951AF53, version = 150) public HLEModuleFunction scePowerWaitRequestCompletionFunction;
-    @HLEFunction(nid = 0x0074EF9B, version = 150) public HLEModuleFunction scePowerGetResumeCountFunction;
-    @HLEFunction(nid = 0x04B7766E, version = 150) public HLEModuleFunction scePowerRegisterCallbackFunction;
-    @HLEFunction(nid = 0xDFA8BAF8, version = 150) public HLEModuleFunction scePowerUnregisterCallbackFunction;
-    @HLEFunction(nid = 0xDB9D28DD, version = 150) public HLEModuleFunction scePowerUnregitserCallbackFunction;
-    @HLEFunction(nid = 0x843FBF43, version = 150) public HLEModuleFunction scePowerSetCpuClockFrequencyFunction;
-    @HLEFunction(nid = 0xB8D7B3FB, version = 150) public HLEModuleFunction scePowerSetBusClockFrequencyFunction;
-    @HLEFunction(nid = 0xFEE03A2F, version = 150) public HLEModuleFunction scePowerGetCpuClockFrequencyFunction;
-    @HLEFunction(nid = 0x478FE6F5, version = 150) public HLEModuleFunction scePowerGetBusClockFrequencyFunction;
-    @HLEFunction(nid = 0xFDB5BFE9, version = 150) public HLEModuleFunction scePowerGetCpuClockFrequencyIntFunction;
-    @HLEFunction(nid = 0xBD681969, version = 150) public HLEModuleFunction scePowerGetBusClockFrequencyIntFunction;
-    @HLEFunction(nid = 0x34F9C463, version = 150) public HLEModuleFunction scePowerGetPllClockFrequencyIntFunction;
-    @HLEFunction(nid = 0xB1A52C83, version = 150) public HLEModuleFunction scePowerGetCpuClockFrequencyFloatFunction;
-    @HLEFunction(nid = 0x9BADB3EB, version = 150) public HLEModuleFunction scePowerGetBusClockFrequencyFloatFunction;
-    @HLEFunction(nid = 0xEA382A27, version = 150) public HLEModuleFunction scePowerGetPllClockFrequencyFloatFunction;
-    @HLEFunction(nid = 0x737486F2, version = 150) public HLEModuleFunction scePowerSetClockFrequencyFunction;
-    @HLEFunction(nid = 0xEBD177D6, version = 150) public HLEModuleFunction scePower_EBD177D6Function;
+    }
 
 }

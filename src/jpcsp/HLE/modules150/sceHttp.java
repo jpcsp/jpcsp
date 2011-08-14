@@ -47,6 +47,7 @@ public class sceHttp implements HLEModule {
     private boolean isSystemCookieLoaded;
     private int maxMemSize;
 
+    @HLEFunction(nid = 0xAB1ABE07, version = 150)
     public void sceHttpInit(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -67,6 +68,7 @@ public class sceHttp implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xD1C8945E, version = 150)
     public void sceHttpEnd(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -85,6 +87,7 @@ public class sceHttp implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x0282A3BD, version = 150)
     public void sceHttpGetContentLength(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -93,6 +96,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x03D9526F, version = 150)
     public void sceHttpSetResolveRetry(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -101,6 +105,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x06488A1C, version = 150)
     public void sceHttpSetCookieSendCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -109,6 +114,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x0809C831, version = 150)
     public void sceHttpEnableRedirect(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -117,6 +123,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x0B12ABFB, version = 150)
     public void sceHttpDisableCookie(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -125,6 +132,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x0DAFA58F, version = 150)
     public void sceHttpEnableCookie(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -133,6 +141,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x15540184, version = 150)
     public void sceHttpDeleteHeader(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -141,6 +150,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x1A0EBB69, version = 150)
     public void sceHttpDisableRedirect(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -149,6 +159,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x1CEDB9D4, version = 150)
     public void sceHttpFlushCache(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -157,6 +168,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x1F0FC3E3, version = 150)
     public void sceHttpSetRecvTimeOut(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -165,6 +177,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x2255551E, version = 150)
     public void sceHttpGetNetworkPspError(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -173,6 +186,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x267618F4, version = 150)
     public void sceHttpSetAuthInfoCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -181,6 +195,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x2A6C3296, version = 150)
     public void sceHttpSetAuthInfoCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -189,6 +204,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x2C3C82CF, version = 150)
     public void sceHttpFlushAuthList(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -197,6 +213,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x3A67F306, version = 150)
     public void sceHttpSetCookieRecvCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -205,6 +222,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x3EABA285, version = 150)
     public void sceHttpAddExtraHeader(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -213,6 +231,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x47347B50, version = 150)
     public void sceHttpCreateRequest(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -221,6 +240,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x47940436, version = 150)
     public void sceHttpSetResolveTimeOut(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -229,6 +249,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x4CC7D78F, version = 150)
     public void sceHttpGetStatusCode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -237,6 +258,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x5152773B, version = 150)
     public void sceHttpDeleteConnection(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -245,6 +267,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x54E7DF75, version = 150)
     public void sceHttpIsRequestInCache(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -253,6 +276,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x59E6D16F, version = 150)
     public void sceHttpEnableCache(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -261,6 +285,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x76D1363B, version = 150)
     public void sceHttpSaveSystemCookie(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -279,6 +304,7 @@ public class sceHttp implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x7774BF4C, version = 150)
     public void sceHttpAddCookie(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -287,6 +313,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x77EE5319, version = 150)
     public void sceHttpLoadAuthList(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -295,6 +322,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x78A0D3EC, version = 150)
     public void sceHttpEnableKeepAlive(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -303,6 +331,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x78B54C09, version = 150)
     public void sceHttpEndCache(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -311,6 +340,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x8ACD1F73, version = 150)
     public void sceHttpSetConnectTimeOut(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -319,6 +349,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x8EEFD953, version = 150)
     public void sceHttpCreateConnection(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -327,6 +358,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x951D310E, version = 150)
     public void sceHttpDisableProxyAuth(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -335,6 +367,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x9668864C, version = 150)
     public void sceHttpSetRecvBlockSize(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -343,6 +376,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x96F16D3E, version = 150)
     public void sceHttpGetCookie(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -351,6 +385,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x9988172D, version = 150)
     public void sceHttpSetSendTimeOut(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -359,6 +394,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x9AFC98B2, version = 150)
     public void sceHttpSendRequestInCacheFirstMode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -367,6 +403,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x9B1F1F36, version = 150)
     public void sceHttpCreateTemplate(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -375,6 +412,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x9FC5F10D, version = 150)
     public void sceHttpEnableAuth(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -383,6 +421,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xA4496DE5, version = 150)
     public void sceHttpSetRedirectCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -391,6 +430,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xA5512E01, version = 150)
     public void sceHttpDeleteRequest(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -399,6 +439,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xA6800C34, version = 150)
     public void sceHttpInitCache(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -407,6 +448,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xAE948FEE, version = 150)
     public void sceHttpDisableAuth(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -415,6 +457,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xB0C34B1D, version = 150)
     public void sceHttpSetCacheContentLengthMaxSize(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -423,6 +466,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xB509B09E, version = 150)
     public void sceHttpCreateRequestWithURL(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -431,6 +475,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xBB70706F, version = 150)
     public void sceHttpSendRequest(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -439,6 +484,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xC10B6BD9, version = 150)
     public void sceHttpAbortRequest(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -447,6 +493,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xC6330B0D, version = 150)
     public void sceHttpChangeHttpVersion(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -455,6 +502,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xC7EF2559, version = 150)
     public void sceHttpDisableKeepAlive(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -463,6 +511,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xC98CBBA7, version = 150)
     public void sceHttpSetResHeaderMaxSize(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -471,6 +520,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xCCBD167A, version = 150)
     public void sceHttpDisableCache(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -479,6 +529,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xCDB0DC58, version = 150)
     public void sceHttpEnableProxyAuth(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -487,6 +538,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xCDF8ECB9, version = 150)
     public void sceHttpCreateConnectionWithURL(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -495,6 +547,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xD081EC8F, version = 150)
     public void sceHttpGetNetworkErrno(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -503,6 +556,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xD70D4847, version = 150)
     public void sceHttpGetProxy(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -511,6 +565,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xDB266CCF, version = 150)
     public void sceHttpGetAllHeader(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -519,6 +574,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xDD6E7857, version = 150)
     public void sceHttpSaveAuthList(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -527,6 +583,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xEDEEB999, version = 150)
     public void sceHttpReadData(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -535,6 +592,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xF0F46C62, version = 150)
     public void sceHttpSetProxy(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -543,6 +601,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xF1657B22, version = 150)
     public void sceHttpLoadSystemCookie(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -562,6 +621,7 @@ public class sceHttp implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xF49934F6, version = 150)
     public void sceHttpSetMallocFunction(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -570,6 +630,7 @@ public class sceHttp implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xFCF8C055, version = 150)
     public void sceHttpDeleteTemplate(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -577,126 +638,5 @@ public class sceHttp implements HLEModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-    @HLEFunction(nid = 0xAB1ABE07, version = 150) public HLEModuleFunction sceHttpInitFunction;
-
-    @HLEFunction(nid = 0xD1C8945E, version = 150) public HLEModuleFunction sceHttpEndFunction;
-
-    @HLEFunction(nid = 0x0282A3BD, version = 150) public HLEModuleFunction sceHttpGetContentLengthFunction;
-
-    @HLEFunction(nid = 0x03D9526F, version = 150) public HLEModuleFunction sceHttpSetResolveRetryFunction;
-
-    @HLEFunction(nid = 0x06488A1C, version = 150) public HLEModuleFunction sceHttpSetCookieSendCallbackFunction;
-
-    @HLEFunction(nid = 0x0809C831, version = 150) public HLEModuleFunction sceHttpEnableRedirectFunction;
-
-    @HLEFunction(nid = 0x0B12ABFB, version = 150) public HLEModuleFunction sceHttpDisableCookieFunction;
-
-    @HLEFunction(nid = 0x0DAFA58F, version = 150) public HLEModuleFunction sceHttpEnableCookieFunction;
-
-    @HLEFunction(nid = 0x15540184, version = 150) public HLEModuleFunction sceHttpDeleteHeaderFunction;
-
-    @HLEFunction(nid = 0x1A0EBB69, version = 150) public HLEModuleFunction sceHttpDisableRedirectFunction;
-
-    @HLEFunction(nid = 0x1CEDB9D4, version = 150) public HLEModuleFunction sceHttpFlushCacheFunction;
-
-    @HLEFunction(nid = 0x1F0FC3E3, version = 150) public HLEModuleFunction sceHttpSetRecvTimeOutFunction;
-
-    @HLEFunction(nid = 0x2255551E, version = 150) public HLEModuleFunction sceHttpGetNetworkPspErrorFunction;
-
-    @HLEFunction(nid = 0x267618F4, version = 150) public HLEModuleFunction sceHttpSetAuthInfoCallbackFunction;
-
-    @HLEFunction(nid = 0x2A6C3296, version = 150) public HLEModuleFunction sceHttpSetAuthInfoCBFunction;
-
-    @HLEFunction(nid = 0x2C3C82CF, version = 150) public HLEModuleFunction sceHttpFlushAuthListFunction;
-
-    @HLEFunction(nid = 0x3A67F306, version = 150) public HLEModuleFunction sceHttpSetCookieRecvCallbackFunction;
-
-    @HLEFunction(nid = 0x3EABA285, version = 150) public HLEModuleFunction sceHttpAddExtraHeaderFunction;
-
-    @HLEFunction(nid = 0x47347B50, version = 150) public HLEModuleFunction sceHttpCreateRequestFunction;
-
-    @HLEFunction(nid = 0x47940436, version = 150) public HLEModuleFunction sceHttpSetResolveTimeOutFunction;
-
-    @HLEFunction(nid = 0x4CC7D78F, version = 150) public HLEModuleFunction sceHttpGetStatusCodeFunction;
-
-    @HLEFunction(nid = 0x5152773B, version = 150) public HLEModuleFunction sceHttpDeleteConnectionFunction;
-
-    @HLEFunction(nid = 0x54E7DF75, version = 150) public HLEModuleFunction sceHttpIsRequestInCacheFunction;
-
-    @HLEFunction(nid = 0x59E6D16F, version = 150) public HLEModuleFunction sceHttpEnableCacheFunction;
-
-    @HLEFunction(nid = 0x76D1363B, version = 150) public HLEModuleFunction sceHttpSaveSystemCookieFunction;
-
-    @HLEFunction(nid = 0x7774BF4C, version = 150) public HLEModuleFunction sceHttpAddCookieFunction;
-
-    @HLEFunction(nid = 0x77EE5319, version = 150) public HLEModuleFunction sceHttpLoadAuthListFunction;
-
-    @HLEFunction(nid = 0x78A0D3EC, version = 150) public HLEModuleFunction sceHttpEnableKeepAliveFunction;
-
-    @HLEFunction(nid = 0x78B54C09, version = 150) public HLEModuleFunction sceHttpEndCacheFunction;
-
-    @HLEFunction(nid = 0x8ACD1F73, version = 150) public HLEModuleFunction sceHttpSetConnectTimeOutFunction;
-
-    @HLEFunction(nid = 0x8EEFD953, version = 150) public HLEModuleFunction sceHttpCreateConnectionFunction;
-
-    @HLEFunction(nid = 0x951D310E, version = 150) public HLEModuleFunction sceHttpDisableProxyAuthFunction;
-
-    @HLEFunction(nid = 0x9668864C, version = 150) public HLEModuleFunction sceHttpSetRecvBlockSizeFunction;
-
-    @HLEFunction(nid = 0x96F16D3E, version = 150) public HLEModuleFunction sceHttpGetCookieFunction;
-
-    @HLEFunction(nid = 0x9988172D, version = 150) public HLEModuleFunction sceHttpSetSendTimeOutFunction;
-
-    @HLEFunction(nid = 0x9AFC98B2, version = 150) public HLEModuleFunction sceHttpSendRequestInCacheFirstModeFunction;
-
-    @HLEFunction(nid = 0x9B1F1F36, version = 150) public HLEModuleFunction sceHttpCreateTemplateFunction;
-
-    @HLEFunction(nid = 0x9FC5F10D, version = 150) public HLEModuleFunction sceHttpEnableAuthFunction;
-
-    @HLEFunction(nid = 0xA4496DE5, version = 150) public HLEModuleFunction sceHttpSetRedirectCallbackFunction;
-
-    @HLEFunction(nid = 0xA5512E01, version = 150) public HLEModuleFunction sceHttpDeleteRequestFunction;
-
-    @HLEFunction(nid = 0xA6800C34, version = 150) public HLEModuleFunction sceHttpInitCacheFunction;
-
-    @HLEFunction(nid = 0xAE948FEE, version = 150) public HLEModuleFunction sceHttpDisableAuthFunction;
-
-    @HLEFunction(nid = 0xB0C34B1D, version = 150) public HLEModuleFunction sceHttpSetCacheContentLengthMaxSizeFunction;
-
-    @HLEFunction(nid = 0xB509B09E, version = 150) public HLEModuleFunction sceHttpCreateRequestWithURLFunction;
-
-    @HLEFunction(nid = 0xBB70706F, version = 150) public HLEModuleFunction sceHttpSendRequestFunction;
-
-    @HLEFunction(nid = 0xC10B6BD9, version = 150) public HLEModuleFunction sceHttpAbortRequestFunction;
-
-    @HLEFunction(nid = 0xC6330B0D, version = 150) public HLEModuleFunction sceHttpChangeHttpVersionFunction;
-
-    @HLEFunction(nid = 0xC7EF2559, version = 150) public HLEModuleFunction sceHttpDisableKeepAliveFunction;
-
-    @HLEFunction(nid = 0xC98CBBA7, version = 150) public HLEModuleFunction sceHttpSetResHeaderMaxSizeFunction;
-
-    @HLEFunction(nid = 0xCCBD167A, version = 150) public HLEModuleFunction sceHttpDisableCacheFunction;
-
-    @HLEFunction(nid = 0xCDB0DC58, version = 150) public HLEModuleFunction sceHttpEnableProxyAuthFunction;
-
-    @HLEFunction(nid = 0xCDF8ECB9, version = 150) public HLEModuleFunction sceHttpCreateConnectionWithURLFunction;
-
-    @HLEFunction(nid = 0xD081EC8F, version = 150) public HLEModuleFunction sceHttpGetNetworkErrnoFunction;
-
-    @HLEFunction(nid = 0xD70D4847, version = 150) public HLEModuleFunction sceHttpGetProxyFunction;
-
-    @HLEFunction(nid = 0xDB266CCF, version = 150) public HLEModuleFunction sceHttpGetAllHeaderFunction;
-
-    @HLEFunction(nid = 0xDD6E7857, version = 150) public HLEModuleFunction sceHttpSaveAuthListFunction;
-
-    @HLEFunction(nid = 0xEDEEB999, version = 150) public HLEModuleFunction sceHttpReadDataFunction;
-
-    @HLEFunction(nid = 0xF0F46C62, version = 150) public HLEModuleFunction sceHttpSetProxyFunction;
-
-    @HLEFunction(nid = 0xF1657B22, version = 150) public HLEModuleFunction sceHttpLoadSystemCookieFunction;
-
-    @HLEFunction(nid = 0xF49934F6, version = 150) public HLEModuleFunction sceHttpSetMallocFunctionFunction;
-
-    @HLEFunction(nid = 0xFCF8C055, version = 150) public HLEModuleFunction sceHttpDeleteTemplateFunction;
 
 }

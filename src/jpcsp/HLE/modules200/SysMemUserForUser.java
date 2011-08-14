@@ -43,6 +43,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
 		return compiledSdkVersion;
 	}
 
+	@HLEFunction(nid = 0xFC114573, version = 200)
 	public void sceKernelGetCompiledSdkVersion(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -53,6 +54,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
 		cpu.gpr[2] = compiledSdkVersion;
 	}
 
+	@HLEFunction(nid = 0x7591C7DB, version = 200)
 	public void sceKernelSetCompiledSdkVersion(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -66,6 +68,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0xF77D77CB, version = 200)
 	public void sceKernelSetCompilerVersion(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -79,6 +82,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0xA6848DF8, version = 200)
 	public void SysMemUserForUser_A6848DF8(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -86,12 +90,5 @@ public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-	@HLEFunction(nid = 0xFC114573, version = 200) public HLEModuleFunction sceKernelGetCompiledSdkVersionFunction;
-
-	@HLEFunction(nid = 0x7591C7DB, version = 200) public HLEModuleFunction sceKernelSetCompiledSdkVersionFunction;
-
-	@HLEFunction(nid = 0xF77D77CB, version = 200) public HLEModuleFunction sceKernelSetCompilerVersionFunction;
-
-	@HLEFunction(nid = 0xA6848DF8, version = 200) public HLEModuleFunction SysMemUserForUser_A6848DF8Function;
 
 }

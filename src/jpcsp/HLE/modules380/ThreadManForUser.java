@@ -33,6 +33,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
+	@HLEFunction(nid = 0x19CFF145, version = 380)
 	public void sceKernelCreateLwMutex(Processor processor) {
 		int[] gpr = processor.cpu.gpr;
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -42,6 +43,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 		Managers.lwmutex.sceKernelCreateLwMutex(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
 	}
 
+	@HLEFunction(nid = 0x1AF94D03, version = 380)
 	public void sceKernelDonateWakeupThread(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -50,6 +52,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x31327F19, version = 380)
 	public void ThreadManForUser_31327F19(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -58,11 +61,13 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x4C145944, version = 380)
 	public void sceKernelReferLwMutexStatusByID(Processor processor) {
         int[] gpr = processor.cpu.gpr;
 		Managers.lwmutex.sceKernelReferLwMutexStatusByID(gpr[4], gpr[5]);
 	}
 
+	@HLEFunction(nid = 0x60107536, version = 380)
 	public void sceKernelDeleteLwMutex(Processor processor) {
 		int[] gpr = processor.cpu.gpr;
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -72,6 +77,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 		Managers.lwmutex.sceKernelDeleteLwMutex(gpr[4]);
 	}
 
+	@HLEFunction(nid = 0x71040D5C, version = 380)
 	public void ThreadManForUser_71040D5C(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -80,6 +86,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x7CFF8CF3, version = 380)
 	public void ThreadManForUser_7CFF8CF3(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -88,6 +95,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0xBEED3A47, version = 380)
 	public void ThreadManForUser_BEED3A47(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -95,20 +103,5 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-	@HLEFunction(nid = 0x19CFF145, version = 380) public HLEModuleFunction sceKernelCreateLwMutexFunction;
-
-	@HLEFunction(nid = 0x1AF94D03, version = 380) public HLEModuleFunction sceKernelDonateWakeupThreadFunction;
-
-	@HLEFunction(nid = 0x31327F19, version = 380) public HLEModuleFunction ThreadManForUser_31327F19Function;
-
-	@HLEFunction(nid = 0x4C145944, version = 380) public HLEModuleFunction sceKernelReferLwMutexStatusByIDFunction;
-
-	@HLEFunction(nid = 0x60107536, version = 380) public HLEModuleFunction sceKernelDeleteLwMutexFunction;
-
-	@HLEFunction(nid = 0x71040D5C, version = 380) public HLEModuleFunction ThreadManForUser_71040D5CFunction;
-
-	@HLEFunction(nid = 0x7CFF8CF3, version = 380) public HLEModuleFunction ThreadManForUser_7CFF8CF3Function;
-
-	@HLEFunction(nid = 0xBEED3A47, version = 380) public HLEModuleFunction ThreadManForUser_BEED3A47Function;
 
 }

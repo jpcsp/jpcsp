@@ -1993,154 +1993,192 @@ public class sceUtility implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xC492F751, version = 150)
     public void sceUtilityGameSharingInitStart(Processor processor) {
         gameSharingState.executeInitStart(processor);
     }
 
+    @HLEFunction(nid = 0xEFC6F80F, version = 150)
     public void sceUtilityGameSharingShutdownStart(Processor processor) {
         gameSharingState.executeShutdownStart(processor);
     }
 
+    @HLEFunction(nid = 0x7853182D, version = 150)
     public void sceUtilityGameSharingUpdate(Processor processor) {
     	gameSharingState.executeUpdate(processor);
     }
 
+    @HLEFunction(nid = 0x946963F3, version = 150)
     public void sceUtilityGameSharingGetStatus(Processor processor) {
         gameSharingState.executeGetStatus(processor);
     }
 
+    @HLEFunction(nid = 0x3AD50AE7, version = 150)
     public void sceNetplayDialogInitStart(Processor processor) {
         netplayDialogState.executeInitStart(processor);
     }
 
+    @HLEFunction(nid = 0xBC6B6296, version = 150)
     public void sceNetplayDialogShutdownStart(Processor processor) {
         netplayDialogState.executeShutdownStart(processor);
     }
 
+    @HLEFunction(nid = 0x417BED54, version = 150)
     public void sceNetplayDialogUpdate(Processor processor) {
     	netplayDialogState.executeUpdate(processor);
     }
 
+    @HLEFunction(nid = 0xB6CEE597, version = 150)
     public void sceNetplayDialogGetStatus(Processor processor) {
         netplayDialogState.executeGetStatus(processor);
     }
 
+    @HLEFunction(nid = 0x4DB1E739, version = 150)
     public void sceUtilityNetconfInitStart(Processor processor) {
         netconfState.executeInitStart(processor);
     }
 
+    @HLEFunction(nid = 0xF88155F6, version = 150)
     public void sceUtilityNetconfShutdownStart(Processor processor) {
         netconfState.executeShutdownStart(processor);
     }
 
+    @HLEFunction(nid = 0x91E70E35, version = 150)
     public void sceUtilityNetconfUpdate(Processor processor) {
     	netconfState.executeUpdate(processor);
     }
 
+    @HLEFunction(nid = 0x6332AA39, version = 150)
     public void sceUtilityNetconfGetStatus(Processor processor) {
         netconfState.executeGetStatus(processor);
     }
 
+    @HLEFunction(nid = 0x50C4CD57, version = 150)
     public void sceUtilitySavedataInitStart(Processor processor) {
         savedataState.executeInitStart(processor);
     }
 
+    @HLEFunction(nid = 0x9790B33C, version = 150)
     public void sceUtilitySavedataShutdownStart(Processor processor) {
         savedataState.executeShutdownStart(processor);
     }
 
+    @HLEFunction(nid = 0xD4B95FFB, version = 150)
     public void sceUtilitySavedataUpdate(Processor processor) {
     	savedataState.executeUpdate(processor);
     }
 
+    @HLEFunction(nid = 0x8874DBE0, version = 150)
     public void sceUtilitySavedataGetStatus(Processor processor) {
         savedataState.executeGetStatus(processor);
     }
 
+    @HLEFunction(nid = 0x2995D020, version = 150)
     public void sceUtilitySavedataErrInitStart(Processor processor) {
         savedataErrState.executeInitStart(processor);
     }
 
+    @HLEFunction(nid = 0xB62A4061, version = 150)
     public void sceUtilitySavedataErrShutdownStart(Processor processor) {
         savedataErrState.executeShutdownStart(processor);
     }
 
+    @HLEFunction(nid = 0xED0FAD38, version = 150)
     public void sceUtilitySavedataErrUpdate(Processor processor) {
     	savedataErrState.executeUpdate(processor);
     }
 
+    @HLEFunction(nid = 0x88BC7406, version = 150)
     public void sceUtilitySavedataErrGetStatus(Processor processor) {
         savedataErrState.executeGetStatus(processor);
     }
 
+    @HLEFunction(nid = 0x2AD8E239, version = 150)
     public void sceUtilityMsgDialogInitStart(Processor processor) {
         msgDialogState.executeInitStart(processor);
     }
 
+    @HLEFunction(nid = 0x67AF3428, version = 150)
     public void sceUtilityMsgDialogShutdownStart(Processor processor) {
         msgDialogState.executeShutdownStart(processor);
     }
 
+    @HLEFunction(nid = 0x95FC253B, version = 150)
     public void sceUtilityMsgDialogUpdate(Processor processor) {
     	msgDialogState.executeUpdate(processor);
     }
 
+    @HLEFunction(nid = 0x9A1C91D7, version = 150)
     public void sceUtilityMsgDialogGetStatus(Processor processor) {
         msgDialogState.executeGetStatus(processor);
     }
 
+    @HLEFunction(nid = 0xF6269B82, version = 150)
     public void sceUtilityOskInitStart(Processor processor) {
         oskState.executeInitStart(processor);
     }
 
+    @HLEFunction(nid = 0x3DFAEBA9, version = 150)
     public void sceUtilityOskShutdownStart(Processor processor) {
         oskState.executeShutdownStart(processor);
     }
 
+    @HLEFunction(nid = 0x4B85C861, version = 150)
     public void sceUtilityOskUpdate(Processor processor) {
     	oskState.executeUpdate(processor);
     }
 
+    @HLEFunction(nid = 0xF3F76017, version = 150)
     public void sceUtilityOskGetStatus(Processor processor) {
         oskState.executeGetStatus(processor);
     }
 
+    @HLEFunction(nid = 0x16D02AF0, version = 150)
     public void sceUtilityNpSigninInitStart(Processor processor) {
         npSigninState.executeInitStart(processor);
     }
 
+    @HLEFunction(nid = 0xE19C97D6, version = 150)
     public void sceUtilityNpSigninShutdownStart(Processor processor) {
         npSigninState.executeShutdownStart(processor);
     }
 
+    @HLEFunction(nid = 0xF3FBC572, version = 150)
     public void sceUtilityNpSigninUpdate(Processor processor) {
     	npSigninState.executeUpdate(processor);
     }
 
+    @HLEFunction(nid = 0x86ABDB1B, version = 150)
     public void sceUtilityNpSigninGetStatus(Processor processor) {
         npSigninState.executeGetStatus(processor);
     }
 
+    @HLEFunction(nid = 0x42071A83, version = 150)
     public void sceUtilityPS3ScanInitStart(Processor processor) {
         PS3ScanState.executeInitStart(processor);
     }
 
+    @HLEFunction(nid = 0xD17A0573, version = 150)
     public void sceUtilityPS3ScanShutdownStart(Processor processor) {
         PS3ScanState.executeShutdownStart(processor);
     }
 
+    @HLEFunction(nid = 0xD852CDCE, version = 150)
     public void sceUtilityPS3ScanUpdate(Processor processor) {
     	PS3ScanState.executeUpdate(processor);
     }
 
+    @HLEFunction(nid = 0x89317C8F, version = 150)
     public void sceUtilityPS3ScanGetStatus(Processor processor) {
         PS3ScanState.executeGetStatus(processor);
     }
 
+    @HLEFunction(nid = 0x81c44706, version = 150)
     public void sceUtilityRssReaderInitStart(Processor processor) {
         rssReaderState.executeInitStart(processor);
     }
 
+    @HLEFunction(nid = 0xB0FB7FF5, version = 150)
     public void sceUtilityRssReaderContStart(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2149,86 +2187,107 @@ public class sceUtility implements HLEModule, HLEStartModule {
         cpu.gpr[2] = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
     }
 
+    @HLEFunction(nid = 0xE7B778D8, version = 150)
     public void sceUtilityRssReaderShutdownStart(Processor processor) {
         rssReaderState.executeShutdownStart(processor);
     }
 
+    @HLEFunction(nid = 0x6F56F9CF, version = 150)
     public void sceUtilityRssReaderUpdate(Processor processor) {
     	rssReaderState.executeUpdate(processor);
     }
 
+    @HLEFunction(nid = 0x8326AB05, version = 150)
     public void sceUtilityRssReaderGetStatus(Processor processor) {
         rssReaderState.executeGetStatus(processor);
     }
 
+    @HLEFunction(nid = 0x4B0A8FE5, version = 150)
     public void sceUtilityRssSubscriberInitStart(Processor processor) {
         rssSubscriberState.executeInitStart(processor);
     }
 
+    @HLEFunction(nid = 0x06A48659, version = 150)
     public void sceUtilityRssSubscriberShutdownStart(Processor processor) {
         rssSubscriberState.executeShutdownStart(processor);
     }
 
+    @HLEFunction(nid = 0xA084E056, version = 150)
     public void sceUtilityRssSubscriberUpdate(Processor processor) {
     	rssSubscriberState.executeUpdate(processor);
     }
 
+    @HLEFunction(nid = 0x2B96173B, version = 150)
     public void sceUtilityRssSubscriberGetStatus(Processor processor) {
         rssSubscriberState.executeGetStatus(processor);
     }
 
+    @HLEFunction(nid = 0x0251B134, version = 150)
     public void sceUtilityScreenshotInitStart(Processor processor) {
         screenshotState.executeInitStart(processor);
     }
 
+    @HLEFunction(nid = 0x86A03A27, version = 150)
     public void sceUtilityScreenshotContStart(Processor processor) {
         screenshotState.executeContStart(processor);
     }
 
+    @HLEFunction(nid = 0xF9E0008C, version = 150)
     public void sceUtilityScreenshotShutdownStart(Processor processor) {
         screenshotState.executeShutdownStart(processor);
     }
 
+    @HLEFunction(nid = 0xAB083EA9, version = 150)
     public void sceUtilityScreenshotUpdate(Processor processor) {
     	screenshotState.executeUpdate(processor);
     }
 
+    @HLEFunction(nid = 0xD81957B7, version = 150)
     public void sceUtilityScreenshotGetStatus(Processor processor) {
         screenshotState.executeGetStatus(processor);
     }
 
+    @HLEFunction(nid = 0xCDC3AA41, version = 150)
     public void sceUtilityHtmlViewerInitStart(Processor processor) {
         htmlViewerState.executeInitStart(processor);
     }
 
+    @HLEFunction(nid = 0xF5CE1134, version = 150)
     public void sceUtilityHtmlViewerShutdownStart(Processor processor) {
         htmlViewerState.executeShutdownStart(processor);
     }
 
+    @HLEFunction(nid = 0x05AFB9E4, version = 150)
     public void sceUtilityHtmlViewerUpdate(Processor processor) {
     	htmlViewerState.executeUpdate(processor);
     }
 
+    @HLEFunction(nid = 0xBDA7D894, version = 150)
     public void sceUtilityHtmlViewerGetStatus(Processor processor) {
         htmlViewerState.executeGetStatus(processor);
     }
 
+    @HLEFunction(nid = 0x24AC31EB, version = 150)
     public void sceUtilityGamedataInstallInitStart(Processor processor) {
         gamedataInstallState.executeInitStart(processor);
     }
 
+    @HLEFunction(nid = 0x32E32DCB, version = 150)
     public void sceUtilityGamedataInstallShutdownStart(Processor processor) {
         gamedataInstallState.executeShutdownStart(processor);
     }
 
+    @HLEFunction(nid = 0x4AECD179, version = 150)
     public void sceUtilityGamedataInstallUpdate(Processor processor) {
     	gamedataInstallState.executeUpdate(processor);
     }
 
+    @HLEFunction(nid = 0xB57E95D9, version = 150)
     public void sceUtilityGamedataInstallGetStatus(Processor processor) {
         gamedataInstallState.executeGetStatus(processor);
     }
 
+    @HLEFunction(nid = 0x45C18506, version = 150)
     public void sceUtilitySetSystemParamInt(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -2284,6 +2343,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x41E30674, version = 150)
     public void sceUtilitySetSystemParamString(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2310,6 +2370,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xA5DA2406, version = 150)
     public void sceUtilityGetSystemParamInt(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -2365,6 +2426,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x34B78343, version = 150)
     public void sceUtilityGetSystemParamString(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -2399,6 +2461,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
      * @param id - id of net Configuration (1 to n)
      * @return 0 on success,
      */
+    @HLEFunction(nid = 0x5EEE6548, version = 150)
     public void sceUtilityCheckNetParam(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2422,6 +2485,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
      * @param data - parameter data
      * @return 0 on success,
      */
+    @HLEFunction(nid = 0x434D4B3A, version = 150)
     public void sceUtilityGetNetParam(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -2501,6 +2565,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
      * @param idAddr - Address to store the current net ID
      * @return 0 on success,
      */
+    @HLEFunction(nid = 0x4FED24D8, version = 150)
     public void sceUtilityGetNetParamLatestID(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -2520,70 +2585,5 @@ public class sceUtility implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_NETPARAM_BAD_PARAM;
         }
     }
-    @HLEFunction(nid = 0xC492F751, version = 150) public HLEModuleFunction sceUtilityGameSharingInitStartFunction;
-    @HLEFunction(nid = 0xEFC6F80F, version = 150) public HLEModuleFunction sceUtilityGameSharingShutdownStartFunction;
-    @HLEFunction(nid = 0x7853182D, version = 150) public HLEModuleFunction sceUtilityGameSharingUpdateFunction;
-    @HLEFunction(nid = 0x946963F3, version = 150) public HLEModuleFunction sceUtilityGameSharingGetStatusFunction;
-    @HLEFunction(nid = 0x3AD50AE7, version = 150) public HLEModuleFunction sceNetplayDialogInitStartFunction;
-    @HLEFunction(nid = 0xBC6B6296, version = 150) public HLEModuleFunction sceNetplayDialogShutdownStartFunction;
-    @HLEFunction(nid = 0x417BED54, version = 150) public HLEModuleFunction sceNetplayDialogUpdateFunction;
-    @HLEFunction(nid = 0xB6CEE597, version = 150) public HLEModuleFunction sceNetplayDialogGetStatusFunction;
-    @HLEFunction(nid = 0x4DB1E739, version = 150) public HLEModuleFunction sceUtilityNetconfInitStartFunction;
-    @HLEFunction(nid = 0xF88155F6, version = 150) public HLEModuleFunction sceUtilityNetconfShutdownStartFunction;
-    @HLEFunction(nid = 0x91E70E35, version = 150) public HLEModuleFunction sceUtilityNetconfUpdateFunction;
-    @HLEFunction(nid = 0x6332AA39, version = 150) public HLEModuleFunction sceUtilityNetconfGetStatusFunction;
-    @HLEFunction(nid = 0x50C4CD57, version = 150) public HLEModuleFunction sceUtilitySavedataInitStartFunction;
-    @HLEFunction(nid = 0x9790B33C, version = 150) public HLEModuleFunction sceUtilitySavedataShutdownStartFunction;
-    @HLEFunction(nid = 0xD4B95FFB, version = 150) public HLEModuleFunction sceUtilitySavedataUpdateFunction;
-    @HLEFunction(nid = 0x8874DBE0, version = 150) public HLEModuleFunction sceUtilitySavedataGetStatusFunction;
-    @HLEFunction(nid = 0x2995D020, version = 150) public HLEModuleFunction sceUtilitySavedataErrInitStartFunction;
-    @HLEFunction(nid = 0xB62A4061, version = 150) public HLEModuleFunction sceUtilitySavedataErrShutdownStartFunction;
-    @HLEFunction(nid = 0xED0FAD38, version = 150) public HLEModuleFunction sceUtilitySavedataErrUpdateFunction;
-    @HLEFunction(nid = 0x88BC7406, version = 150) public HLEModuleFunction sceUtilitySavedataErrGetStatusFunction;
-    @HLEFunction(nid = 0x2AD8E239, version = 150) public HLEModuleFunction sceUtilityMsgDialogInitStartFunction;
-    @HLEFunction(nid = 0x67AF3428, version = 150) public HLEModuleFunction sceUtilityMsgDialogShutdownStartFunction;
-    @HLEFunction(nid = 0x95FC253B, version = 150) public HLEModuleFunction sceUtilityMsgDialogUpdateFunction;
-    @HLEFunction(nid = 0x9A1C91D7, version = 150) public HLEModuleFunction sceUtilityMsgDialogGetStatusFunction;
-    @HLEFunction(nid = 0xF6269B82, version = 150) public HLEModuleFunction sceUtilityOskInitStartFunction;
-    @HLEFunction(nid = 0x3DFAEBA9, version = 150) public HLEModuleFunction sceUtilityOskShutdownStartFunction;
-    @HLEFunction(nid = 0x4B85C861, version = 150) public HLEModuleFunction sceUtilityOskUpdateFunction;
-    @HLEFunction(nid = 0xF3F76017, version = 150) public HLEModuleFunction sceUtilityOskGetStatusFunction;
-    @HLEFunction(nid = 0x45C18506, version = 150) public HLEModuleFunction sceUtilitySetSystemParamIntFunction;
-    @HLEFunction(nid = 0x41E30674, version = 150) public HLEModuleFunction sceUtilitySetSystemParamStringFunction;
-    @HLEFunction(nid = 0xA5DA2406, version = 150) public HLEModuleFunction sceUtilityGetSystemParamIntFunction;
-    @HLEFunction(nid = 0x34B78343, version = 150) public HLEModuleFunction sceUtilityGetSystemParamStringFunction;
-    @HLEFunction(nid = 0x5EEE6548, version = 150) public HLEModuleFunction sceUtilityCheckNetParamFunction;
-    @HLEFunction(nid = 0x434D4B3A, version = 150) public HLEModuleFunction sceUtilityGetNetParamFunction;
-    @HLEFunction(nid = 0x16D02AF0, version = 150) public HLEModuleFunction sceUtilityNpSigninInitStartFunction;
-    @HLEFunction(nid = 0xE19C97D6, version = 150) public HLEModuleFunction sceUtilityNpSigninShutdownStartFunction;
-    @HLEFunction(nid = 0xF3FBC572, version = 150) public HLEModuleFunction sceUtilityNpSigninUpdateFunction;
-    @HLEFunction(nid = 0x86ABDB1B, version = 150) public HLEModuleFunction sceUtilityNpSigninGetStatusFunction;
-    @HLEFunction(nid = 0x42071A83, version = 150) public HLEModuleFunction sceUtilityPS3ScanInitStartFunction;
-    @HLEFunction(nid = 0xD17A0573, version = 150) public HLEModuleFunction sceUtilityPS3ScanShutdownStartFunction;
-    @HLEFunction(nid = 0xD852CDCE, version = 150) public HLEModuleFunction sceUtilityPS3ScanUpdateFunction;
-    @HLEFunction(nid = 0x89317C8F, version = 150) public HLEModuleFunction sceUtilityPS3ScanGetStatusFunction;
-    @HLEFunction(nid = 0x81c44706, version = 150) public HLEModuleFunction sceUtilityRssReaderInitStartFunction;
-    @HLEFunction(nid = 0xB0FB7FF5, version = 150) public HLEModuleFunction sceUtilityRssReaderContStartFunction;
-    @HLEFunction(nid = 0xE7B778D8, version = 150) public HLEModuleFunction sceUtilityRssReaderShutdownStartFunction;
-    @HLEFunction(nid = 0x6F56F9CF, version = 150) public HLEModuleFunction sceUtilityRssReaderUpdateFunction;
-    @HLEFunction(nid = 0x8326AB05, version = 150) public HLEModuleFunction sceUtilityRssReaderGetStatusFunction;
-    @HLEFunction(nid = 0x4B0A8FE5, version = 150) public HLEModuleFunction sceUtilityRssSubscriberInitStartFunction;
-    @HLEFunction(nid = 0x06A48659, version = 150) public HLEModuleFunction sceUtilityRssSubscriberShutdownStartFunction;
-    @HLEFunction(nid = 0xA084E056, version = 150) public HLEModuleFunction sceUtilityRssSubscriberUpdateFunction;
-    @HLEFunction(nid = 0x2B96173B, version = 150) public HLEModuleFunction sceUtilityRssSubscriberGetStatusFunction;
-    @HLEFunction(nid = 0x0251B134, version = 150) public HLEModuleFunction sceUtilityScreenshotInitStartFunction;
-    @HLEFunction(nid = 0x86A03A27, version = 150) public HLEModuleFunction sceUtilityScreenshotContStartFunction;
-    @HLEFunction(nid = 0xF9E0008C, version = 150) public HLEModuleFunction sceUtilityScreenshotShutdownStartFunction;
-    @HLEFunction(nid = 0xAB083EA9, version = 150) public HLEModuleFunction sceUtilityScreenshotUpdateFunction;
-    @HLEFunction(nid = 0xD81957B7, version = 150) public HLEModuleFunction sceUtilityScreenshotGetStatusFunction;
-    @HLEFunction(nid = 0xCDC3AA41, version = 150) public HLEModuleFunction sceUtilityHtmlViewerInitStartFunction;
-    @HLEFunction(nid = 0xF5CE1134, version = 150) public HLEModuleFunction sceUtilityHtmlViewerShutdownStartFunction;
-    @HLEFunction(nid = 0x05AFB9E4, version = 150) public HLEModuleFunction sceUtilityHtmlViewerUpdateFunction;
-    @HLEFunction(nid = 0xBDA7D894, version = 150) public HLEModuleFunction sceUtilityHtmlViewerGetStatusFunction;
-    @HLEFunction(nid = 0x24AC31EB, version = 150) public HLEModuleFunction sceUtilityGamedataInstallInitStartFunction;
-    @HLEFunction(nid = 0x32E32DCB, version = 150) public HLEModuleFunction sceUtilityGamedataInstallShutdownStartFunction;
-    @HLEFunction(nid = 0x4AECD179, version = 150) public HLEModuleFunction sceUtilityGamedataInstallUpdateFunction;
-    @HLEFunction(nid = 0xB57E95D9, version = 150) public HLEModuleFunction sceUtilityGamedataInstallGetStatusFunction;
-    @HLEFunction(nid = 0x4FED24D8, version = 150) public HLEModuleFunction sceUtilityGetNetParamLatestIDFunction;
 
 }

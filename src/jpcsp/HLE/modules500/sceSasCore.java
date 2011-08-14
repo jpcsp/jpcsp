@@ -33,6 +33,7 @@ public class sceSasCore extends jpcsp.HLE.modules150.sceSasCore {
     public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     /** Identical to __sceSasSetVoice, but for raw PCM data (VAG/ADPCM is not allowed). */
+    @HLEFunction(nid = 0xE1CD9561, version = 500)
     public void __sceSasSetVoicePCM(Processor processor) {
         CpuState cpu = processor.cpu;
         
@@ -61,6 +62,5 @@ public class sceSasCore extends jpcsp.HLE.modules150.sceSasCore {
             cpu.gpr[2] = 0;
         }
     }
-    @HLEFunction(nid = 0xE1CD9561, version = 500) public HLEModuleFunction __sceSasSetVoicePCMFunction;
 
 }

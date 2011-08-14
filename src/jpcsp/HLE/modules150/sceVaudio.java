@@ -146,6 +146,7 @@ public class sceVaudio implements HLEModule, HLEStartModule {
         return ret;
     }
 
+    @HLEFunction(nid = 0x67585DFD, version = 150)
     public void sceVaudioChRelease(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -164,6 +165,7 @@ public class sceVaudio implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x03B6807D, version = 150)
     public void sceVaudioChReserve(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -188,6 +190,7 @@ public class sceVaudio implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x8986295E, version = 150)
     public void sceVaudioOutputBlocking(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -226,6 +229,7 @@ public class sceVaudio implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x346FBE94, version = 150)
     public void sceVaudioSetEffectType(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -242,6 +246,7 @@ public class sceVaudio implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xCBD4AC51, version = 150)
     public void sceVaudioSetAlcMode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -255,14 +260,5 @@ public class sceVaudio implements HLEModule, HLEStartModule {
         }
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0x67585DFD, version = 150) public HLEModuleFunction sceVaudioChReleaseFunction;
-
-    @HLEFunction(nid = 0x03B6807D, version = 150) public HLEModuleFunction sceVaudioChReserveFunction;
-
-    @HLEFunction(nid = 0x8986295E, version = 150) public HLEModuleFunction sceVaudioOutputBlockingFunction;
-
-    @HLEFunction(nid = 0x346FBE94, version = 150) public HLEModuleFunction sceVaudioSetEffectTypeFunction;
-
-    @HLEFunction(nid = 0xCBD4AC51, version = 150) public HLEModuleFunction sceVaudioSetAlcModeFunction;
 
 }

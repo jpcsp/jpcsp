@@ -41,6 +41,7 @@ public class sceNetAdhocMatching implements HLEModule {
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
+    @HLEFunction(nid = 0x2A2A1E07, version = 150)
     public void sceNetAdhocMatchingInit(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -51,6 +52,7 @@ public class sceNetAdhocMatching implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x7945ECDA, version = 150)
     public void sceNetAdhocMatchingTerm(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -59,6 +61,7 @@ public class sceNetAdhocMatching implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xCA5EDA6F, version = 150)
     public void sceNetAdhocMatchingCreate(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -67,6 +70,7 @@ public class sceNetAdhocMatching implements HLEModule {
         cpu.gpr[2] = 1;
     }
 
+    @HLEFunction(nid = 0x93EF3843, version = 150)
     public void sceNetAdhocMatchingStart(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -75,6 +79,7 @@ public class sceNetAdhocMatching implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x32B156B3, version = 150)
     public void sceNetAdhocMatchingStop(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -83,6 +88,7 @@ public class sceNetAdhocMatching implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xF16EAF4F, version = 150)
     public void sceNetAdhocMatchingDelete(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -91,6 +97,7 @@ public class sceNetAdhocMatching implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xF79472D7, version = 150)
     public void sceNetAdhocMatchingSendData(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -99,6 +106,7 @@ public class sceNetAdhocMatching implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xEC19337D, version = 150)
     public void sceNetAdhocMatchingAbortSendData(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -107,6 +115,7 @@ public class sceNetAdhocMatching implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x5E3D4B79, version = 150)
     public void sceNetAdhocMatchingSelectTarget(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -115,6 +124,7 @@ public class sceNetAdhocMatching implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xEA3C6108, version = 150)
     public void sceNetAdhocMatchingCancelTarget(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -124,6 +134,7 @@ public class sceNetAdhocMatching implements HLEModule {
     }
 
 
+    @HLEFunction(nid = 0x8F58BEDF, version = 150)
     public void sceNetAdhocMatchingCancelTargetWithOpt(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -132,6 +143,7 @@ public class sceNetAdhocMatching implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xB5D96C2A, version = 150)
     public void sceNetAdhocMatchingGetHelloOpt(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -140,6 +152,7 @@ public class sceNetAdhocMatching implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xB58E61B7, version = 150)
     public void sceNetAdhocMatchingSetHelloOpt(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -148,6 +161,7 @@ public class sceNetAdhocMatching implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xC58BCD9E, version = 150)
     public void sceNetAdhocMatchingGetMembers(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -156,6 +170,7 @@ public class sceNetAdhocMatching implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x9C5CFB7D, version = 150)
     public void sceNetAdhocMatchingGetPoolStat(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -164,6 +179,7 @@ public class sceNetAdhocMatching implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x40F8F435, version = 150)
     public void sceNetAdhocMatchingGetPoolMaxAlloc(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -171,36 +187,5 @@ public class sceNetAdhocMatching implements HLEModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-    @HLEFunction(nid = 0x2A2A1E07, version = 150) public HLEModuleFunction sceNetAdhocMatchingInitFunction;
-
-    @HLEFunction(nid = 0x7945ECDA, version = 150) public HLEModuleFunction sceNetAdhocMatchingTermFunction;
-
-    @HLEFunction(nid = 0xCA5EDA6F, version = 150) public HLEModuleFunction sceNetAdhocMatchingCreateFunction;
-
-    @HLEFunction(nid = 0x93EF3843, version = 150) public HLEModuleFunction sceNetAdhocMatchingStartFunction;
-
-    @HLEFunction(nid = 0x32B156B3, version = 150) public HLEModuleFunction sceNetAdhocMatchingStopFunction;
-
-    @HLEFunction(nid = 0xF16EAF4F, version = 150) public HLEModuleFunction sceNetAdhocMatchingDeleteFunction;
-
-    @HLEFunction(nid = 0xF79472D7, version = 150) public HLEModuleFunction sceNetAdhocMatchingSendDataFunction;
-
-    @HLEFunction(nid = 0xEC19337D, version = 150) public HLEModuleFunction sceNetAdhocMatchingAbortSendDataFunction;
-
-    @HLEFunction(nid = 0x5E3D4B79, version = 150) public HLEModuleFunction sceNetAdhocMatchingSelectTargetFunction;
-
-    @HLEFunction(nid = 0xEA3C6108, version = 150) public HLEModuleFunction sceNetAdhocMatchingCancelTargetFunction;
-
-    @HLEFunction(nid = 0x8F58BEDF, version = 150) public HLEModuleFunction sceNetAdhocMatchingCancelTargetWithOptFunction;
-
-    @HLEFunction(nid = 0xB5D96C2A, version = 150) public HLEModuleFunction sceNetAdhocMatchingGetHelloOptFunction;
-
-    @HLEFunction(nid = 0xB58E61B7, version = 150) public HLEModuleFunction sceNetAdhocMatchingSetHelloOptFunction;
-
-    @HLEFunction(nid = 0xC58BCD9E, version = 150) public HLEModuleFunction sceNetAdhocMatchingGetMembersFunction;
-
-    @HLEFunction(nid = 0x9C5CFB7D, version = 150) public HLEModuleFunction sceNetAdhocMatchingGetPoolStatFunction;
-
-    @HLEFunction(nid = 0x40F8F435, version = 150) public HLEModuleFunction sceNetAdhocMatchingGetPoolMaxAllocFunction;
 
 }

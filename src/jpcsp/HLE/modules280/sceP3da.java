@@ -50,6 +50,7 @@ public class sceP3da implements HLEModule {
     private int p3daChannelsNum;
     private int p3daSamplesNum;
 
+	@HLEFunction(nid = 0x374500A5, version = 280)
 	public void sceP3daBridgeInit(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -64,6 +65,7 @@ public class sceP3da implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x43F756A2, version = 280)
 	public void sceP3daBridgeExit(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -72,6 +74,7 @@ public class sceP3da implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x013016F3, version = 280)
 	public void sceP3daBridgeCore(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -89,10 +92,5 @@ public class sceP3da implements HLEModule {
 
 		cpu.gpr[2] = 0;
 	}
-	@HLEFunction(nid = 0x374500A5, version = 280) public HLEModuleFunction sceP3daBridgeInitFunction;
-
-	@HLEFunction(nid = 0x43F756A2, version = 280) public HLEModuleFunction sceP3daBridgeExitFunction;
-
-	@HLEFunction(nid = 0x013016F3, version = 280) public HLEModuleFunction sceP3daBridgeCoreFunction;
 
 }

@@ -32,6 +32,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
+    @HLEFunction(nid = 0x0C116E1B, version = 630)
     public void sceAtracLowLevelDecode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -40,6 +41,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x1575D64B, version = 630)
     public void sceAtracLowLevelInitDecoder(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -47,8 +49,5 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-    @HLEFunction(nid = 0x0C116E1B, version = 630) public HLEModuleFunction sceAtracLowLevelDecodeFunction;
-
-    @HLEFunction(nid = 0x1575D64B, version = 630) public HLEModuleFunction sceAtracLowLevelInitDecoderFunction;
 
 }

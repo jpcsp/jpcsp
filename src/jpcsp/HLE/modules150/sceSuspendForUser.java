@@ -61,6 +61,7 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
     public static final int KERNEL_POWER_TICK_DISPLAY = 6;
     private boolean volatileMemLocked;
 
+    @HLEFunction(nid = 0xEADB1BD7, version = 150)
     public void sceKernelPowerLock(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -76,6 +77,7 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x3AEE7261, version = 150)
     public void sceKernelPowerUnlock(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -91,6 +93,7 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x090CCB3F, version = 150)
     public void sceKernelPowerTick(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -161,6 +164,7 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x3E0271D3, version = 150)
     public void sceKernelVolatileMemLock(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -171,10 +175,12 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
         hleKernelVolatileMemLock(processor, false);
     }
 
+    @HLEFunction(nid = 0xA14F40B2, version = 150)
     public void sceKernelVolatileMemTryLock(Processor processor) {
         hleKernelVolatileMemLock(processor, true);
     }
 
+    @HLEFunction(nid = 0xA569E425, version = 150)
     public void sceKernelVolatileMemUnlock(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -192,11 +198,6 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
             volatileMemLocked = false;
             cpu.gpr[2] = 0;
         }
-    }    @HLEFunction(nid = 0xEADB1BD7, version = 150) public HLEModuleFunction sceKernelPowerLockFunction;
-    @HLEFunction(nid = 0x3AEE7261, version = 150) public HLEModuleFunction sceKernelPowerUnlockFunction;
-    @HLEFunction(nid = 0x090CCB3F, version = 150) public HLEModuleFunction sceKernelPowerTickFunction;
-    @HLEFunction(nid = 0x3E0271D3, version = 150) public HLEModuleFunction sceKernelVolatileMemLockFunction;
-    @HLEFunction(nid = 0xA14F40B2, version = 150) public HLEModuleFunction sceKernelVolatileMemTryLockFunction;
-    @HLEFunction(nid = 0xA569E425, version = 150) public HLEModuleFunction sceKernelVolatileMemUnlockFunction;
+    }
 
 }

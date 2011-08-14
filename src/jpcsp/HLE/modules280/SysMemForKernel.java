@@ -46,6 +46,7 @@ public class SysMemForKernel extends jpcsp.HLE.modules150.SysMemForKernel implem
     public void stop() {
     }
 
+    @HLEFunction(nid = 0x6373995D, version = 280)
     public void sceKernelGetModel(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -55,6 +56,5 @@ public class SysMemForKernel extends jpcsp.HLE.modules150.SysMemForKernel implem
 
         cpu.gpr[2] = result;
 	}
-    @HLEFunction(nid = 0x6373995D, version = 280) public HLEModuleFunction sceKernelGetModelFunction;
 
 }

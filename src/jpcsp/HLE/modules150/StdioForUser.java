@@ -41,6 +41,7 @@ public class StdioForUser implements HLEModule {
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
+    @HLEFunction(nid = 0x3054D478, version = 150)
     public void sceKernelStdioRead(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -49,6 +50,7 @@ public class StdioForUser implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x0CBB0571, version = 150)
     public void sceKernelStdioLseek(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -57,6 +59,7 @@ public class StdioForUser implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xA46785C9, version = 150)
     public void sceKernelStdioSendChar(Processor processor) {
         CpuState cpu = processor.cpu; 
 
@@ -65,6 +68,7 @@ public class StdioForUser implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xA3B931DB, version = 150)
     public void sceKernelStdioWrite(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -73,6 +77,7 @@ public class StdioForUser implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x9D061C19, version = 150)
     public void sceKernelStdioClose(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -81,6 +86,7 @@ public class StdioForUser implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x924ABA61, version = 150)
     public void sceKernelStdioOpen(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -89,31 +95,25 @@ public class StdioForUser implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x172D316E, version = 150)
     public void sceKernelStdin(Processor processor) {
         CpuState cpu = processor.cpu;
 
         cpu.gpr[2] = IoFileMgrForUser.STDIN_ID;
     }
 
+    @HLEFunction(nid = 0xA6BAB2E9, version = 150)
     public void sceKernelStdout(Processor processor) {
         CpuState cpu = processor.cpu;
 
         cpu.gpr[2] = IoFileMgrForUser.STDOUT_ID;
     }
 
+    @HLEFunction(nid = 0xF78BA90A, version = 150)
     public void sceKernelStderr(Processor processor) {
         CpuState cpu = processor.cpu;
 
         cpu.gpr[2] = IoFileMgrForUser.STDERR_ID;
     }
-    @HLEFunction(nid = 0x3054D478, version = 150) public HLEModuleFunction sceKernelStdioReadFunction;
-    @HLEFunction(nid = 0x0CBB0571, version = 150) public HLEModuleFunction sceKernelStdioLseekFunction;
-    @HLEFunction(nid = 0xA46785C9, version = 150) public HLEModuleFunction sceKernelStdioSendCharFunction;
-    @HLEFunction(nid = 0xA3B931DB, version = 150) public HLEModuleFunction sceKernelStdioWriteFunction;
-    @HLEFunction(nid = 0x9D061C19, version = 150) public HLEModuleFunction sceKernelStdioCloseFunction;
-    @HLEFunction(nid = 0x924ABA61, version = 150) public HLEModuleFunction sceKernelStdioOpenFunction;
-    @HLEFunction(nid = 0x172D316E, version = 150) public HLEModuleFunction sceKernelStdinFunction;
-    @HLEFunction(nid = 0xA6BAB2E9, version = 150) public HLEModuleFunction sceKernelStdoutFunction;
-    @HLEFunction(nid = 0xF78BA90A, version = 150) public HLEModuleFunction sceKernelStderrFunction;
 
 }

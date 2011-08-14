@@ -36,6 +36,7 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
+	@HLEFunction(nid = 0x203CEB0D, version = 200)
 	public void sceRtcGetLastReincarnatedTime(Processor processor) {
 		CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -53,6 +54,7 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
         cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x62685E98, version = 200)
 	public void sceRtcGetLastAdjustedTime(Processor processor) {
 		CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -70,6 +72,7 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
         cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x1909C99B, version = 200)
 	public void sceRtcSetTime64_t(Processor processor) {
 		CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -87,6 +90,7 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
         }
 	}
 
+	@HLEFunction(nid = 0xE1C93E47, version = 200)
 	public void sceRtcGetTime64_t(Processor processor) {
 		CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -108,12 +112,5 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
             cpu.gpr[2] = -1;
         }
 	}
-	@HLEFunction(nid = 0x203CEB0D, version = 200) public HLEModuleFunction sceRtcGetLastReincarnatedTimeFunction;
-
-	@HLEFunction(nid = 0x62685E98, version = 200) public HLEModuleFunction sceRtcGetLastAdjustedTimeFunction;
-
-	@HLEFunction(nid = 0x1909C99B, version = 200) public HLEModuleFunction sceRtcSetTime64_tFunction;
-
-	@HLEFunction(nid = 0xE1C93E47, version = 200) public HLEModuleFunction sceRtcGetTime64_tFunction;
 
 }

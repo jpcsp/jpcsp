@@ -325,6 +325,7 @@ public class ModuleMgrForUser implements HLEModule {
         return Modules.ThreadManForUserModule.getCurrentThread().moduleid;
     }
 
+    @HLEFunction(nid = 0xB7F46618, version = 150)
     public void sceKernelLoadModuleByID(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -351,6 +352,7 @@ public class ModuleMgrForUser implements HLEModule {
         hleKernelLoadModule(processor, name, 0, uid, true);
     }
 
+    @HLEFunction(nid = 0x977DE386, version = 150)
     public void sceKernelLoadModule(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -378,6 +380,7 @@ public class ModuleMgrForUser implements HLEModule {
         hleKernelLoadModule(processor, name, flags, 0, false);
     }
 
+    @HLEFunction(nid = 0x710F61B5, version = 150)
     public void sceKernelLoadModuleMs(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -386,6 +389,7 @@ public class ModuleMgrForUser implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xF9275D98, version = 150)
     public void sceKernelLoadModuleBufferUsbWlan(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -394,6 +398,7 @@ public class ModuleMgrForUser implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x50F0C1EC, version = 150)
     public void sceKernelStartModule(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -482,6 +487,7 @@ public class ModuleMgrForUser implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xD1FF982A, version = 150)
     public void sceKernelStopModule(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -539,6 +545,7 @@ public class ModuleMgrForUser implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x2E0911AA, version = 150)
     public void sceKernelUnloadModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -563,6 +570,7 @@ public class ModuleMgrForUser implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xD675EBB8, version = 150)
     public void sceKernelSelfStopUnloadModule(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -608,6 +616,7 @@ public class ModuleMgrForUser implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x8f2df740, version = 150)
     public void sceKernelStopUnloadSelfModuleWithStatus(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -656,6 +665,7 @@ public class ModuleMgrForUser implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xCC1D3699, version = 150)
     public void sceKernelStopUnloadSelfModule(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -701,6 +711,7 @@ public class ModuleMgrForUser implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x644395E2, version = 150)
     public void sceKernelGetModuleIdList(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -709,6 +720,7 @@ public class ModuleMgrForUser implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x748CBED9, version = 150)
     public void sceKernelQueryModuleInfo(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -739,6 +751,7 @@ public class ModuleMgrForUser implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xF0A26395, version = 150)
     public void sceKernelGetModuleId(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -755,6 +768,7 @@ public class ModuleMgrForUser implements HLEModule {
         cpu.gpr[2] = moduleid;
     }
 
+    @HLEFunction(nid = 0xD8B73127, version = 150)
     public void sceKernelGetModuleIdByAddress(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -775,19 +789,6 @@ public class ModuleMgrForUser implements HLEModule {
             log.warn("sceKernelGetModuleIdByAddress(addr=0x" + Integer.toHexString(addr) + ") module not found");
             cpu.gpr[2] = -1;
         }
-    }    @HLEFunction(nid = 0xB7F46618, version = 150) public HLEModuleFunction sceKernelLoadModuleByIDFunction;
-    @HLEFunction(nid = 0x977DE386, version = 150) public HLEModuleFunction sceKernelLoadModuleFunction;
-    @HLEFunction(nid = 0x710F61B5, version = 150) public HLEModuleFunction sceKernelLoadModuleMsFunction;
-    @HLEFunction(nid = 0xF9275D98, version = 150) public HLEModuleFunction sceKernelLoadModuleBufferUsbWlanFunction;
-    @HLEFunction(nid = 0x50F0C1EC, version = 150) public HLEModuleFunction sceKernelStartModuleFunction;
-    @HLEFunction(nid = 0xD1FF982A, version = 150) public HLEModuleFunction sceKernelStopModuleFunction;
-    @HLEFunction(nid = 0x2E0911AA, version = 150) public HLEModuleFunction sceKernelUnloadModuleFunction;
-    @HLEFunction(nid = 0xD675EBB8, version = 150) public HLEModuleFunction sceKernelSelfStopUnloadModuleFunction;
-    @HLEFunction(nid = 0xCC1D3699, version = 150) public HLEModuleFunction sceKernelStopUnloadSelfModuleFunction;
-    @HLEFunction(nid = 0x644395E2, version = 150) public HLEModuleFunction sceKernelGetModuleIdListFunction;
-    @HLEFunction(nid = 0x748CBED9, version = 150) public HLEModuleFunction sceKernelQueryModuleInfoFunction;
-    @HLEFunction(nid = 0xF0A26395, version = 150) public HLEModuleFunction sceKernelGetModuleIdFunction;
-    @HLEFunction(nid = 0xD8B73127, version = 150) public HLEModuleFunction sceKernelGetModuleIdByAddressFunction;
-    @HLEFunction(nid = 0x8f2df740, version = 150) public HLEModuleFunction sceKernelStopUnloadSelfModuleWithStatusFunction;
+    }
 
 }

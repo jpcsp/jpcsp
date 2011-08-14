@@ -78,6 +78,7 @@ public class sceUsb implements HLEModule {
 	  *
 	  * @return 0 on success
 	  */
+	@HLEFunction(nid = 0xAE5DE6AF, version = 150)
 	public void sceUsbStart(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -103,6 +104,7 @@ public class sceUsb implements HLEModule {
 	  *
 	  * @return 0 on success
 	  */
+	@HLEFunction(nid = 0xC2464FA0, version = 150)
 	public void sceUsbStop(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -124,6 +126,7 @@ public class sceUsb implements HLEModule {
 	  *
 	  * @return OR'd PSP_USB_* constants
 	  */
+	@HLEFunction(nid = 0xC21645A4, version = 150)
 	public void sceUsbGetState(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -134,6 +137,7 @@ public class sceUsb implements HLEModule {
 		cpu.gpr[2] = getUsbState();
 	}
 
+	@HLEFunction(nid = 0x4E537366, version = 150)
 	public void sceUsbGetDrvList(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -149,6 +153,7 @@ public class sceUsb implements HLEModule {
 	  *
 	  * @return 1 if the driver has been started, 2 if it is stopped
 	  */
+	@HLEFunction(nid = 0x112CC951, version = 150)
 	public void sceUsbGetDrvState(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -168,6 +173,7 @@ public class sceUsb implements HLEModule {
 	  *
 	  * @return 0 on success
 	  */
+	@HLEFunction(nid = 0x586DB82C, version = 150)
 	public void sceUsbActivate(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -187,6 +193,7 @@ public class sceUsb implements HLEModule {
 	  *
 	  * @return 0 on success
 	  */
+	@HLEFunction(nid = 0xC572A9C8, version = 150)
 	public void sceUsbDeactivate(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -199,6 +206,7 @@ public class sceUsb implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x5BE0E002, version = 150)
 	public void sceUsbWaitState(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -207,6 +215,7 @@ public class sceUsb implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x1C360735, version = 150)
 	public void sceUsbWaitCancel(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -214,22 +223,5 @@ public class sceUsb implements HLEModule {
 
 		cpu.gpr[2] = 0;
 	}
-	@HLEFunction(nid = 0xAE5DE6AF, version = 150) public HLEModuleFunction sceUsbStartFunction;
-
-	@HLEFunction(nid = 0xC2464FA0, version = 150) public HLEModuleFunction sceUsbStopFunction;
-
-	@HLEFunction(nid = 0xC21645A4, version = 150) public HLEModuleFunction sceUsbGetStateFunction;
-
-	@HLEFunction(nid = 0x4E537366, version = 150) public HLEModuleFunction sceUsbGetDrvListFunction;
-
-	@HLEFunction(nid = 0x112CC951, version = 150) public HLEModuleFunction sceUsbGetDrvStateFunction;
-
-	@HLEFunction(nid = 0x586DB82C, version = 150) public HLEModuleFunction sceUsbActivateFunction;
-
-	@HLEFunction(nid = 0xC572A9C8, version = 150) public HLEModuleFunction sceUsbDeactivateFunction;
-
-	@HLEFunction(nid = 0x5BE0E002, version = 150) public HLEModuleFunction sceUsbWaitStateFunction;
-
-	@HLEFunction(nid = 0x1C360735, version = 150) public HLEModuleFunction sceUsbWaitCancelFunction;
 
 }

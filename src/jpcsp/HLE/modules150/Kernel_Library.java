@@ -49,6 +49,7 @@ public class Kernel_Library implements HLEModule {
      *
      * @returns The current state of the interrupt controller, to be used with ::sceKernelCpuResumeIntr().
      */
+    @HLEFunction(nid = 0x092968F4, version = 150)
     public void sceKernelCpuSuspendIntr(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -69,6 +70,7 @@ public class Kernel_Library implements HLEModule {
      *
      * @param flags - The value returned from ::sceKernelCpuSuspendIntr().
      */
+    @HLEFunction(nid = 0x5F10D406, version = 150)
     public void sceKernelCpuResumeIntr(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -91,6 +93,7 @@ public class Kernel_Library implements HLEModule {
      *
      * @param flags - The value returned from ::sceKernelCpuSuspendIntr()
      */
+    @HLEFunction(nid = 0x3B84732D, version = 150)
     public void sceKernelCpuResumeIntrWithSync(Processor processor) {
     	if (log.isDebugEnabled()) {
         	log.debug("sceKernelCpuResumeIntrWithSync redirecting to sceKernelCpuResumeIntr");
@@ -105,6 +108,7 @@ public class Kernel_Library implements HLEModule {
      *
      * @returns 1 if flags indicate that interrupts were not suspended, 0 otherwise.
      */
+    @HLEFunction(nid = 0x47A0B729, version = 150)
     public void sceKernelIsCpuIntrSuspended(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -123,6 +127,7 @@ public class Kernel_Library implements HLEModule {
      *
      * @returns 1 if interrupts are currently enabled.
      */
+    @HLEFunction(nid = 0xB55249D2, version = 150)
     public void sceKernelIsCpuIntrEnable(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -136,10 +141,5 @@ public class Kernel_Library implements HLEModule {
         	cpu.gpr[2] = 0;
         }
     }
-    @HLEFunction(nid = 0x092968F4, version = 150) public HLEModuleFunction sceKernelCpuSuspendIntrFunction;
-    @HLEFunction(nid = 0x5F10D406, version = 150) public HLEModuleFunction sceKernelCpuResumeIntrFunction;
-    @HLEFunction(nid = 0x3B84732D, version = 150) public HLEModuleFunction sceKernelCpuResumeIntrWithSyncFunction;
-    @HLEFunction(nid = 0x47A0B729, version = 150) public HLEModuleFunction sceKernelIsCpuIntrSuspendedFunction;
-    @HLEFunction(nid = 0xB55249D2, version = 150) public HLEModuleFunction sceKernelIsCpuIntrEnableFunction;
 
 }

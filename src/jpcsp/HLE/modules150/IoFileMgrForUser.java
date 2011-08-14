@@ -2083,6 +2083,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x3251EA56, version = 150)
     public void sceIoPollAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2100,6 +2101,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         hleIoWaitAsync(id, res_addr, false, false);
     }
 
+    @HLEFunction(nid = 0xE23EEC33, version = 150)
     public void sceIoWaitAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2117,6 +2119,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         hleIoWaitAsync(id, res_addr, true, false);
     }
 
+    @HLEFunction(nid = 0x35DBD746, version = 150)
     public void sceIoWaitAsyncCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2134,6 +2137,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         hleIoWaitAsync(id, res_addr, true, true);
     }
 
+    @HLEFunction(nid = 0xCB05F8D6, version = 150)
     public void sceIoGetAsyncStat(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2152,6 +2156,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         hleIoWaitAsync(id, res_addr, (poll == 0), false);
     }
 
+    @HLEFunction(nid = 0xB293727F, version = 150)
     public void sceIoChangeAsyncPriority(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2190,6 +2195,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xA12A0514, version = 150)
     public void sceIoSetAsyncCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2222,6 +2228,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x810C4BC3, version = 150)
     public void sceIoClose(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2239,6 +2246,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         delayIoOperation(IoOperation.close);
     }
 
+    @HLEFunction(nid = 0xFF5940B6, version = 150)
     public void sceIoCloseAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2255,6 +2263,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         hleIoClose(id, true);
     }
 
+    @HLEFunction(nid = 0x109F50BC, version = 150)
     public void sceIoOpen(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2274,6 +2283,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         delayIoOperation(IoOperation.open);
     }
 
+    @HLEFunction(nid = 0x89AA9906, version = 150)
     public void sceIoOpenAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2292,6 +2302,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         hleIoOpen(filename_addr, flags, permissions, true);
     }
 
+    @HLEFunction(nid = 0x6A638D83, version = 150)
     public void sceIoRead(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2307,6 +2318,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         delayIoOperation(IoOperation.read);
     }
 
+    @HLEFunction(nid = 0xA0B5A7C2, version = 150)
     public void sceIoReadAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2321,6 +2333,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         hleIoRead(id, data_addr, size, true);
     }
 
+    @HLEFunction(nid = 0x42EC03AC, version = 150)
     public void sceIoWrite(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2340,6 +2353,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x0FACAB19, version = 150)
     public void sceIoWriteAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2354,6 +2368,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         hleIoWrite(id, data_addr, size, true);
     }
 
+    @HLEFunction(nid = 0x27EB27B8, version = 150)
     public void sceIoLseek(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2373,6 +2388,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         delayIoOperation(IoOperation.seek);
     }
 
+    @HLEFunction(nid = 0x71B19E77, version = 150)
     public void sceIoLseekAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2391,6 +2407,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         hleIoLseek(id, offset, whence, true, true);
     }
 
+    @HLEFunction(nid = 0x68963324, version = 150)
     public void sceIoLseek32(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2410,6 +2427,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         delayIoOperation(IoOperation.seek);
     }
 
+    @HLEFunction(nid = 0x1B385D8F, version = 150)
     public void sceIoLseek32Async(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2428,6 +2446,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         hleIoLseek(id, (long) offset, whence, false, true);
     }
 
+    @HLEFunction(nid = 0x63632449, version = 150)
     public void sceIoIoctl(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2446,6 +2465,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         delayIoOperation(IoOperation.ioctl);
     }
 
+    @HLEFunction(nid = 0xE95A012B, version = 150)
     public void sceIoIoctlAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2463,6 +2483,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         hleIoIoctl(id, cmd, indata_addr, inlen, outdata_addr, outlen, true);
     }
 
+    @HLEFunction(nid = 0xB29DDF9C, version = 150)
     public void sceIoDopen(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2535,6 +2556,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         delayIoOperation(IoOperation.open);
     }
 
+    @HLEFunction(nid = 0xE3EB004C, version = 150)
     public void sceIoDread(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2578,6 +2600,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         delayIoOperation(IoOperation.read);
     }
 
+    @HLEFunction(nid = 0xEB092469, version = 150)
     public void sceIoDclose(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2606,6 +2629,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         delayIoOperation(IoOperation.close);
     }
 
+    @HLEFunction(nid = 0xF27A9C51, version = 150)
     public void sceIoRemove(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2643,6 +2667,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         delayIoOperation(IoOperation.remove);
     }
 
+    @HLEFunction(nid = 0x06A70004, version = 150)
     public void sceIoMkdir(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2673,6 +2698,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         delayIoOperation(IoOperation.mkdir);
     }
 
+    @HLEFunction(nid = 0x1117C65F, version = 150)
     public void sceIoRmdir(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2702,6 +2728,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         delayIoOperation(IoOperation.remove);
     }
 
+    @HLEFunction(nid = 0x55F4717D, version = 150)
     public void sceIoChdir(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2739,6 +2766,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xAB96437F, version = 150)
     public void sceIoSync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2760,6 +2788,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xACE946E8, version = 150)
     public void sceIoGetstat(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2789,6 +2818,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xB8A740F4, version = 150)
     public void sceIoChstat(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2864,6 +2894,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x779103A0, version = 150)
     public void sceIoRename(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2904,6 +2935,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         delayIoOperation(IoOperation.rename);
     }
 
+    @HLEFunction(nid = 0x54F5FB11, version = 150)
     public void sceIoDevctl(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -3241,6 +3273,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         delayIoOperation(IoOperation.ioctl);
     }
 
+    @HLEFunction(nid = 0x08BD7374, version = 150)
     public void sceIoGetDevType(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3264,6 +3297,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xB2A628C1, version = 150)
     public void sceIoAssign(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3307,6 +3341,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x6D08A871, version = 150)
     public void sceIoUnassign(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3323,6 +3358,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xE8BC6571, version = 150)
     public void sceIoCancel(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3350,6 +3386,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x5C2BE2CC, version = 150)
     public void sceIoGetFdList(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -3386,42 +3423,5 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
         cpu.gpr[2] = count;
     }
-    @HLEFunction(nid = 0x3251EA56, version = 150) public HLEModuleFunction sceIoPollAsyncFunction;
-    @HLEFunction(nid = 0xE23EEC33, version = 150) public HLEModuleFunction sceIoWaitAsyncFunction;
-    @HLEFunction(nid = 0x35DBD746, version = 150) public HLEModuleFunction sceIoWaitAsyncCBFunction;
-    @HLEFunction(nid = 0xCB05F8D6, version = 150) public HLEModuleFunction sceIoGetAsyncStatFunction;
-    @HLEFunction(nid = 0xB293727F, version = 150) public HLEModuleFunction sceIoChangeAsyncPriorityFunction;
-    @HLEFunction(nid = 0xA12A0514, version = 150) public HLEModuleFunction sceIoSetAsyncCallbackFunction;
-    @HLEFunction(nid = 0x810C4BC3, version = 150) public HLEModuleFunction sceIoCloseFunction;
-    @HLEFunction(nid = 0xFF5940B6, version = 150) public HLEModuleFunction sceIoCloseAsyncFunction;
-    @HLEFunction(nid = 0x109F50BC, version = 150) public HLEModuleFunction sceIoOpenFunction;
-    @HLEFunction(nid = 0x89AA9906, version = 150) public HLEModuleFunction sceIoOpenAsyncFunction;
-    @HLEFunction(nid = 0x6A638D83, version = 150) public HLEModuleFunction sceIoReadFunction;
-    @HLEFunction(nid = 0xA0B5A7C2, version = 150) public HLEModuleFunction sceIoReadAsyncFunction;
-    @HLEFunction(nid = 0x42EC03AC, version = 150) public HLEModuleFunction sceIoWriteFunction;
-    @HLEFunction(nid = 0x0FACAB19, version = 150) public HLEModuleFunction sceIoWriteAsyncFunction;
-    @HLEFunction(nid = 0x27EB27B8, version = 150) public HLEModuleFunction sceIoLseekFunction;
-    @HLEFunction(nid = 0x71B19E77, version = 150) public HLEModuleFunction sceIoLseekAsyncFunction;
-    @HLEFunction(nid = 0x68963324, version = 150) public HLEModuleFunction sceIoLseek32Function;
-    @HLEFunction(nid = 0x1B385D8F, version = 150) public HLEModuleFunction sceIoLseek32AsyncFunction;
-    @HLEFunction(nid = 0x63632449, version = 150) public HLEModuleFunction sceIoIoctlFunction;
-    @HLEFunction(nid = 0xE95A012B, version = 150) public HLEModuleFunction sceIoIoctlAsyncFunction;
-    @HLEFunction(nid = 0xB29DDF9C, version = 150) public HLEModuleFunction sceIoDopenFunction;
-    @HLEFunction(nid = 0xE3EB004C, version = 150) public HLEModuleFunction sceIoDreadFunction;
-    @HLEFunction(nid = 0xEB092469, version = 150) public HLEModuleFunction sceIoDcloseFunction;
-    @HLEFunction(nid = 0xF27A9C51, version = 150) public HLEModuleFunction sceIoRemoveFunction;
-    @HLEFunction(nid = 0x06A70004, version = 150) public HLEModuleFunction sceIoMkdirFunction;
-    @HLEFunction(nid = 0x1117C65F, version = 150) public HLEModuleFunction sceIoRmdirFunction;
-    @HLEFunction(nid = 0x55F4717D, version = 150) public HLEModuleFunction sceIoChdirFunction;
-    @HLEFunction(nid = 0xAB96437F, version = 150) public HLEModuleFunction sceIoSyncFunction;
-    @HLEFunction(nid = 0xACE946E8, version = 150) public HLEModuleFunction sceIoGetstatFunction;
-    @HLEFunction(nid = 0xB8A740F4, version = 150) public HLEModuleFunction sceIoChstatFunction;
-    @HLEFunction(nid = 0x779103A0, version = 150) public HLEModuleFunction sceIoRenameFunction;
-    @HLEFunction(nid = 0x54F5FB11, version = 150) public HLEModuleFunction sceIoDevctlFunction;
-    @HLEFunction(nid = 0x08BD7374, version = 150) public HLEModuleFunction sceIoGetDevTypeFunction;
-    @HLEFunction(nid = 0xB2A628C1, version = 150) public HLEModuleFunction sceIoAssignFunction;
-    @HLEFunction(nid = 0x6D08A871, version = 150) public HLEModuleFunction sceIoUnassignFunction;
-    @HLEFunction(nid = 0xE8BC6571, version = 150) public HLEModuleFunction sceIoCancelFunction;
-    @HLEFunction(nid = 0x5C2BE2CC, version = 150) public HLEModuleFunction sceIoGetFdListFunction;
 
 }

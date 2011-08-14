@@ -177,6 +177,7 @@ public class sceHttps implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xE4D21302, version = 150)
     public void sceHttpsInit(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -197,6 +198,7 @@ public class sceHttps implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x68AB0F86, version = 150)
     public void sceHttpsInitWithPath(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -215,6 +217,7 @@ public class sceHttps implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xF9D8EB63, version = 150)
     public void sceHttpsEnd(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -228,6 +231,7 @@ public class sceHttps implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x87797BDD, version = 150)
     public void sceHttpsLoadDefaultCert(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -240,6 +244,7 @@ public class sceHttps implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xAB1540D5, version = 150)
     public void sceHttpsGetSslError(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -265,6 +270,7 @@ public class sceHttps implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xBAC31BF1, version = 150)
     public void sceHttpsEnableOption(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -279,6 +285,7 @@ public class sceHttps implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xB3FAF831, version = 150)
     public void sceHttpsDisableOption(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -293,6 +300,7 @@ public class sceHttps implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xD11DAB01, version = 150)
     public void sceHttpsGetCaList(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -309,6 +317,7 @@ public class sceHttps implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x569A1481, version = 150)
     public void sceHttpsSetSslCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -328,22 +337,5 @@ public class sceHttps implements HLEModule {
             cpu.gpr[2] = 0;
         }
     }
-    @HLEFunction(nid = 0xE4D21302, version = 150) public HLEModuleFunction sceHttpsInitFunction;
-
-    @HLEFunction(nid = 0x68AB0F86, version = 150) public HLEModuleFunction sceHttpsInitWithPathFunction;
-
-    @HLEFunction(nid = 0xF9D8EB63, version = 150) public HLEModuleFunction sceHttpsEndFunction;
-
-    @HLEFunction(nid = 0x87797BDD, version = 150) public HLEModuleFunction sceHttpsLoadDefaultCertFunction;
-
-    @HLEFunction(nid = 0xAB1540D5, version = 150) public HLEModuleFunction sceHttpsGetSslErrorFunction;
-
-    @HLEFunction(nid = 0xBAC31BF1, version = 150) public HLEModuleFunction sceHttpsEnableOptionFunction;
-
-    @HLEFunction(nid = 0xB3FAF831, version = 150) public HLEModuleFunction sceHttpsDisableOptionFunction;
-
-    @HLEFunction(nid = 0xD11DAB01, version = 150) public HLEModuleFunction sceHttpsGetCaListFunction;
-
-    @HLEFunction(nid = 0x569A1481, version = 150) public HLEModuleFunction sceHttpsSetSslCallbackFunction;
 
 }

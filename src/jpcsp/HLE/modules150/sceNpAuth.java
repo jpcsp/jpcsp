@@ -48,6 +48,7 @@ public class sceNpAuth implements HLEModule {
     private int npMaxMemSize;  // Maximum memory used by the NP utility.
     private int npFreeMemSize; // Free memory available to use by the NP utility.
 
+    @HLEFunction(nid = 0xA1DE86F8, version = 150)
     public void sceNpAuth_A1DE86F8(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -69,6 +70,7 @@ public class sceNpAuth implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xCD86A656, version = 150)
     public void sceNpAuth_CD86A656(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -88,8 +90,5 @@ public class sceNpAuth implements HLEModule {
         }
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0xA1DE86F8, version = 150) public HLEModuleFunction sceNpAuth_A1DE86F8Function;
-
-    @HLEFunction(nid = 0xCD86A656, version = 150) public HLEModuleFunction sceNpAuth_CD86A656Function;
 
 }

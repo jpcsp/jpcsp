@@ -141,6 +141,7 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         }
     }
 
+    @HLEFunction(nid = 0xC629AF26, version = 270)
     public void sceUtilityLoadAvModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -162,6 +163,7 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         cpu.gpr[2] = result;
     }
 
+    @HLEFunction(nid = 0xF7D8D092, version = 270)
     public void sceUtilityUnloadAvModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -178,6 +180,7 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         cpu.gpr[2] = hleUtilityUnloadAvModule(module);
     }
 
+    @HLEFunction(nid = 0x4928BD96, version = 270)
     public void sceUtilityMsgDialogAbort(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -187,6 +190,7 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x0D5BC6D2, version = 270)
     public void sceUtilityLoadUsbModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -207,12 +211,5 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         }
         cpu.gpr[2] = result;
     }
-    @HLEFunction(nid = 0xC629AF26, version = 270) public HLEModuleFunction sceUtilityLoadAvModuleFunction;
-
-    @HLEFunction(nid = 0xF7D8D092, version = 270) public HLEModuleFunction sceUtilityUnloadAvModuleFunction;
-
-    @HLEFunction(nid = 0x4928BD96, version = 270) public HLEModuleFunction sceUtilityMsgDialogAbortFunction;
-
-    @HLEFunction(nid = 0x0D5BC6D2, version = 270) public HLEModuleFunction sceUtilityLoadUsbModuleFunction;
 
 }

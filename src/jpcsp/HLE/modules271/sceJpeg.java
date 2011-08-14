@@ -49,6 +49,7 @@ public class sceJpeg implements HLEModule {
 	protected int jpegWidth = Screen.width;
 	protected int jpegHeight = Screen.height;
 
+	@HLEFunction(nid = 0x04B5AE02, version = 271)
 	public void sceJpegMJpegCsc(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -74,6 +75,7 @@ public class sceJpeg implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x48B602B7, version = 271)
 	public void sceJpegDeleteMJpeg(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -89,6 +91,7 @@ public class sceJpeg implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x7D2F3D7F, version = 271)
 	public void sceJpegFinishMJpeg(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -99,6 +102,7 @@ public class sceJpeg implements HLEModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x91EED83C, version = 271)
 	public void sceJpegDecodeMJpegYCbCr(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -125,6 +129,7 @@ public class sceJpeg implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x9D47469C, version = 271)
 	public void sceJpegCreateMJpeg(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -144,6 +149,7 @@ public class sceJpeg implements HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0xAC9E70E6, version = 271)
 	public void sceJpegInitMJpeg(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -165,6 +171,7 @@ public class sceJpeg implements HLEModule {
 	 *
 	 * @return (width * 65536) + height on success, < 0 on error
 	 */
+	@HLEFunction(nid = 0x04B93CEF, version = 271)
 	public void sceJpegDecodeMJpeg(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -187,19 +194,5 @@ public class sceJpeg implements HLEModule {
 		// Return size of image
 		cpu.gpr[2] = (height << 16) | width;
 	}
-
-	@HLEFunction(nid = 0x04B5AE02, version = 271) public HLEModuleFunction sceJpegMJpegCscFunction;
-
-	@HLEFunction(nid = 0x48B602B7, version = 271) public HLEModuleFunction sceJpegDeleteMJpegFunction;
-
-	@HLEFunction(nid = 0x7D2F3D7F, version = 271) public HLEModuleFunction sceJpegFinishMJpegFunction;
-
-	@HLEFunction(nid = 0x91EED83C, version = 271) public HLEModuleFunction sceJpegDecodeMJpegYCbCrFunction;
-
-	@HLEFunction(nid = 0x9D47469C, version = 271) public HLEModuleFunction sceJpegCreateMJpegFunction;
-
-	@HLEFunction(nid = 0xAC9E70E6, version = 271) public HLEModuleFunction sceJpegInitMJpegFunction;
-
-	@HLEFunction(nid = 0x04B93CEF, version = 271) public HLEModuleFunction sceJpegDecodeMJpegFunction;
 
 }

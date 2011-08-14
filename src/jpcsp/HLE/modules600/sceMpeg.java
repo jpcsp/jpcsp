@@ -30,6 +30,7 @@ public class sceMpeg extends jpcsp.HLE.modules352.sceMpeg {
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
+    @HLEFunction(nid = 0x63B9536A, version = 600)
     public void sceMpegAvcResourceGetAvcDecTopAddr(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -38,6 +39,7 @@ public class sceMpeg extends jpcsp.HLE.modules352.sceMpeg {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x8160A2FE, version = 600)
     public void sceMpegAvcResourceFinish(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -46,6 +48,7 @@ public class sceMpeg extends jpcsp.HLE.modules352.sceMpeg {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xAF26BB01, version = 600)
     public void sceMpegAvcResourceGetAvcEsBuf(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -54,6 +57,7 @@ public class sceMpeg extends jpcsp.HLE.modules352.sceMpeg {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xFCBDB5AD, version = 600)
     public void sceMpegAvcResourceInit(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -61,12 +65,5 @@ public class sceMpeg extends jpcsp.HLE.modules352.sceMpeg {
 
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0x63B9536A, version = 600) public HLEModuleFunction sceMpegAvcResourceGetAvcDecTopAddrFunction;
-
-    @HLEFunction(nid = 0x8160A2FE, version = 600) public HLEModuleFunction sceMpegAvcResourceFinishFunction;
-
-    @HLEFunction(nid = 0xAF26BB01, version = 600) public HLEModuleFunction sceMpegAvcResourceGetAvcEsBufFunction;
-
-    @HLEFunction(nid = 0xFCBDB5AD, version = 600) public HLEModuleFunction sceMpegAvcResourceInitFunction;
 
 }

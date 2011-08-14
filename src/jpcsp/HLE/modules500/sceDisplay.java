@@ -44,6 +44,7 @@ public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
 	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
 
+	@HLEFunction(nid = 0x40F1469C, version = 500)
 	public void sceDisplayWaitVblankStartMulti(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -61,6 +62,7 @@ public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
         blockCurrentThreadOnVblank(cycleNum, false);
 	}
 
+	@HLEFunction(nid = 0x77ED8B3A, version = 500)
 	public void sceDisplayWaitVblankStartMultiCB(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -77,8 +79,5 @@ public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
         cpu.gpr[2] = 0;
         blockCurrentThreadOnVblank(cycleNum, true);
 	}
-	@HLEFunction(nid = 0x40F1469C, version = 500) public HLEModuleFunction sceDisplayWaitVblankStartMultiFunction;
-
-	@HLEFunction(nid = 0x77ED8B3A, version = 500) public HLEModuleFunction sceDisplayWaitVblankStartMultiCBFunction;
 
 }

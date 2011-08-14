@@ -52,6 +52,7 @@ public class sceWlan implements HLEModule {
      * requests 8 so pass it 8 bytes just in case)
      * @return 0 on success, < 0 on error
      */
+    @HLEFunction(nid = 0x0C622081, version = 150)
     public void sceWlanGetEtherAddr(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -82,6 +83,7 @@ public class sceWlan implements HLEModule {
      *
      * @return 0 if off, 1 if on
      */
+    @HLEFunction(nid = 0xD7763699, version = 150)
     public void sceWlanGetSwitchState(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -97,6 +99,7 @@ public class sceWlan implements HLEModule {
      *
      * @return 0 if off, 1 if on
      */
+    @HLEFunction(nid = 0x93440B11, version = 150)
     public void sceWlanDevIsPowerOn(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -106,10 +109,5 @@ public class sceWlan implements HLEModule {
 
         cpu.gpr[2] = Wlan.getSwitchState();
     }
-    @HLEFunction(nid = 0x0C622081, version = 150) public HLEModuleFunction sceWlanGetEtherAddrFunction;
-
-    @HLEFunction(nid = 0xD7763699, version = 150) public HLEModuleFunction sceWlanGetSwitchStateFunction;
-
-    @HLEFunction(nid = 0x93440B11, version = 150) public HLEModuleFunction sceWlanDevIsPowerOnFunction;
 
 }

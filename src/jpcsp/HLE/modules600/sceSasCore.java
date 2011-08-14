@@ -32,6 +32,7 @@ public class sceSasCore extends jpcsp.HLE.modules500.sceSasCore {
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
+    @HLEFunction(nid = 0x4AA9EAD6, version = 600)
     public void __sceSasSetVoiceATRAC3(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -50,6 +51,7 @@ public class sceSasCore extends jpcsp.HLE.modules500.sceSasCore {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x7497EA85, version = 600)
     public void __sceSasConcatenateATRAC3(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -70,6 +72,7 @@ public class sceSasCore extends jpcsp.HLE.modules500.sceSasCore {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xF6107F00, version = 600)
     public void __sceSasUnsetATRAC3(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -87,10 +90,5 @@ public class sceSasCore extends jpcsp.HLE.modules500.sceSasCore {
         }
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0x4AA9EAD6, version = 600) public HLEModuleFunction __sceSasSetVoiceATRAC3Function;
-
-    @HLEFunction(nid = 0x7497EA85, version = 600) public HLEModuleFunction __sceSasConcatenateATRAC3Function;
-
-    @HLEFunction(nid = 0xF6107F00, version = 600) public HLEModuleFunction __sceSasUnsetATRAC3Function;
 
 }

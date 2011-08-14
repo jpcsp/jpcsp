@@ -345,6 +345,7 @@ public class sceNetApctl implements HLEModule {
 	 *
 	 * @return < 0 on error.
 	 */
+	@HLEFunction(nid = 0xE2F91F9B, version = 150)
 	public void sceNetApctlInit(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -372,6 +373,7 @@ public class sceNetApctl implements HLEModule {
 	 *
 	 * @return < 0 on error.
 	 */
+	@HLEFunction(nid = 0xB3EDD0EC, version = 150)
 	public void sceNetApctlTerm(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -419,6 +421,7 @@ public class sceNetApctl implements HLEModule {
 	//		        unsigned int wifisp;            /* 1 if connection is for Wifi service providers (WISP) */
 	//		
 	//		};
+	@HLEFunction(nid = 0x2BEFDF23, version = 150)
 	public void sceNetApctlGetInfo(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -509,6 +512,7 @@ public class sceNetApctl implements HLEModule {
 	 *
 	 * @return A handler id or < 0 on error.
 	 */
+	@HLEFunction(nid = 0x8ABADD51, version = 150)
 	public void sceNetApctlAddHandler(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -533,6 +537,7 @@ public class sceNetApctl implements HLEModule {
 	 *
 	 * @return < 0 on error.
 	 */
+	@HLEFunction(nid = 0x5963991B, version = 150)
 	public void sceNetApctlDelHandler(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -560,6 +565,7 @@ public class sceNetApctl implements HLEModule {
 	 *
 	 * @return < 0 on error.
 	 */
+	@HLEFunction(nid = 0xCFB957C6, version = 150)
 	public void sceNetApctlConnect(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -579,6 +585,7 @@ public class sceNetApctl implements HLEModule {
 	 *
 	 * @return < 0 on error.
 	 */
+	@HLEFunction(nid = 0x24FE91A1, version = 150)
 	public void sceNetApctlDisconnect(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -598,6 +605,7 @@ public class sceNetApctl implements HLEModule {
 	 *
 	 * @return < 0 on error.
 	 */
+	@HLEFunction(nid = 0x5DEAC81B, version = 150)
 	public void sceNetApctlGetState(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -616,20 +624,5 @@ public class sceNetApctl implements HLEModule {
 			cpu.gpr[2] = 0;
 		}
 	}
-	@HLEFunction(nid = 0xE2F91F9B, version = 150) public HLEModuleFunction sceNetApctlInitFunction;
-
-	@HLEFunction(nid = 0xB3EDD0EC, version = 150) public HLEModuleFunction sceNetApctlTermFunction;
-
-	@HLEFunction(nid = 0x2BEFDF23, version = 150) public HLEModuleFunction sceNetApctlGetInfoFunction;
-
-	@HLEFunction(nid = 0x8ABADD51, version = 150) public HLEModuleFunction sceNetApctlAddHandlerFunction;
-
-	@HLEFunction(nid = 0x5963991B, version = 150) public HLEModuleFunction sceNetApctlDelHandlerFunction;
-
-	@HLEFunction(nid = 0xCFB957C6, version = 150) public HLEModuleFunction sceNetApctlConnectFunction;
-
-	@HLEFunction(nid = 0x24FE91A1, version = 150) public HLEModuleFunction sceNetApctlDisconnectFunction;
-
-	@HLEFunction(nid = 0x5DEAC81B, version = 150) public HLEModuleFunction sceNetApctlGetStateFunction;
 
 };

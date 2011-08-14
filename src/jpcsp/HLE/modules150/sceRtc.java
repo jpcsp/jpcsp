@@ -112,6 +112,7 @@ public class sceRtc implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xC41C2853, version = 150)
     public void sceRtcGetTickResolution(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -119,6 +120,7 @@ public class sceRtc implements HLEModule {
         cpu.gpr[2] = 1000000;
     }
 
+    @HLEFunction(nid = 0x3F7AD767, version = 150)
     public void sceRtcGetCurrentTick(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -133,6 +135,7 @@ public class sceRtc implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x011F03C1, version = 150)
     public void sceRtcGetAccumulativeTime(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -147,6 +150,7 @@ public class sceRtc implements HLEModule {
         cpu.gpr[3] = (int)((accumTick >> 32) & 0xffffffffL);
     }
 
+    @HLEFunction(nid = 0x029CA3B3, version = 150)
     public void sceRtcGetAccumlativeTime(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -160,6 +164,7 @@ public class sceRtc implements HLEModule {
         cpu.gpr[3] = (int)((accumTick >> 32) & 0xffffffffL);
     }
 
+    @HLEFunction(nid = 0x4CFA57B0, version = 150)
     public void sceRtcGetCurrentClock(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -174,6 +179,7 @@ public class sceRtc implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xE7C27D1B, version = 150)
     public void sceRtcGetCurrentClockLocalTime(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -185,6 +191,7 @@ public class sceRtc implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x34885E0D, version = 150)
     public void sceRtcConvertUtcToLocalTime(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -201,6 +208,7 @@ public class sceRtc implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x779242A2, version = 150)
     public void sceRtcConvertLocalTimeToUTC(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -217,6 +225,7 @@ public class sceRtc implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x42307A17, version = 150)
     public void sceRtcIsLeapYear(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -230,6 +239,7 @@ public class sceRtc implements HLEModule {
             cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x05EF322C, version = 150)
     public void sceRtcGetDaysInMonth(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -245,6 +255,7 @@ public class sceRtc implements HLEModule {
     }
 
     // pspsdk says 0=monday but I tested and 0=sunday... (fiveofhearts)
+    @HLEFunction(nid = 0x57726BC1, version = 150)
     public void sceRtcGetDayOfWeek(Processor processor) {
         CpuState cpu = processor.cpu;
         int year = cpu.gpr[4];
@@ -267,6 +278,7 @@ public class sceRtc implements HLEModule {
      * @param date - pointer to pspDate struct to be checked
      * @return 0 on success, one of PSP_TIME_INVALID_* on error
      */
+    @HLEFunction(nid = 0x4B1B5E82, version = 150)
     public void sceRtcCheckValid(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -308,6 +320,7 @@ public class sceRtc implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x3A807CC8, version = 150)
     public void sceRtcSetTime_t(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -325,6 +338,7 @@ public class sceRtc implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x27C4594C, version = 150)
     public void sceRtcGetTime_t(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -347,6 +361,7 @@ public class sceRtc implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xF006F264, version = 150)
     public void sceRtcSetDosTime(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -364,6 +379,7 @@ public class sceRtc implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x36075567, version = 150)
     public void sceRtcGetDosTime(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -386,6 +402,7 @@ public class sceRtc implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x7ACE4C04, version = 150)
     public void sceRtcSetWin32FileTime(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -403,6 +420,7 @@ public class sceRtc implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0xCF561893, version = 150)
     public void sceRtcGetWin32FileTime(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -426,6 +444,7 @@ public class sceRtc implements HLEModule {
     }
 
     /** Set a pspTime struct based on ticks. */
+    @HLEFunction(nid = 0x7ED29E40, version = 150)
     public void sceRtcSetTick(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -448,6 +467,7 @@ public class sceRtc implements HLEModule {
     }
 
     /** Set ticks based on a pspTime struct. */
+    @HLEFunction(nid = 0x6FF40ACC, version = 150)
     public void sceRtcGetTick(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -473,6 +493,7 @@ public class sceRtc implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x9ED0AE87, version = 150)
     public void sceRtcCompareTick(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -499,51 +520,61 @@ public class sceRtc implements HLEModule {
         }
     }
 
+    @HLEFunction(nid = 0x44F45E05, version = 150)
     public void sceRtcTickAddTicks(Processor processor) {
         log.debug("sceRtcTickAddTicks redirecting to hleRtcTickAdd64(1)");
         hleRtcTickAdd64(processor, 1);
     }
 
+    @HLEFunction(nid = 0x26D25A5D, version = 150)
     public void sceRtcTickAddMicroseconds(Processor processor) {
         log.debug("sceRtcTickAddMicroseconds redirecting to hleRtcTickAdd64(1)");
         hleRtcTickAdd64(processor, 1);
     }
 
+    @HLEFunction(nid = 0xF2A4AFE5, version = 150)
     public void sceRtcTickAddSeconds(Processor processor) {
         log.debug("sceRtcTickAddSeconds redirecting to hleRtcTickAdd64(1000000)");
         hleRtcTickAdd64(processor, 1000000L);
     }
 
+    @HLEFunction(nid = 0xE6605BCA, version = 150)
     public void sceRtcTickAddMinutes(Processor processor) {
         log.debug("sceRtcTickAddMinutes redirecting to hleRtcTickAdd64(60*1000000)");
         hleRtcTickAdd64(processor, PSP_TIME_SECONDS_IN_MINUTE*1000000L);
     }
 
+    @HLEFunction(nid = 0x26D7A24A, version = 150)
     public void sceRtcTickAddHours(Processor processor) {
         log.debug("sceRtcTickAddHours redirecting to hleRtcTickAdd32(60*60*1000000)");
         hleRtcTickAdd32(processor, PSP_TIME_SECONDS_IN_HOUR*1000000L);
     }
 
+    @HLEFunction(nid = 0xE51B4B7A, version = 150)
     public void sceRtcTickAddDays(Processor processor) {
         log.debug("sceRtcTickAddDays redirecting to hleRtcTickAdd32(24*60*60*1000000)");
         hleRtcTickAdd32(processor, PSP_TIME_SECONDS_IN_DAY*1000000L);
     }
 
+    @HLEFunction(nid = 0xCF3A2CA8, version = 150)
     public void sceRtcTickAddWeeks(Processor processor) {
         log.debug("sceRtcTickAddWeeks redirecting to hleRtcTickAdd32(7*24*60*60*1000000)");
         hleRtcTickAdd32(processor, PSP_TIME_SECONDS_IN_WEEK*1000000L);
     }
 
+    @HLEFunction(nid = 0xDBF74F1B, version = 150)
     public void sceRtcTickAddMonths(Processor processor) {
         log.debug("sceRtcTickAddMonths redirecting to hleRtcTickAdd32(30*24*60*60*1000000)");
         hleRtcTickAdd32(processor, PSP_TIME_SECONDS_IN_MONTH*1000000L);
     }
 
+    @HLEFunction(nid = 0x42842C77, version = 150)
     public void sceRtcTickAddYears(Processor processor) {
         log.debug("sceRtcTickAddYears redirecting to hleRtcTickAdd32(365*24*60*60*1000000)");
         hleRtcTickAdd32(processor, PSP_TIME_SECONDS_IN_YEAR*1000000L);
     }
 
+    @HLEFunction(nid = 0xC663B3B9, version = 150)
     public void sceRtcFormatRFC2822(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -552,6 +583,7 @@ public class sceRtc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x7DE6711B, version = 150)
     public void sceRtcFormatRFC2822LocalTime(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -560,6 +592,7 @@ public class sceRtc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x0498FB3C, version = 150)
     public void sceRtcFormatRFC3339(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -568,6 +601,7 @@ public class sceRtc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x27F98543, version = 150)
     public void sceRtcFormatRFC3339LocalTime(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -576,6 +610,7 @@ public class sceRtc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xDFBC5F16, version = 150)
     public void sceRtcParseDateTime(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -584,6 +619,7 @@ public class sceRtc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x28E1E988, version = 150)
     public void sceRtcParseRFC3339(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -591,76 +627,5 @@ public class sceRtc implements HLEModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-    @HLEFunction(nid = 0xC41C2853, version = 150) public HLEModuleFunction sceRtcGetTickResolutionFunction;
-
-    @HLEFunction(nid = 0x3F7AD767, version = 150) public HLEModuleFunction sceRtcGetCurrentTickFunction;
-
-    @HLEFunction(nid = 0x011F03C1, version = 150) public HLEModuleFunction sceRtcGetAccumulativeTimeFunction;
-
-    @HLEFunction(nid = 0x029CA3B3, version = 150) public HLEModuleFunction sceRtcGetAccumlativeTimeFunction;
-
-    @HLEFunction(nid = 0x4CFA57B0, version = 150) public HLEModuleFunction sceRtcGetCurrentClockFunction;
-
-    @HLEFunction(nid = 0xE7C27D1B, version = 150) public HLEModuleFunction sceRtcGetCurrentClockLocalTimeFunction;
-
-    @HLEFunction(nid = 0x34885E0D, version = 150) public HLEModuleFunction sceRtcConvertUtcToLocalTimeFunction;
-
-    @HLEFunction(nid = 0x779242A2, version = 150) public HLEModuleFunction sceRtcConvertLocalTimeToUTCFunction;
-
-    @HLEFunction(nid = 0x42307A17, version = 150) public HLEModuleFunction sceRtcIsLeapYearFunction;
-
-    @HLEFunction(nid = 0x05EF322C, version = 150) public HLEModuleFunction sceRtcGetDaysInMonthFunction;
-
-    @HLEFunction(nid = 0x57726BC1, version = 150) public HLEModuleFunction sceRtcGetDayOfWeekFunction;
-
-    @HLEFunction(nid = 0x4B1B5E82, version = 150) public HLEModuleFunction sceRtcCheckValidFunction;
-
-    @HLEFunction(nid = 0x3A807CC8, version = 150) public HLEModuleFunction sceRtcSetTime_tFunction;
-
-    @HLEFunction(nid = 0x27C4594C, version = 150) public HLEModuleFunction sceRtcGetTime_tFunction;
-
-    @HLEFunction(nid = 0xF006F264, version = 150) public HLEModuleFunction sceRtcSetDosTimeFunction;
-
-    @HLEFunction(nid = 0x36075567, version = 150) public HLEModuleFunction sceRtcGetDosTimeFunction;
-
-    @HLEFunction(nid = 0x7ACE4C04, version = 150) public HLEModuleFunction sceRtcSetWin32FileTimeFunction;
-
-    @HLEFunction(nid = 0xCF561893, version = 150) public HLEModuleFunction sceRtcGetWin32FileTimeFunction;
-
-    @HLEFunction(nid = 0x7ED29E40, version = 150) public HLEModuleFunction sceRtcSetTickFunction;
-
-    @HLEFunction(nid = 0x6FF40ACC, version = 150) public HLEModuleFunction sceRtcGetTickFunction;
-
-    @HLEFunction(nid = 0x9ED0AE87, version = 150) public HLEModuleFunction sceRtcCompareTickFunction;
-
-    @HLEFunction(nid = 0x44F45E05, version = 150) public HLEModuleFunction sceRtcTickAddTicksFunction;
-
-    @HLEFunction(nid = 0x26D25A5D, version = 150) public HLEModuleFunction sceRtcTickAddMicrosecondsFunction;
-
-    @HLEFunction(nid = 0xF2A4AFE5, version = 150) public HLEModuleFunction sceRtcTickAddSecondsFunction;
-
-    @HLEFunction(nid = 0xE6605BCA, version = 150) public HLEModuleFunction sceRtcTickAddMinutesFunction;
-
-    @HLEFunction(nid = 0x26D7A24A, version = 150) public HLEModuleFunction sceRtcTickAddHoursFunction;
-
-    @HLEFunction(nid = 0xE51B4B7A, version = 150) public HLEModuleFunction sceRtcTickAddDaysFunction;
-
-    @HLEFunction(nid = 0xCF3A2CA8, version = 150) public HLEModuleFunction sceRtcTickAddWeeksFunction;
-
-    @HLEFunction(nid = 0xDBF74F1B, version = 150) public HLEModuleFunction sceRtcTickAddMonthsFunction;
-
-    @HLEFunction(nid = 0x42842C77, version = 150) public HLEModuleFunction sceRtcTickAddYearsFunction;
-
-    @HLEFunction(nid = 0xC663B3B9, version = 150) public HLEModuleFunction sceRtcFormatRFC2822Function;
-
-    @HLEFunction(nid = 0x7DE6711B, version = 150) public HLEModuleFunction sceRtcFormatRFC2822LocalTimeFunction;
-
-    @HLEFunction(nid = 0x0498FB3C, version = 150) public HLEModuleFunction sceRtcFormatRFC3339Function;
-
-    @HLEFunction(nid = 0x27F98543, version = 150) public HLEModuleFunction sceRtcFormatRFC3339LocalTimeFunction;
-
-    @HLEFunction(nid = 0xDFBC5F16, version = 150) public HLEModuleFunction sceRtcParseDateTimeFunction;
-
-    @HLEFunction(nid = 0x28E1E988, version = 150) public HLEModuleFunction sceRtcParseRFC3339Function;
 
 }

@@ -427,6 +427,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         VideoEngine.getInstance().resetVideoTextures();
     }
 
+    @HLEFunction(nid = 0x21FF80E4, version = 150)
     public void sceMpegQueryStreamOffset(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -474,6 +475,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x611E9E11, version = 150)
     public void sceMpegQueryStreamSize(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -509,6 +511,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x682A619B, version = 150)
     public void sceMpegInit(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -526,6 +529,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x874624D6, version = 150)
     public void sceMpegFinish(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -542,6 +546,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xC132E22F, version = 150)
     public void sceMpegQueryMemSize(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -559,6 +564,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         cpu.gpr[2] = MPEG_MEMSIZE;
     }
 
+    @HLEFunction(nid = 0xD8C5F121, version = 150)
     public void sceMpegCreate(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -615,6 +621,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x606A4649, version = 150)
     public void sceMpegDelete(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -637,6 +644,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x42560F23, version = 150)
     public void sceMpegRegistStream(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -681,6 +689,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x591A4AA2, version = 150)
     public void sceMpegUnRegistStream(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -728,6 +737,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xA780CF7E, version = 150)
     public void sceMpegMallocAvcEsBuf(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -758,6 +768,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xCEB870B1, version = 150)
     public void sceMpegFreeAvcEsBuf(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -790,6 +801,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xF8DCB679, version = 150)
     public void sceMpegQueryAtracEsSize(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -819,6 +831,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xC02CF6B5, version = 150)
     public void sceMpegQueryPcmEsSize(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -848,6 +861,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x167AFD9E, version = 150)
     public void sceMpegInitAu(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -883,6 +897,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x234586AE, version = 150)
     public void sceMpegChangeGetAvcAuMode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -899,6 +914,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x9DCFB7EA, version = 150)
     public void sceMpegChangeGetAuMode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -949,6 +965,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xFE246728, version = 150)
     public void sceMpegGetAvcAu(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1036,6 +1053,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x8C1E027D, version = 150)
     public void sceMpegGetPcmAu(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1105,6 +1123,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xE1CE83A7, version = 150)
     public void sceMpegGetAtracAu(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1201,6 +1220,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x500F0429, version = 150)
     public void sceMpegFlushStream(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1220,6 +1240,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x707B7629, version = 150)
     public void sceMpegFlushAllStream(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1237,6 +1258,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x0E3C2E9D, version = 150)
     public void sceMpegAvcDecode(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1407,6 +1429,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x0F6C18D7, version = 150)
     public void sceMpegAvcDecodeDetail(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1442,6 +1465,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xA11C7026, version = 150)
     public void sceMpegAvcDecodeMode(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1477,6 +1501,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x740FCCD1, version = 150)
     public void sceMpegAvcDecodeStop(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1510,6 +1535,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x4571CC64, version = 150)
     public void sceMpegAvcDecodeFlush(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1527,6 +1553,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x211A057C, version = 150)
     public void sceMpegAvcQueryYCbCrSize(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1566,6 +1593,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x67179B1B, version = 150)
     public void sceMpegAvcInitYCbCr(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1591,6 +1619,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xF0EB1125, version = 150)
     public void sceMpegAvcDecodeYCbCr(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1703,6 +1732,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xF2930C9C, version = 150)
     public void sceMpegAvcDecodeStopYCbCr(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1734,6 +1764,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x31BD0272, version = 150)
     public void sceMpegAvcCsc(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1873,6 +1904,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x800C44DF, version = 150)
     public void sceMpegAtracDecode(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1940,6 +1972,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         return size;
     }
 
+    @HLEFunction(nid = 0xD7A29F46, version = 150)
     public void sceMpegRingbufferQueryMemSize(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1956,6 +1989,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         cpu.gpr[2] = getSizeFromPackets(packets);
     }
 
+    @HLEFunction(nid = 0x37295ED8, version = 150)
     public void sceMpegRingbufferConstruct(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1994,6 +2028,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x13407F13, version = 150)
     public void sceMpegRingbufferDestruct(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2048,6 +2083,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         cpu.gpr[2] = packetsAdded;
     }
 
+    @HLEFunction(nid = 0xB240A59E, version = 150)
     public void sceMpegRingbufferPut(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -2074,6 +2110,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xB5F6DC87, version = 150)
     public void sceMpegRingbufferAvailableSize(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -2095,6 +2132,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x11CAB459, version = 150)
     public void sceMpeg_11CAB459(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2103,6 +2141,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x3C37A7A6, version = 150)
     public void sceMpegNextAvcRpAu(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2115,6 +2154,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0xB27711A8, version = 150)
     public void sceMpeg_B27711A8(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2123,6 +2163,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xD4DD6E75, version = 150)
     public void sceMpeg_D4DD6E75(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2131,6 +2172,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xC345DED2, version = 150)
     public void sceMpeg_C345DED2(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2139,6 +2181,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xAB0E9556, version = 150)
     public void sceMpeg_AB0E9556(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2147,6 +2190,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xCF3547A2, version = 150)
     public void sceMpegAvcDecodeDetail2(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2155,56 +2199,13 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x988E9E12, version = 150)
     public void sceMpeg_988E9E12(Processor processor) {
         CpuState cpu = processor.cpu;
 
         log.warn("Unimplemented NID function sceMpeg_988E9E12 [0x988E9E12]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-    }    @HLEFunction(nid = 0x21FF80E4, version = 150) public HLEModuleFunction sceMpegQueryStreamOffsetFunction;
-    @HLEFunction(nid = 0x611E9E11, version = 150) public HLEModuleFunction sceMpegQueryStreamSizeFunction;
-    @HLEFunction(nid = 0x682A619B, version = 150) public HLEModuleFunction sceMpegInitFunction;
-    @HLEFunction(nid = 0x874624D6, version = 150) public HLEModuleFunction sceMpegFinishFunction;
-    @HLEFunction(nid = 0xC132E22F, version = 150) public HLEModuleFunction sceMpegQueryMemSizeFunction;
-    @HLEFunction(nid = 0xD8C5F121, version = 150) public HLEModuleFunction sceMpegCreateFunction;
-    @HLEFunction(nid = 0x606A4649, version = 150) public HLEModuleFunction sceMpegDeleteFunction;
-    @HLEFunction(nid = 0x42560F23, version = 150) public HLEModuleFunction sceMpegRegistStreamFunction;
-    @HLEFunction(nid = 0x591A4AA2, version = 150) public HLEModuleFunction sceMpegUnRegistStreamFunction;
-    @HLEFunction(nid = 0xA780CF7E, version = 150) public HLEModuleFunction sceMpegMallocAvcEsBufFunction;
-    @HLEFunction(nid = 0xCEB870B1, version = 150) public HLEModuleFunction sceMpegFreeAvcEsBufFunction;
-    @HLEFunction(nid = 0xF8DCB679, version = 150) public HLEModuleFunction sceMpegQueryAtracEsSizeFunction;
-    @HLEFunction(nid = 0xC02CF6B5, version = 150) public HLEModuleFunction sceMpegQueryPcmEsSizeFunction;
-    @HLEFunction(nid = 0x167AFD9E, version = 150) public HLEModuleFunction sceMpegInitAuFunction;
-    @HLEFunction(nid = 0x234586AE, version = 150) public HLEModuleFunction sceMpegChangeGetAvcAuModeFunction;
-    @HLEFunction(nid = 0x9DCFB7EA, version = 150) public HLEModuleFunction sceMpegChangeGetAuModeFunction;
-    @HLEFunction(nid = 0xFE246728, version = 150) public HLEModuleFunction sceMpegGetAvcAuFunction;
-    @HLEFunction(nid = 0x8C1E027D, version = 150) public HLEModuleFunction sceMpegGetPcmAuFunction;
-    @HLEFunction(nid = 0xE1CE83A7, version = 150) public HLEModuleFunction sceMpegGetAtracAuFunction;
-    @HLEFunction(nid = 0x500F0429, version = 150) public HLEModuleFunction sceMpegFlushStreamFunction;
-    @HLEFunction(nid = 0x707B7629, version = 150) public HLEModuleFunction sceMpegFlushAllStreamFunction;
-    @HLEFunction(nid = 0x0E3C2E9D, version = 150) public HLEModuleFunction sceMpegAvcDecodeFunction;
-    @HLEFunction(nid = 0x0F6C18D7, version = 150) public HLEModuleFunction sceMpegAvcDecodeDetailFunction;
-    @HLEFunction(nid = 0xA11C7026, version = 150) public HLEModuleFunction sceMpegAvcDecodeModeFunction;
-    @HLEFunction(nid = 0x740FCCD1, version = 150) public HLEModuleFunction sceMpegAvcDecodeStopFunction;
-    @HLEFunction(nid = 0x4571CC64, version = 150) public HLEModuleFunction sceMpegAvcDecodeFlushFunction;
-    @HLEFunction(nid = 0x211A057C, version = 150) public HLEModuleFunction sceMpegAvcQueryYCbCrSizeFunction;
-    @HLEFunction(nid = 0x67179B1B, version = 150) public HLEModuleFunction sceMpegAvcInitYCbCrFunction;
-    @HLEFunction(nid = 0xF0EB1125, version = 150) public HLEModuleFunction sceMpegAvcDecodeYCbCrFunction;
-    @HLEFunction(nid = 0xF2930C9C, version = 150) public HLEModuleFunction sceMpegAvcDecodeStopYCbCrFunction;
-    @HLEFunction(nid = 0x31BD0272, version = 150) public HLEModuleFunction sceMpegAvcCscFunction;
-    @HLEFunction(nid = 0x800C44DF, version = 150) public HLEModuleFunction sceMpegAtracDecodeFunction;
-    @HLEFunction(nid = 0xD7A29F46, version = 150) public HLEModuleFunction sceMpegRingbufferQueryMemSizeFunction;
-    @HLEFunction(nid = 0x37295ED8, version = 150) public HLEModuleFunction sceMpegRingbufferConstructFunction;
-    @HLEFunction(nid = 0x13407F13, version = 150) public HLEModuleFunction sceMpegRingbufferDestructFunction;
-    @HLEFunction(nid = 0xB240A59E, version = 150) public HLEModuleFunction sceMpegRingbufferPutFunction;
-    @HLEFunction(nid = 0xB5F6DC87, version = 150) public HLEModuleFunction sceMpegRingbufferAvailableSizeFunction;
-    @HLEFunction(nid = 0x11CAB459, version = 150) public HLEModuleFunction sceMpeg_11CAB459Function;
-    @HLEFunction(nid = 0x3C37A7A6, version = 150) public HLEModuleFunction sceMpegNextAvcRpAuFunction;
-    @HLEFunction(nid = 0xB27711A8, version = 150) public HLEModuleFunction sceMpeg_B27711A8Function;
-    @HLEFunction(nid = 0xD4DD6E75, version = 150) public HLEModuleFunction sceMpeg_D4DD6E75Function;
-    @HLEFunction(nid = 0xC345DED2, version = 150) public HLEModuleFunction sceMpeg_C345DED2Function;
-    @HLEFunction(nid = 0xAB0E9556, version = 150) public HLEModuleFunction sceMpeg_AB0E9556Function;
-    @HLEFunction(nid = 0xCF3547A2, version = 150) public HLEModuleFunction sceMpegAvcDecodeDetail2Function;
-    @HLEFunction(nid = 0x988E9E12, version = 150) public HLEModuleFunction sceMpeg_988E9E12Function;
+    }
 
 }

@@ -34,6 +34,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules280.SysMemUserForUser {
 	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     // sceKernelFreeMemoryBlock (internal name)
+	@HLEFunction(nid = 0x50F61D8A, version = 352)
 	public void SysMemUserForUser_50F61D8A(Processor processor) {
 		CpuState cpu = processor.cpu;
 		
@@ -50,6 +51,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules280.SysMemUserForUser {
         }
 	}
     
+	@HLEFunction(nid = 0xACBD88CA, version = 352)
 	public void SysMemUserForUser_ACBD88CA(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -59,6 +61,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules280.SysMemUserForUser {
 	}
 
     // sceKernelGetMemoryBlockAddr (internal name)
+	@HLEFunction(nid = 0xDB83A952, version = 352)
 	public void SysMemUserForUser_DB83A952(Processor processor) {
 		CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -86,6 +89,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules280.SysMemUserForUser {
 	}
 
 	// sceKernelAllocMemoryBlock (internal name)
+	@HLEFunction(nid = 0xFE707FDF, version = 352)
 	public void SysMemUserForUser_FE707FDF(Processor processor) {
 		CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -117,12 +121,5 @@ public class SysMemUserForUser extends jpcsp.HLE.modules280.SysMemUserForUser {
             }
         }
 	}
-	@HLEFunction(nid = 0x50F61D8A, version = 352) public HLEModuleFunction SysMemUserForUser_50F61D8AFunction;
-
-	@HLEFunction(nid = 0xACBD88CA, version = 352) public HLEModuleFunction SysMemUserForUser_ACBD88CAFunction;
-
-	@HLEFunction(nid = 0xDB83A952, version = 352) public HLEModuleFunction SysMemUserForUser_DB83A952Function;
-
-	@HLEFunction(nid = 0xFE707FDF, version = 352) public HLEModuleFunction SysMemUserForUser_FE707FDFFunction;
 
 }

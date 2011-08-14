@@ -30,6 +30,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules200.SysMemUserForUser {
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 	
+	@HLEFunction(nid = 0x2A3E5280, version = 280)
 	public void sceKernelQueryMemoryInfo(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -38,6 +39,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules200.SysMemUserForUser {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
     
+	@HLEFunction(nid = 0x39F49610, version = 280)
 	public void sceKernelGetPTRIG(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -46,6 +48,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules200.SysMemUserForUser {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
     
+	@HLEFunction(nid = 0x6231A71D, version = 280)
 	public void sceKernelSetPTRIG(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -53,11 +56,6 @@ public class SysMemUserForUser extends jpcsp.HLE.modules200.SysMemUserForUser {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-        	@HLEFunction(nid = 0x2A3E5280, version = 280) public HLEModuleFunction sceKernelQueryMemoryInfoFunction;
-
-    	@HLEFunction(nid = 0x39F49610, version = 280) public HLEModuleFunction sceKernelGetPTRIGFunction;
-
-        	@HLEFunction(nid = 0x6231A71D, version = 280) public HLEModuleFunction sceKernelSetPTRIGFunction;
 
 
 }

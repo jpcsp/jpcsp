@@ -230,6 +230,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
     protected static final int PSP_KERNEL_DCACHE_PROBE_HIT = 1;
     protected static final int PSP_KERNEL_DCACHE_PROBE_HIT_DIRTY = 2;
 
+	@HLEFunction(nid = 0xBFA98062, version = 150)
 	public void sceKernelDcacheInvalidateRange(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -243,6 +244,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0xC2DF770E, version = 150)
 	public void sceKernelIcacheInvalidateRange(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -258,6 +260,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0xC8186A58, version = 150)
 	public void sceKernelUtilsMd5Digest(Processor processor) {
 		CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -291,6 +294,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x9E5C5086, version = 150)
 	public void sceKernelUtilsMd5BlockInit(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -304,6 +308,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x61E1E525, version = 150)
 	public void sceKernelUtilsMd5BlockUpdate(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -320,6 +325,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0xB8D24E78, version = 150)
 	public void sceKernelUtilsMd5BlockResult(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -334,6 +340,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x840259F1, version = 150)
 	public void sceKernelUtilsSha1Digest(Processor processor) {
 		CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -367,6 +374,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0xF8FCD5BA, version = 150)
 	public void sceKernelUtilsSha1BlockInit(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -380,6 +388,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x346F6DA8, version = 150)
 	public void sceKernelUtilsSha1BlockUpdate(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -396,6 +405,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x585F1C09, version = 150)
 	public void sceKernelUtilsSha1BlockResult(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -410,6 +420,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0xE860E75E, version = 150)
 	public void sceKernelUtilsMt19937Init(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -426,6 +437,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x06FB8A63, version = 150)
 	public void sceKernelUtilsMt19937UInt(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -440,6 +452,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
         }
 	}
 
+	@HLEFunction(nid = 0x37FB5C42, version = 150)
 	public void sceKernelGetGPI(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -457,6 +470,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
         }
 	}
 
+	@HLEFunction(nid = 0x6AD345D7, version = 150)
 	public void sceKernelSetGPO(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -476,12 +490,14 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x91E4F6A7, version = 150)
 	public void sceKernelLibcClock(Processor processor) {
 		CpuState cpu = processor.cpu;
 
 		cpu.gpr[2] = (int) SystemTimeManager.getSystemTime();
 	}
 
+	@HLEFunction(nid = 0x27CC57F0, version = 150)
 	public void sceKernelLibcTime(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -495,6 +511,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
         Emulator.getProcessor().cpu.gpr[2] = seconds;
 	}
 
+	@HLEFunction(nid = 0x71EC4271, version = 150)
 	public void sceKernelLibcGettimeofday(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -520,14 +537,17 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
 	}
 
+	@HLEFunction(nid = 0x79D1C3FA, version = 150)
 	public void sceKernelDcacheWritebackAll(Processor processor) {
 		Modules.log.trace("IGNORING: sceKernelDcacheWritebackAll");
 	}
 
+	@HLEFunction(nid = 0xB435DEC5, version = 150)
 	public void sceKernelDcacheWritebackInvalidateAll(Processor processor) {
 		Modules.log.trace("IGNORING: sceKernelDcacheWritebackInvalidateAll");
 	}
 
+	@HLEFunction(nid = 0x3EE30821, version = 150)
 	public void sceKernelDcacheWritebackRange(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -538,6 +558,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
                 + ", size=" + size);
 	}
 
+	@HLEFunction(nid = 0x34B9FA9E, version = 150)
 	public void sceKernelDcacheWritebackInvalidateRange(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -548,6 +569,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
                 + ", size=" + size);
 	}
 
+	@HLEFunction(nid = 0x80001C4C, version = 150)
 	public void sceKernelDcacheProbe(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -558,6 +580,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = PSP_KERNEL_DCACHE_PROBE_HIT; // Dummy.
 	}
 
+	@HLEFunction(nid = 0x16641D70, version = 150)
 	public void sceKernelDcacheReadTag(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -566,6 +589,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0xDEADC0DE;
 	}
 
+	@HLEFunction(nid = 0x920F104A, version = 150)
 	public void sceKernelIcacheInvalidateAll(Processor processor) {
 		// Some games attempt to change compiled code at runtime
         // by calling this function.
@@ -581,6 +605,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
         log.info("sceKernelIcacheInvalidateAll");
 	}
 
+	@HLEFunction(nid = 0x4FD31C9D, version = 150)
 	public void sceKernelIcacheProbe(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -591,6 +616,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = PSP_KERNEL_ICACHE_PROBE_HIT; // Dummy.
 	}
 
+	@HLEFunction(nid = 0xFB05FAD0, version = 150)
 	public void sceKernelIcacheReadTag(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -598,56 +624,5 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
 	}
-	@HLEFunction(nid = 0xBFA98062, version = 150) public HLEModuleFunction sceKernelDcacheInvalidateRangeFunction;
-
-	@HLEFunction(nid = 0xC2DF770E, version = 150) public HLEModuleFunction sceKernelIcacheInvalidateRangeFunction;
-
-	@HLEFunction(nid = 0xC8186A58, version = 150) public HLEModuleFunction sceKernelUtilsMd5DigestFunction;
-
-	@HLEFunction(nid = 0x9E5C5086, version = 150) public HLEModuleFunction sceKernelUtilsMd5BlockInitFunction;
-
-	@HLEFunction(nid = 0x61E1E525, version = 150) public HLEModuleFunction sceKernelUtilsMd5BlockUpdateFunction;
-
-	@HLEFunction(nid = 0xB8D24E78, version = 150) public HLEModuleFunction sceKernelUtilsMd5BlockResultFunction;
-
-	@HLEFunction(nid = 0x840259F1, version = 150) public HLEModuleFunction sceKernelUtilsSha1DigestFunction;
-
-	@HLEFunction(nid = 0xF8FCD5BA, version = 150) public HLEModuleFunction sceKernelUtilsSha1BlockInitFunction;
-
-	@HLEFunction(nid = 0x346F6DA8, version = 150) public HLEModuleFunction sceKernelUtilsSha1BlockUpdateFunction;
-
-	@HLEFunction(nid = 0x585F1C09, version = 150) public HLEModuleFunction sceKernelUtilsSha1BlockResultFunction;
-
-	@HLEFunction(nid = 0xE860E75E, version = 150) public HLEModuleFunction sceKernelUtilsMt19937InitFunction;
-
-	@HLEFunction(nid = 0x06FB8A63, version = 150) public HLEModuleFunction sceKernelUtilsMt19937UIntFunction;
-
-	@HLEFunction(nid = 0x37FB5C42, version = 150) public HLEModuleFunction sceKernelGetGPIFunction;
-
-	@HLEFunction(nid = 0x6AD345D7, version = 150) public HLEModuleFunction sceKernelSetGPOFunction;
-
-	@HLEFunction(nid = 0x91E4F6A7, version = 150) public HLEModuleFunction sceKernelLibcClockFunction;
-
-	@HLEFunction(nid = 0x27CC57F0, version = 150) public HLEModuleFunction sceKernelLibcTimeFunction;
-
-	@HLEFunction(nid = 0x71EC4271, version = 150) public HLEModuleFunction sceKernelLibcGettimeofdayFunction;
-
-	@HLEFunction(nid = 0x79D1C3FA, version = 150) public HLEModuleFunction sceKernelDcacheWritebackAllFunction;
-
-	@HLEFunction(nid = 0xB435DEC5, version = 150) public HLEModuleFunction sceKernelDcacheWritebackInvalidateAllFunction;
-
-	@HLEFunction(nid = 0x3EE30821, version = 150) public HLEModuleFunction sceKernelDcacheWritebackRangeFunction;
-
-	@HLEFunction(nid = 0x34B9FA9E, version = 150) public HLEModuleFunction sceKernelDcacheWritebackInvalidateRangeFunction;
-
-	@HLEFunction(nid = 0x80001C4C, version = 150) public HLEModuleFunction sceKernelDcacheProbeFunction;
-
-	@HLEFunction(nid = 0x16641D70, version = 150) public HLEModuleFunction sceKernelDcacheReadTagFunction;
-
-	@HLEFunction(nid = 0x920F104A, version = 150) public HLEModuleFunction sceKernelIcacheInvalidateAllFunction;
-
-	@HLEFunction(nid = 0x4FD31C9D, version = 150) public HLEModuleFunction sceKernelIcacheProbeFunction;
-
-	@HLEFunction(nid = 0xFB05FAD0, version = 150) public HLEModuleFunction sceKernelIcacheReadTagFunction;
 
 }

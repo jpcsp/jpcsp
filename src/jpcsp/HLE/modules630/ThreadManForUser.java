@@ -32,6 +32,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
+	@HLEFunction(nid = 0xBC80EC7C, version = 630)
 	public void sceKernelExtendThreadStack(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -47,6 +48,5 @@ public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
         }
         cpu.gpr[2] = setThreadCurrentStackSize(size);
 	}
-	@HLEFunction(nid = 0xBC80EC7C, version = 630) public HLEModuleFunction sceKernelExtendThreadStackFunction;
 
 }

@@ -51,6 +51,7 @@ public class SysMemForKernel implements HLEModule, HLEStartModule {
     public void stop() {
     }
 
+    @HLEFunction(nid = 0xA089ECA4, version = 150)
     public void sceKernelMemset(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -67,6 +68,5 @@ public class SysMemForKernel implements HLEModule, HLEStartModule {
 
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0xA089ECA4, version = 150) public HLEModuleFunction sceKernelMemsetFunction;
 
 }

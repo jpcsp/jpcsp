@@ -41,6 +41,7 @@ public class sceDmac implements HLEModule {
 	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
 
+    @HLEFunction(nid = 0x617F3FE6, version = 150)
     public void sceDmacMemcpy(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -67,6 +68,7 @@ public class sceDmac implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+	@HLEFunction(nid = 0xD97F94D8, version = 150)
 	public void sceDmacTryMemcpy(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -74,8 +76,5 @@ public class sceDmac implements HLEModule {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-	@HLEFunction(nid = 0x617F3FE6, version = 150) public HLEModuleFunction sceDmacMemcpyFunction;
-
-	@HLEFunction(nid = 0xD97F94D8, version = 150) public HLEModuleFunction sceDmacTryMemcpyFunction;
 
 }

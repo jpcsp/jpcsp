@@ -351,6 +351,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x6A2774F3, version = 150)
     public void sceCtrlSetSamplingCycle(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -368,6 +369,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         cycle = newCycle;
     }
 
+    @HLEFunction(nid = 0x02BAAD91, version = 150)
     public void sceCtrlGetSamplingCycle(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -382,6 +384,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x1F4011E6, version = 150)
     public void sceCtrlSetSamplingMode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -395,6 +398,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         mode = newMode;
     }
 
+    @HLEFunction(nid = 0xDA6B76A1, version = 150)
     public void sceCtrlGetSamplingMode(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -405,6 +409,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x3A622550, version = 150)
     public void sceCtrlPeekBufferPositive(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -417,6 +422,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         hleCtrlReadBufferImmediately(cpu, data_addr, numBuf, true, true);
     }
 
+    @HLEFunction(nid = 0xC152080A, version = 150)
     public void sceCtrlPeekBufferNegative(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -429,6 +435,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         hleCtrlReadBufferImmediately(cpu, data_addr, numBuf, false, true);
     }
 
+    @HLEFunction(nid = 0x1F803938, version = 150)
     public void sceCtrlReadBufferPositive(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -446,6 +453,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         hleCtrlReadBuffer(data_addr, numBuf, true);
     }
 
+    @HLEFunction(nid = 0x60B81F86, version = 150)
     public void sceCtrlReadBufferNegative(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -463,6 +471,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         hleCtrlReadBuffer(data_addr, numBuf, false);
     }
 
+    @HLEFunction(nid = 0xB1D0E5CD, version = 150)
     public void sceCtrlPeekLatch(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -476,6 +485,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         cpu.gpr[2] = latchSamplingCount;
     }
 
+    @HLEFunction(nid = 0x0B588501, version = 150)
     public void sceCtrlReadLatch(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -490,6 +500,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         latchSamplingCount = 0;
     }
 
+    @HLEFunction(nid = 0xA7144800, version = 150)
     public void sceCtrlSetIdleCancelThreshold(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -501,6 +512,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x687660FA, version = 150)
     public void sceCtrlGetIdleCancelThreshold(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -521,6 +533,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x348D99D4, version = 150)
     public void sceCtrl_348D99D4(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -529,6 +542,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xAF5960F3, version = 150)
     public void sceCtrl_AF5960F3(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -537,6 +551,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0xA68FD260, version = 150)
     public void sceCtrlClearRapidFire(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -545,27 +560,13 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x6841BE1A, version = 150)
     public void sceCtrlSetRapidFire(Processor processor) {
         CpuState cpu = processor.cpu;
 
         log.warn("Unimplemented NID function sceCtrlSetRapidFire [0x6841BE1A]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-    }    @HLEFunction(nid = 0x6A2774F3, version = 150) public HLEModuleFunction sceCtrlSetSamplingCycleFunction;
-    @HLEFunction(nid = 0x02BAAD91, version = 150) public HLEModuleFunction sceCtrlGetSamplingCycleFunction;
-    @HLEFunction(nid = 0x1F4011E6, version = 150) public HLEModuleFunction sceCtrlSetSamplingModeFunction;
-    @HLEFunction(nid = 0xDA6B76A1, version = 150) public HLEModuleFunction sceCtrlGetSamplingModeFunction;
-    @HLEFunction(nid = 0x3A622550, version = 150) public HLEModuleFunction sceCtrlPeekBufferPositiveFunction;
-    @HLEFunction(nid = 0xC152080A, version = 150) public HLEModuleFunction sceCtrlPeekBufferNegativeFunction;
-    @HLEFunction(nid = 0x1F803938, version = 150) public HLEModuleFunction sceCtrlReadBufferPositiveFunction;
-    @HLEFunction(nid = 0x60B81F86, version = 150) public HLEModuleFunction sceCtrlReadBufferNegativeFunction;
-    @HLEFunction(nid = 0xB1D0E5CD, version = 150) public HLEModuleFunction sceCtrlPeekLatchFunction;
-    @HLEFunction(nid = 0x0B588501, version = 150) public HLEModuleFunction sceCtrlReadLatchFunction;
-    @HLEFunction(nid = 0xA7144800, version = 150) public HLEModuleFunction sceCtrlSetIdleCancelThresholdFunction;
-    @HLEFunction(nid = 0x687660FA, version = 150) public HLEModuleFunction sceCtrlGetIdleCancelThresholdFunction;
-    @HLEFunction(nid = 0x348D99D4, version = 150) public HLEModuleFunction sceCtrl_348D99D4Function;
-    @HLEFunction(nid = 0xAF5960F3, version = 150) public HLEModuleFunction sceCtrl_AF5960F3Function;
-    @HLEFunction(nid = 0xA68FD260, version = 150) public HLEModuleFunction sceCtrlClearRapidFireFunction;
-    @HLEFunction(nid = 0x6841BE1A, version = 150) public HLEModuleFunction sceCtrlSetRapidFireFunction;
+    }
 
 }
