@@ -24,11 +24,12 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.graphics.VideoEngine;
 
 import org.apache.log4j.Logger;
 
-public class sceDmac implements HLEModule {
+public class sceDmac extends HLEModule {
     private static Logger log = Modules.getLogger("sceDmac");
 
 	@Override

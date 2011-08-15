@@ -197,9 +197,9 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         setTitle(MetaInformation.FULL_NAME);
 
         /*add glcanvas to frame and pack frame to get the canvas size*/
-        getContentPane().add(Modules.sceDisplayModule, java.awt.BorderLayout.CENTER);
-        Modules.sceDisplayModule.addKeyListener(this);
-        Modules.sceDisplayModule.addMouseListener(this);
+        getContentPane().add(Modules.sceDisplayModule.getCanvas(), java.awt.BorderLayout.CENTER);
+        Modules.sceDisplayModule.getCanvas().addKeyListener(this);
+        Modules.sceDisplayModule.getCanvas().addMouseListener(this);
         addComponentListener(this);
         pack();
 
@@ -2152,7 +2152,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 
     private void RunEmu() {
         emulator.RunEmu();
-        Modules.sceDisplayModule.requestFocusInWindow();
+        Modules.sceDisplayModule.getCanvas().requestFocusInWindow();
     }
 
     private void TogglePauseEmu() {

@@ -25,10 +25,11 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 
 import org.apache.log4j.Logger;
 
-public class sceHttp implements HLEModule {
+public class sceHttp extends HLEModule {
 
     protected static Logger log = Modules.getLogger("sceHttp");
 

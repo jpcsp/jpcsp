@@ -53,7 +53,7 @@ import org.apache.log4j.Logger;
  *           int tz_dsttime; // type of dst correction to apply
  *      };
  */
-public class UtilsForUser implements HLEModule, HLEStartModule {
+public class UtilsForUser extends HLEModule implements HLEStartModule {
     private static Logger log = Modules.getLogger("UtilsForUser");
 
 	private HashMap<Integer, SceKernelUtilsMt19937Context> Mt19937List;

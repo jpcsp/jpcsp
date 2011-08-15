@@ -36,7 +36,7 @@ import jpcsp.media.PacketChannel;
 
 import org.apache.log4j.Logger;
 
-public class sceMp3 implements HLEModule, HLEStartModule {
+public class sceMp3 extends HLEModule implements HLEStartModule {
 
     private static Logger log = Modules.getLogger("sceMp3");
 

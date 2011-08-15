@@ -29,7 +29,7 @@ import jpcsp.HLE.modules.HLEStartModule;
 
 import org.apache.log4j.Logger;
 
-public class sceHprm implements HLEModule, HLEStartModule {
+public class sceHprm extends HLEModule implements HLEStartModule {
     private static Logger log = Modules.getLogger("sceHprm");
 
     @Override

@@ -95,7 +95,7 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-public class sceUtility implements HLEModule, HLEStartModule {
+public class sceUtility extends HLEModule implements HLEStartModule {
 
     protected static Logger log = Modules.getLogger("sceUtility");
 

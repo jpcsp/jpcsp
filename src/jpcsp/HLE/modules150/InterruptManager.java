@@ -28,7 +28,7 @@ import jpcsp.HLE.modules.HLEModuleManager;
 
 import org.apache.log4j.Logger;
 
-public class InterruptManager implements HLEModule {
+public class InterruptManager extends HLEModule {
     private static Logger log = Modules.getLogger("InterruptManager");
 
 	@Override

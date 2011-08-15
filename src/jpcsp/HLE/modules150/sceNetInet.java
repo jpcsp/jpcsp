@@ -71,7 +71,7 @@ import jpcsp.Processor;
 
 import jpcsp.Allegrex.CpuState;
 
-public class sceNetInet implements HLEModule, HLEStartModule {
+public class sceNetInet extends HLEModule implements HLEStartModule {
     public static Logger log = Modules.getLogger("sceNetInet");
 
     public static final int AF_INET = 2; // Address familiy internet

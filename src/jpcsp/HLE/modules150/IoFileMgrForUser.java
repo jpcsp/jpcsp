@@ -86,7 +86,7 @@ import org.apache.log4j.Logger;
  * 2. The PSP's filesystem supports permissions.
  * Implement PSP_O_CREAT based on Java File and it's setReadable/Writable/Executable.
  */
-public class IoFileMgrForUser implements HLEModule, HLEStartModule {
+public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
 
     private static Logger log = Modules.getLogger("IoFileMgrForUser");
     private static Logger stdout = Logger.getLogger("stdout");

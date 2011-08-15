@@ -27,7 +27,7 @@ import jpcsp.hardware.Interrupts;
 
 import org.apache.log4j.Logger;
 
-public class Kernel_Library implements HLEModule {
+public class Kernel_Library extends HLEModule {
     protected static Logger log = Modules.getLogger("Kernel_Library");
 
     @Override

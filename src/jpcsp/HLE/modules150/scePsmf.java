@@ -36,7 +36,7 @@ import jpcsp.HLE.modules150.scePsmf.PSMFHeader.PSMFEntry;
 
 import org.apache.log4j.Logger;
 
-public class scePsmf implements HLEModule, HLEStartModule {
+public class scePsmf extends HLEModule implements HLEStartModule {
 
     private static Logger log = Modules.getLogger("scePsmf");
 

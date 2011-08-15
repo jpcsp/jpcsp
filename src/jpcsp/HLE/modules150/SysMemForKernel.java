@@ -29,7 +29,7 @@ import jpcsp.HLE.modules.HLEStartModule;
 
 import org.apache.log4j.Logger;
 
-public class SysMemForKernel implements HLEModule, HLEStartModule {
+public class SysMemForKernel extends HLEModule implements HLEStartModule {
     protected static Logger log = Modules.getLogger("SysMemForKernel");
 
     @Override

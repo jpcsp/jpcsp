@@ -44,7 +44,7 @@ import jpcsp.filesystems.umdiso.UmdIsoReader;
 
 import org.apache.log4j.Logger;
 
-public class sceUmdUser implements HLEModule, HLEStartModule {
+public class sceUmdUser extends HLEModule implements HLEStartModule {
 
     protected static Logger log = Modules.getLogger("sceUmdUser");
 

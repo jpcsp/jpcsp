@@ -54,7 +54,7 @@ import org.apache.log4j.Logger;
  * 2. Implement format string parsing and reading variable number of parameters
  * in sceKernelPrintf.
  */
-public class SysMemUserForUser implements HLEModule, HLEStartModule {
+public class SysMemUserForUser extends HLEModule implements HLEStartModule {
     protected static Logger log = Modules.getLogger("SysMemUserForUser");
     protected static Logger stdout = Logger.getLogger("stdout");
     protected static HashMap<Integer, SysMemInfo> blockList;

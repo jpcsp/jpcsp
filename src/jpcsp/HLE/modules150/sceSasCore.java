@@ -36,7 +36,7 @@ import jpcsp.sound.SoundMixer;
 
 import org.apache.log4j.Logger;
 
-public class sceSasCore implements HLEModule, HLEStartModule {
+public class sceSasCore extends HLEModule implements HLEStartModule {
     protected static Logger log = Modules.getLogger("sceSasCore");
 
     @Override

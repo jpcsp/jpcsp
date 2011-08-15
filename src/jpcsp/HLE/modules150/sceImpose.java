@@ -31,7 +31,7 @@ import jpcsp.hardware.Battery;
 
 import org.apache.log4j.Logger;
 
-public class sceImpose implements HLEModule, HLEStartModule {
+public class sceImpose extends HLEModule implements HLEStartModule {
     private static Logger log = Modules.getLogger("sceImpose");
 
 	@Override

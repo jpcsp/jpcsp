@@ -81,8 +81,200 @@ import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.PixelFormat;
 
-public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule {
+public class sceDisplay extends HLEModule implements HLEStartModule {
     protected static Logger log = Modules.getLogger("sceDisplay");
+    
+    @SuppressWarnings("serial")
+	class AWTGLCanvas_sceDisplay extends AWTGLCanvas {
+
+		public AWTGLCanvas_sceDisplay() throws LWJGLException {
+			super(null, new PixelFormat().withBitsPerPixel(8).withAlphaBits(8).withStencilBits(8).withSamples(antiAliasSamplesNum), null, new ContextAttribs().withDebug(useDebugGL));
+		}
+    	
+		
+		@Override
+		protected void paintGL() {
+	    	if (log.isTraceEnabled()) {
+	    		log.trace(String.format("paintGL resize=%f, size(%dx%d), canvas(%dx%d), location(%d,%d)", viewportResizeFilterScaleFactor, canvas.getSize().width, canvas.getSize().height, canvasWidth, canvasHeight, canvas.getLocation().x, canvas.getLocation().y));
+	    	}
+
+	    	if (resizePending && Emulator.getMainGUI().isVisible()) {
+	    		// Resize the MainGUI to use the preferred size of this sceDisplay
+	    		Emulator.getMainGUI().pack();
+	    		resizePending = false;
+	    	}
+
+	    	if (statistics != null) {
+	            statistics.start();
+	        }
+
+	    	if (re == null) {
+	    		if (startModules) {
+	    			re = RenderingEngineFactory.createRenderingEngine();
+	    		} else {
+	    			re = RenderingEngineFactory.createInitialRenderingEngine();
+	    		}
+	    	}
+
+	    	if (startModules) {
+	    		if (saveGEToTexture) {
+	    			GETextureManager.getInstance().reset(re);
+	    		}
+	    		VideoEngine.getInstance().start();
+	        	drawBuffer = re.getBufferManager().genBuffer(IRenderingEngine.RE_FLOAT, 16, IRenderingEngine.RE_DYNAMIC_DRAW);
+		    	startModules = false;
+		    	if (saveGEToTexture && !re.isFramebufferObjectAvailable()) {
+		    		saveGEToTexture = false;
+		    		log.warn("Saving GE to Textures has been automatically disabled: FBO is not supported by this OpenGL version");
+		    	}
+		    	isStarted = true;
+	    	}
+
+	    	if (!isStarted) {
+	        	re.clear(0.0f, 0.0f, 0.0f, 0.0f);
+	            return;
+	    	}
+
+	    	if (createTex) {
+	        	// Create two textures: one at original PSP size and
+	        	// one resized to the display size
+	        	texFb = createTexture(texFb, false);
+	        	resizedTexFb = createTexture(resizedTexFb, true);
+
+	            checkTemp();
+	            createTex = false;
+	        }
+
+	        if (onlyGEGraphics) {
+	        	re.startDisplay();
+	            VideoEngine.getInstance().update();
+	            re.endDisplay();
+	        } else {
+	        	if (log.isDebugEnabled()) {
+	        		log.debug("sceDisplay.paintGL - start display");
+	        	}
+	        	re.startDisplay();
+
+	        	// The GE will be reloaded to the screen by the VideoEngine
+	            if (VideoEngine.getInstance().update()) {
+	                // Save the GE only if it actually drew something
+	            	if (log.isDebugEnabled()) {
+	            		log.debug(String.format("sceDisplay.paintGL - saving the GE to memory 0x%08X", topaddrGe));
+	            	}
+
+	            	if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(topaddrGe)) {
+	            		GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrGe, bufferwidthGe, widthGe, heightGe, pixelformatGe, true);
+	            		geTexture.copyScreenToTexture(re);
+	            	} else {
+		                // Set texFb as the current texture
+		                re.bindTexture(resizedTexFb);
+		    			re.setTextureFormat(pixelformatGe, false);
+
+		                // Copy screen to the current texture
+		                re.copyTexSubImage(0, 0, 0, 0, 0, getResizedWidth(widthGe), getResizedHeight(heightGe));
+
+		                // Re-render GE/current texture upside down
+		                drawFrameBuffer(true, true, bufferwidthFb, pixelformatFb, width, height);
+
+		                // Save GE/current texture to vram
+		                copyScreenToPixels(pixelsGe, bufferwidthGe, pixelformatGe, widthGe, heightGe);
+	            	}
+	            }
+
+	            // Render the FB
+	        	if (log.isDebugEnabled()) {
+	        		log.debug(String.format("sceDisplay.paintGL - rendering the FB 0x%08X", topaddrFb));
+	        	}
+	        	if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(topaddrFb)) {
+	        		GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrFb, bufferwidthFb, width, height, pixelformatFb, true);
+	        		geTexture.copyTextureToScreen(re);
+	        	} else {
+		            pixelsFb.clear();
+		            re.bindTexture(texFb);
+					re.setTextureFormat(pixelformatFb, false);
+		            re.setPixelStore(bufferwidthFb, pixelformatFb);
+		            int textureSize = bufferwidthFb * height * getPixelFormatBytes(pixelformatFb);
+		            re.setTexSubImage(0,
+		                0, 0, bufferwidthFb, height,
+		                pixelformatFb,
+		                pixelformatFb,
+		                textureSize, pixelsFb);
+
+		            // Call the rotating function (if needed)
+		            if (ang != 4) {
+		                rotate(ang);
+		            }
+
+		            drawFrameBuffer(false, true, bufferwidthFb, pixelformatFb, width, height);
+	        	}
+
+	            re.endDisplay();
+
+	            if (log.isDebugEnabled()) {
+	        		log.debug("sceDisplay.paintGL - end display");
+	        	}
+	        }
+
+	        try {
+	        	canvas.swapBuffers();
+			} catch (LWJGLException e) {
+			}
+
+	        reportFPSStats();
+
+	        if (statistics != null) {
+	            statistics.end();
+	        }
+
+	        if (getscreen) {
+	        	saveScreen();
+	        }
+		}
+		
+		@Override
+		protected void initGL() {
+			setSwapInterval(1);
+			super.initGL();
+
+			// Collect debugging information...
+			initGLcalled = true;
+			openGLversion = RenderingEngineLwjgl.getVersion();
+		}
+
+		@Override
+		public void setBounds(int x, int y, int width, int height) {
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("setBounds width=%d, height=%d", width, height));
+			}
+			canvasWidth = width;
+			canvasHeight = height;
+			super.setBounds(x, y, width, height);
+		}
+
+		@Override
+		public void componentMoved(ComponentEvent e) {
+	        captureX = getX();
+	        captureY = getY();
+	        captureWidth = getWidth();
+	        captureHeight = getHeight();
+		}
+
+	    @Override
+		public void componentResized(ComponentEvent e) {
+	        captureX = getX();
+	        captureY = getY();
+	        captureWidth = getWidth();
+	        captureHeight = getHeight();
+
+	        setViewportResizeScaleFactor(getWidth(), getHeight());
+	    }
+    }
+    
+    protected AWTGLCanvas_sceDisplay canvas;
+    
+    public AWTGLCanvas getCanvas() {
+    	return canvas;
+    }
 
 	private static final long serialVersionUID = 2267866365228834812L;
 
@@ -223,7 +415,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 				waitForDisplay();
 				if (run) {
 		        	if (!display.isOnlyGEGraphics() || VideoEngine.getInstance().hasDrawLists()) {
-		        		display.repaint();
+		        		display.canvas.repaint();
 					}
 				}
 			}
@@ -282,7 +474,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     }
 
     public sceDisplay() throws LWJGLException {
-    	super(null, new PixelFormat().withBitsPerPixel(8).withAlphaBits(8).withStencilBits(8).withSamples(antiAliasSamplesNum), null, new ContextAttribs().withDebug(useDebugGL));
+    	canvas = new AWTGLCanvas_sceDisplay();
         setScreenResolution(Screen.width, Screen.height);
 
         texFb = -1;
@@ -296,7 +488,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     public void setScreenResolution(int width, int height) {
         canvasWidth = width;
         canvasHeight = height;
-        setSize(width, height);
+        canvas.setSize(width, height);
     }
 
     public float getViewportResizeScaleFactor() {
@@ -346,10 +538,10 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     		Dimension size = new Dimension(getResizedWidth(Screen.width), getResizedHeight(Screen.height));
 
     		// Resize the component while keeping the PSP aspect ratio
-    		setSize(size);
+    		canvas.setSize(size);
 
     		// The preferred size is used when resizing the MainGUI
-    		setPreferredSize(size);
+    		canvas.setPreferredSize(size);
 
     		if (Emulator.getMainGUI().isFullScreen()) {
     			Emulator.getMainGUI().setFullScreenDisplaySize();
@@ -359,7 +551,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 			createTex = true;
 
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("setViewportResizeScaleFactor resize=%f, size(%dx%d), canvas(%dx%d), location(%d,%d)", viewportResizeFilterScaleFactor, size.width, size.height, canvasWidth, canvasHeight, getLocation().x, getLocation().y));
+				log.debug(String.format("setViewportResizeScaleFactor resize=%f, size(%dx%d), canvas(%dx%d), location(%d,%d)", viewportResizeFilterScaleFactor, size.width, size.height, canvasWidth, canvasHeight, canvas.getLocation().x, canvas.getLocation().y));
 			}
     	}
     }
@@ -1239,145 +1431,6 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         return textureId;
     }
 
-    @Override
-	protected void paintGL() {
-    	if (log.isTraceEnabled()) {
-    		log.trace(String.format("paintGL resize=%f, size(%dx%d), canvas(%dx%d), location(%d,%d)", viewportResizeFilterScaleFactor, getSize().width, getSize().height, canvasWidth, canvasHeight, getLocation().x, getLocation().y));
-    	}
-
-    	if (resizePending && Emulator.getMainGUI().isVisible()) {
-    		// Resize the MainGUI to use the preferred size of this sceDisplay
-    		Emulator.getMainGUI().pack();
-    		resizePending = false;
-    	}
-
-    	if (statistics != null) {
-            statistics.start();
-        }
-
-    	if (re == null) {
-    		if (startModules) {
-    			re = RenderingEngineFactory.createRenderingEngine();
-    		} else {
-    			re = RenderingEngineFactory.createInitialRenderingEngine();
-    		}
-    	}
-
-    	if (startModules) {
-    		if (saveGEToTexture) {
-    			GETextureManager.getInstance().reset(re);
-    		}
-    		VideoEngine.getInstance().start();
-        	drawBuffer = re.getBufferManager().genBuffer(IRenderingEngine.RE_FLOAT, 16, IRenderingEngine.RE_DYNAMIC_DRAW);
-	    	startModules = false;
-	    	if (saveGEToTexture && !re.isFramebufferObjectAvailable()) {
-	    		saveGEToTexture = false;
-	    		log.warn("Saving GE to Textures has been automatically disabled: FBO is not supported by this OpenGL version");
-	    	}
-	    	isStarted = true;
-    	}
-
-    	if (!isStarted) {
-        	re.clear(0.0f, 0.0f, 0.0f, 0.0f);
-            return;
-    	}
-
-    	if (createTex) {
-        	// Create two textures: one at original PSP size and
-        	// one resized to the display size
-        	texFb = createTexture(texFb, false);
-        	resizedTexFb = createTexture(resizedTexFb, true);
-
-            checkTemp();
-            createTex = false;
-        }
-
-        if (onlyGEGraphics) {
-        	re.startDisplay();
-            VideoEngine.getInstance().update();
-            re.endDisplay();
-        } else {
-        	if (log.isDebugEnabled()) {
-        		log.debug("sceDisplay.paintGL - start display");
-        	}
-        	re.startDisplay();
-
-        	// The GE will be reloaded to the screen by the VideoEngine
-            if (VideoEngine.getInstance().update()) {
-                // Save the GE only if it actually drew something
-            	if (log.isDebugEnabled()) {
-            		log.debug(String.format("sceDisplay.paintGL - saving the GE to memory 0x%08X", topaddrGe));
-            	}
-
-            	if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(topaddrGe)) {
-            		GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrGe, bufferwidthGe, widthGe, heightGe, pixelformatGe, true);
-            		geTexture.copyScreenToTexture(re);
-            	} else {
-	                // Set texFb as the current texture
-	                re.bindTexture(resizedTexFb);
-	    			re.setTextureFormat(pixelformatGe, false);
-
-	                // Copy screen to the current texture
-	                re.copyTexSubImage(0, 0, 0, 0, 0, getResizedWidth(widthGe), getResizedHeight(heightGe));
-
-	                // Re-render GE/current texture upside down
-	                drawFrameBuffer(true, true, bufferwidthFb, pixelformatFb, width, height);
-
-	                // Save GE/current texture to vram
-	                copyScreenToPixels(pixelsGe, bufferwidthGe, pixelformatGe, widthGe, heightGe);
-            	}
-            }
-
-            // Render the FB
-        	if (log.isDebugEnabled()) {
-        		log.debug(String.format("sceDisplay.paintGL - rendering the FB 0x%08X", topaddrFb));
-        	}
-        	if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(topaddrFb)) {
-        		GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrFb, bufferwidthFb, width, height, pixelformatFb, true);
-        		geTexture.copyTextureToScreen(re);
-        	} else {
-	            pixelsFb.clear();
-	            re.bindTexture(texFb);
-				re.setTextureFormat(pixelformatFb, false);
-	            re.setPixelStore(bufferwidthFb, pixelformatFb);
-	            int textureSize = bufferwidthFb * height * getPixelFormatBytes(pixelformatFb);
-	            re.setTexSubImage(0,
-	                0, 0, bufferwidthFb, height,
-	                pixelformatFb,
-	                pixelformatFb,
-	                textureSize, pixelsFb);
-
-	            // Call the rotating function (if needed)
-	            if (ang != 4) {
-	                rotate(ang);
-	            }
-
-	            drawFrameBuffer(false, true, bufferwidthFb, pixelformatFb, width, height);
-        	}
-
-            re.endDisplay();
-
-            if (log.isDebugEnabled()) {
-        		log.debug("sceDisplay.paintGL - end display");
-        	}
-        }
-
-        try {
-			swapBuffers();
-		} catch (LWJGLException e) {
-		}
-
-        reportFPSStats();
-
-        if (statistics != null) {
-            statistics.end();
-        }
-
-        if (getscreen) {
-        	saveScreen();
-        }
-	}
-
 	private void checkTemp() {
         // Buffer large enough to store the complete FB or GE texture
         int sizeInBytes = getResizedWidthPow2(Math.max(bufferwidthFb, bufferwidthGe))
@@ -1395,44 +1448,6 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         	tempSize = sizeInBytes;
         }
 	}
-
-	@Override
-	protected void initGL() {
-		setSwapInterval(1);
-		super.initGL();
-
-		// Collect debugging information...
-		initGLcalled = true;
-		openGLversion = RenderingEngineLwjgl.getVersion();
-	}
-
-	@Override
-	public void setBounds(int x, int y, int width, int height) {
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("setBounds width=%d, height=%d", width, height));
-		}
-		canvasWidth = width;
-		canvasHeight = height;
-		super.setBounds(x, y, width, height);
-	}
-
-	@Override
-	public void componentMoved(ComponentEvent e) {
-        captureX = getX();
-        captureY = getY();
-        captureWidth = getWidth();
-        captureHeight = getHeight();
-	}
-
-    @Override
-	public void componentResized(ComponentEvent e) {
-        captureX = getX();
-        captureY = getY();
-        captureWidth = getWidth();
-        captureHeight = getHeight();
-
-        setViewportResizeScaleFactor(getWidth(), getHeight());
-    }
 
     @HLEFunction(nid = 0x0E20F177, version = 150)
     public void sceDisplaySetMode(Processor processor) {

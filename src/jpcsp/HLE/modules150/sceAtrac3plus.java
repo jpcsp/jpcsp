@@ -35,7 +35,7 @@ import jpcsp.connector.AtracCodec;
 
 import org.apache.log4j.Logger;
 
-public class sceAtrac3plus implements HLEModule, HLEStartModule {
+public class sceAtrac3plus extends HLEModule implements HLEStartModule {
 
     protected static Logger log = Modules.getLogger("sceAtrac3plus");
 

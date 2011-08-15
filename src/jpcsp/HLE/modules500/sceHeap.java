@@ -30,13 +30,14 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-public class sceHeap implements HLEModule {
+public class sceHeap extends HLEModule {
 
     protected static Logger log = Modules.getLogger("sceHeap");
 

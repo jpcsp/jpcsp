@@ -27,11 +27,12 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.hardware.Battery;
 
 import org.apache.log4j.Logger;
 
-public class scePower implements HLEModule {
+public class scePower extends HLEModule {
 
     protected static Logger log = Modules.getLogger("scePower");
 

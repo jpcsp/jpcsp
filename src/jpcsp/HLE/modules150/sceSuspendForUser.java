@@ -33,7 +33,7 @@ import jpcsp.hardware.Screen;
 
 import org.apache.log4j.Logger;
 
-public class sceSuspendForUser implements HLEModule, HLEStartModule {
+public class sceSuspendForUser extends HLEModule implements HLEStartModule {
 
     private static Logger log = Modules.getLogger("sceSuspendForUser");
 

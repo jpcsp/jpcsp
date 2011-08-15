@@ -29,7 +29,7 @@ import jpcsp.HLE.modules.HLEStartModule;
 
 import org.apache.log4j.Logger;
 
-public class sceMp4 implements HLEModule, HLEStartModule {
+public class sceMp4 extends HLEModule implements HLEStartModule {
 
     protected static Logger log = Modules.getLogger("sceMp4");
 

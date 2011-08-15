@@ -40,6 +40,7 @@ import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.filesystems.SeekableDataInput;
@@ -49,7 +50,7 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-public class ModuleMgrForUser implements HLEModule {
+public class ModuleMgrForUser extends HLEModule {
     protected static Logger log = Modules.getLogger("ModuleMgrForUser");
 
     // Modules that should never be loaded

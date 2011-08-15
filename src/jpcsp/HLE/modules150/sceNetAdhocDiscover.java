@@ -23,10 +23,11 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 
 import org.apache.log4j.Logger;
 
-public class sceNetAdhocDiscover implements HLEModule {
+public class sceNetAdhocDiscover extends HLEModule {
 
     protected static Logger log = Modules.getLogger("sceNetAdhocDiscover");
 

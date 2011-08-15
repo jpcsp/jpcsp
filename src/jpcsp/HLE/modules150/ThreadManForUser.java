@@ -143,7 +143,7 @@ import org.apache.log4j.Logger;
  *                      lower or the same priority.
  *                      The clock precision of 200us on the PSP can be observed here.
  */
-public class ThreadManForUser implements HLEModule, HLEStartModule {
+public class ThreadManForUser extends HLEModule implements HLEStartModule {
 
     protected static Logger log = Modules.getLogger("ThreadManForUser");
 

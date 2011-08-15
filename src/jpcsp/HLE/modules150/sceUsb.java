@@ -25,9 +25,10 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.util.Utilities;
 
-public class sceUsb implements HLEModule {
+public class sceUsb extends HLEModule {
     protected static Logger log = Modules.getLogger("sceUsb");
 
 	@Override

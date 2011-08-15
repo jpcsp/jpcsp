@@ -26,6 +26,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.hardware.Wlan;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
@@ -35,7 +36,7 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-public class sceNet implements HLEModule {
+public class sceNet extends HLEModule {
 
     protected static Logger log = Modules.getLogger("sceNet");
 

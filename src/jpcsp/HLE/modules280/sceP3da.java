@@ -25,9 +25,10 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 
 // Positional 3D Audio Library
-public class sceP3da implements HLEModule {
+public class sceP3da extends HLEModule {
     protected static Logger log = Modules.getLogger("sceP3da");
 
     @Override

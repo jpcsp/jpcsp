@@ -35,6 +35,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.graphics.VideoEngine;
@@ -45,7 +46,7 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-public class scePsmfPlayer implements HLEModule {
+public class scePsmfPlayer extends HLEModule {
 
     private static Logger log = Modules.getLogger("scePsmfPlayer");
 
