@@ -859,34 +859,30 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     }
 
     @HLEFunction(nid = 0x07F58C24, version = 150)
-    public void __sceSasGetAllEnvelopeHeights(Processor processor) {
+    public int __sceSasGetAllEnvelopeHeights(Processor processor, int sasCore, int heightsAddr) {
         CpuState cpu = processor.cpu;
-
-        int sasCore = cpu.gpr[4];
-        int heightsAddr = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
             log.debug(String.format("__sceSasGetAllEnvelopeHeights(sasCore=0x%08X, heightsAddr=0x%08X)", sasCore, heightsAddr));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
+            return SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
         }
-        if (isSasHandleGood(sasCore, "__sceSasGetAllEnvelopeHeights", cpu)) {
-        	if (Memory.isAddressGood(heightsAddr)) {
-        		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(heightsAddr, voices.length * 4, 4);
-        		for (int i = 0; i < voices.length; i++) {
-        			memoryWriter.writeNext(voices[i].getEnvelope().height);
-        		}
-        		memoryWriter.flush();
-                cpu.gpr[2] = 0;
-        	} else {
-        		cpu.gpr[2] = -1;
-        	}
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
+        if (!isSasHandleGood(sasCore, "__sceSasGetAllEnvelopeHeights", cpu)) {
+            return SceKernelErrors.ERROR_SAS_NOT_INIT;
         }
+
+        if (Memory.isAddressGood(heightsAddr)) {
+    		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(heightsAddr, voices.length * 4, 4);
+    		for (int i = 0; i < voices.length; i++) {
+    			memoryWriter.writeNext(voices[i].getEnvelope().height);
+    		}
+    		memoryWriter.flush();
+    		return 0;
+    	} else {
+    		return -1;
+    	}
     }
 
 }

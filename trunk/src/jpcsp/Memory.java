@@ -199,6 +199,12 @@ public abstract class Memory {
     public abstract Buffer getBuffer(int address, int length);
     public abstract void copyToMemory(int address, ByteBuffer source, int length);
     protected abstract void memcpy(int destination, int source, int length, boolean checkOverlap);
+    
+    public int strlen(int address) {
+    	int len = 0;
+    	while (read8(address) != 0) { len++; address++; }
+    	return len;
+    }
 
 	public final static boolean isAddressGood(int address) {
     	return validMemoryPage[address >>> MEMORY_PAGE_SHIFT];

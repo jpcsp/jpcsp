@@ -345,222 +345,156 @@ public class sceCtrl extends HLEModule implements HLEStartModule {
         }
     }
 
-    @HLEFunction(nid = 0x6A2774F3, version = 150)
-    public void sceCtrlSetSamplingCycle(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int newCycle = cpu.gpr[4];
-
+    @HLEFunction(nid = 0x6A2774F3, version = 150, checkInsideInterrupt = true)
+    public int sceCtrlSetSamplingCycle(int newCycle) {
+    	int oldCycle = cycle;
+        this.cycle = newCycle;
+    	
         if (log.isDebugEnabled()) {
-            log.debug("sceCtrlSetSamplingCycle(cycle=" + newCycle + ") returning " + cycle);
+            log.debug("sceCtrlSetSamplingCycle(cycle=" + newCycle + ") returning " + oldCycle);
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        cpu.gpr[2] = cycle;
-        cycle = newCycle;
+        return oldCycle;
     }
 
-    @HLEFunction(nid = 0x02BAAD91, version = 150)
-    public void sceCtrlGetSamplingCycle(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int cycleAddr = cpu.gpr[4];
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        mem.write32(cycleAddr, cycle);
-        cpu.gpr[2] = 0;
+    @HLEFunction(nid = 0x02BAAD91, version = 150, checkInsideInterrupt = true)
+    public int sceCtrlGetSamplingCycle(int cycleAddr) {
+        Processor.memory.write32(cycleAddr, cycle);
+        return 0;
     }
 
-    @HLEFunction(nid = 0x1F4011E6, version = 150)
-    public void sceCtrlSetSamplingMode(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int newMode = cpu.gpr[4];
+    @HLEFunction(nid = 0x1F4011E6, version = 150, checkInsideInterrupt = true)
+    public int sceCtrlSetSamplingMode(int newMode) {
+        int oldMode = mode;
+        this.mode = newMode;
 
         if (log.isDebugEnabled()) {
-            log.debug("sceCtrlSetSamplingMode(mode=" + newMode + ") returning " + mode);
+            log.debug("sceCtrlSetSamplingMode(mode=" + newMode + ") returning " + oldMode);
         }
 
-        cpu.gpr[2] = mode;
-        mode = newMode;
+        return oldMode;
     }
 
     @HLEFunction(nid = 0xDA6B76A1, version = 150)
-    public void sceCtrlGetSamplingMode(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int modeAddr = cpu.gpr[4];
-
-        mem.write32(modeAddr, mode);
-        cpu.gpr[2] = 0;
+    public int sceCtrlGetSamplingMode(int modeAddr) {
+        Processor.memory.write32(modeAddr, mode);
+        return 0;
     }
 
     @HLEFunction(nid = 0x3A622550, version = 150)
-    public void sceCtrlPeekBufferPositive(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int data_addr = cpu.gpr[4];
-        int numBuf = cpu.gpr[5];
+    public void sceCtrlPeekBufferPositive(Processor processor, int data_addr, int numBuf) {
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceCtrlPeekBufferPositive(0x%08X, %d)", data_addr, numBuf));
         }
 
-        hleCtrlReadBufferImmediately(cpu, data_addr, numBuf, true, true);
+        hleCtrlReadBufferImmediately(processor.cpu, data_addr, numBuf, true, true);
     }
 
     @HLEFunction(nid = 0xC152080A, version = 150)
-    public void sceCtrlPeekBufferNegative(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int data_addr = cpu.gpr[4];
-        int numBuf = cpu.gpr[5];
+    public void sceCtrlPeekBufferNegative(Processor processor, int data_addr, int numBuf) {
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceCtrlPeekBufferNegative(0x%08X, %d)", data_addr, numBuf));
         }
 
-        hleCtrlReadBufferImmediately(cpu, data_addr, numBuf, false, true);
+        hleCtrlReadBufferImmediately(processor.cpu, data_addr, numBuf, false, true);
     }
 
-    @HLEFunction(nid = 0x1F803938, version = 150)
-    public void sceCtrlReadBufferPositive(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int data_addr = cpu.gpr[4];
-        int numBuf = cpu.gpr[5];
-
+    @HLEFunction(nid = 0x1F803938, version = 150, checkInsideInterrupt = true)
+    public void sceCtrlReadBufferPositive(int data_addr, int numBuf) {
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceCtrlReadBufferPositive(0x%08X, %d)", data_addr, numBuf));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         hleCtrlReadBuffer(data_addr, numBuf, true);
     }
 
-    @HLEFunction(nid = 0x60B81F86, version = 150)
-    public void sceCtrlReadBufferNegative(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int data_addr = cpu.gpr[4];
-        int numBuf = cpu.gpr[5];
-
+    @HLEFunction(nid = 0x60B81F86, version = 150, checkInsideInterrupt = true)
+    public void sceCtrlReadBufferNegative(int data_addr, int numBuf) {
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceCtrlReadBufferNegative(0x%08X, %d)", data_addr, numBuf));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         hleCtrlReadBuffer(data_addr, numBuf, false);
     }
 
     @HLEFunction(nid = 0xB1D0E5CD, version = 150)
-    public void sceCtrlPeekLatch(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceCtrlPeekLatch(int latch_addr) {
         Memory mem = Processor.memory;
-
-        int latch_addr = cpu.gpr[4];
 
         mem.write32(latch_addr, uiMake);
         mem.write32(latch_addr + 4, uiBreak);
         mem.write32(latch_addr + 8, uiPress);
         mem.write32(latch_addr + 12, uiRelease);
-        cpu.gpr[2] = latchSamplingCount;
+
+        return latchSamplingCount;
     }
 
     @HLEFunction(nid = 0x0B588501, version = 150)
-    public void sceCtrlReadLatch(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceCtrlReadLatch(int latch_addr) {
         Memory mem = Processor.memory;
-
-        int latch_addr = cpu.gpr[4];
 
         mem.write32(latch_addr, uiMake);
         mem.write32(latch_addr + 4, uiBreak);
         mem.write32(latch_addr + 8, uiPress);
         mem.write32(latch_addr + 12, uiRelease);
-        cpu.gpr[2] = latchSamplingCount;
+        
+        int prevLatchSamplingCount = latchSamplingCount;
         latchSamplingCount = 0;
+        
+        return prevLatchSamplingCount;
     }
 
     @HLEFunction(nid = 0xA7144800, version = 150)
-    public void sceCtrlSetIdleCancelThreshold(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        idlereset = cpu.gpr[4];
-        idleback = cpu.gpr[5];
+    public int sceCtrlSetIdleCancelThreshold(int idlereset, int idleback) {
+        this.idlereset = idlereset;
+        this.idleback  = idleback;
 
         log.debug("sceCtrlSetIdleCancelThreshold(idlereset=" + idlereset + ",idleback=" + idleback + ")");
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
     @HLEFunction(nid = 0x687660FA, version = 150)
-    public void sceCtrlGetIdleCancelThreshold(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int idlereset_addr = cpu.gpr[4];
-        int idleback_addr = cpu.gpr[5];
-
+    public int sceCtrlGetIdleCancelThreshold(int idlereset_addr, int idleback_addr) {
         log.debug("sceCtrlGetIdleCancelThreshold(idlereset=0x" + Integer.toHexString(idlereset_addr) + ",idleback=0x" + Integer.toHexString(idleback_addr) + ")" + " returning idlereset=" + idlereset + " idleback=" + idleback);
 
         if (Memory.isAddressGood(idlereset_addr)) {
-            mem.write32(idlereset_addr, idlereset);
+        	Processor.memory.write32(idlereset_addr, idlereset);
         }
 
         if (Memory.isAddressGood(idleback_addr)) {
-            mem.write32(idleback_addr, idleback);
+        	Processor.memory.write32(idleback_addr, idleback);
         }
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
     @HLEFunction(nid = 0x348D99D4, version = 150)
-    public void sceCtrl_348D99D4(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceCtrl_348D99D4() {
         log.warn("Unimplemented NID function sceCtrl_348D99D4 [0x348D99D4]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
 
     @HLEFunction(nid = 0xAF5960F3, version = 150)
-    public void sceCtrl_AF5960F3(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceCtrl_AF5960F3() {
         log.warn("Unimplemented NID function sceCtrl_AF5960F3 [0xAF5960F3]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
 
     @HLEFunction(nid = 0xA68FD260, version = 150)
-    public void sceCtrlClearRapidFire(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceCtrlClearRapidFire() {
         log.warn("Unimplemented NID function sceCtrlClearRapidFire [0xA68FD260]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
 
     @HLEFunction(nid = 0x6841BE1A, version = 150)
-    public void sceCtrlSetRapidFire(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceCtrlSetRapidFire() {
         log.warn("Unimplemented NID function sceCtrlSetRapidFire [0x6841BE1A]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
 
 }
