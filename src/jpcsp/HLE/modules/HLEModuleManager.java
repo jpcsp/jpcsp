@@ -464,7 +464,7 @@ public class HLEModuleManager {
 							functionName = method.getName();
 						}
 						
-						HLEModuleFunction hleModuleFunction = new HLEModuleFunctionReflection(moduleName, functionName, hleModule, method.getName());
+						HLEModuleFunction hleModuleFunction = new HLEModuleFunctionReflection(moduleName, functionName, hleModule, method.getName(), hleFunction.checkInsideInterrupt());
 						
 						hleModule.installedHLEModuleFunctions.put(functionName, hleModuleFunction);
 						

@@ -32,12 +32,15 @@ public class Processor {
     public CpuState cpu = new CpuState();
     public static final jpcsp.Memory memory = jpcsp.Memory.getInstance();
     public static Logger log = Logger.getLogger("cpu");
+    public ParameterReader parameterReader;
 
     public Processor() {
         insnCache = new CacheLine[INSN_CACHE_SIZE];
         for (int i = 0; i < INSN_CACHE_SIZE; i++)
             insnCache[i] = new CacheLine();
         reset();
+        
+        parameterReader = new ParameterReader(cpu, memory);
     }
 
     public void reset() {
