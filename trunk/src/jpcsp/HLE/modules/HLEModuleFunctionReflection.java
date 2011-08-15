@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 import java.util.LinkedList;
 
 import jpcsp.Processor;
+import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 
@@ -118,6 +119,8 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 			);
 			try {
 				throw(e.getCause());
+			} catch (SceKernelErrorException kernelError) {
+				processor.parameterReader.setReturnValueInt(kernelError.errorCode);
 			} catch (Throwable e1) {
 				e1.printStackTrace();
 			}
