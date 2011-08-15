@@ -39,6 +39,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -62,10 +63,9 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.ThreadManForUser;
+import jpcsp.autotests.AutoTestsOutput;
 import jpcsp.connector.PGDFileConnector;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
@@ -2930,16 +2930,9 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
     }
 
     @HLEFunction(nid = 0x54F5FB11, version = 150)
-    public void sceIoDevctl(Processor processor) {
+    public void sceIoDevctl(Processor processor, int device_addr, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
-
-        int device_addr = cpu.gpr[4];
-        int cmd = cpu.gpr[5];
-        int indata_addr = cpu.gpr[6];
-        int inlen = cpu.gpr[7];
-        int outdata_addr = cpu.gpr[8];
-        int outlen = cpu.gpr[9];
 
         String device = readStringZ(device_addr);
         if (log.isDebugEnabled()) {
@@ -2955,6 +2948,36 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
                     log.debug("sceIoDevctl outdata[" + (i / 4) + "]=0x" + Integer.toHexString(mem.read32(outdata_addr + i)));
                 }
             }
+        }
+        
+        if (device.equals("emulator:")) {
+        	switch (cmd) {
+        		// EMULATOR_DEVCTL__GET_HAS_DISPLAY
+        		case 0x00000001: {
+        			if (Memory.isAddressGood(outdata_addr) && outlen >= 4) {
+                        mem.write32(outdata_addr, 0);
+                        cpu.gpr[2] = 0;
+        			}
+        		} break;
+       			// EMULATOR_DEVCTL__SEND_OUTPUT
+        		case 0x00000002: {
+        			AutoTestsOutput.appendString(new String(mem.readChunk(indata_addr, inlen).array()));
+        			cpu.gpr[2] = 0;
+        		} break;
+       			// EMULATOR_DEVCTL__IS_EMULATOR
+        		case 0x00000003: {
+        			cpu.gpr[2] = 0;
+        		} break;
+        		default:
+        			throw(new RuntimeException(String.format("Unknown emulator: cmd 0x%08X", cmd)));
+        	}
+        	
+            for (IIoListener ioListener : ioListeners) {
+                ioListener.sceIoDevctl(cpu.gpr[2], device_addr, device, cmd, indata_addr, inlen, outdata_addr, outlen);
+            }
+            delayIoOperation(IoOperation.ioctl);
+
+        	return;
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
