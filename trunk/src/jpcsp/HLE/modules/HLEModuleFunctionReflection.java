@@ -6,6 +6,10 @@ import java.util.LinkedList;
 
 import jpcsp.Processor;
 import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.TPointer64;
+import jpcsp.HLE.TPointerBase;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 
@@ -59,6 +63,7 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 		}
 	}
 
+	@SuppressWarnings("rawtypes")
 	@Override
 	public void execute(Processor processor) {
 		if (checkInsideInterrupt) {
@@ -82,6 +87,25 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 						params.add(processor);
 					} else if (paramClass == int.class) {
 						params.add(processor.parameterReader.getNextInt());
+					} else if (TPointer.class.isAssignableFrom(paramClass)) {
+						TPointer pointer = new TPointer(Processor.memory, processor.parameterReader.getNextInt());
+						if (!pointer.isAddressGood()) {
+							throw(new SceKernelErrorException(SceKernelErrors.ERROR_INVALID_POINTER));
+						}
+						params.add(pointer);
+					} else if (TPointerBase.class.isAssignableFrom(paramClass)) {
+						TPointerBase pointer;
+						if (TPointer64.class.isAssignableFrom(paramClass)) {
+							pointer = new TPointer64(Processor.memory, processor.parameterReader.getNextInt());
+						} else if (TPointer32.class.isAssignableFrom(paramClass)) {
+							pointer = new TPointer32(Processor.memory, processor.parameterReader.getNextInt());
+						} else {
+							throw(new RuntimeException("Unknown TPointerBase parameter class '" + paramClass + "'"));
+						}
+						if (!pointer.isAddressGood()) {
+							throw(new SceKernelErrorException(SceKernelErrors.ERROR_INVALID_POINTER));
+						}
+						params.add(pointer);
 					} else {
 						throw(new RuntimeException("Unknown parameter class '" + paramClass + "'"));
 					}
