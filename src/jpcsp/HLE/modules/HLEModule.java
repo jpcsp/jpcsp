@@ -51,4 +51,9 @@ abstract public class HLEModule {
 		
 		return installedHLEModuleFunctions.get(functionName);
 	}
+	
+    static protected String getCallingFunctionName(int index) {
+    	StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+    	return stack[index + 1].getMethodName();
+    }
 }
