@@ -100,8 +100,6 @@ import jpcsp.HLE.kernel.types.SceKernelVTimerInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.hardware.Interrupts;
@@ -312,7 +310,8 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         int instruction_jr = // jr ra
                 ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.JR & 0x3f) | ((31 & 0x1f) << 21);
         int instruction_syscall = // syscall 0x0201c [sceKernelDelayThread]
-                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((sceKernelDelayThreadFunction.getSyscallCode() & 0x000fffff) << 6);
+                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((this.getHleFunctionByName("sceKernelDelayThread").getSyscallCode() & 0x000fffff) << 6);
+        
 
         // This memory is always reserved on a real PSP
         SysMemInfo info = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "ThreadMan-RootMem", SysMemUserForUser.PSP_SMEM_Addr, 0x4000, MemoryMap.START_USERSPACE);
@@ -350,7 +349,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Memory mem = Memory.getInstance();
 
         int instruction_syscall = // syscall 0x6f000 [hleKernelExitThread]
-                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((hleKernelExitThreadFunction.getSyscallCode() & 0x000fffff) << 6);
+                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((this.getHleFunctionByName("hleKernelExitThread").getSyscallCode() & 0x000fffff) << 6);
 
         // Add a "jr $ra" instruction to indicate the end of the CodeBlock to the compiler
         int instruction_jr = AllegrexOpcodes.JR | (31 << 21);
@@ -363,7 +362,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Memory mem = Memory.getInstance();
 
         int instruction_syscall = // syscall 0x6f001 [hleKernelExitCallback]
-                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((hleKernelExitCallbackFunction.getSyscallCode() & 0x000fffff) << 6);
+                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((this.getHleFunctionByName("hleKernelExitCallback").getSyscallCode() & 0x000fffff) << 6);
 
         // Add a "jr $ra" instruction to indicate the end of the CodeBlock to the compiler
         int instruction_jr = AllegrexOpcodes.JR | (31 << 21);
@@ -376,7 +375,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Memory mem = Memory.getInstance();
 
         int instruction_syscall = // syscall 0x6f002 [hleKernelAsyncLoop]
-                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((hleKernelAsyncLoopFunction.getSyscallCode() & 0x000fffff) << 6);
+                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((this.getHleFunctionByName("hleKernelAsyncLoop").getSyscallCode() & 0x000fffff) << 6);
 
         int instruction_b = (AllegrexOpcodes.BEQ << 26) | 0xFFFE; // branch back to syscall
         int instruction_nop = (AllegrexOpcodes.SLL << 26); // nop
@@ -395,7 +394,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Memory mem = Memory.getInstance();
 
         int instruction_syscall = // syscall 0x6f002 [hleKernelAsyncLoop]
-                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((hleKernelNetApctlLoopFunction.getSyscallCode() & 0x000fffff) << 6);
+                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((this.getHleFunctionByName("hleKernelNetApctlLoop").getSyscallCode() & 0x000fffff) << 6);
 
         int instruction_b = (AllegrexOpcodes.BEQ << 26) | 0xFFFE; // branch back to syscall
         int instruction_nop = (AllegrexOpcodes.SLL << 26); // nop
@@ -1133,7 +1132,8 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         hleKernelExitCallback(Emulator.getProcessor());
     }
 
-    private void hleKernelExitCallback(Processor processor) {
+    @HLEFunction(nid = 0, version = 150, syscall = 1)
+    public void hleKernelExitCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int callbackId = cpu.gpr[CALLBACKID_REGISTER];
@@ -1157,19 +1157,6 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
             }
         }
     }
-    @HLEFunction(nid = 0, version = 150, syscall = 1)
-    public final HLEModuleFunction hleKernelExitCallbackFunction = new HLEModuleFunction("ThreadManForUser", "hleKernelExitCallback") {
-
-        @Override
-        public final void execute(Processor processor) {
-            hleKernelExitCallback(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.hleKernelExitCallback(processor);";
-        }
-    };
 
     /**
      * Execute the code at the given address.
@@ -1360,6 +1347,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         callAddress(thread, address, afterAction, returnVoid, new int[]{registerA0, registerA1, registerA2, registerA3, registerT0});
     }
 
+    @HLEFunction(nid = 0, version = 150, syscall = 1)
     public void hleKernelExitThread(Processor processor) {
         if (log.isDebugEnabled()) {
             log.debug(String.format("Thread exit detected SceUID=%x name='%s' return:0x%08X", currentThread.uid, currentThread.name, processor.cpu.gpr[2]));
@@ -1371,19 +1359,6 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         processor.cpu.gpr[4] = processor.cpu.gpr[2];
         sceKernelExitThread(processor);
     }
-    @HLEFunction(nid = 0, version = 150, syscall = 1)
-    public final HLEModuleFunction hleKernelExitThreadFunction = new HLEModuleFunction("ThreadManForUser", "hleKernelExitThread") {
-
-        @Override
-        public final void execute(Processor processor) {
-            hleKernelExitThread(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.hleKernelExitThread(processor);";
-        }
-    };
 
     public void hleKernelExitDeleteThread() {
         if (log.isDebugEnabled()) {
@@ -1393,39 +1368,15 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         sceKernelExitDeleteThread(Emulator.getProcessor());
     }
 
+    @HLEFunction(nid = 0, version = 150, syscall = 1)
     public void hleKernelAsyncLoop(Processor processor) {
         Modules.IoFileMgrForUserModule.hleAsyncThread(processor);
     }
-    @HLEFunction(nid = 0, version = 150, syscall = 1)
-    public final HLEModuleFunction hleKernelAsyncLoopFunction = new HLEModuleFunction("ThreadManForUser", "hleKernelAsyncLoop") {
 
-        @Override
-        public final void execute(Processor processor) {
-            hleKernelAsyncLoop(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.hleKernelAsyncLoop(processor);";
-        }
-    };
-
+    @HLEFunction(nid = 0, version = 150, syscall = 1)
     public void hleKernelNetApctlLoop(Processor processor) {
     	Modules.sceNetApctl.hleNetApctlThread(processor);
     }
-    @HLEFunction(nid = 0, version = 150, syscall = 1)
-    public final HLEModuleFunction hleKernelNetApctlLoopFunction = new HLEModuleFunction("ThreadManForUser", "hleKernelNetApctlLoop") {
-
-        @Override
-        public final void execute(Processor processor) {
-        	hleKernelNetApctlLoop(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.hleKernelNetApctlLoop(processor);";
-        }
-    };
 
     /** Note: Some functions allow uid = 0 = current thread, others don't.
      * if uid = 0 then $v0 is set to ERROR_ILLEGAL_THREAD and false is returned
@@ -1976,6 +1927,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         } while (handled);
     }
 
+    @HLEFunction(nid = 0x6E9EA350, version = 150)
     public void _sceKernelReturnFromCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1984,6 +1936,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x0C106E53, version = 150)
     public void sceKernelRegisterThreadEventHandler(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2042,6 +1995,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x72F3C145, version = 150)
     public void sceKernelReleaseThreadEventHandler(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2069,6 +2023,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x369EEB6B, version = 150)
     public void sceKernelReferThreadEventHandlerStatus(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -2088,6 +2043,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xE81CAF8F, version = 150)
     public void sceKernelCreateCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2104,6 +2060,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         cpu.gpr[2] = callback.uid;
     }
 
+    @HLEFunction(nid = 0xEDBA5844, version = 150)
     public void sceKernelDeleteCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2124,6 +2081,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      * Manually notifies a callback. Mostly used for exit callbacks,
      * and shouldn't be used at all (only some old homebrews use this, anyway).
      */
+    @HLEFunction(nid = 0xC11BA8C4, version = 150)
     public void sceKernelNotifyCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2157,6 +2115,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xBA4051D6, version = 150)
     public void sceKernelCancelCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2177,6 +2136,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     /** Return the current notifyCount for a specific callback */
+    @HLEFunction(nid = 0x2A3D44FF, version = 150)
     public void sceKernelGetCallbackCount(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2194,6 +2154,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     /** Check callbacks, only on the current thread. */
+    @HLEFunction(nid = 0x349D6D6C, version = 150)
     public void sceKernelCheckCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2217,6 +2178,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         thread.doCallbacks = false; // Callbacks may not be allowed after this.
     }
 
+    @HLEFunction(nid = 0x730ED8BC, version = 150)
     public void sceKernelReferCallbackStatus(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -2248,6 +2210,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     /** sleep the current thread (using wait) */
+    @HLEFunction(nid = 0x9ACE131E, version = 150)
     public void sceKernelSleepThread(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2268,6 +2231,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
 
     /** sleep the current thread and handle callbacks (using wait)
      * in our implementation we have to use wait, not suspend otherwise we don't handle callbacks. */
+    @HLEFunction(nid = 0x82826F70, version = 150)
     public void sceKernelSleepThreadCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2287,6 +2251,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         checkCallbacks();
     }
 
+    @HLEFunction(nid = 0xD59EAD2F, version = 150)
     public void sceKernelWakeupThread(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2305,6 +2270,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xFCCFAD26, version = 150)
     public void sceKernelCancelWakeupThread(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2327,6 +2293,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x9944F31F, version = 150)
     public void sceKernelSuspendThread(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2365,6 +2332,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x75156E8F, version = 150)
     public void sceKernelResumeThread(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2396,6 +2364,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x278C0DF5, version = 150)
     public void sceKernelWaitThreadEnd(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2417,6 +2386,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         hleKernelWaitThreadEnd(uid, timeout_addr, false);
     }
 
+    @HLEFunction(nid = 0x840E8133, version = 150)
     public void sceKernelWaitThreadEndCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2440,6 +2410,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     /** wait the current thread for a certain number of microseconds */
+    @HLEFunction(nid = 0xCEADEB47, version = 150)
     public void sceKernelDelayThread(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2457,6 +2428,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     /** wait the current thread for a certain number of microseconds */
+    @HLEFunction(nid = 0x68DA9E36, version = 150)
     public void sceKernelDelayThreadCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2480,6 +2452,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return 0 on success, < 0 on error
      */
+    @HLEFunction(nid = 0xBD123D9E, version = 150)
     public void sceKernelDelaySysClockThread(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -2512,6 +2485,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      * @return 0 on success, < 0 on error
      *
      */
+    @HLEFunction(nid = 0x1181E963, version = 150)
     public void sceKernelDelaySysClockThreadCB(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -2536,6 +2510,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xD6DA4BA1, version = 150)
     public void sceKernelCreateSema(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2546,6 +2521,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.semas.sceKernelCreateSema(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
     }
 
+    @HLEFunction(nid = 0x28B6489C, version = 150)
     public void sceKernelDeleteSema(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2556,11 +2532,13 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.semas.sceKernelDeleteSema(cpu.gpr[4]);
     }
 
+    @HLEFunction(nid = 0x3F53E640, version = 150)
     public void sceKernelSignalSema(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.semas.sceKernelSignalSema(cpu.gpr[4], cpu.gpr[5]);
     }
 
+    @HLEFunction(nid = 0x4E3A1105, version = 150)
     public void sceKernelWaitSema(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2571,6 +2549,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.semas.sceKernelWaitSema(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
+    @HLEFunction(nid = 0x6D212BAC, version = 150)
     public void sceKernelWaitSemaCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2581,21 +2560,25 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.semas.sceKernelWaitSemaCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
+    @HLEFunction(nid = 0x58B1F937, version = 150)
     public void sceKernelPollSema(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.semas.sceKernelPollSema(cpu.gpr[4], cpu.gpr[5]);
     }
 
+    @HLEFunction(nid = 0x8FFDF9A2, version = 150)
     public void sceKernelCancelSema(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.semas.sceKernelCancelSema(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
+    @HLEFunction(nid = 0xBC6FEBC5, version = 150)
     public void sceKernelReferSemaStatus(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.semas.sceKernelReferSemaStatus(cpu.gpr[4], cpu.gpr[5]);
     }
 
+    @HLEFunction(nid = 0x55C20A00, version = 150)
     public void sceKernelCreateEventFlag(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2606,6 +2589,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.eventFlags.sceKernelCreateEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
     }
 
+    @HLEFunction(nid = 0xEF9E4C70, version = 150)
     public void sceKernelDeleteEventFlag(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2616,16 +2600,19 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.eventFlags.sceKernelDeleteEventFlag(cpu.gpr[4]);
     }
 
+    @HLEFunction(nid = 0x1FB15A32, version = 150)
     public void sceKernelSetEventFlag(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.eventFlags.sceKernelSetEventFlag(cpu.gpr[4], cpu.gpr[5]);
     }
 
+    @HLEFunction(nid = 0x812346E4, version = 150)
     public void sceKernelClearEventFlag(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.eventFlags.sceKernelClearEventFlag(cpu.gpr[4], cpu.gpr[5]);
     }
 
+    @HLEFunction(nid = 0x402FCF22, version = 150)
     public void sceKernelWaitEventFlag(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2636,6 +2623,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.eventFlags.sceKernelWaitEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
     }
 
+    @HLEFunction(nid = 0x328C546A, version = 150)
     public void sceKernelWaitEventFlagCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2646,21 +2634,25 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.eventFlags.sceKernelWaitEventFlagCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
     }
 
+    @HLEFunction(nid = 0x30FD48F0, version = 150)
     public void sceKernelPollEventFlag(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.eventFlags.sceKernelPollEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
     }
 
+    @HLEFunction(nid = 0xCD203292, version = 150)
     public void sceKernelCancelEventFlag(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.eventFlags.sceKernelCancelEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
+    @HLEFunction(nid = 0xA66B0120, version = 150)
     public void sceKernelReferEventFlagStatus(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.eventFlags.sceKernelReferEventFlagStatus(cpu.gpr[4], cpu.gpr[5]);
     }
 
+    @HLEFunction(nid = 0x8125221D, version = 150)
     public void sceKernelCreateMbx(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2671,6 +2663,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.mbx.sceKernelCreateMbx(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
+    @HLEFunction(nid = 0x86255ADA, version = 150)
     public void sceKernelDeleteMbx(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2681,11 +2674,13 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.mbx.sceKernelDeleteMbx(cpu.gpr[4]);
     }
 
+    @HLEFunction(nid = 0xE9B3061E, version = 150)
     public void sceKernelSendMbx(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.mbx.sceKernelSendMbx(cpu.gpr[4], cpu.gpr[5]);
     }
 
+    @HLEFunction(nid = 0x18260574, version = 150)
     public void sceKernelReceiveMbx(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2700,6 +2695,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.mbx.sceKernelReceiveMbx(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
+    @HLEFunction(nid = 0xF3986382, version = 150)
     public void sceKernelReceiveMbxCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2714,21 +2710,25 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.mbx.sceKernelReceiveMbxCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
+    @HLEFunction(nid = 0x0D81716A, version = 150)
     public void sceKernelPollMbx(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.mbx.sceKernelPollMbx(cpu.gpr[4], cpu.gpr[5]);
     }
 
+    @HLEFunction(nid = 0x87D4DD36, version = 150)
     public void sceKernelCancelReceiveMbx(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.mbx.sceKernelCancelReceiveMbx(cpu.gpr[4], cpu.gpr[5]);
     }
 
+    @HLEFunction(nid = 0xA8E8C846, version = 150)
     public void sceKernelReferMbxStatus(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.mbx.sceKernelReferMbxStatus(cpu.gpr[4], cpu.gpr[5]);
     }
 
+    @HLEFunction(nid = 0x7C0DC2A0, version = 150)
     public void sceKernelCreateMsgPipe(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2739,6 +2739,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.msgPipes.sceKernelCreateMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
     }
 
+    @HLEFunction(nid = 0xF0B7DA1C, version = 150)
     public void sceKernelDeleteMsgPipe(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2749,6 +2750,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.msgPipes.sceKernelDeleteMsgPipe(cpu.gpr[4]);
     }
 
+    @HLEFunction(nid = 0x876DBFAD, version = 150)
     public void sceKernelSendMsgPipe(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2763,6 +2765,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.msgPipes.sceKernelSendMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
     }
 
+    @HLEFunction(nid = 0x7C41F2C2, version = 150)
     public void sceKernelSendMsgPipeCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2777,11 +2780,13 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.msgPipes.sceKernelSendMsgPipeCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
     }
 
+    @HLEFunction(nid = 0x884C9F90, version = 150)
     public void sceKernelTrySendMsgPipe(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.msgPipes.sceKernelTrySendMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
     }
 
+    @HLEFunction(nid = 0x74829B76, version = 150)
     public void sceKernelReceiveMsgPipe(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2796,6 +2801,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.msgPipes.sceKernelReceiveMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
     }
 
+    @HLEFunction(nid = 0xFBFA697D, version = 150)
     public void sceKernelReceiveMsgPipeCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2810,21 +2816,25 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.msgPipes.sceKernelReceiveMsgPipeCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
     }
 
+    @HLEFunction(nid = 0xDF52098F, version = 150)
     public void sceKernelTryReceiveMsgPipe(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.msgPipes.sceKernelTryReceiveMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
     }
 
+    @HLEFunction(nid = 0x349B864D, version = 150)
     public void sceKernelCancelMsgPipe(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.msgPipes.sceKernelCancelMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
+    @HLEFunction(nid = 0x33BE4024, version = 150)
     public void sceKernelReferMsgPipeStatus(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.msgPipes.sceKernelReferMsgPipeStatus(cpu.gpr[4], cpu.gpr[5]);
     }
 
+    @HLEFunction(nid = 0x56C039B5, version = 150)
     public void sceKernelCreateVpl(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2835,6 +2845,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.vpl.sceKernelCreateVpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
     }
 
+    @HLEFunction(nid = 0x89B3D48C, version = 150)
     public void sceKernelDeleteVpl(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2845,6 +2856,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.vpl.sceKernelDeleteVpl(cpu.gpr[4]);
     }
 
+    @HLEFunction(nid = 0xBED27435, version = 150)
     public void sceKernelAllocateVpl(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2859,6 +2871,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.vpl.sceKernelAllocateVpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
     }
 
+    @HLEFunction(nid = 0xEC0A693F, version = 150)
     public void sceKernelAllocateVplCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2873,11 +2886,13 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.vpl.sceKernelAllocateVplCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
     }
 
+    @HLEFunction(nid = 0xAF36D708, version = 150)
     public void sceKernelTryAllocateVpl(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.vpl.sceKernelTryAllocateVpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
+    @HLEFunction(nid = 0xB736E9FF, version = 150)
     public void sceKernelFreeVpl(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2888,16 +2903,19 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.vpl.sceKernelFreeVpl(cpu.gpr[4], cpu.gpr[5]);
     }
 
+    @HLEFunction(nid = 0x1D371B8A, version = 150)
     public void sceKernelCancelVpl(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.vpl.sceKernelCancelVpl(cpu.gpr[4], cpu.gpr[5]);
     }
 
+    @HLEFunction(nid = 0x39810265, version = 150)
     public void sceKernelReferVplStatus(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.vpl.sceKernelReferVplStatus(cpu.gpr[4], cpu.gpr[5]);
     }
 
+    @HLEFunction(nid = 0xC07BB470, version = 150)
     public void sceKernelCreateFpl(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2908,6 +2926,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.fpl.sceKernelCreateFpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
     }
 
+    @HLEFunction(nid = 0xED1410E0, version = 150)
     public void sceKernelDeleteFpl(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2918,6 +2937,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.fpl.sceKernelDeleteFpl(cpu.gpr[4]);
     }
 
+    @HLEFunction(nid = 0xD979E9BF, version = 150)
     public void sceKernelAllocateFpl(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2932,6 +2952,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.fpl.sceKernelAllocateFpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
+    @HLEFunction(nid = 0xE7282CB6, version = 150)
     public void sceKernelAllocateFplCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2946,11 +2967,13 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.fpl.sceKernelAllocateFplCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
+    @HLEFunction(nid = 0x623AE665, version = 150)
     public void sceKernelTryAllocateFpl(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.fpl.sceKernelTryAllocateFpl(cpu.gpr[4], cpu.gpr[5]);
     }
 
+    @HLEFunction(nid = 0xF6414A71, version = 150)
     public void sceKernelFreeFpl(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2961,16 +2984,19 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         Managers.fpl.sceKernelFreeFpl(cpu.gpr[4], cpu.gpr[5]);
     }
 
+    @HLEFunction(nid = 0xA8AA591F, version = 150)
     public void sceKernelCancelFpl(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.fpl.sceKernelCancelFpl(cpu.gpr[4], cpu.gpr[5]);
     }
 
+    @HLEFunction(nid = 0xD8199E4C, version = 150)
     public void sceKernelReferFplStatus(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.fpl.sceKernelReferFplStatus(cpu.gpr[4], cpu.gpr[5]);
     }
 
+    @HLEFunction(nid = 0x0E927AED, version = 150)
     public void _sceKernelReturnFromTimerHandler(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2979,35 +3005,42 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x110DEC9A, version = 150)
     public void sceKernelUSec2SysClock(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.systime.sceKernelUSec2SysClock(cpu.gpr[4], cpu.gpr[5]);
     }
 
+    @HLEFunction(nid = 0xC8CD158C, version = 150)
     public void sceKernelUSec2SysClockWide(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.systime.sceKernelUSec2SysClockWide(cpu.gpr[4]);
     }
 
+    @HLEFunction(nid = 0xBA6B92E2, version = 150)
     public void sceKernelSysClock2USec(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.systime.sceKernelSysClock2USec(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
+    @HLEFunction(nid = 0xE1619D7C, version = 150)
     public void sceKernelSysClock2USecWide(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.systime.sceKernelSysClock2USecWide(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
     }
 
+    @HLEFunction(nid = 0xDB738F35, version = 150)
     public void sceKernelGetSystemTime(Processor processor) {
         CpuState cpu = processor.cpu;
         Managers.systime.sceKernelGetSystemTime(cpu.gpr[4]);
     }
 
+    @HLEFunction(nid = 0x82BC5777, version = 150)
     public void sceKernelGetSystemTimeWide(Processor processor) {
         Managers.systime.sceKernelGetSystemTimeWide();
     }
 
+    @HLEFunction(nid = 0x369ED59D, version = 150)
     public void sceKernelGetSystemTimeLow(Processor processor) {
         Managers.systime.sceKernelGetSystemTimeLow();
     }
@@ -3020,6 +3053,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return A UID representing the created alarm, < 0 on error.
      */
+    @HLEFunction(nid = 0x6652B8CA, version = 150)
     public void sceKernelSetAlarm(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3042,6 +3076,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return A UID representing the created alarm, < 0 on error.
      */
+    @HLEFunction(nid = 0xB2C25152, version = 150)
     public void sceKernelSetSysClockAlarm(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -3070,6 +3105,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return 0 on success, < 0 on error.
      */
+    @HLEFunction(nid = 0x7E65B999, version = 150)
     public void sceKernelCancelAlarm(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3096,6 +3132,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return 0 on success, < 0 on error.
      */
+    @HLEFunction(nid = 0xDAA3F564, version = 150)
     public void sceKernelReferAlarmStatus(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -3128,6 +3165,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return The VTimer's UID or < 0 on error.
      */
+    @HLEFunction(nid = 0x20FFF560, version = 150)
     public void sceKernelCreateVTimer(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3154,6 +3192,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return < 0 on error.
      */
+    @HLEFunction(nid = 0x328F9E52, version = 150)
     public void sceKernelDeleteVTimer(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3184,6 +3223,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return 0 on success, < 0 on error
      */
+    @HLEFunction(nid = 0xB3A59970, version = 150)
     public void sceKernelGetVTimerBase(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -3213,6 +3253,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return The 64bit timer base
      */
+    @HLEFunction(nid = 0xB7C18B77, version = 150)
     public void sceKernelGetVTimerBaseWide(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3238,6 +3279,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return 0 on success, < 0 on error
      */
+    @HLEFunction(nid = 0x034A921F, version = 150)
     public void sceKernelGetVTimerTime(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -3271,6 +3313,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return The 64bit timer time
      */
+    @HLEFunction(nid = 0xC0B3FFD2, version = 150)
     public void sceKernelGetVTimerTimeWide(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3300,6 +3343,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return 0 on success, < 0 on error
      */
+    @HLEFunction(nid = 0x542AD630, version = 150)
     public void sceKernelSetVTimerTime(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -3335,6 +3379,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return Possibly the last time
      */
+    @HLEFunction(nid = 0xFB6425C3, version = 150)
     public void sceKernelSetVTimerTimeWide(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3366,6 +3411,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return < 0 on error
      */
+    @HLEFunction(nid = 0xC68D9437, version = 150)
     public void sceKernelStartVTimer(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3395,6 +3441,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return < 0 on error
      */
+    @HLEFunction(nid = 0xD0AEEE87, version = 150)
     public void sceKernelStopVTimer(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3427,6 +3474,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return 0 on success, < 0 on error
      */
+    @HLEFunction(nid = 0xD8B299AE, version = 150)
     public void sceKernelSetVTimerHandler(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -3467,6 +3515,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return 0 on success, < 0 on error
      */
+    @HLEFunction(nid = 0x53B00E9A, version = 150)
     public void sceKernelSetVTimerHandlerWide(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3501,6 +3550,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return 0 on success, < 0 on error
      */
+    @HLEFunction(nid = 0xD2D615EF, version = 150)
     public void sceKernelCancelVTimerHandler(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3527,6 +3577,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return 0 on success, < 0 on error
      */
+    @HLEFunction(nid = 0x5F32BEAA, version = 150)
     public void sceKernelReferVTimerStatus(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -3551,6 +3602,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x446D8DE6, version = 150)
     public void sceKernelCreateThread(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3594,6 +3646,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     /** mark a thread for deletion. */
+    @HLEFunction(nid = 0x9FA03CD3, version = 150)
     public void sceKernelDeleteThread(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3626,6 +3679,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xF475845D, version = 150)
     public void sceKernelStartThread(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3663,12 +3717,14 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x532A522E, version = 150)
     public void _sceKernelExitThread(Processor processor) {
         // _sceKernelExitThread is equivalent to sceKernelExitThread
         sceKernelExitThread(processor);
     }
 
     /** exit the current thread */
+    @HLEFunction(nid = 0xAA73C935, version = 150)
     public void sceKernelExitThread(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3699,6 +3755,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     /** exit the current thread, then delete it */
+    @HLEFunction(nid = 0x809CE29B, version = 150)
     public void sceKernelExitDeleteThread(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3726,6 +3783,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     /** terminate thread */
+    @HLEFunction(nid = 0x616403BA, version = 150)
     public void sceKernelTerminateThread(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3752,6 +3810,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     /** terminate thread, then mark it for deletion */
+    @HLEFunction(nid = 0x383F7BCC, version = 150)
     public void sceKernelTerminateDeleteThread(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3787,6 +3846,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return The current state of the dispatch thread, < 0 on error
      */
+    @HLEFunction(nid = 0x3AD58B8C, version = 150)
     public void sceKernelSuspendDispatchThread(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3815,6 +3875,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *                (from sceKernelSuspendDispatchThread)
      * @return 0 on success, < 0 on error
      */
+    @HLEFunction(nid = 0x27E22EC2, version = 150)
     public void sceKernelResumeDispatchThread(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3841,6 +3902,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xEA748E31, version = 150)
     public void sceKernelChangeCurrentThreadAttr(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3866,6 +3928,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x71BC9871, version = 150)
     public void sceKernelChangeThreadPriority(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3915,6 +3978,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return 0 on success, < 0 on error.
      */
+    @HLEFunction(nid = 0x912354A7, version = 150)
     public void sceKernelRotateThreadReadyQueue(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3955,6 +4019,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x2C34E053, version = 150)
     public void sceKernelReleaseWaitThread(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3987,6 +4052,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     /** Get the current thread Id */
+    @HLEFunction(nid = 0x293B45B8, version = 150)
     public void sceKernelGetThreadId(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -4001,6 +4067,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         cpu.gpr[2] = currentThread.uid;
     }
 
+    @HLEFunction(nid = 0x94AA61EE, version = 150)
     public void sceKernelGetThreadCurrentPriority(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -4016,6 +4083,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     /** @return ERROR_NOT_FOUND_THREAD on uid < 0, uid == 0 and thread not found */
+    @HLEFunction(nid = 0x3B183E26, version = 150)
     public void sceKernelGetThreadExitStatus(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -4041,6 +4109,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     /** @return amount of free stack space.*/
+    @HLEFunction(nid = 0xD13BDE95, version = 150)
     public void sceKernelCheckThreadStack(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -4057,6 +4126,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     /** @return amount of unused stack space of a thread.*/
+    @HLEFunction(nid = 0x52089CA1, version = 150)
     public void sceKernelGetThreadStackFreeSize(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -4090,6 +4160,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
 
     /** Get the status information for the specified thread
      **/
+    @HLEFunction(nid = 0x17C1684E, version = 150)
     public void sceKernelReferThreadStatus(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -4116,6 +4187,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0xFFC36A14, version = 150)
     public void sceKernelReferThreadRunStatus(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -4150,6 +4222,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return < 0 on error.
      */
+    @HLEFunction(nid = 0x627E6F3A, version = 150)
     public void sceKernelReferSystemStatus(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -4170,6 +4243,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     /** Write uid's to buffer
      * return written count
      * save full count to idcount_addr */
+    @HLEFunction(nid = 0x94416130, version = 150)
     public void sceKernelGetThreadmanIdList(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -4217,6 +4291,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         cpu.gpr[2] = saveCount;
     }
 
+    @HLEFunction(nid = 0x57CF62DD, version = 150)
     public void sceKernelGetThreadmanIdType(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -4257,6 +4332,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         }
     }
 
+    @HLEFunction(nid = 0x64D4540E, version = 150)
     public void sceKernelReferThreadProfiler(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -4268,6 +4344,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
+    @HLEFunction(nid = 0x8218B4DD, version = 150)
     public void sceKernelReferGlobalProfiler(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -4540,134 +4617,5 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
 			return true;
 		}
     }
-    @HLEFunction(nid = 0x6E9EA350, version = 150) public HLEModuleFunction _sceKernelReturnFromCallbackFunction;
-    @HLEFunction(nid = 0x0C106E53, version = 150) public HLEModuleFunction sceKernelRegisterThreadEventHandlerFunction;
-    @HLEFunction(nid = 0x72F3C145, version = 150) public HLEModuleFunction sceKernelReleaseThreadEventHandlerFunction;
-    @HLEFunction(nid = 0x369EEB6B, version = 150) public HLEModuleFunction sceKernelReferThreadEventHandlerStatusFunction;
-    @HLEFunction(nid = 0xE81CAF8F, version = 150) public HLEModuleFunction sceKernelCreateCallbackFunction;
-    @HLEFunction(nid = 0xEDBA5844, version = 150) public HLEModuleFunction sceKernelDeleteCallbackFunction;
-    @HLEFunction(nid = 0xC11BA8C4, version = 150) public HLEModuleFunction sceKernelNotifyCallbackFunction;
-    @HLEFunction(nid = 0xBA4051D6, version = 150) public HLEModuleFunction sceKernelCancelCallbackFunction;
-    @HLEFunction(nid = 0x2A3D44FF, version = 150) public HLEModuleFunction sceKernelGetCallbackCountFunction;
-    @HLEFunction(nid = 0x349D6D6C, version = 150) public HLEModuleFunction sceKernelCheckCallbackFunction;
-    @HLEFunction(nid = 0x730ED8BC, version = 150) public HLEModuleFunction sceKernelReferCallbackStatusFunction;
-    @HLEFunction(nid = 0x9ACE131E, version = 150) public HLEModuleFunction sceKernelSleepThreadFunction;
-    @HLEFunction(nid = 0x82826F70, version = 150) public HLEModuleFunction sceKernelSleepThreadCBFunction;
-    @HLEFunction(nid = 0xD59EAD2F, version = 150) public HLEModuleFunction sceKernelWakeupThreadFunction;
-    @HLEFunction(nid = 0xFCCFAD26, version = 150) public HLEModuleFunction sceKernelCancelWakeupThreadFunction;
-    @HLEFunction(nid = 0x9944F31F, version = 150) public HLEModuleFunction sceKernelSuspendThreadFunction;
-    @HLEFunction(nid = 0x75156E8F, version = 150) public HLEModuleFunction sceKernelResumeThreadFunction;
-    @HLEFunction(nid = 0x278C0DF5, version = 150) public HLEModuleFunction sceKernelWaitThreadEndFunction;
-    @HLEFunction(nid = 0x840E8133, version = 150) public HLEModuleFunction sceKernelWaitThreadEndCBFunction;
-    @HLEFunction(nid = 0xCEADEB47, version = 150) public HLEModuleFunction sceKernelDelayThreadFunction;
-    @HLEFunction(nid = 0x68DA9E36, version = 150) public HLEModuleFunction sceKernelDelayThreadCBFunction;
-    @HLEFunction(nid = 0xBD123D9E, version = 150) public HLEModuleFunction sceKernelDelaySysClockThreadFunction;
-    @HLEFunction(nid = 0x1181E963, version = 150) public HLEModuleFunction sceKernelDelaySysClockThreadCBFunction;
-    @HLEFunction(nid = 0xD6DA4BA1, version = 150) public HLEModuleFunction sceKernelCreateSemaFunction;
-    @HLEFunction(nid = 0x28B6489C, version = 150) public HLEModuleFunction sceKernelDeleteSemaFunction;
-    @HLEFunction(nid = 0x3F53E640, version = 150) public HLEModuleFunction sceKernelSignalSemaFunction;
-    @HLEFunction(nid = 0x4E3A1105, version = 150) public HLEModuleFunction sceKernelWaitSemaFunction;
-    @HLEFunction(nid = 0x6D212BAC, version = 150) public HLEModuleFunction sceKernelWaitSemaCBFunction;
-    @HLEFunction(nid = 0x58B1F937, version = 150) public HLEModuleFunction sceKernelPollSemaFunction;
-    @HLEFunction(nid = 0x8FFDF9A2, version = 150) public HLEModuleFunction sceKernelCancelSemaFunction;
-    @HLEFunction(nid = 0xBC6FEBC5, version = 150) public HLEModuleFunction sceKernelReferSemaStatusFunction;
-    @HLEFunction(nid = 0x55C20A00, version = 150) public HLEModuleFunction sceKernelCreateEventFlagFunction;
-    @HLEFunction(nid = 0xEF9E4C70, version = 150) public HLEModuleFunction sceKernelDeleteEventFlagFunction;
-    @HLEFunction(nid = 0x1FB15A32, version = 150) public HLEModuleFunction sceKernelSetEventFlagFunction;
-    @HLEFunction(nid = 0x812346E4, version = 150) public HLEModuleFunction sceKernelClearEventFlagFunction;
-    @HLEFunction(nid = 0x402FCF22, version = 150) public HLEModuleFunction sceKernelWaitEventFlagFunction;
-    @HLEFunction(nid = 0x328C546A, version = 150) public HLEModuleFunction sceKernelWaitEventFlagCBFunction;
-    @HLEFunction(nid = 0x30FD48F0, version = 150) public HLEModuleFunction sceKernelPollEventFlagFunction;
-    @HLEFunction(nid = 0xCD203292, version = 150) public HLEModuleFunction sceKernelCancelEventFlagFunction;
-    @HLEFunction(nid = 0xA66B0120, version = 150) public HLEModuleFunction sceKernelReferEventFlagStatusFunction;
-    @HLEFunction(nid = 0x8125221D, version = 150) public HLEModuleFunction sceKernelCreateMbxFunction;
-    @HLEFunction(nid = 0x86255ADA, version = 150) public HLEModuleFunction sceKernelDeleteMbxFunction;
-    @HLEFunction(nid = 0xE9B3061E, version = 150) public HLEModuleFunction sceKernelSendMbxFunction;
-    @HLEFunction(nid = 0x18260574, version = 150) public HLEModuleFunction sceKernelReceiveMbxFunction;
-    @HLEFunction(nid = 0xF3986382, version = 150) public HLEModuleFunction sceKernelReceiveMbxCBFunction;
-    @HLEFunction(nid = 0x0D81716A, version = 150) public HLEModuleFunction sceKernelPollMbxFunction;
-    @HLEFunction(nid = 0x87D4DD36, version = 150) public HLEModuleFunction sceKernelCancelReceiveMbxFunction;
-    @HLEFunction(nid = 0xA8E8C846, version = 150) public HLEModuleFunction sceKernelReferMbxStatusFunction;
-    @HLEFunction(nid = 0x7C0DC2A0, version = 150) public HLEModuleFunction sceKernelCreateMsgPipeFunction;
-    @HLEFunction(nid = 0xF0B7DA1C, version = 150) public HLEModuleFunction sceKernelDeleteMsgPipeFunction;
-    @HLEFunction(nid = 0x876DBFAD, version = 150) public HLEModuleFunction sceKernelSendMsgPipeFunction;
-    @HLEFunction(nid = 0x7C41F2C2, version = 150) public HLEModuleFunction sceKernelSendMsgPipeCBFunction;
-    @HLEFunction(nid = 0x884C9F90, version = 150) public HLEModuleFunction sceKernelTrySendMsgPipeFunction;
-    @HLEFunction(nid = 0x74829B76, version = 150) public HLEModuleFunction sceKernelReceiveMsgPipeFunction;
-    @HLEFunction(nid = 0xFBFA697D, version = 150) public HLEModuleFunction sceKernelReceiveMsgPipeCBFunction;
-    @HLEFunction(nid = 0xDF52098F, version = 150) public HLEModuleFunction sceKernelTryReceiveMsgPipeFunction;
-    @HLEFunction(nid = 0x349B864D, version = 150) public HLEModuleFunction sceKernelCancelMsgPipeFunction;
-    @HLEFunction(nid = 0x33BE4024, version = 150) public HLEModuleFunction sceKernelReferMsgPipeStatusFunction;
-    @HLEFunction(nid = 0x56C039B5, version = 150) public HLEModuleFunction sceKernelCreateVplFunction;
-    @HLEFunction(nid = 0x89B3D48C, version = 150) public HLEModuleFunction sceKernelDeleteVplFunction;
-    @HLEFunction(nid = 0xBED27435, version = 150) public HLEModuleFunction sceKernelAllocateVplFunction;
-    @HLEFunction(nid = 0xEC0A693F, version = 150) public HLEModuleFunction sceKernelAllocateVplCBFunction;
-    @HLEFunction(nid = 0xAF36D708, version = 150) public HLEModuleFunction sceKernelTryAllocateVplFunction;
-    @HLEFunction(nid = 0xB736E9FF, version = 150) public HLEModuleFunction sceKernelFreeVplFunction;
-    @HLEFunction(nid = 0x1D371B8A, version = 150) public HLEModuleFunction sceKernelCancelVplFunction;
-    @HLEFunction(nid = 0x39810265, version = 150) public HLEModuleFunction sceKernelReferVplStatusFunction;
-    @HLEFunction(nid = 0xC07BB470, version = 150) public HLEModuleFunction sceKernelCreateFplFunction;
-    @HLEFunction(nid = 0xED1410E0, version = 150) public HLEModuleFunction sceKernelDeleteFplFunction;
-    @HLEFunction(nid = 0xD979E9BF, version = 150) public HLEModuleFunction sceKernelAllocateFplFunction;
-    @HLEFunction(nid = 0xE7282CB6, version = 150) public HLEModuleFunction sceKernelAllocateFplCBFunction;
-    @HLEFunction(nid = 0x623AE665, version = 150) public HLEModuleFunction sceKernelTryAllocateFplFunction;
-    @HLEFunction(nid = 0xF6414A71, version = 150) public HLEModuleFunction sceKernelFreeFplFunction;
-    @HLEFunction(nid = 0xA8AA591F, version = 150) public HLEModuleFunction sceKernelCancelFplFunction;
-    @HLEFunction(nid = 0xD8199E4C, version = 150) public HLEModuleFunction sceKernelReferFplStatusFunction;
-    @HLEFunction(nid = 0x0E927AED, version = 150) public HLEModuleFunction _sceKernelReturnFromTimerHandlerFunction;
-    @HLEFunction(nid = 0x110DEC9A, version = 150) public HLEModuleFunction sceKernelUSec2SysClockFunction;
-    @HLEFunction(nid = 0xC8CD158C, version = 150) public HLEModuleFunction sceKernelUSec2SysClockWideFunction;
-    @HLEFunction(nid = 0xBA6B92E2, version = 150) public HLEModuleFunction sceKernelSysClock2USecFunction;
-    @HLEFunction(nid = 0xE1619D7C, version = 150) public HLEModuleFunction sceKernelSysClock2USecWideFunction;
-    @HLEFunction(nid = 0xDB738F35, version = 150) public HLEModuleFunction sceKernelGetSystemTimeFunction;
-    @HLEFunction(nid = 0x82BC5777, version = 150) public HLEModuleFunction sceKernelGetSystemTimeWideFunction;
-    @HLEFunction(nid = 0x369ED59D, version = 150) public HLEModuleFunction sceKernelGetSystemTimeLowFunction;
-    @HLEFunction(nid = 0x6652B8CA, version = 150) public HLEModuleFunction sceKernelSetAlarmFunction;
-    @HLEFunction(nid = 0xB2C25152, version = 150) public HLEModuleFunction sceKernelSetSysClockAlarmFunction;
-    @HLEFunction(nid = 0x7E65B999, version = 150) public HLEModuleFunction sceKernelCancelAlarmFunction;
-    @HLEFunction(nid = 0xDAA3F564, version = 150) public HLEModuleFunction sceKernelReferAlarmStatusFunction;
-    @HLEFunction(nid = 0x20FFF560, version = 150) public HLEModuleFunction sceKernelCreateVTimerFunction;
-    @HLEFunction(nid = 0x328F9E52, version = 150) public HLEModuleFunction sceKernelDeleteVTimerFunction;
-    @HLEFunction(nid = 0xB3A59970, version = 150) public HLEModuleFunction sceKernelGetVTimerBaseFunction;
-    @HLEFunction(nid = 0xB7C18B77, version = 150) public HLEModuleFunction sceKernelGetVTimerBaseWideFunction;
-    @HLEFunction(nid = 0x034A921F, version = 150) public HLEModuleFunction sceKernelGetVTimerTimeFunction;
-    @HLEFunction(nid = 0xC0B3FFD2, version = 150) public HLEModuleFunction sceKernelGetVTimerTimeWideFunction;
-    @HLEFunction(nid = 0x542AD630, version = 150) public HLEModuleFunction sceKernelSetVTimerTimeFunction;
-    @HLEFunction(nid = 0xFB6425C3, version = 150) public HLEModuleFunction sceKernelSetVTimerTimeWideFunction;
-    @HLEFunction(nid = 0xC68D9437, version = 150) public HLEModuleFunction sceKernelStartVTimerFunction;
-    @HLEFunction(nid = 0xD0AEEE87, version = 150) public HLEModuleFunction sceKernelStopVTimerFunction;
-    @HLEFunction(nid = 0xD8B299AE, version = 150) public HLEModuleFunction sceKernelSetVTimerHandlerFunction;
-    @HLEFunction(nid = 0x53B00E9A, version = 150) public HLEModuleFunction sceKernelSetVTimerHandlerWideFunction;
-    @HLEFunction(nid = 0xD2D615EF, version = 150) public HLEModuleFunction sceKernelCancelVTimerHandlerFunction;
-    @HLEFunction(nid = 0x5F32BEAA, version = 150) public HLEModuleFunction sceKernelReferVTimerStatusFunction;
-
-    
-    @HLEFunction(nid = 0x446D8DE6, version = 150)
-    public HLEModuleFunction sceKernelCreateThreadFunction;
-    @HLEFunction(nid = 0x9FA03CD3, version = 150) public HLEModuleFunction sceKernelDeleteThreadFunction;
-    @HLEFunction(nid = 0xF475845D, version = 150) public HLEModuleFunction sceKernelStartThreadFunction;
-    @HLEFunction(nid = 0x532A522E, version = 150) public HLEModuleFunction _sceKernelExitThreadFunction;
-    @HLEFunction(nid = 0xAA73C935, version = 150) public HLEModuleFunction sceKernelExitThreadFunction;
-    @HLEFunction(nid = 0x809CE29B, version = 150) public HLEModuleFunction sceKernelExitDeleteThreadFunction;
-    @HLEFunction(nid = 0x616403BA, version = 150) public HLEModuleFunction sceKernelTerminateThreadFunction;
-    @HLEFunction(nid = 0x383F7BCC, version = 150) public HLEModuleFunction sceKernelTerminateDeleteThreadFunction;
-    @HLEFunction(nid = 0x3AD58B8C, version = 150) public HLEModuleFunction sceKernelSuspendDispatchThreadFunction;
-    @HLEFunction(nid = 0x27E22EC2, version = 150) public HLEModuleFunction sceKernelResumeDispatchThreadFunction;
-    @HLEFunction(nid = 0xEA748E31, version = 150) public HLEModuleFunction sceKernelChangeCurrentThreadAttrFunction;
-    @HLEFunction(nid = 0x71BC9871, version = 150) public HLEModuleFunction sceKernelChangeThreadPriorityFunction;
-    @HLEFunction(nid = 0x912354A7, version = 150) public HLEModuleFunction sceKernelRotateThreadReadyQueueFunction;
-    @HLEFunction(nid = 0x2C34E053, version = 150) public HLEModuleFunction sceKernelReleaseWaitThreadFunction;
-    @HLEFunction(nid = 0x293B45B8, version = 150) public HLEModuleFunction sceKernelGetThreadIdFunction;
-    @HLEFunction(nid = 0x94AA61EE, version = 150) public HLEModuleFunction sceKernelGetThreadCurrentPriorityFunction;
-    @HLEFunction(nid = 0x3B183E26, version = 150) public HLEModuleFunction sceKernelGetThreadExitStatusFunction;
-    @HLEFunction(nid = 0xD13BDE95, version = 150) public HLEModuleFunction sceKernelCheckThreadStackFunction;
-    @HLEFunction(nid = 0x52089CA1, version = 150) public HLEModuleFunction sceKernelGetThreadStackFreeSizeFunction;
-    @HLEFunction(nid = 0x17C1684E, version = 150) public HLEModuleFunction sceKernelReferThreadStatusFunction;
-    @HLEFunction(nid = 0xFFC36A14, version = 150) public HLEModuleFunction sceKernelReferThreadRunStatusFunction;
-    @HLEFunction(nid = 0x627E6F3A, version = 150) public HLEModuleFunction sceKernelReferSystemStatusFunction;
-    @HLEFunction(nid = 0x94416130, version = 150) public HLEModuleFunction sceKernelGetThreadmanIdListFunction;
-    @HLEFunction(nid = 0x57CF62DD, version = 150) public HLEModuleFunction sceKernelGetThreadmanIdTypeFunction;
-    @HLEFunction(nid = 0x64D4540E, version = 150) public HLEModuleFunction sceKernelReferThreadProfilerFunction;
-    @HLEFunction(nid = 0x8218B4DD, version = 150) public HLEModuleFunction sceKernelReferGlobalProfilerFunction;
 
 }

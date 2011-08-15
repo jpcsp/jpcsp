@@ -61,4 +61,9 @@ public abstract class HLEModuleFunction {
     public abstract void execute(Processor cpu);
     
     public abstract String compiledString();
+    
+    @Override
+    public String toString() {
+    	return "HLEModuleFunction(moduleName='" + moduleName + "', functionName='" + functionName + "', nid=" + nid + ", syscallCode=" + syscallCode + ")";
+    }
 }
