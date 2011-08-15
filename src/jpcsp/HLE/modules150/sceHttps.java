@@ -39,12 +39,6 @@ public class sceHttps implements HLEModule {
     public String getName() {
         return "sceHttps";
     }
-
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
     // Certificate related statics (guessed from a PSP's certificates' list).
     // The PSP currently handles certificates for the following issuers:
     //   - RSA: 2 certificates (resolved);

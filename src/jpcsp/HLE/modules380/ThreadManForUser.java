@@ -27,11 +27,6 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
 public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
-	@Override
-	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
 	@HLEFunction(nid = 0x19CFF145, version = 380)
 	public void sceKernelCreateLwMutex(Processor processor) {

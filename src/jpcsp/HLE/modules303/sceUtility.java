@@ -31,14 +31,6 @@ import jpcsp.HLE.modules.HLEModuleManager;
 
 public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) {
-    	super.installModule(mm, version);
-    }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     public static enum UtilityModule {
         PSP_MODULE_NET_COMMON(0x0100),
         PSP_MODULE_NET_ADHOC(0x0101),

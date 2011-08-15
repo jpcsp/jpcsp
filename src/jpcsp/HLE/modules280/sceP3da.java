@@ -34,12 +34,6 @@ public class sceP3da implements HLEModule {
 	public String getName() {
 		return "sceP3da";
 	}
-
-	@Override
-	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-	
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
     public static final int PSP_P3DA_SAMPLES_NUM_STEP = 32;
     public static final int PSP_P3DA_SAMPLES_NUM_MIN = 64;
     public static final int PSP_P3DA_SAMPLES_NUM_DEFAULT = 256;

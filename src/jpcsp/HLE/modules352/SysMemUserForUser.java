@@ -27,11 +27,6 @@ import jpcsp.Memory;
 import static jpcsp.util.Utilities.readStringNZ;
 
 public class SysMemUserForUser extends jpcsp.HLE.modules280.SysMemUserForUser {
-	@Override
-	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-	
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     // sceKernelFreeMemoryBlock (internal name)
 	@HLEFunction(nid = 0x50F61D8A, version = 352)

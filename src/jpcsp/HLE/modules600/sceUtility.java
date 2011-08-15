@@ -24,12 +24,6 @@ import jpcsp.HLE.modules.HLEModuleManager;
 
 public class sceUtility extends jpcsp.HLE.modules303.sceUtility {
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     @HLEFunction(nid = 0x180F7B62, version = 600)
     public void sceUtilityGamedataInstallAbort(Processor processor) {
         CpuState cpu = processor.cpu;

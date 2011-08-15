@@ -26,11 +26,6 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
 public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
-	@Override
-	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
 	@HLEFunction(nid = 0xBC80EC7C, version = 630)
 	public void sceKernelExtendThreadStack(Processor processor) {

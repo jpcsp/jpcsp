@@ -38,14 +38,6 @@ public class sceJpeg implements HLEModule {
 		return "sceJpeg";
 	}
 
-	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		mm.installModuleWithAnnotations(this, version);
-	}
-
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
 	protected int jpegWidth = Screen.width;
 	protected int jpegHeight = Screen.height;
 

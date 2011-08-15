@@ -20,14 +20,4 @@ package jpcsp.HLE.modules;
 public class sceHttp extends jpcsp.HLE.modules150.sceHttp {
 	@Override
 	public final String getName() { return "sceHttp"; }
-
-	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
-	}
-
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.uninstallModule(mm, version);
-	}
 }

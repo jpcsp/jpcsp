@@ -24,12 +24,6 @@ import jpcsp.HLE.modules.HLEModuleManager;
 
 public class ModuleMgrForUser extends jpcsp.HLE.modules150.ModuleMgrForUser {
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     // Export functions
 
     @HLEFunction(nid = 0xFEF27DC1, version = 271)

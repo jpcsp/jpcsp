@@ -27,12 +27,6 @@ import jpcsp.HLE.modules.HLEModuleManager;
 public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
     protected boolean umdAllowReplace;
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     @HLEFunction(nid = 0x87533940, version = 200)
     public void sceUmdReplaceProhibit(Processor processor) {
         CpuState cpu = processor.cpu;

@@ -37,12 +37,6 @@ public class sceNetAdhoc implements HLEModule {
         return "sceNetAdhoc";
     }
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     /**
      * Initialise the adhoc library.
      *

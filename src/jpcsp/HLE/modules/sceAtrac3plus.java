@@ -20,14 +20,4 @@ package jpcsp.HLE.modules;
 public class sceAtrac3plus extends jpcsp.HLE.modules630.sceAtrac3plus {
 	@Override
 	public final String getName() { return "sceAtrac3plus"; }
-
-	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
-	}
-
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.uninstallModule(mm, version);
-	}
 }

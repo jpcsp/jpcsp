@@ -35,12 +35,6 @@ public class StdioForUser implements HLEModule {
         return "StdioForUser";
     }
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     @HLEFunction(nid = 0x3054D478, version = 150)
     public void sceKernelStdioRead(Processor processor) {
         CpuState cpu = processor.cpu;

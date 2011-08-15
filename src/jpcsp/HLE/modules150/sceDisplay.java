@@ -281,12 +281,6 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         return "sceDisplay";
     }
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     public sceDisplay() throws LWJGLException {
     	super(null, new PixelFormat().withBitsPerPixel(8).withAlphaBits(8).withStencilBits(8).withSamples(antiAliasSamplesNum), null, new ContextAttribs().withDebug(useDebugGL));
         setScreenResolution(Screen.width, Screen.height);

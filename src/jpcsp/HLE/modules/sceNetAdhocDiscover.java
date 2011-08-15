@@ -20,14 +20,4 @@ package jpcsp.HLE.modules;
 public class sceNetAdhocDiscover extends jpcsp.HLE.modules150.sceNetAdhocDiscover {
 	@Override
 	public final String getName() { return "sceNetAdhocDiscover"; }
-
-	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
-	}
-
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.uninstallModule(mm, version);
-	}
 }

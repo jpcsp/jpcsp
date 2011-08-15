@@ -22,14 +22,4 @@ public class ThreadManForUser extends jpcsp.HLE.modules630.ThreadManForUser {
     public final String getName() {
         return "ThreadManForUser";
     }
-
-    @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
-    }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        super.uninstallModule(mm, version);
-    }
 }

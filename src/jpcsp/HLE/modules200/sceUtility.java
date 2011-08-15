@@ -40,13 +40,6 @@ import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.filesystems.SeekableDataInput;
 
 public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
-    @Override
-    public void installModule(HLEModuleManager mm, int version) {
-    	super.installModule(mm, version);
-    }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     protected static class InstallUtilityDialogState extends UtilityDialogState {
 		protected SceUtilityInstallParams installParams;

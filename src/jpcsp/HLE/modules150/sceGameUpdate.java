@@ -35,12 +35,6 @@ public class sceGameUpdate implements HLEModule {
         return "sceGameUpdate";
     }
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     @HLEFunction(nid = 0xCBE69FB3, version = 150)
     public void sceGameUpdateInit(Processor processor) {
         CpuState cpu = processor.cpu;

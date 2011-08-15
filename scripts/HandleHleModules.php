@@ -18,11 +18,13 @@ class HandleHleModules {
 	public function handleFile($rfile) {
 	}
 	
-	public function handleModuleFolders() {
+	public function handleModuleFolders($includeModulesItself = false) {
 		foreach (scandir($path = __DIR__ . '/../src/jpcsp/HLE') as $file) {
 			$rfile = "{$path}/{$file}";
-			if (substr($file, 0, 7) == 'modules' && strlen($file) > 7) {
-				$this->handleDir($rfile);
+			if (substr($file, 0, 7) == 'modules') {
+				if ($includeModulesItself || strlen($file) > 7) {
+					$this->handleDir($rfile);
+				}
 			}
 		}
 	}

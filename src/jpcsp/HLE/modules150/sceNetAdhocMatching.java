@@ -35,12 +35,6 @@ public class sceNetAdhocMatching implements HLEModule {
         return "sceNetAdhocMatching";
     }
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     @HLEFunction(nid = 0x2A2A1E07, version = 150)
     public void sceNetAdhocMatchingInit(Processor processor) {
         CpuState cpu = processor.cpu;

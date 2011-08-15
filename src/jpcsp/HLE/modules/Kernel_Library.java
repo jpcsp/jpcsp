@@ -23,14 +23,4 @@ public class Kernel_Library extends jpcsp.HLE.modules380.Kernel_Library {
     public final String getName() {
         return "Kernel_Library";
     }
-
-    @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
-    }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        super.uninstallModule(mm, version);
-    }
 }

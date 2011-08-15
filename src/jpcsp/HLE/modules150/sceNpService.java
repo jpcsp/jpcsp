@@ -38,12 +38,6 @@ public class sceNpService implements HLEModule {
         return "sceNpService";
     }
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     private int npManagerMemSize;            // Memory allocated by the NP Manager utility.
     private int npManagerMaxMemSize;  // Maximum memory used by the NP Manager utility.
     private int npManagerFreeMemSize;        // Free memory available to use by the NP Manager utility.

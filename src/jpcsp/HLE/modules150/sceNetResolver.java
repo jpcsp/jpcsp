@@ -44,12 +44,6 @@ public class sceNetResolver implements HLEModule {
 	public String getName() {
 		return "sceNetResolver";
 	}
-	
-	@Override
-	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-	
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     protected static class ResolverID {
         private int id;

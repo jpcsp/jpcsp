@@ -24,11 +24,6 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
 public class SysMemUserForUser extends jpcsp.HLE.modules200.SysMemUserForUser {
-	@Override
-	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-	
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 	
 	@HLEFunction(nid = 0x2A3E5280, version = 280)
 	public void sceKernelQueryMemoryInfo(Processor processor) {

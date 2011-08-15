@@ -26,12 +26,6 @@ import jpcsp.HLE.modules.HLEModuleManager;
 
 public class sceSasCore extends jpcsp.HLE.modules500.sceSasCore {
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     @HLEFunction(nid = 0x4AA9EAD6, version = 600)
     public void __sceSasSetVoiceATRAC3(Processor processor) {
         CpuState cpu = processor.cpu;

@@ -40,16 +40,6 @@ public class sceCcc implements HLEModule {
 		return "sceCcc";
 	}
 
-	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		mm.installModuleWithAnnotations(this, version);
-	}
-
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		mm.uninstallModuleWithAnnotations(this, version);
-	}
-
 	protected static final Charset charsetUTF8 = Charset.forName("UTF-8");
 	protected static final Charset charsetUTF16 = Charset.forName("UTF-16LE");
 

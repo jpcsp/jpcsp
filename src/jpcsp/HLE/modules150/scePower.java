@@ -39,12 +39,6 @@ public class scePower implements HLEModule {
     public String getName() {
         return "scePower";
     }
-
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
     /**
      * Power callback flags
      */

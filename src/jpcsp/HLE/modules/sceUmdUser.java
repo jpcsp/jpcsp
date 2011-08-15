@@ -23,14 +23,4 @@ public class sceUmdUser extends jpcsp.HLE.modules200.sceUmdUser {
     public final String getName() {
         return "sceUmdUser";
     }
-
-    @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
-    }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        super.uninstallModule(mm, version);
-    }
 }

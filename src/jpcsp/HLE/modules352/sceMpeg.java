@@ -29,12 +29,6 @@ public class sceMpeg extends jpcsp.HLE.modules150.sceMpeg {
         return "sceMpeg";
 	}
 
-	@Override
-	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     @HLEFunction(nid = 0x769BEBB6, version = 352)
     public void sceMpegRingbufferQueryPackNum(Processor processor) {
         CpuState cpu = processor.cpu;

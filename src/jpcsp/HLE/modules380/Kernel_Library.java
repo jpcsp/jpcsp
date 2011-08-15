@@ -27,11 +27,6 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
 public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
-	@Override
-	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
 	@HLEFunction(nid = 0x15B6446B, version = 380)
 	public void sceKernelUnlockLwMutex(Processor processor) {

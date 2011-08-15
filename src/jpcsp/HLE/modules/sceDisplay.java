@@ -30,14 +30,4 @@ public class sceDisplay extends jpcsp.HLE.modules500.sceDisplay {
     public final String getName() {
         return "sceDisplay";
     }
-
-    @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
-    }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        super.uninstallModule(mm, version);
-    }
 }

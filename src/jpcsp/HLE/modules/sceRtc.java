@@ -21,14 +21,4 @@ package jpcsp.HLE.modules;
 public class sceRtc extends jpcsp.HLE.modules200.sceRtc {
 	@Override
 	public final String getName() { return "sceRtc"; }
-	
-	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
-	}
-	
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.uninstallModule(mm, version);
-	}
 }
