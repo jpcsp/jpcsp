@@ -476,45 +476,6 @@ public class HLEModuleManager {
 					}
 				}
 			}
-
-			// Fields
-			// @deprecated NOTE: Still used on ThreadManForUser. It has references to *Function fields. First we should remove those references.
-			for (Field field : objectClass.getFields()) {
-				HLEFunction hleFunction = field.getAnnotation(HLEFunction.class);
-				if (hleFunction != null) {
-					if (version >= hleFunction.version()) {
-						String moduleName = hleFunction.moduleName();
-						String functionName = hleFunction.functionName();
-						
-						if (moduleName.length() == 0) {
-							moduleName = defaultModuleName;
-						}
-
-						if (functionName.length() == 0) {
-							functionName = field.getName();
-							functionName = functionName.substring(0, functionName.length() - 8); // To remove "Function" tail.
-						}
-						
-						// We will create a generic function.
-						if (field.get(hleModule) == null) {
-							String methodName = field.getName();
-							methodName = methodName.substring(0, methodName.length() - 8); // To remove "Function" tail.
-							
-							field.set(hleModule, new HLEModuleFunctionReflection(moduleName, functionName, hleModule, methodName));
-						}
-						
-						//System.console().printf("%s :: %s\n", moduleName, functionName);
-
-						hleModule.installedHLEModuleFunctions.put(functionName, (HLEModuleFunction)field.get(hleModule));
-
-						if (hleFunction.syscall() != 0) {
-							this.addHLEFunction((HLEModuleFunction)field.get(hleModule));
-						} else {
-							this.addFunction(hleFunction.nid(), (HLEModuleFunction)field.get(hleModule));
-						}
-					}
-				}
-			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

@@ -30,8 +30,25 @@ abstract public class HLEModule {
 	abstract public String getName();
 	
 	public HashMap<String, HLEModuleFunction> installedHLEModuleFunctions = new HashMap<String, HLEModuleFunction>();
-	
-	public HLEModuleFunction getFunctionByName(String functionName) {
+
+	/**
+	 * Returns an installed hle function by name.
+	 * 
+	 * @NOTE: If it is too slow to call on several places, it could be called once. Only when installed.
+	 *        And stored in a local field to be used where required.
+	 * 
+	 * @param functionName
+	 * @return
+	 * @throws RuntimeException
+	 */
+	public HLEModuleFunction getHleFunctionByName(String functionName) throws RuntimeException {
+		if (!installedHLEModuleFunctions.containsKey(functionName)) {
+			for (HLEModuleFunction function : installedHLEModuleFunctions.values()) {
+				System.err.println(function);
+			}
+			throw(new RuntimeException("Can't find hle function '" + functionName + "' on module '" + this.getName() + "'"));
+		}
+		
 		return installedHLEModuleFunctions.get(functionName);
 	}
 }
