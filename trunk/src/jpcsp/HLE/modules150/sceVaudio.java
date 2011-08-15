@@ -37,7 +37,7 @@ import jpcsp.sound.SoundChannel;
 
 import org.apache.log4j.Logger;
 
-public class sceVaudio implements HLEModule, HLEStartModule {
+public class sceVaudio extends HLEModule implements HLEStartModule {
 
     protected static Logger log = Modules.getLogger("sceVaudio");
 

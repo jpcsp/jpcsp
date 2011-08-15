@@ -56,7 +56,7 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-public class sceMpeg implements HLEModule, HLEStartModule {
+public class sceMpeg extends HLEModule implements HLEStartModule {
 
     protected static Logger log = Modules.getLogger("sceMpeg");
 

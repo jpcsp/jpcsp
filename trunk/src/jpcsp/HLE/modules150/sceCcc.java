@@ -27,12 +27,13 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 
-public class sceCcc implements HLEModule {
+public class sceCcc extends HLEModule {
     protected static Logger log = Modules.getLogger("sceCcc");
 
 	@Override

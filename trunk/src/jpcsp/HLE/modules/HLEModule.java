@@ -17,11 +17,21 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules;
 
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  *
  * @author fiveofhearts
  */
-public interface HLEModule {
+abstract public class HLEModule {
     /** @return Example: StdioForUser */
-    public String getName();
+	abstract public String getName();
+	
+	public HashMap<String, HLEModuleFunction> installedHLEModuleFunctions = new HashMap<String, HLEModuleFunction>();
+	
+	public HLEModuleFunction getFunctionByName(String functionName) {
+		return installedHLEModuleFunctions.get(functionName);
+	}
 }

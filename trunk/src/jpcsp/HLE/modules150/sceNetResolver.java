@@ -29,6 +29,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.sceNetInet;
 import jpcsp.util.Utilities;
 
@@ -37,7 +38,7 @@ import jpcsp.Processor;
 
 import jpcsp.Allegrex.CpuState;
 
-public class sceNetResolver implements HLEModule {
+public class sceNetResolver extends HLEModule {
     protected static Logger log = Modules.getLogger("sceNetResolver");
 
     @Override

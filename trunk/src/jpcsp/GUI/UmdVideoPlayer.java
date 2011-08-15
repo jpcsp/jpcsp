@@ -173,7 +173,7 @@ public class UmdVideoPlayer implements KeyListener {
         this.iso = iso;
 
         display = new JLabel();
-        gui.remove(Modules.sceDisplayModule);
+        gui.remove(Modules.sceDisplayModule.getCanvas());
         gui.getContentPane().add(display, BorderLayout.CENTER);
         gui.addKeyListener(this);
         setVideoPlayerResizeScaleFactor(gui, 1);

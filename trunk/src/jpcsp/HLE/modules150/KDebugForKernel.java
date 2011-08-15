@@ -29,7 +29,7 @@ import jpcsp.Processor;
 
 import jpcsp.Allegrex.CpuState;
 
-public class KDebugForKernel implements HLEModule {
+public class KDebugForKernel extends HLEModule {
     protected static Logger kprintf = Logger.getLogger("kprintf");
 
     @Override

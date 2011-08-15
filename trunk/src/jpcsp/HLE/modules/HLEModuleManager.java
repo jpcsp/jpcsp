@@ -436,8 +436,6 @@ public class HLEModuleManager {
 		return allSyscallCodes.get(code);
 	}
 	
-	private HashMap<HLEModule, List<HLEModuleFunction>> installedHLEModuleFunctionByModule = new HashMap<HLEModule, List<HLEModuleFunction>>();
-
 	/**
 	 * Iterates over an object fields searching for HLEFunction annotations and if the specified
 	 * version is greater than the required version for that HLEFunction, it will install it.
@@ -450,10 +448,6 @@ public class HLEModuleManager {
 			Class<? extends HLEModule> objectClass = hleModule.getClass();
 			String defaultModuleName = objectClass.getName();
 			defaultModuleName = defaultModuleName.substring(defaultModuleName.lastIndexOf('.') + 1);
-			
-			LinkedList<HLEModuleFunction> hleModuleFunctions = new LinkedList<HLEModuleFunction>();
-			
-			installedHLEModuleFunctionByModule.put(hleModule, hleModuleFunctions);
 			
 			for (Method method : objectClass.getMethods()) {
 				HLEFunction hleFunction = method.getAnnotation(HLEFunction.class);
@@ -472,7 +466,7 @@ public class HLEModuleManager {
 						
 						HLEModuleFunction hleModuleFunction = new HLEModuleFunctionReflection(moduleName, functionName, hleModule, method.getName());
 						
-						hleModuleFunctions.add(hleModuleFunction);
+						hleModule.installedHLEModuleFunctions.put(functionName, hleModuleFunction);
 						
 						if (hleFunction.syscall() != 0) {
 							this.addHLEFunction(hleModuleFunction);
@@ -511,7 +505,7 @@ public class HLEModuleManager {
 						
 						//System.console().printf("%s :: %s\n", moduleName, functionName);
 
-						hleModuleFunctions.add((HLEModuleFunction)field.get(hleModule));
+						hleModule.installedHLEModuleFunctions.put(functionName, (HLEModuleFunction)field.get(hleModule));
 
 						if (hleFunction.syscall() != 0) {
 							this.addHLEFunction((HLEModuleFunction)field.get(hleModule));
@@ -534,7 +528,7 @@ public class HLEModuleManager {
 	 */
 	public void uninstallModuleWithAnnotations(HLEModule hleModule, int version) {
 		try {
-			for (HLEModuleFunction hleModuleFunction : installedHLEModuleFunctionByModule.get(hleModule)) {
+			for (HLEModuleFunction hleModuleFunction : hleModule.installedHLEModuleFunctions.values()) {
 				this.removeFunction(hleModuleFunction);
 			}
 		} catch (Exception e) {

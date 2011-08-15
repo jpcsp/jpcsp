@@ -25,7 +25,7 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 
-public class SysMemForKernel extends jpcsp.HLE.modules150.SysMemForKernel implements HLEModule, HLEStartModule {
+public class SysMemForKernel extends jpcsp.HLE.modules150.SysMemForKernel {
 
     @Override
     public String getName() {

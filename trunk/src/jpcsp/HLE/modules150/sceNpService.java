@@ -25,11 +25,12 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.Memory;
 
 import org.apache.log4j.Logger;
 
-public class sceNpService implements HLEModule {
+public class sceNpService extends HLEModule {
 
     protected static Logger log = Modules.getLogger("sceNpService");
 

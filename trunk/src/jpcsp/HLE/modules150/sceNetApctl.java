@@ -31,6 +31,7 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.util.Utilities;
 
@@ -40,7 +41,7 @@ import jpcsp.Settings;
 
 import jpcsp.Allegrex.CpuState;
 
-public class sceNetApctl implements HLEModule {
+public class sceNetApctl extends HLEModule {
     protected static Logger log = Modules.getLogger("sceNetApctl");
 
     public static final int PSP_NET_APCTL_STATE_DISCONNECTED = 0;

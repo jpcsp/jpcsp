@@ -48,7 +48,7 @@ import jpcsp.graphics.VideoEngine;
 
 import org.apache.log4j.Logger;
 
-public class sceGe_user implements HLEModule, HLEStartModule {
+public class sceGe_user extends HLEModule implements HLEStartModule {
     private static Logger log = Modules.getLogger("sceGe_user");
 
     public volatile boolean waitingForSync;

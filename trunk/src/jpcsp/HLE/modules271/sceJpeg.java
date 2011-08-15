@@ -25,12 +25,13 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.hardware.Screen;
 
-public class sceJpeg implements HLEModule {
+public class sceJpeg extends HLEModule {
     protected static Logger log = Modules.getLogger("sceJpeg");
 
 	@Override
