@@ -61,6 +61,7 @@ import javax.swing.UIManager;
 import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.Profiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.autotests.AutoTestsRunner;
 import jpcsp.connector.AtracCodec;
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.Debugger.ImageViewer;
@@ -70,6 +71,7 @@ import jpcsp.Debugger.StepLogger;
 import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
 import jpcsp.Debugger.DisassemblerModule.VfpuFrame;
 import jpcsp.GUI.CheatsGUI;
+import jpcsp.GUI.IMainGUI;
 import jpcsp.GUI.MemStickBrowser;
 import jpcsp.GUI.RecentElement;
 import jpcsp.GUI.SettingsGUI;
@@ -109,7 +111,7 @@ import org.apache.log4j.xml.DOMConfigurator;
  *
  * @author  shadow
  */
-public class MainGUI extends javax.swing.JFrame implements KeyListener, ComponentListener, MouseListener {
+public class MainGUI extends javax.swing.JFrame implements KeyListener, ComponentListener, MouseListener, IMainGUI {
 
     private static final long serialVersionUID = -3647025845406693230L;
     public static final int MAX_RECENT = 10;
@@ -147,6 +149,10 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     private JComponent fillerRight;
     private JComponent fillerTop;
     private JComponent fillerBottom;
+    
+    public DisplayMode getDisplayMode() {
+    	return displayMode;
+    }
 
     /** Creates new form MainGUI */
     public MainGUI() {
@@ -894,8 +900,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
     public static Dimension getFullScreenDimension() {
     	DisplayMode displayMode;
-    	if (Emulator.getMainGUI().displayMode != null) {
-    		displayMode = Emulator.getMainGUI().displayMode;
+    	if (Emulator.getMainGUI().getDisplayMode() != null) {
+    		displayMode = Emulator.getMainGUI().getDisplayMode();
     	} else {
     		displayMode = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDisplayMode();
     	}
@@ -2195,15 +2201,25 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
         System.err.println();
         System.err.println("  -d, --debugger             Open debugger at start.");
         System.err.println("  -f, --loadfile FILE        Load a file.");
-        System.err.println("                               Example: ms0/PSP/GAME/pspsolitaire/EBOOT.PBP");
+        System.err.println("                             Example: ms0/PSP/GAME/pspsolitaire/EBOOT.PBP");
         System.err.println("  -u, --loadumd FILE         Load a UMD. Example: umdimages/cube.iso");
         System.err.println("  -r, --run                  Run loaded file or umd. Use with -f or -u option.");
+        System.err.println("  -t, --tests                Run the automated tests.");
     }
 
     private void processArgs(String[] args) {
         int i = 0;
         while (i < args.length) {
-            if (args[i].equals("-d") || args[i].equals("--debugger")) {
+			//System.err.println("Args: " + args[0]);
+			if (args[i].equals("-t") || args[i].equals("--tests")) {
+				i++;
+				
+				//(new AutoTestsRunner()).run();
+				//loadFile(new File("pspautotests/tests/rtc/rtc.elf"));
+				//RunEmu();
+				
+				throw(new RuntimeException("Shouldn't get there"));
+			} else if (args[i].equals("-d") || args[i].equals("--debugger")) {
                 i++;
                 // hack: reuse this function
                 EnterDebuggerActionPerformed(null);
@@ -2245,6 +2261,13 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
      * @param args the command line arguments
      */
     public static void main(String args[]) {
+    	if (args.length > 0) {
+    		if (args[0].equals("--tests")) {
+				(new AutoTestsRunner()).run();
+				return;
+    		}
+    	}
+    	
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {

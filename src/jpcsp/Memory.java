@@ -243,6 +243,18 @@ public abstract class Memory {
 		write32(address, (int) data);
 		write32(address + 4, (int) (data >> 32));
 	}
+	
+	public ByteBuffer readChunkZ(int address) {
+		return readChunk(address, strlen(address));
+	}
+	
+	public ByteBuffer readChunk(int address, int size) {
+		ByteBuffer byteBuffer = ByteBuffer.allocate(size);
+		for (int n = 0; n < size; n++) {
+			byteBuffer.put((byte)read8(address + n));
+		}
+		return byteBuffer;
+	}
 
     // memcpy does not check overlapping source and destination areas
     public void memcpy(int destination, int source, int length) {

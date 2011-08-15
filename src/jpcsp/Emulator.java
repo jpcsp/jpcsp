@@ -25,6 +25,7 @@ import jpcsp.Allegrex.compiler.Profiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.StepLogger;
+import jpcsp.GUI.IMainGUI;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.kernel.Managers;
@@ -60,14 +61,14 @@ public class Emulator implements Runnable {
     private Thread mainThread;
     public static boolean run = false;
     public static boolean pause = false;
-    private static MainGUI gui;
+    private static IMainGUI gui;
     private InstructionCounter instructionCounter;
     public static Logger log = Logger.getLogger("emu");
     private SceModule module;
     private int firmwareVersion = 150;
     private String[] bootModuleBlackList = {"Prometheus Loader"};
 
-    public Emulator(MainGUI gui) {
+    public Emulator(IMainGUI gui) {
         Emulator.gui = gui;
         processor = new Processor();
         clock = new Clock();
@@ -77,6 +78,10 @@ public class Emulator implements Runnable {
         mainThread = new Thread(this, "Emu");
 
         instance = this;
+    }
+    
+    public Thread getMainThread() {
+    	return mainThread;
     }
 
     public static void exit() {
@@ -350,7 +355,7 @@ public class Emulator implements Runnable {
     	return scheduler;
     }
 
-    public static MainGUI getMainGUI() {
+    public static IMainGUI getMainGUI() {
     	return gui;
     }
 
