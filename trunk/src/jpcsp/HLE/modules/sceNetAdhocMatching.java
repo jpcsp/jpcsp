@@ -20,14 +20,4 @@ package jpcsp.HLE.modules;
 public class sceNetAdhocMatching extends jpcsp.HLE.modules150.sceNetAdhocMatching {
 	@Override
 	public final String getName() { return "sceNetAdhocMatching"; }
-
-	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
-	}
-
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.uninstallModule(mm, version);
-	}
 }

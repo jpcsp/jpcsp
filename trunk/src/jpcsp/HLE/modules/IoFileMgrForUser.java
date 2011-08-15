@@ -21,14 +21,4 @@ package jpcsp.HLE.modules;
 public class IoFileMgrForUser extends jpcsp.HLE.modules150.IoFileMgrForUser {
 	@Override
 	public final String getName() { return "IoFileMgrForUser"; }
-	
-	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
-	}
-	
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
-	}
 }

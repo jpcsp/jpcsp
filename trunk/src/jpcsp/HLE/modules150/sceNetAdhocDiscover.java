@@ -35,12 +35,6 @@ public class sceNetAdhocDiscover implements HLEModule {
         return "sceNetAdhocDiscover";
     }
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     @HLEFunction(nid = 0x941B3877, version = 150)
     public void sceNetAdhocDiscoverInitStart(Processor processor) {
         CpuState cpu = processor.cpu;

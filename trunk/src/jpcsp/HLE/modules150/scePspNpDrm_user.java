@@ -38,12 +38,6 @@ public class scePspNpDrm_user implements HLEModule {
         return "scePspNpDrm_user";
     }
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     public static final int PSP_NPDRM_KEY_LENGHT = 16;
     private int npDrmKey[] = new int[PSP_NPDRM_KEY_LENGHT];
 

@@ -21,14 +21,4 @@ package jpcsp.HLE.modules;
 public class LoadExecForUser extends jpcsp.HLE.modules150.LoadExecForUser {
 	@Override
 	public final String getName() { return "LoadExecForUser"; }
-	
-	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
-	}
-	
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
-	}
 }

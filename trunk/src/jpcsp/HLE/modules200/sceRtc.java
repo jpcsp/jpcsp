@@ -30,11 +30,6 @@ import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.util.Utilities;
 
 public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
-	@Override
-	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
 	@HLEFunction(nid = 0x203CEB0D, version = 200)
 	public void sceRtcGetLastReincarnatedTime(Processor processor) {

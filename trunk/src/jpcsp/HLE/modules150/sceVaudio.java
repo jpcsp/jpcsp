@@ -47,12 +47,6 @@ public class sceVaudio implements HLEModule, HLEStartModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
-    @Override
 	public void start() {
 		SoundChannel.init();
         pspVaudioChannel = new SoundChannel(9); // Use channel 9 for virtual audio.

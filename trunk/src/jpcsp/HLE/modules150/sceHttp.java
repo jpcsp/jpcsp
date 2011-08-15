@@ -36,12 +36,6 @@ public class sceHttp implements HLEModule {
     public String getName() {
         return "sceHttp";
     }
-
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
     public static final int PSP_HTTP_SYSTEM_COOKIE_HEAP_SIZE = 130 * 1024;
     private boolean isHttpInit;
     private boolean isSystemCookieLoaded;

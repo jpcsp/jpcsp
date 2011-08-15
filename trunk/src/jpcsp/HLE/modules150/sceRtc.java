@@ -40,12 +40,6 @@ public class sceRtc implements HLEModule {
     @Override
     public String getName() { return "sceRtc"; }
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     final static int PSP_TIME_INVALID_YEAR = -1;
     final static int PSP_TIME_INVALID_MONTH = -2;
     final static int PSP_TIME_INVALID_DAY = -3;

@@ -35,14 +35,6 @@ public class sceUsb implements HLEModule {
 		return "sceUsb";
 	}
 
-	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		mm.installModuleWithAnnotations(this, version);
-	}
-
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
 	public static final String PSP_USBBUS_DRIVERNAME = "USBBusDriver";
 
 	public static final int PSP_USB_CONNECTION_ESTABLISHED = 0x002;

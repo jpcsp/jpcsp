@@ -23,14 +23,4 @@ public class StdioForUser extends jpcsp.HLE.modules150.StdioForUser {
     public final String getName() {
         return "StdioForUser";
     }
-
-    @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
-    }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        super.uninstallModule(mm, version);
-    }
 }

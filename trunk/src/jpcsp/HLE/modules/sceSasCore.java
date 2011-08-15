@@ -22,14 +22,4 @@ public class sceSasCore extends jpcsp.HLE.modules600.sceSasCore {
     public final String getName() {
         return "sceSasCore";
     }
-
-    @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
-    }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        super.uninstallModule(mm, version);
-    }
 }

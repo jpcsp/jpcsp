@@ -21,14 +21,4 @@ package jpcsp.HLE.modules;
 public class sceAudio extends jpcsp.HLE.modules150.sceAudio {
 	@Override
 	public final String getName() { return "sceAudio"; }
-	
-	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
-	}
-	
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.uninstallModule(mm, version);
-	}
 }

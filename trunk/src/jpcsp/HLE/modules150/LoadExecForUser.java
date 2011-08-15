@@ -51,12 +51,6 @@ public class LoadExecForUser implements HLEModule {
         return "LoadExecForUser";
     }
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     private SceKernelThreadInfo exitCbThread;
 
     public void triggerExitCallback() {

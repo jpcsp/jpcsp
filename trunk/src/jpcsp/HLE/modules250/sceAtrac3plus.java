@@ -29,12 +29,6 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
     @Override
     public String getName() { return "sceAtrac3plus"; }
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     @HLEFunction(nid = 0xB3B5D042, version = 250)
     public void sceAtracGetOutputChannel(Processor processor) {
         CpuState cpu = processor.cpu;

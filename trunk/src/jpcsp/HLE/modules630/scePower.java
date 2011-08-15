@@ -24,12 +24,6 @@ import jpcsp.HLE.modules.HLEModuleManager;
 
 public class scePower extends jpcsp.HLE.modules150.scePower {
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     @HLEFunction(nid = 0x469989AD, version = 630)
     public void scePower_469989AD(Processor processor) {
         CpuState cpu = processor.cpu;

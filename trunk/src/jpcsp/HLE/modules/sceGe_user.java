@@ -23,14 +23,4 @@ public class sceGe_user extends jpcsp.HLE.modules150.sceGe_user {
     public final String getName() {
         return "sceGe_user";
     }
-
-    @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
-    }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        super.uninstallModule(mm, version);
-    }
 }

@@ -37,12 +37,6 @@ public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
 	@Override
 	public String getName() { return "sceDisplay"; }
 
-	@Override
-	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
 
 	@HLEFunction(nid = 0x40F1469C, version = 500)
 	public void sceDisplayWaitVblankStartMulti(Processor processor) {

@@ -24,6 +24,4 @@ package jpcsp.HLE.modules;
 public interface HLEModule {
     /** @return Example: StdioForUser */
     public String getName();
-    public void installModule(HLEModuleManager mm, int version);
-    public void uninstallModule(HLEModuleManager mm, int version);
 }

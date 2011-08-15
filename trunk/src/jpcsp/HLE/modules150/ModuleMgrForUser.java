@@ -75,12 +75,6 @@ public class ModuleMgrForUser implements HLEModule {
         return "ModuleMgrForUser";
     }
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     //
     // When an HLE module is loaded using sector syntax, with no file corresponding to the
     // referenced sector, try searching for the real module's name inside the file itself.

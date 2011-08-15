@@ -26,12 +26,6 @@ import jpcsp.HLE.modules.HLEModuleManager;
 
 public class sceSasCore extends jpcsp.HLE.modules150.sceSasCore {
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     /** Identical to __sceSasSetVoice, but for raw PCM data (VAG/ADPCM is not allowed). */
     @HLEFunction(nid = 0xE1CD9561, version = 500)
     public void __sceSasSetVoicePCM(Processor processor) {

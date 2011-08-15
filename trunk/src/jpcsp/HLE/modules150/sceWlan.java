@@ -39,12 +39,6 @@ public class sceWlan implements HLEModule {
         return "sceWlan";
     }
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     /**
      * Get the Ethernet Address of the wlan controller
      *

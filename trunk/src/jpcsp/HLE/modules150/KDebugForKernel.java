@@ -35,12 +35,6 @@ public class KDebugForKernel implements HLEModule {
     @Override
 	public String getName() { return "KDebugForKernel"; }
 	
-	@Override
-	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-	
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-	
 	
 	@HLEFunction(nid = 0xE7A3874D, version = 150)
 	public void sceKernelRegisterAssertHandler(Processor processor) {

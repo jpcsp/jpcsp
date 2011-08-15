@@ -34,12 +34,6 @@ public class sceDmac implements HLEModule {
 	@Override
 	public String getName() { return "sceDmac"; }
 
-	@Override
-	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
 
     @HLEFunction(nid = 0x617F3FE6, version = 150)
     public void sceDmacMemcpy(Processor processor) {

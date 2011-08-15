@@ -42,12 +42,6 @@ public class sceNetAdhocctl implements HLEModule {
         return "sceNetAdhocctl";
     }
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     public static final int PSP_ADHOCCTL_EVENT_ERROR = 0;
     public static final int PSP_ADHOCCTL_EVENT_CONNECTED = 1;
     public static final int PSP_ADHOCCTL_EVENT_DISCONNECTED = 2;

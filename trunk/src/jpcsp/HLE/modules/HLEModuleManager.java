@@ -218,13 +218,13 @@ public class HLEModuleManager {
         Modules.log.debug("Loading HLE firmware up to version " + firmwareVersion);
         for (DefaultModule defaultModule : DefaultModule.values()) {
         	if (defaultModule.isLoadedByDefault(firmwareVersion)) {
-        		defaultModule.getModule().installModule(this, firmwareVersion);
+        		installModuleWithAnnotations(defaultModule.getModule(), firmwareVersion);
         	} else {
         		// This module is not loaded by default on this firmware version.
         		// Install and Uninstall the module to register the module syscalls
         		// so that the loader can still resolve the imports for this module.
-        		defaultModule.getModule().installModule(this, firmwareVersion);
-        		defaultModule.getModule().uninstallModule(this, firmwareVersion);
+        		installModuleWithAnnotations(defaultModule.getModule(), firmwareVersion);
+        		uninstallModuleWithAnnotations(defaultModule.getModule(), firmwareVersion);
         	}
         }
     }
@@ -267,7 +267,7 @@ public class HLEModuleManager {
 	        List<HLEModule> modules = flash0prxMap.get(prxname.toLowerCase());
 	        if (modules != null) {
 	            for (HLEModule module : modules) {
-	                module.installModule(this, firmwareVersion);
+	            	installModuleWithAnnotations(module, firmwareVersion);
 	            }
 	        }
     	}
@@ -289,7 +289,7 @@ public class HLEModuleManager {
 	    	List<HLEModule> prx = flash0prxMap.get(sceModule.modname.toLowerCase());
 	        if (prx != null) {
 	            for (HLEModule module : prx) {
-	                module.uninstallModule(this, firmwareVersion);
+	            	uninstallModuleWithAnnotations(module, firmwareVersion);
 	            }
 	        }
     	}

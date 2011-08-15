@@ -210,12 +210,6 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
 	public String getName() { return "UtilsForUser"; }
 
 	@Override
-	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
-	@Override
 	public void start() {
         Mt19937List = new HashMap<Integer, SceKernelUtilsMt19937Context>();
     }

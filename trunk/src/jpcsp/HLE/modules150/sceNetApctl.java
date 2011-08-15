@@ -118,12 +118,6 @@ public class sceNetApctl implements HLEModule {
 	public String getName() {
 		return "sceNetApctl";
 	}
-	
-	@Override
-	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-	
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     protected static final String uidPurpose = "sceNetApctl";
     protected int state = PSP_NET_APCTL_STATE_DISCONNECTED;

@@ -37,12 +37,6 @@ public class LoadCoreForKernel implements HLEModule {
 	@Override
 	public String getName() { return "LoadCoreForKernel"; }
 
-	@Override
-	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
 
 	@HLEFunction(nid = 0xACE23476, version = 150)
 	public void sceKernelCheckPspConfig(Processor processor) {

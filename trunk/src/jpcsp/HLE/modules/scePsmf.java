@@ -20,14 +20,4 @@ package jpcsp.HLE.modules;
 public class scePsmf extends jpcsp.HLE.modules150.scePsmf {
 	@Override
 	public final String getName() { return "scePsmf"; }
-
-	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
-	}
-
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.uninstallModule(mm, version);
-	}
 }

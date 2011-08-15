@@ -24,12 +24,6 @@ import jpcsp.HLE.modules.HLEModuleManager;
 
 public class sceMpeg extends jpcsp.HLE.modules352.sceMpeg {
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     @HLEFunction(nid = 0x63B9536A, version = 600)
     public void sceMpegAvcResourceGetAvcDecTopAddr(Processor processor) {
         CpuState cpu = processor.cpu;

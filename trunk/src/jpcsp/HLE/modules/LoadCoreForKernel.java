@@ -21,15 +21,5 @@ package jpcsp.HLE.modules;
 public class LoadCoreForKernel extends jpcsp.HLE.modules150.LoadCoreForKernel {
 	@Override
 	public final String getName() { return "LoadCoreForKernel"; }
-	
-	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
-	}
-	
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.uninstallModule(mm, version);
-	}
 }
 

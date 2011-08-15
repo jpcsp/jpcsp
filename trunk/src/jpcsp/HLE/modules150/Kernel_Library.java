@@ -35,12 +35,6 @@ public class Kernel_Library implements HLEModule {
         return "Kernel_Library";
     }
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
-
     private final int flagInterruptsEnabled = 1;
     private final int flagInterruptsDisabled = 0;
 
