@@ -17,6 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.TPointer32;
+
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 
@@ -35,6 +38,7 @@ import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
 
 import org.apache.log4j.Logger;
+import org.objectweb.asm.util.CheckAnnotationAdapter;
 
 public class sceMp3 extends HLEModule implements HLEStartModule {
 
@@ -62,6 +66,14 @@ public class sceMp3 extends HLEModule implements HLEStartModule {
 
     // Media Engine based playback.
     protected static boolean useMediaEngine = false;
+    
+    Mp3Stream getMp3OrThrowReturnInt(int mp3handle, int retvalOnNotFound) {
+        if (!mp3Map.containsKey(mp3handle)) {
+        	throw(new SceKernelErrorException(retvalOnNotFound));
+        }
+
+        return mp3Map.get(mp3handle);
+    }
 
     public static boolean checkMediaEngineState() {
         return useMediaEngine;
@@ -463,213 +475,119 @@ public class sceMp3 extends HLEModule implements HLEStartModule {
 		}
     }
 
-    @HLEFunction(nid = 0x07EC321A, version = 150)
-    public void sceMp3ReserveMp3Handle(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mp3args = cpu.gpr[4];
-
-        if(log.isDebugEnabled()) {
-            log.debug("sceMp3ReserveMp3Handle " + String.format("mp3args=0x%08x", cpu.gpr[4]));
+    @HLEFunction(nid = 0x07EC321A, version = 150, checkInsideInterrupt = true)
+    public int sceMp3ReserveMp3Handle(int mp3args) {
+        if (log.isDebugEnabled()) {
+            log.debug("sceMp3ReserveMp3Handle " + String.format("mp3args=0x%08x", mp3args));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         Mp3Stream stream = new Mp3Stream(mp3args);
         int streamHandle = stream.getMp3Handle();
         mp3Map.put(streamHandle, stream);
 
-        cpu.gpr[2] = streamHandle;
+        return streamHandle;
     }
 
-    @HLEFunction(nid = 0x0DB149F4, version = 150)
-    public void sceMp3NotifyAddStreamData(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mp3handle = cpu.gpr[4];
-        int size = cpu.gpr[5];
-
-        if(log.isDebugEnabled()) {
+    @HLEFunction(nid = 0x0DB149F4, version = 150, checkInsideInterrupt = true)
+    public int sceMp3NotifyAddStreamData(int mp3handle, int size) {
+        if (log.isDebugEnabled()) {
             log.debug("sceMp3NotifyAddStreamData " + String.format("mp3handle=0x%08x, size=%d", mp3handle, size));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         // New data has been written by the application.
-        if (mp3Map.containsKey(mp3handle)) {
-            mp3Map.get(mp3handle).addMp3StreamData(size);
-        }
+        getMp3OrThrowReturnInt(mp3handle, 0).addMp3StreamData(size);
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
-    @HLEFunction(nid = 0x2A368661, version = 150)
-    public void sceMp3ResetPlayPosition(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mp3handle = cpu.gpr[4];
-
-        if(log.isDebugEnabled()) {
+    @HLEFunction(nid = 0x2A368661, version = 150, checkInsideInterrupt = true)
+    public int sceMp3ResetPlayPosition(int mp3handle) {
+        if (log.isDebugEnabled()) {
             log.debug("sceMp3ResetPlayPosition " + String.format("mp3handle=0x%08x", mp3handle));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (mp3Map.containsKey(mp3handle)) {
-            mp3Map.get(mp3handle).setMp3BufCurrentPos(0);
-        }
+        getMp3OrThrowReturnInt(mp3handle, 0).setMp3BufCurrentPos(0);
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
-    @HLEFunction(nid = 0x35750070, version = 150)
-    public void sceMp3InitResource(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        if(log.isInfoEnabled()) {
+    @HLEFunction(nid = 0x35750070, version = 150, checkInsideInterrupt = true)
+    public int sceMp3InitResource() {
+        if (log.isInfoEnabled()) {
             log.info("sceMp3InitResource");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
-    @HLEFunction(nid = 0x3C2FA058, version = 150)
-    public void sceMp3TermResource(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        if(log.isInfoEnabled()) {
+    @HLEFunction(nid = 0x3C2FA058, version = 150, checkInsideInterrupt = true)
+    public int sceMp3TermResource(Processor processor) {
+        if (log.isInfoEnabled()) {
             log.info("sceMp3TermResource");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
-    @HLEFunction(nid = 0x3CEF484F, version = 150)
-    public void sceMp3SetLoopNum(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mp3handle = cpu.gpr[4];
-        int loopNbr = cpu.gpr[5];
-
-        if(log.isDebugEnabled()) {
+    @HLEFunction(nid = 0x3CEF484F, version = 150, checkInsideInterrupt = true)
+    public int sceMp3SetLoopNum(int mp3handle, int loopNbr) {
+        if (log.isDebugEnabled()) {
             log.debug("sceMp3SetLoopNum " + String.format("mp3handle=0x%08x, loopNbr=%d", mp3handle, loopNbr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (mp3Map.containsKey(mp3handle)) {
-            mp3Map.get(mp3handle).setMp3LoopNum(loopNbr);
-        }
+        getMp3OrThrowReturnInt(mp3handle, 0).setMp3LoopNum(loopNbr);
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
-    @HLEFunction(nid = 0x44E07129, version = 150)
-    public void sceMp3Init(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mp3handle = cpu.gpr[4];
-
+    @HLEFunction(nid = 0x44E07129, version = 150, checkInsideInterrupt = true)
+    public int sceMp3Init(int mp3handle) {
         if(log.isDebugEnabled()) {
             log.debug("sceMp3Init " + String.format("mp3handle=0x%08x", mp3handle));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (mp3Map.containsKey(mp3handle)) {
-            mp3Map.get(mp3handle).init();
-        }
-        if(log.isInfoEnabled()) {
-            log.info("Initializing Mp3 data: channels = " + mp3Map.get(mp3handle).getMp3ChannelNum()
-                    + ", samplerate = " + mp3Map.get(mp3handle).getMp3SamplingRate() + "kHz, bitrate = "
-                    + mp3Map.get(mp3handle).getMp3BitRate() + "kbps.");
+        try {
+        	getMp3OrThrowReturnInt(mp3handle, 0).init();
+        } finally {
+	        if (log.isInfoEnabled()) {
+	            log.info(
+	        		"Initializing Mp3 data: channels = " + mp3Map.get(mp3handle).getMp3ChannelNum()
+	                + ", samplerate = " + mp3Map.get(mp3handle).getMp3SamplingRate() + "kHz, bitrate = "
+	                + mp3Map.get(mp3handle).getMp3BitRate() + "kbps."
+	            );
+	        }
         }
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
-    @HLEFunction(nid = 0x7F696782, version = 150)
-    public void sceMp3GetMp3ChannelNum(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mp3handle = cpu.gpr[4];
-
-        if(log.isDebugEnabled()) {
+    @HLEFunction(nid = 0x7F696782, version = 150, checkInsideInterrupt = true)
+    public int sceMp3GetMp3ChannelNum(int mp3handle) {
+        if (log.isDebugEnabled()) {
             log.debug("sceMp3GetMp3ChannelNum " + String.format("mp3handle=0x%08x", mp3handle));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        int chNum = 0;
-        if (mp3Map.containsKey(mp3handle)) {
-            chNum = mp3Map.get(mp3handle).getMp3ChannelNum();
-        }
-
-        cpu.gpr[2] = chNum;
+        return getMp3OrThrowReturnInt(mp3handle, 0).getMp3ChannelNum();
     }
 
-    @HLEFunction(nid = 0x8F450998, version = 150)
-    public void sceMp3GetSamplingRate(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mp3handle = cpu.gpr[4];
-
-        if(log.isDebugEnabled()) {
+    @HLEFunction(nid = 0x8F450998, version = 150, checkInsideInterrupt = true)
+    public int sceMp3GetSamplingRate(int mp3handle) {
+        if (log.isDebugEnabled()) {
             log.debug("sceMp3GetSamplingRate " + String.format("mp3handle=0x%08x", mp3handle));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        int sampleRate = 0;
-        if (mp3Map.containsKey(mp3handle)) {
-            sampleRate = mp3Map.get(mp3handle).getMp3SamplingRate();
-        }
-
-        cpu.gpr[2] = sampleRate;
+        return getMp3OrThrowReturnInt(mp3handle, 0).getMp3SamplingRate();
     }
 
-    @HLEFunction(nid = 0xA703FE0F, version = 150)
-    public void sceMp3GetInfoToAddStreamData(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int mp3handle = cpu.gpr[4];
-        int mp3BufAddr = cpu.gpr[5];
-        int mp3BufToWriteAddr = cpu.gpr[6];
-        int mp3PosAddr = cpu.gpr[7];
-
-        if(log.isDebugEnabled()) {
-            log.debug(String.format("sceMp3GetInfoToAddStreamData mp3handle=0x%08x, mp3BufAddr=0x%08x, mp3BufToWriteAddr=0x%08x, mp3PosAddr=0x%08x", mp3handle, mp3BufAddr, mp3BufToWriteAddr, mp3PosAddr));
+    @HLEFunction(nid = 0xA703FE0F, version = 150, checkInsideInterrupt = true)
+    public int sceMp3GetInfoToAddStreamData(int mp3handle, TPointer32 mp3BufPtr, TPointer32 mp3BufToWritePtr, TPointer32 mp3PosPtr) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format(
+            	"sceMp3GetInfoToAddStreamData mp3handle=0x%08x, mp3BufAddr=0x%08x, mp3BufToWriteAddr=0x%08x, mp3PosAddr=0x%08x",
+            	mp3handle, mp3BufPtr.getAddress(), mp3BufToWritePtr.getAddress(), mp3PosPtr.getAddress()
+            ));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         int bufAddr = 0;
         int bufToWrite = 0;
         int bufPos = 0;
@@ -683,176 +601,90 @@ public class sceMp3 extends HLEModule implements HLEStartModule {
             // Position in the source stream file to start reading from (seek position)
             bufPos = stream.getMp3InputFileSize();
         }
-        mem.write32(mp3BufAddr, bufAddr);
-        mem.write32(mp3BufToWriteAddr, bufToWrite);
-        mem.write32(mp3PosAddr, bufPos);
+        mp3BufPtr.setValue(bufAddr);
+        mp3BufToWritePtr.setValue(bufToWrite);
+        mp3PosPtr.setValue(bufPos);
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
-    @HLEFunction(nid = 0xD021C0FB, version = 150)
-    public void sceMp3Decode(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int mp3handle = cpu.gpr[4];
-        int outPcmAddr = cpu.gpr[5];
-
-        if(log.isDebugEnabled()) {
-            log.debug("sceMp3Decode " + String.format("mp3handle=0x%08x, outPcmAddr=0x%08x", mp3handle, outPcmAddr));
+    @HLEFunction(nid = 0xD021C0FB, version = 150, checkInsideInterrupt = true)
+    public int sceMp3Decode(int mp3handle, TPointer32 outPcmPtr) {
+        if (log.isDebugEnabled()) {
+            log.debug("sceMp3Decode " + String.format("mp3handle=0x%08x, outPcmAddr=0x%08x", mp3handle, outPcmPtr.getAddress()));
         }
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         int pcmSamples = 0;
-        Mp3Stream stream = null;
-        if (mp3Map.containsKey(mp3handle)) {
-            long startTime = Emulator.getClock().microTime();
+        Mp3Stream stream = getMp3OrThrowReturnInt(mp3handle, 0);
 
-            stream = mp3Map.get(mp3handle);
-            pcmSamples = stream.decode();
-            mem.write32(outPcmAddr, stream.getMp3PcmBufAddr());
+        long startTime = Emulator.getClock().microTime();
 
-            delayThread(startTime, mp3DecodeDelay);
-        }
+        pcmSamples = stream.decode();
+        outPcmPtr.setValue(stream.getMp3PcmBufAddr());
 
-        cpu.gpr[2] = pcmSamples;
+        delayThread(startTime, mp3DecodeDelay);
+
+        return pcmSamples;
     }
 
-    @HLEFunction(nid = 0xD0A56296, version = 150)
-    public void sceMp3CheckStreamDataNeeded(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mp3handle = cpu.gpr[4];
-
-        if(log.isDebugEnabled()) {
+    @HLEFunction(nid = 0xD0A56296, version = 150, checkInsideInterrupt = true)
+    public int sceMp3CheckStreamDataNeeded(int mp3handle) {
+        if (log.isDebugEnabled()) {
             log.debug("sceMp3CheckStreamDataNeeded " + String.format("mp3handle=0x%08x", mp3handle));
-        }
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-
-        boolean needsData = false;
-        if (mp3Map.containsKey(mp3handle)) {
-            needsData = mp3Map.get(mp3handle).isStreamDataNeeded();
         }
 
         // 1 - Needs more data.
         // 0 - Doesn't need more data.
-        cpu.gpr[2] = needsData ? 1 : 0;
+        return getMp3OrThrowReturnInt(mp3handle, 0).isStreamDataNeeded() ? 1 : 0;
     }
 
-    @HLEFunction(nid = 0xF5478233, version = 150)
-    public void sceMp3ReleaseMp3Handle(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mp3handle = cpu.gpr[4];
-
-        if(log.isDebugEnabled()) {
+    @HLEFunction(nid = 0xF5478233, version = 150, checkInsideInterrupt = true)
+    public int sceMp3ReleaseMp3Handle(int mp3handle) {
+        if (log.isDebugEnabled()) {
             log.debug("sceMp3ReleaseMp3Handle " + String.format("mp3handle=0x%08x", mp3handle));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (mp3Map.containsKey(mp3handle)) {
             mp3Map.remove(mp3handle);
         }
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
     @HLEFunction(nid = 0x354D27EA, version = 150)
-    public void sceMp3GetSumDecodedSample(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mp3handle = cpu.gpr[4];
-
-        if(log.isDebugEnabled()) {
+    public int sceMp3GetSumDecodedSample(int mp3handle) {
+        if (log.isDebugEnabled()) {
             log.debug("sceMp3GetSumDecodedSample " + String.format("mp3handle=0x%08x", mp3handle));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        int samples = 0;
-        if (mp3Map.containsKey(mp3handle)) {
-            samples = mp3Map.get(mp3handle).getMp3DecodedSamples();
-        }
-
-        cpu.gpr[2] = samples;
+        return getMp3OrThrowReturnInt(mp3handle, 0).getMp3DecodedSamples();
     }
 
-    @HLEFunction(nid = 0x87677E40, version = 150)
-    public void sceMp3GetBitRate(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mp3handle = cpu.gpr[4];
-
-        if(log.isDebugEnabled()) {
+    @HLEFunction(nid = 0x87677E40, version = 150, checkInsideInterrupt = true)
+    public int sceMp3GetBitRate(int mp3handle) {
+        if (log.isDebugEnabled()) {
             log.debug("sceMp3GetBitRate " + String.format("mp3handle=0x%08x", mp3handle));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        int bitRate = 0;
-        if (mp3Map.containsKey(mp3handle)) {
-            bitRate = mp3Map.get(mp3handle).getMp3BitRate();
-        }
-
-        cpu.gpr[2] = bitRate;
+        return getMp3OrThrowReturnInt(mp3handle, 0).getMp3BitRate();
     }
-
-    @HLEFunction(nid = 0x87C263D1, version = 150)
-    public void sceMp3GetMaxOutputSample(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mp3handle = cpu.gpr[4];
-
-        if(log.isDebugEnabled()) {
+    
+    @HLEFunction(nid = 0x87C263D1, version = 150, checkInsideInterrupt = true)
+    public int sceMp3GetMaxOutputSample(int mp3handle) {
+        if (log.isDebugEnabled()) {
             log.debug("sceMp3GetMaxOutputSample " + String.format("mp3handle=0x%08x", mp3handle));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        int maxSamples = 0;
-        if (mp3Map.containsKey(mp3handle)) {
-            maxSamples = mp3Map.get(mp3handle).getMp3MaxSamples();
-        }
-
-        cpu.gpr[2] = maxSamples;
+        return getMp3OrThrowReturnInt(mp3handle, 0).getMp3MaxSamples();
     }
 
-    @HLEFunction(nid = 0xD8F54A51, version = 150)
-    public void sceMp3GetLoopNum(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mp3handle = cpu.gpr[4];
-
-        if(log.isDebugEnabled()) {
+    @HLEFunction(nid = 0xD8F54A51, version = 150, checkInsideInterrupt = true)
+    public int sceMp3GetLoopNum(int mp3handle) {
+        if (log.isDebugEnabled()) {
             log.debug("sceMp3GetLoopNum " + String.format("mp3handle=0x%08x", mp3handle));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        int loopNum = 0;
-        if (mp3Map.containsKey(mp3handle)) {
-            loopNum = mp3Map.get(mp3handle).getMp3LoopNum();
-        }
-
-        cpu.gpr[2] = loopNum;
+        return getMp3OrThrowReturnInt(mp3handle, 0).getMp3LoopNum();
     }
 
 }
