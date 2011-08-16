@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.log4j.Appender;
 import org.apache.log4j.Layout;
@@ -43,6 +44,7 @@ public class AutoTestsRunner {
 	
 	public AutoTestsRunner() {
 		emulator = new Emulator(new DummyGUI());
+        emulator.setFirmwareVersion(630);
 	}
 	
 	public void run() {
@@ -51,8 +53,6 @@ public class AutoTestsRunner {
 		//Logger.getRootLogger().setLevel(Level.INFO);
 		Logger.getRootLogger().setLevel(Level.ERROR);
 
-		Logger.getLogger("memory").debug("Hello");
-		
 		try {
 			runImpl();
 		} catch (Throwable o) {
@@ -83,8 +83,12 @@ public class AutoTestsRunner {
 	}
 	
 	protected void runTest(String baseFileName) throws Throwable {
-		runFile(baseFileName + ".elf");
-		checkOutput(baseFileName + ".expected");
+		try {
+			runFile(baseFileName + ".elf");
+			checkOutput(baseFileName + ".expected");
+		} catch (TimeoutException toe) {
+			System.out.println("FAIL:TIMEOUT");
+		}
 	}
 	
 	protected void checkOutput(String fileName) throws IOException {
@@ -138,16 +142,20 @@ public class AutoTestsRunner {
             else if (j == N) System.out.println("+ " + x[i++]);
         }
     }
-	
-	protected void runFile(String fileName) throws Throwable {
-		File file = new File(fileName);
-		
+    
+    protected void reset() {
 		AutoTestsOutput.clearOutput();
 		
 		Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_PAUSE);
 		RuntimeContext.reset();
 		HLEModuleManager.getInstance().stopModules();
+    }
+	
+	protected void runFile(String fileName) throws Throwable {
+		File file = new File(fileName);
 		
+		reset();
+
 		//SceModule module;
 		
 		{
@@ -177,13 +185,26 @@ public class AutoTestsRunner {
         //System.out.printf("Started\n");
 		System.out.print(String.format("Running: %s...", fileName));
         {
-	        //emulator.setFirmwareVersion(630);
-			emulator.RunEmu();
-			//while (emulator.getMainThread().isAlive()) {
-			while (!emulator.pause) {
-				Thread.sleep(1);
-			}
+            RuntimeContext.setIsHomebrew(false);
+            //Modules.SysMemUserForUserModule.setMemory64MB(true);
+
+            HLEModuleManager.getInstance().startModules();
+            {
+				emulator.RunEmu();
+
+				long startTime = System.currentTimeMillis(); 
+				while (!Emulator.pause) {
+					if (System.currentTimeMillis() - startTime > 5 * 1000) {
+						throw(new TimeoutException());
+					}
+					Thread.sleep(1);
+				}
+            }
+			HLEModuleManager.getInstance().stopModules();
+
         }
+        
+        //reset();
         // System.out.printf("Ended\n");
 	}
 	
