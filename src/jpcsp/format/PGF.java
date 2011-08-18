@@ -45,53 +45,53 @@ public class PGF {
 		public static final int FONT_LANGUAGE_LATIN    = 2;
 		public static final int FONT_LANGUAGE_KOREAN   = 3;
 
-		float fontH;
-		float fontV;
-		float fontHRes;
-		float fontVRes;
-		float fontWeight;
-		short fontFamily;
-		short fontStyle;
-		short fontStyleSub;
-		short fontLanguage;
-		short fontRegion;
-		short fontCountry;
+		public float fontH;
+		public float fontV;
+		public float fontHRes;
+		public float fontVRes;
+		public float fontWeight;
+		public short fontFamily;
+		public short fontStyle;
+		public short fontStyleSub;
+		public short fontLanguage;
+		public short fontRegion;
+		public short fontCountry;
 		@ISerializeString(size = 64) String fontName;
-		int fontAttributes;
-		int fontExpire;
+		public int fontAttributes;
+		public int fontExpire;
 	}
 	
 	@ISerializeStruct(size = 264)
 	static public class Info {
 		// Glyph metrics
-		int maxGlyphWidthI;
-		int maxGlyphHeightI;
-		int maxGlyphAscenderI;
-		int maxGlyphDescenderI;
-		int maxGlyphLeftXI;
-		int maxGlyphBaseYI;
-		int minGlyphCenterXI;
-		int maxGlyphTopYI;
-		int maxGlyphAdvanceXI;
-		int maxGlyphAdvanceYI;
+		public int maxGlyphWidthI;
+		public int maxGlyphHeightI;
+		public int maxGlyphAscenderI;
+		public int maxGlyphDescenderI;
+		public int maxGlyphLeftXI;
+		public int maxGlyphBaseYI;
+		public int minGlyphCenterXI;
+		public int maxGlyphTopYI;
+		public int maxGlyphAdvanceXI;
+		public int maxGlyphAdvanceYI;
 		// Glyph metrics (replicated as float).
-		int maxGlyphWidthF;
-		int maxGlyphHeightF;
-		int maxGlyphAscenderF;
-		int maxGlyphDescenderF;
-		int maxGlyphLeftXF;
-		int maxGlyphBaseYF;
-		int minGlyphCenterXF;
-		int maxGlyphTopYF;
-		int maxGlyphAdvanceXF;
-		int maxGlyphAdvanceYF;
+		public float maxGlyphWidthF;
+		public float maxGlyphHeightF;
+		public float maxGlyphAscenderF;
+		public float maxGlyphDescenderF;
+		public float maxGlyphLeftXF;
+		public float maxGlyphBaseYF;
+		public float minGlyphCenterXF;
+		public float maxGlyphTopYF;
+		public float maxGlyphAdvanceXF;
+		public float maxGlyphAdvanceYF;
 		// Bitmap dimensions.
-		short maxGlyphWidth;
-		short maxGlyphHeight;
-		int charMapLength; // Number of elements in the font's charmap.
-		int shadowMapLength;   // Number of elements in the font's shadow charmap.
-		FontStyle fontStyle;
-		int Bpp = 4;
+		public short maxGlyphWidth;
+		public short maxGlyphHeight;
+		public int charMapLength; // Number of elements in the font's charmap.
+		public int shadowMapLength;   // Number of elements in the font's shadow charmap.
+		public FontStyle fontStyle;
+		public int Bpp = 4;
 	}
 
     protected int headerOffset;
