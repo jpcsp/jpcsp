@@ -28,6 +28,7 @@ public abstract class HLEModuleFunction {
     private final String moduleName;
     private final String functionName;
     private int nid;
+    private boolean unimplemented;
 
     public HLEModuleFunction(String moduleName, String functionName) {
         this.moduleName = moduleName;
@@ -56,6 +57,14 @@ public abstract class HLEModuleFunction {
 
     public final int getNid() {
         return nid;
+    }
+    
+    public final void setUnimplemented(boolean unimplemented) {
+        this.unimplemented = unimplemented;
+    }
+
+    public final boolean getUnimplemented() {
+        return unimplemented;
     }
 
     public abstract void execute(Processor cpu);

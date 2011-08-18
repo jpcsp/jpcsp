@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 import java.util.LinkedList;
 
 import jpcsp.Processor;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
@@ -23,47 +24,28 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 	boolean    checkInsideInterrupt;
 	boolean    fastOldInvoke;
 	
-	public HLEModuleFunctionReflection(String moduleName, String functionName, HLEModule hleModule, String hleModuleMethodName, boolean checkInsideInterrupt) {
+	public HLEModuleFunctionReflection(String moduleName, String functionName, HLEModule hleModule, String hleModuleMethodName, Method hleModuleMethod, boolean checkInsideInterrupt) {
 		super(moduleName, functionName);
 		
 		this.hleModule = hleModule;
 		this.hleModuleClass = hleModule.getClass();
 		this.hleModuleMethodName = hleModuleMethodName;
 		this.checkInsideInterrupt = checkInsideInterrupt;
-
-		try {
-			//this.hleModuleMethod = hleModuleClass.getMethod(this.hleModuleMethodName, new Class[] { Processor.class });
-			Boolean found = false;
-			for (Method method : hleModuleClass.getMethods()) {
-				if (method.getName().equals(this.hleModuleMethodName)) {
-					this.hleModuleMethod = method;
-					found = true;
-					break;
-				}
-			}
-
-			if (!found) {
-				throw(new RuntimeException("Can't find method ' + this.hleModuleMethodName + '"));
-			}
-			
-			this.hleModuleMethodParametersTypes = this.hleModuleMethod.getParameterTypes();
-			this.hleModuleMethodReturnType = this.hleModuleMethod.getReturnType();
-			
-			if (
-				this.hleModuleMethodReturnType == void.class &&
-				this.hleModuleMethodParametersTypes.length == 1 &&
-				this.hleModuleMethodParametersTypes[0] == Processor.class
-			) {
-				fastOldInvoke = true;
-			} else {
-				fastOldInvoke = false;
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
+		this.hleModuleMethod = hleModuleMethod; 
+		this.hleModuleMethodParametersTypes = this.hleModuleMethod.getParameterTypes();
+		this.hleModuleMethodReturnType = this.hleModuleMethod.getReturnType();
+		
+		if (
+			this.hleModuleMethodReturnType == void.class &&
+			this.hleModuleMethodParametersTypes.length == 1 &&
+			this.hleModuleMethodParametersTypes[0] == Processor.class
+		) {
+			fastOldInvoke = true;
+		} else {
+			fastOldInvoke = false;
 		}
 	}
 
-	@SuppressWarnings("rawtypes")
 	@Override
 	public void execute(Processor processor) {
 		if (checkInsideInterrupt) {
@@ -71,6 +53,17 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 	        	processor.cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
 	            return;
 	        }
+		}
+		
+		if (getUnimplemented()) {
+			Modules.getLogger(this.getModuleName()).warn(
+				String.format(
+					"Unimplemented NID function %s.%s [0x%08X]",
+					this.getModuleName(),
+					this.getFunctionName(),
+					this.getNid()
+				)
+			);
 		}
 		
 		try {
@@ -87,7 +80,9 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 						params.add(processor);
 					} else if (paramClass == int.class) {
 						params.add(processor.parameterReader.getNextInt());
-					} else if (TPointer.class.isAssignableFrom(paramClass)) {
+					} /*else if (paramClass.isEnum()) {
+						params.add(paramClass.cast(processor.parameterReader.getNextInt()));
+					}*/ else if (TPointer.class.isAssignableFrom(paramClass)) {
 						TPointer pointer = new TPointer(Processor.memory, processor.parameterReader.getNextInt());
 						if (!pointer.isAddressGood()) {
 							throw(new SceKernelErrorException(SceKernelErrors.ERROR_INVALID_POINTER));
@@ -127,8 +122,12 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 					// Do nothing
 				} else if (hleModuleMethodReturnType == int.class) {
 					processor.parameterReader.setReturnValueInt((Integer)returnObject);
+				} else if (hleModuleMethodReturnType == boolean.class) {
+					processor.parameterReader.setReturnValueInt(((Boolean)returnObject) ? 1 : 0);
 				} else if (hleModuleMethodReturnType == long.class) {
 					processor.parameterReader.setReturnValueLong((Integer)returnObject);
+				} else if (hleModuleMethodReturnType == float.class) {
+					processor.parameterReader.setReturnValueFloat((Float)returnObject);
 				} else {
 					throw(new RuntimeException("Can't handle return type '" + hleModuleMethodReturnType + "'"));
 				}

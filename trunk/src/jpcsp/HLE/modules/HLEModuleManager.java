@@ -29,6 +29,7 @@ import jpcsp.Memory;
 import jpcsp.NIDMapper;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
@@ -452,6 +453,8 @@ public class HLEModuleManager {
 			for (Method method : objectClass.getMethods()) {
 				HLEFunction hleFunction = method.getAnnotation(HLEFunction.class);
 				if (hleFunction != null) {
+					HLEUnimplemented hleUnimplemented = method.getAnnotation(HLEUnimplemented.class);
+					
 					if (version >= hleFunction.version()) {
 						String moduleName = hleFunction.moduleName();
 						String functionName = hleFunction.functionName();
@@ -464,7 +467,12 @@ public class HLEModuleManager {
 							functionName = method.getName();
 						}
 						
-						HLEModuleFunction hleModuleFunction = new HLEModuleFunctionReflection(moduleName, functionName, hleModule, method.getName(), hleFunction.checkInsideInterrupt());
+						HLEModuleFunction hleModuleFunction = new HLEModuleFunctionReflection(moduleName, functionName, hleModule, method.getName(), method, hleFunction.checkInsideInterrupt());
+						
+						if (hleUnimplemented != null) {
+							hleModuleFunction.setUnimplemented(true);
+						}
+						
 						
 						hleModule.installedHLEModuleFunctions.put(functionName, hleModuleFunction);
 						
