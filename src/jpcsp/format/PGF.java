@@ -26,7 +26,73 @@ import static jpcsp.util.Utilities.skipUnknown;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import jpcsp.HLE.ISerializeString;
+import jpcsp.HLE.ISerializeStruct;
+
 public class PGF {
+	@ISerializeStruct(size = 168)
+	static public class FontStyle {
+		public static final int FONT_FAMILY_SANS_SERIF = 1;
+		public static final int FONT_FAMILY_SERIF      = 2;
+
+		public static final int FONT_STYLE_REGULAR     = 1;
+		public static final int FONT_STYLE_ITALIC      = 2;
+		public static final int FONT_STYLE_BOLD        = 5;
+		public static final int FONT_STYLE_BOLD_ITALIC = 6;
+		public static final int FONT_STYLE_DB          = 103; // Demi-Bold / semi-bold
+
+		public static final int FONT_LANGUAGE_JAPANESE = 1;
+		public static final int FONT_LANGUAGE_LATIN    = 2;
+		public static final int FONT_LANGUAGE_KOREAN   = 3;
+
+		float fontH;
+		float fontV;
+		float fontHRes;
+		float fontVRes;
+		float fontWeight;
+		short fontFamily;
+		short fontStyle;
+		short fontStyleSub;
+		short fontLanguage;
+		short fontRegion;
+		short fontCountry;
+		@ISerializeString(size = 64) String fontName;
+		int fontAttributes;
+		int fontExpire;
+	}
+	
+	@ISerializeStruct(size = 264)
+	static public class Info {
+		// Glyph metrics
+		int maxGlyphWidthI;
+		int maxGlyphHeightI;
+		int maxGlyphAscenderI;
+		int maxGlyphDescenderI;
+		int maxGlyphLeftXI;
+		int maxGlyphBaseYI;
+		int minGlyphCenterXI;
+		int maxGlyphTopYI;
+		int maxGlyphAdvanceXI;
+		int maxGlyphAdvanceYI;
+		// Glyph metrics (replicated as float).
+		int maxGlyphWidthF;
+		int maxGlyphHeightF;
+		int maxGlyphAscenderF;
+		int maxGlyphDescenderF;
+		int maxGlyphLeftXF;
+		int maxGlyphBaseYF;
+		int minGlyphCenterXF;
+		int maxGlyphTopYF;
+		int maxGlyphAdvanceXF;
+		int maxGlyphAdvanceYF;
+		// Bitmap dimensions.
+		short maxGlyphWidth;
+		short maxGlyphHeight;
+		int charMapLength; // Number of elements in the font's charmap.
+		int shadowMapLength;   // Number of elements in the font's shadow charmap.
+		FontStyle fontStyle;
+		int Bpp = 4;
+	}
 
     protected int headerOffset;
 	protected int headerSize;

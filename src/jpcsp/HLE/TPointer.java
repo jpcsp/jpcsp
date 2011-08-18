@@ -1,10 +1,38 @@
 package jpcsp.HLE;
 
 import jpcsp.Memory;
+import java.io.*;
 
 final public class TPointer {
 	private Memory memory;
 	private int address;
+	
+	class TPointerOutputStream extends OutputStream {
+		int offset = 0;
+		
+		public TPointerOutputStream(int offset) {
+			this.offset = offset;
+		}
+		
+		@Override
+		public void write(int b) throws IOException {
+			setValue8(offset++, (byte)b);
+		}
+	}
+	
+	class TPointerInputStream extends InputStream {
+		int offset = 0;
+		
+		public TPointerInputStream(int offset) {
+			this.offset = offset;
+		}
+		
+		@Override
+		public int read() throws IOException {
+			return getValue8(offset++);
+		}
+		
+	}
 
 	public TPointer(Memory memory, int address) {
 		this.memory = memory;
@@ -42,6 +70,14 @@ final public class TPointer {
 	public void setValue16(int offset, short value) { this.memory.write16(this.address + offset, value); }
 	public void setValue32(int offset, int value) { this.memory.write32(this.address + offset, value); }
 	public void setValue64(int offset, long value) { this.memory.write64(this.address + offset, value); }
+	
+	public void setObject(int offset, Object object) {
+		SerializeMemory.serialize(object, new TPointerOutputStream(offset));
+	}
+	
+	public <T> T getObject(Class<T> objectClass, int offset) {
+		return SerializeMemory.unserialize(objectClass, new TPointerInputStream(offset));
+	}
 
 	/*
 	public T getValue() {
