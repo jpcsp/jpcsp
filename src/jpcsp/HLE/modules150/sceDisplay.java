@@ -21,6 +21,9 @@ import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
 import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.TPointer32;
+
 import java.awt.Dimension;
 import java.awt.event.ComponentEvent;
 import java.awt.image.BufferedImage;
@@ -55,8 +58,6 @@ import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.graphics.GeCommands;
@@ -294,6 +295,8 @@ public class sceDisplay extends HLEModule implements HLEStartModule {
     public static final int PSP_DISPLAY_SETBUF_NEXTFRAME = 1;
 
     private static final float hCountPerVblank = 285.72f;
+
+    private static final float FRAME_PER_SEC = 59.940060f;
 
     // current Rendering Engine
     private IRenderingEngine re;
@@ -711,7 +714,8 @@ public class sceDisplay extends HLEModule implements HLEStartModule {
     	isStarted = false;
     }
 
-    public void exit() {
+    @SuppressWarnings("unused")
+	public void exit() {
         if (statistics != null && DurationStatistics.collectStatistics) {
             log.info("----------------------------- sceDisplay exit -----------------------------");
             log.info(statistics.toString());
@@ -815,7 +819,7 @@ public class sceDisplay extends HLEModule implements HLEStartModule {
         if (topaddr < MemoryMap.START_VRAM || topaddr >= MemoryMap.END_VRAM ||
             bufferwidth <= 0 ||
             pixelformat < 0 || pixelformat > 3 ||
-            sync < 0 || sync > 1)
+            (sync != PSP_DISPLAY_SETBUF_IMMEDIATE && sync != PSP_DISPLAY_SETBUF_NEXTFRAME))
         {
             String msg = "hleDisplaySetGeBuf bad params ("
                 + Integer.toHexString(topaddr)
@@ -1449,120 +1453,74 @@ public class sceDisplay extends HLEModule implements HLEStartModule {
         }
 	}
 
-    @HLEFunction(nid = 0x0E20F177, version = 150)
-    public void sceDisplaySetMode(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int displayMode = cpu.gpr[4];
-        int displayWidth = cpu.gpr[5];
-        int displayHeight = cpu.gpr[6];
-
+    @HLEFunction(nid = 0x0E20F177, version = 150, checkInsideInterrupt = true)
+    public int sceDisplaySetMode(int displayMode, int displayWidth, int displayHeight) {
         if (log.isDebugEnabled()) {
         	log.debug("sceDisplaySetMode(mode=" + displayMode + ",width=" + displayWidth + ",height=" + displayHeight + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (displayWidth <= 0 || displayHeight <= 0) {
-            cpu.gpr[2] = -1;
-        } else {
-            this.mode   = displayMode;
-            this.width  = displayWidth;
-            this.height = displayHeight;
-
-            bottomaddrFb =
-                topaddrFb + bufferwidthFb * displayHeight *
-                getPixelFormatBytes(pixelformatFb);
-            pixelsFb = getPixels(topaddrFb, bottomaddrFb);
-
-            detailsDirty = true;
-
-            if (displayMode != 0) {
-                log.warn("UNIMPLEMENTED:sceDisplaySetMode mode=" + displayMode);
-            }
-
-            cpu.gpr[2] = 0;
+            return -1;
         }
+        
+        this.mode   = displayMode;
+        this.width  = displayWidth;
+        this.height = displayHeight;
+
+        bottomaddrFb =
+            topaddrFb + bufferwidthFb * displayHeight *
+            getPixelFormatBytes(pixelformatFb);
+        pixelsFb = getPixels(topaddrFb, bottomaddrFb);
+
+        detailsDirty = true;
+
+        if (displayMode != 0) {
+            log.warn("UNIMPLEMENTED:sceDisplaySetMode mode=" + displayMode);
+        }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xDEA197D4, version = 150)
-    public void sceDisplayGetMode(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory memory = Processor.memory;
-
-        int modeAddr = cpu.gpr[4];
-        int widthAddr = cpu.gpr[5];
-        int heightAddr = cpu.gpr[6];
-
-        if (!Memory.isAddressGood(modeAddr  ) ||
-            !Memory.isAddressGood(widthAddr ) ||
-            !Memory.isAddressGood(heightAddr))
-        {
-            cpu.gpr[2] = -1;
-        } else {
-            memory.write32(modeAddr  , mode  );
-            memory.write32(widthAddr , width );
-            memory.write32(heightAddr, height);
-            cpu.gpr[2] = 0;
-        }
+    public int sceDisplayGetMode(TPointer32 modeAddr, TPointer32 widthAddr, TPointer32 heightAddr) {
+        modeAddr.setValue(mode );
+        widthAddr.setValue(width);
+        heightAddr.setValue(height);
+        
+        return 0;
     }
-
+    
     @HLEFunction(nid = 0xDBA6C4C4, version = 150)
-    public void sceDisplayGetFramePerSec(Processor processor) {
-        CpuState cpu = processor.cpu;
-        // Return float value in $f0
-    	cpu.fpr[0] = 59.940060f;
+    public float sceDisplayGetFramePerSec() {
     	if (log.isDebugEnabled()) {
-    		log.debug("sceDisplayGetFramePerSec ret: " + cpu.fpr[0]);
+    		log.debug("sceDisplayGetFramePerSec ret: " + FRAME_PER_SEC);
     	}
+    	return FRAME_PER_SEC;
     }
 
-    @HLEFunction(nid = 0x7ED59BC4, version = 150)
-    public void sceDisplaySetHoldMode(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int holdMode = cpu.gpr[4];
-
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x7ED59BC4, version = 150, checkInsideInterrupt = true)
+    public int sceDisplaySetHoldMode(int holdMode) {
         log.warn("IGNORING: sceDisplaySetHoldMode holdMode=" + holdMode);
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
-    @HLEFunction(nid = 0xA544C486, version = 150)
-    public void sceDisplaySetResumeMode(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int resumeMode = cpu.gpr[4];
-
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA544C486, version = 150, checkInsideInterrupt = true)
+    public int sceDisplaySetResumeMode(int resumeMode) {
         log.warn("IGNORING: sceDisplaySetResumeMode resumeMode=" + resumeMode);
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
     @HLEFunction(nid = 0x289D82FE, version = 150)
-    public void sceDisplaySetFrameBuf(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int topaddr = cpu.gpr[4];
-        int bufferwidth = cpu.gpr[5];
-        int pixelformat = cpu.gpr[6];
-        int syncType = cpu.gpr[7];
-
+    public int sceDisplaySetFrameBuf(int topaddr, int bufferwidth, int pixelformat, int syncType) {
         if (log.isDebugEnabled()) {
         	log.debug(String.format("sceDisplaySetFrameBuf(topaddr=0x%08X, bufferwidth=%d, pixelformat=%d, syncType=%d)", topaddr, bufferwidth, pixelformat, syncType));
         }
 
-        cpu.gpr[2] = hleDisplaySetFrameBuf(topaddr, bufferwidth, pixelformat, syncType);
+        return hleDisplaySetFrameBuf(topaddr, bufferwidth, pixelformat, syncType);
     }
 
     public int hleDisplaySetFrameBuf(int topaddr, int bufferwidth, int pixelformat, int syncType) {
@@ -1587,7 +1545,7 @@ public class sceDisplay extends HLEModule implements HLEStartModule {
             isFbShowing = false;
             gotBadFbBufParams = true;
             return -1;
-        } else if (syncType < 0 || syncType > 1) {
+        } else if (syncType != PSP_DISPLAY_SETBUF_IMMEDIATE && syncType != PSP_DISPLAY_SETBUF_NEXTFRAME) {
             log.warn(
                 "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
                 ", bufferwidth=" + bufferwidth +
@@ -1658,63 +1616,51 @@ public class sceDisplay extends HLEModule implements HLEStartModule {
         return SceKernelErrors.ERROR_INVALID_POINTER;
 	}
 
+    /**
+     * @param topaddrAddr       - 
+     * @param bufferwidthAddr   - 
+     * @param pixelformatAddr   - 
+     * @param syncType          - 0 or 1. All other value than 1 is interpreted as 0.
+     * @return
+     */
     @HLEFunction(nid = 0xEEDA2E54, version = 150)
-    public void sceDisplayGetFrameBuf(Processor processor) {
-        CpuState cpu = processor.cpu;
-    	Memory mem = Memory.getInstance();
-
-        int topaddrAddr = cpu.gpr[4];
-        int bufferwidthAddr = cpu.gpr[5];
-        int pixelformatAddr = cpu.gpr[6];
-        int syncType = cpu.gpr[7];
-
+    public int sceDisplayGetFrameBuf(TPointer32 topaddrAddr, TPointer32 bufferwidthAddr, TPointer32 pixelformatAddr, int syncType) {
         if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceDisplayGetFrameBuf topaddrAddr=0x%08X, bufferwidthAddr=0x%08X, pixelformatAddr=0x%08X, sync=%d",
-                    topaddrAddr, bufferwidthAddr, pixelformatAddr, syncType));
+    		log.debug(String.format(
+    			"sceDisplayGetFrameBuf topaddrAddr=0x%08X, bufferwidthAddr=0x%08X, pixelformatAddr=0x%08X, sync=%d",
+    			topaddrAddr, bufferwidthAddr, pixelformatAddr, syncType
+    		));
         }
 
-        // The PSP checks only if syncType == 1.
-        // Any other syncType value is interpreted as 0.
-        if (!Memory.isAddressGood(topaddrAddr    ) ||
-            !Memory.isAddressGood(bufferwidthAddr) ||
-            !Memory.isAddressGood(pixelformatAddr)) {
-            cpu.gpr[2] = -1;
-        } else {
-            mem.write32(topaddrAddr    , topaddrFb    );
-            mem.write32(bufferwidthAddr, bufferwidthFb);
-            mem.write32(pixelformatAddr, pixelformatFb);
-            cpu.gpr[2] = 0;
-        }
+        topaddrAddr.setValue(topaddrFb);
+        bufferwidthAddr.setValue(bufferwidthFb);
+        pixelformatAddr.setValue(pixelformatFb);
+        
+        return 0;
     }
 
     @HLEFunction(nid = 0xB4F378FA, version = 150)
-    public void sceDisplayIsForeground(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public boolean sceDisplayIsForeground() {
         if (log.isDebugEnabled()) {
     		log.debug("sceDisplayIsForeground ret: " + isFbShowing);
     	}
-        cpu.gpr[2] = isFbShowing ? 1 : 0;
+        return isFbShowing;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x31C4BAA8, version = 150)
-    public void sceDisplayGetBrightness(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int leveladdr = cpu.gpr[4];
-        int unkaddr = cpu.gpr[5];
-
+    public int sceDisplayGetBrightness(int leveladdr, int unkaddr) {
         log.warn("IGNORING: sceDisplayGetBrightness leveladdr=0x"
                 + Integer.toHexString(leveladdr) + ", unkaddr=0x"
                 + Integer.toHexString(unkaddr));
-        cpu.gpr[2] = 0;
+        
+        return 0;
     }
 
     @HLEFunction(nid = 0x9C6EAAD7, version = 150)
-    public void sceDisplayGetVcount(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceDisplayGetVcount() {
         // 60 units per second
-        cpu.gpr[2] = vcount;
+        return vcount;
     }
 
     @HLEFunction(nid = 0x4D4E10EC, version = 150)
@@ -1728,90 +1674,64 @@ public class sceDisplay extends HLEModule implements HLEStartModule {
         }
     }
 
-    @HLEFunction(nid = 0x36CDFADE, version = 150)
-    public void sceDisplayWaitVblank(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    @HLEFunction(nid = 0x36CDFADE, version = 150, checkInsideInterrupt = true)
+    public int sceDisplayWaitVblank() {
         if (log.isDebugEnabled()) {
         	log.debug("sceDisplayWaitVblank");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        cpu.gpr[2] = 0;
-    	if (!isVblank()) {
-    		sceDisplayWaitVblankStart(processor);
+        if (!isVblank()) {
+    		sceDisplayWaitVblankStart();
     	}
+    	return 0;
     }
 
-    @HLEFunction(nid = 0x8EB9EC49, version = 150)
-    public void sceDisplayWaitVblankCB(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    @HLEFunction(nid = 0x8EB9EC49, version = 150, checkInsideInterrupt = true)
+    public int sceDisplayWaitVblankCB() {
         if (log.isDebugEnabled()) {
         	log.debug("sceDisplayWaitVblankCB");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        cpu.gpr[2] = 0;
         if (!isVblank()) {
-        	sceDisplayWaitVblankStartCB(processor);
+        	sceDisplayWaitVblankStartCB();
         }
+
+        return 0;
     }
 
-    @HLEFunction(nid = 0x984C27E7, version = 150)
-    public void sceDisplayWaitVblankStart(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    @HLEFunction(nid = 0x984C27E7, version = 150, checkInsideInterrupt = true)
+    public int sceDisplayWaitVblankStart() {
         if (log.isDebugEnabled()) {
         	log.debug("sceDisplayWaitVblankStart");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        cpu.gpr[2] = 0;
         blockCurrentThreadOnVblank(1, false);
+        return 0;
     }
 
-    @HLEFunction(nid = 0x46F186C3, version = 150)
-    public void sceDisplayWaitVblankStartCB(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    @HLEFunction(nid = 0x46F186C3, version = 150, checkInsideInterrupt = true)
+    public int sceDisplayWaitVblankStartCB() {
         if (log.isDebugEnabled()) {
         	log.debug("sceDisplayWaitVblankStartCB");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        cpu.gpr[2] = 0;
         blockCurrentThreadOnVblank(1, true);
+        return 0;
     }
 
     @HLEFunction(nid = 0x773DD3A3, version = 150)
-    public void sceDisplayGetCurrentHcount(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceDisplayGetCurrentHcount() {
         int currentHcount = getCurrentHcount();
 
         if (log.isDebugEnabled()) {
         	log.debug(String.format("sceDisplayGetCurrentHcount returning %d", currentHcount));
         }
 
-        cpu.gpr[2] = currentHcount;
+        return currentHcount;
     }
 
     @HLEFunction(nid = 0x210EAB3A, version = 150)
-    public void sceDisplayGetAccumulatedHcount(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceDisplayGetAccumulatedHcount() {
         // The accumulatedHcount is the currentHcount plus the sum of the Hcounts
         // from all the previous vblanks (vcount * number of Hcounts per Vblank).
         int currentHcount = getCurrentHcount();
@@ -1821,15 +1741,13 @@ public class sceDisplay extends HLEModule implements HLEStartModule {
         	log.debug(String.format("sceDisplayGetAccumulatedHcount returning %d (currentHcount=%d)", accumulatedHcount, currentHcount));
         }
 
-        cpu.gpr[2] = accumulatedHcount;
+        return accumulatedHcount;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xA83EF139, version = 150)
-    public void sceDisplayAdjustAccumulatedHcount(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceDisplayAdjustAccumulatedHcount");
-        cpu.gpr[2] = 0;
+    public int sceDisplayAdjustAccumulatedHcount() {
+        return 0;
     }
 
     public static class BufferInfo {

@@ -72,6 +72,10 @@ final public class ParameterReader {
 		cpu.gpr[2] = value;
 	}
 
+	public void setReturnValueFloat(float value) {
+		cpu.fpr[2] = value;
+	}
+
 	public void setReturnValueLong(long value) {
 		cpu.gpr[2] = (int)((value >>  0) & 0xFFFFFFFF);
 		cpu.gpr[3] = (int)((value >> 32) & 0xFFFFFFFF);
