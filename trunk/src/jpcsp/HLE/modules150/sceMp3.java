@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLEUidClass;
+import jpcsp.HLE.HLEUidObjectMapping;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer32;
 
@@ -67,14 +69,6 @@ public class sceMp3 extends HLEModule implements HLEStartModule {
     // Media Engine based playback.
     protected static boolean useMediaEngine = false;
     
-    Mp3Stream getMp3OrThrowReturnInt(int mp3handle, int retvalOnNotFound) {
-        if (!mp3Map.containsKey(mp3handle)) {
-        	throw(new SceKernelErrorException(retvalOnNotFound));
-        }
-
-        return mp3Map.get(mp3handle);
-    }
-
     public static boolean checkMediaEngineState() {
         return useMediaEngine;
     }
@@ -99,10 +93,13 @@ public class sceMp3 extends HLEModule implements HLEStartModule {
     		Modules.ThreadManForUserModule.hleKernelDelayThread(threadDelayMicros, false);
     	}
     }
+    
+    static final int ERROR_MP3_NOT_FOUND = 0;
 
+    @HLEUidClass(moduleMethodUidGenerator = "makeFakeMp3StreamHandle", returnValueOnNotFound = ERROR_MP3_NOT_FOUND)
     protected class Mp3Stream {
     	private final static int ME_READ_AHEAD = 7 * 32 * 1024; // 224K
-
+    	
     	// SceMp3InitArg struct.
         private final long mp3StreamStart;
         private final long mp3StreamEnd;
@@ -110,9 +107,6 @@ public class sceMp3 extends HLEModule implements HLEStartModule {
         private final int mp3BufSize;
         private final int mp3PcmBuf;
         private final int mp3PcmBufSize;
-
-        // MP3 handle.
-        private final int mp3Handle;
 
         // MP3 internal file buffer vars.
         private int mp3InputFileSize;
@@ -203,8 +197,6 @@ public class sceMp3 extends HLEModule implements HLEStartModule {
             mp3MaxSamples = mp3PcmBufSize / 4;
             mp3LoopNum = PSP_MP3_LOOP_NUM_INFINITE;
             mp3DecodedBytes = 0;
-
-            mp3Handle = makeFakeMp3StreamHandle();
 
             if (checkMediaEngineState()) {
                 me = new MediaEngine();
@@ -401,10 +393,6 @@ public class sceMp3 extends HLEModule implements HLEStartModule {
         	return getMp3BufAddr() + getMp3InputBufWritePos();
         }
 
-        public int getMp3Handle() {
-            return mp3Handle;
-        }
-
         public int getMp3LoopNum() {
             return mp3LoopNum;
         }
@@ -476,37 +464,32 @@ public class sceMp3 extends HLEModule implements HLEStartModule {
     }
 
     @HLEFunction(nid = 0x07EC321A, version = 150, checkInsideInterrupt = true)
-    public int sceMp3ReserveMp3Handle(int mp3args) {
+    public Mp3Stream sceMp3ReserveMp3Handle(int mp3args) {
         if (log.isDebugEnabled()) {
             log.debug("sceMp3ReserveMp3Handle " + String.format("mp3args=0x%08x", mp3args));
         }
 
-        Mp3Stream stream = new Mp3Stream(mp3args);
-        int streamHandle = stream.getMp3Handle();
-        mp3Map.put(streamHandle, stream);
-
-        return streamHandle;
+        return new Mp3Stream(mp3args);
     }
 
     @HLEFunction(nid = 0x0DB149F4, version = 150, checkInsideInterrupt = true)
-    public int sceMp3NotifyAddStreamData(int mp3handle, int size) {
+    public int sceMp3NotifyAddStreamData(Mp3Stream mp3Stream, int size) {
         if (log.isDebugEnabled()) {
-            log.debug("sceMp3NotifyAddStreamData " + String.format("mp3handle=0x%08x, size=%d", mp3handle, size));
+            log.debug("sceMp3NotifyAddStreamData " + String.format("mp3=0x%08x, size=%d", mp3Stream, size));
         }
 
         // New data has been written by the application.
-        getMp3OrThrowReturnInt(mp3handle, 0).addMp3StreamData(size);
-
+        mp3Stream.addMp3StreamData(size);
         return 0;
     }
 
     @HLEFunction(nid = 0x2A368661, version = 150, checkInsideInterrupt = true)
-    public int sceMp3ResetPlayPosition(int mp3handle) {
+    public int sceMp3ResetPlayPosition(Mp3Stream mp3Stream) {
         if (log.isDebugEnabled()) {
-            log.debug("sceMp3ResetPlayPosition " + String.format("mp3handle=0x%08x", mp3handle));
+            log.debug("sceMp3ResetPlayPosition " + String.format("mp3Stream=0x%08x", mp3Stream));
         }
 
-        getMp3OrThrowReturnInt(mp3handle, 0).setMp3BufCurrentPos(0);
+        mp3Stream.setMp3BufCurrentPos(0);
 
         return 0;
     }
@@ -521,7 +504,7 @@ public class sceMp3 extends HLEModule implements HLEStartModule {
     }
 
     @HLEFunction(nid = 0x3C2FA058, version = 150, checkInsideInterrupt = true)
-    public int sceMp3TermResource(Processor processor) {
+    public int sceMp3TermResource() {
         if (log.isInfoEnabled()) {
             log.info("sceMp3TermResource");
         }
@@ -530,30 +513,29 @@ public class sceMp3 extends HLEModule implements HLEStartModule {
     }
 
     @HLEFunction(nid = 0x3CEF484F, version = 150, checkInsideInterrupt = true)
-    public int sceMp3SetLoopNum(int mp3handle, int loopNbr) {
+    public int sceMp3SetLoopNum(Mp3Stream mp3Stream, int loopNbr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceMp3SetLoopNum " + String.format("mp3handle=0x%08x, loopNbr=%d", mp3handle, loopNbr));
+            log.debug("sceMp3SetLoopNum " + String.format("mp3handle=0x%08x, loopNbr=%d", mp3Stream, loopNbr));
         }
 
-        getMp3OrThrowReturnInt(mp3handle, 0).setMp3LoopNum(loopNbr);
-
+        mp3Stream.setMp3LoopNum(loopNbr);
         return 0;
     }
 
     @HLEFunction(nid = 0x44E07129, version = 150, checkInsideInterrupt = true)
-    public int sceMp3Init(int mp3handle) {
+    public int sceMp3Init(Mp3Stream mp3Stream) {
         if(log.isDebugEnabled()) {
-            log.debug("sceMp3Init " + String.format("mp3handle=0x%08x", mp3handle));
+            log.debug("sceMp3Init " + String.format("mp3handle=0x%08x", mp3Stream));
         }
 
         try {
-        	getMp3OrThrowReturnInt(mp3handle, 0).init();
+        	mp3Stream.init();
         } finally {
 	        if (log.isInfoEnabled()) {
 	            log.info(
-	        		"Initializing Mp3 data: channels = " + mp3Map.get(mp3handle).getMp3ChannelNum()
-	                + ", samplerate = " + mp3Map.get(mp3handle).getMp3SamplingRate() + "kHz, bitrate = "
-	                + mp3Map.get(mp3handle).getMp3BitRate() + "kbps."
+	        		"Initializing Mp3 data: channels = " + mp3Stream.getMp3ChannelNum()
+	                + ", samplerate = " + mp3Stream.getMp3SamplingRate() + "kHz, bitrate = "
+	                + mp3Stream.getMp3BitRate() + "kbps."
 	            );
 	        }
         }
@@ -562,21 +544,21 @@ public class sceMp3 extends HLEModule implements HLEStartModule {
     }
 
     @HLEFunction(nid = 0x7F696782, version = 150, checkInsideInterrupt = true)
-    public int sceMp3GetMp3ChannelNum(int mp3handle) {
+    public int sceMp3GetMp3ChannelNum(Mp3Stream mp3Stream) {
         if (log.isDebugEnabled()) {
-            log.debug("sceMp3GetMp3ChannelNum " + String.format("mp3handle=0x%08x", mp3handle));
+            log.debug("sceMp3GetMp3ChannelNum " + String.format("mp3stream=0x%08x", mp3Stream));
         }
 
-        return getMp3OrThrowReturnInt(mp3handle, 0).getMp3ChannelNum();
+        return mp3Stream.getMp3ChannelNum();
     }
 
     @HLEFunction(nid = 0x8F450998, version = 150, checkInsideInterrupt = true)
-    public int sceMp3GetSamplingRate(int mp3handle) {
+    public int sceMp3GetSamplingRate(Mp3Stream mp3Stream) {
         if (log.isDebugEnabled()) {
-            log.debug("sceMp3GetSamplingRate " + String.format("mp3handle=0x%08x", mp3handle));
+            log.debug("sceMp3GetSamplingRate " + String.format("mp3stream=0x%08x", mp3Stream));
         }
 
-        return getMp3OrThrowReturnInt(mp3handle, 0).getMp3SamplingRate();
+        return mp3Stream.getMp3SamplingRate();
     }
 
     @HLEFunction(nid = 0xA703FE0F, version = 150, checkInsideInterrupt = true)
@@ -609,18 +591,16 @@ public class sceMp3 extends HLEModule implements HLEStartModule {
     }
 
     @HLEFunction(nid = 0xD021C0FB, version = 150, checkInsideInterrupt = true)
-    public int sceMp3Decode(int mp3handle, TPointer32 outPcmPtr) {
+    public int sceMp3Decode(Mp3Stream mp3Stream, TPointer32 outPcmPtr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceMp3Decode " + String.format("mp3handle=0x%08x, outPcmAddr=0x%08x", mp3handle, outPcmPtr.getAddress()));
+            log.debug("sceMp3Decode " + String.format("mp3Stream=0x%08x, outPcmAddr=0x%08x", mp3Stream, outPcmPtr.getAddress()));
         }
         
         int pcmSamples = 0;
-        Mp3Stream stream = getMp3OrThrowReturnInt(mp3handle, 0);
-
         long startTime = Emulator.getClock().microTime();
 
-        pcmSamples = stream.decode();
-        outPcmPtr.setValue(stream.getMp3PcmBufAddr());
+        pcmSamples = mp3Stream.decode();
+        outPcmPtr.setValue(mp3Stream.getMp3PcmBufAddr());
 
         delayThread(startTime, mp3DecodeDelay);
 
@@ -628,63 +608,61 @@ public class sceMp3 extends HLEModule implements HLEStartModule {
     }
 
     @HLEFunction(nid = 0xD0A56296, version = 150, checkInsideInterrupt = true)
-    public int sceMp3CheckStreamDataNeeded(int mp3handle) {
+    public boolean sceMp3CheckStreamDataNeeded(Mp3Stream mp3Stream) {
         if (log.isDebugEnabled()) {
-            log.debug("sceMp3CheckStreamDataNeeded " + String.format("mp3handle=0x%08x", mp3handle));
+            log.debug("sceMp3CheckStreamDataNeeded " + String.format("mp3handle=0x%08x", mp3Stream));
         }
 
         // 1 - Needs more data.
         // 0 - Doesn't need more data.
-        return getMp3OrThrowReturnInt(mp3handle, 0).isStreamDataNeeded() ? 1 : 0;
+        return mp3Stream.isStreamDataNeeded();
     }
 
     @HLEFunction(nid = 0xF5478233, version = 150, checkInsideInterrupt = true)
-    public int sceMp3ReleaseMp3Handle(int mp3handle) {
+    public int sceMp3ReleaseMp3Handle(Mp3Stream mp3Stream) {
         if (log.isDebugEnabled()) {
-            log.debug("sceMp3ReleaseMp3Handle " + String.format("mp3handle=0x%08x", mp3handle));
+            log.debug("sceMp3ReleaseMp3Handle " + String.format("mp3=0x%08x", mp3Stream));
         }
-
-        if (mp3Map.containsKey(mp3handle)) {
-            mp3Map.remove(mp3handle);
-        }
+        
+        HLEUidObjectMapping.removeObject(mp3Stream);
 
         return 0;
     }
 
     @HLEFunction(nid = 0x354D27EA, version = 150)
-    public int sceMp3GetSumDecodedSample(int mp3handle) {
+    public int sceMp3GetSumDecodedSample(Mp3Stream mp3Stream) {
         if (log.isDebugEnabled()) {
-            log.debug("sceMp3GetSumDecodedSample " + String.format("mp3handle=0x%08x", mp3handle));
+            log.debug("sceMp3GetSumDecodedSample " + String.format("mp3Stream=0x%08x", mp3Stream));
         }
 
-        return getMp3OrThrowReturnInt(mp3handle, 0).getMp3DecodedSamples();
+        return mp3Stream.getMp3DecodedSamples();
     }
 
     @HLEFunction(nid = 0x87677E40, version = 150, checkInsideInterrupt = true)
-    public int sceMp3GetBitRate(int mp3handle) {
+    public int sceMp3GetBitRate(Mp3Stream mp3Stream) {
         if (log.isDebugEnabled()) {
-            log.debug("sceMp3GetBitRate " + String.format("mp3handle=0x%08x", mp3handle));
+            log.debug("sceMp3GetBitRate " + String.format("mp3Stream=0x%08x", mp3Stream));
         }
 
-        return getMp3OrThrowReturnInt(mp3handle, 0).getMp3BitRate();
+        return mp3Stream.getMp3BitRate();
     }
     
     @HLEFunction(nid = 0x87C263D1, version = 150, checkInsideInterrupt = true)
-    public int sceMp3GetMaxOutputSample(int mp3handle) {
+    public int sceMp3GetMaxOutputSample(Mp3Stream mp3Stream) {
         if (log.isDebugEnabled()) {
-            log.debug("sceMp3GetMaxOutputSample " + String.format("mp3handle=0x%08x", mp3handle));
+            log.debug("sceMp3GetMaxOutputSample " + String.format("mp3Stream=0x%08x", mp3Stream));
         }
 
-        return getMp3OrThrowReturnInt(mp3handle, 0).getMp3MaxSamples();
+        return mp3Stream.getMp3MaxSamples();
     }
 
     @HLEFunction(nid = 0xD8F54A51, version = 150, checkInsideInterrupt = true)
-    public int sceMp3GetLoopNum(int mp3handle) {
+    public int sceMp3GetLoopNum(Mp3Stream mp3Stream) {
         if (log.isDebugEnabled()) {
-            log.debug("sceMp3GetLoopNum " + String.format("mp3handle=0x%08x", mp3handle));
+            log.debug("sceMp3GetLoopNum " + String.format("mp3Stream=0x%08x", mp3Stream));
         }
 
-        return getMp3OrThrowReturnInt(mp3handle, 0).getMp3LoopNum();
+        return mp3Stream.getMp3LoopNum();
     }
 
 }

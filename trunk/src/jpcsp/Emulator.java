@@ -26,6 +26,7 @@ import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.StepLogger;
 import jpcsp.GUI.IMainGUI;
+import jpcsp.HLE.HLEUidObjectMapping;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.kernel.Managers;
@@ -211,6 +212,7 @@ public class Emulator implements Runnable {
         Interrupts.initialize();
         jpcsp.HLE.kernel.types.SceModule.ResetAllocator();
         SceUidManager.reset();
+        HLEUidObjectMapping.reset();
 
         NIDMapper.getInstance().Initialise();
         Loader.getInstance().reset();

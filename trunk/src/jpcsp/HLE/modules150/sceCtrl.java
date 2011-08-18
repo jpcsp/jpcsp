@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLEUnimplemented;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -28,14 +30,10 @@ import jpcsp.State;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
-import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.kernel.types.IAction;
-import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 
 import org.apache.log4j.Logger;
@@ -469,31 +467,27 @@ public class sceCtrl extends HLEModule implements HLEStartModule {
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x348D99D4, version = 150)
     public int sceCtrl_348D99D4() {
-        log.warn("Unimplemented NID function sceCtrl_348D99D4 [0x348D99D4]");
-
         return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xAF5960F3, version = 150)
     public int sceCtrl_AF5960F3() {
-        log.warn("Unimplemented NID function sceCtrl_AF5960F3 [0xAF5960F3]");
-
         return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xA68FD260, version = 150)
     public int sceCtrlClearRapidFire() {
-        log.warn("Unimplemented NID function sceCtrlClearRapidFire [0xA68FD260]");
-
         return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x6841BE1A, version = 150)
     public int sceCtrlSetRapidFire() {
-        log.warn("Unimplemented NID function sceCtrlSetRapidFire [0x6841BE1A]");
-
         return 0xDEADC0DE;
     }
 

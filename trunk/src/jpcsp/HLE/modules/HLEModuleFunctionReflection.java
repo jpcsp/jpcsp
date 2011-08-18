@@ -4,7 +4,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.LinkedList;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Processor;
+import jpcsp.HLE.HLEUidClass;
+import jpcsp.HLE.HLEUidObjectMapping;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
@@ -80,6 +84,14 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 						params.add(processor);
 					} else if (paramClass == int.class) {
 						params.add(processor.parameterReader.getNextInt());
+					} else if (paramClass == boolean.class) {
+						int value = processor.parameterReader.getNextInt();
+						if (value < 0 || value > 1) {
+							Logger.getRootLogger().warn(
+								String.format("Parameter exepcted to be bool but had value 0x%08X", value)
+							);
+						}
+						params.add(value != 0);
 					} /*else if (paramClass.isEnum()) {
 						params.add(paramClass.cast(processor.parameterReader.getNextInt()));
 					}*/ else if (TPointer.class.isAssignableFrom(paramClass)) {
@@ -102,7 +114,18 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 						}
 						params.add(pointer);
 					} else {
-						throw(new RuntimeException("Unknown parameter class '" + paramClass + "'"));
+						HLEUidClass hleUidClass = paramClass.getAnnotation(HLEUidClass.class);
+						if (hleUidClass != null) {
+							int uid = processor.parameterReader.getNextInt();
+							
+							Object object = HLEUidObjectMapping.getObject(paramClass, uid);
+							if (object == null) {
+								throw(new SceKernelErrorException(hleUidClass.returnValueOnNotFound()));
+							}
+							params.add(object);
+						} else {
+							throw(new RuntimeException("Unknown parameter class '" + paramClass + "'"));
+						}
 					}
 				}
 	
@@ -129,7 +152,24 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 				} else if (hleModuleMethodReturnType == float.class) {
 					processor.parameterReader.setReturnValueFloat((Float)returnObject);
 				} else {
-					throw(new RuntimeException("Can't handle return type '" + hleModuleMethodReturnType + "'"));
+					
+					HLEUidClass hleUidClass = hleModuleMethodReturnType.getAnnotation(HLEUidClass.class);
+					
+					if (hleUidClass != null) {
+						if (hleUidClass.moduleMethodUidGenerator().length() == 0) {
+							processor.parameterReader.setReturnValueInt(
+								HLEUidObjectMapping.createUidForObject(hleModuleMethodReturnType, returnObject)
+							);
+						} else {
+							Method moduleMethodUidGenerator = hleModule.getClass().getMethod(hleUidClass.moduleMethodUidGenerator(), new Class[] { });
+							int uid = (Integer)moduleMethodUidGenerator.invoke(hleModule);
+							processor.parameterReader.setReturnValueInt(
+								HLEUidObjectMapping.addObjectMap(hleModuleMethodReturnType, uid, returnObject)
+							);
+						}
+					} else {
+						throw(new RuntimeException("Can't handle return type '" + hleModuleMethodReturnType + "'"));
+					}
 				}
 			}
 		} catch (InvocationTargetException e) {
