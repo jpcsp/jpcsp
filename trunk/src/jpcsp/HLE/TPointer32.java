@@ -2,7 +2,7 @@ package jpcsp.HLE;
 
 import jpcsp.Memory;
 
-final public class TPointer32 extends TPointerBase {
+public class TPointer32 extends TPointerBase {
 	public TPointer32(Memory memory, int address) {
 		super(memory, address);
 	}

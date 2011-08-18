@@ -476,7 +476,7 @@ public class HLEModuleManager {
 						
 						hleModule.installedHLEModuleFunctions.put(functionName, hleModuleFunction);
 						
-						if (hleFunction.syscall() != 0) {
+						if (hleFunction.syscall() != false) {
 							this.addHLEFunction(hleModuleFunction);
 						} else {
 							this.addFunction(hleFunction.nid(), hleModuleFunction);

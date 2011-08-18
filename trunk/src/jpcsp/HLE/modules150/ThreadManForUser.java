@@ -1132,7 +1132,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         hleKernelExitCallback(Emulator.getProcessor());
     }
 
-    @HLEFunction(nid = 0, version = 150, syscall = 1)
+    @HLEFunction(nid = 0, version = 150, syscall = true)
     public void hleKernelExitCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1347,7 +1347,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         callAddress(thread, address, afterAction, returnVoid, new int[]{registerA0, registerA1, registerA2, registerA3, registerT0});
     }
 
-    @HLEFunction(nid = 0, version = 150, syscall = 1)
+    @HLEFunction(nid = 0, version = 150, syscall = true)
     public void hleKernelExitThread(Processor processor) {
         if (log.isDebugEnabled()) {
             log.debug(String.format("Thread exit detected SceUID=%x name='%s' return:0x%08X", currentThread.uid, currentThread.name, processor.cpu.gpr[2]));
@@ -1368,12 +1368,12 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         sceKernelExitDeleteThread(Emulator.getProcessor());
     }
 
-    @HLEFunction(nid = 0, version = 150, syscall = 1)
+    @HLEFunction(nid = 0, version = 150, syscall = true)
     public void hleKernelAsyncLoop(Processor processor) {
         Modules.IoFileMgrForUserModule.hleAsyncThread(processor);
     }
 
-    @HLEFunction(nid = 0, version = 150, syscall = 1)
+    @HLEFunction(nid = 0, version = 150, syscall = true)
     public void hleKernelNetApctlLoop(Processor processor) {
     	Modules.sceNetApctl.hleNetApctlThread(processor);
     }
