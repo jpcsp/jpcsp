@@ -96,7 +96,7 @@ public class sceMp3 extends HLEModule implements HLEStartModule {
     
     static final int ERROR_MP3_NOT_FOUND = 0;
 
-    @HLEUidClass(moduleMethodUidGenerator = "makeFakeMp3StreamHandle", returnValueOnNotFound = ERROR_MP3_NOT_FOUND)
+    @HLEUidClass(moduleMethodUidGenerator = "makeFakeMp3StreamHandle", errorValueOnNotFound = ERROR_MP3_NOT_FOUND)
     protected class Mp3Stream {
     	private final static int ME_READ_AHEAD = 7 * 32 * 1024; // 224K
     	

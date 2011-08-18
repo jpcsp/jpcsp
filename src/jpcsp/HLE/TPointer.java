@@ -18,6 +18,10 @@ final public class TPointer {
 	public int getAddress() {
 		return address;
 	}
+	
+	public Memory getMemory() {
+		return memory;
+	}
 
 	public byte  getValue8() { return getValue8(0); }
 	public short getValue16() { return getValue16(0); }

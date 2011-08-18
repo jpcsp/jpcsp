@@ -3,12 +3,15 @@ package jpcsp;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
 import jpcsp.Allegrex.CpuState;
 
 final public class ParameterReader {
 	public CpuState cpu;
 	public Memory memory;
 	private int parameterIndex = 0;
+	private int parameterIndexFloat = 0;
 	Charset utf8;
 	
 	public ParameterReader(CpuState cpu, Memory memory) {
@@ -19,6 +22,7 @@ final public class ParameterReader {
 	
 	public void resetReading() {
 		parameterIndex = 0;
+		parameterIndexFloat = 0;
 	}
 	
 	private int getParameterIntAt(int index) {
@@ -27,6 +31,14 @@ final public class ParameterReader {
 		} else {
 			//System.err.println("getParameterIntAt(" + index + ") :: " + cpu.gpr[4 + index]);
 			return cpu.gpr[4 + index];
+		}
+	}
+	
+	private float getParameterFloatAt(int index) {
+		if (index >= 8) {
+			throw(new NotImplementedException());
+		} else {
+			return cpu.fpr[12 + index];
 		}
 	}
 
@@ -46,6 +58,13 @@ final public class ParameterReader {
 		return retParameterIndex;
 	}
 	
+	private int moveParameterIndexFloat(int size) {
+		while ((parameterIndexFloat % size) != 0) parameterIndexFloat++;
+		int retParameterIndexFloat = parameterIndexFloat;
+		parameterIndexFloat += size;
+		return retParameterIndexFloat;
+	}
+	
 	protected byte[] getBytez(int addr) {
 		ByteBuffer byteBuffer = ByteBuffer.allocate(memory.strlen(addr));
 		memory.copyToMemory(addr, byteBuffer, byteBuffer.limit());
@@ -58,6 +77,10 @@ final public class ParameterReader {
 
 	public long getNextLong() {
 		return getParameterLongAt(moveParameterIndex(2));
+	}
+	
+	public float getNextFloat() {
+		return getParameterFloatAt(moveParameterIndexFloat(1));
 	}
 	
 	public String getNextStringUtf8() {
