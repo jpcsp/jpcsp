@@ -1,5 +1,6 @@
 package jpcsp.HLE.modules;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.LinkedList;
@@ -7,6 +8,8 @@ import java.util.LinkedList;
 import org.apache.log4j.Logger;
 
 import jpcsp.Processor;
+import jpcsp.HLE.CanBeNull;
+import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEUidClass;
 import jpcsp.HLE.HLEUidObjectMapping;
 import jpcsp.HLE.Modules;
@@ -49,7 +52,12 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 			fastOldInvoke = true;
 		} else {
 			fastOldInvoke = false;
+			prepareParameterDecodingRunList();
 		}
+	}
+	
+	protected void prepareParameterDecodingRunList() {
+		
 	}
 	
 	private void setReturnValue(Processor processor, Object returnObject) {
@@ -115,12 +123,29 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 				processor.parameterReader.cpu = processor.cpu;
 				processor.parameterReader.memory = Processor.memory;
 				processor.parameterReader.resetReading();
+
 				if (fastOldInvoke) {
 					this.hleModuleMethod.invoke(hleModule, processor);
 				} else {
 					LinkedList<Object> params = new LinkedList<Object>();
 					
+					Annotation[][] paramsAnotations = this.hleModuleMethod.getParameterAnnotations();
+					
+					int paramIndex = 0;
 					for (Class<?> paramClass : this.hleModuleMethod.getParameterTypes()) {
+						Annotation[] paramAnnotations = paramsAnotations[paramIndex];
+						boolean canBeNull = false;
+						String methodToCheckName = null;
+
+						for (Annotation currentAnnotation : paramAnnotations) {
+							if (currentAnnotation instanceof CanBeNull) {
+								canBeNull = true;
+							}
+							if (currentAnnotation instanceof CheckArgument) {
+								methodToCheckName = ((CheckArgument)currentAnnotation).value();
+							}
+						}
+
 						if (paramClass.isInstance(processor)) {
 							params.add(processor);
 						} else if (paramClass == int.class) {
@@ -139,7 +164,8 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 							params.add(paramClass.cast(processor.parameterReader.getNextInt()));
 						}*/ else if (TPointer.class.isAssignableFrom(paramClass)) {
 							TPointer pointer = new TPointer(Processor.memory, processor.parameterReader.getNextInt());
-							if (!pointer.isAddressGood()) {
+							
+							if (!canBeNull && !pointer.isAddressGood()) {
 								throw(new SceKernelErrorException(SceKernelErrors.ERROR_INVALID_POINTER));
 							}
 							params.add(pointer);
@@ -154,7 +180,7 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 							} else {
 								throw(new RuntimeException("Unknown TPointerBase parameter class '" + paramClass + "'"));
 							}
-							if (!pointer.isAddressGood()) {
+							if (!canBeNull && !pointer.isAddressGood()) {
 								throw(new SceKernelErrorException(SceKernelErrors.ERROR_INVALID_POINTER));
 							}
 							params.add(pointer);
@@ -172,6 +198,24 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 								throw(new RuntimeException("Unknown parameter class '" + paramClass + "'"));
 							}
 						}
+						
+						if (methodToCheckName != null) {
+							Method methodToCheck = null; //= hleModuleClass.getMethod(methodToCheckName, params.get(params.size() - 1).getClass());
+							
+							for (Method method : hleModuleClass.getMethods()) {
+								if (method.getName().equals(methodToCheckName)) {
+									methodToCheck = method;
+									break;
+								}
+							}
+
+							params.set(
+								params.size() - 1,
+								methodToCheck.invoke(hleModule, params.get(params.size() - 1))
+							);
+						}
+						
+						paramIndex++;
 					}
 		
 					/*
@@ -209,7 +253,7 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 				errorHolder.setValue(kernelError.errorCode);
 				setReturnValue(processor, 0);
 			} else {
-				errorHolder.setValue(kernelError.errorCode);
+				setReturnValue(processor, kernelError.errorCode);
 			}
 		} catch (Throwable e1) {
 			System.err.println("OnMethod: " + hleModuleMethod);

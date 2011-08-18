@@ -82,8 +82,12 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.DumpDebugState;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
@@ -108,6 +112,7 @@ import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
+import jpcsp.HLE.CheckArgument;;
 
 /*
  * Thread scheduling on PSP:
@@ -3929,46 +3934,58 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     @HLEFunction(nid = 0x71BC9871, version = 150)
-    public void sceKernelChangeThreadPriority(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int uid = cpu.gpr[4];
-        int priority = cpu.gpr[5];
-
-        if (uid == 0) {
-            uid = currentThread.uid;
-        }
-
-        // Priority 0 means priority of the calling thread
-        if (priority == 0) {
-            priority = currentThread.currentPriority;
-        }
-
+    public int sceKernelChangeThreadPriority(int uid, @CheckArgument("checkThreadPriority") int priority) {
         SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
-        SceKernelThreadInfo thread = threadMap.get(uid);
-        if (uid < 0) {
-            log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid) + " is invalid");
-            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_THREAD;
-        } else if (thread == null) {
-            log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid) + " newPriority:0x" + Integer.toHexString(priority) + ") unknown thread");
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
-        } else if (thread.isStopped()) {
+        SceKernelThreadInfo thread = getThread(uid);
+
+        if (thread.isStopped()) {
             log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid) + " newPriority:0x" + Integer.toHexString(priority) + " oldPriority:0x" + Integer.toHexString(thread.currentPriority) + " thread is stopped, ignoring");
             // Tested on PSP:
             // If the thread is stopped, it's current priority is replaced by it's initial priority.
             thread.currentPriority = thread.initPriority;
-            cpu.gpr[2] = ERROR_KERNEL_THREAD_ALREADY_DORMANT;
-        } else if ((priority < 0x10 || priority > 0x6F) && priority != 0x7F) {
-            // Only affects user and idle threads (range from 0x10 to 0x6F and 0x7F).
-            log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid) + " newPriority:0x" + Integer.toHexString(priority) + " oldPriority:0x" + Integer.toHexString(thread.currentPriority) + " newPriority is outside of valid range");
-            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_PRIORITY;
-        } else {
-            if (log.isDebugEnabled()) {
-                log.debug("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid) + " newPriority:0x" + Integer.toHexString(priority) + " oldPriority:0x" + Integer.toHexString(thread.currentPriority));
-            }
-            cpu.gpr[2] = 0;
-            hleKernelChangeThreadPriority(thread, priority);
+            throw(new SceKernelErrorException(ERROR_KERNEL_THREAD_ALREADY_DORMANT));
         }
+        
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid) + " newPriority:0x" + Integer.toHexString(priority) + " oldPriority:0x" + Integer.toHexString(thread.currentPriority));
+        }
+        hleKernelChangeThreadPriority(thread, priority);
+        
+        return 0;
+    }
+    
+    public int checkThreadPriority(int priority) {
+        // Priority 0 means priority of the calling thread
+        if (priority == 0) {
+            priority = currentThread.currentPriority;
+        }
+        
+        if ((priority < 0x10 || priority > 0x6F) && priority != 0x7F) {
+            // Only affects user and idle threads (range from 0x10 to 0x6F and 0x7F).
+            log.warn("sceKernelRotateThreadReadyQueue priority:0x" + Integer.toHexString(priority) + " is outside of valid range");
+            throw(new SceKernelErrorException(ERROR_KERNEL_ILLEGAL_PRIORITY));
+        }    	
+
+        return priority;
+    }
+    
+    protected SceKernelThreadInfo getThread(int uid) {
+        if (uid == 0) {
+            uid = currentThread.uid;
+        }
+        
+        if (uid < 0) {
+            log.warn(getCallingFunctionName(+1) + " SceUID=" + Integer.toHexString(uid) + " is invalid");
+            throw(new SceKernelErrorException(ERROR_KERNEL_ILLEGAL_THREAD));
+        }
+        
+        SceKernelThreadInfo thread = threadMap.get(uid);
+        if (thread == null) {
+            log.warn(getCallingFunctionName(+1) + " unknown uid=0x" + Integer.toHexString(uid));
+            throw(new SceKernelErrorException(ERROR_KERNEL_NOT_FOUND_THREAD));
+        }
+        
+        return thread;
     }
 
     /**
@@ -3979,240 +3996,167 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x912354A7, version = 150)
-    public void sceKernelRotateThreadReadyQueue(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int priority = cpu.gpr[4];
-
+    public int sceKernelRotateThreadReadyQueue(@CheckArgument("checkThreadPriority") int priority) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelRotateThreadReadyQueue priority=" + priority);
         }
 
-        if (priority == 0) {
-            priority = currentThread.currentPriority;
-        }
-
-        if ((priority < 0x10 || priority > 0x6F) && priority != 0x7F) {
-            // Only affects user and idle threads (range from 0x10 to 0x6F and 0x7F).
-            log.warn("sceKernelRotateThreadReadyQueue priority:0x" + Integer.toHexString(priority) + " is outside of valid range");
-            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_PRIORITY;
-        } else {
-            synchronized (readyThreads) {
-                for (SceKernelThreadInfo thread : readyThreads) {
-                    if (thread.currentPriority == priority) {
-                    	// When rotating the ready queue of the current thread,
-                    	// the current thread yields and is moved to the end of its
-                    	// ready queue.
-                    	if (priority == currentThread.currentPriority) {
-                    		thread = currentThread;
-                    		// The current thread will be moved to the front of the ready queue
-                    		hleChangeThreadState(thread, PSP_THREAD_READY);
-                    	}
-                        // Move the thread to the end of the ready queue
-                    	removeFromReadyThreads(thread);
-                        addToReadyThreads(thread, false);
-                        hleRescheduleCurrentThread();
-                        break;
-                    }
+        synchronized (readyThreads) {
+            for (SceKernelThreadInfo thread : readyThreads) {
+                if (thread.currentPriority == priority) {
+                	// When rotating the ready queue of the current thread,
+                	// the current thread yields and is moved to the end of its
+                	// ready queue.
+                	if (priority == currentThread.currentPriority) {
+                		thread = currentThread;
+                		// The current thread will be moved to the front of the ready queue
+                		hleChangeThreadState(thread, PSP_THREAD_READY);
+                	}
+                    // Move the thread to the end of the ready queue
+                	removeFromReadyThreads(thread);
+                    addToReadyThreads(thread, false);
+                    hleRescheduleCurrentThread();
+                    break;
                 }
-	            }
+            }
         }
+        
+        return 0;
     }
 
     @HLEFunction(nid = 0x2C34E053, version = 150)
-    public void sceKernelReleaseWaitThread(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int uid = cpu.gpr[4];
-
+    public int sceKernelReleaseWaitThread(int uid) {
         SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadMap.get(uid);
-        if (uid == 0) {
-            log.warn("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") can't release itself!");
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_ILLEGAL_THREAD;
-        } else if (thread == null) {
-            log.warn("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") unknown thread");
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_NOT_FOUND_THREAD;
-        } else if (!thread.isWaiting()) {
+        
+        if (thread == currentThread) {
+        	log.warn("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") can't release itself!");
+        	throw(new SceKernelErrorException(SceKernelErrors.ERROR_KERNEL_ILLEGAL_THREAD));
+        }
+        
+        if (!thread.isWaiting()) {
             if (log.isDebugEnabled()) {
                 log.debug("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") Thread not waiting: status=" + thread.status);
             }
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_THREAD_IS_NOT_WAIT;
-        } else {
-            if (log.isDebugEnabled()) {
-                log.debug("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") releasing waiting thread: " + thread.toString());
-            }
-            cpu.gpr[2] = 0;
-            hleThreadWaitRelease(thread);
-
-            // Check if we need to switch to the released thread
-            // (e.g. has a higher priority)
-            hleRescheduleCurrentThread();
+            return SceKernelErrors.ERROR_KERNEL_THREAD_IS_NOT_WAIT;
+        } 
+        
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") releasing waiting thread: " + thread.toString());
         }
+
+        hleThreadWaitRelease(thread);
+
+        // Check if we need to switch to the released thread
+        // (e.g. has a higher priority)
+        hleRescheduleCurrentThread();
+        
+        return 0;
     }
 
     /** Get the current thread Id */
-    @HLEFunction(nid = 0x293B45B8, version = 150)
-    public void sceKernelGetThreadId(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    @HLEFunction(nid = 0x293B45B8, version = 150, checkInsideInterrupt = true)
+    public int sceKernelGetThreadId() {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelGetThreadId returning uid=0x" + Integer.toHexString(currentThread.uid));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        cpu.gpr[2] = currentThread.uid;
+        return currentThread.uid;
     }
 
-    @HLEFunction(nid = 0x94AA61EE, version = 150)
-    public void sceKernelGetThreadCurrentPriority(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    @HLEFunction(nid = 0x94AA61EE, version = 150, checkInsideInterrupt = true)
+    public int sceKernelGetThreadCurrentPriority(Processor processor) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelGetThreadCurrentPriority returning currentPriority=" + currentThread.currentPriority);
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        cpu.gpr[2] = currentThread.currentPriority;
+        return currentThread.currentPriority;
     }
 
     /** @return ERROR_NOT_FOUND_THREAD on uid < 0, uid == 0 and thread not found */
     @HLEFunction(nid = 0x3B183E26, version = 150)
-    public void sceKernelGetThreadExitStatus(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int uid = cpu.gpr[4];
-
-        SceKernelThreadInfo thread = threadMap.get(uid);
-        if (thread == null) {
-            log.warn("sceKernelGetThreadExitStatus unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
-        } else {
-            if (!thread.isStopped()) {
-	            if (log.isDebugEnabled()) {
-	                log.debug(String.format("sceKernelGetThreadExitStatus not stopped uid=0x%x", uid));
-	            }
-                cpu.gpr[2] = ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
-            } else {
-	            if (log.isDebugEnabled()) {
-	                log.debug("sceKernelGetThreadExitStatus uid=0x" + Integer.toHexString(uid) + " exitStatus=0x" + Integer.toHexString(thread.exitStatus));
-	            }
-	            cpu.gpr[2] = thread.exitStatus;
+    public int sceKernelGetThreadExitStatus(int uid) {
+        SceKernelThreadInfo thread = getThread(uid);
+        if (!thread.isStopped()) {
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("sceKernelGetThreadExitStatus not stopped uid=0x%x", uid));
             }
+            return ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("sceKernelGetThreadExitStatus uid=0x" + Integer.toHexString(uid) + " exitStatus=0x" + Integer.toHexString(thread.exitStatus));
+            }
+            return thread.exitStatus;
         }
     }
 
     /** @return amount of free stack space.*/
-    @HLEFunction(nid = 0xD13BDE95, version = 150)
-    public void sceKernelCheckThreadStack(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    @HLEFunction(nid = 0xD13BDE95, version = 150, checkInsideInterrupt = true)
+    public int sceKernelCheckThreadStack() {
         int size = getThreadCurrentStackSize();
+        
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceKernelCheckThreadStack returning size=0x%X", size));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        cpu.gpr[2] = size;
+        return size;
     }
 
-    /** @return amount of unused stack space of a thread.*/
-    @HLEFunction(nid = 0x52089CA1, version = 150)
-    public void sceKernelGetThreadStackFreeSize(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int uid = cpu.gpr[4];
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
+    /**
+     * @TODO Thread is not used!
+     * @FIX
+     * 
+     * @return amount of unused stack space of a thread.
+     * */
+    @HLEFunction(nid = 0x52089CA1, version = 150, checkInsideInterrupt = true)
+    public int sceKernelGetThreadStackFreeSize(int uid) {
+    	// @TODO Thread is not used
+    	SceKernelThreadInfo thread = threadMap.get(uid);
+    	
+    	
+        // This function compares the stack of the specified thread from when it started with
+        // it's present state. The returned value may not be always the remaining free stack size, because
+        // only the space that has never been used (consumed and/or released afterwards, for instance) counts.
+        int size = getThreadCurrentStackSize() - 0xfb0;
+        if (size < 0) size = 0;
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceKernelGetThreadStackFreeSize returning size=0x%X", size));
         }
-        if (uid == 0) {
-            uid = currentThread.uid;
-        }
-        SceKernelThreadInfo thread = threadMap.get(uid);
-        if (thread == null) {
-            log.warn("sceKernelGetThreadStackFreeSize unknown uid=0x" + Integer.toHexString(uid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
-        } else {
-            // This function compares the stack of the specified thread from when it started with
-            // it's present state. The returned value may not be always the remaining free stack size, because
-            // only the space that has never been used (consumed and/or released afterwards, for instance) counts.
-            int size = getThreadCurrentStackSize() - 0xfb0;
-            if (size < 0) {
-                size = 0;
-            }
-            if (log.isDebugEnabled()) {
-                log.debug(String.format("sceKernelGetThreadStackFreeSize returning size=0x%X", size));
-            }
-            cpu.gpr[2] = size;
-        }
+        return size;
     }
-
+    
     /** Get the status information for the specified thread
      **/
     @HLEFunction(nid = 0x17C1684E, version = 150)
-    public void sceKernelReferThreadStatus(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int uid = cpu.gpr[4];
-        int addr = cpu.gpr[5];
+    public int sceKernelReferThreadStatus(int uid, TPointer ptr) {
+        if (log.isDebugEnabled()) {
+            log.debug(
+            	"sceKernelReferThreadStatus uid=0x" + Integer.toHexString(uid) +
+            	" addr=0x" + Integer.toHexString(ptr.getAddress())
+            );
+        }
+        
+        SceKernelThreadInfo thread = getThread(uid);
 
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelReferThreadStatus uid=0x" + Integer.toHexString(uid) + " addr=0x" + Integer.toHexString(addr));
+            log.debug(String.format("sceKernelReferThreadStatus for thread %s", thread.toString()));
         }
-
-        if (uid == 0) {
-            uid = currentThread.uid;
-        }
-        SceKernelThreadInfo thread = threadMap.get(uid);
-        if (thread == null) {
-            log.warn("sceKernelReferThreadStatus unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
-        } else {
-            if (log.isDebugEnabled()) {
-                log.debug(String.format("sceKernelReferThreadStatus for thread %s", thread.toString()));
-            }
-            thread.write(Memory.getInstance(), addr);
-            cpu.gpr[2] = 0;
-        }
+        getThread(uid).write(ptr.getMemory(), ptr.getAddress());
+        return 0;
     }
 
-    @HLEFunction(nid = 0xFFC36A14, version = 150)
-    public void sceKernelReferThreadRunStatus(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int uid = cpu.gpr[4];
-        int addr = cpu.gpr[5];
-
+    @HLEFunction(nid = 0xFFC36A14, version = 150, checkInsideInterrupt = true)
+    public int sceKernelReferThreadRunStatus(int uid, TPointer ptr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelReferThreadRunStatus uid=0x" + Integer.toHexString(uid) + " addr=0x" + Integer.toHexString(addr));
+            log.debug(
+            	"sceKernelReferThreadRunStatus uid=0x" + Integer.toHexString(uid) +
+            	" addr=0x" + Integer.toHexString(ptr.getAddress())
+            );
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (uid == 0) {
-            uid = currentThread.uid;
-        }
-        SceKernelThreadInfo thread = threadMap.get(uid);
-        if (thread == null) {
-            log.warn("sceKernelReferThreadRunStatus unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
-        } else {
-            thread.writeRunStatus(Memory.getInstance(), addr);
-            cpu.gpr[2] = 0;
-        }
+        getThread(uid).writeRunStatus(ptr.getMemory(), ptr.getAddress());
+        
+        return 0;
     }
 
     /**
@@ -4223,137 +4167,138 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      * @return < 0 on error.
      */
     @HLEFunction(nid = 0x627E6F3A, version = 150)
-    public void sceKernelReferSystemStatus(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
+    public int sceKernelReferSystemStatus(TPointer statusPtr) {
+        SceKernelSystemStatus status = new SceKernelSystemStatus();
+        status.read(statusPtr.getMemory(), statusPtr.getAddress());
+        status.status = 0;
+        status.write(statusPtr.getMemory(), statusPtr.getAddress());
 
-        int statusAddr = cpu.gpr[4];
-
-        if (Memory.isAddressGood(statusAddr)) {
-            SceKernelSystemStatus status = new SceKernelSystemStatus();
-            status.read(mem, statusAddr);
-            status.status = 0;
-            status.write(mem, statusAddr);
-            cpu.gpr[2] = 0;
-        } else {
-            cpu.gpr[2] = -1;
-        }
+        return 0;
     }
 
     /** Write uid's to buffer
      * return written count
      * save full count to idcount_addr */
-    @HLEFunction(nid = 0x94416130, version = 150)
-    public void sceKernelGetThreadmanIdList(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int type = cpu.gpr[4];
-        int readbuf_addr = cpu.gpr[5];
-        int readbufsize = cpu.gpr[6];
-        int idcount_addr = cpu.gpr[7];
-
+    @HLEFunction(nid = 0x94416130, version = 150, checkInsideInterrupt = true)
+    public int sceKernelGetThreadmanIdList(int type, TPointer32 readBufPtr, int readBufSize, TPointer32 idCountPtr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelGetThreadmanIdList type=" + type + " readbuf:0x" + Integer.toHexString(readbuf_addr) + " readbufsize:" + readbufsize + " idcount:0x" + Integer.toHexString(idcount_addr));
+            log.debug(
+            	"sceKernelGetThreadmanIdList type=" + type +
+            	" readbuf:0x" + Integer.toHexString(readBufPtr.getAddress()) +
+            	" readbufsize:" + readBufSize +
+            	" idcount:0x" + Integer.toHexString(idCountPtr.getAddress())
+            );
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
+        if (type != SCE_KERNEL_TMID_Thread) {
+            log.warn("UNIMPLEMENTED:sceKernelGetThreadmanIdList type=" + type);
+            idCountPtr.setValue(0);
+            return 0;
         }
+
         int saveCount = 0;
         int fullCount = 0;
 
-        if (type == SCE_KERNEL_TMID_Thread) {
-            for (SceKernelThreadInfo thread : threadMap.values()) {
-                // Hide kernel mode threads when called from a user mode thread
-                if (userThreadCalledKernelCurrentThread(thread)) {
-                    if (saveCount < readbufsize) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("sceKernelGetThreadmanIdList adding thread '" + thread.name + "'");
-                        }
-                        mem.write32(readbuf_addr + saveCount * 4, thread.uid);
-                        saveCount++;
-                    } else {
-                        log.warn("sceKernelGetThreadmanIdList NOT adding thread '" + thread.name + "' (no more space)");
+        for (SceKernelThreadInfo thread : threadMap.values()) {
+            // Hide kernel mode threads when called from a user mode thread
+            if (userThreadCalledKernelCurrentThread(thread)) {
+                if (saveCount < readBufSize) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("sceKernelGetThreadmanIdList adding thread '" + thread.name + "'");
                     }
-                    fullCount++;
+                    readBufPtr.setValue(saveCount * 4, thread.uid);
+                    saveCount++;
+                } else {
+                    log.warn("sceKernelGetThreadmanIdList NOT adding thread '" + thread.name + "' (no more space)");
                 }
+                fullCount++;
             }
-        } else {
-            log.warn("UNIMPLEMENTED:sceKernelGetThreadmanIdList type=" + type);
         }
 
-        if (Memory.isAddressGood(idcount_addr)) {
-            mem.write32(idcount_addr, fullCount);
-        }
+        idCountPtr.setValue(fullCount);
 
-        cpu.gpr[2] = saveCount;
+        return 0;
     }
 
     @HLEFunction(nid = 0x57CF62DD, version = 150)
-    public void sceKernelGetThreadmanIdType(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int uid = cpu.gpr[4];
-
+    public int sceKernelGetThreadmanIdType(int uid) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelGetThreadmanIdType uid=0x" + uid);
         }
 
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", false)) {
-            cpu.gpr[2] = SCE_KERNEL_TMID_Thread;
-        } else if (SceUidManager.checkUidPurpose(uid, "ThreadMan-sema", false)) {
-            cpu.gpr[2] = SCE_KERNEL_TMID_Semaphore;
-        } else if (SceUidManager.checkUidPurpose(uid, "ThreadMan-eventflag", false)) {
-            cpu.gpr[2] = SCE_KERNEL_TMID_EventFlag;
-        } else if (SceUidManager.checkUidPurpose(uid, "ThreadMan-Mbx", false)) {
-            cpu.gpr[2] = SCE_KERNEL_TMID_Mbox;
-        } else if (SceUidManager.checkUidPurpose(uid, "ThreadMan-Vpl", false)) {
-            cpu.gpr[2] = SCE_KERNEL_TMID_Vpl;
-        } else if (SceUidManager.checkUidPurpose(uid, "ThreadMan-Fpl", false)) {
-            cpu.gpr[2] = SCE_KERNEL_TMID_Fpl;
-        } else if (SceUidManager.checkUidPurpose(uid, "ThreadMan-MsgPipe", false)) {
-            cpu.gpr[2] = SCE_KERNEL_TMID_Mpipe;
-        } else if (SceUidManager.checkUidPurpose(uid, "ThreadMan-callback", false)) {
-            cpu.gpr[2] = SCE_KERNEL_TMID_Callback;
-        } else if (SceUidManager.checkUidPurpose(uid, "ThreadMan-ThreadEventHandler", false)) {
-            cpu.gpr[2] = SCE_KERNEL_TMID_ThreadEventHandler;
-        } else if (SceUidManager.checkUidPurpose(uid, "ThreadMan-Alarm", false)) {
-            cpu.gpr[2] = SCE_KERNEL_TMID_Alarm;
-        } else if (SceUidManager.checkUidPurpose(uid, "ThreadMan-VTimer", false)) {
-            cpu.gpr[2] = SCE_KERNEL_TMID_VTimer;
-        } else if (SceUidManager.checkUidPurpose(uid, "ThreadMan-Mutex", false)) {
-            cpu.gpr[2] = SCE_KERNEL_TMID_Mutex;
-        } else if (SceUidManager.checkUidPurpose(uid, "ThreadMan-LwMutex", false)) {
-            cpu.gpr[2] = SCE_KERNEL_TMID_LwMutex;
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_ILLEGAL_ARGUMENT;
+            return SCE_KERNEL_TMID_Thread;
         }
+        
+        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-sema", false)) {
+        	return SCE_KERNEL_TMID_Semaphore;
+        }
+        
+        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-eventflag", false)) {
+        	return SCE_KERNEL_TMID_EventFlag;
+        }
+        
+        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-Mbx", false)) {
+        	return SCE_KERNEL_TMID_Mbox;
+        }
+        
+        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-Vpl", false)) {
+        	return SCE_KERNEL_TMID_Vpl;
+        }
+        
+        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-Fpl", false)) {
+        	return SCE_KERNEL_TMID_Fpl;
+        }
+        
+        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-MsgPipe", false)) {
+        	return SCE_KERNEL_TMID_Mpipe;
+        }
+        
+        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-callback", false)) {
+        	return SCE_KERNEL_TMID_Callback;
+        }
+        
+        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-ThreadEventHandler", false)) {
+        	return SCE_KERNEL_TMID_ThreadEventHandler;
+        }
+        
+        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-Alarm", false)) {
+        	return SCE_KERNEL_TMID_Alarm;
+        }
+        
+        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-VTimer", false)) {
+        	return SCE_KERNEL_TMID_VTimer;
+        }
+        
+        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-Mutex", false)) {
+        	return SCE_KERNEL_TMID_Mutex;
+        }
+        
+        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-LwMutex", false)) {
+        	return SCE_KERNEL_TMID_LwMutex;
+        }
+        
+        return SceKernelErrors.ERROR_KERNEL_ILLEGAL_ARGUMENT;
     }
 
     @HLEFunction(nid = 0x64D4540E, version = 150)
-    public void sceKernelReferThreadProfiler(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceKernelReferThreadProfiler() {
         // Can be safely ignored. Only valid in debug mode on a real PSP.
         if (log.isDebugEnabled()) {
             log.debug("sceKernelReferThreadProfiler");
         }
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
     @HLEFunction(nid = 0x8218B4DD, version = 150)
-    public void sceKernelReferGlobalProfiler(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceKernelReferGlobalProfiler() {
         // Can be safely ignored. Only valid in debug mode on a real PSP.
         if (log.isDebugEnabled()) {
             log.debug("sceKernelReferGlobalProfiler");
         }
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
     public static class Statistics {

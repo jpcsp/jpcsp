@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
 
 public class SerializeMemory {
@@ -74,6 +75,9 @@ public class SerializeMemory {
 		}
 		
 		for (Field field : objectClass.getFields()) {
+			int fieldModifiers = field.getModifiers();
+			if ((fieldModifiers & Modifier.STATIC) != 0) continue;
+
 			serialize(field.get(object), field, dataOutputStream);
 		}
 	}
@@ -120,6 +124,9 @@ public class SerializeMemory {
 		T object = objectClass.newInstance();
 		
 		for (Field field : objectClass.getFields()) {
+			int fieldModifiers = field.getModifiers(); 
+			if ((fieldModifiers & Modifier.STATIC) != 0) continue;
+			
 			field.set(
 				object,
 				unserialize(field.get(object).getClass(), field, dataInputStream)

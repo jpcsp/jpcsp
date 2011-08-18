@@ -66,10 +66,10 @@ final public class TPointer {
 	public int   getValue32(int offset) { return this.memory.read32(this.address + offset); }
 	public long  getValue64(int offset) { return this.memory.read64(this.address + offset); }
 	
-	public void setValue8(int offset, byte value) { this.memory.write8(this.address + offset, value); }
-	public void setValue16(int offset, short value) { this.memory.write16(this.address + offset, value); }
-	public void setValue32(int offset, int value) { this.memory.write32(this.address + offset, value); }
-	public void setValue64(int offset, long value) { this.memory.write64(this.address + offset, value); }
+	public void setValue8(int offset, byte value) { if (isAddressGood()) this.memory.write8(this.address + offset, value); }
+	public void setValue16(int offset, short value) { if (isAddressGood()) this.memory.write16(this.address + offset, value); }
+	public void setValue32(int offset, int value) { if (isAddressGood()) this.memory.write32(this.address + offset, value); }
+	public void setValue64(int offset, long value) { if (isAddressGood()) this.memory.write64(this.address + offset, value); }
 	
 	public void setObject(int offset, Object object) {
 		SerializeMemory.serialize(object, new TPointerOutputStream(offset));
