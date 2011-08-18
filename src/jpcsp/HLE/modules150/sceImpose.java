@@ -18,6 +18,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.TPointer32;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Settings;
@@ -71,62 +73,42 @@ public class sceImpose extends HLEModule implements HLEStartModule {
 
     private int backlightOffTime;
 
+    @HLEUnimplemented
 	@HLEFunction(nid = 0x381BD9E7, version = 150)
-	public void sceImposeHomeButton(Processor processor) {
-	    CpuState cpu = processor.cpu;
-
-		log.warn("Unimplemented NID function sceImposeHomeButton [0x381BD9E7]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
+	public int sceImposeHomeButton() {
+		return 0xDEADC0DE;
 	}
 
+    @HLEUnimplemented
 	@HLEFunction(nid = 0x5595A71A, version = 150)
-	public void sceImposeSetHomePopup(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn("Unimplemented NID function sceImposeSetHomePopup [0x5595A71A]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
+	public int sceImposeSetHomePopup() {
+		return 0xDEADC0DE;
 	}
 
+    @HLEUnimplemented
 	@HLEFunction(nid = 0x0F341BE4, version = 150)
-	public void sceImposeGetHomePopup(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn("Unimplemented NID function sceImposeGetHomePopup [0x0F341BE4]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
+	public int sceImposeGetHomePopup() {
+		return 0xDEADC0DE;
 	}
 
 	@HLEFunction(nid = 0x72189C48, version = 150)
-	public void sceImposeSetUMDPopup(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-        int mode = cpu.gpr[4];
-
+	public int sceImposeSetUMDPopup(int mode) {
 		log.debug("sceImposeSetUMDPopup(mode=" + mode + ")");
 
         umdPopupStatus = mode;
-
-		cpu.gpr[2] = 0;
+        
+        return 0;
 	}
 
 	@HLEFunction(nid = 0xE0887BC8, version = 150)
-	public void sceImposeGetUMDPopup(Processor processor) {
-		CpuState cpu = processor.cpu;
-
+	public int sceImposeGetUMDPopup() {
 		log.debug("sceImposeGetUMDPopup)");
 
-		cpu.gpr[2] = umdPopupStatus;
+		return umdPopupStatus;
 	}
 
 	@HLEFunction(nid = 0x36AA6E91, version = 150)
-	public void sceImposeSetLanguageMode(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-        int lang = cpu.gpr[4];
-        int button = cpu.gpr[5];
-
+	public int sceImposeSetLanguageMode(int lang, int button) {
         String langStr;
         switch(lang) {
             case PSP_LANGUAGE_JAPANESE: langStr = "JAP"; break;
@@ -141,74 +123,49 @@ public class sceImpose extends HLEModule implements HLEStartModule {
         languageMode_language = lang;
         languageMode_button = button;
 
-		cpu.gpr[2] = 0;
+		return 0;
 	}
 
     @HLEFunction(nid = 0x24FD7BCF, version = 150)
-    public void sceImposeGetLanguageMode(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
+    public int sceImposeGetLanguageMode(TPointer32 langPtr, TPointer32 buttonPtr) {
 
-        int lang_addr = cpu.gpr[4];
-        int button_addr = cpu.gpr[5];
-
-        log.debug("sceImposeGetLanguageMode(lang=0x" + Integer.toHexString(lang_addr)
-            + ",button=0x" + Integer.toHexString(button_addr) + ")"
+    	log.debug("sceImposeGetLanguageMode(lang=0x" + Integer.toHexString(langPtr.getAddress())
+            + ",button=0x" + Integer.toHexString(buttonPtr.getAddress()) + ")"
             + " returning lang=" + languageMode_language + " button=" + languageMode_button);
 
-        if (Memory.isAddressGood(lang_addr)) {
-            mem.write32(lang_addr, languageMode_language);
-        }
+        langPtr.setValue(languageMode_language);
+        buttonPtr.setValue(languageMode_button);
 
-        if (Memory.isAddressGood(button_addr)) {
-            mem.write32(button_addr, languageMode_button);
-        }
-
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
 	@HLEFunction(nid = 0x8C943191, version = 150)
-	public void sceImposeGetBatteryIconStatus(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
-
-        int addrCharging = cpu.gpr[4];
-        int addrIconStatus = cpu.gpr[5];
+	public int sceImposeGetBatteryIconStatus(TPointer32 chargingPtr, TPointer32 iconStatusPtr) {
         int batteryPowerPercent = Battery.getCurrentPowerPercent();
+        
         // Possible values for iconStatus: 0..3
         int iconStatus = Math.min(batteryPowerPercent / 25, 3);
         boolean charging = Battery.isCharging();
 
-        if (Memory.isAddressGood(addrCharging)) {
-            mem.write32(addrCharging, charging ? 1 : 0); // Values: 0..1
-        }
-        if (Memory.isAddressGood(addrIconStatus)) {
-            mem.write32(addrIconStatus, iconStatus); // Values: 0..3
-        }
+        chargingPtr.setValue(charging ? 1 : 0);
+        iconStatusPtr.setValue(iconStatus);
 
-		cpu.gpr[2] = 0;
+		return 0;
 	}
 
     @HLEFunction(nid = 0x8F6E3518, version = 150)
-    public void sceImposeGetBacklightOffTime(Processor processor) {
-		CpuState cpu = processor.cpu;
-
+    public int sceImposeGetBacklightOffTime() {
 		log.debug("sceImposeGetBacklightOffTime");
 
-		cpu.gpr[2] = backlightOffTime;
+		return backlightOffTime;
 	}
 
     @HLEFunction(nid = 0x967F6D4A, version = 150)
-    public void sceImposeSetBacklightOffTime(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-        int time = cpu.gpr[4];
-
+    public int sceImposeSetBacklightOffTime(int time) {
 		log.debug("sceImposeSetBacklightOffTime (time=" + time + ")");
 
         backlightOffTime = time;
 
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-
 }

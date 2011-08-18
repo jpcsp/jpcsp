@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
@@ -46,60 +47,35 @@ public class sceMp4 extends HLEModule implements HLEStartModule {
 	public void stop() {
 	}
 
-    @HLEFunction(nid = 0x68651CBC, version = 150)
-    public void sceMp4Init(Processor processor) {
-        CpuState cpu = processor.cpu;
+	@HLEUnimplemented(partial = true)
+    @HLEFunction(nid = 0x68651CBC, version = 150, checkInsideInterrupt = true)
+    public int sceMp4Init(boolean unk1, boolean unk2) {
+        log.warn("PARTIAL: sceMp4Init (unk1=%s" + unk1 + ", unk2=%s" + unk2 + ")");
 
-        int unk1 = cpu.gpr[4]; // Values: 0 or 1
-        int unk2 = cpu.gpr[5]; // Values: 0 or 1
-
-        log.warn("PARTIAL: sceMp4Init (unk1=0x" + Integer.toHexString(unk1)
-                + ", unk2=0x" + Integer.toHexString(unk2) + ")");
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
-    @HLEFunction(nid = 0x9042B257, version = 150)
-    public void sceMp4Finish(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    @HLEUnimplemented(partial = true)
+    @HLEFunction(nid = 0x9042B257, version = 150, checkInsideInterrupt = true)
+    public int sceMp4Finish(Processor processor) {
         log.warn("PARTIAL: sceMp4Finish");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
-    @HLEFunction(nid = 0xB1221EE7, version = 150)
-    public void sceMp4Create(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xB1221EE7, version = 150, checkInsideInterrupt = true)
+    public int sceMp4Create() {
         log.warn("UNIMPLEMENTED: sceMp4Create");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
     @HLEFunction(nid = 0x538C2057, version = 150)
-    public void sceMp4Delete(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceMp4Delete() {
         log.warn("UNIMPLEMENTED: sceMp4Delete");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
 }

@@ -17,15 +17,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.modules.HLEStartModule;
 
 import org.apache.log4j.Logger;
 
@@ -41,597 +37,407 @@ public class sceHttp extends HLEModule {
     private boolean isHttpInit;
     private boolean isSystemCookieLoaded;
     private int maxMemSize;
+    
+    public void checkHttpInit() {
+    	if (!isHttpInit) {
+    		throw(new SceKernelErrorException(SceKernelErrors.ERROR_HTTP_NOT_INIT));
+    	}
+    }
 
-    @HLEFunction(nid = 0xAB1ABE07, version = 150)
-    public void sceHttpInit(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int heapSize = cpu.gpr[4];
-
+    @HLEFunction(nid = 0xAB1ABE07, version = 150, checkInsideInterrupt = true)
+    public int sceHttpInit(int heapSize) {
         log.info("sceHttpInit: heapSize=" + Integer.toHexString(heapSize));
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (isHttpInit) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_HTTP_ALREADY_INIT;
-        } else {
-            maxMemSize = heapSize;
-            isHttpInit = true;
-            cpu.gpr[2] = 0;
+            return SceKernelErrors.ERROR_HTTP_ALREADY_INIT;
         }
+        
+        maxMemSize = heapSize;
+        isHttpInit = true;
+        return 0;
     }
 
-    @HLEFunction(nid = 0xD1C8945E, version = 150)
-    public void sceHttpEnd(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    @HLEFunction(nid = 0xD1C8945E, version = 150, checkInsideInterrupt = true)
+    public int sceHttpEnd() {
         log.info("sceHttpEnd");
+        
+        checkHttpInit();
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isHttpInit) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_HTTP_NOT_INIT;
-        } else {
-            isSystemCookieLoaded = false;
-            isHttpInit = false;
-            cpu.gpr[2] = 0;
-        }
+        isSystemCookieLoaded = false;
+        isHttpInit = false;
+        return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x0282A3BD, version = 150)
-    public void sceHttpGetContentLength(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpGetContentLength");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpGetContentLength(){
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x03D9526F, version = 150)
-    public void sceHttpSetResolveRetry(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpSetResolveRetry");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpSetResolveRetry() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x06488A1C, version = 150)
-    public void sceHttpSetCookieSendCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpSetCookieSendCallback");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpSetCookieSendCallback() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x0809C831, version = 150)
-    public void sceHttpEnableRedirect(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpEnableRedirect");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpEnableRedirect() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x0B12ABFB, version = 150)
-    public void sceHttpDisableCookie(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpDisableCookie");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpDisableCookie() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x0DAFA58F, version = 150)
-    public void sceHttpEnableCookie(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpEnableCookie");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpEnableCookie() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x15540184, version = 150)
-    public void sceHttpDeleteHeader(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpDeleteHeader");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpDeleteHeader() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x1A0EBB69, version = 150)
-    public void sceHttpDisableRedirect(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpDisableRedirect");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpDisableRedirect() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x1CEDB9D4, version = 150)
-    public void sceHttpFlushCache(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpFlushCache");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpFlushCache() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x1F0FC3E3, version = 150)
-    public void sceHttpSetRecvTimeOut(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpSetRecvTimeOut");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpSetRecvTimeOut() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x2255551E, version = 150)
-    public void sceHttpGetNetworkPspError(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpGetNetworkPspError");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpGetNetworkPspError() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x267618F4, version = 150)
-    public void sceHttpSetAuthInfoCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpSetAuthInfoCallback");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpSetAuthInfoCallback() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x2A6C3296, version = 150)
-    public void sceHttpSetAuthInfoCB(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpSetAuthInfoCB");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpSetAuthInfoCB() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x2C3C82CF, version = 150)
-    public void sceHttpFlushAuthList(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpFlushAuthList");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpFlushAuthList() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x3A67F306, version = 150)
-    public void sceHttpSetCookieRecvCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpSetCookieRecvCallback");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpSetCookieRecvCallback() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x3EABA285, version = 150)
-    public void sceHttpAddExtraHeader(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpAddExtraHeader");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpAddExtraHeader() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x47347B50, version = 150)
-    public void sceHttpCreateRequest(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpCreateRequest");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpCreateRequest() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x47940436, version = 150)
-    public void sceHttpSetResolveTimeOut(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpSetResolveTimeOut");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpSetResolveTimeOut() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x4CC7D78F, version = 150)
-    public void sceHttpGetStatusCode(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpGetStatusCode");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpGetStatusCode() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x5152773B, version = 150)
-    public void sceHttpDeleteConnection(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpDeleteConnection");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpDeleteConnection() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x54E7DF75, version = 150)
-    public void sceHttpIsRequestInCache(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpIsRequestInCache");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpIsRequestInCache() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x59E6D16F, version = 150)
-    public void sceHttpEnableCache(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpEnableCache");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpEnableCache() {
+        return 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0x76D1363B, version = 150)
-    public void sceHttpSaveSystemCookie(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x76D1363B, version = 150, checkInsideInterrupt = true)
+    public int sceHttpSaveSystemCookie() {
         log.info("sceHttpSaveSystemCookie");
+        
+        checkHttpInit();
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isHttpInit) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_HTTP_NOT_INIT;
-        } else if (!isSystemCookieLoaded){
-            cpu.gpr[2] = SceKernelErrors.ERROR_HTTP_SYSTEM_COOKIE_NOT_LOADED;
+        if (!isSystemCookieLoaded){
+            return SceKernelErrors.ERROR_HTTP_SYSTEM_COOKIE_NOT_LOADED;
         } else {
-            cpu.gpr[2] = 0;
+            return 0;
         }
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x7774BF4C, version = 150)
-    public void sceHttpAddCookie(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpAddCookie");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpAddCookie() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x77EE5319, version = 150)
-    public void sceHttpLoadAuthList(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpLoadAuthList");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpLoadAuthList() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x78A0D3EC, version = 150)
-    public void sceHttpEnableKeepAlive(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpEnableKeepAlive");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpEnableKeepAlive() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x78B54C09, version = 150)
-    public void sceHttpEndCache(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpEndCache");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpEndCache() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x8ACD1F73, version = 150)
-    public void sceHttpSetConnectTimeOut(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpSetConnectTimeOut");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpSetConnectTimeOut() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x8EEFD953, version = 150)
-    public void sceHttpCreateConnection(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpCreateConnection");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpCreateConnection() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x951D310E, version = 150)
-    public void sceHttpDisableProxyAuth(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpDisableProxyAuth");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpDisableProxyAuth() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x9668864C, version = 150)
-    public void sceHttpSetRecvBlockSize(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpSetRecvBlockSize");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpSetRecvBlockSize() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x96F16D3E, version = 150)
-    public void sceHttpGetCookie(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpGetCookie");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpGetCookie() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x9988172D, version = 150)
-    public void sceHttpSetSendTimeOut(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpSetSendTimeOut");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpSetSendTimeOut() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x9AFC98B2, version = 150)
-    public void sceHttpSendRequestInCacheFirstMode(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpSendRequestInCacheFirstMode");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpSendRequestInCacheFirstMode() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x9B1F1F36, version = 150)
-    public void sceHttpCreateTemplate(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpCreateTemplate");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpCreateTemplate() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x9FC5F10D, version = 150)
-    public void sceHttpEnableAuth(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpEnableAuth");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpEnableAuth() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xA4496DE5, version = 150)
-    public void sceHttpSetRedirectCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpSetRedirectCallback");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpSetRedirectCallback() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xA5512E01, version = 150)
-    public void sceHttpDeleteRequest(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpDeleteRequest");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpDeleteRequest() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xA6800C34, version = 150)
-    public void sceHttpInitCache(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpInitCache");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpInitCache() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xAE948FEE, version = 150)
-    public void sceHttpDisableAuth(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpDisableAuth");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpDisableAuth() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xB0C34B1D, version = 150)
-    public void sceHttpSetCacheContentLengthMaxSize(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpSetCacheContentLengthMaxSize");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpSetCacheContentLengthMaxSize() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xB509B09E, version = 150)
-    public void sceHttpCreateRequestWithURL(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpCreateRequestWithURL");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpCreateRequestWithURL() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xBB70706F, version = 150)
-    public void sceHttpSendRequest(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpSendRequest");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpSendRequest() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xC10B6BD9, version = 150)
-    public void sceHttpAbortRequest(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpAbortRequest");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpAbortRequest() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xC6330B0D, version = 150)
-    public void sceHttpChangeHttpVersion(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpChangeHttpVersion");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpChangeHttpVersion() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xC7EF2559, version = 150)
-    public void sceHttpDisableKeepAlive(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpDisableKeepAlive");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpDisableKeepAlive() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xC98CBBA7, version = 150)
-    public void sceHttpSetResHeaderMaxSize(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpSetResHeaderMaxSize");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpSetResHeaderMaxSize() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xCCBD167A, version = 150)
-    public void sceHttpDisableCache(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpDisableCache");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpDisableCache() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xCDB0DC58, version = 150)
-    public void sceHttpEnableProxyAuth(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpEnableProxyAuth");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpEnableProxyAuth() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xCDF8ECB9, version = 150)
-    public void sceHttpCreateConnectionWithURL(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpCreateConnectionWithURL");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpCreateConnectionWithURL() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xD081EC8F, version = 150)
-    public void sceHttpGetNetworkErrno(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpGetNetworkErrno");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpGetNetworkErrno() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xD70D4847, version = 150)
-    public void sceHttpGetProxy(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpGetProxy");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpGetProxy() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xDB266CCF, version = 150)
-    public void sceHttpGetAllHeader(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpGetAllHeader");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpGetAllHeader() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xDD6E7857, version = 150)
-    public void sceHttpSaveAuthList(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpSaveAuthList");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpSaveAuthList() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xEDEEB999, version = 150)
-    public void sceHttpReadData(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpReadData");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpReadData() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xF0F46C62, version = 150)
-    public void sceHttpSetProxy(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpSetProxy");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpSetProxy() {
+        return 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0xF1657B22, version = 150)
-    public void sceHttpLoadSystemCookie(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xF1657B22, version = 150, checkInsideInterrupt = true)
+    public int sceHttpLoadSystemCookie() {
         log.info("sceHttpLoadSystemCookie");
+        
+        checkHttpInit();
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (isSystemCookieLoaded) { // The system's cookie list can only be loaded once per session.
-            cpu.gpr[2] = SceKernelErrors.ERROR_HTTP_ALREADY_INIT;
+            return SceKernelErrors.ERROR_HTTP_ALREADY_INIT;
         } else if (maxMemSize <  PSP_HTTP_SYSTEM_COOKIE_HEAP_SIZE){
-            cpu.gpr[2] = SceKernelErrors.ERROR_HTTP_NO_MEMORY;
+            return SceKernelErrors.ERROR_HTTP_NO_MEMORY;
         } else {
             isSystemCookieLoaded = true;
-            cpu.gpr[2] = 0;
+            return 0;
         }
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xF49934F6, version = 150)
-    public void sceHttpSetMallocFunction(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpSetMallocFunction");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpSetMallocFunction() {
+        return 0xDEADC0DE;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xFCF8C055, version = 150)
-    public void sceHttpDeleteTemplate(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceHttpDeleteTemplate");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHttpDeleteTemplate() {
+        return 0xDEADC0DE;
     }
-
 }

@@ -23,12 +23,9 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
@@ -113,9 +110,15 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     protected static final int sasCoreDelay = 5000; // Average microseconds, based on PSP tests.
 
     protected String makeLogParams(CpuState cpu) {
-        return String.format("%08x %08x %08x %08x",
-                cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
+        return String.format("%08x %08x %08x %08x", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
     }
+    
+    /*
+    @HLEUidClass(returnValueOnNotFound = SceKernelErrors.ERROR_SAS_NOT_INIT)
+    class SasCore {
+    	
+    }
+    */
     
     protected void checkSasHandleGood(int sasCore) {
         if (Memory.isAddressGood(sasCore)) {
