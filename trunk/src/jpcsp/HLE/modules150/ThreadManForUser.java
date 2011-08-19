@@ -1361,8 +1361,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         // it's exitStatus becomes it's return value.
         // When this is detected, the $a0 register should be overwritten with the thread's $v0
         // register contents BEFORE calling sceKernelExitThread.
-        processor.cpu.gpr[4] = processor.cpu.gpr[2];
-        sceKernelExitThread(processor);
+        sceKernelExitThread(processor, processor.cpu.gpr[2]);
     }
 
     public void hleKernelExitDeleteThread() {
@@ -1370,7 +1369,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
             log.debug(String.format("hleKernelExitDeleteThread SceUID=%x name='%s' return:0x%08X", currentThread.uid, currentThread.name, Emulator.getProcessor().cpu.gpr[2]));
         }
 
-        sceKernelExitDeleteThread(Emulator.getProcessor());
+        sceKernelExitDeleteThread(Emulator.getProcessor(), Emulator.getProcessor().cpu.gpr[4]);
     }
 
     @HLEFunction(nid = 0, version = 150, syscall = true)
@@ -3723,28 +3722,20 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     @HLEFunction(nid = 0x532A522E, version = 150)
-    public void _sceKernelExitThread(Processor processor) {
+    public void _sceKernelExitThread(Processor processor, int exitStatus) {
         // _sceKernelExitThread is equivalent to sceKernelExitThread
-        sceKernelExitThread(processor);
+        sceKernelExitThread(processor, exitStatus);
     }
 
     /** exit the current thread */
-    @HLEFunction(nid = 0xAA73C935, version = 150)
-    public void sceKernelExitThread(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int exitStatus = cpu.gpr[4];
-
+    @HLEFunction(nid = 0xAA73C935, version = 150, checkInsideInterrupt = true)
+    public void sceKernelExitThread(Processor processor, int exitStatus) {
         SceKernelThreadInfo thread = currentThread;
 
         if (log.isDebugEnabled()) {
             log.debug("sceKernelExitThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' exitStatus:0x" + Integer.toHexString(exitStatus));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (exitStatus < 0) {
             thread.exitStatus = ERROR_KERNEL_ILLEGAL_ARGUMENT;
         } else {
@@ -3752,35 +3743,29 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         }
 
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
+        
+        processor.parameterReader.setReturnValueInt(0);
 
-        cpu.gpr[2] = 0;
         hleChangeThreadState(thread, PSP_THREAD_STOPPED);
         RuntimeContext.onThreadExit(thread);
         hleRescheduleCurrentThread();
     }
 
     /** exit the current thread, then delete it */
-    @HLEFunction(nid = 0x809CE29B, version = 150)
-    public void sceKernelExitDeleteThread(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int exitStatus = cpu.gpr[4];
-
+    @HLEFunction(nid = 0x809CE29B, version = 150, checkInsideInterrupt = true)
+    public void sceKernelExitDeleteThread(Processor processor, int exitStatus) {
         SceKernelThreadInfo thread = currentThread;
         if (log.isDebugEnabled()) {
             log.debug("sceKernelExitDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' exitStatus:0x" + Integer.toHexString(exitStatus));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         thread.exitStatus = exitStatus;
 
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_DELETE);
+        
+        processor.parameterReader.setReturnValueInt(0);
 
-        cpu.gpr[2] = 0;
         hleChangeThreadState(thread, PSP_THREAD_STOPPED);
         RuntimeContext.onThreadExit(thread);
         setToBeDeletedThread(thread);
@@ -3789,61 +3774,39 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
 
     /** terminate thread */
     @HLEFunction(nid = 0x616403BA, version = 150)
-    public void sceKernelTerminateThread(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int uid = cpu.gpr[4];
-
+    public void sceKernelTerminateThread(Processor processor, int uid) {
         if (!checkThreadID(uid)) {
             return;
         }
-        SceKernelThreadInfo thread = threadMap.get(uid);
-        if (thread == null) {
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
-        } else if (thread == currentThread) {
-        	// Cannot terminate itself
-        	cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_THREAD;
-        } else {
-            log.debug("sceKernelTerminateThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
-            triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
+        SceKernelThreadInfo thread = getThreadCurrentIsInvalid(uid);
 
-            cpu.gpr[2] = 0;
-            terminateThread(thread);
-            thread.exitStatus = ERROR_KERNEL_THREAD_IS_TERMINATED; // Update the exit status.
-        }
+        log.debug("sceKernelTerminateThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
+
+        triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
+
+        processor.parameterReader.setReturnValueInt(0);
+        terminateThread(thread);
+        thread.exitStatus = ERROR_KERNEL_THREAD_IS_TERMINATED; // Update the exit status.
     }
 
     /** terminate thread, then mark it for deletion */
-    @HLEFunction(nid = 0x383F7BCC, version = 150)
-    public void sceKernelTerminateDeleteThread(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int uid = cpu.gpr[4];
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+    @HLEFunction(nid = 0x383F7BCC, version = 150, checkInsideInterrupt = true)
+    public void sceKernelTerminateDeleteThread(Processor processor, int uid) {
         if (!checkThreadID(uid)) {
             return;
         }
-        SceKernelThreadInfo thread = threadMap.get(uid);
-        if (thread == null) {
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
-        } else if (thread == currentThread) {
-        	// Cannot terminate itself
-        	cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_THREAD;
-        } else {
-            log.debug("sceKernelTerminateDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
+        
+        SceKernelThreadInfo thread = getThreadCurrentIsInvalid(uid);
 
-            triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
-            triggerThreadEvent(thread, currentThread, THREAD_EVENT_DELETE);
+        log.debug("sceKernelTerminateDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
-            terminateThread(thread);
-            setToBeDeletedThread(thread);
-            cpu.gpr[2] = 0;
-        }
+        triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
+        triggerThreadEvent(thread, currentThread, THREAD_EVENT_DELETE);
+
+        processor.parameterReader.setReturnValueInt(0);
+        terminateThread(thread);
+        setToBeDeletedThread(thread);
     }
 
     /**
@@ -3851,25 +3814,19 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *
      * @return The current state of the dispatch thread, < 0 on error
      */
-    @HLEFunction(nid = 0x3AD58B8C, version = 150)
-    public void sceKernelSuspendDispatchThread(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    @HLEFunction(nid = 0x3AD58B8C, version = 150, checkInsideInterrupt = true)
+    public int sceKernelSuspendDispatchThread() {
         int state = getDispatchThreadState();
+
         if (log.isDebugEnabled()) {
             log.debug("sceKernelSuspendDispatchThread() state=" + state);
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-
         if (Interrupts.isInterruptsDisabled()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_INTERRUPTS_ALREADY_DISABLED;
+            return SceKernelErrors.ERROR_KERNEL_INTERRUPTS_ALREADY_DISABLED;
         } else {
             dispatchThreadEnabled = false;
-            cpu.gpr[2] = state;
+            return state;
         }
     }
 
@@ -3880,40 +3837,28 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
      *                (from sceKernelSuspendDispatchThread)
      * @return 0 on success, < 0 on error
      */
-    @HLEFunction(nid = 0x27E22EC2, version = 150)
-    public void sceKernelResumeDispatchThread(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int state = cpu.gpr[4];
-
+    @HLEFunction(nid = 0x27E22EC2, version = 150, checkInsideInterrupt = true)
+    public int sceKernelResumeDispatchThread(int state) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelResumeDispatchThread(state=" + state + ")");
         }
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-
-        if (Interrupts.isInterruptsDisabled()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_INTERRUPTS_ALREADY_DISABLED;
-        } else {
-            cpu.gpr[2] = 0;
-        }
+        
+        boolean isInterruptsDisabled = Interrupts.isInterruptsDisabled(); 
 
         if (state == SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED) {
             dispatchThreadEnabled = true;
             hleRescheduleCurrentThread();
         }
+
+        if (isInterruptsDisabled) {
+            return SceKernelErrors.ERROR_KERNEL_INTERRUPTS_ALREADY_DISABLED;
+        } else {
+        	return 0;
+        }
     }
 
     @HLEFunction(nid = 0xEA748E31, version = 150)
-    public void sceKernelChangeCurrentThreadAttr(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int removeAttr = cpu.gpr[4];
-        int addAttr = cpu.gpr[5];
-
+    public int sceKernelChangeCurrentThreadAttr(int removeAttr, int addAttr) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelChangeCurrentThreadAttr" + " removeAttr:0x" + Integer.toHexString(removeAttr) + " addAttr:0x" + Integer.toHexString(addAttr) + " oldAttr:0x" + Integer.toHexString(currentThread.attr));
         }
@@ -3930,11 +3875,12 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
             newAttr |= PSP_THREAD_ATTR_USER;
         }
         currentThread.attr = newAttr;
-        cpu.gpr[2] = 0;
+        
+        return 0;
     }
 
     @HLEFunction(nid = 0x71BC9871, version = 150)
-    public int sceKernelChangeThreadPriority(int uid, @CheckArgument("checkThreadPriority") int priority) {
+    public void sceKernelChangeThreadPriority(Processor processor, int uid, @CheckArgument("checkThreadPriority") int priority) {
         SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = getThread(uid);
 
@@ -3949,9 +3895,8 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid) + " newPriority:0x" + Integer.toHexString(priority) + " oldPriority:0x" + Integer.toHexString(thread.currentPriority));
         }
+        processor.parameterReader.setReturnValueInt(0);
         hleKernelChangeThreadPriority(thread, priority);
-        
-        return 0;
     }
     
     public int checkThreadPriority(int priority) {
@@ -3967,6 +3912,14 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         }    	
 
         return priority;
+    }
+    
+    protected SceKernelThreadInfo getThreadCurrentIsInvalid(int uid) {
+    	SceKernelThreadInfo thread = getThread(uid);
+    	if (thread == currentThread) {
+            throw(new SceKernelErrorException(ERROR_KERNEL_ILLEGAL_THREAD));
+    	}
+    	return thread;
     }
     
     protected SceKernelThreadInfo getThread(int uid) {
