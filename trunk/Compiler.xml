@@ -3177,7 +3177,7 @@
 	<NativeCodeSequence name="bzeroSequence">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
 		<Method>callWithStep</Method>
-		<Parameters>$a0,$zr,$a1,0,64</Parameters>
+		<Parameters>$a0,$zr,$a1,0,-1,64</Parameters>
 		<BeforeCodeInstructions><![CDATA[
 088462FC:[8FA40000]: lw         $a0, 0($sp)
 ]]></BeforeCodeInstructions>
@@ -3309,7 +3309,7 @@
 	<NativeCodeSequence name="bzeroSequence">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
 		<Method>callWithStep</Method>
-		<Parameters>$a0,$zr,$v0,0,64</Parameters>
+		<Parameters>$a0,$zr,$v0,0,-1,64</Parameters>
 		<CodeInstructions><![CDATA[
 08846724:[BC980000]: cache      0x18, 0($a0)
 08846728:[2442FFFF]: addiu      $v0, $v0, -1
@@ -5397,8 +5397,8 @@
 	</NativeCodeSequence>
 	<NativeCodeSequence name="memsetSequence">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
-		<Parameters>$v1,$s0,$a0,$v0,2</Parameters>
-		<Method>callWithStep</Method>
+		<Parameters>$v1,$s0,$a0,$v0,1,2</Parameters>
+		<Method>callWithStepReg</Method>
 		<CodeInstructions><![CDATA[
 08937E7C:[24840001]: addiu      $a0, $a0, 1
 08937E80:[A4700000]: sh         $s0, 0($v1)
@@ -5408,8 +5408,8 @@
 	</NativeCodeSequence>
 	<NativeCodeSequence name="memsetSequence">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
-		<Parameters>$t2,$t1,$t0,$a3,4</Parameters>
-		<Method>callWithStep</Method>
+		<Parameters>$t2,$t1,$t0,$a3,1,4</Parameters>
+		<Method>callWithStepReg</Method>
 		<CodeInstructions><![CDATA[
 08992BA4:[AD490000]: sw         $t1, 0($t2)
 08992BA8:[25080001]: addiu      $t0, $t0, 1
@@ -5420,8 +5420,8 @@
 	</NativeCodeSequence>
 	<NativeCodeSequence name="memsetSequence">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
-		<Parameters>$a1,$a2,$v0,$v1,4</Parameters>
-		<Method>callWithStep</Method>
+		<Parameters>$a1,$a2,$v0,$v1,1,4</Parameters>
+		<Method>callWithStepReg</Method>
 		<CodeInstructions><![CDATA[
 08805148:[24420001]: addiu      $v0, $v0, 1
 0880514C:[ACA60000]: sw         $a2, 0($a1)
@@ -5461,8 +5461,8 @@
 	</NativeCodeSequence>
 	<NativeCodeSequence name="bzeroSequence">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
-		<Parameters>$a0,$zr,$v1,16,2</Parameters>
-		<Method>callWithStep</Method>
+		<Parameters>$a0,$zr,$v1,16,1,2</Parameters>
+		<Method>callWithStepReg</Method>
 		<CodeInstructions><![CDATA[
 08885F00:[A4800000]: sh         $zr, 0($a0)
 08885F04:[A4800002]: sh         $zr, 2($a0)
