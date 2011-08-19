@@ -3,7 +3,7 @@ package jpcsp.HLE;
 import jpcsp.Memory;
 import java.io.*;
 
-final public class TPointer {
+final public class TPointer implements ITPointerBase {
 	private Memory memory;
 	private int address;
 	
