@@ -619,5 +619,31 @@ public class sceNetApctl extends HLEModule {
 			cpu.gpr[2] = 0;
 		}
 	}
+        
+        @HLEFunction(nid = 0x2935C45B, version = 150)
+	public void sceNetApctlGetBSSDescEntry2(Processor processor) {
+		CpuState cpu = processor.cpu;
 
-};
+		log.warn("Unimplemented NID function sceNetApctlGetBSSDescEntry2 [0x2935C45B]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0xA3E77E13, version = 150)
+	public void sceNetApctlScanSSID2(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceNetApctlScanSSID2 [0xA3E77E13]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0xF25A5006, version = 150)
+	public void sceNetApctlGetBSSDescIDList2(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceNetApctlGetBSSDescIDList2 [0xF25A5006]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+}

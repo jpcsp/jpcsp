@@ -105,14 +105,11 @@ public class sceMpeg extends HLEModule implements HLEStartModule {
     public static final int PSMF_VERSION_0013 = 0x33313030;
     public static final int PSMF_VERSION_0014 = 0x34313030;
     public static final int PSMF_VERSION_0015 = 0x35313030;
-    public static final int PSMF_STREAM_VERSION_OFFSET = 4;
-    public static final int PSMF_STREAM_OFFSET_OFFSET = 8;
-    public static final int PSMF_STREAM_SIZE_OFFSET = 12;
-    public static final int PSMF_FIRST_TIMESTAMP_OFFSET = 86;
-    public static final int PSMF_LAST_TIMESTAMP_OFFSET = 92;
-    public static final int PSMF_AUDIO_CHANNEL_CONFIG_MONO = 1;
-    public static final int PSMF_AUDIO_CHANNEL_CONFIG_STEREO = 2;
-    public static final int PSMF_AUDIO_DEFAULT_SAMPLE_FREQUENCY = 2;
+    public static final int PSMF_STREAM_VERSION_OFFSET = 0x4;
+    public static final int PSMF_STREAM_OFFSET_OFFSET = 0x8;
+    public static final int PSMF_STREAM_SIZE_OFFSET = 0xC;
+    public static final int PSMF_FIRST_TIMESTAMP_OFFSET = 0x56;
+    public static final int PSMF_LAST_TIMESTAMP_OFFSET = 0x5C;
     protected static final int MPEG_MEMSIZE = 0x10000;          // 64k.
     public static final int atracDecodeDelay = 3000;         // Microseconds
     public static final int avcDecodeDelay = 5400;           // Microseconds
@@ -2126,15 +2123,6 @@ public class sceMpeg extends HLEModule implements HLEStartModule {
         }
     }
 
-    @HLEFunction(nid = 0x11CAB459, version = 150)
-    public void sceMpeg_11CAB459(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function sceMpeg_11CAB459 [0x11CAB459]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
     @HLEFunction(nid = 0x3C37A7A6, version = 150)
     public void sceMpegNextAvcRpAu(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -2146,6 +2134,123 @@ public class sceMpeg extends HLEModule implements HLEStartModule {
             return;
         }
         cpu.gpr[2] = 0;
+    }
+    
+    @HLEFunction(nid = 0x01977054, version = 150)
+    public void sceMpegGetUserdataAu(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("Unimplemented NID function sceMpegGetUserdataAu [0x01977054]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
+    
+    @HLEFunction(nid = 0xC45C99CC, version = 150)
+    public void sceMpegQueryUserdataEsSize(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("Unimplemented NID function sceMpegQueryUserdataEsSize [0xC45C99CC]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
+       
+    @HLEFunction(nid = 0x0558B075, version = 150)
+    public void sceMpegAvcCopyYCbCr(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("Unimplemented NID function sceMpegAvcCopyYCbCr [0x0558B075]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
+       
+    @HLEFunction(nid = 0x11F95CF1, version = 150)
+    public void sceMpegGetAvcNalAu(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("Unimplemented NID function sceMpegGetAvcNalAu [0x11F95CF1]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
+    
+    @HLEFunction(nid = 0x921FCCCF, version = 150)
+    public void sceMpegGetAvcEsAu(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("Unimplemented NID function sceMpegGetAvcEsAu [0x921FCCCF]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
+    
+    @HLEFunction(nid = 0x6F314410, version = 150)
+    public void sceMpegAvcDecodeGetDecodeSEI(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("Unimplemented NID function sceMpegAvcDecodeGetDecodeSEI [0x6F314410]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
+    
+    @HLEFunction(nid = 0xAB0E9556, version = 150)
+    public void sceMpegAvcDecodeDetailIndex(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("Unimplemented NID function sceMpegAvcDecodeDetailIndex [0xAB0E9556]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
+
+    @HLEFunction(nid = 0xCF3547A2, version = 150)
+    public void sceMpegAvcDecodeDetail2(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("Unimplemented NID function sceMpegAvcDecodeDetail2 [0xCF3547A2]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
+    
+    @HLEFunction(nid = 0xF5E7EA31, version = 150)
+    public void sceMpegAvcConvertToYuv420(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("Unimplemented NID function sceMpegAvcConvertToYuv420 [0xF5E7EA31]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
+    
+    @HLEFunction(nid = 0xD1CE4950, version = 150)
+    public void sceMpegAvcCscMode(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("Unimplemented NID function sceMpegAvcCscMode [0xD1CE4950]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
+    
+    @HLEFunction(nid = 0xDBB60658, version = 150)
+    public void sceMpegFlushAu(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("Unimplemented NID function sceMpegFlushAu [0xDBB60658]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
+    
+    @HLEFunction(nid = 0xE95838F6, version = 150)
+    public void sceMpegAvcCscInfo(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("Unimplemented NID function sceMpegAvcCscInfo [0xE95838F6]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
+    
+    @HLEFunction(nid = 0x11CAB459, version = 150)
+    public void sceMpeg_11CAB459(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("Unimplemented NID function sceMpeg_11CAB459 [0x11CAB459]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
     }
 
     @HLEFunction(nid = 0xB27711A8, version = 150)
@@ -2171,24 +2276,6 @@ public class sceMpeg extends HLEModule implements HLEStartModule {
         CpuState cpu = processor.cpu;
 
         log.warn("Unimplemented NID function sceMpeg_C345DED2 [0xC345DED2]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
-    @HLEFunction(nid = 0xAB0E9556, version = 150)
-    public void sceMpeg_AB0E9556(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function sceMpeg_AB0E9556 [0xAB0E9556]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
-    @HLEFunction(nid = 0xCF3547A2, version = 150)
-    public void sceMpegAvcDecodeDetail2(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function sceMpegAvcDecodeDetail2 [0xCF3547A2]");
 
         cpu.gpr[2] = 0xDEADC0DE;
     }

@@ -314,11 +314,13 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
             position = 0;
             printableposition = 0;
             // Hide iso special files
-            if (filenames.length > position && filenames[position].equals(".")) {
-                position++;
-            }
-            if (filenames.length > position && filenames[position].equals("\01")) {
-                position++;
+            if (filenames != null) {
+                if (filenames.length > position && filenames[position].equals(".")) {
+                    position++;
+                }
+                if (filenames.length > position && filenames[position].equals("\01")) {
+                    position++;
+                }
             }
             id = getNewId();
             dirIds.put(id, this);
@@ -441,27 +443,18 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
     		this.size = size;
     	}
 
-    	   @Override
+        @Override
         public void execute() {
             long position = info.position;
             int result = 0;
 
-            try {
-                Utilities.readFully(info.readOnlyFile, address, size);
-                info.position += size;
-                result = size;
-                if (info.sectorBlockMode) {
-                    result /= UmdIsoFile.sectorLength;
-                }
-            } catch (IOException e) {
-                log.error(e);
-                result = ERROR_KERNEL_FILE_READ_ERROR;
+            info.position += size;
+            result = size;
+            if (info.sectorBlockMode) {
+                result /= UmdIsoFile.sectorLength;
             }
 
             info.result = result;
-
-            // Invalidate any compiled code in the read range
-            RuntimeContext.invalidateRange(address, size);
 
             for (IIoListener ioListener : ioListeners) {
                 ioListener.sceIoRead(result, info.id, address, requestedSize, size, position, info.readOnlyFile);
@@ -1506,29 +1499,31 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
                     if (info.readOnlyFile.getFilePointer() + size > info.readOnlyFile.length()) {
                         int oldSize = size;
                         size = (int) (info.readOnlyFile.length() - info.readOnlyFile.getFilePointer());
-                        if (log.isDebugEnabled()) {
-                        	log.debug("hleIoRead - clamping size old=" + oldSize + " new=" + size + " fp=" + info.readOnlyFile.getFilePointer() + " len=" + info.readOnlyFile.length());
-                        }
+                        log.debug("hleIoRead - clamping size old=" + oldSize + " new=" + size + " fp=" + info.readOnlyFile.getFilePointer() + " len=" + info.readOnlyFile.length());
                     }
+                    position = info.position;
+                    dataInput = info.readOnlyFile;
+                    info.position += size;
+                    Utilities.readFully(info.readOnlyFile, data_addr, size);
+                    result = size;
 
-                    if (async) {
-                    	// Execute the read operation in the IO async thread
-                    	asyncAction = new IOAsyncReadAction(info, data_addr, requestedSize, size);
-                    	result = 0;
-                    } else {
-                        position = info.position;
-                        dataInput = info.readOnlyFile;
-                    	Utilities.readFully(info.readOnlyFile, data_addr, size);
-                        info.position += size;
-                        result = size;
+                    // Invalidate any compiled code in the read range
+                    RuntimeContext.invalidateRange(data_addr, size);
 
-                    	// Invalidate any compiled code in the read range
-                        RuntimeContext.invalidateRange(data_addr, size);
-
-                        if (info.sectorBlockMode) {
-                            result /= UmdIsoFile.sectorLength;
-                        }
+                    if (info.sectorBlockMode) {
+                        result /= UmdIsoFile.sectorLength;
                     }
+                    
+                    if(async) {
+                        // Discard the result and recalculate it in the async thread.
+                        // Some games (e.g.: "Kingdom Hearts: Birth By Sleep") check for
+                        // the presence of data right after calling sceReadIoAsync, which seems
+                        // to prove that the file reading starts at sceReadIoAsync and continues
+                        // in execution in the async thread, being this thread the one that
+                        // returns the real result later.
+                        asyncAction = new IOAsyncReadAction(info, data_addr, requestedSize, size);
+                        result = 0;
+                    } 
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -1541,11 +1536,11 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
             }
         }
         updateResult(Emulator.getProcessor().cpu, info, result, async, false, IoOperation.read, asyncAction);
-        // Call the IO listeners (performed in the async action if one is provided)
-        if (asyncAction == null) {
-	        for (IIoListener ioListener : ioListeners) {
-	            ioListener.sceIoRead(result, id, data_addr, requestedSize, size, position, dataInput);
-	        }
+        // Call the IO listeners (performed in the async action if one is provided, otherwise call them here)
+        if (asyncAction != null) {
+            for (IIoListener ioListener : ioListeners) {
+                ioListener.sceIoRead(result, id, data_addr, requestedSize, size, position, dataInput);
+            }
         }
     }
 

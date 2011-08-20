@@ -107,79 +107,8 @@ public class sceCcc extends HLEModule {
 		memoryWriter.writeNext(0);
 		memoryWriter.flush();
 	}
-
-	@HLEFunction(nid = 0xC6A8BEE2, version = 150)
-	public void sceCccDecodeUTF8(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int srcAddrUTF8 = cpu.gpr[4];
-
-		log.warn(String.format("Unimplemented sceCccDecodeUTF8 0x%08X", srcAddrUTF8));
-
-		String srcString = getStringUTF8(srcAddrUTF8);
-		int codePoint = srcString.codePointAt(0);
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceCccDecodeUTF8 string='%s', codePoint=0x%X", srcString, codePoint));
-		}
-
-		cpu.gpr[2] = codePoint;
-	}
-    
-	@HLEFunction(nid = 0x8406F469, version = 150)
-	public void sceCccEncodeUTF16(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn("Unimplemented NID function sceCccEncodeUTF16 [0x8406F469]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
-	@HLEFunction(nid = 0xB4D1CBBF, version = 150)
-	public void sceCccSetTable(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn("Unimplemented NID function sceCccSetTable [0xB4D1CBBF]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-
-	@HLEFunction(nid = 0xE0CF8091, version = 150)
-	public void sceCccDecodeUTF16(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn("Unimplemented NID function sceCccDecodeUTF16 [0xE0CF8091]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
-	@HLEFunction(nid = 0xBEB47224, version = 150)
-	public void sceCccSJIStoUTF16(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn("Unimplemented NID function sceCccSJIStoUTF16 [0xBEB47224]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
-	@HLEFunction(nid = 0xD9392CCB, version = 150)
-	public void sceCccStrlenSJIS(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn("Unimplemented NID function sceCccStrlenSJIS [0xD9392CCB]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
-	@HLEFunction(nid = 0xF1B73D12, version = 150)
-	public void sceCccUTF16toSJIS(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn("Unimplemented NID function sceCccUTF16toSJIS [0xF1B73D12]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
-	@HLEFunction(nid = 0x00D1378F, version = 150)
+        
+        @HLEFunction(nid = 0x00D1378F, version = 150)
 	public void sceCccUTF8toUTF16(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -187,26 +116,44 @@ public class sceCcc extends HLEModule {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-
-	@HLEFunction(nid = 0xB7D3C112, version = 150)
-	public void sceCccStrlenUTF8(Processor processor) {
+        
+        @HLEFunction(nid = 0x068C4320, version = 150)
+	public void sceCccEncodeSJIS(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		log.warn("Unimplemented NID function sceCccStrlenUTF8 [0xB7D3C112]");
+		log.warn("Unimplemented NID function sceCccEncodeSJIS [0x068C4320]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-    
-	@HLEFunction(nid = 0x4BDEB2A8, version = 150)
-	public void sceCccStrlenUTF16(Processor processor) {
+        
+        @HLEFunction(nid = 0x0A00ECF9, version = 150)
+	public void sceCccSwprintfSJIS(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		log.warn("Unimplemented NID function sceCccStrlenUTF16 [0x4BDEB2A8]");
+		log.warn("Unimplemented NID function sceCccSwprintfSJIS [0x0A00ECF9]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-    
-	@HLEFunction(nid = 0x41B724A5, version = 150)
+        
+        @HLEFunction(nid = 0x17E1D813, version = 150)
+	public void sceCccSetErrorCharUTF8(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccSetErrorCharUTF8 [0x17E1D813]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0x3AEC5274, version = 150)
+	public void sceCccSwprintfUTF8(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccSwprintfUTF8 [0x3AEC5274]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0x41B724A5, version = 150)
 	public void sceCccUTF16toUTF8(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -226,5 +173,247 @@ public class sceCcc extends HLEModule {
 		writeStringBytes(dstBytes, dstAddr, dstSize);
 
 		cpu.gpr[2] = dstBytes.length;
+	}
+        
+        @HLEFunction(nid = 0x4BDEB2A8, version = 150)
+	public void sceCccStrlenUTF16(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccStrlenUTF16 [0x4BDEB2A8]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0x67BF0D19, version = 150)
+	public void sceCccIsValidSJIS(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccIsValidSJIS [0x67BF0D19]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0x6CBB36A0, version = 150)
+	public void sceCccVswprintfUTF8(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccVswprintfUTF8 [0x6CBB36A0]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0x6F82EE03, version = 150)
+	public void sceCccUTF8toSJIS(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccUTF8toSJIS [0x6F82EE03]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0x70ECAA10, version = 150)
+	public void sceCccUCStoJIS(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccUCStoJIS [0x70ECAA10]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0x76E33E9C, version = 150)
+	public void sceCccIsValidUCS2(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccIsValidUCS2 [0x76E33E9C]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0x8406F469, version = 150)
+	public void sceCccEncodeUTF16(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccEncodeUTF16 [0x8406F469]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0x90521AC5, version = 150)
+	public void sceCccIsValidUTF8(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccIsValidUTF8 [0x90521AC5]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+
+        @HLEFunction(nid = 0x92C05851, version = 150)
+	public void sceCccEncodeUTF8(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccEncodeUTF8 [0x92C05851]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+
+        @HLEFunction(nid = 0x953E6C10, version = 150)
+	public void sceCccDecodeSJIS(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccDecodeSJIS [0x953E6C10]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0xA2D5D209, version = 150)
+	public void sceCccIsValidJIS(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccIsValidJIS [0xA2D5D209]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0xA62E6E80, version = 150)
+	public void sceCccSJIStoUTF8(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccSJIStoUTF8 [0xA62E6E80]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0xB4D1CBBF, version = 150)
+	public void sceCccSetTable(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccSetTable [0xB4D1CBBF]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0xB7D3C112, version = 150)
+	public void sceCccStrlenUTF8(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccStrlenUTF8 [0xB7D3C112]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0xB8476CF4, version = 150)
+	public void sceCccSetErrorCharUTF16(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccSetErrorCharUTF16 [0xB8476CF4]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0xBD11EEF3, version = 150)
+	public void sceCccIsValidUnicode(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccIsValidUnicode [0xBD11EEF3]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0xBDC4D699, version = 150)
+	public void sceCccVswprintfSJIS(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccVswprintfSJIS [0xBDC4D699]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0xBEB47224, version = 150)
+	public void sceCccSJIStoUTF16(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccSJIStoUTF16 [0xBEB47224]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0xC56949AD, version = 150)
+	public void sceCccSetErrorCharSJIS(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccSetErrorCharSJIS [0xC56949AD]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0xC6A8BEE2, version = 150)
+	public void sceCccDecodeUTF8(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		int srcAddrUTF8 = cpu.gpr[4];
+
+		log.warn(String.format("Unimplemented sceCccDecodeUTF8 0x%08X", srcAddrUTF8));
+
+		String srcString = getStringUTF8(srcAddrUTF8);
+		int codePoint = srcString.codePointAt(0);
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceCccDecodeUTF8 string='%s', codePoint=0x%X", srcString, codePoint));
+		}
+
+		cpu.gpr[2] = codePoint;
+	}
+        
+        @HLEFunction(nid = 0xCC0A8BDA, version = 150)
+	public void sceCccIsValidUTF16(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccIsValidUTF16 [0xCC0A8BDA]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0xD2B18485, version = 150)
+	public void sceCccIsValidUCS4(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccIsValidUCS4 [0xD2B18485]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0xD9392CCB, version = 150)
+	public void sceCccStrlenSJIS(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccStrlenSJIS [0xD9392CCB]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+                
+        @HLEFunction(nid = 0xE0CF8091, version = 150)
+	public void sceCccDecodeUTF16(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccDecodeUTF16 [0xE0CF8091]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0xF1B73D12, version = 150)
+	public void sceCccUTF16toSJIS(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccUTF16toSJIS [0xF1B73D12]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+        
+        @HLEFunction(nid = 0xFB7846E2, version = 150)
+	public void sceCccJIStoUCS(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("Unimplemented NID function sceCccJIStoUCS [0xFB7846E2]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
 	}
 }
