@@ -60,6 +60,7 @@ public class sceUmdUser extends HLEModule implements HLEStartModule {
 
     	umdDeactivateCalled = false;
         waitingThreads = new LinkedList<SceKernelThreadInfo>();
+        umdErrorStat = 0;
     }
 
     @Override
@@ -77,10 +78,19 @@ public class sceUmdUser extends HLEModule implements HLEStartModule {
     protected boolean umdActivated;
     protected boolean umdDeactivateCalled;
     protected List<SceKernelThreadInfo> waitingThreads;
+    protected int umdErrorStat;
 
     public void setIsoReader(UmdIsoReader iso) {
         this.iso = iso;
         setUmdActivated();
+    }
+    
+    public void setUmdErrorStat(int stat) {
+        umdErrorStat = stat;
+    }
+
+    public int getUmdErrorStat() {
+        return umdErrorStat;
     }
 
     private void setUmdActivated() {
@@ -339,7 +349,7 @@ public class sceUmdUser extends HLEModule implements HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if(log.isDebugEnabled()) {
-            log.debug("sceUmdGetDriveStat");
+            log.debug("sceUmdGetDriveStat - " + Integer.toHexString(getUmdStat()));
         }
 
         cpu.gpr[2] = getUmdStat();
@@ -350,10 +360,10 @@ public class sceUmdUser extends HLEModule implements HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if(log.isDebugEnabled()) {
-            log.debug("sceUmdGetErrorStat");
+            log.debug("sceUmdGetErrorStat - " + Integer.toHexString(getUmdErrorStat()));
         }
 
-        cpu.gpr[2] = 0;
+        cpu.gpr[2] = getUmdErrorStat();
     }
 
     @HLEFunction(nid = 0x340B7686, version = 150)

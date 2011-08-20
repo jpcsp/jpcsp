@@ -187,6 +187,15 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 				re.disableFlag(i);
 			}
 		}
+                
+                // Keep this test for non shader use.
+                // Certain games lack or incorrectly display graphics without this
+                // (e.g.: "Worms Open Warfare 2").
+                if (stencil) {
+                    re.enableFlag(GU_STENCIL_TEST);
+                    re.setStencilFunc(GeCommands.STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST, 0, 0);
+                    re.setStencilOp(GeCommands.SOP_KEEP_STENCIL_VALUE, GeCommands.SOP_KEEP_STENCIL_VALUE, GeCommands.SOP_ZERO_STENCIL_VALUE);
+                }
 
 		if (depth) {
             re.enableFlag(GU_DEPTH_TEST);

@@ -107,11 +107,16 @@ public class SceKernelErrors {
     public final static int ERROR_ERRNO_IN_PROGRESS                             = 0x80010077;
     public final static int ERROR_ERRNO_ALREADY                                 = 0x80010078;
     public final static int ERROR_ERRNO_NO_MEDIA                                = 0x8001007B;
-    public final static int ERROR_ERRNO_ADDRESS_NOT_AVAILABLE                   = 0x8001007D;
-    public final static int ERROR_ERRNO_IS_ALREADY_CONNECTED                    = 0x8001007F;
     public final static int ERROR_ERRNO_INVALID_MEDIUM                          = 0x8001007C;
+    public final static int ERROR_ERRNO_ADDRESS_NOT_AVAILABLE                   = 0x8001007D;
+    public final static int ERROR_ERRNO_IS_ALREADY_CONNECTED                    = 0x8001007F;    
     public final static int ERROR_ERRNO_NOT_CONNECTED                           = 0x80010080;
     public final static int ERROR_ERRNO_FILE_QUOTA_EXCEEDED                     = 0x80010084;
+    public final static int ERROR_ERRNO_FUNCTION_NOT_SUPPORTED                  = 0x8001B000;
+    public final static int ERROR_ERRNO_ADDR_OUT_OF_MAIN_MEM                    = 0x8001B001;
+    public final static int ERROR_ERRNO_INVALID_UNIT_NUM                        = 0x8001B002;
+    public final static int ERROR_ERRNO_INVALID_FILE_SIZE                       = 0x8001B003;
+    public final static int ERROR_ERRNO_INVALID_FLAG                            = 0x8001B004;
 
     public final static int ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT        = 0x80020064;
     public final static int ERROR_KERNEL_INTERRUPTS_ALREADY_DISABLED            = 0x80020066;
@@ -334,6 +339,8 @@ public class SceKernelErrors {
     public static final int ERROR_SCREENSHOT_CONT_MODE_NOT_INIT                 = 0x80111229;
 
     public final static int ERROR_UMD_NOT_READY                                 = 0x80210001;
+    public final static int ERROR_UMD_LBA_OUT_OF_BOUNDS                         = 0x80210002;
+    public final static int ERROR_UMD_NO_DISC                                   = 0x80210003;
 
     public final static int ERROR_MEMSTICK_DEVCTL_BAD_PARAMS                    = 0x80220081;
 
@@ -417,4 +424,7 @@ public class SceKernelErrors {
     public final static int ERROR_ATRAC_ALL_DATA_DECODED                        = 0x80630024;
 
     public final static int ERROR_CODEC_AUDIO_FATAL                             = 0x807f00fc;
+    
+    public final static int FATAL_UMD_UNKNOWN_MEDIUM                            = 0xC0210004;
+    public final static int FATAL_UMD_HARDWARE_FAILURE                          = 0xC0210005;
 }

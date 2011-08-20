@@ -3397,5 +3397,13 @@ public class sceNetInet extends HLEModule implements HLEStartModule {
 			}
 		}
 	}
+        
+        @HLEFunction(nid = 0x8CA3A97E, version = 150)
+	public void sceNetInetGetPspError(Processor processor) {
+		CpuState cpu = processor.cpu;
 
-};
+		log.warn("Unimplemented NID function sceNetInetGetPspError [0x8CA3A97E]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+}

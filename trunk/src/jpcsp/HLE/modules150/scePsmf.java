@@ -72,8 +72,8 @@ public class scePsmf extends HLEModule implements HLEStartModule {
     protected class PSMFHeader {
 
         private static final int size = 2048;
-        private static final int PSMF_VIDEO_STREAM_ID = 0xE000;
-        private static final int PSMF_AUDIO_STREAM_ID = 0xBD00;
+        private static final int PSMF_VIDEO_STREAM_ID = 0xE0;
+        private static final int PSMF_AUDIO_STREAM_ID = 0xBD;
         private static final int PSMF_AVC_STREAM = 0;
         private static final int PSMF_ATRAC_STREAM = 1;
         private static final int PSMF_PCM_STREAM = 2;
@@ -88,9 +88,9 @@ public class scePsmf extends HLEModule implements HLEStartModule {
         private int presentationEndTime;
         private int streamNum;
         private int audioSampleFrequency;
-        private int audioSamplesNum;
+        private int audioChannelConfig;
         private int videoWidth;
-        private int videoHeight;
+        private int videoHeigth;
         private int EPMapEntriesNum;
 
         // Offsets for the PSMF struct.
@@ -166,16 +166,42 @@ public class scePsmf extends HLEModule implements HLEStartModule {
                 return StreamChannel;
             }
 
-            public void readStreamParams(int addr) {
+            public void readMPEGVideoStreamParams(int addr) {
                 Memory mem = Memory.getInstance();
-                int internalID = endianSwap16(mem.read16(addr));
-                int unk1 = endianSwap16(mem.read16(addr + 2));
-                audioSampleFrequency = endianSwap16(mem.read16(addr + 4));  // Should be ignored, since the default one is used instead.
-                int unk2 = endianSwap16(mem.read16(addr + 6));
-                audioSamplesNum = endianSwap16(mem.read16(addr + 8));
-                videoWidth = (mem.read8(addr + 10) * 0x10);    // PSMF video width (bytes per line).
-                videoHeight = (mem.read8(addr + 11) * 0x10);   // PSMF video heigth (bytes per line).
-                int unk3 = endianSwap16(mem.read16(addr + 12));
+                int streamID = mem.read8(addr);                // 0xE0
+                int privateStreamID = mem.read8(addr + 1);     // 0x00
+                int unk1 = mem.read8(addr + 2);                // Found values: 0x20/0x21 
+                int unk2 = mem.read8(addr + 3);                // Found values: 0x44/0xFB/0x75
+                EPMapOffset = endianSwap32(readUnaligned32(mem, addr + 4));
+                EPMapEntriesNum = endianSwap32(readUnaligned32(mem, addr + 8));
+                videoWidth = (mem.read8(addr + 12) * 0x10);    // PSMF video width (bytes per line).
+                videoHeigth = (mem.read8(addr + 13) * 0x10);   // PSMF video heigth (bytes per line).
+                
+                log.info("Found PSMF MPEG video stream data: streamID=0x" + Integer.toHexString(streamID) 
+                        + ", privateStreamID=0x" + Integer.toHexString(privateStreamID)
+                        + ", unk1=0x" + Integer.toHexString(unk1) 
+                        + ", unk2=0x" + Integer.toHexString(unk2) 
+                        + ", EPMapOffset=0x" + Integer.toHexString(EPMapOffset) 
+                        + ", EPMapEntriesNum=" + EPMapEntriesNum
+                        + ", videoWidth=" + videoWidth 
+                        + ", videoHeigth=" + videoHeigth);
+            }
+            
+            public void readPrivateAudioStreamParams(int addr) {
+                Memory mem = Memory.getInstance();
+                int streamID = mem.read8(addr);                // 0xBD
+                int privateStreamID = mem.read8(addr + 1);     // 0x00
+                int unk1 = mem.read8(addr + 2);                // Always 0x20
+                int unk2 = mem.read8(addr + 3);                // Always 0x04
+                audioChannelConfig = mem.read8(addr + 14);     // 1 - mono, 2 - stereo
+                audioSampleFrequency = mem.read8(addr + 15);   // 2 - 44khz
+                
+                log.info("Found PSMF private audio stream data: streamID=0x" + Integer.toHexString(streamID) 
+                        + ", privateStreamID=0x" + Integer.toHexString(privateStreamID)
+                        + ", unk1=0x" + Integer.toHexString(unk1) 
+                        + ", unk2=0x" + Integer.toHexString(unk2) 
+                        + ", audioChannelConfig=" + audioChannelConfig
+                        + ", audioSampleFrequency=" + audioSampleFrequency);
             }
         }
 
@@ -193,22 +219,16 @@ public class scePsmf extends HLEModule implements HLEStartModule {
             streamOffset = endianSwap32(mem.read32(addr + sceMpeg.PSMF_STREAM_OFFSET_OFFSET));
             streamSize = endianSwap32(mem.read32(addr + sceMpeg.PSMF_STREAM_SIZE_OFFSET));
 
-            int EPmapEntriesNumOffset = endianSwap16(mem.read16(addr + 82));
-            EPMapEntriesNum = endianSwap16(mem.read16(addr + 82 + EPmapEntriesNumOffset));                           // Number of entry points in the EPMap.
+            int streamDataTotalSize = endianSwap32(readUnaligned32(mem, addr + 0x50));
             presentationStartTime = endianSwap32(readUnaligned32(mem, addr + sceMpeg.PSMF_FIRST_TIMESTAMP_OFFSET));  // First PTS in EPMap (90000).
             presentationEndTime = endianSwap32(readUnaligned32(mem, addr + sceMpeg.PSMF_LAST_TIMESTAMP_OFFSET));     // Last PTS in EPMap.
-            int unk1 = endianSwap16(mem.read16(addr + 98));
-            int unk2 = endianSwap16(mem.read16(addr + 104));
-            int streamDataBlockSize = endianSwap16(mem.read16(addr + 108));                                          // General stream information block size.
-            EPMapOffset = addr + 108 + streamDataBlockSize + 2;                                                      // Calculate the EPMapOffset from the streamDataBlockSize.
-            int unk3 = endianSwap32(mem.read32(addr + 122));
-            int streamStructSize = endianSwap16(mem.read16(addr + 126));                                             // Inner stream information block size.
-            streamNum = endianSwap16(mem.read16(addr + 128));                                                        // Number of total registered streams.
-
+            int unk = endianSwap32(readUnaligned32(mem, addr + 0x60));
+            int streamDataNextBlockSize = endianSwap32(readUnaligned32(mem, addr + 0x6A));                           // General stream information block size.
+            int streamDataNextInnerBlockSize = endianSwap32(readUnaligned32(mem, addr + 0x7C));                      // Inner stream information block size.
+            streamNum = endianSwap16(mem.read16(addr + 0x80));                                                       // Number of total registered streams.
+                                                         
             // Stream area:
-            // At offset 130, each 16 bytes represent one stream:
-            //  - First two bytes (short): stream type ID;
-            //  - The remaining bytes represent varying kinds of stream parameters.
+            // At offset 0x82, each 16 bytes represent one stream.
             streamMap = new HashMap<Integer, PSMFStream>();
             currentStreamNumber = -1;         // Current stream number.
             currentVideoStreamNumber = -1;    // Current video stream number.
@@ -219,15 +239,16 @@ public class scePsmf extends HLEModule implements HLEStartModule {
             // Parse the stream field and assign each one to it's type.
             for (int i = 0; i < streamNum; i++) {
                 PSMFStream stream = null;
-                int currentStreamAddr = (addr + 130 + i * 16);
-                int streamID = endianSwap16(mem.read16(currentStreamAddr));
+                int currentStreamAddr = (addr + 0x82 + i * 16);
+                int streamID = mem.read8(currentStreamAddr);
                 if ((streamID & PSMF_VIDEO_STREAM_ID) == PSMF_VIDEO_STREAM_ID) {
                     stream = new PSMFStream(PSMF_AVC_STREAM, 0);
-                    stream.readStreamParams(currentStreamAddr);  // All PSMF params are stored in the AVC stream.
+                    stream.readMPEGVideoStreamParams(currentStreamAddr);
                     currentVideoStreamNumber++;
                     videoStreamNum++;
                 } else if ((streamID & PSMF_AUDIO_STREAM_ID) == PSMF_AUDIO_STREAM_ID) {
                     stream = new PSMFStream(PSMF_ATRAC_STREAM, 1);
+                    stream.readPrivateAudioStreamParams(currentStreamAddr);
                     currentAudioStreamNumber++;
                     audioStreamNum++;
                 }
@@ -238,7 +259,7 @@ public class scePsmf extends HLEModule implements HLEStartModule {
             }
 
             // EPMap info:
-            // - Located at EPMapOffset;
+            // - Located at EPMapOffset (set by the AVC stream);
             // - Each entry is composed by a total of 10 bytes:
             //      - 1 byte: Reference picture index (RAPI);
             //      - 1 byte: Reference picture offset from the current index;
@@ -288,16 +309,16 @@ public class scePsmf extends HLEModule implements HLEStartModule {
             return videoWidth;
         }
 
-        public int getVideoHeight() {
-            return videoHeight;
+        public int getvideoHeigth() {
+            return videoHeigth;
         }
 
         public int getAudioSampleFrequency() {
             return audioSampleFrequency;
         }
 
-        public int getAudioSamplesNum() {
-            return audioSamplesNum;
+        public int getAudioChannelConfig() {
+            return audioChannelConfig;
         }
 
         public int getEPMapOffset() {
@@ -679,7 +700,7 @@ public class scePsmf extends HLEModule implements HLEStartModule {
         PSMFHeader header = getPsmfHeader(psmf);
         if (header != null) {
             int width = header.getVideoWidth();
-            int height = header.getVideoHeight();
+            int height = header.getvideoHeigth();
             mem.write32(videoInfoAddr, width);
             mem.write32(videoInfoAddr + 4, height);
             cpu.gpr[2] = 0;
@@ -706,8 +727,8 @@ public class scePsmf extends HLEModule implements HLEStartModule {
         }
         PSMFHeader header = getPsmfHeader(psmf);
         if (header != null) {
-            int chConfig = sceMpeg.PSMF_AUDIO_CHANNEL_CONFIG_STEREO;
-            int sampleFreq = sceMpeg.PSMF_AUDIO_DEFAULT_SAMPLE_FREQUENCY;
+            int chConfig = header.getAudioChannelConfig();
+            int sampleFreq = header.getAudioSampleFrequency();
             mem.write32(audioInfoAddr, chConfig);
             mem.write32(audioInfoAddr + 4, sampleFreq);
             cpu.gpr[2] = 0;

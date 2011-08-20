@@ -85,8 +85,6 @@ public enum SyscallIgnore {
 	sceMpegBaseCscAvc(0x91929A21),
 	sceMpegBaseCscInit(0x492B5E4B),
 	sceMpegBasePESpacketCopy(0xBEA18F91),
-	sceMpegGetUserdataAu(0x01977054),
-	sceMpegQueryUserdataEsSize(0xC45C99CC),
 	sceNetApDialogDummyConnect(0x3811281E),
 	sceNetApDialogDummyGetState(0xCA9BE5BF),
 	sceNetApDialogDummyInit(0xBB73FF67),
