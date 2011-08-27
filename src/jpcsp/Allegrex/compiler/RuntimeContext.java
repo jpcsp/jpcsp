@@ -340,8 +340,14 @@ public class RuntimeContext {
     	} else {
     	    // Switch to the callback thread so that it can execute the callback.
     	    pendingCallbackThread = callbackThreadInfo;
-    	    pendingCallbackReturnThread = currentThread;
     	    pendingCallbackCpuState = callbackCpuState;
+    	    pendingCallbackReturnThread = currentThread;
+    	    // Search for the SceKernelThreadInfo corresponding to the current thread
+    	    for (Entry<SceKernelThreadInfo, RuntimeThread> entry : threads.entrySet()) {
+    	    	if (entry.getValue() == Thread.currentThread()) { 
+    	    		pendingCallbackReturnThread = entry.getKey();
+    	    	}
+    	    }
             // The callback thread is switching back to us just after
             // executing the callback.
             switchThread(callbackThreadInfo);
