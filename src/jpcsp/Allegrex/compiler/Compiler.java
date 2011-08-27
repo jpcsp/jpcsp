@@ -373,6 +373,19 @@ public class Compiler implements ICompiler {
     	return compile(address, getResetCount());
     }
 
+    private CompilerContext retryCompilation(CompilerContext context, int instanceIndex, int retries, Throwable e) {
+        // Try again with stricter methodMaxInstructions (75% of current value)
+        int methodMaxInstructions = context.getMethodMaxInstructions() * 3 / 4;
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("Catched exception '%s'' (can be ignored)", e.toString()));
+        	log.debug(String.format("Retrying compilation again with maxInstruction=%d, retries left=%d...", methodMaxInstructions, retries - 1));
+        }
+        context = new CompilerContext(classLoader, instanceIndex);
+        context.setMethodMaxInstructions(methodMaxInstructions);
+
+        return context;
+    }
+
     public IExecutable compile(int address, int instanceIndex) {
     	if (!Memory.isAddressGood(address)) {
             if(isIgnoreInvalidMemory())
@@ -392,6 +405,7 @@ public class Compiler implements ICompiler {
         CompilerContext context = new CompilerContext(classLoader, instanceIndex);
         IExecutable executable = null;
         ClassFormatError error = null;
+        RuntimeException exception = null;
         for (int retries = 2; retries > 0; retries--) {
             try {
                 executable = analyse(context, address, false, instanceIndex);
@@ -402,15 +416,16 @@ public class Compiler implements ICompiler {
                 //
                 error = e;
 
-                // Try again with stricter methodMaxInstructions (75% of current value)
-                int methodMaxInstructions = context.getMethodMaxInstructions() * 3 / 4;
-                Compiler.log.debug("Catched exception '" + e.toString() + "' (can be ignored)");
-                Compiler.log.debug("Retrying compilation again with maxInstruction=" + methodMaxInstructions + ", retries left=" + (retries - 1) + "...");
-                context = new CompilerContext(classLoader, instanceIndex);
-                context.setMethodMaxInstructions(methodMaxInstructions);
+                context = retryCompilation(context, instanceIndex, retries, e);
             } catch (NullPointerException e) {
             	log.error(String.format("Catched exception '%s' while compiling 0x%08X (0x%08X-0x%08X)", e.toString(), address, context.getCodeBlock().getLowestAddress(), context.getCodeBlock().getHighestAddress()));
             	break;
+            } catch (RuntimeException e) {
+            	// Catch exception
+            	//     java.lang.RuntimeException: Method code too large!
+                exception = e;
+
+                context = retryCompilation(context, instanceIndex, retries, e);
             }
         }
         compileDuration.end();
@@ -419,8 +434,13 @@ public class Compiler implements ICompiler {
             Compiler.log.debug("Compilation failed with maxInstruction=" + context.getMethodMaxInstructions());
             context = new CompilerContext(classLoader, instanceIndex);
             executable = interpret(context, address, instanceIndex);
-            if (executable == null && error != null) {
-            	throw error;
+            if (executable == null) {
+            	if (error != null) {
+            		throw error;
+            	}
+            	if (exception != null) {
+            		throw exception;
+            	}
             }
         } else if (error != null) {
             Compiler.log.debug("Compilation was now correct with maxInstruction=" + context.getMethodMaxInstructions());
