@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
+import static jpcsp.Allegrex.Common._gp;
+import static jpcsp.Allegrex.Common._k1;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -187,8 +190,8 @@ public class Emulator implements Runnable {
 
         cpu.pc = entryAddr; //PC.
         cpu.npc = cpu.pc + 4;
-        cpu.gpr[27] = 0; //k1.
-        cpu.gpr[28] = module.gp_value; //gp_reg.
+        cpu.gpr[_k1] = 0;
+        cpu.gpr[_gp] = module.gp_value;
 
         HLEModuleManager.getInstance().startModules();
         Modules.ThreadManForUserModule.Initialise(module, cpu.pc, module.attribute, module.pspfilename, module.modid, fromSyscall);

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_ADDR;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_ARGUMENT;
@@ -78,6 +79,7 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
+import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.RuntimeContext;
@@ -1365,11 +1367,12 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     public void hleKernelExitDeleteThread() {
+        Processor processor = Emulator.getProcessor();
         if (log.isDebugEnabled()) {
-            log.debug(String.format("hleKernelExitDeleteThread SceUID=%x name='%s' return:0x%08X", currentThread.uid, currentThread.name, Emulator.getProcessor().cpu.gpr[2]));
+            log.debug(String.format("hleKernelExitDeleteThread SceUID=%x name='%s' return:0x%08X", currentThread.uid, currentThread.name, processor.cpu.gpr[_v0]));
         }
 
-        sceKernelExitDeleteThread(Emulator.getProcessor(), Emulator.getProcessor().cpu.gpr[4]);
+        sceKernelExitDeleteThread(processor, processor.cpu.gpr[_v0]);
     }
 
     @HLEFunction(nid = 0, version = 150, syscall = true)
@@ -4435,7 +4438,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
 
             if (restoreWaitState) {
                 if (log.isDebugEnabled()) {
-                    log.debug("AfterCallAction: restoring wait state for thread: " + thread.toString());
+                    log.debug(String.format("AfterCallAction: restoring wait state for thread '%s' to %s, %s", thread.toString(), SceKernelThreadInfo.getStatusName(status), SceKernelThreadInfo.getWaitName(waitType, threadWaitInfo, status)));
                 }
 
                 // Restore the wait state of the thread

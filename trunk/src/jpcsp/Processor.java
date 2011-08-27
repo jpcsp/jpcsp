@@ -43,6 +43,10 @@ public class Processor {
         parameterReader = new ParameterReader(cpu, memory);
     }
 
+    public void setCpu(CpuState cpu) {
+    	this.cpu = cpu;
+    }
+
     public void reset() {
         invalidateICache();
         cpu.reset();

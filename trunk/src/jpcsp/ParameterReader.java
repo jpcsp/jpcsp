@@ -1,5 +1,12 @@
 package jpcsp;
 
+import static jpcsp.Allegrex.Common._a0;
+import static jpcsp.Allegrex.Common._f0;
+import static jpcsp.Allegrex.Common._f12;
+import static jpcsp.Allegrex.Common._sp;
+import static jpcsp.Allegrex.Common._v0;
+import static jpcsp.Allegrex.Common._v1;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
@@ -8,8 +15,8 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import jpcsp.Allegrex.CpuState;
 
 final public class ParameterReader {
-	public CpuState cpu;
-	public Memory memory;
+	private CpuState cpu;
+	private Memory memory;
 	private int parameterIndex = 0;
 	private int parameterIndexFloat = 0;
 	Charset utf8;
@@ -20,6 +27,10 @@ final public class ParameterReader {
 		this.utf8 = Charset.forName("UTF8");
 	}
 	
+    public void setCpu(CpuState cpu) {
+    	this.cpu = cpu;
+    }
+
 	public void resetReading() {
 		parameterIndex = 0;
 		parameterIndexFloat = 0;
@@ -27,19 +38,17 @@ final public class ParameterReader {
 	
 	private int getParameterIntAt(int index) {
 		if (index >= 8) {
-			return memory.read32(cpu.gpr[29] + (index - 8) * 4);
-		} else {
-			//System.err.println("getParameterIntAt(" + index + ") :: " + cpu.gpr[4 + index]);
-			return cpu.gpr[4 + index];
+			return memory.read32(cpu.gpr[_sp] + (index - 8) * 4);
 		}
+		//System.err.println("getParameterIntAt(" + index + ") :: " + cpu.gpr[4 + index]);
+		return cpu.gpr[_a0 + index];
 	}
 	
 	private float getParameterFloatAt(int index) {
 		if (index >= 8) {
 			throw(new NotImplementedException());
-		} else {
-			return cpu.fpr[12 + index];
 		}
+		return cpu.fpr[_f12 + index];
 	}
 
 	private long getParameterLongAt(int index) {
@@ -92,16 +101,17 @@ final public class ParameterReader {
 	}
 	
 	public void setReturnValueInt(int value) {
-		cpu.gpr[2] = value;
+		cpu.gpr[_v0] = value;
 	}
 
 	public void setReturnValueFloat(float value) {
-		cpu.fpr[2] = value;
+		// Float value is returned in $f0 register
+		cpu.fpr[_f0] = value;
 	}
 
 	public void setReturnValueLong(long value) {
-		cpu.gpr[2] = (int)((value >>  0) & 0xFFFFFFFF);
-		cpu.gpr[3] = (int)((value >> 32) & 0xFFFFFFFF);
+		cpu.gpr[_v0] = (int)((value >>  0) & 0xFFFFFFFF);
+		cpu.gpr[_v1] = (int)((value >> 32) & 0xFFFFFFFF);
 	}
 
 	/*

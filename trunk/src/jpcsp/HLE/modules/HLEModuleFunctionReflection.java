@@ -373,13 +373,18 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 			}
 
 			try {
+				// Remember the current CpuState in the parameterReader.
+				// This is required as the HLE module method might trigger
+				// a thread switch. The return value has to be stored in the
+				// CpuState of the thread active at this point, not into the
+				// CpuState of the thread active after the HLE module method call.
+				processor.parameterReader.setCpu(processor.cpu);
+
 				if (fastOldInvoke) {
 					this.hleModuleMethod.invoke(hleModule, processor);
 				} else {
 					//this.hleModuleMethod.invoke(hleModule, cpu);
 					
-					processor.parameterReader.cpu = processor.cpu;
-					processor.parameterReader.memory = Processor.memory;
 					processor.parameterReader.resetReading();
 					
 					executeParameterDecodingRunList(runListParams);
