@@ -16,6 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import static jpcsp.Allegrex.Common._gp;
+import static jpcsp.Allegrex.Common._k0;
+import static jpcsp.Allegrex.Common._ra;
+import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_ALREADY_DORMANT;
 
 import java.util.Comparator;
@@ -154,7 +158,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     	}
 
         // Inherit gpReg.
-        gpReg_addr = Emulator.getProcessor().cpu.gpr[28];
+        gpReg_addr = Emulator.getProcessor().cpu.gpr[_gp];
         // Inherit context.
         cpuContext = new CpuState(Emulator.getProcessor().cpu);
         wait = new ThreadWaitInfo();
@@ -198,12 +202,12 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         cpuContext.npc = entry_addr; // + 4;
 
         // sp, 512 byte padding at the top for user data, this will get re-jigged when we call start thread
-        cpuContext.gpr[29] = stack_addr + stackSize - 512;
-        cpuContext.gpr[26] = k0;
+        cpuContext.gpr[_sp] = stack_addr + stackSize - 512;
+        cpuContext.gpr[_k0] = k0;
 
         // We'll hook "jr $ra" where $ra == address of HLE syscall hleKernelExitThread
         // when the thread is exiting
-        cpuContext.gpr[31] = jpcsp.HLE.modules150.ThreadManForUser.THREAD_EXIT_HANDLER_ADDRESS; // $ra
+        cpuContext.gpr[_ra] = jpcsp.HLE.modules150.ThreadManForUser.THREAD_EXIT_HANDLER_ADDRESS; // $ra
 
         doDelete = false;
         doCallbacks = false;
@@ -228,7 +232,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         // so we can set pc = npc regardless of cop0.status.bd.
         cpuContext.pc = cpuContext.npc;
 
-        Emulator.getProcessor().cpu = cpuContext;
+        Emulator.getProcessor().setCpu(cpuContext);
         RuntimeContext.update();
     }
 
@@ -307,7 +311,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     	}
     }
 
-    public String getStatusName() {
+    public static String getStatusName(int status) {
         StringBuilder s = new StringBuilder();
 
         // A thread status is a bitfield so it could be in multiple states
@@ -345,7 +349,11 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         return s.toString();
     }
 
-    public String getWaitName() {
+    public String getStatusName() {
+    	return getStatusName(status);
+    }
+
+    public static String getWaitName(int waitType, ThreadWaitInfo wait, int status) {
         StringBuilder s = new StringBuilder();
 
         // A thread should only be waiting on at most 1 thing, handle it anyway
@@ -400,6 +408,10 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         }
 
         return s.toString();
+    }
+
+    public String getWaitName() {
+    	return getWaitName(waitType, wait, status);
     }
 
     public boolean isSuspended() {
