@@ -714,7 +714,6 @@ public class sceDisplay extends HLEModule implements HLEStartModule {
     	isStarted = false;
     }
 
-    @SuppressWarnings("unused")
 	public void exit() {
         if (statistics != null && DurationStatistics.collectStatistics) {
             log.info("----------------------------- sceDisplay exit -----------------------------");
@@ -1628,7 +1627,7 @@ public class sceDisplay extends HLEModule implements HLEStartModule {
         if (log.isDebugEnabled()) {
     		log.debug(String.format(
     			"sceDisplayGetFrameBuf topaddrAddr=0x%08X, bufferwidthAddr=0x%08X, pixelformatAddr=0x%08X, sync=%d",
-    			topaddrAddr, bufferwidthAddr, pixelformatAddr, syncType
+    			topaddrAddr.getAddress(), bufferwidthAddr.getAddress(), pixelformatAddr.getAddress(), syncType
     		));
         }
 
