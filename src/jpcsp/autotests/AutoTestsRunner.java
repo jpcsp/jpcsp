@@ -5,15 +5,12 @@ import java.awt.Window;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.log4j.Appender;
-import org.apache.log4j.Layout;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.SimpleLayout;
@@ -23,7 +20,6 @@ import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.GUI.IMainGUI;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
 
 public class AutoTestsRunner {

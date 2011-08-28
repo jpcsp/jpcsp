@@ -25,8 +25,6 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.util.Utilities;
 
 public class sceRtc extends jpcsp.HLE.modules150.sceRtc {

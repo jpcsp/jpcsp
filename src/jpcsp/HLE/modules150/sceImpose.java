@@ -20,14 +20,9 @@ package jpcsp.HLE.modules150;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer32;
-import jpcsp.Memory;
-import jpcsp.Processor;
 import jpcsp.Settings;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.hardware.Battery;
 

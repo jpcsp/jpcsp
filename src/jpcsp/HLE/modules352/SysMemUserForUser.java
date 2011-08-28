@@ -21,8 +21,6 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.Memory;
 import static jpcsp.util.Utilities.readStringNZ;
 

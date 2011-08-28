@@ -39,7 +39,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -3045,7 +3044,7 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
                     int unk2 = mem.read32(indata_addr + 8); // NULL.
                     int sectorNum = mem.read32(indata_addr + 12);  // Length of data to read.
                     if (log.isDebugEnabled()) {
-                        log.debug("sector=" + sector + ", sectorNum=" + sectorNum);
+                        log.debug(String.format("sector=%d, sectorNum=%d, unk1=%d, unk2=%d", sector, sectorNum, unk1, unk2));
                     }
                     cpu.gpr[2] = 0;
                 } else {
@@ -3065,7 +3064,7 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
                     int unk2 = mem.read32(indata_addr + 8); // NULL.
                     int sectorNum = mem.read32(indata_addr + 12);  // Length of data to read.
                     if (log.isDebugEnabled()) {
-                        log.debug("sector=" + sector + ", sectorNum=" + sectorNum);
+                        log.debug(String.format("sector=%d, sectorNum=%d, unk1=%d, unk2=%d", sector, sectorNum, unk1, unk2));
                     }
                     mem.write32(outdata_addr, 1); // Status (unitary index of the requested read, greater or equal to 1).
                     cpu.gpr[2] = 0;

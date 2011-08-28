@@ -27,9 +27,6 @@ import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.sceNetInet;
 import jpcsp.util.Utilities;
 

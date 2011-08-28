@@ -209,9 +209,8 @@ public class sceHttp extends HLEModule {
 
         if (!isSystemCookieLoaded){
             return SceKernelErrors.ERROR_HTTP_SYSTEM_COOKIE_NOT_LOADED;
-        } else {
-            return 0;
         }
+        return 0;
     }
 
     @HLEUnimplemented

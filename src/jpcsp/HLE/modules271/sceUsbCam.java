@@ -28,9 +28,6 @@ import jpcsp.HLE.kernel.types.pspUsbCamSetupStillParam;
 import jpcsp.HLE.kernel.types.pspUsbCamSetupVideoExParam;
 import jpcsp.HLE.kernel.types.pspUsbCamSetupVideoParam;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.modules.HLEStartModule;
 
 public class sceUsbCam extends HLEModule {
     protected static Logger log = Modules.getLogger("sceUsbCam");

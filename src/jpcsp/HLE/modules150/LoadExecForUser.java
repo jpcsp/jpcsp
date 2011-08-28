@@ -35,9 +35,6 @@ import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.util.Utilities;
 

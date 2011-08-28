@@ -221,42 +221,42 @@ public class sceRtc extends HLEModule {
     public int sceRtcCheckValid(int time_addr) {
         Memory mem = Processor.memory;
 
-        if (Memory.isAddressGood(time_addr)) {
-            ScePspDateTime time = new ScePspDateTime();
-            time.read(mem, time_addr);
-            Calendar cal = new GregorianCalendar(
-            	time.year, time.month - 1, time.day, time.hour, time.minute, time.second
-            );
-
-            int result = 0;
-
-            if (time.year < 1582 || time.year > 3000) {	// What are valid years?
-            	result = PSP_TIME_INVALID_YEAR;
-            } else if (time.month < 1 || time.month > 12) {
-            	result = PSP_TIME_INVALID_MONTH;
-            } else if (time.day < 1 || time.day > 31) {
-            	result = PSP_TIME_INVALID_DAY;
-            } else if (time.hour < 0 || time.hour > 23) {
-            	result = PSP_TIME_INVALID_HOUR;
-            } else if (time.minute < 0 || time.minute > 59) {
-            	result = PSP_TIME_INVALID_MINUTES;
-            } else if (time.second < 0 || time.second > 59) {
-            	result = PSP_TIME_INVALID_SECONDS;
-            } else if (time.microsecond < 0 || time.microsecond >= 1000000) {
-            	result = PSP_TIME_INVALID_MICROSECONDS;
-            } else if (cal.get(Calendar.DAY_OF_MONTH) != time.day) { // Check if this is a valid day of the month
-            	result = PSP_TIME_INVALID_DAY;
-            }
-
-            if (log.isDebugEnabled()) {
-            	log.debug("sceRtcCheckValid " + time.toString() + ", cal: " + cal + ", result: " + result);
-            }
-
-            return result;
-        } else {
+        if (!Memory.isAddressGood(time_addr)) {
             log.warn("sceRtcGetTick bad address " + String.format("0x%08X", time_addr));
             return -1;
         }
+
+        ScePspDateTime time = new ScePspDateTime();
+        time.read(mem, time_addr);
+        Calendar cal = new GregorianCalendar(
+        	time.year, time.month - 1, time.day, time.hour, time.minute, time.second
+        );
+
+        int result = 0;
+
+        if (time.year < 1582 || time.year > 3000) {	// What are valid years?
+        	result = PSP_TIME_INVALID_YEAR;
+        } else if (time.month < 1 || time.month > 12) {
+        	result = PSP_TIME_INVALID_MONTH;
+        } else if (time.day < 1 || time.day > 31) {
+        	result = PSP_TIME_INVALID_DAY;
+        } else if (time.hour < 0 || time.hour > 23) {
+        	result = PSP_TIME_INVALID_HOUR;
+        } else if (time.minute < 0 || time.minute > 59) {
+        	result = PSP_TIME_INVALID_MINUTES;
+        } else if (time.second < 0 || time.second > 59) {
+        	result = PSP_TIME_INVALID_SECONDS;
+        } else if (time.microsecond < 0 || time.microsecond >= 1000000) {
+        	result = PSP_TIME_INVALID_MICROSECONDS;
+        } else if (cal.get(Calendar.DAY_OF_MONTH) != time.day) { // Check if this is a valid day of the month
+        	result = PSP_TIME_INVALID_DAY;
+        }
+
+        if (log.isDebugEnabled()) {
+        	log.debug("sceRtcCheckValid " + time.toString() + ", cal: " + cal + ", result: " + result);
+        }
+
+        return result;
     }
 
     @HLEFunction(nid = 0x3A807CC8, version = 150)

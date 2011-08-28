@@ -19,6 +19,7 @@ package jpcsp.HLE.kernel.managers;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer64;
 
 import org.apache.log4j.Logger;
 
@@ -134,19 +135,15 @@ public class SystemTimeManager {
         return Emulator.getClock().microTime();
     }
 
-    public void sceKernelGetSystemTime(int time_addr) {
+    public int sceKernelGetSystemTime(TPointer64 time_addr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelGetSystemTime pointer=0x" + Integer.toHexString(time_addr));
+            log.debug(String.format("sceKernelGetSystemTime pointer=0x%08X", time_addr.getAddress()));
         }
 
-        Memory mem = Memory.getInstance();
-        if (Memory.isAddressGood(time_addr)) {
-            long systemTime = getSystemTime();
-            mem.write64(time_addr, systemTime);
-            Emulator.getProcessor().cpu.gpr[2] = 0;
-        } else {
-            Emulator.getProcessor().cpu.gpr[2] = -1;
-        }
+        long systemTime = getSystemTime();
+        time_addr.setValue(systemTime);
+
+        return 0;
     }
 
     public void sceKernelGetSystemTimeWide() {
@@ -158,11 +155,11 @@ public class SystemTimeManager {
         Emulator.getProcessor().cpu.gpr[3] = (int) ((systemTime >> 32) & 0xffffffffL);
     }
 
-    public void sceKernelGetSystemTimeLow() {
+    public int sceKernelGetSystemTimeLow() {
         long systemTime = getSystemTime();
-        int low = (int) (systemTime & 0xffffffffL);
-        Emulator.getProcessor().cpu.gpr[2] = low;
+        return (int) (systemTime & 0xffffffffL);
     }
+
     public static final SystemTimeManager singleton = new SystemTimeManager();
 
     private SystemTimeManager() {

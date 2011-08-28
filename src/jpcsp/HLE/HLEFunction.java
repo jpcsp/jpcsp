@@ -5,8 +5,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.annotation.ElementType;
 
-import jpcsp.HLE.kernel.types.SceKernelErrors;
-
 /**
  * This annotation marks a function as a kernel function from a module.
  */

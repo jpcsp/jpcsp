@@ -21,8 +21,6 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_UMD_NOT_READY;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
 
 public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
     protected boolean umdAllowReplace;
