@@ -79,17 +79,16 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
-import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.DumpDebugState;
-import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.TPointer64;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
@@ -3037,9 +3036,8 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     @HLEFunction(nid = 0xDB738F35, version = 150)
-    public void sceKernelGetSystemTime(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.systime.sceKernelGetSystemTime(cpu.gpr[4]);
+    public int sceKernelGetSystemTime(TPointer64 time_addr) {
+        return Managers.systime.sceKernelGetSystemTime(time_addr);
     }
 
     @HLEFunction(nid = 0x82BC5777, version = 150)
@@ -3048,8 +3046,8 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     @HLEFunction(nid = 0x369ED59D, version = 150)
-    public void sceKernelGetSystemTimeLow(Processor processor) {
-        Managers.systime.sceKernelGetSystemTimeLow();
+    public int sceKernelGetSystemTimeLow() {
+        return Managers.systime.sceKernelGetSystemTimeLow();
     }
 
     /**
@@ -3827,10 +3825,10 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
 
         if (Interrupts.isInterruptsDisabled()) {
             return SceKernelErrors.ERROR_KERNEL_INTERRUPTS_ALREADY_DISABLED;
-        } else {
-            dispatchThreadEnabled = false;
-            return state;
         }
+
+        dispatchThreadEnabled = false;
+        return state;
     }
 
     /**
@@ -3855,9 +3853,9 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
 
         if (isInterruptsDisabled) {
             return SceKernelErrors.ERROR_KERNEL_INTERRUPTS_ALREADY_DISABLED;
-        } else {
-        	return 0;
         }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xEA748E31, version = 150)
@@ -4038,12 +4036,12 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
                 log.debug(String.format("sceKernelGetThreadExitStatus not stopped uid=0x%x", uid));
             }
             return ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
-        } else {
-            if (log.isDebugEnabled()) {
-                log.debug("sceKernelGetThreadExitStatus uid=0x" + Integer.toHexString(uid) + " exitStatus=0x" + Integer.toHexString(thread.exitStatus));
-            }
-            return thread.exitStatus;
         }
+
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelGetThreadExitStatus uid=0x" + Integer.toHexString(uid) + " exitStatus=0x" + Integer.toHexString(thread.exitStatus));
+        }
+        return thread.exitStatus;
     }
 
     /** @return amount of free stack space.*/
@@ -4068,8 +4066,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     public int sceKernelGetThreadStackFreeSize(int uid) {
     	// @TODO Thread is not used
     	SceKernelThreadInfo thread = threadMap.get(uid);
-    	
-    	
+
         // This function compares the stack of the specified thread from when it started with
         // it's present state. The returned value may not be always the remaining free stack size, because
         // only the space that has never been used (consumed and/or released afterwards, for instance) counts.

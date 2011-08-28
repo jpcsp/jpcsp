@@ -181,7 +181,8 @@ public class LogGUI extends javax.swing.JFrame {
         logKeywordField.setEditable(false);
         logKeywordField.setText("LOG_ALL");
         logKeywordField.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
+            @Override
+			public void mouseClicked(java.awt.event.MouseEvent evt) {
                 logKeywordFieldMouseClicked(evt);
             }
         });

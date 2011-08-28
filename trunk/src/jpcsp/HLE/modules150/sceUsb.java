@@ -23,9 +23,6 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.util.Utilities;
 
 public class sceUsb extends HLEModule {

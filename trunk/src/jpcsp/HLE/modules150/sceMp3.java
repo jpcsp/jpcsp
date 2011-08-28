@@ -19,7 +19,6 @@ package jpcsp.HLE.modules150;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEUidClass;
 import jpcsp.HLE.HLEUidObjectMapping;
-import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer32;
 
 import java.nio.ByteBuffer;
@@ -27,20 +26,13 @@ import java.util.HashMap;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.kernel.managers.IntrManager;
-import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
 
 import org.apache.log4j.Logger;
-import org.objectweb.asm.util.CheckAnnotationAdapter;
 
 public class sceMp3 extends HLEModule implements HLEStartModule {
 

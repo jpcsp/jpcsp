@@ -23,9 +23,6 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.modules.HLEStartModule;
 
 // Positional 3D Audio Library
 public class sceP3da extends HLEModule {
@@ -42,8 +39,8 @@ public class sceP3da extends HLEModule {
 
     public static final int PSP_P3DA_CHANNELS_NUM_MAX = 4;
 
-    private int p3daChannelsNum;
-    private int p3daSamplesNum;
+    protected int p3daChannelsNum;
+    protected int p3daSamplesNum;
 
 	@HLEFunction(nid = 0x374500A5, version = 280)
 	public void sceP3daBridgeInit(Processor processor) {

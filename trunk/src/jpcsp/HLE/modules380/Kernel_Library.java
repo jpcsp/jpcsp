@@ -23,8 +23,6 @@ import jpcsp.Processor;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
 
 public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 

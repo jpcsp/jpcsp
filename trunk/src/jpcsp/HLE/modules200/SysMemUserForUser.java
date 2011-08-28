@@ -20,8 +20,6 @@ package jpcsp.HLE.modules200;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
 
 public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
     protected int compiledSdkVersion;

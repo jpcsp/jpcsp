@@ -24,8 +24,6 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
 
 public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
 	private static final long serialVersionUID = 5006833555228054367L;

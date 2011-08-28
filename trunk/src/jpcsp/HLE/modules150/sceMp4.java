@@ -19,13 +19,8 @@ package jpcsp.HLE.modules150;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.kernel.managers.IntrManager;
-import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 
 import org.apache.log4j.Logger;

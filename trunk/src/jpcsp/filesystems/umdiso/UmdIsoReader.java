@@ -91,7 +91,7 @@ public class UmdIsoReader {
             format = FileFormat.CompressedCSO;
             int lenInbytes = BytesToInt(id,8);
             int sectorSize = BytesToInt(id,16);
-            int version = Ubyte(id[20]);
+            //int version = Ubyte(id[20]);
             offsetShift = Ubyte(id[21]);
             numSectors = lenInbytes/sectorSize;
             sectorOffsets = new long[numSectors+1];

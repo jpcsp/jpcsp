@@ -20,10 +20,6 @@ package jpcsp.HLE.modules280;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.modules.HLEStartModule;
 
 public class SysMemForKernel extends jpcsp.HLE.modules150.SysMemForKernel {
 

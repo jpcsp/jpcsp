@@ -19,8 +19,6 @@ package jpcsp.HLE.modules630;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
 
 public class scePower extends jpcsp.HLE.modules150.scePower {
 
