@@ -447,7 +447,7 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
             long position = info.position;
             int result = 0;
 
-            info.position += size;
+//            info.position += size;
             result = size;
             if (info.sectorBlockMode) {
                 result /= UmdIsoFile.sectorLength;
