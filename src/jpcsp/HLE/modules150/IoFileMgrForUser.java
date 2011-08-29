@@ -147,24 +147,52 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
     private final static String idPurpose = "IOFileManager-File";
 
     protected static enum IoOperation {
-        open(5), close(1), read(5), write(5), seek, ioctl(2), remove, rename, mkdir;
+        open(5), close(1), seek, ioctl(2), remove, rename, mkdir,
+        // Duration of read operation: approx. 4 ms per 0x10000 bytes (tested on real PSP)
+        read(4, 0x10000),
+        // Duration of write operation: approx. 5 ms per 0x10000 bytes
+        write(5, 0x10000);
 
-        int delayMillis;
-        int asyncDelayMillis;
+        private int delayMillis;
+        private int sizeUnit;
 
         IoOperation() {
             this.delayMillis = 0;
-            this.asyncDelayMillis = 0;
         }
 
         IoOperation(int delayMillis) {
             this.delayMillis = delayMillis;
-            this.asyncDelayMillis = delayMillis;
+            this.sizeUnit = 0;
         }
 
-        IoOperation(int delayMillis, int asyncDelayMillis) {
+        IoOperation(int delayMillis, int sizeUnit) {
             this.delayMillis = delayMillis;
-            this.asyncDelayMillis = asyncDelayMillis;
+            this.sizeUnit = sizeUnit;
+        }
+
+        /**
+         * Return a delay in milliseconds for the IoOperation.
+         * 
+         * @return       the delay in milliseconds
+         */
+        int getDelayMillis() {
+        	return delayMillis;
+        }
+
+        /**
+         * Return a delay in milliseconds based on the size of the
+         * processed data.
+         * 
+         * @param size   size of the processed data.
+         *               0 if no size is available.
+         * @return       the delay in milliseconds
+         */
+        int getDelayMillis(int size) {
+        	if (sizeUnit == 0 || size <= 0) {
+        		return getDelayMillis();
+        	}
+
+        	return (int) (((long) delayMillis) * size / sizeUnit);
         }
     }
 
@@ -447,13 +475,22 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
             long position = info.position;
             int result = 0;
 
-//            info.position += size;
-            result = size;
-            if (info.sectorBlockMode) {
-                result /= UmdIsoFile.sectorLength;
+            try {
+            	Utilities.readFully(info.readOnlyFile, address, size);
+            	info.position += size;
+            	result = size;
+            	if (info.sectorBlockMode) {
+            		result /= UmdIsoFile.sectorLength;
+            	}
+            } catch (IOException e) {
+            	log.error(e);
+            	result = ERROR_KERNEL_FILE_READ_ERROR;
             }
 
             info.result = result;
+
+            // Invalidate any compiled code in the read range
+            RuntimeContext.invalidateRange(address, size);
 
             for (IIoListener ioListener : ioListeners) {
                 ioListener.sceIoRead(result, info.id, address, requestedSize, size, position, info.readOnlyFile);
@@ -856,15 +893,15 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
     }
 
     private void updateResult(CpuState cpu, IoInfo info, long result, boolean async, boolean resultIs64bit, IoOperation ioOperation) {
-    	updateResult(cpu, info, result, async, resultIs64bit, ioOperation, null);
+    	updateResult(cpu, info, result, async, resultIs64bit, ioOperation, null, 0);
     }
 
     // Handle returning/storing result for sync/async operations
-    private void updateResult(CpuState cpu, IoInfo info, long result, boolean async, boolean resultIs64bit, IoOperation ioOperation, IAction asyncAction) {
+    private void updateResult(CpuState cpu, IoInfo info, long result, boolean async, boolean resultIs64bit, IoOperation ioOperation, IAction asyncAction, int size) {
         if (info != null) {
             if (async) {
                 if (!info.asyncPending) {
-                    startIoAsync(info, result, ioOperation, asyncAction);
+                    startIoAsync(info, result, ioOperation, asyncAction, size);
                     result = 0;
                 }
             } else {
@@ -963,12 +1000,13 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
      * @param info   the file
      * @param result the result the async IO should return
      */
-    private void startIoAsync(IoInfo info, long result, IoOperation ioOperation, IAction asyncAction) {
+    private void startIoAsync(IoInfo info, long result, IoOperation ioOperation, IAction asyncAction, int size) {
         if (info == null) {
             return;
         }
         info.asyncPending = true;
-        info.asyncDoneMillis = Emulator.getClock().currentTimeMillis() + ioOperation.asyncDelayMillis;
+        long now = Emulator.getClock().currentTimeMillis();
+        info.asyncDoneMillis = now + ioOperation.getDelayMillis(size);
         info.asyncAction = asyncAction;
         info.result = result;
         if (info.asyncThread == null) {
@@ -1341,7 +1379,7 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
                 Emulator.getProcessor().cpu.gpr[2] = info.id;
             }
 
-            startIoAsync(info, result, IoOperation.open, null);
+            startIoAsync(info, result, IoOperation.open, null, 0);
         }
     }
 
@@ -1453,7 +1491,7 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
                 result = -1;
             }
         }
-        updateResult(Emulator.getProcessor().cpu, info, result, async, false, IoOperation.write);
+        updateResult(Emulator.getProcessor().cpu, info, result, async, false, IoOperation.write, null, size);
         for (IIoListener ioListener : ioListeners) {
             ioListener.sceIoWrite(Emulator.getProcessor().cpu.gpr[2], id, data_addr, Emulator.getProcessor().cpu.gpr[6], size);
         }
@@ -1498,31 +1536,29 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
                     if (info.readOnlyFile.getFilePointer() + size > info.readOnlyFile.length()) {
                         int oldSize = size;
                         size = (int) (info.readOnlyFile.length() - info.readOnlyFile.getFilePointer());
-                        log.debug("hleIoRead - clamping size old=" + oldSize + " new=" + size + " fp=" + info.readOnlyFile.getFilePointer() + " len=" + info.readOnlyFile.length());
+                        if (log.isDebugEnabled()) {
+                        	log.debug("hleIoRead - clamping size old=" + oldSize + " new=" + size + " fp=" + info.readOnlyFile.getFilePointer() + " len=" + info.readOnlyFile.length());
+                        }
                     }
-                    position = info.position;
-                    dataInput = info.readOnlyFile;
-                    info.position += size;
-                    Utilities.readFully(info.readOnlyFile, data_addr, size);
-                    result = size;
 
-                    // Invalidate any compiled code in the read range
-                    RuntimeContext.invalidateRange(data_addr, size);
+                    if (async) {
+                    	// Execute the read operation in the IO async thread
+                    	asyncAction = new IOAsyncReadAction(info, data_addr, requestedSize, size);
+                    	result = 0;
+                    } else {
+                    	position = info.position;
+                    	dataInput = info.readOnlyFile;
+                    	Utilities.readFully(info.readOnlyFile, data_addr, size);
+                    	info.position += size;
+                    	result = size;
 
-                    if (info.sectorBlockMode) {
-                        result /= UmdIsoFile.sectorLength;
+                    	// Invalidate any compiled code in the read range
+                    	RuntimeContext.invalidateRange(data_addr, size);
+
+                    	if (info.sectorBlockMode) {
+                    		result /= UmdIsoFile.sectorLength;
+                    	}
                     }
-                    
-                    if(async) {
-                        // Discard the result and recalculate it in the async thread.
-                        // Some games (e.g.: "Kingdom Hearts: Birth By Sleep") check for
-                        // the presence of data right after calling sceReadIoAsync, which seems
-                        // to prove that the file reading starts at sceReadIoAsync and continues
-                        // in execution in the async thread, being this thread the one that
-                        // returns the real result later.
-                        asyncAction = new IOAsyncReadAction(info, data_addr, requestedSize, size);
-                        result = 0;
-                    } 
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -1534,7 +1570,7 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
                 Emulator.PauseEmu();
             }
         }
-        updateResult(Emulator.getProcessor().cpu, info, result, async, false, IoOperation.read, asyncAction);
+        updateResult(Emulator.getProcessor().cpu, info, result, async, false, IoOperation.read, asyncAction, size);
         // Call the IO listeners (performed in the async action if one is provided, otherwise call them here)
         if (asyncAction == null) {
             for (IIoListener ioListener : ioListeners) {
