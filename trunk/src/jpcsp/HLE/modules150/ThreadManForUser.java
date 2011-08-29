@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_ADDR;
@@ -108,6 +109,8 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.hardware.Interrupts;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
@@ -1643,7 +1646,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     protected int getThreadCurrentStackSize() {
-        int size = currentThread.stackSize - (Emulator.getProcessor().cpu.gpr[29] - currentThread.stack_addr) - 0x130;
+        int size = currentThread.stackSize - (Emulator.getProcessor().cpu.gpr[_sp] - currentThread.stack_addr) - 0x130;
         if (size < 0) {
             size = 0;
         }
@@ -4057,25 +4060,30 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     /**
-     * @TODO Thread is not used!
-     * @FIX
-     * 
      * @return amount of unused stack space of a thread.
      * */
     @HLEFunction(nid = 0x52089CA1, version = 150, checkInsideInterrupt = true)
     public int sceKernelGetThreadStackFreeSize(int uid) {
-    	// @TODO Thread is not used
-    	SceKernelThreadInfo thread = threadMap.get(uid);
+    	SceKernelThreadInfo thread = getThread(uid);
 
-        // This function compares the stack of the specified thread from when it started with
-        // it's present state. The returned value may not be always the remaining free stack size, because
-        // only the space that has never been used (consumed and/or released afterwards, for instance) counts.
-        int size = getThreadCurrentStackSize() - 0xfb0;
-        if (size < 0) size = 0;
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelGetThreadStackFreeSize returning size=0x%X", size));
+    	// The stack is filled with 0xFF when the thread starts.
+    	// Scan for the unused stack space by looking for the first 32-bit value
+    	// differing from 0xFFFFFFFF.
+    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(thread.stack_addr, thread.stackSize, 4);
+    	int unusedStackSize = thread.stackSize;
+    	for (int i = 0; i < thread.stackSize; i += 4) {
+    		int stackValue = memoryReader.readNext();
+    		if (stackValue != -1) {
+    			unusedStackSize = i;
+    			break;
+    		}
+    	}
+
+    	if (log.isDebugEnabled()) {
+            log.debug(String.format("sceKernelGetThreadStackFreeSize returning size=0x%X", unusedStackSize));
         }
-        return size;
+
+    	return unusedStackSize;
     }
     
     /** Get the status information for the specified thread
