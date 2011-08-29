@@ -87,7 +87,7 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 				prepareReturnValueRunList();
 			}
 		} catch (Throwable o) {
-			System.err.println("OnMethod: " + hleModuleMethod);
+			Modules.log.error("OnMethod: " + hleModuleMethod);
 			o.printStackTrace();
 		}
 	}
@@ -185,7 +185,7 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 	private void prepareReturnValueRunList() {
 		try {
 			setReturnValueMethod = getRunListMethod("setReturnValueVoid");
-			
+
 			if (hleModuleMethodReturnType == void.class) {
 				// Do nothing
 			} else if (hleModuleMethodReturnType == int.class) {
@@ -344,7 +344,7 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 		try {
 			executeInner(processor);
 		} catch (Throwable o) {
-			System.err.println("OnMethod: " + hleModuleMethod);
+			Modules.log.error("OnMethod: " + hleModuleMethod);
 			o.printStackTrace();
 		}
 	}
@@ -357,7 +357,6 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 			if (checkInsideInterrupt) {
 		        if (IntrManager.getInstance().isInsideInterrupt()) {
 		        	throw(new SceKernelErrorException(SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT));
-		        	//setReturnValue(processor, SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT); return;
 		        }
 			}
 			
@@ -383,8 +382,6 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 				if (fastOldInvoke) {
 					this.hleModuleMethod.invoke(hleModule, processor);
 				} else {
-					//this.hleModuleMethod.invoke(hleModule, cpu);
-					
 					processor.parameterReader.resetReading();
 					
 					executeParameterDecodingRunList(runListParams);
@@ -401,25 +398,32 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 					setReturnValueMethod.invoke(this, runListParams);
 				}
 			} catch (InvocationTargetException e) {
-				System.err.println(
-					"Error calling "
-					+ ":: hleModule='" + hleModule + "'"
-					+ ":: hleModuleClass='" + hleModuleClass + "'"
-					+ ":: hleModuleMethodName='" + hleModuleMethodName + "'"
-					+ ":: hleModuleMethod='" + hleModuleMethod + "'"
-				);
-				throw(e.getCause());
+				// When the HLE method throws a SceKernelErrorException,
+				// it is wrapped into an InvocationTargetException.
+				// This case has not to be logged as an error.
+				if (!(e.getCause() instanceof SceKernelErrorException)) {
+					Modules.log.error(String.format("Error '%s(%s)' calling hleModule='%s', hleModuleClass='%s', hleModuleMethodName='%s', hleModuleMethod='%s'", e.toString(), e.getCause(), hleModule, hleModuleClass, hleModuleMethodName, hleModuleMethod));
+				}
+
+				throw e.getCause();
 			}
 		} catch (SceKernelErrorException kernelError) {
+			// The HLE method throws a SceKernelErrorException.
+			// Retrieve the errorCode (one of SceKernelErrors) and set the
+			// return value accordingly.
 			if (errorHolder != null) {
 				errorHolder.setValue(kernelError.errorCode);
-				
 				runListParams.returnObject = 0;
-				setReturnValueMethod.invoke(this, runListParams);
 			} else {
 				runListParams.returnObject = kernelError.errorCode;
-				setReturnValueMethod.invoke(this, runListParams);
 			}
+
+			if (Modules.log.isDebugEnabled()) {
+				Modules.log.debug(String.format("%s returning errorCode 0x%08X", hleModuleMethodName, kernelError.errorCode));
+			}
+
+			// The return value in case of error is always an int value.
+			setReturnValueInt(runListParams);
 		}
 	}
 
@@ -428,5 +432,4 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 		//return "processor.parameterReader.resetReading(); " + this.hleModuleClass.getName() + "." + this.hleModuleMethodName + "(processor);";
 		return "";
 	}
-
 }
