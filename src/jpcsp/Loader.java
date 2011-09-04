@@ -67,6 +67,8 @@ public class Loader {
     private static Logger log = Logger.getLogger("loader");
 
     public final static int SCE_MAGIC = 0x4543537E;
+    public final static int PSP_MAGIC = 0x50535000;
+    public final static int EDAT_MAGIC = 0x54414445;
     private final static int FIRMWAREVERSION_HOMEBREW = 999; // Simulate version 9.99 instead of 1.50
 
     // Format bits
@@ -144,6 +146,10 @@ public class Loader {
                     Modules.SysMemUserForUserModule.setMemory64MB(module.psf.getNumeric("MEMSIZE") == 1);
                 }
             }
+            
+            f.position(currentOffset);
+            if (LoadSPRX(f, module, baseAddress, analyzeOnly))
+                break;
 
             f.position(currentOffset);
             if (LoadSCE(f, module, baseAddress, analyzeOnly))
@@ -268,8 +274,23 @@ public class Loader {
             f.position((int)pbp.getOffsetPspData());
             return true;
         }
-		// Not a valid PBP
-		return false;
+        // Not a valid PBP
+        return false;
+    }
+    
+    /** @return true on success */
+    private boolean LoadSPRX(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly) throws IOException {
+        int magicPSP = Utilities.readWord(f);
+        int magicEDAT = Utilities.readWord(f);
+        if ((magicPSP == PSP_MAGIC) && (magicEDAT == EDAT_MAGIC)) {
+            log.warn("Encrypted file detected! (.PSPEDAT)");
+            // Skip the EDAT header and load as a regular ~PSP prx.
+            f.position(0x90);
+            LoadPSP(f.slice(), module, baseAddress, analyzeOnly);
+            return true;
+        }
+        // Not a valid SPRX
+        return false;
     }
 
     /** @return true on success */
@@ -280,8 +301,8 @@ public class Loader {
             log.warn("Encrypted file not supported! (~SCE)");
             return true;
         }
-		// Not a valid PSP
-		return false;
+        // Not a valid PSP
+        return false;
     }
 
     /** @return true on success */
@@ -296,8 +317,8 @@ public class Loader {
             }
             return true;
         }
-		// Not a valid PSP
-		return false;
+        // Not a valid PSP
+        return false;
     }
 
     /** @return true on success */

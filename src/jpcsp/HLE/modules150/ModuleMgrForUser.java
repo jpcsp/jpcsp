@@ -208,7 +208,7 @@ public class ModuleMgrForUser extends HLEModule {
         return false;
     }
 
-    private void hleKernelLoadModule(Processor processor, String name, int flags, int uid, boolean byUid) {
+    public void hleKernelLoadModule(Processor processor, String name, int flags, int uid, boolean byUid) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 

@@ -99,10 +99,10 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
     public final static int PSP_O_CREAT = 0x0200;
     public final static int PSP_O_TRUNC = 0x0400;
     public final static int PSP_O_EXCL = 0x0800;
-    public final static int PSP_O_NBUF = 0x4000;     // Used on the PSP to bypass the internal disc cache (commonly seen in media files that need to maintain a fixed bitrate).
+    public final static int PSP_O_NBUF = 0x4000;            // Used on the PSP to bypass the internal disc cache (commonly seen in media files that need to maintain a fixed bitrate).
     public final static int PSP_O_NOWAIT = 0x8000;
-    public final static int PSP_O_PLOCK = 0x2000000;  // Used on the PSP to open the file inside a power lock (safe).
-    public final static int PSP_O_PGD = 0x40000000; // From "Kingdom Hearts: Birth by Sleep".
+    public final static int PSP_O_PLOCK = 0x2000000;        // Used on the PSP to open the file inside a power lock (safe).
+    public final static int PSP_O_FGAMEDATA = 0x40000000;   // Used on the PSP to handle encrypted data (used by NPDRM module).
 
     //Every flag seems to be ORed with a retry count.
     //In Activision Hits Remixed, an error is produced after
@@ -199,9 +199,9 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
     // modeStrings indexed by [0, PSP_O_RDONLY, PSP_O_WRONLY, PSP_O_RDWR]
     // SeekableRandomFile doesn't support write only: take "rw",
     private final static String[] modeStrings = {"r", "r", "rw", "rw"};
-    private HashMap<Integer, IoInfo> fileIds;
-    private HashMap<Integer, IoInfo> fileUids;
-    private HashMap<Integer, IoDirInfo> dirIds;
+    public HashMap<Integer, IoInfo> fileIds;
+    public HashMap<Integer, IoInfo> fileUids;
+    public HashMap<Integer, IoDirInfo> dirIds;
     private String filepath; // current working directory on PC
     private UmdIsoReader iso;
     private IoWaitStateChecker ioWaitStateChecker;
@@ -216,7 +216,7 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
     // when iterating over all the entries (most common action).
     private IIoListener[] ioListeners;
 
-    class IoInfo {
+    public class IoInfo {
         // PSP settings
 
         public final int flags;
@@ -322,7 +322,7 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
         }
     }
 
-    class IoDirInfo {
+    public class IoDirInfo {
 
         final String path;
         final String[] filenames;
@@ -538,6 +538,10 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
     public boolean getAllowExtractPGDStatus() {
         return allowExtractPGD;
     }
+    
+    public IoInfo getFileIoInfo(int id) {
+        return fileIds.get(id);
+    }
 
     private static int getNewUid() {
     	return SceUidManager.getNewUid(idPurpose);
@@ -558,7 +562,7 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
     /*
      *  Local file handling functions.
      */
-    private String getDeviceFilePath(String pspfilename) {
+    public String getDeviceFilePath(String pspfilename) {
         pspfilename = pspfilename.replaceAll("\\\\", "/");
         String device = null;
         String cwd = "";
@@ -1243,8 +1247,8 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
             if ((flags & PSP_O_PLOCK) == PSP_O_PLOCK) {
                 log.debug("PSP_O_PLOCK");
             }
-            if ((flags & PSP_O_PGD) == PSP_O_PGD) {
-                log.debug("PSP_O_PGD");
+            if ((flags & PSP_O_FGAMEDATA) == PSP_O_FGAMEDATA) {
+                log.debug("PSP_O_FGAMEDATA");
             }
         }
         String mode = getMode(flags);
