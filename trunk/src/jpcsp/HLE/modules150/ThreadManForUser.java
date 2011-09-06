@@ -3908,10 +3908,10 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         if (priority == 0) {
             priority = currentThread.currentPriority;
         }
-        
+
         if ((priority < 0x10 || priority > 0x6F) && priority != 0x7F) {
             // Only affects user and idle threads (range from 0x10 to 0x6F and 0x7F).
-            log.warn("sceKernelRotateThreadReadyQueue priority:0x" + Integer.toHexString(priority) + " is outside of valid range");
+            log.warn(String.format("checkThreadPriority priority:0x%x is outside of valid range", priority));
             throw(new SceKernelErrorException(ERROR_KERNEL_ILLEGAL_PRIORITY));
         }    	
 
