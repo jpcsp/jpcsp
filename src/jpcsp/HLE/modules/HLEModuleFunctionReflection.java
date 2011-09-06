@@ -6,8 +6,6 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.LinkedList;
 
-import org.apache.log4j.Logger;
-
 import jpcsp.Processor;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
@@ -212,6 +210,7 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 				}
 			}
 		} catch (Throwable o) {
+			Modules.log.error("prepareReturnValueRunList: " + o);
 			o.printStackTrace();
 			//throw(new RuntimeException(o.getCause()));
 		}
@@ -256,9 +255,7 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 	public void parameterAddBoolean(RunListParams runListParams) {
 		int value = runListParams.processor.parameterReader.getNextInt();
 		if (value < 0 || value > 1) {
-			Logger.getRootLogger().warn(
-				String.format("Parameter exepcted to be bool but had value 0x%08X", value)
-			);
+			Modules.log.warn(String.format("Parameter exepcted to be bool but had value 0x%08X", value));
 		}
 
 		runListParams.setParamNext((value != 0));
@@ -295,12 +292,13 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 	}
 
 	public void parameterCheck(RunListParams runListParams) throws Throwable {
-	//void parameterCheck(Integer paramIndex, Object[] params, Processor processor) throws Throwable {
-		//System.err.println("ParamIndex: " + runListParams.paramIndex - 1);
-		//System.err.println(methodsToCheck[runListParams.paramIndex - 1]);
-		runListParams.params[runListParams.paramIndex - 1] =
-			methodsToCheck[runListParams.paramIndex - 1].invoke(hleModule, runListParams.params[runListParams.paramIndex - 1])
-		;
+		try {
+			runListParams.params[runListParams.paramIndex - 1] =
+				methodsToCheck[runListParams.paramIndex - 1].invoke(hleModule, runListParams.params[runListParams.paramIndex - 1]);
+		} catch (InvocationTargetException e) {
+			// Return the real exception cause (e.g. the SceKernelErrorException)
+			throw e.getCause();
+		}
 	}
 	
 	Method setReturnValueMethod;
