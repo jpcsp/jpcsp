@@ -338,7 +338,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 
     public String getBasePath(String saveName) {
         String path = savedataPath + gameName;
-        if (!anyFileName.equals(saveName)) {
+        if (saveName != null && !anyFileName.equals(saveName)) {
             path += saveName;
         }
         path += "/";

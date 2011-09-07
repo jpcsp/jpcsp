@@ -456,8 +456,6 @@ public class sceUtility extends HLEModule implements HLEStartModule {
 	                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
 	                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
 	                        savedataParams.saveName = savedataParams.saveNameList[0];
-	                    } else {
-	                        savedataParams.saveName = "-000";
 	                    }
 	                }
 
@@ -521,8 +519,6 @@ public class sceUtility extends HLEModule implements HLEStartModule {
 	                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
 	                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
 	                        savedataParams.saveName = savedataParams.saveNameList[0];
-	                    } else {
-	                        savedataParams.saveName = "-000";
 	                    }
 	                }
 
@@ -864,8 +860,6 @@ public class sceUtility extends HLEModule implements HLEStartModule {
 	                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
 	                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
 	                        savedataParams.saveName = savedataParams.saveNameList[0];
-	                    } else {
-	                        savedataParams.saveName = "-000";
 	                    }
 	                }
 
@@ -888,8 +882,6 @@ public class sceUtility extends HLEModule implements HLEStartModule {
 	                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
 	                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
 	                        savedataParams.saveName = savedataParams.saveNameList[0];
-	                    } else {
-	                        savedataParams.saveName = "-000";
 	                    }
 	                }
 
@@ -913,8 +905,6 @@ public class sceUtility extends HLEModule implements HLEStartModule {
 	                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
 	                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
 	                        savedataParams.saveName = savedataParams.saveNameList[0];
-	                    } else {
-	                        savedataParams.saveName = "-000";
 	                    }
 	                }
 
