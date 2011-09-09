@@ -73,7 +73,7 @@ public class sceMp3 extends HLEModule implements HLEStartModule {
         return (x << 24) | ((x << 8) & 0xFF0000) | ((x >> 8) & 0xFF00) | ((x >> 24) & 0xFF);
     }
 
-    protected int makeFakeMp3StreamHandle() {
+    public int makeFakeMp3StreamHandle() {
         // The stream can't be negative.
         return 0x0000A300 | (mp3HandleCount++ & 0xFFFF);
     }
