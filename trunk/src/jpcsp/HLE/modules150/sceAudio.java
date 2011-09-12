@@ -149,17 +149,14 @@ public class sceAudio extends HLEModule implements HLEStartModule {
     	}
 
     	if (addr == 0) {
-    		// Waiting for complete audio drain
-    		if (!channel.isDrained()) {
-            	blockThreadOutput(threadId, channel, addr, leftVolume, rightVolume);
-    		} else {
-                ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-                SceKernelThreadInfo thread = threadMan.getThreadById(threadId);
-                if (thread != null) {
-                	thread.cpuContext.gpr[2] = 0;
-                    threadMan.hleUnblockThread(threadId);
-                }
-    		}
+    		// If another thread is also sending audio data on this channel,
+    		// do not wait for the channel to be drained, unblock the thread now.
+            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+            SceKernelThreadInfo thread = threadMan.getThreadById(threadId);
+            if (thread != null) {
+            	thread.cpuContext.gpr[2] = 0;
+                threadMan.hleUnblockThread(threadId);
+            }
     	} else if (!channel.isOutputBlocking()) {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             SceKernelThreadInfo thread = threadMan.getThreadById(threadId);
