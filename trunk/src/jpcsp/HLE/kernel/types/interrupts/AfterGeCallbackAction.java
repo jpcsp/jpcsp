@@ -30,6 +30,6 @@ public class AfterGeCallbackAction implements IAction {
 
 	@Override
 	public void execute() {
-		Modules.sceGe_userModule.hleGeOnAfterCallback(listId, behavior);
+		Modules.sceGe_userModule.hleGeOnAfterCallback(listId, behavior, true);
 	}
 }
