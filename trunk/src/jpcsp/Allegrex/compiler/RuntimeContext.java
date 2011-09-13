@@ -711,9 +711,10 @@ public class RuntimeContext {
     		threadMan.hleKernelExitThread(processor);
     	} catch (StopThreadException e) {
     		// Ignore Exception
-    	} catch (Exception e) {
+    	} catch (Throwable e) {
+    		// Log error in log file and command box
+    		log.error("Catched Throwable in RuntimeThread:", e);
     		e.printStackTrace();
-    		log.error(e);
 		}
 
 		SceKernelThreadInfo threadInfo = thread.getThreadInfo();
