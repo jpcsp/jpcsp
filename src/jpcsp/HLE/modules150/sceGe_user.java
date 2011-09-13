@@ -166,7 +166,7 @@ public class sceGe_user extends HLEModule implements HLEStartModule {
     		GeInterruptHandler geInterruptHandler = new GeInterruptHandler(geCallbackInterruptHandler, listId, behavior, signalId);
     		Emulator.getScheduler().addAction(geInterruptHandler);
     	} else {
-    		hleGeOnAfterCallback(listId, behavior);
+    		hleGeOnAfterCallback(listId, behavior, false);
     	}
     }
 
@@ -249,13 +249,14 @@ public class sceGe_user extends HLEModule implements HLEStartModule {
 		}
     }
 
-    public void hleGeOnAfterCallback(int listId, int behavior) {
+    public void hleGeOnAfterCallback(int listId, int behavior, boolean hasCallback) {
 		// (gid15) I could not make any difference between
 		//    PSP_GE_BEHAVIOR_CONTINUE and PSP_GE_BEHAVIOR_SUSPEND
 		// Both wait for the completion of the callback before continuing
 		// the list processing...
 		if (behavior == PSP_GE_SIGNAL_HANDLER_CONTINUE
-                || behavior == PSP_GE_SIGNAL_HANDLER_SUSPEND) {
+                || behavior == PSP_GE_SIGNAL_HANDLER_SUSPEND
+                || !hasCallback) {
 			if (listId >= 0 && listId < NUMBER_GE_LISTS) {
 				PspGeList list = allGeLists[listId];
 				if (log.isDebugEnabled()) {
