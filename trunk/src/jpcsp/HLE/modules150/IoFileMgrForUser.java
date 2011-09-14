@@ -19,6 +19,7 @@ package jpcsp.HLE.modules150;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_DEVICE_NOT_FOUND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_FILE_ALREADY_EXISTS;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_FILE_NOT_FOUND;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_READ_ONLY;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_INVALID_ARGUMENT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ASYNC_BUSY;
@@ -228,7 +229,6 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
         public SeekableDataInput readOnlyFile; // on memory stick or umd
         public final String mode;
         public long position; // virtual position, beyond the end is allowed, before the start is an error
-        public long cachePosition; // Simulate an out of cache position for asynchronous ioctl read/seek operations.
         public boolean sectorBlockMode;
         public final int id;
         public final int uid;
@@ -1892,23 +1892,29 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
                     }
                     break;
                 }
-                // UMD forced disc read operation.
+                // UMD disc read sectors operation.
                 case 0x01F30003: {
-                    if (Memory.isAddressGood(outdata_addr) && inlen >= 4) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("hleIoIoctl UMD forced file read");
-                        }
-                        int sectorsNum = 0;
-                        if (info.cachePosition < info.position) {
-                            // Always read atleast one sector if the current position has changed.
-                            sectorsNum = 1;
-                            info.cachePosition = info.position;
-                        }
-                        mem.write8(outdata_addr, (byte) sectorsNum);
-                        result = sectorsNum;
+                    if (Memory.isAddressGood(indata_addr) && inlen >= 4) {
+                    	int numberOfSectors = mem.read32(indata_addr);
+                    	if (numberOfSectors > 0) {
+                    		if (Memory.isAddressGood(outdata_addr) && outlen >= numberOfSectors) {
+                                try {
+                                	int length = numberOfSectors * UmdIsoFile.sectorLength;
+									Utilities.readFully(info.readOnlyFile, outdata_addr, length);
+	                                info.position += length;
+	                                result = length / UmdIsoFile.sectorLength;
+								} catch (IOException e) {
+									log.error(e);
+									result = ERROR_KERNEL_FILE_READ_ERROR;
+								}
+                    		} else {
+                                log.warn(String.format("hleIoIoctl cmd=0x%08X inlen=%d unsupported output parameters 0x%08X %d", cmd, inlen, outdata_addr, outlen));
+                                result = ERROR_ERRNO_INVALID_ARGUMENT;
+                    		}
+                    	}
                     } else {
-                        log.warn(String.format("hleIoIoctl cmd=0x%08X in=0x%08X(%d) out=0x%08X(%d) unsupported parameters", cmd, indata_addr, inlen, outdata_addr, outlen));
-                        result = ERROR_INVALID_ARGUMENT;
+                        log.warn(String.format("hleIoIoctl cmd=0x%08X unsupported input parameters 0x%08X %d", cmd, indata_addr, inlen));
+                        result = ERROR_ERRNO_INVALID_ARGUMENT;
                     }
                     break;
                 }
@@ -1919,6 +1925,9 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
                             try {
                                 long offset = mem.read64(indata_addr);
                                 int whence = mem.read32(indata_addr + 12);
+                            	if (info.sectorBlockMode) {
+                            		offset *= UmdIsoFile.sectorLength;
+                            	}
                                 if (log.isDebugEnabled()) {
                                     log.debug("hleIoIoctl UMD file seek offset " + offset + ", whence " + whence);
                                 }
