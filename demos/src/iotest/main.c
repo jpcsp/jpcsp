@@ -111,9 +111,12 @@ void displayBuffer(char *buffer, int length)
 void testIoIoctl()
 {
 	char buffer[0x800];
+	char buffer2[0x1000];
 	SceUID uid;
 	int result;
 	int cmd;
+	int seekInput[4];
+	int numberOfSectors;
 
 	memset(buffer, 0x11, sizeof(buffer));
 	uid = sceIoOpen("disc0:/PSP_GAME/SYSDIR/BOOT.BIN", PSP_O_RDONLY, 0);
@@ -138,6 +141,27 @@ void testIoIoctl()
 	result = sceIoIoctl(uid, cmd, NULL, 0, buffer, pathTableSize);
 	pspDebugScreenPrintf("sceIoIoctl: 0x%08X result=0x%08X\n", cmd, result);
 	displayBuffer(buffer, pathTableSize);
+
+	sceIoClose(uid);
+	uid = sceIoOpen("umd0:", PSP_O_RDONLY, 0);
+	if (uid < 0)
+	{
+		pspDebugScreenPrintf("Cannot open UMD disc: result=0x%08X\n", uid);
+		return;
+	}
+
+	memset(seekInput, 0, 16);
+	seekInput[0] = 16;
+	cmd = 0x01F100A6;
+	result = sceIoIoctl(uid, cmd, seekInput, 16, NULL, 0);
+	pspDebugScreenPrintf("sceIoIoctl: 0x%08X result=0x%08X\n", cmd, result);
+
+	memset(buffer2, 0x11, sizeof(buffer2));
+	numberOfSectors = 1;
+	cmd = 0x01F30003;
+	result = sceIoIoctl(uid, cmd, &numberOfSectors, 4, buffer2, numberOfSectors);
+	pspDebugScreenPrintf("sceIoIoctl: 0x%08X result=0x%08X\n", cmd, result);
+	displayBuffer(buffer2, numberOfSectors * 0x800 + 16);
 
 	sceIoClose(uid);
 }
