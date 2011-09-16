@@ -94,16 +94,18 @@ public class ModuleMgrForUser extends HLEModule {
         try {
             byte[] buffer = Modules.IoFileMgrForUserModule.getIsoReader().readSector(PRXStartSector);
             String libName = new String(buffer);
-            if (libName.contains("sce") && (libName.indexOf("sce") >= 0) && (libName.indexOf(" ") >= 0)) {
-                String module = libName.substring(libName.indexOf("sce"), libName.indexOf(" "));
+            int indexSce = libName.indexOf("sce");
+            int indexSpace = libName.indexOf(" ");
+            if (indexSce >= 0 && indexSpace > indexSce) {
+                String module = libName.substring(indexSce, indexSpace);
                 // Compare with known names and assign the real name for this module.
-                if (module.contains("sceFont")) {
+                if (module.startsWith("sceFont")) {
                     result = "libfont";
-                } else if (module.contains("sceMpeg")) {
+                } else if (module.startsWith("sceMpeg")) {
                     result = "mpeg";
-                } else if (module.contains("sceSAScore")) {
+                } else if (module.startsWith("sceSAScore")) {
                     result = "sc_sascore";
-                } else if (module.contains("sceATRAC3plus")) {
+                } else if (module.startsWith("sceATRAC3plus")) {
                     result = "libatrac3plus";
                 }
             }
