@@ -16,23 +16,29 @@ public @interface HLEFunction {
 	 * Initially was the 32 last bits of the SHA1's function's name.
 	 */
 	public int nid();
-	
+
 	/**
 	 * Specify if this is a special HLE function without NID. 
 	 */
 	public boolean syscall() default false;
-	
+
 	/**
 	 * Checks if the cpu is inside an interrupt and if so, 
 	 * raises SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT. 
 	 */
 	public boolean checkInsideInterrupt() default false;
-	
+
+	/**
+	 * Checks if the dispatch thread is enabled and if disabled, 
+	 * raises SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT. 
+	 */
+	public boolean checkDispatchThreadEnabled() default false;
+
 	/**
 	 * The minimum kernel version where this module function is found. 
 	 */
 	public int version() default 150;
-	
+
 	/**
 	 * Name of the module. The default is the name of the class.
 	 */
