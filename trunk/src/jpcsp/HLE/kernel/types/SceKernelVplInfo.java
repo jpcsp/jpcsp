@@ -123,7 +123,9 @@ public class SceKernelVplInfo {
     public boolean free(int addr) {
         if (!dataBlockMap.containsKey(addr)) {
             // Address is not in valid range.
-            VplManager.log.warn(String.format("Free VPL 0x%08X address not allocated", addr));
+        	if (VplManager.log.isDebugEnabled()) {
+        		VplManager.log.debug(String.format("Free VPL 0x%08X address not allocated", addr));
+        	}
 
             return false;
         }
