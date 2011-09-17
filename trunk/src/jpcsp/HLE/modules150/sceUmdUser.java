@@ -203,14 +203,15 @@ public class sceUmdUser extends HLEModule implements HLEStartModule {
         umdActivated = true;
         cpu.gpr[2] = 0;
 
-        SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
-    	thread.doCallbacks = true;
+        // Notify the callback.
+        // The callback will be executed at the next sceXXXXCB() syscall.
+        int notifyArg;
         if (iso != null) {
-        	Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, PSP_UMD_PRESENT | PSP_UMD_READABLE);
+        	notifyArg = PSP_UMD_PRESENT | PSP_UMD_READABLE;
         } else {
-        	Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, PSP_UMD_NOT_PRESENT | PSP_UMD_NOT_READY);
+        	notifyArg = PSP_UMD_NOT_PRESENT | PSP_UMD_NOT_READY;
         }
-    	thread.doCallbacks = false;
+    	Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, notifyArg);
 
     	checkWaitingThreads();
     }

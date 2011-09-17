@@ -201,7 +201,8 @@ public class sceGe_user extends HLEModule implements HLEStartModule {
 
     	// Block the thread outside of the synchronized block
     	if (blockCurrentThread) {
-    		threadMan.hleBlockCurrentThreadCB(action, new ListSyncWaitStateChecker(list));
+    		// Block the thread, but do not execute callbacks.
+    		threadMan.hleBlockCurrentThread(action, new ListSyncWaitStateChecker(list));
     	}
     }
 
