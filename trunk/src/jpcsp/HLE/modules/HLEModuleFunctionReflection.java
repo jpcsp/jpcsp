@@ -30,6 +30,7 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 	Class<?>[] hleModuleMethodParametersTypes;
 	Class<?>   hleModuleMethodReturnType;
 	boolean    checkInsideInterrupt;
+	boolean    checkDispatchThreadEnabled;
 	boolean    fastOldInvoke;
 	TErrorPointer32 errorHolder;
 	LinkedList<Method> decodingRunListList;
@@ -49,13 +50,14 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 		}
 	}
 	
-	public HLEModuleFunctionReflection(String moduleName, String functionName, HLEModule hleModule, String hleModuleMethodName, Method hleModuleMethod, boolean checkInsideInterrupt) {
+	public HLEModuleFunctionReflection(String moduleName, String functionName, HLEModule hleModule, String hleModuleMethodName, Method hleModuleMethod, boolean checkInsideInterrupt, boolean checkDispatchThreadEnabled) {
 		super(moduleName, functionName);
 		
 		this.hleModule = hleModule;
 		this.hleModuleClass = hleModule.getClass();
 		this.hleModuleMethodName = hleModuleMethodName;
 		this.checkInsideInterrupt = checkInsideInterrupt;
+		this.checkDispatchThreadEnabled = checkDispatchThreadEnabled;
 		this.hleModuleMethod = hleModuleMethod; 
 		this.hleModuleMethodParametersTypes = this.hleModuleMethod.getParameterTypes();
 		this.hleModuleMethodReturnType = this.hleModuleMethod.getReturnType();
@@ -357,7 +359,13 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 		        	throw(new SceKernelErrorException(SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT));
 		        }
 			}
-			
+
+			if (checkDispatchThreadEnabled) {
+				if (!Modules.ThreadManForUserModule.isDispatchThreadEnabled()) {
+		        	throw(new SceKernelErrorException(SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT));
+				}
+			}
+
 			if (getUnimplemented()) {
 				Modules.getLogger(this.getModuleName()).warn(
 					String.format(
