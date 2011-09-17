@@ -716,22 +716,25 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         }
     }
 
-    public void hleBlockCurrentThread(IAction onUnblockAction) {
+    public void hleBlockCurrentThread(boolean doCallbacks, IAction onUnblockAction, IWaitStateChecker waitStateChecker) {
         if (LOG_CONTEXT_SWITCHING && Modules.log.isDebugEnabled()) {
             log.debug("-------------------- block SceUID=" + Integer.toHexString(currentThread.uid) + " name:'" + currentThread.name + "' caller:" + getCallingFunction());
         }
 
-    	hleBlockThread(currentThread, false, onUnblockAction, null);
-        hleRescheduleCurrentThread();
+    	hleBlockThread(currentThread, doCallbacks, onUnblockAction, waitStateChecker);
+        hleRescheduleCurrentThread(doCallbacks);
+    }
+
+    public void hleBlockCurrentThread(IAction onUnblockAction) {
+    	hleBlockCurrentThread(false, onUnblockAction, null);
+    }
+
+    public void hleBlockCurrentThread(IAction onUnblockAction, IWaitStateChecker waitStateChecker) {
+    	hleBlockCurrentThread(false, onUnblockAction, waitStateChecker);
     }
 
     public void hleBlockCurrentThreadCB(IAction onUnblockAction, IWaitStateChecker waitStateChecker) {
-        if (LOG_CONTEXT_SWITCHING && Modules.log.isDebugEnabled()) {
-            log.debug("-------------------- block SceUID=" + Integer.toHexString(currentThread.uid) + " name:'" + currentThread.name + "' caller:" + getCallingFunction());
-        }
-
-    	hleBlockThread(currentThread, true, onUnblockAction, waitStateChecker);
-        hleRescheduleCurrentThread(true);
+    	hleBlockCurrentThread(true, onUnblockAction, waitStateChecker);
     }
 
     public SceKernelThreadInfo getThreadById(int uid) {
