@@ -309,12 +309,14 @@ public class VplManager {
         CpuState cpu = Emulator.getProcessor().cpu;
 
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelFreeVpl(uid=0x" + Integer.toHexString(uid) + ",data=0x" + Integer.toHexString(data_addr) + ")");
+            log.debug(String.format("sceKernelFreeVpl(uid=0x%x, data=0x%08X)", uid, data_addr));
         }
 
         SceKernelVplInfo info = vplMap.get(uid);
         if (info == null) {
-            log.warn("sceKernelFreeVpl unknown uid=0x" + Integer.toHexString(uid));
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceKernelFreeVpl unknown uid=0x%x", uid));
+        	}
             cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_VPOOL;
         } else {
             if (info.free(data_addr)) {
