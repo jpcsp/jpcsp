@@ -1839,14 +1839,16 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         return SystemTimeManager.getSystemTime();
     }
 
-    public long getVTimerTime(SceKernelVTimerInfo sceKernelVTimerInfo) {
-        long time = sceKernelVTimerInfo.current;
-
-        if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_RUNNING) {
-            time += getSystemTime() - sceKernelVTimerInfo.base;
+    protected long getVTimerRunningTime(SceKernelVTimerInfo sceKernelVTimerInfo) {
+        if (sceKernelVTimerInfo.active != SceKernelVTimerInfo.ACTIVE_RUNNING) {
+        	return 0;
         }
 
-        return time;
+        return getSystemTime() - sceKernelVTimerInfo.base;
+    }
+
+    public long getVTimerTime(SceKernelVTimerInfo sceKernelVTimerInfo) {
+        return sceKernelVTimerInfo.current + getVTimerRunningTime(sceKernelVTimerInfo);
     }
 
     protected long getVTimerScheduleForScheduler(SceKernelVTimerInfo sceKernelVTimerInfo) {
@@ -1854,7 +1856,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     protected void setVTimer(SceKernelVTimerInfo sceKernelVTimerInfo, long time) {
-        sceKernelVTimerInfo.current = time;
+        sceKernelVTimerInfo.current = time - getVTimerRunningTime(sceKernelVTimerInfo);
     }
 
     protected void startVTimer(SceKernelVTimerInfo sceKernelVTimerInfo) {
@@ -1869,7 +1871,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     protected void stopVTimer(SceKernelVTimerInfo sceKernelVTimerInfo) {
         sceKernelVTimerInfo.active = SceKernelVTimerInfo.ACTIVE_STOPPED;
         // Sum the elapsed time (multiple Start/Stop sequences are added)
-        sceKernelVTimerInfo.current += getSystemTime() - sceKernelVTimerInfo.base;
+        sceKernelVTimerInfo.current += getVTimerRunningTime(sceKernelVTimerInfo);
     }
 
     protected void scheduleVTimer(SceKernelVTimerInfo sceKernelVTimerInfo, long schedule) {
