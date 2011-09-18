@@ -43,8 +43,6 @@ import jpcsp.HLE.kernel.types.SceMpegAu;
 import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEStartModule;
-import jpcsp.HLE.modules.SysMemUserForUser;
-import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.connector.MpegCodec;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.media.MediaEngine;
@@ -87,7 +85,7 @@ public class sceMpeg extends HLEModule implements HLEStartModule {
 
         encodedVideoFramesYCbCr = new HashMap<Integer, byte[]>();
         audioDecodeBuffer = new byte[MPEG_ATRAC_ES_OUTPUT_SIZE];
-        esBufferMap = new HashMap<Integer, SysMemInfo>();
+        allocatedEsBuffers = new boolean[2];
         streamMap = new HashMap<Integer, StreamInfo>();
     }
 
@@ -193,7 +191,7 @@ public class sceMpeg extends HLEModule implements HLEStartModule {
     protected PacketChannel meChannel;
     protected HashMap<Integer, byte[]> encodedVideoFramesYCbCr;
     protected byte[] audioDecodeBuffer;
-    protected HashMap<Integer, SysMemInfo> esBufferMap;
+    protected boolean[] allocatedEsBuffers;
     protected HashMap<Integer, StreamInfo> streamMap;
     protected static final String streamPurpose = "sceMpeg-Stream";
 
@@ -744,16 +742,19 @@ public class sceMpeg extends HLEModule implements HLEStartModule {
             log.warn("sceMpegMallocAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg) + ") bad mpeg handle");
             cpu.gpr[2] = -1;
         } else {
-        	SysMemInfo info = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, "sceMpegMallocAvcEsBuf", SysMemUserForUser.PSP_SMEM_Low, MPEG_ATRAC_ES_SIZE, 0);
-        	if (info != null) {
-                if (log.isDebugEnabled()) {
-                    log.debug(String.format("sceMpegMallocAvcEsBuf allocated 0x%08X(size=%d)", info.addr, MPEG_ATRAC_ES_SIZE));
-                }
-        		esBufferMap.put(info.addr, info);
-        		cpu.gpr[2] = info.addr;
-        	} else {
-        		cpu.gpr[2] = 0;
+        	// sceMpegMallocAvcEsBuf does not allocate any memory.
+        	// It returns 0x00000001 for the first call,
+        	// 0x00000002 for the second call
+        	// and 0x00000000 for subsequent calls.
+        	int esBufferId = 0;
+        	for (int i = 0; i < allocatedEsBuffers.length; i++) {
+        		if (!allocatedEsBuffers[i]) {
+        			esBufferId = i + 1;
+        			allocatedEsBuffers[i] = true;
+        			break;
+        		}
         	}
+    		cpu.gpr[2] = esBufferId;
         }
     }
 
@@ -779,12 +780,8 @@ public class sceMpeg extends HLEModule implements HLEStartModule {
             log.warn("sceMpegFreeAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg) + ", esBuf=0x" + Integer.toHexString(esBuf) + ") bad esBuf handle");
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
         } else {
-        	SysMemInfo info = esBufferMap.remove(esBuf);
-        	if (info != null) {
-                if (log.isDebugEnabled()) {
-                    log.debug(String.format("sceMpegFreeAvcEsBuf freeing 0x%08X(size=%d)", info.addr, info.size));
-                }
-        		Modules.SysMemUserForUserModule.free(info);
+        	if (esBuf >= 1 && esBuf <= allocatedEsBuffers.length) {
+        		allocatedEsBuffers[esBuf - 1] = false;
         	}
             cpu.gpr[2] = 0;
         }
@@ -873,7 +870,7 @@ public class sceMpeg extends HLEModule implements HLEStartModule {
         } else {
             // Check if sceMpegInitAu is being called for AVC or ATRAC
             // and write the proper AU (access unit) struct.
-            if (esBufferMap.containsKey(buffer_addr)) {
+            if (buffer_addr >= 1 && buffer_addr <= allocatedEsBuffers.length && allocatedEsBuffers[buffer_addr - 1]) {
             	mpegAvcAu.esBuffer = buffer_addr;
             	mpegAvcAu.esSize = MPEG_AVC_ES_SIZE;
             	mpegAvcAu.write(mem, au_addr);
