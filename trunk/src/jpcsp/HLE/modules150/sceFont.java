@@ -828,7 +828,7 @@ public class sceFont extends HLEModule implements HLEStartModule {
             log.debug(String.format(
                     "sceFontGetCharGlyphImage_Clip fontHandle=0x%08X, charCode=%04X (%c), glyphImageAddr=%08X"
                     + ", clipXPos=%d, clipYPos=%d, clipWidth=%d, clipHeight=%d,",
-                    font, charCode, (charCode <= 0xFF ? (char) charCode : '?'), glyphImagePtr.getAddress(), clipXPos, clipYPos, clipWidth, clipHeight));
+                    fontHandle, charCode, (charCode <= 0xFF ? (char) charCode : '?'), glyphImagePtr.getAddress(), clipXPos, clipYPos, clipWidth, clipHeight));
         }
         // Identical to sceFontGetCharGlyphImage, but uses a clipping
         // rectangle over the char.

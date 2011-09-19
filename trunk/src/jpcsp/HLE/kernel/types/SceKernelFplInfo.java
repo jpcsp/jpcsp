@@ -61,7 +61,7 @@ public class SceKernelFplInfo {
         // Reserve psp memory
         int alignedBlockSize = (blockSize + (memAlign - 1)) & (~(memAlign - 1));
         int totalFplSize = alignedBlockSize * numBlocks;
-        sysMemInfo = Modules.SysMemUserForUserModule.malloc(partitionid, "ThreadMan-Fpl", memType, totalFplSize, 0);
+        sysMemInfo = Modules.SysMemUserForUserModule.malloc(partitionid, String.format("ThreadMan-Fpl-0x%x-%s", uid, name), memType, totalFplSize, 0);
         if (sysMemInfo == null)
             throw new RuntimeException("SceKernelFplInfo: not enough free mem");
 

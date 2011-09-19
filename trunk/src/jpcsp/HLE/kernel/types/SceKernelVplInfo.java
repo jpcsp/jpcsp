@@ -63,7 +63,7 @@ public class SceKernelVplInfo {
 
         // Reserve psp memory
         int totalVplSize = Utilities.alignUp(size, vplAddrAlignment); // 8-byte align
-        sysMemInfo = Modules.SysMemUserForUserModule.malloc(partitionid, "ThreadMan-Vpl", memType, totalVplSize, 0);
+        sysMemInfo = Modules.SysMemUserForUserModule.malloc(partitionid, String.format("ThreadMan-Vpl-0x%x-%s", uid, name), memType, totalVplSize, 0);
         if (sysMemInfo == null)
             throw new RuntimeException("SceKernelVplInfo: not enough free mem");
         int addr = sysMemInfo.addr;

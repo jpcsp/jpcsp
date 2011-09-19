@@ -150,7 +150,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         this.attr = attr;
         uid = SceUidManager.getNewUid("ThreadMan-thread");
         // Setup the stack.
-    	stackSysMemInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, "ThreadMan-Stack", SysMemUserForUser.PSP_SMEM_High, stackSize, 0);
+    	stackSysMemInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, String.format("ThreadMan-Stack-0x%x-%s", uid, name), SysMemUserForUser.PSP_SMEM_High, stackSize, 0);
     	if (stackSysMemInfo == null) {
     		stack_addr = 0;
     	} else {
