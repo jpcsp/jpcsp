@@ -470,6 +470,7 @@ public class sceFont extends HLEModule implements HLEStartModule {
 
             font = new Font(font, this);
             fonts.add(font);
+            fontsMap.put(font.getHandle(), font);
 
             return font;
         }
@@ -811,7 +812,6 @@ public class sceFont extends HLEModule implements HLEStartModule {
                     fontLib, index, mode, errorCodePtr.getAddress()));
         }
         Font font = fontLib.openFont(internalFonts.get(index));
-        fontsMap.put(font.getHandle(), font);
         if (log.isDebugEnabled()) {
             log.debug(String.format("Opening '%s' - '%s', font=%s", font.pgf.getFontName(), font.pgf.getFontType(), font));
         }     
