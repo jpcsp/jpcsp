@@ -45,7 +45,6 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     @Override
     public void start() {
         sasCoreUid = -1;
-        isSasInit = false;
         voices = new SoundVoice[32];
         for (int i = 0; i < voices.length; i++) {
             voices[i] = new SoundVoice(i);
@@ -94,7 +93,6 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     public static final int PSP_SAS_EFFECT_TYPE_PIPE = 8;
 
     protected int sasCoreUid;
-    protected boolean isSasInit;
     protected SoundVoice[] voices;
     protected SoundMixer mixer;
     protected int grainSamples;
@@ -108,6 +106,7 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     protected boolean waveformEffectIsDryOn;
     protected boolean waveformEffectIsWetOn;
     protected static final int sasCoreDelay = 5000; // Average microseconds, based on PSP tests.
+    protected static final String sasCodeUidPurpose = "sceSasCore-SasCore";
 
     protected String makeLogParams(CpuState cpu) {
         return String.format("%08x %08x %08x %08x", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
@@ -238,20 +237,23 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
 
         log.info(String.format("__sceSasInit(0x%08X, grain=%d, maxVoices=%d, outMode=%d, sampleRate=%d)", sasCore, grain, maxVoices, outMode, sampleRate));
 
-        // Tested on PSP:
-        // Only one instance at a time is supported.
-        if (!isSasInit) {
-            if (Memory.isAddressGood(sasCore)) {
-                sasCoreUid = SceUidManager.getNewUid("sceSasCore-SasCore");
-                mem.write32(sasCore, sasCoreUid);
-            }
-            grainSamples = grain;
-            outputMode = outMode;
-            for (int i = 0; i < voices.length; i++) {
-                voices[i].setSampleRate(sampleRate); // Default.
-            }
-            isSasInit = true;
+        if (Memory.isAddressGood(sasCore)) {
+        	if (sasCoreUid != -1) {
+        		// Only one Sas core can be active at a time.
+        		// If a previous Uid was allocated, release it.
+        		SceUidManager.releaseUid(sasCoreUid, sasCodeUidPurpose);
+        	}
+
+        	sasCoreUid = SceUidManager.getNewUid(sasCodeUidPurpose);
+            mem.write32(sasCore, sasCoreUid);
         }
+
+        grainSamples = grain;
+        outputMode = outMode;
+        for (int i = 0; i < voices.length; i++) {
+            voices[i].setSampleRate(sampleRate); // Default.
+        }
+
         return 0;
     }
 
