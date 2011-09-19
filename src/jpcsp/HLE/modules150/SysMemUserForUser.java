@@ -21,8 +21,11 @@ import static jpcsp.util.Utilities.readStringNZ;
 import static jpcsp.util.Utilities.readStringZ;
 
 import jpcsp.HLE.HLEFunction;
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -144,7 +147,11 @@ public class SysMemUserForUser extends HLEModule implements HLEStartModule {
 
         @Override
         public String toString() {
-            return String.format("SysMemInfo[uid=%x, partition=%d, name='%s', type=%s, size=0x%X (allocated=0x%X), addr=0x%08X-0x%08X]", uid, partitionid, name, getTypeName(type), size, allocatedSize, addr, addr + allocatedSize);
+            return String.format("SysMemInfo[addr=0x%08X-0x%08X, uid=%x, partition=%d, name='%s', type=%s, size=0x%X (allocated=0x%X)]", addr, addr + allocatedSize, uid, partitionid, name, getTypeName(type), size, allocatedSize);
+        }
+
+        public void free() {
+        	blockList.remove(uid);
         }
 
         @Override
@@ -229,7 +236,8 @@ public class SysMemUserForUser extends HLEModule implements HLEStartModule {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("malloc partition=%d, type=%s, size=0x%X, addr=0x%08X: returns 0x%08X", partitionid, getTypeName(type), size, addr, allocatedAddress));
 				if (log.isTraceEnabled()) {
-					log.trace("Free list after malloc: " + freeMemoryChunks);
+					log.trace("Free list after malloc: " + getDebugFreeMem());
+					log.trace("Allocated blocks after malloc:\n" + getDebugAllocatedMem() + "\n");
 				}
 			}
 		}
@@ -241,15 +249,34 @@ public class SysMemUserForUser extends HLEModule implements HLEStartModule {
     	return freeMemoryChunks.toString();
     }
 
+    public String getDebugAllocatedMem() {
+    	StringBuilder result = new StringBuilder();
+
+    	// Sort allocated blocks by address
+    	List<SysMemInfo> sortedBlockList = Collections.list(Collections.enumeration(blockList.values()));
+    	Collections.sort(sortedBlockList);
+
+    	for (SysMemInfo sysMemInfo : sortedBlockList) {
+    		if (result.length() > 0) {
+    			result.append("\n");
+    		}
+    		result.append(sysMemInfo.toString());
+    	}
+
+    	return result.toString();
+    }
+
     public void free(SysMemInfo info) {
     	if (info != null) {
+    		info.free();
 	    	MemoryChunk memoryChunk = new MemoryChunk(info.addr, info.allocatedSize);
 	    	freeMemoryChunks.add(memoryChunk);
 
 	    	if (log.isDebugEnabled()) {
 	    		log.debug(String.format("free %s", info.toString()));
 	    		if (log.isTraceEnabled()) {
-	    			log.trace("Free list after free: " + freeMemoryChunks.toString());
+	    			log.trace("Free list after free: " + getDebugFreeMem());
+					log.trace("Allocated blocks after free:\n" + getDebugAllocatedMem() + "\n");
 	    		}
 	    	}
     	}
