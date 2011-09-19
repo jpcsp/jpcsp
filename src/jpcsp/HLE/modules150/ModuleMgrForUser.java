@@ -598,12 +598,10 @@ public class ModuleMgrForUser extends HLEModule {
                     sceModule.module_stop_func, sceModule.module_stop_thread_priority,
                     sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, options_addr);
             thread.moduleid = sceModule.modid;
-            cpu.gpr[2] = 0;
-            sceModule.stop();
-            sceModule.unload();
-        } else {
-            cpu.gpr[2] = 0;
         }
+        cpu.gpr[2] = 0;
+        sceModule.stop();
+        sceModule.unload();
 
         threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
         if (thread != null) {
@@ -646,13 +644,11 @@ public class ModuleMgrForUser extends HLEModule {
                     sceModule.module_stop_func, sceModule.module_stop_thread_priority,
                     sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, options_addr);
             thread.moduleid = sceModule.modid;
-            cpu.gpr[2] = 0;
             threadMan.getCurrentThread().exitStatus = exitcode; // Set the current thread's exit status.
-            sceModule.stop();
-            sceModule.unload();
-        } else {
-            cpu.gpr[2] = 0;
         }
+        cpu.gpr[2] = 0;
+        sceModule.stop();
+        sceModule.unload();
 
         threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
         if (thread != null) {
@@ -693,12 +689,10 @@ public class ModuleMgrForUser extends HLEModule {
                     sceModule.module_stop_func, sceModule.module_stop_thread_priority,
                     sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, options_addr);
             thread.moduleid = sceModule.modid;
-            cpu.gpr[2] = 0;
-            sceModule.stop();
-            sceModule.unload();
-        } else {
-            cpu.gpr[2] = 0;
         }
+        cpu.gpr[2] = 0;
+        sceModule.stop();
+        sceModule.unload();
 
         threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
         if (thread != null) {
