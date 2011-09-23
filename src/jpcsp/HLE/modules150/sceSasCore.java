@@ -21,7 +21,6 @@ import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
@@ -35,7 +34,7 @@ import jpcsp.sound.SoundMixer;
 import org.apache.log4j.Logger;
 
 public class sceSasCore extends HLEModule implements HLEStartModule {
-    protected static Logger log = Modules.getLogger("sceSasCore");
+    public static Logger log = Modules.getLogger("sceSasCore");
 
     @Override
     public String getName() {
@@ -108,33 +107,22 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     protected static final int sasCoreDelay = 5000; // Average microseconds, based on PSP tests.
     protected static final String sasCodeUidPurpose = "sceSasCore-SasCore";
 
-    protected String makeLogParams(CpuState cpu) {
-        return String.format("%08x %08x %08x %08x", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
-    }
-    
-    /*
-    @HLEUidClass(returnValueOnNotFound = SceKernelErrors.ERROR_SAS_NOT_INIT)
-    class SasCore {
-    	
-    }
-    */
-    
     protected void checkSasHandleGood(int sasCore) {
         if (Memory.isAddressGood(sasCore)) {
             if (Processor.memory.read32(sasCore) == sasCoreUid) {
                 return;
             }
-            log.warn(getCallingFunctionName(1) + " bad sasCoreUid 0x" + Integer.toHexString(Processor.memory.read32(sasCore)));
+            log.warn(String.format("%s bad sasCoreUid 0x%08X", getCallingFunctionName(3), Processor.memory.read32(sasCore)));
         } else {
-            log.warn(getCallingFunctionName(1) + " bad sasCore Address 0x" + Integer.toHexString(sasCore));
+            log.warn(String.format("%s bad sasCore Address 0x%08X", getCallingFunctionName(3), sasCore));
         }
 
         throw(new SceKernelErrorException(SceKernelErrors.ERROR_SAS_NOT_INIT));
     }
-    
+
     protected void checkVoiceNumberGood(int voice) {
-        if (!(voice >= 0 && voice < voices.length)) {
-            log.warn(getCallingFunctionName(1) + " bad voice number " + voice);
+        if (voice < 0 || voice >= voices.length) {
+            log.warn(String.format("%s bad voice number %d", getCallingFunctionName(3), voice));
     		throw(new SceKernelErrorException(SceKernelErrors.ERROR_SAS_INVALID_VOICE));
         }
     }
@@ -142,6 +130,27 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     protected void checkSasAndVoiceHandlesGood(int sasCore, int voice) {
     	checkSasHandleGood(sasCore);
     	checkVoiceNumberGood(voice);
+    }
+
+    protected void checkADSRmode(int curveIndex, int flag, int curveType) {
+        int[] validCurveTypes = new int[] {
+    		(1 << PSP_SAS_ADSR_CURVE_MODE_LINEAR_INCREASE) | (1 << PSP_SAS_ADSR_CURVE_MODE_LINEAR_BENT) | (1 << PSP_SAS_ADSR_CURVE_MODE_EXPONENT),
+        	(1 << PSP_SAS_ADSR_CURVE_MODE_LINEAR_DECREASE) | (1 << PSP_SAS_ADSR_CURVE_MODE_EXPONENT_REV) | (1 << PSP_SAS_ADSR_CURVE_MODE_DIRECT),
+        	(1 << PSP_SAS_ADSR_CURVE_MODE_LINEAR_INCREASE) | (1 << PSP_SAS_ADSR_CURVE_MODE_LINEAR_DECREASE) | (1 << PSP_SAS_ADSR_CURVE_MODE_LINEAR_BENT) | (1 << PSP_SAS_ADSR_CURVE_MODE_EXPONENT_REV) | (1 << PSP_SAS_ADSR_CURVE_MODE_EXPONENT) | (1 << PSP_SAS_ADSR_CURVE_MODE_DIRECT),
+        	(1 << PSP_SAS_ADSR_CURVE_MODE_LINEAR_DECREASE) | (1 << PSP_SAS_ADSR_CURVE_MODE_EXPONENT_REV) | (1 << PSP_SAS_ADSR_CURVE_MODE_DIRECT)
+        };
+
+        if ((flag & (1 << curveIndex)) != 0) {
+        	if ((validCurveTypes[curveIndex] & (1 << curveType)) == 0) {
+        		throw new SceKernelErrorException(SceKernelErrors.ERROR_SAS_INVALID_ADSR_CURVE_MODE);
+        	}
+        }
+    }
+
+    protected void checkVoiceNotPaused(int voice) {
+        if (voices[voice].isPaused()) {
+        	throw new SceKernelErrorException(SceKernelErrors.ERROR_SAS_VOICE_PAUSED);
+        }
     }
 
     private void delayThread(long startMicros, int delayMicros) {
@@ -172,16 +181,17 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     @HLEFunction(nid = 0x019B25EB, version = 150, checkInsideInterrupt = true)
     public int __sceSasSetADSR(int sasCore, int voice, int flag, int attack, int decay, int sustain, int release) {
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasSetADSR " + String.format("sasCore=%08x, voice=%d flag=%08x a=%08x d=%08x s=%08x r%08x",
+            log.debug(String.format("__sceSasSetADSR sasCore=0x%08X, voice=%d flag=%1X a=0x%08X d=0x%08X s=0x%08X r=0x%08X",
                     sasCore, voice, flag, attack, decay, sustain, release));
         }
-        
+
         checkSasAndVoiceHandlesGood(sasCore, voice);
 
-        if ((flag & 0x1) == 0x1) voices[voice].getEnvelope().AttackRate = attack;
-        if ((flag & 0x2) == 0x2) voices[voice].getEnvelope().DecayRate = decay;
-        if ((flag & 0x4) == 0x4) voices[voice].getEnvelope().SustainRate = sustain;
-        if ((flag & 0x8) == 0x8) voices[voice].getEnvelope().ReleaseRate = release;
+        if ((flag & 0x1) != 0) voices[voice].getEnvelope().AttackRate = attack;
+        if ((flag & 0x2) != 0) voices[voice].getEnvelope().DecayRate = decay;
+        if ((flag & 0x4) != 0) voices[voice].getEnvelope().SustainRate = sustain;
+        if ((flag & 0x8) != 0) voices[voice].getEnvelope().ReleaseRate = release;
+
         return 0;
     }
 
@@ -189,7 +199,7 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     public int __sceSasRevParam(int sasCore, int delay, int feedback) {
         // Set waveform effect's delay and feedback levels.
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasRevParam(" + String.format("sasCore=0x%08x, delay=%d, feedback=%d)", sasCore, delay, feedback));
+            log.debug(String.format("__sceSasRevParam sasCore=0x%08X, delay=%d, feedback=%d", sasCore, delay, feedback));
         }
         
         checkSasHandleGood(sasCore);
@@ -203,7 +213,7 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     @HLEFunction(nid = 0x2C8E6AB3, version = 150, checkInsideInterrupt = true)
     public int __sceSasGetPauseFlag(int sasCore) {
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasGetPauseFlag(sasCore=0x" + Integer.toHexString(sasCore) + ")");
+            log.debug(String.format("__sceSasGetPauseFlag sasCore=0x%08X", sasCore));
         }
         
         checkSasHandleGood(sasCore);
@@ -214,6 +224,7 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
                 pauseFlag |= (1 << i);
             }
         }
+
         return pauseFlag;
     }
 
@@ -221,7 +232,7 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     public int __sceSasRevType(int sasCore, int type) {
         // Set waveform effect's type.
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasRevType(sasCore=0x" + Integer.toHexString(sasCore) + ", type=" + type + ")");
+            log.debug(String.format("__sceSasRevType sasCore=0x%08X, type=%d", sasCore, type));
         }
         
         checkSasHandleGood(sasCore);
@@ -235,7 +246,9 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     public int __sceSasInit(int sasCore, int grain, int maxVoices, int outMode, int sampleRate) {
         Memory mem = Processor.memory;
 
-        log.info(String.format("__sceSasInit(0x%08X, grain=%d, maxVoices=%d, outMode=%d, sampleRate=%d)", sasCore, grain, maxVoices, outMode, sampleRate));
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("__sceSasInit sasCore=0x%08X, grain=%d, maxVoices=%d, outMode=%d, sampleRate=%d", sasCore, grain, maxVoices, outMode, sampleRate));
+        }
 
         if (Memory.isAddressGood(sasCore)) {
         	if (sasCoreUid != -1) {
@@ -251,7 +264,7 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
         grainSamples = grain;
         outputMode = outMode;
         for (int i = 0; i < voices.length; i++) {
-            voices[i].setSampleRate(sampleRate); // Default.
+            voices[i].setSampleRate(sampleRate); // Set default sample rate
         }
 
         return 0;
@@ -263,12 +276,14 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
      * @param voice
      * @param leftVolume     Left channel volume 0 - 0x1000.
      * @param rightVolume    Right channel volume 0 - 0x1000.
+     * @param effectLeftVolumne    Left effect channel volume 0 - 0x1000.
+     * @param effectRightVolume    Right effect channel volume 0 - 0x1000.
      * @return
      */
     @HLEFunction(nid = 0x440CA7D8, version = 150, checkInsideInterrupt = true)
-    public int __sceSasSetVolume(Processor processor, int sasCore, int voice, int leftVolume, int rightVolume) {
+    public int __sceSasSetVolume(Processor processor, int sasCore, int voice, int leftVolume, int rightVolume, int effectLeftVolumne, int effectRightVolume) {
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasSetVolume " + makeLogParams(processor.cpu));
+            log.debug(String.format("__sceSasSetVolume sasCore=0x%08X, voice=%d, leftVolume=0x%04X, rightVolume=0x%04X, effectLeftVolume=0x%04X, effectRightVolume=0x%04X", sasCore, voice, leftVolume, rightVolume, effectLeftVolumne, effectRightVolume));
         }
         
         checkSasAndVoiceHandlesGood(sasCore, voice);
@@ -282,7 +297,7 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     @HLEFunction(nid = 0x50A14DFC, version = 150, checkInsideInterrupt = true)
     public int __sceSasCoreWithMix(int sasCore, int sasInOut, int leftVol, int rightVol) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("__sceSasCoreWithMix 0x%08X, sasInOut=0x%08X, leftVol=%d, rightVol=%d", sasCore, sasInOut, leftVol, rightVol));
+            log.debug(String.format("__sceSasCoreWithMix 0x%08X, sasInOut=0x%08X, leftVol=0x%04X, rightVol=0x%04X", sasCore, sasInOut, leftVol, rightVol));
         }
         
         checkSasHandleGood(sasCore);
@@ -290,15 +305,16 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     	long startTime = Emulator.getClock().microTime();
         mixer.synthesizeWithMix(sasInOut, grainSamples, leftVol << 3, rightVol << 3);
         delayThreadSasCore(startTime);
+
         return 0;
     }
 
     @HLEFunction(nid = 0x5F9529F6, version = 150, checkInsideInterrupt = true)
     public int __sceSasSetSL(int sasCore, int voice, int level) {
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasSetSL: " + String.format("sasCore=0x%08x, voice=0x%08x, unk=0x%08x", sasCore, voice, level));
+            log.debug(String.format("__sceSasSetSL sasCore=0x%08X, voice=%d, level=0x%08X", sasCore, voice, level));
         }
-        
+
         checkSasAndVoiceHandlesGood(sasCore, voice);
 
         voices[voice].getEnvelope().SustainLevel = level;
@@ -309,7 +325,7 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     @HLEFunction(nid = 0x68A46B95, version = 150)
     public int __sceSasGetEndFlag(int sasCore) {
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasGetEndFlag(sasCore=0x" + Integer.toHexString(sasCore) + ")");
+            log.debug(String.format("__sceSasGetEndFlag sasCore=0x%08X", sasCore));
         }
 
         checkSasHandleGood(sasCore);
@@ -320,6 +336,7 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
                 endFlag |= (1 << i);
             }
         }
+
         if (log.isDebugEnabled()) {
             log.debug(String.format("__sceSasGetEndFlag returning 0x%08X", endFlag));
         }
@@ -330,7 +347,7 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     @HLEFunction(nid = 0x74AE582A, version = 150, checkInsideInterrupt = true)
     public int __sceSasGetEnvelopeHeight(int sasCore, int voice) {
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasGetEnvelopeHeight(sasCore=0x" + Integer.toHexString(sasCore) + ",voice=" + voice + ")");
+            log.debug(String.format("__sceSasGetEnvelopeHeight sasCore=0x%08X ,voice=%d", sasCore, voice));
         }
         
         checkSasAndVoiceHandlesGood(sasCore, voice);
@@ -341,30 +358,31 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     @HLEFunction(nid = 0x76F01ACA, version = 150, checkInsideInterrupt = true)
     public int __sceSasSetKeyOn(int sasCore, int voice) {
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasSetKeyOn: " + String.format("sasCore=%08x, voice=%d",
-                    sasCore, voice));
+            log.debug(String.format("__sceSasSetKeyOn: sasCore=0x%08X, voice=%d", sasCore, voice));
         }
         
         checkSasAndVoiceHandlesGood(sasCore, voice);
+        checkVoiceNotPaused(voice);
 
-    	voices[voice].on();
+        voices[voice].on();
     	
         return 0;
     }
 
     @HLEFunction(nid = 0x787D04D5, version = 150, checkInsideInterrupt = true)
-    public int __sceSasSetPause(int sasCore, int voice_bit) {
+    public int __sceSasSetPause(int sasCore, int voice_bit, boolean setPause) {
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasSetPause(sasCore=0x" + Integer.toHexString(sasCore) + "): 0x" + Integer.toHexString(voice_bit));
+            log.debug(String.format("__sceSasSetPause sasCore=0x%08X voice_bit=0x%X setPause=%b", sasCore, voice_bit, setPause));
         }
         
         checkSasHandleGood(sasCore);
 
-        for (int i = 0; i < voices.length; i++) {
-            if (((voice_bit >> i) & 1) != 0) {
-                voices[i].setPaused(true);
-            } else {
-            	voices[i].setPaused(false);
+    	// Update only the pause flag of the voices
+    	// where the corresponding bit is set:
+    	// set or reset the pause flag according to the "setPause" parameter.
+        for (int i = 0; voice_bit != 0; i++, voice_bit >>>= 1) {
+            if ((voice_bit & 1) != 0) {
+            	voices[i].setPaused(setPause);
             }
         }
         
@@ -374,15 +392,14 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     @HLEFunction(nid = 0x99944089, version = 150, checkInsideInterrupt = true)
     public int __sceSasSetVoice(int sasCore, int voice, int vagAddr, int size, int loopmode) {
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasSetVoice: " + String.format("sasCore=0x%08x, voice=%d, vagAddr=0x%08x, size=0x%08x, loopmode=%d",
-                    sasCore, voice, vagAddr, size, loopmode));
+            log.debug(String.format("__sceSasSetVoice sasCore=0x%08X, voice=%d, vagAddr=0x%08X, size=0x%08X, loopmode=%d", sasCore, voice, vagAddr, size, loopmode));
         }
 
         if (size <= 0 || (size & 0xF) != 0) {
         	log.warn(String.format("__sceSasSetVoice invalid size 0x%08X", size));
         	throw(new SceKernelErrorException(SceKernelErrors.ERROR_SAS_INVALID_PARAMETER));
         }
-        
+
         checkSasAndVoiceHandlesGood(sasCore, voice);
         
     	voices[voice].setVAG(vagAddr, size);
@@ -405,41 +422,45 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     @HLEFunction(nid = 0x9EC3676A, version = 150, checkInsideInterrupt = true)
     public int __sceSasSetADSRmode(int sasCore, int voice, int flag, int attackType, int decayType, int sustainType, int releaseType) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format(
-            	"__sceSasSetADSRmode sasCore=%08x, voice=%d flag=%08x a=%08x d=%08x s=%08x r%08x",
-            	sasCore, voice, flag, attackType, decayType, sustainType, releaseType
-            ));
+            log.debug(String.format("__sceSasSetADSRmode sasCore=0x%08X, voice=%d, flag=%1X, attackType=%d, decayType=%d, sustainType=%d, releaseType=%d", sasCore, voice, flag, attackType, decayType, sustainType, releaseType));
         }
-        
+
         checkSasAndVoiceHandlesGood(sasCore, voice);
 
-        if ((flag & 0x1) == 0x1) voices[voice].getEnvelope().AttackCurveType = attackType;
-        if ((flag & 0x2) == 0x2) voices[voice].getEnvelope().DecayCurveType = decayType;
-        if ((flag & 0x4) == 0x4) voices[voice].getEnvelope().SustainCurveType = sustainType;
-        if ((flag & 0x8) == 0x8) voices[voice].getEnvelope().ReleaseCurveType = releaseType;
-        
+        checkADSRmode(0, flag, attackType);
+        checkADSRmode(1, flag, decayType);
+        checkADSRmode(2, flag, sustainType);
+        checkADSRmode(3, flag, releaseType);
+
+        if ((flag & 0x1) != 0) voices[voice].getEnvelope().AttackCurveType = attackType;
+        if ((flag & 0x2) != 0) voices[voice].getEnvelope().DecayCurveType = decayType;
+        if ((flag & 0x4) != 0) voices[voice].getEnvelope().SustainCurveType = sustainType;
+        if ((flag & 0x8) != 0) voices[voice].getEnvelope().ReleaseCurveType = releaseType;
+
         return 0;
     }
 
     @HLEFunction(nid = 0xA0CF2FA4, version = 150, checkInsideInterrupt = true)
     public int __sceSasSetKeyOff(int sasCore, int voice) {
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasSetKeyOff: " + String.format("sasCore=%08x, voice=%d", sasCore, voice));
+            log.debug(String.format("__sceSasSetKeyOff sasCore=%08X, voice=%d", sasCore, voice));
         }
         
         checkSasAndVoiceHandlesGood(sasCore, voice);
-        
+        checkVoiceNotPaused(voice);
+
     	voices[voice].off();
 
     	return 0;
     }
 
     @HLEFunction(nid = 0xA232CBE6, version = 150, checkInsideInterrupt = true)
-    public int __sceSasSetTrianglarWave(Processor processor) {
+    public int __sceSasSetTrianglarWave(int sasCore, int voice, int unknown) {
+        log.warn(String.format("Unimplemented __sceSasSetTrianglarWave sasCore=0x%08X, voice=%d, unknown=0x%08X", sasCore, voice, unknown));
 
-        log.warn("Unimplemented NID function __sceSasSetTrianglarWave [0xA232CBE6] " + makeLogParams(processor.cpu));
+        checkSasAndVoiceHandlesGood(sasCore, voice);
 
-        return 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0xA3589D81, version = 150, checkInsideInterrupt = true)
@@ -453,13 +474,14 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     	long startTime = Emulator.getClock().microTime();
         mixer.synthesize(sasOut, grainSamples);
         delayThreadSasCore(startTime);
+
         return 0;
     }
 
     @HLEFunction(nid = 0xAD84D37F, version = 150, checkInsideInterrupt = true)
     public int __sceSasSetPitch(int sasCore, int voice, int pitch) {
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasSetPitch: " + String.format("sasCore=%08x, voice=%d, pitch=0x%04x", sasCore, voice, pitch));
+            log.debug(String.format("__sceSasSetPitch sasCore=%08X, voice=%d, pitch=0x%04X", sasCore, voice, pitch));
         }
         
         checkSasAndVoiceHandlesGood(sasCore, voice);
@@ -472,19 +494,20 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     @HLEFunction(nid = 0xB7660A23, version = 150, checkInsideInterrupt = true)
     public int __sceSasSetNoise(int sasCore, int voice, int freq) {
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasSetNoise: " + String.format("sasCore=%08x, voice=%d, freq=0x%04x", sasCore, voice, freq));
+            log.debug(String.format("__sceSasSetNoise sasCore=%08X, voice=%d, freq=0x%04X", sasCore, voice, freq));
         }
         
         checkSasAndVoiceHandlesGood(sasCore, voice);
 
         voices[voice].setNoise(freq);
+
         return 0;
     }
 
     @HLEFunction(nid = 0xBD11B7C2, version = 150, checkInsideInterrupt = true)
     public int __sceSasGetGrain(int sasCore) {
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasGetGrain(sasCore=0x" + Integer.toHexString(sasCore) + "): grain samples=" + grainSamples);
+            log.debug(String.format("__sceSasGetGrain sasCore=0x%08X returning grain samples=%d", sasCore, grainSamples));
         }
         
         checkSasHandleGood(sasCore);
@@ -495,9 +518,9 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     @HLEFunction(nid = 0xCBCD4F79, version = 150, checkInsideInterrupt = true)
     public int __sceSasSetSimpleADSR(Processor processor, int sasCore, int voice, int ADSREnv1, int ADSREnv2) {
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasSetSimpleADSR " + makeLogParams(processor.cpu));
+            log.debug(String.format("__sceSasSetSimpleADSR sasCore=0x%08X, voice=%d, ADSREnv1=0x%04X, ADSREnv2=0x%04X", sasCore, voice, ADSREnv1, ADSREnv2));
         }
-        
+
         checkSasAndVoiceHandlesGood(sasCore, voice);
 
         // Only the low-order 16 bits are valid for both parameters.
@@ -522,7 +545,7 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     @HLEFunction(nid = 0xD1E0A01E, version = 150, checkInsideInterrupt = true)
     public int __sceSasSetGrain(int sasCore, int grain) {
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasSetGrain(sasCore=0x" + Integer.toHexString(sasCore) + "): grain samples=" + grain);
+            log.debug(String.format("__sceSasSetGrain sasCore=0x%08X, grain=%d", sasCore, grain));
         }
         
         checkSasHandleGood(sasCore);
@@ -536,7 +559,7 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     public int __sceSasRevEVOL(int sasCore, int leftVol, int rightVol) {
         // Set waveform effect's volume.
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasRevEVOL(" + String.format("sasCore=0x%08x,leftVol=0x%04x,rightVol=0x%04x)", sasCore, leftVol, rightVol));
+            log.debug(String.format("__sceSasRevEVOL sasCore=0x%08X, leftVol=0x%04X, rightVol=0x%04X", sasCore, leftVol, rightVol));
         }
         
         checkSasHandleGood(sasCore);
@@ -548,14 +571,21 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     }
 
     @HLEFunction(nid = 0xD5EBBBCD, version = 150, checkInsideInterrupt = true)
-    public int __sceSasSetSteepWave(Processor processor) {
-        log.warn("Unimplemented NID function __sceSasSetSteepWave [0xD5EBBBCD] " + makeLogParams(processor.cpu));
-        return 0xDEADC0DE;
+    public int __sceSasSetSteepWave(int sasCore, int voice, int unknown) {
+        log.warn(String.format("Unimplemented __sceSasSetSteepWave sasCore=0x%08X, voice=%d, unknown=0x%08X", sasCore, voice, unknown));
+
+        checkSasAndVoiceHandlesGood(sasCore, voice);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xE175EF66, version = 150, checkInsideInterrupt = true)
     public int __sceSasGetOutputmode(int sasCore) {
-    	checkSasHandleGood(sasCore);
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("__sceSasGetOutputmode sasCore=0x%08X, returning output mode=%d", sasCore, outputMode));
+        }
+
+        checkSasHandleGood(sasCore);
     	
     	return outputMode;
     }
@@ -563,11 +593,12 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     @HLEFunction(nid = 0xE855BF76, version = 150, checkInsideInterrupt = true)
     public int __sceSasSetOutputmode(int sasCore, int mode) {
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasSetOutputmode(sasCore=0x" + Integer.toHexString(sasCore) + ", mode=" + mode + ")");
+            log.debug(String.format("__sceSasSetOutputmode sasCore=0x%08X, mode=%d", sasCore, mode));
         }
         
         checkSasHandleGood(sasCore);
         outputMode = mode;
+
         return 0;
     }
 
@@ -575,31 +606,35 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     public int __sceSasRevVON(int sasCore, int dry, int wet) {
         // Set waveform effect's dry and wet status.
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasRevVON(" + String.format("sasCore=0x%08x,dry=%d,wet=%d)", sasCore, dry, wet));
+            log.debug(String.format("__sceSasRevVON sasCore=0x%08X, dry=%d, wet=%d", sasCore, dry, wet));
         }
         
         checkSasHandleGood(sasCore);
 
         waveformEffectIsDryOn = (dry > 0);
         waveformEffectIsWetOn = (wet > 0);
+
         return 0;
     }
 
     @HLEFunction(nid = 0x07F58C24, version = 150, checkInsideInterrupt = true)
     public int __sceSasGetAllEnvelopeHeights(int sasCore, int heightsAddr) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("__sceSasGetAllEnvelopeHeights(sasCore=0x%08X, heightsAddr=0x%08X)", sasCore, heightsAddr));
+            log.debug(String.format("__sceSasGetAllEnvelopeHeights sasCore=0x%08X, heightsAddr=0x%08X", sasCore, heightsAddr));
         }
         
         checkSasHandleGood(sasCore);
-        if (!Memory.isAddressGood(heightsAddr)) return -1;
-        
+
+        if (!Memory.isAddressGood(heightsAddr)) {
+        	return -1;
+        }
+
 		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(heightsAddr, voices.length * 4, 4);
 		for (int i = 0; i < voices.length; i++) {
 			memoryWriter.writeNext(voices[i].getEnvelope().height);
 		}
 		memoryWriter.flush();
+
 		return 0;
     }
-
 }
