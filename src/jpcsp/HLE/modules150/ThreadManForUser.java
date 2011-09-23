@@ -289,7 +289,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         threadMap.put(currentThread.uid, currentThread);
 
         // Set user mode bit if kernel mode bit is not present
-        if ((currentThread.attr & PSP_THREAD_ATTR_KERNEL) != PSP_THREAD_ATTR_KERNEL) {
+        if (!currentThread.isKernelMode()) {
             currentThread.attr |= PSP_THREAD_ATTR_USER;
         }
 
@@ -610,7 +610,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     public boolean isKernelMode() {
-        return ((currentThread.attr & PSP_THREAD_ATTR_KERNEL) == PSP_THREAD_ATTR_KERNEL);
+    	return currentThread.isKernelMode();
     }
 
     public String getThreadName(int uid) {
@@ -1669,13 +1669,11 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     private boolean userCurrentThreadTryingToSwitchToKernelMode(int newAttr) {
-        return (currentThread.attr & PSP_THREAD_ATTR_USER) == PSP_THREAD_ATTR_USER && (newAttr & PSP_THREAD_ATTR_USER) != PSP_THREAD_ATTR_USER;
+        return currentThread.isUserMode() && !SceKernelThreadInfo.isUserMode(newAttr);
     }
 
     private boolean userThreadCalledKernelCurrentThread(SceKernelThreadInfo thread) {
-        return !isIdleThread(thread) &&
-                ((thread.attr & PSP_THREAD_ATTR_KERNEL) != PSP_THREAD_ATTR_KERNEL ||
-                (currentThread.attr & PSP_THREAD_ATTR_KERNEL) == PSP_THREAD_ATTR_KERNEL);
+        return !isIdleThread(thread) && (!thread.isKernelMode() || currentThread.isKernelMode());
     }
 
     private int getDispatchThreadState() {
@@ -1984,7 +1982,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
             } else if (thid == SceKernelThreadEventHandlerInfo.THREAD_EVENT_ID_USER) {
                 threadEventHandlerMap.put(handler.uid, handler);
                 for (SceKernelThreadInfo thread : threadMap.values()) {
-                    if ((thread.attr & PSP_THREAD_ATTR_USER) == PSP_THREAD_ATTR_USER) {
+                    if (thread.isUserMode()) {
                         threadEventMap.put(thread.uid, handler.uid);
                     }
                 }
@@ -1992,7 +1990,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
             } else if (thid == SceKernelThreadEventHandlerInfo.THREAD_EVENT_ID_KERN && isKernelMode()) {
                 threadEventHandlerMap.put(handler.uid, handler);
                 for (SceKernelThreadInfo thread : threadMap.values()) {
-                    if ((thread.attr & PSP_THREAD_ATTR_KERNEL) == PSP_THREAD_ATTR_KERNEL) {
+                    if (thread.isKernelMode()) {
                         threadEventMap.put(thread.uid, handler.uid);
                     }
                 }
@@ -3638,14 +3636,14 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_NO_MEMORY;
         } else {
             // Inherit kernel mode if user mode bit is not set
-            if ((currentThread.attr & PSP_THREAD_ATTR_KERNEL) == PSP_THREAD_ATTR_KERNEL &&
-                    (attr & PSP_THREAD_ATTR_USER) != PSP_THREAD_ATTR_USER) {
+            if (currentThread.isKernelMode() && !SceKernelThreadInfo.isUserMode(thread.attr)) {
                 log.debug("sceKernelCreateThread inheriting kernel mode");
                 thread.attr |= PSP_THREAD_ATTR_KERNEL;
             }
+
             // Inherit user mode
-            if ((currentThread.attr & PSP_THREAD_ATTR_USER) == PSP_THREAD_ATTR_USER) {
-                if ((thread.attr & PSP_THREAD_ATTR_USER) != PSP_THREAD_ATTR_USER) {
+            if (currentThread.isUserMode()) {
+                if (!SceKernelThreadInfo.isUserMode(thread.attr)) {
                     log.debug("sceKernelCreateThread inheriting user mode");
                 }
                 thread.attr |= PSP_THREAD_ATTR_USER;
@@ -3882,6 +3880,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         if (userCurrentThreadTryingToSwitchToKernelMode(newAttr)) {
             log.debug("sceKernelChangeCurrentThreadAttr forcing user mode");
             newAttr |= PSP_THREAD_ATTR_USER;
+            newAttr &= ~PSP_THREAD_ATTR_KERNEL;
         }
         currentThread.attr = newAttr;
         
@@ -3914,11 +3913,25 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
             priority = currentThread.currentPriority;
         }
 
-        if ((priority < 0x10 || priority > 0x6F) && priority != 0x7F) {
-            // Only affects user and idle threads (range from 0x10 to 0x6F and 0x7F).
-            log.warn(String.format("checkThreadPriority priority:0x%x is outside of valid range", priority));
-            throw(new SceKernelErrorException(ERROR_KERNEL_ILLEGAL_PRIORITY));
-        }    	
+        if (currentThread.isUserMode()) {
+        	// Value priority range in user mode: [8..119]
+        	if (priority < 8 || priority >= 120) {
+        		if (log.isDebugEnabled()) {
+        			log.debug(String.format("checkThreadPriority priority:0x%x is outside of valid range in user mode", priority));
+        		}
+                throw(new SceKernelErrorException(ERROR_KERNEL_ILLEGAL_PRIORITY));
+        	}
+        }
+
+        if (currentThread.isKernelMode()) {
+        	// Value priority range in user mode: [1..126]
+        	if (priority < 1 || priority >= 127) {
+        		if (log.isDebugEnabled()) {
+        			log.debug(String.format("checkThreadPriority priority:0x%x is outside of valid range in kernel mode", priority));
+        		}
+                throw(new SceKernelErrorException(ERROR_KERNEL_ILLEGAL_PRIORITY));
+        	}
+        }
 
         return priority;
     }
