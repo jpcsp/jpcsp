@@ -434,6 +434,22 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     	return (status & PSP_THREAD_STOPPED) != 0;
     }
 
+    public static boolean isKernelMode(int attr) {
+        return (attr & PSP_THREAD_ATTR_KERNEL) != 0;
+    }
+
+    public static boolean isUserMode(int attr) {
+        return (attr & PSP_THREAD_ATTR_USER) != 0;
+    }
+
+    public boolean isKernelMode() {
+    	return isKernelMode(attr);
+    }
+
+    public boolean isUserMode() {
+    	return isUserMode(attr);
+    }
+
     @Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
