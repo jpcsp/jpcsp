@@ -74,6 +74,7 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected boolean useGeometryShader;
 	protected boolean useUniformBufferObject = true;
 	protected boolean useNativeClut;
+        protected boolean useShaderDepthTest = false;
 	protected boolean useShaderStencilTest = false;
 	protected boolean useShaderColorMask = false;
 	protected boolean useShaderAlphaTest = false;
@@ -158,6 +159,7 @@ public class REShader extends BaseRenderingEngineFunction {
 			// i.e. the alpha value before the stencil test.
 			useShaderAlphaTest = true;
 			useShaderBlendTest = true;
+                        useShaderDepthTest = true;
 		}
 
 		if (useShaderStencilTest || useShaderBlendTest || useShaderColorMask) {
@@ -551,6 +553,12 @@ public class REShader extends BaseRenderingEngineFunction {
 			case IRenderingEngine.GU_TEXTURE_2D:
 				shaderContext.setTexEnable(value);
 				break;
+                        case IRenderingEngine.GU_DEPTH_TEST:
+                            if (useShaderDepthTest) {
+                                shaderContext.setDepthTestEnable(value);
+                                setFlag = false;
+                            }
+                            break;
 			case IRenderingEngine.GU_STENCIL_TEST:
 				if (useShaderStencilTest) {
 					shaderContext.setStencilTestEnable(value);
@@ -906,6 +914,10 @@ public class REShader extends BaseRenderingEngineFunction {
 	 *          false if the shader will not use the fbTex sampler
 	 */
 	private boolean isFbTextureNeeded() {
+                if (useShaderDepthTest && shaderContext.getDepthTestEnable() != 0) {
+			return true;
+		}
+            
 		if (useShaderStencilTest && shaderContext.getStencilTestEnable() != 0) {
 			return true;
 		}
@@ -1201,6 +1213,22 @@ public class REShader extends BaseRenderingEngineFunction {
 	public void setVertexColor(float[] color) {
 		shaderContext.setVertexColor(color);
 		super.setVertexColor(color);
+	}
+        
+        @Override
+	public void setDepthFunc(int func) {
+		if (useShaderDepthTest) {
+			shaderContext.setDepthFunc(func);
+		}
+		super.setDepthFunc(func);
+	}
+        
+        @Override
+	public void setDepthMask(boolean depthWriteEnabled) {
+		if (useShaderDepthTest) {
+			shaderContext.setDepthMask(depthWriteEnabled);
+		}
+		super.setDepthMask(depthWriteEnabled);
 	}
 
 	@Override

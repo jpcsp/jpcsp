@@ -61,6 +61,8 @@ public class ShaderProgram {
 	private int stencilOpFail; // values: [0..5]
 	private int stencilOpZFail; // values: [0..5]
 	private int stencilOpZPass; // values: [0..5]
+        private int depthTestEnable; // values: [0..1]
+        private int depthFunc; // values: [0..7]
 	private int blendTestEnable; // values: [0..1]
 	private int blendEquation; // values: [0..5]
 	private int blendSrc; // values: [0..10];
@@ -138,6 +140,8 @@ public class ShaderProgram {
 		stencilOpFail = shaderContext.getStencilOpFail();
 		stencilOpZFail = shaderContext.getStencilOpZFail();
 		stencilOpZPass = shaderContext.getStencilOpZPass();
+                depthTestEnable = shaderContext.getDepthTestEnable();
+                depthFunc = shaderContext.getDepthFunc();
 		blendTestEnable = shaderContext.getBlendTestEnable();
 		blendEquation = shaderContext.getBlendEquation();
 		blendSrc = shaderContext.getBlendSrc();
@@ -187,6 +191,8 @@ public class ShaderProgram {
 		REShader.addDefine(defines, "STENCIL_OP_FAIL", dummyValue);
 		REShader.addDefine(defines, "STENCIL_OP_ZFAIL", dummyValue);
 		REShader.addDefine(defines, "STENCIL_OP_ZPASS", dummyValue);
+                REShader.addDefine(defines, "DEPTH_TEST_ENABLE", dummyValue);
+                REShader.addDefine(defines, "DEPTH_FUNC", dummyValue);
 		REShader.addDefine(defines, "BLEND_TEST_ENABLE", dummyValue);
 		REShader.addDefine(defines, "BLEND_EQUATION", dummyValue);
 		REShader.addDefine(defines, "BLEND_SRC", dummyValue);
@@ -235,6 +241,8 @@ public class ShaderProgram {
 		REShader.addDefine(defines, "STENCIL_OP_FAIL", stencilOpFail);
 		REShader.addDefine(defines, "STENCIL_OP_ZFAIL", stencilOpZFail);
 		REShader.addDefine(defines, "STENCIL_OP_ZPASS", stencilOpZPass);
+                REShader.addDefine(defines, "DEPTH_TEST_ENABLE", depthTestEnable);
+                REShader.addDefine(defines, "DEPTH_FUNC", depthFunc);
 		REShader.addDefine(defines, "BLEND_TEST_ENABLE", blendTestEnable);
 		REShader.addDefine(defines, "BLEND_EQUATION", blendEquation);
 		REShader.addDefine(defines, "BLEND_SRC", blendSrc);
@@ -328,7 +336,11 @@ public class ShaderProgram {
 		shift = 0;
 
 		key += ((long) shaderContext.getStencilOpZPass()) << shift;
+		shift += 3;                
+                key += ((long) shaderContext.getDepthTestEnable()) << shift;
 		shift += 3;
+                key += ((long) shaderContext.getDepthFunc()) << shift;
+		shift += 3;                
 		key += ((long) shaderContext.getBlendTestEnable()) << shift;
 		shift++;
 		key += ((long) shaderContext.getBlendEquation()) << shift;

@@ -1649,19 +1649,11 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     protected int getThreadCurrentStackSize() {
-        int size = currentThread.stackSize - (Emulator.getProcessor().cpu.gpr[_sp] - currentThread.stack_addr) - 0x130;
+        int size = currentThread.stackSize - (Emulator.getProcessor().cpu.gpr[_sp] - currentThread.stack_addr - 0x1001);
         if (size < 0) {
             size = 0;
         }
-
         return size;
-    }
-
-    protected int setThreadCurrentStackSize(int size) {
-        if(size > 0) {
-            currentThread.expandStack(size);
-        }
-        return getThreadCurrentStackSize();
     }
 
     private boolean threadCanNotCallback(SceKernelThreadInfo thread, int callbackType, int cbid, SceKernelCallbackInfo cb) {

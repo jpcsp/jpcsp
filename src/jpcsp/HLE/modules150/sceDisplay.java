@@ -283,6 +283,11 @@ public class sceDisplay extends HLEModule implements HLEStartModule {
     private boolean saveGEToTexture = false;
     private static final boolean useDebugGL = false;
     private static final int internalTextureFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+    
+    // sceDisplayModes enum
+    public static final int PSP_DISPLAY_MODE_LCD  = 0;
+    public static final int PSP_DISPLAY_MODE_VESA1A = 0x1A;
+    public static final int PSP_DISPLAY_MODE_PSEUDO_VGA = 0x60;
 
     // sceDisplayPixelFormats enum
     public static final int PSP_DISPLAY_PIXEL_FORMAT_565  = 0;
@@ -1459,9 +1464,13 @@ public class sceDisplay extends HLEModule implements HLEStartModule {
         }
 
         if (displayWidth <= 0 || displayHeight <= 0) {
-            return -1;
+            return SceKernelErrors.ERROR_INVALID_SIZE;
         }
         
+        if (displayMode != PSP_DISPLAY_MODE_LCD) {
+            return SceKernelErrors.ERROR_INVALID_MODE;
+        }
+
         this.mode   = displayMode;
         this.width  = displayWidth;
         this.height = displayHeight;
@@ -1472,10 +1481,6 @@ public class sceDisplay extends HLEModule implements HLEStartModule {
         pixelsFb = getPixels(topaddrFb, bottomaddrFb);
 
         detailsDirty = true;
-
-        if (displayMode != 0) {
-            log.warn("UNIMPLEMENTED:sceDisplaySetMode mode=" + displayMode);
-        }
 
         return 0;
     }

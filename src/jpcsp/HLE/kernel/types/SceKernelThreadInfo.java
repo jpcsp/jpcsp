@@ -35,18 +35,18 @@ import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.util.Utilities;
 
 public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
-    public static final int PSP_MODULE_USER                 = 0;
-    public static final int PSP_MODULE_NO_STOP              = 0x00000001;
-    public static final int PSP_MODULE_SINGLE_LOAD          = 0x00000002;
-    public static final int PSP_MODULE_SINGLE_START         = 0x00000004;
-    public static final int PSP_MODULE_POPS                 = 0x00000200;
-    public static final int PSP_MODULE_DEMO                 = 0x00000200; // same as PSP_MODULE_POPS
-    public static final int PSP_MODULE_GAMESHARING          = 0x00000400;
-    public static final int PSP_MODULE_VSH                  = 0x00000800; // can only be loaded from kernel mode?
-    public static final int PSP_MODULE_KERNEL               = 0x00001000;
-    public static final int PSP_MODULE_USE_MEMLMD_LIB       = 0x00002000;
-    public static final int PSP_MODULE_USE_SEMAPHORE_LIB    = 0x00004000; // not kernel semaphores, but a fake name (actually security stuff)
 
+    public static final int PSP_MODULE_USER = 0;
+    public static final int PSP_MODULE_NO_STOP = 0x00000001;
+    public static final int PSP_MODULE_SINGLE_LOAD = 0x00000002;
+    public static final int PSP_MODULE_SINGLE_START = 0x00000004;
+    public static final int PSP_MODULE_POPS = 0x00000200;
+    public static final int PSP_MODULE_DEMO = 0x00000200; // same as PSP_MODULE_POPS
+    public static final int PSP_MODULE_GAMESHARING = 0x00000400;
+    public static final int PSP_MODULE_VSH = 0x00000800; // can only be loaded from kernel mode?
+    public static final int PSP_MODULE_KERNEL = 0x00001000;
+    public static final int PSP_MODULE_USE_MEMLMD_LIB = 0x00002000;
+    public static final int PSP_MODULE_USE_SEMAPHORE_LIB = 0x00004000; // not kernel semaphores, but a fake name (actually security stuff)
     public static final int PSP_THREAD_ATTR_USER = 0x80000000; // module attr 0, thread attr: 0x800000FF?
     public static final int PSP_THREAD_ATTR_USBWLAN = 0xa0000000;
     public static final int PSP_THREAD_ATTR_VSH = 0xc0000000;
@@ -55,36 +55,33 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public static final int PSP_THREAD_ATTR_SCRATCH_SRAM = 0x00008000;
     public static final int PSP_THREAD_ATTR_NO_FILLSTACK = 0x00100000; // Disables filling the stack with 0xFF on creation.
     public static final int PSP_THREAD_ATTR_CLEAR_STACK = 0x00200000; // Clear the stack when the thread is deleted.
-
     // PspThreadStatus
-    public static final int PSP_THREAD_RUNNING  = 0x00000001;
-    public static final int PSP_THREAD_READY    = 0x00000002;
-    public static final int PSP_THREAD_WAITING  = 0x00000004;
-    public static final int PSP_THREAD_SUSPEND  = 0x00000008;
+    public static final int PSP_THREAD_RUNNING = 0x00000001;
+    public static final int PSP_THREAD_READY = 0x00000002;
+    public static final int PSP_THREAD_WAITING = 0x00000004;
+    public static final int PSP_THREAD_SUSPEND = 0x00000008;
     public static final int PSP_THREAD_WAITING_SUSPEND = PSP_THREAD_WAITING | PSP_THREAD_SUSPEND;
-    public static final int PSP_THREAD_STOPPED  = 0x00000010;
-    public static final int PSP_THREAD_KILLED   = 0x00000020;
-
+    public static final int PSP_THREAD_STOPPED = 0x00000010;
+    public static final int PSP_THREAD_KILLED = 0x00000020;
     // Wait types
-    public static final int PSP_WAIT_NONE               = 0x00;
-    public static final int PSP_WAIT_SLEEP              = 0x01; // Wait on sleep thread.
-    public static final int PSP_WAIT_DELAY              = 0x02; // Wait on delay thread.
-    public static final int PSP_WAIT_SEMA               = 0x03; // Wait on sema.
-    public static final int PSP_WAIT_EVENTFLAG          = 0x04; // Wait on event flag.
-    public static final int PSP_WAIT_MBX                = 0x05; // Wait on mbx.
-    public static final int PSP_WAIT_VPL                = 0x06; // Wait on vpl.
-    public static final int PSP_WAIT_FPL                = 0x07; // Wait on fpl.
-    public static final int PSP_WAIT_MSGPIPE            = 0x08; // Wait on msg pipe (send and receive).
-    public static final int PSP_WAIT_THREAD_END         = 0x09; // Wait on thread end.
-    public static final int PSP_WAIT_EVENTHANDLER       = 0x0a; // Wait on event handler release.
-    public static final int PSP_WAIT_CALLBACK_DELETE    = 0x0b; // Wait on callback delete.
-    public static final int PSP_WAIT_MUTEX              = 0x0c; // Wait on mutex.
-    public static final int PSP_WAIT_LWMUTEX            = 0x0d; // Wait on lwmutex.
+    public static final int PSP_WAIT_NONE = 0x00;
+    public static final int PSP_WAIT_SLEEP = 0x01; // Wait on sleep thread.
+    public static final int PSP_WAIT_DELAY = 0x02; // Wait on delay thread.
+    public static final int PSP_WAIT_SEMA = 0x03; // Wait on sema.
+    public static final int PSP_WAIT_EVENTFLAG = 0x04; // Wait on event flag.
+    public static final int PSP_WAIT_MBX = 0x05; // Wait on mbx.
+    public static final int PSP_WAIT_VPL = 0x06; // Wait on vpl.
+    public static final int PSP_WAIT_FPL = 0x07; // Wait on fpl.
+    public static final int PSP_WAIT_MSGPIPE = 0x08; // Wait on msg pipe (send and receive).
+    public static final int PSP_WAIT_THREAD_END = 0x09; // Wait on thread end.
+    public static final int PSP_WAIT_EVENTHANDLER = 0x0a; // Wait on event handler release.
+    public static final int PSP_WAIT_CALLBACK_DELETE = 0x0b; // Wait on callback delete.
+    public static final int PSP_WAIT_MUTEX = 0x0c; // Wait on mutex.
+    public static final int PSP_WAIT_LWMUTEX = 0x0d; // Wait on lwmutex.
     // These wait types are only used internally in Jpcsp and are not real PSP wait types.
-    public static final int JPCSP_WAIT_IO               = 0x100; // Wait on IO.
-    public static final int JPCSP_WAIT_UMD              = 0x101; // Wait on UMD.
-    public static final int JPCSP_WAIT_BLOCKED          = 0x102; // Thread blocked.
-
+    public static final int JPCSP_WAIT_IO = 0x100; // Wait on IO.
+    public static final int JPCSP_WAIT_UMD = 0x101; // Wait on UMD.
+    public static final int JPCSP_WAIT_BLOCKED = 0x102; // Thread blocked.
     // SceKernelThreadInfo.
     public final String name;
     public int attr;
@@ -105,7 +102,6 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public int releaseCount;
     public int notifyCallback;  // Used by sceKernelNotifyCallback to check if a callback has been called or not.
     public int errno; // used by sceNetInet
-
     private SysMemInfo stackSysMemInfo;
     // internal variables
     public final int uid;
@@ -114,22 +110,18 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public boolean doDelete;
     public IAction doDeleteAction;
     public boolean doCallbacks;
-
     public final ThreadWaitInfo wait;
-
     public int displayLastWaitVcount;
-
     public long javaThreadId = -1;
     public long javaThreadCpuTimeNanos = -1;
-
     // Callbacks, only 1 of each type can be registered per thread.
-    public final static int THREAD_CALLBACK_UMD          = 0;
-    public final static int THREAD_CALLBACK_IO           = 1;
-    public final static int THREAD_CALLBACK_MEMORYSTICK  = 2;
-    public final static int THREAD_CALLBACK_POWER        = 3;
-    public final static int THREAD_CALLBACK_EXIT         = 4;
+    public final static int THREAD_CALLBACK_UMD = 0;
+    public final static int THREAD_CALLBACK_IO = 1;
+    public final static int THREAD_CALLBACK_MEMORYSTICK = 2;
+    public final static int THREAD_CALLBACK_POWER = 3;
+    public final static int THREAD_CALLBACK_EXIT = 4;
     public final static int THREAD_CALLBACK_USER_DEFINED = 5;
-    public final static int THREAD_CALLBACK_SIZE         = 6;
+    public final static int THREAD_CALLBACK_SIZE = 6;
     public boolean[] callbackRegistered;
     public boolean[] callbackReady;
     public SceKernelCallbackInfo[] callbackInfo;
@@ -173,11 +165,11 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         if (stack_addr != 0 && stackSize > 0) {
             // set stack to 0xFF
             if ((attr & PSP_THREAD_ATTR_NO_FILLSTACK) != PSP_THREAD_ATTR_NO_FILLSTACK) {
-                mem.memset(stack_addr, (byte)0xFF, stackSize);
+                mem.memset(stack_addr, (byte) 0xFF, stackSize);
             }
 
             // setup k0
-            mem.memset(k0, (byte)0x0, 0x100);
+            mem.memset(k0, (byte) 0x0, 0x100);
             mem.write32(k0 + 0xc0, stack_addr);
             mem.write32(k0 + 0xca, uid);
             mem.write32(k0 + 0xf8, 0xffffffff);
@@ -243,16 +235,16 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     }
 
     private int getPSPWaitType() {
-    	if (waitType >= 0x100) {
-        	// A blocked thread (e.g. a thread blocked due to audio output or
-        	// wait for vblank or sceCtrl sample reading) is implemented like
-        	// a "wait for Event Flag". This is the closest implementation to a real PSP,
-        	// as event flags are usually used by a PSP to implement these wait
-        	// functions.
-    		// Jpcsp internal wait types are best matched to PSP_WAIT_EVENTFLAG.
-    		return PSP_WAIT_EVENTFLAG;
-    	}
-		return waitType;
+        if (waitType >= 0x100) {
+            // A blocked thread (e.g. a thread blocked due to audio output or
+            // wait for vblank or sceCtrl sample reading) is implemented like
+            // a "wait for Event Flag". This is the closest implementation to a real PSP,
+            // as event flags are usually used by a PSP to implement these wait
+            // functions.
+            // Jpcsp internal wait types are best matched to PSP_WAIT_EVENTFLAG.
+            return PSP_WAIT_EVENTFLAG;
+        }
+        return waitType;
     }
 
     public void write(Memory mem, int address) {
@@ -292,23 +284,12 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         mem.write32(address + 36, releaseCount);
     }
 
-    public void expandStack(int newSize) {
-        freeStack();
-        this.stackSize = newSize;
-        stackSysMemInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, "ThreadMan-Stack", jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High, stackSize, 0);
-    	if (stackSysMemInfo == null) {
-    		stack_addr = 0;
-    	} else {
-    		stack_addr = stackSysMemInfo.addr;
-    	}
-    }
-
     public void freeStack() {
-    	if (stackSysMemInfo != null) {
-    		Modules.SysMemUserForUserModule.free(stackSysMemInfo);
-    		stackSysMemInfo = null;
-    		stack_addr = 0;
-    	}
+        if (stackSysMemInfo != null) {
+            Modules.SysMemUserForUserModule.free(stackSysMemInfo);
+            stackSysMemInfo = null;
+            stack_addr = 0;
+        }
     }
 
     public static String getStatusName(int status) {
@@ -350,7 +331,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     }
 
     public String getStatusName() {
-    	return getStatusName(status);
+        return getStatusName(status);
     }
 
     public static String getWaitName(int waitType, ThreadWaitInfo wait, int status) {
@@ -386,52 +367,52 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         }
 
         if (waitType == JPCSP_WAIT_BLOCKED) {
-        	s.append(String.format(" | Blocked"));
+            s.append(String.format(" | Blocked"));
         }
 
         // Strip off leading " | "
         if (s.length() > 0) {
             s.delete(0, 3);
         } else {
-        	s.append("None");
-        	if ((status & PSP_THREAD_WAITING) == PSP_THREAD_WAITING) {
-	            if (wait.forever) {
-	                s.append(" (sleeping)");
-	            } else {
-	            	int restDelay = (int) (wait.microTimeTimeout - Emulator.getClock().microTime());
-	            	if (restDelay < 0) {
-	            		restDelay = 0;
-	            	}
-	                s.append(String.format(" (delay %d us, rest %d us)", wait.micros, restDelay));
-	            }
-        	}
+            s.append("None");
+            if ((status & PSP_THREAD_WAITING) == PSP_THREAD_WAITING) {
+                if (wait.forever) {
+                    s.append(" (sleeping)");
+                } else {
+                    int restDelay = (int) (wait.microTimeTimeout - Emulator.getClock().microTime());
+                    if (restDelay < 0) {
+                        restDelay = 0;
+                    }
+                    s.append(String.format(" (delay %d us, rest %d us)", wait.micros, restDelay));
+                }
+            }
         }
 
         return s.toString();
     }
 
     public String getWaitName() {
-    	return getWaitName(waitType, wait, status);
+        return getWaitName(waitType, wait, status);
     }
 
     public boolean isSuspended() {
-    	return (status & PSP_THREAD_SUSPEND) != 0;
+        return (status & PSP_THREAD_SUSPEND) != 0;
     }
 
     public boolean isWaiting() {
-    	return (status & PSP_THREAD_WAITING) != 0;
+        return (status & PSP_THREAD_WAITING) != 0;
     }
 
     public boolean isRunning() {
-    	return (status & PSP_THREAD_RUNNING) != 0;
+        return (status & PSP_THREAD_RUNNING) != 0;
     }
 
     public boolean isReady() {
-    	return (status & PSP_THREAD_READY) != 0;
+        return (status & PSP_THREAD_READY) != 0;
     }
 
     public boolean isStopped() {
-    	return (status & PSP_THREAD_STOPPED) != 0;
+        return (status & PSP_THREAD_STOPPED) != 0;
     }
 
     public static boolean isKernelMode(int attr) {
@@ -451,15 +432,15 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     }
 
     @Override
-	public String toString() {
-		StringBuilder s = new StringBuilder();
+    public String toString() {
+        StringBuilder s = new StringBuilder();
 
-		s.append(name);
-		s.append("(");
-		s.append("Status " + getStatusName());
-		s.append(", Wait " + getWaitName());
-		s.append(")");
+        s.append(name);
+        s.append("(");
+        s.append("Status " + getStatusName());
+        s.append(", Wait " + getWaitName());
+        s.append(")");
 
-		return s.toString();
-	}
+        return s.toString();
+    }
 }
