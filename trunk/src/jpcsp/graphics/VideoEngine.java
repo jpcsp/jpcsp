@@ -3676,8 +3676,17 @@ public class VideoEngine {
     		log.warn("Unknown stencil function " + context.stencilFunc);
     		context.stencilFunc = STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST;
     	}
-        context.stencilRef = (normalArgument >> 8) & 0xff;
-        context.stencilMask = (normalArgument >> 16) & 0xff;
+
+        if (context.psm == 0) {  // PSM_5650
+            context.stencilRef = 0;
+        } else if (context.psm == 1) {
+            context.stencilRef = (normalArgument >> 8) & 0x10; // PSM_5551
+        } else if (context.psm == 2) {
+            context.stencilRef = (normalArgument >> 8) & 0xF0; // PSM_4444
+        } else if (context.psm == 3) {
+            context.stencilRef = (normalArgument >> 8) & 0xFF; // PSM_8888
+        }
+        context.stencilMask = (normalArgument >> 16) & 0xFF;
         re.setStencilFunc(context.stencilFunc, context.stencilRef, context.stencilMask);
 
         if (isLogDebugEnabled) {

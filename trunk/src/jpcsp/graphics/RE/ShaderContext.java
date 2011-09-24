@@ -72,6 +72,9 @@ public class ShaderContext {
 	private int stencilOpFail;
 	private int stencilOpZFail;
 	private int stencilOpZPass;
+        private int depthTestEnable;
+        private int depthFunc;
+        private int depthMask;
 	private int fbTex = -1;
 	private int colorMaskEnable;
 	private int[] colorMask = new int[4];
@@ -531,6 +534,30 @@ public class ShaderContext {
 
 	public void setStencilOpZPass(int stencilOpZPass) {
 		this.stencilOpZPass = stencilOpZPass;
+	}
+        
+        public int getDepthTestEnable() {
+		return depthTestEnable;
+	}
+
+	public void setDepthTestEnable(int depthTestEnable) {
+		this.depthTestEnable = depthTestEnable;
+	}
+
+	public int getDepthFunc() {
+		return depthFunc;
+	}
+
+	public void setDepthFunc(int depthFunc) {
+		this.depthFunc = depthFunc;
+	}
+        
+        public int getDepthMask() {
+		return depthMask;
+	}
+
+	public void setDepthMask(boolean depthMask) {
+		this.depthMask = depthMask ? 1 : 0;
 	}
 
 	public int getFbTex() {

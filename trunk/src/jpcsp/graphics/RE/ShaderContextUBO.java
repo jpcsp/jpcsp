@@ -71,6 +71,9 @@ public class ShaderContextUBO extends ShaderContext {
 	private ShaderUniformInfo stencilOpFail;
 	private ShaderUniformInfo stencilOpZFail;
 	private ShaderUniformInfo stencilOpZPass;
+        private ShaderUniformInfo depthTestEnable;
+        private ShaderUniformInfo depthFunc;
+        private ShaderUniformInfo depthMask;
 	private ShaderUniformInfo alphaTestEnable;
 	private ShaderUniformInfo alphaTestFunc;
 	private ShaderUniformInfo alphaTestRef;
@@ -666,6 +669,30 @@ public class ShaderContextUBO extends ShaderContext {
 		if (stencilOpZPass != getStencilOpZPass()) {
 			copy(stencilOpZPass, this.stencilOpZPass);
 			super.setStencilOpZPass(stencilOpZPass);
+		}
+	}
+        
+        @Override
+	public void setDepthTestEnable(int depthTestEnable) {
+		if (depthTestEnable != getDepthTestEnable()) {
+			copy(depthTestEnable, this.depthTestEnable);
+			super.setDepthTestEnable(depthTestEnable);
+		}
+	}
+        
+        @Override
+	public void setDepthFunc(int depthFunc) {
+		if (depthFunc != getDepthFunc()) {
+			copy(depthFunc, this.depthFunc);
+			super.setDepthFunc(depthFunc);
+		}
+	}
+        
+        @Override
+	public void setDepthMask(boolean depthMask) {
+		if ((depthMask ? 1 : 0) != getDepthMask()) {
+			copy(depthMask, this.depthMask);
+			super.setDepthMask(depthMask);
 		}
 	}
 

@@ -43,6 +43,9 @@
     uniform int   stencilOpFail;
     uniform int   stencilOpZFail;
     uniform int   stencilOpZPass;
+    uniform bool  depthTestEnable;
+    uniform int   depthFunc;
+    uniform int   depthMask;
     uniform bool  colorMaskEnable;
     uniform ivec4 colorMask;
     uniform ivec4 notColorMask;
@@ -431,6 +434,77 @@ void ApplyColorTest(in vec3 Cf)
 
 
 ///////////////////////////////////////////////////////////////
+// Depth test
+///////////////////////////////////////////////////////////////
+
+
+// Convert the depth value from float to int and apply the depth mask
+int getDepthInt(float depth)
+{
+    #if USE_BIT_OPERATORS
+        return int(ROUND(depth * 255.0)) & depthMask;
+    #else
+        // Masking with depthMask is not available when not using bit operators...
+        return int(ROUND(depth * 255.0));
+    #endif
+}
+
+
+bool passDepthTest(float depth)
+{
+    #if !USE_DYNAMIC_DEFINES
+        switch (depthFunc)
+        {
+        case 0: // ZTST_FUNCTION_NEVER_PASS_PIXEL
+            return false;
+        case 1: // ZTST_FUNCTION_ALWAYS_PASS_PIXEL
+            return true;
+        case 2: // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_EQUAL
+            return getDepthInt(depth) == gl_FragCoord.z;
+        case 3: // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_ISNOT_EQUAL
+            return getDepthInt(depth) != gl_FragCoord.z;
+        case 4: // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS
+            return getDepthInt(depth) < gl_FragCoord.z;
+        case 5: // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS_OR_EQUAL
+            return getDepthInt(depth) <= gl_FragCoord.z;
+        case 6: // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER
+            return getDepthInt(depth) > gl_FragCoord.z;
+        case 7: // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL
+            return getDepthInt(depth) >= gl_FragCoord.z;
+        }
+
+        return true;
+    #elif DEPTH_FUNC == 0
+        // ZTST_FUNCTION_NEVER_PASS_PIXEL
+        return false;
+    #elif DEPTH_FUNC == 1
+        // ZTST_FUNCTION_ALWAYS_PASS_PIXEL
+        return true;
+    #elif DEPTH_FUNC == 2
+        // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_EQUAL
+        return getDepthInt(depth) == gl_FragCoord.z;
+    #elif DEPTH_FUNC == 3
+        // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_ISNOT_EQUAL
+        return getDepthInt(depth) != gl_FragCoord.z;
+    #elif DEPTH_FUNC == 4
+        // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS
+        return getDepthInt(depth) < gl_FragCoord.z;
+    #elif DEPTH_FUNC == 5
+        // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS_OR_EQUAL
+        return getDepthInt(depth) <= gl_FragCoord.z;
+    #elif DEPTH_FUNC == 6
+        // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER
+        return getDepthInt(depth) > gl_FragCoord.z;
+    #elif DEPTH_FUNC == 7
+        // ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL
+        return getDepthInt(depth) >= gl_FragCoord.z;
+    #else
+        return true;
+    #endif
+}
+
+
+///////////////////////////////////////////////////////////////
 // Stencil Test
 ///////////////////////////////////////////////////////////////
 
@@ -527,7 +601,7 @@ bool passStencilTest(float fbAlpha)
         return getStencilFbAlphaInt(fbAlpha) > stencilRef;
     #elif STENCIL_FUNC == 7
         // STST_FUNCTION_PASS_TEST_IF_GREATER_OR_EQUAL
-        return getStencilFbAlphaInt(fbAlpha) >= stencilRef;;
+        return getStencilFbAlphaInt(fbAlpha) >= stencilRef;
     #else
         return true;
     #endif
@@ -544,8 +618,7 @@ bool ApplyStencilTest(inout vec4 Cf, in vec4 Cdst)
     {
         // The stencil did pass, the RGB will be updated
         // and update the Alpha according to the stencil operation.
-        // TODO Check depth test and use stencilOpZFail or stencilOpZPass accordingly
-        stencilOp = stencilOpZPass;
+        stencilOp = passDepthTest(Cdst.z) ? stencilOpZPass : stencilOpZFail;
         stencilTestPassed = true;
     }
     else
