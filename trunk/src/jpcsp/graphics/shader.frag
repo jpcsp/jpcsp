@@ -434,11 +434,12 @@ void ApplyColorTest(in vec3 Cf)
 
 
 ///////////////////////////////////////////////////////////////
-// Depth test
+// Depth test (disabled)
 ///////////////////////////////////////////////////////////////
 
 
 // Convert the depth value from float to int and apply the depth mask
+#if 0
 int getDepthInt(float depth)
 {
     #if USE_BIT_OPERATORS
@@ -502,7 +503,7 @@ bool passDepthTest(float depth)
         return true;
     #endif
 }
-
+#endif
 
 ///////////////////////////////////////////////////////////////
 // Stencil Test
@@ -618,7 +619,8 @@ bool ApplyStencilTest(inout vec4 Cf, in vec4 Cdst)
     {
         // The stencil did pass, the RGB will be updated
         // and update the Alpha according to the stencil operation.
-        stencilOp = passDepthTest(Cdst.z) ? stencilOpZPass : stencilOpZFail;
+        // FAKING: Always pass the Z test, for now.
+        stencilOp = stencilOpZPass;
         stencilTestPassed = true;
     }
     else
