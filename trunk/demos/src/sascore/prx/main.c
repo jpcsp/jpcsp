@@ -24,6 +24,8 @@ static SasCore __attribute__((aligned(256))) sasCore;
 static char __attribute__((aligned(256))) buffer[100000];
 static unsigned short __attribute__((aligned(256))) sasOut[100000];
 int result;
+int grain;
+int outputMode;
 int voice;
 int loopmode;
 int pitch;
@@ -39,10 +41,18 @@ int sustainCurveType;
 int releaseCurveType;
 int sustainLevel;
 int sasIndex = 0;
+int dumpFlags = 0;
+int dumpHeights = 0;
+int startTime;
+int endTime;
+char s[1000];
+char l[1000];
 
 
 static unsigned char vagSample[] = {
-// 16 lines * 28 samples = 448 (0x1C0) samples
+// 18 lines * 28 samples = 504 (0x1F8) samples
+0x00, 0x00, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77,
+0x00, 0x00, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77,
 0x00, 0x00, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77,
 0x00, 0x00, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77,
 0x00, 0x00, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77,
@@ -64,15 +74,13 @@ static unsigned char vagSample[] = {
 
 void init()
 {
-	result = __sceSasInit(&sasCore, PSP_SAS_GRAIN_SAMPLES, PSP_SAS_VOICES_MAX, PSP_SAS_OUTPUTMODE_STEREO, 44100);
-	pspDebugScreenPrintf("__sceSasInit result 0x%08X\n", result);
+	result = __sceSasInit(&sasCore, grain, PSP_SAS_VOICES_MAX, outputMode, 44100);
+	if (result != 0) pspDebugScreenPrintf("__sceSasInit result 0x%08X\n", result);
 }
 
 void dumpSasOut(unsigned short *sasOut, int samples)
 {
 	int i;
-	char l[1000];
-	char s[100];
 
 	strcpy(l, "");
 	for (i = 0; i < samples; i++)
@@ -103,6 +111,8 @@ void dumpSasOut(unsigned short *sasOut, int samples)
 
 void setDefaults()
 {
+	grain = PSP_SAS_GRAIN_SAMPLES;
+	outputMode = PSP_SAS_OUTPUTMODE_STEREO;
 	voice = 0;
 	loopmode = 0;
 	pitch = PSP_SAS_PITCH_BASE;
@@ -110,20 +120,19 @@ void setDefaults()
 	samples = PSP_SAS_GRAIN_SAMPLES;
 
 	attack = PSP_SAS_ENVELOPE_FREQ_MAX;
-	decay = PSP_SAS_ENVELOPE_FREQ_MAX;
+	decay = 0;
 	sustain = PSP_SAS_ENVELOPE_FREQ_MAX;
 	release = 0;
 	attackCurveType = PSP_SAS_ADSR_CURVE_MODE_LINEAR_INCREASE;
 	decayCurveType = PSP_SAS_ADSR_CURVE_MODE_LINEAR_DECREASE;
 	sustainCurveType = PSP_SAS_ADSR_CURVE_MODE_LINEAR_INCREASE;
 	releaseCurveType = PSP_SAS_ADSR_CURVE_MODE_LINEAR_DECREASE;
-	sustainLevel = PSP_SAS_ENVELOPE_FREQ_MAX;
+	sustainLevel = PSP_SAS_ENVELOPE_FREQ_MAX >> 1;
 }
 
 void setVoice()
 {
 	int vagDataSize;
-	char s[1000];
 
 	SceUID vagFile = sceIoOpen("sample.vag", PSP_O_RDONLY, 0);
 	if (vagFile < 0)
@@ -143,7 +152,7 @@ void setVoice()
 
 	sprintf(s, "SetVoice voice=%d, loopmode=%d, pitch=0x%X, volume=0x%X\n", voice, loopmode, pitch, volume);
 	sceIoWrite(logFd, s, strlen(s));
-	sprintf(s, "         attack=0x%08X(%d), decay=0x%08X(%d), sustain=0x%08X(%d), release=0x%08X(%d)\n", attack, attackCurveType, decay, decayCurveType, sustain, sustainCurveType, release, releaseCurveType);
+	sprintf(s, "         attack=0x%08X(%d), decay=0x%08X(%d), sustain=0x%08X(%d), sustain level=0x%08X, release=0x%08X(%d)\n", attack, attackCurveType, decay, decayCurveType, sustain, sustainCurveType, sustainLevel, release, releaseCurveType);
 	sceIoWrite(logFd, s, strlen(s));
 
 	result = __sceSasSetVoice(&sasCore, voice, buffer, vagDataSize, loopmode);
@@ -168,16 +177,37 @@ void setVoice()
 	if (result != 0) pspDebugScreenPrintf("__sceSasSetKeyOn result 0x%08X\n", result);
 }
 
-void sceSasCore()
+
+void sceSasCore(int count)
 {
 	int i;
+	int endFlag;
+	int pauseFlag;
+	int height;
 
 	for (i = 0; i < 20; i++)
 	{
+		if (dumpFlags)
+		{
+			endFlag = __sceSasGetEndFlag(&sasCore);
+			pauseFlag = __sceSasGetPauseFlag(&sasCore);
+			sprintf(s, "      end=0x%08X, pause=0x%08X\n", endFlag, pauseFlag);
+			sceIoWrite(logFd, s, strlen(s));
+		}
+		if (dumpHeights)
+		{
+			height = __sceSasGetEnvelopeHeight(&sasCore, voice);
+			sprintf(s, "      height=0x%08X\n", height);
+			sceIoWrite(logFd, s, strlen(s));
+		}
+
 		memset(sasOut, 0, sizeof(sasOut));
 		result = __sceSasCore(&sasCore, sasOut);
 
-		dumpSasOut(sasOut, samples);
+		if (i < count)
+		{
+			dumpSasOut(sasOut, samples);
+		}
 
 		int endFlag = __sceSasGetEndFlag(&sasCore);
 		if ((endFlag & (1 << voice)) != 0)
@@ -185,7 +215,22 @@ void sceSasCore()
 			break;
 		}
 	}
+
+	if (dumpFlags)
+	{
+		endFlag = __sceSasGetEndFlag(&sasCore);
+		pauseFlag = __sceSasGetPauseFlag(&sasCore);
+		sprintf(s, "      end=0x%08X, pause=0x%08X\n", endFlag, pauseFlag);
+		sceIoWrite(logFd, s, strlen(s));
+	}
+	if (dumpHeights)
+	{
+		height = __sceSasGetEnvelopeHeight(&sasCore, voice);
+		sprintf(s, "      height=0x%08X\n", height);
+		sceIoWrite(logFd, s, strlen(s));
+	}
 }
+
 
 void runTestPause()
 {
@@ -225,17 +270,238 @@ void runTestPitch()
 	int i;
 
 	setDefaults();
-	attack >>= 4;
-	decay >>= 6;
-	sustain >>= 6;
-	sustainLevel >>= 2;
 	for (i = 0; i < 16; i++)
 	{
-		pspDebugScreenPrintf("Pitch 0x%X\n", pitch);
+		sprintf(s, "Pitch 0x%X\n", pitch);
+		pspDebugScreenPrintf(s);
+		sceIoWrite(logFd, s, strlen(s));
+
 		setVoice();
-		sceSasCore();
+		sceSasCore(1000);
 		pitch += 0x200;
 	}
+}
+
+
+void runTestAttack()
+{
+	int i;
+
+	setDefaults();
+	attack = PSP_SAS_ENVELOPE_FREQ_MAX;
+	for (i = 0; i < 16; i++)
+	{
+		sprintf(s, "Attack rate 0x%X, curve type %d\n", attack, attackCurveType);
+		pspDebugScreenPrintf(s);
+		sceIoWrite(logFd, s, strlen(s));
+
+		setVoice();
+		sceSasCore(1);
+		attack >>= 1;
+	}
+}
+
+
+void runTestDecay()
+{
+	int i;
+
+	setDefaults();
+	decay = PSP_SAS_ENVELOPE_FREQ_MAX;
+	sustain = PSP_SAS_ENVELOPE_FREQ_MAX >> 1;
+	sustainLevel = PSP_SAS_ENVELOPE_HEIGHT_MAX >> 2;
+	for (i = 0; i < 16; i++)
+	{
+		sprintf(s, "Decay rate 0x%X, curve type %d, sustain level 0x%08X\n", decay, decayCurveType, sustainLevel);
+		pspDebugScreenPrintf(s);
+		sceIoWrite(logFd, s, strlen(s));
+
+		setVoice();
+		sceSasCore(1);
+		decay >>= 1;
+	}
+}
+
+
+void runTestSustain()
+{
+	int i;
+
+	setDefaults();
+	decay = PSP_SAS_ENVELOPE_FREQ_MAX;
+	sustainLevel = 0;
+	for (i = 0; i < 16; i++)
+	{
+		sprintf(s, "Sustain rate 0x%X, curve type %d, sustain level 0x%08X\n", sustain, sustainCurveType, sustainLevel);
+		pspDebugScreenPrintf(s);
+		sceIoWrite(logFd, s, strlen(s));
+
+		setVoice();
+		sceSasCore(1);
+		sustain >>= 1;
+	}
+}
+
+
+void runTestRelease()
+{
+	int i;
+
+	dumpFlags = 1;
+	setDefaults();
+	release = PSP_SAS_ENVELOPE_FREQ_MAX;
+	for (i = 0; i < 16; i++)
+	{
+		sprintf(s, "Release rate 0x%X, curve type %d\n", release, releaseCurveType);
+		pspDebugScreenPrintf(s);
+		sceIoWrite(logFd, s, strlen(s));
+
+		setVoice();
+		// Call sceSasCore once then sceSasSetKeyOff to trigger the release
+		__sceSasCore(&sasCore, sasOut);
+		__sceSasSetKeyOff(&sasCore, voice);
+		sceSasCore(release > 0x003FFFFF ? 1 : 2);
+		release >>= 1;
+	}
+	dumpFlags = 0;
+}
+
+
+void runTestCurveType()
+{
+	setDefaults();
+
+	attack = PSP_SAS_ENVELOPE_FREQ_MAX >> 6;
+	attackCurveType = PSP_SAS_ADSR_CURVE_MODE_LINEAR_BENT;
+	pspDebugScreenPrintf("Attack rate 0x%X, curve type %d\n", attack, attackCurveType);
+	setVoice();
+	sceSasCore(1);
+
+	attack = PSP_SAS_ENVELOPE_FREQ_MAX >> 7;
+	attackCurveType = PSP_SAS_ADSR_CURVE_MODE_LINEAR_BENT;
+	pspDebugScreenPrintf("Attack rate 0x%X, curve type %d\n", attack, attackCurveType);
+	setVoice();
+	sceSasCore(1);
+
+	attack = PSP_SAS_ENVELOPE_FREQ_MAX >> 0;
+	attackCurveType = PSP_SAS_ADSR_CURVE_MODE_EXPONENT;
+	pspDebugScreenPrintf("Attack rate 0x%X, curve type %d\n", attack, attackCurveType);
+	setVoice();
+	sceSasCore(1);
+
+	attack = PSP_SAS_ENVELOPE_FREQ_MAX >> 1;
+	attackCurveType = PSP_SAS_ADSR_CURVE_MODE_EXPONENT;
+	pspDebugScreenPrintf("Attack rate 0x%X, curve type %d\n", attack, attackCurveType);
+	setVoice();
+	sceSasCore(1);
+
+	attack = PSP_SAS_ENVELOPE_FREQ_MAX >> 2;
+	attackCurveType = PSP_SAS_ADSR_CURVE_MODE_EXPONENT;
+	pspDebugScreenPrintf("Attack rate 0x%X, curve type %d\n", attack, attackCurveType);
+	setVoice();
+	sceSasCore(1);
+
+	attack = PSP_SAS_ENVELOPE_FREQ_MAX >> 3;
+	attackCurveType = PSP_SAS_ADSR_CURVE_MODE_EXPONENT;
+	pspDebugScreenPrintf("Attack rate 0x%X, curve type %d\n", attack, attackCurveType);
+	setVoice();
+	sceSasCore(1);
+
+	attack = PSP_SAS_ENVELOPE_FREQ_MAX >> 4;
+	attackCurveType = PSP_SAS_ADSR_CURVE_MODE_EXPONENT;
+	pspDebugScreenPrintf("Attack rate 0x%X, curve type %d\n", attack, attackCurveType);
+	setVoice();
+	sceSasCore(2);
+
+	attack = PSP_SAS_ENVELOPE_FREQ_MAX >> 5;
+	attackCurveType = PSP_SAS_ADSR_CURVE_MODE_EXPONENT;
+	pspDebugScreenPrintf("Attack rate 0x%X, curve type %d\n", attack, attackCurveType);
+	setVoice();
+	sceSasCore(2);
+
+	attack = PSP_SAS_ENVELOPE_FREQ_MAX >> 6;
+	attackCurveType = PSP_SAS_ADSR_CURVE_MODE_EXPONENT;
+	pspDebugScreenPrintf("Attack rate 0x%X, curve type %d\n", attack, attackCurveType);
+	setVoice();
+	sceSasCore(3);
+
+	setDefaults();
+	sustain = 0;
+
+	decay = PSP_SAS_ENVELOPE_FREQ_MAX >> 6;
+	decayCurveType = PSP_SAS_ADSR_CURVE_MODE_DIRECT;
+	sustainLevel = PSP_SAS_ENVELOPE_FREQ_MAX >> 3;
+	pspDebugScreenPrintf("Decay rate 0x%X, curve type %d, sustain level 0x%08X\n", decay, decayCurveType, sustainLevel);
+	setVoice();
+	sceSasCore(1);
+
+	decay = PSP_SAS_ENVELOPE_FREQ_MAX >> 6;
+	decayCurveType = PSP_SAS_ADSR_CURVE_MODE_DIRECT;
+	sustainLevel = PSP_SAS_ENVELOPE_FREQ_MAX >> 4;
+	pspDebugScreenPrintf("Decay rate 0x%X, curve type %d, sustain level 0x%08X\n", decay, decayCurveType, sustainLevel);
+	setVoice();
+	sceSasCore(1);
+}
+
+void startTiming()
+{
+	startTime = sceKernelGetSystemTimeLow();
+}
+
+void endTiming(char *comment)
+{
+	endTime = sceKernelGetSystemTimeLow();
+	sprintf(s, "%s: %d us\n", comment, endTime - startTime);
+	pspDebugScreenPrintf(s);
+	sceIoWrite(logFd, s, strlen(s));
+}
+
+void runTestTiming()
+{
+	int i;
+
+	// Timing with no voice playing
+	startTiming();
+	result = __sceSasCore(&sasCore, sasOut);
+	endTiming("No voice playing");
+
+	// Timing with 1 voice playing
+	setDefaults();
+	setVoice();
+	for (i = 0; i < 2; i++)
+	{
+		startTiming();
+		result = __sceSasCore(&sasCore, sasOut);
+		endTiming("One voice playing");
+	}
+	sceSasCore(0);
+
+	// Timing with 2 voices playing
+	setDefaults();
+	setVoice();
+	voice++;
+	setVoice();
+	for (i = 0; i < 2; i++)
+	{
+		startTiming();
+		result = __sceSasCore(&sasCore, sasOut);
+		endTiming("Two voices playing");
+	}
+	sceSasCore(0);
+
+	// Timing with more samples
+	setDefaults();
+	grain <<= 2;
+	samples <<= 2;
+	init();
+	setVoice();
+	for (i = 0; i < 2; i++)
+	{
+		startTiming();
+		result = __sceSasCore(&sasCore, sasOut);
+		endTiming("4x samples");
+	}
+	sceSasCore(0);
 }
 
 
@@ -262,10 +528,19 @@ int main_thread(SceSize _argc, ScePVoid _argp)
 	logFd = sceIoOpen("ms0:/sascore.log", PSP_O_WRONLY | PSP_O_CREAT, 0777);
 
 	pspDebugScreenInit();
+	pspDebugScreenPrintf("Press Triangle to exit\n");
 	pspDebugScreenPrintf("Press Cross to start the sceSasSetPause Test\n");
 	pspDebugScreenPrintf("Press Circle to start the sceSasSetPitch Test\n");
+	pspDebugScreenPrintf("Press Square to start the ADSR attack Test\n");
+	pspDebugScreenPrintf("Press Left to start the ADSR decay Test\n");
+	pspDebugScreenPrintf("Press Right to start the ADSR sustain Test\n");
+	pspDebugScreenPrintf("Press Up to start the ADSR release Test\n");
+	pspDebugScreenPrintf("Press Down to start the curve type Test\n");
+	pspDebugScreenPrintf("Press Left Trigger to start the timing Test\n");
 
+	setDefaults();
 	init();
+	dumpHeights = 1;
 
 	while(!done)
 	{
@@ -330,6 +605,36 @@ int main_thread(SceSize _argc, ScePVoid _argp)
 		if (buttonDown & PSP_CTRL_CIRCLE)
 		{
 			runTestPitch();
+		}
+
+		if (buttonDown & PSP_CTRL_SQUARE)
+		{
+			runTestAttack();
+		}
+
+		if (buttonDown & PSP_CTRL_LEFT)
+		{
+			runTestDecay();
+		}
+
+		if (buttonDown & PSP_CTRL_RIGHT)
+		{
+			runTestSustain();
+		}
+
+		if (buttonDown & PSP_CTRL_UP)
+		{
+			runTestRelease();
+		}
+
+		if (buttonDown & PSP_CTRL_DOWN)
+		{
+			runTestCurveType();
+		}
+
+		if (buttonDown & PSP_CTRL_LTRIGGER)
+		{
+			runTestTiming();
 		}
 
 		if (buttonDown & PSP_CTRL_TRIANGLE)
