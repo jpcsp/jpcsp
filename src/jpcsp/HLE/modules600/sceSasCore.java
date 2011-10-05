@@ -17,70 +17,33 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules600;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.kernel.managers.IntrManager;
-import jpcsp.HLE.kernel.types.SceKernelErrors;
 
 public class sceSasCore extends jpcsp.HLE.modules500.sceSasCore {
 
-    @HLEFunction(nid = 0x4AA9EAD6, version = 600)
-    public void __sceSasSetVoiceATRAC3(Processor processor) {
-        CpuState cpu = processor.cpu;
+	@HLEFunction(nid = 0x4AA9EAD6, version = 600, checkInsideInterrupt = true)
+    public int __sceSasSetVoiceATRAC3(int sasCore, int voice, int atrac3Addr) {
+        log.warn(String.format("Unimplemented __sceSasSetVoiceATRAC3 sasCore=0x%08X, voice=%d, atrac3Addr=0x%08X", sasCore, voice, atrac3Addr));
 
-        int sasCore = cpu.gpr[4];
-        int voice = cpu.gpr[5];
-        int atrac3Addr = cpu.gpr[6];
+        checkSasAndVoiceHandlesGood(sasCore, voice);
 
-        log.warn("UNIMPLEMENTED: __sceSasSetVoiceATRAC3: sasCore=0x" + Integer.toHexString(sasCore)
-                + ", voice=" + voice
-                + ", atrac3Addr=0x" + Integer.toHexString(atrac3Addr));
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
-    @HLEFunction(nid = 0x7497EA85, version = 600)
-    public void __sceSasConcatenateATRAC3(Processor processor) {
-        CpuState cpu = processor.cpu;
+    @HLEFunction(nid = 0x7497EA85, version = 600, checkInsideInterrupt = true)
+    public int __sceSasConcatenateATRAC3(int sasCore, int voice, int atrac3Addr, int unkown) {
+        log.warn(String.format("Unimplemented __sceSasConcatenateATRAC3 sasCore=0x%08X, voice=%d, atrac3Addr=0x%08X, unknown=0x%08X", sasCore, voice, atrac3Addr, unkown));
 
-        int sasCore = cpu.gpr[4];
-        int voice = cpu.gpr[5];
-        int atrac3Addr = cpu.gpr[6];
-        int unk1 = cpu.gpr[7];
+        checkSasAndVoiceHandlesGood(sasCore, voice);
 
-        log.warn("UNIMPLEMENTED: __sceSasConcatenateATRAC3: sasCore=0x" + Integer.toHexString(sasCore)
-                + ", voice=" + voice
-                + ", atrac3Addr=0x" + Integer.toHexString(atrac3Addr)
-                + ", unk1=0x" + Integer.toHexString(unk1));
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
-    @HLEFunction(nid = 0xF6107F00, version = 600)
-    public void __sceSasUnsetATRAC3(Processor processor) {
-        CpuState cpu = processor.cpu;
+    @HLEFunction(nid = 0xF6107F00, version = 600, checkInsideInterrupt = true)
+    public int __sceSasUnsetATRAC3(int sasCore, int voice, int atrac3Addr) {
+        log.warn(String.format("Unimplemented __sceSasUnsetATRAC3 sasCore=0x%08X, voice=%d, atrac3Addr=0x%08X", sasCore, voice, atrac3Addr));
 
-        int sasCore = cpu.gpr[4];
-        int voice = cpu.gpr[5];
-        int atrac3Addr = cpu.gpr[6];
+        checkSasAndVoiceHandlesGood(sasCore, voice);
 
-        log.warn("UNIMPLEMENTED: __sceSasUnsetATRAC3: sasCore=0x" + Integer.toHexString(sasCore)
-                + ", voice=" + voice
-                + ", atrac3Addr=0x" + Integer.toHexString(atrac3Addr));
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        cpu.gpr[2] = 0;
+        return 0;
     }
-
 }

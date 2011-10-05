@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.sound;
 
 import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_PITCH_BASE;
-import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_ENVELOPE_HEIGHT_MAX;
+import static jpcsp.HLE.modules.sceSasCore.getSasADSRCurveTypeName;
 
 public class SoundVoice {
 	private boolean changed;
@@ -34,6 +34,7 @@ public class SoundVoice {
     private boolean on;
     private VoiceADSREnvelope envelope;
     private int playSample;
+    private int index;
 
     public class VoiceADSREnvelope {
         public int AttackRate;
@@ -53,11 +54,17 @@ public class SoundVoice {
             SustainRate = 0;
             ReleaseRate = 0;
             SustainLevel = 0;
-            height = PSP_SAS_ENVELOPE_HEIGHT_MAX;
+            height = 0;
         }
+
+		@Override
+		public String toString() {
+			return String.format("VoiceADSREnvelope[AR 0x%08X(%s), DR 0x%08X(%s), SR 0x%08X(%s, SL 0x%08X), RR 0x%08X(%s)]", AttackRate, getSasADSRCurveTypeName(AttackCurveType), DecayRate, getSasADSRCurveTypeName(DecayCurveType), SustainRate, getSasADSRCurveTypeName(SustainCurveType), SustainLevel, ReleaseRate, getSasADSRCurveTypeName(ReleaseCurveType));
+		}
     }
 
 	public SoundVoice(int index) {
+		this.index = index;
 		changed = true;
 		vagAddress = 0;
 		vagSize = 0;
@@ -103,7 +110,6 @@ public class SoundVoice {
 
     public void off() {
         on = false;
-        setPlaying(false);
     }
 
     public VoiceADSREnvelope getEnvelope() {
@@ -120,9 +126,7 @@ public class SoundVoice {
 
 	public void setPlaying(boolean playing) {
 		playSample = 0;
-		if (playing) {
-			envelope.height = PSP_SAS_ENVELOPE_HEIGHT_MAX;
-		} else {
+		if (!playing) {
 			envelope.height = 0;
 		}
 		this.playing = playing;
@@ -209,5 +213,14 @@ public class SoundVoice {
 
 	public void setChanged(boolean changed) {
 		this.changed = changed;
+	}
+
+	public int getIndex() {
+		return index;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("SoundVoice #%d", index);
 	}
 }
