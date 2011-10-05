@@ -24,23 +24,21 @@ public class sceSasCore extends jpcsp.HLE.modules150.sceSasCore {
 
     /** Identical to __sceSasSetVoice, but for raw PCM data (VAG/ADPCM is not allowed). */
     @HLEFunction(nid = 0xE1CD9561, version = 500, checkInsideInterrupt = true)
-    public int __sceSasSetVoicePCM(int sasCore, int voice, int pcmAddr, int size, int loopsize) {
+    public int __sceSasSetVoicePCM(int sasCore, int voice, int pcmAddr, int size, int loopmode) {
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasSetVoicePCM: " + String.format("sasCore=0x%08x, voice=%d, pcmAddr=0x%08x, size=0x%08x, loopsize=0x%08x",
-                    sasCore, voice, pcmAddr, size, loopsize));
+            log.debug(String.format("__sceSasSetVoicePCM sasCore=0x%08X, voice=%d, pcmAddr=0x%08X, size=0x%08X, loopmode=%d", sasCore, voice, pcmAddr, size, loopmode));
         }
 
         if (size <= 0 || (size & 0xF) != 0) {
         	log.warn(String.format("__sceSasSetVoicePCM invalid size 0x%08X", size));
         	throw(new SceKernelErrorException(SceKernelErrors.ERROR_SAS_INVALID_PARAMETER));
         }
-        
+
         checkSasAndVoiceHandlesGood(sasCore, voice);
-        
+
         voices[voice].setVAG(pcmAddr, size);
-        voices[voice].setLoopMode(loopsize);
-        
+        voices[voice].setLoopMode(loopmode);
+
         return 0;
     }
-
 }

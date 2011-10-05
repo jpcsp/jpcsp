@@ -27,6 +27,7 @@ import jpcsp.util.Utilities;
  *
  */
 public class SampleSourceVAG implements ISampleSource {
+	private SoundVoice voice;
 	private int address;
 	private int numberSamples;
 	private IMemoryReader memoryReader;
@@ -49,7 +50,8 @@ public class SampleSourceVAG implements ISampleSource {
         {122.0 / 64.0, -60.0 / 64.0}
     };
 
-	public SampleSourceVAG(int address, int size, boolean loopMode) {
+	public SampleSourceVAG(SoundVoice voice, int address, int size, boolean loopMode) {
+		this.voice = voice;
 		this.address = address;
 		this.loopMode = loopMode;
 
@@ -86,11 +88,11 @@ public class SampleSourceVAG implements ISampleSource {
 	}
 
 	private boolean unpackNextVAGBlock() {
-		sampleIndex = 0;
-
 		if (currentVAGBlock >= numberVGABlocks) {
 			return false;
 		}
+
+		sampleIndex = 0;
 
 		int n = memoryReader.readNext();
         int predict_nr = n >> 4;
@@ -102,10 +104,8 @@ public class SampleSourceVAG implements ISampleSource {
         if (flag == 0x03) {
             // If loop mode is enabled, this flag indicates
             // the final block of the loop.
-            // TODO: Implement loop processing by decoding
-            // the same samples within the loop flags
-            // when loop mode is on.
-        	if (loopMode) {
+        	// Do not loop if the voice has been keyed Off.
+        	if (loopMode && voice.isOn()) {
         		loopAtNextVAGBlock = true;
         	}
         } else if (flag == 0x06) {
