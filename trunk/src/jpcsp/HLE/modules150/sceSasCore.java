@@ -211,7 +211,7 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     @HLEFunction(nid = 0x019B25EB, version = 150, checkInsideInterrupt = true)
     public int __sceSasSetADSR(int sasCore, int voice, int flag, int attack, int decay, int sustain, int release) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("__sceSasSetADSR sasCore=0x%08X, voice=%d flag=%1X a=0x%08X d=0x%08X s=0x%08X r=0x%08X",
+            log.debug(String.format("__sceSasSetADSR sasCore=0x%08X, voice=%d flag=0x%1X a=0x%08X d=0x%08X s=0x%08X r=0x%08X",
                     sasCore, voice, flag, attack, decay, sustain, release));
         }
 
@@ -587,7 +587,7 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
     @HLEFunction(nid = 0x9EC3676A, version = 150, checkInsideInterrupt = true)
     public int __sceSasSetADSRmode(int sasCore, int voice, int flag, int attackType, int decayType, int sustainType, int releaseType) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("__sceSasSetADSRmode sasCore=0x%08X, voice=%d, flag=%1X, attackType=%d, decayType=%d, sustainType=%d, releaseType=%d", sasCore, voice, flag, attackType, decayType, sustainType, releaseType));
+            log.debug(String.format("__sceSasSetADSRmode sasCore=0x%08X, voice=%d, flag=0x%1X, attackType=%d, decayType=%d, sustainType=%d, releaseType=%d", sasCore, voice, flag, attackType, decayType, sustainType, releaseType));
         }
 
         checkSasAndVoiceHandlesGood(sasCore, voice);

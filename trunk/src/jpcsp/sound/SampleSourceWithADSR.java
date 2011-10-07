@@ -162,18 +162,22 @@ public class SampleSourceWithADSR implements ISampleSource {
 		private int getDuration() {
 			int duration;
 
-			// From experimental tests on a PSP:
-			//   rate=0x7FFFFFFF => duration=0x10
-			//   rate=0x3FFFFFFF => duration=0x22
-			//   rate=0x1FFFFFFF => duration=0x44
-			//   rate=0x0FFFFFFF => duration=0x81
-			//   rate=0x07FFFFFF => duration=0xF1
-			//   rate=0x03FFFFFF => duration=0x1B9
-			//
-			// The correct curve model is still unknown.
-			// We use the following approximation:
-			//   duration = 0x7FFFFFFF / rate * 0x10
-			duration = PSP_SAS_ENVELOPE_FREQ_MAX / rate * 0x10;
+			if (rate == 0) {
+				duration = PSP_SAS_ENVELOPE_FREQ_MAX;
+			} else {
+				// From experimental tests on a PSP:
+				//   rate=0x7FFFFFFF => duration=0x10
+				//   rate=0x3FFFFFFF => duration=0x22
+				//   rate=0x1FFFFFFF => duration=0x44
+				//   rate=0x0FFFFFFF => duration=0x81
+				//   rate=0x07FFFFFF => duration=0xF1
+				//   rate=0x03FFFFFF => duration=0x1B9
+				//
+				// The correct curve model is still unknown.
+				// We use the following approximation:
+				//   duration = 0x7FFFFFFF / rate * 0x10
+				duration = PSP_SAS_ENVELOPE_FREQ_MAX / rate * 0x10;
+			}
 
 			return duration;
 		}
@@ -186,7 +190,7 @@ public class SampleSourceWithADSR implements ISampleSource {
 
 			if (curveIndex1 < 0) {
 				return curve[0];
-			} else if (curveIndex2 >= curve.length) {
+			} else if (curveIndex2 >= curve.length || curveIndex2 < 0) {
 				return curve[curve.length - 1];
 			}
 
@@ -275,6 +279,11 @@ public class SampleSourceWithADSR implements ISampleSource {
 		 *                    properly initialized with the rate.
 		 */
 		private CurveState createCurveState(int rate, int curveType) {
+			if (rate < 0) {
+				// For example, 0x80000000 is replaced by 0x7FFFFFFF
+				rate = PSP_SAS_ENVELOPE_FREQ_MAX;
+			}
+
 			switch (curveType) {
 				case PSP_SAS_ADSR_CURVE_MODE_LINEAR_INCREASE:
 					return new LinearIncrease(rate);
