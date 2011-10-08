@@ -16,30 +16,55 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules630;
 
-import jpcsp.HLE.HLEFunction;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ATRAC_BAD_ID;
+import jpcsp.Memory;
 import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+import jpcsp.util.Utilities;
 
 public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
     @Override
     public String getName() { return "sceAtrac3plus"; }
 
     @HLEFunction(nid = 0x0C116E1B, version = 630)
-    public void sceAtracLowLevelDecode(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAtracLowLevelDecode(int atID, TPointer sourceAddr, TPointer32 unknownAddr, TPointer samplesAddr, TPointer32 resultAddr) {
+        Memory mem = Processor.memory;
+    	atID &= atracIDMask;
 
-        log.warn("UNIMPLEMENTED: sceAtracLowLevelDecode");
+        log.warn(String.format("UNIMPLEMENTED: sceAtracLowLevelDecode atID=%d, sourceAddr=%s, unknownAddr=%s(content=0x%08X), samplesAddr=%s, resultAddr=%s", atID, sourceAddr, unknownAddr, unknownAddr.getValue(), samplesAddr, resultAddr));
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        if (!atracIDs.containsKey(atID)) {
+            log.warn(String.format("sceAtracLowLevelDecode: bad atID=%d", atID));
+            throw new SceKernelErrorException(ERROR_ATRAC_BAD_ID);
+        }
+
+        if (log.isTraceEnabled()) {
+        	int length = 0x130; // How to find the input length?
+        	log.trace(String.format("sceAtracLowLevelDecode input:%s", Utilities.getMemoryDump(sourceAddr.getAddress(), length, 1, 16)));
+        }
+
+        resultAddr.setValue(1); // Must be non-zero
+
+        int samples = 1024; // Always return 1024 samples?
+        mem.memset(samplesAddr.getAddress(), (byte) 0, samples * 4);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x1575D64B, version = 630)
-    public void sceAtracLowLevelInitDecoder(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAtracLowLevelInitDecoder(int atID) {
+    	atID &= atracIDMask;
 
-        log.warn("UNIMPLEMENTED: sceAtracLowLevelInitDecoder");
+    	log.warn(String.format("UNIMPLEMENTED: sceAtracLowLevelInitDecoder atID=%d", atID));
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        if (!atracIDs.containsKey(atID)) {
+            log.warn(String.format("sceAtracLowLevelInitDecoder: bad atID=%d", atID));
+            throw new SceKernelErrorException(ERROR_ATRAC_BAD_ID);
+        }
+
+        return 0;
     }
-
 }

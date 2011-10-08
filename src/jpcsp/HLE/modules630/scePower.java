@@ -17,23 +17,20 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules630;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 
 public class scePower extends jpcsp.HLE.modules150.scePower {
 
-    @HLEFunction(nid = 0x469989AD, version = 630)
-    public void scePower_469989AD(Processor processor) {
-        CpuState cpu = processor.cpu;
+	@HLEFunction(nid = 0x469989AD, version = 630)
+    public int scePower_469989AD(int pllClock, int cpuClock, int busClock) {
+        // Identical to scePowerSetClockFrequency.
+        this.pllClock = pllClock;
+        this.cpuClock = cpuClock;
+        this.busClock = busClock;
 
-        // Identical to scePower_EBD177D6.
-        pllClock = cpu.gpr[4];
-        cpuClock = cpu.gpr[5];
-        busClock = cpu.gpr[6];
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("scePower_469989AD pll: %d, cpu: %d, bus: %d", pllClock, cpuClock, busClock));
+        }
 
-        log.debug("scePower_469989AD pll:" + pllClock + " cpu:" + cpuClock + " bus:" + busClock);
-
-        cpu.gpr[2] = 0;
+        return 0;
     }
-
 }
