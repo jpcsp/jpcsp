@@ -1214,19 +1214,19 @@ public class REShader extends BaseRenderingEngineFunction {
 		shaderContext.setVertexColor(color);
 		super.setVertexColor(color);
 	}
-        
-        @Override
+
+	@Override
 	public void setDepthFunc(int func) {
 		if (useShaderDepthTest) {
 			shaderContext.setDepthFunc(func);
 		}
 		super.setDepthFunc(func);
 	}
-        
-        @Override
+
+	@Override
 	public void setDepthMask(boolean depthWriteEnabled) {
 		if (useShaderDepthTest) {
-			shaderContext.setDepthMask(depthWriteEnabled);
+			shaderContext.setDepthMask(depthWriteEnabled ? 0xFF : 0x00);
 		}
 		super.setDepthMask(depthWriteEnabled);
 	}

@@ -71,9 +71,9 @@ public class ShaderContextUBO extends ShaderContext {
 	private ShaderUniformInfo stencilOpFail;
 	private ShaderUniformInfo stencilOpZFail;
 	private ShaderUniformInfo stencilOpZPass;
-        private ShaderUniformInfo depthTestEnable;
-        private ShaderUniformInfo depthFunc;
-        private ShaderUniformInfo depthMask;
+	private ShaderUniformInfo depthTestEnable;
+	private ShaderUniformInfo depthFunc;
+	private ShaderUniformInfo depthMask;
 	private ShaderUniformInfo alphaTestEnable;
 	private ShaderUniformInfo alphaTestFunc;
 	private ShaderUniformInfo alphaTestRef;
@@ -194,6 +194,9 @@ public class ShaderContextUBO extends ShaderContext {
 		stencilOpFail = addShaderUniform(Uniforms.stencilOpFail, "int");
 		stencilOpZFail = addShaderUniform(Uniforms.stencilOpZFail, "int");
 		stencilOpZPass = addShaderUniform(Uniforms.stencilOpZPass, "int");
+		depthTestEnable = addShaderUniform(Uniforms.depthTestEnable, "bool");
+		depthFunc = addShaderUniform(Uniforms.depthFunc, "int");
+		depthMask = addShaderUniform(Uniforms.depthMask, "int");
 		alphaTestEnable = addShaderUniform(Uniforms.alphaTestEnable, "bool");
 		alphaTestFunc = addShaderUniform(Uniforms.alphaTestFunc, "int");
 		alphaTestRef = addShaderUniform(Uniforms.alphaTestRef, "int");
@@ -672,25 +675,25 @@ public class ShaderContextUBO extends ShaderContext {
 		}
 	}
         
-        @Override
+	@Override
 	public void setDepthTestEnable(int depthTestEnable) {
 		if (depthTestEnable != getDepthTestEnable()) {
 			copy(depthTestEnable, this.depthTestEnable);
 			super.setDepthTestEnable(depthTestEnable);
 		}
 	}
-        
-        @Override
+
+	@Override
 	public void setDepthFunc(int depthFunc) {
 		if (depthFunc != getDepthFunc()) {
 			copy(depthFunc, this.depthFunc);
 			super.setDepthFunc(depthFunc);
 		}
 	}
-        
-        @Override
-	public void setDepthMask(boolean depthMask) {
-		if ((depthMask ? 1 : 0) != getDepthMask()) {
+
+	@Override
+	public void setDepthMask(int depthMask) {
+		if (depthMask != getDepthMask()) {
 			copy(depthMask, this.depthMask);
 			super.setDepthMask(depthMask);
 		}
