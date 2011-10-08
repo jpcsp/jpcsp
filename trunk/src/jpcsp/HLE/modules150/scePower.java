@@ -623,30 +623,29 @@ public class scePower extends HLEModule {
     }
 
     @HLEFunction(nid = 0x737486F2, version = 150)
-    public void scePowerSetClockFrequency(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int scePowerSetClockFrequency(int pllClock, int cpuClock, int busClock) {
+        this.pllClock = pllClock;
+        this.cpuClock = cpuClock;
+        this.busClock = busClock;
 
-        pllClock = cpu.gpr[4];
-        cpuClock = cpu.gpr[5];
-        busClock = cpu.gpr[6];
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("scePowerSetClockFrequency pll: %d, cpu: %d, bus: %d", pllClock, cpuClock, busClock));
+        }
 
-        log.debug("scePowerSetClockFrequency pll:" + pllClock + " cpu:" + cpuClock + " bus:" + busClock);
-
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
     @HLEFunction(nid = 0xEBD177D6, version = 150)
-    public void scePower_EBD177D6(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int scePower_EBD177D6(int pllClock, int cpuClock, int busClock) {
         // Identical to scePowerSetClockFrequency.
-        pllClock = cpu.gpr[4];
-        cpuClock = cpu.gpr[5];
-        busClock = cpu.gpr[6];
+        this.pllClock = pllClock;
+        this.cpuClock = cpuClock;
+        this.busClock = busClock;
 
-        log.debug("scePower_EBD177D6 pll:" + pllClock + " cpu:" + cpuClock + " bus:" + busClock);
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("scePower_EBD177D6 pll: %d, cpu: %d, bus: %d", pllClock, cpuClock, busClock));
+        }
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
-
 }
