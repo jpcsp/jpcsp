@@ -16,9 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import java.util.ArrayList;
-import java.util.Collections;
-
 import jpcsp.Memory;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 
@@ -34,7 +31,6 @@ public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructure {
     // Internal info
     public final int uid;
     public int lastMessageAddr;
-    public ArrayList<SceKernelMsgPacket> msgQueue;
 
     public SceKernelMbxInfo(String name, int attr) {
         this.name = name;
@@ -44,7 +40,6 @@ public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructure {
         numMessages = 0;
         firstMessageAddr = 0;
         lastMessageAddr = 0;
-        msgQueue = new ArrayList<SceKernelMsgPacket>();
 
         uid = SceUidManager.getNewUid("ThreadMan-Mbx");
     }
@@ -87,55 +82,68 @@ public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructure {
     		}
     		packet.nextMsgPacketAddr = 0;
     		packet.write(mem);
-            msgQueue.remove(packet);
     		numMessages--;
     	}
     	return msgAddr;
     }
 
+    private void insertMsgAfter(Memory mem, int msgAddr, int refMsgAddr) {
+		SceKernelMsgPacket msgPacket = new SceKernelMsgPacket();
+		msgPacket.read(mem, msgAddr);
+
+		if (lastMessageAddr == 0) {
+			// Insert into an empty queue
+			msgPacket.nextMsgPacketAddr = 0;
+
+			firstMessageAddr = msgAddr;
+    		lastMessageAddr = msgAddr;
+		} else if (refMsgAddr == 0) {
+			// Insert in front of the queue
+			msgPacket.nextMsgPacketAddr = firstMessageAddr;
+
+			firstMessageAddr = msgAddr;
+    	} else {
+    		// Insert in the middle of the queue
+			SceKernelMsgPacket refMsgPacket = new SceKernelMsgPacket();
+			refMsgPacket.read(mem, refMsgAddr);
+
+			msgPacket.nextMsgPacketAddr = refMsgPacket.nextMsgPacketAddr;
+
+			refMsgPacket.nextMsgPacketAddr = msgAddr;
+			refMsgPacket.write(mem);
+
+			if (lastMessageAddr == refMsgAddr) {
+				// Inset at the end of the queue
+				lastMessageAddr = msgAddr;
+			}
+    	}
+
+		msgPacket.write(mem);
+
+		numMessages++;
+    }
+
     public void addMsg(Memory mem, int msgAddr) {
     	if (msgAddr != 0) {
-    		SceKernelMsgPacket packet = new SceKernelMsgPacket();
-    		packet.read(mem, msgAddr);
-    		packet.nextMsgPacketAddr = 0;
-    		packet.write(mem);
-            msgQueue.add(packet);
-    		if (lastMessageAddr == 0) {
-    			firstMessageAddr = msgAddr;
-    			lastMessageAddr = msgAddr;
-    		} else {
-    			SceKernelMsgPacket lastPacket = new SceKernelMsgPacket();
-    			lastPacket.read(mem, lastMessageAddr);
-    			lastPacket.nextMsgPacketAddr = msgAddr;
-    			lastPacket.write(mem);
-    			lastMessageAddr = msgAddr;
-    		}
-    		numMessages++;
+    		insertMsgAfter(mem, msgAddr, lastMessageAddr);
     	}
     }
 
     public void addMsgByPriority(Memory mem, int msgAddr) {
     	if (msgAddr != 0) {
-    		SceKernelMsgPacket packet = new SceKernelMsgPacket();
-    		packet.read(mem, msgAddr);
-    		packet.nextMsgPacketAddr = 0;
-    		packet.write(mem);
-            msgQueue.add(packet);
-            Collections.sort(msgQueue, packet);
-            if(msgQueue.get(0) != null) {
-                msgAddr = msgQueue.get(0).nextMsgPacketAddr;
-            }
-    		if (lastMessageAddr == 0) {
-    			firstMessageAddr = msgAddr;
-    			lastMessageAddr = msgAddr;
-    		} else {
-    			SceKernelMsgPacket lastPacket = new SceKernelMsgPacket();
-    			lastPacket.read(mem, lastMessageAddr);
-    			lastPacket.nextMsgPacketAddr = msgAddr;
-    			lastPacket.write(mem);
-    			lastMessageAddr = msgAddr;
+    		SceKernelMsgPacket msgPacket = new SceKernelMsgPacket();
+    		msgPacket.read(mem, msgAddr);
+    		SceKernelMsgPacket currentMsgPacket = new SceKernelMsgPacket();
+    		int currentMsgAddr = firstMessageAddr;
+    		int previousMsgAddr = 0;
+    		for (int i = 0; i < numMessages; i++) {
+    			currentMsgPacket.read(mem, currentMsgAddr);
+    			if (msgPacket.compare(msgPacket, currentMsgPacket) < 0) {
+    				break;
+    			}
+    			previousMsgAddr = currentMsgAddr;
     		}
-    		numMessages++;
+			insertMsgAfter(mem, msgAddr, previousMsgAddr);
     	}
     }
 
