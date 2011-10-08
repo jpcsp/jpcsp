@@ -445,8 +445,7 @@ int getDepthInt(float depth)
     #if USE_BIT_OPERATORS
         return int(ROUND(depth * 255.0)) & depthMask;
     #else
-        // Masking with depthMask is not available when not using bit operators...
-        return int(ROUND(depth * 255.0));
+        return depthMask == 0 ? 0 : int(ROUND(depth * 255.0));
     #endif
 }
 

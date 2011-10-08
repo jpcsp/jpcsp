@@ -72,9 +72,9 @@ public class ShaderContext {
 	private int stencilOpFail;
 	private int stencilOpZFail;
 	private int stencilOpZPass;
-        private int depthTestEnable;
-        private int depthFunc;
-        private int depthMask;
+	private int depthTestEnable;
+	private int depthFunc;
+	private int depthMask;
 	private int fbTex = -1;
 	private int colorMaskEnable;
 	private int[] colorMask = new int[4];
@@ -132,6 +132,9 @@ public class ShaderContext {
 		re.setUniform(Uniforms.stencilOpFail.getId(shaderProgram), stencilOpFail);
 		re.setUniform(Uniforms.stencilOpZFail.getId(shaderProgram), stencilOpZFail);
 		re.setUniform(Uniforms.stencilOpZPass.getId(shaderProgram), stencilOpZPass);
+		re.setUniform(Uniforms.depthTestEnable.getId(shaderProgram), depthTestEnable);
+		re.setUniform(Uniforms.depthFunc.getId(shaderProgram), depthFunc);
+		re.setUniform(Uniforms.depthMask.getId(shaderProgram), depthMask);
 		re.setUniform(Uniforms.colorMaskEnable.getId(shaderProgram), colorMaskEnable);
 		re.setUniform4(Uniforms.colorMask.getId(shaderProgram), colorMask);
 		re.setUniform4(Uniforms.notColorMask.getId(shaderProgram), notColorMask);
@@ -536,7 +539,7 @@ public class ShaderContext {
 		this.stencilOpZPass = stencilOpZPass;
 	}
         
-        public int getDepthTestEnable() {
+	public int getDepthTestEnable() {
 		return depthTestEnable;
 	}
 
@@ -551,13 +554,13 @@ public class ShaderContext {
 	public void setDepthFunc(int depthFunc) {
 		this.depthFunc = depthFunc;
 	}
-        
-        public int getDepthMask() {
+
+	public int getDepthMask() {
 		return depthMask;
 	}
 
-	public void setDepthMask(boolean depthMask) {
-		this.depthMask = depthMask ? 1 : 0;
+	public void setDepthMask(int depthMask) {
+		this.depthMask = depthMask;
 	}
 
 	public int getFbTex() {

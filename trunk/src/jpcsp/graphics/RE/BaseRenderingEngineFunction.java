@@ -80,9 +80,9 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
     protected boolean directMode;
     protected boolean directModeSetOrthoMatrix;
     protected static final boolean[] flagsValidInClearMode = new boolean[]{
-        true,  // GU_ALPHA_TEST
-        true,  // GU_DEPTH_TEST
-        false, // GU_SCISSOR_TEST
+        false, // GU_ALPHA_TEST
+        false, // GU_DEPTH_TEST
+        true,  // GU_SCISSOR_TEST
         false, // GU_STENCIL_TEST
         false, // GU_BLEND
         false, // GU_CULL_FACE
@@ -192,14 +192,14 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
             if (!flagsValidInClearMode[i]) {
                 re.disableFlag(i);
             }
-        }      
-        // Alpha and depth tests are set to ALWAYS during clearing, regardlessly 
-        // of any parameters. Their flags are both valid in the clear mode context.
-        context.alphaFunc = GeCommands.ATST_ALWAYS_PASS_PIXEL;
-        context.depthFunc = GeCommands.ZTST_FUNCTION_ALWAYS_PASS_PIXEL;
-        re.setAlphaFunc(context.alphaFunc, context.alphaRef);
-        re.setDepthFunc(context.depthFunc);
-        
+        }
+
+        if (depth) {
+        	re.enableFlag(GU_DEPTH_TEST);
+        	context.depthFunc = GeCommands.ZTST_FUNCTION_ALWAYS_PASS_PIXEL;
+        	re.setDepthFunc(context.depthFunc);
+        }
+
         // Update color, stencil and depth masks.
         re.setDepthMask(depth);
         re.setColorMask(color, color, color, stencil);
