@@ -1648,8 +1648,8 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         return removed;
     }
 
-    protected int getThreadCurrentStackSize() {
-        int size = currentThread.stackSize - (Emulator.getProcessor().cpu.gpr[_sp] - currentThread.stack_addr - 0x1001);
+    protected int getThreadCurrentStackSize(Processor processor) {
+    	int size = processor.cpu.gpr[_sp] - currentThread.stack_addr;
         if (size < 0) {
             size = 0;
         }
@@ -3862,11 +3862,6 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
             log.debug("sceKernelChangeCurrentThreadAttr" + " removeAttr:0x" + Integer.toHexString(removeAttr) + " addAttr:0x" + Integer.toHexString(addAttr) + " oldAttr:0x" + Integer.toHexString(currentThread.attr));
         }
 
-        // Probably meant to be sceKernelChangeThreadAttr unknown=uid
-        if (removeAttr != 0) {
-            log.warn("sceKernelChangeCurrentThreadAttr removeAttr:0x" + Integer.toHexString(removeAttr) + " non-zero");
-        }
-
         int newAttr = (currentThread.attr & ~removeAttr) | addAttr;
         // Don't allow switching into kernel mode!
         if (userCurrentThreadTryingToSwitchToKernelMode(newAttr)) {
@@ -4059,8 +4054,8 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
 
     /** @return amount of free stack space.*/
     @HLEFunction(nid = 0xD13BDE95, version = 150, checkInsideInterrupt = true)
-    public int sceKernelCheckThreadStack() {
-        int size = getThreadCurrentStackSize();
+    public int sceKernelCheckThreadStack(Processor processor) {
+        int size = getThreadCurrentStackSize(processor);
         
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceKernelCheckThreadStack returning size=0x%X", size));
