@@ -93,12 +93,16 @@ public class MediaEngine {
 
     public static void initXuggler() {
     	if (!initialized) {
-	        // Disable Xuggler's logging, since we do our own.
-	        Logger.setGlobalIsLogging(Logger.Level.LEVEL_DEBUG, false);
-	        Logger.setGlobalIsLogging(Logger.Level.LEVEL_ERROR, false);
-	        Logger.setGlobalIsLogging(Logger.Level.LEVEL_INFO, false);
-	        Logger.setGlobalIsLogging(Logger.Level.LEVEL_TRACE, false);
-	        Logger.setGlobalIsLogging(Logger.Level.LEVEL_WARN, false);
+    		try {
+		        // Disable Xuggler's logging, since we do our own.
+		        Logger.setGlobalIsLogging(Logger.Level.LEVEL_DEBUG, false);
+		        Logger.setGlobalIsLogging(Logger.Level.LEVEL_ERROR, false);
+		        Logger.setGlobalIsLogging(Logger.Level.LEVEL_INFO, false);
+		        Logger.setGlobalIsLogging(Logger.Level.LEVEL_TRACE, false);
+		        Logger.setGlobalIsLogging(Logger.Level.LEVEL_WARN, false);
+    		} catch (NoClassDefFoundError e) {
+    			log.warn("Xuggler is not available on your platform");
+    		}
             initialized = true;
     	}
     }
