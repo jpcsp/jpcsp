@@ -224,7 +224,11 @@ public class scePsmf extends HLEModule implements HLEStartModule {
             int streamDataNextBlockSize = endianSwap32(readUnaligned32(mem, addr + 0x6A));                           // General stream information block size.
             int streamDataNextInnerBlockSize = endianSwap32(readUnaligned32(mem, addr + 0x7C));                      // Inner stream information block size.
             streamNum = endianSwap16(mem.read16(addr + 0x80));                                                       // Number of total registered streams.
-                                                         
+
+            if (log.isDebugEnabled()) {
+            	log.debug(String.format("PSMFHeader: streamDataTotalSize=%d, unk=0x%08X, streamDataNextBlockSize=%d, streamDataNextInnerBlockSize=%d", streamDataTotalSize, unk, streamDataNextBlockSize, streamDataNextInnerBlockSize));
+            }
+
             // Stream area:
             // At offset 0x82, each 16 bytes represent one stream.
             streamMap = new HashMap<Integer, PSMFStream>();
@@ -265,10 +269,10 @@ public class scePsmf extends HLEModule implements HLEStartModule {
             //      - 4 bytes: Relative offset of the entry point in the MPEG data.
             EPMap = new HashMap<Integer, PSMFEntry>();
             for (int i = 0; i < EPMapEntriesNum; i++) {
-                int index = mem.read8(EPMapOffset + i * 10);
-                int picOffset = mem.read8(EPMapOffset + 1 + i * 10);
-                int pts = endianSwap32(readUnaligned32(mem, EPMapOffset + 2 + i * 10));
-                int offset = endianSwap32(readUnaligned32(mem, EPMapOffset + 6 + i * 10));
+                int index = mem.read8(addr + EPMapOffset + i * 10);
+                int picOffset = mem.read8(addr + EPMapOffset + 1 + i * 10);
+                int pts = endianSwap32(readUnaligned32(mem, addr + EPMapOffset + 2 + i * 10));
+                int offset = endianSwap32(readUnaligned32(mem, addr + EPMapOffset + 6 + i * 10));
                 int id = currentEntryNumber++;
                 PSMFEntry pEnt = new PSMFEntry(id, index, picOffset, pts, offset);
                 EPMap.put(id, pEnt);
