@@ -37,6 +37,7 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelMutexInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
@@ -243,8 +244,14 @@ public class MutexManager {
 
         SceKernelMutexInfo info = mutexMap.get(uid);
         if (info == null) {
-            log.warn(String.format("hleKernelLockMutex uid=%d, count=%d, timeout_addr=0x%08X, wait=%b, doCallbacks=%b -  - unknown UID", uid, count, timeout_addr, wait, doCallbacks));
+            log.warn(String.format("hleKernelLockMutex uid=%d, count=%d, timeout_addr=0x%08X, wait=%b, doCallbacks=%b - unknown UID", uid, count, timeout_addr, wait, doCallbacks));
             cpu.gpr[2] = ERROR_KERNEL_MUTEX_NOT_FOUND;
+        } else if (count <= 0) {
+            log.warn(String.format("hleKernelLockMutex uid=%d, count=%d, timeout_addr=0x%08X, wait=%b, doCallbacks=%b - illegal count", uid, count, timeout_addr, wait, doCallbacks));
+        	cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_ILLEGAL_COUNT;
+        } else if (count > 1 && (info.attr & PSP_MUTEX_ATTR_ALLOW_RECURSIVE) == 0) {
+            log.warn(String.format("hleKernelLockMutex uid=%d, count=%d, timeout_addr=0x%08X, wait=%b, doCallbacks=%b - illegal count", uid, count, timeout_addr, wait, doCallbacks));
+        	cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_ILLEGAL_COUNT;
         } else {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
