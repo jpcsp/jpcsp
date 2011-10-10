@@ -16,8 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.Allegrex.Common._v0;
+import static jpcsp.Allegrex.Common._v1;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_ADDR;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_ARGUMENT;
@@ -177,7 +179,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     protected CallbackManager callbackManager = new CallbackManager();
     protected static final int IDLE_THREAD_ADDRESS = MemoryMap.START_RAM;
     public static final int THREAD_EXIT_HANDLER_ADDRESS = MemoryMap.START_RAM + 0x20;
-    protected static final int CALLBACK_EXIT_HANDLER_ADDRESS = MemoryMap.START_RAM + 0x30;
+    public static final int CALLBACK_EXIT_HANDLER_ADDRESS = MemoryMap.START_RAM + 0x30;
     public static final int ASYNC_LOOP_ADDRESS = MemoryMap.START_RAM + 0x40;
     public static final int NET_APCTL_LOOP_ADDRESS = MemoryMap.START_RAM + 0x60;
     private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
@@ -530,7 +532,25 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
 
         checkThreadCallbacks(currentThread);
 
+        executePendingCallbacks(currentThread);
+
         return true;
+    }
+
+    private void executePendingCallbacks(SceKernelThreadInfo thread) {
+        if (!thread.pendingCallbacks.isEmpty()) {
+        	if (RuntimeContext.canExecuteCallback(thread)) {
+	    		Callback callback = thread.pendingCallbacks.poll();
+	        	if (log.isDebugEnabled()) {
+	        		log.debug(String.format("Executing pending callback '%s' for thread '%s'", callback, thread));
+	        	}
+	    		callback.execute(thread);
+        	}
+        }
+    }
+
+    public void checkPendingCallbacks() {
+    	executePendingCallbacks(currentThread);
     }
 
     /** This function must have the property of never returning currentThread,
@@ -1197,37 +1217,33 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
             threadWaitInfo.copy(thread.wait);
             boolean doCallbacks = thread.doCallbacks;
 
-            // Context switch to the requested thread
+            // Terminate the thread wait state
             thread.waitType = PSP_WAIT_NONE;
-            internalContextSwitch(thread);
 
             afterAction = new AfterCallAction(thread, status, waitType, waitId, threadWaitInfo, doCallbacks, afterAction);
-        }
-
-        CpuState cpu = Emulator.getProcessor().cpu;
-
-        // Copy parameters ($a0, $a1, ...) to the cpu
-        if (parameters != null) {
-            System.arraycopy(parameters, 0, cpu.gpr, 4, parameters.length);
+            hleChangeThreadState(thread, PSP_THREAD_READY);
         }
 
         int callbackId = callbackManager.getNewCallbackId();
-        Callback callback = new Callback(callbackId, cpu.gpr[CALLBACKID_REGISTER], cpu.gpr[31], cpu.pc, cpu.gpr[2], cpu.gpr[3], afterAction, returnVoid);
-        cpu.gpr[CALLBACKID_REGISTER] = callbackId;
-        cpu.gpr[31] = CALLBACK_EXIT_HANDLER_ADDRESS;
-        cpu.pc = address;
+        Callback callback = new Callback(callbackId, address, parameters, afterAction, returnVoid);
 
         callbackManager.addCallback(callback);
-        if (thread == null) {
-            RuntimeContext.executeCallback();
-        } else {
-            RuntimeContext.executeCallback(thread);
+
+        boolean callbackCalled = false;
+        if (thread == null || thread == currentThread) {
+        	if (RuntimeContext.canExecuteCallback(thread)) {
+        		thread = currentThread;
+                hleChangeThreadState(thread, PSP_THREAD_RUNNING);
+            	callback.execute(thread);
+            	callbackCalled = true;
+        	}
         }
 
-        // When the compiler is enabled, the callback is already executed
-        // when returning from RuntimeContext.executeCallback()
-        if (cpu.pc == CALLBACK_EXIT_HANDLER_ADDRESS) {
-            hleKernelExitCallback(Emulator.getProcessor());
+        if (!callbackCalled) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("Pushing pending callback '%s' for thread '%s'", callback, thread));
+        	}
+        	thread.pendingCallbacks.add(callback);
         }
     }
 
@@ -3893,7 +3909,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         processor.parameterReader.setReturnValueInt(0);
         hleKernelChangeThreadPriority(thread, priority);
     }
-    
+
     public int checkThreadPriority(int priority) {
         // Priority 0 means priority of the calling thread
         if (priority == 0) {
@@ -4172,7 +4188,7 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
                     if (log.isDebugEnabled()) {
                         log.debug("sceKernelGetThreadmanIdList adding thread '" + thread.name + "'");
                     }
-                    readBufPtr.setValue(saveCount * 4, thread.uid);
+                    readBufPtr.setValue(saveCount << 2, thread.uid);
                     saveCount++;
                 } else {
                     log.warn("sceKernelGetThreadmanIdList NOT adding thread '" + thread.name + "' (no more space)");
@@ -4354,8 +4370,9 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     }
 
     public static class Callback {
-
         private int id;
+        private int address;
+        private int[] parameters;
         private int savedIdRegister;
         private int savedRa;
         private int savedPc;
@@ -4364,13 +4381,10 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         private IAction afterAction;
         private boolean returnVoid;
 
-        public Callback(int id, int savedIdRegister, int savedRa, int savedPc, int savedV0, int savedV1, IAction afterAction, boolean returnVoid) {
+        public Callback(int id, int address, int[] parameters, IAction afterAction, boolean returnVoid) {
             this.id = id;
-            this.savedIdRegister = savedIdRegister;
-            this.savedRa = savedRa;
-            this.savedPc = savedPc;
-            this.savedV0 = savedV0;
-            this.savedV1 = savedV1;
+            this.address = address;
+            this.parameters = parameters;
             this.afterAction = afterAction;
             this.returnVoid = returnVoid;
         }
@@ -4407,9 +4421,30 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
 			return returnVoid;
 		}
 
-        @Override
+		public void execute(SceKernelThreadInfo thread) {
+			CpuState cpu = thread.cpuContext;
+
+			savedIdRegister = cpu.gpr[CALLBACKID_REGISTER];
+	        savedRa = cpu.gpr[_ra];
+	        savedPc = cpu.pc;
+	        savedV0 = cpu.gpr[_v0];
+	        savedV1 = cpu.gpr[_v1];
+
+	        // Copy parameters ($a0, $a1, ...) to the cpu
+	        if (parameters != null) {
+	            System.arraycopy(parameters, 0, cpu.gpr, 4, parameters.length);
+	        }
+
+	        cpu.gpr[CALLBACKID_REGISTER] = id;
+	        cpu.gpr[_ra] = CALLBACK_EXIT_HANDLER_ADDRESS;
+	        cpu.pc = address;
+
+	        RuntimeContext.executeCallback();
+		}
+
+		@Override
         public String toString() {
-            return String.format("Callback id=%d,savedIdReg=0x%08X,savedPc=0x%08X,returnVoid=%b,savedV0=0x%08X,savedV1=0x%08X", getId(), getSavedIdRegister(), getSavedPc(), isReturnVoid(), getSavedV0(), getSavedV1());
+            return String.format("Callback address=0x%08X,id=%d,returnVoid=%b", address, getId(), isReturnVoid());
         }
     }
 

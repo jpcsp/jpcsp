@@ -18,6 +18,7 @@ package jpcsp.Allegrex.compiler;
 
 import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common._sp;
+import static jpcsp.util.Utilities.sleep;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -95,9 +96,6 @@ public class RuntimeContext {
 	private static volatile boolean reset = false;
 	public  static CpuDurationStatistics idleDuration = new CpuDurationStatistics("Idle Time");
 	private static Map<Instruction, Integer> instructionTypeCounts = Collections.synchronizedMap(new HashMap<Instruction, Integer>());
-	private static SceKernelThreadInfo pendingCallbackThread = null;
-    private static SceKernelThreadInfo pendingCallbackReturnThread = null;
-	private static CpuState pendingCallbackCpuState = null;
 	public  static boolean enableDaemonThreadSync = true;
 	public  static final String syncName = "sync";
 	public  static volatile boolean wantSync = false;
@@ -295,82 +293,36 @@ public class RuntimeContext {
         return true;
     }
 
+    public static boolean canExecuteCallback(SceKernelThreadInfo callbackThread) {
+    	if (!isActive) {
+    		return true;
+    	}
+
+    	// Can the callback be executed in any thread (e.g. is an interrupt)?
+    	if (callbackThread == null) {
+    		return true;
+    	}
+
+    	if (Modules.ThreadManForUserModule.isIdleThread(callbackThread)) {
+    		return true;
+    	}
+
+    	Thread currentThread = Thread.currentThread();
+    	if (currentThread instanceof RuntimeThread) {
+    		RuntimeThread currentRuntimeThread = (RuntimeThread) currentThread;
+    		if (callbackThread == currentRuntimeThread.getThreadInfo()) {
+    			return true;
+    		}
+    	}
+
+    	return false;
+    }
+
+    private static void checkPendingCallbacks() {
+    	Modules.ThreadManForUserModule.checkPendingCallbacks();
+    }
+
     public static void executeCallback() {
-    	if (!isActive) {
-    		return;
-    	}
-
-    	CpuState callbackCpuState = Emulator.getProcessor().cpu;
-    	SceKernelThreadInfo previousCurrentThread = currentThread;
-    	currentThread = Modules.ThreadManForUserModule.getCurrentThread();
-	    executeCallbackImmediately(callbackCpuState);
-	    currentThread = previousCurrentThread;
-    }
-
-    public static void executeCallback(SceKernelThreadInfo callbackThreadInfo) {
-    	if (!isActive) {
-    		return;
-    	}
-
-    	CpuState callbackCpuState = Emulator.getProcessor().cpu;
-        RuntimeThread callbackThread = threads.get(callbackThreadInfo);
-        boolean doSyncThread = true;
-
-        // The callback has to be executed by its thread
-    	if (Thread.currentThread() == callbackThread && currentThread == callbackThreadInfo) {
-    	    // The current thread is the thread where the callback has to be executed.
-    	    // Execute the callback immediately
-    	    executeCallbackImmediately(callbackCpuState);
-        } else if (Thread.currentThread() == callbackThread && currentThread != callbackThreadInfo) {
-            // The current thread is the thread where the callback has to be executed,
-            // but the ThreadMan has already switched to another thread.
-            // Execute the callback immediately and restore the wanted thread.
-            SceKernelThreadInfo previousThread = currentThread;
-            switchThread(callbackThreadInfo);
-            executeCallbackImmediately(callbackCpuState);
-            switchThread(previousThread);
-        } else if (Modules.ThreadManForUserModule.isIdleThread(callbackThreadInfo)) {
-        	// We want to execute the callback in the idle thread.
-        	// Set the currentThread to a non-null value before executing the callback.
-            SceKernelThreadInfo previousThread = currentThread;
-        	currentThread = Modules.ThreadManForUserModule.getCurrentThread();
-    	    executeCallbackImmediately(callbackCpuState);
-    	    currentThread = previousThread;
-    	    doSyncThread = false;
-    	} else {
-    	    // Switch to the callback thread so that it can execute the callback.
-    	    pendingCallbackThread = callbackThreadInfo;
-    	    pendingCallbackCpuState = callbackCpuState;
-    	    pendingCallbackReturnThread = currentThread;
-    	    // Search for the SceKernelThreadInfo corresponding to the current thread
-    	    for (Entry<SceKernelThreadInfo, RuntimeThread> entry : threads.entrySet()) {
-    	    	if (entry.getValue() == Thread.currentThread()) { 
-    	    		pendingCallbackReturnThread = entry.getKey();
-    	    	}
-    	    }
-            // The callback thread is switching back to us just after
-            // executing the callback.
-            switchThread(callbackThreadInfo);
-    	}
-
-    	if (doSyncThread) {
-	    	try {
-	            syncThreadImmediately();
-	        } catch (StopThreadException e) {
-	            // This exception is not expected at this point...
-	            log.warn(e);
-	        }
-    	}
-    }
-
-    private static void executeCallbackImmediately(CpuState cpu) {
-        if (cpu == null) {
-            return;
-        }
-
-        Emulator.getProcessor().cpu = cpu;
-    	update();
-
     	int pc = cpu.pc;
 
 		if (log.isDebugEnabled()) {
@@ -393,6 +345,10 @@ public class RuntimeContext {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("End of Callback 0x%08X", pc));
 		}
+
+        if (cpu.pc == ThreadManForUser.CALLBACK_EXIT_HANDLER_ADDRESS) {
+            Modules.ThreadManForUserModule.hleKernelExitCallback(Emulator.getProcessor());
+        }
     }
 
     private static void updateStaticVariables() {
@@ -461,22 +417,6 @@ public class RuntimeContext {
     	}
     }
 
-    private static void sleep(int micros) {
-    	sleep(micros / 1000, micros % 1000);
-    }
-
-    private static void sleep(int millis, int micros) {
-        try {
-        	if (micros <= 0) {
-        		Thread.sleep(millis);
-        	} else {
-        		Thread.sleep(millis, micros * 1000);
-        	}
-        } catch (InterruptedException e) {
-        	// Ignore exception
-        }
-    }
-
     private static void syncIdle() throws StopThreadException {
         if (isIdle) {
         	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
@@ -493,6 +433,7 @@ public class RuntimeContext {
             		idleDuration.start();
             	}
                 syncPause();
+                checkPendingCallbacks();
                 scheduler.step();
                 if (threadMan.isIdleThread(threadMan.getCurrentThread())) {
                 	threadMan.hleRescheduleCurrentThread();
@@ -531,18 +472,13 @@ public class RuntimeContext {
 	    	        checkStoppedThread();
 
 	    	        updateStaticVariables();
-
-	    			if (pendingCallbackThread == RuntimeContext.currentThread) {
-	    			    pendingCallbackThread = null;
-	    			    executeCallbackImmediately(pendingCallbackCpuState);
-	    			    switchThread(pendingCallbackReturnThread);
-	    			    syncThread();
-	    			}
     			} else {
     				alreadySwitchedStoppedThreads.add(currentThread);
     			}
     		}
     	}
+
+    	checkPendingCallbacks();
     }
 
     private static void syncThread() throws StopThreadException {
