@@ -106,11 +106,18 @@ public class Controller {
 
 			// Reuse the controller from the settings
 			String controllerName = Settings.getInstance().readString("controller.controllerName");
+			// The controllerNameIndex is the index when several controllers have
+			// the same name. 0 to use the first controller with the given name,
+			// 1, to use the second...
+			int controllerNameIndex = Settings.getInstance().readInt("controller.controllerNameIndex", 0);
             if (controllerName != null) {
             	for (int i = 0; controllers != null && i < controllers.length; i++) {
             		if (controllerName.equals(controllers[i].getName())) {
-            			inputController = controllers[i];
-            			break;
+        				inputController = controllers[i];
+            			if (controllerNameIndex <= 0) {
+            				break;
+            			}
+        				controllerNameIndex--;
             		}
             	}
             }
@@ -145,6 +152,10 @@ public class Controller {
     	}
     	this.inputController = inputController;
     	onInputControllerChanged();
+    }
+
+    public net.java.games.input.Controller getInputController() {
+    	return inputController;
     }
 
     public void setInputControllerIndex(int index) {
