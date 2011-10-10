@@ -158,7 +158,7 @@ public class IntrManager {
 
 	public void addDeferredInterrupt(AbstractInterruptHandler interruptHandler) {
 		if (log.isDebugEnabled()) {
-			log.debug("addDeferredInterrupt");
+			log.debug(String.format("addDeferredInterrupt insideInterrupt=%b, interruptsEnabled=%b", isInsideInterrupt(), Interrupts.isInterruptsEnabled()));
 		}
 		deferredInterrupts.add(interruptHandler);
 	}
@@ -252,7 +252,7 @@ public class IntrManager {
 
 		if (!somethingExecuted) {
 			// No more handlers, end of interrupt
-			insideInterrupt = interruptState.restore(Emulator.getProcessor().cpu);
+			setInsideInterrupt(interruptState.restore(Emulator.getProcessor().cpu));
 			IAction afterInterruptAction = interruptState.getAfterInterruptAction();
 			if (afterInterruptAction != null) {
 				afterInterruptAction.execute();
@@ -279,7 +279,7 @@ public class IntrManager {
 		} else {
 			InterruptState interruptState = new InterruptState();
 			interruptState.save(insideInterrupt, Emulator.getProcessor().cpu, afterInterruptAction, afterHandlerAction);
-			insideInterrupt = true;
+			setInsideInterrupt(true);
 
 			Iterator<AbstractAllegrexInterruptHandler> allegrexInterruptHandlersIterator = allegrexInterruptHandlers.iterator();
 			IAction continueAction = new AfterSubIntrAction(this, interruptState, allegrexInterruptHandlersIterator);

@@ -23,6 +23,8 @@ import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_ALREADY_DORMANT;
 
 import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.Queue;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -32,6 +34,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
+import jpcsp.HLE.modules150.ThreadManForUser.Callback;
 import jpcsp.util.Utilities;
 
 public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
@@ -125,6 +128,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public boolean[] callbackRegistered;
     public boolean[] callbackReady;
     public SceKernelCallbackInfo[] callbackInfo;
+    public Queue<Callback> pendingCallbacks = new LinkedList<Callback>();
 
     public SceKernelThreadInfo(String name, int entry_addr, int initPriority, int stackSize, int attr) {
         if (stackSize < 512) {
