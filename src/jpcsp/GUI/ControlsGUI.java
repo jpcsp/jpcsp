@@ -84,10 +84,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         initComponents();
         loadKeys();
 
-        String controllerName = Settings.getInstance().readString("controller.controllerName");
-        if (controllerName != null) {
+        Controller controller = jpcsp.Controller.getInstance().getInputController();
+        if (controller != null) {
         	for (int i = 0; i < controllerBox.getItemCount(); i++) {
-        		if (controllerName.equals(controllerBox.getItemAt(i))) {
+        		if (controller == controllerBox.getItemAt(i)) {
         			controllerBox.setSelectedIndex(i);
         			break;
         		}
@@ -365,8 +365,8 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         MutableComboBoxModel comboBox = new DefaultComboBoxModel();
         ControllerEnvironment ce = ControllerEnvironment.getDefaultEnvironment();
         Controller[] controllers = ce.getControllers();
-        for(Controller c : controllers) {
-        	comboBox.addElement(c.getName());
+        for (Controller c : controllers) {
+        	comboBox.addElement(c);
         }
         return comboBox;
     }
@@ -905,7 +905,24 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
     Settings.getInstance().writeKeys(currentKeys);
     Settings.getInstance().writeController(currentController);
-    Settings.getInstance().writeString("controller.controllerName", controllerBox.getSelectedItem().toString());
+    String controllerName = controllerBox.getSelectedItem().toString();
+    Settings.getInstance().writeString("controller.controllerName", controllerName);
+
+    // Index when several controllers have the same name:
+    // 0 refers to the first controller with the given name, 1, to the second...
+    int controllerNameIndex = 0;
+    int selectedIndex = controllerBox.getSelectedIndex();
+    for (int i = 0; i < controllerBox.getItemCount(); i++) {
+    	if (controllerName.equals(controllerBox.getItemAt(i).toString())) {
+    		if (i < selectedIndex) {
+    			controllerNameIndex++;
+    		} else {
+    			break;
+    		}
+    	}
+    }
+    Settings.getInstance().writeString("controller.controllerNameIndex", String.valueOf(controllerNameIndex));
+
     State.controller.setInputControllerIndex(controllerBox.getSelectedIndex());
     State.controller.loadKeyConfig(currentKeys);
     State.controller.loadControllerConfig(currentController);
