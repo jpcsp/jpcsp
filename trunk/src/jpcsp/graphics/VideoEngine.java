@@ -359,10 +359,17 @@ public class VideoEngine {
 
     public boolean hasDrawList(int listAddr) {
     	boolean result = false;
+    	boolean waitAndRetry = false;
 
     	synchronized (drawListQueue) {
             if (currentList != null && currentList.list_addr == listAddr) {
-                result = true;
+            	result = true;
+            	// The current list has already reached the FINISH command,
+            	// but the list processing is not yet completed.
+            	// Wait a little for the list to complete.
+            	if (currentList.isFinished()) {
+            		waitAndRetry = true;
+            	}
             } else {
 	            for (PspGeList list : drawListQueue) {
 	                if (list != null && list.list_addr == listAddr) {
@@ -373,7 +380,25 @@ public class VideoEngine {
             }
 		}
 
-        return result;
+    	if (waitAndRetry) {
+    		// The current list is already finished but its processing is not yet
+    		// completed. Wait a little (100ms) and check again to avoid
+    		// the "can't enqueue duplicate list address" error.
+    		for (int i = 0; i < 100; i++) {
+    			if (log.isDebugEnabled()) {
+    				log.debug(String.format("hasDrawList(0x%08X) waiting on finished list %s", listAddr, currentList));
+    			}
+    			Utilities.sleep(1, 0);
+	    		synchronized (drawListQueue) {
+	    			if (currentList == null || currentList.list_addr != listAddr) {
+	    				result = false;
+	    				break;
+	    			}
+	    		}
+    		}
+    	}
+
+    	return result;
     }
 
     public PspGeList getFirstDrawList() {
