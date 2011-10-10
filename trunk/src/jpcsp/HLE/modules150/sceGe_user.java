@@ -16,7 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.CanBeNull;
+import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -24,7 +30,6 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
@@ -346,358 +351,293 @@ public class sceGe_user extends HLEModule implements HLEStartModule {
 		}
     }
 
+    public int checkListId(int id) {
+    	if (id < 0 || id >= NUMBER_GE_LISTS) {
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_INVALID_ID);
+    	}
+
+    	return id;
+    }
+
+    public int checkMode(int mode) {
+    	if (mode < 0 || mode > 1) {
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_INVALID_MODE);
+    	}
+
+    	return mode;
+    }
+
     @HLEFunction(nid = 0x1F6752AD, version = 150)
-    public void sceGeEdramGetSize(Processor processor) {
-        CpuState cpu = processor.cpu;
-        cpu.gpr[2] = MemoryMap.SIZE_VRAM;
+    public int sceGeEdramGetSize() {
+        return MemoryMap.SIZE_VRAM;
     }
 
     @HLEFunction(nid = 0xE47E40E4, version = 150)
-    public void sceGeEdramGetAddr(Processor processor) {
-    	CpuState cpu = processor.cpu;
-        cpu.gpr[2] = MemoryMap.START_VRAM;
+    public int sceGeEdramGetAddr() {
+        return MemoryMap.START_VRAM;
     }
 
     @HLEFunction(nid = 0xB77905EA, version = 150)
-    public void sceGeEdramSetAddrTranslation(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int size = cpu.gpr[4];
-
+    public int sceGeEdramSetAddrTranslation(int size) {
         // Faking. There's no need for real memory width conversion.
         int previousWidth = eDRAMMemoryWidth;
         eDRAMMemoryWidth = size;
 
-        cpu.gpr[2] = previousWidth;
+        return previousWidth;
     }
 
     @HLEFunction(nid = 0xDC93CFEF, version = 150)
-    public void sceGeGetCmd(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int cmd = cpu.gpr[4];
-
+    public int sceGeGetCmd(int cmd) {
         VideoEngine ve = VideoEngine.getInstance();
-        int arg = ve.getCommandValue(cmd);
+        int value = ve.getCommandValue(cmd);
 
-        log.info("sceGeGetCmd " + ve.commandToString(cmd).toUpperCase() + ":" + " cmd=0x" + Integer.toHexString(cmd) + " value=0x" + Integer.toHexString(arg));
+        if (log.isInfoEnabled()) {
+        	log.info(String.format("sceGeGetCmd %s: cmd=0x%X, value=0x%06X", ve.commandToString(cmd).toUpperCase(), cmd, value));
+        }
 
-        cpu.gpr[2] = arg;
+        return value;
     }
 
     @HLEFunction(nid = 0x57C8945B, version = 150)
-    public void sceGeGetMtx(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int mtxtype = cpu.gpr[4];
-        int mtx_addr = cpu.gpr[5];
-
+    public int sceGeGetMtx(int mtxType, TPointer32 mtxAddr) {
         VideoEngine ve = VideoEngine.getInstance();
-        float[] mtx = ve.getMatrix(mtxtype);
+        float[] mtx = ve.getMatrix(mtxType);
 
-        if(Memory.isAddressGood(mtx_addr)) {
-            for(int i = 0; i < mtx.length; i++) {
-                mem.write32(mtx_addr, (int)mtx[i]);
-            }
+        for(int i = 0; i < mtx.length; i++) {
+        	mtxAddr.setValue(i << 2, Float.floatToRawIntBits(mtx[i]));
         }
 
-        log.info("sceGeGetMtx mtxtype=" + mtxtype + " mtx_addr=0x" + Integer.toHexString(mtx_addr) + ", mtx=" + mtx);
+        if (log.isInfoEnabled()) {
+        	log.info(String.format("sceGeGetMtx mtxType=%d, mtxAddr=%s, mtx=%s", mtxType, mtxAddr, mtx));
+        }
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
     @HLEFunction(nid = 0x438A385A, version = 150)
-    public void sceGeSaveContext(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int contextAddr = cpu.gpr[4];
-
+    public int sceGeSaveContext(TPointer contextAddr) {
         if (log.isDebugEnabled()) {
-    		log.debug("sceGeSaveContext contextAddr=" + Integer.toHexString(contextAddr));
+    		log.debug(String.format("sceGeSaveContext contextAddr=%s", contextAddr));
     	}
 
-    	VideoEngine.getInstance().hleSaveContext(contextAddr);
+    	VideoEngine.getInstance().hleSaveContext(contextAddr.getAddress());
 
-    	cpu.gpr[2] = 0;
+    	return 0;
     }
 
     @HLEFunction(nid = 0x0BF608FB, version = 150)
-    public void sceGeRestoreContext(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int contextAddr = cpu.gpr[4];
-
+    public int sceGeRestoreContext(TPointer contextAddr) {
         if (log.isDebugEnabled()) {
-    		log.debug("sceGeRestoreContext contextAddr=" + Integer.toHexString(contextAddr));
+    		log.debug(String.format("sceGeRestoreContext contextAddr=%s", contextAddr));
     	}
 
-    	VideoEngine.getInstance().hleRestoreContext(contextAddr);
+    	VideoEngine.getInstance().hleRestoreContext(contextAddr.getAddress());
 
-    	cpu.gpr[2] = 0;
+    	return 0;
     }
 
     @HLEFunction(nid = 0xAB49E76A, version = 150)
-    public void sceGeListEnQueue(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int list_addr = cpu.gpr[4];
-        int stall_addr = cpu.gpr[5];
-        int cbid = cpu.gpr[6];
-        int arg_addr = cpu.gpr[7];
-
+    public int sceGeListEnQueue(TPointer listAddr, @CanBeNull TPointer stallAddr, int cbid, @CanBeNull TPointer argAddr) {
         if (log.isDebugEnabled()) {
-	        log.debug("sceGeListEnQueue(list=0x" + Integer.toHexString(list_addr)
-	            + ",stall=0x" + Integer.toHexString(stall_addr)
-	            + ",cbid=0x" + Integer.toHexString(cbid)
-	            + ",arg=0x" + Integer.toHexString(arg_addr) + ")");
+	        log.debug(String.format("sceGeListEnQueue(list=%s, stall=%s, cbid=0x%X, arg=%s)", listAddr, stallAddr, cbid, argAddr));
     	}
 
-    	list_addr &= Memory.addressMask;
-    	stall_addr &= Memory.addressMask;
-
-    	if (VideoEngine.getInstance().hasDrawList(list_addr)) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_BUSY;
+    	if (VideoEngine.getInstance().hasDrawList(listAddr.getAddress())) {
     		log.warn("sceGeListEnQueue can't enqueue duplicate list address");
-    	} else {
-    		synchronized (this) {
-    	    	PspGeList list = listFreeQueue.poll();
-    	    	if (list == null) {
-    	    		cpu.gpr[2] = SceKernelErrors.ERROR_OUT_OF_MEMORY;
-    	    		log.warn("sceGeListEnQueue no more free list available!");
-    	    	} else {
-    	    		list.init(list_addr, stall_addr, cbid, arg_addr);
-    	    		startGeList(list);
-    	            cpu.gpr[2] = list.id;
-    	    	}
-			}
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_BUSY);
     	}
+
+        int result;
+    	synchronized (this) {
+	    	PspGeList list = listFreeQueue.poll();
+	    	if (list == null) {
+	    		log.warn("sceGeListEnQueue no more free list available!");
+	    		throw new SceKernelErrorException(SceKernelErrors.ERROR_OUT_OF_MEMORY);
+	    	}
+
+	    	list.init(listAddr.getAddress(), stallAddr.getAddress(), cbid, argAddr.getAddress());
+    		startGeList(list);
+            result = list.id;
+		}
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceGeListEnQueue returning 0x%x", cpu.gpr[2]));
+			log.debug(String.format("sceGeListEnQueue returning 0x%X", result));
 		}
+
+		return result;
     }
 
     @HLEFunction(nid = 0x1C0D95A6, version = 150)
-    public void sceGeListEnQueueHead(Processor processor) {
-    	CpuState cpu = processor.cpu;
-
-        int list_addr = cpu.gpr[4];
-        int stall_addr = cpu.gpr[5];
-        int cbid = cpu.gpr[6];
-        int arg_addr = cpu.gpr[7];
-
+    public int sceGeListEnQueueHead(TPointer listAddr, @CanBeNull TPointer stallAddr, int cbid, @CanBeNull TPointer argAddr) {
         if (log.isDebugEnabled()) {
-	        log.debug("sceGeListEnQueueHead(list=0x" + Integer.toHexString(list_addr)
-	            + ",stall=0x" + Integer.toHexString(stall_addr)
-	            + ",cbid=0x" + Integer.toHexString(cbid)
-	            + ",arg=0x" + Integer.toHexString(arg_addr) + ")");
+	        log.debug(String.format("sceGeListEnQueueHead(list=%s, stall=%s, cbid=0x%X, arg=%s)", listAddr, stallAddr, cbid, argAddr));
     	}
 
-    	list_addr &= Memory.addressMask;
-    	stall_addr &= Memory.addressMask;
-
-    	if (VideoEngine.getInstance().hasDrawList(list_addr)) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_BUSY;
+    	if (VideoEngine.getInstance().hasDrawList(listAddr.getAddress())) {
     		log.warn("sceGeListEnQueueHead can't enqueue duplicate list address");
-    	} else {
-    		synchronized (this) {
-    	    	PspGeList list = listFreeQueue.poll();
-    	    	if (list == null) {
-    	    		cpu.gpr[2] = SceKernelErrors.ERROR_OUT_OF_MEMORY;
-    	    		log.warn("sceGeListEnQueueHead no more free list available!");
-    	    	} else {
-    	    		list.init(list_addr, stall_addr, cbid, arg_addr);
-    	    		startGeListHead(list);
-    	            cpu.gpr[2] = list.id;
-    	    	}
-			}
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_BUSY);
     	}
+
+    	int result;
+    	synchronized (this) {
+	    	PspGeList list = listFreeQueue.poll();
+	    	if (list == null) {
+	    		log.warn("sceGeListEnQueueHead no more free list available!");
+	    		throw new SceKernelErrorException(SceKernelErrors.ERROR_OUT_OF_MEMORY);
+	    	}
+
+	    	list.init(listAddr.getAddress(), stallAddr.getAddress(), cbid, argAddr.getAddress());
+    		startGeListHead(list);
+            result = list.id;
+		}
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceGeListEnQueueHead returning 0x%x", cpu.gpr[2]));
+			log.debug(String.format("sceGeListEnQueueHead returning 0x%X", result));
 		}
+
+		return result;
     }
 
     @HLEFunction(nid = 0x5FB86AB0, version = 150)
-    public void sceGeListDeQueue(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-
+    public int sceGeListDeQueue(@CheckArgument("checkListId") int id) {
         if (log.isDebugEnabled()) {
-        	log.debug("sceGeListDeQueue(id=" + id + ")");
+        	log.debug(String.format("sceGeListDeQueue(id=0x%X)", id));
         }
 
-        if (id < 0 || id >= NUMBER_GE_LISTS) {
-        	cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_ID;
-        } else {
-        	synchronized (this) {
-            	PspGeList list = allGeLists[id];
-            	list.reset();
-            	if (!listFreeQueue.contains(list)) {
-            		listFreeQueue.add(list);
-            	}
-			}
-            cpu.gpr[2] = 0;
-        }
+    	synchronized (this) {
+        	PspGeList list = allGeLists[id];
+        	list.reset();
+        	if (!listFreeQueue.contains(list)) {
+        		listFreeQueue.add(list);
+        	}
+		}
+
+    	return 0;
     }
 
     @HLEFunction(nid = 0xE0D68148, version = 150)
-    public void sceGeListUpdateStallAddr(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-        int stall_addr = cpu.gpr[5];
-
+    public int sceGeListUpdateStallAddr(@CheckArgument("checkListId") int id, @CanBeNull TPointer stallAddr) {
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceGeListUpdateStallAddr(id=0x%x, stall=0x%08X)", id, stall_addr));
+        	log.debug(String.format("sceGeListUpdateStallAddr(id=0x%X, stall=%s)", id, stallAddr));
         }
 
-        stall_addr &= Memory.addressMask;
+    	synchronized (this) {
+        	PspGeList list = allGeLists[id];
+        	if (list.getStallAddr() != stallAddr.getAddress()) {
+        		list.setStallAddr(stallAddr.getAddress());
+                Modules.sceDisplayModule.setGeDirty(true);
+        	}
+		}
 
-        if (id < 0 || id >= NUMBER_GE_LISTS) {
-        	cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_ID;
-        } else {
-        	synchronized (this) {
-            	PspGeList list = allGeLists[id];
-            	if (list.getStallAddr() != stall_addr) {
-            		list.setStallAddr(stall_addr);
-                    Modules.sceDisplayModule.setGeDirty(true);
-            	}
-			}
-            cpu.gpr[2] = 0;
-        }
+    	return 0;
     }
 
     @HLEFunction(nid = 0x03444EB4, version = 150)
-    public void sceGeListSync(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-        int mode = cpu.gpr[5];
-
+    public int sceGeListSync(@CheckArgument("checkListId") int id, @CheckArgument("checkMode") int mode) {
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceGeListSync(id=0x%x,mode=%d)", id, mode));
+        	log.debug(String.format("sceGeListSync(id=0x%X, mode=%d)", id, mode));
         }
 
-        if (mode != 0 && mode != 1) {
-        	cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_MODE;
-        } else if (id < 0 || id >= NUMBER_GE_LISTS) {
-        	cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_ID;
-        } else if (IntrManager.getInstance().isInsideInterrupt() && mode == 0) {
+        if (mode == 0 && IntrManager.getInstance().isInsideInterrupt()) {
     		log.debug("sceGeListSync (mode==0) cannot be called inside an interrupt handler!");
-    		cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-        	PspGeList list = null;
-        	boolean blockCurrentThread = false;
-
-        	synchronized (this) {
-            	list = allGeLists[id];
-            	if (log.isDebugEnabled()) {
-                	log.debug("sceGeListSync on list: " + list);
-            	}
-
-            	if (list.isReset()) {
-            		cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_ID;
-            	} else if (mode == 0 && !list.isDone()) {
-            		cpu.gpr[2] = 0;
-            		blockCurrentThread = true;
-            	} else {
-            		cpu.gpr[2] = list.status;
-            	}
-			}
-
-        	// Block the current thread outside of the synchronized block
-        	if (blockCurrentThread) {
-        		blockCurrentThreadOnList(list, null);
-        	}
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT);
         }
+
+        PspGeList list = null;
+    	boolean blockCurrentThread = false;
+    	int result;
+    	synchronized (this) {
+        	list = allGeLists[id];
+        	if (log.isDebugEnabled()) {
+            	log.debug(String.format("sceGeListSync on list: %s", list));
+        	}
+
+        	if (list.isReset()) {
+        		throw new SceKernelErrorException(SceKernelErrors.ERROR_INVALID_ID);
+        	}
+
+        	if (mode == 0 && !list.isDone()) {
+        		result = 0;
+        		blockCurrentThread = true;
+        	} else {
+        		result = list.status;
+        	}
+		}
+
+    	// Block the current thread outside of the synchronized block
+    	if (blockCurrentThread) {
+    		blockCurrentThreadOnList(list, null);
+    	}
+
+    	return result;
     }
 
     @HLEFunction(nid = 0xB287BD61, version = 150)
-    public void sceGeDrawSync(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mode = cpu.gpr[4];
-
+    public int sceGeDrawSync(@CheckArgument("checkMode") int mode) {
         if (log.isDebugEnabled()) {
-    		log.debug("sceGeDrawSync mode=" + mode);
+    		log.debug(String.format("sceGeDrawSync mode=%d", mode));
     	}
+
+        if (mode == 0 && IntrManager.getInstance().isInsideInterrupt()) {
+            log.debug("sceGeListSync (mode==0) cannot be called inside an interrupt handler!");
+            throw new SceKernelErrorException(SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT);
+        }
 
         // no synchronization on "this" required because we are not accessing
     	// local data, only list information from the VideoEngine.
-        if (IntrManager.getInstance().isInsideInterrupt() && mode == 0) {
-            log.debug("sceGeListSync (mode==0) cannot be called inside an interrupt handler!");
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            if (mode == 0) {
-                cpu.gpr[2] = 0;
-                PspGeList lastList = VideoEngine.getInstance().getLastDrawList();
-                if (lastList != null) {
-                    blockCurrentThreadOnList(lastList, new HLEAfterDrawSyncAction());
-                } else {
-	    			if (log.isDebugEnabled()) {
-                        log.debug("sceGeDrawSync all lists completed, not waiting");
-                    }
-                    hleGeAfterDrawSyncAction();
-                    Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
-	    		}
-            } else if (mode == 1) {
-                PspGeList currentList = VideoEngine.getInstance().getFirstDrawList();
-                if (currentList == null) {
-                    cpu.gpr[2] = 0;
-                } else {
-                    cpu.gpr[2] = currentList.status;
-                }
-                if (log.isDebugEnabled()) {
-                	log.debug("sceGeDrawSync mode=" + mode + ", returning " + cpu.gpr[2]);
-                }
+        int result = 0;
+        if (mode == 0) {
+            PspGeList lastList = VideoEngine.getInstance().getLastDrawList();
+            if (lastList != null) {
+                blockCurrentThreadOnList(lastList, new HLEAfterDrawSyncAction());
             } else {
-                log.warn("sceGeDrawSync invalid mode=" + mode);
-                cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_MODE;
+    			if (log.isDebugEnabled()) {
+                    log.debug("sceGeDrawSync all lists completed, not waiting");
+                }
+                hleGeAfterDrawSyncAction();
+                Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
+    		}
+        } else if (mode == 1) {
+            PspGeList currentList = VideoEngine.getInstance().getFirstDrawList();
+            if (currentList != null) {
+                result = currentList.status;
+            }
+            if (log.isDebugEnabled()) {
+            	log.debug(String.format("sceGeDrawSync mode=%d, returning %d", mode, result));
             }
         }
+
+        return result;
     }
 
     @HLEFunction(nid = 0xB448EC0D, version = 150)
-    public void sceGeBreak(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mode = cpu.gpr[4];
-        int brk_addr = cpu.gpr[5];
-
+    public int sceGeBreak(@CheckArgument("checkMode") int mode, TPointer brk_addr) {
         if (log.isDebugEnabled()) {
-    		log.debug("sceGeBreak mode=" + mode + ", brk_addr=0x" + Integer.toHexString(brk_addr));
+    		log.debug(String.format("sceGeBreak mode=%d, brk_addr=%s", mode, brk_addr));
     	}
 
+        int result = 0;
         PspGeList list = VideoEngine.getInstance().getCurrentList();
-        if(mode == 0) {  // Pause the current list only.
-            if(list != null) {
+        if (mode == 0) {  // Pause the current list only.
+            if (list != null) {
                 list.pauseList();
-                cpu.gpr[2] = list.id;
-            } else {
-                cpu.gpr[2] = 0;
+                result = list.id;
             }
         } else if (mode == 1) {  // Pause the current list and cancel the rest of the queue.
-            if(list != null) {
+            if (list != null) {
                 list.pauseList();
                 for (int i = 0; i < NUMBER_GE_LISTS; i++) {
                     allGeLists[i].status = PSP_GE_LIST_CANCEL_DONE;
                 }
-                cpu.gpr[2] = list.id;
-            } else {
-                cpu.gpr[2] = 0;
+                result = list.id;
             }
-        } else {
-            log.warn("sceGeBreak invalid mode=" + mode);
-            cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_MODE;
         }
+
+        return result;
     }
 
     @HLEFunction(nid = 0x4C06E472, version = 150)
-    public void sceGeContinue(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceGeContinue() {
     	Memory mem = Processor.memory;
 
         if (log.isDebugEnabled()) {
@@ -717,67 +657,45 @@ public class sceGe_user extends HLEModule implements HLEStartModule {
 			}
     	}
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
-    @HLEFunction(nid = 0xA4FC06A4, version = 150)
-    public void sceGeSetCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int cbdata_addr = cpu.gpr[4];
-
+    @HLEFunction(nid = 0xA4FC06A4, version = 150, checkInsideInterrupt = true)
+    public int sceGeSetCallback(TPointer cbdata_addr) {
         pspGeCallbackData cbdata = new pspGeCallbackData();
-        cbdata.read(Emulator.getMemory(), cbdata_addr);
+        cbdata.read(Emulator.getMemory(), cbdata_addr.getAddress());
 
         int cbid = SceUidManager.getNewUid("pspge-callback");
 
         if (log.isDebugEnabled()) {
-        	log.debug("sceGeSetCallback signalFunc=0x" + Integer.toHexString(cbdata.signalFunction)
-                              + ", signalArg=0x" + Integer.toHexString(cbdata.signalArgument)
-                              + ", finishFunc=0x" + Integer.toHexString(cbdata.finishFunction)
-                              + ", finishArg=0x" + Integer.toHexString(cbdata.finishArgument)
-                              + ", result cbid=" + Integer.toHexString(cbid));
+        	log.debug(String.format("sceGeSetCallback signalFunc=0x%08X, signalArg=0x%08X, finishFunc=0x%08X, finishArg=0x%08X, result cbid=0x%X", cbdata.signalFunction, cbdata.signalArgument, cbdata.finishFunction, cbdata.finishArgument, cbid));
         }
 
-         if (IntrManager.getInstance().isInsideInterrupt()) {
-             log.warn("sceGeSetCallback called inside an Interrupt!");
-             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-         } else {
-            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-            SceKernelCallbackInfo callbackSignal = threadMan.hleKernelCreateCallback("GeCallbackSignal", cbdata.signalFunction, cbdata.signalArgument);
-            SceKernelCallbackInfo callbackFinish = threadMan.hleKernelCreateCallback("GeCallbackFinish", cbdata.finishFunction, cbdata.finishArgument);
-            signalCallbacks.put(cbid, callbackSignal);
-            finishCallbacks.put(cbid, callbackFinish);
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        SceKernelCallbackInfo callbackSignal = threadMan.hleKernelCreateCallback("GeCallbackSignal", cbdata.signalFunction, cbdata.signalArgument);
+        SceKernelCallbackInfo callbackFinish = threadMan.hleKernelCreateCallback("GeCallbackFinish", cbdata.finishFunction, cbdata.finishArgument);
+        signalCallbacks.put(cbid, callbackSignal);
+        finishCallbacks.put(cbid, callbackFinish);
 
-            cpu.gpr[2] = cbid;
-        }
+        return cbid;
     }
 
-    @HLEFunction(nid = 0x05DB22CE, version = 150)
-    public void sceGeUnsetCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int cbid = cpu.gpr[4];
-
+    @HLEFunction(nid = 0x05DB22CE, version = 150, checkInsideInterrupt = true)
+    public int sceGeUnsetCallback(int cbid) {
         if (log.isDebugEnabled()) {
-    		log.debug("sceGeUnsetCallback cbid=" + Integer.toHexString(cbid));
+    		log.debug(String.format("sceGeUnsetCallback cbid=0x%X", cbid));
     	}
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-             log.warn("sceGeUnsetCallback called inside an Interrupt!");
-             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-            SceKernelCallbackInfo callbackSignal = signalCallbacks.remove(cbid);
-            SceKernelCallbackInfo callbackFinish = finishCallbacks.remove(cbid);
-            if (callbackSignal != null) {
-                threadMan.hleKernelDeleteCallback(callbackSignal.uid);
-            }
-            if (callbackFinish != null) {
-                threadMan.hleKernelDeleteCallback(callbackFinish.uid);
-            }
-            cpu.gpr[2] = 0;
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        SceKernelCallbackInfo callbackSignal = signalCallbacks.remove(cbid);
+        SceKernelCallbackInfo callbackFinish = finishCallbacks.remove(cbid);
+        if (callbackSignal != null) {
+            threadMan.hleKernelDeleteCallback(callbackSignal.uid);
         }
-    }
+        if (callbackFinish != null) {
+            threadMan.hleKernelDeleteCallback(callbackFinish.uid);
+        }
 
+        return 0;
+    }
 }

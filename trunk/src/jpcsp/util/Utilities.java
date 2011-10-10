@@ -607,4 +607,20 @@ public class Utilities {
             	mem.write8(address + 3, (byte) (data >> 24));
         }
     }
+
+    public static void sleep(int micros) {
+    	sleep(micros / 1000, micros % 1000);
+    }
+
+    public static void sleep(int millis, int micros) {
+        try {
+        	if (micros <= 0) {
+        		Thread.sleep(millis);
+        	} else {
+        		Thread.sleep(millis, micros * 1000);
+        	}
+        } catch (InterruptedException e) {
+        	// Ignore exception
+        }
+    }
 }

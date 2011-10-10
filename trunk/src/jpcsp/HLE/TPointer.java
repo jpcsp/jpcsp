@@ -55,7 +55,7 @@ final public class TPointer implements ITPointerBase {
 
 	public TPointer(Memory memory, int address) {
 		this.memory = memory;
-		this.address = address;
+		this.address = address & Memory.addressMask;
 	}
 	
 	public boolean isAddressGood() {
