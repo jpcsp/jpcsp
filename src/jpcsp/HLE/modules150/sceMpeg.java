@@ -2091,6 +2091,15 @@ public class sceMpeg extends HLEModule implements HLEStartModule {
             cpu.gpr[2] = 0;
         } else {
             int numberPackets = Math.min(available, numPackets);
+
+            // Do not read more packets than available in the MPEG stream
+            int mpegStreamPackets = (mpegStreamSize + mpegRingbuffer.packetSize - 1) / mpegRingbuffer.packetSize;
+            int remainingPackets = mpegStreamPackets - mpegRingbuffer.packetsRead;
+            if (remainingPackets < 0) {
+            	remainingPackets = 0;
+            }
+            numberPackets = Math.min(numberPackets, remainingPackets);
+
             mpegRingbuffer.read(mem, mpegRingbufferAddr);
             Modules.ThreadManForUserModule.executeCallback(null, mpegRingbuffer.callback_addr, afterRingbufferPutCallback, false, mpegRingbuffer.data, numberPackets, mpegRingbuffer.callback_args);
         }
