@@ -348,6 +348,9 @@ public class RuntimeContext {
 
         if (cpu.pc == ThreadManForUser.CALLBACK_EXIT_HANDLER_ADDRESS) {
             Modules.ThreadManForUserModule.hleKernelExitCallback(Emulator.getProcessor());
+
+            // Re-sync the runtime, the current thread might have been rescheduled
+            wantSync = true;
         }
     }
 
