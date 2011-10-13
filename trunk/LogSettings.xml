@@ -42,9 +42,9 @@
 <logger name='memory' />
 <logger name='ge' />
 <logger name='emu' />
-<logger name='compiler' > <level value='off' /> </logger>
-<logger name='runtime' > <level value='off' /> </logger>
-<logger name='loader' > <level value='off' /> </logger>
+<logger name='compiler' />
+<logger name='runtime' />
+<logger name='loader' />
 <logger name='stdout' />
 <logger name='stderr' />
 
