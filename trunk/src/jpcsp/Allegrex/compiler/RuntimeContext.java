@@ -332,12 +332,14 @@ public class RuntimeContext {
     	IExecutable executable = getExecutable(pc);
         int newPc = 0;
         int returnAddress = cpu.gpr[_ra];
+        boolean callbackExited = false;
 		try {
 			newPc = executable.exec(returnAddress, returnAddress, false);
 		} catch (StopThreadException e) {
 			// Ignore exception
 		} catch (Exception e) {
-			log.error(e);
+			log.error("Catched Throwable in executeCallback:", e);
+			callbackExited = true;
 		}
     	cpu.pc = newPc;
     	cpu.npc = newPc; // npc is used when context switching
@@ -346,7 +348,7 @@ public class RuntimeContext {
 			log.debug(String.format("End of Callback 0x%08X", pc));
 		}
 
-        if (cpu.pc == ThreadManForUser.CALLBACK_EXIT_HANDLER_ADDRESS) {
+        if (cpu.pc == ThreadManForUser.CALLBACK_EXIT_HANDLER_ADDRESS || callbackExited) {
             Modules.ThreadManForUserModule.hleKernelExitCallback(Emulator.getProcessor());
 
             // Re-sync the runtime, the current thread might have been rescheduled
