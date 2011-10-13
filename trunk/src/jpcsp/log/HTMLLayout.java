@@ -191,7 +191,7 @@ public class HTMLLayout extends Layout {
 			sbuf.append("</td>" + Layout.LINE_SEP);
 		}
 
-		sbuf.append("<td title=\"Message\">");
+		sbuf.append("<td title=\"Message\" class=\"message\">");
 		sbuf.append(Transform.escapeTags(event.getRenderedMessage()));
 		sbuf.append("</td>" + Layout.LINE_SEP);
 		sbuf.append("</tr>" + Layout.LINE_SEP);
@@ -245,6 +245,8 @@ public class HTMLLayout extends Layout {
 		sbuf.append("body, table {font-family: arial,sans-serif; font-size: x-small;}"
 						+ Layout.LINE_SEP);
 		sbuf.append("th {background: #336699; color: #FFFFFF; text-align: left;}"
+						+ Layout.LINE_SEP);
+		sbuf.append("td.message {white-space: pre; font-family: monospace;}"
 						+ Layout.LINE_SEP);
 		sbuf.append("-->" + Layout.LINE_SEP);
 		sbuf.append("</style>" + Layout.LINE_SEP);
