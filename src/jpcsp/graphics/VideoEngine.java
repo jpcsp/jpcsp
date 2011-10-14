@@ -2263,7 +2263,13 @@ public class VideoEngine {
         Memory mem = Memory.getInstance();
         int numberOfVertexBoundingBox = normalArgument & 0xFF;
 
-        if (!Memory.isAddressGood(vinfo.ptr_vertex)) {
+        if (vinfo.ptr_vertex == 0) {
+        	// The GE is initialized with a NULL vertex address, do not log an error
+        	if (isLogDebugEnabled) {
+                log.debug(String.format("%s null vertex address", helper.getCommandString(BBOX)));
+        	}
+        	return;
+        } else if (!Memory.isAddressGood(vinfo.ptr_vertex)) {
             // Abort here to avoid a lot of useless memory read errors...
             error(String.format("%s Invalid vertex address 0x%08X", helper.getCommandString(BBOX), vinfo.ptr_vertex));
             return;
