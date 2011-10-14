@@ -38,6 +38,7 @@ import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
+import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.util.Debug;
 import jpcsp.util.Utilities;
 
@@ -47,10 +48,25 @@ public class scePsmfPlayer extends HLEModule {
 
     private static Logger log = Modules.getLogger("scePsmfPlayer");
 
+    private class EnableMediaEngineSettingsListener extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setEnableMediaEngine(value);
+		}
+    }
+
     @Override
     public String getName() {
         return "scePsmfPlayer";
     }
+
+	@Override
+	public void start() {
+		setSettingsListener("emu.useMediaEngine", new EnableMediaEngineSettingsListener());
+
+		super.start();
+	}
+
     // PSMF Player timing management.
     protected static final int psmfPlayerVideoTimestampStep = sceMpeg.videoTimestampStep;
     protected static final int psmfPlayerAudioTimestampStep = sceMpeg.audioTimestampStep;
@@ -155,14 +171,14 @@ public class scePsmfPlayer extends HLEModule {
     // Media Engine vars.
     protected PacketChannel pmfFileChannel;
     protected MediaEngine me;
-    protected static boolean useMediaEngine = false;
+    protected boolean useMediaEngine = false;
     protected byte[] audioDecodeBuffer;
 
-    public static boolean checkMediaEngineState() {
+    protected boolean checkMediaEngineState() {
         return useMediaEngine;
     }
 
-    public static void setEnableMediaEngine(boolean state) {
+    private void setEnableMediaEngine(boolean state) {
         useMediaEngine = state;
     }
 
@@ -967,5 +983,4 @@ public class scePsmfPlayer extends HLEModule {
         audioStreamNum++;
         cpu.gpr[2] = 0;
     }
-
 }

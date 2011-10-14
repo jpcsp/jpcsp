@@ -23,24 +23,15 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 
 import org.apache.log4j.Logger;
 
-public class SysMemForKernel extends HLEModule implements HLEStartModule {
+public class SysMemForKernel extends HLEModule {
     protected static Logger log = Modules.getLogger("SysMemForKernel");
 
     @Override
     public String getName() {
         return "SysMemForKernel";
-    }
-
-    @Override
-    public void start() {
-    }
-
-    @Override
-    public void stop() {
     }
 
     @HLEFunction(nid = 0xA089ECA4, version = 150)

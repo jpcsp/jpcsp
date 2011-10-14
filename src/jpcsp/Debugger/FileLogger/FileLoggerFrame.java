@@ -32,10 +32,10 @@ import javax.swing.table.TableColumnModel;
 
 import jpcsp.Emulator;
 import jpcsp.Resource;
-import jpcsp.Settings;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules150.IoFileMgrForUser.IIoListener;
 import jpcsp.filesystems.SeekableDataInput;
+import jpcsp.settings.Settings;
 
 /**
  *

@@ -20,9 +20,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 
-import jpcsp.Settings;
 import jpcsp.graphics.Uniforms;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.settings.Settings;
 
 /**
  * @author gid15

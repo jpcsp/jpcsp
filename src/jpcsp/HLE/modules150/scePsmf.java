@@ -29,12 +29,11 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules150.scePsmf.PSMFHeader.PSMFEntry;
 
 import org.apache.log4j.Logger;
 
-public class scePsmf extends HLEModule implements HLEStartModule {
+public class scePsmf extends HLEModule {
 
     private static Logger log = Modules.getLogger("scePsmf");
 
@@ -46,11 +45,10 @@ public class scePsmf extends HLEModule implements HLEStartModule {
     @Override
     public void start() {
         psmfHeaderMap = new HashMap<Integer, PSMFHeader>();
+
+        super.start();
     }
 
-    @Override
-    public void stop() {
-    }
     private HashMap<Integer, PSMFHeader> psmfHeaderMap;
 
     private PSMFHeader getPsmfHeader(int psmf) {

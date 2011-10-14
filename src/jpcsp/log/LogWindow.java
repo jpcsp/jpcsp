@@ -52,7 +52,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.UIManager;
 
-import jpcsp.Settings;
+import jpcsp.settings.Settings;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;

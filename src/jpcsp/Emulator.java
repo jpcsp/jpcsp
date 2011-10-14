@@ -42,6 +42,7 @@ import jpcsp.graphics.textures.TextureCache;
 import jpcsp.hardware.Battery;
 import jpcsp.hardware.Interrupts;
 import jpcsp.scheduler.Scheduler;
+import jpcsp.settings.Settings;
 import jpcsp.sound.SoundChannel;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.JpcspDialogManager;

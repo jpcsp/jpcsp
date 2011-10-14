@@ -38,7 +38,6 @@ import jpcsp.HLE.kernel.types.MemoryChunk;
 import jpcsp.HLE.kernel.types.MemoryChunkList;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -55,7 +54,7 @@ import org.apache.log4j.Logger;
  * 2. Implement format string parsing and reading variable number of parameters
  * in sceKernelPrintf.
  */
-public class SysMemUserForUser extends HLEModule implements HLEStartModule {
+public class SysMemUserForUser extends HLEModule {
     protected static Logger log = Modules.getLogger("SysMemUserForUser");
     protected static Logger stdout = Logger.getLogger("stdout");
     protected static HashMap<Integer, SysMemInfo> blockList;
@@ -85,11 +84,15 @@ public class SysMemUserForUser extends HLEModule implements HLEStartModule {
 			reset();
 			started = true;
 		}
+
+        super.start();
 	}
 
 	@Override
 	public void stop() {
 		started = false;
+
+        super.start();
 	}
 
     public void reset() {

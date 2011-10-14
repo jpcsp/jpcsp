@@ -27,17 +27,31 @@ import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.hardware.Audio;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
+import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.sound.AudioBlockingOutputAction;
 import jpcsp.sound.SoundChannel;
 
 import org.apache.log4j.Logger;
 
-public class sceAudio extends HLEModule implements HLEStartModule {
+public class sceAudio extends HLEModule {
     public static Logger log = Modules.getLogger("sceAudio");
+
+	private class DisableAudioSettingsListerner extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setChReserveEnabled(!value);
+		}
+	}
+
+	private class DisableBlockingAudioSettingsListerner extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setBlockingEnabled(!value);
+		}
+	}
 
     @Override
     public String getName() {
@@ -58,10 +72,11 @@ public class sceAudio extends HLEModule implements HLEStartModule {
             pspPCMChannels[channel] = new SoundChannel(channel);
         }
         pspSRCChannel = new SoundChannel(8);  // Use a special channel 8 to handle SRC functions.
-	}
 
-	@Override
-	public void stop() {
+        setSettingsListener("emu.disablesceAudio", new DisableAudioSettingsListerner());
+        setSettingsListener("emu.disableblockingaudio", new DisableBlockingAudioSettingsListerner());
+
+        super.start();
 	}
 
 	protected static final int PSP_AUDIO_VOLUME_MAX = 0x8000;
@@ -77,12 +92,12 @@ public class sceAudio extends HLEModule implements HLEStartModule {
     protected boolean disableChReserve;
     protected boolean disableBlockingAudio;
 
-    public void setChReserveEnabled(boolean enabled) {
+    private void setChReserveEnabled(boolean enabled) {
         disableChReserve = !enabled;
         log.info("Audio ChReserve disabled: " + disableChReserve);
     }
 
-    public void setBlockingEnabled(boolean enabled) {
+    private void setBlockingEnabled(boolean enabled) {
         disableBlockingAudio = !enabled;
         log.info("Audio Blocking disabled: " + disableBlockingAudio);
     }

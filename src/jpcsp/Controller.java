@@ -37,6 +37,7 @@ import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_VOLDOWN;
 import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_VOLUP;
 
 import jpcsp.hardware.Audio;
+import jpcsp.settings.Settings;
 import jpcsp.HLE.Modules;
 
 import java.awt.event.KeyEvent;

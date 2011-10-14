@@ -52,7 +52,7 @@ import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
 import jpcsp.Emulator;
-import jpcsp.Settings;
+import jpcsp.settings.Settings;
 
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.Layout;

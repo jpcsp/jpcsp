@@ -44,14 +44,13 @@ import jpcsp.HLE.kernel.types.pspGeCallbackData;
 import jpcsp.HLE.kernel.types.interrupts.GeCallbackInterruptHandler;
 import jpcsp.HLE.kernel.types.interrupts.GeInterruptHandler;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 
 import org.apache.log4j.Logger;
 
-public class sceGe_user extends HLEModule implements HLEStartModule {
+public class sceGe_user extends HLEModule {
     private static Logger log = Modules.getLogger("sceGe_user");
 
     public volatile boolean waitingForSync;
@@ -144,10 +143,8 @@ public class sceGe_user extends HLEModule implements HLEStartModule {
         deferredThreadWakeupQueue = new ConcurrentLinkedQueue<Integer>();
 
         eDRAMMemoryWidth = 1024;
-    }
 
-    @Override
-    public void stop() {
+        super.start();
     }
 
     public void step() {

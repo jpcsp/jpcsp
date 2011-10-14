@@ -26,7 +26,6 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.sound.SoundVoice;
@@ -35,7 +34,7 @@ import jpcsp.sound.SoundVoice.VoiceADSREnvelope;
 
 import org.apache.log4j.Logger;
 
-public class sceSasCore extends HLEModule implements HLEStartModule {
+public class sceSasCore extends HLEModule {
     public static Logger log = Modules.getLogger("sceSasCore");
 
     @Override
@@ -53,10 +52,8 @@ public class sceSasCore extends HLEModule implements HLEStartModule {
         mixer = new SoundMixer(voices);
         grainSamples = PSP_SAS_GRAIN_SAMPLES;
         outputMode = PSP_SAS_OUTPUTMODE_STEREO;
-    }
 
-    @Override
-    public void stop() {
+        super.start();
     }
 
     public static final int PSP_SAS_VOICES_MAX = 32;

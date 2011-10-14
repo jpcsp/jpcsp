@@ -24,7 +24,6 @@ import java.nio.ByteOrder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import jpcsp.Settings;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.graphics.GeCommands;
@@ -35,6 +34,7 @@ import jpcsp.graphics.textures.FBTexture;
 import jpcsp.graphics.textures.GETexture;
 import jpcsp.graphics.textures.Texture;
 import jpcsp.graphics.textures.TextureCache;
+import jpcsp.settings.Settings;
 import jpcsp.util.CpuDurationStatistics;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;

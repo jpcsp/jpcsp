@@ -25,6 +25,8 @@ import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.format.DeferredStub;
+import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.settings.Settings;
 import jpcsp.util.CpuDurationStatistics;
 import jpcsp.util.DurationStatistics;
 
@@ -33,6 +35,14 @@ public class SyscallHandler {
     public static boolean ignoreUnmappedImports = false;
     private static CpuDurationStatistics[] syscallStatistics;
     public static final int syscallUnmappedImport = 0xFFFFF;
+    private static IgnoreUnmappedImportsSettingsListerner ignoreUnmappedImportsSettingsListerner;
+
+	private static class IgnoreUnmappedImportsSettingsListerner extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setEnableIgnoreUnmappedImports(value);
+		}
+	}
 
 	public static void reset() {
 		durationStatistics.reset();
@@ -64,11 +74,11 @@ public class SyscallHandler {
 		}
 	}
 
-	public static boolean isEnableIgnoreUnmappedImports(){
+	private static boolean isEnableIgnoreUnmappedImports(){
         return ignoreUnmappedImports;
     }
 
-    public static void setEnableIgnoreUnmappedImports(boolean enable){
+    private static void setEnableIgnoreUnmappedImports(boolean enable){
         ignoreUnmappedImports = enable;
         if (enable) {
             Modules.log.info("Ignore Unmapped Imports enabled");
@@ -76,7 +86,12 @@ public class SyscallHandler {
     }
 
     public static void syscall(int code) {
-        if (code == syscallUnmappedImport) { // special code for unmapped imports
+    	if (ignoreUnmappedImportsSettingsListerner == null) {
+    		ignoreUnmappedImportsSettingsListerner = new IgnoreUnmappedImportsSettingsListerner();
+    		Settings.getInstance().registerSettingsListener("SyscallHandler", "emu.ignoreUnmappedImports", ignoreUnmappedImportsSettingsListerner);
+    	}
+
+    	if (code == syscallUnmappedImport) { // special code for unmapped imports
             CpuState cpu = Emulator.getProcessor().cpu;
 
             String description = String.format("0x%08X", cpu.pc);

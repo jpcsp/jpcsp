@@ -26,6 +26,8 @@ import jpcsp.memory.FastMemory;
 import jpcsp.memory.SafeDirectBufferMemory;
 import jpcsp.memory.SafeFastMemory;
 import jpcsp.memory.StandardMemory;
+import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.settings.Settings;
 
 import org.apache.log4j.Logger;
 
@@ -100,6 +102,17 @@ public abstract class Memory {
         }
 
         return instance;
+    }
+
+	private class IgnoreInvalidMemoryAccessSettingsListerner extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setIgnoreInvalidMemoryAccess(value);
+		}
+	}
+
+    protected Memory() {
+    	Settings.getInstance().registerSettingsListener("Memory", "emu.ignoreInvalidMemoryAccess", new IgnoreInvalidMemoryAccessSettingsListerner());
     }
 
     public static void setInstance(Memory mem) {
@@ -295,7 +308,7 @@ public abstract class Memory {
         return ignoreInvalidMemoryAccess;
     }
 
-    public void setIgnoreInvalidMemoryAccess(boolean ignoreInvalidMemoryAccess) {
+    private void setIgnoreInvalidMemoryAccess(boolean ignoreInvalidMemoryAccess) {
         this.ignoreInvalidMemoryAccess = ignoreInvalidMemoryAccess;
         Memory.log.info("Ignore invalid memory access: " + ignoreInvalidMemoryAccess);
     }

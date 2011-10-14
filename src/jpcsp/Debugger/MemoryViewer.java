@@ -29,7 +29,7 @@ import javax.swing.JOptionPane;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Resource;
-import jpcsp.Settings;
+import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
 /**

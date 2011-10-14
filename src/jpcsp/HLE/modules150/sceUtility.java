@@ -62,7 +62,6 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Resource;
-import jpcsp.Settings;
 import jpcsp.State;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.GUI.CancelButton;
@@ -83,17 +82,17 @@ import jpcsp.HLE.kernel.types.SceUtilityScreenshotParams;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.kernel.types.SceUtilityOskParams.SceUtilityOskData;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.sceCtrl;
 import jpcsp.HLE.modules.sceNetApctl;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.format.PSF;
 import jpcsp.hardware.MemoryStick;
+import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-public class sceUtility extends HLEModule implements HLEStartModule {
+public class sceUtility extends HLEModule {
 
     protected static Logger log = Modules.getLogger("sceUtility");
 
@@ -128,10 +127,8 @@ public class sceUtility extends HLEModule implements HLEStartModule {
         systemParam_daylightSavingTime = Settings.getInstance().readInt("emu.sysparam.daylightsavings", 0);
         systemParam_language = Settings.getInstance().readInt("emu.impose.language", PSP_SYSTEMPARAM_LANGUAGE_ENGLISH);
         systemParam_buttonPreference = Settings.getInstance().readInt("emu.impose.button", PSP_SYSTEMPARAM_BUTTON_CROSS);
-    }
 
-    @Override
-    public void stop() {
+        super.start();
     }
 
     public static final int PSP_SYSTEMPARAM_ID_STRING_NICKNAME = 1;

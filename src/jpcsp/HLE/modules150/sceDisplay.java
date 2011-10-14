@@ -47,7 +47,6 @@ import jpcsp.MainGUI;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
-import jpcsp.Settings;
 import jpcsp.State;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
@@ -58,7 +57,6 @@ import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
@@ -71,6 +69,9 @@ import jpcsp.graphics.textures.GETexture;
 import jpcsp.graphics.textures.GETextureManager;
 import jpcsp.hardware.Screen;
 import jpcsp.scheduler.UnblockThreadAction;
+import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.settings.AbstractStringSettingsListener;
+import jpcsp.settings.Settings;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
 
@@ -82,7 +83,7 @@ import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.PixelFormat;
 
-public class sceDisplay extends HLEModule implements HLEStartModule {
+public class sceDisplay extends HLEModule {
     protected static Logger log = Modules.getLogger("sceDisplay");
     
     @SuppressWarnings("serial")
@@ -270,7 +271,7 @@ public class sceDisplay extends HLEModule implements HLEStartModule {
 	        setViewportResizeScaleFactor(getWidth(), getHeight());
 	    }
     }
-    
+
     protected AWTGLCanvas_sceDisplay canvas;
     
     public AWTGLCanvas getCanvas() {
@@ -397,6 +398,13 @@ public class sceDisplay extends HLEModule implements HLEStartModule {
     // Anti-alias samples.
     private static int antiAliasSamplesNum;
 
+    private class OnlyGeSettingsListener extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setOnlyGEGraphics(value);
+		}
+    }
+
     private static class WaitVblankInfo {
     	public int threadId;
     	public int unblockVcount;
@@ -476,12 +484,31 @@ public class sceDisplay extends HLEModule implements HLEStartModule {
 		}
 	}
 
+	private class AntiAliasSettingsListerner extends AbstractStringSettingsListener {
+		@Override
+		protected void settingsValueChanged(String value) {
+	        int samples = 0;
+	        if (value != null) {
+	            if (value.equalsIgnoreCase("x4")) {
+	                samples = 4;
+	            } else if (value.equalsIgnoreCase("x8")) {
+	                samples = 8;
+	            } else if (value.equalsIgnoreCase("x16")) {
+	                samples = 16;
+	            }
+	        }
+	        setAntiAliasSamplesNum(samples);
+		}
+	}
+
     @Override
     public String getName() {
         return "sceDisplay";
     }
 
     public sceDisplay() throws LWJGLException {
+    	setSettingsListener("emu.graphics.antialias", new AntiAliasSettingsListerner());
+
     	canvas = new AWTGLCanvas_sceDisplay();
         setScreenResolution(Screen.width, Screen.height);
 
@@ -608,7 +635,7 @@ public class sceDisplay extends HLEModule implements HLEStartModule {
     	return heightPow2 * viewportResizeFilterScaleFactorInt;
     }
 
-    public static void setAntiAliasSamplesNum(int samples) {
+    private static void setAntiAliasSamplesNum(int samples) {
         antiAliasSamplesNum = samples;
     }
 
@@ -705,6 +732,10 @@ public class sceDisplay extends HLEModule implements HLEStartModule {
         } catch (Exception e) {
             // Ignore.
         }
+
+    	setSettingsListener("emu.onlyGEGraphics", new OnlyGeSettingsListener());
+
+    	super.start();
     }
 
     @Override
@@ -717,6 +748,8 @@ public class sceDisplay extends HLEModule implements HLEStartModule {
     	re = null;
     	startModules = false;
     	isStarted = false;
+
+    	super.stop();
     }
 
 	public void exit() {
@@ -951,7 +984,7 @@ public class sceDisplay extends HLEModule implements HLEStartModule {
         return onlyGEGraphics;
     }
 
-    public void setOnlyGEGraphics(boolean onlyGEGraphics) {
+    private void setOnlyGEGraphics(boolean onlyGEGraphics) {
         this.onlyGEGraphics = onlyGEGraphics;
         VideoEngine.log.info("Only GE Graphics: " + onlyGEGraphics);
     }

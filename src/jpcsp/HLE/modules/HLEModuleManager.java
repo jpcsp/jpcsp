@@ -404,10 +404,8 @@ public class HLEModuleManager {
 			return;
 		}
 
-		for(DefaultModule defaultModule : DefaultModule.values()) {
-			if(defaultModule.module instanceof HLEStartModule) {
-				((HLEStartModule)defaultModule.module).start();
-			}
+		for (DefaultModule defaultModule : DefaultModule.values()) {
+			defaultModule.module.start();
 		}
 
 		modulesStarted = true;
@@ -418,10 +416,8 @@ public class HLEModuleManager {
 			return;
 		}
 
-		for(DefaultModule defaultModule : DefaultModule.values()) {
-			if(defaultModule.module instanceof HLEStartModule) {
-				((HLEStartModule)defaultModule.module).stop();
-			}
+		for (DefaultModule defaultModule : DefaultModule.values()) {
+			defaultModule.module.stop();
 		}
 
 		modulesStarted = false;

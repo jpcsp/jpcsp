@@ -51,6 +51,7 @@ import jpcsp.format.PSP;
 import jpcsp.format.PSPModuleInfo;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
+import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
 /*

@@ -20,11 +20,17 @@ package jpcsp.crypto;
 import java.nio.ByteBuffer;
 import java.util.Random;
 
+import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.settings.Settings;
+
 public class CryptoEngine {
 
     // Internal vars.
     private boolean isCryptoEngineInit;
     private static boolean extractEboot;
+    private static ExtractEbootSettingsListerner extractEbootSettingsListerner;
+    private static CryptSavedataSettingsListerner cryptSavedataSettingsListerner;
+    private static final String name = "CryptEngine";
     private static boolean cryptoSavedata;
     private static BBCipherCtx pgdCipherContext;
     private static BBMacCtx pgdMacContext;
@@ -784,8 +790,31 @@ public class CryptoEngine {
         }
     }
 
+	private static class ExtractEbootSettingsListerner extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setExtractEbootStatus(value);
+		}
+	}
+
+	private static class CryptSavedataSettingsListerner extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setSavedataCryptoStatus(value);
+		}
+	}
+
     public CryptoEngine() {
-        isCryptoEngineInit = true;
+    	if (extractEbootSettingsListerner == null) {
+    		extractEbootSettingsListerner = new ExtractEbootSettingsListerner();
+    		Settings.getInstance().registerSettingsListener(name, "emu.extractEboot", extractEbootSettingsListerner);
+    	}
+    	if (cryptSavedataSettingsListerner == null) {
+    		cryptSavedataSettingsListerner = new CryptSavedataSettingsListerner();
+    		Settings.getInstance().registerSettingsListener(name, "emu.cryptoSavedata", cryptSavedataSettingsListerner);
+    	}
+
+    	isCryptoEngineInit = true;
     }
 
     /*
@@ -796,7 +825,7 @@ public class CryptoEngine {
         return extractEboot;
     }
 
-    public static void setExtractEbootStatus(boolean status) {
+    private static void setExtractEbootStatus(boolean status) {
         extractEboot = status;
     }
 
@@ -804,7 +833,7 @@ public class CryptoEngine {
         return cryptoSavedata;
     }
 
-    public static void setSavedataCryptoStatus(boolean status) {
+    private static void setSavedataCryptoStatus(boolean status) {
         cryptoSavedata = status;
     }
 

@@ -32,10 +32,10 @@ import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 
 import jpcsp.Emulator;
-import jpcsp.Settings;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.media.MediaEngine;
+import jpcsp.settings.Settings;
 
 import com.xuggle.xuggler.Global;
 import com.xuggle.xuggler.IAudioSamples;

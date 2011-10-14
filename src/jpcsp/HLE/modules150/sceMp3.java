@@ -28,17 +28,23 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
+import jpcsp.settings.AbstractBoolSettingsListener;
 
 import org.apache.log4j.Logger;
 
-public class sceMp3 extends HLEModule implements HLEStartModule {
-
+public class sceMp3 extends HLEModule {
     private static Logger log = Modules.getLogger("sceMp3");
 
-    @Override
+	private class EnableMediaEngineSettingsListerner extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setEnableMediaEngine(value);
+		}
+	}
+
+	@Override
     public String getName() {
         return "sceMp3";
     }
@@ -46,11 +52,12 @@ public class sceMp3 extends HLEModule implements HLEStartModule {
     @Override
     public void start() {
         mp3Map = new HashMap<Integer, Mp3Stream>();
+
+        setSettingsListener("emu.useMediaEngine", new EnableMediaEngineSettingsListerner());
+
+        super.start();
     }
 
-    @Override
-    public void stop() {
-    }
     protected int mp3HandleCount;
     protected HashMap<Integer, Mp3Stream> mp3Map;
     protected static final int compressionFactor = 10;
@@ -59,13 +66,13 @@ public class sceMp3 extends HLEModule implements HLEStartModule {
     protected static final int mp3DecodeDelay = 4000;           // Microseconds
 
     // Media Engine based playback.
-    protected static boolean useMediaEngine = false;
+    private boolean useMediaEngine = false;
     
-    public static boolean checkMediaEngineState() {
+    protected boolean checkMediaEngineState() {
         return useMediaEngine;
     }
 
-    public static void setEnableMediaEngine(boolean state) {
+    private void setEnableMediaEngine(boolean state) {
         useMediaEngine = state;
     }
 

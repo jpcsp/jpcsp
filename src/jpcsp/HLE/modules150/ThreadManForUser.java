@@ -108,12 +108,12 @@ import jpcsp.HLE.kernel.types.SceKernelVTimerInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.hardware.Interrupts;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.scheduler.Scheduler;
+import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
 
@@ -152,7 +152,7 @@ import jpcsp.HLE.CheckArgument;;
  *                      lower or the same priority.
  *                      The clock precision of 200us on the PSP can be observed here.
  */
-public class ThreadManForUser extends HLEModule implements HLEStartModule {
+public class ThreadManForUser extends HLEModule {
 
     protected static Logger log = Modules.getLogger("ThreadManForUser");
 
@@ -212,6 +212,13 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
     protected boolean needThreadReschedule;
     protected WaitThreadEndWaitStateChecker waitThreadEndWaitStateChecker;
 
+	private class EnableThreadBanningSettingsListerner extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setThreadBanningEnabled(value);
+		}
+	}
+
     public ThreadManForUser() {
     }
 
@@ -244,15 +251,21 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
 		}
 
 		waitThreadEndWaitStateChecker = new WaitThreadEndWaitStateChecker();
+
+		setSettingsListener("emu.ignoreaudiothreads", new EnableThreadBanningSettingsListerner());
+
+		super.start();
     }
 
     @Override
     public void stop() {
         alarms = null;
         vtimers = null;
-        for(SceKernelThreadInfo thread : threadMap.values()) {
+        for (SceKernelThreadInfo thread : threadMap.values()) {
             terminateThread(thread);
         }
+
+        super.stop();
     }
 
     public Iterator<SceKernelThreadInfo> iterator() {
@@ -1447,10 +1460,11 @@ public class ThreadManForUser extends HLEModule implements HLEStartModule {
         return thread;
     }
 
-    public void setThreadBanningEnabled(boolean enabled) {
+    private void setThreadBanningEnabled(boolean enabled) {
         USE_THREAD_BANLIST = enabled;
         log.info("Audio threads disabled: " + USE_THREAD_BANLIST);
     }
+
     /** use lower case in this list */
     private final String[] threadNameBanList = new String[]{
         "bgm thread", "sgx-psp-freq-thr", "sgx-psp-pcm-th", "ss playthread",

@@ -37,12 +37,11 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.pspUmdInfo;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 
 import org.apache.log4j.Logger;
 
-public class sceUmdUser extends HLEModule implements HLEStartModule {
+public class sceUmdUser extends HLEModule {
 
     protected static Logger log = Modules.getLogger("sceUmdUser");
 
@@ -59,10 +58,8 @@ public class sceUmdUser extends HLEModule implements HLEStartModule {
     	umdDeactivateCalled = false;
         waitingThreads = new LinkedList<SceKernelThreadInfo>();
         umdErrorStat = 0;
-    }
 
-    @Override
-    public void stop() {
+        super.start();
     }
 
     protected static final int PSP_UMD_INIT = 0x00;

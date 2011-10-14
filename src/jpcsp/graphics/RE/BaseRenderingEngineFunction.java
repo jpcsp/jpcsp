@@ -28,13 +28,13 @@ import java.nio.IntBuffer;
 
 import org.apache.log4j.Level;
 
-import jpcsp.Settings;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VertexInfo;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.GeContext.EnableDisableFlag;
 import jpcsp.graphics.RE.buffer.BufferManagerFactory;
 import jpcsp.graphics.RE.buffer.IREBufferManager;
+import jpcsp.settings.Settings;
 
 /**
  * @author gid15

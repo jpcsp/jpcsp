@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.connector;
 
-import jpcsp.Settings;
+import jpcsp.settings.Settings;
 
 /**
  * @author gid15

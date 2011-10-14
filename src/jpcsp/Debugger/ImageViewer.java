@@ -42,13 +42,13 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Resource;
-import jpcsp.Settings;
 import jpcsp.GUI.CancelButton;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules150.sceDisplay.BufferInfo;
 import jpcsp.graphics.GeCommands;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.ImageReader;
+import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
 public class ImageViewer extends JFrame {

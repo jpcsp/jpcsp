@@ -17,10 +17,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.GUI;
 
 import jpcsp.log.LogWindow;
+import jpcsp.settings.Settings;
 import jpcsp.Emulator;
 import jpcsp.MainGUI;
 import jpcsp.Resource;
-import jpcsp.Settings;
 
 import java.io.File;
 import java.io.RandomAccessFile;
