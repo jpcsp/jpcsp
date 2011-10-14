@@ -488,7 +488,80 @@ public class CodeInstruction {
         return getInsn().hasFlags(flags);
     }
 
-    @Override
+	public int getSaValue() {
+        return (opcode >> 6) & 0x1F;
+    }
+
+	public int getRsRegisterIndex() {
+        return (opcode >> 21) & 0x1F;
+    }
+
+    public int getRtRegisterIndex() {
+        return (opcode >> 16) & 0x1F;
+    }
+
+    public int getRdRegisterIndex() {
+        return (opcode >> 11) & 0x1F;
+    }
+
+	public int getFdRegisterIndex() {
+        return (opcode >> 6) & 0x1F;
+	}
+
+	public int getFsRegisterIndex() {
+        return (opcode >> 11) & 0x1F;
+	}
+
+	public int getFtRegisterIndex() {
+        return (opcode >> 16) & 0x1F;
+	}
+
+	public int getCrValue() {
+        return (opcode >> 11) & 0x1F;
+	}
+
+	public int getVdRegisterIndex() {
+        return (opcode >> 0) & 0x7F;
+	}
+
+	public int getVsRegisterIndex() {
+        return (opcode >> 8) & 0x7F;
+	}
+
+	public int getVtRegisterIndex() {
+        return (opcode >> 16) & 0x7F;
+	}
+
+	public int getVsize() {
+		int one = (opcode >>  7) & 1;
+		int two = (opcode >> 15) & 1;
+
+		return 1 + one + (two << 1);
+	}
+
+	public int getImm14(boolean signedImm) {
+    	int imm14 = opcode & 0xFFFC;
+    	if (signedImm) {
+    		imm14 = (int)(short) imm14;
+    	}
+
+    	return imm14;
+	}
+
+    public int getImm16(boolean signedImm) {
+    	int imm16 = opcode & 0xFFFF;
+    	if (signedImm) {
+    		imm16 = (int)(short) imm16;
+    	}
+
+    	return imm16;
+    }
+
+	public int getImm5() {
+        return (opcode >> 16) & 0x1F;
+	}
+
+	@Override
 	public String toString() {
     	StringBuilder result = new StringBuilder();
 

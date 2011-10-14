@@ -45,6 +45,8 @@ import jpcsp.HLE.kernel.types.SceModule;
 public class HLEModuleManager {
     private static HLEModuleManager instance;
 
+    public static final int HLESyscallNid = -1;
+
     // Store the syscallCodeToFunction map into an array to improve the performance
     // of handleSyscall().
     private HLEModuleFunction[] syscallCodeToFunction;
@@ -109,9 +111,9 @@ public class HLEModuleManager {
         sceNetAdhocDiscover(Modules.sceNetAdhocDiscoverModule),
         sceNetAdhocMatching(Modules.sceNetAdhocMatchingModule, new String[] { "pspnet_adhoc_matching" }),
         sceNetIfhandle(Modules.sceNetIfhandleModule, new String[] { "ifhandle" }),
-        sceNetApctl(Modules.sceNetApctl, new String[] { "pspnet_apctl", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON" }),
-        sceNetInet(Modules.sceNetInet, new String[] { "pspnet_inet", "PSP_NET_MODULE_INET", "PSP_MODULE_NET_INET" }),
-        sceNetResolver(Modules.sceNetResolver, new String[] { "pspnet_resolver", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON" }),
+        sceNetApctl(Modules.sceNetApctlModule, new String[] { "pspnet_apctl", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON" }),
+        sceNetInet(Modules.sceNetInetModule, new String[] { "pspnet_inet", "PSP_NET_MODULE_INET", "PSP_MODULE_NET_INET" }),
+        sceNetResolver(Modules.sceNetResolverModule, new String[] { "pspnet_resolver", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON" }),
         sceOpenPSID(Modules.sceOpenPSIDModule),
         sceNp(Modules.sceNpModule, new String[] { "PSP_MODULE_NP_COMMON" }),
         sceNpAuth(Modules.sceNpAuthModule, new String[] { "PSP_MODULE_NP_COMMON" }),
@@ -306,7 +308,12 @@ public class HLEModuleManager {
     }
 
     public int getSyscallFromNid(int nid) {
-        int code = NIDMapper.getInstance().nidToSyscall(nid);
+    	// Is this an HLE syscall?
+    	if (nid == HLESyscallNid) {
+    		return syscallCodeAllocator++;
+    	}
+
+    	int code = NIDMapper.getInstance().nidToSyscall(nid);
         if (code == -1) {
             // Allocate an arbitrary syscall code to the function
             code = syscallCodeAllocator;
@@ -330,10 +337,6 @@ public class HLEModuleManager {
     	allSyscallCodes.put(code, func);
     }
 
-    public void addFunction(HLEModuleFunction func, int nid) {
-    	addFunction(nid, func);
-    }
-    
     public void addFunction(int nid, HLEModuleFunction func) {
         int code = getSyscallFromNid(nid);
     	if (code < syscallCodeToFunction.length && syscallCodeToFunction[code] != null) {
@@ -350,16 +353,6 @@ public class HLEModuleManager {
     	}
     }
 
-    public void addHLEFunction(HLEModuleFunction func) {
-        func.setNid(-1);
-
-        // Allocate an arbitrary syscall code to the function
-        int code = syscallCodeAllocator++;
-
-        func.setSyscallCode(code);
-		addSyscallCodeToFunction(code, func);
-    }
-
     public void removeFunction(HLEModuleFunction func) {
         int syscallCode = func.getSyscallCode();
         if (syscallCode >= 0 && syscallCode < syscallCodeToFunction.length) {
@@ -367,7 +360,7 @@ public class HLEModuleManager {
         }
     }
 
-    private HLEModuleFunction getFunctionFromSyscallCode(int code) {
+    public HLEModuleFunction getFunctionFromSyscallCode(int code) {
     	if (code < 0 || code >= syscallCodeToFunction.length) {
     		return null;
     	}
@@ -466,15 +459,10 @@ public class HLEModuleManager {
 						if (hleUnimplemented != null) {
 							hleModuleFunction.setUnimplemented(true);
 						}
-						
-						
+
 						hleModule.installedHLEModuleFunctions.put(functionName, hleModuleFunction);
-						
-						if (hleFunction.syscall() != false) {
-							this.addHLEFunction(hleModuleFunction);
-						} else {
-							this.addFunction(hleFunction.nid(), hleModuleFunction);
-						}
+
+						addFunction(hleFunction.nid(), hleModuleFunction);
 					}
 				}
 			}

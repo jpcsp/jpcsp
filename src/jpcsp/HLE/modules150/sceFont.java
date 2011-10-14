@@ -579,9 +579,7 @@ public class sceFont extends HLEModule {
     @HLEFunction(nid = 0x67F17ED7, version = 150, checkInsideInterrupt = true)
     public int sceFontNewLib(TPointer paramsPtr, TErrorPointer32 errorCodePtr) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format(
-                    "sceFontNewLib paramsAddr=0x%08X, errorCodeAddr=0x%08X",
-                    paramsPtr.getAddress(), errorCodePtr.getAddress()));
+            log.debug(String.format("sceFontNewLib paramsAddr=%s, errorCodeAddr=%s", paramsPtr, errorCodePtr));
         }
         if (errorCodePtr.isAddressGood()) {
             errorCodePtr.setValue(0);

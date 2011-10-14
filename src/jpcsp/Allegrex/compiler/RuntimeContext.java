@@ -100,6 +100,7 @@ public class RuntimeContext {
 	public  static final String syncName = "sync";
 	public  static volatile boolean wantSync = false;
 	private static RuntimeSyncThread runtimeSyncThread = null;
+	private static RuntimeThread syscallRuntimeThread;
 	private static sceDisplay sceDisplayModule;
 
 	public static void execute(Instruction insn, int opcode) {
@@ -600,31 +601,43 @@ public class RuntimeContext {
     	} while (wantSync);
     }
 
-    public static void syscallFast(int code) {
-		// Fast syscall: no context switching
-    	SyscallHandler.syscall(code);
-    	syncFast();
-    }
-
-    public static void syscall(int code) throws StopThreadException {
-    	if (IntrManager.getInstance().isInsideInterrupt()) {
-    		syscallFast(code);
-    	} else {
-	    	RuntimeThread runtimeThread = getRuntimeThread();
-	    	if (runtimeThread != null) {
-	    		runtimeThread.setInSyscall(true);
+    public static void preSyscall() throws StopThreadException {
+    	if (!IntrManager.getInstance().isInsideInterrupt()) {
+	    	syscallRuntimeThread = getRuntimeThread();
+	    	if (syscallRuntimeThread != null) {
+	    		syscallRuntimeThread.setInSyscall(true);
 	    	}
 	    	checkStoppedThread();
 	    	syncPause();
+    	}
+    }
 
-	    	SyscallHandler.syscall(code);
-
+    public static void postSyscall() throws StopThreadException {
+    	if (IntrManager.getInstance().isInsideInterrupt()) {
+    		postSyscallFast();
+    	} else {
 	    	checkStoppedThread();
 	    	sync();
-	    	if (runtimeThread != null) {
-	    		runtimeThread.setInSyscall(false);
+	    	if (syscallRuntimeThread != null) {
+	    		syscallRuntimeThread.setInSyscall(false);
 	    	}
     	}
+    }
+
+    public static void postSyscallFast() {
+    	syncFast();
+    }
+
+    public static void syscallFast(int code) {
+		// Fast syscall: no context switching
+    	SyscallHandler.syscall(code);
+    	postSyscallFast();
+    }
+
+    public static void syscall(int code) throws StopThreadException {
+    	preSyscall();
+    	SyscallHandler.syscall(code);
+    	postSyscall();
     }
 
     public static void runThread(RuntimeThread thread) {
@@ -948,6 +961,16 @@ public class RuntimeContext {
 
     public static void logInfo(String message) {
     	log.info(message);
+    }
+
+    public static boolean checkMemoryPointer(int address) {
+        if (!Memory.isAddressGood(address)) {
+            if (!Memory.isRawAddressGood(memory.normalizeAddress(address))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public static int checkMemoryRead32(int address, int pc) throws StopThreadException {

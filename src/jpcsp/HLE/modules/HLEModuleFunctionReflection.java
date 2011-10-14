@@ -37,7 +37,6 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 	int        parameterCount;
 	RunListParams runListParams = new RunListParams();
 
-	
 	static HashMap<String, Method> methodsByName;
 	static HashMap<String, HashMap<String, Method>> hleModuleModuleMethodsByName = new HashMap<String, HashMap<String, Method>>();
 	static HashMap<String, Method> hleModuleMethodsByName;
@@ -46,13 +45,12 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 		methodsByName = new HashMap<String, Method>();
 		for (Method method : HLEModuleFunctionReflection.class.getMethods()) {
 			methodsByName.put(method.getName(), method);
-			//System.err.println(method.getName());
 		}
 	}
-	
+
 	public HLEModuleFunctionReflection(String moduleName, String functionName, HLEModule hleModule, String hleModuleMethodName, Method hleModuleMethod, boolean checkInsideInterrupt, boolean checkDispatchThreadEnabled) {
 		super(moduleName, functionName);
-		
+
 		this.hleModule = hleModule;
 		this.hleModuleClass = hleModule.getClass();
 		this.hleModuleMethodName = hleModuleMethodName;
@@ -73,7 +71,7 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 		} else {
 			hleModuleMethodsByName = hleModuleModuleMethodsByName.get(moduleName);
 		}
-		
+
 		try {
 			if (
 				this.hleModuleMethodReturnType == void.class &&
@@ -91,24 +89,24 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 			o.printStackTrace();
 		}
 	}
-	
+
 	class RunListParams {
 		int paramIndex;
 		Object[] params;
 		Processor processor;
 		Object returnObject;
-		
+
 		void setParamNext(Object value) {
 			params[paramIndex++] = value;
 		}
 	}
-	
+
 	protected Method getRunListMethod(String name) throws Throwable {
 		Method method = methodsByName.get(name);
 		if (method == null) throw(new Exception(String.format("Can't find method '%s'", name)));
 		return method;
 	}
-	
+
 	protected void prepareParameterDecodingRunList() throws Throwable {
 		Annotation[][] paramsAnotations = this.hleModuleMethod.getParameterAnnotations();
 		
@@ -141,9 +139,7 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 				decodingRunListList.add(getRunListMethod("parameterAddLong"));
 			} else if (paramClass == boolean.class) {
 				decodingRunListList.add(getRunListMethod("parameterAddBoolean"));
-			} /*else if (paramClass.isEnum()) {
-				params.add(paramClass.cast(processor.parameterReader.getNextInt()));
-			}*/ else if (TPointer.class.isAssignableFrom(paramClass)) {
+			} else if (TPointer.class.isAssignableFrom(paramClass)) {
 				decodingRunListList.add(getRunListMethod("parameterAddTPointer"));
 			} else if (TPointerBase.class.isAssignableFrom(paramClass)) {
 				if (TPointer64.class.isAssignableFrom(paramClass)) {
@@ -165,7 +161,7 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 					throw(new RuntimeException("Unknown parameter class '" + paramClass + "'"));
 				}
 			}
-			
+
 			if (methodToCheckName != null) {
 				methodsToCheck[paramIndex] = hleModuleMethodsByName.get(methodToCheckName);
 				
@@ -173,15 +169,11 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 					decodingRunListList.add(getRunListMethod("parameterCheck"));
 				}
 			}
-			
+
 			paramIndex++;
 		}
-		
-		//decodingRunList = new Method[decodingRunListList.size()];
-
-		//decodingRunListList.toArray(decodingRunList);
 	}
-	
+
 	private void prepareReturnValueRunList() {
 		try {
 			setReturnValueMethod = getRunListMethod("setReturnValueVoid");
@@ -197,9 +189,9 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 			} else if (hleModuleMethodReturnType == float.class) {
 				setReturnValueMethod = getRunListMethod("setReturnValueFloat");
 			} else {
-				
+
 				HLEUidClass hleUidClass = hleModuleMethodReturnType.getAnnotation(HLEUidClass.class);
-				
+
 				if (hleUidClass != null) {
 					if (hleUidClass.moduleMethodUidGenerator().length() == 0) {
 						setReturnValueMethod = getRunListMethod("setReturnValueUid");
@@ -212,36 +204,34 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 				}
 			}
 		} catch (Throwable o) {
-			Modules.log.error("prepareReturnValueRunList: " + o);
-			o.printStackTrace();
-			//throw(new RuntimeException(o.getCause()));
+			Modules.log.error("prepareReturnValueRunList: ", o);
 		}
 	}
-	
+
 	protected void executeParameterDecodingRunList(RunListParams runListParams) throws Throwable {
 		for (Method decodingRunListMethod : decodingRunListList) {
-			//System.err.println(runListParams.paramIndex);
 			decodingRunListMethod.invoke(this, runListParams);
 		}
 	}
-	
+
 	protected boolean[] canBeNullParams;
 	protected Integer[] errorValuesOnNotFound;
 	protected Method[] methodsToCheck;
-	
+
 	protected void checkAddressIsGood(RunListParams runListParams) {
-		if (!canBeNullParams[runListParams.paramIndex - 1]) {
-			ITPointerBase pointer = (ITPointerBase)runListParams.params[runListParams.paramIndex - 1];
-			if (!pointer.isAddressGood()) {
+		ITPointerBase pointer = (ITPointerBase)runListParams.params[runListParams.paramIndex - 1];
+		if (!pointer.isAddressGood()) {
+			// Accept NULL pointer if CanBeNull annotation was set
+			if (pointer.getAddress() != 0 || !canBeNullParams[runListParams.paramIndex - 1]) {
 				throw(new SceKernelErrorException(SceKernelErrors.ERROR_INVALID_POINTER));
 			}
 		}
 	}
-	
+
 	public void parameterAddProcessor(RunListParams runListParams) {
 		runListParams.setParamNext(runListParams.processor);
 	}
-	
+
 	public void parameterAddInteger(RunListParams runListParams) {
 		runListParams.setParamNext(runListParams.processor.parameterReader.getNextInt());
 	}
@@ -260,14 +250,14 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 			Modules.log.warn(String.format("Parameter exepcted to be bool but had value 0x%08X", value));
 		}
 
-		runListParams.setParamNext((value != 0));
+		runListParams.setParamNext(value != 0);
 	}
 
 	public void parameterAddTPointer(RunListParams runListParams) {
 		runListParams.setParamNext(new TPointer(Processor.memory, runListParams.processor.parameterReader.getNextInt()));
 		checkAddressIsGood(runListParams);
 	}
-	
+
 	public void parameterAddTPointer64(RunListParams runListParams) {
 		runListParams.setParamNext(new TPointer64(Processor.memory, runListParams.processor.parameterReader.getNextInt()));
 		checkAddressIsGood(runListParams);
@@ -277,16 +267,16 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 		runListParams.setParamNext(new TPointer32(Processor.memory, runListParams.processor.parameterReader.getNextInt()));
 		checkAddressIsGood(runListParams);
 	}
-	
+
 	public void parameterAddTErrorPointer32(RunListParams runListParams) {
 		runListParams.setParamNext(this.errorHolder = new TErrorPointer32(Processor.memory, runListParams.processor.parameterReader.getNextInt()));
 		checkAddressIsGood(runListParams);
 	}
-	
+
 	public void parameterAddUidObject(RunListParams runListParams) {
 		int uid = runListParams.processor.parameterReader.getNextInt();
-		
-		Object object = HLEUidObjectMapping.getObject(hleModuleMethodParametersTypes[runListParams.paramIndex], uid);
+
+		Object object = HLEUidObjectMapping.getObject(hleModuleMethodParametersTypes[runListParams.paramIndex].getName(), uid);
 		if (object == null) {
 			throw(new SceKernelErrorException(errorValuesOnNotFound[runListParams.paramIndex]));
 		}
@@ -302,18 +292,18 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 			throw e.getCause();
 		}
 	}
-	
+
 	Method setReturnValueMethod;
 	Method setReturnValueModuleMethodUidGenerator;
-	
+
 	public void setReturnValueVoid(RunListParams runListParams) {
-		
+		// Nothing to do
 	}
 
 	public void setReturnValueInt(RunListParams runListParams) {
 		runListParams.processor.parameterReader.setReturnValueInt((Integer)runListParams.returnObject);
 	}
-	
+
 	public void setReturnValueBoolean(RunListParams runListParams) {
 		runListParams.processor.parameterReader.setReturnValueInt((Boolean)runListParams.returnObject ? 1 : 0);
 	}
@@ -325,27 +315,26 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 	public void setReturnValueFloat(RunListParams runListParams) {
 		runListParams.processor.parameterReader.setReturnValueFloat((Float)runListParams.returnObject);
 	}
-	
+
 	public void setReturnValueUid(RunListParams runListParams) {
 		runListParams.processor.parameterReader.setReturnValueInt(
-			HLEUidObjectMapping.createUidForObject(hleModuleMethodReturnType, runListParams.returnObject)
+			HLEUidObjectMapping.createUidForObject(hleModuleMethodReturnType.getName(), runListParams.returnObject)
 		);
 	}
-	
+
 	public void setReturnValueUidWithGenerator(RunListParams runListParams) throws Throwable {
 		int uid = (Integer)setReturnValueModuleMethodUidGenerator.invoke(hleModule);
 		runListParams.processor.parameterReader.setReturnValueInt(
-			HLEUidObjectMapping.addObjectMap(hleModuleMethodReturnType, uid, runListParams.returnObject)
+			HLEUidObjectMapping.addObjectMap(hleModuleMethodReturnType.getName(), uid, runListParams.returnObject)
 		);
 	}
-	
+
 	@Override
 	public void execute(Processor processor) {
 		try {
 			executeInner(processor);
 		} catch (Throwable o) {
-			Modules.log.error("OnMethod: " + hleModuleMethod);
-			o.printStackTrace();
+			Modules.log.error(String.format("OnMethod: %s", hleModuleMethod), o);
 		}
 	}
 
@@ -366,7 +355,7 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 				}
 			}
 
-			if (getUnimplemented()) {
+			if (isUnimplemented()) {
 				Modules.getLogger(this.getModuleName()).warn(
 					String.format(
 						"Unimplemented NID function %s.%s [0x%08X]",
@@ -389,9 +378,9 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 					this.hleModuleMethod.invoke(hleModule, processor);
 				} else {
 					processor.parameterReader.resetReading();
-					
+
 					executeParameterDecodingRunList(runListParams);
-					
+
 					runListParams.returnObject = this.hleModuleMethod.invoke(
 						hleModule,
 						runListParams.params
@@ -433,9 +422,37 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 		}
 	}
 
+	public Method getHLEModuleMethod() {
+		return hleModuleMethod;
+	}
+
+	public boolean checkInsideInterrupt() {
+		return checkInsideInterrupt;
+	}
+
+	public boolean checkDispatchThreadEnabled() {
+		return checkDispatchThreadEnabled;
+	}
+
+	public int getErrorValueOnNotFound(int paramIndex) {
+		return errorValuesOnNotFound[paramIndex];
+	}
+
+	public boolean canBeNullParam(int paramIndex) {
+		return canBeNullParams[paramIndex];
+	}
+
+	public Method getMethodToCheck(int paramIndex) {
+		if (methodsToCheck == null) {
+			// No method to check for fastOldInvoke
+			return null;
+		}
+
+		return methodsToCheck[paramIndex];
+	}
+
 	@Override
 	public String compiledString() {
-		//return "processor.parameterReader.resetReading(); " + this.hleModuleClass.getName() + "." + this.hleModuleMethodName + "(processor);";
-		return "";
+		return null;
 	}
 }

@@ -1141,7 +1141,7 @@ public class sceUtility extends HLEModule {
 
 			if (netconfParams.netAction == SceUtilityNetconfParams.PSP_UTILITY_NETCONF_CONNECT_APNET ||
 			    netconfParams.netAction == SceUtilityNetconfParams.PSP_UTILITY_NETCONF_CONNECT_APNET_LASTUSED) {
-				int state = Modules.sceNetApctl.hleNetApctlGetState();
+				int state = Modules.sceNetApctlModule.hleNetApctlGetState();
 
 				// The Netconf dialog stays visible until the network reaches
 				// the state PSP_NET_APCTL_STATE_GOT_IP.
@@ -1152,7 +1152,7 @@ public class sceUtility extends HLEModule {
 					if (state == sceNetApctl.PSP_NET_APCTL_STATE_DISCONNECTED) {
 						// When connecting with infrastructure, simulate a connection
 						// using the first network configuration entry.
-						Modules.sceNetApctl.hleNetApctlConnect(1);
+						Modules.sceNetApctlModule.hleNetApctlConnect(1);
 					}
 				}
 			}

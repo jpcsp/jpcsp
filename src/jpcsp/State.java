@@ -16,8 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
-import java.nio.ByteBuffer;
-
 import jpcsp.Debugger.MemoryViewer;
 import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
 import jpcsp.Debugger.FileLogger.FileLoggerFrame;
@@ -52,22 +50,5 @@ public class State extends jpcsp.HLE.Modules {
         discId = DISCID_UNKNOWN_NOTHING_LOADED;
         captureGeNextFrame = false;
         replayGeNextFrame = false;
-    }
-
-    @Override
-    public void step() {
-        super.step();
-    }
-
-    @Override
-    public void load(ByteBuffer buffer) {
-        memory.load(buffer);
-        super.load(buffer);
-    }
-
-    @Override
-    public void save(ByteBuffer buffer) {
-        memory.save(buffer);
-        super.save(buffer);
     }
 }

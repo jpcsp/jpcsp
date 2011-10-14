@@ -34,11 +34,6 @@ public @interface HLEFunction {
 	public int nid();
 
 	/**
-	 * Specify if this is a special HLE function without NID. 
-	 */
-	public boolean syscall() default false;
-
-	/**
 	 * Checks if the cpu is inside an interrupt and if so, 
 	 * raises SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT. 
 	 */

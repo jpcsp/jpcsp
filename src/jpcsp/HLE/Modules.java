@@ -17,8 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE;
 
-import java.nio.ByteBuffer;
-
 import jpcsp.HLE.modules.InterruptManager;
 import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.HLE.modules.KDebugForKernel;
@@ -83,7 +81,9 @@ import org.apache.log4j.Logger;
 import org.lwjgl.LWJGLException;
 
 public class Modules {
-
+	// The modules must be named using the following convention:
+	//    <module class name>Module
+	// This is required by the compiler (see CompilerContext.loadModule()).
     public static IoFileMgrForUser IoFileMgrForUserModule = new IoFileMgrForUser();
     public static ThreadManForUser ThreadManForUserModule = new ThreadManForUser();
     public static SysMemUserForUser SysMemUserForUserModule = new SysMemUserForUser();
@@ -122,9 +122,9 @@ public class Modules {
     public static sceNetAdhocDiscover sceNetAdhocDiscoverModule = new sceNetAdhocDiscover();
     public static sceNetAdhocMatching sceNetAdhocMatchingModule = new sceNetAdhocMatching();
     public static sceNetIfhandle sceNetIfhandleModule = new sceNetIfhandle();
-    public static sceNetInet sceNetInet = new sceNetInet();
-    public static sceNetApctl sceNetApctl = new sceNetApctl();
-    public static sceNetResolver sceNetResolver = new sceNetResolver();
+    public static sceNetInet sceNetInetModule = new sceNetInet();
+    public static sceNetApctl sceNetApctlModule = new sceNetApctl();
+    public static sceNetResolver sceNetResolverModule = new sceNetResolver();
     public static sceOpenPSID sceOpenPSIDModule = new sceOpenPSID();
     public static sceNp sceNpModule = new sceNp();
     public static sceNpAuth sceNpAuthModule = new sceNpAuth();
@@ -150,20 +150,11 @@ public class Modules {
         return Logger.getLogger("hle." + module);
     }
 
-    public void step() {
-    }
-
-    public void load(ByteBuffer buffer) {
-    }
-
-    public void save(ByteBuffer buffer) {
-    }
-
     static {
     	try {
 			sceDisplayModule = new sceDisplay();
 		} catch (LWJGLException e) {
-			log.error(e);
+			log.error("Error while creating sceDisplay", e);
 		}
     }
 }

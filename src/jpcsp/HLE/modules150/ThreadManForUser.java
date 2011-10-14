@@ -63,6 +63,7 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_LWMUTEX;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_MBX;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_SEMA;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_VPL;
+import static jpcsp.HLE.modules.HLEModuleManager.HLESyscallNid;
 import static jpcsp.util.Utilities.readStringNZ;
 import static jpcsp.util.Utilities.writeStringZ;
 
@@ -1177,7 +1178,7 @@ public class ThreadManForUser extends HLEModule {
         hleKernelExitCallback(Emulator.getProcessor());
     }
 
-    @HLEFunction(nid = 0, version = 150, syscall = true)
+    @HLEFunction(nid = HLESyscallNid, version = 150)
     public void hleKernelExitCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1388,7 +1389,7 @@ public class ThreadManForUser extends HLEModule {
         callAddress(thread, address, afterAction, returnVoid, new int[]{registerA0, registerA1, registerA2, registerA3, registerT0});
     }
 
-    @HLEFunction(nid = 0, version = 150, syscall = true)
+    @HLEFunction(nid = HLESyscallNid, version = 150)
     public void hleKernelExitThread(Processor processor) {
         if (log.isDebugEnabled()) {
             log.debug(String.format("Thread exit detected SceUID=%x name='%s' return:0x%08X", currentThread.uid, currentThread.name, processor.cpu.gpr[2]));
@@ -1409,14 +1410,14 @@ public class ThreadManForUser extends HLEModule {
         sceKernelExitDeleteThread(processor, processor.cpu.gpr[_v0]);
     }
 
-    @HLEFunction(nid = 0, version = 150, syscall = true)
+    @HLEFunction(nid = HLESyscallNid, version = 150)
     public void hleKernelAsyncLoop(Processor processor) {
         Modules.IoFileMgrForUserModule.hleAsyncThread(processor);
     }
 
-    @HLEFunction(nid = 0, version = 150, syscall = true)
+    @HLEFunction(nid = HLESyscallNid, version = 150)
     public void hleKernelNetApctlLoop(Processor processor) {
-    	Modules.sceNetApctl.hleNetApctlThread(processor);
+    	Modules.sceNetApctlModule.hleNetApctlThread(processor);
     }
 
     /** Note: Some functions allow uid = 0 = current thread, others don't.

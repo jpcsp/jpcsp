@@ -220,7 +220,7 @@ public class sceNetInet extends HLEModule {
 
 		@Override
 		protected void executeBlockingState() {
-			Modules.sceNetInet.blockedPoll(this);
+			Modules.sceNetInetModule.blockedPoll(this);
 		}
 	}
 
@@ -246,7 +246,7 @@ public class sceNetInet extends HLEModule {
 
 		@Override
 		protected void executeBlockingState() {
-			Modules.sceNetInet.blockedSelect(this);
+			Modules.sceNetInetModule.blockedSelect(this);
 		}
 	}
 

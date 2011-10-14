@@ -14,13 +14,17 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import jpcsp.Allegrex.CpuState;
 
-final public class ParameterReader {
+public class ParameterReader {
 	private CpuState cpu;
 	private Memory memory;
 	private int parameterIndex = 0;
 	private int parameterIndexFloat = 0;
 	Charset utf8;
-	
+	protected static final int maxParameterInGprRegisters = 8;
+	protected static final int maxParameterInFprRegisters = 8;
+	protected static final int firstParameterInGpr = _a0;
+	protected static final int firstParameterInFpr = _f12;
+
 	public ParameterReader(CpuState cpu, Memory memory) {
 		this.cpu = cpu;
 		this.memory = memory;
@@ -35,39 +39,39 @@ final public class ParameterReader {
 		parameterIndex = 0;
 		parameterIndexFloat = 0;
 	}
-	
+
 	private int getParameterIntAt(int index) {
-		if (index >= 8) {
-			return memory.read32(cpu.gpr[_sp] + (index - 8) * 4);
+		if (index >= maxParameterInGprRegisters) {
+			return memory.read32(cpu.gpr[_sp] + (index - maxParameterInGprRegisters) * 4);
 		}
 		//System.err.println("getParameterIntAt(" + index + ") :: " + cpu.gpr[4 + index]);
-		return cpu.gpr[_a0 + index];
+		return cpu.gpr[firstParameterInGpr + index];
 	}
 	
 	private float getParameterFloatAt(int index) {
-		if (index >= 8) {
+		if (index >= maxParameterInFprRegisters) {
 			throw(new NotImplementedException());
 		}
-		return cpu.fpr[_f12 + index];
+		return cpu.fpr[firstParameterInFpr + index];
 	}
 
 	private long getParameterLongAt(int index) {
 		if ((index % 2) != 0) throw(new RuntimeException("Parameter misalignment"));
-		return (long)getParameterIntAt(index) + (long)getParameterIntAt(index + 0) << 32;
+		return (long)getParameterIntAt(index) + (long)getParameterIntAt(index + 1) << 32;
 	}
 	
 	private String getParameterStringAt(int index, Charset charset) {
 		return new String(getBytez(getParameterIntAt(index)), charset);
 	}
 
-	private int moveParameterIndex(int size) {
+	protected int moveParameterIndex(int size) {
 		while ((parameterIndex % size) != 0) parameterIndex++;
 		int retParameterIndex = parameterIndex;
 		parameterIndex += size;
 		return retParameterIndex;
 	}
 	
-	private int moveParameterIndexFloat(int size) {
+	protected int moveParameterIndexFloat(int size) {
 		while ((parameterIndexFloat % size) != 0) parameterIndexFloat++;
 		int retParameterIndexFloat = parameterIndexFloat;
 		parameterIndexFloat += size;
@@ -113,10 +117,4 @@ final public class ParameterReader {
 		cpu.gpr[_v0] = (int)((value >>  0) & 0xFFFFFFFF);
 		cpu.gpr[_v1] = (int)((value >> 32) & 0xFFFFFFFF);
 	}
-
-	/*
-	protected <T> T getNextObject() {
-		return null;
-	}
-	*/
 }

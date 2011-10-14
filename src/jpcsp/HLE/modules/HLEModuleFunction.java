@@ -63,7 +63,7 @@ public abstract class HLEModuleFunction {
         this.unimplemented = unimplemented;
     }
 
-    public final boolean getUnimplemented() {
+    public final boolean isUnimplemented() {
         return unimplemented;
     }
 
