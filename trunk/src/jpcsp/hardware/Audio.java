@@ -16,12 +16,23 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.hardware;
 
+import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.settings.Settings;
+
 public class Audio {
 	public static final int PSP_AUDIO_VOLUME_MIN = 0;
 	public static final int PSP_AUDIO_VOLUME_MAX = 0x8000;
 	public static final int PSP_AUDIO_VOLUME_STEP = 0x100;
 	private static int volume = PSP_AUDIO_VOLUME_MAX;
 	private static boolean muted;
+	private static AudioMutedSettingsListerner audioMutedSettingsListerner;
+
+	private static class AudioMutedSettingsListerner extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setMuted(value);
+		}
+	}
 
 	public static int getVolume() {
 		return volume;
@@ -38,6 +49,11 @@ public class Audio {
 	}
 
 	public static boolean isMuted() {
+		if (audioMutedSettingsListerner == null) {
+			audioMutedSettingsListerner = new AudioMutedSettingsListerner();
+			Settings.getInstance().registerSettingsListener("HardwareAudio", "emu.mutesound", audioMutedSettingsListerner);
+		}
+
 		return muted;
 	}
 

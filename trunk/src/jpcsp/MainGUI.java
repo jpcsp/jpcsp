@@ -40,14 +40,12 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Properties;
 
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
@@ -58,11 +56,9 @@ import javax.swing.JPopupMenu;
 import javax.swing.ToolTipManager;
 import javax.swing.UIManager;
 
-import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.Profiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.autotests.AutoTestsRunner;
-import jpcsp.connector.AtracCodec;
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.Debugger.ImageViewer;
 import jpcsp.Debugger.InstructionCounter;
@@ -80,16 +76,9 @@ import jpcsp.GUI.LogGUI;
 import jpcsp.GUI.UmdBrowser;
 import jpcsp.GUI.UmdVideoPlayer;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.HLE.modules.sceDisplay;
-import jpcsp.HLE.modules.sceFont;
-import jpcsp.HLE.modules.sceMp3;
-import jpcsp.HLE.modules.sceMpeg;
-import jpcsp.HLE.modules.scePsmfPlayer;
-import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
@@ -98,7 +87,7 @@ import jpcsp.hardware.Audio;
 import jpcsp.hardware.Screen;
 import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
-import jpcsp.media.ExternalDecoder;
+import jpcsp.settings.Settings;
 import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.MetaInformation;
 import jpcsp.util.Utilities;
@@ -141,6 +130,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     };
     private static final String logConfigurationSettingLeft = "    %1$-40s [%2$s]";
     private static final String logConfigurationSettingRight = "    [%2$s] %1$s";
+    private static final String logConfigurationSettingLeftPatch = "    %1$-40s [%2$s] (%3$s)";
+    private static final String logConfigurationSettingRightPatch = "    [%2$s] %1$s (%3$s)";
     public static final int displayModeBitDepth = 32;
     public static final int preferredDisplayModeRefreshRate = 60; // Preferred refresh rate if 60Hz
     private DisplayMode displayMode;
@@ -1192,13 +1183,10 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
             State.discId = discId;
             State.title = title;
 
-            // use regular settings first
-            installCompatibilitySettings();
-
-            if (!isHomebrew && !discId.equals(State.DISCID_UNKNOWN_FILE)) {
-                // override with patch file (allows incomplete patch files)
-                installCompatibilityPatches(discId + ".patch");
+            if (!isHomebrew) {
+            	Settings.getInstance().loadPatchSettings();
             }
+            logConfigurationSettings();
 
             if (instructioncounter != null) {
                 instructioncounter.RefreshWindow();
@@ -1451,18 +1439,15 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             RuntimeContext.setIsHomebrew(psf.isLikelyHomebrew());
             Modules.SysMemUserForUserModule.setMemory64MB(psf.getNumeric("MEMSIZE") == 1);
 
-            // use regular settings first
-            installCompatibilitySettings();
-
-            // override with patch file (allows incomplete patch files)
-            installCompatibilityPatches(discId + ".patch");
-
             if ((!discId.equals(State.DISCID_UNKNOWN_UMD) && loadUnpackedUMD(discId + ".BIN")) ||
                     loadUMD(iso, "PSP_GAME/SYSDIR/BOOT.BIN") ||
                     loadUMD(iso, "PSP_GAME/SYSDIR/EBOOT.BIN")) {
 
                 State.discId = discId;
                 State.title = title;
+
+                Settings.getInstance().loadPatchSettings();
+                logConfigurationSettings();
 
                 Modules.IoFileMgrForUserModule.setfilepath("disc0/");
 
@@ -1534,10 +1519,10 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             RuntimeContext.setIsHomebrew(false);
             Modules.SysMemUserForUserModule.setMemory64MB(psf.getNumeric("MEMSIZE") == 1);
 
-            installCompatibilitySettings();
-
             State.discId = discId;
             State.title = title;
+
+            logConfigurationSettings();
 
             UmdVideoPlayer vp = new UmdVideoPlayer(this, iso);
             umdvideoplayer = vp;
@@ -1584,10 +1569,10 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             RuntimeContext.setIsHomebrew(false);
             Modules.SysMemUserForUserModule.setMemory64MB(psf.getNumeric("MEMSIZE") == 1);
 
-            installCompatibilitySettings();
-
             State.discId = discId;
             State.title = title;
+
+            logConfigurationSettings();
         } catch (IllegalArgumentException iae) {
             // Ignore...
         } catch (Exception ex) {
@@ -1600,28 +1585,34 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         }
     }
 
-    private void logConfigurationSetting(String resourceKey, String value, boolean textLeft) {
-    	String format = textLeft ? logConfigurationSettingLeft : logConfigurationSettingRight;
+    private void logConfigurationSetting(String resourceKey, String settingKey, String value, boolean textLeft) {
+    	boolean isSettingFromPatch = Settings.getInstance().isOptionFromPatch(settingKey);
+    	String format;
+    	if (isSettingFromPatch) {
+    		format = textLeft ? logConfigurationSettingLeftPatch : logConfigurationSettingRightPatch;
+    	} else {
+    		format = textLeft ? logConfigurationSettingLeft : logConfigurationSettingRight;
+    	}
     	String text = Resource.getEnglish(resourceKey);
     	if (text == null) {
     		text = resourceKey;
     	}
-    	Emulator.log.info(String.format(format, text, value));
+    	Emulator.log.info(String.format(format, text, value, "from patch file"));
     }
 
     private void logConfigurationSettingBool(String resourceKey, String settingKey, boolean textLeft) {
     	boolean value = Settings.getInstance().readBool(settingKey);
-    	logConfigurationSetting(resourceKey, value ? "X" : " ", textLeft);
+    	logConfigurationSetting(resourceKey, settingKey, value ? "X" : " ", textLeft);
     }
 
     private void logConfigurationSettingInt(String resourceKey, String settingKey, boolean textLeft) {
     	int value = Settings.getInstance().readInt(settingKey);
-    	logConfigurationSetting(resourceKey, Integer.toString(value), textLeft);
+    	logConfigurationSetting(resourceKey, settingKey, Integer.toString(value), textLeft);
     }
 
     private void logConfigurationSettingString(String resourceKey, String settingKey, boolean textLeft) {
     	String value = Settings.getInstance().readString(settingKey);
-    	logConfigurationSetting(resourceKey, value, textLeft);
+    	logConfigurationSetting(resourceKey, settingKey, value, textLeft);
     }
 
     private void logConfigurationSettingList(String resourceKey, String settingKey, String[] values, boolean textLeft) {
@@ -1630,15 +1621,19 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     	if (values != null && valueIndex >= 0 && valueIndex < values.length) {
     		value = values[valueIndex];
     	}
-    	logConfigurationSetting(resourceKey, value, textLeft);
+    	logConfigurationSetting(resourceKey, settingKey, value, textLeft);
     }
 
     private void logConfigurationPanel(String resourceKey) {
     	Emulator.log.info(String.format("%s / %s", Resource.getEnglish("settings"), Resource.getEnglish(resourceKey)));
     }
 
-    private void installCompatibilitySettings() {
-        Emulator.log.info("Loading global compatibility settings:");
+    private void logConfigurationSettings() {
+    	if (!Emulator.log.isInfoEnabled()) {
+    		return;
+    	}
+
+    	Emulator.log.info("Using the following settings:");
 
         // Log the configuration settings
         logConfigurationPanel("region");
@@ -1695,183 +1690,6 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         logConfigurationSettingString("antiAliasing", "emu.graphics.antialias", true);
         logConfigurationSettingString("resolution", "emu.graphics.resolution", true);
         logConfigurationSettingBool("fullscreenMode", "gui.fullscreen", false);
-
-        boolean onlyGEGraphics = Settings.getInstance().readBool("emu.onlyGEGraphics");
-        Modules.sceDisplayModule.setOnlyGEGraphics(onlyGEGraphics);
-
-        boolean useConnector = Settings.getInstance().readBool("emu.useConnector");
-        sceMpeg.setEnableConnector(useConnector);
-        sceAtrac3plus.setEnableConnector(useConnector);
-
-        boolean useMediaEngine = Settings.getInstance().readBool("emu.useMediaEngine");
-        sceMpeg.setEnableMediaEngine(useMediaEngine);
-        scePsmfPlayer.setEnableMediaEngine(useMediaEngine);
-        AtracCodec.setEnableMediaEngine(useMediaEngine);
-        sceMp3.setEnableMediaEngine(useMediaEngine);
-
-        boolean useFlashFonts = Settings.getInstance().readBool("emu.useFlashFonts");
-        sceFont.setAllowInternalFonts(useFlashFonts);
-
-        boolean useExternalDecoder = Settings.getInstance().readBool("emu.useExternalDecoder");
-        ExternalDecoder.setEnabled(useExternalDecoder);
-
-        boolean useVertexCache = Settings.getInstance().readBool("emu.useVertexCache");
-        VideoEngine.getInstance().setUseVertexCache(useVertexCache);
-
-        boolean disableAudio = Settings.getInstance().readBool("emu.disablesceAudio");
-        Modules.sceAudioModule.setChReserveEnabled(!disableAudio);
-
-        boolean audioMuted = Settings.getInstance().readBool("emu.mutesound");
-        Audio.setMuted(audioMuted);
-
-        boolean disableBlocking = Settings.getInstance().readBool("emu.disableblockingaudio");
-        Modules.sceAudioModule.setBlockingEnabled(!disableBlocking);
-
-        boolean ignoreAudioThreads = Settings.getInstance().readBool("emu.ignoreaudiothreads");
-        Modules.ThreadManForUserModule.setThreadBanningEnabled(ignoreAudioThreads);
-
-        boolean ignoreInvalidMemoryAccess = Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess");
-        Memory.getInstance().setIgnoreInvalidMemoryAccess(ignoreInvalidMemoryAccess);
-        Compiler.setIgnoreInvalidMemory(ignoreInvalidMemoryAccess);
-
-        boolean ignoreUnmappedImports = Settings.getInstance().readBool("emu.ignoreUnmappedImports");
-        SyscallHandler.setEnableIgnoreUnmappedImports(ignoreUnmappedImports);
-
-        boolean extractEboot = Settings.getInstance().readBool("emu.extractEboot");
-        CryptoEngine.setExtractEbootStatus(extractEboot);
-
-        boolean cryptoSavedata = Settings.getInstance().readBool("emu.cryptoSavedata");
-        CryptoEngine.setSavedataCryptoStatus(cryptoSavedata);
-
-        boolean extractPGD = Settings.getInstance().readBool("emu.extractPGD");
-        Modules.IoFileMgrForUserModule.setAllowExtractPGDStatus(extractPGD);
-
-        boolean filterAnisotropic = Settings.getInstance().readBool("emu.graphics.filters.anisotropic");
-        VideoEngine.getInstance().setUseTextureAnisotropicFilter(filterAnisotropic);
-
-        String antialias = Settings.getInstance().readString("emu.graphics.antialias");
-        int samples = 0;
-        if (antialias != null) {
-            if (antialias.equals("x4")) {
-                samples = 4;
-            } else if (antialias.equals("x8")) {
-                samples = 8;
-            } else if (antialias.equals("x16")) {
-                samples = 16;
-            }
-        }
-        sceDisplay.setAntiAliasSamplesNum(samples);
-    }
-
-    /** @return true if a patch file was found */
-    public boolean installCompatibilityPatches(String filename) {
-        File patchfile = new File("patches/" + filename);
-        if (!patchfile.exists()) {
-            Emulator.log.debug("No patch file found for this game");
-            return false;
-        }
-
-        Properties patchSettings = new Properties();
-        InputStream patchInputStream = null;
-        try {
-            Emulator.log.info("Overriding previous settings with patch file");
-            patchInputStream = new BufferedInputStream(new FileInputStream(patchfile));
-            patchSettings.load(patchInputStream);
-
-            String onlyGEGraphics = patchSettings.getProperty("emu.onlyGEGraphics");
-            if (onlyGEGraphics != null) {
-                Modules.sceDisplayModule.setOnlyGEGraphics(Integer.parseInt(onlyGEGraphics) != 0);
-            }
-
-            String useConnector = patchSettings.getProperty("emu.useConnector");
-            if (useConnector != null) {
-                sceMpeg.setEnableConnector(Integer.parseInt(useConnector) != 0);
-                sceAtrac3plus.setEnableConnector(Integer.parseInt(useConnector) != 0);
-            }
-
-            String useMediaEngine = patchSettings.getProperty("emu.useMediaEngine");
-            if (useMediaEngine != null) {
-                sceMpeg.setEnableMediaEngine(Integer.parseInt(useMediaEngine) != 0);
-                scePsmfPlayer.setEnableMediaEngine(Integer.parseInt(useMediaEngine) != 0);
-                AtracCodec.setEnableMediaEngine(Integer.parseInt(useMediaEngine) != 0);
-                sceMp3.setEnableMediaEngine(Integer.parseInt(useMediaEngine) != 0);
-            }
-
-            String useFlashFonts = patchSettings.getProperty("emu.useFlashFonts");
-            if (useFlashFonts != null) {
-                sceFont.setAllowInternalFonts(Integer.parseInt(useFlashFonts) != 0);
-            }
-
-            String useVertexCache = patchSettings.getProperty("emu.useVertexCache");
-            if (useVertexCache != null) {
-                VideoEngine.getInstance().setUseVertexCache(Integer.parseInt(useVertexCache) != 0);
-            }
-
-            String disableAudio = patchSettings.getProperty("emu.disablesceAudio");
-            if (disableAudio != null) {
-                jpcsp.HLE.Modules.sceAudioModule.setChReserveEnabled(!(Integer.parseInt(disableAudio) != 0));
-            }
-
-            String disableBlocking = patchSettings.getProperty("emu.disableblockingaudio");
-            if (disableBlocking != null) {
-                jpcsp.HLE.Modules.sceAudioModule.setBlockingEnabled(!(Integer.parseInt(disableBlocking) != 0));
-            }
-
-            String ignoreAudioThreads = patchSettings.getProperty("emu.ignoreaudiothreads");
-            if (ignoreAudioThreads != null) {
-                Modules.ThreadManForUserModule.setThreadBanningEnabled(Integer.parseInt(ignoreAudioThreads) != 0);
-            }
-
-            String ignoreInvalidMemoryAccess = patchSettings.getProperty("emu.ignoreInvalidMemoryAccess");
-            if (ignoreInvalidMemoryAccess != null) {
-                Memory.getInstance().setIgnoreInvalidMemoryAccess(Integer.parseInt(ignoreInvalidMemoryAccess) != 0);
-                Compiler.setIgnoreInvalidMemory(Integer.parseInt(ignoreInvalidMemoryAccess) != 0);
-            }
-
-            String ignoreUnmappedImports = patchSettings.getProperty("emu.ignoreUnmappedImports");
-            if (ignoreUnmappedImports != null) {
-                SyscallHandler.setEnableIgnoreUnmappedImports(Integer.parseInt(ignoreUnmappedImports) != 0);
-            }
-
-            String extractEboot = patchSettings.getProperty("emu.extractEboot");
-            if (extractEboot != null) {
-                CryptoEngine.setExtractEbootStatus(Integer.parseInt(extractEboot) != 0);
-            }
-
-            String cryptoSavedata = patchSettings.getProperty("emu.cryptoSavedata");
-            if (cryptoSavedata != null) {
-                CryptoEngine.setSavedataCryptoStatus(Integer.parseInt(cryptoSavedata) != 0);
-            }
-
-            String extractPGD = patchSettings.getProperty("emu.extractPGD");
-            if (extractPGD != null) {
-                Modules.IoFileMgrForUserModule.setAllowExtractPGDStatus(Integer.parseInt(extractPGD) != 0);
-            }
-
-            String filterAnisotropic = patchSettings.getProperty("emu.graphics.filters.anisotropic");
-            if (filterAnisotropic != null) {
-                VideoEngine.getInstance().setUseTextureAnisotropicFilter(Integer.parseInt(filterAnisotropic) != 0);
-            }
-
-            String antialias = patchSettings.getProperty("emu.graphics.antialias");
-            if (antialias != null) {
-                int samples = 0;
-                if (antialias.equals("x4")) {
-                    samples = 4;
-                } else if (antialias.equals("x8")) {
-                    samples = 8;
-                } else if (antialias.equals("x16")) {
-                    samples = 16;
-                }
-                sceDisplay.setAntiAliasSamplesNum(samples);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            Utilities.close(patchInputStream);
-        }
-
-        return true;
     }
 
 private void ResetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetButtonActionPerformed

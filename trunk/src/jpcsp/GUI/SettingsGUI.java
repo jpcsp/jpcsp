@@ -25,12 +25,17 @@ import java.util.Set;
 
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JRadioButton;
+import javax.swing.JSpinner;
+import javax.swing.JTextField;
 import javax.swing.MutableComboBoxModel;
 
 import jpcsp.Emulator;
 import jpcsp.MainGUI;
 import jpcsp.Resource;
-import jpcsp.Settings;
+import jpcsp.settings.Settings;
 
 import com.jidesoft.swing.FolderChooser;
 
@@ -40,146 +45,195 @@ import com.jidesoft.swing.FolderChooser;
  */
 public class SettingsGUI extends javax.swing.JFrame {
 	private static final long serialVersionUID = -732715495873159718L;
+	private Settings settings;
     
     /** Creates new form SettingsGUI */
     public SettingsGUI() {
+        settings = Settings.getInstance();
+
         initComponents();
-        
-        boolean enabled = Settings.getInstance().readBool("emu.pbpunpack");
-        pbpunpackcheck.setSelected(enabled);
-        
-        enabled = Settings.getInstance().readBool("gui.saveWindowPos");
-        saveWindowPosCheck.setSelected(enabled);
 
-        enabled = Settings.getInstance().readBool("gui.fullscreen");
-        fullscreenCheck.setSelected(enabled);
-                
-        enabled = Settings.getInstance().readBool("emu.compiler");
-        useCompiler.setSelected(enabled);
-        
-        enabled = Settings.getInstance().readBool("emu.profiler");
-        profilerCheck.setSelected(enabled);
-        
-        enabled = Settings.getInstance().readBool("emu.useshaders");
-        shadersCheck.setSelected(enabled);
-        
-        enabled = Settings.getInstance().readBool("emu.useGeometryShader");
-        geometryShaderCheck.setSelected(enabled);
-        
-        enabled = Settings.getInstance().readBool("emu.debug.enablefilelogger");
-        filelogCheck.setSelected(enabled);
+        setAllComponentsFromSettings();
+    }
 
-        int language = Settings.getInstance().readInt("emu.impose.language");
-        languageBox.setSelectedIndex(language);
+    private void setAllComponentsFromSettings() {
+        setBoolFromSettings(pbpunpackcheck, "emu.pbpunpack");
+        setBoolFromSettings(saveWindowPosCheck, "gui.saveWindowPos");
+        setBoolFromSettings(fullscreenCheck, "gui.fullscreen");
+        setBoolFromSettings(useCompiler, "emu.compiler");
+        setBoolFromSettings(profilerCheck, "emu.profiler");
+        setBoolFromSettings(shadersCheck, "emu.useshaders");
+        setBoolFromSettings(geometryShaderCheck, "emu.useGeometryShader");
+        setBoolFromSettings(filelogCheck, "emu.debug.enablefilelogger");
+        setIntFromSettings(languageBox, "emu.impose.language");
+        setIntFromSettings(buttonBox, "emu.impose.button");
+        setIntFromSettings(daylightBox, "emu.sysparam.daylightsavings");
+        setIntFromSettings(timezoneSpinner, "emu.sysparam.timezone");
+        setIntFromSettings(timeFormatBox, "emu.sysparam.timeformat");
+        setIntFromSettings(dateFormatBox, "emu.sysparam.dateformat");
+        setIntFromSettings(wlanPowerBox, "emu.sysparam.wlanpowersave");
+        setIntFromSettings(adhocChannelBox, "emu.sysparam.adhocchannel");
+        setStringFromSettings(nicknameTextField, "emu.sysparam.nickname");
+        setBoolFromSettings(disableVBOCheck, "emu.disablevbo");
+        setBoolFromSettings(disableUBOCheck, "emu.disableubo");
+        setBoolFromSettings(enableVAOCheck, "emu.enablevao");
+        setBoolFromSettings(enableGETextureCheck, "emu.enablegetexture");
+        setBoolFromSettings(enableNativeCLUTCheck, "emu.enablenativeclut");
+        setBoolFromSettings(enableDynamicShadersCheck, "emu.enabledynamicshaders");
+        setBoolFromSettings(enableShaderStencilTestCheck, "emu.enableshaderstenciltest");
+        setBoolFromSettings(enableShaderColorMaskCheck, "emu.enableshadercolormask");
+        setBoolFromSettings(onlyGEGraphicsCheck, "emu.onlyGEGraphics");
+        setBoolFromSettings(useConnector, "emu.useConnector");
+        setBoolFromSettings(useFlashFonts, "emu.useFlashFonts");
+        setBoolFromSettings(useExternalDecoder, "emu.useExternalDecoder");
+        setBoolFromSettings(useMediaEngine, "emu.useMediaEngine");
+        setBoolFromSettings(useVertexCache, "emu.useVertexCache");
+        setBoolFromSettings(invalidMemoryCheck, "emu.ignoreInvalidMemoryAccess");
+        setBoolFromSettings(DisableSceAudioCheck, "emu.disablesceAudio");
+        setBoolFromSettings(IgnoreAudioThreadsCheck, "emu.ignoreaudiothreads");
+        setBoolFromSettings(disableBlockingAudioCheck, "emu.disableblockingaudio");
+        setBoolFromSettings(ignoreUnmappedImports, "emu.ignoreUnmappedImports");
+        setIntAsStringFromSettings(methodMaxInstructionsBox, "emu.compiler.methodMaxInstructions", 3000);
+        setBoolFromSettings(extractEboot, "emu.extractEboot");
+        setBoolFromSettings(cryptoSavedata, "emu.cryptoSavedata");
+        setBoolFromSettings(extractPGD, "emu.extractPGD");
+        setStringFromSettings(antiAliasingBox, "emu.graphics.antialias");
+        setStringFromSettings(resolutionBox, "emu.graphics.resolution");
+        setStringFromSettings(umdpath, "emu.umdpath");
+        setStringFromSettings(tmppath, "emu.tmppath");
+        setBoolFromSettings(umdBrowser, ClassicOpenDialogumd, "emu.umdbrowser");
+    }
 
-        int button = Settings.getInstance().readInt("emu.impose.button");
-        buttonBox.setSelectedIndex(button);
+    private boolean isEnabledSettings(String settingsOption) {
+    	return !settings.isOptionFromPatch(settingsOption);
+    }
 
-        int daylight = Settings.getInstance().readInt("emu.sysparam.daylightsavings");
-        daylightBox.setSelectedIndex(daylight);
+    private void setBoolFromSettings(JRadioButton trueButton, JRadioButton falseButton, String settingsOption) {
+    	boolean value = settings.readBool(settingsOption);
+    	trueButton.setSelected(value);
+    	falseButton.setSelected(!value);
+		trueButton.setEnabled(isEnabledSettings(settingsOption));
+		falseButton.setEnabled(isEnabledSettings(settingsOption));
+    }
 
-        int timezone = Settings.getInstance().readInt("emu.sysparam.timezone");
-        timezoneSpinner.setValue(timezone);
+    private void setBoolFromSettings(JCheckBox checkBox, String settingsOption) {
+		checkBox.setSelected(settings.readBool(settingsOption));
+		checkBox.setEnabled(isEnabledSettings(settingsOption));
+    }
 
-        int timeformat = Settings.getInstance().readInt("emu.sysparam.timeformat");
-        timeFormatBox.setSelectedIndex(timeformat);
+    private void setIntFromSettings(JComboBox comboBox, String settingsOption) {
+    	comboBox.setSelectedIndex(settings.readInt(settingsOption));
+    	comboBox.setEnabled(isEnabledSettings(settingsOption));
+    }
 
-        int dateformat = Settings.getInstance().readInt("emu.sysparam.dateformat");
-        dateFormatBox.setSelectedIndex(dateformat);
+    private void setIntAsStringFromSettings(JComboBox comboBox, String settingsOption, int defaultValue) {
+    	comboBox.setSelectedItem(Integer.toString(settings.readInt(settingsOption, defaultValue)));
+    	comboBox.setEnabled(isEnabledSettings(settingsOption));
+    }
 
-        int wlanpowersave = Settings.getInstance().readInt("emu.sysparam.wlanpowersave");
-        wlanPowerBox.setSelectedIndex(wlanpowersave);
+    private void setIntFromSettings(JSpinner spinner, String settingsOption) {
+    	spinner.setValue(settings.readInt(settingsOption));
+    	spinner.setEnabled(isEnabledSettings(settingsOption));
+    }
 
-        int adhocchannel = Settings.getInstance().readInt("emu.sysparam.adhocchannel");
-        adhocChannelBox.setSelectedIndex(adhocchannel);
+    private void setStringFromSettings(JComboBox comboBox, String settingsOption) {
+    	comboBox.setSelectedItem(settings.readString(settingsOption));
+    	comboBox.setEnabled(isEnabledSettings(settingsOption));
+    }
 
-        String nickname = Settings.getInstance().readString("emu.sysparam.nickname");
-        nicknameTextField.setText(nickname);
+    private void setStringFromSettings(JTextField textField, String settingsOption) {
+    	textField.setText(settings.readString(settingsOption));
+    	textField.setEnabled(isEnabledSettings(settingsOption));
+    }
 
-        enabled = Settings.getInstance().readBool("emu.disablevbo");
-        disableVBOCheck.setSelected(enabled);
+    private void setAllComponentsToSettings() {
+        setBoolToSettings(pbpunpackcheck, "emu.pbpunpack");
+        setBoolToSettings(saveWindowPosCheck, "gui.saveWindowPos");
+        setBoolToSettings(fullscreenCheck, "gui.fullscreen");
+        setBoolToSettings(useCompiler, "emu.compiler");
+        setBoolToSettings(profilerCheck, "emu.profiler");
+        setBoolToSettings(shadersCheck, "emu.useshaders");
+        setBoolToSettings(geometryShaderCheck, "emu.useGeometryShader");
+        setBoolToSettings(filelogCheck, "emu.debug.enablefilelogger");
+        setIntToSettings(languageBox, "emu.impose.language");
+        setIntToSettings(buttonBox, "emu.impose.button");
+        setIntToSettings(daylightBox, "emu.sysparam.daylightsavings");
+        setIntToSettings(timezoneSpinner, "emu.sysparam.timezone");
+        setIntToSettings(timeFormatBox, "emu.sysparam.timeformat");
+        setIntToSettings(dateFormatBox, "emu.sysparam.dateformat");
+        setIntToSettings(wlanPowerBox, "emu.sysparam.wlanpowersave");
+        setIntToSettings(adhocChannelBox, "emu.sysparam.adhocchannel");
+        setStringToSettings(nicknameTextField, "emu.sysparam.nickname");
+        setBoolToSettings(disableVBOCheck, "emu.disablevbo");
+        setBoolToSettings(disableUBOCheck, "emu.disableubo");
+        setBoolToSettings(enableVAOCheck, "emu.enablevao");
+        setBoolToSettings(enableGETextureCheck, "emu.enablegetexture");
+        setBoolToSettings(enableNativeCLUTCheck, "emu.enablenativeclut");
+        setBoolToSettings(enableDynamicShadersCheck, "emu.enabledynamicshaders");
+        setBoolToSettings(enableShaderStencilTestCheck, "emu.enableshaderstenciltest");
+        setBoolToSettings(enableShaderColorMaskCheck, "emu.enableshadercolormask");
+        setBoolToSettings(onlyGEGraphicsCheck, "emu.onlyGEGraphics");
+        setBoolToSettings(useConnector, "emu.useConnector");
+        setBoolToSettings(useFlashFonts, "emu.useFlashFonts");
+        setBoolToSettings(useExternalDecoder, "emu.useExternalDecoder");
+        setBoolToSettings(useMediaEngine, "emu.useMediaEngine");
+        setBoolToSettings(useVertexCache, "emu.useVertexCache");
+        setBoolToSettings(invalidMemoryCheck, "emu.ignoreInvalidMemoryAccess");
+        setBoolToSettings(DisableSceAudioCheck, "emu.disablesceAudio");
+        setBoolToSettings(IgnoreAudioThreadsCheck, "emu.ignoreaudiothreads");
+        setBoolToSettings(disableBlockingAudioCheck, "emu.disableblockingaudio");
+        setBoolToSettings(ignoreUnmappedImports, "emu.ignoreUnmappedImports");
+        setIntAsStringToSettings(methodMaxInstructionsBox, "emu.compiler.methodMaxInstructions", 3000);
+        setBoolToSettings(extractEboot, "emu.extractEboot");
+        setBoolToSettings(cryptoSavedata, "emu.cryptoSavedata");
+        setBoolToSettings(extractPGD, "emu.extractPGD");
+        setStringToSettings(antiAliasingBox, "emu.graphics.antialias");
+        setStringToSettings(resolutionBox, "emu.graphics.resolution");
+        setStringToSettings(umdpath, "emu.umdpath");
+        setStringToSettings(tmppath, "emu.tmppath");
+        setBoolToSettings(umdBrowser, "emu.umdbrowser");
+    }
 
-        enabled = Settings.getInstance().readBool("emu.disableubo");
-        disableUBOCheck.setSelected(enabled);
+    private void setBoolToSettings(JRadioButton radioButton, String settingsOption) {
+    	if (isEnabledSettings(settingsOption)) {
+    		settings.writeBool(settingsOption, radioButton.isSelected());
+    	}
+    }
 
-        enabled = Settings.getInstance().readBool("emu.enablevao");
-        enableVAOCheck.setSelected(enabled);
+    private void setBoolToSettings(JCheckBox checkBox, String settingsOption) {
+    	if (isEnabledSettings(settingsOption)) {
+    		settings.writeBool(settingsOption, checkBox.isSelected());
+    	}
+    }
 
-        enabled = Settings.getInstance().readBool("emu.enablegetexture");
-        enableGETextureCheck.setSelected(enabled);
+    private void setIntToSettings(JComboBox comboBox, String settingsOption) {
+    	if (isEnabledSettings(settingsOption)) {
+    		settings.writeInt(settingsOption, comboBox.getSelectedIndex());
+    	}
+    }
 
-        enabled = Settings.getInstance().readBool("emu.enablenativeclut");
-        enableNativeCLUTCheck.setSelected(enabled);
+    private void setIntAsStringToSettings(JComboBox comboBox, String settingsOption, int defaultValue) {
+    	if (isEnabledSettings(settingsOption)) {
+    		settings.writeInt(settingsOption, Integer.parseInt(comboBox.getSelectedItem().toString()));
+    	}
+    }
 
-        enabled = Settings.getInstance().readBool("emu.enabledynamicshaders");
-        enableDynamicShadersCheck.setSelected(enabled);
+    private void setIntToSettings(JSpinner spinner, String settingsOption) {
+    	if (isEnabledSettings(settingsOption)) {
+    		settings.writeInt(settingsOption, Integer.parseInt(spinner.getValue().toString()));
+    	}
+    }
 
-        enabled = Settings.getInstance().readBool("emu.enableshaderstenciltest");
-        enableShaderStencilTestCheck.setSelected(enabled);
+    private void setStringToSettings(JComboBox comboBox, String settingsOption) {
+    	if (isEnabledSettings(settingsOption)) {
+    		settings.writeString(settingsOption, comboBox.getSelectedItem().toString());
+    	}
+    }
 
-        enabled = Settings.getInstance().readBool("emu.enableshadercolormask");
-        enableShaderColorMaskCheck.setSelected(enabled);
-
-        enabled = Settings.getInstance().readBool("emu.onlyGEGraphics");
-        onlyGEGraphicsCheck.setSelected(enabled);
-
-        enabled = Settings.getInstance().readBool("emu.useConnector");
-        useConnector.setSelected(enabled);
-
-        enabled = Settings.getInstance().readBool("emu.useFlashFonts");
-        useFlashFonts.setSelected(enabled);
-
-        enabled = Settings.getInstance().readBool("emu.useExternalDecoder");
-        useExternalDecoder.setSelected(enabled);
-
-        enabled = Settings.getInstance().readBool("emu.useMediaEngine");
-        useMediaEngine.setSelected(enabled);
-
-        enabled = Settings.getInstance().readBool("emu.useVertexCache");
-        useVertexCache.setSelected(enabled);
-
-        enabled = Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess");
-        invalidMemoryCheck.setSelected(enabled);
-        
-        enabled = Settings.getInstance().readBool("emu.disablesceAudio");
-        DisableSceAudioCheck.setSelected(enabled);
-        
-        enabled = Settings.getInstance().readBool("emu.ignoreaudiothreads");
-        IgnoreAudioThreadsCheck.setSelected(enabled);
-        
-        enabled = Settings.getInstance().readBool("emu.disableblockingaudio");
-        disableBlockingAudioCheck.setSelected(enabled);
-        
-        enabled = Settings.getInstance().readBool("emu.ignoreUnmappedImports");
-        ignoreUnmappedImports.setSelected(enabled);
-
-        int methodMaxInstructions = Settings.getInstance().readInt("emu.compiler.methodMaxInstructions", 3000);
-        methodMaxInstructionsBox.setSelectedItem(Integer.toString(methodMaxInstructions));
-
-        enabled = Settings.getInstance().readBool("emu.extractEboot");
-        extractEboot.setSelected(enabled);
-
-        enabled = Settings.getInstance().readBool("emu.cryptoSavedata");
-        cryptoSavedata.setSelected(enabled);
-
-        enabled = Settings.getInstance().readBool("emu.extractPGD");
-        extractPGD.setSelected(enabled);
-
-        String antialias = Settings.getInstance().readString("emu.graphics.antialias");
-        antiAliasingBox.setSelectedItem(antialias);
-
-        String resolution = Settings.getInstance().readString("emu.graphics.resolution");
-        resolutionBox.setSelectedItem(resolution);
-
-        enabled = Settings.getInstance().readBool("emu.umdbrowser");
-        if(enabled) {
-            umdBrowser.setSelected(true);
-        } else {
-            ClassicOpenDialogumd.setSelected(true);
-        }
-        umdpath.setText(Settings.getInstance().readString("emu.umdpath"));
-
-        tmppath.setText(Settings.getInstance().readString("emu.tmppath"));
+    private void setStringToSettings(JTextField textField, String settingsOption) {
+    	if (isEnabledSettings(settingsOption)) {
+    		settings.writeString(settingsOption, textField.getText());
+    	}
     }
 
     private ComboBoxModel makeLanguageComboBoxModel() {
@@ -996,220 +1050,36 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-public void RefreshWindow() {
-	boolean enabled = Settings.getInstance().readBool("emu.pbpunpack");
-	pbpunpackcheck.setSelected(enabled);
-	
-	enabled = Settings.getInstance().readBool("gui.saveWindowPos");
-	saveWindowPosCheck.setSelected(enabled);
 
-    enabled = Settings.getInstance().readBool("gui.fullscreen");
-    fullscreenCheck.setSelected(enabled);
-	
-	enabled = Settings.getInstance().readBool("emu.compiler");
-	useCompiler.setSelected(enabled);
-	
-	enabled = Settings.getInstance().readBool("emu.profiler");
-	profilerCheck.setSelected(enabled);
-	
-	enabled = Settings.getInstance().readBool("emu.useshaders");
-	shadersCheck.setSelected(enabled);
-	
-	enabled = Settings.getInstance().readBool("emu.useGeometryShader");
-	geometryShaderCheck.setSelected(enabled);
-	
-	enabled = Settings.getInstance().readBool("emu.debug.enablefilelogger");
-	filelogCheck.setSelected(enabled);
-	
-	int language = Settings.getInstance().readInt("emu.impose.language");
-	languageBox.setSelectedItem(language);
-
-    int button = Settings.getInstance().readInt("emu.impose.button");
-	buttonBox.setSelectedItem(button);
-
-    int daylight = Settings.getInstance().readInt("emu.sysparam.daylightsavings");
-    daylightBox.setSelectedIndex(daylight);
-
-    int timezone = Settings.getInstance().readInt("emu.sysparam.timezone");
-    timezoneSpinner.setValue(timezone);
-
-    int timeformat = Settings.getInstance().readInt("emu.sysparam.timeformat");
-    timeFormatBox.setSelectedIndex(timeformat);
-
-    int dateformat = Settings.getInstance().readInt("emu.sysparam.dateformat");
-    dateFormatBox.setSelectedIndex(dateformat);
-
-    int wlanpowersave = Settings.getInstance().readInt("emu.sysparam.wlanpowersave");
-    wlanPowerBox.setSelectedIndex(wlanpowersave);
-
-    int adhocchannel = Settings.getInstance().readInt("emu.sysparam.adhocchannel");
-    adhocChannelBox.setSelectedIndex(adhocchannel);
-
-    String nickname = Settings.getInstance().readString("emu.sysparam.nickname");
-    nicknameTextField.setText(nickname);
-
-	enabled = Settings.getInstance().readBool("emu.disablevbo");
-	disableVBOCheck.setSelected(enabled);
-	
-	enabled = Settings.getInstance().readBool("emu.disableubo");
-	disableUBOCheck.setSelected(enabled);
-
-    enabled = Settings.getInstance().readBool("emu.enablevao");
-    enableVAOCheck.setSelected(enabled);
-
-    enabled = Settings.getInstance().readBool("emu.enablegetexture");
-    enableGETextureCheck.setSelected(enabled);
-	
-	enabled = Settings.getInstance().readBool("emu.enablenativeclut");
-	enableNativeCLUTCheck.setSelected(enabled);
-	
-	enabled = Settings.getInstance().readBool("emu.enabledynamicshaders");
-	enableDynamicShadersCheck.setSelected(enabled);
-	
-	enabled = Settings.getInstance().readBool("emu.enableshaderstenciltest");
-	enableShaderStencilTestCheck.setSelected(enabled);
-	
-	enabled = Settings.getInstance().readBool("emu.enableshadercolormask");
-	enableShaderColorMaskCheck.setSelected(enabled);
-	
-	enabled = Settings.getInstance().readBool("emu.onlyGEGraphics");
-	onlyGEGraphicsCheck.setSelected(enabled);
-	
-	enabled = Settings.getInstance().readBool("emu.useConnector");
-	useConnector.setSelected(enabled);
-
-    enabled = Settings.getInstance().readBool("emu.useFlashFonts");
-    useFlashFonts.setSelected(enabled);
-
-	enabled = Settings.getInstance().readBool("emu.useExternalDecoder");
-	useExternalDecoder.setSelected(enabled);
-
-    enabled = Settings.getInstance().readBool("emu.useMediaEngine");
-    useMediaEngine.setSelected(enabled);
-	
-	enabled = Settings.getInstance().readBool("emu.useVertexCache");
-	useVertexCache.setSelected(enabled);
-	
-	enabled = Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess");
-	invalidMemoryCheck.setSelected(enabled);
-	
-	enabled = Settings.getInstance().readBool("emu.disablesceAudio");
-	DisableSceAudioCheck.setSelected(enabled);
-	
-	enabled = Settings.getInstance().readBool("emu.ignoreaudiothreads");
-	IgnoreAudioThreadsCheck.setSelected(enabled);
-		
-	enabled = Settings.getInstance().readBool("emu.disableblockingaudio");
-	disableBlockingAudioCheck.setSelected(enabled);
-		
-	enabled = Settings.getInstance().readBool("emu.ignoreUnmappedImports");
-	ignoreUnmappedImports.setSelected(enabled);
-
-	int methodMaxInstructions = Settings.getInstance().readInt("emu.compiler.methodMaxInstructions");
-	methodMaxInstructionsBox.setSelectedItem(Integer.toString(methodMaxInstructions));
-
-    enabled = Settings.getInstance().readBool("emu.extractEboot");
-    extractEboot.setSelected(enabled);
-
-    enabled = Settings.getInstance().readBool("emu.cryptoSavedata");
-    cryptoSavedata.setSelected(enabled);
-
-    enabled = Settings.getInstance().readBool("emu.extractPGD");
-    extractPGD.setSelected(enabled);
-
-    String antialias = Settings.getInstance().readString("emu.graphics.antialias");
-    antiAliasingBox.setSelectedItem(antialias);
-
-    String resolution = Settings.getInstance().readString("emu.graphics.resolution");
-    resolutionBox.setSelectedItem(resolution);
-
-    enabled = Settings.getInstance().readBool("emu.umdbrowser");
-    if (enabled) {
-        umdBrowser.setSelected(true);
-    } else {
-        ClassicOpenDialogumd.setSelected(true);
+    public void RefreshWindow() {
+    	setAllComponentsFromSettings();
     }
-    umdpath.setText(Settings.getInstance().readString("emu.umdpath"));
 
-    tmppath.setText(Settings.getInstance().readString("emu.tmppath"));
-}
+    private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
+		setAllComponentsToSettings();
+		dispose();
+	}//GEN-LAST:event_jButtonOKActionPerformed
 
-private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
-   Settings.getInstance().writeBool("emu.pbpunpack", pbpunpackcheck.isSelected());
-   Settings.getInstance().writeBool("gui.saveWindowPos", saveWindowPosCheck.isSelected());
-   Settings.getInstance().writeBool("gui.fullscreen", fullscreenCheck.isSelected());
-   Settings.getInstance().writeBool("emu.compiler", useCompiler.isSelected());
-   Settings.getInstance().writeBool("emu.profiler", profilerCheck.isSelected());
-   Settings.getInstance().writeBool("emu.useshaders", shadersCheck.isSelected());
-   Settings.getInstance().writeBool("emu.useGeometryShader", geometryShaderCheck.isSelected());
-   Settings.getInstance().writeBool("emu.debug.enablefilelogger", filelogCheck.isSelected());
-   Settings.getInstance().writeInt("emu.impose.language", languageBox.getSelectedIndex());
-   Settings.getInstance().writeInt("emu.impose.button", buttonBox.getSelectedIndex());
-   Settings.getInstance().writeInt("emu.sysparam.daylightsavings", daylightBox.getSelectedIndex());
-   Settings.getInstance().writeInt("emu.sysparam.timezone", Integer.parseInt(timezoneSpinner.getValue().toString()));
-   Settings.getInstance().writeInt("emu.sysparam.timeformat", timeFormatBox.getSelectedIndex());
-   Settings.getInstance().writeInt("emu.sysparam.dateformat", dateFormatBox.getSelectedIndex());
-   Settings.getInstance().writeInt("emu.sysparam.wlanpowersave", wlanPowerBox.getSelectedIndex());
-   Settings.getInstance().writeInt("emu.sysparam.adhocchannel", adhocChannelBox.getSelectedIndex());
-   Settings.getInstance().writeString("emu.sysparam.nickname", nicknameTextField.getText());
-   Settings.getInstance().writeBool("emu.disablevbo", disableVBOCheck.isSelected());
-   Settings.getInstance().writeBool("emu.disableubo", disableUBOCheck.isSelected());
-   Settings.getInstance().writeBool("emu.enablevao", enableVAOCheck.isSelected());
-   Settings.getInstance().writeBool("emu.enablegetexture", enableGETextureCheck.isSelected());
-   Settings.getInstance().writeBool("emu.enablenativeclut", enableNativeCLUTCheck.isSelected());
-   Settings.getInstance().writeBool("emu.enabledynamicshaders", enableDynamicShadersCheck.isSelected());
-   Settings.getInstance().writeBool("emu.enableshaderstenciltest", enableShaderStencilTestCheck.isSelected());
-   Settings.getInstance().writeBool("emu.enableshadercolormask", enableShaderColorMaskCheck.isSelected());
-   Settings.getInstance().writeBool("emu.onlyGEGraphics", onlyGEGraphicsCheck.isSelected());
-   Settings.getInstance().writeBool("emu.useConnector",useConnector.isSelected());
-   Settings.getInstance().writeBool("emu.useFlashFonts",useFlashFonts.isSelected());
-   Settings.getInstance().writeBool("emu.useExternalDecoder",useExternalDecoder.isSelected());
-   Settings.getInstance().writeBool("emu.useMediaEngine",useMediaEngine.isSelected());
-   Settings.getInstance().writeBool("emu.useVertexCache",useVertexCache.isSelected());
-   Settings.getInstance().writeBool("emu.ignoreInvalidMemoryAccess", invalidMemoryCheck.isSelected());
-   Settings.getInstance().writeBool("emu.disablesceAudio", DisableSceAudioCheck.isSelected());
-   Settings.getInstance().writeBool("emu.ignoreaudiothreads",IgnoreAudioThreadsCheck.isSelected());
-   Settings.getInstance().writeBool("emu.disableblockingaudio",disableBlockingAudioCheck.isSelected());
-   Settings.getInstance().writeBool("emu.ignoreUnmappedImports",ignoreUnmappedImports.isSelected());
-   Settings.getInstance().writeInt("emu.compiler.methodMaxInstructions", Integer.parseInt(methodMaxInstructionsBox.getSelectedItem().toString()));
-   Settings.getInstance().writeBool("emu.extractEboot",extractEboot.isSelected());
-   Settings.getInstance().writeBool("emu.cryptoSavedata",cryptoSavedata.isSelected());
-   Settings.getInstance().writeBool("emu.extractPGD",extractPGD.isSelected());
-   Settings.getInstance().writeString("emu.graphics.antialias", (String) antiAliasingBox.getSelectedItem());
-   Settings.getInstance().writeString("emu.graphics.resolution", (String) resolutionBox.getSelectedItem());
+	private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+		FolderChooser folderChooser = new FolderChooser("Select UMD folder");
+		int result = folderChooser.showSaveDialog(jButton1.getTopLevelAncestor());
+		if (result == FolderChooser.APPROVE_OPTION) {
+			umdpath.setText(folderChooser.getSelectedFile().getPath());
+		}
+	}//GEN-LAST:event_jButton1ActionPerformed
 
-   if(umdBrowser.isSelected()) {
-       Settings.getInstance().writeBool("emu.umdbrowser", true);
-   } else {
-       Settings.getInstance().writeBool("emu.umdbrowser", false);
-   }
-   Settings.getInstance().writeString("emu.umdpath", umdpath.getText());
+	private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
+		RefreshWindow();
+		dispose();
+	}//GEN-LAST:event_jButtonCancelActionPerformed
 
-   Settings.getInstance().writeString("emu.tmppath", tmppath.getText());
-
-   dispose();
-}//GEN-LAST:event_jButtonOKActionPerformed
-
-private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-  FolderChooser folderChooser = new FolderChooser("Select UMD folder");
-  int result = folderChooser.showSaveDialog(jButton1.getTopLevelAncestor());
-  if (result == FolderChooser.APPROVE_OPTION) {
-       umdpath.setText(folderChooser.getSelectedFile().getPath());
-  }
-}//GEN-LAST:event_jButton1ActionPerformed
-
-private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
-    RefreshWindow();
-    dispose();
-}//GEN-LAST:event_jButtonCancelActionPerformed
-
-private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-  FolderChooser folderChooser = new FolderChooser("Select TMP folder");
-  int result = folderChooser.showSaveDialog(jButton2.getTopLevelAncestor());
-  if (result == FolderChooser.APPROVE_OPTION) {
-       tmppath.setText(folderChooser.getSelectedFile().getPath());
-  }
-}//GEN-LAST:event_jButton2ActionPerformed
+	private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+		FolderChooser folderChooser = new FolderChooser("Select TMP folder");
+		int result = folderChooser.showSaveDialog(jButton2.getTopLevelAncestor());
+		if (result == FolderChooser.APPROVE_OPTION) {
+			tmppath.setText(folderChooser.getSelectedFile().getPath());
+		}
+	}//GEN-LAST:event_jButton2ActionPerformed
 
 
 	@Override

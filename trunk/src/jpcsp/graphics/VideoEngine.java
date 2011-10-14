@@ -66,6 +66,8 @@ import jpcsp.graphics.textures.TextureCache;
 import jpcsp.hardware.Screen;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
+import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.settings.Settings;
 import jpcsp.util.CpuDurationStatistics;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
@@ -204,6 +206,7 @@ public class VideoEngine {
     private IntBuffer multiDrawFirst;
     private IntBuffer multiDrawCount;
     private static final int maxMultiDrawElements = 1000;
+    private static final String name ="VideoEngine";
 
     public static class MatrixUpload {
         private final float[] matrix;
@@ -258,6 +261,20 @@ public class VideoEngine {
             this.changed = changed;
         }
     }
+
+	private class UseVertexCacheSettingsListerner extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setUseVertexCache(value);
+		}
+	}
+
+	private class UseTextureAnisotropicFilterSettingsListerner extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setUseTextureAnisotropicFilter(value);
+		}
+	}
 
     private static void log(String msg) {
         log.debug(msg);
@@ -445,9 +462,14 @@ public class VideoEngine {
 				// Ignore Exception
 			}
     	}
+
+    	Settings.getInstance().removeSettingsListener(name);
     }
 
     public void start() {
+    	Settings.getInstance().registerSettingsListener(name, "emu.useVertexCache", new UseVertexCacheSettingsListerner());
+    	Settings.getInstance().registerSettingsListener(name, "emu.graphics.filters.anisotropic", new UseTextureAnisotropicFilterSettingsListerner());
+
     	display = Modules.sceDisplayModule;
         re = display.getRenderingEngine();
         re.setGeContext(context);
@@ -5843,7 +5865,7 @@ public class VideoEngine {
         return maxSpriteWidth;
     }
 
-    public void setUseVertexCache(boolean useVertexCache) {
+    private void setUseVertexCache(boolean useVertexCache) {
         // VertexCache is relying on VBO
     	if (bufferManager != null && !bufferManager.useVBO()) {
     		useVertexCache = false;

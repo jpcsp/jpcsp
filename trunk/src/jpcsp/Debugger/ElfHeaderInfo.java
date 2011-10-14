@@ -18,7 +18,7 @@ package jpcsp.Debugger;
 
 import jpcsp.Emulator;
 import jpcsp.Resource;
-import jpcsp.Settings;
+import jpcsp.settings.Settings;
 
 public class ElfHeaderInfo extends javax.swing.JFrame {
 

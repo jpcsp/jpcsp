@@ -51,9 +51,9 @@ import javax.swing.table.TableColumn;
 import jpcsp.Emulator;
 import jpcsp.MainGUI;
 import jpcsp.Resource;
-import jpcsp.Settings;
 import jpcsp.format.PBP;
 import jpcsp.format.PSF;
+import jpcsp.settings.Settings;
 
 /**
  * @author Orphis

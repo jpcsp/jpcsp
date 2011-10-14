@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp;
+package jpcsp.settings;
 
 import java.awt.Dimension;
 import java.awt.Font;
@@ -31,17 +31,21 @@ import java.io.InputStream;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Properties;
 
+import jpcsp.Emulator;
+import jpcsp.State;
 import jpcsp.Controller.keyCode;
 import jpcsp.GUI.RecentElement;
 import jpcsp.util.Utilities;
 
 /**
  *
- * @author spip2001
+ * @author spip2001, gid15
  */
 public class Settings {
 	private final static String SETTINGS_FILE_NAME = "Settings.properties";
@@ -49,19 +53,24 @@ public class Settings {
 	private static Settings instance = null;
 	private Properties defaultSettings;
 	private SortedProperties loadedSettings;
+	private Properties patchSettings;
+	private HashMap<String, List<ISettingsListener>> listenersByKey;
+	private List<SettingsListenerInfo> allListeners;
 
 	public static Settings getInstance() {
-		if (instance == null) instance = new Settings();
+		if (instance == null) {
+			instance = new Settings();
+		}
 		return instance;
 	}
 
-	public void NullSettings() {
-		instance = null;
-	}
-
 	private Settings() {
+		listenersByKey = new HashMap<String, List<ISettingsListener>>();
+		allListeners = new LinkedList<SettingsListenerInfo>();
 		defaultSettings = new Properties();
-        InputStream defaultSettingsStream = null, loadedSettingsStream = null;
+		patchSettings = new Properties();
+        InputStream defaultSettingsStream = null;
+        InputStream loadedSettingsStream = null;
 		try {
 			defaultSettingsStream = getClass().getResourceAsStream(DEFAULT_SETTINGS_FILE_NAME);
 			defaultSettings.load(defaultSettingsStream);
@@ -71,11 +80,56 @@ public class Settings {
             loadedSettingsStream = new BufferedInputStream(new FileInputStream(settingsFile));
 			loadedSettings.load(loadedSettingsStream);
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			Emulator.log.error("Settings file not found:", e);
 		} catch (IOException e) {
-			e.printStackTrace();
+			Emulator.log.error("Problem loading settings:", e);
 		} finally{
 			Utilities.close(defaultSettingsStream, loadedSettingsStream);
+		}
+	}
+
+	public void loadPatchSettings() {
+		Properties previousPatchSettings = new Properties(patchSettings);
+		patchSettings.clear();
+
+		String discId = State.discId;
+		if (discId != State.DISCID_UNKNOWN_FILE && discId != State.DISCID_UNKNOWN_NOTHING_LOADED) {
+			String patchFileName = String.format("patches/%s.properties", discId);
+			File patchFile = new File(patchFileName);
+			InputStream patchSettingsStream = null;
+			try {
+				patchSettingsStream = new BufferedInputStream(new FileInputStream(patchFile));
+				patchSettings.load(patchSettingsStream);
+				Emulator.log.info(String.format("Overwriting default settings with patch file '%s'", patchFileName));
+			} catch (FileNotFoundException e) {
+				Emulator.log.debug("Patch file not found", e);
+			} catch (IOException e) {
+				Emulator.log.error("Problem loading patch:", e);
+			} finally {
+				Utilities.close(patchSettingsStream);
+			}
+		}
+
+		// Trigger the settings listener for all values modified
+		// by the new patch settings.
+		for (Enumeration<Object> e = patchSettings.keys(); e.hasMoreElements(); ) {
+			String key = e.nextElement().toString();
+			previousPatchSettings.remove(key);
+			String value = patchSettings.getProperty(key);
+			if (!value.equals(loadedSettings.getProperty(key))) {
+				triggerSettingsListener(key, value);
+			}
+		}
+
+		// Trigger the settings listener for all values that disappeared from the
+		// previous patch settings.
+		for (Enumeration<Object> e = previousPatchSettings.keys(); e.hasMoreElements(); ) {
+			String key = e.nextElement().toString();
+			String oldValue = previousPatchSettings.getProperty(key);
+			String newValue = getProperty(key);
+			if (!oldValue.equals(newValue)) {
+				triggerSettingsListener(key, newValue);
+			}
 		}
 	}
 
@@ -86,22 +140,58 @@ public class Settings {
 	 *        Settings as XML document
 	 */
 	private void writeSettings() {
-                BufferedOutputStream out = null;
+		BufferedOutputStream out = null;
 		try {
 			out = new BufferedOutputStream(new FileOutputStream(SETTINGS_FILE_NAME));
 			loadedSettings.store(out, null);
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			Emulator.log.error("Settings file not found:", e);
 		} catch (IOException e) {
-			e.printStackTrace();
-		}finally{
+			Emulator.log.error("Problem saving settings:", e);
+		} finally {
 			Utilities.close(out);
         }
 	}
 
+	private String getProperty(String key) {
+		String value = patchSettings.getProperty(key);
+		if (value == null) {
+			value = loadedSettings.getProperty(key);
+		}
+
+		return value;
+	}
+
+	private String getProperty(String key, String defaultValue) {
+		String value = patchSettings.getProperty(key);
+		if (value == null) {
+			value = loadedSettings.getProperty(key, defaultValue);
+		}
+
+		return value;
+	}
+
+	private void setProperty(String key, String value) {
+		String previousValue = getProperty(key);
+
+		// Store the value in the loadedSettings,
+		// the patchSettings staying unchanged.
+		loadedSettings.setProperty(key, value);
+
+		// Retrieve the new value (might be different from the value
+		// just set in the loadedSettings as it might be overwritten by
+		// a patchSettings).
+		String newValue = getProperty(key);
+
+		// Trigger the settings listener if this resulted in a changed value
+		if (previousValue == null || !previousValue.equals(newValue)) {
+			triggerSettingsListener(key, newValue);
+		}
+	}
+
 	public Point readWindowPos(String windowname) {
-		String x = loadedSettings.getProperty("gui.windows." + windowname + ".x");
-		String y = loadedSettings.getProperty("gui.windows." + windowname + ".y");
+		String x = getProperty("gui.windows." + windowname + ".x");
+		String y = getProperty("gui.windows." + windowname + ".y");
 
 		Point position = new Point();
 		position.x = x != null ? Integer.parseInt(x) : 0;
@@ -111,8 +201,8 @@ public class Settings {
 	}
 
 	public Dimension readWindowSize(String windowname, int defaultWidth, int defaultHeight) {
-		String w = loadedSettings.getProperty("gui.windows." + windowname + ".w");
-		String h = loadedSettings.getProperty("gui.windows." + windowname + ".h");
+		String w = getProperty("gui.windows." + windowname + ".w");
+		String h = getProperty("gui.windows." + windowname + ".h");
 
 		Dimension dimension = new Dimension();
 		dimension.width = w != null ? Integer.parseInt(w) : defaultWidth;
@@ -122,56 +212,69 @@ public class Settings {
 	}
 
 	public void writeWindowPos(String windowname, Point pos) {
-		loadedSettings.setProperty("gui.windows." + windowname + ".x", Integer.toString(pos.x));
-		loadedSettings.setProperty("gui.windows." + windowname + ".y", Integer.toString(pos.y));
+		setProperty("gui.windows." + windowname + ".x", Integer.toString(pos.x));
+		setProperty("gui.windows." + windowname + ".y", Integer.toString(pos.y));
 		writeSettings();
 	}
 
 	public void writeWindowSize(String windowname, Dimension dimension) {
-		loadedSettings.setProperty("gui.windows." + windowname + ".w", Integer.toString(dimension.width));
-		loadedSettings.setProperty("gui.windows." + windowname + ".h", Integer.toString(dimension.height));
+		setProperty("gui.windows." + windowname + ".w", Integer.toString(dimension.width));
+		setProperty("gui.windows." + windowname + ".h", Integer.toString(dimension.height));
 		writeSettings();
 	}
 
-	public boolean readBool(String option) {
-		String bool = loadedSettings.getProperty(option);
-		if(bool == null) return false;
+	public static boolean parseBool(String value) {
+		return Integer.parseInt(value) != 0;
+	}
 
-		return Integer.parseInt(bool) != 0;
+	public static int parseInt(String value) {
+		return Integer.parseInt(value);
+	}
+
+	public boolean readBool(String option) {
+		String bool = getProperty(option);
+		if (bool == null) {
+			return false;
+		}
+
+		return parseBool(bool);
 	}
 
 	public int readInt(String option) {
-		String value = loadedSettings.getProperty(option);
-		if (value == null) return 0;
-
-		return Integer.parseInt(value);
+		return readInt(option, 0);
 	}
 
 	public int readInt(String option, int defaultValue) {
-		String value = loadedSettings.getProperty(option);
-		if (value == null) return defaultValue;
+		String value = getProperty(option);
+		if (value == null) {
+			return defaultValue;
+		}
 
-		return Integer.parseInt(value);
+		return parseInt(value);
 	}
 
 	public void writeBool(String option, boolean value) {
 		String state = value ? "1" : "0";
-		loadedSettings.setProperty(option, state);
+		setProperty(option, state);
 		writeSettings();
 	}
 
 	public void writeInt(String option, int value) {
 		String state = Integer.toString(value);
-		loadedSettings.setProperty(option, state);
+		setProperty(option, state);
 		writeSettings();
 	}
 
 	public String readString(String option) {
-            return loadedSettings.getProperty(option, "");
+		return getProperty(option, "");
+	}
+
+	public boolean isOptionFromPatch(String option) {
+		return patchSettings.containsKey(option);
 	}
 
 	public void writeString(String option, String value) {
-		loadedSettings.setProperty(option, value);
+		setProperty(option, value);
 		writeSettings();
 	}
 
@@ -307,7 +410,7 @@ public class Settings {
 	}
 
 	private int readKey(String keyName) {
-		String str = loadedSettings.getProperty("keys." + keyName);
+		String str = getProperty("keys." + keyName);
 		if (str == null) {
 			return KeyEvent.VK_UNDEFINED;
 		}
@@ -315,19 +418,18 @@ public class Settings {
 	}
 
 	private void writeKey(String keyName, int key) {
-		loadedSettings.setProperty("keys." + keyName, Integer.toString(key));
+		setProperty("keys." + keyName, Integer.toString(key));
 	}
 
 	private String readController(String name) {
-		return loadedSettings.getProperty("controller." + name);
+		return getProperty("controller." + name);
 	}
 
 	private void writeController(String name, String value) {
-		loadedSettings.setProperty("controller." + name, value);
+		setProperty("controller." + name, value);
 	}
 
 	private static class SortedProperties extends Properties {
-
 		private static final long serialVersionUID = -8127868945637348944L;
 
 		public SortedProperties(Properties defaultSettings) {
@@ -339,16 +441,19 @@ public class Settings {
 		public synchronized Enumeration keys() {
 			Enumeration keysEnum = super.keys();
 			List keyList = Collections.list(keysEnum);
-                        Collections.sort(keyList);
+			Collections.sort(keyList);
+
 			return Collections.enumeration(keyList);
 		}
 	}
 
 	public void readRecent(String cat, List<RecentElement> recent) {
 		for(int i = 0;; ++i) {
-    		String r = loadedSettings.getProperty("gui.recent." + cat + "." + i);
-    		if(r == null) break;
-    		String title = loadedSettings.getProperty("gui.recent." + cat + "." + i + ".title");
+    		String r = getProperty("gui.recent." + cat + "." + i);
+    		if (r == null) {
+    			break;
+    		}
+    		String title = getProperty("gui.recent." + cat + "." + i + ".title");
     		recent.add(new RecentElement(r, title));
     	}
 	}
@@ -356,17 +461,19 @@ public class Settings {
 	@SuppressWarnings("unchecked")
 	public void writeRecent(String cat, List<RecentElement> recent) {
 		Enumeration<String> keys = loadedSettings.keys();
-		while(keys.hasMoreElements()) {
+		while (keys.hasMoreElements()) {
 			String key = keys.nextElement();
-			if(key.startsWith("gui.recent." + cat))
-                            loadedSettings.remove(key);
+			if (key.startsWith("gui.recent." + cat)) {
+                loadedSettings.remove(key);
+			}
 		}
-                int index = 0;
-		for(RecentElement elem : recent) {
-			loadedSettings.setProperty("gui.recent." + cat + "." + index, elem.path);
-			if(elem.title != null)
-                            loadedSettings.setProperty("gui.recent." + cat + "." + index + ".title", elem.title);
-                        index++;
+		int index = 0;
+		for (RecentElement elem : recent) {
+			setProperty("gui.recent." + cat + "." + index, elem.path);
+			if (elem.title != null) {
+                setProperty("gui.recent." + cat + "." + index + ".title", elem.title);
+			}
+			index++;
 		}
 		writeSettings();
 	}
@@ -382,6 +489,7 @@ public class Settings {
      *              - SansSerif, Plain, 11.
      */
     private Font loadedFont = null;
+
     public Font getFont() {
         if (loadedFont != null) {
             return loadedFont;
@@ -427,5 +535,87 @@ public class Settings {
 
         loadedFont = font;
         return font;
+    }
+
+    /**
+     * Register a settings listener for a specific option.
+     * The settings listener will be called as soon as the option value changes,
+     * e.g. when modifying the configuration through the GUI, or when loading
+     * a game having a patch file defined.
+     * The settings listener is also called immediately by this method while
+     * registering.
+     *
+     * Only one settings listener can be defined for each name/option combination.
+     * This allows to call this method for the same listener multiple times and
+     * have it registered only once.
+     *
+     * @param name      the name of the settings listener
+     * @param option    the settings option
+     * @param listener  the listener to be called when the settings option value changes
+     */
+    public void registerSettingsListener(String name, String option, ISettingsListener listener) {
+    	removeSettingsListener(name, option);
+
+    	SettingsListenerInfo info = new SettingsListenerInfo(name, option, listener);
+    	allListeners.add(info);
+    	List<ISettingsListener> listenersForKey = listenersByKey.get(option);
+    	if (listenersForKey == null) {
+    		listenersForKey = new LinkedList<ISettingsListener>();
+    		listenersByKey.put(option, listenersForKey);
+    	}
+    	listenersForKey.add(listener);
+
+    	// Trigger the settings listener immediately if a value is defined
+    	String value = getProperty(option);
+    	if (value != null) {
+    		listener.settingsValueChanged(option, value);
+    	}
+    }
+
+    /**
+     * Remove the settings listeners matching the name and option parameters.
+     * 
+     * @param name     the name of the settings listener, or null to match any name
+     * @param option   the settings open, or null to match any settings option
+     */
+    public void removeSettingsListener(String name, String option) {
+    	for (ListIterator<SettingsListenerInfo> lit = allListeners.listIterator(); lit.hasNext(); ) {
+    		SettingsListenerInfo info = lit.next();
+    		if (info.equals(name, option)) {
+    			lit.remove();
+    			String key = info.getKey();
+    			List<ISettingsListener> listenersForKey = listenersByKey.get(key);
+    			listenersForKey.remove(info.getListener());
+    			if (listenersForKey.isEmpty()) {
+    				listenersByKey.remove(key);
+    			}
+    		}
+    	}
+    }
+
+    /**
+     * Remove all the settings listeners matching the name parameter.
+     * 
+     * @param name     the name of the settings listener, or null to match any name
+     *                 (in which case all the settings listeners will be removed).
+     */
+    public void removeSettingsListener(String name) {
+    	removeSettingsListener(name, null);
+    }
+
+    /**
+     * Trigger the settings listener for a given settings key.
+     * This method has to be called when the value of a settings key changes.
+     * 
+     * @param key     the key
+     * @param value   the settings value
+     */
+    private void triggerSettingsListener(String key, String value) {
+    	List<ISettingsListener> listenersForKey = listenersByKey.get(key);
+    	if (listenersForKey != null) {
+    		for (ISettingsListener listener : listenersForKey) {
+    			listener.settingsValueChanged(key, value);
+    		}
+    	}
     }
 }

@@ -41,10 +41,10 @@ import javax.swing.JLabel;
 
 import jpcsp.Emulator;
 import jpcsp.MainGUI;
-import jpcsp.Settings;
 import jpcsp.State;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
+import jpcsp.settings.Settings;
 import jpcsp.HLE.Modules;
 
 import com.xuggle.xuggler.Global;

@@ -21,11 +21,10 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.Processor;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 
 import org.apache.log4j.Logger;
 
-public class sceMp4 extends HLEModule implements HLEStartModule {
+public class sceMp4 extends HLEModule {
 
     protected static Logger log = Modules.getLogger("sceMp4");
 
@@ -33,14 +32,6 @@ public class sceMp4 extends HLEModule implements HLEStartModule {
     public String getName() {
         return "sceMp4";
     }
-
-    @Override
-	public void start() {
-	}
-
-	@Override
-	public void stop() {
-	}
 
 	@HLEUnimplemented(partial = true)
     @HLEFunction(nid = 0x68651CBC, version = 150, checkInsideInterrupt = true)

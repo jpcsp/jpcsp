@@ -28,12 +28,12 @@ import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.connector.AtracCodec;
+import jpcsp.settings.AbstractBoolSettingsListener;
 
 import org.apache.log4j.Logger;
 
-public class sceAtrac3plus extends HLEModule implements HLEStartModule {
+public class sceAtrac3plus extends HLEModule {
 
     protected static Logger log = Modules.getLogger("sceAtrac3plus");
 
@@ -45,10 +45,10 @@ public class sceAtrac3plus extends HLEModule implements HLEStartModule {
     @Override
     public void start() {
         atracIDs = new HashMap<Integer, AtracID>();
-    }
 
-    @Override
-    public void stop() {
+        setSettingsListener("emu.useConnector", new EnableConnectorSettingsListener());
+
+        super.start();
     }
 
     protected static final String idPurpose = "sceAtrac3plus";
@@ -616,12 +616,19 @@ public class sceAtrac3plus extends HLEModule implements HLEStartModule {
 		}
     }
 
+    private static class EnableConnectorSettingsListener extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setEnableConnector(value);
+		}
+    }
+
     public static boolean isEnableConnector() {
         return useAtracCodec;
     }
 
-    public static void setEnableConnector(boolean useConnector) {
-        sceAtrac3plus.useAtracCodec = useConnector;
+    private static void setEnableConnector(boolean useConnector) {
+        useAtracCodec = useConnector;
     }
 
     protected String getStringFromInt32(int n) {

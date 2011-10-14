@@ -34,11 +34,10 @@ import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 
 import org.apache.log4j.Logger;
 
-public class sceCtrl extends HLEModule implements HLEStartModule {
+public class sceCtrl extends HLEModule {
 
     private static Logger log = Modules.getLogger("sceCtrl");
     private int cycle;
@@ -159,10 +158,8 @@ public class sceCtrl extends HLEModule implements HLEStartModule {
             sampleAction = new SamplingAction();
             Managers.intr.addVBlankAction(sampleAction);
         }
-    }
 
-    @Override
-    public void stop() {
+        super.start();
     }
 
     protected class SamplingAction implements IAction {

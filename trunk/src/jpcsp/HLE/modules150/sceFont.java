@@ -55,20 +55,26 @@ import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.pspCharInfo;
 import jpcsp.HLE.kernel.types.pspFontStyle;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.format.PGF;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.capture.CaptureImage;
+import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.util.Debug;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-public class sceFont extends HLEModule implements HLEStartModule {
-
+public class sceFont extends HLEModule {
     private static Logger log = Modules.getLogger("sceFont");
+
+	private class AllowInternalFontsSettingsListerner extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setAllowInternalFonts(value);
+		}
+	}
 
     @Override
     public String getName() {
@@ -77,7 +83,9 @@ public class sceFont extends HLEModule implements HLEStartModule {
 
     @Override
     public void start() {
-        fontIndex = -1;
+    	setSettingsListener("emu.useFlashFonts", new AllowInternalFontsSettingsListerner());
+
+    	fontIndex = -1;
         fontLibIndex = -1;
         internalFonts = new LinkedList<Font>();
         fontLibsMap = new HashMap<Integer, FontLib>();
@@ -85,12 +93,10 @@ public class sceFont extends HLEModule implements HLEStartModule {
         loadFontRegistry();
         loadDefaultSystemFont();
         loadAllFonts();
+
+        super.start();
     }
 
-    @Override
-    public void stop() {
-    }
-    
     public int fontIndex;
     public int fontLibIndex;
 
@@ -198,7 +204,7 @@ public class sceFont extends HLEModule implements HLEStartModule {
     public static final int PSP_FONT_PIXELFORMAT_32 = 4; // 1 pixel in 4 bytes (RGBA)
     public static final int PSP_FONT_MODE_FILE = 0;
     public static final int PSP_FONT_MODE_MEMORY = 1;
-    private static boolean allowInternalFonts = false;
+    private boolean allowInternalFonts = false;
     private static final boolean dumpFonts = false;
     private List<Font> internalFonts;
     private HashMap<Integer, FontLib> fontLibsMap;
@@ -207,11 +213,11 @@ public class sceFont extends HLEModule implements HLEStartModule {
     private List<FontRegistryEntry> fontRegistry;
     protected static final float pointDPI = 72.f;
 
-    public static boolean getAllowInternalFonts() {
+    protected boolean getAllowInternalFonts() {
         return allowInternalFonts;
     }
 
-    public static void setAllowInternalFonts(boolean status) {
+    private void setAllowInternalFonts(boolean status) {
         allowInternalFonts = status;
     }
 

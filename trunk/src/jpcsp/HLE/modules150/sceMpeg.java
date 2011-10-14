@@ -42,19 +42,32 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceMpegAu;
 import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.connector.MpegCodec;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
+import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.util.Debug;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-public class sceMpeg extends HLEModule implements HLEStartModule {
-
+public class sceMpeg extends HLEModule {
     protected static Logger log = Modules.getLogger("sceMpeg");
+
+    private class EnableConnectorSettingsListener extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setEnableConnector(value);
+		}
+    }
+
+    private class EnableMediaEngineSettingsListener extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setEnableMediaEngine(value);
+		}
+    }
 
     @Override
     public String getName() {
@@ -63,6 +76,9 @@ public class sceMpeg extends HLEModule implements HLEStartModule {
 
     @Override
     public void start() {
+        setSettingsListener("emu.useConnector", new EnableConnectorSettingsListener());
+        setSettingsListener("emu.useMediaEngine", new EnableMediaEngineSettingsListener());
+
         mpegHandle = 0;
         isCurrentMpegAnalyzed = false;
         mpegRingbuffer = null;
@@ -87,11 +103,10 @@ public class sceMpeg extends HLEModule implements HLEStartModule {
         audioDecodeBuffer = new byte[MPEG_ATRAC_ES_OUTPUT_SIZE];
         allocatedEsBuffers = new boolean[2];
         streamMap = new HashMap<Integer, StreamInfo>();
+
+        super.start();
     }
 
-    @Override
-    public void stop() {
-    }
     public static boolean useMpegCodec = false;
     public static boolean enableMediaEngine = false;
 
@@ -224,7 +239,7 @@ public class sceMpeg extends HLEModule implements HLEStartModule {
         return useMpegCodec;
     }
 
-    public static void setEnableConnector(boolean useConnector) {
+    private static void setEnableConnector(boolean useConnector) {
         sceMpeg.useMpegCodec = useConnector;
         if (useConnector) {
             log.info("Using JPCSP connector");
@@ -235,7 +250,7 @@ public class sceMpeg extends HLEModule implements HLEStartModule {
         return enableMediaEngine;
     }
 
-    public static void setEnableMediaEngine(boolean enableMediaEngine) {
+    private static void setEnableMediaEngine(boolean enableMediaEngine) {
         sceMpeg.enableMediaEngine = enableMediaEngine;
         if (enableMediaEngine) {
             log.info("Media Engine enabled");

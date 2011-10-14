@@ -31,9 +31,9 @@ import javax.swing.MutableComboBoxModel;
 
 import jpcsp.Emulator;
 import jpcsp.Resource;
-import jpcsp.Settings;
 import jpcsp.State;
 import jpcsp.Controller.keyCode;
+import jpcsp.settings.Settings;
 
 import net.java.games.input.Component;
 import net.java.games.input.Controller;

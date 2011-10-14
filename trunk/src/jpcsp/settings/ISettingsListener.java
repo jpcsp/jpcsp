@@ -14,10 +14,21 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
+package jpcsp.settings;
 
-package jpcsp.HLE.modules;
-
-public interface HLEStartModule {
-	public void start();
-	public void stop();
+/**
+ * Interface for a settings listener.
+ * See Settings.registerSettingsListener for the registration of settings listeners.
+ * 
+ * @author gid15
+ */
+public interface ISettingsListener {
+	/**
+	 * This method is called when the value of the registered settings option
+	 * changes.
+	 * 
+	 * @param option    the option name
+	 * @param value     the new option value
+	 */
+	public void settingsValueChanged(String option, String value);
 }

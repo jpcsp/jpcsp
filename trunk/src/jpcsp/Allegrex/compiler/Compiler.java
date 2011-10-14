@@ -27,7 +27,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
-import jpcsp.Settings;
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.Instructions;
@@ -35,6 +34,8 @@ import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
+import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.settings.Settings;
 import jpcsp.util.CpuDurationStatistics;
 import jpcsp.util.DurationStatistics;
 
@@ -133,14 +134,21 @@ public class Compiler implements ICompiler {
 	public static CpuDurationStatistics compileDuration = new CpuDurationStatistics("Compilation Time");
 	private Document configuration;
 	private NativeCodeManager nativeCodeManager;
-    public static boolean ignoreInvalidMemory = false;
+    private boolean ignoreInvalidMemory = false;
     public int defaultMethodMaxInstructions = 3000;
 
-    public static boolean isIgnoreInvalidMemory() {
+	private class IgnoreInvalidMemoryAccessSettingsListerner extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setIgnoreInvalidMemory(value);
+		}
+	}
+
+    private boolean isIgnoreInvalidMemory() {
         return ignoreInvalidMemory;
     }
 
-    public static void setIgnoreInvalidMemory(boolean enable) {
+    private void setIgnoreInvalidMemory(boolean enable) {
         ignoreInvalidMemory = enable;
     }
 
@@ -187,7 +195,9 @@ public class Compiler implements ICompiler {
     }
 
     private void Initialise() {
-		DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+    	Settings.getInstance().registerSettingsListener("Compiler", "emu.ignoreInvalidMemoryAccess", new IgnoreInvalidMemoryAccessSettingsListerner());
+
+    	DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 		documentBuilderFactory.setIgnoringElementContentWhitespace(true);
 		documentBuilderFactory.setIgnoringComments(true);
 		documentBuilderFactory.setCoalescing(true);

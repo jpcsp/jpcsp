@@ -20,15 +20,14 @@ package jpcsp.HLE.modules150;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer32;
-import jpcsp.Settings;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.hardware.Battery;
+import jpcsp.settings.Settings;
 
 import org.apache.log4j.Logger;
 
-public class sceImpose extends HLEModule implements HLEStartModule {
+public class sceImpose extends HLEModule {
     private static Logger log = Modules.getLogger("sceImpose");
 
 	@Override
@@ -38,10 +37,8 @@ public class sceImpose extends HLEModule implements HLEStartModule {
     public void start() {
         languageMode_language = Settings.getInstance().readInt("emu.impose.language", PSP_LANGUAGE_ENGLISH);
         languageMode_button = Settings.getInstance().readInt("emu.impose.button", PSP_CONFIRM_BUTTON_CROSS);
-    }
 
-    @Override
-    public void stop() {
+        super.start();
     }
 
     public final static int PSP_LANGUAGE_JAPANESE = 0;

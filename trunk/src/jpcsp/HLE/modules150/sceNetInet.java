@@ -53,7 +53,6 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.kernel.types.pspNetSockAddrInternet;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.sceNetApctl;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
@@ -69,7 +68,7 @@ import jpcsp.Processor;
 
 import jpcsp.Allegrex.CpuState;
 
-public class sceNetInet extends HLEModule implements HLEStartModule {
+public class sceNetInet extends HLEModule {
     public static Logger log = Modules.getLogger("sceNetInet");
 
     public static final int AF_INET = 2; // Address familiy internet
@@ -1919,6 +1918,8 @@ public class sceNetInet extends HLEModule implements HLEStartModule {
 	@Override
 	public void start() {
 		sockets = new HashMap<Integer, pspInetSocket>();
+
+        super.start();
 	}
 
 	@Override
@@ -1928,6 +1929,8 @@ public class sceNetInet extends HLEModule implements HLEStartModule {
 			inetSocket.close();
 		}
 		sockets.clear();
+
+        super.start();
 	}
 
 	/**

@@ -63,7 +63,6 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.autotests.AutoTestsOutput;
 import jpcsp.connector.PGDFileConnector;
@@ -75,6 +74,7 @@ import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.hardware.MemoryStick;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
+import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -86,7 +86,7 @@ import org.apache.log4j.Logger;
  * 2. The PSP's filesystem supports permissions.
  * Implement PSP_O_CREAT based on Java File and it's setReadable/Writable/Executable.
  */
-public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
+public class IoFileMgrForUser extends HLEModule {
 
     private static Logger log = Modules.getLogger("IoFileMgrForUser");
     private static Logger stdout = Logger.getLogger("stdout");
@@ -498,6 +498,13 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
         }
     }
 
+	private class ExtractPGDSettingsListerner extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setAllowExtractPGDStatus(value);
+		}
+	}
+
     @Override
     public String getName() {
         return "IoFileMgrForUser";
@@ -525,17 +532,17 @@ public class IoFileMgrForUser extends HLEModule implements HLEStartModule {
             ioListeners = new IIoListener[0];
         }
         ioWaitStateChecker = new IoWaitStateChecker();
+
+        setSettingsListener("emu.extractPGD", new ExtractPGDSettingsListerner());
+
+        super.start();
     }
 
-    @Override
-    public void stop() {
-    }
-
-    public void setAllowExtractPGDStatus(boolean status) {
+    private void setAllowExtractPGDStatus(boolean status) {
         allowExtractPGD = status;
     }
 
-    public boolean getAllowExtractPGDStatus() {
+    private boolean getAllowExtractPGDStatus() {
         return allowExtractPGD;
     }
     

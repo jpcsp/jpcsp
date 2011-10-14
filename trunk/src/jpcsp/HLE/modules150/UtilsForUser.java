@@ -33,7 +33,6 @@ import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 
 import org.apache.log4j.Logger;
 
@@ -51,7 +50,7 @@ import org.apache.log4j.Logger;
  *           int tz_dsttime; // type of dst correction to apply
  *      };
  */
-public class UtilsForUser extends HLEModule implements HLEStartModule {
+public class UtilsForUser extends HLEModule {
     private static Logger log = Modules.getLogger("UtilsForUser");
 
 	private HashMap<Integer, SceKernelUtilsMt19937Context> Mt19937List;
@@ -210,11 +209,9 @@ public class UtilsForUser extends HLEModule implements HLEStartModule {
 	@Override
 	public void start() {
         Mt19937List = new HashMap<Integer, SceKernelUtilsMt19937Context>();
-    }
 
-	@Override
-	public void stop() {
-	}
+        super.start();
+    }
 
     protected static final int PSP_KERNEL_ICACHE_PROBE_MISS = 0;
     protected static final int PSP_KERNEL_ICACHE_PROBE_HIT = 1;

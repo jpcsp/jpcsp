@@ -26,7 +26,6 @@ import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.hardware.Audio;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
@@ -35,7 +34,7 @@ import jpcsp.sound.SoundChannel;
 
 import org.apache.log4j.Logger;
 
-public class sceVaudio extends HLEModule implements HLEStartModule {
+public class sceVaudio extends HLEModule {
 
     protected static Logger log = Modules.getLogger("sceVaudio");
 
@@ -48,10 +47,8 @@ public class sceVaudio extends HLEModule implements HLEStartModule {
 	public void start() {
 		SoundChannel.init();
         pspVaudioChannel = new SoundChannel(9); // Use channel 9 for virtual audio.
-	}
 
-	@Override
-	public void stop() {
+        super.start();
 	}
 
     protected static final int PSP_VAUDIO_VOLUME_BASE = 0x8000;

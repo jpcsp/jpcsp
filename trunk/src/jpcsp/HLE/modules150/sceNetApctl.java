@@ -30,11 +30,11 @@ import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.ThreadManForUser;
+import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
 import jpcsp.Memory;
 import jpcsp.Processor;
-import jpcsp.Settings;
 
 import jpcsp.Allegrex.CpuState;
 

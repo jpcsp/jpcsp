@@ -62,10 +62,10 @@ import javax.swing.table.TableColumn;
 import jpcsp.Emulator;
 import jpcsp.MainGUI;
 import jpcsp.Resource;
-import jpcsp.Settings;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
+import jpcsp.settings.Settings;
 
 /**
  * @author Orphis, gid15

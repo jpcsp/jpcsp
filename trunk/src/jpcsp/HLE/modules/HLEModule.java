@@ -19,6 +19,9 @@ package jpcsp.HLE.modules;
 
 import java.util.HashMap;
 
+import jpcsp.settings.ISettingsListener;
+import jpcsp.settings.Settings;
+
 /**
  *
  * @author fiveofhearts
@@ -49,8 +52,20 @@ abstract public class HLEModule {
 		
 		return installedHLEModuleFunctions.get(functionName);
 	}
-	
-    static protected String getCallingFunctionName(int index) {
+
+	public void start() {
+	}
+
+	public void stop() {
+		// Remove all the settings listener defined for this module
+		Settings.getInstance().removeSettingsListener(getName());
+	}
+
+	protected void setSettingsListener(String option, ISettingsListener settingsListener) {
+		Settings.getInstance().registerSettingsListener(getName(), option, settingsListener);
+	}
+
+	static protected String getCallingFunctionName(int index) {
     	StackTraceElement[] stack = Thread.currentThread().getStackTrace();
     	return stack[index + 1].getMethodName();
     }

@@ -36,6 +36,8 @@ import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
+import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.settings.Settings;
 import jpcsp.util.Hash;
 import jpcsp.util.Utilities;
 
@@ -53,16 +55,29 @@ public class ExternalDecoder {
     private static boolean dumpAudioStreamFile = false;
     private static boolean keepOmaFile = true;
     private static boolean scanAllFileMagicOffsets = true;
+    private static EnableExternalDecoderSettingsListerner enableExternalDecoderSettingsListerner;
+
+	private static class EnableExternalDecoderSettingsListerner extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setEnabled(value);
+		}
+	}
 
     public ExternalDecoder() {
     	init();
     }
 
-    public static void setEnabled(boolean flag) {
+    private static void setEnabled(boolean flag) {
     	enabled = flag;
     }
 
     private static void init() {
+    	if (enableExternalDecoderSettingsListerner == null) {
+    		enableExternalDecoderSettingsListerner = new EnableExternalDecoderSettingsListerner();
+    		Settings.getInstance().registerSettingsListener("ExternalDecoder", "emu.useExternalDecoder", enableExternalDecoderSettingsListerner);
+    	}
+
     	if (enabled && extAudioDecoder == null) {
     		String extAudioDecoderPath = System.getProperty("java.library.path");
     		if (extAudioDecoderPath == null) {

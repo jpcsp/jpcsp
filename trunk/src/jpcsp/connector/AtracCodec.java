@@ -36,6 +36,8 @@ import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
+import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.settings.Settings;
 import jpcsp.util.Hash;
 import jpcsp.util.Utilities;
 
@@ -46,6 +48,12 @@ import org.apache.log4j.Logger;
  *
  */
 public class AtracCodec {
+	private class EnableMediaEngineSettingsListerner extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setEnableMediaEngine(value);
+		}
+	}
 
     protected String id;
     protected static final String atracSuffix = ".at3";
@@ -68,25 +76,16 @@ public class AtracCodec {
     protected MediaEngine me;
     protected PacketChannel atracChannel;
     protected int currentLoopCount;
-    protected static boolean useMediaEngine = false;
+    protected boolean useMediaEngine = false;
     protected byte[] samplesBuffer;
     protected ExternalDecoder externalDecoder;
     protected boolean requireAllAtracData;
-
-    public boolean checkMediaEngineState() {
-        return useMediaEngine && me != null;
-    }
-
-    public static boolean useMediaEngine() {
-        return useMediaEngine;
-    }
-
-    public static void setEnableMediaEngine(boolean state) {
-        useMediaEngine = state;
-    }
+    private static final String name = "AtracCodec";
 
     public AtracCodec() {
-        if (useMediaEngine()) {
+    	Settings.getInstance().registerSettingsListener(name, "emu.useMediaEngine", new EnableMediaEngineSettingsListerner());
+
+    	if (useMediaEngine()) {
             me = new MediaEngine();
             atracChannel = new PacketChannel();
             currentLoopCount = 0;
@@ -94,6 +93,18 @@ public class AtracCodec {
 
         externalDecoder = new ExternalDecoder();
         generateCommandFile();
+    }
+
+    protected boolean checkMediaEngineState() {
+        return useMediaEngine && me != null;
+    }
+
+    protected boolean useMediaEngine() {
+        return useMediaEngine;
+    }
+
+    private void setEnableMediaEngine(boolean state) {
+        useMediaEngine = state;
     }
 
     public void setAtracMaxSamples(int atracMaxSamples) {
@@ -462,6 +473,7 @@ public class AtracCodec {
 
     public void finish() {
         closeStreams();
+        Settings.getInstance().removeSettingsListener(name);
     }
 
     public boolean isExternalAudio() {

@@ -26,8 +26,8 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import jpcsp.Emulator;
-import jpcsp.Settings;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.settings.Settings;
 
 public class VfpuFrame extends JFrame {
 

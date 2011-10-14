@@ -23,11 +23,10 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 
 import org.apache.log4j.Logger;
 
-public class sceHprm extends HLEModule implements HLEStartModule {
+public class sceHprm extends HLEModule {
     private static Logger log = Modules.getLogger("sceHprm");
 
     @Override
@@ -36,10 +35,8 @@ public class sceHprm extends HLEModule implements HLEStartModule {
     @Override
     public void start() {
     	hprmWarningLogged = false;
-    }
 
-    @Override
-    public void stop() {
+        super.start();
     }
 
     private boolean enableRemote = false;

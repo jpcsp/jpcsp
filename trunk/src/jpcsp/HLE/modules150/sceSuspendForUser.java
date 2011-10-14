@@ -26,12 +26,11 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.hardware.Screen;
 
 import org.apache.log4j.Logger;
 
-public class sceSuspendForUser extends HLEModule implements HLEStartModule {
+public class sceSuspendForUser extends HLEModule {
 
     private static Logger log = Modules.getLogger("sceSuspendForUser");
 
@@ -43,11 +42,10 @@ public class sceSuspendForUser extends HLEModule implements HLEStartModule {
     @Override
     public void start() {
         volatileMemLocked = false;
+
+        super.start();
     }
 
-    @Override
-    public void stop() {
-    }
     public static final int KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY = 0;
     public static final int KERNEL_POWER_TICK_SUSPEND = 1;
     public static final int KERNEL_POWER_TICK_DISPLAY = 6;

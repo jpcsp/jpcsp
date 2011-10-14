@@ -19,8 +19,8 @@ package jpcsp.graphics.RE.buffer;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
-import jpcsp.Settings;
 import jpcsp.graphics.RE.IRenderingEngine;
+import jpcsp.settings.Settings;
 
 /**
  * @author gid15
