@@ -35,6 +35,7 @@ import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.settings.AbstractIntSettingsListener;
 import jpcsp.settings.Settings;
 import jpcsp.util.CpuDurationStatistics;
 import jpcsp.util.DurationStatistics;
@@ -144,6 +145,13 @@ public class Compiler implements ICompiler {
 		}
 	}
 
+	private class MethodMaxInstructionsSettingsListerner extends AbstractIntSettingsListener {
+		@Override
+		protected void settingsValueChanged(int value) {
+			setDefaultMethodMaxInstructions(value);
+		}
+	}
+
     private boolean isIgnoreInvalidMemory() {
         return ignoreInvalidMemory;
     }
@@ -196,6 +204,7 @@ public class Compiler implements ICompiler {
 
     private void Initialise() {
     	Settings.getInstance().registerSettingsListener("Compiler", "emu.ignoreInvalidMemoryAccess", new IgnoreInvalidMemoryAccessSettingsListerner());
+    	Settings.getInstance().registerSettingsListener("Compiler", "emu.compiler.methodMaxInstructions", new MethodMaxInstructionsSettingsListerner());
 
     	DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 		documentBuilderFactory.setIgnoringElementContentWhitespace(true);
@@ -219,8 +228,6 @@ public class Compiler implements ICompiler {
 		} else {
 			nativeCodeManager = new NativeCodeManager(null);
 		}
-
-		setDefaultMethodMaxInstructions(Settings.getInstance().readInt("emu.compiler.methodMaxInstructions", 3000));
 
 		reset();
 	}

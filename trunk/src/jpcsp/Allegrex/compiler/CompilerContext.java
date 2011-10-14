@@ -99,7 +99,8 @@ public class CompilerContext implements ICompilerContext {
     private static final int LOCAL_TMP_VD1 = 11;
     private static final int LOCAL_TMP_VD2 = 12;
     private static final int LOCAL_MAX = 13;
-    private static final int STACK_MAX = 11;
+    private static final int DEFAULT_MAX_STACK_SIZE = 11;
+    private static final int SYSCALL_MAX_STACK_SIZE = 100;
     private static final int LOCAL_ERROR_POINTER = LOCAL_TMP3;
 	private boolean enableIntructionCounting = false;
     public Set<Integer> analysedAddresses = new HashSet<Integer>();
@@ -136,6 +137,7 @@ public class CompilerContext implements ICompilerContext {
 	private int instanceIndex;
 	private boolean preparedCall = false;
 	private NativeCodeSequence preparedCallNativeCodeBlock = null;
+	private int maxStackSize = DEFAULT_MAX_STACK_SIZE;
 
 	public CompilerContext(CompilerClassLoader classLoader, int instanceIndex) {
     	Compiler compiler = Compiler.getInstance();
@@ -146,7 +148,7 @@ public class CompilerContext implements ICompilerContext {
 
         // Count instructions only when the profile is enabled or
         // when the statistics are enabled
-        if (Profiler.enableProfiler || DurationStatistics.collectStatistics) {
+        if (Profiler.isProfilerEnabled() || DurationStatistics.collectStatistics) {
         	enableIntructionCounting = true;
         }
 
@@ -690,7 +692,7 @@ public class CompilerContext implements ICompilerContext {
 
     	// Do not call native block directly if we are profiling,
         // this would loose profiler information
-        if (!Profiler.enableProfiler) {
+        if (!Profiler.isProfilerEnabled()) {
         	// Is a native equivalent for this CodeBlock available?
         	preparedCallNativeCodeBlock = nativeCodeManager.getCompiledNativeCodeBlock(address);
         }
@@ -1089,6 +1091,9 @@ public class CompilerContext implements ICompilerContext {
      *                     false if not (i.e. a syscall where context switching could happen)
      */
     private void visitSyscall(HLEModuleFunctionReflection func, boolean fastSyscall) {
+    	// The compilation of a syscall requires more stack size than usual
+    	maxStackSize = SYSCALL_MAX_STACK_SIZE;
+
     	if (!fastSyscall) {
     		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "preSyscall", "()V");
     	}
@@ -1338,7 +1343,7 @@ public class CompilerContext implements ICompilerContext {
     	}
     	mv.visitLabel(notReplacedLabel);
 
-    	if (Profiler.enableProfiler) {
+    	if (Profiler.isProfilerEnabled()) {
     		loadImm(getCodeBlock().getStartAddress());
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, profilerInternalName, "addCall", "(I)V");
     	}
@@ -1372,7 +1377,7 @@ public class CompilerContext implements ICompilerContext {
 		        	loadImm(currentInstructionCount);
 			        mv.visitInsn(Opcodes.IADD);
 		        }
-		        if (Profiler.enableProfiler) {
+		        if (Profiler.isProfilerEnabled()) {
 			        mv.visitInsn(Opcodes.DUP);
 		    		loadImm(getCodeBlock().getStartAddress());
 		            mv.visitMethodInsn(Opcodes.INVOKESTATIC, profilerInternalName, "addInstructionCount", "(II)V");
@@ -1491,7 +1496,7 @@ public class CompilerContext implements ICompilerContext {
         if (target.getAddress() <= getCodeInstruction().getAddress()) {
         	checkSync();
 
-        	if (Profiler.enableProfiler) {
+        	if (Profiler.isProfilerEnabled()) {
         		loadImm(getCodeInstruction().getAddress());
                 mv.visitMethodInsn(Opcodes.INVOKESTATIC, profilerInternalName, "addBackBranch", "(I)V");
         	}
@@ -1587,7 +1592,7 @@ public class CompilerContext implements ICompilerContext {
     }
 
     public int getMaxStack() {
-        return STACK_MAX;
+        return maxStackSize;
     }
 
     public void visitPauseEmuWithStatus(MethodVisitor mv, int status) {

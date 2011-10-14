@@ -42,7 +42,6 @@ import jpcsp.graphics.textures.TextureCache;
 import jpcsp.hardware.Battery;
 import jpcsp.hardware.Interrupts;
 import jpcsp.scheduler.Scheduler;
-import jpcsp.settings.Settings;
 import jpcsp.sound.SoundChannel;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.JpcspDialogManager;
@@ -231,8 +230,7 @@ public class Emulator implements Runnable {
     @Override
     public void run()
     {
-        RuntimeContext.isActive = Settings.getInstance().readBool("emu.compiler");
-        Profiler.enableProfiler = Settings.getInstance().readBool("emu.profiler");
+    	RuntimeContext.start();
 
         clock.resume();
 
@@ -251,7 +249,7 @@ public class Emulator implements Runnable {
     			clock.resume();
             }
 
-            if (RuntimeContext.isActive) {
+            if (RuntimeContext.isCompilerEnabled()) {
             	RuntimeContext.run();
             } else {
                 processor.step();
@@ -260,8 +258,9 @@ public class Emulator implements Runnable {
                 scheduler.step();
                 Modules.sceDisplayModule.step();
 
-                if (State.debugger != null)
+                if (State.debugger != null) {
                     State.debugger.step();
+                }
             }
         }
 
