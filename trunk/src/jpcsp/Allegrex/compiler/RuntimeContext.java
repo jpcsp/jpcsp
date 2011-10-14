@@ -330,7 +330,10 @@ public class RuntimeContext {
 			log.debug(String.format("Start of Callback 0x%08X", pc));
 		}
 
-    	IExecutable executable = getExecutable(pc);
+		// Switch to the real active thread, even if it is an idle thread
+		switchRealThread(Modules.ThreadManForUserModule.getCurrentThread());
+
+		IExecutable executable = getExecutable(pc);
         int newPc = 0;
         int returnAddress = cpu.gpr[_ra];
         boolean callbackExited = false;
@@ -355,6 +358,8 @@ public class RuntimeContext {
             // Re-sync the runtime, the current thread might have been rescheduled
             wantSync = true;
         }
+
+        update();
     }
 
     private static void updateStaticVariables() {
@@ -384,6 +389,19 @@ public class RuntimeContext {
         }
 	}
 
+    private static void switchRealThread(SceKernelThreadInfo threadInfo) {
+    	RuntimeThread thread = threads.get(threadInfo);
+    	if (thread == null) {
+    		thread = new RuntimeThread(threadInfo);
+    		threads.put(threadInfo, thread);
+    		thread.start();
+    	}
+
+    	currentThread = threadInfo;
+    	currentRuntimeThread = thread;
+        isIdle = false;
+    }
+
     private static void switchThread(SceKernelThreadInfo threadInfo) {
     	if (log.isDebugEnabled()) {
     		String name;
@@ -410,16 +428,7 @@ public class RuntimeContext {
     		currentThread = null;
     		currentRuntimeThread = null;
     	} else {
-        	RuntimeThread thread = threads.get(threadInfo);
-        	if (thread == null) {
-        		thread = new RuntimeThread(threadInfo);
-        		threads.put(threadInfo, thread);
-        		thread.start();
-        	}
-
-        	currentThread = threadInfo;
-        	currentRuntimeThread = thread;
-            isIdle = false;
+    		switchRealThread(threadInfo);
     	}
     }
 
