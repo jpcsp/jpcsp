@@ -16,14 +16,19 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
+import static jpcsp.Allegrex.Common._f0;
 import static jpcsp.Allegrex.Common._sp;
+import static jpcsp.Allegrex.Common._v0;
+import static jpcsp.Allegrex.Common._v1;
 import static jpcsp.Allegrex.Common._zr;
 
+import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.Common;
@@ -40,12 +45,26 @@ import jpcsp.Allegrex.compiler.nativeCode.NativeCodeInstruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
 import jpcsp.Allegrex.compiler.nativeCode.Nop;
+import jpcsp.HLE.HLEUidClass;
+import jpcsp.HLE.HLEUidObjectMapping;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.SyscallHandler;
+import jpcsp.HLE.TErrorPointer32;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.TPointer64;
+import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.modules.HLEModuleFunction;
+import jpcsp.HLE.modules.HLEModuleFunctionReflection;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.memory.SafeFastMemory;
 import jpcsp.util.DurationStatistics;
 
+import org.apache.log4j.Logger;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -81,6 +100,7 @@ public class CompilerContext implements ICompilerContext {
     private static final int LOCAL_TMP_VD2 = 12;
     private static final int LOCAL_MAX = 13;
     private static final int STACK_MAX = 11;
+    private static final int LOCAL_ERROR_POINTER = LOCAL_TMP3;
 	private boolean enableIntructionCounting = false;
     public Set<Integer> analysedAddresses = new HashSet<Integer>();
     public Stack<Integer> blocksToBeAnalysed = new Stack<Integer>();
@@ -117,7 +137,7 @@ public class CompilerContext implements ICompilerContext {
 	private boolean preparedCall = false;
 	private NativeCodeSequence preparedCallNativeCodeBlock = null;
 
-    public CompilerContext(CompilerClassLoader classLoader, int instanceIndex) {
+	public CompilerContext(CompilerClassLoader classLoader, int instanceIndex) {
     	Compiler compiler = Compiler.getInstance();
         this.classLoader = classLoader;
         this.instanceIndex = instanceIndex;
@@ -196,6 +216,14 @@ public class CompilerContext implements ICompilerContext {
     	}
     }
 
+    private void loadMemory() {
+		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memory", memoryDescriptor);
+    }
+
+    private void loadModule(String moduleName) {
+        mv.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(Modules.class), moduleName + "Module", "Ljpcsp/HLE/modules/" + moduleName + ";");
+    }
+
     private void loadFpr() {
 		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "fpr", "[F");
     }
@@ -204,12 +232,14 @@ public class CompilerContext implements ICompilerContext {
 		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "vpr", "[" + vfpuValueDescriptor);
     }
 
+    @Override
     public void loadRegister(int reg) {
     	loadGpr();
     	loadImm(reg);
         mv.visitInsn(Opcodes.IALOAD);
     }
 
+    @Override
     public void loadFRegister(int reg) {
     	loadFpr();
     	loadImm(reg);
@@ -760,7 +790,470 @@ public class CompilerContext implements ICompilerContext {
 		return fastSyscalls.contains(code);
 	}
 
-	public void visitSyscall(int opcode) {
+    /**
+     * Generate the required Java code to load one parameter for
+     * the syscall function from the CPU registers.
+     *
+     * The following code is generated based on the parameter type:
+     * Processor: parameterValue = RuntimeContext.processor
+     * int:       parameterValue = cpu.gpr[paramIndex++]
+     * float:     parameterValue = cpu.fpr[paramFloatIndex++]
+     * long:      parameterValue = (cpu.gpr[paramIndex++] & 0xFFFFFFFFL) + ((long) cpu.gpr[paramIndex++]) << 32)
+     * boolean:   parameterValue = cpu.gpr[paramIndex++]
+     * TPointer,
+     * TPointer32,
+     * TPointer64,
+     * TErrorPointer32:
+     *            if (checkMemoryAccess()) {
+     *                if (canBeNullParam && address == 0) {
+     *                    goto addressGood;
+     *                }
+     *                if (RuntimeContext.checkMemoryPointer(address)) {
+     *                    goto addressGood;
+     *                }
+     *                cpu.gpr[_v0] = SceKernelErrors.ERROR_INVALID_POINTER;
+     *                pop all the parameters already prepared on the stack;
+     *                goto afterSyscall;
+     *                addressGood:
+     *            }
+     *            <parameterType> pointer = new <parameterType>(address);
+     *            if (parameterType == TErrorPointer32.class) {
+     *                parameterReader.setHasErrorPointer(true);
+     *                localVar[LOCAL_ERROR_POINTER] = pointer;
+     *            }
+     *            parameterValue = pointer
+     * HLEUidClass defined in annotation:
+     *            <parameterType> uidObject = HLEUidObjectMapping.getObject("<parameterType>", uid);
+     *            if (uidObject == null) {
+     *                cpu.gpr[_v0] = errorValueOnNotFound;
+     *                pop all the parameters already prepared on the stack;
+     *                goto afterSyscall;
+     *            }
+     *            parameterValue = uidObject
+     *
+     * And then common for all the types:
+     *            try {
+     *                parameterValue = <module>.<methodToCheck>(parameterValue);
+     *            } catch (SceKernelErrorException e) {
+     *                goto catchSceKernelErrorException;
+     *            }
+     *            push parameterValue on stack
+     *
+     * @param parameterReader               the current parameter state
+     * @param func                          the syscall function
+     * @param parameterType                 the type of the parameter
+     * @param afterSyscallLabel             the Label pointing after the call to the syscall function
+     * @param catchSceKernelErrorException  the Label pointing to the SceKernelErrorException catch handler
+     */
+    private void loadParameter(CompilerParameterReader parameterReader, HLEModuleFunctionReflection func, Class<?> parameterType, Label afterSyscallLabel, Label catchSceKernelErrorException) {
+    	if (parameterType == Processor.class) {
+    		loadProcessor();
+    		parameterReader.incrementCurrentStackSize();
+    	} else if (parameterType == int.class) {
+    		parameterReader.loadNextInt();
+    		parameterReader.incrementCurrentStackSize();
+    	} else if (parameterType == float.class) {
+    		parameterReader.loadNextFloat();
+    		parameterReader.incrementCurrentStackSize();
+    	} else if (parameterType == long.class) {
+    		parameterReader.loadNextLong();
+    		parameterReader.incrementCurrentStackSize(2);
+    	} else if (parameterType == boolean.class) {
+    		parameterReader.loadNextInt();
+    		parameterReader.incrementCurrentStackSize();
+    	} else if (parameterType == TPointer.class || parameterType == TPointer32.class || parameterType == TPointer64.class || parameterType == TErrorPointer32.class) {
+    		// if (checkMemoryAccess()) {
+    		//     if (canBeNullParam && address == 0) {
+    		//         goto addressGood;
+    		//     }
+    		//     if (RuntimeContext.checkMemoryPointer(address)) {
+    		//         goto addressGood;
+    		//     }
+    		//     cpu.gpr[_v0] = SceKernelErrors.ERROR_INVALID_POINTER;
+    		//     pop all the parameters already prepared on the stack;
+    		//     goto afterSyscall;
+    		//     addressGood:
+    		// }
+    		// <parameterType> pointer = new <parameterType>(address);
+    		// if (parameterType == TErrorPointer32.class) {
+    		//     parameterReader.setHasErrorPointer(true);
+    		//     localVar[LOCAL_ERROR_POINTER] = pointer;
+    		// }
+    		mv.visitTypeInsn(Opcodes.NEW, Type.getInternalName(parameterType));
+    		mv.visitInsn(Opcodes.DUP);
+    		loadMemory();
+    		parameterReader.loadNextInt();
+    		if (checkMemoryAccess()) {
+    			Label addressGood = new Label();
+    			if (func.canBeNullParam(parameterReader.getCurrentParameterIndex())) {
+        			mv.visitInsn(Opcodes.DUP);
+    				mv.visitJumpInsn(Opcodes.IFEQ, addressGood);
+    			}
+    			mv.visitInsn(Opcodes.DUP);
+                mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryPointer", "(I)Z");
+    			mv.visitJumpInsn(Opcodes.IFNE, addressGood);
+    			storeRegister(_v0, SceKernelErrors.ERROR_INVALID_POINTER);
+    			parameterReader.popAllStack(4);
+    			mv.visitJumpInsn(Opcodes.GOTO, afterSyscallLabel);
+    			mv.visitLabel(addressGood);
+    		}
+    		mv.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(parameterType), "<init>", "(" + memoryDescriptor + "I)V");
+    		if (parameterType == TErrorPointer32.class) {
+    			parameterReader.setHasErrorPointer(true);
+    			mv.visitInsn(Opcodes.DUP);
+    			mv.visitVarInsn(Opcodes.ASTORE, LOCAL_ERROR_POINTER);
+    		}
+    		parameterReader.incrementCurrentStackSize();
+    	} else {
+			HLEUidClass hleUidClass = parameterType.getAnnotation(HLEUidClass.class);
+			if (hleUidClass != null) {
+				// <parameterType> uidObject = HLEUidObjectMapping.getObject("<parameterType>", uid);
+				// if (uidObject == null) {
+				//     cpu.gpr[_v0] = errorValueOnNotFound;
+	    		//     pop all the parameters already prepared on the stack;
+	    		//     goto afterSyscall;
+				// }
+				mv.visitLdcInsn(parameterType.getName());
+				// Load the UID
+				parameterReader.loadNextInt();
+
+				// Load the UID Object
+				mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(HLEUidObjectMapping.class), "getObject", "(" + Type.getDescriptor(String.class) + "I)" + Type.getDescriptor(Object.class));
+				Label foundUid = new Label();
+				mv.visitInsn(Opcodes.DUP);
+				mv.visitJumpInsn(Opcodes.IFNONNULL, foundUid);
+				storeRegister(_v0, func.getErrorValueOnNotFound(parameterReader.getCurrentParameterIndex()));
+				parameterReader.popAllStack(1);
+				mv.visitJumpInsn(Opcodes.GOTO, afterSyscallLabel);
+				mv.visitLabel(foundUid);
+				mv.visitTypeInsn(Opcodes.CHECKCAST, Type.getInternalName(parameterType));
+	    		parameterReader.incrementCurrentStackSize();
+			} else {
+				Compiler.log.error(String.format("Unsupported sycall parameter type '%s'", parameterType.getName()));
+				Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+			}
+    	}
+
+    	Method methodToCheck = func.getMethodToCheck(parameterReader.getCurrentParameterIndex());
+    	if (methodToCheck != null) {
+    		// try {
+    		//     parameterValue = <module>.<methodToCheck>(parameterValue);
+    		// } catch (SceKernelErrorException e) {
+    		//     goto catchSceKernelErrorException;
+    		// }
+    		loadModule(func.getModuleName());
+    		mv.visitInsn(Opcodes.SWAP);
+
+    		Label tryStart = new Label();
+        	Label tryEnd = new Label();
+        	mv.visitTryCatchBlock(tryStart, tryEnd, catchSceKernelErrorException, Type.getInternalName(SceKernelErrorException.class));
+
+        	mv.visitLabel(tryStart);
+        	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(methodToCheck.getDeclaringClass()), methodToCheck.getName(), "(" + Type.getDescriptor(parameterType) + ")" + Type.getDescriptor(parameterType));
+        	mv.visitLabel(tryEnd);
+    	}
+
+    	parameterReader.incrementCurrentParameterIndex();
+    }
+
+    /**
+     * Generate the required Java code to store the return value of
+     * the syscall function into the CPU registers.
+     *
+     * The following code is generated depending on the return type:
+     * void:         -
+     * int:          cpu.gpr[_v0] = intValue
+     * boolean:      cpu.gpr[_v0] = booleanValue
+     * long:         cpu.gpr[_v0] = (int) (longValue & 0xFFFFFFFFL)
+     *               cpu.gpr[_v1] = (int) (longValue >>> 32)
+     * float:        cpu.fpr[_f0] = floatValue
+     * HLEUidClass:  if (moduleMethodUidGenerator == "") {
+     *                   cpu.gpr[_v0] = HLEUidObjectMapping.createUidForObject("<return type>", returnValue);
+     *               } else {
+     *                   int uid = <module>.<moduleMethodUidGenerator>();
+     *                   cpu.gpr[_v0] = HLEUidObjectMapping.addObjectMap("<return type>", uid, returnValue);
+     *               }
+     *
+     * @param func        the syscall function
+     * @param returnType  the type of the return value
+     */
+    private void storeReturnValue(HLEModuleFunctionReflection func, Class<?> returnType) {
+    	if (returnType == void.class) {
+    		// Nothing to do
+    	} else if (returnType == int.class) {
+    		// cpu.gpr[_v0] = intValue
+    		storeRegister(_v0);
+    	} else if (returnType == boolean.class) {
+    		// cpu.gpr[_v0] = booleanValue
+    		storeRegister(_v0);
+    	} else if (returnType == long.class) {
+    		// cpu.gpr[_v0] = (int) (longValue & 0xFFFFFFFFL)
+    		// cpu.gpr[_v1] = (int) (longValue >>> 32)
+    		mv.visitInsn(Opcodes.DUP2);
+    		mv.visitLdcInsn(0xFFFFFFFFL);
+    		mv.visitInsn(Opcodes.LAND);
+    		mv.visitInsn(Opcodes.L2I);
+    		storeRegister(_v0);
+    		loadImm(32);
+    		mv.visitInsn(Opcodes.LSHR);
+    		mv.visitInsn(Opcodes.L2I);
+    		storeRegister(_v1);
+    	} else if (returnType == float.class) {
+    		// cpu.fpr[_f0] = floatValue
+    		storeFRegister(_f0);
+    	} else {
+			HLEUidClass hleUidClass = returnType.getAnnotation(HLEUidClass.class);
+			if (hleUidClass != null) {
+				// if (moduleMethodUidGenerator == "") {
+				//     cpu.gpr[_v0] = HLEUidObjectMapping.createUidForObject("<return type>", returnValue);
+				// } else {
+				//     int uid = <module>.<moduleMethodUidGenerator>();
+				//     cpu.gpr[_v0] = HLEUidObjectMapping.addObjectMap("<return type>", uid, returnValue);
+				// }
+				if (hleUidClass.moduleMethodUidGenerator().length() <= 0) {
+					// No UID generator method, use the default one
+					mv.visitLdcInsn(returnType.getName());
+					mv.visitInsn(Opcodes.SWAP);
+					mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(HLEUidObjectMapping.class), "createUidForObject", "(" + Type.getDescriptor(String.class) + Type.getDescriptor(Object.class) + ")I");
+					storeRegister(_v0);
+				} else {
+					mv.visitLdcInsn(returnType.getName());
+					mv.visitInsn(Opcodes.SWAP);
+					loadModule(func.getModuleName());
+					mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(func.getHLEModuleMethod().getDeclaringClass()), hleUidClass.moduleMethodUidGenerator(), "()I");
+					mv.visitInsn(Opcodes.SWAP);
+					mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(HLEUidObjectMapping.class), "addObjectMap", "(" + Type.getDescriptor(String.class) + "I" + Type.getDescriptor(Object.class) + ")I");
+					storeRegister(_v0);
+				}
+			} else {
+				Compiler.log.error(String.format("Unsupported sycall return value type '%s'", returnType.getName()));
+			}
+    	}
+    }
+
+    /**
+     * Generate the required Java code to call a syscall function.
+     * The code generated much match the Java behavior implemented in
+     * jpcsp.HLE.modules.HLEModuleFunctionReflection
+     *
+     * The following code is generated:
+     *     if (!fastSyscall) {
+     *         RuntimeContext.preSyscall();
+     *     }
+     *     if (func.checkInsideInterrupt()) {
+     *         if (IntrManager.getInstance.isInsideInterrupt()) {
+     *             cpu.gpr[_v0] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+     *             goto afterSyscall;
+     *         }
+     *     }
+     *     if (func.checkDispatchThreadEnabled()) {
+     *         if (!Modules.ThreadManForUserModule.isDispatchThreadEnabled()) {
+     *             cpu.gpr[_v0] = SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+     *             goto afterSyscall;
+     *         }
+     *     }
+     *     if (func.isUnimplemented()) {
+     *         Modules.getLogger(func.getModuleName()).warn("Unimplemented NID function <module name>.<function name> [0x<nid>]");
+     *     }
+     *     foreach parameter {
+     *         loadParameter(parameter);
+     *     }
+     *     try {
+     *         returnValue = <module name>.<function name>(...parameters...);
+     *         storeReturnValue();
+     *         if (parameterReader.hasErrorPointer()) {
+     *             errorPointer.setValue(0);
+     *         }
+     *     } catch (SceKernelErrorException e) {
+     *         errorCode = e.errorCode;
+     *         if (Modules.log.isDebugEnabled()) {
+     *             Modules.log.debug(String.format("<function name> return errorCode 0x%08X", errorCode));
+     *         }
+     *         if (parameterReader.hasErrorPointer()) {
+     *             errorPointer.setValue(errorCode);
+     *             cpu.gpr[_v0] = 0;
+     *         } else {
+     *             cpu.gpr[_v0] = errorCode;
+     *         }
+     *         reload cpu.gpr[_ra]; // an exception is always clearing the whole stack
+     *     }
+     *     afterSyscall:
+     *     if (fastSyscall) {
+     *         RuntimeContext.postSyscallFast();
+     *     } else {
+     *         RuntimeContext.postSyscall();
+     *     }
+     *
+     * @param func         the syscall function
+     * @param fastSyscall  true if this is a fast syscall (i.e. without context switching)
+     *                     false if not (i.e. a syscall where context switching could happen)
+     */
+    private void visitSyscall(HLEModuleFunctionReflection func, boolean fastSyscall) {
+    	if (!fastSyscall) {
+    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "preSyscall", "()V");
+    	}
+
+    	Label afterSyscallLabel = new Label();
+
+    	if (func.checkInsideInterrupt()) {
+    		// if (IntrManager.getInstance().isInsideInterrupt()) {
+    		//     cpu.gpr[_v0] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+    		//     goto afterSyscall
+    		// }
+    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(IntrManager.class), "getInstance", "()" + Type.getDescriptor(IntrManager.class));
+    		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(IntrManager.class), "isInsideInterrupt", "()Z");
+    		Label notInsideInterrupt = new Label();
+    		mv.visitJumpInsn(Opcodes.IFEQ, notInsideInterrupt);
+    		storeRegister(_v0, SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT);
+    		mv.visitJumpInsn(Opcodes.GOTO, afterSyscallLabel);
+    		mv.visitLabel(notInsideInterrupt);
+    	}
+
+    	if (func.checkDispatchThreadEnabled()) {
+    		// if (!Modules.ThreadManForUserModule.isDispatchThreadEnabled()) {
+    		//     cpu.gpr[_v0] = SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+    		//     goto afterSyscall
+    		// }
+    		loadModule("ThreadManForUser");
+    		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(ThreadManForUser.class), "isDispatchThreadEnabled", "()Z");
+    		Label dispatchThreadEnabled = new Label();
+    		mv.visitJumpInsn(Opcodes.IFNE, dispatchThreadEnabled);
+    		storeRegister(_v0, SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT);
+    		mv.visitJumpInsn(Opcodes.GOTO, afterSyscallLabel);
+    		mv.visitLabel(dispatchThreadEnabled);
+    	}
+
+    	if (func.isUnimplemented()) {
+    		// Modules.getLogger(func.getModuleName()).warn("Unimplemented...");
+    		mv.visitLdcInsn(func.getModuleName());
+    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Modules.class), "getLogger", "(" + Type.getDescriptor(String.class) + ")" + Type.getDescriptor(Logger.class));
+    		mv.visitLdcInsn(String.format("Unimplemented NID function %s.%s [0x%08X]", func.getModuleName(), func.getFunctionName(), func.getNid()));
+    		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), "warn", "(" + Type.getDescriptor(Object.class) + ")V");
+    	}
+
+    	// Collecting the parameters and calling the module function...
+        CompilerParameterReader parameterReader = new CompilerParameterReader(this);
+
+    	loadModule(func.getModuleName());
+    	parameterReader.incrementCurrentStackSize();
+
+    	Label tryStart = new Label();
+    	Label tryEnd = new Label();
+    	Label catchSceKernelErrorException = new Label();
+    	mv.visitTryCatchBlock(tryStart, tryEnd, catchSceKernelErrorException, Type.getInternalName(SceKernelErrorException.class));
+
+        Class<?>[] parameterTypes = func.getHLEModuleMethod().getParameterTypes();
+        Class<?> returnType = func.getHLEModuleMethod().getReturnType();
+        StringBuilder methodDescriptor = new StringBuilder();
+        methodDescriptor.append("(");
+        for (Class<?> parameterType : parameterTypes) {
+        	methodDescriptor.append(Type.getDescriptor(parameterType));
+        	loadParameter(parameterReader, func, parameterType, afterSyscallLabel, catchSceKernelErrorException);
+        }
+        methodDescriptor.append(")");
+        methodDescriptor.append(Type.getDescriptor(returnType));
+
+    	mv.visitLabel(tryStart);
+
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(func.getHLEModuleMethod().getDeclaringClass()), func.getFunctionName(), methodDescriptor.toString());
+
+        storeReturnValue(func, returnType);
+
+        if (parameterReader.hasErrorPointer()) {
+        	// errorPointer.setValue(0);
+            mv.visitVarInsn(Opcodes.ALOAD, LOCAL_ERROR_POINTER);
+        	loadImm(0);
+        	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(TErrorPointer32.class), "setValue", "(I)V");
+    	}
+
+        mv.visitLabel(tryEnd);
+        mv.visitJumpInsn(Opcodes.GOTO, afterSyscallLabel);
+
+        // catch (SceKernelErrorException e) {
+        //     errorCode = e.errorCode;
+        //     if (Modules.log.isDebugEnabled()) {
+        //         Modules.log.debug(String.format("<function name> return errorCode 0x%08X", errorCode));
+        //     }
+        //     if (hasErrorPointer()) {
+        //         errorPointer.setValue(errorCode);
+        //         cpu.gpr[_v0] = 0;
+        //     } else {
+        //         cpu.gpr[_v0] = errorCode;
+        //     }
+        // }
+        mv.visitLabel(catchSceKernelErrorException);
+        mv.visitFieldInsn(Opcodes.GETFIELD, Type.getInternalName(SceKernelErrorException.class), "errorCode", "I");
+        {
+        	// if (Modules.log.isDebugEnabled()) {
+        	//     Modules.log.debug(String.format("<function name> returning errorCode 0x%08X", new Object[1] { new Integer(errorCode) }));
+        	// }
+        	mv.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(Modules.class), "log", Type.getDescriptor(Logger.class));
+        	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), "isDebugEnabled", "()Z");
+        	Label notDebug = new Label();
+        	mv.visitJumpInsn(Opcodes.IFEQ, notDebug);
+        	mv.visitInsn(Opcodes.DUP);
+    		mv.visitTypeInsn(Opcodes.NEW, Type.getInternalName(Integer.class));
+    		mv.visitInsn(Opcodes.DUP_X1);
+    		mv.visitInsn(Opcodes.SWAP);
+    		mv.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(Integer.class), "<init>", "(I)V");
+    		loadImm(1);
+    		mv.visitTypeInsn(Opcodes.ANEWARRAY, Type.getInternalName(Object.class));
+        	mv.visitInsn(Opcodes.DUP_X1);
+        	mv.visitInsn(Opcodes.SWAP);
+    		loadImm(0);
+    		mv.visitInsn(Opcodes.SWAP);
+    		mv.visitInsn(Opcodes.AASTORE);
+        	mv.visitLdcInsn(String.format("%s returning errorCode 0x%%08X", func.getFunctionName()));
+        	mv.visitInsn(Opcodes.SWAP);
+        	mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class), "format", "(" + Type.getDescriptor(String.class) + "[" + Type.getDescriptor(Object.class) + ")" + Type.getDescriptor(String.class));
+        	mv.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(Modules.class), "log", Type.getDescriptor(Logger.class));
+        	mv.visitInsn(Opcodes.SWAP);
+        	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), "debug", "(" + Type.getDescriptor(Object.class) + ")V");
+        	mv.visitLabel(notDebug);
+        }
+        if (parameterReader.hasErrorPointer()) {
+        	// errorPointer.setValue(errorCode);
+        	// cpu.gpr[_v0] = 0;
+            mv.visitVarInsn(Opcodes.ALOAD, LOCAL_ERROR_POINTER);
+        	mv.visitInsn(Opcodes.SWAP);
+        	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(TErrorPointer32.class), "setValue", "(I)V");
+        	storeRegister(_v0, 0);
+    	} else {
+    		// cpu.gpr[_v0] = errorCode;
+    		storeRegister(_v0);
+    	}
+
+        // Reload the $ra register, the stack is lost after an exception
+        CodeInstruction previousInstruction = codeBlock.getCodeInstruction(codeInstruction.getAddress() - 4);
+        if (previousInstruction != null && previousInstruction.getInsn() == Instructions.JR) {
+        	int jumpRegister = (previousInstruction.getOpcode() >> 21) & 0x1F;
+        	loadRegister(jumpRegister);
+        }
+
+    	mv.visitLabel(afterSyscallLabel);
+
+        if (fastSyscall) {
+    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "postSyscallFast", "()V");
+        } else {
+    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "postSyscall", "()V");
+        }
+    }
+
+    /**
+     * Generate the required Java code to perform a syscall.
+     *
+     * When the syscall function is an HLEModuleFunctionReflection,
+     * generate the code for calling the module function directly, as
+     * HLEModuleFunctionReflection.execute() would.
+     *
+     * Otherwise, generate the code for calling
+     *     RuntimeContext.syscall()
+     * or
+     *     RuntimeContext.syscallFast()
+     * 
+     * @param opcode    opcode of the instruction
+     */
+    public void visitSyscall(int opcode) {
     	flushInstructionCount(false, false);
 
     	int code = (opcode >> 6) & 0x000FFFFF;
@@ -769,24 +1262,18 @@ public class CompilerContext implements ICompilerContext {
     		storePc();
     	}
 
-    	loadImm(code);
-    	if (isFastSyscall(code)) {
-    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscallFast", "(I)V");
+    	HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromSyscallCode(code);
+    	boolean fastSyscall = isFastSyscall(code);
+    	if (func == null || !(func instanceof HLEModuleFunctionReflection)) {
+	    	loadImm(code);
+	    	if (fastSyscall) {
+	    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscallFast", "(I)V");
+	    	} else {
+	    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscall", "(I)V");
+	    	}
     	} else {
-    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscall", "(I)V");
+    		visitSyscall((HLEModuleFunctionReflection) func, fastSyscall);
     	}
-
-        if (storeGprLocal) {
-        	// Reload "gpr", it could have been changed due to a thread switch
-        	mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "gpr", "[I");
-            mv.visitVarInsn(Opcodes.ASTORE, LOCAL_GPR);
-        }
-
-        if (storeCpuLocal) {
-        	// Reload "cpu", it could have been changed due to a thread switch
-        	mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "cpu", cpuDescriptor);
-            mv.visitVarInsn(Opcodes.ASTORE, LOCAL_CPU);
-        }
     }
 
     public void startClass(ClassVisitor cv) {
@@ -1132,22 +1619,22 @@ public class CompilerContext implements ICompilerContext {
 
 	@Override
 	public int getSaValue() {
-        return (codeInstruction.getOpcode() >> 6) & 31;
+		return codeInstruction.getSaValue();
     }
 
 	@Override
 	public int getRsRegisterIndex() {
-        return (codeInstruction.getOpcode() >> 21) & 31;
+		return codeInstruction.getRsRegisterIndex();
     }
 
 	@Override
     public int getRtRegisterIndex() {
-        return (codeInstruction.getOpcode() >> 16) & 31;
+		return codeInstruction.getRtRegisterIndex();
     }
 
 	@Override
     public int getRdRegisterIndex() {
-        return (codeInstruction.getOpcode() >> 11) & 31;
+		return codeInstruction.getRdRegisterIndex();
     }
 
 	@Override
@@ -1188,22 +1675,12 @@ public class CompilerContext implements ICompilerContext {
 
 	@Override
     public int getImm16(boolean signedImm) {
-    	int imm16 = codeInstruction.getOpcode()& 0xFFFF;
-    	if (signedImm) {
-    		imm16 = (int)(short) imm16;
-    	}
-
-    	return imm16;
+		return codeInstruction.getImm16(signedImm);
     }
 
 	@Override
 	public int getImm14(boolean signedImm) {
-    	int imm14 = codeInstruction.getOpcode() & 0xFFFC;
-    	if (signedImm) {
-    		imm14 = (int)(short) imm14;
-    	}
-
-    	return imm14;
+		return codeInstruction.getImm14(signedImm);
 	}
 
 	@Override
@@ -1303,7 +1780,7 @@ public class CompilerContext implements ICompilerContext {
 	@Override
 	public void memRead32(int registerIndex, int offset) {
 		if (RuntimeContext.memoryInt == null) {
-    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memory", memoryDescriptor);
+			loadMemory();
 		} else {
     		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memoryInt", "[I");
 		}
@@ -1351,7 +1828,7 @@ public class CompilerContext implements ICompilerContext {
 	@Override
 	public void memRead16(int registerIndex, int offset) {
 		if (RuntimeContext.memoryInt == null) {
-    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memory", memoryDescriptor);
+			loadMemory();
 		} else {
     		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memoryInt", "[I");
 		}
@@ -1405,7 +1882,7 @@ public class CompilerContext implements ICompilerContext {
 	@Override
 	public void memRead8(int registerIndex, int offset) {
 		if (RuntimeContext.memoryInt == null) {
-    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memory", memoryDescriptor);
+			loadMemory();
 		} else {
     		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memoryInt", "[I");
 		}
@@ -1457,7 +1934,7 @@ public class CompilerContext implements ICompilerContext {
 	@Override
 	public void prepareMemWrite32(int registerIndex, int offset) {
 		if (RuntimeContext.memoryInt == null) {
-    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memory", memoryDescriptor);
+			loadMemory();
 		} else {
     		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memoryInt", "[I");
 		}
@@ -1494,7 +1971,7 @@ public class CompilerContext implements ICompilerContext {
 	public void memWrite32(int registerIndex, int offset) {
 		if (!memWritePrepared) {
 			if (RuntimeContext.memoryInt == null) {
-	    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memory", memoryDescriptor);
+				loadMemory();
 			} else {
 	    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memoryInt", "[I");
 			}
@@ -1537,7 +2014,7 @@ public class CompilerContext implements ICompilerContext {
 
 	@Override
 	public void prepareMemWrite16(int registerIndex, int offset) {
-		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memory", memoryDescriptor);
+		loadMemory();
 
 		loadRegister(registerIndex);
 		if (offset != 0) {
@@ -1551,7 +2028,7 @@ public class CompilerContext implements ICompilerContext {
 	@Override
 	public void memWrite16(int registerIndex, int offset) {
 		if (!memWritePrepared) {
-    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memory", memoryDescriptor);
+			loadMemory();
 
 			loadRegister(registerIndex);
 			if (offset != 0) {
@@ -1568,7 +2045,7 @@ public class CompilerContext implements ICompilerContext {
 
 	@Override
 	public void prepareMemWrite8(int registerIndex, int offset) {
-		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memory", memoryDescriptor);
+		loadMemory();
 
 		loadRegister(registerIndex);
 		if (offset != 0) {
@@ -1582,7 +2059,7 @@ public class CompilerContext implements ICompilerContext {
 	@Override
 	public void memWrite8(int registerIndex, int offset) {
 		if (!memWritePrepared) {
-    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memory", memoryDescriptor);
+			loadMemory();
 
 			loadRegister(registerIndex);
 			if (offset != 0) {
@@ -1740,17 +2217,17 @@ public class CompilerContext implements ICompilerContext {
 
 	@Override
 	public int getFdRegisterIndex() {
-        return (codeInstruction.getOpcode() >> 6) & 31;
+		return codeInstruction.getFdRegisterIndex();
 	}
 
 	@Override
 	public int getFsRegisterIndex() {
-        return (codeInstruction.getOpcode() >> 11) & 31;
+		return codeInstruction.getFsRegisterIndex();
 	}
 
 	@Override
 	public int getFtRegisterIndex() {
-        return (codeInstruction.getOpcode() >> 16) & 31;
+		return codeInstruction.getFtRegisterIndex();
 	}
 
 	@Override
@@ -1800,7 +2277,7 @@ public class CompilerContext implements ICompilerContext {
 
 	@Override
 	public int getCrValue() {
-        return (codeInstruction.getOpcode() >> 11) & 31;
+		return codeInstruction.getCrValue();
 	}
 
 	@Override
@@ -1810,25 +2287,22 @@ public class CompilerContext implements ICompilerContext {
 
 	@Override
 	public int getVdRegisterIndex() {
-        return (codeInstruction.getOpcode() >> 0) & 127;
+		return codeInstruction.getVdRegisterIndex();
 	}
 
 	@Override
 	public int getVsRegisterIndex() {
-        return (codeInstruction.getOpcode() >> 8) & 127;
+		return codeInstruction.getVsRegisterIndex();
 	}
 
 	@Override
 	public int getVtRegisterIndex() {
-        return (codeInstruction.getOpcode() >> 16) & 127;
+		return codeInstruction.getVtRegisterIndex();
 	}
 
 	@Override
 	public int getVsize() {
-		int one = (codeInstruction.getOpcode() >>  7) & 1;
-		int two = (codeInstruction.getOpcode() >> 15) & 1;
-
-		return 1 + one + (two << 1);
+		return codeInstruction.getVsize();
 	}
 
 	@Override
@@ -1975,7 +2449,7 @@ public class CompilerContext implements ICompilerContext {
 
 	@Override
 	public int getImm5() {
-        return (codeInstruction.getOpcode() >> 16) & 31;
+		return codeInstruction.getImm5();
 	}
 
 	@Override

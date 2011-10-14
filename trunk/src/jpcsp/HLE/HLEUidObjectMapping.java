@@ -66,45 +66,45 @@ public class HLEUidObjectMapping {
 		}
 	}
 	
-	private static HashMap<Class<?>, DoubleHash<Integer, Object>> map = new HashMap<Class<?>, DoubleHash<Integer, Object>>();
+	private static HashMap<String, DoubleHash<Integer, Object>> map = new HashMap<String, DoubleHash<Integer, Object>>();
 
 	static public void reset() {
 		map.clear();
 	}
 	
-	static protected DoubleHash<Integer, Object> getMapForClass(Class<?> type) {
-		if (!map.containsKey(type)) {
-			map.put(type, new DoubleHash<Integer, Object>());
+	static protected DoubleHash<Integer, Object> getMapForClass(String className) {
+		if (!map.containsKey(className)) {
+			map.put(className, new DoubleHash<Integer, Object>());
 		}
-		return map.get(type);
+		return map.get(className);
 	}
 	
-	static public int addObjectMap(Class<?> type, int uid, Object object) {
-		getMapForClass(type).put(uid, object);
+	static public int addObjectMap(String className, int uid, Object object) {
+		getMapForClass(className).put(uid, object);
 		return uid;
 	}
 
 	static public int addObjectMap(int uid, Object object) {
-		return addObjectMap(object.getClass(), uid, object);
+		return addObjectMap(object.getClass().getName(), uid, object);
 	}
 
-	static public int createUidForObject(Class<?> type, Object object) {
-		return addObjectMap(type, getMapForClass(type).size(), object);
+	static public int createUidForObject(String className, Object object) {
+		return addObjectMap(className, getMapForClass(className).size(), object);
 	}
 
 	static public int createUidForObject(Object object) {
-		return createUidForObject(object.getClass(), object);
+		return createUidForObject(object.getClass().getName(), object);
 	}
 
-	static public Object getObject(Class<?> type, int uid) {
-		return getMapForClass(type).getValueByKey(uid);
+	static public Object getObject(String className, int uid) {
+		return getMapForClass(className).getValueByKey(uid);
 	}
 	
-	static public void removeObject(Class<?> type, Object object) {
-		getMapForClass(type).removeValue(object);
+	static public void removeObject(String className, Object object) {
+		getMapForClass(className).removeValue(object);
 	}
 	
 	static public void removeObject(Object object) {
-		removeObject(object.getClass(), object);
+		removeObject(object.getClass().getName(), object);
 	}
 }

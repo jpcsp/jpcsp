@@ -33,9 +33,11 @@ public interface ICompilerContext {
     public void loadRs();
     public void loadRt();
     public void loadRd();
+    public void loadRegister(int reg);
     public void loadFs();
     public void loadFt();
     public void loadFd();
+    public void loadFRegister(int reg);
     public void loadVs(int n);
     public void loadVs(int vsize, int n);
     public void loadVs(int vsize, int vs, int n);
