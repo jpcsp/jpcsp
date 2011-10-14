@@ -47,6 +47,8 @@ import jpcsp.hardware.Interrupts;
 import jpcsp.memory.DebuggerMemory;
 import jpcsp.memory.FastMemory;
 import jpcsp.scheduler.Scheduler;
+import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.settings.Settings;
 import jpcsp.util.CpuDurationStatistics;
 import jpcsp.util.DurationStatistics;
 
@@ -58,7 +60,7 @@ import org.apache.log4j.Logger;
  */
 public class RuntimeContext {
     public  static Logger log = Logger.getLogger("runtime");
-	public  static boolean isActive = true;
+	private static boolean compilerEnabled = true;
 	public  static int gpr[];
 	public  static float fpr[];
 	public  static VfpuState.VfpuValue vpr[];
@@ -102,6 +104,21 @@ public class RuntimeContext {
 	private static RuntimeSyncThread runtimeSyncThread = null;
 	private static RuntimeThread syscallRuntimeThread;
 	private static sceDisplay sceDisplayModule;
+
+	private static class CompilerEnabledSettingsListerner extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setCompilerEnabled(value);
+		}
+	}
+
+	private static void setCompilerEnabled(boolean enabled) {
+		compilerEnabled = enabled;
+	}
+
+	public static boolean isCompilerEnabled() {
+		return compilerEnabled;
+	}
 
 	public static void execute(Instruction insn, int opcode) {
 		insn.interpret(processor, opcode);
@@ -263,7 +280,7 @@ public class RuntimeContext {
     }
 
     private static boolean initialise() {
-        if (!isActive) {
+        if (!compilerEnabled) {
             return false;
         }
 
@@ -295,7 +312,7 @@ public class RuntimeContext {
     }
 
     public static boolean canExecuteCallback(SceKernelThreadInfo callbackThread) {
-    	if (!isActive) {
+    	if (!compilerEnabled) {
     		return true;
     	}
 
@@ -374,7 +391,7 @@ public class RuntimeContext {
     }
 
     public static void update() {
-        if (!isActive) {
+        if (!compilerEnabled) {
             return;
         }
 
@@ -747,13 +764,17 @@ public class RuntimeContext {
         return executable;
     }
 
+    public static void start() {
+    	Settings.getInstance().registerSettingsListener("RuntimeContext", "emu.compiler", new CompilerEnabledSettingsListerner());
+    }
+
     public static void run() {
     	if (Modules.ThreadManForUserModule.exitCalled) {
     		return;
     	}
 
     	if (!initialise()) {
-        	isActive = false;
+        	compilerEnabled = false;
         	return;
         }
 
@@ -883,7 +904,7 @@ public class RuntimeContext {
     }
 
     public static void exit() {
-        if (isActive) {
+        if (compilerEnabled) {
     		log.debug("RuntimeContext.exit");
         	stopAllThreads();
         	if (DurationStatistics.collectStatistics) {
@@ -915,7 +936,7 @@ public class RuntimeContext {
     }
 
     public static void reset() {
-    	if (isActive) {
+    	if (compilerEnabled) {
     		log.debug("RuntimeContext.reset");
     		Compiler.getInstance().reset();
     		codeBlocks.clear();
@@ -930,7 +951,7 @@ public class RuntimeContext {
     }
 
     public static void invalidateAll() {
-        if (isActive) {
+        if (compilerEnabled) {
     		log.debug("RuntimeContext.invalidateAll");
             codeBlocks.clear();
             Compiler.getInstance().invalidateAll();
@@ -938,7 +959,7 @@ public class RuntimeContext {
     }
 
     public static void invalidateRange(int addr, int size) {
-        if (isActive) {
+        if (compilerEnabled) {
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("RuntimeContext.invalidateRange(addr=0x%08X, size=%d)", addr, size));
         	}

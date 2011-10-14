@@ -50,6 +50,7 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.State;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.PspGeList;
@@ -206,7 +207,8 @@ public class VideoEngine {
     private IntBuffer multiDrawFirst;
     private IntBuffer multiDrawCount;
     private static final int maxMultiDrawElements = 1000;
-    private static final String name ="VideoEngine";
+    private static final String name = "VideoEngine";
+    private int maxWaitForSyncCount;
 
     public static class MatrixUpload {
         private final float[] matrix;
@@ -631,7 +633,10 @@ public class VideoEngine {
     }
 
     private void startUpdate() {
-		statistics.start();
+    	// Wait longer for a sync when the compiler is not enabled... Jpcsp is then much slower
+    	maxWaitForSyncCount = RuntimeContext.isCompilerEnabled() ? 100 : 10000;
+
+    	statistics.start();
 
         logLevelUpdated();
         memoryForGEUpdated();
@@ -761,7 +766,10 @@ public class VideoEngine {
             // allow waiting for a longer time (the CPU might be busy
             // compiling a huge CodeBlock on the first call).
             // This avoids aborting the first list enqueued.
-            int maxStallCount = (currentList.pc != currentList.list_addr ? 100 : 400);
+            int maxStallCount = maxWaitForSyncCount;
+            if (currentList.pc == currentList.list_addr) {
+            	maxStallCount *= 4;
+            }
             if (isLogDebugEnabled) {
             	maxStallCount = Integer.MAX_VALUE;
             }
@@ -798,7 +806,7 @@ public class VideoEngine {
 
 		    // Waiting maximum 100 * 10ms (= 1 second) on an END command.
 		    // After this timeout, abort the list.
-		    if (waitForSyncCount > 100) {
+		    if (waitForSyncCount > maxWaitForSyncCount) {
 		        error(String.format("Waiting too long on an END command, aborting the list %s", currentList));
 		    }
 		} else {

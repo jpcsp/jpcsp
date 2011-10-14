@@ -24,6 +24,8 @@ import java.util.List;
 
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
+import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.settings.Settings;
 
 import org.apache.log4j.Logger;
 
@@ -34,7 +36,7 @@ import org.apache.log4j.Logger;
 public class Profiler {
 
     public static Logger log = Logger.getLogger("profiler");
-    public static boolean enableProfiler = true;
+    private static boolean profilerEnabled = true;
     private static final HashMap<Integer, Long> callCounts = new HashMap<Integer, Long>();
     private static final HashMap<Integer, Long> instructionCounts = new HashMap<Integer, Long>();
     private static final HashMap<Integer, Long> backBranchCounts = new HashMap<Integer, Long>();
@@ -44,13 +46,34 @@ public class Profiler {
     private static final int backBranchMaxLength = 100;
     private static final int backBranchContextBefore = 5;
     private static final int backBranchContextAfter = 3;
+    private static ProfilerEnabledSettingsListerner profilerEnabledSettingsListerner;
+
+	private static class ProfilerEnabledSettingsListerner extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setProfilerEnabled(value);
+		}
+	}
 
     public static void initialise() {
-        reset();
+    	if (profilerEnabledSettingsListerner == null) {
+    		profilerEnabledSettingsListerner = new ProfilerEnabledSettingsListerner();
+    		Settings.getInstance().registerSettingsListener("Profiler", "emu.profiler", profilerEnabledSettingsListerner);
+    	}
+
+    	reset();
+    }
+
+    private static void setProfilerEnabled(boolean enabled) {
+    	profilerEnabled = enabled;
+    }
+
+    public static boolean isProfilerEnabled() {
+    	return profilerEnabled;
     }
 
     public static void reset() {
-        if (!enableProfiler) {
+        if (!profilerEnabled) {
             return;
         }
 
@@ -60,7 +83,7 @@ public class Profiler {
     }
 
     public static void exit() {
-        if (!enableProfiler) {
+        if (!profilerEnabled) {
             return;
         }
         List<Integer> sortedBackBranches = new ArrayList<Integer>(backBranchCounts.keySet());
