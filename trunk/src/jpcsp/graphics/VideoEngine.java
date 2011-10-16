@@ -4412,7 +4412,7 @@ public class VideoEngine {
     }
 
     private int getValidNumberMipmaps() {
-    	for (int level = 0; level < context.texture_num_mip_maps; level++) {
+    	for (int level = 0; level <= context.texture_num_mip_maps; level++) {
     		int texaddr = context.texture_base_pointer[level] & Memory.addressMask;
     		if (!Memory.isAddressGood(texaddr)) {
             	if (texaddr == 0) {
@@ -4424,7 +4424,7 @@ public class VideoEngine {
             			log.warn(String.format("Invalid texture address 0x%08X for texture level %d", texaddr, level));
             		}
             	}
-    			return level;
+    			return Math.max(level - 1, 0);
     		}
 
     		if (level > 0) {
@@ -4439,7 +4439,7 @@ public class VideoEngine {
                 			log.warn(String.format("... and this invalid Texture mipmap will be used with mipmap_mode=%d, mipmap_bias=%d", context.tex_mipmap_mode, context.tex_mipmap_bias_int));
             			}
             		}
-            		return level;
+            		return level - 1;
             	}
             }
     	}
