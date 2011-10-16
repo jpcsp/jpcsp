@@ -64,7 +64,15 @@ public class CodeInstruction {
 		return address;
 	}
 
-	public void setAddress(int address) {
+    public int getEndAddress() {
+    	return address;
+    }
+
+    public int getLength() {
+    	return 1;
+    }
+
+    public void setAddress(int address) {
 		this.address = address;
 	}
 

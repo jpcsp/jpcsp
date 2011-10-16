@@ -237,9 +237,9 @@ public class CodeBlock {
                 } else {
                     if (currentCodeSequence == null) {
                         currentCodeSequence = new CodeSequence(address);
-                    } else if (currentCodeSequence.getLength() >= sequenceMaxInstructionsWithDelay) {
+                    } else if (currentCodeSequence.getLength() + codeInstruction.getLength() > sequenceMaxInstructionsWithDelay) {
                     	boolean doSplit = false;
-                		if (currentCodeSequence.getLength() >= sequenceMaxInstructions) {
+                		if (currentCodeSequence.getLength() + codeInstruction.getLength() > sequenceMaxInstructions) {
                 			doSplit = true;
                 		} else if (codeInstruction.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT)) {
                 			doSplit = true;
@@ -249,7 +249,7 @@ public class CodeBlock {
                             currentCodeSequence = new CodeSequence(address);
                     	}
                     }
-                    currentCodeSequence.setEndAddress(address);
+                	currentCodeSequence.setEndAddress(codeInstruction.getEndAddress());
                 }
             }
         }
