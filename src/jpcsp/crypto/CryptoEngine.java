@@ -805,6 +805,11 @@ public class CryptoEngine {
 	}
 
     public CryptoEngine() {
+    	installSettingsListeners();
+    	isCryptoEngineInit = true;
+    }
+
+    private static void installSettingsListeners() {
     	if (extractEbootSettingsListerner == null) {
     		extractEbootSettingsListerner = new ExtractEbootSettingsListerner();
     		Settings.getInstance().registerSettingsListener(name, "emu.extractEboot", extractEbootSettingsListerner);
@@ -813,8 +818,6 @@ public class CryptoEngine {
     		cryptSavedataSettingsListerner = new CryptSavedataSettingsListerner();
     		Settings.getInstance().registerSettingsListener(name, "emu.cryptoSavedata", cryptSavedataSettingsListerner);
     	}
-
-    	isCryptoEngineInit = true;
     }
 
     /*
@@ -822,6 +825,7 @@ public class CryptoEngine {
      */
 
     public static boolean getExtractEbootStatus() {
+    	installSettingsListeners();
         return extractEboot;
     }
 
@@ -830,6 +834,7 @@ public class CryptoEngine {
     }
 
     public static boolean getSavedataCryptoStatus() {
+    	installSettingsListeners();
         return cryptoSavedata;
     }
 
