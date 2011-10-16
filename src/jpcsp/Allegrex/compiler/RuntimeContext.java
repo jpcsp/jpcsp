@@ -704,7 +704,10 @@ public class RuntimeContext {
     		log.debug("End of Thread " + threadInfo.name + " - stopped");
     	}
 
-		threads.remove(threadInfo);
+    	// Tell stopAllThreads that this thread is stopped.
+    	thread.setInSyscall(true);
+
+    	threads.remove(threadInfo);
 		toBeStoppedThreads.remove(threadInfo);
 		toBeDeletedThreads.remove(threadInfo);
 
