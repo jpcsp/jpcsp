@@ -4542,6 +4542,22 @@ public class VideoEngine {
                 	}
                 	break;
                 }
+
+                if (level > 0) {
+                	int previousWidth = context.texture_width[level - 1];
+                	int currentWidth = context.texture_width[level];
+                	int previousHeight = context.texture_height[level - 1];
+                	int currentHeight = context.texture_height[level];
+                	if (currentWidth * 2 != previousWidth || currentHeight * 2 != previousHeight) {
+                		if (isLogWarnEnabled) {
+                			log.warn(String.format("Texture mipmap with invalid dimension at level %d: (%dx%d)@0x%08X -> (%dx%d)@0x%08X", level, previousWidth, previousHeight, context.texture_base_pointer[level - 1] & Memory.addressMask, currentWidth, currentHeight, texaddr));
+                			if (context.tex_mipmap_mode == TBIAS_MODE_CONST && context.tex_mipmap_bias_int >= level) {
+                    			log.warn(String.format("... and this invalid Texture mipmap will be used with mipmap_mode=%d, mipmap_bias=%d", context.tex_mipmap_mode, context.tex_mipmap_bias_int));
+                			}
+                		}
+                	}
+                }
+
                 compressedTexture = false;
                 int compressedTextureSize = 0;
                 int buffer_storage = context.texture_storage;
