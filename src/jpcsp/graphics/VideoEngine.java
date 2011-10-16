@@ -3325,7 +3325,7 @@ public class VideoEngine {
         }
 
         if (isLogDebugEnabled) {
-            log("sceGuTexImage(level=" + level + ", X, X, X, lo(pointer=0x" + Integer.toHexString(context.texture_base_pointer[level]) + "))");
+            log(String.format("sceGuTexImage(level=%d, X, X, X, lo(pointer=0x%08X)", level, context.texture_base_pointer[level]));
         }
     }
 
@@ -3341,7 +3341,7 @@ public class VideoEngine {
         }
 
         if (isLogDebugEnabled) {
-            log("sceGuTexImage(level=" + level + ", X, X, texBufferWidth=" + context.texture_buffer_width[level] + ", hi(pointer=0x" + Integer.toHexString(context.texture_base_pointer[level]) + "))");
+            log(String.format("sceGuTexImage(level=%d, X, X, texBufferWidth=%d, hi(pointer=0x%08X))", level, context.texture_buffer_width[level], context.texture_base_pointer[level]));
         }
     }
 
@@ -4411,6 +4411,42 @@ public class VideoEngine {
 		return true;
     }
 
+    private int getValidNumberMipmaps() {
+    	for (int level = 0; level < context.texture_num_mip_maps; level++) {
+    		int texaddr = context.texture_base_pointer[level] & Memory.addressMask;
+    		if (!Memory.isAddressGood(texaddr)) {
+            	if (texaddr == 0) {
+            		if (isLogDebugEnabled) {
+            			log.debug(String.format("Invalid texture address 0x%08X for texture level %d", texaddr, level));
+            		}
+            	} else {
+            		if (isLogWarnEnabled) {
+            			log.warn(String.format("Invalid texture address 0x%08X for texture level %d", texaddr, level));
+            		}
+            	}
+    			return level;
+    		}
+
+    		if (level > 0) {
+            	int previousWidth = context.texture_width[level - 1];
+            	int currentWidth = context.texture_width[level];
+            	int previousHeight = context.texture_height[level - 1];
+            	int currentHeight = context.texture_height[level];
+            	if (currentWidth * 2 != previousWidth || currentHeight * 2 != previousHeight) {
+            		if (isLogWarnEnabled) {
+            			log.warn(String.format("Texture mipmap with invalid dimension at level %d: (%dx%d)@0x%08X -> (%dx%d)@0x%08X", level, previousWidth, previousHeight, context.texture_base_pointer[level - 1] & Memory.addressMask, currentWidth, currentHeight, texaddr));
+            			if (context.tex_mipmap_mode == TBIAS_MODE_CONST && context.tex_mipmap_bias_int >= level) {
+                			log.warn(String.format("... and this invalid Texture mipmap will be used with mipmap_mode=%d, mipmap_bias=%d", context.tex_mipmap_mode, context.tex_mipmap_bias_int));
+            			}
+            		}
+            		return level;
+            	}
+            }
+    	}
+
+    	return context.texture_num_mip_maps;
+    }
+
     private void loadTexture() {
         // No need to reload or check the texture cache if no texture parameter
         // has been changed since last call loadTexture()
@@ -4517,7 +4553,7 @@ public class VideoEngine {
             int textureByteAlignment = 4;   // 32 bits
             boolean compressedTexture = false;
 
-            int numberMipmaps = context.texture_num_mip_maps;
+            int numberMipmaps = getValidNumberMipmaps();
 
             // Set the texture min/mag filters before uploading the texture
             // (some drivers have problems changing the parameters afterwards)
@@ -4528,36 +4564,7 @@ public class VideoEngine {
             for (int level = 0; level <= numberMipmaps; level++) {
                 // Extract texture information with the minor conversion possible
                 // TODO: Get rid of information copying, and implement all the available formats
-                texaddr = context.texture_base_pointer[level];
-                texaddr &= Memory.addressMask;
-                if (!Memory.isAddressGood(texaddr)) {
-                	if (texaddr == 0) {
-                		if (isLogDebugEnabled) {
-                			log.debug(String.format("Invalid texture address 0x%08X for texture level %d", texaddr, level));
-                		}
-                	} else {
-                		if (isLogWarnEnabled) {
-                			log.warn(String.format("Invalid texture address 0x%08X for texture level %d", texaddr, level));
-                		}
-                	}
-                	break;
-                }
-
-                if (level > 0) {
-                	int previousWidth = context.texture_width[level - 1];
-                	int currentWidth = context.texture_width[level];
-                	int previousHeight = context.texture_height[level - 1];
-                	int currentHeight = context.texture_height[level];
-                	if (currentWidth * 2 != previousWidth || currentHeight * 2 != previousHeight) {
-                		if (isLogWarnEnabled) {
-                			log.warn(String.format("Texture mipmap with invalid dimension at level %d: (%dx%d)@0x%08X -> (%dx%d)@0x%08X", level, previousWidth, previousHeight, context.texture_base_pointer[level - 1] & Memory.addressMask, currentWidth, currentHeight, texaddr));
-                			if (context.tex_mipmap_mode == TBIAS_MODE_CONST && context.tex_mipmap_bias_int >= level) {
-                    			log.warn(String.format("... and this invalid Texture mipmap will be used with mipmap_mode=%d, mipmap_bias=%d", context.tex_mipmap_mode, context.tex_mipmap_bias_int));
-                			}
-                		}
-                	}
-                }
-
+                texaddr = context.texture_base_pointer[level] & Memory.addressMask;
                 compressedTexture = false;
                 int compressedTextureSize = 0;
                 int buffer_storage = context.texture_storage;
@@ -5390,8 +5397,9 @@ public class VideoEngine {
         if (context.textureFlag.isEnabled()) {
         	re.setTextureWrapMode(context.tex_wrap_s, context.tex_wrap_t);
 
+        	int validNumberMipmaps = getValidNumberMipmaps();
 	        int mipmapBaseLevel = 0;
-	        int mipmapMaxLevel = context.texture_num_mip_maps;
+	        int mipmapMaxLevel = validNumberMipmaps;
 	        if (context.tex_mipmap_mode == TBIAS_MODE_CONST) {
 	            // TBIAS_MODE_CONST uses the tex_mipmap_bias_int level supplied by TBIAS.
 	            mipmapBaseLevel = context.tex_mipmap_bias_int;
@@ -5422,12 +5430,12 @@ public class VideoEngine {
 	            }
 	        }
 
-	        // Clamp to [0..texture_num_mip_maps]
-	        mipmapBaseLevel = Math.max(0, Math.min(mipmapBaseLevel, context.texture_num_mip_maps));
-	        // Clamp to [mipmapBaseLevel..texture_num_mip_maps]
-	        mipmapMaxLevel = Math.max(mipmapBaseLevel, Math.min(mipmapMaxLevel, context.texture_num_mip_maps));
+	        // Clamp to [0..validNumberMipmaps]
+	        mipmapBaseLevel = Math.max(0, Math.min(mipmapBaseLevel, validNumberMipmaps));
+	        // Clamp to [mipmapBaseLevel..validNumberMipmaps]
+	        mipmapMaxLevel = Math.max(mipmapBaseLevel, Math.min(mipmapMaxLevel, validNumberMipmaps));
 	        if (isLogDebugEnabled) {
-	            log.debug("Texture Mipmap base=" + mipmapBaseLevel + ", max=" + mipmapMaxLevel + ", textureNumMipmaps=" + context.texture_num_mip_maps);
+	            log.debug(String.format("Texture Mipmap base=%d, max=%d, validNumberMipmaps=%d", mipmapBaseLevel, mipmapMaxLevel, validNumberMipmaps));
 	        }
 	        re.setTextureMipmapMinLevel(mipmapBaseLevel);
 	        re.setTextureMipmapMaxLevel(mipmapMaxLevel);
