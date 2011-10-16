@@ -76,6 +76,16 @@ public class NativeCodeInstruction extends CodeInstruction {
 	}
 
 	@Override
+	public int getEndAddress() {
+		return getAddress() + ((nativeCodeSequence.getNumOpcodes() - 1) << 2);
+	}
+
+	@Override
+	public int getLength() {
+		return nativeCodeSequence.getNumOpcodes();
+	}
+
+	@Override
     public String toString() {
         return String.format("0x%X - %s", getAddress(), nativeCodeSequence.toString());
     }

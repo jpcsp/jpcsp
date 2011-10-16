@@ -35,7 +35,17 @@ public class SequenceCodeInstruction extends CodeInstruction {
         return codeSequence;
     }
 
-    @Override
+	@Override
+	public int getEndAddress() {
+		return codeSequence.getEndAddress();
+	}
+
+	@Override
+	public int getLength() {
+		return codeSequence.getLength();
+	}
+
+	@Override
     public void compile(CompilerContext context, MethodVisitor mv) {
         startCompile(context, mv);
 
