@@ -58,6 +58,11 @@ public class NativeCodeInstruction extends CodeInstruction {
 	    		Compiler.log.error(String.format("Incorrect Branch Instruction at 0x%08X - %s", branchInstructionAddress, branchInsn.disasm(branchInstructionAddress, branchOpcode)));
 	    	}
 		}
+
+		if (nativeCodeSequence.isReturning()) {
+			// Handle like a "JR $ra" instruction
+			flags |= Instruction.FLAG_CANNOT_BE_SPLIT;
+		}
 	}
 
 	public NativeCodeSequence getNativeCodeSequence() {
