@@ -327,6 +327,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         buttonGroup1 = new javax.swing.ButtonGroup();
         jButtonOK = new javax.swing.JButton();
         jButtonCancel = new javax.swing.JButton();
+        jButtonApply = new javax.swing.JButton();
         jTabbedPane1 = new javax.swing.JTabbedPane();
         generalPanel = new javax.swing.JPanel();
         pbpunpackcheck = new javax.swing.JCheckBox();
@@ -423,6 +424,13 @@ public class SettingsGUI extends javax.swing.JFrame {
         jButtonCancel.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonCancelActionPerformed(evt);
+            }
+        });
+
+        jButtonApply.setText(Resource.get("apply"));
+        jButtonApply.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonApplyActionPerformed(evt);
             }
         });
 
@@ -1031,7 +1039,9 @@ public class SettingsGUI extends javax.swing.JFrame {
                         .addContainerGap()
                         .addComponent(jButtonOK, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButtonCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(jButtonCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jButtonApply, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
                         .addContainerGap()
                         .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 535, javax.swing.GroupLayout.PREFERRED_SIZE)))
@@ -1043,6 +1053,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 377, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jButtonApply)
                     .addComponent(jButtonCancel)
                     .addComponent(jButtonOK))
                 .addContainerGap())
@@ -1059,6 +1070,10 @@ public class SettingsGUI extends javax.swing.JFrame {
 		setAllComponentsToSettings();
 		dispose();
 	}//GEN-LAST:event_jButtonOKActionPerformed
+
+    private void jButtonApplyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonApplyActionPerformed
+		setAllComponentsToSettings();
+	}//GEN-LAST:event_jButtonApplyActionPerformed
 
 	private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
 		FolderChooser folderChooser = new FolderChooser("Select UMD folder");
@@ -1135,6 +1150,7 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButtonCancel;
     private javax.swing.JButton jButtonOK;
+    private javax.swing.JButton jButtonApply;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JPanel jPanel1;
