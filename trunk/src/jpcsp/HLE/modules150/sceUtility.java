@@ -118,18 +118,18 @@ public class sceUtility extends HLEModule {
         savedataErrState = new NotImplementedUtilityDialogState("sceUtilitySavedataErr");
         gamedataInstallState = new GamedataInstallUtilityDialogState("sceUtilityGamedataInstall");
 
-        systemParam_nickname = Settings.getInstance().readString("emu.sysparam.nickname");
-        systemParam_adhocChannel = Settings.getInstance().readInt("emu.sysparam.adhocchannel", 0);
-        systemParam_wlanPowersave = Settings.getInstance().readInt("emu.sysparam.wlanpowersave", 0);
-        systemParam_dateFormat = Settings.getInstance().readInt("emu.sysparam.dateformat", PSP_SYSTEMPARAM_DATE_FORMAT_YYYYMMDD);
-        systemParam_timeFormat = Settings.getInstance().readInt("emu.sysparam.timeformat", PSP_SYSTEMPARAM_TIME_FORMAT_24HR);
-        systemParam_timeZone = Settings.getInstance().readInt("emu.sysparam.timezone", 0);
-        systemParam_daylightSavingTime = Settings.getInstance().readInt("emu.sysparam.daylightsavings", 0);
-        systemParam_language = Settings.getInstance().readInt("emu.impose.language", PSP_SYSTEMPARAM_LANGUAGE_ENGLISH);
-        systemParam_buttonPreference = Settings.getInstance().readInt("emu.impose.button", PSP_SYSTEMPARAM_BUTTON_CROSS);
-
         super.start();
     }
+
+    public static final String SYSTEMPARAM_SETTINGS_OPTION_NICKNAME = "emu.sysparam.nickname";
+    public static final String SYSTEMPARAM_SETTINGS_OPTION_ADHOC_CHANNEL = "emu.sysparam.adhocchannel";
+    public static final String SYSTEMPARAM_SETTINGS_OPTION_WLAN_POWER_SAVE = "emu.sysparam.wlanpowersave";
+    public static final String SYSTEMPARAM_SETTINGS_OPTION_DATE_FORMAT = "emu.sysparam.dateformat";
+    public static final String SYSTEMPARAM_SETTINGS_OPTION_TIME_FORMAT = "emu.sysparam.timeformat";
+    public static final String SYSTEMPARAM_SETTINGS_OPTION_TIME_ZONE = "emu.sysparam.timezone";
+    public static final String SYSTEMPARAM_SETTINGS_OPTION_DAYLIGHT_SAVING_TIME = "emu.sysparam.daylightsavings";
+    public static final String SYSTEMPARAM_SETTINGS_OPTION_LANGUAGE = "emu.impose.language";
+    public static final String SYSTEMPARAM_SETTINGS_OPTION_BUTTON_PREFERENCE = "emu.impose.button";
 
     public static final int PSP_SYSTEMPARAM_ID_STRING_NICKNAME = 1;
     public static final int PSP_SYSTEMPARAM_ID_INT_ADHOC_CHANNEL = 2;
@@ -210,16 +210,6 @@ public class sceUtility extends HLEModule {
     protected HtmlViewerUtilityDialogState htmlViewerState;
     protected UtilityDialogState savedataErrState;
     protected GamedataInstallUtilityDialogState gamedataInstallState;
-
-    protected String systemParam_nickname;
-    protected int systemParam_adhocChannel;
-    protected int systemParam_wlanPowersave;
-    protected int systemParam_dateFormat;
-    protected int systemParam_timeFormat;
-    protected int systemParam_timeZone;
-    protected int systemParam_daylightSavingTime;
-    protected int systemParam_language;
-    protected int systemParam_buttonPreference;
 
     private static final String dummyNetParamName = "NetConf #%d";
     private static final int numberNetConfigurations = 1;
@@ -1416,11 +1406,11 @@ public class sceUtility extends HLEModule {
         }
 
         protected boolean isConfirmButtonPressed() {
-        	return isButtonPressed(Modules.sceUtilityModule.systemParam_buttonPreference == PSP_SYSTEMPARAM_BUTTON_CIRCLE ? sceCtrl.PSP_CTRL_CIRCLE : sceCtrl.PSP_CTRL_CROSS);
+        	return isButtonPressed(getSystemParamButtonPreference() == PSP_SYSTEMPARAM_BUTTON_CIRCLE ? sceCtrl.PSP_CTRL_CIRCLE : sceCtrl.PSP_CTRL_CROSS);
         }
 
         protected boolean isCancelButtonPressed() {
-        	return isButtonPressed(Modules.sceUtilityModule.systemParam_buttonPreference == PSP_SYSTEMPARAM_BUTTON_CIRCLE ? sceCtrl.PSP_CTRL_CROSS : sceCtrl.PSP_CTRL_CIRCLE);
+        	return isButtonPressed(getSystemParamButtonPreference() == PSP_SYSTEMPARAM_BUTTON_CIRCLE ? sceCtrl.PSP_CTRL_CROSS : sceCtrl.PSP_CTRL_CIRCLE);
         }
 
         private int getControllerLy() {
@@ -1755,6 +1745,42 @@ public class sceUtility extends HLEModule {
 
 	        endDialog();
     	}
+    }
+
+    public static String getSystemParamNickname() {
+    	return Settings.getInstance().readString(SYSTEMPARAM_SETTINGS_OPTION_NICKNAME);
+    }
+
+    public static int getSystemParamAdhocChannel() {
+    	return Settings.getInstance().readInt(SYSTEMPARAM_SETTINGS_OPTION_ADHOC_CHANNEL, 0);
+    }
+
+    public static int getSystemParamWlanPowersave() {
+    	return Settings.getInstance().readInt(SYSTEMPARAM_SETTINGS_OPTION_WLAN_POWER_SAVE, 0);
+    }
+
+    public static int getSystemParamDateFormat() {
+    	return Settings.getInstance().readInt(SYSTEMPARAM_SETTINGS_OPTION_DATE_FORMAT, PSP_SYSTEMPARAM_DATE_FORMAT_YYYYMMDD);
+    }
+
+    public static int getSystemParamTimeFormat() {
+    	return Settings.getInstance().readInt(SYSTEMPARAM_SETTINGS_OPTION_TIME_FORMAT, PSP_SYSTEMPARAM_TIME_FORMAT_24HR);
+    }
+
+    public static int getSystemParamTimeZone() {
+    	return Settings.getInstance().readInt(SYSTEMPARAM_SETTINGS_OPTION_TIME_ZONE, 0);
+    }
+
+    public static int getSystemParamDaylightSavingTime() {
+    	return Settings.getInstance().readInt(SYSTEMPARAM_SETTINGS_OPTION_DAYLIGHT_SAVING_TIME, 0);
+    }
+
+    public static int getSystemParamLanguage() {
+    	return Settings.getInstance().readInt(SYSTEMPARAM_SETTINGS_OPTION_LANGUAGE, PSP_SYSTEMPARAM_LANGUAGE_ENGLISH);
+    }
+
+    public static int getSystemParamButtonPreference() {
+    	return Settings.getInstance().readInt(SYSTEMPARAM_SETTINGS_OPTION_BUTTON_PREFERENCE, PSP_SYSTEMPARAM_BUTTON_CROSS);
     }
 
     protected static String getNetParamName(int id) {
@@ -2283,35 +2309,35 @@ public class sceUtility extends HLEModule {
             cpu.gpr[2] = 0;
             switch (id) {
                 case PSP_SYSTEMPARAM_ID_INT_ADHOC_CHANNEL:
-                    systemParam_adhocChannel = mem.read32(value_addr);
+                    Settings.getInstance().writeInt(SYSTEMPARAM_SETTINGS_OPTION_ADHOC_CHANNEL, mem.read32(value_addr));
                     break;
 
                 case PSP_SYSTEMPARAM_ID_INT_WLAN_POWERSAVE:
-                    systemParam_wlanPowersave = mem.read32(value_addr);
+                    Settings.getInstance().writeInt(SYSTEMPARAM_SETTINGS_OPTION_WLAN_POWER_SAVE, mem.read32(value_addr));
                     break;
 
                 case PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT:
-                    systemParam_dateFormat = mem.read32(value_addr);
+                    Settings.getInstance().writeInt(SYSTEMPARAM_SETTINGS_OPTION_DATE_FORMAT, mem.read32(value_addr));
                     break;
 
                 case PSP_SYSTEMPARAM_ID_INT_TIME_FORMAT:
-                    systemParam_timeFormat = mem.read32(value_addr);
+                    Settings.getInstance().writeInt(SYSTEMPARAM_SETTINGS_OPTION_TIME_FORMAT, mem.read32(value_addr));
                     break;
 
                 case PSP_SYSTEMPARAM_ID_INT_TIMEZONE:
-                    systemParam_timeZone = mem.read32(value_addr);
+                    Settings.getInstance().writeInt(SYSTEMPARAM_SETTINGS_OPTION_TIME_ZONE, mem.read32(value_addr));
                     break;
 
                 case PSP_SYSTEMPARAM_ID_INT_DAYLIGHTSAVINGS:
-                    systemParam_daylightSavingTime = mem.read32(value_addr);
+                    Settings.getInstance().writeInt(SYSTEMPARAM_SETTINGS_OPTION_DAYLIGHT_SAVING_TIME, mem.read32(value_addr));
                     break;
 
                 case PSP_SYSTEMPARAM_ID_INT_LANGUAGE:
-                    systemParam_language = mem.read32(value_addr);
+                    Settings.getInstance().writeInt(SYSTEMPARAM_SETTINGS_OPTION_LANGUAGE, mem.read32(value_addr));
                     break;
 
                 case PSP_SYSTEMPARAM_ID_INT_BUTTON_PREFERENCE:
-                    systemParam_buttonPreference = mem.read32(value_addr);
+                    Settings.getInstance().writeInt(SYSTEMPARAM_SETTINGS_OPTION_BUTTON_PREFERENCE, mem.read32(value_addr));
                     break;
 
                 default:
@@ -2338,7 +2364,7 @@ public class sceUtility extends HLEModule {
             cpu.gpr[2] = 0;
             switch (id) {
                 case PSP_SYSTEMPARAM_ID_STRING_NICKNAME:
-                    systemParam_nickname = Utilities.readStringZ(str_addr);
+                    Settings.getInstance().writeString(SYSTEMPARAM_SETTINGS_OPTION_NICKNAME, Utilities.readStringZ(str_addr));
                     break;
 
                 default:
@@ -2366,35 +2392,35 @@ public class sceUtility extends HLEModule {
             cpu.gpr[2] = 0;
             switch (id) {
                 case PSP_SYSTEMPARAM_ID_INT_ADHOC_CHANNEL:
-                    mem.write32(value_addr, systemParam_adhocChannel);
+                    mem.write32(value_addr, getSystemParamAdhocChannel());
                     break;
 
                 case PSP_SYSTEMPARAM_ID_INT_WLAN_POWERSAVE:
-                    mem.write32(value_addr, systemParam_wlanPowersave);
+                    mem.write32(value_addr, getSystemParamWlanPowersave());
                     break;
 
                 case PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT:
-                    mem.write32(value_addr, systemParam_dateFormat);
+                    mem.write32(value_addr, getSystemParamDateFormat());
                     break;
 
                 case PSP_SYSTEMPARAM_ID_INT_TIME_FORMAT:
-                    mem.write32(value_addr, systemParam_timeFormat);
+                    mem.write32(value_addr, getSystemParamTimeFormat());
                     break;
 
                 case PSP_SYSTEMPARAM_ID_INT_TIMEZONE:
-                    mem.write32(value_addr, systemParam_timeZone);
+                    mem.write32(value_addr, getSystemParamTimeZone());
                     break;
 
                 case PSP_SYSTEMPARAM_ID_INT_DAYLIGHTSAVINGS:
-                    mem.write32(value_addr, systemParam_daylightSavingTime);
+                    mem.write32(value_addr, getSystemParamDaylightSavingTime());
                     break;
 
                 case PSP_SYSTEMPARAM_ID_INT_LANGUAGE:
-                    mem.write32(value_addr, systemParam_language);
+                    mem.write32(value_addr, getSystemParamLanguage());
                     break;
 
                 case PSP_SYSTEMPARAM_ID_INT_BUTTON_PREFERENCE:
-                    mem.write32(value_addr, systemParam_buttonPreference);
+                    mem.write32(value_addr, getSystemParamLanguage());
                     break;
 
                 default:
@@ -2423,7 +2449,7 @@ public class sceUtility extends HLEModule {
             cpu.gpr[2] = 0;
             switch (id) {
                 case PSP_SYSTEMPARAM_ID_STRING_NICKNAME:
-                    Utilities.writeStringNZ(mem, str_addr, len, systemParam_nickname);
+                    Utilities.writeStringNZ(mem, str_addr, len, getSystemParamNickname());
                     break;
 
                 default:

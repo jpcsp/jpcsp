@@ -79,6 +79,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.sceDisplay;
+import jpcsp.HLE.modules.sceUtility;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
@@ -1637,15 +1638,15 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
         // Log the configuration settings
         logConfigurationPanel("region");
-        logConfigurationSettingList("language", "emu.impose.language", SettingsGUI.getImposeLanguages(), true);
-        logConfigurationSettingList("buttonpref", "emu.impose.button", SettingsGUI.getImposeButtons(), true);
-        logConfigurationSettingList("daylightSavings", "emu.sysparam.daylightsavings", SettingsGUI.getSysparamDaylightSavings(), true);
-        logConfigurationSettingInt("timezone", "emu.sysparam.timezone", true);
-        logConfigurationSettingList("timeformat", "emu.sysparam.timeformat", SettingsGUI.getSysparamTimeFormats(), true);
-        logConfigurationSettingList("dateformat", "emu.sysparam.dateformat", SettingsGUI.getSysparamDateFormats(), true);
-        logConfigurationSettingList("wlanpowersaving", "emu.sysparam.wlanpowersave", SettingsGUI.getSysparamWlanPowerSaves(), true);
-        logConfigurationSettingList("adhocChannel", "emu.sysparam.adhocchannel", SettingsGUI.getSysparamAdhocChannels(), true);
-        logConfigurationSettingString("nickname", "emu.sysparam.nickname", true);
+        logConfigurationSettingList("language", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_LANGUAGE, SettingsGUI.getImposeLanguages(), true);
+        logConfigurationSettingList("buttonpref", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_BUTTON_PREFERENCE, SettingsGUI.getImposeButtons(), true);
+        logConfigurationSettingList("daylightSavings", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_DAYLIGHT_SAVING_TIME, SettingsGUI.getSysparamDaylightSavings(), true);
+        logConfigurationSettingInt("timezone", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_TIME_ZONE, true);
+        logConfigurationSettingList("timeformat", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_TIME_FORMAT, SettingsGUI.getSysparamTimeFormats(), true);
+        logConfigurationSettingList("dateformat", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_DATE_FORMAT, SettingsGUI.getSysparamDateFormats(), true);
+        logConfigurationSettingList("wlanpowersaving", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_WLAN_POWER_SAVE, SettingsGUI.getSysparamWlanPowerSaves(), true);
+        logConfigurationSettingList("adhocChannel", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_ADHOC_CHANNEL, SettingsGUI.getSysparamAdhocChannels(), true);
+        logConfigurationSettingString("nickname", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_NICKNAME, true);
 
         logConfigurationPanel("video");
         logConfigurationSettingBool("disablevbo", "emu.disablevbo", false);
