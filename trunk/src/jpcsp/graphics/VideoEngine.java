@@ -4278,11 +4278,15 @@ public class VideoEngine {
 
     public boolean isVideoTexture(int tex_addr) {
     	if (!videoTextures.isEmpty()) {
-    		for (AddressRange addressRange : videoTextures) {
-    			if (addressRange.contains(tex_addr)) {
-    				return true;
-    			}
-    		}
+    		// Synchronize the access to videoTextures as it can be accessed
+    		// from a parallel threads (async display and PSP thread)
+    		synchronized (videoTextures) {
+        		for (AddressRange addressRange : videoTextures) {
+        			if (addressRange.contains(tex_addr)) {
+        				return true;
+        			}
+        		}
+			}
     	}
 
     	return false;
@@ -5950,18 +5954,26 @@ public class VideoEngine {
     }
 
     public void addVideoTexture(int startAddress, int endAddress) {
-    	for (AddressRange addressRange : videoTextures) {
-    		if (addressRange.equals(startAddress, endAddress)) {
-    			return;
-    		}
-    	}
+		// Synchronize the access to videoTextures as it can be accessed
+		// from a parallel threads (async display and PSP thread)
+    	synchronized (videoTextures) {
+        	for (AddressRange addressRange : videoTextures) {
+        		if (addressRange.equals(startAddress, endAddress)) {
+        			return;
+        		}
+        	}
 
-    	AddressRange addressRange = new AddressRange(startAddress, endAddress);
-    	videoTextures.add(addressRange);
+        	AddressRange addressRange = new AddressRange(startAddress, endAddress);
+        	videoTextures.add(addressRange);
+		}
     }
 
     public void resetVideoTextures() {
-    	videoTextures.clear();
+		// Synchronize the access to videoTextures as it can be accessed
+		// from a parallel threads (async display and PSP thread)
+    	synchronized (videoTextures) {
+        	videoTextures.clear();
+		}
     }
 
     protected void matrixMult(float[] result, float[] m1, float[] m2) {
