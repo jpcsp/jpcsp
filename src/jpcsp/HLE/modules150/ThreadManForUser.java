@@ -352,18 +352,14 @@ public class ThreadManForUser extends HLEModule {
         // idle thread, using its stack.
         // The stack is allocated into the reservedMem area.
         idle0 = new SceKernelThreadInfo("idle0", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0, PSP_THREAD_ATTR_KERNEL);
-        idle0.freeStack();
-        idle0.stackSize = 0x2000;
-        idle0.stack_addr = reservedMem;
+        idle0.setSystemStack(reservedMem, 0x2000);
         idle0.reset();
         idle0.exitStatus = ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
         threadMap.put(idle0.uid, idle0);
         hleChangeThreadState(idle0, PSP_THREAD_READY);
 
         idle1 = new SceKernelThreadInfo("idle1", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0, PSP_THREAD_ATTR_KERNEL);
-        idle1.freeStack();
-        idle1.stackSize = 0x2000;
-        idle1.stack_addr = reservedMem + 0x2000;
+        idle1.setSystemStack(reservedMem + 0x2000, 0x2000);
         idle1.reset();
         idle1.exitStatus = ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
         threadMap.put(idle1.uid, idle1);
@@ -931,16 +927,14 @@ public class ThreadManForUser extends HLEModule {
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("really deleting thread:'" + thread.name + "'");
+            log.debug(String.format("really deleting thread:'%s'", thread.name));
         }
 
         // cleanup thread - free the stack
-        if (thread.stack_addr != 0) {
-            if (log.isDebugEnabled()) {
-                log.debug("thread:'" + thread.name + "' freeing stack " + String.format("0x%08X", thread.stack_addr));
-            }
-            thread.freeStack();
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("thread:'%s' freeing stack 0x%08X", thread.name, thread.getStackAddr()));
         }
+        thread.freeStack();
 
         Managers.eventFlags.onThreadDeleted(thread);
         Managers.semas.onThreadDeleted(thread);
@@ -1520,7 +1514,7 @@ public class ThreadManForUser extends HLEModule {
         // Setup args by copying them onto the stack
         //int address = thread.cpuContext.gpr[29];
         // 256 bytes padding between user data top and real stack top
-        int address = (thread.stack_addr + thread.stackSize - 0x100) - ((userDataLength + 0xF) & ~0xF);
+        int address = (thread.getStackAddr() + thread.stackSize - 0x100) - ((userDataLength + 0xF) & ~0xF);
         if (userDataAddr == 0) {
             // Set the pointer to NULL when none is provided
             thread.cpuContext.gpr[4] = 0; // a0 = user data len
@@ -1680,7 +1674,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     protected int getThreadCurrentStackSize(Processor processor) {
-    	int size = processor.cpu.gpr[_sp] - currentThread.stack_addr;
+    	int size = processor.cpu.gpr[_sp] - currentThread.getStackAddr();
         if (size < 0) {
             size = 0;
         }
@@ -3653,7 +3647,7 @@ public class ThreadManForUser extends HLEModule {
         }
         SceKernelThreadInfo thread = hleKernelCreateThread(name, entry_addr, initPriority, stackSize, attr, option_addr);
 
-        if (thread.stackSize > 0 && thread.stack_addr == 0) {
+        if (thread.stackSize > 0 && thread.getStackAddr() == 0) {
             log.warn("sceKernelCreateThread not enough memory to create the stack");
             hleDeleteThread(thread);
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_NO_MEMORY;
@@ -4105,7 +4099,7 @@ public class ThreadManForUser extends HLEModule {
     	// The stack is filled with 0xFF when the thread starts.
     	// Scan for the unused stack space by looking for the first 32-bit value
     	// differing from 0xFFFFFFFF.
-    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(thread.stack_addr, thread.stackSize, 4);
+    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(thread.getStackAddr(), thread.stackSize, 4);
     	int unusedStackSize = thread.stackSize;
     	for (int i = 0; i < thread.stackSize; i += 4) {
     		int stackValue = memoryReader.readNext();
