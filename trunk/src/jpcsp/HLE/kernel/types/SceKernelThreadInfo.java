@@ -90,7 +90,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public int attr;
     public int status; // it's a bitfield but I don't think we ever use more than 1 bit at once
     public final int entry_addr;
-    public int stack_addr; // using low address, no need to add stackSize to the pointer returned by malloc
+    private int stackAddr; // using low address, no need to add stackSize to the pointer returned by malloc
     public int stackSize;
     public int gpReg_addr;
     public final int initPriority; // lower numbers mean higher priority
@@ -129,6 +129,8 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public boolean[] callbackReady;
     public SceKernelCallbackInfo[] callbackInfo;
     public Queue<Callback> pendingCallbacks = new LinkedList<Callback>();
+    // Used by sceKernelExtendThreadStack
+    private SysMemInfo extendedStackSysMemInfo;
 
     public SceKernelThreadInfo(String name, int entry_addr, int initPriority, int stackSize, int attr) {
         if (stackSize < 512) {
@@ -148,9 +150,9 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         // Setup the stack.
     	stackSysMemInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, String.format("ThreadMan-Stack-0x%x-%s", uid, name), SysMemUserForUser.PSP_SMEM_High, stackSize, 0);
     	if (stackSysMemInfo == null) {
-    		stack_addr = 0;
+    		stackAddr = 0;
     	} else {
-    		stack_addr = stackSysMemInfo.addr;
+    		stackAddr = stackSysMemInfo.addr;
     	}
 
         // Inherit gpReg.
@@ -164,22 +166,22 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public void reset() {
         status = PSP_THREAD_STOPPED;
 
-        int k0 = stack_addr + stackSize - 0x100; // setup k0
+        int k0 = stackAddr + stackSize - 0x100; // setup k0
         Memory mem = Memory.getInstance();
-        if (stack_addr != 0 && stackSize > 0) {
+        if (stackAddr != 0 && stackSize > 0) {
             // set stack to 0xFF
             if ((attr & PSP_THREAD_ATTR_NO_FILLSTACK) != PSP_THREAD_ATTR_NO_FILLSTACK) {
-                mem.memset(stack_addr, (byte) 0xFF, stackSize);
+                mem.memset(stackAddr, (byte) 0xFF, stackSize);
             }
 
             // setup k0
             mem.memset(k0, (byte) 0x0, 0x100);
-            mem.write32(k0 + 0xc0, stack_addr);
+            mem.write32(k0 + 0xc0, stackAddr);
             mem.write32(k0 + 0xca, uid);
             mem.write32(k0 + 0xf8, 0xffffffff);
             mem.write32(k0 + 0xfc, 0xffffffff);
 
-            mem.write32(stack_addr, uid);
+            mem.write32(stackAddr, uid);
         }
 
         currentPriority = initPriority;
@@ -198,7 +200,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         cpuContext.npc = entry_addr; // + 4;
 
         // sp, 512 byte padding at the top for user data, this will get re-jigged when we call start thread
-        cpuContext.gpr[_sp] = stack_addr + stackSize - 512;
+        cpuContext.gpr[_sp] = stackAddr + stackSize - 512;
         cpuContext.gpr[_k0] = k0;
 
         // We'll hook "jr $ra" where $ra == address of HLE syscall hleKernelExitThread
@@ -257,7 +259,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         mem.write32(address + 36, attr);
         mem.write32(address + 40, status);
         mem.write32(address + 44, entry_addr);
-        mem.write32(address + 48, stack_addr);
+        mem.write32(address + 48, stackAddr);
         mem.write32(address + 52, stackSize);
         mem.write32(address + 56, gpReg_addr);
         mem.write32(address + 60, initPriority);
@@ -288,12 +290,40 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         mem.write32(address + 36, releaseCount);
     }
 
+    public void setSystemStack(int stackAddr, int stackSize) {
+    	freeStack();
+    	this.stackAddr = stackAddr;
+    	this.stackSize = stackSize;
+    }
+
     public void freeStack() {
         if (stackSysMemInfo != null) {
             Modules.SysMemUserForUserModule.free(stackSysMemInfo);
             stackSysMemInfo = null;
-            stack_addr = 0;
+            stackAddr = 0;
         }
+        freeExtendedStack();
+    }
+
+    public void freeExtendedStack() {
+        if (extendedStackSysMemInfo != null) {
+        	Modules.SysMemUserForUserModule.free(extendedStackSysMemInfo);
+        	extendedStackSysMemInfo = null;
+        }
+    }
+
+    public int extendStack(int size) {
+    	extendedStackSysMemInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, String.format("ThreadMan-ExtendedStack-0x%x-%s", uid, name), SysMemUserForUser.PSP_SMEM_High, size, 0);
+
+    	return extendedStackSysMemInfo.addr;
+    }
+
+    public int getStackAddr() {
+    	if (extendedStackSysMemInfo != null) {
+        	return extendedStackSysMemInfo.addr;
+    	}
+
+		return stackAddr;
     }
 
     public static String getStatusName(int status) {
