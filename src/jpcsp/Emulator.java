@@ -41,6 +41,7 @@ import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.textures.TextureCache;
 import jpcsp.hardware.Battery;
 import jpcsp.hardware.Interrupts;
+import jpcsp.memory.MemorySections;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.sound.SoundChannel;
 import jpcsp.util.DurationStatistics;
@@ -220,6 +221,7 @@ public class Emulator implements Runnable {
         NIDMapper.getInstance().Initialise();
         Loader.getInstance().reset();
         State.fileLogger.resetLogging();
+        MemorySections.getInstance().reset();
 
         HLEModuleManager.getInstance().Initialise(firmwareVersion);
         Managers.reset();

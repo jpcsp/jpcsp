@@ -34,6 +34,7 @@ import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
+import jpcsp.memory.MemorySections;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.AbstractIntSettingsListener;
 import jpcsp.settings.Settings;
@@ -210,7 +211,6 @@ public class Compiler implements ICompiler {
 		documentBuilderFactory.setIgnoringElementContentWhitespace(true);
 		documentBuilderFactory.setIgnoringComments(true);
 		documentBuilderFactory.setCoalescing(true);
-//		documentBuilderFactory.setValidating(true);
 		configuration = null;
 		try {
 			DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
@@ -283,6 +283,7 @@ public class Compiler implements ICompiler {
         if (log.isTraceEnabled()) {
             log.trace(String.format("Compiler.analyse Block 0x%08X", startAddress));
         }
+        MemorySections memorySections = MemorySections.getInstance();
         startAddress = startAddress & Memory.addressMask;
         CodeBlock codeBlock = new CodeBlock(startAddress, instanceIndex);
         Stack<Integer> pendingBlockAddresses = new Stack<Integer>();
@@ -322,12 +323,14 @@ public class Compiler implements ICompiler {
 
                     int branchingTo = 0;
                     boolean isBranching = false;
+                    boolean checkDynamicBranching = false;
                     if (insn.hasFlags(Instruction.FLAG_IS_BRANCHING)) {
                         branchingTo = branchTarget(npc, opcode);
                         isBranching = true;
                     } else if (insn.hasFlags(Instruction.FLAG_IS_JUMPING)) {
-                        branchingTo = jumpTarget(npc, opcode);
-                        isBranching = true;
+                		branchingTo = jumpTarget(npc, opcode);
+                		isBranching = true;
+                		checkDynamicBranching = true;
                     }
 
                     if (isEndBlockInsn(pc, opcode, insn)) {
@@ -340,7 +343,17 @@ public class Compiler implements ICompiler {
                         }
                     } else if (isBranching) {
                         if (branchingTo != 0) {  // Ignore "J 0x00000000" instruction
-                            pendingBlockAddresses.push(branchingTo);
+                        	if (checkDynamicBranching) {
+	                        	// Analyse only the jump instructions that are jumping to
+	                        	// non-writeable memory sections. A jump to a writeable memory
+	                        	// section has to be interpreted at runtime to check if the
+	                        	// reached code has not been changed (i.e. invalidated).
+                        		if (!memorySections.canWrite(branchingTo, false)) {
+	                        		pendingBlockAddresses.push(branchingTo);
+	                        	}
+                        	} else {
+                        		pendingBlockAddresses.push(branchingTo);
+                        	}
                         }
                     }
 
