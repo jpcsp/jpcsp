@@ -16,6 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
+import static jpcsp.format.Elf32SectionHeader.SHF_ALLOCATE;
+import static jpcsp.format.Elf32SectionHeader.SHF_EXECUTE;
+import static jpcsp.format.Elf32SectionHeader.SHF_NONE;
+import static jpcsp.format.Elf32SectionHeader.SHF_WRITE;
 import static jpcsp.util.Utilities.readUnaligned32;
 import static jpcsp.util.Utilities.writeUnaligned32;
 
@@ -51,6 +55,8 @@ import jpcsp.format.PSP;
 import jpcsp.format.PSPModuleInfo;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
+import jpcsp.memory.MemorySection;
+import jpcsp.memory.MemorySections;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
@@ -529,20 +535,31 @@ public class Loader {
         	if (log.isTraceEnabled()) {
         		log.trace(String.format("ELF Section Header: %s", shdr.toString()));
         	}
-            if ((shdr.getSh_flags() & Elf32SectionHeader.SHF_ALLOCATE) == Elf32SectionHeader.SHF_ALLOCATE) {
+
+            int memOffset = baseAddress + (int)shdr.getSh_addr();
+            if (!Memory.isAddressGood(memOffset)) {
+                memOffset = (int)shdr.getSh_addr();
+            }
+            int len = (int)shdr.getSh_size();
+            int flags = shdr.getSh_flags();
+
+            if (flags != SHF_NONE && Memory.isAddressGood(memOffset)) {
+        		boolean read = (flags & SHF_ALLOCATE) != 0;
+        		boolean write = (flags & SHF_WRITE) != 0;
+        		boolean execute = (flags & SHF_EXECUTE) != 0;
+        		MemorySection memorySection = new MemorySection(memOffset, len, read, write, execute);
+        		MemorySections.getInstance().addMemorySection(memorySection);
+        	}
+
+        	if ((flags & SHF_ALLOCATE) != 0) {
                 switch (shdr.getSh_type()) {
                     case Elf32SectionHeader.SHT_PROGBITS: // 1
                     {
                         // Load this section into memory
                         // now loaded using program header type 1
-                        int memOffset = baseAddress + (int)shdr.getSh_addr();
                         if (!Memory.isAddressGood(memOffset)) {
-                            memOffset = (int)shdr.getSh_addr();
-                            if (!Memory.isAddressGood(memOffset)) {
-                                log.warn(String.format("Section header (type 1) has invalid memory offset 0x%08X!", memOffset));
-                            }
+                            log.warn(String.format("Section header (type 1) has invalid memory offset 0x%08X!", memOffset));
                         }
-                        int len = (int)shdr.getSh_size();
 
                         // Update memory area consumed by the module
                         if (memOffset < module.loadAddressLow) {
@@ -559,14 +576,9 @@ public class Loader {
                     case Elf32SectionHeader.SHT_NOBITS: // 8
                     {
                         // Zero out this portion of memory
-                        int memOffset = baseAddress + (int)shdr.getSh_addr();
                         if (!Memory.isAddressGood(memOffset)) {
-                            memOffset = (int)shdr.getSh_addr();
-                            if (!Memory.isAddressGood(memOffset)) {
-                                log.warn(String.format("Section header (type 8) has invalid memory offset 0x%08X!", memOffset));
-                            }
+                            log.warn(String.format("Section header (type 8) has invalid memory offset 0x%08X!", memOffset));
                         }
-                        int len = (int)shdr.getSh_size();
 
                         if (len == 0) {
                         	if (log.isDebugEnabled()) {
