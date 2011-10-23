@@ -148,7 +148,10 @@ public class sceFont extends HLEModule {
 
         @Override
         public String toString() {
-            return String.format("Font '%s' - '%s'", pgf.getFileNamez(), pgf.getFontName());
+        	if (pgf == null) {
+        		return String.format("Font[handle=0x%X closed]", getHandle());
+        	}
+            return String.format("Font[handle=0x%X, '%s' - '%s']", getHandle(), pgf.getFileNamez(), pgf.getFontName());
         }
     }
 
@@ -789,7 +792,11 @@ public class sceFont extends HLEModule {
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceFontClose font=%s", font));
         }
-        font.fontLib.closeFont(font);
+        if (font.fontLib != null) {
+        	font.fontLib.closeFont(font);
+        } else {
+        	log.debug(String.format("sceFontClose font already closed font=%s", font));
+        }
         return 0;
     }
 
