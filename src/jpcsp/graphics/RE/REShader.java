@@ -283,6 +283,10 @@ public class REShader extends BaseRenderingEngineFunction {
 
 		shaderStaticDefines = staticDefines.toString();
 		shaderDummyDynamicDefines = ShaderProgram.getDummyDynamicDefines();
+
+		if (log.isDebugEnabled()) {
+        	log.debug(String.format("Using shader version %d, available shading language version %d", shaderVersion, getAvailableShadingLanguageVersion()));
+        }
 	}
 
 	protected void preprocessShader(StringBuilder src, ShaderProgram shaderProgram) {
