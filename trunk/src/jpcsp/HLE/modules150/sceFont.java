@@ -146,9 +146,13 @@ public class sceFont extends HLEModule {
             return handle;
         }
 
+        public boolean isClosed() {
+        	return pgf == null;
+        }
+
         @Override
         public String toString() {
-        	if (pgf == null) {
+        	if (isClosed()) {
         		return String.format("Font[handle=0x%X closed]", getHandle());
         	}
             return String.format("Font[handle=0x%X, '%s' - '%s']", getHandle(), pgf.getFileNamez(), pgf.getFontName());
@@ -631,6 +635,9 @@ public class sceFont extends HLEModule {
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceFontGetFontInfo font=%s, fontInfoAddr=0x%08X", font, fontInfoPtr.getAddress()));
         }
+        if (font == null || font.isClosed()) {
+        	return -1;
+        }
         PGF currentPGF = font.pgf;
         int maxGlyphWidthI = currentPGF.getMaxSize()[0];
         int maxGlyphHeightI = currentPGF.getMaxSize()[1];
@@ -701,6 +708,9 @@ public class sceFont extends HLEModule {
             log.debug(String.format(
                     "sceFontGetCharInfo font=%s, charCode=%04X (%c), charInfoAddr=%08X",
                     font, charCode, (charCode <= 0xFF ? (char) charCode : '?'), charInfoPtr.getAddress()));
+        }
+        if (font == null || font.fontInfo == null) {
+        	return -1;
         }
         pspCharInfo pspCharInfo = null;
         if (getAllowInternalFonts()) {
