@@ -802,7 +802,7 @@ public class sceFont extends HLEModule {
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceFontClose font=%s", font));
         }
-        if (font.fontLib != null) {
+        if (font != null && font.fontLib != null) {
         	font.fontLib.closeFont(font);
         } else {
         	log.debug(String.format("sceFontClose font already closed font=%s", font));
