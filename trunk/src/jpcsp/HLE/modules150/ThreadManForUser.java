@@ -4013,23 +4013,39 @@ public class ThreadManForUser extends HLEModule {
 
     @HLEFunction(nid = 0x2C34E053, version = 150)
     public int sceKernelReleaseWaitThread(int uid) {
-        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
-        SceKernelThreadInfo thread = threadMap.get(uid);
-        
-        if (thread == currentThread) {
-        	log.warn("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") can't release itself!");
+    	if (uid == 0) {
         	throw(new SceKernelErrorException(SceKernelErrors.ERROR_KERNEL_ILLEGAL_THREAD));
+    	}
+
+        SceKernelThreadInfo thread = getThread(uid);
+
+        if (thread == currentThread) {
+        	if (log.isDebugEnabled()) {
+                log.debug(String.format("sceKernelReleaseWaitThread(0x%X): can't release itself: %s", uid, thread));
+        	}
+        	return SceKernelErrors.ERROR_KERNEL_ILLEGAL_THREAD;
         }
-        
+
         if (!thread.isWaiting()) {
             if (log.isDebugEnabled()) {
-                log.debug("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") Thread not waiting: status=" + thread.status);
+                log.debug(String.format("sceKernelReleaseWaitThread(0x%X): thread not waiting: %s", uid, thread));
             }
             return SceKernelErrors.ERROR_KERNEL_THREAD_IS_NOT_WAIT;
-        } 
-        
+        }
+
+        // If the application is waiting on a internal condition,
+        // return an illegal permission
+        // (e.g. on a real PSP, it would be the case for a
+        //  sceKernelWaitEventFlag issued internally by a syscall).
+        if (thread.waitType >= SceKernelThreadInfo.JPCSP_FIRST_INTERNAL_WAIT_TYPE) {
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("sceKernelReleaseWaitThread(0x%X): thread waiting in privileged status: waitType=0x%X", uid, thread.waitType));
+            }
+        	return SceKernelErrors.ERROR_KERNEL_ILLEGAL_PERMISSION;
+        }
+
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") releasing waiting thread: " + thread.toString());
+            log.debug(String.format("sceKernelReleaseWaitThread(0x%X): releasing waiting thread: %s", uid, thread));
         }
 
         hleThreadWaitRelease(thread);

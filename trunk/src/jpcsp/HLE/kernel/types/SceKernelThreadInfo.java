@@ -82,9 +82,10 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public static final int PSP_WAIT_MUTEX = 0x0c; // Wait on mutex.
     public static final int PSP_WAIT_LWMUTEX = 0x0d; // Wait on lwmutex.
     // These wait types are only used internally in Jpcsp and are not real PSP wait types.
-    public static final int JPCSP_WAIT_IO = 0x100; // Wait on IO.
-    public static final int JPCSP_WAIT_UMD = 0x101; // Wait on UMD.
-    public static final int JPCSP_WAIT_BLOCKED = 0x102; // Thread blocked.
+    public static final int JPCSP_FIRST_INTERNAL_WAIT_TYPE = 0x100;
+    public static final int JPCSP_WAIT_IO = JPCSP_FIRST_INTERNAL_WAIT_TYPE; // Wait on IO.
+    public static final int JPCSP_WAIT_UMD = JPCSP_WAIT_IO + 1; // Wait on UMD.
+    public static final int JPCSP_WAIT_BLOCKED = JPCSP_WAIT_UMD + 1; // Thread blocked.
     // SceKernelThreadInfo.
     public final String name;
     public int attr;
