@@ -107,7 +107,7 @@ public class EventFlagManager {
     }
 
     public void onThreadDeleted(SceKernelThreadInfo thread) {
-        if (thread.waitType == PSP_WAIT_EVENTFLAG) {
+        if (thread.isWaitingForType(PSP_WAIT_EVENTFLAG)) {
             // decrement numWaitThreads
             removeWaitingThread(thread);
         }
@@ -119,7 +119,7 @@ public class EventFlagManager {
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
-            if (thread.waitType == PSP_WAIT_EVENTFLAG &&
+            if (thread.isWaitingForType(PSP_WAIT_EVENTFLAG) &&
                     thread.wait.EventFlag_id == evid) {
                 thread.cpuContext.gpr[2] = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
@@ -146,7 +146,7 @@ public class EventFlagManager {
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
-            if (thread.waitType == PSP_WAIT_EVENTFLAG &&
+            if (thread.isWaitingForType(PSP_WAIT_EVENTFLAG) &&
                     thread.wait.EventFlag_id == event.uid) {
                 if (checkEventFlag(event, thread.wait.EventFlag_bits, thread.wait.EventFlag_wait, thread.wait.EventFlag_outBits_addr)) {
                     if (log.isDebugEnabled()) {

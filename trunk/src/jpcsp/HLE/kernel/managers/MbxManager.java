@@ -95,7 +95,7 @@ public class MbxManager {
     }
 
     public void onThreadDeleted(SceKernelThreadInfo thread) {
-    	if (thread.waitType == PSP_WAIT_MBX) {
+    	if (thread.isWaitingForType(PSP_WAIT_MBX)) {
     		removeWaitingThread(thread);
     	}
     }
@@ -106,7 +106,7 @@ public class MbxManager {
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
-            if (thread.waitType == PSP_WAIT_MBX &&
+            if (thread.isWaitingForType(PSP_WAIT_MBX) &&
                     thread.wait.Mbx_id == mbxid) {
                 thread.cpuContext.gpr[2] = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
@@ -134,7 +134,7 @@ public class MbxManager {
         if ((info.attr & PSP_MBX_ATTR_PRIORITY) == PSP_MBX_ATTR_FIFO) {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
-                if (thread.waitType == PSP_WAIT_MBX &&
+                if (thread.isWaitingForType(PSP_WAIT_MBX) &&
                         thread.wait.Mbx_id == info.uid &&
                         info.hasMessage()) {
                     if (log.isDebugEnabled()) {
@@ -152,7 +152,7 @@ public class MbxManager {
         } else if ((info.attr & PSP_MBX_ATTR_PRIORITY) == PSP_MBX_ATTR_PRIORITY) {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
-                if (thread.waitType == PSP_WAIT_MBX &&
+                if (thread.isWaitingForType(PSP_WAIT_MBX) &&
                         thread.wait.Mbx_id == info.uid &&
                         info.hasMessage()) {
                     if (log.isDebugEnabled()) {

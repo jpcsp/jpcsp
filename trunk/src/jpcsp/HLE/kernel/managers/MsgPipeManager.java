@@ -73,7 +73,7 @@ public class MsgPipeManager {
     }
 
     private boolean removeWaitingThread(SceKernelThreadInfo thread) {
-        if (thread.waitType == PSP_WAIT_MSGPIPE) {
+        if (thread.isWaitingForType(PSP_WAIT_MSGPIPE)) {
             // Update numSendWaitThreads.
             SceKernelMppInfo info = msgMap.get(thread.wait.MsgPipe_id);
             if (info != null) {
@@ -130,7 +130,7 @@ public class MsgPipeManager {
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
-            if (thread.waitType == PSP_WAIT_MSGPIPE &&
+            if (thread.isWaitingForType(PSP_WAIT_MSGPIPE) &&
                     thread.wait.MsgPipe_id == msgpid) {
                 thread.cpuContext.gpr[2] = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
@@ -160,7 +160,7 @@ public class MsgPipeManager {
         if ((info.attr & PSP_MPP_ATTR_SEND) == PSP_MPP_ATTR_SEND_FIFO) {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
-                if (thread.waitType == PSP_WAIT_MSGPIPE &&
+                if (thread.isWaitingForType(PSP_WAIT_MSGPIPE) &&
                         thread.wait.MsgPipe_isSend &&
                         thread.wait.MsgPipe_id == info.uid &&
                         trySendMsgPipe(mem, info, thread.wait.MsgPipe_address, thread.wait.MsgPipe_size, thread.wait.MsgPipe_waitMode, thread.wait.MsgPipe_resultSize_addr)) {
@@ -176,7 +176,7 @@ public class MsgPipeManager {
         } else if ((info.attr & PSP_MPP_ATTR_SEND) == PSP_MPP_ATTR_SEND_PRIORITY) {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
-                if (thread.waitType == PSP_WAIT_MSGPIPE &&
+                if (thread.isWaitingForType(PSP_WAIT_MSGPIPE) &&
                         thread.wait.MsgPipe_isSend &&
                         thread.wait.MsgPipe_id == info.uid &&
                         trySendMsgPipe(mem, info, thread.wait.MsgPipe_address, thread.wait.MsgPipe_size, thread.wait.MsgPipe_waitMode, thread.wait.MsgPipe_resultSize_addr)) {
@@ -204,7 +204,7 @@ public class MsgPipeManager {
         if ((info.attr & PSP_MPP_ATTR_RECEIVE) == PSP_MPP_ATTR_RECEIVE_FIFO) {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
-                if (thread.waitType == PSP_WAIT_MSGPIPE &&
+                if (thread.isWaitingForType(PSP_WAIT_MSGPIPE) &&
                         !thread.wait.MsgPipe_isSend &&
                         thread.wait.MsgPipe_id == info.uid &&
                         tryReceiveMsgPipe(mem, info, thread.wait.MsgPipe_address, thread.wait.MsgPipe_size, thread.wait.MsgPipe_waitMode, thread.wait.MsgPipe_resultSize_addr)) {
@@ -220,7 +220,7 @@ public class MsgPipeManager {
         } else if ((info.attr & PSP_MPP_ATTR_RECEIVE) == PSP_MPP_ATTR_RECEIVE_PRIORITY) {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
-                if (thread.waitType == PSP_WAIT_MSGPIPE &&
+                if (thread.isWaitingForType(PSP_WAIT_MSGPIPE) &&
                         !thread.wait.MsgPipe_isSend &&
                         thread.wait.MsgPipe_id == info.uid &&
                         tryReceiveMsgPipe(mem, info, thread.wait.MsgPipe_address, thread.wait.MsgPipe_size, thread.wait.MsgPipe_waitMode, thread.wait.MsgPipe_resultSize_addr)) {

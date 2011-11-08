@@ -104,7 +104,7 @@ public class MutexManager {
     }
 
     public void onThreadDeleted(SceKernelThreadInfo thread) {
-        if (thread.waitType == PSP_WAIT_MUTEX) {
+        if (thread.isWaitingForType(PSP_WAIT_MUTEX)) {
             // decrement numWaitThreads
             removeWaitingThread(thread);
         }
@@ -116,7 +116,7 @@ public class MutexManager {
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
-            if (thread.waitType == PSP_WAIT_MUTEX &&
+            if (thread.isWaitingForType(PSP_WAIT_MUTEX) &&
                     thread.wait.Mutex_id == mid) {
                 thread.cpuContext.gpr[2] = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
@@ -144,7 +144,7 @@ public class MutexManager {
         if ((info.attr & PSP_MUTEX_ATTR_PRIORITY) == PSP_MUTEX_ATTR_FIFO) {
             for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iterator(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
-                if (thread.waitType == PSP_WAIT_MUTEX &&
+                if (thread.isWaitingForType(PSP_WAIT_MUTEX) &&
                         thread.wait.Mutex_id == info.uid &&
                         tryLockMutex(info, thread.wait.Mutex_count, thread)) {
                     // New thread is taking control of Mutex.
@@ -160,7 +160,7 @@ public class MutexManager {
         } else if ((info.attr & PSP_MUTEX_ATTR_PRIORITY) == PSP_MUTEX_ATTR_PRIORITY) {
             for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iteratorByPriority(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
-                if (thread.waitType == PSP_WAIT_MUTEX &&
+                if (thread.isWaitingForType(PSP_WAIT_MUTEX) &&
                         thread.wait.Mutex_id == info.uid &&
                         tryLockMutex(info, thread.wait.Mutex_count, thread)) {
                     // New thread is taking control of Mutex.

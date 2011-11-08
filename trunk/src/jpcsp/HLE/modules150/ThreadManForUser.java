@@ -652,7 +652,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     public boolean isThreadBlocked(SceKernelThreadInfo thread) {
-    	return thread.isWaiting() && thread.waitType == JPCSP_WAIT_BLOCKED;
+    	return thread.isWaitingForType(JPCSP_WAIT_BLOCKED);
     }
 
     public boolean isDispatchThreadEnabled() {
@@ -1158,8 +1158,7 @@ public class ThreadManForUser extends HLEModule {
         for (SceKernelThreadInfo thread : threadMap.values()) {
             // Wakeup threads that are in sceKernelWaitThreadEnd
             // We're assuming if waitingOnThreadEnd is set then thread.status = waiting
-            if (thread.isWaiting() &&
-            		thread.waitType == PSP_WAIT_THREAD_END &&
+            if (thread.isWaitingForType(PSP_WAIT_THREAD_END) &&
                     thread.wait.ThreadEnd_id == stoppedThread.uid) {
             	hleThreadWaitRelease(thread);
                 // Return exit status of stopped thread

@@ -103,7 +103,7 @@ public class SemaManager {
     }
 
     public void onThreadDeleted(SceKernelThreadInfo thread) {
-        if (thread.waitType == PSP_WAIT_SEMA) {
+        if (thread.isWaitingForType(PSP_WAIT_SEMA)) {
             // decrement numWaitThreads
             removeWaitingThread(thread);
         }
@@ -115,7 +115,7 @@ public class SemaManager {
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
-            if (thread.waitType == PSP_WAIT_SEMA &&
+            if (thread.isWaitingForType(PSP_WAIT_SEMA) &&
                     thread.wait.Semaphore_id == semaid) {
                 thread.cpuContext.gpr[2] = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
@@ -143,7 +143,7 @@ public class SemaManager {
         if ((sema.attr & PSP_SEMA_ATTR_PRIORITY) == PSP_SEMA_ATTR_FIFO) {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
-                if (thread.waitType == PSP_WAIT_SEMA &&
+                if (thread.isWaitingForType(PSP_WAIT_SEMA) &&
                         thread.wait.Semaphore_id == sema.uid &&
                         tryWaitSemaphore(sema, thread.wait.Semaphore_signal)) {
                     if (log.isDebugEnabled()) {
@@ -162,7 +162,7 @@ public class SemaManager {
         } else if ((sema.attr & PSP_SEMA_ATTR_PRIORITY) == PSP_SEMA_ATTR_PRIORITY) {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
-                if (thread.waitType == PSP_WAIT_SEMA &&
+                if (thread.isWaitingForType(PSP_WAIT_SEMA) &&
                         thread.wait.Semaphore_id == sema.uid &&
                         tryWaitSemaphore(sema, thread.wait.Semaphore_signal)) {
                     if (log.isDebugEnabled()) {
