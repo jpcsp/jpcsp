@@ -66,7 +66,7 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 		GL11.GL_CULL_FACE,      // GU_CULL_FACE
 		GL11.GL_DITHER,         // GU_DITHER
 		GL11.GL_FOG,            // GU_FOG
-		0,                    // GU_CLIP_PLANES
+		0,                      // GU_CLIP_PLANES
 		GL11.GL_TEXTURE_2D,     // GU_TEXTURE_2D
 		GL11.GL_LIGHTING,       // GU_LIGHTING
 		GL11.GL_LIGHT0,         // GU_LIGHT0
@@ -74,15 +74,15 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 		GL11.GL_LIGHT2,         // GU_LIGHT2
 		GL11.GL_LIGHT3,         // GU_LIGHT3
 		GL11.GL_LINE_SMOOTH,    // GU_LINE_SMOOTH
-		0,                    // GU_PATCH_CULL_FACE
-		0,                    // GU_COLOR_TEST
+		0,                      // GU_PATCH_CULL_FACE
+		0,                      // GU_COLOR_TEST
 		GL11.GL_COLOR_LOGIC_OP, // GU_COLOR_LOGIC_OP
-		0,                    // GU_FACE_NORMAL_REVERSE
-		0,                    // GU_PATCH_FACE
-		0,                    // GU_FRAGMENT_2X
+		0,                      // GU_FACE_NORMAL_REVERSE
+		0,                      // GU_PATCH_FACE
+		0,                      // GU_FRAGMENT_2X
 		GL11.GL_COLOR_MATERIAL, // RE_COLOR_MATERIAL
 		GL11.GL_TEXTURE_GEN_S,  // RE_TEXTURE_GEN_S
-		GL11.GL_TEXTURE_GEN_T,  // RE_TEXTURE_GEN_T
+		GL11.GL_TEXTURE_GEN_T   // RE_TEXTURE_GEN_T
 	};
 	protected static final int[] shadeModelToGL = {
 		GL11.GL_FLAT,           // GU_FLAT
