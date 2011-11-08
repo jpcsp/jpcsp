@@ -40,6 +40,9 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import javax.imageio.ImageIO;
 
 import jpcsp.Emulator;
@@ -92,8 +95,7 @@ public class sceDisplay extends HLEModule {
 		public AWTGLCanvas_sceDisplay() throws LWJGLException {
 			super(null, new PixelFormat().withBitsPerPixel(8).withAlphaBits(8).withStencilBits(8).withSamples(antiAliasSamplesNum), null, new ContextAttribs().withDebug(useDebugGL));
 		}
-    	
-		
+
 		@Override
 		protected void paintGL() {
 	    	if (log.isTraceEnabled()) {
@@ -396,7 +398,7 @@ public class sceDisplay extends HLEModule {
     private List<WaitVblankInfo> waitingOnVblank;
 
     // Anti-alias samples.
-    private static int antiAliasSamplesNum;
+    private int antiAliasSamplesNum;
 
     private class OnlyGeSettingsListener extends AbstractBoolSettingsListener {
 		@Override
@@ -485,17 +487,16 @@ public class sceDisplay extends HLEModule {
 	}
 
 	private class AntiAliasSettingsListerner extends AbstractStringSettingsListener {
-		@Override
+    	private Pattern pattern = Pattern.compile("x(\\d+)", Pattern.CASE_INSENSITIVE);
+
+    	@Override
 		protected void settingsValueChanged(String value) {
 	        int samples = 0;
 	        if (value != null) {
-	            if (value.equalsIgnoreCase("x4")) {
-	                samples = 4;
-	            } else if (value.equalsIgnoreCase("x8")) {
-	                samples = 8;
-	            } else if (value.equalsIgnoreCase("x16")) {
-	                samples = 16;
-	            }
+	        	Matcher matcher = pattern.matcher(value);
+	        	if (matcher.matches()) {
+	        		samples = Integer.parseInt(matcher.group(1));
+	        	}
 	        }
 	        setAntiAliasSamplesNum(samples);
 		}
@@ -635,7 +636,7 @@ public class sceDisplay extends HLEModule {
     	return heightPow2 * viewportResizeFilterScaleFactorInt;
     }
 
-    private static void setAntiAliasSamplesNum(int samples) {
+    private void setAntiAliasSamplesNum(int samples) {
         antiAliasSamplesNum = samples;
     }
 
@@ -658,6 +659,11 @@ public class sceDisplay extends HLEModule {
 			} catch (LWJGLException e) {
 				log.error(e);
 			}
+        }
+
+        if (!initGLcalled) {
+        	// Some problem occurred during the OpenGL/LWJGL initialization...
+        	throw new RuntimeException("Your display format is not compatible with Jpcsp or the anti-aliasing settings is not supported by your display");
         }
 
         mode          = 0;

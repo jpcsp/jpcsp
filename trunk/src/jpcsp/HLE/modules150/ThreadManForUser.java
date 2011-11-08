@@ -1786,7 +1786,9 @@ public class ThreadManForUser extends HLEModule {
             }
             checkCallbacks();
         } else {
-            log.warn("hleKernelNotifyCallback(type=" + callbackType + ") no registered callbacks to push");
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("hleKernelNotifyCallback(type=%d) no registered callbacks to push", callbackType));
+        	}
         }
     }
 
