@@ -106,7 +106,7 @@ public class VplManager {
     }
 
     public void onThreadDeleted(SceKernelThreadInfo thread) {
-        if (thread.waitType == PSP_WAIT_VPL) {
+        if (thread.isWaitingForType(PSP_WAIT_VPL)) {
             removeWaitingThread(thread);
         }
     }
@@ -117,7 +117,7 @@ public class VplManager {
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
-            if (thread.waitType == PSP_WAIT_VPL &&
+            if (thread.isWaitingForType(PSP_WAIT_VPL) &&
                     thread.wait.Vpl_id == vid) {
                 thread.cpuContext.gpr[2] = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
@@ -145,7 +145,7 @@ public class VplManager {
         if ((info.attr & PSP_VPL_ATTR_PRIORITY) == PSP_VPL_ATTR_FIFO) {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
-                if (thread.waitType == PSP_WAIT_VPL &&
+                if (thread.isWaitingForType(PSP_WAIT_VPL) &&
                         thread.wait.Vpl_id == info.uid) {
                     if (log.isDebugEnabled()) {
                         log.debug(String.format("onVplFree waking thread %s", thread.toString()));
@@ -159,7 +159,7 @@ public class VplManager {
         } else if ((info.attr & PSP_VPL_ATTR_PRIORITY) == PSP_VPL_ATTR_PRIORITY) {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
-                if (thread.waitType == PSP_WAIT_VPL &&
+                if (thread.isWaitingForType(PSP_WAIT_VPL) &&
                         thread.wait.Vpl_id == info.uid) {
                     if (log.isDebugEnabled()) {
                         log.debug(String.format("onVplFree waking thread %s", thread.toString()));

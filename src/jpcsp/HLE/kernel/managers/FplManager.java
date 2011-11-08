@@ -105,7 +105,7 @@ public class FplManager {
     }
 
     public void onThreadDeleted(SceKernelThreadInfo thread) {
-        if (thread.waitType == PSP_WAIT_FPL) {
+        if (thread.isWaitingForType(PSP_WAIT_FPL)) {
             removeWaitingThread(thread);
         }
     }
@@ -116,7 +116,7 @@ public class FplManager {
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
-            if (thread.waitType == PSP_WAIT_FPL &&
+            if (thread.isWaitingForType(PSP_WAIT_FPL) &&
                     thread.wait.Fpl_id == fid) {
                 thread.cpuContext.gpr[2] = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
@@ -144,7 +144,7 @@ public class FplManager {
         if ((info.attr & PSP_FPL_ATTR_PRIORITY) == PSP_FPL_ATTR_FIFO) {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
-                if (thread.waitType == PSP_WAIT_FPL &&
+                if (thread.isWaitingForType(PSP_WAIT_FPL) &&
                         thread.wait.Fpl_id == info.uid) {
                     if (log.isDebugEnabled()) {
                         log.debug(String.format("onFplFree waking thread %s", thread.toString()));
@@ -158,7 +158,7 @@ public class FplManager {
         } else if ((info.attr & PSP_FPL_ATTR_PRIORITY) == PSP_FPL_ATTR_PRIORITY) {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
-                if (thread.waitType == PSP_WAIT_FPL &&
+                if (thread.isWaitingForType(PSP_WAIT_FPL) &&
                         thread.wait.Fpl_id == info.uid) {
                     if (log.isDebugEnabled()) {
                         log.debug(String.format("onFplFree waking thread %s", thread.toString()));

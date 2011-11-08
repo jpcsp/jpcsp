@@ -99,7 +99,7 @@ public class LwMutexManager {
     }
 
     public void onThreadDeleted(SceKernelThreadInfo thread) {
-        if (thread.waitType == PSP_WAIT_LWMUTEX) {
+        if (thread.isWaitingForType(PSP_WAIT_LWMUTEX)) {
             // decrement numWaitThreads
             removeWaitingThread(thread);
         }
@@ -111,7 +111,7 @@ public class LwMutexManager {
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
-            if (thread.waitType == PSP_WAIT_LWMUTEX &&
+            if (thread.isWaitingForType(PSP_WAIT_LWMUTEX) &&
                     thread.wait.LwMutex_id == lwmid) {
                 thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
@@ -131,7 +131,7 @@ public class LwMutexManager {
         if ((info.attr & PSP_LWMUTEX_ATTR_PRIORITY) == PSP_LWMUTEX_ATTR_FIFO) {
             for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iterator(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
-                if (thread.waitType == PSP_WAIT_LWMUTEX &&
+                if (thread.isWaitingForType(PSP_WAIT_LWMUTEX) &&
                         thread.wait.LwMutex_id == info.uid &&
                         tryLockLwMutex(info, thread.wait.LwMutex_count, thread)) {
                     // New thread is taking control of LwMutex.
@@ -148,7 +148,7 @@ public class LwMutexManager {
         } else if ((info.attr & PSP_LWMUTEX_ATTR_PRIORITY) == PSP_LWMUTEX_ATTR_PRIORITY) {
             for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iteratorByPriority(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
-                if (thread.waitType == PSP_WAIT_LWMUTEX &&
+                if (thread.isWaitingForType(PSP_WAIT_LWMUTEX) &&
                         thread.wait.LwMutex_id == info.uid &&
                         tryLockLwMutex(info, thread.wait.LwMutex_count, thread)) {
                     // New thread is taking control of LwMutex.

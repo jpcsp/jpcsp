@@ -438,6 +438,14 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         return (status & PSP_THREAD_WAITING) != 0;
     }
 
+    public boolean isWaitingForType(int waitType) {
+    	// Check if the thread is still in a WAITING state, but not WAITING_SUSPEND
+    	if (!isWaiting() || isSuspended()) {
+    		return false;
+    	}
+    	return this.waitType == waitType;
+    }
+
     public boolean isRunning() {
         return (status & PSP_THREAD_RUNNING) != 0;
     }
