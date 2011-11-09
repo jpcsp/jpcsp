@@ -5695,7 +5695,141 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	int cond = context.getImm4();
+	int vsize = context.getVsize();
+	MethodVisitor mv = context.getMethodVisitor();
+	boolean not = (cond & 4) != 0;
+	if ((cond & 8) == 0) {
+		if ((cond & 3) == 0) {
+			int value = not ? 1 : 0;
+			for (int i = 0; i < vsize; i++) {
+				context.prepareVcrCcForStore(i);
+				context.loadImm(value);
+				context.storeVcrCc(i);
+			}
+			context.prepareVcrCcForStore(4);
+			context.loadImm(value);
+			context.storeVcrCc(4);
+			context.prepareVcrCcForStore(5);
+			context.loadImm(value);
+			context.storeVcrCc(5);
+		} else {
+			context.loadImm(0);
+			context.storeTmp1();
+			context.loadImm(1);
+			context.storeTmp2();
+			for (int i = 0; i < vsize; i++) {
+				context.prepareVcrCcForStore(i);
+				context.loadVs(vsize, i);
+				context.loadVt(vsize, i);
+				mv.visitInsn(Opcodes.FCMPG);
+				int opcodeCond = Opcodes.NOP;
+				switch (cond & 3) {
+					case 1:
+						opcodeCond = not ? Opcodes.IFNE : Opcodes.IFEQ;
+						break;
+					case 2:
+						opcodeCond = not ? Opcodes.IFGE : Opcodes.IFLT;
+						break;
+					case 3:
+						opcodeCond = not ? Opcodes.IFGT : Opcodes.IFLE;
+						break;
+				}
+				Label trueLabel = new Label();
+				Label afterLabel = new Label();
+				mv.visitJumpInsn(opcodeCond, trueLabel);
+				context.loadImm(0);
+				context.loadImm(0);
+				context.storeTmp2();
+				mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
+				mv.visitLabel(trueLabel);
+				context.loadImm(1);
+				context.loadImm(1);
+				context.storeTmp1();
+				mv.visitLabel(afterLabel);
+				context.storeVcrCc(i);
+			}
+			context.prepareVcrCcForStore(4);
+			context.loadTmp1();
+			context.storeVcrCc(4);
+			context.prepareVcrCcForStore(5);
+			context.loadTmp2();
+			context.storeVcrCc(5);
+		}
+	} else {
+		context.loadImm(0);
+		context.storeTmp1();
+		context.loadImm(1);
+		context.storeTmp2();
+		for (int i = 0; i < vsize; i++) {
+			context.prepareVcrCcForStore(i);
+			context.loadVs(vsize, i);
+			boolean updateOrAnd = false;
+			switch (cond & 3) {
+				case 0: {
+					mv.visitInsn(Opcodes.FCONST_0);
+					mv.visitInsn(Opcodes.FCMPG);
+					Label trueLabel = new Label();
+					Label afterLabel = new Label();
+					mv.visitJumpInsn(not ? Opcodes.IFNE : Opcodes.IFEQ, trueLabel);
+					context.loadImm(0);
+					context.loadImm(0);
+					context.storeTmp2();
+					mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
+					mv.visitLabel(trueLabel);
+					context.loadImm(1);
+					context.loadImm(1);
+					context.storeTmp1();
+					mv.visitLabel(afterLabel);
+					break;
+				}
+				case 1: {
+					mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "isNaN", "(F)Z");
+					updateOrAnd = true;
+					break;
+				}
+				case 2: {
+					mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "isInfinite", "(F)Z");
+					updateOrAnd = true;
+					break;
+				}
+				case 3: {
+					mv.visitInsn(Opcodes.DUP);
+					mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "isNaN", "(F)Z");
+					mv.visitInsn(Opcodes.SWAP);
+					mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "isInfinite", "(F)Z");
+					mv.visitInsn(Opcodes.IOR);
+					updateOrAnd = true;
+					break;
+				}
+			}
+
+			if (updateOrAnd) {
+				if (not) {
+					context.loadImm(1);
+					mv.visitInsn(Opcodes.IXOR);
+				}
+
+				mv.visitInsn(Opcodes.DUP);
+				context.loadTmp1();
+				mv.visitInsn(Opcodes.IOR);
+				context.storeTmp1();
+
+				mv.visitInsn(Opcodes.DUP);
+				context.loadTmp2();
+				mv.visitInsn(Opcodes.IAND);
+				context.storeTmp2();
+			}
+
+			context.storeVcrCc(i);
+		}
+		context.prepareVcrCcForStore(4);
+		context.loadTmp1();
+		context.storeVcrCc(4);
+		context.prepareVcrCcForStore(5);
+		context.loadTmp2();
+		context.storeVcrCc(5);
+	}
 }
 @Override
 public String disasm(int address, int insn) {

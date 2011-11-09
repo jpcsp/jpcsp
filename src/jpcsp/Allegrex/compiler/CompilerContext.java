@@ -2281,6 +2281,31 @@ public class CompilerContext implements ICompilerContext {
 	}
 
 	@Override
+	public void prepareVcrCcForStore(int cc) {
+    	if (preparedRegisterForStore < 0) {
+        	loadVcr();
+            mv.visitFieldInsn(Opcodes.GETFIELD, Type.getInternalName(Vcr.class), "cc", "[Z");
+    		loadImm(cc);
+    		preparedRegisterForStore = cc;
+    	}
+	}
+
+	@Override
+	public void storeVcrCc(int cc) {
+    	if (preparedRegisterForStore == cc) {
+	        mv.visitInsn(Opcodes.BASTORE);
+	        preparedRegisterForStore = -1;
+    	} else {
+        	loadVcr();
+            mv.visitFieldInsn(Opcodes.GETFIELD, Type.getInternalName(Vcr.class), "cc", "[Z");
+	        mv.visitInsn(Opcodes.SWAP);
+	        loadImm(cc);
+	        mv.visitInsn(Opcodes.SWAP);
+	        mv.visitInsn(Opcodes.BASTORE);
+    	}
+	}
+
+	@Override
 	public int getCrValue() {
 		return codeInstruction.getCrValue();
 	}
@@ -2455,6 +2480,11 @@ public class CompilerContext implements ICompilerContext {
 	@Override
 	public int getImm5() {
 		return codeInstruction.getImm5();
+	}
+
+	@Override
+	public int getImm4() {
+		return codeInstruction.getImm4();
 	}
 
 	@Override

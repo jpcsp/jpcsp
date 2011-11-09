@@ -569,6 +569,10 @@ public class CodeInstruction {
         return (opcode >> 16) & 0x1F;
 	}
 
+	public int getImm4() {
+        return opcode & 0xF;
+	}
+
 	@Override
 	public String toString() {
     	StringBuilder result = new StringBuilder();

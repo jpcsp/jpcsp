@@ -73,6 +73,7 @@ public interface ICompilerContext {
     public void storeHilo();
     public void storeFCr();
     public void storeFcr31c();
+    public void storeVcrCc(int cc);
     public void prepareRdForStore();
     public void prepareRtForStore();
     public void prepareFdForStore();
@@ -86,6 +87,7 @@ public interface ICompilerContext {
     public void prepareHiloForStore();
     public void prepareFCrForStore();
     public void prepareFcr31cForStore();
+    public void prepareVcrCcForStore(int cc);
 	public int getRsRegisterIndex();
     public int getRtRegisterIndex();
     public int getRdRegisterIndex();
@@ -104,6 +106,7 @@ public interface ICompilerContext {
     public int getImm16(boolean signedImm);
     public int getImm14(boolean signedImm);
     public int getImm5();
+    public int getImm4();
     public void loadImm(int imm);
     public void loadImm16(boolean signedImm);
     public MethodVisitor getMethodVisitor();
