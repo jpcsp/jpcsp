@@ -2527,6 +2527,11 @@ public class CompilerContext implements ICompilerContext {
         mv.visitVarInsn(Opcodes.FLOAD, LOCAL_TMP2);
 	}
 
+	@Override
+	public void loadFTmp3() {
+        mv.visitVarInsn(Opcodes.FLOAD, LOCAL_TMP3);
+	}
+
 	private void loadFTmpVd(int n, boolean isFloat) {
 		if (isFloat) {
 			if (n == 0) {
@@ -2565,6 +2570,11 @@ public class CompilerContext implements ICompilerContext {
 	@Override
 	public void storeFTmp2() {
 		mv.visitVarInsn(Opcodes.FSTORE, LOCAL_TMP2);
+	}
+
+	@Override
+	public void storeFTmp3() {
+		mv.visitVarInsn(Opcodes.FSTORE, LOCAL_TMP3);
 	}
 
 	private void storeFTmpVd(int n, boolean isFloat) {
