@@ -130,10 +130,12 @@ public interface ICompilerContext {
     public void loadTmp2();
     public void loadFTmp1();
     public void loadFTmp2();
+    public void loadFTmp3();
     public void storeTmp1();
     public void storeTmp2();
     public void storeFTmp1();
     public void storeFTmp2();
+    public void storeFTmp3();
     public VfpuPfxSrcState getPfxsState();
     public VfpuPfxSrcState getPfxtState();
     public VfpuPfxDstState getPfxdState();
