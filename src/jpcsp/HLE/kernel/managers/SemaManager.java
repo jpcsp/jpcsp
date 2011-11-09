@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_COUNT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_SEMA_ZERO;
@@ -209,13 +208,6 @@ public class SemaManager {
             log.debug("sceKernelCreateSema name= " + name + " attr= 0x" + Integer.toHexString(attr) + " initVal= " + initVal + " maxVal= " + maxVal + " option= 0x" + Integer.toHexString(option));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            if (log.isDebugEnabled()) {
-                log.debug("sceKernelCreateSema called insided an interrupt");
-            }
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (Memory.isAddressGood(option)) {
             // The first int does not seem to be the size of the struct, found values:
             // SSX On Tour: 0, 0x08B0F9E4, 0x0892E664, 0x08AF7257 (some values are used in more than one semaphore)

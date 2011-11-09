@@ -20,7 +20,6 @@ import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._v1;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_ADDR;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_ARGUMENT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_PRIORITY;
@@ -34,7 +33,6 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_ALREADY
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_IS_NOT_SUSPEND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_IS_TERMINATED;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadEventHandlerInfo.THREAD_EVENT_CREATE;
@@ -1966,7 +1964,7 @@ public class ThreadManForUser extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x0C106E53, version = 150)
+    @HLEFunction(nid = 0x0C106E53, version = 150, checkInsideInterrupt = true)
     public void sceKernelRegisterThreadEventHandler(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1982,10 +1980,6 @@ public class ThreadManForUser extends HLEModule {
             log.debug("sceKernelRegisterThreadEventHandler name=" + name + ", thid=0x" + Integer.toHexString(thid) + ", mask=0x" + Integer.toHexString(mask) + ", handler_func=0x" + Integer.toHexString(handler_func) + ", common_addr=0x" + Integer.toHexString(common_addr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (threadMap.containsKey(thid)) {
             SceKernelThreadEventHandlerInfo handler = new SceKernelThreadEventHandlerInfo(name, thid, mask, handler_func, common_addr);
             threadEventHandlerMap.put(handler.uid, handler);
@@ -2025,7 +2019,7 @@ public class ThreadManForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x72F3C145, version = 150)
+    @HLEFunction(nid = 0x72F3C145, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public void sceKernelReleaseThreadEventHandler(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2033,15 +2027,6 @@ public class ThreadManForUser extends HLEModule {
 
         if (log.isDebugEnabled()) {
             log.debug("sceKernelReleaseThreadEventHandler uid=0x" + Integer.toHexString(uid));
-        }
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isDispatchThreadEnabled()) {
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
         }
 
         if (threadEventHandlerMap.containsKey(uid)) {
@@ -2073,7 +2058,7 @@ public class ThreadManForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xE81CAF8F, version = 150)
+    @HLEFunction(nid = 0xE81CAF8F, version = 150, checkInsideInterrupt = true)
     public void sceKernelCreateCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2082,24 +2067,16 @@ public class ThreadManForUser extends HLEModule {
         int user_arg_addr = cpu.gpr[6];
         String name = readStringNZ(name_addr, 32);
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         SceKernelCallbackInfo callback = hleKernelCreateCallback(name, func_addr, user_arg_addr);
         cpu.gpr[2] = callback.uid;
     }
 
-    @HLEFunction(nid = 0xEDBA5844, version = 150)
+    @HLEFunction(nid = 0xEDBA5844, version = 150, checkInsideInterrupt = true)
     public void sceKernelDeleteCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int uid = cpu.gpr[4];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (hleKernelDeleteCallback(uid)) {
             cpu.gpr[2] = 0;
         } else {
@@ -2184,17 +2161,12 @@ public class ThreadManForUser extends HLEModule {
     }
 
     /** Check callbacks, only on the current thread. */
-    @HLEFunction(nid = 0x349D6D6C, version = 150)
+    @HLEFunction(nid = 0x349D6D6C, version = 150, checkInsideInterrupt = true)
     public void sceKernelCheckCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
         if (log.isDebugEnabled()) {
             log.debug("sceKernelCheckCallback(void)");
-        }
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
         }
 
         // Remember the currentThread, as it might have changed after
@@ -2240,45 +2212,29 @@ public class ThreadManForUser extends HLEModule {
     }
 
     /** sleep the current thread (using wait) */
-    @HLEFunction(nid = 0x9ACE131E, version = 150)
-    public void sceKernelSleepThread(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    @HLEFunction(nid = 0x9ACE131E, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
+    public int sceKernelSleepThread() {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelSleepThread SceUID=" + Integer.toHexString(currentThread.uid) + " name:'" + currentThread.name + "'");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isDispatchThreadEnabled()) {
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
-        }
         hleKernelSleepThread(false);
+
+        return 0;
     }
 
     /** sleep the current thread and handle callbacks (using wait)
      * in our implementation we have to use wait, not suspend otherwise we don't handle callbacks. */
-    @HLEFunction(nid = 0x82826F70, version = 150)
-    public void sceKernelSleepThreadCB(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    @HLEFunction(nid = 0x82826F70, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
+    public int sceKernelSleepThreadCB() {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelSleepThreadCB SceUID=" + Integer.toHexString(currentThread.uid) + " name:'" + currentThread.name + "'");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isDispatchThreadEnabled()) {
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
-        }
         hleKernelSleepThread(true);
         checkCallbacks();
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xD59EAD2F, version = 150)
@@ -2394,7 +2350,7 @@ public class ThreadManForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x278C0DF5, version = 150)
+    @HLEFunction(nid = 0x278C0DF5, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public void sceKernelWaitThreadEnd(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2405,18 +2361,10 @@ public class ThreadManForUser extends HLEModule {
             log.debug("sceKernelWaitThreadEnd redirecting to hleKernelWaitThreadEnd(callbacks=false)");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isDispatchThreadEnabled()) {
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
-        }
         hleKernelWaitThreadEnd(uid, timeout_addr, false);
     }
 
-    @HLEFunction(nid = 0x840E8133, version = 150)
+    @HLEFunction(nid = 0x840E8133, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public void sceKernelWaitThreadEndCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2427,51 +2375,27 @@ public class ThreadManForUser extends HLEModule {
             log.debug("sceKernelWaitThreadEndCB redirecting to hleKernelWaitThreadEnd(callbacks=true)");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isDispatchThreadEnabled()) {
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
-        }
         hleKernelWaitThreadEnd(uid, timeout_addr, true);
         checkCallbacks();
     }
 
     /** wait the current thread for a certain number of microseconds */
-    @HLEFunction(nid = 0xCEADEB47, version = 150)
+    @HLEFunction(nid = 0xCEADEB47, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public void sceKernelDelayThread(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int micros = cpu.gpr[4];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isDispatchThreadEnabled()) {
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
-        }
         hleKernelDelayThread(micros, false);
     }
 
     /** wait the current thread for a certain number of microseconds */
-    @HLEFunction(nid = 0x68DA9E36, version = 150)
+    @HLEFunction(nid = 0x68DA9E36, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public void sceKernelDelayThreadCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int micros = cpu.gpr[4];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isDispatchThreadEnabled()) {
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
-        }
         hleKernelDelayThread(micros, true);
     }
 
@@ -2482,21 +2406,13 @@ public class ThreadManForUser extends HLEModule {
      *
      * @return 0 on success, < 0 on error
      */
-    @HLEFunction(nid = 0xBD123D9E, version = 150)
+    @HLEFunction(nid = 0xBD123D9E, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public void sceKernelDelaySysClockThread(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
 
         int sysclocks_addr = cpu.gpr[4];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isDispatchThreadEnabled()) {
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
-        }
         if (Memory.isAddressGood(sysclocks_addr)) {
             long sysclocks = mem.read64(sysclocks_addr);
             int micros = SystemTimeManager.hleSysClock2USec32(sysclocks);
@@ -2515,50 +2431,31 @@ public class ThreadManForUser extends HLEModule {
      * @return 0 on success, < 0 on error
      *
      */
-    @HLEFunction(nid = 0x1181E963, version = 150)
+    @HLEFunction(nid = 0x1181E963, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public void sceKernelDelaySysClockThreadCB(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
 
         int sysclocks_addr = cpu.gpr[4];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isDispatchThreadEnabled()) {
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
-        }
         if (Memory.isAddressGood(sysclocks_addr)) {
             long sysclocks = mem.read64(sysclocks_addr);
             int micros = SystemTimeManager.hleSysClock2USec32(sysclocks);
             hleKernelDelayThread(micros, true);
         } else {
             log.warn("sceKernelDelaySysClockThreadCB invalid sysclocks address 0x" + Integer.toHexString(sysclocks_addr));
-            Emulator.getProcessor().cpu.gpr[2] = -1;
+            cpu.gpr[2] = -1;
         }
     }
 
-    @HLEFunction(nid = 0xD6DA4BA1, version = 150)
-    public void sceKernelCreateSema(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        Managers.semas.sceKernelCreateSema(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+    @HLEFunction(nid = 0xD6DA4BA1, version = 150, checkInsideInterrupt = true)
+    public void sceKernelCreateSema(int name_addr, int attr, int initVal, int maxVal, int option) {
+        Managers.semas.sceKernelCreateSema(name_addr, attr, initVal, maxVal, option);
     }
 
-    @HLEFunction(nid = 0x28B6489C, version = 150)
+    @HLEFunction(nid = 0x28B6489C, version = 150, checkInsideInterrupt = true)
     public void sceKernelDeleteSema(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         Managers.semas.sceKernelDeleteSema(cpu.gpr[4]);
     }
 
@@ -2568,25 +2465,15 @@ public class ThreadManForUser extends HLEModule {
         Managers.semas.sceKernelSignalSema(cpu.gpr[4], cpu.gpr[5]);
     }
 
-    @HLEFunction(nid = 0x4E3A1105, version = 150)
+    @HLEFunction(nid = 0x4E3A1105, version = 150, checkInsideInterrupt = true)
     public void sceKernelWaitSema(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         Managers.semas.sceKernelWaitSema(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
-    @HLEFunction(nid = 0x6D212BAC, version = 150)
+    @HLEFunction(nid = 0x6D212BAC, version = 150, checkInsideInterrupt = true)
     public void sceKernelWaitSemaCB(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         Managers.semas.sceKernelWaitSemaCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
@@ -2608,25 +2495,15 @@ public class ThreadManForUser extends HLEModule {
         Managers.semas.sceKernelReferSemaStatus(cpu.gpr[4], cpu.gpr[5]);
     }
 
-    @HLEFunction(nid = 0x55C20A00, version = 150)
+    @HLEFunction(nid = 0x55C20A00, version = 150, checkInsideInterrupt = true)
     public void sceKernelCreateEventFlag(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         Managers.eventFlags.sceKernelCreateEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
     }
 
-    @HLEFunction(nid = 0xEF9E4C70, version = 150)
+    @HLEFunction(nid = 0xEF9E4C70, version = 150, checkInsideInterrupt = true)
     public void sceKernelDeleteEventFlag(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         Managers.eventFlags.sceKernelDeleteEventFlag(cpu.gpr[4]);
     }
 
@@ -2642,25 +2519,15 @@ public class ThreadManForUser extends HLEModule {
         Managers.eventFlags.sceKernelClearEventFlag(cpu.gpr[4], cpu.gpr[5]);
     }
 
-    @HLEFunction(nid = 0x402FCF22, version = 150)
+    @HLEFunction(nid = 0x402FCF22, version = 150, checkInsideInterrupt = true)
     public void sceKernelWaitEventFlag(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         Managers.eventFlags.sceKernelWaitEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
     }
 
-    @HLEFunction(nid = 0x328C546A, version = 150)
+    @HLEFunction(nid = 0x328C546A, version = 150, checkInsideInterrupt = true)
     public void sceKernelWaitEventFlagCB(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         Managers.eventFlags.sceKernelWaitEventFlagCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
     }
 
@@ -2682,25 +2549,15 @@ public class ThreadManForUser extends HLEModule {
         Managers.eventFlags.sceKernelReferEventFlagStatus(cpu.gpr[4], cpu.gpr[5]);
     }
 
-    @HLEFunction(nid = 0x8125221D, version = 150)
+    @HLEFunction(nid = 0x8125221D, version = 150, checkInsideInterrupt = true)
     public void sceKernelCreateMbx(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         Managers.mbx.sceKernelCreateMbx(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
-    @HLEFunction(nid = 0x86255ADA, version = 150)
+    @HLEFunction(nid = 0x86255ADA, version = 150, checkInsideInterrupt = true)
     public void sceKernelDeleteMbx(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         Managers.mbx.sceKernelDeleteMbx(cpu.gpr[4]);
     }
 
@@ -2710,33 +2567,15 @@ public class ThreadManForUser extends HLEModule {
         Managers.mbx.sceKernelSendMbx(cpu.gpr[4], cpu.gpr[5]);
     }
 
-    @HLEFunction(nid = 0x18260574, version = 150)
+    @HLEFunction(nid = 0x18260574, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public void sceKernelReceiveMbx(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isDispatchThreadEnabled()) {
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
-        }
         Managers.mbx.sceKernelReceiveMbx(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
-    @HLEFunction(nid = 0xF3986382, version = 150)
+    @HLEFunction(nid = 0xF3986382, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public void sceKernelReceiveMbxCB(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isDispatchThreadEnabled()) {
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
-        }
         Managers.mbx.sceKernelReceiveMbxCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
@@ -2758,55 +2597,27 @@ public class ThreadManForUser extends HLEModule {
         Managers.mbx.sceKernelReferMbxStatus(cpu.gpr[4], cpu.gpr[5]);
     }
 
-    @HLEFunction(nid = 0x7C0DC2A0, version = 150)
+    @HLEFunction(nid = 0x7C0DC2A0, version = 150, checkInsideInterrupt = true)
     public void sceKernelCreateMsgPipe(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         Managers.msgPipes.sceKernelCreateMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
     }
 
-    @HLEFunction(nid = 0xF0B7DA1C, version = 150)
+    @HLEFunction(nid = 0xF0B7DA1C, version = 150, checkInsideInterrupt = true)
     public void sceKernelDeleteMsgPipe(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         Managers.msgPipes.sceKernelDeleteMsgPipe(cpu.gpr[4]);
     }
 
-    @HLEFunction(nid = 0x876DBFAD, version = 150)
+    @HLEFunction(nid = 0x876DBFAD, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public void sceKernelSendMsgPipe(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isDispatchThreadEnabled()) {
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
-        }
         Managers.msgPipes.sceKernelSendMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
     }
 
-    @HLEFunction(nid = 0x7C41F2C2, version = 150)
+    @HLEFunction(nid = 0x7C41F2C2, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public void sceKernelSendMsgPipeCB(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isDispatchThreadEnabled()) {
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
-        }
         Managers.msgPipes.sceKernelSendMsgPipeCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
     }
 
@@ -2816,33 +2627,15 @@ public class ThreadManForUser extends HLEModule {
         Managers.msgPipes.sceKernelTrySendMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
     }
 
-    @HLEFunction(nid = 0x74829B76, version = 150)
+    @HLEFunction(nid = 0x74829B76, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public void sceKernelReceiveMsgPipe(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isDispatchThreadEnabled()) {
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
-        }
         Managers.msgPipes.sceKernelReceiveMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
     }
 
-    @HLEFunction(nid = 0xFBFA697D, version = 150)
+    @HLEFunction(nid = 0xFBFA697D, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public void sceKernelReceiveMsgPipeCB(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isDispatchThreadEnabled()) {
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
-        }
         Managers.msgPipes.sceKernelReceiveMsgPipeCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
     }
 
@@ -2864,55 +2657,27 @@ public class ThreadManForUser extends HLEModule {
         Managers.msgPipes.sceKernelReferMsgPipeStatus(cpu.gpr[4], cpu.gpr[5]);
     }
 
-    @HLEFunction(nid = 0x56C039B5, version = 150)
+    @HLEFunction(nid = 0x56C039B5, version = 150, checkInsideInterrupt = true)
     public void sceKernelCreateVpl(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         Managers.vpl.sceKernelCreateVpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
     }
 
-    @HLEFunction(nid = 0x89B3D48C, version = 150)
+    @HLEFunction(nid = 0x89B3D48C, version = 150, checkInsideInterrupt = true)
     public void sceKernelDeleteVpl(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         Managers.vpl.sceKernelDeleteVpl(cpu.gpr[4]);
     }
 
-    @HLEFunction(nid = 0xBED27435, version = 150)
+    @HLEFunction(nid = 0xBED27435, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public void sceKernelAllocateVpl(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isDispatchThreadEnabled()) {
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
-        }
         Managers.vpl.sceKernelAllocateVpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
     }
 
-    @HLEFunction(nid = 0xEC0A693F, version = 150)
+    @HLEFunction(nid = 0xEC0A693F, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public void sceKernelAllocateVplCB(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isDispatchThreadEnabled()) {
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
-        }
         Managers.vpl.sceKernelAllocateVplCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
     }
 
@@ -2922,14 +2687,9 @@ public class ThreadManForUser extends HLEModule {
         Managers.vpl.sceKernelTryAllocateVpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
-    @HLEFunction(nid = 0xB736E9FF, version = 150)
+    @HLEFunction(nid = 0xB736E9FF, version = 150, checkInsideInterrupt = true)
     public void sceKernelFreeVpl(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         Managers.vpl.sceKernelFreeVpl(cpu.gpr[4], cpu.gpr[5]);
     }
 
@@ -2945,55 +2705,27 @@ public class ThreadManForUser extends HLEModule {
         Managers.vpl.sceKernelReferVplStatus(cpu.gpr[4], cpu.gpr[5]);
     }
 
-    @HLEFunction(nid = 0xC07BB470, version = 150)
+    @HLEFunction(nid = 0xC07BB470, version = 150, checkInsideInterrupt = true)
     public void sceKernelCreateFpl(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         Managers.fpl.sceKernelCreateFpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
     }
 
-    @HLEFunction(nid = 0xED1410E0, version = 150)
+    @HLEFunction(nid = 0xED1410E0, version = 150, checkInsideInterrupt = true)
     public void sceKernelDeleteFpl(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         Managers.fpl.sceKernelDeleteFpl(cpu.gpr[4]);
     }
 
-    @HLEFunction(nid = 0xD979E9BF, version = 150)
+    @HLEFunction(nid = 0xD979E9BF, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public void sceKernelAllocateFpl(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isDispatchThreadEnabled()) {
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
-        }
         Managers.fpl.sceKernelAllocateFpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
-    @HLEFunction(nid = 0xE7282CB6, version = 150)
+    @HLEFunction(nid = 0xE7282CB6, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public void sceKernelAllocateFplCB(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (!isDispatchThreadEnabled()) {
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
-        }
         Managers.fpl.sceKernelAllocateFplCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
@@ -3003,14 +2735,9 @@ public class ThreadManForUser extends HLEModule {
         Managers.fpl.sceKernelTryAllocateFpl(cpu.gpr[4], cpu.gpr[5]);
     }
 
-    @HLEFunction(nid = 0xF6414A71, version = 150)
+    @HLEFunction(nid = 0xF6414A71, version = 150, checkInsideInterrupt = true)
     public void sceKernelFreeFpl(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         Managers.fpl.sceKernelFreeFpl(cpu.gpr[4], cpu.gpr[5]);
     }
 
@@ -3194,7 +2921,7 @@ public class ThreadManForUser extends HLEModule {
      *
      * @return The VTimer's UID or < 0 on error.
      */
-    @HLEFunction(nid = 0x20FFF560, version = 150)
+    @HLEFunction(nid = 0x20FFF560, version = 150, checkInsideInterrupt = true)
     public void sceKernelCreateVTimer(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3205,10 +2932,6 @@ public class ThreadManForUser extends HLEModule {
             log.debug(String.format("sceKernelCreateVTimer(name=%s(0x%08X), optAddr=0x%08X)", name, nameAddr, optAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         SceKernelVTimerInfo sceKernelVTimerInfo = new SceKernelVTimerInfo(name);
         vtimers.put(sceKernelVTimerInfo.uid, sceKernelVTimerInfo);
         cpu.gpr[2] = sceKernelVTimerInfo.uid;
@@ -3221,7 +2944,7 @@ public class ThreadManForUser extends HLEModule {
      *
      * @return < 0 on error.
      */
-    @HLEFunction(nid = 0x328F9E52, version = 150)
+    @HLEFunction(nid = 0x328F9E52, version = 150, checkInsideInterrupt = true)
     public void sceKernelDeleteVTimer(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3230,10 +2953,6 @@ public class ThreadManForUser extends HLEModule {
             log.debug(String.format("sceKernelDeleteVTimer(uid=0x%x)", vtimerUid));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.remove(vtimerUid);
         if (sceKernelVTimerInfo == null) {
             log.warn(String.format("sceKernelDeleteVTimer unknown uid=0x%x", vtimerUid));
@@ -3372,7 +3091,7 @@ public class ThreadManForUser extends HLEModule {
      *
      * @return 0 on success, < 0 on error
      */
-    @HLEFunction(nid = 0x542AD630, version = 150)
+    @HLEFunction(nid = 0x542AD630, version = 150, checkInsideInterrupt = true)
     public void sceKernelSetVTimerTime(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -3383,10 +3102,6 @@ public class ThreadManForUser extends HLEModule {
             log.debug(String.format("sceKernelSetVTimerTime(uid=0x%x,timeAddr=0x%08X)", vtimerUid, timeAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         if (sceKernelVTimerInfo == null) {
             log.warn(String.format("sceKernelSetVTimerTime unknown uid=0x%x", vtimerUid));
@@ -3408,7 +3123,7 @@ public class ThreadManForUser extends HLEModule {
      *
      * @return Possibly the last time
      */
-    @HLEFunction(nid = 0xFB6425C3, version = 150)
+    @HLEFunction(nid = 0xFB6425C3, version = 150, checkInsideInterrupt = true)
     public void sceKernelSetVTimerTimeWide(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3419,10 +3134,6 @@ public class ThreadManForUser extends HLEModule {
             log.debug(String.format("sceKernelSetVTimerTime(uid=0x%x,time=0x%016X)", vtimerUid, time));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         if (sceKernelVTimerInfo == null) {
             log.warn(String.format("sceKernelSetVTimerTime unknown uid=0x%x", vtimerUid));
@@ -3675,16 +3386,12 @@ public class ThreadManForUser extends HLEModule {
     }
 
     /** mark a thread for deletion. */
-    @HLEFunction(nid = 0x9FA03CD3, version = 150)
+    @HLEFunction(nid = 0x9FA03CD3, version = 150, checkInsideInterrupt = true)
     public void sceKernelDeleteThread(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int uid = cpu.gpr[4];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (uid == 0) {
             uid = currentThread.uid;
         }
@@ -3708,7 +3415,7 @@ public class ThreadManForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xF475845D, version = 150)
+    @HLEFunction(nid = 0xF475845D, version = 150, checkInsideInterrupt = true)
     public void sceKernelStartThread(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3716,10 +3423,6 @@ public class ThreadManForUser extends HLEModule {
         int len = cpu.gpr[5];
         int data_addr = cpu.gpr[6];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (!checkThreadID(uid)) {
             return;
         }
