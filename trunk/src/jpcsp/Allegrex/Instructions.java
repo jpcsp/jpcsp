@@ -5714,10 +5714,12 @@ public void compile(ICompilerContext context, int insn) {
 			context.loadImm(value);
 			context.storeVcrCc(5);
 		} else {
-			context.loadImm(0);
-			context.storeTmp1();
-			context.loadImm(1);
-			context.storeTmp2();
+			if (vsize > 1) {
+				context.loadImm(0);
+				context.storeTmp1();
+				context.loadImm(1);
+				context.storeTmp2();
+			}
 			for (int i = 0; i < vsize; i++) {
 				context.prepareVcrCcForStore(i);
 				context.loadVs(vsize, i);
@@ -5739,28 +5741,50 @@ public void compile(ICompilerContext context, int insn) {
 				Label afterLabel = new Label();
 				mv.visitJumpInsn(opcodeCond, trueLabel);
 				context.loadImm(0);
-				context.loadImm(0);
-				context.storeTmp2();
+				if (vsize > 1) {
+					context.loadImm(0);
+					context.storeTmp2();
+				} else {
+					context.prepareVcrCcForStore(4);
+					context.loadImm(0);
+					context.storeVcrCc(4);
+					context.prepareVcrCcForStore(5);
+					context.loadImm(0);
+					context.storeVcrCc(5);
+				}
 				mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
 				mv.visitLabel(trueLabel);
 				context.loadImm(1);
-				context.loadImm(1);
-				context.storeTmp1();
+				if (vsize > 1) {
+					context.loadImm(1);
+					context.storeTmp1();
+				} else {
+					context.prepareVcrCcForStore(4);
+					context.loadImm(1);
+					context.storeVcrCc(4);
+					context.prepareVcrCcForStore(5);
+					context.loadImm(1);
+					context.storeVcrCc(5);
+				}
 				mv.visitLabel(afterLabel);
 				context.storeVcrCc(i);
 			}
-			context.prepareVcrCcForStore(4);
-			context.loadTmp1();
-			context.storeVcrCc(4);
-			context.prepareVcrCcForStore(5);
-			context.loadTmp2();
-			context.storeVcrCc(5);
+			if (vsize > 1) {
+				context.prepareVcrCcForStore(4);
+				context.loadTmp1();
+				context.storeVcrCc(4);
+				context.prepareVcrCcForStore(5);
+				context.loadTmp2();
+				context.storeVcrCc(5);
+			}
 		}
 	} else {
-		context.loadImm(0);
-		context.storeTmp1();
-		context.loadImm(1);
-		context.storeTmp2();
+		if (vsize > 1) {
+			context.loadImm(0);
+			context.storeTmp1();
+			context.loadImm(1);
+			context.storeTmp2();
+		}
 		for (int i = 0; i < vsize; i++) {
 			context.prepareVcrCcForStore(i);
 			context.loadVs(vsize, i);
@@ -5773,13 +5797,31 @@ public void compile(ICompilerContext context, int insn) {
 					Label afterLabel = new Label();
 					mv.visitJumpInsn(not ? Opcodes.IFNE : Opcodes.IFEQ, trueLabel);
 					context.loadImm(0);
-					context.loadImm(0);
-					context.storeTmp2();
+					if (vsize > 1) {
+						context.loadImm(0);
+						context.storeTmp2();
+					} else {
+						context.prepareVcrCcForStore(4);
+						context.loadImm(0);
+						context.storeVcrCc(4);
+						context.prepareVcrCcForStore(5);
+						context.loadImm(0);
+						context.storeVcrCc(5);
+					}
 					mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
 					mv.visitLabel(trueLabel);
 					context.loadImm(1);
-					context.loadImm(1);
-					context.storeTmp1();
+					if (vsize > 1) {
+						context.loadImm(1);
+						context.storeTmp1();
+					} else {
+						context.prepareVcrCcForStore(4);
+						context.loadImm(1);
+						context.storeVcrCc(4);
+						context.prepareVcrCcForStore(5);
+						context.loadImm(1);
+						context.storeVcrCc(5);
+					}
 					mv.visitLabel(afterLabel);
 					break;
 				}
@@ -5810,25 +5852,35 @@ public void compile(ICompilerContext context, int insn) {
 					mv.visitInsn(Opcodes.IXOR);
 				}
 
-				mv.visitInsn(Opcodes.DUP);
-				context.loadTmp1();
-				mv.visitInsn(Opcodes.IOR);
-				context.storeTmp1();
+				if (vsize > 1) {
+					mv.visitInsn(Opcodes.DUP);
+					context.loadTmp1();
+					mv.visitInsn(Opcodes.IOR);
+					context.storeTmp1();
 
-				mv.visitInsn(Opcodes.DUP);
-				context.loadTmp2();
-				mv.visitInsn(Opcodes.IAND);
-				context.storeTmp2();
+					mv.visitInsn(Opcodes.DUP);
+					context.loadTmp2();
+					mv.visitInsn(Opcodes.IAND);
+					context.storeTmp2();
+				} else {
+					mv.visitInsn(Opcodes.DUP);
+					context.storeVcrCc(4);
+
+					mv.visitInsn(Opcodes.DUP);
+					context.storeVcrCc(5);
+				}
 			}
 
 			context.storeVcrCc(i);
 		}
-		context.prepareVcrCcForStore(4);
-		context.loadTmp1();
-		context.storeVcrCc(4);
-		context.prepareVcrCcForStore(5);
-		context.loadTmp2();
-		context.storeVcrCc(5);
+		if (vsize > 1) {
+			context.prepareVcrCcForStore(4);
+			context.loadTmp1();
+			context.storeVcrCc(4);
+			context.prepareVcrCcForStore(5);
+			context.loadTmp2();
+			context.storeVcrCc(5);
+		}
 	}
 }
 @Override
