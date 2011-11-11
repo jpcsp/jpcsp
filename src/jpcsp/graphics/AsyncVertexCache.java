@@ -61,9 +61,11 @@ public class AsyncVertexCache extends VertexCache {
 	}
 
 	public void asyncCheck(AsyncEntry asyncEntry) {
+		vinfo.setDirty();
 		vinfo.processType(asyncEntry.vtype);
 		vinfo.ptr_vertex = asyncEntry.vertices;
 		vinfo.ptr_index = asyncEntry.indices;
+		vinfo.prepareForCache(this, asyncEntry.count, null, 0);
 
 		if (useVertexArray) {
 			int address = vinfo.ptr_vertex;
