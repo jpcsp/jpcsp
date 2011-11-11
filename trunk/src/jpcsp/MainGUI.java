@@ -20,6 +20,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.DisplayMode;
+import java.awt.EventQueue;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Insets;
@@ -2047,6 +2048,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 if (i < args.length) {
                     File file = new File(args[i]);
                     if (file.exists()) {
+                    	Modules.sceDisplayModule.setCalledFromCommandLine();
                         loadFile(file);
                     }
                     i++;
@@ -2059,6 +2061,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 if (i < args.length) {
                     File file = new File(args[i]);
                     if (file.exists()) {
+                    	Modules.sceDisplayModule.setCalledFromCommandLine();
                         loadUMD(file);
                     }
                     i++;
@@ -2096,8 +2099,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
         // final copy of args for use in inner class
         final String[] fargs = args;
 
-        java.awt.EventQueue.invokeLater(new Runnable() {
-
+        EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
                 Thread.currentThread().setName("GUI");
