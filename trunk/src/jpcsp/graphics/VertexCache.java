@@ -61,7 +61,7 @@ public class VertexCache {
 	}
 
 	private static Integer getKey(VertexInfo vertexInfo) {
-		return new Integer(vertexInfo.ptr_vertex);
+		return new Integer(vertexInfo.ptr_vertex + vertexInfo.ptr_index);
 	}
 
 	public boolean hasVertex(VertexInfo vertexInfo) {

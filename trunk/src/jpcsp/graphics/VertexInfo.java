@@ -835,7 +835,7 @@ public class VertexInfo {
 		cachedMorphWeights = new float[morphingVertexCount];
 		System.arraycopy(morph_weight, 0, cachedMorphWeights, 0, morphingVertexCount);
 
-		if (weight != 0 && numberOfWeightsForBuffer == 0) {
+		if (weight != 0 && numberOfWeightsForBuffer == 0 && boneMatrix != null) {
 			cachedBoneMatrix = new float[skinningWeightCount][];
 			for (int i = 0; i < skinningWeightCount; i++) {
 				cachedBoneMatrix[i] = new float[12];
