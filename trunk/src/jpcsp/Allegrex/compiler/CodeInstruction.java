@@ -573,6 +573,10 @@ public class CodeInstruction {
         return opcode & 0xF;
 	}
 
+	public int getImm3() {
+        return (opcode >> 16) & 0x7;
+	}
+
 	@Override
 	public String toString() {
     	StringBuilder result = new StringBuilder();

@@ -1127,7 +1127,7 @@ public class VfpuState extends FpuState {
         }
     }
 
-    float halffloatToFloat(int imm16) {   
+    static public float halffloatToFloat(int imm16) {   
         int s = (imm16 >> 15) & 0x00000001; // sign
         int e = (imm16 >> 10) & 0x0000001f; // exponent
         int f = (imm16 >>  0) & 0x000003ff; // fraction

@@ -95,10 +95,11 @@ public class CompilerContext implements ICompilerContext {
     private static final int LOCAL_TMP1 = 7;
     private static final int LOCAL_TMP2 = 8;
     private static final int LOCAL_TMP3 = 9;
-    private static final int LOCAL_TMP_VD0 = 10;
-    private static final int LOCAL_TMP_VD1 = 11;
-    private static final int LOCAL_TMP_VD2 = 12;
-    private static final int LOCAL_MAX = 13;
+    private static final int LOCAL_TMP4 = 10;
+    private static final int LOCAL_TMP_VD0 = 11;
+    private static final int LOCAL_TMP_VD1 = 12;
+    private static final int LOCAL_TMP_VD2 = 13;
+    private static final int LOCAL_MAX = 14;
     private static final int DEFAULT_MAX_STACK_SIZE = 11;
     private static final int SYSCALL_MAX_STACK_SIZE = 100;
     private static final int LOCAL_ERROR_POINTER = LOCAL_TMP3;
@@ -330,7 +331,7 @@ public class CompilerContext implements ICompilerContext {
     }
 
     private void loadVRegister(int vsize, int reg, int n, VfpuPfxSrcState pfxSrcState, boolean isFloat) {
-		if (Compiler.log.isTraceEnabled() && pfxSrcState.isKnown() && pfxSrcState.pfxSrc.enabled) {
+		if (Compiler.log.isTraceEnabled() && pfxSrcState != null && pfxSrcState.isKnown() && pfxSrcState.pfxSrc.enabled) {
 			Compiler.log.trace(String.format("PFX    %08X - loadVRegister %d, %d, %d", getCodeInstruction().getAddress(), vsize, reg, n));
 		}
 
@@ -617,7 +618,8 @@ public class CompilerContext implements ICompilerContext {
 		loadVcrCc((codeInstruction.getOpcode() >> 18) & 7);
 	}
 
-	private void loadVcrCc(int cc) {
+	@Override
+	public void loadVcrCc(int cc) {
     	loadVcr();
         mv.visitFieldInsn(Opcodes.GETFIELD, Type.getInternalName(Vcr.class), "cc", "[Z");
     	loadImm(cc);
@@ -2376,6 +2378,36 @@ public class CompilerContext implements ICompilerContext {
 	}
 
 	@Override
+	public void loadVd(int n) {
+		loadVRegister(getVsize(), getVdRegisterIndex(), n, null, true);
+	}
+
+	@Override
+	public void loadVdInt(int n) {
+		loadVRegister(getVsize(), getVdRegisterIndex(), n, null, false);
+	}
+
+	@Override
+	public void loadVd(int vsize, int n) {
+		loadVRegister(vsize, getVdRegisterIndex(), n, null, true);
+	}
+
+	@Override
+	public void loadVdInt(int vsize, int n) {
+		loadVRegister(vsize, getVdRegisterIndex(), n, null, false);
+	}
+
+	@Override
+	public void loadVd(int vsize, int vd, int n) {
+		loadVRegister(vsize, vd, n, null, true);
+	}
+
+	@Override
+	public void loadVdInt(int vsize, int vd, int n) {
+		loadVRegister(vsize, vd, n, null, false);
+	}
+
+	@Override
 	public void prepareVdForStore(int n) {
 		prepareVdForStore(getVsize(), n);
 	}
@@ -2488,6 +2520,11 @@ public class CompilerContext implements ICompilerContext {
 	}
 
 	@Override
+	public int getImm3() {
+		return codeInstruction.getImm3();
+	}
+
+	@Override
 	public void loadVs(int vsize, int n) {
 		loadVRegister(vsize, getVsRegisterIndex(), n, vfpuPfxsState, true);
 	}
@@ -2518,6 +2555,11 @@ public class CompilerContext implements ICompilerContext {
 	}
 
 	@Override
+	public void loadLTmp1() {
+		mv.visitVarInsn(Opcodes.LLOAD, LOCAL_TMP1);
+	}
+
+	@Override
 	public void loadFTmp1() {
         mv.visitVarInsn(Opcodes.FLOAD, LOCAL_TMP1);
 	}
@@ -2530,6 +2572,11 @@ public class CompilerContext implements ICompilerContext {
 	@Override
 	public void loadFTmp3() {
         mv.visitVarInsn(Opcodes.FLOAD, LOCAL_TMP3);
+	}
+
+	@Override
+	public void loadFTmp4() {
+        mv.visitVarInsn(Opcodes.FLOAD, LOCAL_TMP4);
 	}
 
 	private void loadFTmpVd(int n, boolean isFloat) {
@@ -2563,6 +2610,11 @@ public class CompilerContext implements ICompilerContext {
 	}
 
 	@Override
+	public void storeLTmp1() {
+		mv.visitVarInsn(Opcodes.LSTORE, LOCAL_TMP1);
+	}
+
+	@Override
 	public void storeFTmp1() {
 		mv.visitVarInsn(Opcodes.FSTORE, LOCAL_TMP1);
 	}
@@ -2575,6 +2627,11 @@ public class CompilerContext implements ICompilerContext {
 	@Override
 	public void storeFTmp3() {
 		mv.visitVarInsn(Opcodes.FSTORE, LOCAL_TMP3);
+	}
+
+	@Override
+	public void storeFTmp4() {
+		mv.visitVarInsn(Opcodes.FSTORE, LOCAL_TMP4);
 	}
 
 	private void storeFTmpVd(int n, boolean isFloat) {
