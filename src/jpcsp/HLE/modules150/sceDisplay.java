@@ -349,6 +349,7 @@ public class sceDisplay extends HLEModule {
 
     private boolean initGLcalled;
     private String openGLversion;
+    private boolean calledFromCommandLine;
 
     // Canvas fields
     private Buffer pixelsFb;
@@ -661,7 +662,7 @@ public class sceDisplay extends HLEModule {
 			}
         }
 
-        if (!initGLcalled) {
+        if (!initGLcalled && !calledFromCommandLine) {
         	// Some problem occurred during the OpenGL/LWJGL initialization...
         	throw new RuntimeException("Your display format is not compatible with Jpcsp or the anti-aliasing settings is not supported by your display");
         }
@@ -1496,7 +1497,11 @@ public class sceDisplay extends HLEModule {
         }
 	}
 
-    @HLEFunction(nid = 0x0E20F177, version = 150, checkInsideInterrupt = true)
+	public void setCalledFromCommandLine() {
+		calledFromCommandLine = true;
+	}
+
+	@HLEFunction(nid = 0x0E20F177, version = 150, checkInsideInterrupt = true)
     public int sceDisplaySetMode(int displayMode, int displayWidth, int displayHeight) {
         if (log.isDebugEnabled()) {
         	log.debug("sceDisplaySetMode(mode=" + displayMode + ",width=" + displayWidth + ",height=" + displayHeight + ")");
