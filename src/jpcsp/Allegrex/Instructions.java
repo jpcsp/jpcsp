@@ -541,7 +541,7 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	// Nothing to compile
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2507,7 +2507,36 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	if (!context.isRtRegister0()) {
+        // According to MIPS spec., result is unpredictable when dividing by zero.
+		// Here, do nothing when dividing by zero.
+		Label divideByZero = new Label();
+		context.loadRt();
+		context.getMethodVisitor().visitJumpInsn(Opcodes.IFEQ, divideByZero);
+
+		context.loadRs();
+		context.getMethodVisitor().visitInsn(Opcodes.I2L);
+		context.getMethodVisitor().visitLdcInsn(0x00000000FFFFFFFFL);
+		context.getMethodVisitor().visitInsn(Opcodes.LAND);
+		context.getMethodVisitor().visitInsn(Opcodes.DUP2);
+		context.loadRt();
+		context.getMethodVisitor().visitInsn(Opcodes.I2L);
+		context.getMethodVisitor().visitLdcInsn(0x00000000FFFFFFFFL);
+		context.getMethodVisitor().visitInsn(Opcodes.LAND);
+		context.getMethodVisitor().visitInsn(Opcodes.DUP2_X2);
+		context.getMethodVisitor().visitInsn(Opcodes.LREM);
+		context.loadImm(32);
+		context.getMethodVisitor().visitInsn(Opcodes.LSHL);
+		context.storeLTmp1();
+		context.getMethodVisitor().visitInsn(Opcodes.LDIV);
+		context.getMethodVisitor().visitLdcInsn(0x00000000FFFFFFFFL);
+		context.getMethodVisitor().visitInsn(Opcodes.LAND);
+		context.loadLTmp1();
+		context.getMethodVisitor().visitInsn(Opcodes.LOR);
+		context.storeHilo();
+
+		context.getMethodVisitor().visitLabel(divideByZero);
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4134,7 +4163,17 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	context.compileRTRSIMM("doSC", true);
+	int rs = context.getRsRegisterIndex();
+	int simm16 = context.getImm16(true);
+	context.prepareMemWrite32(rs, simm16);
+	context.loadRt();
+	context.memWrite32(rs, simm16);
+
+	if (!context.isRtRegister0()) {
+		context.prepareRtForStore();
+		context.loadImm(1);
+		context.storeRt();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4353,7 +4392,18 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	int vt1 = (insn>>0)&1;
+	int vt5 = (insn>>16)&31;
+	int vt = vt5 | (vt1<<5);
+	int simm14 = context.getImm14(true);
+	int rs = context.getRsRegisterIndex();
+    int vsize = 4;
+
+    for (int n = 0; n < vsize; n++) {
+    	context.prepareMemWrite32(rs, simm14 + n * 4);
+    	context.loadVtInt(vsize, vt, n);
+    	context.memWrite32(rs, simm14 + n * 4);
+    }
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5574,7 +5624,11 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	if (!context.isRtRegister0()) {
+		context.prepareRtForStore();
+		context.loadVdInt(1, 0);
+		context.storeRt();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5703,10 +5757,10 @@ public void compile(ICompilerContext context, int insn) {
 	if ((cond & 8) == 0) {
 		if ((cond & 3) == 0) {
 			int value = not ? 1 : 0;
-			for (int i = 0; i < vsize; i++) {
-				context.prepareVcrCcForStore(i);
+			for (int n = 0; n < vsize; n++) {
+				context.prepareVcrCcForStore(n);
 				context.loadImm(value);
-				context.storeVcrCc(i);
+				context.storeVcrCc(n);
 			}
 			context.prepareVcrCcForStore(4);
 			context.loadImm(value);
@@ -5721,10 +5775,10 @@ public void compile(ICompilerContext context, int insn) {
 				context.loadImm(1);
 				context.storeTmp2();
 			}
-			for (int i = 0; i < vsize; i++) {
-				context.prepareVcrCcForStore(i);
-				context.loadVs(vsize, i);
-				context.loadVt(vsize, i);
+			for (int n = 0; n < vsize; n++) {
+				context.prepareVcrCcForStore(n);
+				context.loadVs(n);
+				context.loadVt(n);
 				mv.visitInsn(Opcodes.FCMPG);
 				int opcodeCond = Opcodes.NOP;
 				switch (cond & 3) {
@@ -5768,7 +5822,7 @@ public void compile(ICompilerContext context, int insn) {
 					context.storeVcrCc(5);
 				}
 				mv.visitLabel(afterLabel);
-				context.storeVcrCc(i);
+				context.storeVcrCc(n);
 			}
 			if (vsize > 1) {
 				context.prepareVcrCcForStore(4);
@@ -5786,9 +5840,9 @@ public void compile(ICompilerContext context, int insn) {
 			context.loadImm(1);
 			context.storeTmp2();
 		}
-		for (int i = 0; i < vsize; i++) {
-			context.prepareVcrCcForStore(i);
-			context.loadVs(vsize, i);
+		for (int n = 0; n < vsize; n++) {
+			context.prepareVcrCcForStore(n);
+			context.loadVs(n);
 			boolean updateOrAnd = false;
 			switch (cond & 3) {
 				case 0: {
@@ -5872,7 +5926,7 @@ public void compile(ICompilerContext context, int insn) {
 				}
 			}
 
-			context.storeVcrCc(i);
+			context.storeVcrCc(n);
 		}
 		if (vsize > 1) {
 			context.prepareVcrCcForStore(4);
@@ -6026,10 +6080,10 @@ public void compile(ICompilerContext context, int insn) {
 	int vsize = context.getVsize();
 	context.startPfxCompiled();
 	MethodVisitor mv = context.getMethodVisitor();
-	for (int i = 0; i < vsize; i++) {
-		context.prepareVdForStore(vsize, i);
-		context.loadVs(vsize, i);
-		context.loadVt(vsize, i);
+	for (int n = 0; n < vsize; n++) {
+		context.prepareVdForStore(n);
+		context.loadVs(n);
+		context.loadVt(n);
 		mv.visitInsn(Opcodes.FCMPG);
 		Label trueLabel = new Label();
 		Label afterLabel = new Label();
@@ -6039,7 +6093,7 @@ public void compile(ICompilerContext context, int insn) {
 		mv.visitLabel(trueLabel);
 		mv.visitInsn(Opcodes.FCONST_1);
 		mv.visitLabel(afterLabel);
-		context.storeVd(vsize, i);
+		context.storeVd(n);
 	}
 	context.endPfxCompiled();
 }
@@ -6079,10 +6133,10 @@ public void compile(ICompilerContext context, int insn) {
 	int vsize = context.getVsize();
 	context.startPfxCompiled();
 	MethodVisitor mv = context.getMethodVisitor();
-	for (int i = 0; i < vsize; i++) {
-		context.prepareVdForStore(vsize, i);
-		context.loadVs(vsize, i);
-		context.loadVt(vsize, i);
+	for (int n = 0; n < vsize; n++) {
+		context.prepareVdForStore(n);
+		context.loadVs(n);
+		context.loadVt(n);
 		mv.visitInsn(Opcodes.FCMPG);
 		Label trueLabel = new Label();
 		Label afterLabel = new Label();
@@ -6092,7 +6146,7 @@ public void compile(ICompilerContext context, int insn) {
 		mv.visitLabel(trueLabel);
 		mv.visitInsn(Opcodes.FCONST_1);
 		mv.visitLabel(afterLabel);
-		context.storeVd(vsize, i);
+		context.storeVd(n);
 	}
 	context.endPfxCompiled();
 }
@@ -6267,7 +6321,39 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	int vsize = context.getVsize();
+	MethodVisitor mv = context.getMethodVisitor();
+	context.startPfxCompiled();
+	for (int n = 0; n < vsize; n++) {
+		// float stackValue = vs[n];
+		// if (stackValue <= 0.f) {
+		//     stackValue = 0.f;
+		// } else if (stackValue > 1.f) {
+		//     stackValue = 1.f;
+		// }
+		// vd[n] = stackValue;
+		context.prepareVdForStore(n);
+		context.loadVs(n);
+		mv.visitInsn(Opcodes.DUP);
+		mv.visitLdcInsn(0.f);
+		mv.visitInsn(Opcodes.FCMPG);
+		Label limitLabel = new Label();
+		Label afterLabel = new Label();
+		mv.visitJumpInsn(Opcodes.IFGT, limitLabel);
+		mv.visitInsn(Opcodes.POP);
+		mv.visitLdcInsn(0.f);
+		mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
+		mv.visitLabel(limitLabel);
+		mv.visitInsn(Opcodes.DUP);
+		mv.visitLdcInsn(1.f);
+		mv.visitInsn(Opcodes.FCMPG);
+		mv.visitJumpInsn(Opcodes.IFLE, afterLabel);
+		mv.visitInsn(Opcodes.POP);
+		mv.visitLdcInsn(1.f);
+		mv.visitLabel(afterLabel);
+		context.storeVd(n);
+	}
+	context.endPfxCompiled();
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6300,7 +6386,39 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	int vsize = context.getVsize();
+	MethodVisitor mv = context.getMethodVisitor();
+	context.startPfxCompiled();
+	for (int n = 0; n < vsize; n++) {
+		// float stackValue = vs[n];
+		// if (stackValue <= -1.f) {
+		//     stackValue = -1.f;
+		// } else if (stackValue > 1.f) {
+		//     stackValue = 1.f;
+		// }
+		// vd[n] = stackValue;
+		context.prepareVdForStore(n);
+		context.loadVs(n);
+		mv.visitInsn(Opcodes.DUP);
+		mv.visitLdcInsn(-1.f);
+		mv.visitInsn(Opcodes.FCMPG);
+		Label limitLabel = new Label();
+		Label afterLabel = new Label();
+		mv.visitJumpInsn(Opcodes.IFGT, limitLabel);
+		mv.visitInsn(Opcodes.POP);
+		mv.visitLdcInsn(-1.f);
+		mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
+		mv.visitLabel(limitLabel);
+		mv.visitInsn(Opcodes.DUP);
+		mv.visitLdcInsn(1.f);
+		mv.visitInsn(Opcodes.FCMPG);
+		mv.visitJumpInsn(Opcodes.IFLE, afterLabel);
+		mv.visitInsn(Opcodes.POP);
+		mv.visitLdcInsn(1.f);
+		mv.visitLabel(afterLabel);
+		context.storeVd(n);
+	}
+	context.endPfxCompiled();
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7160,7 +7278,38 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	final int vsize = context.getVsize();
+	if (vsize == 4) {
+		MethodVisitor mv = context.getMethodVisitor();
+		context.startPfxCompiled();
+		context.prepareVdForStore(1, 0);
+		for (int n = 0; n < vsize; n++) {
+			context.loadVsInt(n);
+			mv.visitInsn(Opcodes.DUP);
+			Label afterLabel = new Label();
+			Label negativeLabel = new Label();
+			mv.visitJumpInsn(Opcodes.IFLT, negativeLabel);
+			context.loadImm(23);
+			mv.visitInsn(Opcodes.ISHR);
+			if (n > 0) {
+				context.loadImm(n * 8);
+				mv.visitInsn(Opcodes.ISHL);
+				mv.visitInsn(Opcodes.IOR);
+			}
+			mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
+			mv.visitLabel(negativeLabel);
+			mv.visitInsn(Opcodes.POP);
+			if (n == 0) {
+				context.loadImm(0);
+			}
+			mv.visitLabel(afterLabel);
+		}
+		context.storeVdInt(1, 0);
+		context.endPfxCompiled(true);
+	} else {
+		// Only supported VI2UC.Q
+		context.compileInterpreterInstruction();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7860,7 +8009,21 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	int vsize = context.getVsize();
+	int imm5 = context.getImm5();
+	MethodVisitor mv = context.getMethodVisitor();
+	context.startPfxCompiled();
+	for (int n = 0; n < vsize; n++) {
+		context.prepareVdForStore(n);
+		context.loadVs(n);
+		if (imm5 != 0) {
+			context.loadImm(imm5);
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "scalb", "(FI)F");
+		}
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "round", "(F)I");
+		context.storeVdInt(n);
+	}
+	context.endPfxCompiled(false);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7895,7 +8058,39 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	int vsize = context.getVsize();
+	int imm5 = context.getImm5();
+	MethodVisitor mv = context.getMethodVisitor();
+	context.startPfxCompiled();
+	for (int n = 0; n < vsize; n++) {
+		context.prepareVdForStore(n);
+		context.loadVs(n);
+		mv.visitInsn(Opcodes.DUP);
+		mv.visitLdcInsn(0.f);
+		mv.visitInsn(Opcodes.FCMPG);
+		Label negativeLabel = new Label();
+		Label afterLabel = new Label();
+		mv.visitJumpInsn(Opcodes.IFLT, negativeLabel);
+		if (imm5 != 0) {
+			context.loadImm(imm5);
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "scalb", "(FI)F");
+		}
+		mv.visitInsn(Opcodes.F2D);
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "floor", "(D)D");
+		mv.visitInsn(Opcodes.D2I);
+		mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
+		mv.visitLabel(negativeLabel);
+		if (imm5 != 0) {
+			context.loadImm(imm5);
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "scalb", "(FI)F");
+		}
+		mv.visitInsn(Opcodes.F2D);
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "ceil", "(D)D");
+		mv.visitInsn(Opcodes.D2I);
+		mv.visitLabel(afterLabel);
+		context.storeVdInt(n);
+	}
+	context.endPfxCompiled(false);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7930,7 +8125,23 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	int vsize = context.getVsize();
+	int imm5 = context.getImm5();
+	MethodVisitor mv = context.getMethodVisitor();
+	context.startPfxCompiled();
+	for (int n = 0; n < vsize; n++) {
+		context.prepareVdForStore(n);
+		context.loadVs(n);
+		if (imm5 != 0) {
+			context.loadImm(imm5);
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "scalb", "(FI)F");
+		}
+		mv.visitInsn(Opcodes.F2D);
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "ceil", "(D)D");
+		mv.visitInsn(Opcodes.D2I);
+		context.storeVdInt(n);
+	}
+	context.endPfxCompiled(false);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7965,7 +8176,23 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	int vsize = context.getVsize();
+	int imm5 = context.getImm5();
+	MethodVisitor mv = context.getMethodVisitor();
+	context.startPfxCompiled();
+	for (int n = 0; n < vsize; n++) {
+		context.prepareVdForStore(n);
+		context.loadVs(n);
+		if (imm5 != 0) {
+			context.loadImm(imm5);
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "scalb", "(FI)F");
+		}
+		mv.visitInsn(Opcodes.F2D);
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "floor", "(D)D");
+		mv.visitInsn(Opcodes.D2I);
+		context.storeVdInt(n);
+	}
+	context.endPfxCompiled(false);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -8000,7 +8227,21 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	int vsize = context.getVsize();
+	int imm5 = context.getImm5();
+	MethodVisitor mv = context.getMethodVisitor();
+	context.startPfxCompiled();
+	for (int n = 0; n < vsize; n++) {
+		context.prepareVdForStore(n);
+		context.loadVsInt(n);
+		mv.visitInsn(Opcodes.I2F);
+		if (imm5 != 0) {
+			context.loadImm(-imm5);
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "scalb", "(FI)F");
+		}
+		context.storeVd(n);
+	}
+	context.endPfxCompiled();
 }
 @Override
 public String disasm(int address, int insn) {
@@ -8035,7 +8276,52 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	int vsize = context.getVsize();
+	int imm3 = context.getImm3();
+	MethodVisitor mv = context.getMethodVisitor();
+	context.startPfxCompiled();
+	if (imm3 < 6) {
+		Label notMoveLabel = new Label();
+		Label afterLabel = new Label();
+		context.loadVcrCc(imm3);
+		mv.visitJumpInsn(Opcodes.IFEQ, notMoveLabel);
+		for (int n = 0; n < vsize; n++) {
+			context.prepareVdForStore(n);
+			context.loadVsInt(n);
+			context.storeVdInt(n);
+		}
+		mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
+		mv.visitLabel(notMoveLabel);
+		if (context.getPfxdState().isKnown() && context.getPfxdState().pfxDst.enabled) {
+			for (int n = 0; n < vsize; n++) {
+				context.prepareVdForStore(n);
+				context.loadVdInt(n);
+				context.storeVdInt(n);
+			}
+		}
+		mv.visitLabel(afterLabel);
+	} else if (imm3 == 6) {
+		for (int n = 0; n < vsize; n++) {
+			Label notMoveLabel = new Label();
+			Label afterLabel = new Label();
+			context.loadVcrCc(n);
+			mv.visitJumpInsn(Opcodes.IFEQ, notMoveLabel);
+			context.prepareVdForStore(n);
+			context.loadVsInt(n);
+			context.storeVdInt(n);
+			mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
+			mv.visitLabel(notMoveLabel);
+			if (context.getPfxdState().isKnown() && context.getPfxdState().pfxDst.enabled) {
+				context.prepareVdForStore(n);
+				context.loadVdInt(n);
+				context.storeVd(n);
+			}
+			mv.visitLabel(afterLabel);
+		}
+	} else {
+		// Never copy
+	}
+	context.endPfxCompiled(false);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -8070,7 +8356,57 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	int vsize = context.getVsize();
+	int imm3 = context.getImm3();
+	MethodVisitor mv = context.getMethodVisitor();
+	context.startPfxCompiled();
+	if (imm3 < 6) {
+		Label notMoveLabel = new Label();
+		Label afterLabel = new Label();
+		context.loadVcrCc(imm3);
+		mv.visitJumpInsn(Opcodes.IFNE, notMoveLabel);
+		for (int n = 0; n < vsize; n++) {
+			context.prepareVdForStore(n);
+			context.loadVsInt(n);
+			context.storeVdInt(n);
+		}
+		mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
+		mv.visitLabel(notMoveLabel);
+		if (context.getPfxdState().isKnown() && context.getPfxdState().pfxDst.enabled) {
+			for (int n = 0; n < vsize; n++) {
+				context.prepareVdForStore(n);
+				context.loadVdInt(n);
+				context.storeVdInt(n);
+			}
+		}
+		mv.visitLabel(afterLabel);
+	} else if (imm3 == 6) {
+		for (int n = 0; n < vsize; n++) {
+			Label notMoveLabel = new Label();
+			Label afterLabel = new Label();
+			context.loadVcrCc(n);
+			mv.visitJumpInsn(Opcodes.IFNE, notMoveLabel);
+			context.prepareVdForStore(n);
+			context.loadVsInt(n);
+			context.storeVdInt(n);
+			mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
+			mv.visitLabel(notMoveLabel);
+			if (context.getPfxdState().isKnown() && context.getPfxdState().pfxDst.enabled) {
+				context.prepareVdForStore(n);
+				context.loadVdInt(n);
+				context.storeVd(n);
+			}
+			mv.visitLabel(afterLabel);
+		}
+	} else {
+		// Always copy
+		for (int n = 0; n < vsize; n++) {
+			context.prepareVdForStore(n);
+			context.loadVsInt(n);
+			context.storeVdInt(n);
+		}
+	}
+	context.endPfxCompiled(false);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -8424,11 +8760,13 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	context.startPfxCompiled();
-	context.prepareVdForStore(1, context.getVtRegisterIndex(), 0);
+	final int vsize = 1;
+	final int vd = context.getVtRegisterIndex(); // vd index stored as vt
 	int imm16 = context.getImm16(false);
+	context.startPfxCompiled();
+	context.prepareVdForStore(vsize, vd, 0);
 	context.getMethodVisitor().visitLdcInsn((float) imm16);
-	context.storeVd(1, context.getVtRegisterIndex(), 0);
+	context.storeVd(vsize, vd, 0);
 	context.endPfxCompiled();
 }
 @Override
@@ -8458,7 +8796,15 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	final int vsize = 1;
+	final int vd = context.getVtRegisterIndex(); // vd index stored as vt
+	final int imm16 = context.getImm16(false);
+	float value = VfpuState.halffloatToFloat(imm16);
+	context.startPfxCompiled();
+	context.prepareVdForStore(vsize, vd, 0);
+	context.getMethodVisitor().visitLdcInsn(value);
+	context.storeVd(vsize, vd, 0);
+	context.endPfxCompiled();
 }
 @Override
 public String disasm(int address, int insn) {
@@ -8650,20 +8996,20 @@ public void compile(ICompilerContext context, int insn) {
 	context.storeFTmp2();
 	context.loadVt(vsize, 2);
 	context.storeFTmp3();
-	for (int i = 0; i < vsize; i++) {
-		context.prepareVdForStore(vsize, i);
-		context.loadVs(vsize, vs + i, 0);
+	for (int n = 0; n < vsize; n++) {
+		context.prepareVdForStore(vsize, n);
+		context.loadVs(vsize, vs + n, 0);
 		context.loadFTmp1();
 		mv.visitInsn(Opcodes.FMUL);
-		context.loadVs(vsize, vs + i, 1);
+		context.loadVs(vsize, vs + n, 1);
 		context.loadFTmp2();
 		mv.visitInsn(Opcodes.FMUL);
 		mv.visitInsn(Opcodes.FADD);
-		context.loadVs(vsize, vs + i, 2);
+		context.loadVs(vsize, vs + n, 2);
 		context.loadFTmp3();
 		mv.visitInsn(Opcodes.FMUL);
 		mv.visitInsn(Opcodes.FADD);
-		context.storeVd(vsize, i);
+		context.storeVd(vsize, n);
 	}
 }
 @Override
@@ -8704,22 +9050,22 @@ public void compile(ICompilerContext context, int insn) {
 	context.storeFTmp2();
 	context.loadVt(3, 2);
 	context.storeFTmp3();
-	for (int i = 0; i < vsize; i++) {
-		context.prepareVdForStore(vsize, i);
-		context.loadVs(vsize, vs + i, 0);
+	for (int n = 0; n < vsize; n++) {
+		context.prepareVdForStore(vsize, n);
+		context.loadVs(vsize, vs + n, 0);
 		context.loadFTmp1();
 		mv.visitInsn(Opcodes.FMUL);
-		context.loadVs(vsize, vs + i, 1);
+		context.loadVs(vsize, vs + n, 1);
 		context.loadFTmp2();
 		mv.visitInsn(Opcodes.FMUL);
 		mv.visitInsn(Opcodes.FADD);
-		context.loadVs(vsize, vs + i, 2);
+		context.loadVs(vsize, vs + n, 2);
 		context.loadFTmp3();
 		mv.visitInsn(Opcodes.FMUL);
 		mv.visitInsn(Opcodes.FADD);
-		context.loadVs(vsize, vs + i, 3);
+		context.loadVs(vsize, vs + n, 3);
 		mv.visitInsn(Opcodes.FADD);
-		context.storeVd(vsize, i);
+		context.storeVd(vsize, n);
 	}
 }
 @Override
@@ -8751,7 +9097,36 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	final int vsize = 4;
+	final int vs = context.getVsRegisterIndex();
+	MethodVisitor mv = context.getMethodVisitor();
+	context.loadVt(vsize, 0);
+	context.storeFTmp1();
+	context.loadVt(vsize, 1);
+	context.storeFTmp2();
+	context.loadVt(vsize, 2);
+	context.storeFTmp3();
+	context.loadVt(vsize, 3);
+	context.storeFTmp4();
+	for (int n = 0; n < vsize; n++) {
+		context.prepareVdForStore(vsize, n);
+		context.loadVs(vsize, vs + n, 0);
+		context.loadFTmp1();
+		mv.visitInsn(Opcodes.FMUL);
+		context.loadVs(vsize, vs + n, 1);
+		context.loadFTmp2();
+		mv.visitInsn(Opcodes.FMUL);
+		mv.visitInsn(Opcodes.FADD);
+		context.loadVs(vsize, vs + n, 2);
+		context.loadFTmp3();
+		mv.visitInsn(Opcodes.FMUL);
+		mv.visitInsn(Opcodes.FADD);
+		context.loadVs(vsize, vs + n, 3);
+		context.loadFTmp4();
+		mv.visitInsn(Opcodes.FMUL);
+		mv.visitInsn(Opcodes.FADD);
+		context.storeVd(vsize, n);
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -8784,7 +9159,27 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	final int vsize = context.getVsize();
+	if (vsize > 1) {
+		final int vs = context.getVsRegisterIndex();
+		final int vd = context.getVdRegisterIndex();
+	    context.startPfxCompiled();
+		context.loadVt(1, 0);
+		context.storeFTmp1();
+		for (int i = 0; i < vsize; i++) {
+			for (int n = 0; n < vsize; n++) {
+				context.prepareVdForStore(vsize, vd + i, n);
+				context.loadVs(vsize, vs + i, n);
+				context.loadFTmp1();
+				context.getMethodVisitor().visitInsn(Opcodes.FMUL);
+				context.storeVd(vsize, vd + i, n);
+			}
+		}
+		context.endPfxCompiled();
+	} else {
+		// Unsupported VMSCL.S
+		context.compileInterpreterInstruction();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -8817,7 +9212,44 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	context.startPfxCompiled();
+	final int vsize = 3;
+	MethodVisitor mv = context.getMethodVisitor();
+
+	// v3[0] = +v1[1] * v2[2] - v1[2] * v2[1];
+	context.prepareVdForStore(vsize, 0);
+	context.loadVs(vsize, 1);
+	context.loadVt(vsize, 2);
+	mv.visitInsn(Opcodes.FMUL);
+	context.loadVs(vsize, 2);
+	context.loadVt(vsize, 1);
+	mv.visitInsn(Opcodes.FMUL);
+	mv.visitInsn(Opcodes.FSUB);
+	context.storeVd(vsize, 0);
+
+	// v3[1] = +v1[2] * v2[0] - v1[0] * v2[2];
+	context.prepareVdForStore(vsize, 1);
+	context.loadVs(vsize, 2);
+	context.loadVt(vsize, 0);
+	mv.visitInsn(Opcodes.FMUL);
+	context.loadVs(vsize, 0);
+	context.loadVt(vsize, 2);
+	mv.visitInsn(Opcodes.FMUL);
+	mv.visitInsn(Opcodes.FSUB);
+	context.storeVd(vsize, 1);
+
+	// v3[2] = +v1[0] * v2[1] - v1[1] * v2[0];
+	context.prepareVdForStore(vsize, 2);
+	context.loadVs(vsize, 0);
+	context.loadVt(vsize, 1);
+	mv.visitInsn(Opcodes.FMUL);
+	context.loadVs(vsize, 1);
+	context.loadVt(vsize, 0);
+	mv.visitInsn(Opcodes.FMUL);
+	mv.visitInsn(Opcodes.FSUB);
+	context.storeVd(vsize, 2);
+
+	context.endPfxCompiled();
 }
 @Override
 public String disasm(int address, int insn) {
@@ -8880,7 +9312,18 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	final int vsize = context.getVsize();
+	final int vd = context.getVdRegisterIndex();
+	final int vs = context.getVsRegisterIndex();
+	context.startPfxCompiled();
+	for (int i = 0; i < vsize; i++) {
+		for (int n = 0; n < vsize; n++) {
+			context.prepareVdForStore(vsize, vd + i, n);
+			context.loadVsInt(vsize, vs + i, n);
+			context.storeVdInt(vsize, vd + i, n);
+		}
+	}
+	context.endPfxCompiled(false);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -8955,7 +9398,17 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+    context.startPfxCompiled();
+	int vsize = context.getVsize();
+	int vd = context.getVdRegisterIndex();
+	for (int i = 0; i < vsize; i++) {
+		for (int n = 0; n < vsize; n++) {
+			context.prepareVdForStore(vsize, vd + i, n);
+			context.getMethodVisitor().visitLdcInsn(0.0f);
+			context.storeVd(vsize, vd + i, n);
+		}
+	}
+	context.endPfxCompiled();
 }
 @Override
 public String disasm(int address, int insn) {
@@ -8986,7 +9439,17 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+    context.startPfxCompiled();
+	int vsize = context.getVsize();
+	int vd = context.getVdRegisterIndex();
+	for (int i = 0; i < vsize; i++) {
+		for (int n = 0; n < vsize; n++) {
+			context.prepareVdForStore(vsize, vd + i, n);
+			context.getMethodVisitor().visitLdcInsn(1.0f);
+			context.storeVd(vsize, vd + i, n);
+		}
+	}
+	context.endPfxCompiled();
 }
 @Override
 public String disasm(int address, int insn) {
@@ -9108,7 +9571,7 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	// Nothing to compile
 }
 @Override
 public String disasm(int address, int insn) {
@@ -9132,7 +9595,7 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	// Nothing to compile
 }
 @Override
 public String disasm(int address, int insn) {

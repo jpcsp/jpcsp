@@ -912,29 +912,29 @@ public class RuntimeContext {
         	stopAllThreads();
         	if (DurationStatistics.collectStatistics) {
         		log.info(idleDuration);
-
-	            if (enableInstructionTypeCounting) {
-	            	long totalCount = 0;
-	            	for (Instruction insn : instructionTypeCounts.keySet()) {
-	            		int count = instructionTypeCounts.get(insn);
-	            		totalCount += count;
-	            	}
-
-	            	while (!instructionTypeCounts.isEmpty()) {
-	            		Instruction highestCountInsn = null;
-	            		int highestCount = -1;
-	                	for (Instruction insn : instructionTypeCounts.keySet()) {
-	                		int count = instructionTypeCounts.get(insn);
-	                		if (count > highestCount) {
-	                			highestCount = count;
-	                			highestCountInsn = insn;
-	                		}
-	                	}
-	                	instructionTypeCounts.remove(highestCountInsn);
-	            		log.info(String.format("  %10s %s %d (%2.2f%%)", highestCountInsn.name(), (highestCountInsn.hasFlags(Instruction.FLAG_INTERPRETED) ? "I" : "C"), highestCount, highestCount * 100.0 / totalCount));
-	            	}
-	            }
         	}
+
+            if (enableInstructionTypeCounting) {
+            	long totalCount = 0;
+            	for (Instruction insn : instructionTypeCounts.keySet()) {
+            		int count = instructionTypeCounts.get(insn);
+            		totalCount += count;
+            	}
+
+            	while (!instructionTypeCounts.isEmpty()) {
+            		Instruction highestCountInsn = null;
+            		int highestCount = -1;
+                	for (Instruction insn : instructionTypeCounts.keySet()) {
+                		int count = instructionTypeCounts.get(insn);
+                		if (count > highestCount) {
+                			highestCount = count;
+                			highestCountInsn = insn;
+                		}
+                	}
+                	instructionTypeCounts.remove(highestCountInsn);
+            		log.info(String.format("  %10s %s %d (%2.2f%%)", highestCountInsn.name(), (highestCountInsn.hasFlags(Instruction.FLAG_INTERPRETED) ? "I" : "C"), highestCount, highestCount * 100.0 / totalCount));
+            	}
+            }
         }
     }
 
