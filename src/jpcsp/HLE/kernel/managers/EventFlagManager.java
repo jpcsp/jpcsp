@@ -33,8 +33,6 @@ import static jpcsp.util.Utilities.readStringZ;
 import java.util.HashMap;
 import java.util.Iterator;
 
-import jpcsp.Allegrex.CpuState;
-import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
@@ -196,9 +194,7 @@ public class EventFlagManager {
         return matched;
     }
 
-    public void sceKernelCreateEventFlag(int name_addr, int attr, int initPattern, int option) {
-        CpuState cpu = Emulator.getProcessor().cpu;
-
+    public int sceKernelCreateEventFlag(int name_addr, int attr, int initPattern, int option) {
         String name = readStringZ(name_addr);
 
         if (log.isDebugEnabled()) {
@@ -208,12 +204,10 @@ public class EventFlagManager {
         SceKernelEventFlagInfo event = new SceKernelEventFlagInfo(name, attr, initPattern, initPattern);
         eventMap.put(event.uid, event);
 
-        cpu.gpr[2] = event.uid;
+        return event.uid;
     }
 
-    public void sceKernelDeleteEventFlag(int uid) {
-        CpuState cpu = Emulator.getProcessor().cpu;
-
+    public int sceKernelDeleteEventFlag(int uid) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelDeleteEventFlag uid=0x" + Integer.toHexString(uid) + ")");
         }
@@ -222,19 +216,18 @@ public class EventFlagManager {
         SceKernelEventFlagInfo event = eventMap.remove(uid);
         if (event == null) {
             log.warn("sceKernelDeleteEventFlag unknown uid");
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
-        } else {
-            if (event.numWaitThreads > 0) {
-                log.warn("sceKernelDeleteEventFlag numWaitThreads " + event.numWaitThreads);
-            }
-            cpu.gpr[2] = 0;
-            onEventFlagDeleted(uid);
+            return ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
         }
+
+        if (event.numWaitThreads > 0) {
+            log.warn("sceKernelDeleteEventFlag numWaitThreads " + event.numWaitThreads);
+        }
+        onEventFlagDeleted(uid);
+
+        return 0;
     }
 
-    public void sceKernelSetEventFlag(int uid, int bitsToSet) {
-        CpuState cpu = Emulator.getProcessor().cpu;
-
+    public int sceKernelSetEventFlag(int uid, int bitsToSet) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelSetEventFlag uid=0x" + Integer.toHexString(uid) + " bitsToSet=0x" + Integer.toHexString(bitsToSet));
         }
@@ -243,17 +236,16 @@ public class EventFlagManager {
         SceKernelEventFlagInfo event = eventMap.get(uid);
         if (event == null) {
             log.warn("sceKernelSetEventFlag unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
-        } else {
-            event.currentPattern |= bitsToSet;
-            cpu.gpr[2] = 0;
-            onEventFlagModified(event);
+            return ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
         }
+
+        event.currentPattern |= bitsToSet;
+        onEventFlagModified(event);
+
+        return 0;
     }
 
-    public void sceKernelClearEventFlag(int uid, int bitsToKeep) {
-        CpuState cpu = Emulator.getProcessor().cpu;
-
+    public int sceKernelClearEventFlag(int uid, int bitsToKeep) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelClearEventFlag uid=0x" + Integer.toHexString(uid) + " bitsToKeep=0x" + Integer.toHexString(bitsToKeep));
         }
@@ -262,89 +254,84 @@ public class EventFlagManager {
         SceKernelEventFlagInfo event = eventMap.get(uid);
         if (event == null) {
             log.warn("sceKernelClearEventFlag unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
-        } else {
-            event.currentPattern &= bitsToKeep;
-            cpu.gpr[2] = 0;
+            return ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
         }
+
+        event.currentPattern &= bitsToKeep;
+
+        return 0;
     }
 
-    public void hleKernelWaitEventFlag(int uid, int bits, int wait, int outBits_addr, int timeout_addr, boolean doCallbacks) {
-        CpuState cpu = Emulator.getProcessor().cpu;
-
+    public int hleKernelWaitEventFlag(int uid, int bits, int wait, int outBits_addr, int timeout_addr, boolean doCallbacks) {
         if (log.isDebugEnabled()) {
             log.debug("hleKernelWaitEventFlag uid=0x" + Integer.toHexString(uid) + " bits=0x" + Integer.toHexString(bits) + " wait=0x" + Integer.toHexString(wait) + " outBits=0x" + Integer.toHexString(outBits_addr) + " timeout=0x" + Integer.toHexString(timeout_addr) + " callbacks=" + doCallbacks);
         }
 
         if ((wait & ~(PSP_EVENT_WAITOR | PSP_EVENT_WAITCLEAR | PSP_EVENT_WAITCLEARALL)) != 0 ||
             (wait & (PSP_EVENT_WAITCLEAR | PSP_EVENT_WAITCLEARALL)) == (PSP_EVENT_WAITCLEAR | PSP_EVENT_WAITCLEARALL)) {
-        	cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_MODE;
-        	return;
+        	return ERROR_KERNEL_ILLEGAL_MODE;
         }
         if (bits == 0) {
-        	cpu.gpr[2] = ERROR_KERNEL_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
-        	return;
+        	return ERROR_KERNEL_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
         }
         if (!Modules.ThreadManForUserModule.isDispatchThreadEnabled()) {
             if (log.isDebugEnabled()) {
                 log.debug("hleKernelWaitEventFlag called when dispatch thread disabled");
             }
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
+        	return ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
         }
 
         SceUidManager.checkUidPurpose(uid, "ThreadMan-eventflag", true);
         SceKernelEventFlagInfo event = eventMap.get(uid);
         if (event == null) {
             log.warn("hleKernelWaitEventFlag unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
-        } else if (event.numWaitThreads >= 1 &&
-                (event.attr & PSP_EVENT_WAITMULTIPLE) != PSP_EVENT_WAITMULTIPLE) {
+            return ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
+        }
+        if (event.numWaitThreads >= 1 && (event.attr & PSP_EVENT_WAITMULTIPLE) != PSP_EVENT_WAITMULTIPLE) {
             log.warn("hleKernelWaitEventFlag already another thread waiting on it");
-            cpu.gpr[2] = ERROR_KERNEL_EVENT_FLAG_NO_MULTI_PERM;
-        } else {
-            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-            if (!checkEventFlag(event, bits, wait, outBits_addr)) {
-                // Failed, but it's ok, just wait a little
-                if (log.isDebugEnabled()) {
-                    log.debug("hleKernelWaitEventFlag - '" + event.name + "' fast check failed");
-                }
-                event.numWaitThreads++;
-                SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-                // Wait on a specific event flag
-                currentThread.wait.EventFlag_id = uid;
-                currentThread.wait.EventFlag_bits = bits;
-                currentThread.wait.EventFlag_wait = wait;
-                currentThread.wait.EventFlag_outBits_addr = outBits_addr;
+            return ERROR_KERNEL_EVENT_FLAG_NO_MULTI_PERM;
+        }
 
-                threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_EVENTFLAG, uid, eventFlagWaitStateChecker, timeout_addr, doCallbacks);
-            } else {
-                // Success, do not reschedule the current thread.
-                if (log.isDebugEnabled()) {
-                    log.debug("hleKernelWaitEventFlag - '" + event.name + "' fast check succeeded");
-                }
-                cpu.gpr[2] = 0;
+        if (!checkEventFlag(event, bits, wait, outBits_addr)) {
+            // Failed, but it's ok, just wait a little
+            if (log.isDebugEnabled()) {
+                log.debug("hleKernelWaitEventFlag - '" + event.name + "' fast check failed");
+            }
+            event.numWaitThreads++;
+            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+            SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+            // Wait on a specific event flag
+            currentThread.wait.EventFlag_id = uid;
+            currentThread.wait.EventFlag_bits = bits;
+            currentThread.wait.EventFlag_wait = wait;
+            currentThread.wait.EventFlag_outBits_addr = outBits_addr;
+
+            threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_EVENTFLAG, uid, eventFlagWaitStateChecker, timeout_addr, doCallbacks);
+        } else {
+            // Success, do not reschedule the current thread.
+            if (log.isDebugEnabled()) {
+                log.debug("hleKernelWaitEventFlag - '" + event.name + "' fast check succeeded");
             }
         }
+
+        return 0;
     }
 
-    public void sceKernelWaitEventFlag(int uid, int bits, int wait, int outBits_addr, int timeout_addr) {
+    public int sceKernelWaitEventFlag(int uid, int bits, int wait, int outBits_addr, int timeout_addr) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelWaitEventFlag redirecting to hleKernelWaitEventFlag(callbacks=false)");
         }
-        hleKernelWaitEventFlag(uid, bits, wait, outBits_addr, timeout_addr, false);
+        return hleKernelWaitEventFlag(uid, bits, wait, outBits_addr, timeout_addr, false);
     }
 
-    public void sceKernelWaitEventFlagCB(int uid, int bits, int wait, int outBits_addr, int timeout_addr) {
+    public int sceKernelWaitEventFlagCB(int uid, int bits, int wait, int outBits_addr, int timeout_addr) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelWaitEventFlagCB redirecting to hleKernelWaitEventFlag(callbacks=true)");
         }
-        hleKernelWaitEventFlag(uid, bits, wait, outBits_addr, timeout_addr, true);
+        return hleKernelWaitEventFlag(uid, bits, wait, outBits_addr, timeout_addr, true);
     }
 
-    public void sceKernelPollEventFlag(int uid, int bits, int wait, int outBits_addr) {
-        CpuState cpu = Emulator.getProcessor().cpu;
-
+    public int sceKernelPollEventFlag(int uid, int bits, int wait, int outBits_addr) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelPollEventFlag uid=0x" + Integer.toHexString(uid) + " bits=0x" + Integer.toHexString(bits) + " wait=0x" + Integer.toHexString(wait) + " outBits=0x" + Integer.toHexString(outBits_addr));
         }
@@ -353,25 +340,24 @@ public class EventFlagManager {
         SceKernelEventFlagInfo event = eventMap.get(uid);
         if (event == null) {
             log.warn("sceKernelPollEventFlag unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
-        } else if (bits == 0) {
-        	cpu.gpr[2] = ERROR_KERNEL_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
-        } else {
-            if (!checkEventFlag(event, bits, wait, outBits_addr)) {
-            	// Write the outBits, even if the poll failed
-            	if (Memory.isAddressGood(outBits_addr)) {
-                    Memory.getInstance().write32(outBits_addr, event.currentPattern);
-            	}
-                cpu.gpr[2] = ERROR_KERNEL_EVENT_FLAG_POLL_FAILED;
-            } else {
-                cpu.gpr[2] = 0;
-            }
+            return ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
         }
+        if (bits == 0) {
+        	return ERROR_KERNEL_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
+        }
+
+        if (!checkEventFlag(event, bits, wait, outBits_addr)) {
+        	// Write the outBits, even if the poll failed
+        	if (Memory.isAddressGood(outBits_addr)) {
+                Memory.getInstance().write32(outBits_addr, event.currentPattern);
+        	}
+            return ERROR_KERNEL_EVENT_FLAG_POLL_FAILED;
+        }
+
+        return 0;
     }
 
-    public void sceKernelCancelEventFlag(int uid, int newPattern, int numWaitThreadAddr) {
-        CpuState cpu = Emulator.getProcessor().cpu;
-
+    public int sceKernelCancelEventFlag(int uid, int newPattern, int numWaitThreadAddr) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelCancelEventFlag uid=0x" + Integer.toHexString(uid) + " newPattern=0x" + Integer.toHexString(newPattern) + " numWaitThreadAddr=0x" + Integer.toHexString(numWaitThreadAddr));
         }
@@ -380,22 +366,21 @@ public class EventFlagManager {
         SceKernelEventFlagInfo event = eventMap.get(uid);
         if (event == null) {
             log.warn("sceKernelCancelEventFlag unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
-        } else {
-            Memory mem = Memory.getInstance();
-            if (Memory.isAddressGood(numWaitThreadAddr)) {
-                mem.write32(numWaitThreadAddr, event.numWaitThreads);
-            }
-            event.currentPattern = newPattern;
-            event.numWaitThreads = 0;
-            cpu.gpr[2] = 0;
-            onEventFlagCancelled(uid);
+            return ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
         }
+
+        Memory mem = Memory.getInstance();
+        if (Memory.isAddressGood(numWaitThreadAddr)) {
+            mem.write32(numWaitThreadAddr, event.numWaitThreads);
+        }
+        event.currentPattern = newPattern;
+        event.numWaitThreads = 0;
+        onEventFlagCancelled(uid);
+
+        return 0;
     }
 
-    public void sceKernelReferEventFlagStatus(int uid, int addr) {
-        CpuState cpu = Emulator.getProcessor().cpu;
-
+    public int sceKernelReferEventFlagStatus(int uid, int addr) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelReferEventFlagStatus uid=0x" + Integer.toHexString(uid) + " addr=0x" + Integer.toHexString(addr));
         }
@@ -404,11 +389,12 @@ public class EventFlagManager {
         SceKernelEventFlagInfo event = eventMap.get(uid);
         if (event == null) {
             log.warn("sceKernelReferEventFlagStatus unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
-        } else {
-            event.write(Memory.getInstance(), addr);
-            cpu.gpr[2] = 0;
+            return ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
         }
+
+        event.write(Memory.getInstance(), addr);
+
+        return 0;
     }
 
     private class EventFlagWaitStateChecker implements IWaitStateChecker {

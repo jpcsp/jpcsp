@@ -2449,104 +2449,88 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0xD6DA4BA1, version = 150, checkInsideInterrupt = true)
-    public void sceKernelCreateSema(int name_addr, int attr, int initVal, int maxVal, int option) {
-        Managers.semas.sceKernelCreateSema(name_addr, attr, initVal, maxVal, option);
+    public int sceKernelCreateSema(int name_addr, int attr, int initVal, int maxVal, int option) {
+        return Managers.semas.sceKernelCreateSema(name_addr, attr, initVal, maxVal, option);
     }
 
     @HLEFunction(nid = 0x28B6489C, version = 150, checkInsideInterrupt = true)
-    public void sceKernelDeleteSema(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.semas.sceKernelDeleteSema(cpu.gpr[4]);
+    public int sceKernelDeleteSema(int semaid) {
+        return Managers.semas.sceKernelDeleteSema(semaid);
     }
 
     @HLEFunction(nid = 0x3F53E640, version = 150)
-    public void sceKernelSignalSema(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.semas.sceKernelSignalSema(cpu.gpr[4], cpu.gpr[5]);
+    public int sceKernelSignalSema(int semaid, int signal) {
+        return Managers.semas.sceKernelSignalSema(semaid, signal);
     }
 
     @HLEFunction(nid = 0x4E3A1105, version = 150, checkInsideInterrupt = true)
-    public void sceKernelWaitSema(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.semas.sceKernelWaitSema(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+    public int sceKernelWaitSema(int semaid, int signal, int timeout_addr) {
+        return Managers.semas.sceKernelWaitSema(semaid, signal, timeout_addr);
     }
 
     @HLEFunction(nid = 0x6D212BAC, version = 150, checkInsideInterrupt = true)
-    public void sceKernelWaitSemaCB(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.semas.sceKernelWaitSemaCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+    public int sceKernelWaitSemaCB(int semaid, int signal, int timeout_addr) {
+        return Managers.semas.sceKernelWaitSemaCB(semaid, signal, timeout_addr);
     }
 
     @HLEFunction(nid = 0x58B1F937, version = 150)
-    public void sceKernelPollSema(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.semas.sceKernelPollSema(cpu.gpr[4], cpu.gpr[5]);
+    public int sceKernelPollSema(int semaid, int signal) {
+        return Managers.semas.sceKernelPollSema(semaid, signal);
     }
 
     @HLEFunction(nid = 0x8FFDF9A2, version = 150)
-    public void sceKernelCancelSema(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.semas.sceKernelCancelSema(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+    public int sceKernelCancelSema(int semaid, int newcount, int numWaitThreadAddr) {
+        return Managers.semas.sceKernelCancelSema(semaid, newcount, numWaitThreadAddr);
     }
 
     @HLEFunction(nid = 0xBC6FEBC5, version = 150)
-    public void sceKernelReferSemaStatus(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.semas.sceKernelReferSemaStatus(cpu.gpr[4], cpu.gpr[5]);
+    public int sceKernelReferSemaStatus(int semaid, int addr) {
+        return Managers.semas.sceKernelReferSemaStatus(semaid, addr);
     }
 
     @HLEFunction(nid = 0x55C20A00, version = 150, checkInsideInterrupt = true)
-    public void sceKernelCreateEventFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.eventFlags.sceKernelCreateEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
+    public int sceKernelCreateEventFlag(int name_addr, int attr, int initPattern, int option) {
+        return Managers.eventFlags.sceKernelCreateEventFlag(name_addr, attr, initPattern, option);
     }
 
     @HLEFunction(nid = 0xEF9E4C70, version = 150, checkInsideInterrupt = true)
-    public void sceKernelDeleteEventFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.eventFlags.sceKernelDeleteEventFlag(cpu.gpr[4]);
+    public int sceKernelDeleteEventFlag(int uid) {
+        return Managers.eventFlags.sceKernelDeleteEventFlag(uid);
     }
 
     @HLEFunction(nid = 0x1FB15A32, version = 150)
-    public void sceKernelSetEventFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.eventFlags.sceKernelSetEventFlag(cpu.gpr[4], cpu.gpr[5]);
+    public int sceKernelSetEventFlag(int uid, int bitsToSet) {
+        return Managers.eventFlags.sceKernelSetEventFlag(uid, bitsToSet);
     }
 
     @HLEFunction(nid = 0x812346E4, version = 150)
-    public void sceKernelClearEventFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.eventFlags.sceKernelClearEventFlag(cpu.gpr[4], cpu.gpr[5]);
+    public int sceKernelClearEventFlag(int uid, int bitsToKeep) {
+        return Managers.eventFlags.sceKernelClearEventFlag(uid, bitsToKeep);
     }
 
     @HLEFunction(nid = 0x402FCF22, version = 150, checkInsideInterrupt = true)
-    public void sceKernelWaitEventFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.eventFlags.sceKernelWaitEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+    public int sceKernelWaitEventFlag(int uid, int bits, int wait, int outBits_addr, int timeout_addr) {
+        return Managers.eventFlags.sceKernelWaitEventFlag(uid, bits, wait, outBits_addr, timeout_addr);
     }
 
     @HLEFunction(nid = 0x328C546A, version = 150, checkInsideInterrupt = true)
-    public void sceKernelWaitEventFlagCB(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.eventFlags.sceKernelWaitEventFlagCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+    public int sceKernelWaitEventFlagCB(int uid, int bits, int wait, int outBits_addr, int timeout_addr) {
+        return Managers.eventFlags.sceKernelWaitEventFlagCB(uid, bits, wait, outBits_addr, timeout_addr);
     }
 
     @HLEFunction(nid = 0x30FD48F0, version = 150)
-    public void sceKernelPollEventFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.eventFlags.sceKernelPollEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
+    public int sceKernelPollEventFlag(int uid, int bits, int wait, int outBits_addr) {
+        return Managers.eventFlags.sceKernelPollEventFlag(uid, bits, wait, outBits_addr);
     }
 
     @HLEFunction(nid = 0xCD203292, version = 150)
-    public void sceKernelCancelEventFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.eventFlags.sceKernelCancelEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+    public int sceKernelCancelEventFlag(int uid, int newPattern, int numWaitThreadAddr) {
+        return Managers.eventFlags.sceKernelCancelEventFlag(uid, newPattern, numWaitThreadAddr);
     }
 
     @HLEFunction(nid = 0xA66B0120, version = 150)
-    public void sceKernelReferEventFlagStatus(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.eventFlags.sceKernelReferEventFlagStatus(cpu.gpr[4], cpu.gpr[5]);
+    public int sceKernelReferEventFlagStatus(int uid, int addr) {
+        return Managers.eventFlags.sceKernelReferEventFlagStatus(uid, addr);
     }
 
     @HLEFunction(nid = 0x8125221D, version = 150, checkInsideInterrupt = true)
@@ -2792,8 +2776,8 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x82BC5777, version = 150)
-    public void sceKernelGetSystemTimeWide(Processor processor) {
-        Managers.systime.sceKernelGetSystemTimeWide();
+    public long sceKernelGetSystemTimeWide() {
+        return Managers.systime.sceKernelGetSystemTimeWide();
     }
 
     @HLEFunction(nid = 0x369ED59D, version = 150)

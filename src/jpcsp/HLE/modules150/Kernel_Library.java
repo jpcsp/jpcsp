@@ -17,8 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.hardware.Interrupts;
@@ -42,19 +40,20 @@ public class Kernel_Library extends HLEModule {
      * @returns The current state of the interrupt controller, to be used with ::sceKernelCpuResumeIntr().
      */
     @HLEFunction(nid = 0x092968F4, version = 150)
-    public void sceKernelCpuSuspendIntr(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceKernelCpuSuspendIntr() {
         if (log.isDebugEnabled()) {
         	log.debug("sceKernelCpuSuspendIntr interruptsEnabled=" + Interrupts.isInterruptsEnabled());
         }
 
+        int returnValue;
         if (Interrupts.isInterruptsEnabled()) {
-        	cpu.gpr[2] = flagInterruptsEnabled;
+        	returnValue = flagInterruptsEnabled;
             Interrupts.disableInterrupts();
         } else {
-        	cpu.gpr[2] = flagInterruptsDisabled;
+        	returnValue = flagInterruptsDisabled;
         }
+
+        return returnValue;
     }
 
     /**
@@ -63,10 +62,7 @@ public class Kernel_Library extends HLEModule {
      * @param flags - The value returned from ::sceKernelCpuSuspendIntr().
      */
     @HLEFunction(nid = 0x5F10D406, version = 150)
-    public void sceKernelCpuResumeIntr(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int flagInterrupts = cpu.gpr[4];
+    public void sceKernelCpuResumeIntr(int flagInterrupts) {
         if (log.isDebugEnabled()) {
         	log.debug("sceKernelCpuResumeIntr flag=" + flagInterrupts);
         }
@@ -86,11 +82,11 @@ public class Kernel_Library extends HLEModule {
      * @param flags - The value returned from ::sceKernelCpuSuspendIntr()
      */
     @HLEFunction(nid = 0x3B84732D, version = 150)
-    public void sceKernelCpuResumeIntrWithSync(Processor processor) {
+    public void sceKernelCpuResumeIntrWithSync(int flagInterrupts) {
     	if (log.isDebugEnabled()) {
         	log.debug("sceKernelCpuResumeIntrWithSync redirecting to sceKernelCpuResumeIntr");
     	}
-    	sceKernelCpuResumeIntr(processor);
+    	sceKernelCpuResumeIntr(flagInterrupts);
     }
 
     /**
@@ -101,17 +97,10 @@ public class Kernel_Library extends HLEModule {
      * @returns 1 if flags indicate that interrupts were not suspended, 0 otherwise.
      */
     @HLEFunction(nid = 0x47A0B729, version = 150)
-    public void sceKernelIsCpuIntrSuspended(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int flagInterrupts = cpu.gpr[4];
+    public boolean sceKernelIsCpuIntrSuspended(int flagInterrupts) {
     	log.warn("sceKernelIsCpuIntrSuspended flag=" + flagInterrupts);
 
-    	if (flagInterrupts == flagInterruptsDisabled) {
-    		cpu.gpr[2] = 1;
-    	} else {
-    		cpu.gpr[2] = 0;
-    	}
+		return flagInterrupts == flagInterruptsDisabled;
     }
 
     /**
@@ -120,18 +109,11 @@ public class Kernel_Library extends HLEModule {
      * @returns 1 if interrupts are currently enabled.
      */
     @HLEFunction(nid = 0xB55249D2, version = 150)
-    public void sceKernelIsCpuIntrEnable(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public boolean sceKernelIsCpuIntrEnable() {
         if (log.isDebugEnabled()) {
         	log.debug("sceKernelIsCpuIntrEnable interruptsEnabled=" + Interrupts.isInterruptsEnabled());
         }
 
-        if (Interrupts.isInterruptsEnabled()) {
-        	cpu.gpr[2] = 1;
-        } else {
-        	cpu.gpr[2] = 0;
-        }
+        return Interrupts.isInterruptsEnabled();
     }
-
 }

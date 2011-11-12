@@ -146,13 +146,12 @@ public class SystemTimeManager {
         return 0;
     }
 
-    public void sceKernelGetSystemTimeWide() {
+    public long sceKernelGetSystemTimeWide() {
         long systemTime = getSystemTime();
         if (log.isDebugEnabled()) {
             log.debug("sceKernelGetSystemTimeWide ret:" + systemTime);
         }
-        Emulator.getProcessor().cpu.gpr[2] = (int) (systemTime & 0xffffffffL);
-        Emulator.getProcessor().cpu.gpr[3] = (int) ((systemTime >> 32) & 0xffffffffL);
+        return systemTime;
     }
 
     public int sceKernelGetSystemTimeLow() {
