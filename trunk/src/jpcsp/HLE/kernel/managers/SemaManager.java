@@ -31,7 +31,6 @@ import static jpcsp.util.Utilities.readStringNZ;
 import java.util.HashMap;
 import java.util.Iterator;
 
-import jpcsp.Allegrex.CpuState;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
@@ -193,8 +192,7 @@ public class SemaManager {
         return success;
     }
 
-    public void sceKernelCreateSema(int name_addr, int attr, int initVal, int maxVal, int option) {
-        CpuState cpu = Emulator.getProcessor().cpu;
+    public int sceKernelCreateSema(int name_addr, int attr, int initVal, int maxVal, int option) {
         Memory mem = Memory.getInstance();
 
         String name;
@@ -219,12 +217,11 @@ public class SemaManager {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelCreateSema name= " + name + " created with uid=0x" + Integer.toHexString(sema.uid));
         }
-        cpu.gpr[2] = sema.uid;
+
+        return sema.uid;
     }
 
-    public void sceKernelDeleteSema(int semaid) {
-        CpuState cpu = Emulator.getProcessor().cpu;
-
+    public int sceKernelDeleteSema(int semaid) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelDeleteSema id=0x" + Integer.toHexString(semaid));
         }
@@ -233,34 +230,31 @@ public class SemaManager {
         SceKernelSemaInfo sema = semaMap.remove(semaid);
         if (sema == null) {
             log.warn("sceKernelDeleteSema - unknown uid 0x" + Integer.toHexString(semaid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
-        } else {
-            if (sema.numWaitThreads > 0) {
-                log.warn("sceKernelDeleteSema numWaitThreads " + sema.numWaitThreads);
-            }
-            cpu.gpr[2] = 0;
-            onSemaphoreDeleted(semaid);
+            return ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
         }
+
+        if (sema.numWaitThreads > 0) {
+            log.warn("sceKernelDeleteSema numWaitThreads " + sema.numWaitThreads);
+        }
+        onSemaphoreDeleted(semaid);
+
+        return 0;
     }
 
-    private void hleKernelWaitSema(int semaid, int signal, int timeout_addr, boolean doCallbacks) {
-        CpuState cpu = Emulator.getProcessor().cpu;
-
+    private int hleKernelWaitSema(int semaid, int signal, int timeout_addr, boolean doCallbacks) {
         if (log.isDebugEnabled()) {
             log.debug("hleKernelWaitSema(id=0x" + Integer.toHexString(semaid) + ",signal=" + signal + ",timeout=0x" + Integer.toHexString(timeout_addr) + ") callbacks=" + doCallbacks);
         }
 
         if (signal <= 0) {
             log.warn("hleKernelWaitSema - bad signal " + signal);
-            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_COUNT;
-            return;
+            return ERROR_KERNEL_ILLEGAL_COUNT;
         }
         if (!Modules.ThreadManForUserModule.isDispatchThreadEnabled()) {
             if (log.isDebugEnabled()) {
                 log.debug("hleKernelWaitSema called when dispatch thread disabled");
             }
-        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        	return;
+        	return ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
         }
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
         SceKernelSemaInfo sema = semaMap.get(semaid);
@@ -276,43 +270,41 @@ public class SemaManager {
                     log.warn(String.format("hleKernelWaitSema - unknown uid 0x%X", semaid));
         		}
         	}
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
-        } else {
+            return ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
+        }
+
+        if (!tryWaitSemaphore(sema, signal)) {
+            // Failed, but it's ok, just wait a little
+            if (log.isDebugEnabled()) {
+                log.debug("hleKernelWaitSema - '" + sema.name + "' fast check failed");
+            }
+            sema.numWaitThreads++;
+
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-
-            if (!tryWaitSemaphore(sema, signal)) {
-                // Failed, but it's ok, just wait a little
-                if (log.isDebugEnabled()) {
-                    log.debug("hleKernelWaitSema - '" + sema.name + "' fast check failed");
-                }
-                sema.numWaitThreads++;
-
-                SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-                // Wait on a specific semaphore
-                currentThread.wait.Semaphore_id = semaid;
-                currentThread.wait.Semaphore_signal = signal;
-                threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_SEMA, semaid, semaWaitStateChecker, timeout_addr, doCallbacks);
-            } else {
-                // Success, do not reschedule the current thread.
-                if (log.isDebugEnabled()) {
-                    log.debug("hleKernelWaitSema - '" + sema.name + "' fast check succeeded");
-                }
-                cpu.gpr[2] = 0;
+            SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+            // Wait on a specific semaphore
+            currentThread.wait.Semaphore_id = semaid;
+            currentThread.wait.Semaphore_signal = signal;
+            threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_SEMA, semaid, semaWaitStateChecker, timeout_addr, doCallbacks);
+        } else {
+            // Success, do not reschedule the current thread.
+            if (log.isDebugEnabled()) {
+                log.debug("hleKernelWaitSema - '" + sema.name + "' fast check succeeded");
             }
         }
+
+        return 0;
     }
 
-    public void sceKernelWaitSema(int semaid, int signal, int timeout_addr) {
-        hleKernelWaitSema(semaid, signal, timeout_addr, false);
+    public int sceKernelWaitSema(int semaid, int signal, int timeout_addr) {
+        return hleKernelWaitSema(semaid, signal, timeout_addr, false);
     }
 
-    public void sceKernelWaitSemaCB(int semaid, int signal, int timeout_addr) {
-        hleKernelWaitSema(semaid, signal, timeout_addr, true);
+    public int sceKernelWaitSemaCB(int semaid, int signal, int timeout_addr) {
+        return hleKernelWaitSema(semaid, signal, timeout_addr, true);
     }
 
-    public void sceKernelSignalSema(int semaid, int signal) {
-        CpuState cpu = Emulator.getProcessor().cpu;
-
+    public int sceKernelSignalSema(int semaid, int signal) {
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
         SceKernelSemaInfo sema = semaMap.get(semaid);
         if (sema == null) {
@@ -327,53 +319,51 @@ public class SemaManager {
                     log.warn(String.format("sceKernelSignalSema - unknown uid 0x%X", semaid));
         		}
         	}
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
-        } else {
-            if (log.isDebugEnabled()) {
-                log.debug("sceKernelSignalSema id=0x" + Integer.toHexString(semaid) + " name='" + sema.name + "' signal=" + signal);
-            }
-            sema.currentCount += signal;
-            if (sema.currentCount > sema.maxCount) {
-                sema.currentCount = sema.maxCount;
-            }
-            cpu.gpr[2] = 0;
-            onSemaphoreModified(sema);
+            return ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
         }
+
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelSignalSema id=0x" + Integer.toHexString(semaid) + " name='" + sema.name + "' signal=" + signal);
+        }
+        sema.currentCount += signal;
+        if (sema.currentCount > sema.maxCount) {
+            sema.currentCount = sema.maxCount;
+        }
+        onSemaphoreModified(sema);
+
+        return 0;
     }
 
     /** This is attempt to signal the sema and always return immediately */
-    public void sceKernelPollSema(int semaid, int signal) {
-        CpuState cpu = Emulator.getProcessor().cpu;
-
-        String msg = "sceKernelPollSema id=0x" + Integer.toHexString(semaid) + " signal=" + signal;
-
+    public int sceKernelPollSema(int semaid, int signal) {
         if (signal <= 0) {
-            log.warn(msg + " bad signal");
-            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_COUNT;
-            return;
+            log.warn(String.format("sceKernelPollSema id=0x%X, signal=%d: bad signal", semaid, signal));
+            return ERROR_KERNEL_ILLEGAL_COUNT;
         }
 
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
         SceKernelSemaInfo sema = semaMap.get(semaid);
         if (sema == null) {
-            log.warn(msg + " unknown uid");
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
-        } else if (sema.currentCount - signal < 0) {
-            if (log.isDebugEnabled()) {
-                log.debug(msg + " '" + sema.name + "'");
-            }
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_SEMA_ZERO;
-        } else {
-            if (log.isDebugEnabled()) {
-                log.debug(msg + " '" + sema.name + "'");
-            }
-            sema.currentCount -= signal;
-            cpu.gpr[2] = 0;
+            log.warn(String.format("sceKernelPollSema id=0x%X, signal=%d: unknown uid", semaid, signal));
+            return ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
         }
+
+        if (sema.currentCount - signal < 0) {
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("sceKernelPollSema id=0x%X('%s'), signal=%d", semaid, sema.name, signal));
+            }
+            return ERROR_KERNEL_SEMA_ZERO;
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceKernelPollSema id=0x%X('%s'), signal=%d", semaid, sema.name, signal));
+        }
+        sema.currentCount -= signal;
+
+        return 0;
     }
 
-    public void sceKernelCancelSema(int semaid, int newcount, int numWaitThreadAddr) {
-        CpuState cpu = Emulator.getProcessor().cpu;
+    public int sceKernelCancelSema(int semaid, int newcount, int numWaitThreadAddr) {
         Memory mem = Memory.getInstance();
 
         if (log.isDebugEnabled()) {
@@ -381,8 +371,7 @@ public class SemaManager {
         }
 
         if (newcount <= 0 && newcount != -1) {
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_COUNT;
-            return;
+            return ERROR_KERNEL_ILLEGAL_COUNT;
         }
 
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
@@ -404,12 +393,12 @@ public class SemaManager {
                 sema.currentCount = newcount;
             }
         }
-        cpu.gpr[2] = 0;
         onSemaphoreCancelled(semaid);
+
+        return 0;
     }
 
-    public void sceKernelReferSemaStatus(int semaid, int addr) {
-        CpuState cpu = Emulator.getProcessor().cpu;
+    public int sceKernelReferSemaStatus(int semaid, int addr) {
         Memory mem = Memory.getInstance();
 
         if (log.isDebugEnabled()) {
@@ -420,11 +409,12 @@ public class SemaManager {
         SceKernelSemaInfo sema = semaMap.get(semaid);
         if (sema == null) {
             log.warn("sceKernelReferSemaStatus - unknown uid 0x" + Integer.toHexString(semaid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
-        } else {
-            sema.write(mem, addr);
-            cpu.gpr[2] = 0;
+            return ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
         }
+
+        sema.write(mem, addr);
+
+        return 0;
     }
 
     private class SemaWaitStateChecker implements IWaitStateChecker {

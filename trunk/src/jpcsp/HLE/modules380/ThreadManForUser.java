@@ -21,19 +21,12 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.Managers;
-import jpcsp.HLE.kernel.managers.IntrManager;
-import jpcsp.HLE.kernel.types.SceKernelErrors;
 
 public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 
-	@HLEFunction(nid = 0x19CFF145, version = 380)
-	public void sceKernelCreateLwMutex(Processor processor) {
-		int[] gpr = processor.cpu.gpr;
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-		Managers.lwmutex.sceKernelCreateLwMutex(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
+	@HLEFunction(nid = 0x19CFF145, version = 380, checkInsideInterrupt = true)
+	public int sceKernelCreateLwMutex(int workAreaAddr, int name_addr, int attr, int count, int option_addr) {
+		return Managers.lwmutex.sceKernelCreateLwMutex(workAreaAddr, name_addr, attr, count, option_addr);
 	}
 
 	@HLEFunction(nid = 0x1AF94D03, version = 380)
@@ -55,19 +48,13 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 	}
 
 	@HLEFunction(nid = 0x4C145944, version = 380)
-	public void sceKernelReferLwMutexStatusByID(Processor processor) {
-        int[] gpr = processor.cpu.gpr;
-		Managers.lwmutex.sceKernelReferLwMutexStatusByID(gpr[4], gpr[5]);
+	public int sceKernelReferLwMutexStatusByID(int uid, int addr) {
+		return Managers.lwmutex.sceKernelReferLwMutexStatusByID(uid, addr);
 	}
 
-	@HLEFunction(nid = 0x60107536, version = 380)
-	public void sceKernelDeleteLwMutex(Processor processor) {
-		int[] gpr = processor.cpu.gpr;
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-		Managers.lwmutex.sceKernelDeleteLwMutex(gpr[4]);
+	@HLEFunction(nid = 0x60107536, version = 380, checkInsideInterrupt = true)
+	public int sceKernelDeleteLwMutex(int workAreaAddr) {
+		return Managers.lwmutex.sceKernelDeleteLwMutex(workAreaAddr);
 	}
 
 	@HLEFunction(nid = 0x71040D5C, version = 380)
