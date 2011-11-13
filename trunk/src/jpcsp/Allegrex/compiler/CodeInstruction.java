@@ -565,6 +565,10 @@ public class CodeInstruction {
     	return imm16;
     }
 
+	public int getImm7() {
+        return opcode & 0x7F;
+	}
+
 	public int getImm5() {
         return (opcode >> 16) & 0x1F;
 	}

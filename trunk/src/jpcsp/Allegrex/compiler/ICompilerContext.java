@@ -112,6 +112,7 @@ public interface ICompilerContext {
     public boolean isRsRegister0();
     public int getImm16(boolean signedImm);
     public int getImm14(boolean signedImm);
+    public int getImm7();
     public int getImm5();
     public int getImm4();
     public int getImm3();

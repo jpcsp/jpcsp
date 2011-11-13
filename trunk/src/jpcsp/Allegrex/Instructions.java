@@ -839,10 +839,14 @@ public void interpret(Processor processor, int insn) {
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRtRegister0()) {
 		context.prepareRtForStore();
-		context.loadRs();
 		int imm = context.getImm16(false);
-		context.loadImm(imm);
-		context.getMethodVisitor().visitInsn(Opcodes.IAND);
+		if (imm == 0) {
+			context.loadImm(0);
+		} else {
+			context.loadRs();
+			context.loadImm(imm);
+			context.getMethodVisitor().visitInsn(Opcodes.IAND);
+		}
 		context.storeRt();
 	}
 }
@@ -5657,7 +5661,27 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
+	if (!context.isRtRegister0()) {
+		int imm7 = context.getImm7();
+		MethodVisitor mv = context.getMethodVisitor();
+		switch (imm7) {
+			case 3: {
+				context.prepareRtForStore();
+				context.loadVcrCc(5);
+				for (int i = 4; i >= 0; i--) {
+					context.loadImm(1);
+					mv.visitInsn(Opcodes.ISHL);
+					context.loadVcrCc(i);
+					mv.visitInsn(Opcodes.IOR);
+				}
+				context.storeRt();
+				break;
+			}
+			default:
+				super.compile(context, insn);
+				break;
+		}
+	}
 }
 @Override
 public String disasm(int address, int insn) {
