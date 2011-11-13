@@ -2510,6 +2510,11 @@ public class CompilerContext implements ICompilerContext {
 	}
 
 	@Override
+	public int getImm7() {
+		return codeInstruction.getImm7();
+	}
+
+	@Override
 	public int getImm5() {
 		return codeInstruction.getImm5();
 	}
