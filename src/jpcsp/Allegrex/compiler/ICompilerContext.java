@@ -63,6 +63,8 @@ public interface ICompilerContext {
     public void loadVcrCc(int cc);
     public void storeRd();
     public void storeRt();
+    public void storeRd(int constantValue);
+    public void storeRt(int constantValue);
     public void storeFd();
     public void storeFt();
     public void storeVd(int n);

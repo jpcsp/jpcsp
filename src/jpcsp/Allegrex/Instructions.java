@@ -647,21 +647,21 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		context.prepareRdForStore();
-		if (context.isRsRegister0()) {
-			if (context.isRtRegister0()) {
-				context.loadImm(0);
-			} else {
-				context.loadRt();
-			}
+		if (context.isRsRegister0() && context.isRtRegister0()) {
+			context.storeRd(0);
 		} else {
-			context.loadRs();
-			if (!context.isRtRegister0()) {
+			context.prepareRdForStore();
+			if (context.isRsRegister0()) {
 				context.loadRt();
-				context.getMethodVisitor().visitInsn(Opcodes.IADD);
+			} else {
+				context.loadRs();
+				if (!context.isRtRegister0()) {
+					context.loadRt();
+					context.getMethodVisitor().visitInsn(Opcodes.IADD);
+				}
 			}
+			context.storeRd();
 		}
-		context.storeRd();
 	}
 }
 @Override
@@ -757,18 +757,18 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRtRegister0()) {
-		context.prepareRtForStore();
 		int imm = context.getImm16(true);
 		if (context.isRsRegister0()) {
-			context.loadImm(imm);
+			context.storeRt(imm);
 		} else {
+			context.prepareRtForStore();
 			context.loadRs();
 			if (imm != 0) {
 				context.loadImm(imm);
 				context.getMethodVisitor().visitInsn(Opcodes.IADD);
 			}
+			context.storeRt();
 		}
-		context.storeRt();
 	}
 }
 @Override
@@ -801,11 +801,15 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		context.prepareRdForStore();
-		context.loadRs();
-		context.loadRt();
-		context.getMethodVisitor().visitInsn(Opcodes.IAND);
-		context.storeRd();
+		if (context.isRsRegister0() || context.isRtRegister0()) {
+			context.storeRd(0);
+		} else {
+			context.prepareRdForStore();
+			context.loadRs();
+			context.loadRt();
+			context.getMethodVisitor().visitInsn(Opcodes.IAND);
+			context.storeRd();
+		}
 	}
 }
 @Override
@@ -838,16 +842,16 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRtRegister0()) {
-		context.prepareRtForStore();
 		int imm = context.getImm16(false);
-		if (imm == 0) {
-			context.loadImm(0);
+		if (imm == 0 || context.isRsRegister0()) {
+			context.storeRt(0);
 		} else {
+			context.prepareRtForStore();
 			context.loadRs();
 			context.loadImm(imm);
 			context.getMethodVisitor().visitInsn(Opcodes.IAND);
+			context.storeRt();
 		}
-		context.storeRt();
 	}
 }
 @Override
@@ -919,21 +923,21 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		context.prepareRdForStore();
-		if (context.isRsRegister0()) {
-			if (context.isRtRegister0()) {
-				context.loadImm(0);
-			} else {
-				context.loadRt();
-			}
+		if (context.isRsRegister0() && context.isRtRegister0()) {
+			context.storeRd(0);
 		} else {
-			context.loadRs();
-			if (!context.isRtRegister0()) {
+			context.prepareRdForStore();
+			if (context.isRsRegister0()) {
 				context.loadRt();
-				context.getMethodVisitor().visitInsn(Opcodes.IOR);
+			} else {
+				context.loadRs();
+				if (!context.isRtRegister0()) {
+					context.loadRt();
+					context.getMethodVisitor().visitInsn(Opcodes.IOR);
+				}
 			}
+			context.storeRd();
 		}
-		context.storeRd();
 	}
 }
 @Override
@@ -966,18 +970,18 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRtRegister0()) {
-		context.prepareRtForStore();
 		int imm = context.getImm16(false);
 		if (context.isRsRegister0()) {
-			context.loadImm(imm);
+			context.storeRt(imm);
 		} else {
+			context.prepareRtForStore();
 			context.loadRs();
 			if (imm != 0) {
 				context.loadImm(imm);
 				context.getMethodVisitor().visitInsn(Opcodes.IOR);
 			}
+			context.storeRt();
 		}
-		context.storeRt();
 	}
 }
 @Override
@@ -1010,11 +1014,21 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		context.prepareRdForStore();
-		context.loadRs();
-		context.loadRt();
-		context.getMethodVisitor().visitInsn(Opcodes.IXOR);
-		context.storeRd();
+		if (context.isRsRegister0() && context.isRtRegister0()) {
+			context.storeRd(0);
+		} else {
+			context.prepareRdForStore();
+			if (context.isRsRegister0()) {
+				context.loadRt();
+			} else {
+				context.loadRs();
+				if (!context.isRtRegister0()) {
+					context.loadRt();
+					context.getMethodVisitor().visitInsn(Opcodes.IXOR);
+				}
+			}
+			context.storeRd();
+		}
 	}
 }
 @Override
@@ -1047,14 +1061,18 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRtRegister0()) {
-		context.prepareRtForStore();
-		context.loadRs();
 		int imm = context.getImm16(false);
-		if (imm != 0) {
-			context.loadImm(imm);
-			context.getMethodVisitor().visitInsn(Opcodes.IXOR);
+		if (context.isRsRegister0()) {
+			context.storeRt(imm);
+		} else {
+			context.prepareRtForStore();
+			context.loadRs();
+			if (imm != 0) {
+				context.loadImm(imm);
+				context.getMethodVisitor().visitInsn(Opcodes.IXOR);
+			}
+			context.storeRt();
 		}
-		context.storeRt();
 	}
 }
 @Override
@@ -1087,14 +1105,18 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		context.prepareRdForStore();
-		context.loadRt();
-		int sa = context.getSaValue();
-		if (sa != 0) {
-			context.loadImm(sa);
-			context.getMethodVisitor().visitInsn(Opcodes.ISHL);
+		if (context.isRtRegister0()) {
+			context.storeRd(0);
+		} else {
+			context.prepareRdForStore();
+			context.loadRt();
+			int sa = context.getSaValue();
+			if (sa != 0) {
+				context.loadImm(sa);
+				context.getMethodVisitor().visitInsn(Opcodes.ISHL);
+			}
+			context.storeRd();
 		}
-		context.storeRd();
 	}
 }
 @Override
@@ -1127,15 +1149,19 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		context.prepareRdForStore();
-		context.loadRt();
-		if (!context.isRsRegister0()) {
-			context.loadRs();
-			context.loadImm(31);
-			context.getMethodVisitor().visitInsn(Opcodes.IAND);
-			context.getMethodVisitor().visitInsn(Opcodes.ISHL);
+		if (context.isRtRegister0()) {
+			context.storeRd(0);
+		} else {
+			context.prepareRdForStore();
+			context.loadRt();
+			if (!context.isRsRegister0()) {
+				context.loadRs();
+				context.loadImm(31);
+				context.getMethodVisitor().visitInsn(Opcodes.IAND);
+				context.getMethodVisitor().visitInsn(Opcodes.ISHL);
+			}
+			context.storeRd();
 		}
-		context.storeRd();
 	}
 }
 @Override
@@ -1168,14 +1194,18 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		context.prepareRdForStore();
-		context.loadRt();
-		int sa = context.getSaValue();
-		if (sa != 0) {
-			context.loadImm(sa);
-			context.getMethodVisitor().visitInsn(Opcodes.ISHR);
+		if (context.isRtRegister0()) {
+			context.storeRd(0);
+		} else {
+			context.prepareRdForStore();
+			context.loadRt();
+			int sa = context.getSaValue();
+			if (sa != 0) {
+				context.loadImm(sa);
+				context.getMethodVisitor().visitInsn(Opcodes.ISHR);
+			}
+			context.storeRd();
 		}
-		context.storeRd();
 	}
 }
 @Override
@@ -1208,15 +1238,19 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		context.prepareRdForStore();
-		context.loadRt();
-		if (!context.isRsRegister0()) {
-			context.loadRs();
-			context.loadImm(31);
-			context.getMethodVisitor().visitInsn(Opcodes.IAND);
-			context.getMethodVisitor().visitInsn(Opcodes.ISHR);
+		if (context.isRtRegister0()) {
+			context.storeRd(0);
+		} else {
+			context.prepareRdForStore();
+			context.loadRt();
+			if (!context.isRsRegister0()) {
+				context.loadRs();
+				context.loadImm(31);
+				context.getMethodVisitor().visitInsn(Opcodes.IAND);
+				context.getMethodVisitor().visitInsn(Opcodes.ISHR);
+			}
+			context.storeRd();
 		}
-		context.storeRd();
 	}
 }
 @Override
@@ -1249,14 +1283,18 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		context.prepareRdForStore();
-		context.loadRt();
-		int sa = context.getSaValue();
-		if (sa != 0) {
-			context.loadImm(sa);
-			context.getMethodVisitor().visitInsn(Opcodes.IUSHR);
+		if (context.isRtRegister0()) {
+			context.storeRd(0);
+		} else {
+			context.prepareRdForStore();
+			context.loadRt();
+			int sa = context.getSaValue();
+			if (sa != 0) {
+				context.loadImm(sa);
+				context.getMethodVisitor().visitInsn(Opcodes.IUSHR);
+			}
+			context.storeRd();
 		}
-		context.storeRd();
 	}
 }
 @Override
@@ -1289,15 +1327,19 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		context.prepareRdForStore();
-		context.loadRt();
-		if (!context.isRsRegister0()) {
-			context.loadRs();
-			context.loadImm(31);
-			context.getMethodVisitor().visitInsn(Opcodes.IAND);
-			context.getMethodVisitor().visitInsn(Opcodes.IUSHR);
+		if (context.isRtRegister0()) {
+			context.storeRd(0);
+		} else {
+			context.prepareRdForStore();
+			context.loadRt();
+			if (!context.isRsRegister0()) {
+				context.loadRs();
+				context.loadImm(31);
+				context.getMethodVisitor().visitInsn(Opcodes.IAND);
+				context.getMethodVisitor().visitInsn(Opcodes.IUSHR);
+			}
+			context.storeRd();
 		}
-		context.storeRd();
 	}
 }
 @Override
@@ -1330,20 +1372,24 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		context.prepareRdForStore();
-		context.loadRt();
-		int sa = context.getSaValue();
-		if (sa != 0) {
-			// rotateRight(rt, sa) = (rt >>> sa | rt << -sa)
-			context.getMethodVisitor().visitInsn(Opcodes.DUP);
-			context.loadImm(sa);
-			context.getMethodVisitor().visitInsn(Opcodes.IUSHR);
-			context.getMethodVisitor().visitInsn(Opcodes.SWAP);
-			context.loadImm(-sa);
-			context.getMethodVisitor().visitInsn(Opcodes.ISHL);
-			context.getMethodVisitor().visitInsn(Opcodes.IOR);
+		if (context.isRtRegister0()) {
+			context.storeRd(0);
+		} else {
+			context.prepareRdForStore();
+			context.loadRt();
+			int sa = context.getSaValue();
+			if (sa != 0) {
+				// rotateRight(rt, sa) = (rt >>> sa | rt << -sa)
+				context.getMethodVisitor().visitInsn(Opcodes.DUP);
+				context.loadImm(sa);
+				context.getMethodVisitor().visitInsn(Opcodes.IUSHR);
+				context.getMethodVisitor().visitInsn(Opcodes.SWAP);
+				context.loadImm(-sa);
+				context.getMethodVisitor().visitInsn(Opcodes.ISHL);
+				context.getMethodVisitor().visitInsn(Opcodes.IOR);
+			}
+			context.storeRd();
 		}
-		context.storeRd();
 	}
 }
 @Override
@@ -1376,22 +1422,26 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		context.prepareRdForStore();
-		context.loadRt();
-		if (!context.isRsRegister0()) {
-			// rotateRight(rt, rs) = (rt >>> rs | rt << -rs)
-			context.loadRs();
-			context.loadImm(31);
-			context.getMethodVisitor().visitInsn(Opcodes.IAND);
-			context.getMethodVisitor().visitInsn(Opcodes.DUP2);
-			context.getMethodVisitor().visitInsn(Opcodes.IUSHR);
-			context.getMethodVisitor().visitInsn(Opcodes.DUP_X2);
-			context.getMethodVisitor().visitInsn(Opcodes.POP);
-			context.getMethodVisitor().visitInsn(Opcodes.INEG);
-			context.getMethodVisitor().visitInsn(Opcodes.ISHL);
-			context.getMethodVisitor().visitInsn(Opcodes.IOR);
+		if (context.isRtRegister0()) {
+			context.storeRd(0);
+		} else {
+			context.prepareRdForStore();
+			context.loadRt();
+			if (!context.isRsRegister0()) {
+				// rotateRight(rt, rs) = (rt >>> rs | rt << -rs)
+				context.loadRs();
+				context.loadImm(31);
+				context.getMethodVisitor().visitInsn(Opcodes.IAND);
+				context.getMethodVisitor().visitInsn(Opcodes.DUP2);
+				context.getMethodVisitor().visitInsn(Opcodes.IUSHR);
+				context.getMethodVisitor().visitInsn(Opcodes.DUP_X2);
+				context.getMethodVisitor().visitInsn(Opcodes.POP);
+				context.getMethodVisitor().visitInsn(Opcodes.INEG);
+				context.getMethodVisitor().visitInsn(Opcodes.ISHL);
+				context.getMethodVisitor().visitInsn(Opcodes.IOR);
+			}
+			context.storeRd();
 		}
-		context.storeRd();
 	}
 }
 @Override
@@ -1424,20 +1474,34 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		context.prepareRdForStore();
-		// rd = rs < rt ? 1 : 0
-		context.loadRs();
-		context.loadRt();
-		MethodVisitor mv = context.getMethodVisitor();
-		Label ifLtLabel = new Label();
-		Label continueLabel = new Label();
-		mv.visitJumpInsn(Opcodes.IF_ICMPLT, ifLtLabel);
-		context.loadImm(0);
-		mv.visitJumpInsn(Opcodes.GOTO, continueLabel);
-		mv.visitLabel(ifLtLabel);
-		context.loadImm(1);
-		mv.visitLabel(continueLabel);
-		context.storeRd();
+		if (context.getRsRegisterIndex() == context.getRtRegisterIndex()) {
+			context.storeRd(0);
+		} else {
+			MethodVisitor mv = context.getMethodVisitor();
+			Label ifLtLabel = new Label();
+			Label continueLabel = new Label();
+			context.prepareRdForStore();
+			if (context.isRsRegister0()) {
+				// rd = 0 < rt ? 1 : 0
+				context.loadRt();
+				mv.visitJumpInsn(Opcodes.IFGT, ifLtLabel);
+			} else if (context.isRtRegister0()) {
+				// rd = rs < 0 ? 1 : 0
+				context.loadRs();
+				mv.visitJumpInsn(Opcodes.IFLT, ifLtLabel);
+			} else {
+				// rd = rs < rt ? 1 : 0
+				context.loadRs();
+				context.loadRt();
+				mv.visitJumpInsn(Opcodes.IF_ICMPLT, ifLtLabel);
+			}
+			context.loadImm(0);
+			mv.visitJumpInsn(Opcodes.GOTO, continueLabel);
+			mv.visitLabel(ifLtLabel);
+			context.loadImm(1);
+			mv.visitLabel(continueLabel);
+			context.storeRd();
+		}
 	}
 }
 @Override
@@ -1470,20 +1534,29 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRtRegister0()) {
-		context.prepareRtForStore();
-        // rt = rs < simm16 ? 1 : 0
-        context.loadRs();
-        context.loadImm16(true);
-        MethodVisitor mv = context.getMethodVisitor();
-        Label ifLtLabel = new Label();
-        Label continueLabel = new Label();
-        mv.visitJumpInsn(Opcodes.IF_ICMPLT, ifLtLabel);
-        context.loadImm(0);
-        mv.visitJumpInsn(Opcodes.GOTO, continueLabel);
-        mv.visitLabel(ifLtLabel);
-        context.loadImm(1);
-        mv.visitLabel(continueLabel);
-		context.storeRt();
+		int simm16 = context.getImm16(true);
+		if (context.isRsRegister0()) {
+			context.storeRt(simm16 > 0 ? 1 : 0);
+		} else {
+	        MethodVisitor mv = context.getMethodVisitor();
+	        Label ifLtLabel = new Label();
+	        Label continueLabel = new Label();
+			context.prepareRtForStore();
+	        // rt = rs < simm16 ? 1 : 0
+	        context.loadRs();
+	        if (simm16 == 0) {
+	        	mv.visitJumpInsn(Opcodes.IFLT, ifLtLabel);
+	        } else {
+	        	context.loadImm(simm16);
+	        	mv.visitJumpInsn(Opcodes.IF_ICMPLT, ifLtLabel);
+	        }
+	        context.loadImm(0);
+	        mv.visitJumpInsn(Opcodes.GOTO, continueLabel);
+	        mv.visitLabel(ifLtLabel);
+	        context.loadImm(1);
+	        mv.visitLabel(continueLabel);
+			context.storeRt();
+		}
 	}
 }
 @Override
@@ -1516,23 +1589,37 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		context.prepareRdForStore();
-        // rd = rs < rt ? 1 : 0
-        context.loadRs();
-        context.convertUnsignedIntToLong();
-        context.loadRt();
-        context.convertUnsignedIntToLong();
-        MethodVisitor mv = context.getMethodVisitor();
-        Label ifLtLabel = new Label();
-        Label continueLabel = new Label();
-        mv.visitInsn(Opcodes.LCMP); // -1 if rs < rt, 0 if rs == rt, 1 if rs > rt
-        mv.visitJumpInsn(Opcodes.IFLT, ifLtLabel);
-        context.loadImm(0);
-        mv.visitJumpInsn(Opcodes.GOTO, continueLabel);
-        mv.visitLabel(ifLtLabel);
-        context.loadImm(1);
-        mv.visitLabel(continueLabel);
-		context.storeRd();
+		if (context.getRsRegisterIndex() == context.getRtRegisterIndex()) {
+			// rd = x < x
+			context.storeRd(0);
+		} else if (context.isRtRegister0()) {
+			// rd = rs < 0
+			context.storeRd(0);
+		} else {
+	        MethodVisitor mv = context.getMethodVisitor();
+	        Label ifLtLabel = new Label();
+	        Label continueLabel = new Label();
+			context.prepareRdForStore();
+			if (context.isRsRegister0()) {
+				// rd = 0 < rt ? 1 : 0
+				context.loadRt();
+				mv.visitJumpInsn(Opcodes.IFNE, ifLtLabel);
+			} else {
+		        // rd = rs < rt ? 1 : 0
+		        context.loadRs();
+		        context.convertUnsignedIntToLong();
+		        context.loadRt();
+		        context.convertUnsignedIntToLong();
+		        mv.visitInsn(Opcodes.LCMP); // -1 if rs < rt, 0 if rs == rt, 1 if rs > rt
+		        mv.visitJumpInsn(Opcodes.IFLT, ifLtLabel);
+			}
+	        context.loadImm(0);
+	        mv.visitJumpInsn(Opcodes.GOTO, continueLabel);
+	        mv.visitLabel(ifLtLabel);
+	        context.loadImm(1);
+	        mv.visitLabel(continueLabel);
+			context.storeRd();
+		}
 	}
 }
 @Override
@@ -1565,23 +1652,37 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRtRegister0()) {
-		context.prepareRtForStore();
-        // rt = rs < simm16 ? 1 : 0
-        context.loadRs();
-        context.convertUnsignedIntToLong();
-        context.loadImm16(true);
-        context.convertUnsignedIntToLong();
-        MethodVisitor mv = context.getMethodVisitor();
-        Label ifLtLabel = new Label();
-        Label continueLabel = new Label();
-        mv.visitInsn(Opcodes.LCMP); // -1 if rs < rt, 0 if rs == rt, 1 if rs > rt
-        mv.visitJumpInsn(Opcodes.IFLT, ifLtLabel);
-        context.loadImm(0);
-        mv.visitJumpInsn(Opcodes.GOTO, continueLabel);
-        mv.visitLabel(ifLtLabel);
-        context.loadImm(1);
-        mv.visitLabel(continueLabel);
-		context.storeRt();
+		int simm16 = context.getImm16(true);
+		if (context.isRsRegister0()) {
+			// rt = 0 < simm16 ? 1 : 0
+			context.storeRt(0 < simm16 ? 1 : 0);
+		} else if (simm16 == 0) {
+			// rt = rs < 0
+			context.storeRt(0);
+		} else {
+	        MethodVisitor mv = context.getMethodVisitor();
+	        Label ifLtLabel = new Label();
+	        Label continueLabel = new Label();
+			context.prepareRtForStore();
+			if (simm16 == 1) {
+				// rt = rs < 1 ? 1 : 0   <=> rt = rs == 0 ? 1 : 0 
+				context.loadRs();
+				mv.visitJumpInsn(Opcodes.IFEQ, ifLtLabel);
+			} else {
+		        // rt = rs < simm16 ? 1 : 0
+		        context.loadRs();
+		        context.convertUnsignedIntToLong();
+		        mv.visitLdcInsn(((long) simm16) & 0xFFFFFFFFL);
+		        mv.visitInsn(Opcodes.LCMP); // -1 if rs < rt, 0 if rs == rt, 1 if rs > rt
+		        mv.visitJumpInsn(Opcodes.IFLT, ifLtLabel);
+			}
+	        context.loadImm(0);
+	        mv.visitJumpInsn(Opcodes.GOTO, continueLabel);
+	        mv.visitLabel(ifLtLabel);
+	        context.loadImm(1);
+	        mv.visitLabel(continueLabel);
+			context.storeRt();
+		}
 	}
 }
 @Override
@@ -1615,22 +1716,22 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		context.prepareRdForStore();
-		if (context.isRsRegister0()) {
-			if (context.isRtRegister0()) {
-				context.loadImm(0);
-			} else {
+		if (context.isRsRegister0() && context.isRtRegister0()) {
+			context.storeRd(0);
+		} else {
+			context.prepareRdForStore();
+			if (context.isRsRegister0()) {
 				context.loadRt();
 				context.getMethodVisitor().visitInsn(Opcodes.INEG);
+			} else {
+				context.loadRs();
+				if (!context.isRtRegister0()) {
+					context.loadRt();
+					context.getMethodVisitor().visitInsn(Opcodes.ISUB);
+				}
 			}
-		} else {
-			context.loadRs();
-			if (!context.isRtRegister0()) {
-				context.loadRt();
-				context.getMethodVisitor().visitInsn(Opcodes.ISUB);
-			}
+			context.storeRd();
 		}
-		context.storeRd();
 	}
 }
 @Override
@@ -1693,10 +1794,8 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRtRegister0()) {
-		context.prepareRtForStore();
 		int uimm16 = context.getImm16(false);
-		context.loadImm(uimm16 << 16);
-		context.storeRt();
+		context.storeRt(uimm16 << 16);
 	}
 }
 @Override
@@ -2044,14 +2143,14 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		context.prepareRdForStore();
 		if (context.isRsRegister0()) {
-			context.loadImm(32);
+			context.storeRd(32);
 		} else {
+			context.prepareRdForStore();
 			context.loadRs();
 			context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Integer.class), "numberOfLeadingZeros", "(I)I");
+			context.storeRd();
 		}
-		context.storeRd();
 	}
 }
 @Override
@@ -2082,16 +2181,16 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		context.prepareRdForStore();
 		if (context.isRsRegister0()) {
-			context.loadImm(0);
+			context.storeRd(0);
 		} else {
+			context.prepareRdForStore();
 			context.loadRs();
 			context.loadImm(-1);
 			context.getMethodVisitor().visitInsn(Opcodes.IXOR);
 			context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Integer.class), "numberOfLeadingZeros", "(I)I");
+			context.storeRd();
 		}
-		context.storeRd();
 	}
 }
 @Override
@@ -2127,17 +2226,21 @@ public void compile(ICompilerContext context, int insn) {
 		int lsb = (insn>>6)&31;
 		int msb = (insn>>11)&31;
 		int mask = ~(~0 << (msb + 1));
-		context.prepareRtForStore();
-		context.loadRs();
-		if (lsb != 0) {
-			context.loadImm(lsb);
-			context.getMethodVisitor().visitInsn(Opcodes.IUSHR);
+		if (context.isRsRegister0() || mask == 0) {
+			context.storeRt(0);
+		} else {
+			context.prepareRtForStore();
+			context.loadRs();
+			if (lsb != 0) {
+				context.loadImm(lsb);
+				context.getMethodVisitor().visitInsn(Opcodes.IUSHR);
+			}
+			if (mask != 0xFFFFFFFF) {
+				context.loadImm(mask);
+				context.getMethodVisitor().visitInsn(Opcodes.IAND);
+			}
+			context.storeRt();
 		}
-		if (mask != 0xFFFFFFFF) {
-			context.loadImm(mask);
-			context.getMethodVisitor().visitInsn(Opcodes.IAND);
-		}
-		context.storeRt();
 	}
 }
 @Override
@@ -2176,21 +2279,33 @@ public void compile(ICompilerContext context, int insn) {
 		int msb = (insn>>11)&31;
         int mask = ~(~0 << (msb - lsb + 1)) << lsb;
 
-		if (mask != 0) {
+        if (mask == 0xFFFFFFFF && context.isRsRegister0()) {
+        	context.storeRt(0);
+        } else if (mask != 0) {
 			context.prepareRtForStore();
-			context.loadRt();
-			context.loadImm(~mask);
-			context.getMethodVisitor().visitInsn(Opcodes.IAND);
-			context.loadRs();
-			if (lsb != 0) {
-				context.loadImm(lsb);
-				context.getMethodVisitor().visitInsn(Opcodes.ISHL);
-			}
-			if (mask != 0xFFFFFFFF) {
-				context.loadImm(mask);
+			if (mask == 0xFFFFFFFF) {
+				context.loadRs();
+				if (lsb != 0) {
+					context.loadImm(lsb);
+					context.getMethodVisitor().visitInsn(Opcodes.ISHL);
+				}
+			} else {
+				context.loadRt();
+				context.loadImm(~mask);
 				context.getMethodVisitor().visitInsn(Opcodes.IAND);
+				if (!context.isRsRegister0()) {
+					context.loadRs();
+					if (lsb != 0) {
+						context.loadImm(lsb);
+						context.getMethodVisitor().visitInsn(Opcodes.ISHL);
+					}
+					if (mask != 0xFFFFFFFF) {
+						context.loadImm(mask);
+						context.getMethodVisitor().visitInsn(Opcodes.IAND);
+					}
+					context.getMethodVisitor().visitInsn(Opcodes.IOR);
+				}
 			}
-			context.getMethodVisitor().visitInsn(Opcodes.IOR);
 			context.storeRt();
 		}
 	}
@@ -4174,9 +4289,7 @@ public void compile(ICompilerContext context, int insn) {
 	context.memWrite32(rs, simm16);
 
 	if (!context.isRtRegister0()) {
-		context.prepareRtForStore();
-		context.loadImm(1);
-		context.storeRt();
+		context.storeRt(1);
 	}
 }
 @Override
