@@ -118,24 +118,29 @@ public class scePspNpDrm_user extends HLEModule {
         try {
             String pcfilename = Modules.IoFileMgrForUserModule.getDeviceFilePath(fileName);
             SeekableRandomFile file = new SeekableRandomFile(pcfilename, "rw");
-
-            // EDAT header size.
-            int edatHeaderSize = 0x90;
-
+            
+            String[] name = pcfilename.split("/");
+            String fName = "";
+            for (int i = 0; i < name.length; i++) {
+                if (name[i].contains("EDAT")) {
+                    fName = name[i].toLowerCase();
+                }
+            }
+  
             // Setup the buffers.
-            byte[] inBuf = new byte[edatHeaderSize];
+            byte[] inBuf = new byte[0x80];
             byte[] dataBuf = new byte[0x30];
-            byte[] hashBuf = new byte[0x10];
+            byte[] nameHashBuf = new byte[0x10];
 
             // Read the encrypted PSPEDATA header.
             file.readFully(inBuf);
 
             // Generate a new name hash for this file and compare with the one stored in it's header.
             System.arraycopy(inBuf, 0x10, dataBuf, 0, 0x30);
-            System.arraycopy(inBuf, 0x40, hashBuf, 0, 0x10);
+            System.arraycopy(inBuf, 0x40, nameHashBuf, 0, 0x10);
             
             // If the CryptoEngine fails to find a match, then the file has been renamed.
-            if (crypto.CheckEDATANameKey(dataBuf, hashBuf, fileName.getBytes(), fileName.getBytes().length) != 0) {
+            if (crypto.CheckEDATANameKey(nameHashBuf, dataBuf, fName.getBytes(), fName.getBytes().length) != 0) {
                 renamed = true;
             }
 
@@ -152,7 +157,7 @@ public class scePspNpDrm_user extends HLEModule {
 
         int edataFd = cpu.gpr[4];
 
-        log.warn("PARTIAL: (sceNpDrmEdataSetupKey edataFd=0x" + Integer.toHexString(edataFd) + ")");
+        log.warn("PARTIAL: sceNpDrmEdataSetupKey (edataFd=0x" + Integer.toHexString(edataFd) + ")");
     
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -276,7 +281,7 @@ public class scePspNpDrm_user extends HLEModule {
         
         int edataFd = cpu.gpr[4];
 
-        log.warn("PARTIAL: sceNpDrmEdataGetDataSize edataFd=0x" + Integer.toHexString(edataFd));
+        log.warn("PARTIAL: sceNpDrmEdataGetDataSize (edataFd=0x" + Integer.toHexString(edataFd) + ")");
         
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -301,7 +306,7 @@ public class scePspNpDrm_user extends HLEModule {
         int permissions = cpu.gpr[6];
 
         log.warn("IGNORING: sceNpDrmOpen (nameAddr=0x" + Integer.toHexString(nameAddr) 
-                + ", flags=0x" + Integer.toHexString(flags) + ", permissions=0" + Integer.toOctalString(permissions));
+                + ", flags=0x" + Integer.toHexString(flags) + ", permissions=0" + Integer.toOctalString(permissions) + ")");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -335,7 +340,7 @@ public class scePspNpDrm_user extends HLEModule {
         if (option_addr != 0) {
             lmOption = new SceKernelLMOption();
             lmOption.read(mem, option_addr);
-            log.info("sceKernelLoadModuleNpDrm: partition=" + lmOption.mpidText + ", position=" + lmOption.position);
+            log.info("sceKernelLoadModuleNpDrm (partition=" + lmOption.mpidText + ", position=" + lmOption.position + ")");
         }
 
         Modules.ModuleMgrForUserModule.hleKernelLoadModule(processor, name, flags, 0, false);
@@ -356,7 +361,7 @@ public class scePspNpDrm_user extends HLEModule {
             return;
         }
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelLoadExecNpDrm file='%s' option_addr=0x%08X", name, option_addr));
+            log.debug(String.format("sceKernelLoadExecNpDrm (file='%s', option_addr=0x%08X", name, option_addr) + ")");
         }
 
         // Flush system memory to mimic a real PSP reset.
@@ -369,7 +374,7 @@ public class scePspNpDrm_user extends HLEModule {
             int keyAddr = mem.read32(option_addr + 12);  // Pointer to an encryption key (may not be used).
 
             if (log.isDebugEnabled()) {
-            	log.debug(String.format("sceKernelLoadExecNpDrm params: optSize=%d, argSize=%d, argAddr=0x%08X, keyAddr=0x%08X", optSize, argSize, argAddr, keyAddr));
+            	log.debug(String.format("sceKernelLoadExecNpDrm (params: optSize=%d, argSize=%d, argAddr=0x%08X, keyAddr=0x%08X)", optSize, argSize, argAddr, keyAddr));
             }
         }
 
@@ -399,5 +404,4 @@ public class scePspNpDrm_user extends HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
         }
     }
-
 }
