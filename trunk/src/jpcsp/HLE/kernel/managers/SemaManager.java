@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
+import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_COUNT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_SEMA_ZERO;
@@ -31,7 +32,6 @@ import static jpcsp.util.Utilities.readStringNZ;
 import java.util.HashMap;
 import java.util.Iterator;
 
-import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
@@ -80,11 +80,11 @@ public class SemaManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return WAIT_TIMEOUT
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_TIMEOUT;
+            thread.cpuContext.gpr[_v0] = ERROR_KERNEL_WAIT_TIMEOUT;
         } else {
             log.warn("Sema deleted while we were waiting for it! (timeout expired)");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
+            thread.cpuContext.gpr[_v0] = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -92,11 +92,11 @@ public class SemaManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return ERROR_WAIT_STATUS_RELEASED
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
+            thread.cpuContext.gpr[_v0] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
         } else {
             log.warn("EventFlag deleted while we were waiting for it!");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
+            thread.cpuContext.gpr[_v0] = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -115,7 +115,7 @@ public class SemaManager {
             SceKernelThreadInfo thread = it.next();
             if (thread.isWaitingForType(PSP_WAIT_SEMA) &&
                     thread.wait.Semaphore_id == semaid) {
-                thread.cpuContext.gpr[2] = result;
+                thread.cpuContext.gpr[_v0] = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 reschedule = true;
             }
@@ -148,7 +148,7 @@ public class SemaManager {
                         log.debug("onSemaphoreModified waking thread 0x" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
                     }
                     sema.numWaitThreads--;
-                    thread.cpuContext.gpr[2] = 0;
+                    thread.cpuContext.gpr[_v0] = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
 
@@ -167,7 +167,7 @@ public class SemaManager {
                         log.debug("onSemaphoreModified waking thread 0x" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
                     }
                     sema.numWaitThreads--;
-                    thread.cpuContext.gpr[2] = 0;
+                    thread.cpuContext.gpr[_v0] = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
 
@@ -233,9 +233,6 @@ public class SemaManager {
             return ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
         }
 
-        if (sema.numWaitThreads > 0) {
-            log.warn("sceKernelDeleteSema numWaitThreads " + sema.numWaitThreads);
-        }
         onSemaphoreDeleted(semaid);
 
         return 0;
@@ -378,20 +375,20 @@ public class SemaManager {
         SceKernelSemaInfo sema = semaMap.get(semaid);
         if (sema == null) {
             log.warn("sceKernelCancelSema - unknown uid 0x" + Integer.toHexString(semaid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
+            return ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
+        }
+
+        // Write previous numWaitThreads count.
+        if (Memory.isAddressGood(numWaitThreadAddr)) {
+            mem.write32(numWaitThreadAddr, sema.numWaitThreads);
+        }
+        sema.numWaitThreads = 0;
+        // Reset this semaphore's count based on newcount.
+        // Note: If newcount is -1, the count becomes this semaphore's initCount.
+        if (newcount == -1) {
+            sema.currentCount = sema.initCount;
         } else {
-            // Write previous numWaitThreads count.
-            if (Memory.isAddressGood(numWaitThreadAddr)) {
-                mem.write32(numWaitThreadAddr, sema.numWaitThreads);
-            }
-            sema.numWaitThreads = 0;
-            // Reset this semaphore's count based on newcount.
-            // Note: If newcount is -1, the count becomes this semaphore's initCount.
-            if (newcount == -1) {
-                sema.currentCount = sema.initCount;
-            } else {
-                sema.currentCount = newcount;
-            }
+            sema.currentCount = newcount;
         }
         onSemaphoreCancelled(semaid);
 
@@ -425,14 +422,14 @@ public class SemaManager {
             // has been signaled during the callback execution.
             SceKernelSemaInfo sema = semaMap.get(wait.Semaphore_id);
             if (sema == null) {
-                thread.cpuContext.gpr[2] = ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
+                thread.cpuContext.gpr[_v0] = ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
                 return false;
             }
 
             // Check the sema.
             if (tryWaitSemaphore(sema, wait.Semaphore_signal)) {
                 sema.numWaitThreads--;
-                thread.cpuContext.gpr[2] = 0;
+                thread.cpuContext.gpr[_v0] = 0;
                 return false;
             }
 
