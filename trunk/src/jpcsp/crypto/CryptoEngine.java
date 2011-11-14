@@ -2091,17 +2091,6 @@ public class CryptoEngine {
         } else {
             hashBuf = hash;
         }
-
-        try {
-            java.io.RandomAccessFile r = new java.io.RandomAccessFile("res.bin", "rw");
-            r.write(resBuf);
-            r.close();
-            java.io.RandomAccessFile h = new java.io.RandomAccessFile("hash.bin", "rw");
-            h.write(hashBuf);
-            h.close();
-        } catch (Exception e) {
-            
-        }
                       
         // Compare the hashes.
         for (int i = 0; i < 0x10; i++) {
