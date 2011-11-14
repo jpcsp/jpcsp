@@ -168,6 +168,8 @@ public class CompilerContext implements ICompilerContext {
 	        addFastSyscall(0x34B9FA9E); // sceKernelDcacheWritebackInvalidateRangeFunction
 	        addFastSyscall(0xE47E40E4); // sceGeEdramGetAddrFunction
 	        addFastSyscall(0x1F6752AD); // sceGeEdramGetSizeFunction
+	        addFastSyscall(0x74AE582A); // __sceSasGetEnvelopeHeight
+	        addFastSyscall(0x68A46B95); // __sceSasGetEndFlag
         }
     }
 
@@ -422,8 +424,12 @@ public class CompilerContext implements ICompilerContext {
     }
 
     public void storeRegister(int reg, int constantValue) {
-    	loadGpr();
-    	loadImm(reg);
+    	if (preparedRegisterForStore == reg) {
+    		preparedRegisterForStore = -1;
+    	} else {
+    		loadGpr();
+    		loadImm(reg);
+    	}
     	loadImm(constantValue);
         mv.visitInsn(Opcodes.IASTORE);
     }
@@ -1755,11 +1761,21 @@ public class CompilerContext implements ICompilerContext {
 	}
 
 	@Override
+	public void storeRd(int constantValue) {
+		storeRegister(getRdRegisterIndex(), constantValue);
+	}
+
+	@Override
 	public void storeRt() {
 		storeRegister(getRtRegisterIndex());
 	}
 
-    @Override
+	@Override
+	public void storeRt(int constantValue) {
+		storeRegister(getRtRegisterIndex(), constantValue);
+	}
+
+	@Override
 	public boolean isRdRegister0() {
 		return getRdRegisterIndex() == _zr;
 	}
