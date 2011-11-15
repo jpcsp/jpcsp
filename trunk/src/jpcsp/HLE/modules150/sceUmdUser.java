@@ -20,24 +20,23 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CANCELLED
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_UMD;
-import static jpcsp.util.Utilities.readStringZ;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.TPointer;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 
 import jpcsp.Memory;
 import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
-import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.pspUmdInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -172,33 +171,22 @@ public class sceUmdUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x46EBB729, version = 150)
-    public void sceUmdCheckMedium(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        if(log.isDebugEnabled()) {
+    public boolean sceUmdCheckMedium() {
+        if (log.isDebugEnabled()) {
             log.debug("sceUmdCheckMedium (umd mounted = " + (iso != null) + ")");
         }
 
-        cpu.gpr[2] = (iso != null) ? 1 : 0;
+        return iso != null;
     }
 
-    @HLEFunction(nid = 0xC6183D47, version = 150)
-    public void sceUmdActivate(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mode = cpu.gpr[4];
-        String drive = readStringZ(cpu.gpr[5]);
-
-        if(log.isDebugEnabled()) {
+    @HLEFunction(nid = 0xC6183D47, version = 150, checkInsideInterrupt = true)
+    public int sceUmdActivate(int mode, TPointer driveAddr) {
+    	String drive = Utilities.readStringZ(driveAddr.getAddress());
+        if (log.isDebugEnabled()) {
             log.debug("sceUmdActivate mode = " + mode + " drive = " + drive);
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         umdActivated = true;
-        cpu.gpr[2] = 0;
 
         // Notify the callback.
         // The callback will be executed at the next sceXXXXCB() syscall.
@@ -211,48 +199,40 @@ public class sceUmdUser extends HLEModule {
     	Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, notifyArg);
 
     	checkWaitingThreads();
+
+    	return 0;
     }
 
-    @HLEFunction(nid = 0xE83742BA, version = 150)
-    public void sceUmdDeactivate(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mode = cpu.gpr[4];
-        String drive = readStringZ(cpu.gpr[5]);
-
-        if(log.isDebugEnabled()) {
+    @HLEFunction(nid = 0xE83742BA, version = 150, checkInsideInterrupt = true)
+    public int sceUmdDeactivate(int mode, TPointer driveAddr) {
+    	String drive = Utilities.readStringZ(driveAddr.getAddress());
+        if (log.isDebugEnabled()) {
             log.debug("sceUmdDeactivate mode = " + mode + " drive = " + drive);
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        // Trigger the callback only if the UMD was already activated
+        // Trigger the callback only if the UMD was already activated.
+        // The callback will be executed at the next sceXXXXCB() syscall.
         boolean triggerCallback = umdActivated;
         umdActivated = false;
         umdDeactivateCalled = true;
-        cpu.gpr[2] = 0;
         if (triggerCallback) {
-        	SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
-        	thread.doCallbacks = true;
-	        if (iso != null) {
-	        	Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, PSP_UMD_PRESENT | PSP_UMD_READY);
-	        } else {
-	        	Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, PSP_UMD_NOT_PRESENT | PSP_UMD_NOT_READY);
-	        }
-        	thread.doCallbacks = false;
+            int notifyArg;
+            if (iso != null) {
+            	notifyArg = PSP_UMD_PRESENT | PSP_UMD_READY;
+            } else {
+            	notifyArg = PSP_UMD_NOT_PRESENT | PSP_UMD_NOT_READY;
+            }
+        	Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, notifyArg);
         }
         checkWaitingThreads();
+
+        return 0;
     }
 
-    protected void hleUmdWaitDriveStat(Processor processor, int wantedStat, boolean doCallbacks, boolean doTimeout, int timeout) {
+    protected int hleUmdWaitDriveStat(int wantedStat, boolean doCallbacks, boolean doTimeout, int timeout) {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        CpuState cpu = processor.cpu;
 
-        if (checkDriveStat(wantedStat)) {
-            cpu.gpr[2] = 0;
-        } else {
+        if (!checkDriveStat(wantedStat)) {
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
             // Wait on a specific umdStat.
             currentThread.wait.wantedUmdStat = wantedStat;
@@ -260,66 +240,41 @@ public class sceUmdUser extends HLEModule {
             threadMan.hleKernelThreadEnterWaitState(currentThread, JPCSP_WAIT_UMD, -1, null, timeout, !doTimeout, doCallbacks);
         }
         threadMan.hleRescheduleCurrentThread(doCallbacks);
+
+        return 0;
     }
 
-    @HLEFunction(nid = 0x8EF08FCE, version = 150)
-    public void sceUmdWaitDriveStat(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int wantedStat = cpu.gpr[4];
-
-        if(log.isDebugEnabled()) {
+    @HLEFunction(nid = 0x8EF08FCE, version = 150, checkInsideInterrupt = true)
+    public int sceUmdWaitDriveStat(int wantedStat) {
+        if (log.isDebugEnabled()) {
             log.debug("sceUmdWaitDriveStat(stat=0x" + Integer.toHexString(wantedStat) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        hleUmdWaitDriveStat(processor, wantedStat, false, false, 0);
+        return hleUmdWaitDriveStat(wantedStat, false, false, 0);
     }
 
-    @HLEFunction(nid = 0x56202973, version = 150)
-    public void sceUmdWaitDriveStatWithTimer(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int wantedStat = cpu.gpr[4];
-        int timeout = cpu.gpr[5];
-
-        if(log.isDebugEnabled()) {
+    @HLEFunction(nid = 0x56202973, version = 150, checkInsideInterrupt = true)
+    public int sceUmdWaitDriveStatWithTimer(int wantedStat, int timeout) {
+        if (log.isDebugEnabled()) {
             log.debug("sceUmdWaitDriveStatWithTimer(stat=0x" + Integer.toHexString(wantedStat)
                     + ", timeout=" + timeout + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        hleUmdWaitDriveStat(processor, wantedStat, false, true, timeout);
+        return hleUmdWaitDriveStat(wantedStat, false, true, timeout);
     }
 
-    @HLEFunction(nid = 0x4A9E5E29, version = 150)
-    public void sceUmdWaitDriveStatCB(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int wantedStat = cpu.gpr[4];
-        int timeout = cpu.gpr[5];
-
-        if(log.isDebugEnabled()) {
+    @HLEFunction(nid = 0x4A9E5E29, version = 150, checkInsideInterrupt = true)
+    public int sceUmdWaitDriveStatCB(int wantedStat, int timeout) {
+        if (log.isDebugEnabled()) {
             log.debug("sceUmdWaitDriveStatCB(stat=0x" + Integer.toHexString(wantedStat)
                     + ",timeout=" + timeout + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        hleUmdWaitDriveStat(processor, wantedStat, true, true, timeout);
+        return hleUmdWaitDriveStat(wantedStat, true, true, timeout);
     }
 
     @HLEFunction(nid = 0x6AF9B50A, version = 150)
-    public void sceUmdCancelWaitDriveStat(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceUmdCancelWaitDriveStat() {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
         for (ListIterator<SceKernelThreadInfo> lit = waitingThreads.listIterator(); lit.hasNext();) {
@@ -337,95 +292,69 @@ public class sceUmdUser extends HLEModule {
                 threadMan.hleChangeThreadState(waitingThread, SceKernelThreadInfo.PSP_THREAD_READY);
             }
         }
-        cpu.gpr[2] = 0;
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x6B4A146C, version = 150)
-    public void sceUmdGetDriveStat(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        if(log.isDebugEnabled()) {
+    public int sceUmdGetDriveStat() {
+        if (log.isDebugEnabled()) {
             log.debug("sceUmdGetDriveStat - " + Integer.toHexString(getUmdStat()));
         }
 
-        cpu.gpr[2] = getUmdStat();
+        return getUmdStat();
     }
 
     @HLEFunction(nid = 0x20628E6F, version = 150)
-    public void sceUmdGetErrorStat(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        if(log.isDebugEnabled()) {
+    public int sceUmdGetErrorStat() {
+        if (log.isDebugEnabled()) {
             log.debug("sceUmdGetErrorStat - " + Integer.toHexString(getUmdErrorStat()));
         }
 
-        cpu.gpr[2] = getUmdErrorStat();
+        return getUmdErrorStat();
     }
 
-    @HLEFunction(nid = 0x340B7686, version = 150)
-    public void sceUmdGetDiscInfo(Processor processor) {
-        CpuState cpu = processor.cpu;
+    @HLEFunction(nid = 0x340B7686, version = 150, checkInsideInterrupt = true)
+    public int sceUmdGetDiscInfo(TPointer pspUmdInfoAddr) {
         Memory mem = Processor.memory;
 
-        int pspUmdInfoAddr = cpu.gpr[4];
-
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceUmdGetDiscInfo pspUmdInfoAddr=0x%08X", pspUmdInfoAddr));
+            log.debug(String.format("sceUmdGetDiscInfo pspUmdInfoAddr=0x%08X", pspUmdInfoAddr.getAddress()));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (Memory.isAddressGood(pspUmdInfoAddr)) {
-            pspUmdInfo umdInfo = new pspUmdInfo();
-            umdInfo.read(mem, pspUmdInfoAddr);
-            umdInfo.type = pspUmdInfo.PSP_UMD_TYPE_GAME;
-            umdInfo.write(mem);
-            cpu.gpr[2] = 0;
-        } else {
-            cpu.gpr[2] = -1;
-        }
+        pspUmdInfo umdInfo = new pspUmdInfo();
+        umdInfo.read(mem, pspUmdInfoAddr.getAddress());
+        umdInfo.type = pspUmdInfo.PSP_UMD_TYPE_GAME;
+        umdInfo.write(mem);
+
+        return 0;
     }
 
-    @HLEFunction(nid = 0xAEE7404D, version = 150)
-    public void sceUmdRegisterUMDCallBack(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int uid = cpu.gpr[4];
-
+    @HLEFunction(nid = 0xAEE7404D, version = 150, checkInsideInterrupt = true)
+    public int sceUmdRegisterUMDCallBack(int uid) {
         if (log.isDebugEnabled()) {
             log.debug("sceUmdRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        if (threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, uid)) {
-            cpu.gpr[2] = 0;
-        } else {
-            cpu.gpr[2] = -1;
+        if (!threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, uid)) {
+            return -1;
         }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xBD2BDE07, version = 150)
-    public void sceUmdUnRegisterUMDCallBack(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int uid = cpu.gpr[4];
-
+    public int sceUmdUnRegisterUMDCallBack(int uid) {
         if (log.isDebugEnabled()) {
             log.debug("sceUmdUnRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));
         }
 
         SceKernelCallbackInfo info = Modules.ThreadManForUserModule.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, uid);
-        if (info != null) {
-            cpu.gpr[2] = 0;
-        } else {
-            cpu.gpr[2] = -1;
+        if (info == null) {
+        	return -1;
         }
-    }
 
+        return 0;
+    }
 }
