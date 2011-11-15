@@ -1804,8 +1804,11 @@ public class ThreadManForUser extends HLEModule {
                     log.debug(String.format("Entering callback type %d %s for thread %s (current thread is %s)", i, thread.callbackInfo[i].toString(), thread.toString(), currentThread.toString()));
                 }
 
+                // Prohibit the execution of a new callback while we are inside a callback.
+                thread.doCallbacks = false;
                 thread.callbackReady[i] = false;
                 thread.callbackInfo[i].startContext(thread, null);
+                thread.doCallbacks = true;
                 handled = true;
                 break;
             }
