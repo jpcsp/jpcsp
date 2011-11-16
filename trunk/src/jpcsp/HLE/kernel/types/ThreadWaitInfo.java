@@ -122,4 +122,9 @@ public class ThreadWaitInfo {
 
         onUnblockAction = that.onUnblockAction;
     }
+
+	@Override
+	public String toString() {
+		return SceKernelThreadInfo.getWaitName(0, this, SceKernelThreadInfo.PSP_THREAD_WAITING);
+	}
 }
