@@ -482,6 +482,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         s.append("(");
         s.append("Status " + getStatusName());
         s.append(", Wait " + getWaitName());
+        s.append(", doCallbacks " + doCallbacks);
         s.append(")");
 
         return s.toString();

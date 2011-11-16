@@ -210,6 +210,7 @@ public class ThreadManForUser extends HLEModule {
     protected Map<Integer, SceKernelVTimerInfo> vtimers;
     protected boolean needThreadReschedule;
     protected WaitThreadEndWaitStateChecker waitThreadEndWaitStateChecker;
+    protected TimeoutThreadWaitStateChecker timeoutThreadWaitStateChecker;
 
 	private class EnableThreadBanningSettingsListerner extends AbstractBoolSettingsListener {
 		@Override
@@ -250,6 +251,7 @@ public class ThreadManForUser extends HLEModule {
 		}
 
 		waitThreadEndWaitStateChecker = new WaitThreadEndWaitStateChecker();
+		timeoutThreadWaitStateChecker = new TimeoutThreadWaitStateChecker();
 
 		setSettingsListener("emu.ignoreaudiothreads", new EnableThreadBanningSettingsListerner());
 
@@ -495,7 +497,7 @@ public class ThreadManForUser extends HLEModule {
             // restore registers
             newThread.restoreContext();
 
-            if (LOG_CONTEXT_SWITCHING && Modules.log.isDebugEnabled() && !isIdleThread(newThread)) {
+            if (LOG_CONTEXT_SWITCHING && log.isDebugEnabled() && !isIdleThread(newThread)) {
                 log.debug("---------------------------------------- SceUID=" + Integer.toHexString(newThread.uid) + " name:'" + newThread.name + "'");
             }
         } else {
@@ -1124,9 +1126,10 @@ public class ThreadManForUser extends HLEModule {
             thread.waitType = PSP_WAIT_NONE;
             thread.wait.waitTimeoutAction = null;
             thread.wait.waitStateChecker = null;
+            thread.doCallbacks = false;
         } else if (thread.isRunning()) {
             // debug
-            if (thread.waitType != PSP_WAIT_NONE) {
+            if (thread.waitType != PSP_WAIT_NONE && !isIdleThread(thread)) {
                 log.error("changeThreadState thread '" + thread.name + "' => PSP_THREAD_RUNNING. waitType should be PSP_WAIT_NONE. caller:" + getCallingFunction());
             }
         }
@@ -1623,6 +1626,7 @@ public class ThreadManForUser extends HLEModule {
             long longMicros = ((long) micros) & 0xFFFFFFFFL;
             thread.wait.microTimeTimeout = Emulator.getClock().microTime() + longMicros;
             thread.wait.waitTimeoutAction = new TimeoutThreadAction(thread);
+            thread.wait.waitStateChecker = timeoutThreadWaitStateChecker;
         }
 
         if (LOG_CONTEXT_SWITCHING && Modules.log.isDebugEnabled() && !isIdleThread(thread)) {
@@ -1804,11 +1808,8 @@ public class ThreadManForUser extends HLEModule {
                     log.debug(String.format("Entering callback type %d %s for thread %s (current thread is %s)", i, thread.callbackInfo[i].toString(), thread.toString(), currentThread.toString()));
                 }
 
-                // Prohibit the execution of a new callback while we are inside a callback.
-                thread.doCallbacks = false;
                 thread.callbackReady[i] = false;
                 thread.callbackInfo[i].startContext(thread, null);
-                thread.doCallbacks = true;
                 handled = true;
                 break;
             }
@@ -1941,7 +1942,7 @@ public class ThreadManForUser extends HLEModule {
      * It is probably unsafe to call contextSwitch() when insideCallback is true.
      * insideCallback may become true after a call to checkCallbacks().
      */
-    private void checkCallbacks() {
+    public void checkCallbacks() {
         if (log.isTraceEnabled()) {
             log.trace("checkCallbacks current thread is '" + currentThread.name + "' doCallbacks:" + currentThread.doCallbacks + " caller:" + getCallingFunction());
         }
@@ -4198,8 +4199,11 @@ public class ThreadManForUser extends HLEModule {
             }
 
             if (restoreWaitState) {
+            	if (status == PSP_THREAD_RUNNING) {
+            		doCallback = false;
+            	}
                 if (log.isDebugEnabled()) {
-                    log.debug(String.format("AfterCallAction: restoring wait state for thread '%s' to %s, %s", thread.toString(), SceKernelThreadInfo.getStatusName(status), SceKernelThreadInfo.getWaitName(waitType, threadWaitInfo, status)));
+                    log.debug(String.format("AfterCallAction: restoring wait state for thread '%s' to %s, %s, doCallbacks %b", thread.toString(), SceKernelThreadInfo.getStatusName(status), SceKernelThreadInfo.getWaitName(waitType, threadWaitInfo, status), doCallback));
                 }
 
                 // Restore the wait state of the thread
@@ -4222,7 +4226,8 @@ public class ThreadManForUser extends HLEModule {
                 doCallback = false;
             }
 
-            hleRescheduleCurrentThread(doCallback);
+        	thread.doCallbacks = doCallback;
+            hleRescheduleCurrentThread();
 
             if (afterAction != null) {
                 afterAction.execute();
@@ -4242,6 +4247,29 @@ public class ThreadManForUser extends HLEModule {
         public void execute() {
             hleThreadWaitTimeout(thread);
         }
+    }
+
+    public class TimeoutThreadWaitStateChecker implements IWaitStateChecker {
+		@Override
+		public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
+			// Waiting forever?
+			if (wait.forever) {
+				return true;
+			}
+
+			if (wait.microTimeTimeout <= Emulator.getClock().microTime()) {
+				hleThreadWaitTimeout(thread);
+				return false;
+			}
+
+			// The waitTimeoutAction has been deleted by hleChangeThreadState while
+			// leaving the WAIT state. It has to be restored.
+			if (wait.waitTimeoutAction == null) {
+				wait.waitTimeoutAction = new TimeoutThreadAction(thread);
+			}
+
+			return true;
+		}
     }
 
     public class DeleteThreadAction implements IAction {

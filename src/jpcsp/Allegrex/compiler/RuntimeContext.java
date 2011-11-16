@@ -468,6 +468,7 @@ public class RuntimeContext {
                 checkPendingCallbacks();
                 scheduler.step();
                 if (threadMan.isIdleThread(threadMan.getCurrentThread())) {
+                	threadMan.checkCallbacks();
                 	threadMan.hleRescheduleCurrentThread();
                 }
 
