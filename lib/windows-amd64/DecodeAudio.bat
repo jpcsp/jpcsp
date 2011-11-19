@@ -1,2 +1,2 @@
 @echo off
-lib\windows-x86\HIMDRender.exe -e -i %1 -o %2
+lib\windows-amd64\HIMDRender.exe -e -i %1 -o %2

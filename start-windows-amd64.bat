@@ -1,4 +1,6 @@
 @echo off
+set PATH=%PATH%;lib\;lib\windows-amd64\
+
 if NOT EXIST "%SystemRoot%\SysWOW64" goto JAVA32
 
 if "%ProgramFiles%" == "%ProgramFiles(x86)%" goto JAVA32SHELL
