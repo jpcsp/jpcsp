@@ -3152,15 +3152,16 @@ public class IoFileMgrForUser extends HLEModule {
                     cpu.gpr[2] = ERROR_KERNEL_UNSUPPORTED_OPERATION;
                 } else if (Memory.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
-                    if (threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid)) {
-                        // Trigger callback immediately.
-                        threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, MemoryStick.getStateMs());
+                    final int callbackType = SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK;
+                    if (threadMan.hleKernelRegisterCallback(callbackType, cbid)) {
+                        // Trigger the registered callback immediately.
+                        threadMan.hleKernelNotifyCallback(callbackType, cbid, MemoryStick.getStateMs());
                         cpu.gpr[2] = 0; // Success.
                     } else {
-                        cpu.gpr[2] = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS; // No such callback.
+                        cpu.gpr[2] = SceKernelErrors.ERROR_MEMSTICK_DEVCTL_TOO_MANY_CALLBACKS;
                     }
                 } else {
-                    cpu.gpr[2] = -1; // Invalid parameters.
+                    cpu.gpr[2] = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
                 }
                 break;
             }
@@ -3205,12 +3206,17 @@ public class IoFileMgrForUser extends HLEModule {
                     cpu.gpr[2] = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
                 } else if (Memory.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
-                    threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid);
-                    // Trigger callback immediately
-                    threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, MemoryStick.getStateFatMs());
-                    cpu.gpr[2] = 0;  // Success.
+                    final int callbackType = SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK_FAT;
+                    if (threadMan.hleKernelRegisterCallback(callbackType, cbid)) {
+                        // Trigger the registered callback immediately.
+                    	// Only trigger this one callback, not all the MS callbacks.
+                        threadMan.hleKernelNotifyCallback(callbackType, cbid, MemoryStick.getStateFatMs());
+                        cpu.gpr[2] = 0;  // Success.
+                    } else {
+                    	cpu.gpr[2] = SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
+                    }
                 } else {
-                    cpu.gpr[2] = -1; // Invalid parameters.
+                    cpu.gpr[2] = SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
                 }
                 break;
             }
@@ -3222,10 +3228,10 @@ public class IoFileMgrForUser extends HLEModule {
                     cpu.gpr[2] = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
                 } else if (Memory.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
-                    threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid);
+                    threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK_FAT, cbid);
                     cpu.gpr[2] = 0;  // Success.
                 } else {
-                    cpu.gpr[2] = -1; // Invalid parameters.
+                    cpu.gpr[2] = SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
                 }
                 break;
             }
