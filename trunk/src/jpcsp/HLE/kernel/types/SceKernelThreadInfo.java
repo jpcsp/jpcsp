@@ -24,6 +24,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_ALREADY
 
 import java.util.Comparator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 
 import jpcsp.Emulator;
@@ -122,16 +123,108 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public final static int THREAD_CALLBACK_UMD = 0;
     public final static int THREAD_CALLBACK_IO = 1;
     public final static int THREAD_CALLBACK_MEMORYSTICK = 2;
-    public final static int THREAD_CALLBACK_POWER = 3;
-    public final static int THREAD_CALLBACK_EXIT = 4;
-    public final static int THREAD_CALLBACK_USER_DEFINED = 5;
-    public final static int THREAD_CALLBACK_SIZE = 6;
-    public boolean[] callbackRegistered;
-    public boolean[] callbackReady;
-    public SceKernelCallbackInfo[] callbackInfo;
+    public final static int THREAD_CALLBACK_MEMORYSTICK_FAT = 3;
+    public final static int THREAD_CALLBACK_POWER = 4;
+    public final static int THREAD_CALLBACK_EXIT = 5;
+    public final static int THREAD_CALLBACK_USER_DEFINED = 6;
+    public final static int THREAD_CALLBACK_SIZE = 7;
+    private RegisteredCallbacks[] registeredCallbacks;
     public Queue<Callback> pendingCallbacks = new LinkedList<Callback>();
     // Used by sceKernelExtendThreadStack
     private SysMemInfo extendedStackSysMemInfo;
+
+    public static class RegisteredCallbacks {
+    	private int type;
+    	private List<SceKernelCallbackInfo> callbacks;
+    	private List<SceKernelCallbackInfo> readyCallbacks;
+    	// THREAD_CALLBACK_MEMORYSTICK and THREAD_CALLBACK_MEMORYSTICK_FAT have
+    	// a maximum of 32 registered callbacks each.
+    	// Don't know yet for the other types, assuming also 32.
+    	private int maxNumberOfCallbacks = 32;
+
+    	public RegisteredCallbacks(int type) {
+    		this.type = type;
+    		callbacks = new LinkedList<SceKernelCallbackInfo>();
+    		readyCallbacks = new LinkedList<SceKernelCallbackInfo>();
+    	}
+
+		public boolean hasCallbacks() {
+			return !callbacks.isEmpty();
+		}
+
+		public SceKernelCallbackInfo getCallbackByUid(int cbid) {
+    		for (SceKernelCallbackInfo callback : callbacks) {
+    			if (callback.uid == cbid) {
+    				return callback;
+    			}
+    		}
+
+    		return null;
+		}
+
+		public boolean hasCallback(int cbid) {
+			return getCallbackByUid(cbid) != null;
+    	}
+
+		public boolean hasCallback(SceKernelCallbackInfo callback) {
+			return callbacks.contains(callback);
+		}
+
+		public boolean addCallback(SceKernelCallbackInfo callback) {
+			if (hasCallback(callback)) {
+				return true;
+			}
+
+			if (getNumberOfCallbacks() >= maxNumberOfCallbacks) {
+				return false;
+			}
+
+			callbacks.add(callback);
+
+			return true;
+		}
+
+    	public void setCallbackReady(SceKernelCallbackInfo callback) {
+    		if (hasCallback(callback) && !isCallbackReady(callback)) {
+				readyCallbacks.add(callback);
+    		}
+    	}
+
+    	public boolean isCallbackReady(SceKernelCallbackInfo callback) {
+    		return readyCallbacks.contains(callback);
+    	}
+
+    	public SceKernelCallbackInfo removeCallback(SceKernelCallbackInfo callback) {
+    		if (!callbacks.remove(callback)) {
+    			return null;
+    		}
+
+    		readyCallbacks.remove(callback);
+
+    		return callback;
+    	}
+
+    	public SceKernelCallbackInfo getNextReadyCallback() {
+    		if (readyCallbacks.isEmpty()) {
+    			return null;
+    		}
+
+    		return readyCallbacks.remove(0);
+    	}
+
+    	public int getNumberOfCallbacks() {
+    		return callbacks.size();
+    	}
+
+    	public SceKernelCallbackInfo getCallbackByIndex(int index) {
+    		return callbacks.get(index);
+    	}
+
+    	@Override
+		public String toString() {
+			return String.format("RegisteredCallbacks[type %d, count %d, ready %d]", type, callbacks.size(), readyCallbacks.size());
+		}
+    }
 
     public SceKernelThreadInfo(String name, int entry_addr, int initPriority, int stackSize, int attr) {
         if (stackSize < 512) {
@@ -211,13 +304,9 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         doDelete = false;
         doCallbacks = false;
 
-        callbackRegistered = new boolean[THREAD_CALLBACK_SIZE];
-        callbackReady = new boolean[THREAD_CALLBACK_SIZE];
-        callbackInfo = new SceKernelCallbackInfo[THREAD_CALLBACK_SIZE];
-        for (int i = 0; i < THREAD_CALLBACK_SIZE; i++) {
-            callbackRegistered[i] = false;
-            callbackReady[i] = false;
-            callbackInfo[i] = null;
+        registeredCallbacks = new RegisteredCallbacks[THREAD_CALLBACK_SIZE];
+        for (int i = 0; i < registeredCallbacks.length; i++) {
+        	registeredCallbacks[i] = new RegisteredCallbacks(i);
         }
     }
 
@@ -472,6 +561,10 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 
     public boolean isUserMode() {
     	return isUserMode(attr);
+    }
+
+    public RegisteredCallbacks getRegisteredCallbacks(int type) {
+    	return registeredCallbacks[type];
     }
 
     @Override

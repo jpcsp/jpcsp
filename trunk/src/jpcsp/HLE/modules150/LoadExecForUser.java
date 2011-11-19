@@ -16,22 +16,23 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_LOADEXEC_FILENAME;
 import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
 import jpcsp.Loader;
-import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.compiler.RuntimeContext;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModule;
@@ -49,43 +50,26 @@ public class LoadExecForUser extends HLEModule {
         return "LoadExecForUser";
     }
 
-    private SceKernelThreadInfo exitCbThread;
-
     public void triggerExitCallback() {
-        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        if (exitCbThread != null) {
-            threadMan.executeCallback(exitCbThread, exitCbThread.callbackInfo[SceKernelThreadInfo.THREAD_CALLBACK_EXIT].callback_addr, null, true, 0);
-        } else {
-            log.warn("No EXIT callback has been registered!");
-        }
+        Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_EXIT, 0);
     }
 
-    @HLEFunction(nid = 0xBD2F1094, version = 150)
-    public void sceKernelLoadExec(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
+    @HLEFunction(nid = 0xBD2F1094, version = 150, checkInsideInterrupt = true)
+    public int sceKernelLoadExec(TPointer filename_addr, @CanBeNull TPointer32 option_addr) {
+        String name = Utilities.readStringZ(filename_addr.getAddress());
 
-        int filename_addr = cpu.gpr[4];
-        int option_addr = cpu.gpr[5];
-
-        String name = Utilities.readStringZ(filename_addr);
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelLoadExec file='%s' optionAddr=0x%08X", name, option_addr));
+        	log.debug(String.format("sceKernelLoadExec file='%s' optionAddr=%s", name, option_addr));
         }
 
         // Flush system memory to mimic a real PSP reset.
         Modules.SysMemUserForUserModule.reset();
 
-        if (option_addr != 0) {
-            int optSize = mem.read32(option_addr);       // Size of the option struct.
-            int argSize = mem.read32(option_addr + 4);   // Number of args (strings).
-            int argAddr = mem.read32(option_addr + 8);   // Pointer to a list of strings.
-            int keyAddr = mem.read32(option_addr + 12);  // Pointer to an encryption key (may not be used).
+        if (option_addr.isAddressGood()) {
+            int optSize = option_addr.getValue(0);   // Size of the option struct.
+            int argSize = option_addr.getValue(4);   // Number of args (strings).
+            int argAddr = option_addr.getValue(8);   // Pointer to a list of strings.
+            int keyAddr = option_addr.getValue(12);  // Pointer to an encryption key (may not be used).
 
             if (log.isDebugEnabled()) {
             	log.debug(String.format("sceKernelLoadExec params: optSize=%d, argSize=%d, argAddr=0x%08X, keyAddr=0x%08X", optSize, argSize, argAddr, keyAddr));
@@ -97,76 +81,54 @@ public class LoadExecForUser extends HLEModule {
             if (moduleInput != null) {
                 byte[] moduleBytes = new byte[(int) moduleInput.length()];
                 moduleInput.readFully(moduleBytes);
+                moduleInput.close();
                 ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
 
                 SceModule module = Emulator.getInstance().load(name, moduleBuffer, true);
                 Emulator.getClock().resume();
 
-                if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
-                    cpu.gpr[2] = 0;
-                } else {
+                if ((module.fileFormat & Loader.FORMAT_ELF) != Loader.FORMAT_ELF) {
                     log.warn("sceKernelLoadExec - failed, target is not an ELF");
-                    cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_LOADEXEC_FILENAME;
+                    throw new SceKernelErrorException(ERROR_KERNEL_ILLEGAL_LOADEXEC_FILENAME);
                 }
-                moduleInput.close();
             }
         } catch (GeneralJpcspException e) {
             log.error("General Error : " + e.getMessage());
             Emulator.PauseEmu();
         } catch (IOException e) {
             log.error("sceKernelLoadExec - Error while loading module " + name + ": " + e.getMessage());
-            cpu.gpr[2] = ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
+            throw new SceKernelErrorException(ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE);
         }
+
+        return 0;
     }
 
-    @HLEFunction(nid = 0x2AC9954B, version = 150)
-    public void sceKernelExitGameWithStatus(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int status = cpu.gpr[4];
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+    @HLEFunction(nid = 0x2AC9954B, version = 150, checkInsideInterrupt = true)
+    public int sceKernelExitGameWithStatus(int status) {
         log.info("Program exit detected with status=" + status + " (sceKernelExitGameWithStatus)");
         Emulator.PauseEmuWithStatus(status);
         RuntimeContext.reset();
         Modules.ThreadManForUserModule.stop();
+
+        return 0;
     }
 
-    @HLEFunction(nid = 0x05572A5F, version = 150)
-    public void sceKernelExitGame(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+    @HLEFunction(nid = 0x05572A5F, version = 150, checkInsideInterrupt = true)
+    public int sceKernelExitGame(Processor processor) {
         log.info("Program exit detected (sceKernelExitGame)");
         Emulator.PauseEmu();
         RuntimeContext.reset();
         Modules.ThreadManForUserModule.stop();
+
+        return 0;
     }
 
-    @HLEFunction(nid = 0x4AC57943, version = 150)
-    public void sceKernelRegisterExitCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int uid = cpu.gpr[4];
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-
+    @HLEFunction(nid = 0x4AC57943, version = 150, checkInsideInterrupt = true)
+    public int sceKernelRegisterExitCallback(int uid) {
         log.info("sceKernelRegisterExitCallback SceUID=" + Integer.toHexString(uid));
 
-        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_EXIT, uid);
-        exitCbThread = threadMan.getCurrentThread();
+        Modules.ThreadManForUserModule.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_EXIT, uid);
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
-
 }
