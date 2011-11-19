@@ -167,6 +167,70 @@ void testIoIoctl()
 }
 
 
+int msCallback(int arg1, int arg2, void *common)
+{
+	pspDebugScreenPrintf("msCallback: 0x%08X 0x%08X 0x%08X\n", arg1, arg2, (int) common);
+	return 0;
+}
+
+int msCallbackIndex = 0;
+
+void testFatMsCallback()
+{
+	int result;
+	int cbid1 = sceKernelCreateCallback("MS Callback 1", msCallback, (void*) (0x11111100 + msCallbackIndex++));
+	if (cbid1 < 0)
+	{
+		pspDebugScreenPrintf("sceKernelCreateCallback: 0x%08X\n", cbid1);
+		return;
+	}
+	int cbid2 = sceKernelCreateCallback("MS Callback 2", msCallback, (void*) (0x22222200 + msCallbackIndex++));
+	if (cbid2 < 0)
+	{
+		pspDebugScreenPrintf("sceKernelCreateCallback: 0x%08X\n", cbid2);
+		return;
+	}
+
+	result = sceIoDevctl("fatms0:", 0x02415821, &cbid1, sizeof(cbid1), NULL, 0);
+	pspDebugScreenPrintf("Register msCallback 1: 0x%08X\n", result);
+
+	sceKernelDelayThreadCB(100000);
+
+	result = sceIoDevctl("fatms0:", 0x02415821, &cbid2, sizeof(cbid2), NULL, 0);
+	pspDebugScreenPrintf("Register msCallback 2: 0x%08X\n", result);
+
+	sceKernelDelayThreadCB(100000);
+}
+
+void testStateMsCallback()
+{
+	int result;
+	int cbid1 = sceKernelCreateCallback("MS Callback 1", msCallback, (void*) (0x33333300 + msCallbackIndex++));
+	if (cbid1 < 0)
+	{
+		pspDebugScreenPrintf("sceKernelCreateCallback: 0x%08X\n", cbid1);
+		return;
+	}
+	int cbid2 = sceKernelCreateCallback("MS Callback 2", msCallback, (void*) (0x44444400 + msCallbackIndex++));
+	if (cbid2 < 0)
+	{
+		pspDebugScreenPrintf("sceKernelCreateCallback: 0x%08X\n", cbid2);
+		return;
+	}
+
+	result = sceIoDevctl("mscmhc0:", 0x02015804, &cbid1, sizeof(cbid1), NULL, 0);
+	pspDebugScreenPrintf("Register msCallback 1: 0x%08X\n", result);
+
+	sceKernelDelayThreadCB(100000);
+
+	result = sceIoDevctl("mscmhc0:", 0x02015804, &cbid2, sizeof(cbid2), NULL, 0);
+	pspDebugScreenPrintf("Register msCallback 2: 0x%08X\n", result);
+
+	sceKernelDelayThreadCB(100000);
+}
+
+
+
 int main(int argc, char *argv[])
 {
 	SceCtrlData pad;
@@ -185,6 +249,8 @@ int main(int argc, char *argv[])
 	pspDebugScreenInit();
 	pspDebugScreenPrintf("Press Cross to start the sceIoDevctl Test\n");
 	pspDebugScreenPrintf("Press Circle to start the sceIoIoctl Test\n");
+	pspDebugScreenPrintf("Press Square to start the fatms0 MemoryStick Callback Test\n");
+	pspDebugScreenPrintf("Press Left to start the mscmhc0 MemoryStick Callback Test\n");
 
 	while(!done)
 	{
@@ -242,10 +308,22 @@ int main(int argc, char *argv[])
 			testIoIoctl();
 		}
 
+		if (buttonDown & PSP_CTRL_SQUARE)
+		{
+			testFatMsCallback();
+		}
+
+		if (buttonDown & PSP_CTRL_LEFT)
+		{
+			testStateMsCallback();
+		}
+
 		if (buttonDown & PSP_CTRL_TRIANGLE)
 		{
 			done = 1;
 		}
+
+		sceKernelDelayThreadCB(5000);
 
 		oldButtons = pad.Buttons;
 	}
