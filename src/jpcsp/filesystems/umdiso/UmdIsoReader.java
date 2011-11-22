@@ -343,6 +343,7 @@ public class UmdIsoReader {
         } else if (filePath != null && filePath.length() == 0) {
         	fileStart = 0;
         	fileLength = numSectors * sectorLength;
+                timestamp = new Date();
         } else {
             Iso9660File info = getFileEntry(filePath);
 	        if (info != null) {
