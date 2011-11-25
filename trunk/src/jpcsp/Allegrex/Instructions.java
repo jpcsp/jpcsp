@@ -760,6 +760,9 @@ public void compile(ICompilerContext context, int insn) {
 		int imm = context.getImm16(true);
 		if (context.isRsRegister0()) {
 			context.storeRt(imm);
+		} else if (imm == 0 && context.getRsRegisterIndex() == context.getRtRegisterIndex()) {
+			// Incrementing a register by 0 is a No-OP:
+			// ADDIU $reg, $reg, 0
 		} else {
 			context.prepareRtForStore();
 			context.loadRs();
@@ -973,6 +976,9 @@ public void compile(ICompilerContext context, int insn) {
 		int imm = context.getImm16(false);
 		if (context.isRsRegister0()) {
 			context.storeRt(imm);
+		} else if (imm == 0 && context.getRsRegisterIndex() == context.getRtRegisterIndex()) {
+			// Or-ing a register with 0 and himself is a No-OP:
+			// ORI $reg, $reg, 0
 		} else {
 			context.prepareRtForStore();
 			context.loadRs();
@@ -1015,6 +1021,10 @@ public void interpret(Processor processor, int insn) {
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
 		if (context.isRsRegister0() && context.isRtRegister0()) {
+			context.storeRd(0);
+		} else if (context.getRtRegisterIndex() == context.getRsRegisterIndex()) {
+			// XOR-ing a register with himself is equivalent to setting to 0.
+			// XOR $rd, $rs, $rs
 			context.storeRd(0);
 		} else {
 			context.prepareRdForStore();
@@ -1064,6 +1074,9 @@ public void compile(ICompilerContext context, int insn) {
 		int imm = context.getImm16(false);
 		if (context.isRsRegister0()) {
 			context.storeRt(imm);
+		} else if (imm == 0 && context.getRtRegisterIndex() == context.getRsRegisterIndex()) {
+			// XOR-ing a register with 0 and storing the result in the same register is a No-OP.
+			// XORI $reg, $reg, 0
 		} else {
 			context.prepareRtForStore();
 			context.loadRs();
