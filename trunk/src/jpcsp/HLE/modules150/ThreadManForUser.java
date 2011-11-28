@@ -1977,6 +1977,7 @@ public class ThreadManForUser extends HLEModule {
         }
 
         boolean handled;
+        SceKernelThreadInfo checkCurrentThread = currentThread;
         do {
             handled = false;
             for (SceKernelThreadInfo thread : threadMap.values()) {
@@ -1985,7 +1986,9 @@ public class ThreadManForUser extends HLEModule {
                     break;
                 }
             }
-        } while (handled);
+            // Continue until there is no more callback to be executed or
+            // we have switched to another thread.
+        } while (handled && checkCurrentThread == currentThread);
     }
 
     @HLEFunction(nid = 0x6E9EA350, version = 150)
