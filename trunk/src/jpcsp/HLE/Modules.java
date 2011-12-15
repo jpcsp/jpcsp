@@ -62,6 +62,7 @@ import jpcsp.HLE.modules.sceNpAuth;
 import jpcsp.HLE.modules.sceNpService;
 import jpcsp.HLE.modules.sceOpenPSID;
 import jpcsp.HLE.modules.sceP3da;
+import jpcsp.HLE.modules.scePauth;
 import jpcsp.HLE.modules.scePower;
 import jpcsp.HLE.modules.scePsmf;
 import jpcsp.HLE.modules.scePsmfPlayer;
@@ -143,6 +144,7 @@ public class Modules {
     public static sceHeap sceHeapModule = new sceHeap();
     public static KDebugForKernel KDebugForKernelModule = new KDebugForKernel();
     public static sceCcc sceCccModule = new sceCcc();
+    public static scePauth scePauthModule = new scePauth();
 
     public static Logger log = Logger.getLogger("hle");
 
