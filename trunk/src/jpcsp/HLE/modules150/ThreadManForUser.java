@@ -1550,21 +1550,16 @@ public class ThreadManForUser extends HLEModule {
         }
     }
 
-    public void hleKernelSleepThread(boolean doCallbacks) {
+    public int hleKernelSleepThread(boolean doCallbacks) {
         if (currentThread.wakeupCount > 0) {
             // sceKernelWakeupThread() has been called before, do not sleep
             currentThread.wakeupCount--;
-            Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
-            // Go to wait state
-            // wait type
-            currentThread.waitType = PSP_WAIT_SLEEP;
-            // Wait forever (another thread will call sceKernelWakeupThread)
-            hleKernelThreadWait(currentThread, 0, true);
-            hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
-            Emulator.getProcessor().cpu.gpr[2] = 0;
-            hleRescheduleCurrentThread(doCallbacks);
+            // Go to wait state and wait forever (another thread will call sceKernelWakeupThread)
+        	hleKernelThreadEnterWaitState(PSP_WAIT_SLEEP, 0, null, doCallbacks);
         }
+
+        return 0;
     }
 
     public void hleKernelWakeupThread(SceKernelThreadInfo thread) {
@@ -2253,9 +2248,7 @@ public class ThreadManForUser extends HLEModule {
             log.debug("sceKernelSleepThread SceUID=" + Integer.toHexString(currentThread.uid) + " name:'" + currentThread.name + "'");
         }
 
-        hleKernelSleepThread(false);
-
-        return 0;
+        return hleKernelSleepThread(false);
     }
 
     /** sleep the current thread and handle callbacks (using wait)
@@ -2266,10 +2259,10 @@ public class ThreadManForUser extends HLEModule {
             log.debug("sceKernelSleepThreadCB SceUID=" + Integer.toHexString(currentThread.uid) + " name:'" + currentThread.name + "'");
         }
 
-        hleKernelSleepThread(true);
+        int result = hleKernelSleepThread(true);
         checkCallbacks();
 
-        return 0;
+        return result;
     }
 
     @HLEFunction(nid = 0xD59EAD2F, version = 150)

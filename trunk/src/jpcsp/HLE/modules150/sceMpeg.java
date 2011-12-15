@@ -230,6 +230,7 @@ public class sceMpeg extends HLEModule {
 
     	public void release() {
     		SceUidManager.releaseId(uid, streamPurpose);
+    		streamMap.remove(uid);
     		uid = -1;
     		type = -1;
     	}
@@ -731,6 +732,7 @@ public class sceMpeg extends HLEModule {
 	                    log.warn("sceMpegUnRegistStream unknown stream=0x" + Integer.toHexString(streamUid));
 	                    break;
 	            }
+	            info.release();
         	} else {
                 log.warn("sceMpegUnRegistStream unknown stream=0x" + Integer.toHexString(streamUid));
         	}

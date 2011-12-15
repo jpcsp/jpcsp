@@ -816,11 +816,17 @@ public class sceFont extends HLEModule {
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceFontDoneLib fontLib=%s", fontLib));
         }
-        // Free all reserved font lib space and close all open font files.
-        fontLib.triggerFreeCallback();
-        fontLib.triggerCloseCallback();
-        fontLib.closeAllFonts();
-        HLEUidObjectMapping.removeObject(fontLib);
+        if (fontLib != null) {
+	        // Free all reserved font lib space and close all open font files.
+	        fontLib.triggerFreeCallback();
+	        fontLib.triggerCloseCallback();
+	        fontLib.closeAllFonts();
+	        HLEUidObjectMapping.removeObject(fontLib);
+        } else {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceFontDoneLib font lib already done 0x%08X", fontLibHandle));
+        	}
+        }
         return 0;
     }
 

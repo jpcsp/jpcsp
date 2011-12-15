@@ -183,7 +183,12 @@ public class ExternalDecoder {
     	}
 
     	MpegDemux mpegDemux = new MpegDemux(mpegData, mpegOffset);
-		mpegDemux.demux(false, true);
+    	try {
+    		mpegDemux.demux(false, true);
+		} catch (OutOfMemoryError e) {
+			log.error(String.format("Error '%s' while decoding external audio file (mpegFileSize=%d)", e.toString(), mpegFileSize));
+			return false;
+		}
 
 		ByteBuffer audioStream = mpegDemux.getAudioStream();
 		if (audioStream == null) {

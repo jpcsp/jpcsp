@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules630;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.hardware.Model;
 
 public class scePower extends jpcsp.HLE.modules150.scePower {
 
@@ -32,5 +33,19 @@ public class scePower extends jpcsp.HLE.modules150.scePower {
         }
 
         return 0;
+    }
+
+	@HLEFunction(nid = 0xA85880D0, version = 630)
+    public boolean scePower_A85880D0() {
+		int model = Model.getModel();
+
+		// Returning 0 for a PSP fat, 1 otherwise
+		boolean result = model != Model.MODEL_PSP_FAT;
+
+		if (log.isDebugEnabled()) {
+        	log.debug(String.format("scePower_A85880D0 returning %b", result));
+        }
+
+        return result;
     }
 }
