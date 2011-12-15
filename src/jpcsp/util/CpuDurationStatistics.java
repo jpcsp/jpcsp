@@ -87,9 +87,9 @@ public class CpuDurationStatistics extends DurationStatistics {
     {
     	if (o instanceof CpuDurationStatistics) {
         	CpuDurationStatistics cpuDurationStatistics = (CpuDurationStatistics) o;
-            if (cpuDurationStatistics.cumulatedCpuTimeNanos < cpuDurationStatistics.cumulatedCpuTimeNanos) {
+            if (cumulatedCpuTimeNanos < cpuDurationStatistics.cumulatedCpuTimeNanos) {
                 return 1;
-            } else if (cpuDurationStatistics.cumulatedCpuTimeNanos > cpuDurationStatistics.cumulatedCpuTimeNanos) {
+            } else if (cumulatedCpuTimeNanos > cpuDurationStatistics.cumulatedCpuTimeNanos) {
                 return -1;
             }
     	}
