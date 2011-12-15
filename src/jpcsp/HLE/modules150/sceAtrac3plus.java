@@ -734,6 +734,9 @@ public class sceAtrac3plus extends HLEModule {
             return;
         }
         cpu.gpr[2] = hleCreateAtracID(codecType);
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceAtracGetAtracID: returning atracID=0x%08X", cpu.gpr[2]));
+        }
     }
 
     @HLEFunction(nid = 0x61EB33F5, version = 150)
@@ -836,6 +839,9 @@ public class sceAtrac3plus extends HLEModule {
             if (atracIDs.containsKey(atID)) {
                 atracIDs.get(atID).setData(buffer, bufferSize, bufferSize, false);
             }
+        }
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceAtracSetDataAndGetID returning atracID=0x%08X", atID));
         }
         cpu.gpr[2] = atID;
     }

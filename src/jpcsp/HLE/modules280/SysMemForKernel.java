@@ -18,8 +18,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules280;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
+import jpcsp.hardware.Model;
 
 public class SysMemForKernel extends jpcsp.HLE.modules150.SysMemForKernel {
 
@@ -37,14 +36,14 @@ public class SysMemForKernel extends jpcsp.HLE.modules150.SysMemForKernel {
     }
 
     @HLEFunction(nid = 0x6373995D, version = 280)
-    public void sceKernelGetModel(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public int sceKernelGetModel() {
+		int result = Model.getModel(); // <= 0 original, 1 slim
 
-		int result = 0; // <= 0 original, 1 slim
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceKernelGetModel ret: %d", result));
+		}
 
-        log.debug("sceKernelGetModel ret:" + result);
-
-        cpu.gpr[2] = result;
+		return result;
 	}
 
 }

@@ -461,54 +461,69 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public static String getWaitName(int waitType, ThreadWaitInfo wait, int status) {
         StringBuilder s = new StringBuilder();
 
-        // A thread should only be waiting on at most 1 thing, handle it anyway
-        if (waitType == PSP_WAIT_THREAD_END) {
-            s.append(String.format(" | ThreadEnd (0x%04X)", wait.ThreadEnd_id));
+        switch (waitType) {
+        	case PSP_WAIT_NONE:
+        		s.append(String.format("None"));
+        		break;
+        	case PSP_WAIT_SLEEP:
+        		s.append(String.format("Sleep"));
+        		break;
+        	case PSP_WAIT_THREAD_END:
+        		s.append(String.format("ThreadEnd (0x%04X)", wait.ThreadEnd_id));
+        		break;
+        	case PSP_WAIT_EVENTFLAG:
+        		s.append(String.format("EventFlag (0x%04X)", wait.EventFlag_id));
+        		break;
+        	case PSP_WAIT_SEMA:
+        		s.append(String.format("Semaphore (0x%04X)", wait.Semaphore_id));
+        		break;
+        	case PSP_WAIT_MUTEX:
+        		s.append(String.format("Mutex (0x%04X)", wait.Mutex_id));
+        		break;
+        	case PSP_WAIT_LWMUTEX:
+        		s.append(String.format("LwMutex (0x%04X)", wait.LwMutex_id));
+        		break;
+        	case PSP_WAIT_MBX:
+        		s.append(String.format("Mbx (0x%04X)", wait.Mbx_id));
+        		break;
+        	case PSP_WAIT_VPL:
+        		s.append(String.format("Vpl (0x%04X)", wait.Vpl_id));
+        		break;
+        	case PSP_WAIT_FPL:
+        		s.append(String.format("Fpl (0x%04X)", wait.Fpl_id));
+        		break;
+        	case PSP_WAIT_MSGPIPE:
+        		s.append(String.format("MsgPipe (0x%04X)", wait.MsgPipe_id));
+        		break;
+        	case PSP_WAIT_EVENTHANDLER:
+        		s.append(String.format("EventHandler"));
+        		break;
+        	case PSP_WAIT_CALLBACK_DELETE:
+        		s.append(String.format("CallBackDelete"));
+        		break;
+        	case JPCSP_WAIT_IO:
+        		s.append(String.format("Io (0x%04X)", wait.Io_id));
+        		break;
+        	case JPCSP_WAIT_UMD:
+        		s.append(String.format("Umd (0x%02X)", wait.wantedUmdStat));
+        		break;
+        	case JPCSP_WAIT_BLOCKED:
+        		s.append(String.format("Blocked"));
+        		break;
+        	default:
+        		s.append(String.format("Unknown waitType=%d", waitType));
+        		break;
         }
 
-        if (waitType == PSP_WAIT_EVENTFLAG) {
-            s.append(String.format(" | EventFlag (0x%04X)", wait.EventFlag_id));
-        }
-
-        if (waitType == PSP_WAIT_SEMA) {
-            s.append(String.format(" | Semaphore (0x%04X)", wait.Semaphore_id));
-        }
-
-        if (waitType == PSP_WAIT_MUTEX) {
-            s.append(String.format(" | Mutex (0x%04X)", wait.Mutex_id));
-        }
-
-        if (waitType == PSP_WAIT_LWMUTEX) {
-            s.append(String.format(" | LwMutex (0x%04X)", wait.LwMutex_id));
-        }
-
-        if (waitType == JPCSP_WAIT_IO) {
-            s.append(String.format(" | Io (0x%04X)", wait.Io_id));
-        }
-
-        if (waitType == JPCSP_WAIT_UMD) {
-            s.append(String.format(" | Umd (0x%02X)", wait.wantedUmdStat));
-        }
-
-        if (waitType == JPCSP_WAIT_BLOCKED) {
-            s.append(String.format(" | Blocked"));
-        }
-
-        // Strip off leading " | "
-        if (s.length() > 0) {
-            s.delete(0, 3);
-        } else {
-            s.append("None");
-            if ((status & PSP_THREAD_WAITING) == PSP_THREAD_WAITING) {
-                if (wait.forever) {
-                    s.append(" (sleeping)");
-                } else {
-                    int restDelay = (int) (wait.microTimeTimeout - Emulator.getClock().microTime());
-                    if (restDelay < 0) {
-                        restDelay = 0;
-                    }
-                    s.append(String.format(" (delay %d us, rest %d us)", wait.micros, restDelay));
+        if ((status & PSP_THREAD_WAITING) != 0) {
+            if (wait.forever) {
+                s.append(" (forever)");
+            } else {
+                int restDelay = (int) (wait.microTimeTimeout - Emulator.getClock().microTime());
+                if (restDelay < 0) {
+                    restDelay = 0;
                 }
+                s.append(String.format(" (delay %d us, rest %d us)", wait.micros, restDelay));
             }
         }
 

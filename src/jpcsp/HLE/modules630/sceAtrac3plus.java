@@ -20,6 +20,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ATRAC_BAD_ID;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
@@ -30,26 +31,28 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
     public String getName() { return "sceAtrac3plus"; }
 
     @HLEFunction(nid = 0x0C116E1B, version = 630)
-    public int sceAtracLowLevelDecode(int atID, TPointer sourceAddr, TPointer32 unknownAddr, TPointer samplesAddr, TPointer32 resultAddr) {
+    public int sceAtracLowLevelDecode(int atID, int sourceAddr, TPointer32 unknownAddr, TPointer samplesAddr, TPointer32 resultAddr) {
         Memory mem = Processor.memory;
     	atID &= atracIDMask;
 
-        log.warn(String.format("UNIMPLEMENTED: sceAtracLowLevelDecode atID=%d, sourceAddr=%s, unknownAddr=%s(content=0x%08X), samplesAddr=%s, resultAddr=%s", atID, sourceAddr, unknownAddr, unknownAddr.getValue(), samplesAddr, resultAddr));
+        log.warn(String.format("UNIMPLEMENTED: sceAtracLowLevelDecode atID=%d, sourceAddr=0x%08X, unknownAddr=%s(content=0x%08X), samplesAddr=%s, resultAddr=%s", atID, sourceAddr, unknownAddr, unknownAddr.getValue(), samplesAddr, resultAddr));
 
         if (!atracIDs.containsKey(atID)) {
             log.warn(String.format("sceAtracLowLevelDecode: bad atID=%d", atID));
             throw new SceKernelErrorException(ERROR_ATRAC_BAD_ID);
         }
 
-        if (log.isTraceEnabled()) {
+        if (log.isTraceEnabled() && Memory.isAddressGood(sourceAddr)) {
         	int length = 0x130; // How to find the input length?
-        	log.trace(String.format("sceAtracLowLevelDecode input:%s", Utilities.getMemoryDump(sourceAddr.getAddress(), length, 1, 16)));
+        	log.trace(String.format("sceAtracLowLevelDecode input:%s", Utilities.getMemoryDump(sourceAddr, length, 1, 16)));
         }
 
         resultAddr.setValue(1); // Must be non-zero
 
         int samples = 1024; // Always return 1024 samples?
         mem.memset(samplesAddr.getAddress(), (byte) 0, samples * 4);
+
+    	Modules.ThreadManForUserModule.hleKernelDelayThread(atracDecodeDelay, false);
 
         return 0;
     }

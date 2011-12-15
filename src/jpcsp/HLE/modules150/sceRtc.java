@@ -20,6 +20,7 @@ package jpcsp.HLE.modules150;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
+import jpcsp.Clock.TimeNanos;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -57,7 +58,8 @@ public class sceRtc extends HLEModule {
     private long rtcMagicOffset = 62135596800000000L;
 
     protected long hleGetCurrentTick() {
-        return Emulator.getClock().microTime();
+    	TimeNanos timeNanos = Emulator.getClock().currentTimeNanos();
+    	return (timeNanos.micros + timeNanos.millis * 1000) + timeNanos.seconds * 1000000L + rtcMagicOffset;
     }
 
     /** 64 bit addend */

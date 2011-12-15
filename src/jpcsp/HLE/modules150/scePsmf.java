@@ -101,9 +101,7 @@ public class scePsmf extends HLEModule {
         private HashMap<Integer, PSMFStream> streamMap;
         private int currentStreamNumber;
         private int currentVideoStreamNumber;
-        private int videoStreamNum;
         private int currentAudioStreamNumber;
-        private int audioStreamNum;
 
         // Entry class for the EPMap.
         protected class PSMFEntry {
@@ -233,8 +231,6 @@ public class scePsmf extends HLEModule {
             currentStreamNumber = -1;         // Current stream number.
             currentVideoStreamNumber = -1;    // Current video stream number.
             currentAudioStreamNumber = -1;    // Current audio stream number.
-            videoStreamNum = 0;
-            audioStreamNum = 0;
 
             // Parse the stream field and assign each one to it's type.
             for (int i = 0; i < streamNum; i++) {
@@ -245,12 +241,10 @@ public class scePsmf extends HLEModule {
                     stream = new PSMFStream(PSMF_AVC_STREAM, 0);
                     stream.readMPEGVideoStreamParams(currentStreamAddr);
                     currentVideoStreamNumber++;
-                    videoStreamNum++;
                 } else if ((streamID & PSMF_AUDIO_STREAM_ID) == PSMF_AUDIO_STREAM_ID) {
                     stream = new PSMFStream(PSMF_ATRAC_STREAM, 1);
                     stream.readPrivateAudioStreamParams(currentStreamAddr);
                     currentAudioStreamNumber++;
-                    audioStreamNum++;
                 }
                 if (stream != null) {
                     currentStreamNumber++;
@@ -868,6 +862,10 @@ public class scePsmf extends HLEModule {
         	}
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("scePsmfGetEPidWithTimestamp returning 0x%08X", cpu.gpr[2]));
         }
     }
 
