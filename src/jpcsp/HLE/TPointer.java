@@ -58,10 +58,12 @@ final public class TPointer implements ITPointerBase {
 		this.address = address & Memory.addressMask;
 	}
 	
+	@Override
 	public boolean isAddressGood() {
 		return Memory.isAddressGood(address);
 	}
 	
+	@Override
 	public int getAddress() {
 		return address;
 	}

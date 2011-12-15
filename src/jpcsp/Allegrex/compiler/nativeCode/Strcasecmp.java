@@ -32,7 +32,7 @@ public class Strcasecmp extends AbstractNativeCodeSequence {
 		IMemoryReader memoryReader2 = MemoryReader.getMemoryReader(src2Addr, 1);
 
 		if (memoryReader1 != null && memoryReader2 != null) {
-			for (int i = 0; true; i++) {
+			while (true) {
 				char c1 = toUpperCase[memoryReader1.readNext()];
 				char c2 = toUpperCase[memoryReader2.readNext()];
 				if (c1 != c2) {

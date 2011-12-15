@@ -416,6 +416,7 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         jButtonOK.setText(Resource.get("ok"));
         jButtonOK.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonOKActionPerformed(evt);
             }
@@ -423,6 +424,7 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         jButtonCancel.setText(Resource.get("cancel"));
         jButtonCancel.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonCancelActionPerformed(evt);
             }
@@ -430,6 +432,7 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         jButtonApply.setText(Resource.get("apply"));
         jButtonApply.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonApplyActionPerformed(evt);
             }
@@ -451,6 +454,7 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         jButton1.setText("...");
         jButton1.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton1ActionPerformed(evt);
             }
@@ -464,6 +468,7 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         jButton2.setText("...");
         jButton2.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton2ActionPerformed(evt);
             }

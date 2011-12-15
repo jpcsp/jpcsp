@@ -24,6 +24,7 @@ import jpcsp.format.PSF;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;
 
+@SuppressWarnings("unused")
 public class CryptoEngine {
 
     // Internal vars.
@@ -124,7 +125,7 @@ public class CryptoEngine {
     private static final int[] amHashKey5 = {0x67, 0x8D, 0x7F, 0xA3, 0x2A, 0x9C, 0xA0, 0xD1, 0x50, 0x8A, 0xD8, 0x38, 0x5E, 0x4B, 0x01, 0x7E};
     
     // KIRK error values.
-    private static final int PSP_KIRK_NOT_ENABLED = 0x1;
+	private static final int PSP_KIRK_NOT_ENABLED = 0x1;
     private static final int PSP_KIRK_INVALID_MODE = 0x2;
     private static final int PSP_KIRK_INVALID_HEADER_HASH = 0x3;
     private static final int PSP_KIRK_INVALID_DATA_HASH = 0x4;
@@ -976,39 +977,39 @@ public class CryptoEngine {
         // Check for a valid signature.
         int sigCheck = executeKIRKCmd10(sigIn, size);
 
-        // Get the newly decrypted AES key and proceed with the
-        // full data decryption.
-        if (decryptedKeys != null) {
-            byte[] aesBuf = new byte[16];
-            System.arraycopy(decryptedKeys, 0, aesBuf, 0, 16);
-            // Skip the CMD1 header.
-            int headerSize = 0x90;
-            int headerOffset = 0x40;
-
-            // Extract the final ELF params.
-            int elfDataSize = Integer.reverseBytes(header.dataSize);
-            int elfDataOffset = Integer.reverseBytes(header.dataOffset);
-
-            // Decrypt all the ELF data.
-            byte[] inBuf = new byte[elfDataSize];
-            for (int i = 0; i < elfDataSize; i++) {
-                inBuf[i] = in.array()[elfDataOffset + headerOffset + headerSize + i];
-            }
-            byte[] outBuf = new byte[elfDataSize];
-            outBuf = aes.decryptCBC(inBuf, aesBuf, iv);
-
-            out.clear();
-            out.put(outBuf);
-            out.limit(elfDataSize);
-            in.clear();
-
-            return 0;
-        } else {
+        if (decryptedKeys == null) {
             // Only return the sig check result if the keys are invalid
             // to allow skipping the CMAC comparision.
             // TODO: Trace why the CMAC hashes aren't matching.
-            return sigCheck;
+        	return sigCheck;
         }
+
+        // Get the newly decrypted AES key and proceed with the
+        // full data decryption.
+        byte[] aesBuf = new byte[16];
+        System.arraycopy(decryptedKeys, 0, aesBuf, 0, 16);
+        // Skip the CMD1 header.
+        int headerSize = 0x90;
+        int headerOffset = 0x40;
+
+        // Extract the final ELF params.
+        int elfDataSize = Integer.reverseBytes(header.dataSize);
+        int elfDataOffset = Integer.reverseBytes(header.dataOffset);
+
+        // Decrypt all the ELF data.
+        byte[] inBuf = new byte[elfDataSize];
+        for (int i = 0; i < elfDataSize; i++) {
+            inBuf[i] = in.array()[elfDataOffset + headerOffset + headerSize + i];
+        }
+        byte[] outBuf = new byte[elfDataSize];
+        outBuf = aes.decryptCBC(inBuf, aesBuf, iv);
+
+        out.clear();
+        out.put(outBuf);
+        out.limit(elfDataSize);
+        in.clear();
+
+        return 0;
     }
 
     // Encrypt with AESCBC128 using keys from table.
@@ -1665,123 +1666,123 @@ public class CryptoEngine {
         if (ctx.padSize > 0x10) {
             // Invalid key length.
             return -1;
-        } else {
-            // Setup the buffers.           
-            byte[] scrambleEmptyBuf = new byte[0x10 + 0x14];
-            byte[] keyBuf = new byte[0x10];            
-            byte[] scrambleKeyBuf = new byte[0x10 + 0x14];          
-            byte[] resultBuf = new byte[0x10];
-            byte[] scrambleResultBuf = new byte[0x10 + 0x14];     
-            byte[] scrambleResultKeyBuf = new byte[0x10 + 0x14];
+        }
 
-            // Calculate the seed.
-            int seed = 0;
-            switch (ctx.mode) {
-                case 0x6:
-                    seed = 0x11;
-                    break;
-                case 0x4:
-                    seed = 0xD;
-                    break;
-                case 0x2:
-                    seed = 0x5;
-                    break;
-                case 0x1:
-                    seed = 0x3;
-                    break;
-                case 0x3:
-                    seed = 0xC;
-                    break;
-                default:
-                    seed = 0x10;
-                    break;
-            }
-            
-            // Encrypt an empty buffer with KIRK CMD 4.
-            ScrambleSD(scrambleEmptyBuf, 0x10, seed, 0x4, 0x04);
-            System.arraycopy(scrambleEmptyBuf, 0, keyBuf, 0, 0x10);
-            
-            // Apply custom padding management.
-            byte b = ((keyBuf[0] & (byte) 0x80) != 0) ? (byte) 0x87 : 0;       
+        // Setup the buffers.           
+        byte[] scrambleEmptyBuf = new byte[0x10 + 0x14];
+        byte[] keyBuf = new byte[0x10];            
+        byte[] scrambleKeyBuf = new byte[0x10 + 0x14];          
+        byte[] resultBuf = new byte[0x10];
+        byte[] scrambleResultBuf = new byte[0x10 + 0x14];     
+        byte[] scrambleResultKeyBuf = new byte[0x10 + 0x14];
+
+        // Calculate the seed.
+        int seed = 0;
+        switch (ctx.mode) {
+            case 0x6:
+                seed = 0x11;
+                break;
+            case 0x4:
+                seed = 0xD;
+                break;
+            case 0x2:
+                seed = 0x5;
+                break;
+            case 0x1:
+                seed = 0x3;
+                break;
+            case 0x3:
+                seed = 0xC;
+                break;
+            default:
+                seed = 0x10;
+                break;
+        }
+        
+        // Encrypt an empty buffer with KIRK CMD 4.
+        ScrambleSD(scrambleEmptyBuf, 0x10, seed, 0x4, 0x04);
+        System.arraycopy(scrambleEmptyBuf, 0, keyBuf, 0, 0x10);
+        
+        // Apply custom padding management.
+        byte b = ((keyBuf[0] & (byte) 0x80) != 0) ? (byte) 0x87 : 0;       
+        for(int i = 0; i < 0xF; i++) {
+            keyBuf[i] = (byte) ((keyBuf[i] << 1) | (keyBuf[i + 1] >> 7));
+        }        
+        keyBuf[0xF] = (byte) ((keyBuf[0xF] << 1) ^ b);    
+        
+        if (ctx.padSize < 0x10) {
+            byte bb = ((keyBuf[0] & (byte) 0x80) != 0) ? (byte) 0x87 : 0;       
             for(int i = 0; i < 0xF; i++) {
                 keyBuf[i] = (byte) ((keyBuf[i] << 1) | (keyBuf[i + 1] >> 7));
             }        
-            keyBuf[0xF] = (byte) ((keyBuf[0xF] << 1) ^ b);    
+            keyBuf[0xF] = (byte) ((keyBuf[0xF] << 1) ^ bb);
             
-            if (ctx.padSize < 0x10) {
-                byte bb = ((keyBuf[0] & (byte) 0x80) != 0) ? (byte) 0x87 : 0;       
-                for(int i = 0; i < 0xF; i++) {
-                    keyBuf[i] = (byte) ((keyBuf[i] << 1) | (keyBuf[i + 1] >> 7));
-                }        
-                keyBuf[0xF] = (byte) ((keyBuf[0xF] << 1) ^ bb);
-                
-                ctx.pad[ctx.padSize] = (byte) 0x80;
-                if ((ctx.padSize + 1) < 0x10) {
-                    for (int i = 0; i < (0x10 - ctx.padSize - 1); i++) {
-                        ctx.pad[ctx.padSize + 1 + i] = 0;
-                    }
+            ctx.pad[ctx.padSize] = (byte) 0x80;
+            if ((ctx.padSize + 1) < 0x10) {
+                for (int i = 0; i < (0x10 - ctx.padSize - 1); i++) {
+                    ctx.pad[ctx.padSize + 1 + i] = 0;
                 }
             }
-            
-            // XOR previous key with new one.
-            for (int i = 0; i < 0x10; i++) {
-                ctx.pad[i] = (byte) (ctx.pad[i] ^ keyBuf[i]);
-            }
-            
-            System.arraycopy(ctx.pad, 0, scrambleKeyBuf, 0x14, 0x10);
-            System.arraycopy(ctx.key, 0, resultBuf, 0, 0x10);
-            
-            // Encrypt with KIRK CMD 4 and XOR with result.
-            for (int i = 0; i < 0x10; i++) {
-                scrambleKeyBuf[0x14 + i] = (byte) (scrambleKeyBuf[0x14 + i] ^ resultBuf[i]);
-            }
-            ScrambleSD(scrambleKeyBuf, 0x10, seed, 0x4, 0x04);
-            System.arraycopy(scrambleKeyBuf, (0x10 + 0x4) - 0x14, resultBuf, 0, 0x10);
-            
-            // If ctx.mode is the new mode 0x6, XOR with the new hash key 5, else, XOR with hash key 2.
-            if (ctx.mode == 0x6) {
-                for (int i = 0; i < 0x10; i++) {
-                    resultBuf[i] = (byte) (resultBuf[i] ^ sdHashKey5[i]);
-                }
-            } else {
-                for (int i = 0; i < 0x10; i++) {
-                    resultBuf[i] = (byte) (resultBuf[i] ^ sdHashKey2[i]);
-                }
-            }
-            
-            // If mode is 2, 4 or 6, encrypt again with KIRK CMD 5 and then KIRK CMD 4.
-            if ((ctx.mode == 0x2) || (ctx.mode == 0x4) || (ctx.mode == 0x6)) {
-                System.arraycopy(resultBuf, 0, scrambleResultBuf, 0x14, 0x10);
-                ScrambleSD(scrambleResultBuf, 0x10, 0x100, 0x4, 0x05);           
-                ScrambleSD(scrambleResultBuf, 0x10, seed, 0x4, 0x04);
-                System.arraycopy(scrambleResultBuf, 0, resultBuf, 0, 0x10);
-            }
-            
-            // XOR with the supplied key and encrypt with KIRK CMD 4.
-            if (key != null) {
-                for (int i = 0; i < 0x10; i++) {
-                    resultBuf[i] = (byte) (resultBuf[i] ^ key[i]);
-                }
-                System.arraycopy(resultBuf, 0, scrambleResultKeyBuf, 0x14, 0x10);
-                ScrambleSD(scrambleResultKeyBuf, 0x10, seed, 0x4, 0x04);
-                System.arraycopy(scrambleResultKeyBuf, 0, resultBuf, 0, 0x10);
-            }
-            
-            // Copy back the generated hash.
-            System.arraycopy(resultBuf, 0, hash, 0, 0x10);
-         
-            // Clear the context fields.
-            ctx.mode = 0;
-            ctx.padSize = 0;
-            for (int i = 0; i < 0x10; i++) {
-                ctx.pad[i] = 0;
-            }
-            for (int i = 0; i < 0x10; i++) {
-                ctx.key[i] = 0;
-            }     
-            
-            return 0;
         }
+        
+        // XOR previous key with new one.
+        for (int i = 0; i < 0x10; i++) {
+            ctx.pad[i] = (byte) (ctx.pad[i] ^ keyBuf[i]);
+        }
+        
+        System.arraycopy(ctx.pad, 0, scrambleKeyBuf, 0x14, 0x10);
+        System.arraycopy(ctx.key, 0, resultBuf, 0, 0x10);
+        
+        // Encrypt with KIRK CMD 4 and XOR with result.
+        for (int i = 0; i < 0x10; i++) {
+            scrambleKeyBuf[0x14 + i] = (byte) (scrambleKeyBuf[0x14 + i] ^ resultBuf[i]);
+        }
+        ScrambleSD(scrambleKeyBuf, 0x10, seed, 0x4, 0x04);
+        System.arraycopy(scrambleKeyBuf, (0x10 + 0x4) - 0x14, resultBuf, 0, 0x10);
+        
+        // If ctx.mode is the new mode 0x6, XOR with the new hash key 5, else, XOR with hash key 2.
+        if (ctx.mode == 0x6) {
+            for (int i = 0; i < 0x10; i++) {
+                resultBuf[i] = (byte) (resultBuf[i] ^ sdHashKey5[i]);
+            }
+        } else {
+            for (int i = 0; i < 0x10; i++) {
+                resultBuf[i] = (byte) (resultBuf[i] ^ sdHashKey2[i]);
+            }
+        }
+        
+        // If mode is 2, 4 or 6, encrypt again with KIRK CMD 5 and then KIRK CMD 4.
+        if ((ctx.mode == 0x2) || (ctx.mode == 0x4) || (ctx.mode == 0x6)) {
+            System.arraycopy(resultBuf, 0, scrambleResultBuf, 0x14, 0x10);
+            ScrambleSD(scrambleResultBuf, 0x10, 0x100, 0x4, 0x05);           
+            ScrambleSD(scrambleResultBuf, 0x10, seed, 0x4, 0x04);
+            System.arraycopy(scrambleResultBuf, 0, resultBuf, 0, 0x10);
+        }
+        
+        // XOR with the supplied key and encrypt with KIRK CMD 4.
+        if (key != null) {
+            for (int i = 0; i < 0x10; i++) {
+                resultBuf[i] = (byte) (resultBuf[i] ^ key[i]);
+            }
+            System.arraycopy(resultBuf, 0, scrambleResultKeyBuf, 0x14, 0x10);
+            ScrambleSD(scrambleResultKeyBuf, 0x10, seed, 0x4, 0x04);
+            System.arraycopy(scrambleResultKeyBuf, 0, resultBuf, 0, 0x10);
+        }
+        
+        // Copy back the generated hash.
+        System.arraycopy(resultBuf, 0, hash, 0, 0x10);
+     
+        // Clear the context fields.
+        ctx.mode = 0;
+        ctx.padSize = 0;
+        for (int i = 0; i < 0x10; i++) {
+            ctx.pad[i] = 0;
+        }
+        for (int i = 0; i < 0x10; i++) {
+            ctx.key[i] = 0;
+        }     
+            
+        return 0;
     }
 
     private int hleSdSetMember(SDCtx1 ctx, byte[] data, int length) {
@@ -1977,103 +1978,103 @@ public class CryptoEngine {
         if (ctx.padSize > 0x10) {
             // Invalid key was set.
             return -1;
-        } else {
-            // Setup the buffers.           
-            byte[] scrambleEmptyBuf = new byte[0x10 + 0x14];
-            byte[] keyBuf = new byte[0x10];            
-            byte[] scrambleKeyBuf = new byte[0x10 + 0x14];          
-            byte[] resultBuf = new byte[0x10];
-            byte[] scrambleResultBuf = new byte[0x10 + 0x14];     
-            byte[] scrambleResultKeyBuf = new byte[0x10 + 0x14];
-            byte[] scrambleResultKeyBuf2 = new byte[0x10 + 0x14];
-            byte[] finalBuf = new byte[0x10];
+        }
 
-            // Calculate the seed (mode 2 == 0x3A / mode 1 and 3 == 0x3A).
-            int seed = 0x38;
-            if (ctx.mode == 0x2) {
-                seed = 0x3A;
-            }
-            
-            // Encrypt an empty buffer with KIRK CMD 4.
-            ScrambleSD(scrambleEmptyBuf, 0x10, seed, 0x4, 0x04);
-            System.arraycopy(scrambleEmptyBuf, 0, keyBuf, 0, 0x10);
-            
-            // Apply custom padding management.
-            byte b = ((keyBuf[0] & (byte) 0x80) != 0) ? (byte) 0x87 : 0;       
+        // Setup the buffers.           
+        byte[] scrambleEmptyBuf = new byte[0x10 + 0x14];
+        byte[] keyBuf = new byte[0x10];            
+        byte[] scrambleKeyBuf = new byte[0x10 + 0x14];          
+        byte[] resultBuf = new byte[0x10];
+        byte[] scrambleResultBuf = new byte[0x10 + 0x14];     
+        byte[] scrambleResultKeyBuf = new byte[0x10 + 0x14];
+        byte[] scrambleResultKeyBuf2 = new byte[0x10 + 0x14];
+        byte[] finalBuf = new byte[0x10];
+
+        // Calculate the seed (mode 2 == 0x3A / mode 1 and 3 == 0x3A).
+        int seed = 0x38;
+        if (ctx.mode == 0x2) {
+            seed = 0x3A;
+        }
+        
+        // Encrypt an empty buffer with KIRK CMD 4.
+        ScrambleSD(scrambleEmptyBuf, 0x10, seed, 0x4, 0x04);
+        System.arraycopy(scrambleEmptyBuf, 0, keyBuf, 0, 0x10);
+        
+        // Apply custom padding management.
+        byte b = ((keyBuf[0] & (byte) 0x80) != 0) ? (byte) 0x87 : 0;       
+        for(int i = 0; i < 0xF; i++) {
+            keyBuf[i] = (byte) ((keyBuf[i] << 1) | (keyBuf[i + 1] >> 7));
+        }        
+        keyBuf[0xF] = (byte) ((keyBuf[0xF] << 1) ^ b);    
+        
+        if (ctx.padSize < 0x10) {
+            byte bb = ((keyBuf[0] & (byte) 0x80) != 0) ? (byte) 0x87 : 0;       
             for(int i = 0; i < 0xF; i++) {
                 keyBuf[i] = (byte) ((keyBuf[i] << 1) | (keyBuf[i + 1] >> 7));
             }        
-            keyBuf[0xF] = (byte) ((keyBuf[0xF] << 1) ^ b);    
+            keyBuf[0xF] = (byte) ((keyBuf[0xF] << 1) ^ bb);
             
-            if (ctx.padSize < 0x10) {
-                byte bb = ((keyBuf[0] & (byte) 0x80) != 0) ? (byte) 0x87 : 0;       
-                for(int i = 0; i < 0xF; i++) {
-                    keyBuf[i] = (byte) ((keyBuf[i] << 1) | (keyBuf[i + 1] >> 7));
-                }        
-                keyBuf[0xF] = (byte) ((keyBuf[0xF] << 1) ^ bb);
-                
-                ctx.pad[ctx.padSize] = (byte) 0x80;
-                if ((ctx.padSize + 1) < 0x10) {
-                    for (int i = 0; i < (0x10 - ctx.padSize - 1); i++) {
-                        ctx.pad[ctx.padSize + 1 + i] = 0;
-                    }
+            ctx.pad[ctx.padSize] = (byte) 0x80;
+            if ((ctx.padSize + 1) < 0x10) {
+                for (int i = 0; i < (0x10 - ctx.padSize - 1); i++) {
+                    ctx.pad[ctx.padSize + 1 + i] = 0;
                 }
             }
-            
-            // XOR pad.
-            for (int i = 0; i < 0x10; i++) {
-                ctx.pad[i] = (byte) (ctx.pad[i] ^ keyBuf[i]);
-            }
-            
-            System.arraycopy(ctx.pad, 0, scrambleKeyBuf, 0x14, 0x10);
-            System.arraycopy(ctx.key, 0, resultBuf, 0, 0x10);
-            
-            // Encrypt with KIRK CMD 4 and XOR with result.
-            for (int i = 0; i < 0x10; i++) {
-                scrambleKeyBuf[0x14 + i] = (byte) (scrambleKeyBuf[0x14 + i] ^ resultBuf[i]);
-            }
-            ScrambleSD(scrambleKeyBuf, 0x10, seed, 0x4, 0x04);
-            System.arraycopy(scrambleKeyBuf, (0x10 + 0x4) - 0x14, resultBuf, 0, 0x10);
-            
-            // XOR with amHashKey3.
-            for (int i = 0; i < 0x10; i++) {
-                resultBuf[i] = (byte) (resultBuf[i] ^ amHashKey3[i]);
-            }
-            
-            // If mode is 2, encrypt again with KIRK CMD 5 and then KIRK CMD 4.
-            if (ctx.mode == 0x2) {
-                System.arraycopy(resultBuf, 0, scrambleResultBuf, 0x14, 0x10);
-                ScrambleSD(scrambleResultBuf, 0x10, 0x100, 0x4, 0x05);
-                System.arraycopy(scrambleResultBuf, 0, scrambleResultKeyBuf2, 0x14, 0x10);
-                ScrambleSD(scrambleResultKeyBuf2, 0x10, seed, 0x4, 0x04);
-                System.arraycopy(scrambleResultKeyBuf2, 0, resultBuf, 0, 0x10);
-            }
-            
-            // XOR with the supplied key and encrypt with KIRK CMD 4.
-            if (key != null) {
-                for (int i = 0; i < 0x10; i++) {
-                    resultBuf[i] = (byte) (resultBuf[i] ^ key[i]);
-                }
-                System.arraycopy(resultBuf, 0, scrambleResultKeyBuf, 0x14, 0x10);
-                ScrambleSD(scrambleResultKeyBuf, 0x10, seed, 0x4, 0x04);
-                System.arraycopy(scrambleResultKeyBuf, 0, finalBuf, 0, 0x10);
-            }
-            
-            // Copy back the generated hash.
-            System.arraycopy(finalBuf, 0, hash, 0, 0x10);
-         
-            // Clear the context fields.
-            ctx.mode = 0;
-            ctx.padSize = 0;
-            for (int i = 0; i < 0x10; i++) {
-                ctx.pad[i] = 0;
-            }
-            for (int i = 0; i < 0x10; i++) {
-                ctx.key[i] = 0;
-            }     
-            
-            return 0;
         }
+        
+        // XOR pad.
+        for (int i = 0; i < 0x10; i++) {
+            ctx.pad[i] = (byte) (ctx.pad[i] ^ keyBuf[i]);
+        }
+        
+        System.arraycopy(ctx.pad, 0, scrambleKeyBuf, 0x14, 0x10);
+        System.arraycopy(ctx.key, 0, resultBuf, 0, 0x10);
+        
+        // Encrypt with KIRK CMD 4 and XOR with result.
+        for (int i = 0; i < 0x10; i++) {
+            scrambleKeyBuf[0x14 + i] = (byte) (scrambleKeyBuf[0x14 + i] ^ resultBuf[i]);
+        }
+        ScrambleSD(scrambleKeyBuf, 0x10, seed, 0x4, 0x04);
+        System.arraycopy(scrambleKeyBuf, (0x10 + 0x4) - 0x14, resultBuf, 0, 0x10);
+        
+        // XOR with amHashKey3.
+        for (int i = 0; i < 0x10; i++) {
+            resultBuf[i] = (byte) (resultBuf[i] ^ amHashKey3[i]);
+        }
+        
+        // If mode is 2, encrypt again with KIRK CMD 5 and then KIRK CMD 4.
+        if (ctx.mode == 0x2) {
+            System.arraycopy(resultBuf, 0, scrambleResultBuf, 0x14, 0x10);
+            ScrambleSD(scrambleResultBuf, 0x10, 0x100, 0x4, 0x05);
+            System.arraycopy(scrambleResultBuf, 0, scrambleResultKeyBuf2, 0x14, 0x10);
+            ScrambleSD(scrambleResultKeyBuf2, 0x10, seed, 0x4, 0x04);
+            System.arraycopy(scrambleResultKeyBuf2, 0, resultBuf, 0, 0x10);
+        }
+        
+        // XOR with the supplied key and encrypt with KIRK CMD 4.
+        if (key != null) {
+            for (int i = 0; i < 0x10; i++) {
+                resultBuf[i] = (byte) (resultBuf[i] ^ key[i]);
+            }
+            System.arraycopy(resultBuf, 0, scrambleResultKeyBuf, 0x14, 0x10);
+            ScrambleSD(scrambleResultKeyBuf, 0x10, seed, 0x4, 0x04);
+            System.arraycopy(scrambleResultKeyBuf, 0, finalBuf, 0, 0x10);
+        }
+        
+        // Copy back the generated hash.
+        System.arraycopy(finalBuf, 0, hash, 0, 0x10);
+     
+        // Clear the context fields.
+        ctx.mode = 0;
+        ctx.padSize = 0;
+        for (int i = 0; i < 0x10; i++) {
+            ctx.pad[i] = 0;
+        }
+        for (int i = 0; i < 0x10; i++) {
+            ctx.key[i] = 0;
+        }     
+        
+        return 0;
     }
     
     private int hleDrmBBMacFinal2(BBMacCtx ctx, byte[] hash, byte[] key) {

@@ -156,7 +156,8 @@ public class VfpuState extends FpuState {
             return next(32);
         }
 
-        public int nextInt(int n) {
+        @SuppressWarnings("unused")
+		public int nextInt(int n) {
             if (n <= 0)
                 throw new IllegalArgumentException("n must be positive");
 

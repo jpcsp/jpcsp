@@ -118,7 +118,8 @@ public class TextPaneAppender extends AppenderSkeleton {
         fancy = false;
     }
 
-    public void close() {
+    @Override
+	public void close() {
     }
 
     private void createAttributes() {
@@ -321,7 +322,8 @@ public class TextPaneAppender extends AppenderSkeleton {
         return StyleConstants.getFontFamily(attrSet);
     }
 
-    public boolean requiresLayout() {
+    @Override
+	public boolean requiresLayout() {
         return true;
     }
 }

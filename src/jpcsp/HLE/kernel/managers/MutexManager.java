@@ -226,7 +226,7 @@ public class MutexManager {
         CpuState cpu = Emulator.getProcessor().cpu;
 
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelDeleteMutex(uid=" + Integer.toHexString(uid));
+            log.debug(String.format("sceKernelDeleteMutex uid=%x", uid));
         }
 
         SceKernelMutexInfo info = mutexMap.remove(uid);

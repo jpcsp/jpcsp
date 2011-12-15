@@ -24,7 +24,6 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 
 public class sceDisplay extends jpcsp.HLE.modules150.sceDisplay {
-	private static final long serialVersionUID = 7951510954219695582L;
 
 	public sceDisplay() throws LWJGLException {
 		super();

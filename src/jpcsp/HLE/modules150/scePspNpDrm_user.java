@@ -113,7 +113,8 @@ public class scePspNpDrm_user extends HLEModule {
         }
         String fileName = Utilities.readStringZ(nameAddr);        
         CryptoEngine crypto = new CryptoEngine(); 
-        boolean renamed = false;
+        @SuppressWarnings("unused")
+		boolean renamed = false;
 
         try {
             String pcfilename = Modules.IoFileMgrForUserModule.getDeviceFilePath(fileName);

@@ -110,7 +110,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         });
         disasmList.addListSelectionListener(new ListSelectionListener() {
-            public void valueChanged(ListSelectionEvent e) {
+            @Override
+			public void valueChanged(ListSelectionEvent e) {
                 if (!e.getValueIsAdjusting()) {
                     // this is the only place we can use disasmList.getSelectedValue(),
                     // all other places should go through disasmListGetSelectedValue()
@@ -241,7 +242,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     public void RefreshDebugger(boolean moveToPC) {
         CpuState cpu = Emulator.getProcessor().cpu;
         int pc;
-        int cnt;
 
         if (moveToPC) {
             DebuggerPC = cpu.pc;
@@ -251,7 +251,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         synchronized(listmodel) {
             listmodel.clear();
 
-            for (pc = DebuggerPC, cnt = 0; pc < (DebuggerPC + 0x00000094); pc += 0x00000004, cnt++) {
+            for (pc = DebuggerPC; pc < (DebuggerPC + 0x00000094); pc += 0x00000004) {
                 if (Memory.isAddressGood(pc)) {
                     int opcode = Memory.getInstance().read32(pc);
 
@@ -404,6 +404,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         CopyAddress.setText("Copy Address");
         CopyAddress.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 CopyAddressActionPerformed(evt);
             }
@@ -412,6 +413,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         CopyAll.setText("Copy All");
         CopyAll.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 CopyAllActionPerformed(evt);
             }
@@ -421,6 +423,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         BranchOrJump.setText("Copy Branch Or Jump address");
         BranchOrJump.setEnabled(false); //disable as default
         BranchOrJump.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 BranchOrJumpActionPerformed(evt);
             }
@@ -429,6 +432,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         SetPCToCursor.setText("Set PC to Cursor");
         SetPCToCursor.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 SetPCToCursorActionPerformed(evt);
             }
@@ -437,6 +441,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         CopyValue.setText("Copy value");
         CopyValue.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 CopyValueActionPerformed(evt);
             }
@@ -456,6 +461,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         disasmList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         disasmList.setToolTipText("");
         disasmList.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
+            @Override
             public void mouseWheelMoved(java.awt.event.MouseWheelEvent evt) {
                 disasmListMouseWheelMoved(evt);
             }
@@ -484,6 +490,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         RunDebugger.setIconTextGap(2);
         RunDebugger.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         RunDebugger.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 RunDebuggerActionPerformed(evt);
             }
@@ -499,6 +506,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         PauseDebugger.setInheritsPopupMenu(true);
         PauseDebugger.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         PauseDebugger.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 PauseDebuggerActionPerformed(evt);
             }
@@ -513,6 +521,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         StepInto.setIconTextGap(2);
         StepInto.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         StepInto.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 StepIntoActionPerformed(evt);
             }
@@ -536,6 +545,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         jButton3.setIconTextGap(2);
         jButton3.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         jButton3.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton3ActionPerformed(evt);
             }
@@ -551,6 +561,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         ResetToPCbutton.setIconTextGap(2);
         ResetToPCbutton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         ResetToPCbutton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ResetToPCbuttonActionPerformed(evt);
             }
@@ -565,6 +576,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         JumpToAddress.setIconTextGap(2);
         JumpToAddress.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         JumpToAddress.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 JumpToAddressActionPerformed(evt);
             }
@@ -580,6 +592,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         DumpCodeToText.setIconTextGap(2);
         DumpCodeToText.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         DumpCodeToText.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 DumpCodeToTextActionPerformed(evt);
             }
@@ -629,6 +642,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         ) {
 			private static final long serialVersionUID = 4714824805211201111L;
+			@SuppressWarnings("rawtypes")
 			Class[] types = new Class [] {
                 java.lang.String.class, java.lang.Object.class
             };
@@ -636,7 +650,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 false, false
             };
 
-            @Override
+            @SuppressWarnings("rawtypes")
+			@Override
 			public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
@@ -668,6 +683,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         ) {
 			private static final long serialVersionUID = 1080691380828614427L;
+			@SuppressWarnings("rawtypes")
 			Class[] types = new Class [] {
                 java.lang.String.class, java.lang.Object.class
             };
@@ -675,7 +691,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 false, false
             };
 
-            @Override
+            @SuppressWarnings("rawtypes")
+			@Override
 			public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
@@ -727,6 +744,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         ) {
 			private static final long serialVersionUID = -5902668243370431997L;
+			@SuppressWarnings("rawtypes")
 			Class[] types = new Class [] {
                 java.lang.String.class, java.lang.Float.class
             };
@@ -734,7 +752,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 false, false
             };
 
-            @Override
+            @SuppressWarnings("rawtypes")
+			@Override
 			public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
@@ -757,6 +776,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         gpiButton1.setBorder(null);
         gpiButton1.setPreferredSize(new java.awt.Dimension(16, 16));
         gpiButton1.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 gpiButton1ActionPerformed(evt);
             }
@@ -766,6 +786,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         gpiButton2.setBorder(null);
         gpiButton2.setPreferredSize(new java.awt.Dimension(16, 16));
         gpiButton2.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 gpiButton2ActionPerformed(evt);
             }
@@ -775,6 +796,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         gpiButton3.setBorder(null);
         gpiButton3.setPreferredSize(new java.awt.Dimension(16, 16));
         gpiButton3.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 gpiButton3ActionPerformed(evt);
             }
@@ -784,6 +806,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         gpiButton4.setBorder(null);
         gpiButton4.setPreferredSize(new java.awt.Dimension(16, 16));
         gpiButton4.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 gpiButton4ActionPerformed(evt);
             }
@@ -793,6 +816,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         gpiButton5.setBorder(null);
         gpiButton5.setPreferredSize(new java.awt.Dimension(16, 16));
         gpiButton5.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 gpiButton5ActionPerformed(evt);
             }
@@ -802,6 +826,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         gpiButton6.setBorder(null);
         gpiButton6.setPreferredSize(new java.awt.Dimension(16, 16));
         gpiButton6.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 gpiButton6ActionPerformed(evt);
             }
@@ -811,6 +836,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         gpiButton7.setBorder(null);
         gpiButton7.setPreferredSize(new java.awt.Dimension(16, 16));
         gpiButton7.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 gpiButton7ActionPerformed(evt);
             }
@@ -820,6 +846,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         gpiButton8.setBorder(null);
         gpiButton8.setPreferredSize(new java.awt.Dimension(16, 16));
         gpiButton8.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 gpiButton8ActionPerformed(evt);
             }
@@ -855,6 +882,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         captureButton.setText(Resource.get("capturenextframe"));
         captureButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 captureButtonActionPerformed(evt);
             }
@@ -862,6 +890,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         replayButton.setText(Resource.get("replaycapturenextframe"));
         replayButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 replayButtonActionPerformed(evt);
             }
@@ -871,12 +900,14 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         dumpDebugStateButton.setText(Resource.get("dumptoconsole"));
         dumpDebugStateButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 dumpDebugStateButtonActionPerformed(evt);
             }
         });
 
         SearchField.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 SearchFieldActionPerformed(evt);
             }
@@ -1006,6 +1037,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         AddBreakpoint.setIconTextGap(2);
         AddBreakpoint.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         AddBreakpoint.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AddBreakpointActionPerformed(evt);
             }
@@ -1021,6 +1053,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         DeleteBreakpoint.setInheritsPopupMenu(true);
         DeleteBreakpoint.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         DeleteBreakpoint.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 DeleteBreakpointActionPerformed(evt);
             }
@@ -1035,6 +1068,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         DeleteAllBreakpoints.setIconTextGap(2);
         DeleteAllBreakpoints.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         DeleteAllBreakpoints.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 DeleteAllBreakpointsActionPerformed(evt);
             }
@@ -1048,6 +1082,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         ExportBreaks.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         ExportBreaks.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         ExportBreaks.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ExportBreaksActionPerformed(evt);
             }
@@ -1060,6 +1095,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         ImportBreaks.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         ImportBreaks.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         ImportBreaks.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ImportBreaksActionPerformed(evt);
             }

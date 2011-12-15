@@ -139,7 +139,8 @@ public class MemoryViewer extends javax.swing.JFrame {
         memoryview.setFont(new java.awt.Font("Courier New", 0, 12));
         memoryview.setRows(5);
         memoryview.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
-            public void mouseWheelMoved(java.awt.event.MouseWheelEvent evt) {
+            @Override
+			public void mouseWheelMoved(java.awt.event.MouseWheelEvent evt) {
                 memoryviewMouseWheelMoved(evt);
             }
         });
@@ -160,6 +161,7 @@ public class MemoryViewer extends javax.swing.JFrame {
 
         GoToButton.setText(Resource.get("gotoaddress"));
         GoToButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 GoToButtonActionPerformed(evt);
             }
@@ -167,6 +169,7 @@ public class MemoryViewer extends javax.swing.JFrame {
 
         GoToSP.setText(Resource.get("gotosp"));
         GoToSP.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 GoToSPActionPerformed(evt);
             }
@@ -174,6 +177,7 @@ public class MemoryViewer extends javax.swing.JFrame {
 
         DumpRawRam.setText(Resource.get("dumprawram"));
         DumpRawRam.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 DumpRawRamActionPerformed(evt);
             }
@@ -181,6 +185,7 @@ public class MemoryViewer extends javax.swing.JFrame {
 
         GoToButton1.setText(Resource.get("gotovram"));
         GoToButton1.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 GoToButton1ActionPerformed(evt);
             }

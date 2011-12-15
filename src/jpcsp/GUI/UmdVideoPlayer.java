@@ -256,7 +256,8 @@ public class UmdVideoPlayer implements KeyListener {
         return Short.reverseBytes(x);
     }
 
-    private void parsePlaylistFile() {
+    @SuppressWarnings("unused")
+	private void parsePlaylistFile() {
         try {
             UmdIsoFile file = iso.getFile("UMD_VIDEO/PLAYLIST.UMD");
             int umdvMagic = file.readInt();

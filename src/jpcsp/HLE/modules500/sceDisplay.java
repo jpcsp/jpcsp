@@ -26,7 +26,6 @@ import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 
 public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
-	private static final long serialVersionUID = 5006833555228054367L;
 
 	public sceDisplay() throws LWJGLException {
 		super();

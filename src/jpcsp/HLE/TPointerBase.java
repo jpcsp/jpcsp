@@ -25,10 +25,12 @@ abstract public class TPointerBase implements ITPointerBase {
 		pointer = new TPointer(memory, address);
 	}
 
+	@Override
 	public boolean isAddressGood() {
 		return Memory.isAddressGood(pointer.getAddress());
 	}
 
+	@Override
 	public int getAddress() {
 		return pointer.getAddress();
 	}

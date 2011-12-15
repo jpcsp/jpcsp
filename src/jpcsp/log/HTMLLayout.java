@@ -138,6 +138,7 @@ public class HTMLLayout extends Layout {
 	/**
 	 * No options to activate.
 	 */
+	@Override
 	public void activateOptions() {
 	}
 

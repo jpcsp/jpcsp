@@ -160,6 +160,7 @@ public class LogGUI extends javax.swing.JFrame {
 
         jButtonOK.setText(Resource.get("ok"));
         jButtonOK.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonOKActionPerformed(evt);
             }
@@ -167,6 +168,7 @@ public class LogGUI extends javax.swing.JFrame {
 
         jButtonCancel.setText(Resource.get("cancel"));
         jButtonCancel.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonCancelActionPerformed(evt);
             }
@@ -189,6 +191,7 @@ public class LogGUI extends javax.swing.JFrame {
 
         clearKeywordButton.setText("Clear");
         clearKeywordButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 clearKeywordButtonActionPerformed(evt);
             }
@@ -241,6 +244,7 @@ public class LogGUI extends javax.swing.JFrame {
 
         fileButton.setText("...");
         fileButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 fileButtonActionPerformed(evt);
             }
@@ -267,6 +271,7 @@ public class LogGUI extends javax.swing.JFrame {
 
         splitFilesBox.setText("Split files");
         splitFilesBox.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 splitFilesBoxActionPerformed(evt);
             }
@@ -337,6 +342,7 @@ public class LogGUI extends javax.swing.JFrame {
         jRadioButton1.setSelected(true);
         jRadioButton1.setText("General Debug");
         jRadioButton1.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jRadioButton1ActionPerformed(evt);
             }
@@ -345,6 +351,7 @@ public class LogGUI extends javax.swing.JFrame {
         buttonGroup1.add(jRadioButton2);
         jRadioButton2.setText("CPU Debug");
         jRadioButton2.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jRadioButton2ActionPerformed(evt);
             }
@@ -353,6 +360,7 @@ public class LogGUI extends javax.swing.JFrame {
         buttonGroup1.add(jRadioButton3);
         jRadioButton3.setText("GPU Debug");
         jRadioButton3.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jRadioButton3ActionPerformed(evt);
             }
@@ -361,6 +369,7 @@ public class LogGUI extends javax.swing.JFrame {
         buttonGroup1.add(jRadioButton4);
         jRadioButton4.setText("Core Debug");
         jRadioButton4.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jRadioButton4ActionPerformed(evt);
             }
@@ -369,6 +378,7 @@ public class LogGUI extends javax.swing.JFrame {
         buttonGroup1.add(jRadioButton5);
         jRadioButton5.setText("Full Debug");
         jRadioButton5.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jRadioButton5ActionPerformed(evt);
             }
@@ -377,6 +387,7 @@ public class LogGUI extends javax.swing.JFrame {
         buttonGroup1.add(jRadioButton6);
         jRadioButton6.setText("Custom");
         jRadioButton6.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jRadioButton6ActionPerformed(evt);
             }
@@ -685,6 +696,7 @@ public class LogGUI extends javax.swing.JFrame {
 
         saveButton.setText("Generate new settings file");
         saveButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 saveButtonActionPerformed(evt);
             }

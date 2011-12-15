@@ -20,7 +20,6 @@ package jpcsp.HLE.modules;
 import org.lwjgl.LWJGLException;
 
 public class sceDisplay extends jpcsp.HLE.modules500.sceDisplay {
-	private static final long serialVersionUID = 5133304298118632765L;
 
 	public sceDisplay() throws LWJGLException {
 		super();

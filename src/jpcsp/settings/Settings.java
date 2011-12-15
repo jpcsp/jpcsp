@@ -437,7 +437,7 @@ public class Settings {
 		}
 
 		@Override
-		@SuppressWarnings("unchecked")
+		@SuppressWarnings({ "unchecked", "rawtypes" })
 		public synchronized Enumeration keys() {
 			Enumeration keysEnum = super.keys();
 			List keyList = Collections.list(keysEnum);
