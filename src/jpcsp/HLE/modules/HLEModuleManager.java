@@ -100,7 +100,7 @@ public class HLEModuleManager {
         sceSasCore(Modules.sceSasCoreModule, new String[] { "sc_sascore", "PSP_AV_MODULE_SASCORE", "PSP_MODULE_AV_SASCORE", "sceSAScore" } ),
         sceMpeg(Modules.sceMpegModule, new String[] { "mpeg", "mpeg_vsh", "PSP_AV_MODULE_MPEGBASE", "PSP_MODULE_AV_MPEGBASE", "sceMpeg_library" }),
         sceFont(Modules.sceFontModule, new String[] { "libfont", "sceFont_Library" }),
-        scePsmfPlayer(Modules.scePsmfPlayerModule, new String[] { "libpsmfplayer", "psmf_jk" }),
+        scePsmfPlayer(Modules.scePsmfPlayerModule, new String[] { "libpsmfplayer", "psmf_jk", "scePsmfP_library" }),
         scePsmf(Modules.scePsmfModule, new String[] { "psmf", "scePsmf_library" }),
         sceMp3(Modules.sceMp3Module, new String[] { "PSP_AV_MODULE_MP3", "PSP_MODULE_AV_MP3", "LIBMP3" }),
         sceDeflt(Modules.sceDefltModule),
@@ -131,7 +131,8 @@ public class HLEModuleManager {
         sceUsb(Modules.sceUsbModule),
         sceHeap(Modules.sceHeapModule),
         KDebugForKernel(Modules.KDebugForKernelModule),
-        sceCcc(Modules.sceCccModule, new String[] { "libccc" });
+        sceCcc(Modules.sceCccModule, new String[] { "libccc" }),
+        scePauth(Modules.scePauthModule);
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
