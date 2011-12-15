@@ -29,12 +29,13 @@ import java.util.concurrent.TimeUnit;
 
 import jpcsp.HLE.Modules;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
 import jpcsp.Memory;
 
-public class PspGeList
-{
+public class PspGeList {
 	private VideoEngine videoEngine;
-	private static final int pcAddressMask = 0xFFFFFFFC;
+	private static final int pcAddressMask = 0xFFFFFFFC & Memory.addressMask;
 	private Memory mem;
     public int list_addr;
     private int stall_addr;
@@ -42,7 +43,7 @@ public class PspGeList
     public int arg_addr;
     public pspGeListOptParam optParams;
 
-    public int pc;
+    private int pc;
 
     // a stack entry contains the PC and the baseOffset
     private int[] stack = new int[32*2];
@@ -58,6 +59,7 @@ public class PspGeList
     private boolean reset;
     private boolean restarted;
     private Semaphore sync; // Used for async display
+    private IMemoryReader memoryReader;
 
     public PspGeList(int id) {
     	videoEngine = VideoEngine.getInstance();
@@ -75,22 +77,26 @@ public class PspGeList
     	reset = true;
         ended = true;
         restarted = false;
+        memoryReader = null;
+        pc = 0;
     }
 
     public void init(int list_addr, int stall_addr, int cbid, int arg_addr) {
-        Memory mem = Memory.getInstance();
         init();
+
+        list_addr &= pcAddressMask;
+        stall_addr &= pcAddressMask;
 
         this.list_addr = list_addr;
         this.stall_addr = stall_addr;
         this.cbid = cbid;
         this.arg_addr = arg_addr;
 
-        if(Memory.isAddressGood(arg_addr)) {
+        if (Memory.isAddressGood(arg_addr)) {
             optParams = new pspGeListOptParam();
             optParams.read(mem, arg_addr);
         }
-        pc = list_addr;
+        setPc(list_addr);
         status = (pc == stall_addr) ? PSP_GE_LIST_STALL_REACHED : PSP_GE_LIST_QUEUED;
     	finished = false;
     	reset = false;
@@ -132,16 +138,29 @@ public class PspGeList
     	return stackIndex <= 0;
     }
 
+    public void setPc(int pc) {
+    	pc &= pcAddressMask;
+    	if (this.pc != pc) {
+    		int oldPc = this.pc;
+    		this.pc = pc;
+    		resetMemoryReader(oldPc);
+    	}
+    }
+
+	public int getPc() {
+		return pc;
+	}
+
     public void jumpAbsolute(int argument) {
-    	pc = mem.normalizeAddress(argument) & pcAddressMask;
+    	setPc(mem.normalizeAddress(argument));
     }
 
     public void jumpRelative(int argument) {
-    	pc = getAddressRel(argument) & pcAddressMask;
+    	setPc(getAddressRel(argument));
     }
 
     public void jumpRelativeOffset(int argument) {
-    	pc = getAddressRelOffset(argument) & pcAddressMask;
+    	setPc(getAddressRelOffset(argument));
     }
 
     public void callAbsolute(int argument) {
@@ -165,7 +184,7 @@ public class PspGeList
     public void ret() {
     	if (!isStackEmpty()) {
     		videoEngine.setBaseOffset(popStack());
-    		pc = popStack();
+    		setPc(popStack());
     	}
     }
 
@@ -196,6 +215,7 @@ public class PspGeList
     }
 
     public void setStallAddr(int stall_addr) {
+    	stall_addr &= pcAddressMask;
     	if (this.stall_addr != stall_addr) {
     		this.stall_addr = stall_addr;
     		sync();
@@ -259,7 +279,7 @@ public class PspGeList
     }
 
     public void endList() {
-        if(isFinished()) {
+        if (isFinished()) {
             ended = true;
         } else {
             ended = false;
@@ -272,6 +292,19 @@ public class PspGeList
 
 	public boolean isReset() {
 		return reset;
+	}
+
+	private void resetMemoryReader(int oldPc) {
+		if (memoryReader != null && pc >= oldPc) {
+			memoryReader.skip((pc - oldPc) >> 2);
+		} else {
+			memoryReader = MemoryReader.getMemoryReader(pc, 4);
+		}
+	}
+
+	public int readNextInstruction() {
+		pc += 4;
+		return memoryReader.readNext();
 	}
 
 	@Override

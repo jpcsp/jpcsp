@@ -489,6 +489,18 @@ public class VideoEngine {
         if (useAsyncVertexCache) {
         	AsyncVertexCache.getInstance().setUseVertexArray(re.isVertexArrayAvailable());
         }
+
+        context.setDirty();
+        projectionMatrixUpload.setChanged(true);
+        modelMatrixUpload.setChanged(true);
+        viewMatrixUpload.setChanged(true);
+        textureMatrixUpload.setChanged(true);
+        lightingChanged = true;
+        textureChanged = true;
+        geBufChanged = true;
+        viewportChanged = true;
+        depthChanged = true;
+        materialChanged = true;
     }
 
     public IRenderingEngine getRenderingEngine() {
@@ -700,9 +712,9 @@ public class VideoEngine {
 
         if (!currentList.isStackEmpty()) {
             // When have some CALLs on the stack, try to return from the last CALL
-            int oldPc = currentList.pc;
+            int oldPc = currentList.getPc();
             currentList.ret();
-            int newPc = currentList.pc;
+            int newPc = currentList.getPc();
             if (isLogDebugEnabled) {
                 log(String.format("tryToFallback old PC: 0x%08X, new PC: 0x%08X", oldPc, newPc));
             }
@@ -720,14 +732,14 @@ public class VideoEngine {
 
     private void checkCurrentListPc() {
         Memory mem = Memory.getInstance();
-        while (!Memory.isAddressGood(currentList.pc)) {
+        while (!Memory.isAddressGood(currentList.getPc())) {
             if (!mem.isIgnoreInvalidMemoryAccess()) {
-                error("Reading GE list from invalid address 0x" + Integer.toHexString(currentList.pc));
+                error("Reading GE list from invalid address 0x" + Integer.toHexString(currentList.getPc()));
                 break;
             }
 			// Ignoring memory read errors.
 			// Try to fall back and continue the list processing.
-			log.warn("Reading GE list from invalid address 0x" + Integer.toHexString(currentList.pc));
+			log.warn("Reading GE list from invalid address 0x" + Integer.toHexString(currentList.getPc()));
 			if (tryToFallback()) {
 			    break;
 			}
@@ -744,7 +756,7 @@ public class VideoEngine {
     private void executeListStalled() {
 		waitStallStatistics.start();
         if (isLogDebugEnabled) {
-            log.debug(String.format("Stall address 0x%08X reached, waiting for Sync", currentList.pc));
+            log.debug(String.format("Stall address 0x%08X reached, waiting for Sync", currentList.getPc()));
         }
         currentList.status = PSP_GE_LIST_STALL_REACHED;
 		long startWaitClockMillis = Emulator.getClock().milliTime();
@@ -767,7 +779,7 @@ public class VideoEngine {
             // compiling a huge CodeBlock on the first call).
             // This avoids aborting the first list enqueued.
             int maxStallCount = maxWaitForSyncCount;
-            if (currentList.pc == currentList.list_addr) {
+            if (currentList.getPc() == currentList.list_addr) {
             	maxStallCount *= 4;
             }
             if (isLogDebugEnabled) {
@@ -775,7 +787,7 @@ public class VideoEngine {
             }
 
             if (waitForSyncCount > maxStallCount) {
-                error(String.format("Waiting too long on stall address 0x%08X, aborting the list %s", currentList.pc, currentList));
+                error(String.format("Waiting too long on stall address 0x%08X, aborting the list %s", currentList.getPc(), currentList));
             }
         } else {
             waitForSyncCount = 0;
@@ -846,8 +858,6 @@ public class VideoEngine {
 
         executeHleAction();
 
-        IMemoryReader memoryReader = MemoryReader.getMemoryReader(currentList.pc, 4);
-        int memoryReaderPc = currentList.pc;
         waitForSyncCount = 0;
         while (!listHasEnded && (!Emulator.pause || State.captureGeNextFrame)) {
             if (currentList.isPaused() || currentList.isEnded()) {
@@ -857,19 +867,7 @@ public class VideoEngine {
             } else if (currentList.isStallReached()) {
             	executeListStalled();
             } else {
-                if (currentList.pc != memoryReaderPc) {
-                    // The currentList.pc is no longer reading in sequence
-                    // and has jumped to a next location, get a new memory reader.
-                    checkCurrentListPc();
-                    if (listHasEnded || Emulator.pause) {
-                        break;
-                    }
-                    memoryReader = MemoryReader.getMemoryReader(currentList.pc, 4);
-                }
-                int ins = memoryReader.readNext();
-                currentList.pc += 4;
-                memoryReaderPc = currentList.pc;
-
+                int ins = currentList.readNextInstruction();
                 executeCommand(ins);
             }
         }
@@ -1370,7 +1368,7 @@ public class VideoEngine {
 
     private void executeCommandUNKNOWN() {
         if (isLogWarnEnabled) {
-            log.warn(String.format("Unknown/unimplemented video command [%s]%s at 0x%08X", helper.getCommandString(command), getArgumentLog(normalArgument), currentList.pc - 4));
+            log.warn(String.format("Unknown/unimplemented video command [%s]%s at 0x%08X", helper.getCommandString(command), getArgumentLog(normalArgument), currentList.getPc() - 4));
         }
     }
 
@@ -1440,10 +1438,10 @@ public class VideoEngine {
 
     private int checkMultiDraw(int currentFirst, int currentType, int currentNumberOfVertex, IntBuffer bufferFirst, IntBuffer bufferCount) {
     	if (isLogDebugEnabled) {
-    		log(String.format("checkMultiDraw at 0x%08X", currentList.pc));
+    		log(String.format("checkMultiDraw at 0x%08X", currentList.getPc()));
     	}
     	Memory mem = Memory.getInstance();
-    	int pc = currentList.pc;
+    	int pc = currentList.getPc();
     	int afterMultiPc = pc;
     	boolean hasMultiDraw = false;
     	int initialFirst = currentFirst;
@@ -1563,7 +1561,7 @@ public class VideoEngine {
 		bufferCount.limit(bufferCount.position());
 		bufferCount.rewind();
 
-		currentList.pc = afterMultiPc;
+		currentList.setPc(afterMultiPc);
 
     	return currentFirst + currentNumberOfVertex - initialFirst;
     }
@@ -1584,7 +1582,7 @@ public class VideoEngine {
         }
 
         if (type > PRIM_SPRITES) {
-            error(String.format("%s: Type %d unhandled at 0x%08X", helper.getCommandString(PRIM), type, currentList.pc - 4));
+            error(String.format("%s: Type %d unhandled at 0x%08X", helper.getCommandString(PRIM), type, currentList.getPc() - 4));
             return;
         }
 
@@ -2330,9 +2328,9 @@ public class VideoEngine {
         }
 
         if (takeConditionalJump) {
-            int oldPc = currentList.pc;
+            int oldPc = currentList.getPc();
             currentList.jumpRelativeOffset(normalArgument);
-            int newPc = currentList.pc;
+            int newPc = currentList.getPc();
             if (isLogDebugEnabled) {
                 log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(BJUMP), oldPc, newPc));
             }
@@ -2434,27 +2432,27 @@ public class VideoEngine {
     }
 
     private void executeCommandJUMP() {
-        int oldPc = currentList.pc;
+        int oldPc = currentList.getPc();
         currentList.jumpRelativeOffset(normalArgument);
-        int newPc = currentList.pc;
+        int newPc = currentList.getPc();
         if (isLogDebugEnabled) {
             log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(JUMP), oldPc, newPc));
         }
     }
 
     private void executeCommandCALL() {
-        int oldPc = currentList.pc;
+        int oldPc = currentList.getPc();
         currentList.callRelativeOffset(normalArgument);
-        int newPc = currentList.pc;
+        int newPc = currentList.getPc();
         if (isLogDebugEnabled) {
             log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(CALL), oldPc, newPc));
         }
     }
 
     private void executeCommandRET() {
-        int oldPc = currentList.pc;
+        int oldPc = currentList.getPc();
         currentList.ret();
-        int newPc = currentList.pc;
+        int newPc = currentList.getPc();
         if (isLogDebugEnabled) {
             log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(RET), oldPc, newPc));
         }
@@ -2467,7 +2465,7 @@ public class VideoEngine {
         currentList.endList();
         currentList.pauseList();
         if (isLogDebugEnabled) {
-            log(helper.getCommandString(END) + " pc=0x" + Integer.toHexString(currentList.pc));
+            log(helper.getCommandString(END) + " pc=0x" + Integer.toHexString(currentList.getPc()));
         }
         updateGeBuf();
     }
@@ -2483,32 +2481,31 @@ public class VideoEngine {
         	case sceGe_user.PSP_GE_SIGNAL_SYNC: {
 	        	// Skip END / FINISH / END
 	        	Memory mem = Memory.getInstance();
-	        	if (command(mem.read32(currentList.pc)) == END) {
-	        		currentList.pc += 4;
-	        		if (command(mem.read32(currentList.pc)) == FINISH) {
-	            		currentList.pc += 4;
-	                	if (command(mem.read32(currentList.pc)) == END) {
-	                		currentList.pc += 4;
+	        	if (command(mem.read32(currentList.getPc())) == END) {
+	        		currentList.readNextInstruction();
+	        		if (command(mem.read32(currentList.getPc())) == FINISH) {
+	            		currentList.readNextInstruction();
+	                	if (command(mem.read32(currentList.getPc())) == END) {
+	                		currentList.readNextInstruction();
 	                	}
 	        		}
 	        	}
                 if (isLogDebugEnabled) {
-                    log(String.format("PSP_GE_SIGNAL_SYNC ignored PC: 0x%08X", currentList.pc));
+                    log(String.format("PSP_GE_SIGNAL_SYNC ignored PC: 0x%08X", currentList.getPc()));
                 }
 	        	break;
         	}
         	case sceGe_user.PSP_GE_SIGNAL_CALL: {
 	            // Call list using absolute address from SIGNAL + END.
 	            Memory mem = Memory.getInstance();
-	        	if (command(mem.read32(currentList.pc)) == END) {
+	        	if (command(mem.read32(currentList.getPc())) == END) {
 	                int hi16 = signal & 0x0FFF;
-	        		int lo16 = (mem.read32(currentList.pc) & 0xFFFF);
+	                // Read & skip END
+	        		int lo16 = (currentList.readNextInstruction() & 0xFFFF);
 	                int addr = (hi16 << 16) | lo16;
-	                // Skip END
-	                currentList.pc += 4;
-	                int oldPc = currentList.pc;
+	                int oldPc = currentList.getPc();
 	                currentList.callAbsolute(addr);
-	                int newPc = currentList.pc;
+	                int newPc = currentList.getPc();
 	                if (isLogDebugEnabled) {
 	                    log(String.format("PSP_GE_SIGNAL_CALL old PC: 0x%08X, new PC: 0x%08X", oldPc, newPc));
 	                }
@@ -2518,12 +2515,12 @@ public class VideoEngine {
         	case sceGe_user.PSP_GE_SIGNAL_RETURN: {
 	            // Return from PSP_GE_SIGNAL_CALL.
 	            Memory mem = Memory.getInstance();
-	        	if (command(mem.read32(currentList.pc)) == END) {
+	        	if (command(mem.read32(currentList.getPc())) == END) {
 	        		// Skip END
-	                currentList.pc += 4;
-	                int oldPc = currentList.pc;
+	        		currentList.readNextInstruction();
+	                int oldPc = currentList.getPc();
 	                currentList.ret();
-	                int newPc = currentList.pc;
+	                int newPc = currentList.getPc();
 	                if (isLogDebugEnabled) {
 	                    log(String.format("PSP_GE_SIGNAL_RETURN old PC: 0x%08X, new PC: 0x%08X", oldPc, newPc));
 	                }
@@ -2540,13 +2537,13 @@ public class VideoEngine {
         	case sceGe_user.PSP_GE_SIGNAL_TBP7_REL: {
                 // Overwrite TBPn and TBPw with SIGNAL + END (uses relative address only).
                 Memory mem = Memory.getInstance();
-            	if (command(mem.read32(currentList.pc)) == END) {
+            	if (command(mem.read32(currentList.getPc())) == END) {
                     int hi16 = signal & 0xFFFF;
-            		int lo16 = (mem.read32(currentList.pc) & 0xFFFF);
-                    int width = ((mem.read32(currentList.pc) >> 16) & 0xFF);
+                    // Read & skip END
+                    int ins = currentList.readNextInstruction();
+            		int lo16 = ins & 0xFFFF;
+                    int width = (ins >> 16) & 0xFF;
                     int addr = currentList.getAddressRel((hi16 << 16) | lo16);
-                    // Skip END
-                    currentList.pc += 4;
                     context.texture_base_pointer[behavior - sceGe_user.PSP_GE_SIGNAL_TBP0_REL] = addr;
                     context.texture_buffer_width[behavior - sceGe_user.PSP_GE_SIGNAL_TBP0_REL] = width;
                 }
@@ -2562,13 +2559,13 @@ public class VideoEngine {
         	case sceGe_user.PSP_GE_SIGNAL_TBP7_REL_OFFSET: {
                 // Overwrite TBPn and TBPw with SIGNAL + END (uses relative address with offset).
                 Memory mem = Memory.getInstance();
-            	if (command(mem.read32(currentList.pc)) == END) {
+            	if (command(mem.read32(currentList.getPc())) == END) {
                     int hi16 = signal & 0xFFFF;
-            		int lo16 = (mem.read32(currentList.pc) & 0xFFFF);
-                    int width = ((mem.read32(currentList.pc) >> 16) & 0xFF);
+                    // Read & skip END
+                    int ins = currentList.readNextInstruction();
+            		int lo16 = ins & 0xFFFF;
+                    int width = (ins >> 16) & 0xFF;
                     int addr = currentList.getAddressRelOffset((hi16 << 16) | lo16);
-                    // Skip END
-                    currentList.pc += 4;
                     context.texture_base_pointer[behavior - sceGe_user.PSP_GE_SIGNAL_TBP0_REL_OFFSET] = addr;
                     context.texture_buffer_width[behavior - sceGe_user.PSP_GE_SIGNAL_TBP7_REL_OFFSET] = width;
                 }
@@ -2583,7 +2580,7 @@ public class VideoEngine {
         	}
         	default: {
                 if (isLogWarnEnabled) {
-                    log.warn(String.format("%s (behavior=%d, signal=0x%X) unknown behavior at 0x%08X", helper.getCommandString(SIGNAL), behavior, signal, currentList.pc - 4));
+                    log.warn(String.format("%s (behavior=%d, signal=0x%X) unknown behavior at 0x%08X", helper.getCommandString(SIGNAL), behavior, signal, currentList.getPc() - 4));
                 }
         	}
         }
@@ -2645,7 +2642,7 @@ public class VideoEngine {
     }
 
     private void executeCommandORIGIN_ADDR() {
-    	context.baseOffset = currentList.pc - 4;
+    	context.baseOffset = currentList.getPc() - 4;
         if (normalArgument != 0) {
             log.warn(String.format("%s unknown argument 0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument));
         } else if (isLogDebugEnabled) {
@@ -4572,6 +4569,7 @@ public class VideoEngine {
                 compressedTexture = false;
                 int compressedTextureSize = 0;
                 int buffer_storage = context.texture_storage;
+                int textureBufferWidthInPixels = context.texture_buffer_width[level];
 
                 switch (context.texture_storage) {
                     case TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED: {
@@ -4589,10 +4587,13 @@ public class VideoEngine {
                                 int clutSharingOffset = context.mipmapShareClut ? 0 : level * 16;
 
                                 if (!context.texture_swizzle) {
-                                    int length = context.texture_buffer_width[level] * context.texture_height[level];
+                                    // In case of 4-bit indexed, texture_buffer_width is the size in bytes,
+                                    // not in pixels.
+                                    textureBufferWidthInPixels *= 2;
+
+                                    int length = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level];
                                     IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length / 2, 1);
                                     for (int i = 0; i < length; i += 2) {
-
                                         int index = memoryReader.readNext();
 
                                         tmp_texture_buffer16[i] = clut[getClutIndex(index & 0xF) + clutSharingOffset];
@@ -4638,10 +4639,13 @@ public class VideoEngine {
                                 int clutSharingOffset = context.mipmapShareClut ? 0 : level * 16;
 
                                 if (!context.texture_swizzle) {
-                                    int length = context.texture_buffer_width[level] * context.texture_height[level];
+                                    // In case of 4-bit indexed, texture_buffer_width is the size in bytes,
+                                    // not in pixels.
+                                    textureBufferWidthInPixels *= 2;
+
+                                    int length = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level];
                                     IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length / 2, 1);
                                     for (int i = 0; i < length; i += 2) {
-
                                         int index = memoryReader.readNext();
 
                                         tmp_texture_buffer32[i + 1] = clut[getClutIndex((index >> 4) & 0xF) + clutSharingOffset];
@@ -4857,7 +4861,7 @@ public class VideoEngine {
                 }
 
                 // Upload texture to openGL.
-                re.setPixelStore(context.texture_buffer_width[level], textureByteAlignment);
+                re.setPixelStore(textureBufferWidthInPixels, textureByteAlignment);
 
                 if (compressedTexture) {
                     re.setCompressedTexImage(
@@ -4867,7 +4871,7 @@ public class VideoEngine {
                             compressedTextureSize,
                             final_buffer);
                 } else {
-                	int textureSize = Math.max(context.texture_buffer_width[level], context.texture_width[level]) * context.texture_height[level] * textureByteAlignment;
+                	int textureSize = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level] * textureByteAlignment;
                     re.setTexImage(
                             level,
                             buffer_storage,

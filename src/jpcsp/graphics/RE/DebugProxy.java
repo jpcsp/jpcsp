@@ -730,4 +730,12 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 		}
 		super.setUniform4(id, values);
 	}
+
+	@Override
+	public void setColorMaterial(boolean ambient, boolean diffuse, boolean specular) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setColorMaterial ambient=%b, diffuse=%b, specular=%b", ambient, diffuse, specular));
+		}
+		super.setColorMaterial(ambient, diffuse, specular);
+	}
 }
