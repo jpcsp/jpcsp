@@ -7848,6 +7848,99 @@
 08804BA8:[24E70010]: addiu      $a3, $a3, 16
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="MultDiv">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.arithmetic.MultDiv</Class>
+		<Method>call</Method>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+089BAE2C:[00850018]: mult       $a0, $a1
+089BAE30:[3C080972]: lui        $t0, 0x0972 <=> li $t0, 0x09720000
+089BAE34:[2508D1C0]: addiu      $t0, $t0, -11840
+089BAE38:[AD100000]: sw         $s0, 0($t0)
+089BAE3C:[AD110004]: sw         $s1, 4($t0)
+089BAE40:[AD120008]: sw         $s2, 8($t0)
+089BAE44:[AD13000C]: sw         $s3, 12($t0)
+089BAE48:[AD140010]: sw         $s4, 16($t0)
+089BAE4C:[AD150014]: sw         $s5, 20($t0)
+089BAE50:[AD160018]: sw         $s6, 24($t0)
+089BAE54:[AD17001C]: sw         $s7, 28($t0)
+089BAE58:[2018FFFF]: addi       $t8, $zr, -1
+089BAE5C:[00004012]: mflo       $t0
+089BAE60:[00004810]: mfhi       $t1
+089BAE64:[00005021]: addu       $t2, $zr, $zr <=> li $t2, 0
+089BAE68:[00005821]: addu       $t3, $zr, $zr <=> li $t3, 0
+089BAE6C:[00006021]: addu       $t4, $zr, $zr <=> li $t4, 0
+089BAE70:[000997C2]: srl        $s2, $t1, 0x001F
+089BAE74:[12400007]: beq        $s2, $zr, 0x089BAE94
+089BAE78:[00000000]: nop
+089BAE7C:[01184026]: xor        $t0, $t0, $t8
+089BAE80:[01384826]: xor        $t1, $t1, $t8
+089BAE84:[25080001]: addiu      $t0, $t0, 1
+089BAE88:[15000002]: bne        $t0, $zr, 0x089BAE94
+089BAE8C:[00000000]: nop
+089BAE90:[254A0001]: addiu      $t2, $t2, 1
+089BAE94:[00069FC2]: srl        $s3, $a2, 0x001F
+089BAE98:[12600003]: beq        $s3, $zr, 0x089BAEA8
+089BAE9C:[00000000]: nop
+089BAEA0:[00D83026]: xor        $a2, $a2, $t8
+089BAEA4:[25080001]: addiu      $t0, $t0, 1
+089BAEA8:[24170040]: addiu      $s7, $zr, 64 <=> li $s7, 64
+089BAEAC:[0008A7C2]: srl        $s4, $t0, 0x001F
+089BAEB0:[0009AFC2]: srl        $s5, $t1, 0x001F
+089BAEB4:[000A5040]: sll        $t2, $t2, 0x0001
+089BAEB8:[12A00002]: beq        $s5, $zr, 0x089BAEC4
+089BAEBC:[00000000]: nop
+089BAEC0:[354A0001]: ori        $t2, $t2, 1
+089BAEC4:[00094840]: sll        $t1, $t1, 0x0001
+089BAEC8:[12800002]: beq        $s4, $zr, 0x089BAED4
+089BAECC:[00000000]: nop
+089BAED0:[35290001]: ori        $t1, $t1, 1
+089BAED4:[00084040]: sll        $t0, $t0, 0x0001
+089BAED8:[24160000]: addiu      $s6, $zr, 0 <=> li $s6, 0
+089BAEDC:[0146082A]: slt        $at, $t2, $a2
+089BAEE0:[14200003]: bne        $at, $zr, 0x089BAEF0
+089BAEE4:[00000000]: nop
+089BAEE8:[01465023]: subu       $t2, $t2, $a2
+089BAEEC:[24160001]: addiu      $s6, $zr, 1 <=> li $s6, 1
+089BAEF0:[000BA7C2]: srl        $s4, $t3, 0x001F
+089BAEF4:[000C6040]: sll        $t4, $t4, 0x0001
+089BAEF8:[12800002]: beq        $s4, $zr, 0x089BAF04
+089BAEFC:[00000000]: nop
+089BAF00:[358C0001]: ori        $t4, $t4, 1
+089BAF04:[000B5840]: sll        $t3, $t3, 0x0001
+089BAF08:[01765825]: or         $t3, $t3, $s6
+089BAF0C:[22F7FFFF]: addi       $s7, $s7, -1
+089BAF10:[16E0FFE6]: bne        $s7, $zr, 0x089BAEAC
+089BAF14:[00000000]: nop
+089BAF18:[02729026]: xor        $s2, $s3, $s2
+089BAF1C:[1240000C]: beq        $s2, $zr, 0x089BAF50
+089BAF20:[00000000]: nop
+089BAF24:[11800008]: beq        $t4, $zr, 0x089BAF48
+089BAF28:[00000000]: nop
+089BAF2C:[258C0001]: addiu      $t4, $t4, 1
+089BAF30:[11800005]: beq        $t4, $zr, 0x089BAF48
+089BAF34:[00000000]: nop
+089BAF38:[200C0001]: addi       $t4, $zr, 1
+089BAF3C:[3C080939]: lui        $t0, 0x0939 <=> li $t0, 0x09390000
+089BAF40:[2508ABB8]: addiu      $t0, $t0, -21576
+089BAF44:[AD0C0000]: sw         $t4, 0($t0)
+089BAF48:[01785826]: xor        $t3, $t3, $t8
+089BAF4C:[256B0001]: addiu      $t3, $t3, 1
+089BAF50:[000B1021]: addu       $v0, $zr, $t3 <=> move $v0, $t3
+089BAF54:[3C080972]: lui        $t0, 0x0972 <=> li $t0, 0x09720000
+089BAF58:[2508D1C0]: addiu      $t0, $t0, -11840
+089BAF5C:[8D100000]: lw         $s0, 0($t0)
+089BAF60:[8D110004]: lw         $s1, 4($t0)
+089BAF64:[8D120008]: lw         $s2, 8($t0)
+089BAF68:[8D13000C]: lw         $s3, 12($t0)
+089BAF6C:[8D140010]: lw         $s4, 16($t0)
+089BAF70:[8D150014]: lw         $s5, 20($t0)
+089BAF74:[8D160018]: lw         $s6, 24($t0)
+089BAF78:[8D17001C]: lw         $s7, 28($t0)
+089BAF7C:[03E00008]: jr         $ra
+089BAF80:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
 <!--
 	<NativeCodeSequence name="XXX">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.XXX</Class>
