@@ -266,16 +266,6 @@ public class sceGe_user extends HLEModule {
 					log.debug("hleGeOnAfterCallback restarting list " + list);
 				}
 
-				if (!list.isFinished()) {
-					// If the list is still on the END command, skip it.
-					Memory mem = Memory.getInstance();
-					if (Memory.isAddressGood(list.pc)) {
-						if (VideoEngine.command(mem.read32(list.pc)) == GeCommands.END) {
-							list.pc += 4;
-						}
-					}
-				}
-
 				list.restartList();
 			}
 		}
@@ -457,7 +447,7 @@ public class sceGe_user extends HLEModule {
             result = list.id;
 		}
 
-		if (log.isDebugEnabled()) {
+    	if (log.isDebugEnabled()) {
 			log.debug(String.format("sceGeListEnQueue returning 0x%X", result));
 		}
 
@@ -576,7 +566,7 @@ public class sceGe_user extends HLEModule {
     	}
 
         if (mode == 0 && IntrManager.getInstance().isInsideInterrupt()) {
-            log.debug("sceGeListSync (mode==0) cannot be called inside an interrupt handler!");
+            log.debug("sceGeDrawSync (mode==0) cannot be called inside an interrupt handler!");
             throw new SceKernelErrorException(SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT);
         }
 
@@ -645,9 +635,10 @@ public class sceGe_user extends HLEModule {
     	if (list != null) {
     		synchronized (this) {
         		if (list.status == PSP_GE_LIST_END_REACHED) {
-                	if (mem.read32(list.pc) == (GeCommands.FINISH << 24) &&
-                		mem.read32(list.pc + 4) == (GeCommands.END << 24)) {
-                		list.pc += 8;
+                	if (mem.read32(list.getPc()) == (GeCommands.FINISH << 24) &&
+                		mem.read32(list.getPc() + 4) == (GeCommands.END << 24)) {
+                		list.readNextInstruction();
+                		list.readNextInstruction();
                 	}
         		}
             	list.restartList();

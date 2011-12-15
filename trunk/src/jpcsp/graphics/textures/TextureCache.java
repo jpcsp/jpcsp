@@ -127,4 +127,12 @@ public class TextureCache {
 	public void resetTextureAlreadyHashed(int addr, int clutAddr) {
 		textureAlreadyHashed.remove(getKey(addr, clutAddr));
 	}
+
+	public void reset(IRenderingEngine re) {
+		for (Texture texture : cache.values()) {
+			texture.deleteTexture(re);
+		}
+		cache.clear();
+		resetTextureAlreadyHashed();
+	}
 }
