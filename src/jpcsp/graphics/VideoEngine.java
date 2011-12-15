@@ -1026,8 +1026,8 @@ public class VideoEngine {
     }
 
     // UnSwizzling based on pspplayer
-    private Buffer unswizzleTextureFromMemory(int texaddr, int bytesPerPixel, int level) {
-        int rowWidth = (bytesPerPixel > 0) ? (context.texture_buffer_width[level] * bytesPerPixel) : (context.texture_buffer_width[level] / 2);
+    private Buffer unswizzleTextureFromMemory(int texaddr, int bytesPerPixel, int level, int textureBufferWidthInPixels) {
+        int rowWidth = (bytesPerPixel > 0) ? (textureBufferWidthInPixels * bytesPerPixel) : (textureBufferWidthInPixels / 2);
         int pitch = rowWidth / 4;
         int bxc = rowWidth / 16;
         int byc = Math.max((context.texture_height[level] + 7) / 8, 1);
@@ -4448,6 +4448,11 @@ public class VideoEngine {
     	return context.texture_num_mip_maps;
     }
 
+    private static int alignBufferWidth(int bufferWidth, int alignment) {
+    	alignment -= 1;
+    	return (bufferWidth + alignment) & ~alignment;
+    }
+
     private void loadTexture() {
         // No need to reload or check the texture cache if no texture parameter
         // has been changed since last call loadTexture()
@@ -4577,6 +4582,9 @@ public class VideoEngine {
                             return;
                         }
 
+                        // The texture buffer width must be a multiple of 32
+                        textureBufferWidthInPixels = alignBufferWidth(textureBufferWidthInPixels, 32);
+
                         buffer_storage = context.tex_clut_mode;
                         switch (context.tex_clut_mode) {
                             case CMODE_FORMAT_16BIT_BGR5650:
@@ -4587,10 +4595,6 @@ public class VideoEngine {
                                 int clutSharingOffset = context.mipmapShareClut ? 0 : level * 16;
 
                                 if (!context.texture_swizzle) {
-                                    // In case of 4-bit indexed, texture_buffer_width is the size in bytes,
-                                    // not in pixels.
-                                    textureBufferWidthInPixels *= 2;
-
                                     int length = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level];
                                     IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length / 2, 1);
                                     for (int i = 0; i < length; i += 2) {
@@ -4606,8 +4610,8 @@ public class VideoEngine {
                                         CaptureManager.captureRAM(texaddr, length / 2);
                                     }
                                 } else {
-                                    unswizzleTextureFromMemory(texaddr, 0, level);
-                                    int pixels = context.texture_buffer_width[level] * context.texture_height[level];
+                                    unswizzleTextureFromMemory(texaddr, 0, level, textureBufferWidthInPixels);
+                                    int pixels = textureBufferWidthInPixels * context.texture_height[level];
                                     for (int i = 0, j = 0; i < pixels; i += 8, j++) {
                                         int n = tmp_texture_buffer32[j];
                                         int index = n & 0xF;
@@ -4639,10 +4643,6 @@ public class VideoEngine {
                                 int clutSharingOffset = context.mipmapShareClut ? 0 : level * 16;
 
                                 if (!context.texture_swizzle) {
-                                    // In case of 4-bit indexed, texture_buffer_width is the size in bytes,
-                                    // not in pixels.
-                                    textureBufferWidthInPixels *= 2;
-
                                     int length = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level];
                                     IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length / 2, 1);
                                     for (int i = 0; i < length; i += 2) {
@@ -4658,8 +4658,8 @@ public class VideoEngine {
                                         CaptureManager.captureRAM(texaddr, length / 2);
                                     }
                                 } else {
-                                    unswizzleTextureFromMemory(texaddr, 0, level);
-                                    int pixels = context.texture_buffer_width[level] * context.texture_height[level];
+                                    unswizzleTextureFromMemory(texaddr, 0, level, textureBufferWidthInPixels);
+                                    int pixels = textureBufferWidthInPixels * context.texture_height[level];
                                     for (int i = pixels - 8, j = (pixels / 8) - 1; i >= 0; i -= 8, j--) {
                                         int n = tmp_texture_buffer32[j];
                                         int index = n & 0xF;
@@ -4694,33 +4694,42 @@ public class VideoEngine {
                         break;
                     }
                     case TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED: {
-                    	if (re.canNativeClut()) {
-                            final_buffer = getTextureBuffer(texaddr, 1, level);
+                        // The texture buffer width must be a multiple of 16
+                        textureBufferWidthInPixels = alignBufferWidth(textureBufferWidthInPixels, 16);
+
+                        if (re.canNativeClut()) {
+                            final_buffer = getTextureBuffer(texaddr, 1, level, textureBufferWidthInPixels);
                             textureByteAlignment = 1; // 8 bits
                     	} else {
-	                        final_buffer = readIndexedTexture(level, texaddr, texclut, 1);
+	                        final_buffer = readIndexedTexture(level, texaddr, texclut, 1, textureBufferWidthInPixels);
 	                        buffer_storage = context.tex_clut_mode;
 	                        textureByteAlignment = textureByteAlignmentMapping[context.tex_clut_mode];
                     	}
                         break;
                     }
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED: {
-                    	if (re.canNativeClut()) {
-                    		final_buffer = getTextureBuffer(texaddr, 2, level);
+                        // The texture buffer width must be a multiple of 8
+                        textureBufferWidthInPixels = alignBufferWidth(textureBufferWidthInPixels, 8);
+
+                        if (re.canNativeClut()) {
+                    		final_buffer = getTextureBuffer(texaddr, 2, level, textureBufferWidthInPixels);
                     		textureByteAlignment = 2; // 16 bits
                     	} else {
-                    		final_buffer = readIndexedTexture(level, texaddr, texclut, 2);
+                    		final_buffer = readIndexedTexture(level, texaddr, texclut, 2, textureBufferWidthInPixels);
                     		buffer_storage = context.tex_clut_mode;
                     		textureByteAlignment = textureByteAlignmentMapping[context.tex_clut_mode];
                     	}
                         break;
                     }
                     case TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED: {
-                    	if (re.canNativeClut()) {
-                    		final_buffer = getTextureBuffer(texaddr, 4, level);
+                        // The texture buffer width must be a multiple of 4
+                        textureBufferWidthInPixels = alignBufferWidth(textureBufferWidthInPixels, 4);
+
+                        if (re.canNativeClut()) {
+                    		final_buffer = getTextureBuffer(texaddr, 4, level, textureBufferWidthInPixels);
                     		textureByteAlignment = 4; // 32 bits
                     	} else {
-	                        final_buffer = readIndexedTexture(level, texaddr, texclut, 4);
+	                        final_buffer = readIndexedTexture(level, texaddr, texclut, 4, textureBufferWidthInPixels);
 	                        buffer_storage = context.tex_clut_mode;
 	                        textureByteAlignment = textureByteAlignmentMapping[context.tex_clut_mode];
                     	}
@@ -4729,10 +4738,13 @@ public class VideoEngine {
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {
+                        // The texture buffer width must be a multiple of 8
+                        textureBufferWidthInPixels = alignBufferWidth(textureBufferWidthInPixels, 8);
+
                         textureByteAlignment = 2;  // 16 bits
 
                         if (!context.texture_swizzle) {
-                            int length = Math.max(context.texture_buffer_width[level], context.texture_width[level]) * context.texture_height[level];
+                            int length = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level];
                             final_buffer = Memory.getInstance().getBuffer(texaddr, length * 2);
                             if (final_buffer == null) {
                                 IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length * 2, 2);
@@ -4749,14 +4761,17 @@ public class VideoEngine {
                                 CaptureManager.captureRAM(texaddr, length * 2);
                             }
                         } else {
-                            final_buffer = unswizzleTextureFromMemory(texaddr, 2, level);
+                            final_buffer = unswizzleTextureFromMemory(texaddr, 2, level, textureBufferWidthInPixels);
                         }
 
                         break;
                     }
 
                     case TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888: {
-                        final_buffer = getTextureBuffer(texaddr, 4, level);
+                        // The texture buffer width must be a multiple of 4
+                        textureBufferWidthInPixels = alignBufferWidth(textureBufferWidthInPixels, 4);
+
+                        final_buffer = getTextureBuffer(texaddr, 4, level, textureBufferWidthInPixels);
                         break;
                     }
 
@@ -4931,10 +4946,10 @@ public class VideoEngine {
         }
     }
 
-    private Buffer readIndexedTexture(int level, int texaddr, int texclut, int bytesPerIndex) {
+    private Buffer readIndexedTexture(int level, int texaddr, int texclut, int bytesPerIndex, int textureBufferWidthInPixels) {
         Buffer buffer = null;
 
-        int length = context.texture_buffer_width[level] * context.texture_height[level];
+        int length = textureBufferWidthInPixels * context.texture_height[level];
         switch (context.tex_clut_mode) {
             case CMODE_FORMAT_16BIT_BGR5650:
             case CMODE_FORMAT_16BIT_ABGR5551:
@@ -4958,7 +4973,7 @@ public class VideoEngine {
                         CaptureManager.captureRAM(texaddr, length * bytesPerIndex);
                     }
                 } else {
-                    unswizzleTextureFromMemory(texaddr, bytesPerIndex, level);
+                    unswizzleTextureFromMemory(texaddr, bytesPerIndex, level, textureBufferWidthInPixels);
                     switch (bytesPerIndex) {
                         case 1: {
                             for (int i = 0, j = 0; i < length; i += 4, j++) {
@@ -5016,7 +5031,7 @@ public class VideoEngine {
                         CaptureManager.captureRAM(texaddr, length * bytesPerIndex);
                     }
                 } else {
-                    unswizzleTextureFromMemory(texaddr, bytesPerIndex, level);
+                    unswizzleTextureFromMemory(texaddr, bytesPerIndex, level, textureBufferWidthInPixels);
                     switch (bytesPerIndex) {
                         case 1: {
                             for (int i = length - 4, j = (length / 4) - 1; i >= 0; i -= 4, j--) {
@@ -5748,12 +5763,12 @@ public class VideoEngine {
         return new float[] {u1Pow3, 3 * u * u1Pow2, 3 * uPow2 * u1, uPow3 };
     }
 
-    private Buffer getTextureBuffer(int texaddr, int bytesPerPixel, int level) {
+    private Buffer getTextureBuffer(int texaddr, int bytesPerPixel, int level, int textureBufferWidthInPixels) {
         Buffer final_buffer = null;
 
         if (!context.texture_swizzle) {
             // texture_width might be larger than texture_buffer_width
-            int bufferlen = Math.max(context.texture_buffer_width[level], context.texture_width[level]) * context.texture_height[level] * bytesPerPixel;
+            int bufferlen = Math.max(textureBufferWidthInPixels, context.texture_width[level]) * context.texture_height[level] * bytesPerPixel;
             final_buffer = Memory.getInstance().getBuffer(texaddr, bufferlen);
 
             if (State.captureGeNextFrame) {
@@ -5761,7 +5776,7 @@ public class VideoEngine {
                 CaptureManager.captureRAM(texaddr, bufferlen);
             }
         } else {
-            final_buffer = unswizzleTextureFromMemory(texaddr, bytesPerPixel, level);
+            final_buffer = unswizzleTextureFromMemory(texaddr, bytesPerPixel, level, textureBufferWidthInPixels);
         }
 
         return final_buffer;
