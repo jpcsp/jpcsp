@@ -70,10 +70,12 @@ import jpcsp.graphics.RE.buffer.IREBufferManager;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.graphics.textures.GETexture;
 import jpcsp.graphics.textures.GETextureManager;
+import jpcsp.graphics.textures.TextureCache;
 import jpcsp.hardware.Screen;
 import jpcsp.scheduler.UnblockThreadAction;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.AbstractStringSettingsListener;
+import jpcsp.settings.ISettingsListener;
 import jpcsp.settings.Settings;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
@@ -111,6 +113,20 @@ public class sceDisplay extends HLEModule {
 	    	if (statistics != null) {
 	            statistics.start();
 	        }
+
+	    	if (resetDisplaySettings) {
+	    		// Some display settings have been updated,
+	    		// a new rendering engine has to be created.
+	    		TextureCache.getInstance().reset(re);
+	    		startModules = true;
+	    		re = null;
+	    		resetDisplaySettings = false;
+
+	    		saveGEToTexture = Settings.getInstance().readBool("emu.enablegetexture");
+	        	if (saveGEToTexture) {
+	        		log.info("Saving GE to Textures");
+	        	}
+	    	}
 
 	    	if (re == null) {
 	    		if (startModules) {
@@ -280,8 +296,6 @@ public class sceDisplay extends HLEModule {
     	return canvas;
     }
 
-	private static final long serialVersionUID = 2267866365228834812L;
-
     private boolean onlyGEGraphics = false;
     private boolean saveGEToTexture = false;
     private static final boolean useDebugGL = false;
@@ -311,6 +325,7 @@ public class sceDisplay extends HLEModule {
     private boolean startModules;
     private boolean isStarted;
     private int drawBuffer;
+    private boolean resetDisplaySettings;
 
     // current display mode
     private int mode;
@@ -503,13 +518,34 @@ public class sceDisplay extends HLEModule {
 		}
 	}
 
-    @Override
+	private class DisplaySettingsListener implements ISettingsListener {
+		@Override
+		public void settingsValueChanged(String option, String value) {
+			if (isStarted) {
+				resetDisplaySettings = true;
+			}
+		}
+	}
+
+	@Override
     public String getName() {
         return "sceDisplay";
     }
 
     public sceDisplay() throws LWJGLException {
     	setSettingsListener("emu.graphics.antialias", new AntiAliasSettingsListerner());
+
+    	DisplaySettingsListener displaySettingsListener = new DisplaySettingsListener();
+    	setSettingsListener("emu.useVertexCache", displaySettingsListener);
+    	setSettingsListener("emu.useshaders", displaySettingsListener);
+    	setSettingsListener("emu.useGeometryShader", displaySettingsListener);
+    	setSettingsListener("emu.disableubo", displaySettingsListener);
+    	setSettingsListener("emu.enablevao", displaySettingsListener);
+    	setSettingsListener("emu.enablegetexture", displaySettingsListener);
+    	setSettingsListener("emu.enablenativeclut", displaySettingsListener);
+    	setSettingsListener("emu.enabledynamicshaders", displaySettingsListener);
+    	setSettingsListener("emu.enableshaderstenciltest", displaySettingsListener);
+    	setSettingsListener("emu.enableshadercolormask", displaySettingsListener);
 
     	canvas = new AWTGLCanvas_sceDisplay();
         setScreenResolution(Screen.width, Screen.height);
@@ -723,6 +759,7 @@ public class sceDisplay extends HLEModule {
     	// Start the VideoEngine at the next display(GLAutoDrawable).
     	startModules = true;
     	re = null;
+    	resetDisplaySettings = false;
 
     	saveGEToTexture = Settings.getInstance().readBool("emu.enablegetexture");
     	if (saveGEToTexture) {
