@@ -88,14 +88,16 @@ public class ConsoleWindow extends javax.swing.JFrame {
 
         ClearMessageButton.setText(Resource.get("clearmessages"));
         ClearMessageButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            @Override
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ClearMessageButtonActionPerformed(evt);
             }
         });
 
         SaveMessageToFileButton.setText(Resource.get("savemessages"));
         SaveMessageToFileButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            @Override
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
                 SaveMessageToFileButtonActionPerformed(evt);
             }
         });

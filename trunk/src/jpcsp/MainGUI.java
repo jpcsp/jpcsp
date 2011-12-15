@@ -143,7 +143,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     private JComponent fillerTop;
     private JComponent fillerBottom;
     
-    public DisplayMode getDisplayMode() {
+    @Override
+	public DisplayMode getDisplayMode() {
     	return displayMode;
     }
 
@@ -312,7 +313,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         RunButton.setIconTextGap(2);
         RunButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         RunButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            @Override
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
                 RunButtonActionPerformed(evt);
             }
         });
@@ -325,6 +327,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         PauseButton.setIconTextGap(2);
         PauseButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         PauseButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 PauseButtonActionPerformed(evt);
             }
@@ -338,6 +341,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ResetButton.setIconTextGap(2);
         ResetButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         ResetButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ResetButtonActionPerformed(evt);
             }
@@ -352,6 +356,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         openUmd.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadUmdIcon.png"))); // NOI18N
         openUmd.setText(Resource.get("loadumd"));
         openUmd.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 openUmdActionPerformed(evt);
             }
@@ -362,6 +367,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         OpenFile.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadFileIcon.png"))); // NOI18N
         OpenFile.setText(Resource.get("loadfile"));
         OpenFile.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 OpenFileActionPerformed(evt);
             }
@@ -372,6 +378,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         OpenMemStick.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadMemoryStick.png"))); // NOI18N
         OpenMemStick.setText(Resource.get("loadmemstick"));
         OpenMemStick.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 OpenMemStickActionPerformed(evt);
             }
@@ -387,6 +394,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         SaveSnap.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/SaveStateIcon.png"))); // NOI18N
         SaveSnap.setText(Resource.get("savesnapshot"));
         SaveSnap.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 SaveSnapActionPerformed(evt);
             }
@@ -397,6 +405,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         LoadSnap.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadStateIcon.png"))); // NOI18N
         LoadSnap.setText(Resource.get("loadsnapshot"));
         LoadSnap.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 LoadSnapActionPerformed(evt);
             }
@@ -408,6 +417,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ExitEmu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/CloseIcon.png"))); // NOI18N
         ExitEmu.setText(Resource.get("exit"));
         ExitEmu.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ExitEmuActionPerformed(evt);
             }
@@ -426,6 +436,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         oneTimeResize.setSelected(true);
         oneTimeResize.setText("1x");
         oneTimeResize.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 oneTimeResizeActionPerformed(evt);
             }
@@ -435,6 +446,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         resGroup.add(twoTimesResize);
         twoTimesResize.setText("2x");
         twoTimesResize.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 twoTimesResizeActionPerformed(evt);
             }
@@ -444,6 +456,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         resGroup.add(threeTimesResize);
         threeTimesResize.setText("3x");
         threeTimesResize.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 threeTimesResizeActionPerformed(evt);
             }
@@ -458,6 +471,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         noneCheck.setSelected(true);
         noneCheck.setText("None");
         noneCheck.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 noneCheckActionPerformed(evt);
             }
@@ -468,6 +482,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         anisotropicCheck.setSelected(Settings.getInstance().readBool("emu.graphics.filters.anisotropic"));
         anisotropicCheck.setText("Anisotropic");
         anisotropicCheck.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 anisotropicCheckActionPerformed(evt);
             }
@@ -480,6 +495,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ShotItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/ScreenshotIcon.png"))); // NOI18N
         ShotItem.setText(Resource.get("screenshot"));
         ShotItem.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ShotItemActionPerformed(evt);
             }
@@ -490,6 +506,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         RotateItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/RotateIcon.png"))); // NOI18N
         RotateItem.setText(Resource.get("rotate"));
         RotateItem.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 RotateItemActionPerformed(evt);
             }
@@ -503,7 +520,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         MuteOpt.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_M, java.awt.event.InputEvent.SHIFT_MASK));
         MuteOpt.setText("Mute");
         MuteOpt.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            @Override
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
                 MuteOptActionPerformed(evt);
             }
         });
@@ -514,7 +532,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ControlsConf.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F11, 0));
         ControlsConf.setText("Controls");
         ControlsConf.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            @Override
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ControlsConfActionPerformed(evt);
             }
         });
@@ -524,7 +543,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ConfigMenu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/SettingsIcon.png"))); // NOI18N
         ConfigMenu.setText(Resource.get("settings"));
         ConfigMenu.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            @Override
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ConfigMenuActionPerformed(evt);
             }
         });
@@ -540,7 +560,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         ToggleLogger.setText("Show Logger");
         ToggleLogger.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            @Override
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ToggleLoggerActionPerformed(evt);
             }
         });
@@ -548,7 +569,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         CustomLogger.setText("Customize...");
         CustomLogger.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            @Override
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
                 CustomLoggerActionPerformed(evt);
             }
         });
@@ -558,7 +580,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         EnterDebugger.setText(Resource.get("enterdebugger"));
         EnterDebugger.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            @Override
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
                 EnterDebuggerActionPerformed(evt);
             }
         });
@@ -566,7 +589,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         EnterMemoryViewer.setText(Resource.get("memoryviewer"));
         EnterMemoryViewer.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            @Override
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
                 EnterMemoryViewerActionPerformed(evt);
             }
         });
@@ -574,6 +598,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         EnterImageViewer.setText(Resource.get("imageviewer"));
         EnterImageViewer.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 EnterImageViewerActionPerformed(evt);
             }
@@ -582,6 +607,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         VfpuRegisters.setText(Resource.get("vfpuregisters"));
         VfpuRegisters.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 VfpuRegistersActionPerformed(evt);
             }
@@ -590,6 +616,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         ElfHeaderViewer.setText(Resource.get("elfheaderinfo"));
         ElfHeaderViewer.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ElfHeaderViewerActionPerformed(evt);
             }
@@ -598,6 +625,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         FileLog.setText(Resource.get("filelog"));
         FileLog.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 FileLogActionPerformed(evt);
             }
@@ -606,6 +634,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         InstructionCounter.setText(Resource.get("instructioncounter"));
         InstructionCounter.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 InstructionCounterActionPerformed(evt);
             }
@@ -616,6 +645,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         DumpIso.setText(Resource.get("dumpisotoisoindex"));
         DumpIso.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 DumpIsoActionPerformed(evt);
             }
@@ -624,6 +654,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         ResetProfiler.setText(Resource.get("resetprofilerinformation"));
         ResetProfiler.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ResetProfilerActionPerformed(evt);
             }
@@ -636,6 +667,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         cwcheat.setText("CWCheat");
         cwcheat.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cwcheatActionPerformed(evt);
             }
@@ -649,6 +681,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         English.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/en_EN.png"))); // NOI18N
         English.setText(Resource.get("english"));
         English.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 EnglishActionPerformed(evt);
             }
@@ -658,6 +691,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         French.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/fr_FR.png"))); // NOI18N
         French.setText(Resource.get("french"));
         French.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 FrenchActionPerformed(evt);
             }
@@ -667,6 +701,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         German.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/de_DE.png"))); // NOI18N
         German.setText(Resource.get("german"));
         German.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 GermanActionPerformed(evt);
             }
@@ -676,6 +711,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         Lithuanian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/lt_LT.png"))); // NOI18N
         Lithuanian.setText(Resource.get("lithuanian"));
         Lithuanian.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 LithuanianActionPerformed(evt);
             }
@@ -685,6 +721,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         Spanish.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/es_ES.png"))); // NOI18N
         Spanish.setText(Resource.get("spanish"));
         Spanish.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 SpanishActionPerformed(evt);
             }
@@ -694,6 +731,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         Catalan.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/es_CA.png"))); // NOI18N
         Catalan.setText(Resource.get("catalan"));
         Catalan.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 CatalanActionPerformed(evt);
             }
@@ -703,6 +741,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         PortugueseBR.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pt_BR.png"))); // NOI18N
         PortugueseBR.setText(Resource.get("portuguesebr"));
         PortugueseBR.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 PortugueseBRActionPerformed(evt);
             }
@@ -712,6 +751,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         Portuguese.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pt_PT.png"))); // NOI18N
         Portuguese.setText(Resource.get("portuguese"));
         Portuguese.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 PortugueseActionPerformed(evt);
             }
@@ -721,6 +761,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         Japanese.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/jp_JP.png"))); // NOI18N
         Japanese.setText(Resource.get("japanese"));
         Japanese.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 JapaneseActionPerformed(evt);
             }
@@ -730,6 +771,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         Russian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/ru_RU.png"))); // NOI18N
         Russian.setText(Resource.get("russian"));
         Russian.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 RussianActionPerformed(evt);
             }
@@ -739,6 +781,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         Polish.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pl_PL.png"))); // NOI18N
         Polish.setText(Resource.get("polish"));
         Polish.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 PolishActionPerformed(evt);
             }
@@ -748,6 +791,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ChinesePRC.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/cn_CN.png"))); // NOI18N
         ChinesePRC.setText(Resource.get("chinesePRC"));
         ChinesePRC.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ChinesePRCActionPerformed(evt);
             }
@@ -757,6 +801,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ChineseTW.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/tw_TW.png"))); // NOI18N
         ChineseTW.setText(Resource.get("chineseTW"));
         ChineseTW.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ChineseTWActionPerformed(evt);
             }
@@ -766,6 +811,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         Italian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/it_IT.png"))); // NOI18N
         Italian.setText(Resource.get("italian"));
         Italian.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ItalianActionPerformed(evt);
             }
@@ -780,6 +826,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         About.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/AboutIcon.png"))); // NOI18N
         About.setText(Resource.get("about"));
         About.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AboutActionPerformed(evt);
             }
@@ -910,7 +957,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
      * 
      * @param window     the window to be displayed
      */
-    public void startWindowDialog(Window window) {
+    @Override
+	public void startWindowDialog(Window window) {
         GraphicsDevice localDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
     	if (localDevice.getFullScreenWindow() != null) {
     		localDevice.setFullScreenWindow(null);
@@ -921,7 +969,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     /**
      * Restore the full screen window if required.
      */
-    public void endWindowDialog() {
+    @Override
+	public void endWindowDialog() {
     	if (displayMode != null) {
     		GraphicsDevice localDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
     		if (localDevice.getFullScreenWindow() == null) {
@@ -971,7 +1020,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     	}
     }
 
-    public void setLocation() {
+    @Override
+	public void setLocation() {
     	if (displayMode != null && useFullscreen) {
 	        // FIXME When running in non-native resolution, the window is not displaying
 	        // if it is completely visible. It is only displaying if part of it is
@@ -991,7 +1041,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     	}
     }
 
-    public void setFullScreenDisplaySize() {
+    @Override
+	public void setFullScreenDisplaySize() {
 		Dimension size = new Dimension(sceDisplay.getResizedWidth(Screen.width), sceDisplay.getResizedHeight(Screen.height));
 		setFullScreenDisplaySize(size);
     }
@@ -1999,13 +2050,15 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
         }
     }
 
-    public void RefreshButtons() {
+    @Override
+	public void RefreshButtons() {
         RunButton.setSelected(Emulator.run && !Emulator.pause);
         PauseButton.setSelected(Emulator.run && Emulator.pause);
     }
 
     /** set the FPS portion of the title */
-    public void setMainTitle(String message) {
+    @Override
+	public void setMainTitle(String message) {
         String oldtitle = getTitle();
         int sub = oldtitle.indexOf("FPS:");
         if (sub != -1) {
@@ -2116,7 +2169,8 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
         });
     }
 
-    public boolean isFullScreen() {
+    @Override
+	public boolean isFullScreen() {
     	return useFullscreen;
     }
 

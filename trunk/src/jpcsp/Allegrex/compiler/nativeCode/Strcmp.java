@@ -36,7 +36,7 @@ public class Strcmp extends AbstractNativeCodeSequence {
 		IMemoryReader memoryReader2 = MemoryReader.getMemoryReader(src2Addr, 1);
 
 		if (memoryReader1 != null && memoryReader2 != null) {
-			for (int i = 0; true; i++) {
+			while (true) {
 				int c1 = memoryReader1.readNext();
 				int c2 = memoryReader2.readNext();
 				if (c1 != c2) {

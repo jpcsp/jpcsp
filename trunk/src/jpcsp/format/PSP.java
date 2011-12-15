@@ -29,11 +29,12 @@ import jpcsp.util.Utilities;
  *
  * @author shadow
  */
+@SuppressWarnings("unused")
 public class PSP {
 
     public static final int PSP_MAGIC = 0x5053507E;
     private int magic;
-    private int mod_attr;
+	private int mod_attr;
     private int comp_mod_attr;
     private int mod_ver_lo;
     private int mod_ver_hi;

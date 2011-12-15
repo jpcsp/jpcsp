@@ -674,73 +674,91 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
             detach();
         }
 
-        public void propertyChange(PropertyChangeEvent evt) {
+        @Override
+		public void propertyChange(PropertyChangeEvent evt) {
             change();
         }
+        @Override
         public void treeNodesChanged(TreeModelEvent e) {
             change();
         }
 
+        @Override
         public void treeNodesInserted(TreeModelEvent e) {
             change();
         }
 
+        @Override
         public void treeNodesRemoved(TreeModelEvent e) {
             change();
         }
 
+        @Override
         public void treeStructureChanged(TreeModelEvent e) {
             change();
         }
 
+        @Override
         public void hierarchyChanged(HierarchyEvent e) {
             change();
         }
 
+        @Override
         public void valueChanged(TreeSelectionEvent e) {
             change();
         }
 
+        @Override
         public void ancestorMoved(HierarchyEvent e) {
             change();
         }
 
+        @Override
         public void ancestorResized(HierarchyEvent e) {
             change();
         }
 
+        @Override
         public void stateChanged(ChangeEvent e) {
             change();
         }
 
+        @Override
         public void valueChanged(ListSelectionEvent e) {
             change();
         }
 
+        @Override
         public void intervalAdded(ListDataEvent e) {
             change();
         }
 
+        @Override
         public void intervalRemoved(ListDataEvent e) {
             change();
         }
 
+        @Override
         public void contentsChanged(ListDataEvent e) {
             change();
         }
 
+        @Override
         public void componentResized(ComponentEvent e) {
             change();
         }
 
+        @Override
         public void componentMoved(ComponentEvent e) {
             change();
         }
 
+        @Override
         public void componentShown(ComponentEvent e) {
             change();
         }
 
+        @Override
         public void componentHidden(ComponentEvent e) {
             change();
         }
