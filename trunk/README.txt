@@ -91,13 +91,17 @@ JPCSP v0.7 (????????):
 -> Added the configuration of regional settings
    under "Options" > "Configuration" > "Region";
 
+-> Configuration settings can be changed "on the fly",
+   i.e. the changes are effective immediately.
+
 -> Draft implementation for the support of Video UMDs;
 
 -> Basic network support: Infrastructure network is almost complete.
-   Adhoc network or Signin to Playstation Network are not supported at all.
+   Adhoc network or Signin to the Playstation Network are not supported at all.
 
--> A lot of compatibility improvements in almost of the PSP modules.
+-> A lot of compatibility improvements in almost all of the PSP modules.
 
+-> Major code cleanup in the module architecture (now using Java reflection).
 
 
 
@@ -370,7 +374,7 @@ Displays images directly loaded from the VRAM.
 
 
 * VFPU Registers:
-Contains internal information on VFPU oprations.
+Contains internal information on VFPU operations.
 
 
 * Instruction Counter:
@@ -390,7 +394,7 @@ file.
 
 
 - Profiler:
-The profiler is a method used by JPCSP to analyse repeated code sequences in
+The profiler is a method used by JPCSP to analyze repeated code sequences in
 order to allow further optimization. If you wish, you can turn this feature on
 under "Options" > "Configuration" > "General". The data will be saved in the file
 "profiler.txt" after closing the emulator.
@@ -538,12 +542,13 @@ Jpcsp "flash0/fonts" directory.
 ...............................................................................
 JPCSP Team (active):
 - gid15
-- hlide
 - Hykem
+- soywiz
 - Orphis
 - shadow
 
 Past members and contributors (inactive):
+- hlide
 - fiveofhearts
 - gigaherz
 - mad
@@ -562,10 +567,30 @@ Past members and contributors (inactive):
 
 Beta-testers:
 - BlackDaemon
-- SilvX
-- s1n
-- Foxik
 - Darth1701
+- Hyakki
+- Kai3213
+- MaXiMu
+- dista_bagus
+- beanclr
+- Vegerunks
+- pmk
+- serio
+- shakirmole
+- otenki
+- mordaki987
+- legend80
+- Itaru
+- theball
+- virgil94
+- Pinguito
+- andutrache
+- hyperspeedgx
+- l2sp
+- ionelush2001
+- rcoltrane
+...and a lot more
+
 ...............................................................................
 
 
