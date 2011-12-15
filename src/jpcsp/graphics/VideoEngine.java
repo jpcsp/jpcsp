@@ -5697,30 +5697,31 @@ public class VideoEngine {
 		if (re.isVertexArrayAvailable()) {
 			re.bindVertexArray(0);
 		}
-		// TODO: Compute the normals
-		setDataPointers(3, useVertexColor, 4, useTexture, 2, useNormal, 0, true);
 
 		int type = patch_prim_types[context.patch_prim];
 		re.setVertexInfo(vinfo, false, useVertexColor, useTexture, type);
 
+		// TODO: Compute the normals
+		setDataPointers(3, useVertexColor, 4, useTexture, 2, useNormal, 0, true);
+
 		ByteBuffer drawByteBuffer = bufferManager.getBuffer(bufferId);
 		drawByteBuffer.clear();
 		FloatBuffer drawFloatBuffer = drawByteBuffer.asFloatBuffer();
-        for(int j = 0; j <= context.patch_div_t - 1; j++) {
+        for (int j = 0; j <= context.patch_div_t - 1; j++) {
         	drawFloatBuffer.clear();
 
-        	for(int i = 0; i <= context.patch_div_s; i++) {
+        	for (int i = 0; i <= context.patch_div_s; i++) {
         		VertexState v1 = patch[i][j];
                 VertexState v2 = patch[i][j + 1];
 
-        		if(useTexture)     drawFloatBuffer.put(v1.t);
-        		if(useVertexColor) drawFloatBuffer.put(v1.c);
-        		if(useNormal)      drawFloatBuffer.put(v1.n);
+        		if (useTexture)     drawFloatBuffer.put(v1.t);
+        		if (useVertexColor) drawFloatBuffer.put(v1.c);
+        		if (useNormal)      drawFloatBuffer.put(v1.n);
         		drawFloatBuffer.put(v1.p);
 
-        		if(useTexture)     drawFloatBuffer.put(v2.t);
-        		if(useVertexColor) drawFloatBuffer.put(v2.c);
-        		if(useNormal)      drawFloatBuffer.put(v2.n);
+        		if (useTexture)     drawFloatBuffer.put(v2.t);
+        		if (useVertexColor) drawFloatBuffer.put(v2.c);
+        		if (useNormal)      drawFloatBuffer.put(v2.n);
         		drawFloatBuffer.put(v2.p);
         	}
 
