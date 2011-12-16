@@ -671,6 +671,10 @@ public class ThreadManForUser extends HLEModule {
         hleBlockCurrentThread(null);
     }
 
+    public SceKernelCallbackInfo hleKernelReferCallbackStatus(int uid) {
+    	return callbackMap.get(uid);
+    }
+
     /**
      * Enter the current thread in a wait state.
      *
@@ -2222,7 +2226,7 @@ public class ThreadManForUser extends HLEModule {
             log.debug("sceKernelReferCallbackStatus SceUID=" + Integer.toHexString(uid) + " info=" + Integer.toHexString(info_addr));
         }
 
-        SceKernelCallbackInfo info = callbackMap.get(uid);
+        SceKernelCallbackInfo info = hleKernelReferCallbackStatus(uid);
         if (info == null) {
             log.warn("sceKernelReferCallbackStatus unknown uid 0x" + Integer.toHexString(uid));
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_NOT_FOUND_CALLBACK;
@@ -2231,7 +2235,7 @@ public class ThreadManForUser extends HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_ILLEGAL_ADDR;
         } else {
             int size = mem.read32(info_addr);
-            if (size == SceKernelCallbackInfo.size) {
+            if (size >= SceKernelCallbackInfo.size) {
                 info.write(mem, info_addr);
                 cpu.gpr[2] = 0;
             } else {

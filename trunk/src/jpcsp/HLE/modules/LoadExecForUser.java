@@ -18,7 +18,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules;
 
-public class LoadExecForUser extends jpcsp.HLE.modules150.LoadExecForUser {
+public class LoadExecForUser extends jpcsp.HLE.modules500.LoadExecForUser {
 	@Override
 	public final String getName() { return "LoadExecForUser"; }
 }
