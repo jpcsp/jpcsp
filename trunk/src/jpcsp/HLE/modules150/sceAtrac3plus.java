@@ -221,7 +221,7 @@ public class sceAtrac3plus extends HLEModule {
                             atracBytesPerFrame = mem.read16(currentAddr + 12);
                             int hiBytesPerSample = mem.read16(currentAddr + 14);
                             if (log.isDebugEnabled()) {
-                                log.debug(String.format("WAVE format: magic=0x%08X ('%s'), chunkSize=%d, compressionCode=0x%04X, channels=%d, sampleRate=%d, bitrate=%d, chunkAlign=%d, hiBytesPerSample=%d", chunkMagic, getStringFromInt32(chunkMagic), chunkSize, compressionCode, atracChannels, atracSampleRate, atracBitrate, atracBytesPerFrame, hiBytesPerSample));
+                                log.debug(String.format("WAVE format: magic=0x%08X('%s'), chunkSize=%d, compressionCode=0x%04X, channels=%d, sampleRate=%d, bitrate=%d, chunkAlign=%d, hiBytesPerSample=%d", chunkMagic, getStringFromInt32(chunkMagic), chunkSize, compressionCode, atracChannels, atracSampleRate, atracBitrate, atracBytesPerFrame, hiBytesPerSample));
                                 // Display rest of chunk as debug information
                                 StringBuilder restChunk = new StringBuilder();
                                 for (int i = 16; i < chunkSize; i++) {
@@ -240,6 +240,9 @@ public class sceAtrac3plus extends HLEModule {
             			if (chunkSize >= 8) {
                             atracEndSample = mem.read32(currentAddr);
                             atracSampleOffset = mem.read32(currentAddr + 4); // The loop samples are offset by this value
+                            if (log.isDebugEnabled()) {
+                            	log.debug(String.format("FACT Chunk: endSample=%d, sampleOffset=%d", atracEndSample, atracSampleOffset));
+                            }
             			}
             			break;
             		}
@@ -445,7 +448,7 @@ public class sceAtrac3plus extends HLEModule {
                 forceAllDataIsOnMemory = false;
                 forceReloadOfData = false;
                 analyzeAtracHeader();
-                log.info(String.format("hleAtracSetData atracID=%d, buffer=0x%08X, bufferSize=0x%X, fileSize=0x%X", getAtracId(), buffer, inputBufferSize, inputFileSize));
+                log.info(String.format("hleAtracSetData atracID=%d, buffer=0x%08X, readSize=0x%X, bufferSize=0x%X, fileSize=0x%X", getAtracId(), buffer, readSize, inputBufferSize, inputFileSize));
                 if (getAtracCodec() == null) {
                     log.warn(String.format("hleAtracSetData atracID=%d is invalid", getAtracId()));
                     return;
@@ -851,10 +854,11 @@ public class sceAtrac3plus extends HLEModule {
         CpuState cpu = processor.cpu;
 
         int halfBuffer = cpu.gpr[4];
-        int halfBufferSize = cpu.gpr[5];
+        int readSize = cpu.gpr[5];
+        int halfBufferSize = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracSetHalfwayBufferAndGetID buffer = 0x%08X, bufferSize = 0x%08X", halfBuffer, halfBufferSize));
+            log.debug(String.format("sceAtracSetHalfwayBufferAndGetID buffer = 0x%08X, readSize = 0x%08X, bufferSize = 0x%08X", halfBuffer, readSize, halfBufferSize));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -866,7 +870,7 @@ public class sceAtrac3plus extends HLEModule {
         	int codecType = getCodecType(halfBuffer);
             atID = hleCreateAtracID(codecType);
             if (atracIDs.containsKey(atID)) {
-                atracIDs.get(atID).setData(halfBuffer, halfBufferSize, halfBufferSize, false);
+                atracIDs.get(atID).setData(halfBuffer, readSize, halfBufferSize, false);
             }
         }
         cpu.gpr[2] = atID;

@@ -88,7 +88,7 @@ public class PacketChannel extends FIFOByteBuffer implements IURLProtocolHandler
 				readLength += readSize;
 				position += readSize;
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("PacketChannel: read %d bytes", size));
+					log.debug(String.format("PacketChannel: read %d/%d bytes", readSize, size));
 				}
 			} else {
 				log.debug("PacketChannel: End of data");
