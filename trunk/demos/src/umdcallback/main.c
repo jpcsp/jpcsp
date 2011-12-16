@@ -19,7 +19,7 @@ int sceUmdDeactivate(int unit, const char *drive);
 int sceUmdGetErrorStat();
 int sceUmdGetDriveStat();
 int sceUmdRegisterUMDCallBack(int cbid);
-int sceUmdWaitDriveStatCB(int stat, int *timeout);
+int sceUmdWaitDriveStatCB(int stat, int timeout);
 int sceUmdCancelWaitDriveStat();
 
 int CallbackThread(SceSize args, void *argp);
@@ -65,7 +65,7 @@ void printUmdInfo()
 
 int umd_callback(int count, int event, void *common)
 {
-    printf("umd_callback count=%d event=0x%02x\n", count, event);
+    printf("umd_callback count=%d event=0x%02x common=0x%08X\n", count, event, (int) common);
     printUmdInfo();
 
     return 0;
@@ -155,12 +155,17 @@ int main(int argc, char *argv[])
 
         // result:
         // callback events are generated if we launch from iso or immediately after psplink has reset
-        cbid = sceKernelCreateCallback("UMD Callback", umd_callback, (void*)0x34343434);
+        cbid = sceKernelCreateCallback("UMD Callback (not active)", umd_callback, (void*)0x34343434);
         result = sceUmdRegisterUMDCallBack(cbid);
-        printf("sceUmdRegisterUMDCallBack result %08x\n", result);
+        printf("sceUmdRegisterUMDCallBack result %08X\n", result);
+
+		// Register a second UMD callback: it will overwrite the first one.
+		cbid = sceKernelCreateCallback("UMD Callback", umd_callback, (void*)0x11111111);
+		result = sceUmdRegisterUMDCallBack(cbid);
+        printf("sceUmdRegisterUMDCallBack result %08X\n", result);
     }
 
-    while(!done)
+    while (!done)
     {
         sceCtrlReadBufferPositive(&pad, 1); // context switch in here
         //sceCtrlPeekBufferPositive(&pad, 1); // no context switch version
@@ -181,7 +186,7 @@ int main(int argc, char *argv[])
         if (buttonDown & PSP_CTRL_CROSS)
         {
             printf("sceKernelDelayThreadCB ...\n");
-            sceKernelDelayThreadCB(1000);
+            sceKernelDelayThreadCB(10000);
         }
 
         if (buttonDown & PSP_CTRL_CIRCLE)
@@ -262,8 +267,8 @@ int main(int argc, char *argv[])
             done = 1;
 
         oldButtons = pad.Buttons;
-        //sceDisplayWaitVblank(); // only catch callback when we press Cross (sceKernelDelayThreadCB)
-        sceDisplayWaitVblankCB(); // catch all callback events
+        sceDisplayWaitVblank(); // only catch callback when we press Cross (sceKernelDelayThreadCB)
+        //sceDisplayWaitVblankCB(); // catch all callback events
     }
 
     sceKernelExitGame();
