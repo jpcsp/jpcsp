@@ -141,6 +141,8 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     	// a maximum of 32 registered callbacks each.
     	// Don't know yet for the other types, assuming also 32.
     	private int maxNumberOfCallbacks = 32;
+    	// Registering a new callback overwrites the previous one.
+    	private boolean registerOnlyLastCallback = false;
 
     	public RegisteredCallbacks(int type) {
     		this.type = type;
@@ -177,6 +179,10 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 
 			if (getNumberOfCallbacks() >= maxNumberOfCallbacks) {
 				return false;
+			}
+
+			if (registerOnlyLastCallback) {
+				callbacks.clear();
 			}
 
 			callbacks.add(callback);
@@ -220,7 +226,11 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     		return callbacks.get(index);
     	}
 
-    	@Override
+		public void setRegisterOnlyLastCallback() {
+			registerOnlyLastCallback = true;
+		}
+
+		@Override
 		public String toString() {
 			return String.format("RegisteredCallbacks[type %d, count %d, ready %d]", type, callbacks.size(), readyCallbacks.size());
 		}
@@ -308,6 +318,8 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         for (int i = 0; i < registeredCallbacks.length; i++) {
         	registeredCallbacks[i] = new RegisteredCallbacks(i);
         }
+    	// The UMD callback registers only the last callback.
+        registeredCallbacks[THREAD_CALLBACK_UMD].setRegisterOnlyLastCallback();
     }
 
     public void saveContext() {
