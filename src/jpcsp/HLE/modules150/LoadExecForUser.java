@@ -43,7 +43,8 @@ import org.apache.log4j.Logger;
 
 public class LoadExecForUser extends HLEModule {
 
-    private static Logger log = Modules.getLogger("LoadExecForUser");
+    protected static Logger log = Modules.getLogger("LoadExecForUser");
+    protected int registeredExitCallbackUid;
 
     @Override
     public String getName() {
@@ -127,7 +128,9 @@ public class LoadExecForUser extends HLEModule {
     public int sceKernelRegisterExitCallback(int uid) {
         log.info("sceKernelRegisterExitCallback SceUID=" + Integer.toHexString(uid));
 
-        Modules.ThreadManForUserModule.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_EXIT, uid);
+        if (Modules.ThreadManForUserModule.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_EXIT, uid)) {
+            registeredExitCallbackUid = uid;
+        }
 
         return 0;
     }
