@@ -92,7 +92,7 @@ public class SysMemUserForUser extends HLEModule {
 	public void stop() {
 		started = false;
 
-        super.start();
+        super.stop();
 	}
 
     public void reset() {
