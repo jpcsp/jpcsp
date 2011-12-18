@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.sound;
 
+import org.apache.log4j.Level;
+
+import jpcsp.HLE.Modules;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
@@ -221,10 +224,14 @@ public class Utils {
 		}
 
 		if (inLeftVolume < 0.f || inLeftVolume > 1.f) {
-			throw new UnsupportedOperationException("Incorrect volume " + inLeftVolume);
+			if (Modules.log.isEnabledFor(Level.WARN)) {
+				Modules.log.warn(String.format("Utils.mixStereoInMemory left volume outside range %f", inLeftVolume));
+			}
 		}
 		if (inRightVolume < 0.f || inRightVolume > 1.f) {
-			throw new UnsupportedOperationException("Incorrect volume " + inRightVolume);
+			if (Modules.log.isEnabledFor(Level.WARN)) {
+				Modules.log.warn(String.format("Utils.mixStereoInMemory right volume outside range %f", inRightVolume));
+			}
 		}
 
 		int length = samples << 2;
