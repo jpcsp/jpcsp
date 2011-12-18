@@ -1729,7 +1729,8 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		if (context.isRsRegister0() && context.isRtRegister0()) {
+		// SUB $rd, $rs, $rs <=> li $rd, 0
+		if (context.getRsRegisterIndex() == context.getRtRegisterIndex()) {
 			context.storeRd(0);
 		} else {
 			context.prepareRdForStore();
