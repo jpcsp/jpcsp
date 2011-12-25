@@ -124,8 +124,31 @@ public class CryptoEngine {
     private static final int[] amHashKey4 = {0x13, 0x5F, 0xA4, 0x7C, 0xAB, 0x39, 0x5B, 0xA4, 0x76, 0xB8, 0xCC, 0xA9, 0x8F, 0x3A, 0x04, 0x45};
     private static final int[] amHashKey5 = {0x67, 0x8D, 0x7F, 0xA3, 0x2A, 0x9C, 0xA0, 0xD1, 0x50, 0x8A, 0xD8, 0x38, 0x5E, 0x4B, 0x01, 0x7E};
     
+    private static final int[] drmFixedKey1 = {0x38, 0x20, 0xD0, 0x11, 0x07, 0xA3, 0xFF, 0x3E, 0x0A, 0x4C, 0x20, 0x85, 0x39, 0x10, 0xB5, 0x54};
+    private static final int[] drmFixedKey2 = {0xBA, 0x87, 0xE4, 0xAB, 0x2C, 0x60, 0x5F, 0x59, 0xB8, 0x3B, 0xDB, 0xA6, 0x82, 0xFD, 0xAE, 0x14};
+    private static final int[] drmVersionKey1 = {0xDA, 0x7D, 0x4B, 0x5E, 0x49, 0x9A, 0x4F, 0x53, 0xB1, 0xC1, 0xA1, 0x4A, 0x74, 0x84, 0x44, 0x3B};
+    private static final int[] drmVersionKey2 = {0x69, 0xB4, 0x53, 0xF2, 0xE4, 0x21, 0x89, 0x8E, 0x53, 0xE4, 0xA3, 0x5A, 0x5B, 0x91, 0x79, 0x51};
+    private static final int[] drmNameKey = {0xEB, 0x71, 0x5D, 0xB8, 0xD3, 0x73, 0xCE, 0xA4, 0x6F, 0xE7, 0x1D, 0xCF, 0xFF, 0x63, 0xFA, 0xEA};
+    
+    private static final int[] drmActRifSig = {
+        0x62, 0x27, 0xB0, 0x0A, 0x02, 0x85, 0x6F, 0xB0,
+        0x41, 0x08, 0x87, 0x67, 0x19, 0xE0, 0xA0, 0x18,
+        0x32, 0x91, 0xEE, 0xB9, 0x6E, 0x73, 0x6A, 0xBF,
+        0x81, 0xF7, 0x0E, 0xE9, 0x16, 0x1B, 0x0D, 0xDE,
+        0xB0, 0x26, 0x76, 0x1A, 0x5B, 0xC8, 0x7B, 0xFF
+    };
+    
+    private static final int[] drmEdatSprxSig = {
+        0x1F, 0x07, 0x2B, 0xCC, 0xC1, 0x62, 0xF2, 0xCF,
+        0xAE, 0xA0, 0xE7, 0xF4, 0xCD, 0xFD, 0x9C, 0xAE,
+        0xC6, 0xC4, 0x55, 0x21, 0x53, 0x01, 0xF4, 0xE3,
+        0x70, 0xC3, 0xED, 0xE2, 0xD4, 0xF5, 0xDB, 0xC3,
+        0xA7, 0xDE, 0x8C, 0xAA, 0xE8, 0xAD, 0x5B, 0x7D
+    };
+
+    
     // KIRK error values.
-	private static final int PSP_KIRK_NOT_ENABLED = 0x1;
+    private static final int PSP_KIRK_NOT_ENABLED = 0x1;
     private static final int PSP_KIRK_INVALID_MODE = 0x2;
     private static final int PSP_KIRK_INVALID_HEADER_HASH = 0x3;
     private static final int PSP_KIRK_INVALID_DATA_HASH = 0x4;
@@ -2272,8 +2295,12 @@ public class CryptoEngine {
     /*
      *
      * User functions: crypto functions that interact with the CryptoEngine
-     * at the user level. Used for PRX, SaveData and PGD encryption/decryption.
+     * at the user level. Used for PRX, SaveData,PGD and DRM encryption/decryption.
      *
+     */
+    
+    /*
+     * PRX
      */
 
     private TAG_INFO GetTagInfo(int tag) {
@@ -2844,6 +2871,10 @@ public class CryptoEngine {
 
         return retsize;
     }
+    
+    /*
+     * SAVEDATA
+     */
 
     public byte[] DecryptSavedata(byte[] inbuf, int size, byte[] key, int mode) {
         // Setup the crypto and keygen modes and initialize both context structs.
@@ -2975,6 +3006,10 @@ public class CryptoEngine {
             // Ignore...
         }
     }
+    
+    /*
+     * PGD
+     */
 
     public byte[] DecryptPGD(byte[] inbuf, int size, byte[] key) {
         // Setup the crypto and keygen modes and initialize both context structs.
@@ -3023,38 +3058,9 @@ public class CryptoEngine {
         hleDrmBBCipherFinal(pgdCipherContext);
     }
     
-    public int CheckEDATANameKey(byte[] nameHash, byte[] data, byte[] name, int nameLength) {
-        // Setup the crypto and keygen modes and initialize both context structs.
-        int sdEncMode = 3;
-        pgdMacContext = new BBMacCtx();
-
-        int dataSize = 0x30;
-        
-        byte[] renameKey = {(byte)0xEB, (byte)0x71, (byte)0x5D, (byte)0xB8, (byte)0xD3, (byte)0x73,
-            (byte)0xCE, (byte)0xA4, (byte)0x6F, (byte)0xE7, (byte)0x1D, (byte)0xCF,
-            (byte)0xFF, (byte)0x63, (byte)0xFA, (byte)0xEA};
-        
-        // Call the BBMac functions.
-        hleDrmBBMacInit(pgdMacContext, sdEncMode);
-        hleDrmBBMacUpdate(pgdMacContext, data, dataSize);
-        hleDrmBBMacUpdate(pgdMacContext, name, nameLength);        
-        return hleDrmBBMacFinal2(pgdMacContext, nameHash, renameKey);
-    }
-    
-    public int VerifyEDATA(byte[] data, byte[] hash) {
-        // Setup the crypto and keygen modes and initialize both context structs.
-        int sdEncMode = 3;
-        pgdMacContext = new BBMacCtx();
-
-        int dataSize = 0x80;
-        
-        // Call the BBMac functions.
-        hleDrmBBMacInit(pgdMacContext, sdEncMode);
-        hleDrmBBMacUpdate(pgdMacContext, data, dataSize);
-        hleDrmBBMacFinal2(pgdMacContext, hash, null);
-        
-        return 0;
-    }
+    /*
+     * DRM
+     */
     
     public byte[] DecryptEDATAKey(byte[] key) {
         byte[] scrambleBuf = new byte[0x10 + 0x14];
@@ -3067,17 +3073,36 @@ public class CryptoEngine {
         return decKey;
     }
     
+    public int CheckEDATANameKey(byte[] nameHash, byte[] data, byte[] name, int nameLength) {
+        // Setup the crypto and keygen modes and initialize both context structs.
+        int sdEncMode = 3;
+        pgdMacContext = new BBMacCtx();
+
+        int dataSize = 0x30;
+        byte[] nameKey = new byte[drmNameKey.length];
+        
+        for(int i = 0; i < drmNameKey.length; i++) {
+            nameKey[i] = (byte)(drmNameKey[i] & 0xFF);
+        }
+                
+        // Call the BBMac functions.
+        hleDrmBBMacInit(pgdMacContext, sdEncMode);
+        hleDrmBBMacUpdate(pgdMacContext, data, dataSize);
+        hleDrmBBMacUpdate(pgdMacContext, name, nameLength);        
+        return hleDrmBBMacFinal2(pgdMacContext, nameHash, nameKey);
+    }
+      
     public byte[] MakeEDATAFixedKey(byte[] data, byte[] hash) {
         // Setup the crypto and keygen modes and initialize both context structs.
         int sdEncMode = 1;
         pgdMacContext = new BBMacCtx();
 
         int dataSize = 0x30;
+        byte[] fixedKey = new byte[drmFixedKey1.length];
         
-        byte[] fixedKey = {(byte)0x38, (byte)0x20, (byte)0xD0, (byte)0x11, (byte)0x07, (byte)0xA3,
-            (byte)0xFF, (byte)0x3E, (byte)0x0A, (byte)0x4C, (byte)0x20, (byte)0x85,
-            (byte)0x39, (byte)0x10, (byte)0xB5, (byte)0x54};
-        
+        for(int i = 0; i < drmFixedKey1.length; i++) {
+            fixedKey[i] = (byte)(drmFixedKey1[i] & 0xFF);
+        }
         // Call the BBMac functions.
         hleDrmBBMacInit(pgdMacContext, sdEncMode);
         hleDrmBBMacUpdate(pgdMacContext, data, dataSize);
