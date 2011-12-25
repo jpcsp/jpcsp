@@ -432,6 +432,11 @@ public class ModuleMgrForUser extends HLEModule {
             }
             sceModule.start();
             cpu.gpr[2] = sceModule.modid; // return the module id
+        } else if (HLEModuleManager.getInstance().hasFlash0Module(sceModule.modname)) {
+            log.info("sceKernelStartModule - loading missing HLE module '" + sceModule.modname + "' (was loaded as ELF)");
+            HLEModuleManager.getInstance().LoadFlash0Module(sceModule.modname);
+            sceModule.start();
+            cpu.gpr[2] = sceModule.modid; // return the module id
         } else {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             int attribute = sceModule.attribute;
@@ -779,5 +784,5 @@ public class ModuleMgrForUser extends HLEModule {
             cpu.gpr[2] = -1;
         }
     }
-
+    
 }
