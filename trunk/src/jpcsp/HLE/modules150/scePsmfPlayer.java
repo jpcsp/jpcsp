@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import jpcsp.HLE.HLEFunction;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -120,10 +121,6 @@ public class scePsmfPlayer extends HLEModule {
 
     // PSMF Player config pixel type.
     protected static final int PSMF_PLAYER_PIXEL_TYPE_NONE = -1;
-    protected static final int PSMF_PLAYER_PIXEL_TYPE_565 = sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_565;
-    protected static final int PSMF_PLAYER_PIXEL_TYPE_5551 = sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_5551;
-    protected static final int PSMF_PLAYER_PIXEL_TYPE_4444 = sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_4444;
-    protected static final int PSMF_PLAYER_PIXEL_TYPE_8888 = sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
 
     // PSMF Player version.
     protected static final int PSMF_PLAYER_VERSION_FULL = 0;
@@ -161,7 +158,7 @@ public class scePsmfPlayer extends HLEModule {
     protected int videoDataDisplayPts;
 
     // PSMF Player config.
-    protected int videoPixelMode = PSMF_PLAYER_PIXEL_TYPE_8888;  // Default.
+    protected int videoPixelMode = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;  // Default.
     protected int videoLoopStatus = PSMF_PLAYER_CONFIG_NO_LOOP;  // Default.
 
     // PSMF Player audio size

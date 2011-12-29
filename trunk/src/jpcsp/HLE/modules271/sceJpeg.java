@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules271;
 
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import jpcsp.HLE.HLEFunction;
 import org.apache.log4j.Logger;
 
@@ -49,7 +50,7 @@ public class sceJpeg extends HLEModule {
 		int width = widthHeight & 0xFFF;
 		int height = (widthHeight >> 16) & 0xFFF;
 		int bufferWidth = cpu.gpr[7];
-		int pixelFormat = sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
+		int pixelFormat = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 
 		log.warn(String.format("Unimplemented sceJpegMJpegCsc imageBuffer=0x%08X, yCbCrBuffer=0x%08X, widthHeight=0x%08X(width=%d, height=%d), bufferWidth=%d", imageBuffer, yCbCrBuffer, widthHeight, width, height, bufferWidth));
 
@@ -114,7 +115,7 @@ public class sceJpeg extends HLEModule {
 	/**
 	 * Creates the decoder context.
 	 *
-	 * @param width - The width of the frame
+	 * @param wantedWidth - The width of the frame
 	 * @param height - The height of the frame
 	 *
 	 * @return 0 on success, < 0 on error
@@ -175,7 +176,7 @@ public class sceJpeg extends HLEModule {
 		int width = jpegWidth;
 		int height = jpegHeight;
 		int bufferWidth = width;
-		int pixelFormat = sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
+		int pixelFormat = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 
 		// Return a fake image
 		sceMpeg.generateFakeImage(imageBuffer, bufferWidth, width, height, pixelFormat);

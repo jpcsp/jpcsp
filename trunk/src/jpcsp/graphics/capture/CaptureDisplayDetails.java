@@ -26,6 +26,7 @@ import jpcsp.MemoryMap;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.IRenderingEngine;
 
 /** captures draw, depth and display buffers along with their settings (width, height, etc) */
 public class CaptureDisplayDetails {
@@ -65,12 +66,12 @@ public class CaptureDisplayDetails {
         sync = display.getSync();
 
         // TODO clamp lengths to within valid RAM range
-        int pixelFormatBytes = (psm == sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888) ? 4 : 2;
+        int pixelFormatBytes = IRenderingEngine.sizeOfTextureType[psm];
         drawBuffer = new CaptureRAM(fbp + MemoryMap.START_VRAM, fbw * 272 * pixelFormatBytes);
 
         depthBuffer = new CaptureRAM(zbp + MemoryMap.START_VRAM, zbw * 272 * 2);
 
-        pixelFormatBytes = (pixelformatFb == sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888) ? 4 : 2;
+        pixelFormatBytes = IRenderingEngine.sizeOfTextureType[pixelformatFb];
         displayBuffer = new CaptureRAM(topaddrFb, bufferwidthFb * 272 * pixelFormatBytes);
     }
 

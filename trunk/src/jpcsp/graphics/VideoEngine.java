@@ -144,7 +144,6 @@ public class VideoEngine {
     private int command;
     private int normalArgument;
     private int waitForSyncCount;
-    private VertexInfo vinfo = new VertexInfo();
     private VertexInfoReader vertexInfoReader = new VertexInfoReader();
     private static final char SPACE = ' ';
     private DurationStatistics statistics = new CpuDurationStatistics("VideoEngine Statistics");
@@ -209,6 +208,9 @@ public class VideoEngine {
     private static final int maxMultiDrawElements = 1000;
     private static final String name = "VideoEngine";
     private int maxWaitForSyncCount;
+    private VertexState v = new VertexState();
+    private VertexState v1 = new VertexState();
+    private VertexState v2 = new VertexState();
 
     public static class MatrixUpload {
         private final float[] matrix;
@@ -902,7 +904,7 @@ public class VideoEngine {
     }
 
     public float[] getMatrix(int mtxtype) {
-        float resmtx[] = new float[4 * 4];
+        float[] resmtx;
         switch (mtxtype) {
             case PSP_GE_MATRIX_BONE0:
             case PSP_GE_MATRIX_BONE1:
@@ -926,6 +928,9 @@ public class VideoEngine {
             case PSP_GE_MATRIX_TEXGEN:
                 resmtx = context.texture_uploaded_matrix;
                 break;
+            default:
+            	resmtx = null;
+            	break;
         }
 
         return resmtx;
@@ -978,11 +983,10 @@ public class VideoEngine {
     }
 
     public short[] readClut16(int level) {
-        int clutNumEntries = context.tex_clut_num_blocks * 16;
-
         // Update the clut_buffer only if some clut parameters have been changed
         // since last update.
         if (clutIsDirty) {
+            int clutNumEntries = context.tex_clut_num_blocks << 4;
         	int clutOffset = context.tex_clut_start << 4;
             IMemoryReader memoryReader = MemoryReader.getMemoryReader(getClutAddr(level, clutNumEntries, 2), (clutNumEntries - clutOffset) << 1, 2);
             for (int i = clutOffset; i < clutNumEntries; i++) {
@@ -993,18 +997,17 @@ public class VideoEngine {
 
         if (State.captureGeNextFrame) {
             log.info("Capture readClut16");
-            CaptureManager.captureRAM(context.tex_clut_addr, clutNumEntries * 2);
+            CaptureManager.captureRAM(context.tex_clut_addr, context.tex_clut_num_blocks * 32);
         }
 
         return clut_buffer16;
     }
 
     public int[] readClut32(int level) {
-        int clutNumEntries = context.tex_clut_num_blocks * 8;
-
         // Update the clut_buffer only if some clut parameters have been changed
         // since last update.
         if (clutIsDirty) {
+            int clutNumEntries = context.tex_clut_num_blocks << 3;
         	int clutOffset = context.tex_clut_start << 4;
             IMemoryReader memoryReader = MemoryReader.getMemoryReader(getClutAddr(level, clutNumEntries, 4), (clutNumEntries - clutOffset) << 2, 4);
             for (int i = clutOffset; i < clutNumEntries; i++) {
@@ -1015,7 +1018,7 @@ public class VideoEngine {
 
         if (State.captureGeNextFrame) {
             log.info("Capture readClut32");
-            CaptureManager.captureRAM(context.tex_clut_addr, clutNumEntries * 4);
+            CaptureManager.captureRAM(context.tex_clut_addr, context.tex_clut_num_blocks * 32);
         }
 
         return clut_buffer32;
@@ -1374,6 +1377,10 @@ public class VideoEngine {
 
     private void executeCommandCLEAR() {
         if ((normalArgument & 1) == 0) {
+        	if (!context.clearMode) {
+        		return;
+        	}
+            context.clearMode = false;
             re.endClearMode();
             if (isLogDebugEnabled) {
             	log("clear mode end");
@@ -1381,11 +1388,15 @@ public class VideoEngine {
         } else {
             // TODO Add more disabling in clear mode, we also need to reflect the change to the internal GE registers
             boolean color = (normalArgument & 0x100) != 0;
-            boolean alpha = (normalArgument & 0x200) != 0;
+            boolean stencil = (normalArgument & 0x200) != 0;
             boolean depth = (normalArgument & 0x400) != 0;
 
             updateGeBuf();
-            re.startClearMode(color, alpha, depth);
+            re.startClearMode(color, stencil, depth);
+            context.clearMode = true;
+            context.clearModeColor = color;
+            context.clearModeStencil = stencil;
+            context.clearModeDepth = depth;
             if (isLogDebugEnabled) {
                 log("clear mode : " + (normalArgument >> 8));
             }
@@ -1426,9 +1437,9 @@ public class VideoEngine {
     	// starting at 0xNNNNNN0
     	int nativeBufferOffset = 0;
     	if (vertexData instanceof IntBuffer || vertexData instanceof FloatBuffer) {
-    		nativeBufferOffset = vinfo.ptr_vertex & 3;
+    		nativeBufferOffset = context.vinfo.ptr_vertex & 3;
     	} else if (vertexData instanceof ShortBuffer) {
-    		nativeBufferOffset = vinfo.ptr_vertex & 1;
+    		nativeBufferOffset = context.vinfo.ptr_vertex & 1;
     	}
     	size += nativeBufferOffset;
     	vertexInfoReader.addNativeOffset(nativeBufferOffset);
@@ -1448,7 +1459,7 @@ public class VideoEngine {
     	int currentSkip = 0;
     	bufferFirst.clear();
     	bufferCount.clear();
-    	int currentPtrVertex = vinfo.ptr_vertex + vinfo.vertexSize * currentNumberOfVertex;
+    	int currentPtrVertex = context.vinfo.ptr_vertex + context.vinfo.vertexSize * currentNumberOfVertex;
     	boolean frontFaceCw = context.frontFaceCw;
 
     	// Leave at least one entry free to put the last item
@@ -1475,7 +1486,7 @@ public class VideoEngine {
     	        bufferCount.put(currentNumberOfVertex);
     	        currentFirst += currentNumberOfVertex + currentSkip;
     	        currentNumberOfVertex = numberOfVertex;
-    	        currentPtrVertex += vinfo.vertexSize * (numberOfVertex + currentSkip);
+    	        currentPtrVertex += context.vinfo.vertexSize * (numberOfVertex + currentSkip);
     	        currentSkip = 0;
     	        hasMultiDraw = true;
     	        afterMultiPc = pc;
@@ -1490,9 +1501,9 @@ public class VideoEngine {
         	        if (isLogDebugEnabled) {
         	        	log.debug(String.format("%s 0x%08X integrated in MultiDrawArrays", helper.getCommandString(cmd), ptr_vertex));
         	        }
-    			} else if (ptr_vertex > currentPtrVertex && ((ptr_vertex - currentPtrVertex) % vinfo.vertexSize) == 0) {
+    			} else if (ptr_vertex > currentPtrVertex && ((ptr_vertex - currentPtrVertex) % context.vinfo.vertexSize) == 0) {
     				// VADDR almost in sequence with an aligned hole, skip the command
-    				currentSkip = (ptr_vertex - currentPtrVertex) / vinfo.vertexSize;
+    				currentSkip = (ptr_vertex - currentPtrVertex) / context.vinfo.vertexSize;
         	        if (isLogDebugEnabled) {
         	        	log.debug(String.format("%s 0x%08X (skip=%d) integrated in MultiDrawArrays", helper.getCommandString(cmd), ptr_vertex, currentSkip));
         	        }
@@ -1575,9 +1586,9 @@ public class VideoEngine {
         }
 
         Memory mem = Memory.getInstance();
-        if (!Memory.isAddressGood(vinfo.ptr_vertex)) {
+        if (!Memory.isAddressGood(context.vinfo.ptr_vertex)) {
             // Abort here to avoid a lot of useless memory read errors...
-            error(helper.getCommandString(PRIM) + " Invalid vertex address 0x" + Integer.toHexString(vinfo.ptr_vertex));
+            error(helper.getCommandString(PRIM) + " Invalid vertex address 0x" + Integer.toHexString(context.vinfo.ptr_vertex));
             return;
         }
 
@@ -1629,7 +1640,7 @@ public class VideoEngine {
             }
         }
 
-        boolean useVertexColor = initRendering();
+        initRendering();
 
         int nTexCoord = 2;
         int nColor = 4;
@@ -1641,7 +1652,7 @@ public class VideoEngine {
         boolean useTextureFromPosition = false;
         switch (context.tex_map_mode) {
             case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
-            	if (vinfo.texture != 0) {
+            	if (context.vinfo.texture != 0) {
             	    useTexture = true;
             	}
                 break;
@@ -1649,26 +1660,26 @@ public class VideoEngine {
             case TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX: {
                 switch (context.tex_proj_map_mode) {
                     case TMAP_TEXTURE_PROJECTION_MODE_POSITION:
-                        if (vinfo.position != 0) {
+                        if (context.vinfo.position != 0) {
                             useTexture = true;
                             useTextureFromPosition = true;
                 	        nTexCoord = nVertex;
                         }
                         break;
                     case TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES:
-                        if (vinfo.texture != 0) {
+                        if (context.vinfo.texture != 0) {
                             useTexture = true;
                         }
                         break;
                     case TMAP_TEXTURE_PROJECTION_MODE_NORMAL:
-                        if (vinfo.normal != 0) {
+                        if (context.vinfo.normal != 0) {
                             useTexture = true;
                             useTextureFromNormal = true;
                             nTexCoord = 3;
                         }
                         break;
                     case TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL:
-                        if (vinfo.normal != 0) {
+                        if (context.vinfo.normal != 0) {
                             useTexture = true;
                             useTextureFromNormalizedNormal = true;
                             nTexCoord = 3;
@@ -1688,13 +1699,13 @@ public class VideoEngine {
 
     	vertexStatistics.start();
 
-        vinfo.setMorphWeights(context.morph_weight);
-        vinfo.setDirty();
+        context.vinfo.setMorphWeights(context.morph_weight);
+        context.vinfo.setDirty();
 
         int numberOfWeightsForBuffer;
         boolean mustComputeWeights;
-        if (vinfo.weight != 0) {
-        	numberOfWeightsForBuffer = re.setBones(vinfo.skinningWeightCount, context.boneMatrixLinear);
+        if (context.vinfo.weight != 0) {
+        	numberOfWeightsForBuffer = re.setBones(context.vinfo.skinningWeightCount, context.boneMatrixLinear);
         	mustComputeWeights = (numberOfWeightsForBuffer == 0);
         } else {
         	numberOfWeightsForBuffer = re.setBones(0, null);
@@ -1718,12 +1729,12 @@ public class VideoEngine {
         // - the weights have to be computed and are not supported natively
         // - the vertex address is invalid
         if ((!useVertexCache || re.canAllNativeVertexInfo()) &&
-            vinfo.index == 0 &&
-            vinfo.morphingVertexCount == 1 &&
+            context.vinfo.index == 0 &&
+            context.vinfo.morphingVertexCount == 1 &&
             (type != PRIM_SPRITES || re.canNativeSpritesPrimitive()) &&
             !useTextureFromNormalizedNormal &&
             !mustComputeWeights &&
-            Memory.isAddressGood(vinfo.ptr_vertex)) {
+            Memory.isAddressGood(context.vinfo.ptr_vertex)) {
         	//
             // Optimized VertexInfo reading:
             // - do not copy the info already available in the OpenGL format
@@ -1735,23 +1746,23 @@ public class VideoEngine {
             // vertex info are available in a format usable by OpenGL.
             //
     		vertexReadingStatistics.start();
-            Buffer buffer = vertexInfoReader.read(vinfo, vinfo.ptr_vertex, numberOfVertex, re.canAllNativeVertexInfo());
+            Buffer buffer = vertexInfoReader.read(context.vinfo, context.vinfo.ptr_vertex, numberOfVertex, re.canAllNativeVertexInfo());
         	vertexReadingStatistics.end();
 
         	int stride;
-        	int size = vinfo.vertexSize * numberOfVertex;
+        	int size = context.vinfo.vertexSize * numberOfVertex;
         	int firstVertex = 0;
         	boolean useBufferManager;
         	boolean multiDrawArrays = false;
         	if (useVertexCache && buffer == null) {
-        		stride = vinfo.vertexSize;
+        		stride = context.vinfo.vertexSize;
         		useBufferManager = false;
-        		final int vertexAddress = vinfo.ptr_vertex;
+        		final int vertexAddress = context.vinfo.ptr_vertex;
         		VertexBuffer vertexBuffer = VertexBufferManager.getInstance().getVertexBuffer(re, vertexAddress, size, stride, re.isVertexArrayAvailable());
         		Buffer vertexData = mem.getBuffer(vertexAddress, size);
         		vertexBuffer.load(re, vertexData, vertexAddress, size);
         		if (re.isVertexArrayAvailable()) {
-        			VertexArray vertexArray = VertexArrayManager.getInstance().getVertexArray(re, vinfo.vtype, vertexBuffer, vertexAddress, stride);
+        			VertexArray vertexArray = VertexArrayManager.getInstance().getVertexArray(re, context.vinfo.vtype, vertexBuffer, vertexAddress, stride);
     				needSetDataPointers = vertexArray.bind(re);
     				firstVertex = vertexArray.getVertexOffset(vertexAddress);
         		} else {
@@ -1764,7 +1775,7 @@ public class VideoEngine {
 				if (multiDrawNumberOfVertex > 0) {
 					multiDrawArrays = true;
 					numberOfVertex = multiDrawNumberOfVertex;
-					size = vinfo.vertexSize * multiDrawNumberOfVertex;
+					size = context.vinfo.vertexSize * multiDrawNumberOfVertex;
 	        		vertexData = mem.getBuffer(vertexAddress, size);
 					vertexBuffer.load(re, vertexData, vertexAddress, size);
 				}
@@ -1786,16 +1797,16 @@ public class VideoEngine {
 	            if (vertexInfoReader.hasNative()) {
 	                // Copy the VertexInfo from Memory to the nativeBuffer
 	                // (a direct buffer is required by glXXXPointer())
-	        		Buffer vertexData = mem.getBuffer(vinfo.ptr_vertex, size);
+	        		Buffer vertexData = mem.getBuffer(context.vinfo.ptr_vertex, size);
 	        		size = fixNativeBufferOffset(vertexData, size);
 	            	bufferManager.setBufferData(nativeBufferId, size, vertexData, IRenderingEngine.RE_STREAM_DRAW);
 	            }
         	}
 
-            re.setVertexInfo(vinfo, re.canAllNativeVertexInfo(), useVertexColor, useTexture, type);
+            re.setVertexInfo(context.vinfo, re.canAllNativeVertexInfo(), context.useVertexColor, useTexture, type);
 
             if (needSetDataPointers) {
-	            if (vinfo.texture != 0 || useTexture) {
+	            if (context.vinfo.texture != 0 || useTexture) {
 	                boolean textureNative;
 	                int textureOffset;
 	                int textureType;
@@ -1821,8 +1832,8 @@ public class VideoEngine {
 	            nColor = vertexInfoReader.getColorNumberValues();
 	            int nWeight = vertexInfoReader.getWeightNumberValues();
 
-	            enableClientState(useVertexColor, useTexture);
-	            setColorPointer(useVertexColor, nColor, vertexInfoReader.getColorType(), stride, vertexInfoReader.getColorOffset(), vertexInfoReader.isColorNative(), useBufferManager);
+	            enableClientState(context.useVertexColor, useTexture);
+	            setColorPointer(context.useVertexColor, nColor, vertexInfoReader.getColorType(), stride, vertexInfoReader.getColorOffset(), vertexInfoReader.isColorNative(), useBufferManager);
 	            setNormalPointer(vertexInfoReader.getNormalType(), stride, vertexInfoReader.getNormalOffset(), vertexInfoReader.isNormalNative(), useBufferManager);
 	            setWeightPointer(nWeight, vertexInfoReader.getWeightType(), stride, vertexInfoReader.getWeightOffset(), vertexInfoReader.isWeightNative(), useBufferManager);
 	            setVertexPointer(nVertex, vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative(), useBufferManager);
@@ -1840,7 +1851,7 @@ public class VideoEngine {
             VertexInfo cachedVertexInfo = null;
             if (useVertexCache) {
         		vertexCacheLookupStatistics.start();
-                cachedVertexInfo = VertexCache.getInstance().getVertex(vinfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
+                cachedVertexInfo = VertexCache.getInstance().getVertex(context.vinfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
             	vertexCacheLookupStatistics.end();
             }
 
@@ -1860,19 +1871,19 @@ public class VideoEngine {
                 case PRIM_TRIANGLE:
                 case PRIM_TRIANGLE_STRIPS:
                 case PRIM_TRIANGLE_FANS:
-                    re.setVertexInfo(vinfo, false, useVertexColor, useTexture, type);
+                    re.setVertexInfo(context.vinfo, false, context.useVertexColor, useTexture, type);
 
                     float[] normalizedNormal = new float[3];
                     if (cachedVertexInfo == null) {
                 		vertexReadingStatistics.start();
                         for (int i = 0; i < numberOfVertex; i++) {
-                            int addr = vinfo.getAddress(mem, i);
+                            int addr = context.vinfo.getAddress(mem, i);
 
-                            VertexState v = vinfo.readVertex(mem, addr);
+                            context.vinfo.readVertex(mem, addr, v);
 
                             // Do skinning first as it modifies v.p and v.n
-                            if (mustComputeWeights && vinfo.position != 0) {
-                                doSkinning(vinfo, v);
+                            if (mustComputeWeights && context.vinfo.position != 0) {
+                                doSkinning(context.vinfo, v);
                             }
 
                             if (useTextureFromNormal) {
@@ -1885,16 +1896,16 @@ public class VideoEngine {
                                 floatBuffer.put(normalizedNormal, 0, 3);
                             } else if (useTextureFromPosition) {
                                 floatBuffer.put(v.p, 0, 3);
-                            } else if (useTexture || vinfo.texture != 0) {
+                            } else if (useTexture || context.vinfo.texture != 0) {
                                 floatBuffer.put(v.t);
                             }
-                            if (useVertexColor) {
+                            if (context.useVertexColor) {
                                 floatBuffer.put(v.c);
                             }
-                            if (vinfo.normal != 0) {
+                            if (context.vinfo.normal != 0) {
                                 floatBuffer.put(v.n);
                             }
-                            if (vinfo.position != 0) {
+                            if (context.vinfo.position != 0) {
                                 floatBuffer.put(v.p);
                             }
                             if (numberOfWeightsForBuffer > 0) {
@@ -1902,7 +1913,7 @@ public class VideoEngine {
                             }
 
                             if (isLogTraceEnabled) {
-                                if (vinfo.texture != 0 && vinfo.position != 0) {
+                                if (context.vinfo.texture != 0 && context.vinfo.position != 0) {
                                     log.trace("  vertex#" + i + " (" + ((int) v.t[0]) + "," + ((int) v.t[1]) + ") at (" + ((int) v.p[0]) + "," + ((int) v.p[1]) + "," + ((int) v.p[2]) + ")");
                                 }
                             }
@@ -1910,7 +1921,7 @@ public class VideoEngine {
                     	vertexReadingStatistics.end();
 
                         if (useVertexCache) {
-                            cachedVertexInfo = new VertexInfo(vinfo);
+                            cachedVertexInfo = new VertexInfo(context.vinfo);
                             VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
                             int size = floatBuffer.position();
                             floatBuffer.rewind();
@@ -1925,7 +1936,7 @@ public class VideoEngine {
                         needSetDataPointers = cachedVertexInfo.bindVertex(re);
                     }
                     if (needSetDataPointers) {
-                    	setDataPointers(nVertex, useVertexColor, nColor, useTexture, nTexCoord, vinfo.normal != 0, numberOfWeightsForBuffer, cachedVertexInfo == null);
+                    	setDataPointers(nVertex, context.useVertexColor, nColor, useTexture, nTexCoord, context.vinfo.normal != 0, numberOfWeightsForBuffer, cachedVertexInfo == null);
                     }
                 	drawArraysStatistics.start();
                     re.drawArrays(type, 0, numberOfVertex);
@@ -1935,11 +1946,11 @@ public class VideoEngine {
                     break;
 
                 case PRIM_SPRITES:
-                    re.setVertexInfo(vinfo, false, useVertexColor, useTexture, IRenderingEngine.RE_QUADS);
+                    re.setVertexInfo(context.vinfo, false, context.useVertexColor, useTexture, IRenderingEngine.RE_QUADS);
                 	re.disableFlag(IRenderingEngine.GU_CULL_FACE);
 
                 	float[] mvpMatrix = null;
-                	if (!vinfo.transform2D) {
+                	if (!context.vinfo.transform2D) {
                 		mvpMatrix = new float[4 * 4];
                 		// pre-Compute the MVP (Model-View-Projection) matrix
                 		matrixMult(mvpMatrix, context.model_uploaded_matrix, context.view_uploaded_matrix);
@@ -1949,10 +1960,10 @@ public class VideoEngine {
                 	if (cachedVertexInfo == null) {
             			vertexReadingStatistics.start();
                         for (int i = 0; i < numberOfVertex; i += 2) {
-                            int addr1 = vinfo.getAddress(mem, i);
-                            int addr2 = vinfo.getAddress(mem, i + 1);
-                            VertexState v1 = vinfo.readVertex(mem, addr1);
-                            VertexState v2 = vinfo.readVertex(mem, addr2);
+                            int addr1 = context.vinfo.getAddress(mem, i);
+                            int addr2 = context.vinfo.getAddress(mem, i + 1);
+                            context.vinfo.readVertex(mem, addr1, v1);
+                            context.vinfo.readVertex(mem, addr2, v2);
 
                             v1.p[2] = v2.p[2];
 
@@ -2005,71 +2016,71 @@ public class VideoEngine {
                             }
 
                             // V1
-                            if (vinfo.texture != 0) {
+                            if (context.vinfo.texture != 0) {
                                 floatBuffer.put(v1.t);
                             }
-                            if (useVertexColor) {
+                            if (context.useVertexColor) {
                                 floatBuffer.put(v2.c);
                             }
-                            if (vinfo.normal != 0) {
+                            if (context.vinfo.normal != 0) {
                                 floatBuffer.put(v2.n);
                             }
-                            if (vinfo.position != 0) {
+                            if (context.vinfo.position != 0) {
                                 floatBuffer.put(v1.p);
                             }
 
-                            if (vinfo.texture != 0) {
+                            if (context.vinfo.texture != 0) {
                                 if (flippedTexture) {
                                     floatBuffer.put(v2.t[0]).put(v1.t[1]);
                                 } else {
                                     floatBuffer.put(v1.t[0]).put(v2.t[1]);
                                 }
                             }
-                            if (useVertexColor) {
+                            if (context.useVertexColor) {
                                 floatBuffer.put(v2.c);
                             }
-                            if (vinfo.normal != 0) {
+                            if (context.vinfo.normal != 0) {
                                 floatBuffer.put(v2.n);
                             }
-                            if (vinfo.position != 0) {
+                            if (context.vinfo.position != 0) {
                                 floatBuffer.put(v1.p[0]).put(v2.p[1]).put(v2.p[2]);
                             }
 
                             // V2
-                            if (vinfo.texture != 0) {
+                            if (context.vinfo.texture != 0) {
                                 floatBuffer.put(v2.t);
                             }
-                            if (useVertexColor) {
+                            if (context.useVertexColor) {
                                 floatBuffer.put(v2.c);
                             }
-                            if (vinfo.normal != 0) {
+                            if (context.vinfo.normal != 0) {
                                 floatBuffer.put(v2.n);
                             }
-                            if (vinfo.position != 0) {
+                            if (context.vinfo.position != 0) {
                                 floatBuffer.put(v2.p);
                             }
 
-                            if (vinfo.texture != 0) {
+                            if (context.vinfo.texture != 0) {
                                 if (flippedTexture) {
                                     floatBuffer.put(v1.t[0]).put(v2.t[1]);
                                 } else {
                                     floatBuffer.put(v2.t[0]).put(v1.t[1]);
                                 }
                             }
-                            if (useVertexColor) {
+                            if (context.useVertexColor) {
                                 floatBuffer.put(v2.c);
                             }
-                            if (vinfo.normal != 0) {
+                            if (context.vinfo.normal != 0) {
                                 floatBuffer.put(v2.n);
                             }
-                            if (vinfo.position != 0) {
+                            if (context.vinfo.position != 0) {
                                 floatBuffer.put(v2.p[0]).put(v1.p[1]).put(v2.p[2]);
                             }
                         }
                     	vertexReadingStatistics.end();
 
                         if (useVertexCache) {
-                            cachedVertexInfo = new VertexInfo(vinfo);
+                            cachedVertexInfo = new VertexInfo(context.vinfo);
                             VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
                             int size = floatBuffer.position();
                             floatBuffer.rewind();
@@ -2084,7 +2095,7 @@ public class VideoEngine {
                         needSetDataPointers = cachedVertexInfo.bindVertex(re);
                     }
                 	if (needSetDataPointers) {
-                		setDataPointers(nVertex, useVertexColor, nColor, useTexture, nTexCoord, vinfo.normal != 0, 0, cachedVertexInfo == null);
+                		setDataPointers(nVertex, context.useVertexColor, nColor, useTexture, nTexCoord, context.vinfo.normal != 0, 0, cachedVertexInfo == null);
                 	}
             		drawArraysStatistics.start();
                     re.drawArrays(IRenderingEngine.RE_QUADS, 0, numberOfVertex * 2);
@@ -2101,13 +2112,13 @@ public class VideoEngine {
         if (State.captureGeNextFrame) {
     		if (!isVertexBufferEmbedded()) {
     				log.info("Capture PRIM");
-	            CaptureManager.captureRAM(vinfo.ptr_vertex, vinfo.vertexSize * numberOfVertex);
+	            CaptureManager.captureRAM(context.vinfo.ptr_vertex, context.vinfo.vertexSize * numberOfVertex);
     		}
             display.captureGeImage();
             textureChanged = true;
         }
 
-        endRendering(useVertexColor, useTexture, numberOfVertex);
+        endRendering(context.useVertexColor, useTexture, numberOfVertex);
     }
 
     private void executeCommandTRXKICK() {
@@ -2269,17 +2280,17 @@ public class VideoEngine {
         Memory mem = Memory.getInstance();
         int numberOfVertexBoundingBox = normalArgument & 0xFF;
 
-        if (vinfo.ptr_vertex == 0) {
+        if (context.vinfo.ptr_vertex == 0) {
         	// The GE is initialized with a NULL vertex address, do not log an error
         	if (isLogDebugEnabled) {
                 log.debug(String.format("%s null vertex address", helper.getCommandString(BBOX)));
         	}
         	return;
-        } else if (!Memory.isAddressGood(vinfo.ptr_vertex)) {
+        } else if (!Memory.isAddressGood(context.vinfo.ptr_vertex)) {
             // Abort here to avoid a lot of useless memory read errors...
-            error(String.format("%s Invalid vertex address 0x%08X", helper.getCommandString(BBOX), vinfo.ptr_vertex));
+            error(String.format("%s Invalid vertex address 0x%08X", helper.getCommandString(BBOX), context.vinfo.ptr_vertex));
             return;
-        } else if (vinfo.position == 0) {
+        } else if (context.vinfo.position == 0) {
             log.warn(helper.getCommandString(BBOX) + " no positions for vertex!");
             return;
         } else if (!re.hasBoundingBox()) {
@@ -2295,13 +2306,13 @@ public class VideoEngine {
             log.debug(helper.getCommandString(BBOX) + " numberOfVertex=" + numberOfVertexBoundingBox);
         }
 
-        boolean useVertexColor = initRendering();
+        initRendering();
 
         re.beginBoundingBox(numberOfVertexBoundingBox);
         for (int i = 0; i < numberOfVertexBoundingBox; i++) {
-            int addr = vinfo.getAddress(mem, i);
+            int addr = context.vinfo.getAddress(mem, i);
 
-            VertexState v = vinfo.readVertex(mem, addr);
+            context.vinfo.readVertex(mem, addr, v);
             if (isLogDebugEnabled) {
                 log.debug(String.format("%s (%f,%f,%f)", helper.getCommandString(BBOX), v.p[0], v.p[1], v.p[2]));
             }
@@ -2315,9 +2326,9 @@ public class VideoEngine {
             	re.drawBoundingBox(bboxVertices);
             }
         }
-        re.endBoundingBox(vinfo);
+        re.endBoundingBox(context.vinfo);
 
-        endRendering(useVertexColor, false, numberOfVertexBoundingBox);
+        endRendering(context.useVertexColor, false, numberOfVertexBoundingBox);
     }
 
     private void executeCommandBJUMP() {
@@ -2384,16 +2395,16 @@ public class VideoEngine {
     }
 
     private void executeCommandVADDR() {
-        vinfo.ptr_vertex = currentList.getAddressRelOffset(normalArgument);
+        context.vinfo.ptr_vertex = currentList.getAddressRelOffset(normalArgument);
         if (isLogDebugEnabled) {
-            log(helper.getCommandString(VADDR) + " " + String.format("%08x", vinfo.ptr_vertex));
+            log(helper.getCommandString(VADDR) + " " + String.format("%08x", context.vinfo.ptr_vertex));
         }
     }
 
     private void executeCommandIADDR() {
-        vinfo.ptr_index = currentList.getAddressRelOffset(normalArgument);
+        context.vinfo.ptr_index = currentList.getAddressRelOffset(normalArgument);
         if (isLogDebugEnabled) {
-            log(helper.getCommandString(IADDR) + " " + String.format("%08x", vinfo.ptr_index));
+            log(helper.getCommandString(IADDR) + " " + String.format("%08x", context.vinfo.ptr_index));
         }
     }
 
@@ -2606,10 +2617,10 @@ public class VideoEngine {
 
     private void executeCommandVTYPE() {
         int old_transform_mode = context.transform_mode;
-        boolean old_vertex_hasColor = vinfo.color != 0;
-        vinfo.processType(normalArgument);
+        boolean old_vertex_hasColor = context.vinfo.color != 0;
+        context.vinfo.processType(normalArgument);
         context.transform_mode = (normalArgument >> 23) & 0x1;
-        boolean vertex_hasColor = vinfo.color != 0;
+        boolean vertex_hasColor = context.vinfo.color != 0;
 
         //Switching from 2D to 3D or 3D to 2D?
         if (old_transform_mode != context.transform_mode) {
@@ -2630,7 +2641,7 @@ public class VideoEngine {
         }
 
         if (isLogDebugEnabled) {
-            log(helper.getCommandString(VTYPE) + " " + vinfo.toString());
+            log(helper.getCommandString(VTYPE) + " " + context.vinfo.toString());
         }
     }
 
@@ -3601,11 +3612,11 @@ public class VideoEngine {
     }
 
     private void executeCommandTSYNC() {
-        // Probably synchronizing the GE when a drawing result
-    	// is used as a texture. Currently ignored.
+        // Synchronize the GE when a drawing result is used as a texture.
         if (isLogDebugEnabled) {
-            log(helper.getCommandString(TSYNC) + " waiting for drawing.");
+            log(helper.getCommandString(TSYNC) + " wait for rendering completion.");
         }
+        re.waitForRenderingCompletion();
     }
 
     private void executeCommandFFAR() {
@@ -3822,28 +3833,30 @@ public class VideoEngine {
     }
 
     private void executeCommandSFIX() {
-        context.sfix_color[0] = ((normalArgument) & 255) / 255.f;
-        context.sfix_color[1] = ((normalArgument >> 8) & 255) / 255.f;
-        context.sfix_color[2] = ((normalArgument >> 16) & 255) / 255.f;
+    	context.sfix = normalArgument;
+        context.sfix_color[0] = ((context.sfix) & 255) / 255.f;
+        context.sfix_color[1] = ((context.sfix >> 8) & 255) / 255.f;
+        context.sfix_color[2] = ((context.sfix >> 16) & 255) / 255.f;
         context.sfix_color[3] = 1.f;
 
-        re.setBlendSFix(context.sfix_color);
+        re.setBlendSFix(context.sfix, context.sfix_color);
 
         if (isLogDebugEnabled) {
-            log(String.format("%s : 0x%06X", helper.getCommandString(SFIX), normalArgument));
+            log(String.format("%s : 0x%06X", helper.getCommandString(SFIX), context.sfix));
         }
     }
 
     private void executeCommandDFIX() {
-        context.dfix_color[0] = ((normalArgument) & 255) / 255.f;
-        context.dfix_color[1] = ((normalArgument >> 8) & 255) / 255.f;
-        context.dfix_color[2] = ((normalArgument >> 16) & 255) / 255.f;
+    	context.dfix = normalArgument;
+        context.dfix_color[0] = ((context.dfix) & 255) / 255.f;
+        context.dfix_color[1] = ((context.dfix >> 8) & 255) / 255.f;
+        context.dfix_color[2] = ((context.dfix >> 16) & 255) / 255.f;
         context.dfix_color[3] = 1.f;
 
-        re.setBlendDFix(context.dfix_color);
+        re.setBlendDFix(context.dfix, context.dfix_color);
 
         if (isLogDebugEnabled) {
-            log(String.format("%s : 0x%06X", helper.getCommandString(DFIX), normalArgument));
+            log(String.format("%s : 0x%06X", helper.getCommandString(DFIX), context.dfix));
         }
     }
 
@@ -4025,7 +4038,7 @@ public class VideoEngine {
     }
 
     private void enableClientState(boolean useVertexColor, boolean useTexture) {
-        if (vinfo.texture != 0 || useTexture) {
+        if (context.vinfo.texture != 0 || useTexture) {
             re.enableClientState(IRenderingEngine.RE_TEXTURE);
         } else {
         	re.disableClientState(IRenderingEngine.RE_TEXTURE);
@@ -4035,7 +4048,7 @@ public class VideoEngine {
         } else {
             re.disableClientState(IRenderingEngine.RE_COLOR);
         }
-        if (vinfo.normal != 0) {
+        if (context.vinfo.normal != 0) {
         	re.enableClientState(IRenderingEngine.RE_NORMAL);
         } else {
         	re.disableClientState(IRenderingEngine.RE_NORMAL);
@@ -4048,7 +4061,7 @@ public class VideoEngine {
         	if (!useBufferManager) {
         		re.setTexCoordPointer(nTexCoord, type, stride, offset);
         	} else if (isNative) {
-            	bufferManager.setTexCoordPointer(nativeBufferId, nTexCoord, type, vinfo.vertexSize, offset);
+            	bufferManager.setTexCoordPointer(nativeBufferId, nTexCoord, type, context.vinfo.vertexSize, offset);
             } else {
             	bufferManager.setTexCoordPointer(bufferId, nTexCoord, type, stride, offset);
             }
@@ -4060,7 +4073,7 @@ public class VideoEngine {
         	if (!useBufferManager) {
         		re.setColorPointer(nColor, type, stride, offset);
         	} else if (isNative) {
-                bufferManager.setColorPointer(nativeBufferId, nColor, type, vinfo.vertexSize, offset);
+                bufferManager.setColorPointer(nativeBufferId, nColor, type, context.vinfo.vertexSize, offset);
             } else {
             	bufferManager.setColorPointer(bufferId, nColor, type, stride, offset);
             }
@@ -4071,18 +4084,18 @@ public class VideoEngine {
     	if (!useBufferManager) {
     		re.setVertexPointer(nVertex, type, stride, offset);
     	} else if (isNative) {
-            bufferManager.setVertexPointer(nativeBufferId, nVertex, type, vinfo.vertexSize, offset);
+            bufferManager.setVertexPointer(nativeBufferId, nVertex, type, context.vinfo.vertexSize, offset);
         } else {
         	bufferManager.setVertexPointer(bufferId, nVertex, type, stride, offset);
         }
     }
 
     private void setNormalPointer(int type, int stride, int offset, boolean isNative, boolean useBufferManager) {
-        if (vinfo.normal != 0) {
+        if (context.vinfo.normal != 0) {
         	if (!useBufferManager) {
         		re.setNormalPointer(type, stride, offset);
         	} else if (isNative) {
-                bufferManager.setNormalPointer(nativeBufferId, type, vinfo.vertexSize, offset);
+                bufferManager.setNormalPointer(nativeBufferId, type, context.vinfo.vertexSize, offset);
             } else {
             	bufferManager.setNormalPointer(bufferId, type, stride, offset);
             }
@@ -4094,7 +4107,7 @@ public class VideoEngine {
     		if (!useBufferManager) {
     			re.setWeightPointer(numberOfWeightsForBuffer, type, stride, offset);
     		} else if (isNative) {
-    			re.setWeightPointer(numberOfWeightsForBuffer, type, vinfo.vertexSize, offset);
+    			re.setWeightPointer(numberOfWeightsForBuffer, type, context.vinfo.vertexSize, offset);
     		} else {
     			re.setWeightPointer(numberOfWeightsForBuffer, type, stride, offset);
     		}
@@ -4104,7 +4117,7 @@ public class VideoEngine {
     private void setDataPointers(int nVertex, boolean useVertexColor, int nColor, boolean useTexture, int nTexCoord, boolean useNormal, int numberOfWeightsForBuffer, boolean useBufferManager) {
         int stride = 0, cpos = 0, npos = 0, vpos = 0, wpos = 0;
 
-        if (vinfo.texture != 0 || useTexture) {
+        if (context.vinfo.texture != 0 || useTexture) {
             stride += SIZEOF_FLOAT * nTexCoord;
             cpos = npos = vpos = stride;
         }
@@ -4132,7 +4145,7 @@ public class VideoEngine {
 
     public void doPositionSkinning(VertexInfo vinfo, float[] boneWeights, float[] position) {
         float x = 0, y = 0, z = 0;
-        for (int i = 0; i < vinfo.skinningWeightCount; i++) {
+        for (int i = 0; i < context.vinfo.skinningWeightCount; i++) {
             if (boneWeights[i] != 0) {
                 x += (position[0] * context.bone_uploaded_matrix[i][0]
                         + position[1] * context.bone_uploaded_matrix[i][3]
@@ -4158,7 +4171,7 @@ public class VideoEngine {
 
     public void doNormalSkinning(VertexInfo vinfo, float[] boneWeights, float[] normal) {
         float nx = 0, ny = 0, nz = 0;
-        for (int i = 0; i < vinfo.skinningWeightCount; i++) {
+        for (int i = 0; i < context.vinfo.skinningWeightCount; i++) {
             if (boneWeights[i] != 0) {
                 // Normals shouldn't be translated :)
                 nx += (normal[0] * context.bone_uploaded_matrix[i][0]
@@ -4197,7 +4210,7 @@ public class VideoEngine {
     private void doSkinning(VertexInfo vinfo, VertexState v) {
         float x = 0, y = 0, z = 0;
         float nx = 0, ny = 0, nz = 0;
-        for (int i = 0; i < vinfo.skinningWeightCount; ++i) {
+        for (int i = 0; i < context.vinfo.skinningWeightCount; ++i) {
             if (v.boneWeights[i] != 0.f) {
 
                 x += (v.p[0] * context.bone_uploaded_matrix[i][0]
@@ -4448,8 +4461,11 @@ public class VideoEngine {
     	return context.texture_num_mip_maps;
     }
 
-    private static int alignBufferWidth(int bufferWidth, int alignment) {
-    	alignment -= 1;
+    public static int alignBufferWidth(int bufferWidth, int pixelFormat) {
+    	int alignment = IRenderingEngine.alignementOfTextureBufferWidth[pixelFormat] - 1;
+    	if (alignment <= 0) {
+    		return bufferWidth;
+    	}
     	return (bufferWidth + alignment) & ~alignment;
     }
 
@@ -4574,16 +4590,15 @@ public class VideoEngine {
                 compressedTexture = false;
                 int compressedTextureSize = 0;
                 int buffer_storage = context.texture_storage;
-                int textureBufferWidthInPixels = context.texture_buffer_width[level];
+                // The texture buffer width must be a multiple of 4, 8, 16 or 32 depending
+                // on the pixel format
+                int textureBufferWidthInPixels = alignBufferWidth(context.texture_buffer_width[level], context.texture_storage);
 
                 switch (context.texture_storage) {
                     case TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED: {
                         if (texclut == 0) {
                             return;
                         }
-
-                        // The texture buffer width must be a multiple of 32
-                        textureBufferWidthInPixels = alignBufferWidth(textureBufferWidthInPixels, 32);
 
                         buffer_storage = context.tex_clut_mode;
                         switch (context.tex_clut_mode) {
@@ -4694,9 +4709,6 @@ public class VideoEngine {
                         break;
                     }
                     case TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED: {
-                        // The texture buffer width must be a multiple of 16
-                        textureBufferWidthInPixels = alignBufferWidth(textureBufferWidthInPixels, 16);
-
                         if (re.canNativeClut()) {
                             final_buffer = getTextureBuffer(texaddr, 1, level, textureBufferWidthInPixels);
                             textureByteAlignment = 1; // 8 bits
@@ -4708,9 +4720,6 @@ public class VideoEngine {
                         break;
                     }
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED: {
-                        // The texture buffer width must be a multiple of 8
-                        textureBufferWidthInPixels = alignBufferWidth(textureBufferWidthInPixels, 8);
-
                         if (re.canNativeClut()) {
                     		final_buffer = getTextureBuffer(texaddr, 2, level, textureBufferWidthInPixels);
                     		textureByteAlignment = 2; // 16 bits
@@ -4722,9 +4731,6 @@ public class VideoEngine {
                         break;
                     }
                     case TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED: {
-                        // The texture buffer width must be a multiple of 4
-                        textureBufferWidthInPixels = alignBufferWidth(textureBufferWidthInPixels, 4);
-
                         if (re.canNativeClut()) {
                     		final_buffer = getTextureBuffer(texaddr, 4, level, textureBufferWidthInPixels);
                     		textureByteAlignment = 4; // 32 bits
@@ -4738,9 +4744,6 @@ public class VideoEngine {
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {
-                        // The texture buffer width must be a multiple of 8
-                        textureBufferWidthInPixels = alignBufferWidth(textureBufferWidthInPixels, 8);
-
                         textureByteAlignment = 2;  // 16 bits
 
                         if (!context.texture_swizzle) {
@@ -4768,9 +4771,6 @@ public class VideoEngine {
                     }
 
                     case TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888: {
-                        // The texture buffer width must be a multiple of 4
-                        textureBufferWidthInPixels = alignBufferWidth(textureBufferWidthInPixels, 4);
-
                         final_buffer = getTextureBuffer(texaddr, 4, level, textureBufferWidthInPixels);
                         break;
                     }
@@ -5125,7 +5125,7 @@ public class VideoEngine {
 		return flippedMatrix;
     }
 
-    private boolean initRendering() {
+    private void initRendering() {
         /*
          * Defer transformations until primitive rendering
          */
@@ -5377,16 +5377,16 @@ public class VideoEngine {
             textureMatrixUpload.setChanged(false);
         }
 
-        boolean useVertexColor = false;
+        context.useVertexColor = false;
         if (!context.lightingFlag.isEnabled() || context.transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
         	context.reColorMaterial.setEnabled(false);
-            if (vinfo.color != 0) {
-                useVertexColor = true;
+            if (context.vinfo.color != 0) {
+            	context.useVertexColor = true;
             } else {
             	re.setVertexColor(context.mat_ambient);
             }
-        } else if (vinfo.color != 0 && context.mat_flags != 0) {
-            useVertexColor = true;
+        } else if (context.vinfo.color != 0 && context.mat_flags != 0) {
+        	context.useVertexColor = true;
             if (materialChanged) {
             	boolean ambient = (context.mat_flags & 1) != 0;
             	boolean diffuse = (context.mat_flags & 2) != 0;
@@ -5463,8 +5463,6 @@ public class VideoEngine {
 	        re.setTextureMipmapMinLevel(mipmapBaseLevel);
 	        re.setTextureMipmapMaxLevel(mipmapMaxLevel);
         }
-
-        return useVertexColor;
     }
 
     private void endRendering(boolean useVertexColor, boolean useTexture, int numberOfVertex) {
@@ -5473,10 +5471,10 @@ public class VideoEngine {
         // VADDR/IADDR are updated after vertex rendering
         // (IADDR when indexed and VADDR when not).
         // Some games rely on this and don't reload VADDR/IADDR between 2 PRIM/BBOX calls.
-        if (vinfo.index == 0) {
-            vinfo.ptr_vertex = vinfo.getAddress(mem, numberOfVertex);
+        if (context.vinfo.index == 0) {
+            context.vinfo.ptr_vertex = context.vinfo.getAddress(mem, numberOfVertex);
         } else {
-            vinfo.ptr_index += numberOfVertex * vinfo.index;
+            context.vinfo.ptr_index += numberOfVertex * context.vinfo.index;
         }
     }
 
@@ -5542,8 +5540,8 @@ public class VideoEngine {
             return;
         }
 
-        boolean useVertexColor = initRendering();
-        boolean useTexture = vinfo.texture != 0 || context.textureFlag.isEnabled();
+        initRendering();
+        boolean useTexture = context.vinfo.texture != 0 || context.textureFlag.isEnabled();
         boolean useNormal = context.lightingFlag.isEnabled();
 
         // Generate control points.
@@ -5552,7 +5550,7 @@ public class VideoEngine {
         // GE capture.
         if (State.captureGeNextFrame && !isVertexBufferEmbedded()) {
             log.info("Capture drawSpline");
-            CaptureManager.captureRAM(vinfo.ptr_vertex, vinfo.vertexSize * ucount * vcount);
+            CaptureManager.captureRAM(context.vinfo.ptr_vertex, context.vinfo.vertexSize * ucount * vcount);
         }
 
         // Generate patch VertexState.
@@ -5582,18 +5580,18 @@ public class VideoEngine {
         			for(int jj = 0; jj <= m; jj++) {
         				float f = spline_n(ii, 3, u, knot_u) * spline_n(jj, 3, v, knot_v);
         				if(f != 0) {
-        					pointMultAdd(p, ctrlpoints[ii][jj], f, useVertexColor, useTexture, useNormal);
+        					pointMultAdd(p, ctrlpoints[ii][jj], f, context.useVertexColor, useTexture, useNormal);
         				}
         			}
         		}
-        		if(useTexture && vinfo.texture == 0) {
+        		if(useTexture && context.vinfo.texture == 0) {
         			p.t[0] = u;
         			p.t[1] = v;
         		}
         	}
         }
 
-        drawCurvedSurface(patch, ucount, vcount, useVertexColor, useTexture, useNormal);
+        drawCurvedSurface(patch, ucount, vcount, context.useVertexColor, useTexture, useNormal);
     }
 
 	private void pointMultAdd(VertexState dest, VertexState src, float f, boolean useVertexColor, boolean useTexture, boolean useNormal) {
@@ -5627,8 +5625,8 @@ public class VideoEngine {
             return;
         }
 
-        boolean useVertexColor = initRendering();
-        boolean useTexture = vinfo.texture != 0 || context.textureFlag.isEnabled();
+        initRendering();
+        boolean useTexture = context.vinfo.texture != 0 || context.textureFlag.isEnabled();
         boolean useNormal = context.lightingFlag.isEnabled();
 
         VertexState[][] anchors = getControlPoints(ucount, vcount);
@@ -5637,7 +5635,7 @@ public class VideoEngine {
         // TODO may need to move inside the loop if indices are used, or find the largest index so we can calculate the size of the vertex list
         if (State.captureGeNextFrame && !isVertexBufferEmbedded()) {
             log.info("Capture drawBezier");
-            CaptureManager.captureRAM(vinfo.ptr_vertex, vinfo.vertexSize * ucount * vcount);
+            CaptureManager.captureRAM(context.vinfo.ptr_vertex, context.vinfo.vertexSize * ucount * vcount);
         }
 
         // Generate patch VertexState.
@@ -5670,26 +5668,26 @@ public class VideoEngine {
         		}
         		ucoeff[i] = BernsteinCoeff(u);
 
-        		patch[i][j] = new VertexState();
-        		VertexState p = patch[i][j];
+        		VertexState p = new VertexState();
+        		patch[i][j] = p;
 
         		for(int ii = 0; ii < 4; ++ii) {
         			for(int jj = 0; jj < 4; ++jj) {
         				pointMultAdd(p,
         						anchors[3 * upatch + ii][3 * vpatch + jj],
         						ucoeff[i][ii] * vcoeff[jj],
-        						useVertexColor, useTexture, useNormal);
+        						context.useVertexColor, useTexture, useNormal);
         			}
         		}
 
-        		if(useTexture && vinfo.texture == 0) {
+        		if(useTexture && context.vinfo.texture == 0) {
         			p.t[0] = uglobal;
         			p.t[1] = vglobal;
         		}
         	}
         }
 
-        drawCurvedSurface(patch, ucount, vcount, useVertexColor, useTexture, useNormal);
+        drawCurvedSurface(patch, ucount, vcount, context.useVertexColor, useTexture, useNormal);
     }
 
 	private void drawCurvedSurface(VertexState[][] patch, int ucount, int vcount,
@@ -5699,7 +5697,7 @@ public class VideoEngine {
 		}
 
 		int type = patch_prim_types[context.patch_prim];
-		re.setVertexInfo(vinfo, false, useVertexColor, useTexture, type);
+		re.setVertexInfo(context.vinfo, false, useVertexColor, useTexture, type);
 
 		// TODO: Compute the normals
 		setDataPointers(3, useVertexColor, 4, useTexture, 2, useNormal, 0, true);
@@ -5740,8 +5738,8 @@ public class VideoEngine {
 		Memory mem = Memory.getInstance();
         for (int u = 0; u < ucount; u++) {
             for (int v = 0; v < vcount; v++) {
-                int addr = vinfo.getAddress(mem, v * ucount + u);
-                VertexState vs = vinfo.readVertex(mem, addr);
+                int addr = context.vinfo.getAddress(mem, v * ucount + u);
+                VertexState vs = context.vinfo.readVertex(mem, addr);
                 if (isLogDebugEnabled) {
                 	log(String.format("control point #%d,%d p(%f,%f,%f) t(%f,%f), c(%f,%f,%f)",
                 			u, v,
@@ -5849,7 +5847,7 @@ public class VideoEngine {
 
     private boolean isVertexBufferEmbedded() {
         // stall_addr may be 0
-        return (vinfo.ptr_vertex >= currentList.list_addr && vinfo.ptr_vertex < currentList.getStallAddr());
+        return (context.vinfo.ptr_vertex >= currentList.list_addr && context.vinfo.ptr_vertex < currentList.getStallAddr());
     }
 
     public boolean isVRAM(int addr) {

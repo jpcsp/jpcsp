@@ -390,7 +390,12 @@ public class sceGe_user extends HLEModule {
         VideoEngine ve = VideoEngine.getInstance();
         float[] mtx = ve.getMatrix(mtxType);
 
-        for(int i = 0; i < mtx.length; i++) {
+        if (mtx == null) {
+        	log.warn(String.format("sceGeGetMtx invalid type mtxType=%d", mtxType));
+        	return -1;
+        }
+
+        for (int i = 0; i < mtx.length; i++) {
         	mtxAddr.setValue(i << 2, Float.floatToRawIntBits(mtx[i]));
         }
 

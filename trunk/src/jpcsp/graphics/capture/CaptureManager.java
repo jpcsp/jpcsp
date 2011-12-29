@@ -41,6 +41,7 @@ import java.nio.Buffer;
 import java.util.HashSet;
 
 import jpcsp.Emulator;
+import jpcsp.Memory;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.graphics.VideoEngine;
 
@@ -187,6 +188,10 @@ public class CaptureManager {
             return;
         }
 
+        if (!Memory.isAddressGood(address)) {
+        	return;
+        }
+
         try {
             // write ram fragment
             CaptureHeader header = new CaptureHeader(CaptureHeader.PACKET_TYPE_RAM);
@@ -194,7 +199,7 @@ public class CaptureManager {
 
             CaptureRAM captureRAM = new CaptureRAM(address, length);
             captureRAM.write(out);
-        } catch(Exception e) {
+        } catch (Exception e) {
             VideoEngine.log.error("Failed to capture RAM: " + e.getMessage());
             e.printStackTrace();
         }
@@ -208,7 +213,7 @@ public class CaptureManager {
             if (capturedImages != null) {
             	capturedImages.add(imageaddr);
             }
-        } catch(Exception e) {
+        } catch (Exception e) {
             VideoEngine.log.error("Failed to capture Image: " + e.getMessage());
             e.printStackTrace();
             Emulator.PauseEmu();

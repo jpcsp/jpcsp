@@ -372,7 +372,7 @@ public class ImageViewer extends JFrame {
 			if (Memory.isAddressGood(startAddress)) {
 				Insets insets = getInsets();
 				int minWidth = Math.min(imageWidth, bufferWidth);
-				IMemoryReader imageReader = ImageReader.getImageReader(startAddress, imageWidth, imageHeight, bufferWidth, pixelFormat, imageSwizzle, clutAddress, clutFormat, clutNumberBlocks, clutStart, clutShift, clutMask);
+				IMemoryReader imageReader = ImageReader.getImageReader(startAddress, imageWidth, imageHeight, bufferWidth, pixelFormat, imageSwizzle, clutAddress, clutFormat, clutNumberBlocks, clutStart, clutShift, clutMask, null, null);
 
 				for (int y = 0; y < imageHeight; y++) {
 					for (int x = 0; x < minWidth; x++) {

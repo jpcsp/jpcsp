@@ -46,6 +46,23 @@ public interface IRenderingEngine {
         2, // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444
         4  // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
 	};
+	public static final int[] alignementOfTextureBufferWidth = {
+		8, // TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650
+		8, // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551
+		8, // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444
+		4, // TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888
+		32, // TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED
+        16, // TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED
+        8, // TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED
+        4, // TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED
+        1, // TPSM_PIXEL_STORAGE_MODE_DXT1
+        1, // TPSM_PIXEL_STORAGE_MODE_DXT3
+        1, // TPSM_PIXEL_STORAGE_MODE_DXT5
+        8, // RE_PIXEL_STORAGE_16BIT_INDEXED_BGR5650
+        8, // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5651
+        8, // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444
+        4  // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
+	};
 	public static final boolean[] isTextureTypeIndexed = {
 		false, // TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650
 		false, // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551
@@ -470,6 +487,7 @@ public interface IRenderingEngine {
 	public void setTextureAnisotropy(float value);
 	public float getMaxTextureAnisotropy();
 	public String getShadingLanguageVersion();
-	public void setBlendSFix(float[] color);
-	public void setBlendDFix(float[] color);
+	public void setBlendSFix(int sfix, float[] color);
+	public void setBlendDFix(int dfix, float[] color);
+	public void waitForRenderingCompletion();
 }

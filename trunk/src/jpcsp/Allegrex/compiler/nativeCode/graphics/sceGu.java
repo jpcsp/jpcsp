@@ -19,10 +19,10 @@ package jpcsp.Allegrex.compiler.nativeCode.graphics;
 import jpcsp.Memory;
 import jpcsp.Allegrex.compiler.nativeCode.AbstractNativeCodeSequence;
 import jpcsp.HLE.kernel.types.PspGeList;
-import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.graphics.AsyncVertexCache;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
@@ -247,7 +247,7 @@ public class sceGu extends AbstractNativeCodeSequence {
 		cmd = (GeCommands.TRXSIZE << 24) | ((height - 1) << 10) | (width - 1);
 		listWriter.writeNext(cmd);
 
-		cmd = (GeCommands.TRXKICK << 24) | (psm == sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888 ? GeCommands.TRXKICK_32BIT_TEXEL_SIZE : GeCommands.TRXKICK_16BIT_TEXEL_SIZE);
+		cmd = (GeCommands.TRXKICK << 24) | (IRenderingEngine.sizeOfTextureType[psm] == 4 ? GeCommands.TRXKICK_32BIT_TEXEL_SIZE : GeCommands.TRXKICK_16BIT_TEXEL_SIZE);
 		listWriter.writeNext(cmd);
 
 		listWriter.flush();

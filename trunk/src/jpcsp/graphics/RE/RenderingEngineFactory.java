@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
+import jpcsp.graphics.RE.software.RESoftware;
 import jpcsp.util.DurationStatistics;
 
 /**
@@ -25,27 +26,38 @@ import jpcsp.util.DurationStatistics;
 public class RenderingEngineFactory {
 	private static final boolean enableDebugProxy = false;
 	private static final boolean enableStatisticsProxy = false;
+	public static final boolean enableSoftwareRendering = false;
 
-	public static IRenderingEngine createRenderingEngine() {
+	private static IRenderingEngine createRenderingEngine(boolean enableSoftwareRendering) {
 		// Build the rendering pipeline, from the last entry to the first one.
+		IRenderingEngine re;
 
-		// The RenderingEngine actually performing the OpenGL calls
-		IRenderingEngine re = RenderingEngineLwjgl.newInstance();
+		if (enableSoftwareRendering) {
+			// RenderingEngine using a complete software implementation, i.e. not using the GPU
+			re = new RESoftware();
+		} else {
+			// RenderingEngine performing the OpenGL calls by using the LWJGL library
+			re = RenderingEngineLwjgl.newInstance();
+		}
 
 		if (enableStatisticsProxy && DurationStatistics.collectStatistics) {
+			// Proxy collecting statistics for all the calls (number of calls and execution time)
 			re = new StatisticsProxy(re);
 		}
 
 		if (enableDebugProxy) {
+			// Proxy logging the calls at the DEBUG level
 			re = new DebugProxy(re);
 		}
 
-		if (REShader.useShaders(re)) {
-			// RenderingEngine using shaders
-			re = new REShader(re);
-		} else {
-			// RenderingEngine using the OpenGL fixed-function pipeline (i.e. without shaders)
-			re = new REFixedFunction(re);
+		if (!enableSoftwareRendering) {
+			if (REShader.useShaders(re)) {
+				// RenderingEngine using shaders
+				re = new REShader(re);
+			} else {
+				// RenderingEngine using the OpenGL fixed-function pipeline (i.e. without shaders)
+				re = new REFixedFunction(re);
+			}
 		}
 
 		// Proxy removing redundant calls.
@@ -67,14 +79,36 @@ public class RenderingEngineFactory {
 	}
 
 	/**
+	 * Create a rendering engine to be used for processing the GE lists.
+	 * 
+	 * @return the rendering engine to be used
+	 */
+	public static IRenderingEngine createRenderingEngine() {
+		return createRenderingEngine(enableSoftwareRendering);
+	}
+
+	/**
+	 * Create a rendering engine to be used for display.
+	 * This rendering engine forces the use of OpenGL and is not using the software rendering.
+	 * 
+	 * @return the rendering engine to be used for display
+	 */
+	public static IRenderingEngine createRenderingEngineForDisplay() {
+		return createRenderingEngine(false);
+	}
+
+	/**
 	 * Create a rendering engine to be used when the HLE modules have not yet
 	 * been started.
 	 * 
-	 * @param gl
 	 * @return the initial rendering engine
 	 */
 	public static IRenderingEngine createInitialRenderingEngine() {
 		IRenderingEngine re = RenderingEngineLwjgl.newInstance();
+
+		if (enableDebugProxy) {
+			re = new DebugProxy(re);
+		}
 
 		return re;
 	}

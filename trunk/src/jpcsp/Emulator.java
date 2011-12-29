@@ -38,6 +38,7 @@ import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.graphics.VertexCache;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.software.RendererExecutor;
 import jpcsp.graphics.textures.TextureCache;
 import jpcsp.hardware.Battery;
 import jpcsp.hardware.Interrupts;
@@ -93,6 +94,7 @@ public class Emulator implements Runnable {
     	if (DurationStatistics.collectStatistics) {
     		log.info(TextureCache.getInstance().statistics);
     	}
+        RendererExecutor.exit();
         VertexCache.getInstance().exit();
         Compiler.exit();
         RuntimeContext.exit();
