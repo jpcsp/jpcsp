@@ -879,19 +879,17 @@ public class CompilerContext implements ICompilerContext {
     		parameterReader.loadNextInt();
 
     		int maxLength = 16 * 1024;
-    		
-    		// @TODO: Use the encoding @StringInfo annotation.
     		for (Annotation parameterAnnotation : parameterAnnotations) {
     			if (parameterAnnotation instanceof StringInfo) {
     				StringInfo stringInfo = ((StringInfo)parameterAnnotation);
     				maxLength = stringInfo.maxLength();
     			}
     		}
-    		mv.visitIntInsn(Opcodes.SIPUSH, maxLength);
+    		loadImm(maxLength);
    			mv.visitMethodInsn(
 				Opcodes.INVOKESTATIC,
 				runtimeContextInternalName,
-				"readStringZ", "(II)" + Type.getDescriptor(String.class)
+				"readStringNZ", "(II)" + Type.getDescriptor(String.class)
    			);
     		parameterReader.incrementCurrentStackSize();
     	} else if (parameterType == TPointer.class || parameterType == TPointer32.class || parameterType == TPointer64.class || parameterType == TErrorPointer32.class) {
@@ -916,21 +914,14 @@ public class CompilerContext implements ICompilerContext {
     		mv.visitInsn(Opcodes.DUP);
     		loadMemory();
     		parameterReader.loadNextInt();
-    		
+
     		boolean canBeNull = false;
-    		
-    		// @TODO: Use the encoding @StringInfo annotation.
-    		/*
     		for (Annotation parameterAnnotation : parameterAnnotations) {
     			if (parameterAnnotation instanceof CanBeNull) {
     				canBeNull = true;
     			}
     		}
-    		*/
-    		if (parameterType.getAnnotation(CanBeNull.class) != null) {
-    			canBeNull = true;
-    		}
-    		
+
     		if (checkMemoryAccess()) {
     			Label addressGood = new Label();
     			if (canBeNull) {
