@@ -32,7 +32,6 @@ import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VertexInfo;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.GeContext.EnableDisableFlag;
-import jpcsp.graphics.RE.buffer.BufferManagerFactory;
 import jpcsp.graphics.RE.buffer.IREBufferManager;
 import jpcsp.settings.Settings;
 
@@ -74,8 +73,6 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
     protected static final boolean useQueryForBoundingBox = true;
     protected static final boolean useWorkaroundForMultiDrawArrays = true;
     protected boolean useVertexArray;
-    protected IREBufferManager bufferManager;
-    protected boolean clearMode;
     ClearModeContext clearModeContext = new ClearModeContext();
     protected boolean directMode;
     protected boolean directModeSetOrthoMatrix;
@@ -154,16 +151,13 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
     }
 
     protected void init() {
-        bufferManager = BufferManagerFactory.createBufferManager(re);
-        bufferManager.setRenderingEngine(re);
-
         queryAvailable = re.isQueryAvailable();
         if (queryAvailable) {
             bboxQueryId = re.genQuery();
 
             // We need 24 * vertex (having 3 floats each) for one BBOX.
             // We reserve space for 10 bboxes.
-            bboxBuffer = bufferManager.genBuffer(RE_FLOAT, 10 * 24 * 3, RE_DYNAMIC_DRAW);
+            bboxBuffer = getBufferManager().genBuffer(RE_FLOAT, 10 * 24 * 3, RE_DYNAMIC_DRAW);
         }
 
         useVertexArray = Settings.getInstance().readBool("emu.enablevao") && super.isVertexArrayAvailable();
@@ -174,7 +168,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 
     @Override
     public void setRenderingEngine(IRenderingEngine re) {
-        bufferManager.setRenderingEngine(re);
+        getBufferManager().setRenderingEngine(re);
         super.setRenderingEngine(re);
     }
 
@@ -209,7 +203,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 
     @Override
     public void startClearMode(boolean color, boolean stencil, boolean depth) {
-        // Clear mode flags.
+		// Clear mode flags.
         clearModeContext.color = color;
         clearModeContext.stencil = stencil;
         clearModeContext.depth = depth;
@@ -232,61 +226,55 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 
         setClearModeSettings(color, stencil, depth);
         super.startClearMode(color, stencil, depth);
-        
-        clearMode = true;
     }
 
     @Override
     public void endClearMode() {
-        if (clearMode) {
-            clearMode = false;
-
-            // Reset all the flags disabled in CLEAR mode
-            for (EnableDisableFlag flag : context.flags) {
-                if (!flagsValidInClearMode[flag.getReFlag()]) {
-                    setFlag(flag);
-                }
+        // Reset all the flags disabled in CLEAR mode
+        for (EnableDisableFlag flag : context.flags) {
+            if (!flagsValidInClearMode[flag.getReFlag()]) {
+                setFlag(flag);
             }
-
-            // Restore depth.
-            context.depthFunc = clearModeContext.depthFunc;
-            re.setDepthFunc(context.depthFunc);
-
-            // Restore texture.
-            context.textureFunc = clearModeContext.textureFunc;
-            context.textureAlphaUsed = clearModeContext.textureAlphaUsed;
-            context.textureColorDoubled = clearModeContext.textureColorDoubled;
-            re.setTextureFunc(context.textureFunc, context.textureAlphaUsed, context.textureColorDoubled);
-
-            // Restore stencil.
-            context.stencilFunc = clearModeContext.stencilFunc;
-            context.stencilRef = clearModeContext.stencilRef;
-            context.stencilMask = clearModeContext.stencilMask;
-            re.setStencilFunc(context.stencilFunc, context.stencilRef, context.stencilRef);
-            
-            context.stencilOpFail = clearModeContext.stencilOpFail;
-            context.stencilOpZFail = clearModeContext.stencilOpZFail;
-            context.stencilOpZPass = clearModeContext.stencilOpZPass;
-            re.setStencilOp(context.stencilOpFail, context.stencilOpZFail, context.stencilOpZPass);
-
-            re.setDepthMask(context.depthMask);
-            re.setColorMask(true, true, true, context.stencilTestFlag.isEnabled());
-            re.setColorMask(context.colorMask[0], context.colorMask[1], context.colorMask[2], context.colorMask[3]);
-
-            super.endClearMode();
         }
+
+        // Restore depth.
+        context.depthFunc = clearModeContext.depthFunc;
+        re.setDepthFunc(context.depthFunc);
+
+        // Restore texture.
+        context.textureFunc = clearModeContext.textureFunc;
+        context.textureAlphaUsed = clearModeContext.textureAlphaUsed;
+        context.textureColorDoubled = clearModeContext.textureColorDoubled;
+        re.setTextureFunc(context.textureFunc, context.textureAlphaUsed, context.textureColorDoubled);
+
+        // Restore stencil.
+        context.stencilFunc = clearModeContext.stencilFunc;
+        context.stencilRef = clearModeContext.stencilRef;
+        context.stencilMask = clearModeContext.stencilMask;
+        re.setStencilFunc(context.stencilFunc, context.stencilRef, context.stencilRef);
+        
+        context.stencilOpFail = clearModeContext.stencilOpFail;
+        context.stencilOpZFail = clearModeContext.stencilOpZFail;
+        context.stencilOpZPass = clearModeContext.stencilOpZPass;
+        re.setStencilOp(context.stencilOpFail, context.stencilOpZFail, context.stencilOpZPass);
+
+        re.setDepthMask(context.depthMask);
+        re.setColorMask(true, true, true, context.stencilTestFlag.isEnabled());
+        re.setColorMask(context.colorMask[0], context.colorMask[1], context.colorMask[2], context.colorMask[3]);
+
+        super.endClearMode();
     }
 
     protected boolean isClearMode() {
-        return clearMode;
+        return context.clearMode;
     }
 
     protected boolean canUpdateFlag(int flag) {
-        return !clearMode || directMode || flagsValidInClearMode[flag];
+        return !context.clearMode || directMode || flagsValidInClearMode[flag];
     }
 
     protected boolean canUpdate() {
-        return !clearMode || directMode;
+        return !context.clearMode || directMode;
     }
 
     protected static boolean getBooleanColorMask(String name, int bitMask) {
@@ -409,7 +397,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
     public void endDirectRendering() {
         // Restore all the values according to the context or the clearMode
         re.setColorMask(context.colorMask[0], context.colorMask[1], context.colorMask[2], context.colorMask[3]);
-        if (clearMode) {
+        if (context.clearMode) {
             setClearModeSettings(clearModeContext.color, clearModeContext.stencil, clearModeContext.depth);
         } else {
             context.depthTestFlag.updateEnabled();
@@ -467,7 +455,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 
             re.beginQuery(bboxQueryId);
 
-            bufferManager.getBuffer(bboxBuffer).clear();
+            getBufferManager().getBuffer(bboxBuffer).clear();
             bboxNumberVertex = 0;
 
             bboxQueryInitialized = true;
@@ -569,7 +557,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
             //  0---1
             //
 
-            ByteBuffer byteBuffer = bufferManager.getBuffer(bboxBuffer);
+            ByteBuffer byteBuffer = getBufferManager().getBuffer(bboxBuffer);
             byteBuffer.clear();
             FloatBuffer bboxVertexBuffer = byteBuffer.asFloatBuffer();
 
@@ -618,6 +606,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
     @Override
     public void endBoundingBox(VertexInfo vinfo) {
         if (bboxQueryInitialized) {
+        	IREBufferManager bufferManager = getBufferManager();
             if (re.isVertexArrayAvailable()) {
                 re.bindVertexArray(0);
             }
@@ -684,11 +673,6 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
         }
 
         return isVisible && super.isBoundingBoxVisible();
-    }
-
-    @Override
-    public IREBufferManager getBufferManager() {
-        return bufferManager;
     }
 
     @Override
@@ -842,21 +826,14 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
         super.enableFlag(flag);
     }
 
-    private int getBlendFix(float[] fix_color) {
-        if (fix_color[0] == 0 && fix_color[1] == 0 && fix_color[2] == 0) {
+    private int getBlendFix(int fixColor) {
+        if (fixColor == 0x000000) {
             return IRenderingEngine.GU_FIX_BLACK;
-        } else if (fix_color[0] == 1 && fix_color[1] == 1 && fix_color[2] == 1) {
+        } else if (fixColor == 0xFFFFFF) {
             return IRenderingEngine.GU_FIX_WHITE;
         } else {
             return IRenderingEngine.GU_FIX_BLEND_COLOR;
         }
-    }
-
-    private int getColorInt(float[] color) {
-        return (((int) (color[0] * 255)))
-                | (((int) (color[1] * 255)) << 8)
-                | (((int) (color[2] * 255)) << 16)
-                | (((int) (color[3] * 255)) << 24);
     }
 
     private float[] getBlendColor(int gl_blend_src, int gl_blend_dst) {
@@ -864,11 +841,8 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
         if (gl_blend_src == IRenderingEngine.GU_FIX_BLEND_COLOR) {
             blend_color = context.sfix_color;
             if (gl_blend_dst == IRenderingEngine.GU_FIX_BLEND_COLOR) {
-                if (context.sfix_color[0] != context.dfix_color[0]
-                        || context.sfix_color[1] != context.dfix_color[1]
-                        || context.sfix_color[2] != context.dfix_color[2]
-                        || context.sfix_color[3] != context.dfix_color[3]) {
-                    log.warn(String.format("UNSUPPORTED: Both different SFIX (%08X) and DFIX (%08X) are not supported (blend equation=%d)", getColorInt(context.sfix_color), getColorInt(context.dfix_color), context.blendEquation));
+                if (context.sfix != context.dfix) {
+                    log.warn(String.format("UNSUPPORTED: Both different SFIX (0x%06X) and DFIX (0x%06X) are not supported (blend equation=%d)", context.sfix, context.dfix, context.blendEquation));
                 }
             }
         } else if (gl_blend_dst == IRenderingEngine.GU_FIX_BLEND_COLOR) {
@@ -881,17 +855,14 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
     @Override
     public void setBlendFunc(int src, int dst) {
         if (src == 10) { // GU_FIX
-            src = getBlendFix(context.sfix_color);
+            src = getBlendFix(context.sfix);
         }
 
         if (dst == 10) { // GU_FIX
-            if (src == IRenderingEngine.GU_FIX_BLEND_COLOR
-                    && context.sfix_color[0] + context.dfix_color[0] == 1
-                    && context.sfix_color[1] + context.dfix_color[1] == 1
-                    && context.sfix_color[2] + context.dfix_color[2] == 1) {
+            if (src == IRenderingEngine.GU_FIX_BLEND_COLOR && (context.sfix + context.dfix == 0xFFFFFF)) {
                 dst = IRenderingEngine.GU_FIX_BLEND_ONE_MINUS_COLOR;
             } else {
-                dst = getBlendFix(context.dfix_color);
+                dst = getBlendFix(context.dfix);
             }
         }
 
@@ -904,18 +875,18 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
     }
 
     @Override
-    public void setBlendDFix(float[] color) {
+    public void setBlendDFix(int sfix, float[] color) {
         // Update the blend color and functions when the DFIX is changing
         setBlendFunc(context.blend_src, context.blend_dst);
 
-        super.setBlendDFix(color);
+        super.setBlendDFix(sfix, color);
     }
 
     @Override
-    public void setBlendSFix(float[] color) {
+    public void setBlendSFix(int dfix, float[] color) {
         // Update the blend color and functions when the SFIX is changing
         setBlendFunc(context.blend_src, context.blend_dst);
 
-        super.setBlendSFix(color);
+        super.setBlendSFix(dfix, color);
     }
 }

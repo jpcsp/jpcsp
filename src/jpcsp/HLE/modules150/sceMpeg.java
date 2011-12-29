@@ -16,8 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import static jpcsp.HLE.modules150.sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_565;
-import static jpcsp.HLE.modules150.sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.util.Utilities.endianSwap32;
 import static jpcsp.util.Utilities.readUnaligned32;
 
@@ -38,7 +38,6 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Debugger.MemoryViewer;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
@@ -583,7 +582,7 @@ public class sceMpeg extends HLEModule {
         mpegRingbuffer = ringbuffer;
         videoFrameCount = 0;
         audioFrameCount = 0;
-        videoPixelMode = PSP_DISPLAY_PIXEL_FORMAT_8888;
+        videoPixelMode = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
         defaultFrameWidth = frameWidth;
 
         return 0;
@@ -599,9 +598,8 @@ public class sceMpeg extends HLEModule {
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegDelete bad mpeg handle 0x" + Integer.toHexString(mpeg));
             return -1;
-        } else {
-            return 0;
         }
+        return 0;
     }
 
     @HLEFunction(nid = 0x42560F23, version = 150, checkInsideInterrupt = true)
@@ -1341,7 +1339,7 @@ public class sceMpeg extends HLEModule {
             // -1 is a default value.
             int mode = mem.read32(mode_addr);
             int pixelMode = mem.read32(mode_addr + 4);
-            if (pixelMode >= PSP_DISPLAY_PIXEL_FORMAT_565 && pixelMode <= PSP_DISPLAY_PIXEL_FORMAT_8888) {
+            if (pixelMode >= TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650 && pixelMode <= TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
                 videoPixelMode = pixelMode;
             } else {
                 log.warn("sceMpegAvcDecodeMode mode=0x" + mode + " pixel mode=" + pixelMode + ": unknown mode");

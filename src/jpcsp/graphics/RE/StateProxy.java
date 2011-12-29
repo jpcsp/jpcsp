@@ -109,8 +109,8 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected int bindVertexArray;
 	protected int activeTextureUnit;
 	protected boolean useTextureAnisotropicFilter;
-	protected float[] blendDFix;
-	protected float[] blendSFix;
+	protected int dfix;
+	protected int sfix;
 
 	protected static class StateBoolean {
 		private boolean undefined = true;
@@ -214,9 +214,6 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		colorMaterialAmbient = new StateBoolean();
 		colorMaterialDiffuse = new StateBoolean();
 		colorMaterialSpecular = new StateBoolean();
-
-		blendDFix = new float[4];
-		blendSFix = new float[4];
 	}
 
 	@Override
@@ -1138,24 +1135,18 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setBlendDFix(float[] color) {
-		if (blendDFix[0] != color[0] || blendDFix[1] != color[1] || blendDFix[2] != color[2] || blendDFix[3] != color[3]) {
-			super.setBlendDFix(color);
-			blendDFix[0] = color[0];
-			blendDFix[1] = color[1];
-			blendDFix[2] = color[2];
-			blendDFix[3] = color[3];
+	public void setBlendSFix(int sfix, float[] color) {
+		if (this.sfix != sfix) {
+			super.setBlendSFix(sfix, color);
+			this.sfix = sfix;
 		}
 	}
 
 	@Override
-	public void setBlendSFix(float[] color) {
-		if (blendSFix[0] != color[0] || blendSFix[1] != color[1] || blendSFix[2] != color[2] || blendSFix[3] != color[3]) {
-			super.setBlendSFix(color);
-			blendSFix[0] = color[0];
-			blendSFix[1] = color[1];
-			blendSFix[2] = color[2];
-			blendSFix[3] = color[3];
+	public void setBlendDFix(int dfix, float[] color) {
+		if (this.dfix != dfix) {
+			super.setBlendDFix(dfix, color);
+			this.dfix = dfix;
 		}
 	}
 }

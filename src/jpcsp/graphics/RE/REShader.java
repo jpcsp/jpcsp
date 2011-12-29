@@ -1308,24 +1308,24 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	@Override
-	public void setBlendDFix(float[] color) {
+	public void setBlendSFix(int sfix, float[] color) {
 		if (useShaderBlendTest) {
-			shaderContext.setBlendDFix(color);
+			shaderContext.setBlendSFix(color);
 			// Do not call the "super" method in BaseRenderingEngineFunction
-			proxy.setBlendDFix(color);
+			proxy.setBlendSFix(sfix, color);
 		} else {
-			super.setBlendDFix(color);
+			super.setBlendSFix(sfix, color);
 		}
 	}
 
 	@Override
-	public void setBlendSFix(float[] color) {
+	public void setBlendDFix(int dfix, float[] color) {
 		if (useShaderBlendTest) {
-			shaderContext.setBlendSFix(color);
+			shaderContext.setBlendDFix(color);
 			// Do not call the "super" method in BaseRenderingEngineFunction
-			proxy.setBlendSFix(color);
+			proxy.setBlendDFix(dfix, color);
 		} else {
-			super.setBlendSFix(color);
+			super.setBlendDFix(dfix, color);
 		}
 	}
 

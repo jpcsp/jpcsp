@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.media;
 
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.util.Utilities.endianSwap32;
 
 import java.awt.image.BufferedImage;
@@ -761,7 +762,7 @@ public class MediaEngine {
             if (image.getColorModel() instanceof ComponentColorModel && image.getRaster().getDataBuffer() instanceof DataBufferByte) {
             	// Optimized version for most common case: 1 pixel stored in 3 bytes in BGR format
             	byte[] imageData = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
-            	if (videoPixelMode == sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888) {
+            	if (videoPixelMode == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
             		// Fastest version for pixel format 8888
 	                IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dest_addr, bytesPerPixel);
 	            	for (int y = 0, i = 0; y < height; y++) {

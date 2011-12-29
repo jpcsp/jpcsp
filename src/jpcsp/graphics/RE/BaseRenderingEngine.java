@@ -18,6 +18,8 @@ package jpcsp.graphics.RE;
 
 import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.buffer.BufferManagerFactory;
+import jpcsp.graphics.RE.buffer.IREBufferManager;
 
 import org.apache.log4j.Logger;
 
@@ -35,10 +37,17 @@ public abstract class BaseRenderingEngine implements IRenderingEngine {
 	protected final static Logger log = VideoEngine.log;
 	protected IRenderingEngine re = this;
 	protected GeContext context;
+    protected IREBufferManager bufferManager;
 
-	@Override
+    public BaseRenderingEngine() {
+		bufferManager = BufferManagerFactory.createBufferManager(this);
+		bufferManager.setRenderingEngine(this);
+    }
+
+    @Override
 	public void setRenderingEngine(IRenderingEngine re) {
 		this.re = re;
+		bufferManager.setRenderingEngine(re);
 	}
 
 	@Override
@@ -76,5 +85,17 @@ public abstract class BaseRenderingEngine implements IRenderingEngine {
 	public void setModelViewMatrix(float[] values) {
 		re.setMatrixMode(RE_MODELVIEW);
 		setMatrix(values);
+	}
+
+	@Override
+	public IREBufferManager getBufferManager() {
+		return bufferManager;
+	}
+
+	@Override
+	public void setVertexColor(float[] color) {
+		for (int i = 0; i < context.vertexColor.length; i++) {
+			context.vertexColor[i] = color[i];
+		}
 	}
 }

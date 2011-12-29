@@ -1008,12 +1008,17 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setBlendDFix(float[] color) {
-		proxy.setBlendDFix(color);
+	public void setBlendDFix(int sfix, float[] color) {
+		proxy.setBlendDFix(sfix, color);
 	}
 
 	@Override
-	public void setBlendSFix(float[] color) {
-		proxy.setBlendSFix(color);
+	public void setBlendSFix(int dfix, float[] color) {
+		proxy.setBlendSFix(dfix, color);
+	}
+
+	@Override
+	public void waitForRenderingCompletion() {
+		proxy.waitForRenderingCompletion();
 	}
 }

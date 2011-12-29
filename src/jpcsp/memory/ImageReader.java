@@ -30,7 +30,9 @@ import static jpcsp.graphics.GeCommands.CMODE_FORMAT_16BIT_BGR5650;
 import static jpcsp.graphics.GeCommands.CMODE_FORMAT_16BIT_ABGR5551;
 import static jpcsp.graphics.GeCommands.CMODE_FORMAT_16BIT_ABGR4444;
 import static jpcsp.graphics.GeCommands.CMODE_FORMAT_32BIT_ABGR8888;
+
 import jpcsp.graphics.GeCommands;
+import jpcsp.graphics.RE.IRenderingEngine;
 
 /**
  * @author gid15
@@ -94,9 +96,11 @@ public class ImageReader {
 	 * @param clutStart     the clut start index
 	 * @param clutShift     the clut index shift
 	 * @param clutMask      the clut index mask
+	 * @param clut32        a pre-read clut
+	 * @param clut16        a pre-read clut
 	 * @return              the Image Reader implementing the IMemoryReader interface
 	 */
-	public static IMemoryReader getImageReader(int address, int width, int height, int bufferWidth, int pixelFormat, boolean swizzle, int clutAddr, int clutMode, int clutNumBlocks, int clutStart, int clutShift, int clutMask) {
+	public static IMemoryReader getImageReader(int address, int width, int height, int bufferWidth, int pixelFormat, boolean swizzle, int clutAddr, int clutMode, int clutNumBlocks, int clutStart, int clutShift, int clutMask, int[] clut32, short[] clut16) {
 		//
 		// Step 1: read from memory as 32-bit values
 		//
@@ -133,37 +137,21 @@ public class ImageReader {
 				break;
 			case TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED:
 				imageReader = new Value32to4Decoder(imageReader);
-				if (clutStart == 0 && clutShift == 0 && clutMask == 0xFF) {
-					imageReader = new SimpleClutDecoder(imageReader, clutAddr, clutMode, clutNumBlocks);
-				} else {
-					imageReader = new ClutDecoder(imageReader, clutAddr, clutMode, clutNumBlocks, clutStart, clutShift, clutMask);
-				}
+				imageReader = getClutDecoder(imageReader, 4, clutAddr, clutMode, clutNumBlocks, clutStart, clutShift, clutMask, clut32, clut16);
 				hasClut = true;
 				break;
 			case TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED:
 				imageReader = new Value32to8Decoder(imageReader);
-				if (clutStart == 0 && clutShift == 0 && clutMask == 0xFF) {
-					imageReader = new SimpleClutDecoder(imageReader, clutAddr, clutMode, clutNumBlocks);
-				} else {
-					imageReader = new ClutDecoder(imageReader, clutAddr, clutMode, clutNumBlocks, clutStart, clutShift, clutMask);
-				}
+				imageReader = getClutDecoder(imageReader, 8, clutAddr, clutMode, clutNumBlocks, clutStart, clutShift, clutMask, clut32, clut16);
 				hasClut = true;
 				break;
 			case TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED:
 				imageReader = new Value32to16Decoder(imageReader);
-				if (clutStart == 0 && clutShift == 0 && clutMask == 0xFF) {
-					imageReader = new SimpleClutDecoder(imageReader, clutAddr, clutMode, clutNumBlocks);
-				} else {
-					imageReader = new ClutDecoder(imageReader, clutAddr, clutMode, clutNumBlocks, clutStart, clutShift, clutMask);
-				}
+				imageReader = getClutDecoder(imageReader, 16, clutAddr, clutMode, clutNumBlocks, clutStart, clutShift, clutMask, clut32, clut16);
 				hasClut = true;
 				break;
 			case TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED:
-				if (clutStart == 0 && clutShift == 0 && clutMask == 0xFF) {
-					imageReader = new SimpleClutDecoder(imageReader, clutAddr, clutMode, clutNumBlocks);
-				} else {
-					imageReader = new ClutDecoder(imageReader, clutAddr, clutMode, clutNumBlocks, clutStart, clutShift, clutMask);
-				}
+				imageReader = getClutDecoder(imageReader, 32, clutAddr, clutMode, clutNumBlocks, clutStart, clutShift, clutMask, clut32, clut16);
 				hasClut = true;
 				break;
 			case TPSM_PIXEL_STORAGE_MODE_DXT1:
@@ -209,6 +197,42 @@ public class ImageReader {
 		return imageReader;
 	}
 
+	private static boolean isSimpleClutMask(int indexBits, int clutMask) {
+		// clutMask 0xFF means no masking
+		if (clutMask == 0xFF) {
+			return true;
+		}
+
+		// For TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED, a clut mask 0x.F also means no masking
+		if (indexBits == 4 && (clutMask & 0xF) == 0xF) {
+			return true;
+		}
+
+		return false;
+	}
+
+	private static IMemoryReader getClutDecoder(IMemoryReader imageReader, int indexBits, int clutAddr, int clutMode, int clutNumBlocks, int clutStart, int clutShift, int clutMask, int[] clut32, short[] clut16) {
+		if (clutStart == 0 && clutShift == 0 && isSimpleClutMask(indexBits, clutMask)) {
+			if (clutMode == CMODE_FORMAT_32BIT_ABGR8888 && clut32 != null) {
+				imageReader = new SimpleClutDecoder(imageReader, clut32, clutMode, indexBits);
+			} else if (clut16 != null) {
+				imageReader = new SimpleClutDecoder(imageReader, clut16, clutMode, indexBits);
+			} else {
+				imageReader = new SimpleClutDecoder(imageReader, clutAddr, clutMode, clutNumBlocks, indexBits);
+			}
+		} else {
+			if (clutMode == CMODE_FORMAT_32BIT_ABGR8888 && clut32 != null) {
+				imageReader = new ClutDecoder(imageReader, clut32, clutMode, clutStart, clutShift, clutMask);
+			} else if (clut16 != null) {
+				imageReader = new ClutDecoder(imageReader, clut16, clutMode, clutStart, clutShift, clutMask);
+			} else {
+				imageReader = new ClutDecoder(imageReader, clutAddr, clutMode, clutNumBlocks, clutStart, clutShift, clutMask);
+			}
+		}
+
+		return imageReader;
+	}
+
 	/**
 	 * The ImageReader classes are based on a decoder concept, receiving
 	 * a IMemoryReader as input and delivering the transformed output also
@@ -221,13 +245,6 @@ public class ImageReader {
 
 		public ImageDecoder(IMemoryReader memoryReader) {
 			this.memoryReader = memoryReader;
-		}
-
-		@Override
-		public void skip(int n) {
-			for (int i = 0; i < n; i++) {
-				readNext();
-			}
 		}
 	}
 
@@ -254,6 +271,25 @@ public class ImageReader {
 			}
 			index = 0;
 			return (value >>> 16);
+		}
+
+		@Override
+		public void skip(int n) {
+			if (n > 0) {
+				int previousIndex = index;
+				index += n;
+				if (index > 1) {
+					int skip = index / 2;
+					if (previousIndex > 0) {
+						skip--;
+					}
+					memoryReader.skip(skip);
+					index = index % 2;
+					if (index > 0) {
+						value = memoryReader.readNext();
+					}
+				}
+			}
 		}
 	}
 
@@ -284,6 +320,30 @@ public class ImageReader {
 
 			return n;
 		}
+
+		@Override
+		public void skip(int n) {
+			if (n > 0) {
+				int previousIndex = index;
+				index += n;
+				if (index > 4) {
+					int skip = index / 4;
+					if (previousIndex > 0) {
+						skip--;
+					}
+					memoryReader.skip(skip);
+					index = index % 4;
+					if (index > 0) {
+						value = memoryReader.readNext();
+						value >>= index * 8;
+					} else {
+						index = 4;
+					}
+				} else if (index < 4) {
+					value >>= n * 8;
+				}
+			}
+		}
 	}
 
 	/**
@@ -313,6 +373,30 @@ public class ImageReader {
 
 			return n;
 		}
+
+		@Override
+		public void skip(int n) {
+			if (n > 0) {
+				int previousIndex = index;
+				index += n;
+				if (index > 8) {
+					int skip = index / 8;
+					if (previousIndex > 0) {
+						skip--;
+					}
+					memoryReader.skip(skip);
+					index = index % 8;
+					if (index > 0) {
+						value = memoryReader.readNext();
+						value >>= index * 4;
+					} else {
+						index = 8;
+					}
+				} else if (index < 8) {
+					value >>= n * 4;
+				}
+			}
+		}
 	}
 
 	/**
@@ -328,6 +412,11 @@ public class ImageReader {
 		@Override
 		public int readNext() {
 			return color5551to8888(memoryReader.readNext());
+		}
+
+		@Override
+		public void skip(int n) {
+			memoryReader.skip(n);
 		}
 	}
 
@@ -345,6 +434,11 @@ public class ImageReader {
 		public int readNext() {
 			return color565to8888(memoryReader.readNext());
 		}
+
+		@Override
+		public void skip(int n) {
+			memoryReader.skip(n);
+		}
 	}
 
 	/**
@@ -360,6 +454,11 @@ public class ImageReader {
 		@Override
 		public int readNext() {
 			return color4444to8888(memoryReader.readNext());
+		}
+
+		@Override
+		public void skip(int n) {
+			memoryReader.skip(n);
 		}
 	}
 
@@ -388,61 +487,91 @@ public class ImageReader {
 			index = maxIndex;
 		}
 
+		private void reload() {
+			// Reload the swizzle buffer with the next 8 pixel rows
+	        int xdest = 0;
+	        if (rowWidth >= 16) {
+				for (int bx = 0; bx < bxc; bx++) {
+					int dest = xdest;
+					for (int n = 0; n < 8; n++) {
+						buffer[dest    ] = memoryReader.readNext();
+						buffer[dest + 1] = memoryReader.readNext();
+						buffer[dest + 2] = memoryReader.readNext();
+						buffer[dest + 3] = memoryReader.readNext();
+
+						dest += pitch;
+					}
+					xdest += 4;
+				}
+	        } else if (rowWidth == 8) {
+            	for (int n = 0; n < 8; n++, xdest += 2) {
+                    buffer[xdest] = memoryReader.readNext();
+                    buffer[xdest + 1] = memoryReader.readNext();
+                    memoryReader.skip(2);
+            	}
+	        } else if (rowWidth == 4) {
+            	for (int n = 0; n < 8; n++, xdest++) {
+                    buffer[xdest] = memoryReader.readNext();
+                    memoryReader.skip(3);
+            	}
+            } else if (rowWidth == 2) {
+            	for (int n = 0; n < 4; n++, xdest++) {
+            		int n1 = memoryReader.readNext() & 0xFFFF;
+            		memoryReader.skip(3);
+            		int n2 = memoryReader.readNext() & 0xFFFF;
+                    memoryReader.skip(3);
+                    buffer[xdest] = n1 | (n2 << 16);
+            	}
+            } else if (rowWidth == 1) {
+            	for (int n = 0; n < 2; n++, xdest++) {
+            		int n1 = memoryReader.readNext() & 0xFF;
+            		memoryReader.skip(3);
+            		int n2 = memoryReader.readNext() & 0xFF;
+                    memoryReader.skip(3);
+            		int n3 = memoryReader.readNext() & 0xFF;
+                    memoryReader.skip(3);
+            		int n4 = memoryReader.readNext() & 0xFF;
+                    memoryReader.skip(3);
+                    buffer[xdest] = n1 | (n2 << 8) | (n3 << 16) | (n4 << 24);
+            	}
+            }
+		}
+
+		private int getBufferSkipLength() {
+			return bxc > 0 ? bxc * 32 : 32;
+		}
+
 		@Override
 		public int readNext() {
 			if (index >= maxIndex) {
-				// Reload the swizzle buffer with the next 8 pixel rows
-		        int xdest = 0;
-		        if (rowWidth >= 16) {
-					for (int bx = 0; bx < bxc; bx++) {
-						int dest = xdest;
-						for (int n = 0; n < 8; n++) {
-							buffer[dest    ] = memoryReader.readNext();
-							buffer[dest + 1] = memoryReader.readNext();
-							buffer[dest + 2] = memoryReader.readNext();
-							buffer[dest + 3] = memoryReader.readNext();
-	
-							dest += pitch;
-						}
-						xdest += 4;
-					}
-		        } else if (rowWidth == 8) {
-	            	for (int n = 0; n < 8; n++, xdest += 2) {
-	                    buffer[xdest] = memoryReader.readNext();
-	                    buffer[xdest + 1] = memoryReader.readNext();
-	                    memoryReader.skip(2);
-	            	}
-		        } else if (rowWidth == 4) {
-	            	for (int n = 0; n < 8; n++, xdest++) {
-	                    buffer[xdest] = memoryReader.readNext();
-	                    memoryReader.skip(3);
-	            	}
-	            } else if (rowWidth == 2) {
-	            	for (int n = 0; n < 4; n++, xdest++) {
-	            		int n1 = memoryReader.readNext() & 0xFFFF;
-	            		memoryReader.skip(3);
-	            		int n2 = memoryReader.readNext() & 0xFFFF;
-	                    memoryReader.skip(3);
-	                    buffer[xdest] = n1 | (n2 << 16);
-	            	}
-	            } else if (rowWidth == 1) {
-	            	for (int n = 0; n < 2; n++, xdest++) {
-	            		int n1 = memoryReader.readNext() & 0xFF;
-	            		memoryReader.skip(3);
-	            		int n2 = memoryReader.readNext() & 0xFF;
-	                    memoryReader.skip(3);
-	            		int n3 = memoryReader.readNext() & 0xFF;
-	                    memoryReader.skip(3);
-	            		int n4 = memoryReader.readNext() & 0xFF;
-	                    memoryReader.skip(3);
-	                    buffer[xdest] = n1 | (n2 << 8) | (n3 << 16) | (n4 << 24);
-	            	}
-	            }
-
+				reload();
 				index = 0;
 			}
 
 			return buffer[index++];
+		}
+
+		@Override
+		public void skip(int n) {
+			if (n > 0) {
+				int previousIndex = index;
+				index += n;
+				if (index > maxIndex) {
+					int skipBlocks = index / maxIndex;
+					if (previousIndex > 0) {
+						skipBlocks--;
+					}
+					if (skipBlocks > 0) {
+						memoryReader.skip(skipBlocks * getBufferSkipLength());
+					}
+					index = index % maxIndex;
+					if (index > 0) {
+						reload();
+					} else {
+						index = maxIndex;
+					}
+				}
+			}
 		}
 	}
 
@@ -472,6 +601,17 @@ public class ImageReader {
 			x++;
 
 			return memoryReader.readNext();
+		}
+
+		@Override
+		public void skip(int n) {
+			x += n;
+			if (x >= minWidth) {
+				int lines = x / minWidth;
+				n += lines * skipWidth;
+				x -= lines * minWidth;
+			}
+			memoryReader.skip(n);
 		}
 	}
 
@@ -510,6 +650,34 @@ public class ImageReader {
 			readClut();
 		}
 
+		public ClutDecoder(IMemoryReader memoryReader, int[] clut, int clutMode, int clutStart, int clutShift, int clutMask) {
+			super(memoryReader);
+			this.clutAddr = 0;
+			this.clutNumBlocks = -1;
+			this.clutStart = clutStart;
+			this.clutShift = clutShift;
+			this.clutMask = clutMask;
+			this.clut = new int[getMaxClutEntries()];
+			System.arraycopy(clut, 0, this.clut, 0, this.clut.length);
+		}
+
+		public ClutDecoder(IMemoryReader memoryReader, short[] clut, int clutMode, int clutStart, int clutShift, int clutMask) {
+			super(memoryReader);
+			this.clutAddr = 0;
+			this.clutNumBlocks = -1;
+			this.clutStart = clutStart;
+			this.clutShift = clutShift;
+			this.clutMask = clutMask;
+			this.clut = new int[getMaxClutEntries()];
+			for (int i = 0; i < this.clut.length; i++) {
+				this.clut[i] = clut[i] & 0xFFFF;
+			}
+		}
+
+		protected int getMaxClutEntries() {
+			return Integer.highestOneBit(getClutIndex(0xFFFFFFFF)) << 1;
+		}
+
 		protected int getClutAddr() {
 			return clutAddr + (clutStart << 4) * clutEntrySize;
 	    }
@@ -533,6 +701,11 @@ public class ImageReader {
 			int index = memoryReader.readNext();
 			return clut[getClutIndex(index)];
 		}
+
+		@Override
+		public void skip(int n) {
+			memoryReader.skip(n);
+		}
 	}
 
 	/**
@@ -553,10 +726,28 @@ public class ImageReader {
 	 *   clutStart = 0
 	 *   clutShift = 0
 	 *   clutMask = 0xFF
+	 *              or 0xF for TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED
 	 */
 	private static final class SimpleClutDecoder extends ClutDecoder {
-		public SimpleClutDecoder(IMemoryReader memoryReader, int clutMode, int clutAddr, int clutNumBlocks) {
-			super(memoryReader, clutMode, clutAddr, clutNumBlocks, 0, 0, 0xFF);
+		public SimpleClutDecoder(IMemoryReader memoryReader, int clutMode, int clutAddr, int clutNumBlocks, int indexBits) {
+			super(memoryReader, clutMode, clutAddr, clutNumBlocks, 0, 0, getClutMask(indexBits));
+		}
+
+		public SimpleClutDecoder(IMemoryReader memoryReader, int[] clut, int clutMode, int indexBits) {
+			super(memoryReader, clut, clutMode, 0, 0, getClutMask(indexBits));
+		}
+
+		public SimpleClutDecoder(IMemoryReader memoryReader, short[] clut, int clutMode, int indexBits) {
+			super(memoryReader, clut, clutMode, 0, 0, getClutMask(indexBits));
+		}
+
+		private static int getClutMask(int indexBits) {
+			return indexBits == 4 ? 0xF : 0xFF;
+		}
+
+		@Override
+		protected int getMaxClutEntries() {
+			return clutMask == 0xF ? 16 : 256;
 		}
 
 		@Override
@@ -568,6 +759,11 @@ public class ImageReader {
 		public int readNext() {
 			int index = memoryReader.readNext();
 			return clut[index];
+		}
+
+		@Override
+		public void skip(int n) {
+			memoryReader.skip(n);
 		}
 	}
 
@@ -590,80 +786,105 @@ public class ImageReader {
 			//compressedImageSize = round4(width) * round4(height) * 4 / compressionRatio;
 
 			buffer = new int[width * 4]; // DXT images are compressed in blocks of 4 rows
-			maxIndex = width * 4;
+			maxIndex = buffer.length;
 			index = maxIndex;
 			colors = new int[4];
+		}
+
+		protected void reload() {
+			// Reload buffer
+			for (int strideX = 0; strideX < width; strideX += 4) {
+                // PSP DXT1 hardware format reverses the colors and the per-pixel
+                // bits, and encodes the color in RGB 565 format
+				//
+                // PSP DXT3 format reverses the alpha and color parts of each block,
+                // and reverses the color and per-pixel terms in the color part.
+				//
+                // PSP DXT5 format reverses the alpha and color parts of each block,
+                // and reverses the color and per-pixel terms in the color part. In
+                // the alpha part, the 2 reference alpha values are swapped with the
+                // alpha interpolation values.
+				int bits = memoryReader.readNext();
+				int color = memoryReader.readNext();
+				readAlpha();
+
+				int color0 = (color >>  0) & 0xFFFF;
+				int color1 = (color >> 16) & 0xFFFF;
+
+				int r0 = (color0 >> 8) & 0xF8;
+				int g0 = (color0 >> 3) & 0xFC;
+				int b0 = (color0 << 3) & 0xF8;
+
+				int r1 = (color1 >> 8) & 0xF8;
+				int g1 = (color1 >> 3) & 0xFC;
+				int b1 = (color1 << 3) & 0xF8;
+
+				int r2, g2, b2;
+				if (color0 > color1) {
+					r2 = (r0 * 2 + r1) / 3;
+					g2 = (g0 * 2 + g1) / 3;
+					b2 = (b0 * 2 + b1) / 3;
+				} else {
+					r2 = (r0 + r1) / 2;
+					g2 = (g0 + g1) / 2;
+					b2 = (b0 + b1) / 2;
+				}
+
+				int r3, g3, b3;
+				if (color0 > color1 || dxtLevel > 1) {
+					r3 = (r0 + r1 * 2) / 3;
+					g3 = (g0 + g1 * 2) / 3;
+					b3 = (b0 + b1 * 2) / 3;
+				} else {
+					// Transparent black
+					r3 = 0x00;
+					g3 = 0x00;
+					b3 = 0x00;
+				}
+
+				colors[0] = (b0 << 16) | (g0 << 8) | (r0);
+				colors[1] = (b1 << 16) | (g1 << 8) | (r1);
+				colors[2] = (b2 << 16) | (g2 << 8) | (r2);
+				colors[3] = (b3 << 16) | (g3 << 8) | (r3);
+
+				storePixels(strideX, bits);
+			}
 		}
 
 		@Override
 		public int readNext() {
 			if (index >= maxIndex) {
-				// Reload buffer
-				for (int strideX = 0; strideX < width; strideX += 4) {
-                    // PSP DXT1 hardware format reverses the colors and the per-pixel
-                    // bits, and encodes the color in RGB 565 format
-					//
-                    // PSP DXT3 format reverses the alpha and color parts of each block,
-                    // and reverses the color and per-pixel terms in the color part.
-					//
-                    // PSP DXT5 format reverses the alpha and color parts of each block,
-                    // and reverses the color and per-pixel terms in the color part. In
-                    // the alpha part, the 2 reference alpha values are swapped with the
-                    // alpha interpolation values.
-					int bits = memoryReader.readNext();
-					int color = memoryReader.readNext();
-					readAlpha();
-
-					int color0 = (color >>  0) & 0xFFFF;
-					int color1 = (color >> 16) & 0xFFFF;
-
-					int r0 = (color0 >> 8) & 0xF8;
-					int g0 = (color0 >> 3) & 0xFC;
-					int b0 = (color0 << 3) & 0xF8;
-
-					int r1 = (color1 >> 8) & 0xF8;
-					int g1 = (color1 >> 3) & 0xFC;
-					int b1 = (color1 << 3) & 0xF8;
-
-					int r2, g2, b2;
-					if (color0 > color1) {
-						r2 = (r0 * 2 + r1) / 3;
-						g2 = (g0 * 2 + g1) / 3;
-						b2 = (b0 * 2 + b1) / 3;
-					} else {
-						r2 = (r0 + r1) / 2;
-						g2 = (g0 + g1) / 2;
-						b2 = (b0 + b1) / 2;
-					}
-
-					int r3, g3, b3;
-					if (color0 > color1 || dxtLevel > 1) {
-						r3 = (r0 + r1 * 2) / 3;
-						g3 = (g0 + g1 * 2) / 3;
-						b3 = (b0 + b1 * 2) / 3;
-					} else {
-						// Transparent black
-						r3 = 0x00;
-						g3 = 0x00;
-						b3 = 0x00;
-					}
-
-					colors[0] = (b0 << 16) | (g0 << 8) | (r0);
-					colors[1] = (b1 << 16) | (g1 << 8) | (r1);
-					colors[2] = (b2 << 16) | (g2 << 8) | (r2);
-					colors[3] = (b3 << 16) | (g3 << 8) | (r3);
-
-					storePixels(strideX, bits);
-				}
-
+				reload();
 				index = 0;
 			}
 
 			return buffer[index++];
 		}
 
+		protected int getSkipLength() {
+			return (width / 4) * (2 + getAlphaSkipLength());
+		}
+
+		@Override
+		public void skip(int n) {
+			index += n;
+			if (index > maxIndex) {
+				int skipBlocks = (index / maxIndex) - 1;
+				if (skipBlocks > 0) {
+					memoryReader.skip(skipBlocks * getSkipLength());
+				}
+				index = index % maxIndex;
+				if (index > 0) {
+					reload();
+				} else {
+					index = maxIndex;
+				}
+			}
+		}
+
 		protected abstract void storePixels(int strideX, int bits);
 		protected abstract void readAlpha();
+		protected abstract int getAlphaSkipLength();
 	}
 
 	/**
@@ -697,6 +918,12 @@ public class ImageReader {
 		protected void readAlpha() {
 			// No alpha
 		}
+
+		@Override
+		protected int getAlphaSkipLength() {
+			// No alpha
+			return 0;
+		}
 	}
 
 	/**
@@ -729,6 +956,11 @@ public class ImageReader {
 		protected void readAlpha() {
 			alpha = memoryReader.readNext();
 			alpha |= (((long) memoryReader.readNext()) << 32);
+		}
+
+		@Override
+		protected int getAlphaSkipLength() {
+			return 2;
 		}
 	}
 
@@ -784,6 +1016,11 @@ public class ImageReader {
 				alpha[6] = 0x00;
 				alpha[7] = 0xFF;
 			}
+		}
+
+		@Override
+		protected int getAlphaSkipLength() {
+			return 2;
 		}
 	}
 
@@ -876,30 +1113,8 @@ public class ImageReader {
 	 * @return            the number of bytes required by one pixel.
 	 *                    0 when a pixel requires a half-byte (i.e. 2 pixels per byte).
 	 */
-	public static int getBytesPerPixel(int pixelFormat) {
-		switch (pixelFormat) {
-			case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444:
-			case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
-			case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
-				return 2;
-			case TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888:
-				return 4;
-			case TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED:
-				return 0; // meaning 0.5 byte per pixel
-			case TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED:
-				return 1;
-			case TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED:
-				return 2;
-			case TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED:
-				return 4;
-			case TPSM_PIXEL_STORAGE_MODE_DXT1:
-				return 0; // meaning 0.5 byte per pixel
-			case TPSM_PIXEL_STORAGE_MODE_DXT3:
-			case TPSM_PIXEL_STORAGE_MODE_DXT5:
-				return 1;
-		}
-
-		return -1;
+	private static int getBytesPerPixel(int pixelFormat) {
+		return IRenderingEngine.sizeOfTextureType[pixelFormat];
 	}
 
 	/**

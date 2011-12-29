@@ -141,6 +141,8 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
     public int textureTx_pixelSize;
     public float[] dfix_color = new float[4];
     public float[] sfix_color = new float[4];
+    public int sfix;
+    public int dfix;
     public int blend_src;
     public int blend_dst;
     public int blendEquation;
@@ -180,6 +182,13 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
     public final EnableDisableFlag reColorMaterial = new EnableDisableFlag("RE_COLOR_MATERIAL", IRenderingEngine.RE_COLOR_MATERIAL);
     public final EnableDisableFlag reTextureGenS = new EnableDisableFlag("RE_TEXTURE_GEN_S", IRenderingEngine.RE_TEXTURE_GEN_S);
     public final EnableDisableFlag reTextureGenT = new EnableDisableFlag("RE_TEXTURE_GEN_T", IRenderingEngine.RE_TEXTURE_GEN_T);
+    public float[] vertexColor = new float[4];
+    public boolean useVertexColor;
+    public boolean clearMode;
+    public boolean clearModeColor;
+    public boolean clearModeStencil;
+    public boolean clearModeDepth;
+    public VertexInfo vinfo = new VertexInfo();
 
     public GeContext() {
         tex_envmap_matrix[0] = tex_envmap_matrix[5] = tex_envmap_matrix[10] = tex_envmap_matrix[15] = 1.f;

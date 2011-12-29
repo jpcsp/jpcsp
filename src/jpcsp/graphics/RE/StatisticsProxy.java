@@ -229,8 +229,10 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		addStatistic("setTextureAnisotropy", 189);
 		addStatistic("getMaxTextureAnisotropy", 190);
 		addStatistic("getShadingLanguageVersion", 191);
-		addStatistic("setBlendDFix", 192);
-		addStatistic("setBlendSFix", 193);
+		addStatistic("setBlendSFix", 192);
+		addStatistic("setBlendDFix", 193);
+		addStatistic("setUniform3", 194);
+		addStatistic("waitForRenderingCompletion", 195);
 	}
 
 	private void addStatistic(String name, int index) {
@@ -1816,18 +1818,34 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setBlendDFix(float[] color) {
+	public void setBlendSFix(int sfix, float[] color) {
 		DurationStatistics statistic = statistics[192];
 		statistic.start();
-		super.setBlendDFix(color);
+		super.setBlendSFix(sfix, color);
 		statistic.end();
 	}
 
 	@Override
-	public void setBlendSFix(float[] color) {
+	public void setBlendDFix(int dfix, float[] color) {
 		DurationStatistics statistic = statistics[193];
 		statistic.start();
-		super.setBlendSFix(color);
+		super.setBlendDFix(dfix, color);
+		statistic.end();
+	}
+
+	@Override
+	public void setUniform3(int id, float[] values) {
+		DurationStatistics statistic = statistics[194];
+		statistic.start();
+		super.setUniform3(id, values);
+		statistic.end();
+	}
+
+	@Override
+	public void waitForRenderingCompletion() {
+		DurationStatistics statistic = statistics[195];
+		statistic.start();
+		super.waitForRenderingCompletion();
 		statistic.end();
 	}
 }

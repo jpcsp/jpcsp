@@ -48,7 +48,6 @@ import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GLContext;
 
 import jpcsp.graphics.VertexInfo;
-import jpcsp.graphics.RE.buffer.IREBufferManager;
 
 /**
  * @author gid15
@@ -1382,12 +1381,6 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public IREBufferManager getBufferManager() {
-		// Nothing to do
-		return null;
-	}
-
-	@Override
 	public boolean canAllNativeVertexInfo() {
 		return false;
 	}
@@ -1635,12 +1628,17 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setBlendDFix(float[] color) {
+	public void setBlendSFix(int sfix, float[] color) {
 		// Nothing to do here
 	}
 
 	@Override
-	public void setBlendSFix(float[] color) {
+	public void setBlendDFix(int dfix, float[] color) {
+		// Nothing to do here
+	}
+
+	@Override
+	public void waitForRenderingCompletion() {
 		// Nothing to do here
 	}
 }

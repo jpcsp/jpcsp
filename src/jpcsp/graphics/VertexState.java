@@ -18,9 +18,26 @@ package jpcsp.graphics;
 
 // Based on soywiz/pspemulator
 public class VertexState {
-    float[] boneWeights = new float[8];
-    float[] c = new float[4]; // R, G, B, A
-    float[] p = new float[3]; // X, Y, Z
-    float[] n = new float[3]; // NX, NY, NZ
-    float[] t = new float[2]; // U, V
+    public float[] boneWeights = new float[8];
+    public float[] c = new float[4]; // R, G, B, A
+    public float[] p = new float[3]; // X, Y, Z
+    public float[] n = new float[3]; // NX, NY, NZ
+    public float[] t = new float[2]; // U, V
+
+    public void copy(VertexState from) {
+    	if (from != this) {
+	    	System.arraycopy(from.boneWeights, 0, boneWeights, 0, boneWeights.length);
+	    	System.arraycopy(from.c, 0, c, 0, c.length);
+	    	System.arraycopy(from.p, 0, p, 0, p.length);
+	    	System.arraycopy(from.n, 0, n, 0, n.length);
+	    	System.arraycopy(from.t, 0, t, 0, t.length);
+    	}
+    }
+
+    public void clear() {
+    	c[0] = c[1] = c[2] = c[3] = 0.f;
+    	p[0] = p[1] = p[2] = 0.f;
+    	n[0] = n[1] = n[2] = 0.f;
+    	t[0] = t[1] = 0.f;
+    }
 }

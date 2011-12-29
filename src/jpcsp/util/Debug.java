@@ -16,10 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.util;
 
-import static jpcsp.HLE.modules150.sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_4444;
-import static jpcsp.HLE.modules150.sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_5551;
-import static jpcsp.HLE.modules150.sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_565;
-import static jpcsp.HLE.modules150.sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules150.sceFont;
@@ -216,16 +216,16 @@ public class Debug {
 
 	public static int getPixelColor(int color, int pixelformat) {
 		switch (pixelformat) {
-			case PSP_DISPLAY_PIXEL_FORMAT_565:
+			case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
 				color = ((color & 0x00F80000) >> 8) | ((color & 0x0000FC00) >> 5) | ((color & 0x000000F8) >> 3);
 				break;
-			case PSP_DISPLAY_PIXEL_FORMAT_5551:
+			case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
 				color = ((color & 0x80000000) >> 16) | ((color & 0x00F80000) >> 9) | ((color & 0x0000F800) >> 6) | ((color & 0x000000F8) >> 3);
 				break;
-			case PSP_DISPLAY_PIXEL_FORMAT_4444:
+			case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444:
 				color = ((color & 0xF0000000) >> 16) | ((color & 0x00F00000) >> 12) | ((color & 0x0000F000) >> 8) | ((color & 0x000000F0) >> 4);
 				break;
-			case PSP_DISPLAY_PIXEL_FORMAT_8888:
+			case TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888:
 				break;
 		}
 		return color;

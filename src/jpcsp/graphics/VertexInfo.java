@@ -53,9 +53,6 @@ public class VertexInfo {
     public int positionOffset;
     public int alignmentSize;
     
-    //temp value for memory addres 
-    public int tempAddr;
-
     private static int[] size_mapping = new int[] { 0, 1, 2, 4 };
     private static int[] size_padding = new int[] { 0, 0, 1, 3 };
     private static int[] color_size_mapping = new int[] { 0, 1, 1, 1, 2, 2, 2, 4 };
@@ -189,50 +186,39 @@ public class VertexInfo {
         	morph_weight[0] = 1.f;
     }
 
-    public VertexState lastVertex = new VertexState();
     public VertexState readVertex(Memory mem, int addr) {
-        VertexState v = new VertexState();
+    	VertexState v = new VertexState();
+    	readVertex(mem, addr, v);
 
-        // testing
-        /*
-        int u0 = mem.read8(addr);
-        int u1 = mem.read8(addr + 1);
-        int u2 = mem.read8(addr + 2);
-        int u3 = mem.read8(addr + 3);
-        int u4 = mem.read8(addr + 4);
-        int u5 = mem.read8(addr + 5);
-        int u6 = mem.read8(addr + 6);
-        int u7 = mem.read8(addr + 7);
-        int u8 = mem.read8(addr + 8);
-        int u9 = mem.read8(addr + 9);
-        int u10 = mem.read8(addr + 10);
-        int u11 = mem.read8(addr + 11);
-        int u12 = mem.read8(addr + 12);
-        VideoEngine.log.debug("vertex " + String.format("%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x ",
-                u0, u1, u2, u3, u4, u5, u6, u7, u8, u9, u10, u11, u12));
-        */
-        
-        tempAddr = addr;
+    	return v;
+    }
 
-        //VideoEngine.log.debug("skinning " + String.format("0x%08x", addr));
+    public void readVertex(Memory mem, int addr, VertexState v) {
+        int startAddr = addr;
+
+        v.clear();
+
         if (weight != 0) {
-	        for (int i = 0; i < skinningWeightCount; ++i) {
+	        for (int i = 0; i < skinningWeightCount; i++) {
 	            switch (weight) {
-	            case 1:
-	            	// Unsigned 8 bit, mapped to [0..2]
-	                v.boneWeights[i] = mem.read8(addr); addr += 1;
-	                v.boneWeights[i] /= 0x80;
-	                break;
-	            case 2:
-	            	addr = (addr + 1) & ~1;
-	            	// Unsigned 16 bit, mapped to [0..2]
-	                v.boneWeights[i] = mem.read16(addr); addr += 2;
-	                v.boneWeights[i] /= 0x8000;
-	                break;
-	            case 3:
-	            	addr = (addr + 3) & ~3;
-	                v.boneWeights[i] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-	                break;
+		            case 1:
+		            	// Unsigned 8 bit, mapped to [0..2]
+		                v.boneWeights[i] = mem.read8(addr);
+		                v.boneWeights[i] /= 0x80;
+		                addr += 1;
+		                break;
+		            case 2:
+		            	addr = (addr + 1) & ~1;
+		            	// Unsigned 16 bit, mapped to [0..2]
+		                v.boneWeights[i] = mem.read16(addr);
+		                v.boneWeights[i] /= 0x8000;
+		                addr += 2;
+		                break;
+		            case 3:
+		            	addr = (addr + 3) & ~3;
+		                v.boneWeights[i] = Float.intBitsToFloat(mem.read32(addr));
+		                addr += 4;
+		                break;
 	            }
 	        }
 	        if (VideoEngine.log.isTraceEnabled()) {
@@ -240,24 +226,22 @@ public class VertexInfo {
 	        }
         }
 
-        //VideoEngine.log.debug("texture " + String.format("0x%08x", addr));
-        switch(texture) {
+        switch (texture) {
             case 1:
-            	for(int morphCounter = 0;morphCounter < morphingVertexCount;morphCounter++){
-            		addr = tempAddr + (morphCounter * oneVertexSize) + textureOffset;
-            		float tu,tv;
-            		
+            	for (int morphCounter = 0; morphCounter < morphingVertexCount; morphCounter++) {
+            		addr = startAddr + (morphCounter * oneVertexSize) + textureOffset;
+
 	            	// Unsigned 8 bit
-	        		tu = mem.read8(addr) & 0xFF; addr += 1;
-	        		tv = mem.read8(addr) & 0xFF; addr += 1;
+	        		float tu = mem.read8(addr    );
+	        		float tv = mem.read8(addr + 1);
 	            	if (!transform2D) {
 	            		// To be mapped to [0..2] for 3D
 	            		tu /= 0x80;
 	            		tv /= 0x80;
-	            		
+
 	            		v.t[0] += tu * morph_weight[morphCounter];
 		                v.t[1] += tv * morph_weight[morphCounter];
-	            	}else{
+	            	} else {
 	            		v.t[0] = tu;
 		                v.t[1] = tv;
 	            	}
@@ -267,22 +251,20 @@ public class VertexInfo {
             	}
                 break;
             case 2:
-            	for(int morphCounter = 0;morphCounter < morphingVertexCount;morphCounter++){
-            		addr = tempAddr + (morphCounter * oneVertexSize) + textureOffset;
-            		float tu,tv;
-	            	
-            		addr = (addr + 1) & ~1;
+            	for (int morphCounter = 0; morphCounter < morphingVertexCount; morphCounter++) {
+            		addr = startAddr + (morphCounter * oneVertexSize) + textureOffset;
+
 	            	// Unsigned 16 bit
-	        		tu = mem.read16(addr) & 0xFFFF; addr += 2;
-	        		tv = mem.read16(addr) & 0xFFFF; addr += 2;
+	        		float tu = mem.read16(addr    );
+	        		float tv = mem.read16(addr + 2);
 	            	if (!transform2D) {
 	            		// To be mapped to [0..2] for 3D
 	            		tu /= 0x8000;
 	            		tv /= 0x8000;
-	            		
+
 	            		v.t[0] += tu * morph_weight[morphCounter];
 	 	                v.t[1] += tv * morph_weight[morphCounter];
-	            	}else {
+	            	} else {
 	            		v.t[0] = tu;
 		                v.t[1] = tv;
 	            	}
@@ -292,14 +274,12 @@ public class VertexInfo {
             	}
                 break;
             case 3:
-            	for(int morphCounter = 0;morphCounter < morphingVertexCount;morphCounter++){
-            		addr = tempAddr + (morphCounter * oneVertexSize) + textureOffset;
-            		float tu,tv;
-            		
-	            	addr = (addr + 3) & ~3;
-	                tu = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-	                tv = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-	                
+            	for (int morphCounter = 0; morphCounter < morphingVertexCount; morphCounter++) {
+            		addr = startAddr + (morphCounter * oneVertexSize) + textureOffset;
+
+	                float tu = Float.intBitsToFloat(mem.read32(addr    ));
+	                float tv = Float.intBitsToFloat(mem.read32(addr + 4));
+
 	                v.t[0] += tu * morph_weight[morphCounter];
 	                v.t[1] += tv * morph_weight[morphCounter];
             	}
@@ -309,20 +289,16 @@ public class VertexInfo {
                 break;
         }
 
-        //VideoEngine.log.debug("color " + String.format("0x%08x", addr));
-        switch(color) {
+        switch (color) {
             case 1: case 2: case 3:
                 VideoEngine.log.warn("unimplemented color type " + color);
-                addr += 1;
                 break;
 
             case 4: { // GU_COLOR_5650
-            	for(int morphCounter = 0;morphCounter < morphingVertexCount;morphCounter++){
-            		addr = tempAddr + (morphCounter * oneVertexSize) + colorOffset;
-            		float a,r,g,b; //??
-            		
-	            	addr = (addr + 1) & ~1;
-	            	int packed = mem.read16(addr); addr += 2;
+            	for (int morphCounter = 0; morphCounter < morphingVertexCount; morphCounter++) {
+            		addr = startAddr + (morphCounter * oneVertexSize) + colorOffset;
+
+            		int packed = mem.read16(addr);
 	                // All components checked on PSP
 	            	//
 	            	//    5650 format: BBBBBGGGGGGRRRRR
@@ -334,27 +310,25 @@ public class VertexInfo {
 	            	int rBits = (packed      ) & 0x1F;
 	            	int gBits = (packed >>  5) & 0x3F;
 	            	int bBits = (packed >> 11) & 0x1F;
-	            	r = ((rBits << 3) | (rBits >> 2)) / 255.0f;
-	            	g = ((gBits << 2) | (gBits >> 4)) / 255.0f;
-	            	b = ((bBits << 3) | (bBits >> 2)) / 255.0f;
-	                a = 1.0f;
-	                
+	            	float r = ((rBits << 3) | (rBits >> 2)) / 255.0f;
+	            	float g = ((gBits << 2) | (gBits >> 4)) / 255.0f;
+	            	float b = ((bBits << 3) | (bBits >> 2)) / 255.0f;
+	                float a = 1.0f;
+
 	                v.c[0] += r * morph_weight[morphCounter];
 	                v.c[1] += g * morph_weight[morphCounter];
 	                v.c[2] += b * morph_weight[morphCounter];
 	                v.c[3] += a * morph_weight[morphCounter];
-                
+
             	}
             	break;
             }
 
             case 5: { // GU_COLOR_5551
-            	for(int morphCounter = 0;morphCounter < morphingVertexCount;morphCounter++){
-            		addr = tempAddr + (morphCounter * oneVertexSize) + colorOffset;
-            		float a,r,g,b; //??
-            		
-	            	addr = (addr + 1) & ~1;
-	            	int packed = mem.read16(addr); addr += 2;
+            	for (int morphCounter = 0; morphCounter < morphingVertexCount; morphCounter++) {
+            		addr = startAddr + (morphCounter * oneVertexSize) + colorOffset;
+
+	            	int packed = mem.read16(addr);
 	                // All components checked on PSP
 	            	//
 	            	//    5551 format: ABBBBBGGGGGRRRRR
@@ -366,10 +340,10 @@ public class VertexInfo {
 	            	int rBits = (packed      ) & 0x1F;
 	            	int gBits = (packed >>  5) & 0x1F;
 	            	int bBits = (packed >> 10) & 0x1F;
-	            	r = ((rBits << 3) | (rBits >> 2)) / 255.0f;
-	            	g = ((gBits << 3) | (gBits >> 2)) / 255.0f;
-	            	b = ((bBits << 3) | (bBits >> 2)) / 255.0f;
-	                a = ((packed >> 15) & 0x01) /  1.0f;
+	            	float r = ((rBits << 3) | (rBits >> 2)) / 255.0f;
+	            	float g = ((gBits << 3) | (gBits >> 2)) / 255.0f;
+	            	float b = ((bBits << 3) | (bBits >> 2)) / 255.0f;
+	                float a = ((packed >> 15) & 0x01) /  1.0f;
 
 	                v.c[0] += r * morph_weight[morphCounter];
 	                v.c[1] += g * morph_weight[morphCounter];
@@ -380,12 +354,10 @@ public class VertexInfo {
             }
 
             case 6: { // GU_COLOR_4444
-            	for(int morphCounter = 0;morphCounter < morphingVertexCount;morphCounter++){
-            		addr = tempAddr + (morphCounter * oneVertexSize) + colorOffset;
-            		float a,r,g,b; //??
-            		
-	            	addr = (addr + 1) & ~1;
-	                int packed = mem.read16(addr); addr += 2;
+            	for (int morphCounter = 0; morphCounter < morphingVertexCount; morphCounter++) {
+            		addr = startAddr + (morphCounter * oneVertexSize) + colorOffset;
+
+	                int packed = mem.read16(addr);
 	                // All components checked on PSP
 	            	//
 	            	//    4444 format: AAAABBBBGGGGRRRR
@@ -398,16 +370,15 @@ public class VertexInfo {
 	            	int gBits = (packed >>  4) & 0x0F;
 	            	int bBits = (packed >>  8) & 0x0F;
 	            	int aBits = (packed >> 12) & 0x0F;
-	            	r = ((rBits << 4) | rBits) / 255.0f;
-	            	g = ((gBits << 4) | gBits) / 255.0f;
-	            	b = ((bBits << 4) | bBits) / 255.0f;
-	            	a = ((aBits << 4) | aBits) / 255.0f;
+	            	float r = ((rBits << 4) | rBits) / 255.0f;
+	            	float g = ((gBits << 4) | gBits) / 255.0f;
+	            	float b = ((bBits << 4) | bBits) / 255.0f;
+	            	float a = ((aBits << 4) | aBits) / 255.0f;
 
 	                v.c[0] += r * morph_weight[morphCounter];
 	                v.c[1] += g * morph_weight[morphCounter];
 	                v.c[2] += b * morph_weight[morphCounter];
 	                v.c[3] += a * morph_weight[morphCounter];
-                
             	}
                 if (VideoEngine.log.isTraceEnabled()) {
                 	VideoEngine.log.trace("color type 6 " + String.format("r=%.1f g=%.1f b=%.1f a=%.1f ", v.c[0], v.c[1], v.c[2], v.c[3]));
@@ -416,53 +387,47 @@ public class VertexInfo {
             }
 
             case 7: { // GU_COLOR_8888
-                // 32-bit align here instead of on vertexSize, from actarus/sam
-            	for(int morphCounter = 0;morphCounter < morphingVertexCount;morphCounter++){
-            		addr = tempAddr + (morphCounter * oneVertexSize) + colorOffset;
-            		float a,r,g,b; //??143695396
-            		
-	                addr = (addr + 3) & ~3;
-	                int packed = mem.read32(addr); addr += 4;
-	                r = ((packed      ) & 0xff) / 255.0f;
-	                g = ((packed >>  8) & 0xff) / 255.0f;
-	                b = ((packed >> 16) & 0xff) / 255.0f;
-	                a = ((packed >> 24) & 0xff) / 255.0f;
-	                
+            	for (int morphCounter = 0; morphCounter < morphingVertexCount; morphCounter++) {
+            		addr = startAddr + (morphCounter * oneVertexSize) + colorOffset;
+
+	                int packed = mem.read32(addr);
+	                float r = ((packed      ) & 0xff) / 255.0f;
+	                float g = ((packed >>  8) & 0xff) / 255.0f;
+	                float b = ((packed >> 16) & 0xff) / 255.0f;
+	                float a = ((packed >> 24) & 0xff) / 255.0f;
+
 	                v.c[0] += r * morph_weight[morphCounter];
 	                v.c[1] += g * morph_weight[morphCounter];
 	                v.c[2] += b * morph_weight[morphCounter];
 	                v.c[3] += a * morph_weight[morphCounter];
             	}
                 if (VideoEngine.log.isTraceEnabled()) {
-                	VideoEngine.log.trace("color type 7 " + String.format("r=%.1f g=%.1f b=%.1f a=%.1f", v.c[0], v.c[1], v.c[2], v.c[3]));
+                	VideoEngine.log.trace(String.format("color type 7 r=%.1f g=%.1f b=%.1f a=%.1f, addr=0x%08X", v.c[0], v.c[1], v.c[2], v.c[3], addr));
                 }
                 break;
             }
         }
 
-        //VideoEngine.log.debug("normal " + String.format("0x%08x", addr));
-        switch(normal) {
+        switch (normal) {
             case 1:
             	// TODO Check if this value is signed like position or unsigned like texture
             	// Signed 8 bit
-            	for(int morphCounter = 0;morphCounter < morphingVertexCount;morphCounter++){
-            		addr = tempAddr + (morphCounter * oneVertexSize) + normalOffset;
-            		float x,y,z;
-            		
-	                x = (byte)mem.read8(addr); addr += 1;
-	                y = (byte)mem.read8(addr); addr += 1;
-	                z = (byte)mem.read8(addr); addr += 1;
+            	for (int morphCounter = 0; morphCounter < morphingVertexCount; morphCounter++) {
+            		addr = startAddr + (morphCounter * oneVertexSize) + normalOffset;
+
+	                float x = (byte) mem.read8(addr    );
+	                float y = (byte) mem.read8(addr + 1);
+	                float z = (byte) mem.read8(addr + 2);
 	            	if (!transform2D) {
 	            		// To be mapped to [-1..1] for 3D
 	            		x /= 0x7f;
 	            		y /= 0x7f;
 	            		z /= 0x7f;
-	            		
+
 	            		v.n[0] += x * morph_weight[morphCounter];
 		                v.n[1] += y * morph_weight[morphCounter];
 		                v.n[2] += z * morph_weight[morphCounter];
-	            	}else
-	            	{
+	            	} else {
 	            		v.n[0] = x;
 		                v.n[1] = y;
 		                v.n[2] = z;
@@ -473,27 +438,24 @@ public class VertexInfo {
             	}
                 break;
             case 2:
-            	for(int morphCounter = 0;morphCounter < morphingVertexCount;morphCounter++){
-            		addr = tempAddr + (morphCounter * oneVertexSize) + normalOffset;
-            		float x,y,z;
-            	
-	            	addr = (addr + 1) & ~1;
+            	for (int morphCounter = 0; morphCounter < morphingVertexCount; morphCounter++) {
+            		addr = startAddr + (morphCounter * oneVertexSize) + normalOffset;
+
 	            	// TODO Check if this value is signed like position or unsigned like texture
 	            	// Signed 16 bit
-	                x = (short)mem.read16(addr); addr += 2;
-	                y = (short)mem.read16(addr); addr += 2;
-	                z = (short)mem.read16(addr); addr += 2;
+	                float x = (short)mem.read16(addr    );
+	                float y = (short)mem.read16(addr + 2);
+	                float z = (short)mem.read16(addr + 4);
 	            	if (!transform2D) {
 	            		// To be mapped to [-1..1] for 3D
 	            		x /= 0x7fff;
 	            		y /= 0x7fff;
 	            		z /= 0x7fff;
-	            		
+
 	            		v.n[0] += x * morph_weight[morphCounter];
 		                v.n[1] += y * morph_weight[morphCounter];
 		                v.n[2] += z * morph_weight[morphCounter];
-	            	}else
-	            	{
+	            	} else {
 	            		v.n[0] = x;
 		                v.n[1] = y;
 		                v.n[2] = z;
@@ -504,15 +466,13 @@ public class VertexInfo {
             	}
                 break;
             case 3:
-            	for(int morphCounter = 0;morphCounter < morphingVertexCount;morphCounter++){
-            		addr = tempAddr + (morphCounter * oneVertexSize) + normalOffset;
-            		float x,y,z;
-            		
-	            	addr = (addr + 3) & ~3;
-	                x = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-	                y = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-	                z = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-	                
+            	for (int morphCounter = 0; morphCounter < morphingVertexCount; morphCounter++) {
+            		addr = startAddr + (morphCounter * oneVertexSize) + normalOffset;
+
+	                float x = Float.intBitsToFloat(mem.read32(addr    ));
+	                float y = Float.intBitsToFloat(mem.read32(addr + 4));
+	                float z = Float.intBitsToFloat(mem.read32(addr + 8));
+
 	                v.n[0] += x * morph_weight[morphCounter];
 	                v.n[1] += y * morph_weight[morphCounter];
 	                v.n[2] += z * morph_weight[morphCounter];
@@ -520,25 +480,22 @@ public class VertexInfo {
                 break;
         }
 
-        //VideoEngine.log.debug("position " + String.format("0x%08x", addr));
         switch (position) {
             case 1:
-            	for(int morphCounter = 0;morphCounter < morphingVertexCount;morphCounter++){
-            		addr = tempAddr + (morphCounter * oneVertexSize) + positionOffset;
-            		float x,y,z;
-            		
+            	for (int morphCounter = 0; morphCounter < morphingVertexCount; morphCounter++) {
+            		addr = startAddr + (morphCounter * oneVertexSize) + positionOffset;
+
 	            	if (transform2D) {
 	            		// X and Y are signed 8 bit, Z is unsigned 8 bit
-	            		v.p[0] = (byte) mem.read8(addr); addr += 1;
-	            		v.p[1] = (byte) mem.read8(addr); addr += 1;
-	            		v.p[2] =        mem.read8(addr); addr += 1;
-	                    
+	            		v.p[0] = (byte) mem.read8(addr    );
+	            		v.p[1] = (byte) mem.read8(addr + 1);
+	            		v.p[2] =        mem.read8(addr + 2);
 	            	} else {
 		            	// Signed 8 bit, to be mapped to [-1..1] for 3D
-		                x = ((byte)mem.read8(addr)) / 127f; addr += 1;
-		                y = ((byte)mem.read8(addr)) / 127f; addr += 1;
-		                z = ((byte)mem.read8(addr)) / 127f; addr += 1;
-		                
+		                float x = ((byte)mem.read8(addr    )) / 127f;
+		                float y = ((byte)mem.read8(addr + 1)) / 127f;
+		                float z = ((byte)mem.read8(addr + 2)) / 127f;
+
 		                v.p[0] += x * morph_weight[morphCounter];
 	                    v.p[1] += y * morph_weight[morphCounter];
 	                    v.p[2] += z * morph_weight[morphCounter];
@@ -549,41 +506,37 @@ public class VertexInfo {
             	}
                 break;
             case 2:
-            	for(int morphCounter = 0;morphCounter < morphingVertexCount;morphCounter++){
-            		addr = tempAddr + (morphCounter * oneVertexSize) + positionOffset;
-            		float x,y,z;
-	            	addr = (addr + 1) & ~1;
-	            	if (transform2D) {
-	            		// X and Y are signed 16 bit, Z is unsigned 16 bit
-	            		v.p[0] = (short)mem.read16(addr); addr += 2;
-	            		v.p[1] = (short)mem.read16(addr); addr += 2;
-	            		v.p[2] =        mem.read16(addr); addr += 2;
+            	for (int morphCounter = 0; morphCounter < morphingVertexCount; morphCounter++) {
+            		addr = startAddr + (morphCounter * oneVertexSize) + positionOffset;
 
+            		if (transform2D) {
+	            		// X and Y are signed 16 bit, Z is unsigned 16 bit
+	            		v.p[0] = (short)mem.read16(addr    );
+	            		v.p[1] = (short)mem.read16(addr + 2);
+	            		v.p[2] =        mem.read16(addr + 4);
 	            	} else {
 		            	// Signed 16 bit, to be mapped to [-1..1] for 3D
-		        		x = ((short)mem.read16(addr)) / 32767f; addr += 2;
-		        		y = ((short)mem.read16(addr)) / 32767f; addr += 2;
-		        		z = ((short)mem.read16(addr)) / 32767f; addr += 2;
-		        		
+		        		float x = ((short)mem.read16(addr    )) / 32767f;
+		        		float y = ((short)mem.read16(addr + 2)) / 32767f;
+		        		float z = ((short)mem.read16(addr + 4)) / 32767f;
+
 		        		v.p[0] += x * morph_weight[morphCounter];
 	                    v.p[1] += y * morph_weight[morphCounter];
 	                    v.p[2] += z * morph_weight[morphCounter];
 	            	}
             	}
             	if (VideoEngine.log.isTraceEnabled()) {
-            		VideoEngine.log.trace("vertex type 2 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + " transform2D=" + transform2D + ", addr=0x" + Integer.toHexString(addr - 6));
+            		VideoEngine.log.trace("vertex type 2 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + " transform2D=" + transform2D + ", addr=0x" + Integer.toHexString(addr));
             	}
                 break;
             case 3: // GU_VERTEX_32BITF
             	for(int morphCounter = 0;morphCounter < morphingVertexCount;morphCounter++){
-            		addr = tempAddr + (morphCounter * oneVertexSize) + positionOffset;
-            		float x,y,z;
-            		
-	            	addr = (addr + 3) & ~3;
-	                x = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-	                y = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-	                z = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-	                
+            		addr = startAddr + (morphCounter * oneVertexSize) + positionOffset;
+
+	                float x = Float.intBitsToFloat(mem.read32(addr    ));
+	                float y = Float.intBitsToFloat(mem.read32(addr + 4));
+	                float z = Float.intBitsToFloat(mem.read32(addr + 8));
+
 	                if (transform2D) {
 	                	// Negative Z are interpreted as 0
 	                	if (z < 0) {
@@ -591,11 +544,11 @@ public class VertexInfo {
 	                	} else {
 	                		z = (int) z;	// 2D positions are always integer values
 	                	}
-	                	
-	                	v.p[0] = x ;
-	                    v.p[1] = y ;
-	                    v.p[2] = z ;
-	                }else {
+
+	                	v.p[0] = x;
+	                    v.p[1] = y;
+	                    v.p[2] = z;
+	                } else {
 	                	v.p[0] += x * morph_weight[morphCounter];
 	                    v.p[1] += y * morph_weight[morphCounter];
 	                    v.p[2] += z * morph_weight[morphCounter];
@@ -606,11 +559,6 @@ public class VertexInfo {
             	}
                 break;
         }
-
-        //VideoEngine.log.debug("end " + String.format("0x%08x", addr) + " size=" + vertexSize);
-
-        lastVertex = v;
-        return v;
     }
 
     public void setDirty() {
