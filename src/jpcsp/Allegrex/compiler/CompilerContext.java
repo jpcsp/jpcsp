@@ -87,23 +87,21 @@ public class CompilerContext implements ICompilerContext {
 	private MethodVisitor mv;
 	private CodeInstruction codeInstruction;
 	private static final boolean storeGprLocal = true;
-	private static final boolean storeProcessorLocal = false;
-	private static final boolean storeCpuLocal = false;
+	private static final boolean storeMemoryIntLocal = false;
 	private static final int LOCAL_RETURN_ADDRESS = 0;
 	private static final int LOCAL_ALTERVATIVE_RETURN_ADDRESS = 1;
     private static final int LOCAL_IS_JUMP = 2;
-    private static final int LOCAL_PROCESSOR = 3;
-    private static final int LOCAL_GPR = 4;
-    private static final int LOCAL_INSTRUCTION_COUNT = 5;
-    private static final int LOCAL_CPU = 6;
-    private static final int LOCAL_TMP1 = 7;
-    private static final int LOCAL_TMP2 = 8;
-    private static final int LOCAL_TMP3 = 9;
-    private static final int LOCAL_TMP4 = 10;
-    private static final int LOCAL_TMP_VD0 = 11;
-    private static final int LOCAL_TMP_VD1 = 12;
-    private static final int LOCAL_TMP_VD2 = 13;
-    private static final int LOCAL_MAX = 14;
+    private static final int LOCAL_GPR = 3;
+    private static final int LOCAL_INSTRUCTION_COUNT = 4;
+    private static final int LOCAL_MEMORY_INT = 5;
+    private static final int LOCAL_TMP1 = 6;
+    private static final int LOCAL_TMP2 = 7;
+    private static final int LOCAL_TMP3 = 8;
+    private static final int LOCAL_TMP4 = 9;
+    private static final int LOCAL_TMP_VD0 = 10;
+    private static final int LOCAL_TMP_VD1 = 11;
+    private static final int LOCAL_TMP_VD2 = 12;
+    private static final int LOCAL_MAX = 13;
     private static final int DEFAULT_MAX_STACK_SIZE = 11;
     private static final int SYSCALL_MAX_STACK_SIZE = 100;
     private static final int LOCAL_ERROR_POINTER = LOCAL_TMP3;
@@ -210,19 +208,11 @@ public class CompilerContext implements ICompilerContext {
     }
 
     private void loadCpu() {
-    	if (storeCpuLocal) {
-    		mv.visitVarInsn(Opcodes.ALOAD, LOCAL_CPU);
-    	} else {
-    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "cpu", cpuDescriptor);
-    	}
+		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "cpu", cpuDescriptor);
 	}
 
     private void loadProcessor() {
-    	if (storeProcessorLocal) {
-    		mv.visitVarInsn(Opcodes.ALOAD, LOCAL_PROCESSOR);
-    	} else {
-            mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "processor", processorDescriptor);
-    	}
+        mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "processor", processorDescriptor);
     }
 
     private void loadMemory() {
@@ -1337,19 +1327,14 @@ public class CompilerContext implements ICompilerContext {
     }
 
     public void startSequenceMethod() {
-        if (storeProcessorLocal) {
-            mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "processor", processorDescriptor);
-            mv.visitVarInsn(Opcodes.ASTORE, LOCAL_PROCESSOR);
-        }
-
         if (storeGprLocal) {
             mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "gpr", "[I");
             mv.visitVarInsn(Opcodes.ASTORE, LOCAL_GPR);
         }
 
-        if (storeCpuLocal) {
-            mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "cpu", cpuDescriptor);
-            mv.visitVarInsn(Opcodes.ASTORE, LOCAL_CPU);
+        if (storeMemoryIntLocal) {
+			mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memoryInt", "[I");
+			mv.visitVarInsn(Opcodes.ASTORE, LOCAL_MEMORY_INT);
         }
 
         if (enableIntructionCounting) {
@@ -1771,24 +1756,6 @@ public class CompilerContext implements ICompilerContext {
 	}
 
 	@Override
-	public void compileRDRSRT(String method) {
-		loadCpu();
-		loadRdIndex();
-		loadRsIndex();
-		loadRtIndex();
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, cpuInternalName, method, "(III)V");
-	}
-
-	@Override
-	public void compileRDRTRS(String method) {
-		loadCpu();
-		loadRdIndex();
-		loadRtIndex();
-		loadRsIndex();
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, cpuInternalName, method, "(III)V");
-	}
-
-	@Override
 	public void compileRDRT(String method) {
 		loadCpu();
 		loadRdIndex();
@@ -1841,12 +1808,20 @@ public class CompilerContext implements ICompilerContext {
 		prepareRegisterForStore(getRtRegisterIndex());
 	}
 
+	private void loadMemoryInt() {
+		if (storeMemoryIntLocal) {
+			mv.visitVarInsn(Opcodes.ALOAD, LOCAL_MEMORY_INT);
+		} else {
+			mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memoryInt", "[I");
+		}
+	}
+
 	@Override
 	public void memRead32(int registerIndex, int offset) {
 		if (RuntimeContext.memoryInt == null) {
 			loadMemory();
 		} else {
-    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memoryInt", "[I");
+			loadMemoryInt();
 		}
 
 		loadRegister(registerIndex);
@@ -1894,7 +1869,7 @@ public class CompilerContext implements ICompilerContext {
 		if (RuntimeContext.memoryInt == null) {
 			loadMemory();
 		} else {
-    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memoryInt", "[I");
+			loadMemoryInt();
 		}
 
 		loadRegister(registerIndex);
@@ -1948,7 +1923,7 @@ public class CompilerContext implements ICompilerContext {
 		if (RuntimeContext.memoryInt == null) {
 			loadMemory();
 		} else {
-    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memoryInt", "[I");
+			loadMemoryInt();
 		}
 
 		loadRegister(registerIndex);
@@ -2000,7 +1975,7 @@ public class CompilerContext implements ICompilerContext {
 		if (RuntimeContext.memoryInt == null) {
 			loadMemory();
 		} else {
-    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memoryInt", "[I");
+			loadMemoryInt();
 		}
 
 		loadRegister(registerIndex);
@@ -2037,7 +2012,7 @@ public class CompilerContext implements ICompilerContext {
 			if (RuntimeContext.memoryInt == null) {
 				loadMemory();
 			} else {
-	    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memoryInt", "[I");
+				loadMemoryInt();
 			}
 			mv.visitInsn(Opcodes.SWAP);
 
@@ -2093,6 +2068,7 @@ public class CompilerContext implements ICompilerContext {
 	public void memWrite16(int registerIndex, int offset) {
 		if (!memWritePrepared) {
 			loadMemory();
+			mv.visitInsn(Opcodes.SWAP);
 
 			loadRegister(registerIndex);
 			if (offset != 0) {
@@ -2124,6 +2100,7 @@ public class CompilerContext implements ICompilerContext {
 	public void memWrite8(int registerIndex, int offset) {
 		if (!memWritePrepared) {
 			loadMemory();
+			mv.visitInsn(Opcodes.SWAP);
 
 			loadRegister(registerIndex);
 			if (offset != 0) {
@@ -2141,15 +2118,6 @@ public class CompilerContext implements ICompilerContext {
 	@Override
 	public void compileSyscall() {
 		visitSyscall(codeInstruction.getOpcode());
-	}
-
-	@Override
-	public void compileRDRTSA(String method) {
-		loadCpu();
-		loadRdIndex();
-		loadRtIndex();
-		loadSaValue();
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, cpuInternalName, method, "(III)V");
 	}
 
 	@Override

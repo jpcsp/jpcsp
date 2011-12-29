@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler.nativeCode;
 
+import jpcsp.Allegrex.Common;
+
 /**
  * @author gid15
  *
@@ -29,8 +31,8 @@ public class Strlen extends AbstractNativeCodeSequence {
 
 		// Some games are also assuming that the other registers
 		// have been modified... dirty programming
-		getGpr()[4] = srcAddr + srcLength;
-		getGpr()[5] = srcAddr;
-		getGpr()[6] = 0;
+		getGpr()[Common._a0] = srcAddr + srcLength;
+		getGpr()[Common._a1] = srcAddr;
+		getGpr()[Common._a2] = 0;
 	}
 }

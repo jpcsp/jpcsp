@@ -242,7 +242,7 @@ public class DebuggerMemory extends Memory {
     		log.trace(getMemoryReadMessage(address, width));
 		}
 
-		if (memoryReadBreakpoint.contains(address)) {
+		if ((pauseEmulatorOnMemoryBreakpoint || log.isInfoEnabled()) && memoryReadBreakpoint.contains(address)) {
 			log.info(getMemoryReadMessage(address, width));
 			if (pauseEmulatorOnMemoryBreakpoint) {
 				Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_BREAKPOINT);
@@ -272,7 +272,7 @@ public class DebuggerMemory extends Memory {
     		log.trace(getMemoryWriteMessage(address, value, width));
 		}
 
-		if (memoryWriteBreakpoint.contains(address)) {
+		if ((pauseEmulatorOnMemoryBreakpoint || log.isInfoEnabled()) && memoryWriteBreakpoint.contains(address)) {
 			log.info(getMemoryWriteMessage(address, value, width));
 			if (pauseEmulatorOnMemoryBreakpoint) {
 				Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_BREAKPOINT);
