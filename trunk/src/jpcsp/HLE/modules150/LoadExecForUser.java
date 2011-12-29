@@ -115,7 +115,7 @@ public class LoadExecForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x05572A5F, version = 150, checkInsideInterrupt = true)
-    public int sceKernelExitGame(Processor processor) {
+    public int sceKernelExitGame() {
         log.info("Program exit detected (sceKernelExitGame)");
         Emulator.PauseEmu();
         RuntimeContext.reset();
