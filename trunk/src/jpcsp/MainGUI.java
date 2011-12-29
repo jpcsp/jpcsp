@@ -1151,9 +1151,14 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     PauseEmu();
 
     final JFileChooser fc = makeJFileChooser();
+    String lastOpenedFolder = Settings.getInstance().readString("gui.lastOpenedFileFolder");
+    if (lastOpenedFolder != null) {
+   		fc.setCurrentDirectory(new File(lastOpenedFolder));
+    }
     int returnVal = fc.showOpenDialog(this);
 
     if (userChooseSomething(returnVal)) {
+    	Settings.getInstance().writeString("gui.lastOpenedFileFolder", fc.getSelectedFile().getParent());
         File file = fc.getSelectedFile();
         loadFile(file);
     } else {
@@ -1380,10 +1385,15 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         umdbrowser.setVisible(true);
     } else {
         final JFileChooser fc = makeJFileChooser();
+        String lastOpenedFolder = Settings.getInstance().readString("gui.lastOpenedUmdFolder");
+        if (lastOpenedFolder != null) {
+        	fc.setCurrentDirectory(new File(lastOpenedFolder));
+        }
         fc.setDialogTitle(Resource.get("openumd"));
         int returnVal = fc.showOpenDialog(this);
 
         if (userChooseSomething(returnVal)) {
+        	Settings.getInstance().writeString("gui.lastOpenedUmdFolder", fc.getSelectedFile().getParent());
             File file = fc.getSelectedFile();
             loadUMD(file);
         } else {
