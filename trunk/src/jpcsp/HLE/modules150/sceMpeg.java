@@ -22,6 +22,9 @@ import static jpcsp.util.Utilities.endianSwap32;
 import static jpcsp.util.Utilities.readUnaligned32;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -430,509 +433,387 @@ public class sceMpeg extends HLEModule {
         VideoEngine.getInstance().resetVideoTextures();
     }
 
-    @HLEFunction(nid = 0x21FF80E4, version = 150)
-    public void sceMpegQueryStreamOffset(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int mpeg = cpu.gpr[4];
-        int buffer_addr = cpu.gpr[5];
-        int offset_addr = cpu.gpr[6];
-
+    @HLEFunction(nid = 0x21FF80E4, version = 150, checkInsideInterrupt = true)
+    public int sceMpegQueryStreamOffset(int mpeg, int buffer_addr, TPointer32 offset_addr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceMpegQueryStreamOffset(mpeg=0x" + Integer.toHexString(mpeg) + ", buffer=0x" + Integer.toHexString(buffer_addr) + ", offset=0x" + Integer.toHexString(offset_addr) + ")");
+            log.debug("sceMpegQueryStreamOffset(mpeg=0x" + Integer.toHexString(mpeg) + ", buffer=0x" + Integer.toHexString(buffer_addr) + ", offset=0x" + Integer.toHexString(offset_addr.getAddress()) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        // Check handler.
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegQueryStreamOffset bad mpeg handle 0x" + Integer.toHexString(mpeg));
-            cpu.gpr[2] = -1;
-        } else if (Memory.isAddressGood(buffer_addr) && Memory.isAddressGood(offset_addr)) {
-            analyseMpeg(buffer_addr);
-            if (mpegMagic == PSMF_MAGIC) {
-                if (mpegVersion < 0) {
-                    log.warn("sceMpegQueryStreamOffset bad version " + String.format("0x%08X", mpegRawVersion));
-                    mem.write32(offset_addr, 0);
-                    cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_BAD_VERSION;
-                } else {
-                    if ((mpegOffset & 2047) != 0 || mpegOffset == 0) {
-                        log.warn("sceMpegQueryStreamOffset bad offset " + String.format("0x%08X", mpegOffset));
-                        mem.write32(offset_addr, 0);
-                        cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
-                    } else {
-                        mem.write32(offset_addr, mpegOffset);
-                        cpu.gpr[2] = 0;
-                    }
-                }
-            } else {
-                log.warn("sceMpegQueryStreamOffset bad magic " + String.format("0x%08X", mpegMagic));
-                mem.write32(offset_addr, 0);
-                cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
-            }
-        } else {
+            return -1;
+        }
+        
+        // Check pointers.
+        if (!Memory.isAddressGood(buffer_addr) || !offset_addr.isAddressGood()) {
             log.warn("sceMpegQueryStreamOffset bad address " + String.format("0x%08X 0x%08X", buffer_addr, offset_addr));
-            cpu.gpr[2] = -1;
+            return -1;
         }
+
+        analyseMpeg(buffer_addr);
+
+        // Check magic.
+        if (mpegMagic != PSMF_MAGIC) {
+            log.warn("sceMpegQueryStreamOffset bad magic " + String.format("0x%08X", mpegMagic));
+            offset_addr.setValue(0);
+            return SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
+        }
+
+        // Check version.
+        if (mpegVersion < 0) {
+            log.warn("sceMpegQueryStreamOffset bad version " + String.format("0x%08X", mpegRawVersion));
+            offset_addr.setValue(0);
+            return SceKernelErrors.ERROR_MPEG_BAD_VERSION;
+        }
+
+        // Check offset.
+        if ((mpegOffset & 2047) != 0 || mpegOffset == 0) {
+            log.warn("sceMpegQueryStreamOffset bad offset " + String.format("0x%08X", mpegOffset));
+            offset_addr.setValue(0);
+            return SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
+        }
+        
+    	offset_addr.setValue(mpegOffset);
+        return 0;
     }
 
-    @HLEFunction(nid = 0x611E9E11, version = 150)
-    public void sceMpegQueryStreamSize(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int buffer_addr = cpu.gpr[4];
-        int size_addr = cpu.gpr[5];
-
+    @HLEFunction(nid = 0x611E9E11, version = 150, checkInsideInterrupt = true)
+    public int sceMpegQueryStreamSize(TPointer bufferPointer, TPointer32 sizePointer) {
         if (log.isDebugEnabled()) {
-            log.debug("sceMpegQueryStreamSize(buffer=0x" + Integer.toHexString(buffer_addr) + ", size=0x" + Integer.toHexString(size_addr) + ")");
+            log.debug("sceMpegQueryStreamSize(buffer=0x" + Integer.toHexString(bufferPointer.getAddress()) + ", size=0x" + Integer.toHexString(sizePointer.getAddress()) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
+        // Check pointers.
+        if (!bufferPointer.isAddressGood() || !sizePointer.isAddressGood()) {
+            log.warn("sceMpegQueryStreamSize bad address " + String.format("0x%08X 0x%08X", bufferPointer, sizePointer));
+            return -1;
         }
-        if (Memory.isAddressGood(buffer_addr) && Memory.isAddressGood(size_addr)) {
-            analyseMpeg(buffer_addr);
-            if (mpegMagic == PSMF_MAGIC) {
-                if ((mpegStreamSize & 2047) == 0) {
-                    mem.write32(size_addr, mpegStreamSize);
-                    cpu.gpr[2] = 0;
-                } else {
-                    mem.write32(size_addr, 0);
-                    cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
-                }
-            } else {
-                log.warn("sceMpegQueryStreamSize bad magic " + String.format("0x%08X", mpegMagic));
-                cpu.gpr[2] = -1;
-            }
-        } else {
-            log.warn("sceMpegQueryStreamSize bad address " + String.format("0x%08X 0x%08X", buffer_addr, size_addr));
-            cpu.gpr[2] = -1;
+
+        analyseMpeg(bufferPointer.getAddress());
+        
+        // Check magic.
+        if (mpegMagic != PSMF_MAGIC) {
+            log.warn("sceMpegQueryStreamSize bad magic " + String.format("0x%08X", mpegMagic));
+            return -1;
         }
+
+        // Check alignment.
+        if ((mpegStreamSize & 2047) != 0) {
+        	sizePointer.setValue(0);
+            return SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
+        }
+        
+    	sizePointer.setValue(mpegStreamSize);
+        return 0;
     }
 
-    @HLEFunction(nid = 0x682A619B, version = 150)
-    public void sceMpegInit(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    @HLEFunction(nid = 0x682A619B, version = 150, checkInsideInterrupt = true)
+    public int sceMpegInit() {
         if (log.isInfoEnabled()) {
             log.info("sceMpegInit");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (checkMediaEngineState()) {
             meChannel = null;
         }
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
-    @HLEFunction(nid = 0x874624D6, version = 150)
-    public void sceMpegFinish(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    @HLEFunction(nid = 0x874624D6, version = 150, checkInsideInterrupt = true)
+    public int sceMpegFinish() {
         if (log.isInfoEnabled()) {
             log.info("sceMpegFinish");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         finishMpeg();
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
-    @HLEFunction(nid = 0xC132E22F, version = 150)
-    public void sceMpegQueryMemSize(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mode = cpu.gpr[4];
-
+    @HLEFunction(nid = 0xC132E22F, version = 150, checkInsideInterrupt = true)
+    public int sceMpegQueryMemSize(int mode) {
         if (log.isDebugEnabled()) {
             log.debug("sceMpegQueryMemSize(mode=" + mode + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         // Mode = 0 -> 64k (constant).
-        cpu.gpr[2] = MPEG_MEMSIZE;
+        return MPEG_MEMSIZE;
     }
 
-    @HLEFunction(nid = 0xD8C5F121, version = 150)
-    public void sceMpegCreate(Processor processor) {
-        CpuState cpu = processor.cpu;
+    @HLEFunction(nid = 0xD8C5F121, version = 150, checkInsideInterrupt = true)
+    public int sceMpegCreate(Processor processor, int mpeg, int data, int size, int ringbuffer_addr, int frameWidth, int mode, int ddrtop) {
         Memory mem = Processor.memory;
-
-        int mpeg = cpu.gpr[4];
-        int data = cpu.gpr[5];
-        int size = cpu.gpr[6];
-        int ringbuffer_addr = cpu.gpr[7];
-        int frameWidth = cpu.gpr[8];
-        int mode = cpu.gpr[9];
-        int ddrtop = cpu.gpr[10];
 
         if (log.isDebugEnabled()) {
             log.debug("sceMpegCreate(mpeg=0x" + Integer.toHexString(mpeg) + ", data=0x" + Integer.toHexString(data) + ", size=" + size + ", ringbuffer=0x" + Integer.toHexString(ringbuffer_addr) + ", frameWidth=" + frameWidth + ", mode=" + mode + ", ddrtop=0x" + Integer.toHexString(ddrtop) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        // Check size.
         if (size < MPEG_MEMSIZE) {
             log.warn("sceMpegCreate bad size " + size);
-            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_MEMORY;
-        } else if (Memory.isAddressGood(mpeg) && Memory.isAddressGood(data) && Memory.isAddressGood(ringbuffer_addr)) {
-            // Update the ring buffer struct.
-            SceMpegRingbuffer ringbuffer = SceMpegRingbuffer.fromMem(mem, ringbuffer_addr);
-            if (ringbuffer.packetSize == 0) {
-                ringbuffer.packetsFree = 0;
-            } else {
-                ringbuffer.packetsFree = (ringbuffer.dataUpperBound - ringbuffer.data) / ringbuffer.packetSize;
-            }
-            ringbuffer.mpeg = mpeg;
-            ringbuffer.write(mem, ringbuffer_addr);
-            // Write mpeg system handle.
-            mpegHandle = data + 0x30;
-            mem.write32(mpeg, mpegHandle);
-            // Initialise fake mpeg struct.
-            Utilities.writeStringZ(mem, mpegHandle, "LIBMPEG.001");
-            mem.write32(mpegHandle + 12, -1);
-            mem.write32(mpegHandle + 16, ringbuffer_addr);
-            mem.write32(mpegHandle + 20, ringbuffer.dataUpperBound);
-            // Initialise mpeg values.
-            mpegRingbufferAddr = ringbuffer_addr;
-            mpegRingbuffer = ringbuffer;
-            videoFrameCount = 0;
-            audioFrameCount = 0;
-            videoPixelMode = PSP_DISPLAY_PIXEL_FORMAT_8888;
-            defaultFrameWidth = frameWidth;
-
-            cpu.gpr[2] = 0;
-        } else {
-            log.warn("sceMpegCreate bad address " + String.format("0x%08X 0x%08X 0x%08X", mpeg, data, ringbuffer_addr));
-            cpu.gpr[2] = -1;
+            return SceKernelErrors.ERROR_MPEG_NO_MEMORY;
         }
+        
+        // Check pointers.
+        if (!Memory.isAddressGood(mpeg) || !Memory.isAddressGood(data) || !Memory.isAddressGood(ringbuffer_addr)) {
+            log.warn("sceMpegCreate bad address " + String.format("0x%08X 0x%08X 0x%08X", mpeg, data, ringbuffer_addr));
+            return -1;
+        }
+
+        // Update the ring buffer struct.
+        SceMpegRingbuffer ringbuffer = SceMpegRingbuffer.fromMem(mem, ringbuffer_addr);
+        if (ringbuffer.packetSize == 0) {
+            ringbuffer.packetsFree = 0;
+        } else {
+            ringbuffer.packetsFree = (ringbuffer.dataUpperBound - ringbuffer.data) / ringbuffer.packetSize;
+        }
+        ringbuffer.mpeg = mpeg;
+        ringbuffer.write(mem, ringbuffer_addr);
+        // Write mpeg system handle.
+        mpegHandle = data + 0x30;
+        mem.write32(mpeg, mpegHandle);
+        // Initialise fake mpeg struct.
+        Utilities.writeStringZ(mem, mpegHandle, "LIBMPEG.001");
+        mem.write32(mpegHandle + 12, -1);
+        mem.write32(mpegHandle + 16, ringbuffer_addr);
+        mem.write32(mpegHandle + 20, ringbuffer.dataUpperBound);
+        // Initialise mpeg values.
+        mpegRingbufferAddr = ringbuffer_addr;
+        mpegRingbuffer = ringbuffer;
+        videoFrameCount = 0;
+        audioFrameCount = 0;
+        videoPixelMode = PSP_DISPLAY_PIXEL_FORMAT_8888;
+        defaultFrameWidth = frameWidth;
+
+        return 0;
     }
 
-    @HLEFunction(nid = 0x606A4649, version = 150)
-    public void sceMpegDelete(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mpeg = cpu.gpr[4];
-
+    @HLEFunction(nid = 0x606A4649, version = 150, checkInsideInterrupt = true)
+    public int sceMpegDelete(int mpeg) {
         if (log.isDebugEnabled()) {
             log.debug("sceMpegDelete(mpeg=0x" + Integer.toHexString(mpeg) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         finishMpeg();
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegDelete bad mpeg handle 0x" + Integer.toHexString(mpeg));
-            cpu.gpr[2] = -1;
+            return -1;
         } else {
-            cpu.gpr[2] = 0;
+            return 0;
         }
     }
 
-    @HLEFunction(nid = 0x42560F23, version = 150)
-    public void sceMpegRegistStream(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mpeg = cpu.gpr[4];
-        int stream_type = cpu.gpr[5];
-        int stream_num = cpu.gpr[6];
-
+    @HLEFunction(nid = 0x42560F23, version = 150, checkInsideInterrupt = true)
+    public int sceMpegRegistStream(Processor processor, int mpeg, int stream_type, int stream_num) {
         if (log.isDebugEnabled()) {
             log.debug("sceMpegRegistStream(mpeg=0x" + Integer.toHexString(mpeg) + ", stream_type=" + stream_type + ", stream_num=" + stream_num + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegRegistStream bad mpeg handle 0x" + Integer.toHexString(mpeg));
-            cpu.gpr[2] = -1;
-        } else {
-        	StreamInfo info = new StreamInfo(stream_type);
-        	int uid = info.getUid();
-            // Register the respective stream.
-            switch (stream_type) {
-                case MPEG_AVC_STREAM:
-                    isAvcRegistered = true;
-                    avcStreamsMap.put(uid, stream_num);
-                    break;
-                case MPEG_AUDIO_STREAM:  // Unknown purpose. Use Atrac anyway.
-                case MPEG_ATRAC_STREAM:
-                    isAtracRegistered = true;
-                    atracStreamsMap.put(uid, stream_num);
-                    break;
-                case MPEG_PCM_STREAM:
-                    isPcmRegistered = true;
-                    pcmStreamsMap.put(uid, stream_num);
-                    break;
-                default:
-                    log.warn("sceMpegRegistStream unknown stream type=" + stream_type);
-                    break;
-            }
-            cpu.gpr[2] = uid;
+            return -1;
         }
+        
+    	StreamInfo info = new StreamInfo(stream_type);
+    	int uid = info.getUid();
+        // Register the respective stream.
+        switch (stream_type) {
+            case MPEG_AVC_STREAM:
+                isAvcRegistered = true;
+                avcStreamsMap.put(uid, stream_num);
+                break;
+            case MPEG_AUDIO_STREAM:  // Unknown purpose. Use Atrac anyway.
+            case MPEG_ATRAC_STREAM:
+                isAtracRegistered = true;
+                atracStreamsMap.put(uid, stream_num);
+                break;
+            case MPEG_PCM_STREAM:
+                isPcmRegistered = true;
+                pcmStreamsMap.put(uid, stream_num);
+                break;
+            default:
+                log.warn("sceMpegRegistStream unknown stream type=" + stream_type);
+                break;
+        }
+
+        return uid;
     }
 
-    @HLEFunction(nid = 0x591A4AA2, version = 150)
-    public void sceMpegUnRegistStream(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mpeg = cpu.gpr[4];
-        int streamUid = cpu.gpr[5];
-
+    @HLEFunction(nid = 0x591A4AA2, version = 150, checkInsideInterrupt = true)
+    public int sceMpegUnRegistStream(int mpeg, int streamUid) {
         if (log.isDebugEnabled()) {
             log.debug("sceMpegUnRegistStream(mpeg=0x" + Integer.toHexString(mpeg) + ", stream=0x" + Integer.toHexString(streamUid) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegUnRegistStream bad mpeg handle 0x" + Integer.toHexString(mpeg));
-            cpu.gpr[2] = -1;
-        } else {
-        	StreamInfo info = getStreamInfo(streamUid);
-        	if (info != null) {
-	            // Unregister the respective stream.
-	            switch (info.getType()) {
-	                case MPEG_AVC_STREAM:
-	                    isAvcRegistered = false;
-	                    avcStreamsMap.remove(streamUid);
-	                    break;
-	                case MPEG_AUDIO_STREAM:  // Unknown purpose. Use Atrac anyway.
-	                case MPEG_ATRAC_STREAM:
-	                    isAtracRegistered = false;
-	                    atracStreamsMap.remove(streamUid);
-	                    break;
-	                case MPEG_PCM_STREAM:
-	                    isPcmRegistered = false;
-	                    pcmStreamsMap.remove(streamUid);
-	                    break;
-	                default:
-	                    log.warn("sceMpegUnRegistStream unknown stream=0x" + Integer.toHexString(streamUid));
-	                    break;
-	            }
-	            info.release();
-        	} else {
-                log.warn("sceMpegUnRegistStream unknown stream=0x" + Integer.toHexString(streamUid));
-        	}
-            setCurrentMpegAnalyzed(false);
-            cpu.gpr[2] = 0;
+            return -1;
         }
+
+    	StreamInfo info = getStreamInfo(streamUid);
+    	if (info != null) {
+            // Unregister the respective stream.
+            switch (info.getType()) {
+                case MPEG_AVC_STREAM:
+                    isAvcRegistered = false;
+                    avcStreamsMap.remove(streamUid);
+                    break;
+                case MPEG_AUDIO_STREAM:  // Unknown purpose. Use Atrac anyway.
+                case MPEG_ATRAC_STREAM:
+                    isAtracRegistered = false;
+                    atracStreamsMap.remove(streamUid);
+                    break;
+                case MPEG_PCM_STREAM:
+                    isPcmRegistered = false;
+                    pcmStreamsMap.remove(streamUid);
+                    break;
+                default:
+                    log.warn("sceMpegUnRegistStream unknown stream=0x" + Integer.toHexString(streamUid));
+                    break;
+            }
+            info.release();
+    	} else {
+            log.warn("sceMpegUnRegistStream unknown stream=0x" + Integer.toHexString(streamUid));
+    	}
+        setCurrentMpegAnalyzed(false);
+        return 0;
     }
 
-    @HLEFunction(nid = 0xA780CF7E, version = 150)
-    public void sceMpegMallocAvcEsBuf(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mpeg = cpu.gpr[4];
-
+    @HLEFunction(nid = 0xA780CF7E, version = 150, checkInsideInterrupt = true)
+    public int sceMpegMallocAvcEsBuf(int mpeg) {
         if (log.isDebugEnabled()) {
             log.debug("sceMpegMallocAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegMallocAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg) + ") bad mpeg handle");
-            cpu.gpr[2] = -1;
-        } else {
-        	// sceMpegMallocAvcEsBuf does not allocate any memory.
-        	// It returns 0x00000001 for the first call,
-        	// 0x00000002 for the second call
-        	// and 0x00000000 for subsequent calls.
-        	int esBufferId = 0;
-        	for (int i = 0; i < allocatedEsBuffers.length; i++) {
-        		if (!allocatedEsBuffers[i]) {
-        			esBufferId = i + 1;
-        			allocatedEsBuffers[i] = true;
-        			break;
-        		}
-        	}
-    		cpu.gpr[2] = esBufferId;
+            return -1;
         }
+
+        // sceMpegMallocAvcEsBuf does not allocate any memory.
+    	// It returns 0x00000001 for the first call,
+    	// 0x00000002 for the second call
+    	// and 0x00000000 for subsequent calls.
+    	int esBufferId = 0;
+    	for (int i = 0; i < allocatedEsBuffers.length; i++) {
+    		if (!allocatedEsBuffers[i]) {
+    			esBufferId = i + 1;
+    			allocatedEsBuffers[i] = true;
+    			break;
+    		}
+    	}
+		return esBufferId;
     }
 
-    @HLEFunction(nid = 0xCEB870B1, version = 150)
-    public void sceMpegFreeAvcEsBuf(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mpeg = cpu.gpr[4];
-        int esBuf = cpu.gpr[5];
-
+    @HLEFunction(nid = 0xCEB870B1, version = 150, checkInsideInterrupt = true)
+    public int sceMpegFreeAvcEsBuf(int mpeg, int esBuf) {
         if (log.isDebugEnabled()) {
             log.debug("sceMpegFreeAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg) + ", esBuf=0x" + Integer.toHexString(esBuf) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegFreeAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg) + ", esBuf=0x" + Integer.toHexString(esBuf) + ") bad mpeg handle");
-            cpu.gpr[2] = -1;
-        } else if (esBuf == 0) {
-            log.warn("sceMpegFreeAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg) + ", esBuf=0x" + Integer.toHexString(esBuf) + ") bad esBuf handle");
-            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
-        } else {
-        	if (esBuf >= 1 && esBuf <= allocatedEsBuffers.length) {
-        		allocatedEsBuffers[esBuf - 1] = false;
-        	}
-            cpu.gpr[2] = 0;
+            return -1;
         }
+        
+        if (esBuf == 0) {
+            log.warn("sceMpegFreeAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg) + ", esBuf=0x" + Integer.toHexString(esBuf) + ") bad esBuf handle");
+            return SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
+        }
+        
+    	if (esBuf >= 1 && esBuf <= allocatedEsBuffers.length) {
+    		allocatedEsBuffers[esBuf - 1] = false;
+    	}
+    	return 0;
     }
 
-    @HLEFunction(nid = 0xF8DCB679, version = 150)
-    public void sceMpegQueryAtracEsSize(Processor processor) {
-        CpuState cpu = processor.cpu;
+    @HLEFunction(nid = 0xF8DCB679, version = 150, checkInsideInterrupt = true)
+    public int sceMpegQueryAtracEsSize(int mpeg, int esSize_addr, int outSize_addr) {
         Memory mem = Processor.memory;
-
-        int mpeg = cpu.gpr[4];
-        int esSize_addr = cpu.gpr[5];
-        int outSize_addr = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
             log.debug("sceMpegQueryAtracEsSize(mpeg=0x" + Integer.toHexString(mpeg) + ", esSize_addr=0x" + Integer.toHexString(esSize_addr) + ", outSize_addr=0x" + Integer.toHexString(outSize_addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegQueryAtracEsSize bad mpeg handle 0x" + Integer.toHexString(mpeg));
-            cpu.gpr[2] = -1;
-        } else if (Memory.isAddressGood(esSize_addr) && Memory.isAddressGood(outSize_addr)) {
+            return -1;
+        }
+        
+        if (Memory.isAddressGood(esSize_addr) && Memory.isAddressGood(outSize_addr)) {
             mem.write32(esSize_addr, MPEG_ATRAC_ES_SIZE);
             mem.write32(outSize_addr, MPEG_ATRAC_ES_OUTPUT_SIZE);
-            cpu.gpr[2] = 0;
-        } else {
-            log.warn("sceMpegQueryAtracEsSize bad address " + String.format("0x%08X 0x%08X", esSize_addr, outSize_addr));
-            cpu.gpr[2] = -1;
+            return 0;
         }
+        
+        log.warn("sceMpegQueryAtracEsSize bad address " + String.format("0x%08X 0x%08X", esSize_addr, outSize_addr));
+        return -1;
     }
 
-    @HLEFunction(nid = 0xC02CF6B5, version = 150)
-    public void sceMpegQueryPcmEsSize(Processor processor) {
-        CpuState cpu = processor.cpu;
+    @HLEFunction(nid = 0xC02CF6B5, version = 150, checkInsideInterrupt = true)
+    public int sceMpegQueryPcmEsSize(int mpeg, int esSize_addr, int outSize_addr) {
         Memory mem = Processor.memory;
-
-        int mpeg = cpu.gpr[4];
-        int esSize_addr = cpu.gpr[5];
-        int outSize_addr = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
             log.debug("sceMpegQueryPcmEsSize(mpeg=0x" + Integer.toHexString(mpeg) + ", esSize_addr=0x" + Integer.toHexString(esSize_addr) + ", outSize_addr=0x" + Integer.toHexString(outSize_addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             Modules.log.warn("sceMpegQueryPcmEsSize bad mpeg handle 0x" + Integer.toHexString(mpeg));
-            cpu.gpr[2] = -1;
-        } else if (Memory.isAddressGood(esSize_addr) && Memory.isAddressGood(outSize_addr)) {
+            return -1;
+        }
+        
+        if (Memory.isAddressGood(esSize_addr) && Memory.isAddressGood(outSize_addr)) {
             mem.write32(esSize_addr, MPEG_PCM_ES_SIZE);
             mem.write32(outSize_addr, MPEG_PCM_ES_OUTPUT_SIZE);
-            cpu.gpr[2] = 0;
-        } else {
-            log.warn("sceMpegQueryPcmEsSize bad address " + String.format("0x%08X 0x%08X", esSize_addr, outSize_addr));
-            cpu.gpr[2] = -1;
+            return 0;
         }
+        
+        log.warn("sceMpegQueryPcmEsSize bad address " + String.format("0x%08X 0x%08X", esSize_addr, outSize_addr));
+        return -1;
     }
 
-    @HLEFunction(nid = 0x167AFD9E, version = 150)
-    public void sceMpegInitAu(Processor processor) {
-        CpuState cpu = processor.cpu;
+    @HLEFunction(nid = 0x167AFD9E, version = 150, checkInsideInterrupt = true)
+    public int sceMpegInitAu(int mpeg, int buffer_addr, int au_addr) {
         Memory mem = Processor.memory;
-
-        int mpeg = cpu.gpr[4];
-        int buffer_addr = cpu.gpr[5];
-        int au_addr = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
             log.debug("sceMpegInitAu(mpeg=0x" + Integer.toHexString(mpeg) + ", buffer=0x" + Integer.toHexString(buffer_addr) + ", au=0x" + Integer.toHexString(au_addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             Modules.log.warn("sceMpegInitAu bad mpeg handle 0x" + Integer.toHexString(mpeg));
-            cpu.gpr[2] = -1;
-        } else {
-            // Check if sceMpegInitAu is being called for AVC or ATRAC
-            // and write the proper AU (access unit) struct.
-            if (buffer_addr >= 1 && buffer_addr <= allocatedEsBuffers.length && allocatedEsBuffers[buffer_addr - 1]) {
-            	mpegAvcAu.esBuffer = buffer_addr;
-            	mpegAvcAu.esSize = MPEG_AVC_ES_SIZE;
-            	mpegAvcAu.write(mem, au_addr);
-            } else {
-            	mpegAtracAu.esBuffer = buffer_addr;
-            	mpegAtracAu.esSize = MPEG_ATRAC_ES_SIZE;
-            	mpegAtracAu.write(mem, au_addr);
-            }
-            cpu.gpr[2] = 0;
+            return -1;
         }
+        
+        // Check if sceMpegInitAu is being called for AVC or ATRAC
+        // and write the proper AU (access unit) struct.
+        if (buffer_addr >= 1 && buffer_addr <= allocatedEsBuffers.length && allocatedEsBuffers[buffer_addr - 1]) {
+        	mpegAvcAu.esBuffer = buffer_addr;
+        	mpegAvcAu.esSize = MPEG_AVC_ES_SIZE;
+        	mpegAvcAu.write(mem, au_addr);
+        } else {
+        	mpegAtracAu.esBuffer = buffer_addr;
+        	mpegAtracAu.esSize = MPEG_ATRAC_ES_SIZE;
+        	mpegAtracAu.write(mem, au_addr);
+        }
+        return 0;
     }
 
-    @HLEFunction(nid = 0x234586AE, version = 150)
-    public void sceMpegChangeGetAvcAuMode(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mpeg = cpu.gpr[4];
-        int stream_addr = cpu.gpr[5];
-        int mode = cpu.gpr[6];
-
+    @HLEFunction(nid = 0x234586AE, version = 150, checkInsideInterrupt = true)
+    public int sceMpegChangeGetAvcAuMode(int mpeg, int stream_addr, int mode) {
         log.warn("UNIMPLEMENTED: sceMpegChangeGetAvcAuMode(mpeg=0x" + Integer.toHexString(mpeg) + ",stream_addr=0x" + Integer.toHexString(stream_addr) + ",mode=0x" + mode + ")");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
-    @HLEFunction(nid = 0x9DCFB7EA, version = 150)
-    public void sceMpegChangeGetAuMode(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mpeg = cpu.gpr[4];
-        int streamUid = cpu.gpr[5];
-        int mode = cpu.gpr[6];
-
+    @HLEFunction(nid = 0x9DCFB7EA, version = 150, checkInsideInterrupt = true)
+    public int sceMpegChangeGetAuMode(int mpeg, int streamUid, int mode) {
         if (log.isDebugEnabled()) {
             log.debug("sceMpegChangeGetAuMode(mpeg=0x" + Integer.toHexString(mpeg) + ",stream_addr=0x" + Integer.toHexString(streamUid) + ",mode=0x" + mode + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         StreamInfo info = getStreamInfo(streamUid);
         if (info != null) {
 	        switch (info.getType()) {
@@ -965,18 +846,12 @@ public class sceMpeg extends HLEModule {
         } else {
             log.warn("sceMpegChangeGetAuMode unknown stream=0x" + Integer.toHexString(streamUid));
         }
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
-    @HLEFunction(nid = 0xFE246728, version = 150)
-    public void sceMpegGetAvcAu(Processor processor) {
-        CpuState cpu = processor.cpu;
+    @HLEFunction(nid = 0xFE246728, version = 150, checkInsideInterrupt = true)
+    public int sceMpegGetAvcAu(int mpeg, int streamUid, int au_addr, int attr_addr) {
         Memory mem = Processor.memory;
-
-        int mpeg = cpu.gpr[4];
-        int streamUid = cpu.gpr[5];
-        int au_addr = cpu.gpr[6];
-        int attr_addr = cpu.gpr[7];
 
         if (log.isDebugEnabled()) {
             log.debug("sceMpegGetAvcAu(mpeg=0x" + Integer.toHexString(mpeg)
@@ -985,86 +860,86 @@ public class sceMpeg extends HLEModule {
                     + ", attr_addr=0x" + Integer.toHexString(attr_addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (mpegRingbuffer != null) {
             mpegRingbuffer.read(mem, mpegRingbufferAddr);
         }
+        
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegGetAvcAu bad mpeg handle 0x" + Integer.toHexString(mpeg));
-            cpu.gpr[2] = -1;
-        } else if (mpegRingbuffer.packetsRead == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
-            delayThread(mpegDecodeErrorDelay);
-        } else if (Memory.isAddressGood(streamUid) && Memory.isAddressGood(au_addr)) {
-            log.warn("sceMpegGetAvcAu didn't get a fake stream");
-            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
-        } else if (streamMap.containsKey(streamUid)) {
-            if ((mpegAvcAu.pts > mpegAtracAu.pts + maxAheadTimestamp) && isAtracRegistered) {
-                // Video is ahead of audio, deliver no video data to wait for audio.
-                if (log.isDebugEnabled()) {
-                    log.debug("sceMpegGetAvcAu video ahead of audio: " + mpegAvcAu.pts + " - " + mpegAtracAu.pts);
-                }
-                cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
-                delayThread(mpegDecodeErrorDelay);
-            } else {
-                cpu.gpr[2] = 0;
-                // Update the video timestamp (AVC).
-                if (!ignoreAvc) {
-                	// Read Au of next Avc frame
-                    if (checkMediaEngineState()) {
-                    	Emulator.getClock().pause();
-                        if (me.getContainer() == null) {
-                            me.init(meChannel, true, true);
-                        }
-                    	if (!me.readVideoAu(mpegAvcAu)) {
-                    		// Returning "ERROR_MPEG_NO_DATA" only last timestamp has been reached
-                    		if (mpegLastTimestamp <= 0 || mpegAvcAu.pts >= mpegLastTimestamp) {
-                    			endOfVideoReached = true;
-                    			cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
-                    		}
-                    	} else {
-                    		endOfVideoReached = false;
-                    	}
-                    	Emulator.getClock().resume();
-                    } else if (isEnableConnector()) {
-                    	if (!mpegCodec.readVideoAu(mpegAvcAu, videoFrameCount)) {
-                    		// Avc Au was not updated by the MpegCodec
-                            mpegAvcAu.pts += videoTimestampStep;
-                    	}
-                		updateAvcDts();
-                    }
-                	mpegAvcAu.write(mem, au_addr);
-                	if (log.isDebugEnabled()) {
-                		log.debug(String.format("sceMpegGetAvcAu returning 0x%08X, AvcAu=%s", cpu.gpr[2], mpegAvcAu.toString()));
-                	}
-                }
-                // Bitfield used to store data attributes.
-                if (Memory.isAddressGood(attr_addr)) {
-                    mem.write32(attr_addr, 1);     // Unknown.
-                }
-
-                if (cpu.gpr[2] != 0) {
-                	delayThread(mpegDecodeErrorDelay);
-                }
-            }
-        } else {
-            log.warn("sceMpegGetAvcAu bad address " + String.format("0x%08X 0x%08X", streamUid, au_addr));
-            cpu.gpr[2] = -1;
+            return -1;
         }
+        
+        if (mpegRingbuffer.packetsRead == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
+            delayThread(mpegDecodeErrorDelay);
+            return SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
+        }
+        
+        // @NOTE: Shouldn't this be negated?
+        if (Memory.isAddressGood(streamUid) && Memory.isAddressGood(au_addr)) {
+            log.warn("sceMpegGetAvcAu didn't get a fake stream");
+            return SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
+        }
+        
+        if (!streamMap.containsKey(streamUid)) {
+            log.warn("sceMpegGetAvcAu bad address " + String.format("0x%08X 0x%08X", streamUid, au_addr));
+            return -1;
+        }
+
+        if ((mpegAvcAu.pts > mpegAtracAu.pts + maxAheadTimestamp) && isAtracRegistered) {
+            // Video is ahead of audio, deliver no video data to wait for audio.
+            if (log.isDebugEnabled()) {
+                log.debug("sceMpegGetAvcAu video ahead of audio: " + mpegAvcAu.pts + " - " + mpegAtracAu.pts);
+            }
+            delayThread(mpegDecodeErrorDelay);
+            return SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
+        }
+        
+        int result = 0;
+        // Update the video timestamp (AVC).
+        if (!ignoreAvc) {
+        	// Read Au of next Avc frame
+            if (checkMediaEngineState()) {
+            	Emulator.getClock().pause();
+                if (me.getContainer() == null) {
+                    me.init(meChannel, true, true);
+                }
+            	if (!me.readVideoAu(mpegAvcAu)) {
+            		// Returning "ERROR_MPEG_NO_DATA" only last timestamp has been reached
+            		if (mpegLastTimestamp <= 0 || mpegAvcAu.pts >= mpegLastTimestamp) {
+            			endOfVideoReached = true;
+            			result = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
+            		}
+            	} else {
+            		endOfVideoReached = false;
+            	}
+            	Emulator.getClock().resume();
+            } else if (isEnableConnector()) {
+            	if (!mpegCodec.readVideoAu(mpegAvcAu, videoFrameCount)) {
+            		// Avc Au was not updated by the MpegCodec
+                    mpegAvcAu.pts += videoTimestampStep;
+            	}
+        		updateAvcDts();
+            }
+        	mpegAvcAu.write(mem, au_addr);
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceMpegGetAvcAu returning 0x%08X, AvcAu=%s", result, mpegAvcAu.toString()));
+        	}
+        }
+        // Bitfield used to store data attributes.
+        if (Memory.isAddressGood(attr_addr)) {
+            mem.write32(attr_addr, 1);     // Unknown.
+        }
+
+        if (result != 0) {
+        	delayThread(mpegDecodeErrorDelay);
+        }
+        
+        return result;
     }
 
-    @HLEFunction(nid = 0x8C1E027D, version = 150)
-    public void sceMpegGetPcmAu(Processor processor) {
-        CpuState cpu = processor.cpu;
+    @HLEFunction(nid = 0x8C1E027D, version = 150, checkInsideInterrupt = true)
+    public int sceMpegGetPcmAu(int mpeg, int streamUid, int au_addr, int attr_addr) {
         Memory mem = Processor.memory;
-
-        int mpeg = cpu.gpr[4];
-        int streamUid = cpu.gpr[5];
-        int au_addr = cpu.gpr[6];
-        int attr_addr = cpu.gpr[7];
 
         if (log.isDebugEnabled()) {
             log.debug("sceMpegGetPcmAu(mpeg=0x" + Integer.toHexString(mpeg)
@@ -1073,68 +948,65 @@ public class sceMpeg extends HLEModule {
                     + ", attr_addr=0x" + Integer.toHexString(attr_addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (mpegRingbuffer != null) {
             mpegRingbuffer.read(mem, mpegRingbufferAddr);
         }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegGetPcmAu bad mpeg handle 0x" + Integer.toHexString(mpeg));
-            cpu.gpr[2] = -1;
-        }else if (mpegRingbuffer.packetsRead == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
-            delayThread(mpegDecodeErrorDelay);
-        } else if (Memory.isAddressGood(streamUid) && Memory.isAddressGood(au_addr)) {
-            log.warn("sceMpegGetPcmAu didn't get a fake stream");
-            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
-        } else if (streamMap.containsKey(streamUid)) {
-            cpu.gpr[2] = 0;
-            // Update the audio timestamp (Atrac).
-            if (!ignorePcm) {
-            	// Read Au of next Atrac frame
-                if (checkMediaEngineState()) {
-                	Emulator.getClock().pause();
-                	if (me.getContainer() == null) {
-                		me.init(meChannel, true, true);
-                	}
-                	if (!me.readAudioAu(mpegAtracAu)) {
-                        cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
-                	}
-                	Emulator.getClock().resume();
-                } else if (isEnableConnector() && mpegCodec.readAudioAu(mpegAtracAu, audioFrameCount)) {
-            		// Atrac Au updated by the MpegCodec
-            	}
-            	mpegAtracAu.write(mem, au_addr);
-            	if (log.isDebugEnabled()) {
-            		log.debug(String.format("sceMpegGetPcmAu returning AtracAu=%s", mpegAtracAu.toString()));
-            	}
-            }
-            // Bitfield used to store data attributes.
-            if (Memory.isAddressGood(attr_addr)) {
-                // Uses same bitfield as the one in the PSMF header.
-                mem.write32(attr_addr, (1 << 7));     // Sampling rate (1 = 44.1kHz).
-                mem.write32(attr_addr, 2);            // Number of channels (1 - MONO / 2 - STEREO).
-            }
-            if (cpu.gpr[2] != 0) {
-            	delayThread(mpegDecodeErrorDelay);
-            }
-        } else {
-            log.warn("sceMpegGetPcmAu bad address " + String.format("0x%08X 0x%08X", streamUid, au_addr));
-            cpu.gpr[2] = -1;
+            return -1;
         }
+        
+        if (mpegRingbuffer.packetsRead == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
+            delayThread(mpegDecodeErrorDelay);
+            return SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
+        }
+        
+        // Should be negated?
+        if (Memory.isAddressGood(streamUid) && Memory.isAddressGood(au_addr)) {
+            log.warn("sceMpegGetPcmAu didn't get a fake stream");
+            return SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
+        } 
+        
+        if (!streamMap.containsKey(streamUid)) {
+            log.warn("sceMpegGetPcmAu bad address " + String.format("0x%08X 0x%08X", streamUid, au_addr));
+            return -1;
+        }
+        int result = 0;
+        // Update the audio timestamp (Atrac).
+        if (!ignorePcm) {
+        	// Read Au of next Atrac frame
+            if (checkMediaEngineState()) {
+            	Emulator.getClock().pause();
+            	if (me.getContainer() == null) {
+            		me.init(meChannel, true, true);
+            	}
+            	if (!me.readAudioAu(mpegAtracAu)) {
+            		result = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
+            	}
+            	Emulator.getClock().resume();
+            } else if (isEnableConnector() && mpegCodec.readAudioAu(mpegAtracAu, audioFrameCount)) {
+        		// Atrac Au updated by the MpegCodec
+        	}
+        	mpegAtracAu.write(mem, au_addr);
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceMpegGetPcmAu returning AtracAu=%s", mpegAtracAu.toString()));
+        	}
+        }
+        // Bitfield used to store data attributes.
+        if (Memory.isAddressGood(attr_addr)) {
+            // Uses same bitfield as the one in the PSMF header.
+            mem.write32(attr_addr, (1 << 7));     // Sampling rate (1 = 44.1kHz).
+            mem.write32(attr_addr, 2);            // Number of channels (1 - MONO / 2 - STEREO).
+        }
+        if (result != 0) {
+        	delayThread(mpegDecodeErrorDelay);
+        }
+        return result;
     }
 
-    @HLEFunction(nid = 0xE1CE83A7, version = 150)
-    public void sceMpegGetAtracAu(Processor processor) {
-        CpuState cpu = processor.cpu;
+    @HLEFunction(nid = 0xE1CE83A7, version = 150, checkInsideInterrupt = true)
+    public int sceMpegGetAtracAu(int mpeg, int streamUid, int au_addr, int attr_addr) {
         Memory mem = Processor.memory;
-
-        int mpeg = cpu.gpr[4];
-        int streamUid = cpu.gpr[5];
-        int au_addr = cpu.gpr[6];
-        int attr_addr = cpu.gpr[7];
 
         if (log.isDebugEnabled()) {
             log.debug("sceMpegGetAtracAu(mpeg=0x" + Integer.toHexString(mpeg)
@@ -1143,125 +1015,114 @@ public class sceMpeg extends HLEModule {
                     + ", attr_addr=0x" + Integer.toHexString(attr_addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (mpegRingbuffer != null) {
             mpegRingbuffer.read(mem, mpegRingbufferAddr);
         }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegGetAtracAu bad mpeg handle 0x" + Integer.toHexString(mpeg));
-            cpu.gpr[2] = -1;
-        } else if (mpegRingbuffer.packetsRead == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
-            log.debug("sceMpegGetAtracAu ringbuffer empty");
-            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
-            delayThread(mpegDecodeErrorDelay);
-        } else if (Memory.isAddressGood(streamUid) && Memory.isAddressGood(au_addr)) {
-            log.warn("sceMpegGetAtracAu didn't get a fake stream");
-            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
-        } else if (streamMap.containsKey(streamUid)) {
-        	if (endOfAudioReached && endOfVideoReached) {
-        		if (log.isDebugEnabled()) {
-        			log.debug("sceMpegGetAtracAu end of audio and video reached");
-        		}
-
-        		// Consume all the remaining packets, if any.
-        		if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
-        			mpegRingbuffer.packetsFree = mpegRingbuffer.packets;
-        			mpegRingbuffer.write(mem, mpegRingbufferAddr);
-        		}
-
-        		cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
-        	} else if ((mpegAtracAu.pts > mpegAvcAu.pts + maxAheadTimestamp) && isAvcRegistered && !endOfAudioReached) {
-                // Audio is ahead of video, deliver no audio data to wait for video.
-            	// This error is not returned when the end of audio has been reached (Patapon 3).
-                if (log.isDebugEnabled()) {
-                    log.debug("sceMpegGetAtracAu audio ahead of video: " + mpegAtracAu.pts + " - " + mpegAvcAu.pts);
-                }
-                cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
-                delayThread(mpegDecodeErrorDelay);
-            } else {
-                // Update the audio timestamp (Atrac).
-                cpu.gpr[2] = 0;
-                if (!ignoreAtrac) {
-                	// Read Au of next Atrac frame
-                    if (checkMediaEngineState()) {
-                    	Emulator.getClock().pause();
-                    	if (me.getContainer() == null) {
-                    		me.init(meChannel, true, true);
-                    	}
-                    	if (!me.readAudioAu(mpegAtracAu)) {
-                    		endOfAudioReached = true;
-                    		// If the audio could not be decoded or the
-                    		// end of audio has been reached (Patapon 3),
-                    		// simulate a successful return
-                    	} else {
-                    		endOfAudioReached = false;
-                    	}
-                    	Emulator.getClock().resume();
-                    } else if (isEnableConnector() && mpegCodec.readAudioAu(mpegAtracAu, audioFrameCount)) {
-                		// Atrac Au updated by the MpegCodec
-                	}
-                	mpegAtracAu.write(mem, au_addr);
-                	if (log.isDebugEnabled()) {
-                		log.debug(String.format("sceMpegGetAtracAu returning 0x%08X, AtracAu=%s", cpu.gpr[2], mpegAtracAu.toString()));
-                	}
-                }
-                // Bitfield used to store data attributes.
-                if (Memory.isAddressGood(attr_addr)) {
-                    mem.write32(attr_addr, 0);     // Pointer to ATRAC3plus stream (from PSMF file).
-                }
-
-                if (cpu.gpr[2] != 0) {
-                	delayThread(mpegDecodeErrorDelay);
-                }
-            }
-        } else {
-            log.warn("sceMpegGetAtracAu bad address " + String.format("0x%08X 0x%08X", streamUid, au_addr));
-            cpu.gpr[2] = -1;
+            return -1;
         }
+        
+        if (mpegRingbuffer.packetsRead == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
+            log.debug("sceMpegGetAtracAu ringbuffer empty");
+            delayThread(mpegDecodeErrorDelay);
+            return SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
+        }
+        
+        if (Memory.isAddressGood(streamUid) && Memory.isAddressGood(au_addr)) {
+            log.warn("sceMpegGetAtracAu didn't get a fake stream");
+            return SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
+        }
+        
+        if (!streamMap.containsKey(streamUid)) {
+            log.warn("sceMpegGetAtracAu bad address " + String.format("0x%08X 0x%08X", streamUid, au_addr));
+            return -1;
+        }
+
+    	if (endOfAudioReached && endOfVideoReached) {
+    		if (log.isDebugEnabled()) {
+    			log.debug("sceMpegGetAtracAu end of audio and video reached");
+    		}
+
+    		// Consume all the remaining packets, if any.
+    		if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
+    			mpegRingbuffer.packetsFree = mpegRingbuffer.packets;
+    			mpegRingbuffer.write(mem, mpegRingbufferAddr);
+    		}
+
+    		return SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
+    	}
+    	
+    	if ((mpegAtracAu.pts > mpegAvcAu.pts + maxAheadTimestamp) && isAvcRegistered && !endOfAudioReached) {
+            // Audio is ahead of video, deliver no audio data to wait for video.
+        	// This error is not returned when the end of audio has been reached (Patapon 3).
+            if (log.isDebugEnabled()) {
+                log.debug("sceMpegGetAtracAu audio ahead of video: " + mpegAtracAu.pts + " - " + mpegAvcAu.pts);
+            }
+            delayThread(mpegDecodeErrorDelay);
+            return SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
+        }
+    	
+        // Update the audio timestamp (Atrac).
+        int result = 0;
+        if (!ignoreAtrac) {
+        	// Read Au of next Atrac frame
+            if (checkMediaEngineState()) {
+            	Emulator.getClock().pause();
+            	if (me.getContainer() == null) {
+            		me.init(meChannel, true, true);
+            	}
+            	if (!me.readAudioAu(mpegAtracAu)) {
+            		endOfAudioReached = true;
+            		// If the audio could not be decoded or the
+            		// end of audio has been reached (Patapon 3),
+            		// simulate a successful return
+            	} else {
+            		endOfAudioReached = false;
+            	}
+            	Emulator.getClock().resume();
+            } else if (isEnableConnector() && mpegCodec.readAudioAu(mpegAtracAu, audioFrameCount)) {
+        		// Atrac Au updated by the MpegCodec
+        	}
+        	mpegAtracAu.write(mem, au_addr);
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceMpegGetAtracAu returning 0x%08X, AtracAu=%s", result, mpegAtracAu.toString()));
+        	}
+        }
+        // Bitfield used to store data attributes.
+        if (Memory.isAddressGood(attr_addr)) {
+            mem.write32(attr_addr, 0);     // Pointer to ATRAC3plus stream (from PSMF file).
+        }
+
+        if (result != 0) {
+        	delayThread(mpegDecodeErrorDelay);
+        }
+        
+        return result;
     }
 
-    @HLEFunction(nid = 0x500F0429, version = 150)
-    public void sceMpegFlushStream(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mpeg = cpu.gpr[4];
-        int stream_addr = cpu.gpr[5];
-
+    @HLEFunction(nid = 0x500F0429, version = 150, checkInsideInterrupt = true)
+    public int sceMpegFlushStream(int mpeg, int stream_addr) {
         if (log.isDebugEnabled()) {
             log.debug("sceMpegFlushStream mpeg=0x" + Integer.toHexString(mpeg)
                     + ", stream_addr=0x" + Integer.toHexString(stream_addr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         finishMpeg();
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
-    @HLEFunction(nid = 0x707B7629, version = 150)
-    public void sceMpegFlushAllStream(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int mpeg = cpu.gpr[4];
-
+    @HLEFunction(nid = 0x707B7629, version = 150, checkInsideInterrupt = true)
+    public int sceMpegFlushAllStream(int mpeg) {
         if (log.isDebugEnabled()) {
             log.debug("sceMpegFlushAllStream mpeg=0x" + Integer.toHexString(mpeg));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         finishMpeg();
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
-    @HLEFunction(nid = 0x0E3C2E9D, version = 150)
+    @HLEFunction(nid = 0x0E3C2E9D, version = 150, checkInsideInterrupt = true)
     public void sceMpegAvcDecode(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1280,10 +1141,6 @@ public class sceMpeg extends HLEModule {
                     + ", init=0x" + Integer.toHexString(init_addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         // When frameWidth is 0, take the frameWidth specified at sceMpegCreate.
         if (frameWidth == 0) {
             if (defaultFrameWidth == 0) {
@@ -1432,7 +1289,7 @@ public class sceMpeg extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x0F6C18D7, version = 150)
+    @HLEFunction(nid = 0x0F6C18D7, version = 150, checkInsideInterrupt = true)
     public void sceMpegAvcDecodeDetail(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1444,10 +1301,6 @@ public class sceMpeg extends HLEModule {
             log.debug(String.format("sceMpegAvcDecodeDetail(mpeg=0x%08X, detailAddr=0x%08X)", mpeg, detailAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegAvcDecodeDetail bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -1468,7 +1321,7 @@ public class sceMpeg extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xA11C7026, version = 150)
+    @HLEFunction(nid = 0xA11C7026, version = 150, checkInsideInterrupt = true)
     public void sceMpegAvcDecodeMode(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1481,10 +1334,6 @@ public class sceMpeg extends HLEModule {
                     + ", mode_addr=0x" + Integer.toHexString(mode_addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn(String.format("sceMpegAvcDecodeMode bad mpeg handle 0x%08X", mpeg));
             cpu.gpr[2] = -1;
@@ -1504,7 +1353,7 @@ public class sceMpeg extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x740FCCD1, version = 150)
+    @HLEFunction(nid = 0x740FCCD1, version = 150, checkInsideInterrupt = true)
     public void sceMpegAvcDecodeStop(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1521,10 +1370,6 @@ public class sceMpeg extends HLEModule {
                     + ", status_addr=0x" + Integer.toHexString(status_addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegAvcDecodeStop bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -1538,7 +1383,7 @@ public class sceMpeg extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x4571CC64, version = 150)
+    @HLEFunction(nid = 0x4571CC64, version = 150, checkInsideInterrupt = true)
     public void sceMpegAvcDecodeFlush(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1548,15 +1393,11 @@ public class sceMpeg extends HLEModule {
             log.debug("sceMpegAvcDecodeFlush mpeg=0x" + Integer.toHexString(mpeg));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         finishMpeg();
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x211A057C, version = 150)
+    @HLEFunction(nid = 0x211A057C, version = 150, checkInsideInterrupt = true)
     public void sceMpegAvcQueryYCbCrSize(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1575,10 +1416,6 @@ public class sceMpeg extends HLEModule {
                     + ", resultAddr=0x" + Integer.toHexString(resultAddr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegAvcQueryYCbCrSize bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -1596,7 +1433,7 @@ public class sceMpeg extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x67179B1B, version = 150)
+    @HLEFunction(nid = 0x67179B1B, version = 150, checkInsideInterrupt = true)
     public void sceMpegAvcInitYCbCr(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1614,15 +1451,11 @@ public class sceMpeg extends HLEModule {
                     + ", height=" + height + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         encodedVideoFramesYCbCr.remove(ycbcr_addr);
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0xF0EB1125, version = 150)
+    @HLEFunction(nid = 0xF0EB1125, version = 150, checkInsideInterrupt = true)
     public void sceMpegAvcDecodeYCbCr(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1639,10 +1472,6 @@ public class sceMpeg extends HLEModule {
                     + ", init=0x" + Integer.toHexString(init_addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (mpegRingbuffer != null) {
             mpegRingbuffer.read(mem, mpegRingbufferAddr);
         }
@@ -1735,7 +1564,7 @@ public class sceMpeg extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xF2930C9C, version = 150)
+    @HLEFunction(nid = 0xF2930C9C, version = 150, checkInsideInterrupt = true)
     public void sceMpegAvcDecodeStopYCbCr(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1750,10 +1579,6 @@ public class sceMpeg extends HLEModule {
                     + ", status=0x" + Integer.toHexString(status_addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegAvcDecodeStopYCbCr bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -1767,7 +1592,7 @@ public class sceMpeg extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x31BD0272, version = 150)
+    @HLEFunction(nid = 0x31BD0272, version = 150, checkInsideInterrupt = true)
     public void sceMpegAvcCsc(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1786,10 +1611,6 @@ public class sceMpeg extends HLEModule {
                     + ", dest=0x" + Integer.toHexString(dest_addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         // When frameWidth is 0, take the frameWidth specified at sceMpegCreate.
         if (frameWidth == 0) {
             if (defaultFrameWidth == 0) {
@@ -1907,7 +1728,7 @@ public class sceMpeg extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x800C44DF, version = 150)
+    @HLEFunction(nid = 0x800C44DF, version = 150, checkInsideInterrupt = true)
     public void sceMpegAtracDecode(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1924,10 +1745,6 @@ public class sceMpeg extends HLEModule {
                     + ", init=" + init + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegAtracDecode bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -1975,7 +1792,7 @@ public class sceMpeg extends HLEModule {
         return size;
     }
 
-    @HLEFunction(nid = 0xD7A29F46, version = 150)
+    @HLEFunction(nid = 0xD7A29F46, version = 150, checkInsideInterrupt = true)
     public void sceMpegRingbufferQueryMemSize(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1985,14 +1802,10 @@ public class sceMpeg extends HLEModule {
             log.debug("sceMpegRingbufferQueryMemSize packets=" + packets);
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         cpu.gpr[2] = getSizeFromPackets(packets);
     }
 
-    @HLEFunction(nid = 0x37295ED8, version = 150)
+    @HLEFunction(nid = 0x37295ED8, version = 150, checkInsideInterrupt = true)
     public void sceMpegRingbufferConstruct(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -2013,10 +1826,6 @@ public class sceMpeg extends HLEModule {
                     + ", args=0x" + Integer.toHexString(callback_args) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (size < getSizeFromPackets(packets)) {
             log.warn("sceMpegRingbufferConstruct insufficient space: size=" + size + ", packets=" + packets);
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_MEMORY;
@@ -2031,7 +1840,7 @@ public class sceMpeg extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x13407F13, version = 150)
+    @HLEFunction(nid = 0x13407F13, version = 150, checkInsideInterrupt = true)
     public void sceMpegRingbufferDestruct(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2041,10 +1850,6 @@ public class sceMpeg extends HLEModule {
             log.debug("sceMpegRingbufferDestruct(ringbuffer=0x" + Integer.toHexString(ringbuffer_addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         cpu.gpr[2] = 0;
     }
 
@@ -2086,7 +1891,7 @@ public class sceMpeg extends HLEModule {
         cpu.gpr[2] = packetsAdded;
     }
 
-    @HLEFunction(nid = 0xB240A59E, version = 150)
+    @HLEFunction(nid = 0xB240A59E, version = 150, checkInsideInterrupt = true)
     public void sceMpegRingbufferPut(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -2100,10 +1905,6 @@ public class sceMpeg extends HLEModule {
             		mpegRingbufferAddr, numPackets, available));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (numPackets < 0) {
             cpu.gpr[2] = 0;
         } else {
@@ -2122,7 +1923,7 @@ public class sceMpeg extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xB5F6DC87, version = 150)
+    @HLEFunction(nid = 0xB5F6DC87, version = 150, checkInsideInterrupt = true)
     public void sceMpegRingbufferAvailableSize(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -2133,10 +1934,6 @@ public class sceMpeg extends HLEModule {
             log.debug("sceMpegRingbufferAvailableSize(ringbuffer=0x" + Integer.toHexString(mpegRingbufferAddr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
     	mpegRingbuffer.read(mem, mpegRingbufferAddr);
         cpu.gpr[2] = mpegRingbuffer.packetsFree;
         if (log.isDebugEnabled()) {
@@ -2144,170 +1941,130 @@ public class sceMpeg extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x3C37A7A6, version = 150)
-    public void sceMpegNextAvcRpAu(Processor processor) {
-        CpuState cpu = processor.cpu;
+    @HLEFunction(nid = 0x3C37A7A6, version = 150, checkInsideInterrupt = true)
+    public int sceMpegNextAvcRpAu(int p1, int p2, int p3, int p4) {
+        log.warn("UNIMPLEMENTED: sceMpegNextAvcRpAu " + String.format("%08X %08X %08X %08X", p1, p2, p3, p4));
 
-        log.warn("UNIMPLEMENTED: sceMpegNextAvcRpAu " + String.format("%08X %08X %08X %08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]));
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        cpu.gpr[2] = 0;
+        return 0;
     }
     
     @HLEFunction(nid = 0x01977054, version = 150)
-    public void sceMpegGetUserdataAu(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceMpegGetUserdataAu() {
         log.warn("Unimplemented NID function sceMpegGetUserdataAu [0x01977054]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
     
     @HLEFunction(nid = 0xC45C99CC, version = 150)
-    public void sceMpegQueryUserdataEsSize(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceMpegQueryUserdataEsSize() {
         log.warn("Unimplemented NID function sceMpegQueryUserdataEsSize [0xC45C99CC]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
        
     @HLEFunction(nid = 0x0558B075, version = 150)
-    public void sceMpegAvcCopyYCbCr(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceMpegAvcCopyYCbCr() {
         log.warn("Unimplemented NID function sceMpegAvcCopyYCbCr [0x0558B075]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
        
     @HLEFunction(nid = 0x11F95CF1, version = 150)
-    public void sceMpegGetAvcNalAu(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceMpegGetAvcNalAu() {
         log.warn("Unimplemented NID function sceMpegGetAvcNalAu [0x11F95CF1]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
     
     @HLEFunction(nid = 0x921FCCCF, version = 150)
-    public void sceMpegGetAvcEsAu(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceMpegGetAvcEsAu() {
         log.warn("Unimplemented NID function sceMpegGetAvcEsAu [0x921FCCCF]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
     
     @HLEFunction(nid = 0x6F314410, version = 150)
-    public void sceMpegAvcDecodeGetDecodeSEI(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceMpegAvcDecodeGetDecodeSEI() {
         log.warn("Unimplemented NID function sceMpegAvcDecodeGetDecodeSEI [0x6F314410]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
     
     @HLEFunction(nid = 0xAB0E9556, version = 150)
-    public void sceMpegAvcDecodeDetailIndex(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceMpegAvcDecodeDetailIndex() {
         log.warn("Unimplemented NID function sceMpegAvcDecodeDetailIndex [0xAB0E9556]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
 
     @HLEFunction(nid = 0xCF3547A2, version = 150)
-    public void sceMpegAvcDecodeDetail2(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceMpegAvcDecodeDetail2() {
         log.warn("Unimplemented NID function sceMpegAvcDecodeDetail2 [0xCF3547A2]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
     
     @HLEFunction(nid = 0xF5E7EA31, version = 150)
-    public void sceMpegAvcConvertToYuv420(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceMpegAvcConvertToYuv420() {
         log.warn("Unimplemented NID function sceMpegAvcConvertToYuv420 [0xF5E7EA31]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
     
     @HLEFunction(nid = 0xD1CE4950, version = 150)
-    public void sceMpegAvcCscMode(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceMpegAvcCscMode() {
         log.warn("Unimplemented NID function sceMpegAvcCscMode [0xD1CE4950]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
     
     @HLEFunction(nid = 0xDBB60658, version = 150)
-    public void sceMpegFlushAu(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceMpegFlushAu() {
         log.warn("Unimplemented NID function sceMpegFlushAu [0xDBB60658]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
     
     @HLEFunction(nid = 0xE95838F6, version = 150)
-    public void sceMpegAvcCscInfo(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceMpegAvcCscInfo() {
         log.warn("Unimplemented NID function sceMpegAvcCscInfo [0xE95838F6]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
     
     @HLEFunction(nid = 0x11CAB459, version = 150)
-    public void sceMpeg_11CAB459(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceMpeg_11CAB459() {
         log.warn("Unimplemented NID function sceMpeg_11CAB459 [0x11CAB459]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
 
     @HLEFunction(nid = 0xB27711A8, version = 150)
-    public void sceMpeg_B27711A8(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceMpeg_B27711A8() {
         log.warn("Unimplemented NID function sceMpeg_B27711A8 [0xB27711A8]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
 
     @HLEFunction(nid = 0xD4DD6E75, version = 150)
-    public void sceMpeg_D4DD6E75(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceMpeg_D4DD6E75() {
         log.warn("Unimplemented NID function sceMpeg_D4DD6E75 [0xD4DD6E75]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
 
     @HLEFunction(nid = 0xC345DED2, version = 150)
-    public void sceMpeg_C345DED2(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceMpeg_C345DED2() {
         log.warn("Unimplemented NID function sceMpeg_C345DED2 [0xC345DED2]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
 
     @HLEFunction(nid = 0x988E9E12, version = 150)
-    public void sceMpeg_988E9E12(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceMpeg_988E9E12() {
         log.warn("Unimplemented NID function sceMpeg_988E9E12 [0x988E9E12]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0xDEADC0DE;
     }
 
 }
