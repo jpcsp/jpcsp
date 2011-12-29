@@ -46,6 +46,8 @@ import jpcsp.Allegrex.compiler.nativeCode.NativeCodeInstruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
 import jpcsp.Allegrex.compiler.nativeCode.Nop;
+import jpcsp.HLE.CanBeNull;
+import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEUidClass;
 import jpcsp.HLE.HLEUidObjectMapping;
 import jpcsp.HLE.Modules;
@@ -914,9 +916,24 @@ public class CompilerContext implements ICompilerContext {
     		mv.visitInsn(Opcodes.DUP);
     		loadMemory();
     		parameterReader.loadNextInt();
+    		
+    		boolean canBeNull = false;
+    		
+    		// @TODO: Use the encoding @StringInfo annotation.
+    		/*
+    		for (Annotation parameterAnnotation : parameterAnnotations) {
+    			if (parameterAnnotation instanceof CanBeNull) {
+    				canBeNull = true;
+    			}
+    		}
+    		*/
+    		if (parameterType.getAnnotation(CanBeNull.class) != null) {
+    			canBeNull = true;
+    		}
+    		
     		if (checkMemoryAccess()) {
     			Label addressGood = new Label();
-    			if (func.canBeNullParam(parameterReader.getCurrentParameterIndex())) {
+    			if (canBeNull) {
         			mv.visitInsn(Opcodes.DUP);
     				mv.visitJumpInsn(Opcodes.IFEQ, addressGood);
     			}
@@ -938,6 +955,8 @@ public class CompilerContext implements ICompilerContext {
     	} else {
 			HLEUidClass hleUidClass = parameterType.getAnnotation(HLEUidClass.class);
 			if (hleUidClass != null) {
+		   		int errorValueOnNotFound = hleUidClass.errorValueOnNotFound();
+				
 				// <parameterType> uidObject = HLEUidObjectMapping.getObject("<parameterType>", uid);
 				// if (uidObject == null) {
 				//     cpu.gpr[_v0] = errorValueOnNotFound;
@@ -953,7 +972,7 @@ public class CompilerContext implements ICompilerContext {
 				Label foundUid = new Label();
 				mv.visitInsn(Opcodes.DUP);
 				mv.visitJumpInsn(Opcodes.IFNONNULL, foundUid);
-				storeRegister(_v0, func.getErrorValueOnNotFound(parameterReader.getCurrentParameterIndex()));
+				storeRegister(_v0, errorValueOnNotFound);
 				parameterReader.popAllStack(1);
 				mv.visitJumpInsn(Opcodes.GOTO, afterSyscallLabel);
 				mv.visitLabel(foundUid);
@@ -964,8 +983,14 @@ public class CompilerContext implements ICompilerContext {
 				Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
 			}
     	}
+    	
+    	Method methodToCheck = null;
+    	CheckArgument checkArgument = (CheckArgument)parameterType.getAnnotation(CheckArgument.class);
+    	
+		if (checkArgument != null) {
+			methodToCheck = HLEModuleFunctionReflection.hleModuleMethodsByName.get(checkArgument.value());
+		}
 
-    	Method methodToCheck = func.getMethodToCheck(parameterReader.getCurrentParameterIndex());
     	if (methodToCheck != null) {
     		// try {
     		//     parameterValue = <module>.<methodToCheck>(parameterValue);
