@@ -113,16 +113,13 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
         }
     }
 
-    @HLEFunction(nid = 0x2A2B3DE0, version = 303)
+    @HLEFunction(nid = 0x2A2B3DE0, version = 303, checkInsideInterrupt = true)
     public void sceUtilityLoadModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int module = cpu.gpr[4];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
 
         String moduleName = getModuleName(module);
         int result = hleUtilityLoadModule(module, moduleName);
@@ -135,17 +132,14 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
         cpu.gpr[2] = result;
     }
 
-    @HLEFunction(nid = 0xE49BFE92, version = 303)
+    @HLEFunction(nid = 0xE49BFE92, version = 303, checkInsideInterrupt = true)
     public void sceUtilityUnloadModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int module = cpu.gpr[4];
 
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
 
         String moduleName = getModuleName(module);
         log.info(String.format("sceUtilityUnloadModule(module=0x%04X) %s unloaded", module, moduleName));

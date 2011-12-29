@@ -320,7 +320,7 @@ public class ModuleMgrForUser extends HLEModule {
         return Modules.ThreadManForUserModule.getCurrentThread().moduleid;
     }
 
-    @HLEFunction(nid = 0xB7F46618, version = 150)
+    @HLEFunction(nid = 0xB7F46618, version = 150, checkInsideInterrupt = true)
     public void sceKernelLoadModuleByID(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -333,10 +333,7 @@ public class ModuleMgrForUser extends HLEModule {
             log.debug("sceKernelLoadModuleByID(uid=0x" + Integer.toHexString(uid) + "('" + name + "')" + ",option=0x" + Integer.toHexString(option_addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         SceKernelLMOption lmOption = null;
         if (option_addr != 0) {
             lmOption = new SceKernelLMOption();
@@ -347,7 +344,7 @@ public class ModuleMgrForUser extends HLEModule {
         hleKernelLoadModule(processor, name, 0, uid, true);
     }
 
-    @HLEFunction(nid = 0x977DE386, version = 150)
+    @HLEFunction(nid = 0x977DE386, version = 150, checkInsideInterrupt = true)
     public void sceKernelLoadModule(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -361,10 +358,7 @@ public class ModuleMgrForUser extends HLEModule {
             log.debug("sceKernelLoadModule(path='" + name + "',flags=0x" + Integer.toHexString(flags) + ",option=0x" + Integer.toHexString(option_addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         SceKernelLMOption lmOption = null;
         if (option_addr != 0) {
             lmOption = new SceKernelLMOption();
@@ -375,7 +369,7 @@ public class ModuleMgrForUser extends HLEModule {
         hleKernelLoadModule(processor, name, flags, 0, false);
     }
 
-    @HLEFunction(nid = 0x710F61B5, version = 150)
+    @HLEFunction(nid = 0x710F61B5, version = 150, checkInsideInterrupt = true)
     public void sceKernelLoadModuleMs(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -384,7 +378,7 @@ public class ModuleMgrForUser extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0xF9275D98, version = 150)
+    @HLEFunction(nid = 0xF9275D98, version = 150, checkInsideInterrupt = true)
     public void sceKernelLoadModuleBufferUsbWlan(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -393,7 +387,7 @@ public class ModuleMgrForUser extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0x50F0C1EC, version = 150)
+    @HLEFunction(nid = 0x50F0C1EC, version = 150, checkInsideInterrupt = true)
     public void sceKernelStartModule(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -408,10 +402,7 @@ public class ModuleMgrForUser extends HLEModule {
             log.debug("sceKernelStartModule(uid=0x" + Integer.toHexString(uid) + ", argsize=" + argsize + ", argp=0x" + Integer.toHexString(argp_addr) + ", status=0x" + Integer.toHexString(status_addr) + ", option=0x" + Integer.toHexString(option_addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
         SceKernelSMOption smOption = null;
         if (option_addr != 0) {
@@ -487,7 +478,7 @@ public class ModuleMgrForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xD1FF982A, version = 150)
+    @HLEFunction(nid = 0xD1FF982A, version = 150, checkInsideInterrupt = true)
     public void sceKernelStopModule(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -500,10 +491,7 @@ public class ModuleMgrForUser extends HLEModule {
 
         log.info("sceKernelStopModule(uid=0x" + Integer.toHexString(uid) + ", argsize=" + argsize + ", argp=0x" + Integer.toHexString(argp_addr) + ", status=0x" + Integer.toHexString(status_addr) + ", option=0x" + Integer.toHexString(option_addr) + ")");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
         if (sceModule == null) {
             log.warn("sceKernelStopModule - unknown module UID 0x" + Integer.toHexString(uid));
@@ -545,7 +533,7 @@ public class ModuleMgrForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x2E0911AA, version = 150)
+    @HLEFunction(nid = 0x2E0911AA, version = 150, checkInsideInterrupt = true)
     public void sceKernelUnloadModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -553,10 +541,7 @@ public class ModuleMgrForUser extends HLEModule {
 
         log.info("sceKernelUnloadModule(uid=" + Integer.toHexString(uid) + ")");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
         if (sceModule == null) {
             log.warn("sceKernelUnloadModule unknown module UID 0x" + Integer.toHexString(uid));
@@ -570,7 +555,7 @@ public class ModuleMgrForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xD675EBB8, version = 150)
+    @HLEFunction(nid = 0xD675EBB8, version = 150, checkInsideInterrupt = true)
     public void sceKernelSelfStopUnloadModule(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -587,10 +572,7 @@ public class ModuleMgrForUser extends HLEModule {
                     + ",options_addr=0x" + Integer.toHexString(options_addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         SceModule sceModule = Managers.modules.getModuleByUID(getSelfModuleId());
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelThreadInfo thread = null;
@@ -614,7 +596,7 @@ public class ModuleMgrForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x8f2df740, version = 150)
+    @HLEFunction(nid = 0x8f2df740, version = 150, checkInsideInterrupt = true)
     public void sceKernelStopUnloadSelfModuleWithStatus(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -633,10 +615,7 @@ public class ModuleMgrForUser extends HLEModule {
                     + ",options_addr=0x" + Integer.toHexString(options_addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         SceModule sceModule = Managers.modules.getModuleByUID(getSelfModuleId());
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelThreadInfo thread = null;
@@ -661,7 +640,7 @@ public class ModuleMgrForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xCC1D3699, version = 150)
+    @HLEFunction(nid = 0xCC1D3699, version = 150, checkInsideInterrupt = true)
     public void sceKernelStopUnloadSelfModule(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -678,10 +657,7 @@ public class ModuleMgrForUser extends HLEModule {
                     + ",option_addr=0x" + Integer.toHexString(options_addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         SceModule sceModule = Managers.modules.getModuleByUID(getSelfModuleId());
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelThreadInfo thread = null;
@@ -705,7 +681,7 @@ public class ModuleMgrForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x644395E2, version = 150)
+    @HLEFunction(nid = 0x644395E2, version = 150, checkInsideInterrupt = true)
     public void sceKernelGetModuleIdList(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -714,7 +690,7 @@ public class ModuleMgrForUser extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0x748CBED9, version = 150)
+    @HLEFunction(nid = 0x748CBED9, version = 150, checkInsideInterrupt = true)
     public void sceKernelQueryModuleInfo(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -726,10 +702,7 @@ public class ModuleMgrForUser extends HLEModule {
             log.debug("sceKernelQueryModuleInfo UID 0x" + Integer.toHexString(uid) + " info " + String.format("0x%08X", info_addr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
         if (sceModule == null) {
             log.warn("sceKernelQueryModuleInfo unknown module UID 0x" + Integer.toHexString(uid));
@@ -745,7 +718,7 @@ public class ModuleMgrForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xF0A26395, version = 150)
+    @HLEFunction(nid = 0xF0A26395, version = 150, checkInsideInterrupt = true)
     public void sceKernelGetModuleId(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -755,14 +728,11 @@ public class ModuleMgrForUser extends HLEModule {
             log.debug("sceKernelGetModuleId returning 0x" + Integer.toHexString(moduleid));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         cpu.gpr[2] = moduleid;
     }
 
-    @HLEFunction(nid = 0xD8B73127, version = 150)
+    @HLEFunction(nid = 0xD8B73127, version = 150, checkInsideInterrupt = true)
     public void sceKernelGetModuleIdByAddress(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -772,10 +742,7 @@ public class ModuleMgrForUser extends HLEModule {
             log.debug("sceKernelGetModuleIdByAddress(addr=0x" + Integer.toHexString(addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         SceModule module = Managers.modules.getModuleByAddress(addr);
         if (module != null) {
             cpu.gpr[2] = module.modid;

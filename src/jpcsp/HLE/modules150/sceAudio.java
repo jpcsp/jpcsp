@@ -230,7 +230,7 @@ public class sceAudio extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x80F1F7E0, version = 150, moduleName = "sceAudio_driver")
+    @HLEFunction(nid = 0x80F1F7E0, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
     public void sceAudioInit(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -239,7 +239,7 @@ public class sceAudio extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0x210567F7, version = 150, moduleName = "sceAudio_driver")
+    @HLEFunction(nid = 0x210567F7, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
     public void sceAudioEnd(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -248,7 +248,7 @@ public class sceAudio extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0xA2BEAA6C, version = 150, moduleName = "sceAudio_driver")
+    @HLEFunction(nid = 0xA2BEAA6C, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
     public void sceAudioSetFrequency(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -264,7 +264,7 @@ public class sceAudio extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xB61595C0, version = 150, moduleName = "sceAudio_driver")
+    @HLEFunction(nid = 0xB61595C0, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
     public void sceAudioLoopbackTest(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -273,7 +273,7 @@ public class sceAudio extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0x927AC32B, version = 150, moduleName = "sceAudio_driver")
+    @HLEFunction(nid = 0x927AC32B, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
     public void sceAudioSetVolumeOffset(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -282,7 +282,7 @@ public class sceAudio extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0x8C1009B2, version = 150)
+    @HLEFunction(nid = 0x8C1009B2, version = 150, checkInsideInterrupt = true)
     public void sceAudioOutput(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -290,10 +290,7 @@ public class sceAudio extends HLEModule {
         int vol = cpu.gpr[5];
         int pvoid_buf = cpu.gpr[6];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!Memory.isAddressGood(pvoid_buf)) {
             log.warn("sceAudioOutput bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
@@ -308,7 +305,7 @@ public class sceAudio extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x136CAF51, version = 150)
+    @HLEFunction(nid = 0x136CAF51, version = 150, checkInsideInterrupt = true)
     public void sceAudioOutputBlocking(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -316,10 +313,7 @@ public class sceAudio extends HLEModule {
         int vol = cpu.gpr[5];
         int pvoid_buf = cpu.gpr[6];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
 
         if (pvoid_buf == 0) {
             if (!pspPCMChannels[channel].isDrained()) {
@@ -353,7 +347,7 @@ public class sceAudio extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xE2D56B2D, version = 150)
+    @HLEFunction(nid = 0xE2D56B2D, version = 150, checkInsideInterrupt = true)
     public void sceAudioOutputPanned(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -362,10 +356,7 @@ public class sceAudio extends HLEModule {
         int rightvol = cpu.gpr[6];
         int pvoid_buf = cpu.gpr[7];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!Memory.isAddressGood(pvoid_buf)) {
             log.warn("sceAudioOutputPanned bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
@@ -380,7 +371,7 @@ public class sceAudio extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x13F592BC, version = 150)
+    @HLEFunction(nid = 0x13F592BC, version = 150, checkInsideInterrupt = true)
     public void sceAudioOutputPannedBlocking(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -389,10 +380,7 @@ public class sceAudio extends HLEModule {
         int rightvol = cpu.gpr[6];
         int pvoid_buf = cpu.gpr[7];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
 
         if (pvoid_buf == 0) {
             // Tested on PSP:
@@ -427,7 +415,7 @@ public class sceAudio extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x5EC81C55, version = 150)
+    @HLEFunction(nid = 0x5EC81C55, version = 150, checkInsideInterrupt = true)
     public void sceAudioChReserve(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -435,10 +423,7 @@ public class sceAudio extends HLEModule {
         int samplecount = cpu.gpr[5];
         int format = cpu.gpr[6];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (disableChReserve) {
             log.warn("IGNORED sceAudioChReserve channel= " + channel + " samplecount = " + samplecount + " format = " + format);
             cpu.gpr[2] = -1;
@@ -472,7 +457,7 @@ public class sceAudio extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x41EFADE7, version = 150)
+    @HLEFunction(nid = 0x41EFADE7, version = 150, checkInsideInterrupt = true)
     public void sceAudioOneshotOutput(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -481,16 +466,13 @@ public class sceAudio extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0x6FC46853, version = 150)
+    @HLEFunction(nid = 0x6FC46853, version = 150, checkInsideInterrupt = true)
     public void sceAudioChRelease(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int channel = cpu.gpr[4];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (pspPCMChannels[channel].isReserved()) {
             pspPCMChannels[channel].release();
             pspPCMChannels[channel].setReserved(false);
@@ -500,20 +482,17 @@ public class sceAudio extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xB011922F, version = 150)
+    @HLEFunction(nid = 0xB011922F, version = 150, checkInsideInterrupt = true)
     public void sceAudioGetChannelRestLength(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int channel = cpu.gpr[4];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         cpu.gpr[2] = hleAudioGetChannelRestLen(pspPCMChannels[channel]);
     }
 
-    @HLEFunction(nid = 0xCB2E439E, version = 150)
+    @HLEFunction(nid = 0xCB2E439E, version = 150, checkInsideInterrupt = true)
     public void sceAudioSetChannelDataLen(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -524,30 +503,24 @@ public class sceAudio extends HLEModule {
             log.debug(String.format("sceAudioSetChannelDataLen channel=%d, sampleCount=%d", channel, samplecount));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         pspPCMChannels[channel].setSampleLength(samplecount);
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x95FD0C2D, version = 150)
+    @HLEFunction(nid = 0x95FD0C2D, version = 150, checkInsideInterrupt = true)
     public void sceAudioChangeChannelConfig(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int channel = cpu.gpr[4];
         int format = cpu.gpr[5];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         pspPCMChannels[channel].setFormat(format);
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0xB7E1D8E7, version = 150)
+    @HLEFunction(nid = 0xB7E1D8E7, version = 150, checkInsideInterrupt = true)
     public void sceAudioChangeChannelVolume(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -555,14 +528,11 @@ public class sceAudio extends HLEModule {
         int leftvol = cpu.gpr[5];
         int rightvol = cpu.gpr[6];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         cpu.gpr[2] = changeChannelVolume(pspPCMChannels[channel], leftvol, rightvol);
     }
 
-    @HLEFunction(nid = 0x01562BA3, version = 150)
+    @HLEFunction(nid = 0x01562BA3, version = 150, checkInsideInterrupt = true)
     public void sceAudioOutput2Reserve(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -575,37 +545,31 @@ public class sceAudio extends HLEModule {
         hleAudioSRCChReserve(processor, samplecount, 44100, SoundChannel.FORMAT_STEREO);
     }
 
-    @HLEFunction(nid = 0x43196845, version = 150)
+    @HLEFunction(nid = 0x43196845, version = 150, checkInsideInterrupt = true)
     public void sceAudioOutput2Release(Processor processor) {
         sceAudioSRCChRelease(processor);
     }
 
-    @HLEFunction(nid = 0x2D53F36E, version = 150)
+    @HLEFunction(nid = 0x2D53F36E, version = 150, checkInsideInterrupt = true)
     public void sceAudioOutput2OutputBlocking(Processor processor) {
         sceAudioSRCOutputBlocking(processor);
     }
 
-    @HLEFunction(nid = 0x647CEF33, version = 150)
+    @HLEFunction(nid = 0x647CEF33, version = 150, checkInsideInterrupt = true)
     public void sceAudioOutput2GetRestSample(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         cpu.gpr[2] = hleAudioGetChannelRestLen(pspSRCChannel);
     }
 
-    @HLEFunction(nid = 0x63F2889C, version = 150)
+    @HLEFunction(nid = 0x63F2889C, version = 150, checkInsideInterrupt = true)
     public void sceAudioOutput2ChangeLength(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int samplecount = cpu.gpr[4];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (pspSRCChannel.isReserved()) {
             pspSRCChannel.setSampleLength(samplecount);
             cpu.gpr[2] = 0;
@@ -614,7 +578,7 @@ public class sceAudio extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x38553111, version = 150)
+    @HLEFunction(nid = 0x38553111, version = 150, checkInsideInterrupt = true)
     public void sceAudioSRCChReserve(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -629,14 +593,11 @@ public class sceAudio extends HLEModule {
         hleAudioSRCChReserve(processor, samplecount, freq, format);
     }
 
-    @HLEFunction(nid = 0x5C37C0AE, version = 150)
+    @HLEFunction(nid = 0x5C37C0AE, version = 150, checkInsideInterrupt = true)
     public void sceAudioSRCChRelease(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (pspSRCChannel.isReserved()) {
             pspSRCChannel.release();
             pspSRCChannel.setReserved(false);
@@ -645,17 +606,14 @@ public class sceAudio extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0xE0727056, version = 150)
+    @HLEFunction(nid = 0xE0727056, version = 150, checkInsideInterrupt = true)
     public void sceAudioSRCOutputBlocking(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int vol = cpu.gpr[4];
         int buf = cpu.gpr[5];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (buf == 0) {
             // Tested on PSP:
             // SRC audio also delays when buf == 0, in order to drain all
@@ -688,7 +646,7 @@ public class sceAudio extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x086E5895, version = 150)
+    @HLEFunction(nid = 0x086E5895, version = 150, checkInsideInterrupt = true)
     public void sceAudioInputBlocking(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -697,7 +655,7 @@ public class sceAudio extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0x6D4BEC68, version = 150)
+    @HLEFunction(nid = 0x6D4BEC68, version = 150, checkInsideInterrupt = true)
     public void sceAudioInput(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -706,7 +664,7 @@ public class sceAudio extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0xA708C6A6, version = 150)
+    @HLEFunction(nid = 0xA708C6A6, version = 150, checkInsideInterrupt = true)
     public void sceAudioGetInputLength(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -715,7 +673,7 @@ public class sceAudio extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0x87B2E651, version = 150)
+    @HLEFunction(nid = 0x87B2E651, version = 150, checkInsideInterrupt = true)
     public void sceAudioWaitInputEnd(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -724,7 +682,7 @@ public class sceAudio extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0x7DE61688, version = 150)
+    @HLEFunction(nid = 0x7DE61688, version = 150, checkInsideInterrupt = true)
     public void sceAudioInputInit(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -733,7 +691,7 @@ public class sceAudio extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0xE926D3FB, version = 150)
+    @HLEFunction(nid = 0xE926D3FB, version = 150, checkInsideInterrupt = true)
     public void sceAudioInputInitEx(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -742,7 +700,7 @@ public class sceAudio extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0xA633048E, version = 150)
+    @HLEFunction(nid = 0xA633048E, version = 150, checkInsideInterrupt = true)
     public void sceAudioPollInputEnd(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -751,16 +709,13 @@ public class sceAudio extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0xE9D97901, version = 150)
+    @HLEFunction(nid = 0xE9D97901, version = 150, checkInsideInterrupt = true)
     public void sceAudioGetChannelRestLen(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int channel = cpu.gpr[4];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         cpu.gpr[2] = hleAudioGetChannelRestLen(pspPCMChannels[channel]);
     }
 

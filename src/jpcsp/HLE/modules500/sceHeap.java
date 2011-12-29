@@ -48,7 +48,7 @@ public class sceHeap extends HLEModule {
     private HashMap<Integer, SysMemInfo> heapMap = new HashMap<Integer, SysMemInfo>();
     private HashMap<Integer, SysMemInfo> heapMemMap = new HashMap<Integer, SysMemInfo>();
 
-    @HLEFunction(nid = 0x0E875980, version = 500)
+    @HLEFunction(nid = 0x0E875980, version = 500, checkInsideInterrupt = true)
     public void sceHeapReallocHeapMemory(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -60,15 +60,12 @@ public class sceHeap extends HLEModule {
                 + ", mem_addr=0x" + Integer.toHexString(mem_addr)
                 + ", memSize=0x" + Integer.toHexString(memSize));
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0x1C84B58D, version = 500)
+    @HLEFunction(nid = 0x1C84B58D, version = 500, checkInsideInterrupt = true)
     public void sceHeapReallocHeapMemoryWithOption(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -82,15 +79,12 @@ public class sceHeap extends HLEModule {
                 + ", memSize=0x" + Integer.toHexString(memSize)
                 + ", param_addr=0x" + Integer.toHexString(param_addr));
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0x2ABADC63, version = 500)
+    @HLEFunction(nid = 0x2ABADC63, version = 500, checkInsideInterrupt = true)
     public void sceHeapFreeHeapMemory(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -102,10 +96,7 @@ public class sceHeap extends HLEModule {
                     + ", mem_addr=0x" + Integer.toHexString(mem_addr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         // Try to free memory back to the heap.
         if (heapMemMap.containsKey(mem_addr)) {
             Modules.SysMemUserForUserModule.free(heapMemMap.get(mem_addr));
@@ -117,7 +108,7 @@ public class sceHeap extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x2A0C2009, version = 500)
+    @HLEFunction(nid = 0x2A0C2009, version = 500, checkInsideInterrupt = true)
     public void sceHeapGetMallinfo(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -127,15 +118,12 @@ public class sceHeap extends HLEModule {
         log.warn("UNIMPLEMENTED: sceHeapGetMallinfo heap_addr=0x" + Integer.toHexString(heap_addr)
                 + ", info_addr=0x" + Integer.toHexString(info_addr));
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0x2B7299D8, version = 500)
+    @HLEFunction(nid = 0x2B7299D8, version = 500, checkInsideInterrupt = true)
     public void sceHeapAllocHeapMemoryWithOption(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -150,10 +138,7 @@ public class sceHeap extends HLEModule {
                     + ", param_addr=0x" + Integer.toHexString(param_addr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (Memory.isAddressGood(param_addr)) {
             int paramSize = mem.read32(param_addr);
             if ((paramSize >= 4) && (paramSize <= 8)) {
@@ -180,7 +165,7 @@ public class sceHeap extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x4929B40D, version = 500)
+    @HLEFunction(nid = 0x4929B40D, version = 500, checkInsideInterrupt = true)
     public void sceHeapGetTotalFreeSize(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -188,15 +173,12 @@ public class sceHeap extends HLEModule {
 
         log.warn("UNIMPLEMENTED: sceHeapGetTotalFreeSize heap_addr=0x" + Integer.toHexString(heap_addr));
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0x7012BBDD, version = 500)
+    @HLEFunction(nid = 0x7012BBDD, version = 500, checkInsideInterrupt = true)
     public void sceHeapIsAllocatedHeapMemory(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -206,15 +188,12 @@ public class sceHeap extends HLEModule {
         log.warn("UNIMPLEMENTED: sceHeapIsAllocatedHeapMemory heap_addr=0x" + Integer.toHexString(heap_addr)
                 + ", mem_addr=0x" + Integer.toHexString(mem_addr));
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0x70210B73, version = 500)
+    @HLEFunction(nid = 0x70210B73, version = 500, checkInsideInterrupt = true)
     public void sceHeapDeleteHeap(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -224,10 +203,7 @@ public class sceHeap extends HLEModule {
             log.debug("sceHeapDeleteHeap heap_addr=0x" + Integer.toHexString(heap_addr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (heapMap.containsKey(heap_addr)) {
             Modules.SysMemUserForUserModule.free(heapMap.get(heap_addr));
             cpu.gpr[2] = 0;
@@ -236,7 +212,7 @@ public class sceHeap extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x7DE281C2, version = 500)
+    @HLEFunction(nid = 0x7DE281C2, version = 500, checkInsideInterrupt = true)
     public void sceHeapCreateHeap(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -253,10 +229,7 @@ public class sceHeap extends HLEModule {
                     + ", param_addr=0x" + Integer.toHexString(param_addr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         int memType = PSP_SMEM_Low;
         if ((attr & PSP_HEAP_ATTR_ADDR_HIGH) == PSP_HEAP_ATTR_ADDR_HIGH) {
             memType = PSP_SMEM_High;
@@ -281,7 +254,7 @@ public class sceHeap extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xA8E102A0, version = 500)
+    @HLEFunction(nid = 0xA8E102A0, version = 500, checkInsideInterrupt = true)
     public void sceHeapAllocHeapMemory(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -293,10 +266,7 @@ public class sceHeap extends HLEModule {
                     + ", memSize=0x" + Integer.toHexString(memSize));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         // Try to allocate memory from the heap and return it's address.
         SysMemInfo heapInfo = null;
         SysMemInfo heapMemInfo = null;

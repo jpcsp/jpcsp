@@ -40,7 +40,7 @@ public class sceNpAuth extends HLEModule {
     private int npMaxMemSize;  // Maximum memory used by the NP utility.
     private int npFreeMemSize; // Free memory available to use by the NP utility.
 
-    @HLEFunction(nid = 0xA1DE86F8, version = 150)
+    @HLEFunction(nid = 0xA1DE86F8, version = 150, checkInsideInterrupt = true)
     public void sceNpAuth_A1DE86F8(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -52,17 +52,14 @@ public class sceNpAuth extends HLEModule {
                 + ", stackSize=0x" + Integer.toHexString(stackSize)
                 + ", threadPriority=0x" + Integer.toHexString(threadPriority) + ")");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         npMemSize = poolSize;
         npMaxMemSize = poolSize / 2;    // Dummy
         npFreeMemSize = poolSize - 16;  // Dummy.
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0xCD86A656, version = 150)
+    @HLEFunction(nid = 0xCD86A656, version = 150, checkInsideInterrupt = true)
     public void sceNpAuth_CD86A656(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -71,10 +68,7 @@ public class sceNpAuth extends HLEModule {
 
         log.warn("PARTIAL: sceNpAuth_CD86A656 (memStatAddr=0x" + Integer.toHexString(memStatAddr) + ")");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (Memory.isAddressGood(memStatAddr)) {
             mem.write32(memStatAddr, npMemSize);
             mem.write32(memStatAddr + 4, npMaxMemSize);

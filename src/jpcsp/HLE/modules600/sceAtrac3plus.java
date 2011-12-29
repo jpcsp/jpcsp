@@ -30,7 +30,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules250.sceAtrac3plus {
     @Override
     public String getName() { return "sceAtrac3plus"; }
 
-    @HLEFunction(nid = 0x231FC6B7, version = 600)
+    @HLEFunction(nid = 0x231FC6B7, version = 600, checkInsideInterrupt = true)
     public void _sceAtracGetContextAddress(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -39,10 +39,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules250.sceAtrac3plus {
 
         log.warn(String.format("PARTIAL: _sceAtracGetContextAddress at3IDNum=%d", at3IDNum));
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         SysMemInfo at3ctx = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, String.format("ThreadMan-AtracCtx"), SysMemUserForUser.PSP_SMEM_High, 200, 0);
         mem.write32(at3ctx.addr + 151, 1); // Unknown.
 

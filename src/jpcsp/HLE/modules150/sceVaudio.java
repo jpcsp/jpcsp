@@ -135,16 +135,13 @@ public class sceVaudio extends HLEModule {
         return ret;
     }
 
-    @HLEFunction(nid = 0x67585DFD, version = 150)
+    @HLEFunction(nid = 0x67585DFD, version = 150, checkInsideInterrupt = true)
     public void sceVaudioChRelease(Processor processor) {
         CpuState cpu = processor.cpu;
 
         log.warn("PARTIAL: sceVaudioChRelease");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (pspVaudioChannel.isReserved()) {
             pspVaudioChannel.release();
             pspVaudioChannel.setReserved(false);
@@ -154,7 +151,7 @@ public class sceVaudio extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x03B6807D, version = 150)
+    @HLEFunction(nid = 0x03B6807D, version = 150, checkInsideInterrupt = true)
     public void sceVaudioChReserve(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -164,10 +161,7 @@ public class sceVaudio extends HLEModule {
 
         log.warn("PARTIAL: sceVaudioChReserve: samplecount=" + samplecount + ", freq=" + freq + ", format=" + format);
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!pspVaudioChannel.isReserved()) {
             pspVaudioChannel.setReserved(true);
             pspVaudioChannel.setSampleLength(samplecount);
@@ -179,7 +173,7 @@ public class sceVaudio extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x8986295E, version = 150)
+    @HLEFunction(nid = 0x8986295E, version = 150, checkInsideInterrupt = true)
     public void sceVaudioOutputBlocking(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -189,10 +183,7 @@ public class sceVaudio extends HLEModule {
         log.warn("PARTIAL: sceVaudioOutputBlocking: vol=0x" + Integer.toHexString(vol)
                     + ", buf=0x" + Integer.toHexString(buf));
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!Memory.isAddressGood(buf)) {
             log.warn("sceVaudioOutputBlocking bad pointer " + String.format("0x%08X", buf));
             cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
@@ -218,7 +209,7 @@ public class sceVaudio extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x346FBE94, version = 150)
+    @HLEFunction(nid = 0x346FBE94, version = 150, checkInsideInterrupt = true)
     public void sceVaudioSetEffectType(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -228,14 +219,11 @@ public class sceVaudio extends HLEModule {
         log.warn("UNIMPLEMENTED: sceVaudioSetEffectType: type=" + type
                     + ", vol=0x" + Integer.toHexString(vol));
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0xCBD4AC51, version = 150)
+    @HLEFunction(nid = 0xCBD4AC51, version = 150, checkInsideInterrupt = true)
     public void sceVaudioSetAlcMode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -243,10 +231,7 @@ public class sceVaudio extends HLEModule {
 
         log.warn("UNIMPLEMENTED: sceVaudioSetAlcMode: alcMode=" + alcMode);
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         cpu.gpr[2] = 0;
     }
 
