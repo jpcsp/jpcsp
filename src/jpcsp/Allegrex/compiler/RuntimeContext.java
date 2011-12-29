@@ -51,6 +51,7 @@ import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;
 import jpcsp.util.CpuDurationStatistics;
 import jpcsp.util.DurationStatistics;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -1005,6 +1006,11 @@ public class RuntimeContext {
         }
 
         return true;
+    }
+
+    public static String readStringZ(int address, int maxLength) {
+    	//System.err.println("RuntimeContext.readStringZ: " + maxLength);
+    	return Utilities.readStringZ(address);
     }
 
     public static int checkMemoryRead32(int address, int pc) throws StopThreadException {

@@ -22,6 +22,7 @@ import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._v1;
 import static jpcsp.Allegrex.Common._zr;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
@@ -49,6 +50,7 @@ import jpcsp.HLE.HLEUidClass;
 import jpcsp.HLE.HLEUidObjectMapping;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.StringInfo;
 import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.TErrorPointer32;
 import jpcsp.HLE.TPointer;
@@ -855,7 +857,7 @@ public class CompilerContext implements ICompilerContext {
      * @param afterSyscallLabel             the Label pointing after the call to the syscall function
      * @param catchSceKernelErrorException  the Label pointing to the SceKernelErrorException catch handler
      */
-    private void loadParameter(CompilerParameterReader parameterReader, HLEModuleFunctionReflection func, Class<?> parameterType, Label afterSyscallLabel, Label catchSceKernelErrorException) {
+    private void loadParameter(CompilerParameterReader parameterReader, HLEModuleFunctionReflection func, Class<?> parameterType, Annotation[] parameterAnnotations, Label afterSyscallLabel, Label catchSceKernelErrorException) {
     	if (parameterType == Processor.class) {
     		loadProcessor();
     		parameterReader.incrementCurrentStackSize();
@@ -870,6 +872,25 @@ public class CompilerContext implements ICompilerContext {
     		parameterReader.incrementCurrentStackSize(2);
     	} else if (parameterType == boolean.class) {
     		parameterReader.loadNextInt();
+    		parameterReader.incrementCurrentStackSize();
+    	} else if (parameterType == String.class) {
+    		parameterReader.loadNextInt();
+
+    		int maxLength = 16 * 1024;
+    		
+    		// @TODO: Use the encoding @StringInfo annotation.
+    		for (Annotation parameterAnnotation : parameterAnnotations) {
+    			if (parameterAnnotation instanceof StringInfo) {
+    				StringInfo stringInfo = ((StringInfo)parameterAnnotation);
+    				maxLength = stringInfo.maxLength();
+    			}
+    		}
+    		mv.visitIntInsn(Opcodes.SIPUSH, maxLength);
+   			mv.visitMethodInsn(
+				Opcodes.INVOKESTATIC,
+				runtimeContextInternalName,
+				"readStringZ", "(II)" + Type.getDescriptor(String.class)
+   			);
     		parameterReader.incrementCurrentStackSize();
     	} else if (parameterType == TPointer.class || parameterType == TPointer32.class || parameterType == TPointer64.class || parameterType == TErrorPointer32.class) {
     		// if (checkMemoryAccess()) {
@@ -1159,9 +1180,13 @@ public class CompilerContext implements ICompilerContext {
         Class<?> returnType = func.getHLEModuleMethod().getReturnType();
         StringBuilder methodDescriptor = new StringBuilder();
         methodDescriptor.append("(");
+        
+        Annotation[][] paramsAnotations = func.getHLEModuleMethod().getParameterAnnotations();
+        int paramIndex = 0;
         for (Class<?> parameterType : parameterTypes) {
         	methodDescriptor.append(Type.getDescriptor(parameterType));
-        	loadParameter(parameterReader, func, parameterType, afterSyscallLabel, catchSceKernelErrorException);
+        	loadParameter(parameterReader, func, parameterType, paramsAnotations[paramIndex], afterSyscallLabel, catchSceKernelErrorException);
+        	paramIndex++;
         }
         methodDescriptor.append(")");
         methodDescriptor.append(Type.getDescriptor(returnType));

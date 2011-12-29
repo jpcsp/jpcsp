@@ -88,6 +88,7 @@ import jpcsp.Debugger.DumpDebugState;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.StringInfo;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.TPointer64;
@@ -3359,17 +3360,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x446D8DE6, version = 150)
-    public void sceKernelCreateThread(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int name_addr = cpu.gpr[4];
-        int entry_addr = cpu.gpr[5];
-        int initPriority = cpu.gpr[6];
-        int stackSize = cpu.gpr[7];
-        int attr = cpu.gpr[8];
-        int option_addr = cpu.gpr[9];
-        String name = readStringNZ(name_addr, 32);
-
+    public int sceKernelCreateThread(@StringInfo(maxLength = 32) String name, int entry_addr, int initPriority, int stackSize, int attr, int option_addr) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelCreateThread redirecting to hleKernelCreateThread");
         }
@@ -3378,27 +3369,28 @@ public class ThreadManForUser extends HLEModule {
         if (thread.stackSize > 0 && thread.getStackAddr() == 0) {
             log.warn("sceKernelCreateThread not enough memory to create the stack");
             hleDeleteThread(thread);
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_NO_MEMORY;
-        } else {
-            // Inherit kernel mode if user mode bit is not set
-            if (currentThread.isKernelMode() && !SceKernelThreadInfo.isUserMode(thread.attr)) {
-                log.debug("sceKernelCreateThread inheriting kernel mode");
-                thread.attr |= PSP_THREAD_ATTR_KERNEL;
-            }
-
-            // Inherit user mode
-            if (currentThread.isUserMode()) {
-                if (!SceKernelThreadInfo.isUserMode(thread.attr)) {
-                    log.debug("sceKernelCreateThread inheriting user mode");
-                }
-                thread.attr |= PSP_THREAD_ATTR_USER;
-                // Always remove kernel mode bit
-                thread.attr &= ~PSP_THREAD_ATTR_KERNEL;
-            }
-            cpu.gpr[2] = thread.uid;
-
-            triggerThreadEvent(thread, currentThread, THREAD_EVENT_CREATE);
+            return SceKernelErrors.ERROR_KERNEL_NO_MEMORY;
         }
+
+        // Inherit kernel mode if user mode bit is not set
+        if (currentThread.isKernelMode() && !SceKernelThreadInfo.isUserMode(thread.attr)) {
+            log.debug("sceKernelCreateThread inheriting kernel mode");
+            thread.attr |= PSP_THREAD_ATTR_KERNEL;
+        }
+
+        // Inherit user mode
+        if (currentThread.isUserMode()) {
+            if (!SceKernelThreadInfo.isUserMode(thread.attr)) {
+                log.debug("sceKernelCreateThread inheriting user mode");
+            }
+            thread.attr |= PSP_THREAD_ATTR_USER;
+            // Always remove kernel mode bit
+            thread.attr &= ~PSP_THREAD_ATTR_KERNEL;
+        }
+        //int result = thread.uid;
+
+        triggerThreadEvent(thread, currentThread, THREAD_EVENT_CREATE);
+        return thread.uid;
     }
 
     /** mark a thread for deletion. */

@@ -107,7 +107,9 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 		return method;
 	}
 
+	@Deprecated
 	protected void prepareParameterDecodingRunList() throws Throwable {
+		/*
 		Annotation[][] paramsAnotations = this.hleModuleMethod.getParameterAnnotations();
 		
 		decodingRunListList = new LinkedList<Method>();
@@ -172,9 +174,12 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 
 			paramIndex++;
 		}
+		*/
 	}
 
+	@Deprecated
 	private void prepareReturnValueRunList() {
+		/*
 		try {
 			setReturnValueMethod = getRunListMethod("setReturnValueVoid");
 
@@ -206,6 +211,7 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 		} catch (Throwable o) {
 			Modules.log.error("prepareReturnValueRunList: ", o);
 		}
+		*/
 	}
 
 	protected void executeParameterDecodingRunList(RunListParams runListParams) throws Throwable {
