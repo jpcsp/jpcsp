@@ -35,16 +35,13 @@ public class sceNp extends HLEModule {
         return "sceNp";
     }
 
-    @HLEFunction(nid = 0x857B47D3, version = 150)
+    @HLEFunction(nid = 0x857B47D3, version = 150, checkInsideInterrupt = true)
     public void sceNp_857B47D3(Processor processor) {
         CpuState cpu = processor.cpu;
 
         log.info("sceNp_857B47D3");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         cpu.gpr[2] = 0;
     }
 

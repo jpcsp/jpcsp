@@ -2127,7 +2127,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x3251EA56, version = 150)
+    @HLEFunction(nid = 0x3251EA56, version = 150, checkInsideInterrupt = true)
     public void sceIoPollAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2138,14 +2138,11 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoPollAsync redirecting to hleIoWaitAsync");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         hleIoWaitAsync(id, res_addr, false, false);
     }
 
-    @HLEFunction(nid = 0xE23EEC33, version = 150)
+    @HLEFunction(nid = 0xE23EEC33, version = 150, checkInsideInterrupt = true)
     public void sceIoWaitAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2156,14 +2153,11 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoWaitAsync redirecting to hleIoWaitAsync");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         hleIoWaitAsync(id, res_addr, true, false);
     }
 
-    @HLEFunction(nid = 0x35DBD746, version = 150)
+    @HLEFunction(nid = 0x35DBD746, version = 150, checkInsideInterrupt = true)
     public void sceIoWaitAsyncCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2174,14 +2168,11 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoWaitAsyncCB redirecting to hleIoWaitAsync");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         hleIoWaitAsync(id, res_addr, true, true);
     }
 
-    @HLEFunction(nid = 0xCB05F8D6, version = 150)
+    @HLEFunction(nid = 0xCB05F8D6, version = 150, checkInsideInterrupt = true)
     public void sceIoGetAsyncStat(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2193,14 +2184,11 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoGetAsyncStat poll=0x" + Integer.toHexString(poll) + " redirecting to hleIoWaitAsync");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         hleIoWaitAsync(id, res_addr, (poll == 0), false);
     }
 
-    @HLEFunction(nid = 0xB293727F, version = 150)
+    @HLEFunction(nid = 0xB293727F, version = 150, checkInsideInterrupt = true)
     public void sceIoChangeAsyncPriority(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2211,10 +2199,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoChangeAsyncPriority id=0x" + Integer.toHexString(id) + ", priority=0x" + Integer.toHexString(priority));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (priority == -1) {
             priority = Modules.ThreadManForUserModule.getCurrentThread().currentPriority;
         }
@@ -2239,7 +2224,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xA12A0514, version = 150)
+    @HLEFunction(nid = 0xA12A0514, version = 150, checkInsideInterrupt = true)
     public void sceIoSetAsyncCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2251,10 +2236,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoSetAsyncCallback - id " + Integer.toHexString(id) + " cbid " + Integer.toHexString(cbid) + " arg 0x" + Integer.toHexString(notifyArg));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         IoInfo info = fileIds.get(id);
         if (info == null) {
             log.warn("sceIoSetAsyncCallback - unknown id " + Integer.toHexString(id));
@@ -2272,7 +2254,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x810C4BC3, version = 150)
+    @HLEFunction(nid = 0x810C4BC3, version = 150, checkInsideInterrupt = true)
     public void sceIoClose(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2282,15 +2264,12 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoClose redirecting to hleIoClose");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         hleIoClose(id, false);
         delayIoOperation(IoOperation.close);
     }
 
-    @HLEFunction(nid = 0xFF5940B6, version = 150)
+    @HLEFunction(nid = 0xFF5940B6, version = 150, checkInsideInterrupt = true)
     public void sceIoCloseAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2300,14 +2279,11 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoCloseAsync redirecting to hleIoClose");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         hleIoClose(id, true);
     }
 
-    @HLEFunction(nid = 0x109F50BC, version = 150)
+    @HLEFunction(nid = 0x109F50BC, version = 150, checkInsideInterrupt = true)
     public void sceIoOpen(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2319,15 +2295,12 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoOpen redirecting to hleIoOpen");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         hleIoOpen(filename_addr, flags, permissions, false);
         delayIoOperation(IoOperation.open);
     }
 
-    @HLEFunction(nid = 0x89AA9906, version = 150)
+    @HLEFunction(nid = 0x89AA9906, version = 150, checkInsideInterrupt = true)
     public void sceIoOpenAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2339,14 +2312,11 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoOpenAsync redirecting to hleIoOpen");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         hleIoOpen(filename_addr, flags, permissions, true);
     }
 
-    @HLEFunction(nid = 0x6A638D83, version = 150)
+    @HLEFunction(nid = 0x6A638D83, version = 150, checkInsideInterrupt = true)
     public void sceIoRead(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2354,15 +2324,12 @@ public class IoFileMgrForUser extends HLEModule {
         int data_addr = cpu.gpr[5];
         int size = cpu.gpr[6];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         hleIoRead(id, data_addr, size, false);
         delayIoOperation(IoOperation.read);
     }
 
-    @HLEFunction(nid = 0xA0B5A7C2, version = 150)
+    @HLEFunction(nid = 0xA0B5A7C2, version = 150, checkInsideInterrupt = true)
     public void sceIoReadAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2370,14 +2337,11 @@ public class IoFileMgrForUser extends HLEModule {
         int data_addr = cpu.gpr[5];
         int size = cpu.gpr[6];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         hleIoRead(id, data_addr, size, true);
     }
 
-    @HLEFunction(nid = 0x42EC03AC, version = 150)
+    @HLEFunction(nid = 0x42EC03AC, version = 150, checkInsideInterrupt = true)
     public void sceIoWrite(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2385,10 +2349,7 @@ public class IoFileMgrForUser extends HLEModule {
         int data_addr = cpu.gpr[5];
         int size = cpu.gpr[6];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         hleIoWrite(id, data_addr, size, false);
 
         // Do not delay output on stdout/stderr
@@ -2397,7 +2358,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x0FACAB19, version = 150)
+    @HLEFunction(nid = 0x0FACAB19, version = 150, checkInsideInterrupt = true)
     public void sceIoWriteAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2405,14 +2366,11 @@ public class IoFileMgrForUser extends HLEModule {
         int data_addr = cpu.gpr[5];
         int size = cpu.gpr[6];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         hleIoWrite(id, data_addr, size, true);
     }
 
-    @HLEFunction(nid = 0x27EB27B8, version = 150)
+    @HLEFunction(nid = 0x27EB27B8, version = 150, checkInsideInterrupt = true)
     public void sceIoLseek(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2424,15 +2382,12 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoLseek - id " + Integer.toHexString(id) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         hleIoLseek(id, offset, whence, true, false);
         delayIoOperation(IoOperation.seek);
     }
 
-    @HLEFunction(nid = 0x71B19E77, version = 150)
+    @HLEFunction(nid = 0x71B19E77, version = 150, checkInsideInterrupt = true)
     public void sceIoLseekAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2444,14 +2399,11 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoLseekAsync - id " + Integer.toHexString(id) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         hleIoLseek(id, offset, whence, true, true);
     }
 
-    @HLEFunction(nid = 0x68963324, version = 150)
+    @HLEFunction(nid = 0x68963324, version = 150, checkInsideInterrupt = true)
     public void sceIoLseek32(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2463,15 +2415,12 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoLseek32 - id " + Integer.toHexString(id) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         hleIoLseek(id, (long) offset, whence, false, false);
         delayIoOperation(IoOperation.seek);
     }
 
-    @HLEFunction(nid = 0x1B385D8F, version = 150)
+    @HLEFunction(nid = 0x1B385D8F, version = 150, checkInsideInterrupt = true)
     public void sceIoLseek32Async(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2483,14 +2432,11 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoLseek32Async - id " + Integer.toHexString(id) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         hleIoLseek(id, (long) offset, whence, false, true);
     }
 
-    @HLEFunction(nid = 0x63632449, version = 150)
+    @HLEFunction(nid = 0x63632449, version = 150, checkInsideInterrupt = true)
     public void sceIoIoctl(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2501,15 +2447,12 @@ public class IoFileMgrForUser extends HLEModule {
         int outdata_addr = cpu.gpr[8];
         int outlen = cpu.gpr[9];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         hleIoIoctl(id, cmd, indata_addr, inlen, outdata_addr, outlen, false);
         delayIoOperation(IoOperation.ioctl);
     }
 
-    @HLEFunction(nid = 0xE95A012B, version = 150)
+    @HLEFunction(nid = 0xE95A012B, version = 150, checkInsideInterrupt = true)
     public void sceIoIoctlAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2520,14 +2463,11 @@ public class IoFileMgrForUser extends HLEModule {
         int outdata_addr = cpu.gpr[8];
         int outlen = cpu.gpr[9];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         hleIoIoctl(id, cmd, indata_addr, inlen, outdata_addr, outlen, true);
     }
 
-    @HLEFunction(nid = 0xB29DDF9C, version = 150)
+    @HLEFunction(nid = 0xB29DDF9C, version = 150, checkInsideInterrupt = true)
     public void sceIoDopen(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2538,10 +2478,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoDopen dirname = " + dirname);
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         String pcfilename = getDeviceFilePath(dirname);
         if (pcfilename != null) {
             if (isUmdPath(pcfilename)) {
@@ -2600,17 +2537,14 @@ public class IoFileMgrForUser extends HLEModule {
         delayIoOperation(IoOperation.open);
     }
 
-    @HLEFunction(nid = 0xE3EB004C, version = 150)
+    @HLEFunction(nid = 0xE3EB004C, version = 150, checkInsideInterrupt = true)
     public void sceIoDread(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int id = cpu.gpr[4];
         int dirent_addr = cpu.gpr[5];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         IoDirInfo info = dirIds.get(id);
         if (info == null) {
             log.warn("sceIoDread unknown id " + Integer.toHexString(id));
@@ -2644,7 +2578,7 @@ public class IoFileMgrForUser extends HLEModule {
         delayIoOperation(IoOperation.read);
     }
 
-    @HLEFunction(nid = 0xEB092469, version = 150)
+    @HLEFunction(nid = 0xEB092469, version = 150, checkInsideInterrupt = true)
     public void sceIoDclose(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2654,10 +2588,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoDclose - id = " + Integer.toHexString(id));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         IoDirInfo info = dirIds.get(id);
         if (info == null) {
             log.warn("sceIoDclose - unknown id " + Integer.toHexString(id));
@@ -2673,7 +2604,7 @@ public class IoFileMgrForUser extends HLEModule {
         delayIoOperation(IoOperation.close);
     }
 
-    @HLEFunction(nid = 0xF27A9C51, version = 150)
+    @HLEFunction(nid = 0xF27A9C51, version = 150, checkInsideInterrupt = true)
     public void sceIoRemove(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2684,10 +2615,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoRemove - file = " + filename);
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         String pcfilename = getDeviceFilePath(filename);
 
         if (pcfilename != null) {
@@ -2711,7 +2639,7 @@ public class IoFileMgrForUser extends HLEModule {
         delayIoOperation(IoOperation.remove);
     }
 
-    @HLEFunction(nid = 0x06A70004, version = 150)
+    @HLEFunction(nid = 0x06A70004, version = 150, checkInsideInterrupt = true)
     public void sceIoMkdir(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2723,10 +2651,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoMkdir dir = " + dir);
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         String pcfilename = getDeviceFilePath(dir);
         if (pcfilename != null) {
             File f = new File(pcfilename);
@@ -2742,7 +2667,7 @@ public class IoFileMgrForUser extends HLEModule {
         delayIoOperation(IoOperation.mkdir);
     }
 
-    @HLEFunction(nid = 0x1117C65F, version = 150)
+    @HLEFunction(nid = 0x1117C65F, version = 150, checkInsideInterrupt = true)
     public void sceIoRmdir(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2753,10 +2678,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoRmdir dir = " + dir);
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         String pcfilename = getDeviceFilePath(dir);
         if (pcfilename != null) {
             File f = new File(pcfilename);
@@ -2772,7 +2694,7 @@ public class IoFileMgrForUser extends HLEModule {
         delayIoOperation(IoOperation.remove);
     }
 
-    @HLEFunction(nid = 0x55F4717D, version = 150)
+    @HLEFunction(nid = 0x55F4717D, version = 150, checkInsideInterrupt = true)
     public void sceIoChdir(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2783,10 +2705,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoChdir path = " + path);
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (path.equals("..")) {
             int index = filepath.lastIndexOf("/");
             if (index != -1) {
@@ -2810,7 +2729,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xAB96437F, version = 150)
+    @HLEFunction(nid = 0xAB96437F, version = 150, checkInsideInterrupt = true)
     public void sceIoSync(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2822,17 +2741,14 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("IGNORING: sceIoSync(device='" + device + "', flag=0x" + Integer.toHexString(flag) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         for (IIoListener ioListener : ioListeners) {
             ioListener.sceIoSync(0, device_addr, device, flag);
         }
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0xACE946E8, version = 150)
+    @HLEFunction(nid = 0xACE946E8, version = 150, checkInsideInterrupt = true)
     public void sceIoGetstat(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2844,10 +2760,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoGetstat - file = " + filename + " stat = " + Integer.toHexString(stat_addr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         String pcfilename = getDeviceFilePath(filename);
         SceIoStat stat = stat(pcfilename);
         if (stat != null) {
@@ -2862,7 +2775,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xB8A740F4, version = 150)
+    @HLEFunction(nid = 0xB8A740F4, version = 150, checkInsideInterrupt = true)
     public void sceIoChstat(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2875,10 +2788,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoChstat - file = " + filename + ", bits=0x" + Integer.toHexString(bits));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         String pcfilename = getDeviceFilePath(filename);
         if (pcfilename != null) {
             if (isUmdPath(pcfilename)) {
@@ -2938,7 +2848,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x779103A0, version = 150)
+    @HLEFunction(nid = 0x779103A0, version = 150, checkInsideInterrupt = true)
     public void sceIoRename(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2951,10 +2861,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoRename - file = " + filename + ", new_file = " + newfilename);
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         String pcfilename = getDeviceFilePath(filename);
         String newpcfilename = getDeviceFilePath(newfilename);
         if (pcfilename != null) {
@@ -2979,7 +2886,7 @@ public class IoFileMgrForUser extends HLEModule {
         delayIoOperation(IoOperation.rename);
     }
 
-    @HLEFunction(nid = 0x54F5FB11, version = 150)
+    @HLEFunction(nid = 0x54F5FB11, version = 150, checkInsideInterrupt = true)
     public void sceIoDevctl(Processor processor, int device_addr, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -3030,10 +2937,7 @@ public class IoFileMgrForUser extends HLEModule {
         	return;
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         switch (cmd) {
             // Get UMD disc type.
             case 0x01F20001: {
@@ -3346,7 +3250,7 @@ public class IoFileMgrForUser extends HLEModule {
         delayIoOperation(IoOperation.ioctl);
     }
 
-    @HLEFunction(nid = 0x08BD7374, version = 150)
+    @HLEFunction(nid = 0x08BD7374, version = 150, checkInsideInterrupt = true)
     public void sceIoGetDevType(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3356,10 +3260,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoGetDevType - id " + Integer.toHexString(id));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         IoInfo info = fileIds.get(id);
         if (info == null) {
             log.warn("sceIoGetDevType - unknown id " + Integer.toHexString(id));
@@ -3370,7 +3271,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xB2A628C1, version = 150)
+    @HLEFunction(nid = 0xB2A628C1, version = 150, checkInsideInterrupt = true)
     public void sceIoAssign(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3402,10 +3303,7 @@ public class IoFileMgrForUser extends HLEModule {
         // Mounts physical_dev on filesystem_dev and sets an alias to represent it.
         log.warn("IGNORING: sceIoAssign(alias='" + alias + "', physical_dev='" + physical_dev + "', filesystem_dev='" + filesystem_dev + "', mode=" + perm + ", arg_addr=0x" + Integer.toHexString(arg_addr) + ", argSize=" + argSize + ")");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         cpu.gpr[2] = 0;
 
         for (IIoListener ioListener : ioListeners) {
@@ -3414,7 +3312,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x6D08A871, version = 150)
+    @HLEFunction(nid = 0x6D08A871, version = 150, checkInsideInterrupt = true)
     public void sceIoUnassign(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3424,14 +3322,11 @@ public class IoFileMgrForUser extends HLEModule {
 
         log.warn("IGNORING: sceIoUnassign (alias='" + alias + ")");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0xE8BC6571, version = 150)
+    @HLEFunction(nid = 0xE8BC6571, version = 150, checkInsideInterrupt = true)
     public void sceIoCancel(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -3441,10 +3336,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoCancel - id " + Integer.toHexString(id));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         IoInfo info = fileIds.get(id);
         if (info == null) {
             log.warn("sceIoCancel - unknown id " + Integer.toHexString(id));
@@ -3459,7 +3351,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x5C2BE2CC, version = 150)
+    @HLEFunction(nid = 0x5C2BE2CC, version = 150, checkInsideInterrupt = true)
     public void sceIoGetFdList(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -3472,10 +3364,7 @@ public class IoFileMgrForUser extends HLEModule {
         	log.debug(String.format("sceIoGetFdList out_addr=0x%08X, outSize=%d, fdNum_addr=0x%08X", out_addr, outSize, fdNum_addr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
 
         int count = 0;
         if (Memory.isAddressGood(out_addr) && outSize > 0) {

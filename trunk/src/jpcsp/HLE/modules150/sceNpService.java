@@ -40,7 +40,7 @@ public class sceNpService extends HLEModule {
     private int npManagerMaxMemSize;  // Maximum memory used by the NP Manager utility.
     private int npManagerFreeMemSize;        // Free memory available to use by the NP Manager utility.
 
-    @HLEFunction(nid = 0x0F8F5821, version = 150)
+    @HLEFunction(nid = 0x0F8F5821, version = 150, checkInsideInterrupt = true)
     public void sceNpService_0F8F5821(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -52,17 +52,14 @@ public class sceNpService extends HLEModule {
                 + ", stackSize=0x" + Integer.toHexString(stackSize)
                 + ", threadPriority=0x" + Integer.toHexString(threadPriority) + ")");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         npManagerMemSize = poolSize;
         npManagerMaxMemSize = poolSize / 2;    // Dummy
         npManagerFreeMemSize = poolSize - 16;         // Dummy.
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x00ACFAC3, version = 150)
+    @HLEFunction(nid = 0x00ACFAC3, version = 150, checkInsideInterrupt = true)
     public void sceNpService_00ACFAC3(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -71,10 +68,7 @@ public class sceNpService extends HLEModule {
 
         log.warn("PARTIAL: sceNpService_00ACFAC3 (memStatAddr=0x" + Integer.toHexString(memStatAddr) + ")");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (Memory.isAddressGood(memStatAddr)) {
             mem.write32(memStatAddr, npManagerMemSize);
             mem.write32(memStatAddr + 4, npManagerMaxMemSize);

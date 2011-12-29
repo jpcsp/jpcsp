@@ -38,7 +38,7 @@ public class sceOpenPSID extends HLEModule {
 
     protected int[] dummyOpenPSID = {0x10, 0x02, 0xA3, 0x44, 0x13, 0xF5, 0x93, 0xB0, 0xCC, 0x6E, 0xD1, 0x32, 0x27, 0x85, 0x0F, 0x9D};
 
-    @HLEFunction(nid = 0xC69BEBCE, version = 150)
+    @HLEFunction(nid = 0xC69BEBCE, version = 150, checkInsideInterrupt = true)
     public void sceOpenPSIDGetOpenPSID(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -49,10 +49,7 @@ public class sceOpenPSID extends HLEModule {
             log.debug("sceOpenPSIDGetOpenPSID (openPSIDAddr=0x" + Integer.toHexString(openPSIDAddr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if(Memory.isAddressGood(openPSIDAddr)) {
             for(int i = 0; i < 16 ; i++) {
                 mem.write8(openPSIDAddr + i, (byte)dummyOpenPSID[i]);

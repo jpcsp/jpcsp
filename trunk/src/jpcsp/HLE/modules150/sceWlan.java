@@ -44,7 +44,7 @@ public class sceWlan extends HLEModule {
      * requests 8 so pass it 8 bytes just in case)
      * @return 0 on success, < 0 on error
      */
-    @HLEFunction(nid = 0x0C622081, version = 150)
+    @HLEFunction(nid = 0x0C622081, version = 150, checkInsideInterrupt = true)
     public void sceWlanGetEtherAddr(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -55,10 +55,7 @@ public class sceWlan extends HLEModule {
             log.debug("sceWlanGetEtherAddr ether_addr=0x" + Integer.toHexString(ether_addr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (Memory.isAddressGood(ether_addr)) {
         	byte[] wlanAddr = Wlan.getMacAddress();
             for (int i = 0; i < wlanAddr.length; i++) {

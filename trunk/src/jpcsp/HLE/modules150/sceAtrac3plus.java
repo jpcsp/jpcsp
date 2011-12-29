@@ -704,7 +704,7 @@ public class sceAtrac3plus extends HLEModule {
         return 0; // Unknown Codec
     }
 
-    @HLEFunction(nid = 0xD1F59FDB, version = 150)
+    @HLEFunction(nid = 0xD1F59FDB, version = 150, checkInsideInterrupt = true)
     public void sceAtracStartEntry(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -713,7 +713,7 @@ public class sceAtrac3plus extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0xD5C28CC0, version = 150)
+    @HLEFunction(nid = 0xD5C28CC0, version = 150, checkInsideInterrupt = true)
     public void sceAtracEndEntry(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -722,7 +722,7 @@ public class sceAtrac3plus extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    @HLEFunction(nid = 0x780F88D1, version = 150)
+    @HLEFunction(nid = 0x780F88D1, version = 150, checkInsideInterrupt = true)
     public void sceAtracGetAtracID(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -732,17 +732,14 @@ public class sceAtrac3plus extends HLEModule {
             log.debug("sceAtracGetAtracID: codecType = 0x" + Integer.toHexString(codecType));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         cpu.gpr[2] = hleCreateAtracID(codecType);
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceAtracGetAtracID: returning atracID=0x%08X", cpu.gpr[2]));
         }
     }
 
-    @HLEFunction(nid = 0x61EB33F5, version = 150)
+    @HLEFunction(nid = 0x61EB33F5, version = 150, checkInsideInterrupt = true)
     public void sceAtracReleaseAtracID(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -752,10 +749,7 @@ public class sceAtrac3plus extends HLEModule {
             log.debug("sceAtracReleaseAtracID: atracID = " + atID);
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracReleaseAtracID: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -769,7 +763,7 @@ public class sceAtrac3plus extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x0E2A73AB, version = 150)
+    @HLEFunction(nid = 0x0E2A73AB, version = 150, checkInsideInterrupt = true)
     public void sceAtracSetData(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -781,10 +775,7 @@ public class sceAtrac3plus extends HLEModule {
             log.debug(String.format("sceAtracSetData: atID = %d, buffer = 0x%08X, bufferSize = 0x%08X", atID, buffer, bufferSize));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracSetData: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -794,7 +785,7 @@ public class sceAtrac3plus extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x3F6E26B5, version = 150)
+    @HLEFunction(nid = 0x3F6E26B5, version = 150, checkInsideInterrupt = true)
     public void sceAtracSetHalfwayBuffer(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -807,10 +798,7 @@ public class sceAtrac3plus extends HLEModule {
             log.debug(String.format("sceAtracSetHalfwayBuffer: atID = %d, buffer = 0x%08X, readSize = 0x%08X, bufferSize = 0x%08X", atID, halfBuffer, readSize, halfBufferSize));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracSetHalfwayBuffer: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -820,7 +808,7 @@ public class sceAtrac3plus extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x7A20E7AF, version = 150)
+    @HLEFunction(nid = 0x7A20E7AF, version = 150, checkInsideInterrupt = true)
     public void sceAtracSetDataAndGetID(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -831,10 +819,7 @@ public class sceAtrac3plus extends HLEModule {
             log.debug(String.format("sceAtracSetDataAndGetID buffer = 0x%08X, bufferSize = 0x%08X", buffer, bufferSize));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         int atID = 0;
         if (Memory.isAddressGood(buffer)) {
         	int codecType = getCodecType(buffer);
@@ -849,7 +834,7 @@ public class sceAtrac3plus extends HLEModule {
         cpu.gpr[2] = atID;
     }
 
-    @HLEFunction(nid = 0x0FAE370E, version = 150)
+    @HLEFunction(nid = 0x0FAE370E, version = 150, checkInsideInterrupt = true)
     public void sceAtracSetHalfwayBufferAndGetID(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -861,10 +846,7 @@ public class sceAtrac3plus extends HLEModule {
             log.debug(String.format("sceAtracSetHalfwayBufferAndGetID buffer = 0x%08X, readSize = 0x%08X, bufferSize = 0x%08X", halfBuffer, readSize, halfBufferSize));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         int atID = 0;
         if (Memory.isAddressGood(halfBuffer)) {
         	int codecType = getCodecType(halfBuffer);
@@ -876,7 +858,7 @@ public class sceAtrac3plus extends HLEModule {
         cpu.gpr[2] = atID;
     }
 
-    @HLEFunction(nid = 0x6A8C3CD5, version = 150)
+    @HLEFunction(nid = 0x6A8C3CD5, version = 150, checkInsideInterrupt = true)
     public void sceAtracDecodeData(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -892,10 +874,7 @@ public class sceAtrac3plus extends HLEModule {
                     atID, samplesAddr, samplesNbrAddr, outEndAddr, remainFramesAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracDecodeData: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -985,7 +964,7 @@ public class sceAtrac3plus extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x9AE849A7, version = 150)
+    @HLEFunction(nid = 0x9AE849A7, version = 150, checkInsideInterrupt = true)
     public void sceAtracGetRemainFrame(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -997,10 +976,7 @@ public class sceAtrac3plus extends HLEModule {
             log.debug(String.format("sceAtracGetRemainFrame: atracID = %d, remainFramesAddr = 0x%08X", atID, remainFramesAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracGetRemainFrame: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -1017,7 +993,7 @@ public class sceAtrac3plus extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x5D268707, version = 150)
+    @HLEFunction(nid = 0x5D268707, version = 150, checkInsideInterrupt = true)
     public void sceAtracGetStreamDataInfo(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1031,10 +1007,7 @@ public class sceAtrac3plus extends HLEModule {
             log.debug(String.format("sceAtracGetStreamDataInfo: atID=%d, writeAddr=0x%08X, writableBytesAddr=0x%08X, readOffsetAddr=0x%08X", atID, writeAddr, writableBytesAddr, readOffsetAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracGetStreamDataInfo: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -1057,7 +1030,7 @@ public class sceAtrac3plus extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x7DB31251, version = 150)
+    @HLEFunction(nid = 0x7DB31251, version = 150, checkInsideInterrupt = true)
     public void sceAtracAddStreamData(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1068,10 +1041,7 @@ public class sceAtrac3plus extends HLEModule {
             log.debug(String.format("sceAtracAddStreamData: atracID=%d, bytesToAdd=0x%x", atID, bytesToAdd));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracAddStreamData: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -1084,7 +1054,7 @@ public class sceAtrac3plus extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x83E85EA0, version = 150)
+    @HLEFunction(nid = 0x83E85EA0, version = 150, checkInsideInterrupt = true)
     public void sceAtracGetSecondBufferInfo(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1097,10 +1067,7 @@ public class sceAtrac3plus extends HLEModule {
             log.debug("sceAtracGetSecondBufferInfo: atracID = " + atID + ", outPos=0x" + Integer.toHexString(outPosition) + ", outBytes=0x" + Integer.toHexString(outBytes));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracGetSecondBufferInfo: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -1117,7 +1084,7 @@ public class sceAtrac3plus extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x83BF7AFD, version = 150)
+    @HLEFunction(nid = 0x83BF7AFD, version = 150, checkInsideInterrupt = true)
     public void sceAtracSetSecondBuffer(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1129,10 +1096,7 @@ public class sceAtrac3plus extends HLEModule {
             log.debug(String.format("sceAtracSetSecondBuffer: atID = %d, buffer = 0x%08X, bufferSize = 0x%08X", atID, secondBuffer, secondBufferSize));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracSetSecondBuffer: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -1142,7 +1106,7 @@ public class sceAtrac3plus extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xE23E3A35, version = 150)
+    @HLEFunction(nid = 0xE23E3A35, version = 150, checkInsideInterrupt = true)
     public void sceAtracGetNextDecodePosition(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1155,10 +1119,7 @@ public class sceAtrac3plus extends HLEModule {
                     atID, posAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracGetNextDecodePosition: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -1173,7 +1134,7 @@ public class sceAtrac3plus extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xA2BBA8BE, version = 150)
+    @HLEFunction(nid = 0xA2BBA8BE, version = 150, checkInsideInterrupt = true)
     public void sceAtracGetSoundSample(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1187,10 +1148,7 @@ public class sceAtrac3plus extends HLEModule {
             log.debug(String.format("sceAtracGetSoundSample atracID = %d, endSampleAddr = 0x%08X, loopStartSampleAddr = 0x%08X, loopEndSampleAddr = 0x%08X", atID, endSampleAddr, loopStartSampleAddr, loopEndSampleAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracGetSoundSample: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -1212,7 +1170,7 @@ public class sceAtrac3plus extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x31668BAA, version = 150)
+    @HLEFunction(nid = 0x31668BAA, version = 150, checkInsideInterrupt = true)
     public void sceAtracGetChannel(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1224,10 +1182,7 @@ public class sceAtrac3plus extends HLEModule {
             log.debug("sceAtracGetChannel: atracID = " + atID + ", channelAddr =0x" + Integer.toHexString(channelAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracGetChannel: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -1237,7 +1192,7 @@ public class sceAtrac3plus extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xD6A5F2F7, version = 150)
+    @HLEFunction(nid = 0xD6A5F2F7, version = 150, checkInsideInterrupt = true)
     public void sceAtracGetMaxSample(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -1249,10 +1204,7 @@ public class sceAtrac3plus extends HLEModule {
             log.debug(String.format("sceAtracGetMaxSample: atracID = %d, maxSamplesAddr = 0x%08X", atID, maxSamplesAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracGetMaxSample: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -1264,7 +1216,7 @@ public class sceAtrac3plus extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x36FAABFB, version = 150)
+    @HLEFunction(nid = 0x36FAABFB, version = 150, checkInsideInterrupt = true)
     public void sceAtracGetNextSample(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1276,10 +1228,7 @@ public class sceAtrac3plus extends HLEModule {
             log.debug(String.format("sceAtracGetNextSample: atracID=%d, nbrSamplesAddr=0x%08x", atID, nbrSamplesAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracGetNextSample: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -1296,7 +1245,7 @@ public class sceAtrac3plus extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xA554A158, version = 150)
+    @HLEFunction(nid = 0xA554A158, version = 150, checkInsideInterrupt = true)
     public void sceAtracGetBitrate(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1308,10 +1257,7 @@ public class sceAtrac3plus extends HLEModule {
             log.debug("sceAtracGetBitrate: atracID = " + atID + ", bitrateAddr =0x" + Integer.toHexString(bitrateAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracGetBitrate: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -1321,7 +1267,7 @@ public class sceAtrac3plus extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xFAA4F89B, version = 150)
+    @HLEFunction(nid = 0xFAA4F89B, version = 150, checkInsideInterrupt = true)
     public void sceAtracGetLoopStatus(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1334,10 +1280,7 @@ public class sceAtrac3plus extends HLEModule {
             log.debug(String.format("sceAtracGetLoopStatus atracID=%d, loopNbr=0x%08x, statusAddr=0x%08X", atID, loopNbr, statusAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracGetLoopStatus: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -1352,7 +1295,7 @@ public class sceAtrac3plus extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x868120B5, version = 150)
+    @HLEFunction(nid = 0x868120B5, version = 150, checkInsideInterrupt = true)
     public void sceAtracSetLoopNum(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1363,10 +1306,7 @@ public class sceAtrac3plus extends HLEModule {
             log.debug("sceAtracSetLoopNum: atracID = " + atID + ", loopNbr = " + loopNbr);
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracSetLoopNum: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -1377,7 +1317,7 @@ public class sceAtrac3plus extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xCA3CA3D2, version = 150)
+    @HLEFunction(nid = 0xCA3CA3D2, version = 150, checkInsideInterrupt = true)
     public void sceAtracGetBufferInfoForReseting(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1389,10 +1329,7 @@ public class sceAtrac3plus extends HLEModule {
             log.debug(String.format("sceAtracGetBufferInfoForReseting atracID=%d, sample=%d, bufferInfoAddr=0x%08x", atID, sample, bufferInfoAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracGetBufferInfoForReseting: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -1402,7 +1339,7 @@ public class sceAtrac3plus extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x644E5607, version = 150)
+    @HLEFunction(nid = 0x644E5607, version = 150, checkInsideInterrupt = true)
     public void sceAtracResetPlayPosition(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -1415,10 +1352,7 @@ public class sceAtrac3plus extends HLEModule {
             log.debug(String.format("sceAtracResetPlayPosition atracId=%d, sample=%d, bytesWrittenFirstBuf=%d, bytesWrittenSecondBuf=%d", atID, sample, bytesWrittenFirstBuf, bytesWrittenSecondBuf));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracResetPlayPosition: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -1429,7 +1363,7 @@ public class sceAtrac3plus extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xE88F759B, version = 150)
+    @HLEFunction(nid = 0xE88F759B, version = 150, checkInsideInterrupt = true)
     public void sceAtracGetInternalErrorInfo(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -1441,10 +1375,7 @@ public class sceAtrac3plus extends HLEModule {
             log.debug(String.format("sceAtracGetInternalErrorInfo atracId=%d, errorAddr=0x%08X", atID, errorAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracGetInternalErrorInfo: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;

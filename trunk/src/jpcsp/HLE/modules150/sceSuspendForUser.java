@@ -51,48 +51,39 @@ public class sceSuspendForUser extends HLEModule {
     public static final int KERNEL_POWER_TICK_DISPLAY = 6;
     private boolean volatileMemLocked;
 
-    @HLEFunction(nid = 0xEADB1BD7, version = 150)
+    @HLEFunction(nid = 0xEADB1BD7, version = 150, checkInsideInterrupt = true)
     public void sceKernelPowerLock(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int type = cpu.gpr[4];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (log.isTraceEnabled()) {
             log.trace("IGNORING:sceKernelPowerLock type=" + type);
         }
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x3AEE7261, version = 150)
+    @HLEFunction(nid = 0x3AEE7261, version = 150, checkInsideInterrupt = true)
     public void sceKernelPowerUnlock(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int type = cpu.gpr[4];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (log.isTraceEnabled()) {
             log.trace("IGNORING:sceKernelPowerUnlock type=" + type);
         }
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x090CCB3F, version = 150)
+    @HLEFunction(nid = 0x090CCB3F, version = 150, checkInsideInterrupt = true)
     public void sceKernelPowerTick(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int flag = cpu.gpr[4];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         switch (flag) {
             case KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY:
             	Screen.hleKernelPowerTick();
@@ -154,14 +145,11 @@ public class sceSuspendForUser extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0x3E0271D3, version = 150)
+    @HLEFunction(nid = 0x3E0271D3, version = 150, checkInsideInterrupt = true)
     public void sceKernelVolatileMemLock(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         hleKernelVolatileMemLock(processor, false);
     }
 

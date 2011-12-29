@@ -269,7 +269,7 @@ public class scePsmfPlayer extends HLEModule {
     	}
     }
 
-    @HLEFunction(nid = 0x235D8787, version = 150)
+    @HLEFunction(nid = 0x235D8787, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerCreate(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -281,10 +281,7 @@ public class scePsmfPlayer extends HLEModule {
             log.debug("scePsmfPlayerCreate psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", psmfPlayerDataAddr=0x" + Integer.toHexString(psmfPlayerDataAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         // The psmfDataAddr contains three fields that are manually set before
         // scePsmfPlayerCreate is called.
         displayBuffer = mem.read32(psmfPlayerDataAddr);                   // The buffer allocated for scePsmf, which is ported into scePsmfPlayer.
@@ -304,7 +301,7 @@ public class scePsmfPlayer extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x9B71A274, version = 150)
+    @HLEFunction(nid = 0x9B71A274, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerDelete(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -314,10 +311,7 @@ public class scePsmfPlayer extends HLEModule {
             log.debug("scePsmfPlayerDelete psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (checkMediaEngineState()) {
             if (me != null) {
                 me.finish();
@@ -335,7 +329,7 @@ public class scePsmfPlayer extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x3D6D25A9, version = 150)
+    @HLEFunction(nid = 0x3D6D25A9, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerSetPsmf(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -346,10 +340,7 @@ public class scePsmfPlayer extends HLEModule {
             log.debug("scePsmfPlayerSetPsmf psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", fileAddr=0x" + Integer.toHexString(fileAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         pmfFilePath = Utilities.readStringZ(fileAddr);
 
         //Get the file and read it to a buffer.
@@ -373,7 +364,7 @@ public class scePsmfPlayer extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x58B83577, version = 150)
+    @HLEFunction(nid = 0x58B83577, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerSetPsmfCB(Processor processor) {
         if (log.isDebugEnabled()) {
             log.debug("scePsmfPlayerSetPsmfCB redirecting to scePsmfPlayerSetPsmf");
@@ -382,7 +373,7 @@ public class scePsmfPlayer extends HLEModule {
         Modules.ThreadManForUserModule.hleRescheduleCurrentThread(true);
     }
 
-    @HLEFunction(nid = 0xE792CD94, version = 150)
+    @HLEFunction(nid = 0xE792CD94, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerReleasePsmf(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -392,10 +383,7 @@ public class scePsmfPlayer extends HLEModule {
             log.debug("scePsmfPlayerReleasePsmf psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (checkMediaEngineState()) {
             if (me != null) {
                 me.finish();
@@ -414,7 +402,7 @@ public class scePsmfPlayer extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x95A84EE5, version = 150)
+    @HLEFunction(nid = 0x95A84EE5, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerStart(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -427,10 +415,7 @@ public class scePsmfPlayer extends HLEModule {
             log.debug("scePsmfPlayerStart psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", initPlayInfoAddr=0x" + Integer.toHexString(initPlayInfoAddr) + ", initPts=" + initPts);
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         // Read the playback parameters.
         if (Memory.isAddressGood(initPlayInfoAddr)) {
             videoCodec = mem.read32(initPlayInfoAddr);
@@ -459,7 +444,7 @@ public class scePsmfPlayer extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x3EA82A4B, version = 150)
+    @HLEFunction(nid = 0x3EA82A4B, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerGetAudioOutSize(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -469,14 +454,11 @@ public class scePsmfPlayer extends HLEModule {
             log.debug("scePsmfPlayerGetAudioOutSize psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         cpu.gpr[2] = audioSamplesBytes;
     }
 
-    @HLEFunction(nid = 0x1078C008, version = 150)
+    @HLEFunction(nid = 0x1078C008, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerStop(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -486,10 +468,7 @@ public class scePsmfPlayer extends HLEModule {
             log.debug("scePsmfPlayerStop psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (checkMediaEngineState()) {
             if (me != null) {
                 me.finish();
@@ -507,7 +486,7 @@ public class scePsmfPlayer extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0xA0B8CA55, version = 150)
+    @HLEFunction(nid = 0xA0B8CA55, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerUpdate(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -529,7 +508,7 @@ public class scePsmfPlayer extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x46F61F8B, version = 150)
+    @HLEFunction(nid = 0x46F61F8B, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerGetVideoData(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -541,10 +520,7 @@ public class scePsmfPlayer extends HLEModule {
             log.debug(String.format("scePsmfPlayerGetVideoData psmfPlayer=0x%X, videoDataAddr=0x%08X", psmfPlayer, videoDataAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!checkPlayerInitialized(psmfPlayer)) {
         	// Error returned
         } else if (psmfPlayerAtracAu.pts != 0 && psmfPlayerAvcAu.pts > psmfPlayerAtracAu.pts + psmfMaxAheadTimestamp) {
@@ -610,7 +586,7 @@ public class scePsmfPlayer extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xB9848A74, version = 150)
+    @HLEFunction(nid = 0xB9848A74, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerGetAudioData(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -622,10 +598,7 @@ public class scePsmfPlayer extends HLEModule {
             log.debug("scePsmfPlayerGetAudioData psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", audioDataAddr=0x" + Integer.toHexString(audioDataAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!checkPlayerInitialized(psmfPlayer)) {
         	// Error returned
         } else if (psmfPlayerAvcAu.pts != 0 && psmfPlayerAtracAu.pts > psmfPlayerAvcAu.pts + psmfMaxAheadTimestamp) {
@@ -668,7 +641,7 @@ public class scePsmfPlayer extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xF8EF08A6, version = 150)
+    @HLEFunction(nid = 0xF8EF08A6, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerGetCurrentStatus(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -687,7 +660,7 @@ public class scePsmfPlayer extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xDF089680, version = 150)
+    @HLEFunction(nid = 0xDF089680, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerGetPsmfInfo(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -699,10 +672,7 @@ public class scePsmfPlayer extends HLEModule {
             log.debug("scePsmfPlayerGetPsmfInfo psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", psmfInfoAddr=0x" + Integer.toHexString(psmfInfoAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (Memory.isAddressGood(psmfInfoAddr)) {
             mem.write32(psmfInfoAddr, psmfCurrentPts);
             mem.write32(psmfInfoAddr + 4, psmfAvcStreamNum);
@@ -713,7 +683,7 @@ public class scePsmfPlayer extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x1E57A8E7, version = 150)
+    @HLEFunction(nid = 0x1E57A8E7, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerConfigPlayer(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -725,10 +695,7 @@ public class scePsmfPlayer extends HLEModule {
             log.debug("scePsmfPlayerConfigPlayer psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", configMode=" + configMode + ", configAttr=" + configAttr);
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (configMode == PSMF_PLAYER_CONFIG_MODE_LOOP) {                 // Sets if the video is looped or not.
             videoLoopStatus = configAttr;
         } else if (configMode == PSMF_PLAYER_CONFIG_MODE_PIXEL_TYPE) {    // Sets the display's pixel type.
@@ -739,7 +706,7 @@ public class scePsmfPlayer extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0xA3D81169, version = 150)
+    @HLEFunction(nid = 0xA3D81169, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerChangePlayMode(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -751,16 +718,13 @@ public class scePsmfPlayer extends HLEModule {
             log.debug("scePsmfPlayerChangePlayMode psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", newPlayMode=" + newPlayMode + ", newPlaySpeed=" + newPlaySpeed);
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         playMode = newPlayMode;
         playSpeed = newPlaySpeed;
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x68F07175, version = 150)
+    @HLEFunction(nid = 0x68F07175, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerGetCurrentAudioStream(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -773,10 +737,7 @@ public class scePsmfPlayer extends HLEModule {
             log.debug("scePsmfPlayerGetCurrentAudioStream psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", audioCodecAddr=0x" + Integer.toHexString(audioCodecAddr) + ", audioStreamNumAddr=0x" + Integer.toHexString(audioStreamNumAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (Memory.isAddressGood(audioCodecAddr)) {
             mem.write32(audioCodecAddr, audioCodec);
         }
@@ -786,7 +747,7 @@ public class scePsmfPlayer extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0xF3EFAA91, version = 150)
+    @HLEFunction(nid = 0xF3EFAA91, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerGetCurrentPlayMode(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -799,10 +760,7 @@ public class scePsmfPlayer extends HLEModule {
             log.debug("scePsmfPlayerGetCurrentPlayMode psmfplayer=0x" + Integer.toHexString(psmfPlayer) + ", playModeAddr=0x" + Integer.toHexString(playModeAddr) + ", playSpeedAddr=0x" + Integer.toHexString(playSpeedAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (Memory.isAddressGood(playModeAddr)) {
             mem.write32(playModeAddr, playMode);
         }
@@ -812,7 +770,7 @@ public class scePsmfPlayer extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x3ED62233, version = 150)
+    @HLEFunction(nid = 0x3ED62233, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerGetCurrentPts(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -824,10 +782,7 @@ public class scePsmfPlayer extends HLEModule {
             log.debug("scePsmfPlayerGetCurrentPts psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", currentPtsAddr=0x" + Integer.toHexString(currentPtsAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         // Write our current video presentation timestamp.
         if (Memory.isAddressGood(currentPtsAddr)) {
             mem.write32(currentPtsAddr, (int) psmfPlayerAvcAu.pts);
@@ -835,7 +790,7 @@ public class scePsmfPlayer extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x9FF2B2E7, version = 150)
+    @HLEFunction(nid = 0x9FF2B2E7, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerGetCurrentVideoStream(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -848,10 +803,7 @@ public class scePsmfPlayer extends HLEModule {
             log.debug("scePsmfPlayerGetCurrentVideoStream psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", videoCodecAddr=0x" + Integer.toHexString(videoCodecAddr) + ", videoStreamNumAddr=0x" + Integer.toHexString(videoStreamNumAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (Memory.isAddressGood(videoCodecAddr)) {
             mem.write32(videoCodecAddr, videoCodec);
         }
@@ -861,7 +813,7 @@ public class scePsmfPlayer extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x2BEB1569, version = 150)
+    @HLEFunction(nid = 0x2BEB1569, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerBreak(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -873,7 +825,7 @@ public class scePsmfPlayer extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x76C0F4AE, version = 150)
+    @HLEFunction(nid = 0x76C0F4AE, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerSetPsmfOffset(Processor processor) {
         if (log.isDebugEnabled()) {
             log.debug("scePsmfPlayerSetPsmfOffset redirecting to scePsmfPlayerSetPsmf");
@@ -881,7 +833,7 @@ public class scePsmfPlayer extends HLEModule {
         scePsmfPlayerSetPsmf(processor);
     }
 
-    @HLEFunction(nid = 0xA72DB4F9, version = 150)
+    @HLEFunction(nid = 0xA72DB4F9, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerSetPsmfOffsetCB(Processor processor) {
         if (log.isDebugEnabled()) {
             log.debug("scePsmfPlayerSetPsmfOffsetCB redirecting to scePsmfPlayerSetPsmfCB");
@@ -889,7 +841,7 @@ public class scePsmfPlayer extends HLEModule {
         scePsmfPlayerSetPsmfCB(processor);
     }
 
-    @HLEFunction(nid = 0x2D0E4E0A, version = 150)
+    @HLEFunction(nid = 0x2D0E4E0A, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerSetTempBuf(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -897,14 +849,11 @@ public class scePsmfPlayer extends HLEModule {
 
         log.warn("IGNORING: scePsmfPlayerSetTempBuf psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x75F03FA2, version = 150)
+    @HLEFunction(nid = 0x75F03FA2, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerSelectSpecificVideo(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -916,16 +865,13 @@ public class scePsmfPlayer extends HLEModule {
             log.debug("scePsmfPlayerSelectSpecificVideo psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", newVideoCodec=0x" + Integer.toHexString(newVideoCodec) + ", newVideoStreamNum=" + newVideoStreamNum);
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         videoCodec = newVideoCodec;
         videoStreamNum = newVideoStreamNum;
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x85461EFF, version = 150)
+    @HLEFunction(nid = 0x85461EFF, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerSelectSpecificAudio(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -937,16 +883,13 @@ public class scePsmfPlayer extends HLEModule {
             log.debug("scePsmfPlayerSelectSpecificVideo psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", newAudioCodec=0x" + Integer.toHexString(newAudioCodec) + ", newAudioStreamNum=" + newAudioStreamNum);
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         audioCodec = newAudioCodec;
         audioStreamNum = newAudioStreamNum;
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x8A9EBDCD, version = 150)
+    @HLEFunction(nid = 0x8A9EBDCD, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerSelectVideo(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -956,16 +899,13 @@ public class scePsmfPlayer extends HLEModule {
             log.debug("scePsmfPlayerSelectVideo psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         // Advances to the next video stream number.
         videoStreamNum++;
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0xB8D10C56, version = 150)
+    @HLEFunction(nid = 0xB8D10C56, version = 150, checkInsideInterrupt = true)
     public void scePsmfPlayerSelectAudio(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -975,10 +915,7 @@ public class scePsmfPlayer extends HLEModule {
             log.debug("scePsmfPlayerSelectAudio psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         // Advances to the next audio stream number.
         audioStreamNum++;
         cpu.gpr[2] = 0;

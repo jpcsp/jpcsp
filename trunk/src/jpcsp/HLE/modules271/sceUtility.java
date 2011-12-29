@@ -132,16 +132,13 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         }
     }
 
-    @HLEFunction(nid = 0xC629AF26, version = 270)
+    @HLEFunction(nid = 0xC629AF26, version = 270, checkInsideInterrupt = true)
     public void sceUtilityLoadAvModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int module = cpu.gpr[4];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
 
         String moduleName = getAvModuleName(module);
         int result = hleUtilityLoadAvModule(module, moduleName);
@@ -154,16 +151,13 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         cpu.gpr[2] = result;
     }
 
-    @HLEFunction(nid = 0xF7D8D092, version = 270)
+    @HLEFunction(nid = 0xF7D8D092, version = 270, checkInsideInterrupt = true)
     public void sceUtilityUnloadAvModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int module = cpu.gpr[4];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
 
         String moduleName = getAvModuleName(module);
         log.info(String.format("sceUtilityUnloadAvModule(module=0x%04X) %s unloaded", module, moduleName));
@@ -171,7 +165,7 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         cpu.gpr[2] = hleUtilityUnloadAvModule(module);
     }
 
-    @HLEFunction(nid = 0x4928BD96, version = 270)
+    @HLEFunction(nid = 0x4928BD96, version = 270, checkInsideInterrupt = true)
     public void sceUtilityMsgDialogAbort(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -181,16 +175,13 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x0D5BC6D2, version = 270)
+    @HLEFunction(nid = 0x0D5BC6D2, version = 270, checkInsideInterrupt = true)
     public void sceUtilityLoadUsbModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int module = cpu.gpr[4];
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
 
         String moduleName = getUsbModuleName(module);
         int result = hleUtilityLoadUsbModule(module, moduleName);

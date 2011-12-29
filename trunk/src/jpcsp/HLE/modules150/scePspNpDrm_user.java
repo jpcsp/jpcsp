@@ -55,7 +55,7 @@ public class scePspNpDrm_user extends HLEModule {
     private byte npDrmKey[] = new byte[PSP_NPDRM_KEY_LENGHT];
     private PGDFileConnector edatFileConnector;
 
-    @HLEFunction(nid = 0xA1336091, version = 150)
+    @HLEFunction(nid = 0xA1336091, version = 150, checkInsideInterrupt = true)
     public void sceNpDrmSetLicenseeKey(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -66,10 +66,7 @@ public class scePspNpDrm_user extends HLEModule {
             log.debug("sceNpDrmSetLicenseeKey (npDrmKeyAddr=0x" + Integer.toHexString(npDrmKeyAddr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (Memory.isAddressGood(npDrmKeyAddr)) {
             String key = "";
             for(int i = 0; i < PSP_NPDRM_KEY_LENGHT; i++) {
@@ -81,7 +78,7 @@ public class scePspNpDrm_user extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x9B745542, version = 150)
+    @HLEFunction(nid = 0x9B745542, version = 150, checkInsideInterrupt = true)
     public void sceNpDrmClearLicenseeKey(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -89,17 +86,14 @@ public class scePspNpDrm_user extends HLEModule {
             log.debug("sceNpDrmClearLicenseeKey");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         for(int i = 0; i < PSP_NPDRM_KEY_LENGHT; i++) {
             npDrmKey[i] = 0;
         }
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x275987D1, version = 150)
+    @HLEFunction(nid = 0x275987D1, version = 150, checkInsideInterrupt = true)
     public void sceNpDrmRenameCheck(Processor processor) {
         CpuState cpu = processor.cpu;
         
@@ -107,10 +101,7 @@ public class scePspNpDrm_user extends HLEModule {
 
         log.warn("PARTIAL: sceNpDrmRenameCheck (nameAddr=0x" + Integer.toHexString(nameAddr) + ")");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         String fileName = Utilities.readStringZ(nameAddr);        
         CryptoEngine crypto = new CryptoEngine(); 
         @SuppressWarnings("unused")
@@ -152,7 +143,7 @@ public class scePspNpDrm_user extends HLEModule {
         cpu.gpr[2] = 0;  // Faking.
     }
 
-    @HLEFunction(nid = 0x08D98894, version = 150)
+    @HLEFunction(nid = 0x08D98894, version = 150, checkInsideInterrupt = true)
     public void sceNpDrmEdataSetupKey(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -160,10 +151,7 @@ public class scePspNpDrm_user extends HLEModule {
 
         log.warn("PARTIAL: sceNpDrmEdataSetupKey (edataFd=0x" + Integer.toHexString(edataFd) + ")");
     
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         IoInfo info = Modules.IoFileMgrForUserModule.getFileIoInfo(edataFd);    
         CryptoEngine crypto = new CryptoEngine();
         
@@ -276,7 +264,7 @@ public class scePspNpDrm_user extends HLEModule {
         cpu.gpr[2] = 0;  // Faking.
     }
 
-    @HLEFunction(nid = 0x219EF5CC, version = 150)
+    @HLEFunction(nid = 0x219EF5CC, version = 150, checkInsideInterrupt = true)
     public void sceNpDrmEdataGetDataSize(Processor processor) {
         CpuState cpu = processor.cpu;
         
@@ -284,10 +272,7 @@ public class scePspNpDrm_user extends HLEModule {
 
         log.warn("PARTIAL: sceNpDrmEdataGetDataSize (edataFd=0x" + Integer.toHexString(edataFd) + ")");
         
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         IoInfo info = Modules.IoFileMgrForUserModule.getFileIoInfo(edataFd); 
         int size = 0;
         try {
@@ -298,7 +283,7 @@ public class scePspNpDrm_user extends HLEModule {
         cpu.gpr[2] = size;
     }
 
-    @HLEFunction(nid = 0x2BAA4294, version = 150)
+    @HLEFunction(nid = 0x2BAA4294, version = 150, checkInsideInterrupt = true)
     public void sceNpDrmOpen(Processor processor) {
         CpuState cpu = processor.cpu;
         
@@ -309,14 +294,11 @@ public class scePspNpDrm_user extends HLEModule {
         log.warn("IGNORING: sceNpDrmOpen (nameAddr=0x" + Integer.toHexString(nameAddr) 
                 + ", flags=0x" + Integer.toHexString(flags) + ", permissions=0" + Integer.toOctalString(permissions) + ")");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0xC618D0B1, version = 150)
+    @HLEFunction(nid = 0xC618D0B1, version = 150, checkInsideInterrupt = true)
     public void sceKernelLoadModuleNpDrm(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -333,10 +315,7 @@ public class scePspNpDrm_user extends HLEModule {
                     + ", option_addr=0x" + Integer.toHexString(option_addr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         SceKernelLMOption lmOption = null;
         if (option_addr != 0) {
             lmOption = new SceKernelLMOption();
@@ -347,7 +326,7 @@ public class scePspNpDrm_user extends HLEModule {
         Modules.ModuleMgrForUserModule.hleKernelLoadModule(processor, name, flags, 0, false);
     }
 
-    @HLEFunction(nid = 0xAA5FC85B, version = 150)
+    @HLEFunction(nid = 0xAA5FC85B, version = 150, checkInsideInterrupt = true)
     public void sceKernelLoadExecNpDrm(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -357,10 +336,7 @@ public class scePspNpDrm_user extends HLEModule {
 
         String name = Utilities.readStringZ(filename_addr);
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceKernelLoadExecNpDrm (file='%s', option_addr=0x%08X", name, option_addr) + ")");
         }

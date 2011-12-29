@@ -27,7 +27,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
     @Override
     public String getName() { return "sceAtrac3plus"; }
 
-    @HLEFunction(nid = 0xB3B5D042, version = 250)
+    @HLEFunction(nid = 0xB3B5D042, version = 250, checkInsideInterrupt = true)
     public void sceAtracGetOutputChannel(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -39,10 +39,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
             log.debug(String.format("sceAtracGetOutputChannel: atracID = %d, outputChannelAddr = 0x%08X", atID, outputChannelAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracGetOutputChannel: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -54,7 +51,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         }
     }
 
-    @HLEFunction(nid = 0xECA32A99, version = 250)
+    @HLEFunction(nid = 0xECA32A99, version = 250, checkInsideInterrupt = true)
     public void sceAtracIsSecondBufferNeeded(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -64,10 +61,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
             log.debug(String.format("sceAtracIsSecondBufferNeeded atracId=%d", atID));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracGetOutputChannel: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -79,7 +73,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         }
     }
 
-    @HLEFunction(nid = 0x132F1ECA, version = 250)
+    @HLEFunction(nid = 0x132F1ECA, version = 250, checkInsideInterrupt = true)
     public void sceAtracReinit(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -90,10 +84,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
             log.debug(String.format("sceAtracReinit at3IDNum=%d at3plusIDNum=%d", at3IDNum, at3plusIDNum));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (at3IDNum + at3plusIDNum * 2 > 6) {
             // The total ammount of AT3 IDs and AT3+ IDs (x2) can't be superior to 6.
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_NO_ID;
@@ -103,7 +94,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         }
     }
 
-    @HLEFunction(nid = 0x2DD3E298, version = 250)
+    @HLEFunction(nid = 0x2DD3E298, version = 250, checkInsideInterrupt = true)
     public void sceAtracGetBufferInfoForResetting(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -123,7 +114,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         }
     }
 
-    @HLEFunction(nid = 0x5CF9D852, version = 250)
+    @HLEFunction(nid = 0x5CF9D852, version = 250, checkInsideInterrupt = true)
     public void sceAtracSetMOutHalfwayBuffer(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -136,10 +127,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
             log.debug(String.format("sceAtracSetMOutHalfwayBuffer: atID = %d, buffer = 0x%08X, readSize = 0x%08X, bufferSize = 0x%08X", atID, MOutHalfBuffer, readSize, MOutHalfBufferSize));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracSetMOutHalfwayBuffer: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
@@ -149,7 +137,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         }
     }
 
-    @HLEFunction(nid = 0xF6837A1A, version = 250)
+    @HLEFunction(nid = 0xF6837A1A, version = 250, checkInsideInterrupt = true)
     public void sceAtracSetMOutData(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -160,7 +148,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x472E3825, version = 250)
+    @HLEFunction(nid = 0x472E3825, version = 250, checkInsideInterrupt = true)
     public void sceAtracSetMOutDataAndGetID(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -171,7 +159,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x9CD7DE03, version = 250)
+    @HLEFunction(nid = 0x9CD7DE03, version = 250, checkInsideInterrupt = true)
     public void sceAtracSetMOutHalfwayBufferAndGetID(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -183,10 +171,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
             log.debug(String.format("sceAtracSetMOutHalfwayBufferAndGetID buffer = 0x%08X, readSize = 0x%08X, bufferSize = 0x%08X", MOutHalfBuffer, readSize, MOutHalfBufferSize));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         int atID = 0;
         if (Memory.isAddressGood(MOutHalfBuffer)) {
         	int codecType = getCodecType(MOutHalfBuffer);
@@ -198,7 +183,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         cpu.gpr[2] = atID;
     }
 
-    @HLEFunction(nid = 0x5622B7C1, version = 250)
+    @HLEFunction(nid = 0x5622B7C1, version = 250, checkInsideInterrupt = true)
     public void sceAtracSetAA3DataAndGetID(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -212,10 +197,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
             log.debug(String.format("sceAtracSetAA3DataAndGetID buffer = 0x%08X, bufferSize = 0x%08X, fileSize = 0x%08X, metadataSizeAddr = 0x%08X", buffer, bufferSize, fileSize, metadataSizeAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         int atID = 0;
         if (Memory.isAddressGood(buffer)) {
         	int codecType = getCodecType(buffer);

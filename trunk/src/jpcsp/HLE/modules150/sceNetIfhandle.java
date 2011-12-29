@@ -39,7 +39,7 @@ public class sceNetIfhandle extends HLEModule {
     private int netDropRate;
     private int netDropDuration;
 
-    @HLEFunction(nid = 0xC80181A2, version = 150)
+    @HLEFunction(nid = 0xC80181A2, version = 150, checkInsideInterrupt = true)
     public void sceNetGetDropRate(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -50,10 +50,7 @@ public class sceNetIfhandle extends HLEModule {
         log.warn("PARTIAL: sceNetGetDropRate (dropRateAddr=0x" + Integer.toHexString(dropRateAddr)
                 + ", dropDurationAddr=0x" + Integer.toHexString(dropDurationAddr) + ")");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         if(Memory.isAddressGood(dropRateAddr) && Memory.isAddressGood(dropDurationAddr)) {
             mem.write32(dropRateAddr, netDropRate);
             mem.write32(dropDurationAddr, netDropDuration);
@@ -61,7 +58,7 @@ public class sceNetIfhandle extends HLEModule {
         cpu.gpr[2] = 0;
     }
     
-    @HLEFunction(nid = 0xFD8585E1, version = 150)
+    @HLEFunction(nid = 0xFD8585E1, version = 150, checkInsideInterrupt = true)
     public void sceNetSetDropRate(Processor processor) {
         CpuState cpu = processor.cpu;
         
@@ -71,10 +68,7 @@ public class sceNetIfhandle extends HLEModule {
         log.warn("PARTIAL: sceNetSetDropRate (dropRate=" + dropRate
                 + "%, dropDuration=" + dropDuration + "s)");
         
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         netDropRate = dropRate;
         netDropDuration = dropDuration;
         cpu.gpr[2] = 0;

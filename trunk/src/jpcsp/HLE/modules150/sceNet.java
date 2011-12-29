@@ -44,7 +44,7 @@ public class sceNet extends HLEModule {
 
     protected int netMemSize;
 
-    @HLEFunction(nid = 0x39AF39A6, version = 150)
+    @HLEFunction(nid = 0x39AF39A6, version = 150, checkInsideInterrupt = true)
     public void sceNetInit(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -58,28 +58,22 @@ public class sceNet extends HLEModule {
                 + ", calloutThreadStack=0x" + Integer.toHexString(calloutThreadStack) + ", netinitThreadPri=0x" + Integer.toHexString(netinitThreadPri)
                 + ", netinitThreadStack=0x" + Integer.toHexString(netinitThreadStack) + ")");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         netMemSize = poolSize;
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x281928A9, version = 150)
+    @HLEFunction(nid = 0x281928A9, version = 150, checkInsideInterrupt = true)
     public void sceNetTerm(Processor processor) {
         CpuState cpu = processor.cpu;
         
         log.warn("IGNORING: sceNetTerm");
         
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x50647530, version = 150)
+    @HLEFunction(nid = 0x50647530, version = 150, checkInsideInterrupt = true)
     public void sceNetFreeThreadinfo(Processor processor) {
         CpuState cpu = processor.cpu;
         
@@ -87,14 +81,11 @@ public class sceNet extends HLEModule {
 
         log.warn("IGNORING: sceNetFreeThreadinfo (thID=0x" + Integer.toHexString(thID) + ")");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0xAD6844c6, version = 150)
+    @HLEFunction(nid = 0xAD6844c6, version = 150, checkInsideInterrupt = true)
     public void sceNetThreadAbort(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -102,14 +93,11 @@ public class sceNet extends HLEModule {
 
         log.warn("IGNORING: sceNetThreadAbort (thID=0x" + Integer.toHexString(thID) + ")");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x89360950, version = 150)
+    @HLEFunction(nid = 0x89360950, version = 150, checkInsideInterrupt = true)
     public void sceNetEtherNtostr(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -152,7 +140,7 @@ public class sceNet extends HLEModule {
     	}
     }
 
-    @HLEFunction(nid = 0xD27961C9, version = 150)
+    @HLEFunction(nid = 0xD27961C9, version = 150, checkInsideInterrupt = true)
     public void sceNetEtherStrton(Processor processor) {
         CpuState cpu = processor.cpu;
         
@@ -190,7 +178,7 @@ public class sceNet extends HLEModule {
     	return Integer.reverseBytes(value) >>> 16;
     }
 
-    @HLEFunction(nid = 0xF5805EFE, version = 150)
+    @HLEFunction(nid = 0xF5805EFE, version = 150, checkInsideInterrupt = true)
     public void sceNetHtonl(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -204,7 +192,7 @@ public class sceNet extends HLEModule {
         cpu.gpr[2] = networkSwap32(host32);
     }
 
-    @HLEFunction(nid = 0x39C1BF02, version = 150)
+    @HLEFunction(nid = 0x39C1BF02, version = 150, checkInsideInterrupt = true)
     public void sceNetHtons(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -218,7 +206,7 @@ public class sceNet extends HLEModule {
         cpu.gpr[2] = networkSwap16(host16);
     }
 
-    @HLEFunction(nid = 0x93C4AF7E, version = 150)
+    @HLEFunction(nid = 0x93C4AF7E, version = 150, checkInsideInterrupt = true)
     public void sceNetNtohl(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -232,7 +220,7 @@ public class sceNet extends HLEModule {
         cpu.gpr[2] = networkSwap32(net32);
     }
 
-    @HLEFunction(nid = 0x4CE03207, version = 150)
+    @HLEFunction(nid = 0x4CE03207, version = 150, checkInsideInterrupt = true)
     public void sceNetNtohs(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -246,7 +234,7 @@ public class sceNet extends HLEModule {
         cpu.gpr[2] = networkSwap16(net16);
     }
 
-    @HLEFunction(nid = 0x0BF0A3AE, version = 150)
+    @HLEFunction(nid = 0x0BF0A3AE, version = 150, checkInsideInterrupt = true)
     public void sceNetGetLocalEtherAddr(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -257,10 +245,7 @@ public class sceNet extends HLEModule {
             log.debug("sceNetGetLocalEtherAddr (etherAddr=0x" + Integer.toHexString(etherAddr) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        
 
         if (Memory.isAddressGood(etherAddr)) {
             // Return WLAN MAC address
@@ -274,7 +259,7 @@ public class sceNet extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xCC393E48, version = 150)
+    @HLEFunction(nid = 0xCC393E48, version = 150, checkInsideInterrupt = true)
     public void sceNetGetMallocStat(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -283,10 +268,7 @@ public class sceNet extends HLEModule {
         
         log.warn("PARTIAL: sceNetGetMallocStat (statAddr=0x" + Integer.toHexString(statAddr) + ")");
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }     
+             
         if(Memory.isAddressGood(statAddr)) {
             // Faking. Assume no free size.
             mem.write32(statAddr, netMemSize);      // Poolsize from sceNetInit.
