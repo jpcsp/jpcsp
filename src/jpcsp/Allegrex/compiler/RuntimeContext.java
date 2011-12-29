@@ -1008,9 +1008,8 @@ public class RuntimeContext {
         return true;
     }
 
-    public static String readStringZ(int address, int maxLength) {
-    	//System.err.println("RuntimeContext.readStringZ: " + maxLength);
-    	return Utilities.readStringZ(address);
+    public static String readStringNZ(int address, int maxLength) {
+    	return Utilities.readStringNZ(address, maxLength);
     }
 
     public static int checkMemoryRead32(int address, int pc) throws StopThreadException {
