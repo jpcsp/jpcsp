@@ -5,6 +5,7 @@ import java.awt.Window;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -21,6 +22,7 @@ import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.GUI.IMainGUI;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.sceDisplay;
 
 public class AutoTestsRunner {
 	Emulator emulator;
@@ -151,10 +153,11 @@ public class AutoTestsRunner {
 		File file = new File(fileName);
 		
 		reset();
+		sceDisplay.ignoreLWJGLError = true;
 
 		//SceModule module;
 		
-		{
+		try {
 	        RandomAccessFile raf = new RandomAccessFile(file, "r");
 	        try {
 		        FileChannel roChannel = raf.getChannel();
@@ -170,6 +173,7 @@ public class AutoTestsRunner {
 	        } finally {
 	        	raf.close();
 	        }
+		} catch (FileNotFoundException fileNotFoundException) {
 		}
 		
 		RuntimeContext.setIsHomebrew(true);

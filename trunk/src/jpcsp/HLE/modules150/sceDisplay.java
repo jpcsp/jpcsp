@@ -676,6 +676,8 @@ public class sceDisplay extends HLEModule {
     private void setAntiAliasSamplesNum(int samples) {
         antiAliasSamplesNum = samples;
     }
+    
+    static public boolean ignoreLWJGLError = false;
 
     @Override
     public void start() {
@@ -700,7 +702,10 @@ public class sceDisplay extends HLEModule {
 
         if (!initGLcalled && !calledFromCommandLine) {
         	// Some problem occurred during the OpenGL/LWJGL initialization...
-        	throw new RuntimeException("Your display format is not compatible with Jpcsp or the anti-aliasing settings is not supported by your display");
+        	if (!ignoreLWJGLError)
+        	{
+        		throw new RuntimeException("Your display format is not compatible with Jpcsp or the anti-aliasing settings is not supported by your display");
+        	}
         }
 
         mode          = 0;
