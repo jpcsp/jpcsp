@@ -25,9 +25,6 @@ import org.objectweb.asm.MethodVisitor;
 public interface ICompilerContext {
 	public void compileInterpreterInstruction();
 	public void compileRTRSIMM(String method, boolean signedImm);
-	public void compileRDRSRT(String method);
-	public void compileRDRTRS(String method);
-	public void compileRDRTSA(String method);
 	public void compileRDRT(String method);
 	public void compileSyscall();
     public void loadRs();
