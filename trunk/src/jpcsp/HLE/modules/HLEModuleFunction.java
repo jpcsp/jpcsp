@@ -17,22 +17,30 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules;
 
-import jpcsp.Processor;
+import java.lang.reflect.Method;
 
 /**
  *
  * @author fiveofhearts
  */
-public abstract class HLEModuleFunction {
+public class HLEModuleFunction {
     private int syscallCode;
     private final String moduleName;
     private final String functionName;
     private int nid;
     private boolean unimplemented;
+	private Method hleModuleMethod;
+	private boolean checkInsideInterrupt;
+	private boolean checkDispatchThreadEnabled;
+	private HLEModule hleModule;
 
-    public HLEModuleFunction(String moduleName, String functionName) {
+    public HLEModuleFunction(String moduleName, String functionName, HLEModule hleModule, Method hleModuleMethod, boolean checkInsideInterrupt, boolean checkDispatchThreadEnabled) {
         this.moduleName = moduleName;
         this.functionName = functionName;
+		this.checkInsideInterrupt = checkInsideInterrupt;
+		this.checkDispatchThreadEnabled = checkDispatchThreadEnabled;
+		this.hleModuleMethod = hleModuleMethod; 
+		this.hleModule = hleModule;
     }
 
     public final void setSyscallCode(int syscallCode) {
@@ -67,10 +75,22 @@ public abstract class HLEModuleFunction {
         return unimplemented;
     }
 
-    public abstract void execute(Processor cpu);
-    
-    public abstract String compiledString();
-    
+	public boolean checkDispatchThreadEnabled() {
+		return checkDispatchThreadEnabled;
+	}
+	
+	public boolean checkInsideInterrupt() {
+		return checkInsideInterrupt;
+	}
+
+	public Method getHLEModuleMethod() {
+		return hleModuleMethod;
+	}
+
+	public HLEModule getHLEModule() {
+		return hleModule;
+	}
+
     @Override
     public String toString() {
     	return "HLEModuleFunction(moduleName='" + moduleName + "', functionName='" + functionName + "', nid=" + nid + ", syscallCode=" + syscallCode + ")";
