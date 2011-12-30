@@ -17,13 +17,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_INVALID_ARGUMENT;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_POWER_VMEM_IN_USE;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.hardware.Screen;
@@ -147,9 +145,6 @@ public class sceSuspendForUser extends HLEModule {
 
     @HLEFunction(nid = 0x3E0271D3, version = 150, checkInsideInterrupt = true)
     public void sceKernelVolatileMemLock(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        
         hleKernelVolatileMemLock(processor, false);
     }
 

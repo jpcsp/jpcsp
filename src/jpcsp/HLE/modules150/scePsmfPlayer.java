@@ -29,7 +29,6 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceMpegAu;
 import jpcsp.HLE.Modules;

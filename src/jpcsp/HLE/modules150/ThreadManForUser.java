@@ -62,7 +62,6 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_MBX;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_SEMA;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_VPL;
 import static jpcsp.HLE.modules.HLEModuleManager.HLESyscallNid;
-import static jpcsp.util.Utilities.readStringNZ;
 import static jpcsp.util.Utilities.writeStringZ;
 
 import java.lang.management.ManagementFactory;

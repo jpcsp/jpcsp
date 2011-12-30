@@ -31,7 +31,6 @@ import jpcsp.connector.PGDFileConnector;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
-import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelLMOption;
 import jpcsp.HLE.kernel.types.SceModule;

@@ -20,7 +20,6 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 
 public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {

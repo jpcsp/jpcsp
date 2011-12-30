@@ -19,8 +19,6 @@ package jpcsp.HLE.modules150;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.kernel.managers.IntrManager;
-import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.Memory;
