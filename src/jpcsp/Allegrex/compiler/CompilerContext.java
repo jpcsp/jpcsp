@@ -853,6 +853,9 @@ public class CompilerContext implements ICompilerContext {
     	if (parameterType == Processor.class) {
     		loadProcessor();
     		parameterReader.incrementCurrentStackSize();
+    	} else if (parameterType == CpuState.class) {
+    		loadCpu();
+    		parameterReader.incrementCurrentStackSize();
     	} else if (parameterType == int.class) {
     		parameterReader.loadNextInt();
     		parameterReader.incrementCurrentStackSize();

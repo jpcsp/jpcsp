@@ -18,7 +18,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import static jpcsp.util.Utilities.readStringNZ;
-import static jpcsp.util.Utilities.readStringZ;
 
 import jpcsp.HLE.HLEFunction;
 
@@ -30,7 +29,6 @@ import java.util.List;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
-import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
@@ -360,7 +358,7 @@ public class SysMemUserForUser extends HLEModule {
         System.err.println(fragmentedDiagram);
     }
 
-    public void hleKernelPrintf(CpuState cpu, Logger logger, String sceFunctionName) {
+    public int hleKernelPrintf(CpuState cpu, Logger logger, String sceFunctionName) {
 		int string_addr = cpu.gpr[4];
 
 		String msg = readStringNZ(string_addr, 256);
@@ -405,12 +403,12 @@ public class SysMemUserForUser extends HLEModule {
         	}
         	logger.info(formattedMsg);
         }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xA291F107, version = 150)
-    public void sceKernelMaxFreeMemSize(Processor processor) {
-		CpuState cpu = processor.cpu;
-
+    public int sceKernelMaxFreeMemSize() {
 		int maxFreeMemSize = maxFreeMemSize();
 
         // Some games expect size to be rounded down in 16 bytes block
@@ -419,102 +417,82 @@ public class SysMemUserForUser extends HLEModule {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sceKernelMaxFreeMemSize %d(hex=0x%1$X)", maxFreeMemSize));
     	}
-        cpu.gpr[2] = maxFreeMemSize;
+
+    	return maxFreeMemSize;
 	}
 
 	@HLEFunction(nid = 0xF919F628, version = 150)
-	public void sceKernelTotalFreeMemSize(Processor processor) {
-		CpuState cpu = processor.cpu;
-
+	public int sceKernelTotalFreeMemSize() {
 		int totalFreeMemSize = totalFreeMemSize();
-
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sceKernelTotalFreeMemSize %d(hex=0x%1$X)", totalFreeMemSize));
     	}
-        cpu.gpr[2] = totalFreeMemSize;
+
+    	return totalFreeMemSize;
 	}
 
 	@HLEFunction(nid = 0x237DBD4F, version = 150)
-	public void sceKernelAllocPartitionMemory(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int partitionid = cpu.gpr[4];
-		int pname = cpu.gpr[5];
-		int type = cpu.gpr[6];
-		int size = cpu.gpr[7];
-		int addr = cpu.gpr[8];
-
+	public int sceKernelAllocPartitionMemory(int partitionid, String name, int type, int size, int addr) {
         addr &= Memory.addressMask;
-        String name = readStringZ(pname);
-
         if (log.isDebugEnabled()) {
 	        log.debug(String.format("sceKernelAllocPartitionMemory(partition=%d, name='%s', type=%s, size=0x%X, addr=0x%08X", partitionid, name, getTypeName(type), size, addr));
         }
 
         if (type < PSP_SMEM_Low || type > PSP_SMEM_HighAligned) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_ILLEGAL_MEMBLOCK_ALLOC_TYPE;
-        } else {
-            SysMemInfo info = malloc(partitionid, name, type, size, addr);
-            if (info != null) {
-                cpu.gpr[2] = info.uid;
-            } else {
-                cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_FAILED_ALLOC_MEMBLOCK;
-            }
+            return SceKernelErrors.ERROR_KERNEL_ILLEGAL_MEMBLOCK_ALLOC_TYPE;
         }
+
+        SysMemInfo info = malloc(partitionid, name, type, size, addr);
+        if (info == null) {
+        	return SceKernelErrors.ERROR_KERNEL_FAILED_ALLOC_MEMBLOCK;
+        }
+
+        return info.uid;
 	}
 
 	@HLEFunction(nid = 0xB6D61D02, version = 150)
-	public void sceKernelFreePartitionMemory(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int uid = cpu.gpr[4];
-
+	public int sceKernelFreePartitionMemory(int uid) {
 		SceUidManager.checkUidPurpose(uid, "SysMem", true);
-        SysMemInfo info = blockList.remove(uid);
+
+		SysMemInfo info = blockList.remove(uid);
         if (info == null) {
             log.warn("sceKernelFreePartitionMemory unknown SceUID=" + Integer.toHexString(uid));
-            Emulator.getProcessor().cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_ILLEGAL_CHUNK_ID;
-        } else {
-        	if (log.isDebugEnabled()) {
-        		log.debug("sceKernelFreePartitionMemory SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "'");
-        	}
-            free(info);
-            cpu.gpr[2] = 0;
+            return SceKernelErrors.ERROR_KERNEL_ILLEGAL_CHUNK_ID;
         }
+
+        if (log.isDebugEnabled()) {
+    		log.debug("sceKernelFreePartitionMemory SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "'");
+    	}
+
+        free(info);
+
+        return 0;
 	}
 
 	@HLEFunction(nid = 0x9D9A5BA1, version = 150)
-	public void sceKernelGetBlockHeadAddr(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int uid = cpu.gpr[4];
-
+	public int sceKernelGetBlockHeadAddr(int uid) {
 		SceUidManager.checkUidPurpose(uid, "SysMem", true);
-        SysMemInfo info = blockList.get(uid);
+
+		SysMemInfo info = blockList.get(uid);
         if (info == null) {
             log.warn("sceKernelGetBlockHeadAddr unknown SceUID=" + Integer.toHexString(uid));
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_ILLEGAL_CHUNK_ID;
-        } else {
-        	if (log.isDebugEnabled()) {
-        		log.debug("sceKernelGetBlockHeadAddr SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "' headAddr:" + Integer.toHexString(info.addr));
-        	}
-            cpu.gpr[2] = info.addr;
+            return SceKernelErrors.ERROR_KERNEL_ILLEGAL_CHUNK_ID;
         }
+
+        if (log.isDebugEnabled()) {
+    		log.debug("sceKernelGetBlockHeadAddr SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "' headAddr:" + Integer.toHexString(info.addr));
+    	}
+
+        return info.addr;
 	}
 
 	@HLEFunction(nid = 0x13A5ABEF, version = 150)
-	public void sceKernelPrintf(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		hleKernelPrintf(cpu, stdout, "sceKernelPrintf");
-
-        cpu.gpr[2] = 0;
+	public int sceKernelPrintf(CpuState cpu) {
+		return hleKernelPrintf(cpu, stdout, "sceKernelPrintf");
 	}
 
 	@HLEFunction(nid = 0x3FC9AE6A, version = 150)
-	public void sceKernelDevkitVersion(Processor processor) {
-		CpuState cpu = processor.cpu;
-
+	public int sceKernelDevkitVersion() {
 		int major = firmwareVersion / 100;
         int minor = (firmwareVersion / 10) % 10;
         int revision = firmwareVersion % 10;
@@ -523,7 +501,16 @@ public class SysMemUserForUser extends HLEModule {
         	log.debug(String.format("sceKernelDevkitVersion return:0x%08X", devkitVersion));
         }
 
-        cpu.gpr[2] = devkitVersion;
+        return devkitVersion;
 	}
 
+	@HLEFunction(nid = 0xD8DE5C1E, version = 150)
+	public int SysMemUserForUser_D8DE5C1E() {
+		if (log.isDebugEnabled()) {
+			log.debug("SysMemUserForUser_D8DE5C1E");
+		}
+
+		// Seems to always return 0...
+		return 0;
+	}
 }
