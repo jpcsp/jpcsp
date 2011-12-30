@@ -3,17 +3,29 @@ package jpcsp.HLE;
 import jpcsp.util.Utilities;
 
 public class PspString {
-	public String string;
-	public int address;
+	protected String string;
+	protected int address;
+	protected int maxLength;
 	
 	public PspString(int address) {
+		this.string = null;
 		this.address = address;
-		this.string = Utilities.readStringZ(address);
+		this.maxLength = 64 * 1024 * 1024; // Never will be greater than the whole PSP memory :P
 	}
 
 	public PspString(int address, int maxLength) {
+		this.string = null;
 		this.address = address;
-		this.string = Utilities.readStringNZ(address, maxLength);
+		this.maxLength = maxLength;
+	}
+	
+	public String getString() {
+		if (this.string == null) this.string = Utilities.readStringNZ(address, maxLength);
+		return this.string;
+	}
+	
+	public int getAddress() {
+		return this.address;
 	}
 
 	@Override
