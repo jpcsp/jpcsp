@@ -140,18 +140,25 @@ public class sceSasCore extends HLEModule {
 
     	return sasADSRCurveTypeNames[curveType];
     }
+    
+    protected void checkSasAddressGood(int sasCore) {
+    	if (!Memory.isAddressGood(sasCore)) {
+            log.warn(String.format("%s bad sasCore Address 0x%08X", getCallingFunctionName(3), sasCore));
+    		throw(new SceKernelErrorException(PSP_SAS_ERROR_ADDRESS));
+    	}
+    	
+    	if (!Memory.isAddressAlignedTo(sasCore, 64)) {
+            log.warn(String.format("%s bad sasCore Address 0x%08X (not aligned to 64)", getCallingFunctionName(3), sasCore));
+    		throw(new SceKernelErrorException(PSP_SAS_ERROR_ADDRESS));
+    	}
+    }
 
     protected void checkSasHandleGood(int sasCore) {
-        if (Memory.isAddressGood(sasCore)) {
-            if (Processor.memory.read32(sasCore) == sasCoreUid) {
-                return;
-            }
-            log.warn(String.format("%s bad sasCoreUid 0x%08X", getCallingFunctionName(3), Processor.memory.read32(sasCore)));
-        } else {
-            log.warn(String.format("%s bad sasCore Address 0x%08X", getCallingFunctionName(3), sasCore));
+    	checkSasAddressGood(sasCore);
+    	
+        if (Processor.memory.read32(sasCore) != sasCoreUid) {
+            throw(new SceKernelErrorException(SceKernelErrors.ERROR_SAS_NOT_INIT));
         }
-
-        throw(new SceKernelErrorException(SceKernelErrors.ERROR_SAS_NOT_INIT));
     }
 
     protected void checkVoiceNumberGood(int voice) {
@@ -323,7 +330,7 @@ public class sceSasCore extends HLEModule {
     /**
      * Initialize a new sasCore handle.
      *
-     * @param sasCorePointer     sasCore handle, must be a valid address
+     * @param sasCore     sasCore handle, must be a valid address
      *                    (Uid will be written at this address).
      * @param grain       number of samples processed by one call to __sceSasCore
      * @param maxVoices   number of voices (maximum 32)
@@ -334,18 +341,12 @@ public class sceSasCore extends HLEModule {
      * @return            0
      */
     @HLEFunction(nid = 0x42778A9F, version = 150)
-    public int __sceSasInit(TPointer sasCorePointer, int grain, int maxVoices, int outputMode, int sampleRate) {
+    public int __sceSasInit(TPointer sasCore, int grain, int maxVoices, int outputMode, int sampleRate) {
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("__sceSasInit sasCore=0x%08X, grain=%d, maxVoices=%d, outputMode=%d, sampleRate=%d", sasCorePointer.getAddress(), grain, maxVoices, outputMode, sampleRate));
+        	log.debug(String.format("__sceSasInit sasCore=0x%08X, grain=%d, maxVoices=%d, outputMode=%d, sampleRate=%d", sasCore.getAddress(), grain, maxVoices, outputMode, sampleRate));
         }
         
-        if (!sasCorePointer.isAddressGood()) {
-        	return PSP_SAS_ERROR_ADDRESS;
-        }
-        
-        if (!sasCorePointer.isAlignedTo(64)) {
-        	return PSP_SAS_ERROR_ADDRESS;
-        }
+        checkSasAddressGood(sasCore.getAddress());
 
     	if (sasCoreUid != -1) {
     		// Only one Sas core can be active at a time.
@@ -354,7 +355,7 @@ public class sceSasCore extends HLEModule {
     	}
 
     	sasCoreUid = SceUidManager.getNewUid(sasCodeUidPurpose);
-    	sasCorePointer.setValue32(0, sasCoreUid);
+    	sasCore.setValue32(0, sasCoreUid);
 
         grainSamples = grain;
         this.outputMode = outputMode;
@@ -1056,5 +1057,5 @@ public class sceSasCore extends HLEModule {
 		memoryWriter.flush();
 
 		return 0;
-    }
+    }  
 }
