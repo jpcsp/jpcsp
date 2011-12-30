@@ -904,12 +904,12 @@ public class IoFileMgrForUser extends HLEModule {
         return modeStrings[flags & PSP_O_RDWR];
     }
 
-    private void updateResult(CpuState cpu, IoInfo info, long result, boolean async, boolean resultIs64bit, IoOperation ioOperation) {
-    	updateResult(cpu, info, result, async, resultIs64bit, ioOperation, null, 0);
+    private long updateResult(IoInfo info, long result, boolean async, boolean resultIs64bit, IoOperation ioOperation) {
+    	return updateResult(info, result, async, resultIs64bit, ioOperation, null, 0);
     }
 
     // Handle returning/storing result for sync/async operations
-    private void updateResult(CpuState cpu, IoInfo info, long result, boolean async, boolean resultIs64bit, IoOperation ioOperation, IAction asyncAction, int size) {
+    private long updateResult(IoInfo info, long result, boolean async, boolean resultIs64bit, IoOperation ioOperation, IAction asyncAction, int size) {
         if (info != null) {
             if (async) {
                 if (!info.asyncPending) {
@@ -921,10 +921,7 @@ public class IoFileMgrForUser extends HLEModule {
             }
         }
 
-        cpu.gpr[2] = (int) (result & 0xFFFFFFFFL);
-        if (resultIs64bit) {
-            cpu.gpr[3] = (int) (result >> 32);
-        }
+        return result;
     }
 
     private String getWhenceName(int whence) {
@@ -1138,82 +1135,92 @@ public class IoFileMgrForUser extends HLEModule {
     /*
      * HLE functions.
      */
-    public void hleIoWaitAsync(int id, int res_addr, boolean wait, boolean callbacks) {
+    public int hleIoWaitAsync(int id, int res_addr, boolean wait, boolean callbacks) {
         if (log.isDebugEnabled()) {
             log.debug("hleIoWaitAsync(id=" + Integer.toHexString(id) + ",res=0x" + Integer.toHexString(res_addr) + ") wait=" + wait + " callbacks=" + callbacks);
         }
+
         IoInfo info = fileIds.get(id);
+
         if (info == null) {
             log.warn("hleIoWaitAsync - unknown id " + Integer.toHexString(id));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
-        } else if (info.result == ERROR_KERNEL_NO_ASYNC_OP) {
+            return ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
+        }
+
+        if (info.result == ERROR_KERNEL_NO_ASYNC_OP) {
             log.debug("hleIoWaitAsync - PSP_ERROR_NO_ASYNC_OP");
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_NO_ASYNC_OP;
-        } else if (info.asyncPending && !wait) {
+            return ERROR_KERNEL_NO_ASYNC_OP;
+        }
+
+        if (info.asyncPending && !wait) {
             // Polling returns 1 when async is busy.
             log.debug("hleIoWaitAsync - poll return = 1(busy)");
-            Emulator.getProcessor().cpu.gpr[2] = 1;
+            if (log.isDebugEnabled()) {
+            	log.debug(String.format("hleIoWaitAsync info.result=%d", info.result));
+            }
+            return 1;
+        }
+
+        boolean waitForAsync = false;
+
+        // Check for the waiting condition first.
+        if (wait) {
+            waitForAsync = true;                
+        }
+        
+        // This case happens when the game switches thread before calling waitAsync,
+        // example: sceIoReadAsync -> sceKernelDelayThread -> sceIoWaitAsync
+        // Technically we should wait at least some time, since tests show
+        // a load of sceKernelDelayThread before sceIoWaitAsync won't make
+        // the async io complete (maybe something to do with thread priorities).
+        if (!info.asyncPending) {
+            log.debug("hleIoWaitAsync - already context switched, not waiting");
+            waitForAsync = false;
+        }
+        
+        // The file was marked as closePending, so close it right away to avoid delays.
+        if (info.closePending) {
+            log.debug("hleIoWaitAsync - file marked with closePending, calling hleIoClose, not waiting");
+            hleIoClose(info.id, false);
+            waitForAsync = false;
+        }
+
+        // The file was not found at sceIoOpenAsync.
+        if (info.result == ERROR_ERRNO_FILE_NOT_FOUND) {
+            log.debug("hleIoWaitAsync - file not found, not waiting");
+            info.close();
+            triggerAsyncThread(info);
+            waitForAsync = false;
+        }
+
+        if (waitForAsync) {
+            // Call the ioListeners.
+            for (IIoListener ioListener : ioListeners) {
+                ioListener.sceIoWaitAsync(0, id, res_addr);
+            }
+            // Start the waiting mode.
+            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+            SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+            currentThread.wait.Io_id = info.id;
+            currentThread.wait.Io_resultAddr = res_addr;
+            threadMan.hleKernelThreadEnterWaitState(JPCSP_WAIT_IO, info.id, ioWaitStateChecker, callbacks);
         } else {
-            boolean waitForAsync = false;
-            
-            // Check for the waiting condition first.
-            if (wait) {
-                waitForAsync = true;                
-            }
-            
-            // This case happens when the game switches thread before calling waitAsync,
-            // example: sceIoReadAsync -> sceKernelDelayThread -> sceIoWaitAsync
-            // Technically we should wait at least some time, since tests show
-            // a load of sceKernelDelayThread before sceIoWaitAsync won't make
-            // the async io complete (maybe something to do with thread priorities).
-            if (!info.asyncPending) {
-                log.debug("hleIoWaitAsync - already context switched, not waiting");
-                waitForAsync = false;
-            }
-            
-            // The file was marked as closePending, so close it right away to avoid delays.
-            if (info.closePending) {
-                log.debug("hleIoWaitAsync - file marked with closePending, calling hleIoClose, not waiting");
-                hleIoClose(info.id, false);
-                waitForAsync = false;
+            // Always store the result.
+            Memory mem = Memory.getInstance();
+            if (Memory.isAddressGood(res_addr)) {
+            	if (log.isDebugEnabled()) {
+            		log.debug("hleIoWaitAsync - storing result 0x" + Long.toHexString(info.result));
+            	}
+                mem.write64(res_addr, info.result);
             }
 
-            // The file was not found at sceIoOpenAsync.
-            if (info.result == ERROR_ERRNO_FILE_NOT_FOUND) {
-                log.debug("hleIoWaitAsync - file not found, not waiting");
-                info.close();
-                triggerAsyncThread(info);
-                waitForAsync = false;
-            }
-
-            Emulator.getProcessor().cpu.gpr[2] = 0;
-            if (waitForAsync) {
-                // Call the ioListeners.
-                for (IIoListener ioListener : ioListeners) {
-                    ioListener.sceIoWaitAsync(Emulator.getProcessor().cpu.gpr[2], id, res_addr);
-                }
-                // Start the waiting mode.
-                ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-                SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-                currentThread.wait.Io_id = info.id;
-                currentThread.wait.Io_resultAddr = res_addr;
-                threadMan.hleKernelThreadEnterWaitState(JPCSP_WAIT_IO, info.id, ioWaitStateChecker, callbacks);
-            } else {
-                // Always store the result.
-                Memory mem = Memory.getInstance();
-                if (Memory.isAddressGood(res_addr)) {
-                	if (log.isDebugEnabled()) {
-                		log.debug("hleIoWaitAsync - storing result 0x" + Long.toHexString(info.result));
-                	}
-                    mem.write64(res_addr, info.result);
-                }
-
-                // For sceIoPollAsync, only call the ioListeners.
-                for (IIoListener ioListener : ioListeners) {
-                    ioListener.sceIoPollAsync(Emulator.getProcessor().cpu.gpr[2], id, res_addr);
-                }
+            // For sceIoPollAsync, only call the ioListeners.
+            for (IIoListener ioListener : ioListeners) {
+                ioListener.sceIoPollAsync(0, id, res_addr);
             }
         }
+
+        return 0;
     }
     
     public int hleIoOpen(PspString filename, int flags, int permissions, boolean async) {
@@ -1221,7 +1228,6 @@ public class IoFileMgrForUser extends HLEModule {
     }
 
     public int hleIoOpen(int filename_addr, String filename, int flags, int permissions, boolean async) {
-        
         if (log.isInfoEnabled()) {
             log.info("hleIoOpen filename = " + filename + " flags = " + Integer.toHexString(flags) + " permissions = 0" + Integer.toOctalString(permissions));
         }
@@ -1269,8 +1275,7 @@ public class IoFileMgrForUser extends HLEModule {
             for (IIoListener ioListener : ioListeners) {
                 ioListener.sceIoOpen(-1, filename_addr, filename, flags, permissions, mode);
             }
-            Emulator.getProcessor().cpu.gpr[2] = -1;
-            return Emulator.getProcessor().cpu.gpr[2];
+            return -1;
         }
         //Retry count.
         int retry = (flags >> 16) & 0x000F;
@@ -1284,6 +1289,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
 
         IoInfo info = null;
+        int result;
         try {
             String pcfilename = getDeviceFilePath(filename);
             if (pcfilename != null) {
@@ -1294,17 +1300,17 @@ public class IoFileMgrForUser extends HLEModule {
                     // Check umd is mounted.
                     if (iso == null) {
                         log.error("hleIoOpen - no umd mounted");
-                        Emulator.getProcessor().cpu.gpr[2] = ERROR_ERRNO_DEVICE_NOT_FOUND;
+                        result = ERROR_ERRNO_DEVICE_NOT_FOUND;
                     // Check umd is activated.
                     } else if (!Modules.sceUmdUserModule.isUmdActivated()) {
                         log.warn("hleIoOpen - umd mounted but not activated");
-                        Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_NO_SUCH_DEVICE;
+                        result = ERROR_KERNEL_NO_SUCH_DEVICE;
                     // Check flags are valid.
                     } else if ((flags & PSP_O_WRONLY) == PSP_O_WRONLY ||
                             (flags & PSP_O_CREAT) == PSP_O_CREAT ||
                             (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
                         log.error("hleIoOpen - refusing to open umd media for write");
-                        Emulator.getProcessor().cpu.gpr[2] = ERROR_ERRNO_READ_ONLY;
+                        result = ERROR_ERRNO_READ_ONLY;
                     } else {
                         // Open file.
                         try {
@@ -1314,7 +1320,7 @@ public class IoFileMgrForUser extends HLEModule {
                             if (!info.isValidId()) {
                             	// Too many open files...
                             	log.warn(String.format("hleIoOpen - too many open files"));
-                            	Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_TOO_MANY_OPEN_FILES;
+                            	result = ERROR_KERNEL_TOO_MANY_OPEN_FILES;
                             	// Return immediately the error, even in async mode
                             	async = false;
                             } else {
@@ -1323,7 +1329,7 @@ public class IoFileMgrForUser extends HLEModule {
 	                                info.sectorBlockMode = true;
 	                            }
 	                            info.result = ERROR_KERNEL_NO_ASYNC_OP;
-	                            Emulator.getProcessor().cpu.gpr[2] = info.id;
+	                            result = info.id;
 	                            if (log.isDebugEnabled()) {
 	                                log.debug("hleIoOpen assigned id = 0x" + Integer.toHexString(info.id));
 	                            }
@@ -1332,10 +1338,10 @@ public class IoFileMgrForUser extends HLEModule {
                             if (log.isDebugEnabled()) {
                                 log.debug("hleIoOpen - umd file not found (ok to ignore this message, debug purpose only)");
                             }
-                            Emulator.getProcessor().cpu.gpr[2] = ERROR_ERRNO_FILE_NOT_FOUND;
+                            result = ERROR_ERRNO_FILE_NOT_FOUND;
                         } catch (IOException e) {
                             log.error("hleIoOpen - error opening umd media: " + e.getMessage());
-                            Emulator.getProcessor().cpu.gpr[2] = -1;
+                            result = -1;
                         }
                     }
                 } else {
@@ -1346,7 +1352,7 @@ public class IoFileMgrForUser extends HLEModule {
                         if (log.isDebugEnabled()) {
                             log.debug("hleIoOpen - file already exists (PSP_O_CREAT + PSP_O_EXCL)");
                         }
-                        Emulator.getProcessor().cpu.gpr[2] = ERROR_ERRNO_FILE_ALREADY_EXISTS;
+                        result = ERROR_ERRNO_FILE_ALREADY_EXISTS;
                     } else {
                     	// When PSP_O_CREAT is specified, create the parent directories
                     	// if they do not yet exist.
@@ -1363,45 +1369,45 @@ public class IoFileMgrForUser extends HLEModule {
                             info.truncate(0);
                         }
                         info.result = ERROR_KERNEL_NO_ASYNC_OP; // sceIoOpenAsync will set this properly
-                        Emulator.getProcessor().cpu.gpr[2] = info.id;
+                        result = info.id;
                         if (log.isDebugEnabled()) {
                             log.debug("hleIoOpen assigned id = 0x" + Integer.toHexString(info.id));
                         }
                     }
                 }
             } else {
-                Emulator.getProcessor().cpu.gpr[2] = -1;
+                result = -1;
             }
         } catch (FileNotFoundException e) {
             // To be expected under mode="r" and file doesn't exist
             if (log.isDebugEnabled()) {
                 log.debug("hleIoOpen - file not found (ok to ignore this message, debug purpose only)");
             }
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_ERRNO_FILE_NOT_FOUND;
+            result = ERROR_ERRNO_FILE_NOT_FOUND;
         }
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoOpen(Emulator.getProcessor().cpu.gpr[2], filename_addr, filename, flags, permissions, mode);
+            ioListener.sceIoOpen(result, filename_addr, filename, flags, permissions, mode);
         }
 
         if (async) {
-            int result = Emulator.getProcessor().cpu.gpr[2];
+        	int realResult = result;
             if (info == null) {
                 log.debug("sceIoOpenAsync - file not found (ok to ignore this message, debug purpose only)");
                 // For async we still need to make and return a file handle even if we couldn't open the file,
                 // this is so the game can query on the handle (wait/async stat/io callback).
                 info = new IoInfo(readStringZ(filename_addr), null, null, flags, permissions);
-                Emulator.getProcessor().cpu.gpr[2] = info.id;
+                result = info.id;
             }
 
-            startIoAsync(info, result, IoOperation.open, null, 0);
+            startIoAsync(info, realResult, IoOperation.open, null, 0);
         }
-        
-        return Emulator.getProcessor().cpu.gpr[2];
+
+        return result;
     }
 
-    private void hleIoClose(int id, boolean async) {
-        CpuState cpu = Emulator.getProcessor().cpu;
+    private int hleIoClose(int id, boolean async) {
+        int result;
 
         if (log.isDebugEnabled()) {
             log.debug("hleIoClose - id " + Integer.toHexString(id));
@@ -1412,13 +1418,13 @@ public class IoFileMgrForUser extends HLEModule {
             if (info != null) {
                 if (info.asyncPending) {
                     log.warn("sceIoCloseAsync - id " + Integer.toHexString(id) + " PSP_ERROR_ASYNC_BUSY");
-                    cpu.gpr[2] = ERROR_KERNEL_ASYNC_BUSY;
+                    result = ERROR_KERNEL_ASYNC_BUSY;
                 } else {
                     info.closePending = true;
-                    updateResult(cpu, info, 0, true, false, IoOperation.close);
+                    result = (int) updateResult(info, 0, true, false, IoOperation.close);
                 }
             } else {
-                cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
+                result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
             }
         } else {
             try {
@@ -1426,7 +1432,7 @@ public class IoFileMgrForUser extends HLEModule {
                     if (id != 1 && id != 2) { // Ignore stdout and stderr.
                         log.warn("sceIoClose - unknown id " + Integer.toHexString(id));
                     }
-                    cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
+                    result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
                 } else {
                     if (info.readOnlyFile != null) {
                         // Can be just closing an empty handle, because hleIoOpen(async==true)
@@ -1436,20 +1442,22 @@ public class IoFileMgrForUser extends HLEModule {
                     info.close();
                     triggerAsyncThread(info);
                     info.result = 0;
-                    cpu.gpr[2] = 0;
+                    result = 0;
                 }
             } catch (IOException e) {
                 log.error("pspiofilemgr - error closing file: " + e.getMessage());
                 e.printStackTrace();
-                cpu.gpr[2] = -1;
+                result = -1;
             }
             for (IIoListener ioListener : ioListeners) {
-                ioListener.sceIoClose(cpu.gpr[2], id);
+                ioListener.sceIoClose(result, id);
             }
         }
+
+        return result;
     }
 
-    private void hleIoWrite(int id, int data_addr, int size, boolean async) {
+    private int hleIoWrite(int id, int data_addr, int size, boolean async) {
         IoInfo info = null;
         int result;
 
@@ -1508,10 +1516,12 @@ public class IoFileMgrForUser extends HLEModule {
                 result = -1;
             }
         }
-        updateResult(Emulator.getProcessor().cpu, info, result, async, false, IoOperation.write, null, size);
+        result = (int) updateResult(info, result, async, false, IoOperation.write, null, size);
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoWrite(Emulator.getProcessor().cpu.gpr[2], id, data_addr, Emulator.getProcessor().cpu.gpr[6], size);
+            ioListener.sceIoWrite(result, id, data_addr, size, size);
         }
+
+        return result;
     }
 
     public int hleIoRead(int id, int data_addr, int size, boolean async) {
@@ -1587,7 +1597,7 @@ public class IoFileMgrForUser extends HLEModule {
                 Emulator.PauseEmu();
             }
         }
-        updateResult(Emulator.getProcessor().cpu, info, result, async, false, IoOperation.read, asyncAction, size);
+        result = (int) updateResult(info, result, async, false, IoOperation.read, asyncAction, size);
         // Call the IO listeners (performed in the async action if one is provided, otherwise call them here)
         if (asyncAction == null) {
             for (IIoListener ioListener : ioListeners) {
@@ -1595,12 +1605,12 @@ public class IoFileMgrForUser extends HLEModule {
             }
         }
         
-        return Emulator.getProcessor().cpu.gpr[2];
+        return result;
     }
 
-    private void hleIoLseek(int id, long offset, int whence, boolean resultIs64bit, boolean async) {
+    private long hleIoLseek(int id, long offset, int whence, boolean resultIs64bit, boolean async) {
         IoInfo info = null;
-        long result = 0;
+        long result;
 
         if (id == STDOUT_ID || id == STDERR_ID || id == STDIN_ID) { // stdio
             log.error("seek - can't seek on stdio id " + Integer.toHexString(id));
@@ -1631,7 +1641,7 @@ public class IoFileMgrForUser extends HLEModule {
                                 for (IIoListener ioListener : ioListeners) {
                                     ioListener.sceIoSeek64(ERROR_INVALID_ARGUMENT, id, offset, whence);
                                 }
-                                return;
+                                return result;
                             }
                             info.position = offset;
 
@@ -1646,7 +1656,7 @@ public class IoFileMgrForUser extends HLEModule {
                                 for (IIoListener ioListener : ioListeners) {
                                     ioListener.sceIoSeek64(ERROR_INVALID_ARGUMENT, id, offset, whence);
                                 }
-                                return;
+                                return result;
                             }
                             info.position += offset;
 
@@ -1661,7 +1671,7 @@ public class IoFileMgrForUser extends HLEModule {
                                 for (IIoListener ioListener : ioListeners) {
                                     ioListener.sceIoSeek64(ERROR_INVALID_ARGUMENT, id, offset, whence);
                                 }
-                                return;
+                                return result;
                             }
                             info.position = info.readOnlyFile.length() + offset;
 
@@ -1683,24 +1693,24 @@ public class IoFileMgrForUser extends HLEModule {
                 result = -1;
             }
         }
-        updateResult(Emulator.getProcessor().cpu, info, result, async, resultIs64bit, IoOperation.seek);
+        result = updateResult(info, result, async, resultIs64bit, IoOperation.seek);
 
         if (resultIs64bit) {
             for (IIoListener ioListener : ioListeners) {
-                ioListener.sceIoSeek64(
-                        (long) (Emulator.getProcessor().cpu.gpr[2] & 0xFFFFFFFFL) | ((long) Emulator.getProcessor().cpu.gpr[3] << 32),
-                        id, offset, whence);
+                ioListener.sceIoSeek64(result, id, offset, whence);
             }
         } else {
             for (IIoListener ioListener : ioListeners) {
-                ioListener.sceIoSeek32(Emulator.getProcessor().cpu.gpr[2], id, (int) offset, whence);
+                ioListener.sceIoSeek32((int) result, id, (int) offset, whence);
             }
         }
+
+        return result;
     }
 
-    public void hleIoIoctl(int id, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen, boolean async) {
+    public int hleIoIoctl(int id, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen, boolean async) {
         IoInfo info = null;
-        int result = -1;
+        int result;
         Memory mem = Memory.getInstance();
 
         if (log.isDebugEnabled()) {
@@ -1740,10 +1750,11 @@ public class IoFileMgrForUser extends HLEModule {
                             } catch (IOException e) {
                                 // Should never happen?
                                 log.warn("hleIoIoctl cmd=0x01010005 exception: " + e.getMessage());
-                                result = -1;
+								result = ERROR_KERNEL_FILE_READ_ERROR;
                             }
                         } else {
                             log.warn("hleIoIoctl cmd=0x01010005 only allowed on UMD files");
+                            result = ERROR_INVALID_ARGUMENT;
                         }
                     } else {
                         log.warn("hleIoIoctl cmd=0x01010005 " + String.format("0x%08X %d", indata_addr, inlen) + " unsupported parameters");
@@ -1769,6 +1780,7 @@ public class IoFileMgrForUser extends HLEModule {
 							}
 	                    } else {
 	                        log.warn("hleIoIoctl cmd=0x01020001 only allowed on UMD files");
+	                        result = ERROR_INVALID_ARGUMENT;
 	                    }
 	                } else {
 	                    log.warn("hleIoIoctl cmd=0x01020001 " + String.format("0x%08X %d", outdata_addr, outlen) + " unsupported parameters");
@@ -1798,6 +1810,7 @@ public class IoFileMgrForUser extends HLEModule {
 							}
 	                    } else {
 	                        log.warn("hleIoIoctl cmd=0x01020002 only allowed on UMD files");
+	                        result = ERROR_INVALID_ARGUMENT;
 	                    }
 	                } else {
 	                    log.warn("hleIoIoctl cmd=0x01020002 " + String.format("0x%08X %d", outdata_addr, outlen) + " unsupported parameters");
@@ -1813,6 +1826,7 @@ public class IoFileMgrForUser extends HLEModule {
 	                    	result = 0;
 	                    } else {
 	                        log.warn("hleIoIoctl cmd=0x01020003 only allowed on UMD files");
+	                        result = ERROR_INVALID_ARGUMENT;
 	                    }
 	                } else {
 	                    log.warn("hleIoIoctl cmd=0x01020003 " + String.format("0x%08X %d", outdata_addr, outlen) + " unsupported parameters");
@@ -1831,9 +1845,11 @@ public class IoFileMgrForUser extends HLEModule {
                                 result = 0;
                             } catch (IOException e) {
                                 log.warn("hleIoIoctl cmd=0x01020004 exception: " + e.getMessage());
+								result = ERROR_KERNEL_FILE_READ_ERROR;
                             }
                         } else {
                             log.warn("hleIoIoctl cmd=0x01020004 only allowed on UMD files");
+                            result = ERROR_INVALID_ARGUMENT;
                         }
                     } else {
                         log.warn("hleIoIoctl cmd=0x01020004 " + String.format("0x%08X %d", outdata_addr, outlen) + " unsupported parameters");
@@ -1853,6 +1869,7 @@ public class IoFileMgrForUser extends HLEModule {
                             result = 0;
                         } else {
                             log.warn("hleIoIoctl cmd=0x01020006 only allowed on UMD files and only implemented for UmdIsoFile");
+                            result = ERROR_INVALID_ARGUMENT;
                         }
                     } else {
                         log.warn("hleIoIoctl cmd=0x01020006 " + String.format("0x%08X %d", outdata_addr, outlen) + " unsupported parameters");
@@ -1872,9 +1889,11 @@ public class IoFileMgrForUser extends HLEModule {
                             } catch (IOException e) {
                                 // Should never happen?
                                 log.warn("hleIoIoctl cmd=0x01020007 exception: " + e.getMessage());
+								result = ERROR_KERNEL_FILE_READ_ERROR;
                             }
                         } else {
                             log.warn("hleIoIoctl cmd=0x01020007 only allowed on UMD files");
+                            result = ERROR_INVALID_ARGUMENT;
                         }
                     } else {
                         log.warn("hleIoIoctl cmd=0x01020007 " + String.format("0x%08X %d", outdata_addr, outlen) + " unsupported parameters");
@@ -1900,6 +1919,9 @@ public class IoFileMgrForUser extends HLEModule {
                                 log.warn(String.format("hleIoIoctl cmd=0x%08X inlen=%d unsupported output parameters 0x%08X %d", cmd, inlen, outdata_addr, outlen));
                                 result = ERROR_INVALID_ARGUMENT;
                     		}
+                    	} else {
+                            log.warn(String.format("hleIoIoctl cmd=0x%08X unsupported input parameters 0x%08X %d, length=%d", cmd, indata_addr, inlen, length));
+                            result = ERROR_INVALID_ARGUMENT;
                     	}
                     } else {
                         log.warn(String.format("hleIoIoctl cmd=0x%08X unsupported input parameters 0x%08X %d", cmd, indata_addr, inlen));
@@ -1926,6 +1948,9 @@ public class IoFileMgrForUser extends HLEModule {
                                 log.warn(String.format("hleIoIoctl cmd=0x%08X inlen=%d unsupported output parameters 0x%08X %d", cmd, inlen, outdata_addr, outlen));
                                 result = ERROR_ERRNO_INVALID_ARGUMENT;
                     		}
+                    	} else {
+                            log.warn(String.format("hleIoIoctl cmd=0x%08X unsupported input parameters 0x%08X %d numberOfSectors=%d", cmd, indata_addr, inlen, numberOfSectors));
+                            result = ERROR_ERRNO_INVALID_ARGUMENT;
                     	}
                     } else {
                         log.warn(String.format("hleIoIoctl cmd=0x%08X unsupported input parameters 0x%08X %d", cmd, indata_addr, inlen));
@@ -1978,6 +2003,7 @@ public class IoFileMgrForUser extends HLEModule {
                             }
                         } else {
                             log.warn("hleIoIoctl cmd=0x01F100A6 only allowed on UMD files");
+                            result = ERROR_INVALID_ARGUMENT;
                         }
                     } else {
                         log.warn("hleIoIoctl cmd=0x01F100A6 " + String.format("0x%08X %d", indata_addr, inlen) + " unsupported parameters");
@@ -2114,6 +2140,7 @@ public class IoFileMgrForUser extends HLEModule {
                 }
 
                 default: {
+                	result = -1;
                     log.warn(String.format("hleIoIoctl 0x%08X unknown command, inlen=%d, outlen=%d", cmd, inlen, outlen));
                     if (Memory.isAddressGood(indata_addr)) {
                         for (int i = 0; i < inlen; i += 4) {
@@ -2129,10 +2156,12 @@ public class IoFileMgrForUser extends HLEModule {
                 }
             }
         }
-        updateResult(Emulator.getProcessor().cpu, info, result, async, false, IoOperation.ioctl);
+        result = (int) updateResult(info, result, async, false, IoOperation.ioctl);
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoIoctl(Emulator.getProcessor().cpu.gpr[2], id, cmd, indata_addr, inlen, outdata_addr, outlen);
+            ioListener.sceIoIoctl(result, id, cmd, indata_addr, inlen, outdata_addr, outlen);
         }
+
+        return result;
     }
 
     /**
@@ -2149,8 +2178,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoPollAsync redirecting to hleIoWaitAsync");
         }
 
-        hleIoWaitAsync(id, res_addr, false, false);
-        return Emulator.getProcessor().cpu.gpr[2];
+        return hleIoWaitAsync(id, res_addr, false, false);
     }
 
     /**
@@ -2167,8 +2195,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoWaitAsync redirecting to hleIoWaitAsync");
         }
         
-        hleIoWaitAsync(id, res_addr, true, false);
-        return Emulator.getProcessor().cpu.gpr[2];
+        return hleIoWaitAsync(id, res_addr, true, false);
     }
 
     /**
@@ -2185,8 +2212,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoWaitAsyncCB redirecting to hleIoWaitAsync");
         }
 
-        hleIoWaitAsync(id, res_addr, true, true);
-        return Emulator.getProcessor().cpu.gpr[2]; 
+        return hleIoWaitAsync(id, res_addr, true, true);
     }
 
     /**
@@ -2204,8 +2230,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoGetAsyncStat poll=0x" + Integer.toHexString(poll) + " redirecting to hleIoWaitAsync");
         }
         
-        hleIoWaitAsync(id, res_addr, (poll == 0), false);
-        return Emulator.getProcessor().cpu.gpr[2]; 
+        return hleIoWaitAsync(id, res_addr, (poll == 0), false);
     }
 
     /**
@@ -2298,11 +2323,11 @@ public class IoFileMgrForUser extends HLEModule {
         if (log.isDebugEnabled()) {
             log.debug("sceIoClose redirecting to hleIoClose");
         }
-        
-        hleIoClose(id, false);
+
+        int result = hleIoClose(id, false);
         delayIoOperation(IoOperation.close);
-        
-        return Emulator.getProcessor().cpu.gpr[2];
+
+        return result;
     }
 
     /**
@@ -2318,8 +2343,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoCloseAsync redirecting to hleIoClose");
         }
 
-        hleIoClose(id, true);
-        return Emulator.getProcessor().cpu.gpr[2];
+        return hleIoClose(id, true);
     }
 
     /**
@@ -2387,8 +2411,7 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xA0B5A7C2, version = 150, checkInsideInterrupt = true)
     public int sceIoReadAsync(int id, int data_addr, int size) {
-        int result = hleIoRead(id, data_addr, size, true);
-        return result;
+        return hleIoRead(id, data_addr, size, true);
     }
 
     /**
@@ -2402,14 +2425,14 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x42EC03AC, version = 150, checkInsideInterrupt = true)
     public int sceIoWrite(int id, int data_addr, int size) {
-        hleIoWrite(id, data_addr, size, false);
+        int result = hleIoWrite(id, data_addr, size, false);
 
         // Do not delay output on stdout/stderr
         if (id != STDOUT_ID && id != STDERR_ID) {
         	delayIoOperation(IoOperation.write);
         }
         
-        return Emulator.getProcessor().cpu.gpr[2];
+        return result;
     }
 
     /**
@@ -2423,9 +2446,7 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x0FACAB19, version = 150, checkInsideInterrupt = true)
     public int sceIoWriteAsync(int id, int data_addr, int size) {
-        hleIoWrite(id, data_addr, size, true);
-
-        return Emulator.getProcessor().cpu.gpr[2];
+        return hleIoWrite(id, data_addr, size, true);
     }
 
     /**
@@ -2438,14 +2459,14 @@ public class IoFileMgrForUser extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0x27EB27B8, version = 150, checkInsideInterrupt = true)
-    public int sceIoLseek(int id, long offset, int whence) {
+    public long sceIoLseek(int id, long offset, int whence) {
         if (log.isDebugEnabled()) {
             log.debug("sceIoLseek - id " + Integer.toHexString(id) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
         }
-        
-        hleIoLseek(id, offset, whence, true, false);
+
+        long result = hleIoLseek(id, offset, whence, true, false);
         delayIoOperation(IoOperation.seek);
-        return Emulator.getProcessor().cpu.gpr[2];
+        return result;
     }
 
     /**
@@ -2462,9 +2483,8 @@ public class IoFileMgrForUser extends HLEModule {
         if (log.isDebugEnabled()) {
             log.debug("sceIoLseekAsync - id " + Integer.toHexString(id) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
         }
-        
-        hleIoLseek(id, offset, whence, true, true);
-        return Emulator.getProcessor().cpu.gpr[2];
+
+        return (int) hleIoLseek(id, offset, whence, true, true);
     }
 
     /**
@@ -2481,10 +2501,10 @@ public class IoFileMgrForUser extends HLEModule {
         if (log.isDebugEnabled()) {
             log.debug("sceIoLseek32 - id " + Integer.toHexString(id) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
         }
-        
-        hleIoLseek(id, (long) offset, whence, false, false);
+
+        int result = (int) hleIoLseek(id, (long) offset, whence, false, false);
         delayIoOperation(IoOperation.seek);
-        return Emulator.getProcessor().cpu.gpr[2];
+        return result;
     }
 
     /**
@@ -2499,9 +2519,8 @@ public class IoFileMgrForUser extends HLEModule {
         if (log.isDebugEnabled()) {
             log.debug("sceIoLseek32Async - id " + Integer.toHexString(id) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
         }
-       
-        hleIoLseek(id, (long) offset, whence, false, true);
-        return Emulator.getProcessor().cpu.gpr[2];
+
+        return (int) hleIoLseek(id, (long) offset, whence, false, true);
     }
 
     /**
@@ -2518,9 +2537,9 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x63632449, version = 150, checkInsideInterrupt = true)
     public int sceIoIoctl(int id, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen) {
-        hleIoIoctl(id, cmd, indata_addr, inlen, outdata_addr, outlen, false);
+        int result = hleIoIoctl(id, cmd, indata_addr, inlen, outdata_addr, outlen, false);
         delayIoOperation(IoOperation.ioctl);
-        return Emulator.getProcessor().cpu.gpr[2];
+        return result;
     }
 
     /**
@@ -2537,8 +2556,7 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xE95A012B, version = 150, checkInsideInterrupt = true)
     public int sceIoIoctlAsync(int id, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen) {
-        hleIoIoctl(id, cmd, indata_addr, inlen, outdata_addr, outlen, true);
-        return Emulator.getProcessor().cpu.gpr[2];
+        return hleIoIoctl(id, cmd, indata_addr, inlen, outdata_addr, outlen, true);
     }
 
     /**
@@ -2553,7 +2571,7 @@ public class IoFileMgrForUser extends HLEModule {
         if (log.isDebugEnabled()) {
             log.debug("sceIoDopen dirname = " + dirname);
         }
-        
+
         String pcfilename = getDeviceFilePath(dirname.getString());
         int result;
         if (pcfilename != null) {
@@ -2608,7 +2626,7 @@ public class IoFileMgrForUser extends HLEModule {
         	result = -1;
         }
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoDopen(Emulator.getProcessor().cpu.gpr[2], dirname.getAddress(), dirname.getString());
+            ioListener.sceIoDopen(result, dirname.getAddress(), dirname.getString());
         }
         delayIoOperation(IoOperation.open);
         return result;
