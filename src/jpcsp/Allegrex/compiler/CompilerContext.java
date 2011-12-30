@@ -24,7 +24,6 @@ import static jpcsp.Allegrex.Common._zr;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
@@ -64,7 +63,6 @@ import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleFunctionReflection;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.memory.SafeFastMemory;
@@ -851,7 +849,7 @@ public class CompilerContext implements ICompilerContext {
      * @param afterSyscallLabel             the Label pointing after the call to the syscall function
      * @param catchSceKernelErrorException  the Label pointing to the SceKernelErrorException catch handler
      */
-    private void loadParameter(CompilerParameterReader parameterReader, HLEModuleFunctionReflection func, Class<?> parameterType, Annotation[] parameterAnnotations, Label afterSyscallLabel, Label catchSceKernelErrorException) {
+    private void loadParameter(CompilerParameterReader parameterReader, HLEModuleFunction func, Class<?> parameterType, Annotation[] parameterAnnotations, Label afterSyscallLabel, Label catchSceKernelErrorException) {
     	if (parameterType == Processor.class) {
     		loadProcessor();
     		parameterReader.incrementCurrentStackSize();
@@ -990,9 +988,10 @@ public class CompilerContext implements ICompilerContext {
 		for (Annotation parameterAnnotation : parameterAnnotations) {
 			if (parameterAnnotation instanceof CheckArgument) {
 				CheckArgument checkArgument = (CheckArgument) parameterAnnotation;
-				HashMap<String, Method> hleModuleMethodsByName = HLEModuleFunctionReflection.hleModuleModuleMethodsByName.get(func.getModuleName());
-				if (hleModuleMethodsByName != null) {
-					methodToCheck = hleModuleMethodsByName.get(checkArgument.value());
+				try {
+					methodToCheck = func.getHLEModule().getClass().getMethod(checkArgument.value(), parameterType);
+				} catch (Exception e) {
+					Compiler.log.error(String.format("CheckArgument method '%s' not found in %s", checkArgument.value(), func.getModuleName()), e);
 				}
 				break;
 			}
@@ -1040,7 +1039,7 @@ public class CompilerContext implements ICompilerContext {
      * @param func        the syscall function
      * @param returnType  the type of the return value
      */
-    private void storeReturnValue(HLEModuleFunctionReflection func, Class<?> returnType) {
+    private void storeReturnValue(HLEModuleFunction func, Class<?> returnType) {
     	if (returnType == void.class) {
     		// Nothing to do
     	} else if (returnType == int.class) {
@@ -1151,7 +1150,7 @@ public class CompilerContext implements ICompilerContext {
      * @param fastSyscall  true if this is a fast syscall (i.e. without context switching)
      *                     false if not (i.e. a syscall where context switching could happen)
      */
-    private void visitSyscall(HLEModuleFunctionReflection func, boolean fastSyscall) {
+    private void visitSyscall(HLEModuleFunction func, boolean fastSyscall) {
     	// The compilation of a syscall requires more stack size than usual
     	maxStackSize = SYSCALL_MAX_STACK_SIZE;
 
@@ -1334,7 +1333,7 @@ public class CompilerContext implements ICompilerContext {
 
     	HLEModuleFunction func = HLEModuleManager.getInstance().getFunctionFromSyscallCode(code);
     	boolean fastSyscall = isFastSyscall(code);
-    	if (func == null || !(func instanceof HLEModuleFunctionReflection)) {
+    	if (func == null) {
 	    	loadImm(code);
 	    	if (fastSyscall) {
 	    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscallFast", "(I)V");
@@ -1342,7 +1341,7 @@ public class CompilerContext implements ICompilerContext {
 	    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscall", "(I)V");
 	    	}
     	} else {
-    		visitSyscall((HLEModuleFunctionReflection) func, fastSyscall);
+    		visitSyscall(func, fastSyscall);
     	}
     }
 

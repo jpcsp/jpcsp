@@ -31,7 +31,6 @@ import jpcsp.Debugger.StepLogger;
 import jpcsp.GUI.IMainGUI;
 import jpcsp.HLE.HLEUidObjectMapping;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceModule;
@@ -99,24 +98,20 @@ public class Emulator implements Runnable {
         Compiler.exit();
         RuntimeContext.exit();
         Profiler.exit();
-        SyscallHandler.exit();
         if (DurationStatistics.collectStatistics && Modules.ThreadManForUserModule.statistics != null && Modules.sceDisplayModule.statistics != null) {
             long totalMillis = getClock().milliTime();
             long displayMillis = Modules.sceDisplayModule.statistics.cumulatedTimeMillis;
-            long syscallCpuMillis = SyscallHandler.durationStatistics.getCpuDurationMillis();
             long idleCpuMillis = RuntimeContext.idleDuration.getCpuDurationMillis();
             long compilationCpuMillis = Compiler.compileDuration.getCpuDurationMillis();
-            long cpuMillis = Modules.ThreadManForUserModule.statistics.allCpuMillis - syscallCpuMillis - compilationCpuMillis - idleCpuMillis;
+            long cpuMillis = Modules.ThreadManForUserModule.statistics.allCpuMillis - compilationCpuMillis - idleCpuMillis;
             long cpuCycles = Modules.ThreadManForUserModule.statistics.allCycles;
             double totalSecs = totalMillis / 1000.0;
             double displaySecs = displayMillis / 1000.0;
-            double syscallSecs = syscallCpuMillis / 1000.0;
             double cpuSecs = cpuMillis / 1000.0;
             if (totalSecs != 0) {
                 log.info("Total execution time: " + String.format("%.3f", totalSecs) + "s");
                 log.info("     PSP CPU time: " + String.format("%.3f", cpuSecs) + "s (" + String.format("%.1f", cpuSecs / totalSecs * 100) + "%)");
                 log.info("     Display time: " + String.format("%.3f", displaySecs) + "s (" + String.format("%.1f", displaySecs / totalSecs * 100) + "%)");
-                log.info("     Syscall time: " + String.format("%.3f", syscallSecs) + "s (" + String.format("%.1f", syscallSecs / totalSecs * 100) + "%)");
             }
             if (VideoEngine.getStatistics() != null) {
                 long videoCalls = VideoEngine.getStatistics().numberCalls;
@@ -212,7 +207,6 @@ public class Emulator implements Runnable {
         getClock().reset();
         getProcessor().reset();
         getScheduler().reset();
-        SyscallHandler.reset();
         Memory.getInstance().Initialise();
         Battery.initialize();
         Interrupts.initialize();

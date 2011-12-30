@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
-import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.NIDMapper;
 import jpcsp.Allegrex.compiler.RuntimeContext;
@@ -368,21 +367,6 @@ public class HLEModuleManager {
     	return syscallCodeToFunction[code];
     }
 
-    /**
-     * @param code The syscall code to try and execute.
-     * @return true if handled, false if not handled.
-     */
-    public boolean handleSyscall(int code) {
-    	HLEModuleFunction func = getFunctionFromSyscallCode(code);
-        if (func == null) {
-        	return false;
-        }
-
-        func.execute(Emulator.getProcessor());
-
-        return true;
-    }
-
     public String functionName(int code) {
     	HLEModuleFunction func = getFunctionFromSyscallCode(code);
     	if (func == null) {
@@ -436,16 +420,16 @@ public class HLEModuleManager {
 			Class<? extends HLEModule> objectClass = hleModule.getClass();
 			String defaultModuleName = objectClass.getName();
 			defaultModuleName = defaultModuleName.substring(defaultModuleName.lastIndexOf('.') + 1);
-			
+
 			for (Method method : objectClass.getMethods()) {
 				HLEFunction hleFunction = method.getAnnotation(HLEFunction.class);
 				if (hleFunction != null) {
 					HLEUnimplemented hleUnimplemented = method.getAnnotation(HLEUnimplemented.class);
-					
+
 					if (version >= hleFunction.version()) {
 						String moduleName = hleFunction.moduleName();
 						String functionName = hleFunction.functionName();
-						
+
 						if (moduleName.length() == 0) {
 							moduleName = defaultModuleName;
 						}
@@ -453,9 +437,9 @@ public class HLEModuleManager {
 						if (functionName.length() == 0) {
 							functionName = method.getName();
 						}
-						
-						HLEModuleFunction hleModuleFunction = new HLEModuleFunctionReflection(moduleName, functionName, hleModule, method, hleFunction.checkInsideInterrupt(), hleFunction.checkDispatchThreadEnabled());
-						
+
+						HLEModuleFunction hleModuleFunction = new HLEModuleFunction(moduleName, functionName, hleModule, method, hleFunction.checkInsideInterrupt(), hleFunction.checkDispatchThreadEnabled());
+
 						if (hleUnimplemented != null) {
 							hleModuleFunction.setUnimplemented(true);
 						}
@@ -467,7 +451,7 @@ public class HLEModuleManager {
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			Modules.log.error("installModuleWithAnnotations", e);
 		}
 	}
 	
