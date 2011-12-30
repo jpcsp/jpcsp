@@ -1874,7 +1874,7 @@ public class sceMpeg extends HLEModule {
             return SceKernelErrors.ERROR_AVC_VIDEO_FATAL;
         }
         
-        if (!Memory.isAddressGood(dest_addr) && !Memory.isAddressGood(source_addr) && !Memory.isAddressGood(range_addr)) {
+        if (!Memory.isAddressGood(dest_addr) || !Memory.isAddressGood(source_addr) || !Memory.isAddressGood(range_addr)) {
             log.warn("sceMpegAvcCsc bad address " + String.format("0x%08X 0x%08X", source_addr, dest_addr));
             return -1;
         }
