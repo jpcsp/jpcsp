@@ -62,7 +62,12 @@ final public class TPointer implements ITPointerBase {
 	public boolean isAddressGood() {
 		return Memory.isAddressGood(address);
 	}
-	
+
+	@Override
+	public boolean isAlignedTo(int offset) {
+		return (address % offset) == 0;
+	}
+
 	@Override
 	public int getAddress() {
 		return address;

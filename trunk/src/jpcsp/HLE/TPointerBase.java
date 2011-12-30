@@ -29,6 +29,11 @@ abstract public class TPointerBase implements ITPointerBase {
 	public boolean isAddressGood() {
 		return Memory.isAddressGood(pointer.getAddress());
 	}
+	
+	@Override
+	public boolean isAlignedTo(int offset) {
+		return pointer.isAlignedTo(offset);
+	}
 
 	@Override
 	public int getAddress() {

@@ -19,6 +19,7 @@ package jpcsp.HLE.modules150;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAS_INVALID_ADSR_CURVE_MODE;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.TPointer;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -55,6 +56,24 @@ public class sceSasCore extends HLEModule {
 
         super.start();
     }
+
+    public static final int PSP_SAS_ERROR_ADDRESS = 0x80420005;
+    public static final int PSP_SAS_ERROR_VOICE_INDEX = 0x80420010;
+    public static final int PSP_SAS_ERROR_NOISE_CLOCK = 0x80420011;
+    public static final int PSP_SAS_ERROR_PITCH_VAL = 0x80420012;
+    public static final int PSP_SAS_ERROR_ADSR_MODE = 0x80420013;
+    public static final int PSP_SAS_ERROR_ADPCM_SIZE = 0x80420014;
+    public static final int PSP_SAS_ERROR_LOOP_MODE = 0x80420015;
+    public static final int PSP_SAS_ERROR_INVALID_STATE = 0x80420016;
+    public static final int PSP_SAS_ERROR_VOLUME_VAL = 0x80420018;
+    public static final int PSP_SAS_ERROR_ADSR_VAL = 0x80420019;
+    public static final int PSP_SAS_ERROR_FX_TYPE = 0x80420020;
+    public static final int PSP_SAS_ERROR_FX_FEEDBACK = 0x80420021;
+    public static final int PSP_SAS_ERROR_FX_DELAY = 0x80420022;
+    public static final int PSP_SAS_ERROR_FX_VOLUME_VAL = 0x80420023;
+    public static final int PSP_SAS_ERROR_BUSY = 0x80420030;
+    public static final int PSP_SAS_ERROR_NOTINIT = 0x80420100;
+    public static final int PSP_SAS_ERROR_ALRDYINIT = 0x80420101;
 
     public static final int PSP_SAS_VOICES_MAX = 32;
     public static final int PSP_SAS_GRAIN_SAMPLES = 256;
@@ -300,11 +319,11 @@ public class sceSasCore extends HLEModule {
         
         return 0;
     }
-
+    
     /**
      * Initialize a new sasCore handle.
      *
-     * @param sasCore     sasCore handle, must be a valid address
+     * @param sasCorePointer     sasCore handle, must be a valid address
      *                    (Uid will be written at this address).
      * @param grain       number of samples processed by one call to __sceSasCore
      * @param maxVoices   number of voices (maximum 32)
@@ -315,23 +334,27 @@ public class sceSasCore extends HLEModule {
      * @return            0
      */
     @HLEFunction(nid = 0x42778A9F, version = 150)
-    public int __sceSasInit(int sasCore, int grain, int maxVoices, int outputMode, int sampleRate) {
-        Memory mem = Processor.memory;
-
+    public int __sceSasInit(TPointer sasCorePointer, int grain, int maxVoices, int outputMode, int sampleRate) {
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("__sceSasInit sasCore=0x%08X, grain=%d, maxVoices=%d, outputMode=%d, sampleRate=%d", sasCore, grain, maxVoices, outputMode, sampleRate));
+        	log.debug(String.format("__sceSasInit sasCore=0x%08X, grain=%d, maxVoices=%d, outputMode=%d, sampleRate=%d", sasCorePointer.getAddress(), grain, maxVoices, outputMode, sampleRate));
+        }
+        
+        if (!sasCorePointer.isAddressGood()) {
+        	return PSP_SAS_ERROR_ADDRESS;
+        }
+        
+        if (!sasCorePointer.isAlignedTo(64)) {
+        	return PSP_SAS_ERROR_ADDRESS;
         }
 
-        if (Memory.isAddressGood(sasCore)) {
-        	if (sasCoreUid != -1) {
-        		// Only one Sas core can be active at a time.
-        		// If a previous Uid was allocated, release it.
-        		SceUidManager.releaseUid(sasCoreUid, sasCodeUidPurpose);
-        	}
+    	if (sasCoreUid != -1) {
+    		// Only one Sas core can be active at a time.
+    		// If a previous Uid was allocated, release it.
+    		SceUidManager.releaseUid(sasCoreUid, sasCodeUidPurpose);
+    	}
 
-        	sasCoreUid = SceUidManager.getNewUid(sasCodeUidPurpose);
-            mem.write32(sasCore, sasCoreUid);
-        }
+    	sasCoreUid = SceUidManager.getNewUid(sasCodeUidPurpose);
+    	sasCorePointer.setValue32(0, sasCoreUid);
 
         grainSamples = grain;
         this.outputMode = outputMode;
