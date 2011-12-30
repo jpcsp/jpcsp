@@ -22,8 +22,6 @@ import org.lwjgl.LWJGLException;
 
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.kernel.managers.IntrManager;
-import jpcsp.HLE.kernel.types.SceKernelErrors;
 
 public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
 

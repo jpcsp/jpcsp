@@ -14,7 +14,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules;
 
 import java.lang.reflect.Method;
@@ -455,7 +454,7 @@ public class HLEModuleManager {
 							functionName = method.getName();
 						}
 						
-						HLEModuleFunction hleModuleFunction = new HLEModuleFunctionReflection(moduleName, functionName, hleModule, method.getName(), method, hleFunction.checkInsideInterrupt(), hleFunction.checkDispatchThreadEnabled());
+						HLEModuleFunction hleModuleFunction = new HLEModuleFunctionReflection(moduleName, functionName, hleModule, method, hleFunction.checkInsideInterrupt(), hleFunction.checkDispatchThreadEnabled());
 						
 						if (hleUnimplemented != null) {
 							hleModuleFunction.setUnimplemented(true);

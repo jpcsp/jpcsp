@@ -1,3 +1,19 @@
+/*
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package jpcsp.HLE.modules;
 
 import java.lang.reflect.Method;
@@ -6,63 +22,25 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import jpcsp.Processor;
 
 public class HLEModuleFunctionReflection extends HLEModuleFunction {
-	class RunListParams {
-		int paramIndex;
-		Object[] params;
-		Processor processor;
-		Object returnObject;
+	private Method     hleModuleMethod;
+	private boolean    checkInsideInterrupt;
+	private boolean    checkDispatchThreadEnabled;
 
-		void setParamNext(Object value) {
-			params[paramIndex++] = value;
-		}
-	}
-
-	HLEModule  hleModule;
-	Class<?>   hleModuleClass;
-	String     hleModuleMethodName;
-	Method     hleModuleMethod;
-	Class<?>[] hleModuleMethodParametersTypes;
-	boolean    checkInsideInterrupt;
-	boolean    checkDispatchThreadEnabled;
-	Class<?>   hleModuleMethodReturnType;
-	int        parameterCount;
-	RunListParams runListParams = new RunListParams();
-	
-	// hleModuleMethodsByName.get(methodToCheckName)
-
-	static public HashMap<String, Method> methodsByName;
 	static public HashMap<String, HashMap<String, Method>> hleModuleModuleMethodsByName = new HashMap<String, HashMap<String, Method>>();
-	static public HashMap<String, Method> hleModuleMethodsByName;
 
-	static {
-		methodsByName = new HashMap<String, Method>();
-		for (Method method : HLEModuleFunctionReflection.class.getMethods()) {
-			methodsByName.put(method.getName(), method);
-		}
-	}
-
-	public HLEModuleFunctionReflection(String moduleName, String functionName, HLEModule hleModule, String hleModuleMethodName, Method hleModuleMethod, boolean checkInsideInterrupt, boolean checkDispatchThreadEnabled) {
+	public HLEModuleFunctionReflection(String moduleName, String functionName, HLEModule hleModule, Method hleModuleMethod, boolean checkInsideInterrupt, boolean checkDispatchThreadEnabled) {
 		super(moduleName, functionName);
-		
-		this.hleModule = hleModule;
-		this.hleModuleClass = hleModule.getClass();
-		this.hleModuleMethodName = hleModuleMethodName;
+
 		this.checkInsideInterrupt = checkInsideInterrupt;
 		this.checkDispatchThreadEnabled = checkDispatchThreadEnabled;
 		this.hleModuleMethod = hleModuleMethod; 
-		this.hleModuleMethodParametersTypes = this.hleModuleMethod.getParameterTypes();
-		this.hleModuleMethodReturnType = this.hleModuleMethod.getReturnType();
-		this.parameterCount = hleModuleMethodParametersTypes.length;
-		this.runListParams.params = new Object[parameterCount];
-		
+
 		if (!hleModuleModuleMethodsByName.containsKey(moduleName)) {
-			hleModuleModuleMethodsByName.put(moduleName, new HashMap<String, Method>());
-			hleModuleMethodsByName = hleModuleModuleMethodsByName.get(moduleName);
-			for (Method method : hleModuleClass.getMethods()) {
+			HashMap<String, Method> hleModuleMethodsByName = new HashMap<String, Method>();
+			hleModuleModuleMethodsByName.put(moduleName, hleModuleMethodsByName);
+			for (Method method : hleModule.getClass().getMethods()) {
 				hleModuleMethodsByName.put(method.getName(), method);
 			}
-		} else {
-			hleModuleMethodsByName = hleModuleModuleMethodsByName.get(moduleName);
 		}
 	}
 	

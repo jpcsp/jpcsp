@@ -21,8 +21,6 @@ import jpcsp.Processor;
 import jpcsp.Memory;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.kernel.managers.IntrManager;
-import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 
