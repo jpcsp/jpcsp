@@ -3036,12 +3036,12 @@ public class IoFileMgrForUser extends HLEModule {
             }
         }
         
-        if (devicename.getString().equals("emulator:")) {
+        if (devicename.getString().equals("emulator:") || devicename.getString().equals("kemulator:")) {
         	switch (cmd) {
         		// EMULATOR_DEVCTL__GET_HAS_DISPLAY
         		case 0x00000001: {
         			if (Memory.isAddressGood(outdata_addr) && outlen >= 4) {
-                        mem.write32(outdata_addr, 0);
+                        mem.write32(outdata_addr, 1);
                         result = 0;
         			}
         		} break;

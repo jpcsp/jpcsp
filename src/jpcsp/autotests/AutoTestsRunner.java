@@ -23,6 +23,7 @@ import jpcsp.GUI.IMainGUI;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.sceDisplay;
+import jpcsp.filesystems.umdiso.UmdIsoReader;
 
 public class AutoTestsRunner {
 	Emulator emulator;
@@ -80,8 +81,23 @@ public class AutoTestsRunner {
 		}
 	}
 	
+	protected boolean isWindows() {
+		return (System.getProperty("os.name").toLowerCase().indexOf("win") >= 0);
+	}
+	
+	protected void buildFile(String fileName) throws IOException, InterruptedException {
+		String command;
+		if (isWindows()) {
+			command = "pspautotests/tests/build.bat";
+		} else {
+			command = "pspautotests/tests/build.sh";
+		}
+		Runtime.getRuntime().exec(new String[] { command, fileName }).waitFor();
+	}
+	
 	protected void runTest(String baseFileName) throws Throwable {
 		try {
+			buildFile(baseFileName + ".elf");
 			runFile(baseFileName + ".elf");
 			checkOutput(baseFileName + ".expected");
 		} catch (TimeoutException toe) {
@@ -178,9 +194,10 @@ public class AutoTestsRunner {
 		
 		RuntimeContext.setIsHomebrew(true);
 		
+		UmdIsoReader umdIsoReader = new UmdIsoReader("pspautotests/input/cube.cso");
+        Modules.IoFileMgrForUserModule.setIsoReader(umdIsoReader);
+        jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(umdIsoReader);
         Modules.IoFileMgrForUserModule.setfilepath(file.getPath());
-        Modules.IoFileMgrForUserModule.setIsoReader(null);
-        jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(null);
         
         //System.out.printf("Started\n");
 		System.out.print(String.format("Running: %s...", fileName));
