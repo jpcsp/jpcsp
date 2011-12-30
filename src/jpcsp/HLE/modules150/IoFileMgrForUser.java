@@ -1218,7 +1218,7 @@ public class IoFileMgrForUser extends HLEModule {
     }
     
     public int hleIoOpen(PspString filename, int flags, int permissions, boolean async) {
-    	return hleIoOpen(filename.address, filename.string, flags, permissions, async);
+    	return hleIoOpen(filename.getAddress(), filename.getString(), flags, permissions, async);
     }
 
     public int hleIoOpen(int filename_addr, String filename, int flags, int permissions, boolean async) {
@@ -2555,7 +2555,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.debug("sceIoDopen dirname = " + dirname);
         }
         
-        String pcfilename = getDeviceFilePath(dirname.string);
+        String pcfilename = getDeviceFilePath(dirname.getString());
         int result;
         if (pcfilename != null) {
             if (isUmdPath(pcfilename)) {
@@ -2588,7 +2588,7 @@ public class IoFileMgrForUser extends HLEModule {
                         result = -1;
                     }
                 }
-            } else if (dirname.string.startsWith("/") && dirname.string.indexOf(":") != -1) {
+            } else if (dirname.getString().startsWith("/") && dirname.getString().indexOf(":") != -1) {
                 log.warn("sceIoDopen apps running outside of ms0 dir are not fully supported, relative child paths should still work");
                 result = -1;
             } else {
@@ -2609,7 +2609,7 @@ public class IoFileMgrForUser extends HLEModule {
         	result = -1;
         }
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoDopen(Emulator.getProcessor().cpu.gpr[2], dirname.address, dirname.string);
+            ioListener.sceIoDopen(Emulator.getProcessor().cpu.gpr[2], dirname.getAddress(), dirname.getString());
         }
         delayIoOperation(IoOperation.open);
         return result;
@@ -2701,10 +2701,10 @@ public class IoFileMgrForUser extends HLEModule {
     @HLEFunction(nid = 0xF27A9C51, version = 150, checkInsideInterrupt = true)
     public int sceIoRemove(PspString filename) {
         if (log.isDebugEnabled()) {
-            log.debug("sceIoRemove - file = " + filename.string);
+            log.debug("sceIoRemove - file = " + filename.getString());
         }
         
-        String pcfilename = getDeviceFilePath(filename.string);
+        String pcfilename = getDeviceFilePath(filename.getString());
         int result;
 
         if (pcfilename != null) {
@@ -2723,7 +2723,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoRemove(result, filename.address, filename.string);
+            ioListener.sceIoRemove(result, filename.getAddress(), filename.getString());
         }
         delayIoOperation(IoOperation.remove);
         return result;
@@ -2740,10 +2740,10 @@ public class IoFileMgrForUser extends HLEModule {
     @HLEFunction(nid = 0x06A70004, version = 150, checkInsideInterrupt = true)
     public int sceIoMkdir(PspString dirname, int permissions) {
         if (log.isDebugEnabled()) {
-            log.debug("sceIoMkdir dir = " + dirname.string);
+            log.debug("sceIoMkdir dir = " + dirname.getString());
         }
 
-        String pcfilename = getDeviceFilePath(dirname.string);
+        String pcfilename = getDeviceFilePath(dirname.getString());
         int result;
         
         if (pcfilename != null) {
@@ -2755,7 +2755,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoMkdir(result, dirname.address, dirname.string, permissions);
+            ioListener.sceIoMkdir(result, dirname.getAddress(), dirname.getString(), permissions);
         }
         delayIoOperation(IoOperation.mkdir);
 
@@ -2772,10 +2772,10 @@ public class IoFileMgrForUser extends HLEModule {
     @HLEFunction(nid = 0x1117C65F, version = 150, checkInsideInterrupt = true)
     public int sceIoRmdir(PspString dirname) {
         if (log.isDebugEnabled()) {
-            log.debug("sceIoRmdir dir = " + dirname.string);
+            log.debug("sceIoRmdir dir = " + dirname.getString());
         }
 
-        String pcfilename = getDeviceFilePath(dirname.string);
+        String pcfilename = getDeviceFilePath(dirname.getString());
         int result;
         
         if (pcfilename != null) {
@@ -2787,7 +2787,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoRmdir(result, dirname.address, dirname.string);
+            ioListener.sceIoRmdir(result, dirname.getAddress(), dirname.getString());
         }
         delayIoOperation(IoOperation.remove);
 
@@ -2805,12 +2805,12 @@ public class IoFileMgrForUser extends HLEModule {
     public int sceIoChdir(PspString path) {
 
     	if (log.isDebugEnabled()) {
-            log.debug("sceIoChdir path = " + path.string);
+            log.debug("sceIoChdir path = " + path.getString());
         }
     	
     	int result;
 
-        if (path.string.equals("..")) {
+        if (path.getString().equals("..")) {
             int index = filepath.lastIndexOf("/");
             if (index != -1) {
                 filepath = filepath.substring(0, index);
@@ -2819,7 +2819,7 @@ public class IoFileMgrForUser extends HLEModule {
             log.info("pspiofilemgr - filepath " + filepath + " (going up one level)");
             result = 0;
         } else {
-            String pcfilename = getDeviceFilePath(path.string);
+            String pcfilename = getDeviceFilePath(path.getString());
             if (pcfilename != null) {
                 filepath = pcfilename;
                 log.info("pspiofilemgr - filepath " + filepath);
@@ -2829,7 +2829,7 @@ public class IoFileMgrForUser extends HLEModule {
             }
         }
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoChdir(result, path.address, path.string);
+            ioListener.sceIoChdir(result, path.getAddress(), path.getString());
         }
         return result;
     }
@@ -2845,11 +2845,11 @@ public class IoFileMgrForUser extends HLEModule {
     @HLEFunction(nid = 0xAB96437F, version = 150, checkInsideInterrupt = true)
     public int sceIoSync(PspString devicename, int flag) {
     	if (log.isDebugEnabled()) {
-            log.debug("IGNORING: sceIoSync(device='" + devicename.string + "', flag=0x" + Integer.toHexString(flag) + ")");
+            log.debug("IGNORING: sceIoSync(device='" + devicename.getString() + "', flag=0x" + Integer.toHexString(flag) + ")");
         }
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoSync(0, devicename.address, devicename.string, flag);
+            ioListener.sceIoSync(0, devicename.getAddress(), devicename.getString(), flag);
         }
 
         return 0;
@@ -2866,11 +2866,11 @@ public class IoFileMgrForUser extends HLEModule {
     @HLEFunction(nid = 0xACE946E8, version = 150, checkInsideInterrupt = true)
     public int sceIoGetstat(PspString filename, int stat_addr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceIoGetstat - file = " + filename.string + " stat = " + Integer.toHexString(stat_addr));
+            log.debug("sceIoGetstat - file = " + filename.getString() + " stat = " + Integer.toHexString(stat_addr));
         }
 
         int result;
-        String pcfilename = getDeviceFilePath(filename.string);
+        String pcfilename = getDeviceFilePath(filename.getString());
         SceIoStat stat = stat(pcfilename);
         if (stat != null) {
             stat.write(Memory.getInstance(), stat_addr);
@@ -2880,7 +2880,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoGetStat(result, filename.address, filename.string, stat_addr);
+            ioListener.sceIoGetStat(result, filename.getAddress(), filename.getString(), stat_addr);
         }
         
         return result;
@@ -2898,10 +2898,10 @@ public class IoFileMgrForUser extends HLEModule {
     @HLEFunction(nid = 0xB8A740F4, version = 150, checkInsideInterrupt = true)
     public int sceIoChstat(PspString filename, int stat_addr, int bits) {
         if (log.isDebugEnabled()) {
-            log.debug("sceIoChstat - file = " + filename.string + ", bits=0x" + Integer.toHexString(bits));
+            log.debug("sceIoChstat - file = " + filename.getString() + ", bits=0x" + Integer.toHexString(bits));
         }
 
-        String pcfilename = getDeviceFilePath(filename.string);
+        String pcfilename = getDeviceFilePath(filename.getString());
         int result;
         
         if (pcfilename != null) {
@@ -2958,7 +2958,7 @@ public class IoFileMgrForUser extends HLEModule {
         	result = -1;
         }
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoChstat(result, filename.address, filename.string, stat_addr, bits);
+            ioListener.sceIoChstat(result, filename.getAddress(), filename.getString(), stat_addr, bits);
         }
         return result;
     }
@@ -2974,11 +2974,11 @@ public class IoFileMgrForUser extends HLEModule {
     @HLEFunction(nid = 0x779103A0, version = 150, checkInsideInterrupt = true)
     public int sceIoRename(PspString oldfilename, PspString newfilename) {
     	if (log.isDebugEnabled()) {
-            log.debug("sceIoRename - file = " + oldfilename.string + ", new_file = " + newfilename.string);
+            log.debug("sceIoRename - file = " + oldfilename.getString() + ", new_file = " + newfilename.getString());
         }
         
-        String oldpcfilename = getDeviceFilePath(oldfilename.string);
-        String newpcfilename = getDeviceFilePath(newfilename.string);
+        String oldpcfilename = getDeviceFilePath(oldfilename.getString());
+        String newpcfilename = getDeviceFilePath(newfilename.getString());
         int result;
         
         if (oldpcfilename != null) {
@@ -2998,7 +2998,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoRename(result, oldfilename.address, oldfilename.string, newfilename.address, newfilename.string);
+            ioListener.sceIoRename(result, oldfilename.getAddress(), oldfilename.getString(), newfilename.getAddress(), newfilename.getString());
         }
         delayIoOperation(IoOperation.rename);
         return result;
@@ -3022,7 +3022,7 @@ public class IoFileMgrForUser extends HLEModule {
         int result = -1;
 
         if (log.isDebugEnabled()) {
-            log.debug("sceIoDevctl(device='" + devicename.string + "',cmd=0x" + Integer.toHexString(cmd) + ",indata=0x" + Integer.toHexString(indata_addr) + ",inlen=" + inlen + ",outdata=0x" + Integer.toHexString(outdata_addr) + ",outlen=" + outlen + ")");
+            log.debug("sceIoDevctl(device='" + devicename.getString() + "',cmd=0x" + Integer.toHexString(cmd) + ",indata=0x" + Integer.toHexString(indata_addr) + ",inlen=" + inlen + ",outdata=0x" + Integer.toHexString(outdata_addr) + ",outlen=" + outlen + ")");
 
             if (Memory.isAddressGood(indata_addr)) {
                 for (int i = 0; i < inlen; i += 4) {
@@ -3036,7 +3036,7 @@ public class IoFileMgrForUser extends HLEModule {
             }
         }
         
-        if (devicename.string.equals("emulator:")) {
+        if (devicename.getString().equals("emulator:")) {
         	switch (cmd) {
         		// EMULATOR_DEVCTL__GET_HAS_DISPLAY
         		case 0x00000001: {
@@ -3059,7 +3059,7 @@ public class IoFileMgrForUser extends HLEModule {
         	}
         	
             for (IIoListener ioListener : ioListeners) {
-                ioListener.sceIoDevctl(result, devicename.address, devicename.string, cmd, indata_addr, inlen, outdata_addr, outlen);
+                ioListener.sceIoDevctl(result, devicename.getAddress(), devicename.getString(), cmd, indata_addr, inlen, outdata_addr, outlen);
             }
             delayIoOperation(IoOperation.ioctl);
 
@@ -3165,7 +3165,7 @@ public class IoFileMgrForUser extends HLEModule {
             // Check the MemoryStick's driver status (mscmhc0).
             case 0x02025801: {
                 log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " check ms driver status");
-                if (!devicename.string.equals("mscmhc0:")) {
+                if (!devicename.getString().equals("mscmhc0:")) {
                 	result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
                 } else if (Memory.isAddressGood(outdata_addr)) {
                     // 0 = Driver busy.
@@ -3181,7 +3181,7 @@ public class IoFileMgrForUser extends HLEModule {
             case 0x02015804: {
                 log.debug("sceIoDevctl register memorystick insert/eject callback (mscmhc0)");
                 ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-                if (!devicename.string.equals("mscmhc0:")) {
+                if (!devicename.getString().equals("mscmhc0:")) {
                 	result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
                 } else if (Memory.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
@@ -3202,7 +3202,7 @@ public class IoFileMgrForUser extends HLEModule {
             case 0x02015805: {
                 log.debug("sceIoDevctl unregister memorystick insert/eject callback (mscmhc0)");
                 ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-                if (!devicename.string.equals("mscmhc0:")) {
+                if (!devicename.getString().equals("mscmhc0:")) {
                 	result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
                 } else if (Memory.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
@@ -3219,7 +3219,7 @@ public class IoFileMgrForUser extends HLEModule {
             // Check if the device is inserted (mscmhc0).
             case 0x02025806: {
                 log.debug("sceIoDevctl check ms inserted (mscmhc0)");
-                if (!devicename.string.equals("mscmhc0:")) {
+                if (!devicename.getString().equals("mscmhc0:")) {
                 	result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
                 } else if (Memory.isAddressGood(outdata_addr)) {
                     // 0 = Not inserted.
@@ -3235,7 +3235,7 @@ public class IoFileMgrForUser extends HLEModule {
             case 0x02415821: {
                 log.debug("sceIoDevctl register memorystick insert/eject callback (fatms0)");
                 ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-                if (!devicename.string.equals("fatms0:")) {
+                if (!devicename.getString().equals("fatms0:")) {
                 	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
                 } else if (Memory.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
@@ -3257,7 +3257,7 @@ public class IoFileMgrForUser extends HLEModule {
             case 0x02415822: {
                 log.debug("sceIoDevctl unregister memorystick insert/eject callback (fatms0)");
                 ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-                if (!devicename.string.equals("fatms0:")) {
+                if (!devicename.getString().equals("fatms0:")) {
                 	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
                 } else if (Memory.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
@@ -3271,7 +3271,7 @@ public class IoFileMgrForUser extends HLEModule {
             // Set if the device is assigned/inserted or not (fatms0).
             case 0x02415823: {
                 log.debug("sceIoDevctl set assigned device (fatms0)");
-                if (!devicename.string.equals("fatms0:")) {
+                if (!devicename.getString().equals("fatms0:")) {
                 	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
                 } else if (Memory.isAddressGood(indata_addr) && inlen >= 4) {
                     // 0 - Device is not assigned (callback not registered).
@@ -3286,7 +3286,7 @@ public class IoFileMgrForUser extends HLEModule {
             // Check if the device is write protected (fatms0).
             case 0x02425824: {
                 log.debug("sceIoDevctl check write protection (fatms0)");
-                if (!devicename.string.equals("fatms0:") && !devicename.string.equals("ms0:")) { // For this command the alias "ms0:" is also supported.
+                if (!devicename.getString().equals("fatms0:") && !devicename.getString().equals("ms0:")) { // For this command the alias "ms0:" is also supported.
                 	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
                 } else if (Memory.isAddressGood(outdata_addr)) {
                     // 0 - Device is not protected.
@@ -3329,7 +3329,7 @@ public class IoFileMgrForUser extends HLEModule {
             // Check if the device is assigned/inserted (fatms0).
             case 0x02425823: {
                 log.debug("sceIoDevctl check assigned device (fatms0)");
-                if (!devicename.string.equals("fatms0:")) {
+                if (!devicename.getString().equals("fatms0:")) {
                 	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
                 } else if (Memory.isAddressGood(outdata_addr) && outlen >= 4) {
                     // 0 - Device is not assigned (callback not registered).
@@ -3374,7 +3374,7 @@ public class IoFileMgrForUser extends HLEModule {
                 break;
         }
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoDevctl(result, devicename.address, devicename.string, cmd, indata_addr, inlen, outdata_addr, outlen);
+            ioListener.sceIoDevctl(result, devicename.getAddress(), devicename.getString(), cmd, indata_addr, inlen, outdata_addr, outlen);
         }
         delayIoOperation(IoOperation.ioctl);
         return result;
@@ -3461,7 +3461,7 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x6D08A871, version = 150, checkInsideInterrupt = true)
     public int sceIoUnassign(PspString alias) {
-        log.warn("IGNORING: sceIoUnassign (alias='" + alias.string + ")");
+        log.warn("IGNORING: sceIoUnassign (alias='" + alias.getString() + ")");
 
         return 0;
     }
