@@ -145,7 +145,6 @@ public enum SyscallIgnore {
 	SupportIntr(0x0E224D66), // 1.00+
 	SysMemUserForUser_35669D4C(0x35669D4C), // 1.00 to 3.52, gone in 3.95+
 	SysMemUserForUser_91DE343C(0x91DE343C), // 1.00+
-	SysMemUserForUser_D8DE5C1E(0xD8DE5C1E), // 1.00+
     SysMemUserForUser_1B4217BC(0x1B4217BC), // 6.30+
 	unknown_CC9ADCF8(0xCC9ADCF8), // 1.00+
 	UnSupportIntr(0x27BC9A45), // 1.00+
