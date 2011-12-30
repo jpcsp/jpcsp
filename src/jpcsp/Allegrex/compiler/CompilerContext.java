@@ -24,6 +24,7 @@ import static jpcsp.Allegrex.Common._zr;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
@@ -874,6 +875,7 @@ public class CompilerContext implements ICompilerContext {
     			if (parameterAnnotation instanceof StringInfo) {
     				StringInfo stringInfo = ((StringInfo)parameterAnnotation);
     				maxLength = stringInfo.maxLength();
+    				break;
     			}
     		}
     		loadImm(maxLength);
@@ -927,6 +929,7 @@ public class CompilerContext implements ICompilerContext {
     		for (Annotation parameterAnnotation : parameterAnnotations) {
     			if (parameterAnnotation instanceof CanBeNull) {
     				canBeNull = true;
+    				break;
     			}
     		}
 
@@ -982,12 +985,17 @@ public class CompilerContext implements ICompilerContext {
 				Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
 			}
     	}
-    	
+
     	Method methodToCheck = null;
-    	CheckArgument checkArgument = (CheckArgument)parameterType.getAnnotation(CheckArgument.class);
-    	
-		if (checkArgument != null) {
-			methodToCheck = HLEModuleFunctionReflection.hleModuleMethodsByName.get(checkArgument.value());
+		for (Annotation parameterAnnotation : parameterAnnotations) {
+			if (parameterAnnotation instanceof CheckArgument) {
+				CheckArgument checkArgument = (CheckArgument) parameterAnnotation;
+				HashMap<String, Method> hleModuleMethodsByName = HLEModuleFunctionReflection.hleModuleModuleMethodsByName.get(func.getModuleName());
+				if (hleModuleMethodsByName != null) {
+					methodToCheck = hleModuleMethodsByName.get(checkArgument.value());
+				}
+				break;
+			}
 		}
 
     	if (methodToCheck != null) {
