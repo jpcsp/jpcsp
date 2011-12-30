@@ -223,6 +223,10 @@ public abstract class Memory {
     	return validMemoryPage[address >>> MEMORY_PAGE_SHIFT];
 	}
 
+	public final static boolean isAddressAlignedTo(int address, int alignment) {
+		return (address % alignment) == 0;
+	}
+
     public final static boolean isRawAddressGood(int rawAddress) {
     	return validMemoryPage[rawAddress >> MEMORY_PAGE_SHIFT];
     }
