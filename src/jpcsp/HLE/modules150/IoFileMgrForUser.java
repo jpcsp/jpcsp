@@ -36,6 +36,8 @@ import static jpcsp.util.Utilities.readStringNZ;
 import static jpcsp.util.Utilities.readStringZ;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.PspString;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
@@ -1214,9 +1216,13 @@ public class IoFileMgrForUser extends HLEModule {
             }
         }
     }
+    
+    public int hleIoOpen(PspString filename, int flags, int permissions, boolean async) {
+    	return hleIoOpen(filename.address, filename.string, flags, permissions, async);
+    }
 
-    public void hleIoOpen(int filename_addr, int flags, int permissions, boolean async) {
-        String filename = readStringZ(filename_addr);
+    public int hleIoOpen(int filename_addr, String filename, int flags, int permissions, boolean async) {
+        
         if (log.isInfoEnabled()) {
             log.info("hleIoOpen filename = " + filename + " flags = " + Integer.toHexString(flags) + " permissions = 0" + Integer.toOctalString(permissions));
         }
@@ -1265,7 +1271,7 @@ public class IoFileMgrForUser extends HLEModule {
                 ioListener.sceIoOpen(-1, filename_addr, filename, flags, permissions, mode);
             }
             Emulator.getProcessor().cpu.gpr[2] = -1;
-            return;
+            return Emulator.getProcessor().cpu.gpr[2];
         }
         //Retry count.
         int retry = (flags >> 16) & 0x000F;
@@ -1376,8 +1382,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoOpen(Emulator.getProcessor().cpu.gpr[2],
-                    filename_addr, filename, flags, permissions, mode);
+            ioListener.sceIoOpen(Emulator.getProcessor().cpu.gpr[2], filename_addr, filename, flags, permissions, mode);
         }
 
         if (async) {
@@ -1392,6 +1397,8 @@ public class IoFileMgrForUser extends HLEModule {
 
             startIoAsync(info, result, IoOperation.open, null, 0);
         }
+        
+        return Emulator.getProcessor().cpu.gpr[2];
     }
 
     private void hleIoClose(int id, boolean async) {
@@ -1508,7 +1515,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
     }
 
-    public void hleIoRead(int id, int data_addr, int size, boolean async) {
+    public int hleIoRead(int id, int data_addr, int size, boolean async) {
         if (log.isDebugEnabled()) {
             log.debug("hleIoRead(id=" + Integer.toHexString(id) + ",data=0x" + Integer.toHexString(data_addr) + ",size=0x" + Integer.toHexString(size) + ") async=" + async);
         }
@@ -1588,6 +1595,8 @@ public class IoFileMgrForUser extends HLEModule {
                 ioListener.sceIoRead(result, id, data_addr, requestedSize, size, position, dataInput);
             }
         }
+        
+        return Emulator.getProcessor().cpu.gpr[2];
     }
 
     private void hleIoLseek(int id, long offset, int whence, boolean resultIs64bit, boolean async) {
@@ -2127,87 +2136,103 @@ public class IoFileMgrForUser extends HLEModule {
         }
     }
 
+    /**
+     * sceIoPollAsync
+     * 
+     * @param id
+     * @param res_addr
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0x3251EA56, version = 150, checkInsideInterrupt = true)
-    public void sceIoPollAsync(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-        int res_addr = cpu.gpr[5];
-
+    public int sceIoPollAsync(int id, int res_addr) {
         if (log.isDebugEnabled()) {
             log.debug("sceIoPollAsync redirecting to hleIoWaitAsync");
         }
 
-        
         hleIoWaitAsync(id, res_addr, false, false);
+        return Emulator.getProcessor().cpu.gpr[2];
     }
 
+    /**
+     * sceIoWaitAsync
+     * 
+     * @param id
+     * @param res_addr
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0xE23EEC33, version = 150, checkInsideInterrupt = true)
-    public void sceIoWaitAsync(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-        int res_addr = cpu.gpr[5];
-
+    public int sceIoWaitAsync(int id, int res_addr) {
         if (log.isDebugEnabled()) {
             log.debug("sceIoWaitAsync redirecting to hleIoWaitAsync");
         }
-
         
         hleIoWaitAsync(id, res_addr, true, false);
+        return Emulator.getProcessor().cpu.gpr[2];
     }
 
+    /**
+     * sceIoWaitAsyncCB
+     * 
+     * @param id
+     * @param res_addr
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0x35DBD746, version = 150, checkInsideInterrupt = true)
-    public void sceIoWaitAsyncCB(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-        int res_addr = cpu.gpr[5];
-
+    public int sceIoWaitAsyncCB(int id, int res_addr) {
         if (log.isDebugEnabled()) {
             log.debug("sceIoWaitAsyncCB redirecting to hleIoWaitAsync");
         }
 
-        
         hleIoWaitAsync(id, res_addr, true, true);
+        return Emulator.getProcessor().cpu.gpr[2]; 
     }
 
+    /**
+     * sceIoGetAsyncStat
+     * 
+     * @param id
+     * @param poll
+     * @param res_addr
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0xCB05F8D6, version = 150, checkInsideInterrupt = true)
-    public void sceIoGetAsyncStat(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-        int poll = cpu.gpr[5];
-        int res_addr = cpu.gpr[6];
-
+    public int sceIoGetAsyncStat(int id, int poll, int res_addr) {
         if (log.isDebugEnabled()) {
             log.debug("sceIoGetAsyncStat poll=0x" + Integer.toHexString(poll) + " redirecting to hleIoWaitAsync");
         }
-
         
         hleIoWaitAsync(id, res_addr, (poll == 0), false);
+        return Emulator.getProcessor().cpu.gpr[2]; 
     }
 
+    /**
+     * sceIoChangeAsyncPriority
+     * 
+     * @param id
+     * @param priority
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0xB293727F, version = 150, checkInsideInterrupt = true)
-    public void sceIoChangeAsyncPriority(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-        int priority = cpu.gpr[5];
-
+    public int sceIoChangeAsyncPriority(int id, int priority) {
         if (log.isDebugEnabled()) {
             log.debug("sceIoChangeAsyncPriority id=0x" + Integer.toHexString(id) + ", priority=0x" + Integer.toHexString(priority));
         }
-
+        
+        int result;
         
         if (priority == -1) {
             priority = Modules.ThreadManForUserModule.getCurrentThread().currentPriority;
         }
         if (priority < 0) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_ILLEGAL_PRIORITY;
+        	result = SceKernelErrors.ERROR_KERNEL_ILLEGAL_PRIORITY;
         } else if (id == -1) {
             defaultAsyncPriority = priority;
-            cpu.gpr[2] = 0;
+            result = 0;
         } else {
             IoInfo info = fileIds.get(id);
             if (info != null) {
@@ -2215,271 +2240,323 @@ public class IoFileMgrForUser extends HLEModule {
                     log.debug(String.format("sceIoChangeAsyncPriority changing priority of async thread from fd=%x to %d", info.id, priority));
                 }
                 info.asyncThreadPriority = priority;
-                cpu.gpr[2] = 0;
+                result = 0;
                 Modules.ThreadManForUserModule.hleKernelChangeThreadPriority(info.asyncThread, priority);
             } else {
                 log.warn("sceIoChangeAsyncPriority invalid fd=" + id);
-                cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
+                result = SceKernelErrors.ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
             }
         }
+        
+        return result;
     }
 
+    /**
+     * sceIoSetAsyncCallback
+     * 
+     * @param id
+     * @param cbid
+     * @param notifyArg
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0xA12A0514, version = 150, checkInsideInterrupt = true)
-    public void sceIoSetAsyncCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-        int cbid = cpu.gpr[5];
-        int notifyArg = cpu.gpr[6];
-
+    public int sceIoSetAsyncCallback(int id, int cbid, int notifyArg) {
         if (log.isDebugEnabled()) {
             log.debug("sceIoSetAsyncCallback - id " + Integer.toHexString(id) + " cbid " + Integer.toHexString(cbid) + " arg 0x" + Integer.toHexString(notifyArg));
         }
-
         
         IoInfo info = fileIds.get(id);
+        int result;
+        
         if (info == null) {
             log.warn("sceIoSetAsyncCallback - unknown id " + Integer.toHexString(id));
-            cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
+            result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
         } else {
             if (Modules.ThreadManForUserModule.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, cbid)) {
                 info.cbid = cbid;
                 info.notifyArg = notifyArg;
                 triggerAsyncThread(info);
-                cpu.gpr[2] = 0;
+                result = 0;
             } else {
                 log.warn("sceIoSetAsyncCallback - not a callback id " + Integer.toHexString(id));
-                cpu.gpr[2] = -1;
+                result = -1;
             }
         }
+        
+        return result;
     }
 
+    /**
+     * sceIoClose
+     * 
+     * @param id
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0x810C4BC3, version = 150, checkInsideInterrupt = true)
-    public void sceIoClose(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-
+    public int sceIoClose(int id) {
         if (log.isDebugEnabled()) {
             log.debug("sceIoClose redirecting to hleIoClose");
         }
-
         
         hleIoClose(id, false);
         delayIoOperation(IoOperation.close);
+        
+        return Emulator.getProcessor().cpu.gpr[2];
     }
 
+    /**
+     * sceIoCloseAsync
+     * 
+     * @param id
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0xFF5940B6, version = 150, checkInsideInterrupt = true)
-    public void sceIoCloseAsync(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-
+    public int sceIoCloseAsync(int id) {
         if (log.isDebugEnabled()) {
             log.debug("sceIoCloseAsync redirecting to hleIoClose");
         }
 
-        
         hleIoClose(id, true);
+        return Emulator.getProcessor().cpu.gpr[2];
     }
 
+    /**
+     * sceIoOpen
+     * 
+     * @param filename
+     * @param flags
+     * @param permissions
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0x109F50BC, version = 150, checkInsideInterrupt = true)
-    public void sceIoOpen(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int filename_addr = cpu.gpr[4];
-        int flags = cpu.gpr[5];
-        int permissions = cpu.gpr[6];
-
+    public int sceIoOpen(PspString filename, int flags, int permissions) {
         if (log.isDebugEnabled()) {
             log.debug("sceIoOpen redirecting to hleIoOpen");
         }
-
         
-        hleIoOpen(filename_addr, flags, permissions, false);
+        int result = hleIoOpen(filename, flags, permissions, /* async = */ false);
         delayIoOperation(IoOperation.open);
+        return result;
     }
 
+    /**
+     * sceIoOpenAsync
+     * 
+     * @param filename
+     * @param flags
+     * @param permissions
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0x89AA9906, version = 150, checkInsideInterrupt = true)
-    public void sceIoOpenAsync(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int filename_addr = cpu.gpr[4];
-        int flags = cpu.gpr[5];
-        int permissions = cpu.gpr[6];
-
+    public int sceIoOpenAsync(PspString filename, int flags, int permissions) {
         if (log.isDebugEnabled()) {
             log.debug("sceIoOpenAsync redirecting to hleIoOpen");
         }
-
         
-        hleIoOpen(filename_addr, flags, permissions, true);
+        return hleIoOpen(filename, flags, permissions, /* async = */ true);
     }
 
+    /**
+     * sceIoRead
+     * 
+     * @param id
+     * @param data_addr
+     * @param size
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0x6A638D83, version = 150, checkInsideInterrupt = true)
-    public void sceIoRead(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-        int data_addr = cpu.gpr[5];
-        int size = cpu.gpr[6];
-
-        
-        hleIoRead(id, data_addr, size, false);
+    public int sceIoRead(int id, int data_addr, int size) {
+        int result = hleIoRead(id, data_addr, size, false);
         delayIoOperation(IoOperation.read);
+        return result;
     }
 
+    /**
+     * sceIoReadAsync
+     * 
+     * @param id
+     * @param data_addr
+     * @param size
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0xA0B5A7C2, version = 150, checkInsideInterrupt = true)
-    public void sceIoReadAsync(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-        int data_addr = cpu.gpr[5];
-        int size = cpu.gpr[6];
-
-        
-        hleIoRead(id, data_addr, size, true);
+    public int sceIoReadAsync(int id, int data_addr, int size) {
+        int result = hleIoRead(id, data_addr, size, true);
+        return result;
     }
 
+    /**
+     * sceIoWrite
+     * 
+     * @param id
+     * @param data_addr
+     * @param size
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0x42EC03AC, version = 150, checkInsideInterrupt = true)
-    public void sceIoWrite(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-        int data_addr = cpu.gpr[5];
-        int size = cpu.gpr[6];
-
-        
+    public int sceIoWrite(int id, int data_addr, int size) {
         hleIoWrite(id, data_addr, size, false);
 
         // Do not delay output on stdout/stderr
         if (id != STDOUT_ID && id != STDERR_ID) {
         	delayIoOperation(IoOperation.write);
         }
-    }
-
-    @HLEFunction(nid = 0x0FACAB19, version = 150, checkInsideInterrupt = true)
-    public void sceIoWriteAsync(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-        int data_addr = cpu.gpr[5];
-        int size = cpu.gpr[6];
-
         
-        hleIoWrite(id, data_addr, size, true);
+        return Emulator.getProcessor().cpu.gpr[2];
     }
 
+    /**
+     * sceIoWriteAsync
+     * 
+     * @param id
+     * @param data_addr
+     * @param size
+     * 
+     * @return
+     */
+    @HLEFunction(nid = 0x0FACAB19, version = 150, checkInsideInterrupt = true)
+    public int sceIoWriteAsync(int id, int data_addr, int size) {
+        hleIoWrite(id, data_addr, size, true);
+
+        return Emulator.getProcessor().cpu.gpr[2];
+    }
+
+    /**
+     * sceIoLseek
+     * 
+     * @param id
+     * @param offset
+     * @param whence
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0x27EB27B8, version = 150, checkInsideInterrupt = true)
-    public void sceIoLseek(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-        long offset = ((long) cpu.gpr[6] & 0xFFFFFFFFL) | ((long) cpu.gpr[7] << 32);
-        int whence = cpu.gpr[8];
-
+    public int sceIoLseek(int id, long offset, int whence) {
         if (log.isDebugEnabled()) {
             log.debug("sceIoLseek - id " + Integer.toHexString(id) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
         }
-
         
         hleIoLseek(id, offset, whence, true, false);
         delayIoOperation(IoOperation.seek);
+        return Emulator.getProcessor().cpu.gpr[2];
     }
 
+    /**
+     * sceIoLseekAsync
+     * 
+     * @param id
+     * @param offset
+     * @param whence
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0x71B19E77, version = 150, checkInsideInterrupt = true)
-    public void sceIoLseekAsync(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-        long offset = ((long) cpu.gpr[6] & 0xFFFFFFFFL) | ((long) cpu.gpr[7] << 32);
-        int whence = cpu.gpr[8];
-
+    public int sceIoLseekAsync(int id, long offset, int whence) {
         if (log.isDebugEnabled()) {
             log.debug("sceIoLseekAsync - id " + Integer.toHexString(id) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
         }
-
         
         hleIoLseek(id, offset, whence, true, true);
+        return Emulator.getProcessor().cpu.gpr[2];
     }
 
+    /**
+     * sceIoLseek32
+     * 
+     * @param id
+     * @param offset
+     * @param whence
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0x68963324, version = 150, checkInsideInterrupt = true)
-    public void sceIoLseek32(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-        int offset = cpu.gpr[5];
-        int whence = cpu.gpr[6];
-
+    public int sceIoLseek32(int id, int offset, int whence) {
         if (log.isDebugEnabled()) {
             log.debug("sceIoLseek32 - id " + Integer.toHexString(id) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
         }
-
         
         hleIoLseek(id, (long) offset, whence, false, false);
         delayIoOperation(IoOperation.seek);
+        return Emulator.getProcessor().cpu.gpr[2];
     }
 
+    /**
+     * sceIoLseek32Async
+     * 
+     * @param id
+     * @param offset
+     * @param whence
+     */
     @HLEFunction(nid = 0x1B385D8F, version = 150, checkInsideInterrupt = true)
-    public void sceIoLseek32Async(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-        int offset = cpu.gpr[5];
-        int whence = cpu.gpr[6];
-
+    public int sceIoLseek32Async(int id, int offset, int whence) {
         if (log.isDebugEnabled()) {
             log.debug("sceIoLseek32Async - id " + Integer.toHexString(id) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
         }
-
-        
+       
         hleIoLseek(id, (long) offset, whence, false, true);
+        return Emulator.getProcessor().cpu.gpr[2];
     }
 
+    /**
+     * sceIoIoctl
+     * 
+     * @param id
+     * @param cmd
+     * @param indata_addr
+     * @param inlen
+     * @param outdata_addr
+     * @param outlen
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0x63632449, version = 150, checkInsideInterrupt = true)
-    public void sceIoIoctl(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-        int cmd = cpu.gpr[5];
-        int indata_addr = cpu.gpr[6];
-        int inlen = cpu.gpr[7];
-        int outdata_addr = cpu.gpr[8];
-        int outlen = cpu.gpr[9];
-
-        
+    public int sceIoIoctl(int id, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen) {
         hleIoIoctl(id, cmd, indata_addr, inlen, outdata_addr, outlen, false);
         delayIoOperation(IoOperation.ioctl);
+        return Emulator.getProcessor().cpu.gpr[2];
     }
 
+    /**
+     * sceIoIoctlAsync
+     * 
+     * @param id
+     * @param cmd
+     * @param indata_addr
+     * @param inlen
+     * @param outdata_addr
+     * @param outlen
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0xE95A012B, version = 150, checkInsideInterrupt = true)
-    public void sceIoIoctlAsync(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-        int cmd = cpu.gpr[5];
-        int indata_addr = cpu.gpr[6];
-        int inlen = cpu.gpr[7];
-        int outdata_addr = cpu.gpr[8];
-        int outlen = cpu.gpr[9];
-
-        
+    public int sceIoIoctlAsync(int id, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen) {
         hleIoIoctl(id, cmd, indata_addr, inlen, outdata_addr, outlen, true);
+        return Emulator.getProcessor().cpu.gpr[2];
     }
 
+    /**
+     * Opens a directory for listing.
+     * 
+     * @param dirname
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0xB29DDF9C, version = 150, checkInsideInterrupt = true)
-    public void sceIoDopen(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int dirname_addr = cpu.gpr[4];
-
-        String dirname = readStringZ(dirname_addr);
+    public int sceIoDopen(PspString dirname) {
         if (log.isDebugEnabled()) {
             log.debug("sceIoDopen dirname = " + dirname);
         }
-
         
-        String pcfilename = getDeviceFilePath(dirname);
+        String pcfilename = getDeviceFilePath(dirname.string);
+        int result;
         if (pcfilename != null) {
             if (isUmdPath(pcfilename)) {
                 // Files in our iso virtual file system
@@ -2489,31 +2566,31 @@ public class IoFileMgrForUser extends HLEModule {
                 }
                 if (iso == null) { // check umd is mounted
                     log.error("sceIoDopen - no umd mounted");
-                    cpu.gpr[2] = ERROR_ERRNO_DEVICE_NOT_FOUND;
+                    result = ERROR_ERRNO_DEVICE_NOT_FOUND;
                 } else if (!Modules.sceUmdUserModule.isUmdActivated()) { // check umd is activated
                     log.warn("sceIoDopen - umd mounted but not activated");
-                    cpu.gpr[2] = ERROR_KERNEL_NO_SUCH_DEVICE;
+                    result = ERROR_KERNEL_NO_SUCH_DEVICE;
                 } else {
                     try {
                         if (iso.isDirectory(isofilename)) {
                             String[] filenames = iso.listDirectory(isofilename);
                             IoDirInfo info = new IoDirInfo(pcfilename, filenames);
-                            cpu.gpr[2] = info.id;
+                            result = info.id;
                         } else {
                             log.warn("sceIoDopen '" + isofilename + "' not a umd directory!");
-                            cpu.gpr[2] = -1;
+                            result = -1;
                         }
                     } catch (FileNotFoundException e) {
                         log.warn("sceIoDopen - '" + isofilename + "' umd file not found");
-                        cpu.gpr[2] = -1;
+                        result = -1;
                     } catch (IOException e) {
                         log.warn("sceIoDopen - umd io error: " + e.getMessage());
-                        cpu.gpr[2] = -1;
+                        result = -1;
                     }
                 }
-            } else if (dirname.startsWith("/") && dirname.indexOf(":") != -1) {
+            } else if (dirname.string.startsWith("/") && dirname.string.indexOf(":") != -1) {
                 log.warn("sceIoDopen apps running outside of ms0 dir are not fully supported, relative child paths should still work");
-                cpu.gpr[2] = -1;
+                result = -1;
             } else {
                 // Regular apps run from inside mstick dir or absolute path given
                 if (log.isDebugEnabled()) {
@@ -2522,33 +2599,38 @@ public class IoFileMgrForUser extends HLEModule {
                 File f = new File(pcfilename);
                 if (f.isDirectory()) {
                     IoDirInfo info = new IoDirInfo(pcfilename, f.list());
-                    cpu.gpr[2] = info.id;
+                    result = info.id;
                 } else {
                     log.warn("sceIoDopen '" + pcfilename + "' not a directory! (could be missing)");
-                    cpu.gpr[2] = ERROR_ERRNO_FILE_NOT_FOUND;
+                    result = ERROR_ERRNO_FILE_NOT_FOUND;
                 }
             }
         } else {
-            cpu.gpr[2] = -1;
+        	result = -1;
         }
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoDopen(Emulator.getProcessor().cpu.gpr[2], dirname_addr, dirname);
+            ioListener.sceIoDopen(Emulator.getProcessor().cpu.gpr[2], dirname.address, dirname.string);
         }
         delayIoOperation(IoOperation.open);
+        return result;
     }
 
+    /**
+     * sceIoDread
+     * 
+     * @param id
+     * @param dirent_addr
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0xE3EB004C, version = 150, checkInsideInterrupt = true)
-    public void sceIoDread(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-        int dirent_addr = cpu.gpr[5];
-
-        
+    public int sceIoDread(int id, int dirent_addr) {
         IoDirInfo info = dirIds.get(id);
+        
+        int result;
         if (info == null) {
             log.warn("sceIoDread unknown id " + Integer.toHexString(id));
-            cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
+            result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
         } else if (info.hasNext()) {
             String filename = info.next();
 
@@ -2563,236 +2645,268 @@ public class IoFileMgrForUser extends HLEModule {
                     log.debug("sceIoDread id=" + Integer.toHexString(id) + " #" + info.printableposition + " dir='" + info.path + "', file='" + filename + "'");
                 }
 
-                cpu.gpr[2] = 1;
+                result = 1;
             } else {
                 log.warn("sceIoDread id=" + Integer.toHexString(id) + " stat failed (" + info.path + "/" + filename + ")");
-                cpu.gpr[2] = -1;
+                result = -1;
             }
         } else {
             log.debug("sceIoDread id=" + Integer.toHexString(id) + " no more files");
-            cpu.gpr[2] = 0;
+            result = 0;
         }
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoDread(cpu.gpr[2], id, dirent_addr);
+            ioListener.sceIoDread(result, id, dirent_addr);
         }
         delayIoOperation(IoOperation.read);
+        return result;
     }
 
+    /**
+     * sceIoDclose
+     * 
+     * @param id
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0xEB092469, version = 150, checkInsideInterrupt = true)
-    public void sceIoDclose(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-
+    public int sceIoDclose(int id) {
         if (log.isDebugEnabled()) {
             log.debug("sceIoDclose - id = " + Integer.toHexString(id));
         }
-
         
         IoDirInfo info = dirIds.get(id);
+        int result;
         if (info == null) {
             log.warn("sceIoDclose - unknown id " + Integer.toHexString(id));
-            cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
+            result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
         } else {
         	info.close();
-            cpu.gpr[2] = 0;
+        	result = 0;
         }
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoDclose(cpu.gpr[2], id);
+            ioListener.sceIoDclose(result, id);
         }
         delayIoOperation(IoOperation.close);
+        return result;
     }
 
+    /**
+     * sceIoRemove
+     * 
+     * @param filename
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0xF27A9C51, version = 150, checkInsideInterrupt = true)
-    public void sceIoRemove(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int file_addr = cpu.gpr[4];
-
-        String filename = readStringZ(file_addr);
+    public int sceIoRemove(PspString filename) {
         if (log.isDebugEnabled()) {
-            log.debug("sceIoRemove - file = " + filename);
+            log.debug("sceIoRemove - file = " + filename.string);
         }
-
         
-        String pcfilename = getDeviceFilePath(filename);
+        String pcfilename = getDeviceFilePath(filename.string);
+        int result;
 
         if (pcfilename != null) {
             if (isUmdPath(pcfilename)) {
-                cpu.gpr[2] = -1;
+            	result = -1;
             } else {
                 File file = new File(pcfilename);
                 if (file.delete()) {
-                    cpu.gpr[2] = 0;
+                	result = 0;
                 } else {
-                    cpu.gpr[2] = -1;
+                	result = -1;
                 }
             }
         } else {
-            cpu.gpr[2] = -1;
+        	result = -1;
         }
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoRemove(cpu.gpr[2], file_addr, filename);
+            ioListener.sceIoRemove(result, filename.address, filename.string);
         }
         delayIoOperation(IoOperation.remove);
+        return result;
     }
 
+    /**
+     * Creates a directory.
+     * 
+     * @param dirname      - Name of the directory
+     * @param permissions  - 
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0x06A70004, version = 150, checkInsideInterrupt = true)
-    public void sceIoMkdir(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int dir_addr = cpu.gpr[4];
-        int permissions = cpu.gpr[5];
-
-        String dir = readStringZ(dir_addr);
+    public int sceIoMkdir(PspString dirname, int permissions) {
         if (log.isDebugEnabled()) {
-            log.debug("sceIoMkdir dir = " + dir);
+            log.debug("sceIoMkdir dir = " + dirname.string);
         }
 
+        String pcfilename = getDeviceFilePath(dirname.string);
+        int result;
         
-        String pcfilename = getDeviceFilePath(dir);
         if (pcfilename != null) {
             File f = new File(pcfilename);
             f.mkdir();
-            cpu.gpr[2] = 0;
+            result = 0;
         } else {
-            cpu.gpr[2] = -1;
+        	result = -1;
         }
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoMkdir(cpu.gpr[2], dir_addr, dir, permissions);
+            ioListener.sceIoMkdir(result, dirname.address, dirname.string, permissions);
         }
         delayIoOperation(IoOperation.mkdir);
+
+        return result;
     }
 
+    /**
+     * Removes a directory.
+     * 
+     * @param dirname
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0x1117C65F, version = 150, checkInsideInterrupt = true)
-    public void sceIoRmdir(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int dir_addr = cpu.gpr[4];
-
-        String dir = readStringZ(dir_addr);
+    public int sceIoRmdir(PspString dirname) {
         if (log.isDebugEnabled()) {
-            log.debug("sceIoRmdir dir = " + dir);
+            log.debug("sceIoRmdir dir = " + dirname.string);
         }
 
+        String pcfilename = getDeviceFilePath(dirname.string);
+        int result;
         
-        String pcfilename = getDeviceFilePath(dir);
         if (pcfilename != null) {
             File f = new File(pcfilename);
             f.delete();
-            cpu.gpr[2] = 0;
+            result = 0;
         } else {
-            cpu.gpr[2] = -1;
+        	result = -1;
         }
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoRmdir(cpu.gpr[2], dir_addr, dir);
+            ioListener.sceIoRmdir(result, dirname.address, dirname.string);
         }
         delayIoOperation(IoOperation.remove);
+
+        return result;
     }
 
+    /**
+     * Changes the current directory.
+     * 
+     * @param path
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0x55F4717D, version = 150, checkInsideInterrupt = true)
-    public void sceIoChdir(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceIoChdir(PspString path) {
 
-        int path_addr = cpu.gpr[4];
-
-        String path = readStringZ(path_addr);
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoChdir path = " + path);
+    	if (log.isDebugEnabled()) {
+            log.debug("sceIoChdir path = " + path.string);
         }
+    	
+    	int result;
 
-        
-        if (path.equals("..")) {
+        if (path.string.equals("..")) {
             int index = filepath.lastIndexOf("/");
             if (index != -1) {
                 filepath = filepath.substring(0, index);
             }
 
             log.info("pspiofilemgr - filepath " + filepath + " (going up one level)");
-            cpu.gpr[2] = 0;
+            result = 0;
         } else {
-            String pcfilename = getDeviceFilePath(path);
+            String pcfilename = getDeviceFilePath(path.string);
             if (pcfilename != null) {
                 filepath = pcfilename;
                 log.info("pspiofilemgr - filepath " + filepath);
-                cpu.gpr[2] = 0;
+                result = 0;
             } else {
-                cpu.gpr[2] = -1;
+            	result = -1;
             }
         }
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoChdir(cpu.gpr[2], path_addr, path);
+            ioListener.sceIoChdir(result, path.address, path.string);
         }
+        return result;
     }
 
+    /**
+     * sceIoSync
+     * 
+     * @param devicename
+     * @param flag
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0xAB96437F, version = 150, checkInsideInterrupt = true)
-    public void sceIoSync(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int device_addr = cpu.gpr[4];
-        int flag = cpu.gpr[5];
-
-        String device = readStringZ(device_addr);
-        if (log.isDebugEnabled()) {
-            log.debug("IGNORING: sceIoSync(device='" + device + "', flag=0x" + Integer.toHexString(flag) + ")");
+    public int sceIoSync(PspString devicename, int flag) {
+    	if (log.isDebugEnabled()) {
+            log.debug("IGNORING: sceIoSync(device='" + devicename.string + "', flag=0x" + Integer.toHexString(flag) + ")");
         }
 
-        
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoSync(0, device_addr, device, flag);
+            ioListener.sceIoSync(0, devicename.address, devicename.string, flag);
         }
-        cpu.gpr[2] = 0;
+
+        return 0;
     }
 
+    /**
+     * sceIoGetstat
+     * 
+     * @param filename
+     * @param stat_addr
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0xACE946E8, version = 150, checkInsideInterrupt = true)
-    public void sceIoGetstat(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int file_addr = cpu.gpr[4];
-        int stat_addr = cpu.gpr[5];
-
-        String filename = readStringZ(file_addr);
+    public int sceIoGetstat(PspString filename, int stat_addr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceIoGetstat - file = " + filename + " stat = " + Integer.toHexString(stat_addr));
+            log.debug("sceIoGetstat - file = " + filename.string + " stat = " + Integer.toHexString(stat_addr));
         }
 
-        
-        String pcfilename = getDeviceFilePath(filename);
+        int result;
+        String pcfilename = getDeviceFilePath(filename.string);
         SceIoStat stat = stat(pcfilename);
         if (stat != null) {
             stat.write(Memory.getInstance(), stat_addr);
-            cpu.gpr[2] = 0;
+            result = 0;
         } else {
-            cpu.gpr[2] = ERROR_ERRNO_FILE_NOT_FOUND;
+        	result = ERROR_ERRNO_FILE_NOT_FOUND;
         }
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoGetStat(cpu.gpr[2], file_addr, filename, stat_addr);
+            ioListener.sceIoGetStat(result, filename.address, filename.string, stat_addr);
         }
+        
+        return result;
     }
 
+    /**
+     * sceIoChstat
+     * 
+     * @param filename
+     * @param stat_addr
+     * @param bits
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0xB8A740F4, version = 150, checkInsideInterrupt = true)
-    public void sceIoChstat(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int file_addr = cpu.gpr[4];
-        int stat_addr = cpu.gpr[5];
-        int bits = cpu.gpr[6];
-
-        String filename = readStringZ(file_addr);
+    public int sceIoChstat(PspString filename, int stat_addr, int bits) {
         if (log.isDebugEnabled()) {
-            log.debug("sceIoChstat - file = " + filename + ", bits=0x" + Integer.toHexString(bits));
+            log.debug("sceIoChstat - file = " + filename.string + ", bits=0x" + Integer.toHexString(bits));
         }
 
+        String pcfilename = getDeviceFilePath(filename.string);
+        int result;
         
-        String pcfilename = getDeviceFilePath(filename);
         if (pcfilename != null) {
             if (isUmdPath(pcfilename)) {
-                cpu.gpr[2] = -1;
+            	result = -1;
             } else {
                 File file = new File(pcfilename);
 
@@ -2835,65 +2949,80 @@ public class IoFileMgrForUser extends HLEModule {
                 }
 
                 if (successful) {
-                    cpu.gpr[2] = 0;
+                	result = 0;
                 } else {
-                    cpu.gpr[2] = -1;
+                	result = -1;
                 }
             }
         } else {
-            cpu.gpr[2] = -1;
+        	result = -1;
         }
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoChstat(cpu.gpr[2], file_addr, filename, stat_addr, bits);
+            ioListener.sceIoChstat(result, filename.address, filename.string, stat_addr, bits);
         }
+        return result;
     }
 
+    /**
+     * sceIoRename
+     * 
+     * @param oldfilename
+     * @param newfilename
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0x779103A0, version = 150, checkInsideInterrupt = true)
-    public void sceIoRename(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int file_addr = cpu.gpr[4];
-        int new_file_addr = cpu.gpr[4];
-
-        String filename = readStringZ(file_addr);
-        String newfilename = readStringZ(new_file_addr);
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoRename - file = " + filename + ", new_file = " + newfilename);
+    public int sceIoRename(PspString oldfilename, PspString newfilename) {
+    	if (log.isDebugEnabled()) {
+            log.debug("sceIoRename - file = " + oldfilename.string + ", new_file = " + newfilename.string);
         }
-
         
-        String pcfilename = getDeviceFilePath(filename);
-        String newpcfilename = getDeviceFilePath(newfilename);
-        if (pcfilename != null) {
-            if (isUmdPath(pcfilename)) {
-                cpu.gpr[2] = -1;
+        String oldpcfilename = getDeviceFilePath(oldfilename.string);
+        String newpcfilename = getDeviceFilePath(newfilename.string);
+        int result;
+        
+        if (oldpcfilename != null) {
+            if (isUmdPath(oldpcfilename)) {
+                result = -1;
             } else {
-                File file = new File(pcfilename);
+                File file = new File(oldpcfilename);
                 File newfile = new File(newpcfilename);
                 if (file.renameTo(newfile)) {
-                    cpu.gpr[2] = 0;
+                	result = 0;
                 } else {
-                    cpu.gpr[2] = -1;
+                	result = -1;
                 }
             }
         } else {
-            cpu.gpr[2] = -1;
+        	result = -1;
         }
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoRename(cpu.gpr[2], file_addr, filename, new_file_addr, newfilename);
+            ioListener.sceIoRename(result, oldfilename.address, oldfilename.string, newfilename.address, newfilename.string);
         }
         delayIoOperation(IoOperation.rename);
+        return result;
     }
 
+    /**
+     * sceIoDevctl
+     * 
+     * @param processor
+     * @param devicename
+     * @param cmd
+     * @param indata_addr
+     * @param inlen
+     * @param outdata_addr
+     * 
+     * @param outlen
+     */
     @HLEFunction(nid = 0x54F5FB11, version = 150, checkInsideInterrupt = true)
-    public void sceIoDevctl(Processor processor, int device_addr, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen) {
-        CpuState cpu = processor.cpu;
+    public int sceIoDevctl(PspString devicename, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen) {
         Memory mem = Processor.memory;
+        int result = -1;
 
-        String device = readStringZ(device_addr);
         if (log.isDebugEnabled()) {
-            log.debug("sceIoDevctl(device='" + device + "',cmd=0x" + Integer.toHexString(cmd) + ",indata=0x" + Integer.toHexString(indata_addr) + ",inlen=" + inlen + ",outdata=0x" + Integer.toHexString(outdata_addr) + ",outlen=" + outlen + ")");
+            log.debug("sceIoDevctl(device='" + devicename.string + "',cmd=0x" + Integer.toHexString(cmd) + ",indata=0x" + Integer.toHexString(indata_addr) + ",inlen=" + inlen + ",outdata=0x" + Integer.toHexString(outdata_addr) + ",outlen=" + outlen + ")");
 
             if (Memory.isAddressGood(indata_addr)) {
                 for (int i = 0; i < inlen; i += 4) {
@@ -2907,34 +3036,34 @@ public class IoFileMgrForUser extends HLEModule {
             }
         }
         
-        if (device.equals("emulator:")) {
+        if (devicename.string.equals("emulator:")) {
         	switch (cmd) {
         		// EMULATOR_DEVCTL__GET_HAS_DISPLAY
         		case 0x00000001: {
         			if (Memory.isAddressGood(outdata_addr) && outlen >= 4) {
                         mem.write32(outdata_addr, 0);
-                        cpu.gpr[2] = 0;
+                        result = 0;
         			}
         		} break;
        			// EMULATOR_DEVCTL__SEND_OUTPUT
         		case 0x00000002: {
         			AutoTestsOutput.appendString(new String(mem.readChunk(indata_addr, inlen).array()));
-        			cpu.gpr[2] = 0;
+        			result = 0;
         		} break;
        			// EMULATOR_DEVCTL__IS_EMULATOR
         		case 0x00000003: {
-        			cpu.gpr[2] = 0;
+        			result = 0;
         		} break;
         		default:
         			throw(new RuntimeException(String.format("Unknown emulator: cmd 0x%08X", cmd)));
         	}
         	
             for (IIoListener ioListener : ioListeners) {
-                ioListener.sceIoDevctl(cpu.gpr[2], device_addr, device, cmd, indata_addr, inlen, outdata_addr, outlen);
+                ioListener.sceIoDevctl(result, devicename.address, devicename.string, cmd, indata_addr, inlen, outdata_addr, outlen);
             }
             delayIoOperation(IoOperation.ioctl);
 
-        	return;
+        	return result;
         }
 
         
@@ -2950,16 +3079,16 @@ public class IoFileMgrForUser extends HLEModule {
                     // 0x20 = Video disc.
                     // 0x40 = Audio disc.
                     // 0x80 = Cleaning disc.
-                    int result;
+                    int out;
                     if (iso == null) {
-                        result = 0;
+                    	out = 0;
                     } else {
-                        result = 0x10;  // Always return game disc (if present).
+                    	out = 0x10;  // Always return game disc (if present).
                     }
-                    mem.write32(outdata_addr + 4, result);
-                    cpu.gpr[2] = 0;
+                    mem.write32(outdata_addr + 4, out);
+                    result = 0;
                 } else {
-                    cpu.gpr[2] = -1;
+                	result = -1;
                 }
                 break;
             }
@@ -2970,9 +3099,9 @@ public class IoFileMgrForUser extends HLEModule {
                 }
                 if (Memory.isAddressGood(outdata_addr) && outlen >= 4) {
                     mem.write32(outdata_addr, 0); // Assume first sector.
-                    cpu.gpr[2] = 0;
+                    result = 0;
                 } else {
-                    cpu.gpr[2] = -1;
+                	result = -1;
                 }
                 break;
             }
@@ -2986,9 +3115,9 @@ public class IoFileMgrForUser extends HLEModule {
                     if (log.isDebugEnabled()) {
                         log.debug("sector=" + sector);
                     }
-                    cpu.gpr[2] = 0;
+                    result = 0;
                 } else {
-                    cpu.gpr[2] = -1;
+                	result = -1;
                 }
                 break;
             }
@@ -3006,9 +3135,9 @@ public class IoFileMgrForUser extends HLEModule {
                     if (log.isDebugEnabled()) {
                         log.debug(String.format("sector=%d, sectorNum=%d, unk1=%d, unk2=%d", sector, sectorNum, unk1, unk2));
                     }
-                    cpu.gpr[2] = 0;
+                    result = 0;
                 } else {
-                    cpu.gpr[2] = -1;
+                	result = -1;
                 }
                 break;
             }
@@ -3027,24 +3156,24 @@ public class IoFileMgrForUser extends HLEModule {
                         log.debug(String.format("sector=%d, sectorNum=%d, unk1=%d, unk2=%d", sector, sectorNum, unk1, unk2));
                     }
                     mem.write32(outdata_addr, 1); // Status (unitary index of the requested read, greater or equal to 1).
-                    cpu.gpr[2] = 0;
+                    result = 0;
                 } else {
-                    cpu.gpr[2] = -1;
+                	result = -1;
                 }
                 break;
             }
             // Check the MemoryStick's driver status (mscmhc0).
             case 0x02025801: {
                 log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " check ms driver status");
-                if (!device.equals("mscmhc0:")) {
-                    cpu.gpr[2] = ERROR_KERNEL_UNSUPPORTED_OPERATION;
+                if (!devicename.string.equals("mscmhc0:")) {
+                	result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
                 } else if (Memory.isAddressGood(outdata_addr)) {
                     // 0 = Driver busy.
                     // 1 = Driver ready.
                     mem.write32(outdata_addr, 1);
-                    cpu.gpr[2] = 0;
+                    result = 0;
                 } else {
-                    cpu.gpr[2] = -1;
+                	result = -1;
                 }
                 break;
             }
@@ -3052,20 +3181,20 @@ public class IoFileMgrForUser extends HLEModule {
             case 0x02015804: {
                 log.debug("sceIoDevctl register memorystick insert/eject callback (mscmhc0)");
                 ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-                if (!device.equals("mscmhc0:")) {
-                    cpu.gpr[2] = ERROR_KERNEL_UNSUPPORTED_OPERATION;
+                if (!devicename.string.equals("mscmhc0:")) {
+                	result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
                 } else if (Memory.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
                     final int callbackType = SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK;
                     if (threadMan.hleKernelRegisterCallback(callbackType, cbid)) {
                         // Trigger the registered callback immediately.
                         threadMan.hleKernelNotifyCallback(callbackType, cbid, MemoryStick.getStateMs());
-                        cpu.gpr[2] = 0; // Success.
+                        result = 0; // Success.
                     } else {
-                        cpu.gpr[2] = SceKernelErrors.ERROR_MEMSTICK_DEVCTL_TOO_MANY_CALLBACKS;
+                    	result = SceKernelErrors.ERROR_MEMSTICK_DEVCTL_TOO_MANY_CALLBACKS;
                     }
                 } else {
-                    cpu.gpr[2] = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
+                	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
                 }
                 break;
             }
@@ -3073,32 +3202,32 @@ public class IoFileMgrForUser extends HLEModule {
             case 0x02015805: {
                 log.debug("sceIoDevctl unregister memorystick insert/eject callback (mscmhc0)");
                 ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-                if (!device.equals("mscmhc0:")) {
-                    cpu.gpr[2] = ERROR_KERNEL_UNSUPPORTED_OPERATION;
+                if (!devicename.string.equals("mscmhc0:")) {
+                	result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
                 } else if (Memory.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
                     if (threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid) != null) {
-                        cpu.gpr[2] = 0; // Success.
+                    	result = 0; // Success.
                     } else {
-                        cpu.gpr[2] = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS; // No such callback.
+                    	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS; // No such callback.
                     }
                 } else {
-                    cpu.gpr[2] = -1; // Invalid parameters.
+                	result = -1; // Invalid parameters.
                 }
                 break;
             }
             // Check if the device is inserted (mscmhc0).
             case 0x02025806: {
                 log.debug("sceIoDevctl check ms inserted (mscmhc0)");
-                if (!device.equals("mscmhc0:")) {
-                    cpu.gpr[2] = ERROR_KERNEL_UNSUPPORTED_OPERATION;
+                if (!devicename.string.equals("mscmhc0:")) {
+                	result = ERROR_KERNEL_UNSUPPORTED_OPERATION;
                 } else if (Memory.isAddressGood(outdata_addr)) {
                     // 0 = Not inserted.
                     // 1 = Inserted.
                     mem.write32(outdata_addr, 1);
-                    cpu.gpr[2] = 0;
+                    result = 0;
                 } else {
-                    cpu.gpr[2] = -1;
+                	result = -1;
                 }
                 break;
             }
@@ -3106,8 +3235,8 @@ public class IoFileMgrForUser extends HLEModule {
             case 0x02415821: {
                 log.debug("sceIoDevctl register memorystick insert/eject callback (fatms0)");
                 ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-                if (!device.equals("fatms0:")) {
-                    cpu.gpr[2] = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
+                if (!devicename.string.equals("fatms0:")) {
+                	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
                 } else if (Memory.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
                     final int callbackType = SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK_FAT;
@@ -3115,12 +3244,12 @@ public class IoFileMgrForUser extends HLEModule {
                         // Trigger the registered callback immediately.
                     	// Only trigger this one callback, not all the MS callbacks.
                         threadMan.hleKernelNotifyCallback(callbackType, cbid, MemoryStick.getStateFatMs());
-                        cpu.gpr[2] = 0;  // Success.
+                        result = 0;  // Success.
                     } else {
-                    	cpu.gpr[2] = SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
+                    	result = SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
                     }
                 } else {
-                    cpu.gpr[2] = SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
+                	result = SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
                 }
                 break;
             }
@@ -3128,44 +3257,44 @@ public class IoFileMgrForUser extends HLEModule {
             case 0x02415822: {
                 log.debug("sceIoDevctl unregister memorystick insert/eject callback (fatms0)");
                 ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-                if (!device.equals("fatms0:")) {
-                    cpu.gpr[2] = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
+                if (!devicename.string.equals("fatms0:")) {
+                	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
                 } else if (Memory.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
                     threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK_FAT, cbid);
-                    cpu.gpr[2] = 0;  // Success.
+                    result = 0;  // Success.
                 } else {
-                    cpu.gpr[2] = SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
+                	result = SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
                 }
                 break;
             }
             // Set if the device is assigned/inserted or not (fatms0).
             case 0x02415823: {
                 log.debug("sceIoDevctl set assigned device (fatms0)");
-                if (!device.equals("fatms0:")) {
-                    cpu.gpr[2] = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
+                if (!devicename.string.equals("fatms0:")) {
+                	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
                 } else if (Memory.isAddressGood(indata_addr) && inlen >= 4) {
                     // 0 - Device is not assigned (callback not registered).
                     // 1 - Device is assigned (callback registered).
                     MemoryStick.setStateFatMs(mem.read32(indata_addr));
-                    cpu.gpr[2] = 0;
+                    result = 0;
                 } else {
-                    cpu.gpr[2] = -1;
+                	result = -1;
                 }
                 break;
             }
             // Check if the device is write protected (fatms0).
             case 0x02425824: {
                 log.debug("sceIoDevctl check write protection (fatms0)");
-                if (!device.equals("fatms0:") && !device.equals("ms0:")) { // For this command the alias "ms0:" is also supported.
-                    cpu.gpr[2] = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
+                if (!devicename.string.equals("fatms0:") && !devicename.string.equals("ms0:")) { // For this command the alias "ms0:" is also supported.
+                	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
                 } else if (Memory.isAddressGood(outdata_addr)) {
                     // 0 - Device is not protected.
                     // 1 - Device is protected.
                     mem.write32(outdata_addr, 0);
-                    cpu.gpr[2] = 0;
+                    result = 0;
                 } else {
-                    cpu.gpr[2] = -1;
+                	result = -1;
                 }
                 break;
             }
@@ -3186,29 +3315,29 @@ public class IoFileMgrForUser extends HLEModule {
                         mem.write32(addr + 8, maxSectors);
                         mem.write32(addr + 12, sectorSize);
                         mem.write32(addr + 16, sectorCount);
-                        cpu.gpr[2] = 0;
+                        result = 0;
                     } else {
                         log.warn("sceIoDevctl 0x02425818 bad save address " + String.format("0x%08X", addr));
-                        cpu.gpr[2] = -1;
+                        result = -1;
                     }
                 } else {
                     log.warn("sceIoDevctl 0x02425818 bad param address " + String.format("0x%08X", indata_addr) + " or size " + inlen);
-                    cpu.gpr[2] = -1;
+                    result = -1;
                 }
                 break;
             }
             // Check if the device is assigned/inserted (fatms0).
             case 0x02425823: {
                 log.debug("sceIoDevctl check assigned device (fatms0)");
-                if (!device.equals("fatms0:")) {
-                    cpu.gpr[2] = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
+                if (!devicename.string.equals("fatms0:")) {
+                	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
                 } else if (Memory.isAddressGood(outdata_addr) && outlen >= 4) {
                     // 0 - Device is not assigned (callback not registered).
                     // 1 - Device is assigned (callback registered).
                     mem.write32(outdata_addr, MemoryStick.getStateFatMs());
-                    cpu.gpr[2] = 0;
+                    result = 0;
                 } else {
-                    cpu.gpr[2] = -1;
+                	result = -1;
                 }
                 break;
             }
@@ -3217,9 +3346,9 @@ public class IoFileMgrForUser extends HLEModule {
                 log.debug("sceIoDevctl register usb thread");
                 if (Memory.isAddressGood(indata_addr) && inlen >= 4) {
                     // Unknown params.
-                    cpu.gpr[2] = 0;
+                	result = 0;
                 } else {
-                    cpu.gpr[2] = -1;
+                	result = -1;
                 }
                 break;
             }
@@ -3228,9 +3357,9 @@ public class IoFileMgrForUser extends HLEModule {
                 log.debug("sceIoDevctl unregister usb thread");
                 if (Memory.isAddressGood(indata_addr) && inlen >= 4) {
                     // Unknown params.
-                    cpu.gpr[2] = 0;
+                	result = 0;
                 } else {
-                    cpu.gpr[2] = -1;
+                	result = -1;
                 }
                 break;
             }
@@ -3241,47 +3370,56 @@ public class IoFileMgrForUser extends HLEModule {
                         log.warn("sceIoDevctl indata[" + (i / 4) + "]=0x" + Integer.toHexString(mem.read32(indata_addr + i)));
                     }
                 }
-                cpu.gpr[2] = -1;
+                result = -1;
                 break;
         }
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoDevctl(cpu.gpr[2], device_addr, device, cmd, indata_addr, inlen, outdata_addr, outlen);
+            ioListener.sceIoDevctl(result, devicename.address, devicename.string, cmd, indata_addr, inlen, outdata_addr, outlen);
         }
         delayIoOperation(IoOperation.ioctl);
+        return result;
     }
 
+    /**
+     * sceIoGetDevType
+     * 
+     * @param id
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0x08BD7374, version = 150, checkInsideInterrupt = true)
-    public void sceIoGetDevType(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-
+    public int sceIoGetDevType(int id) {
         if (log.isDebugEnabled()) {
             log.debug("sceIoGetDevType - id " + Integer.toHexString(id));
         }
-
         
         IoInfo info = fileIds.get(id);
+        int result;
         if (info == null) {
             log.warn("sceIoGetDevType - unknown id " + Integer.toHexString(id));
-            cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
+            result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
         } else {
             // For now, return alias type, since it's the most used.
-            cpu.gpr[2] = PSP_DEV_TYPE_ALIAS;
+            result = PSP_DEV_TYPE_ALIAS;
         }
+        
+        return result;
     }
 
+    /**
+     * sceIoAssign
+     * 
+     * @param alias_addr
+     * @param physical_addr
+     * @param filesystem_addr
+     * @param mode
+     * @param arg_addr
+     * @param argSize
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0xB2A628C1, version = 150, checkInsideInterrupt = true)
-    public void sceIoAssign(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int alias_addr = cpu.gpr[4];
-        int physical_addr = cpu.gpr[5];
-        int filesystem_addr = cpu.gpr[6];
-        int mode = cpu.gpr[7];
-        int arg_addr = cpu.gpr[8];
-        int argSize = cpu.gpr[9];
-
+    public int sceIoAssign(int alias_addr, int physical_addr, int filesystem_addr, int mode, int arg_addr, int argSize) {
         String alias = readStringZ(alias_addr);
         String physical_dev = readStringZ(physical_addr);
         String filesystem_dev = readStringZ(filesystem_addr);
@@ -3304,67 +3442,77 @@ public class IoFileMgrForUser extends HLEModule {
         log.warn("IGNORING: sceIoAssign(alias='" + alias + "', physical_dev='" + physical_dev + "', filesystem_dev='" + filesystem_dev + "', mode=" + perm + ", arg_addr=0x" + Integer.toHexString(arg_addr) + ", argSize=" + argSize + ")");
 
         
-        cpu.gpr[2] = 0;
+        int result = 0;
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoAssign(cpu.gpr[2], alias_addr, alias, physical_addr, physical_dev,
+            ioListener.sceIoAssign(result, alias_addr, alias, physical_addr, physical_dev,
                     filesystem_addr, filesystem_dev, mode, arg_addr, argSize);
         }
-    }
-
-    @HLEFunction(nid = 0x6D08A871, version = 150, checkInsideInterrupt = true)
-    public void sceIoUnassign(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int alias_addr = cpu.gpr[4];
-
-        String alias = readStringZ(alias_addr);
-
-        log.warn("IGNORING: sceIoUnassign (alias='" + alias + ")");
-
         
-        cpu.gpr[2] = 0;
+        return result;
     }
 
+    /**
+     * sceIoUnassign
+     * 
+     * @param alias
+     * 
+     * @return
+     */
+    @HLEFunction(nid = 0x6D08A871, version = 150, checkInsideInterrupt = true)
+    public int sceIoUnassign(PspString alias) {
+        log.warn("IGNORING: sceIoUnassign (alias='" + alias.string + ")");
+
+        return 0;
+    }
+
+    /**
+     * sceIoCancel
+     * 
+     * @param id
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0xE8BC6571, version = 150, checkInsideInterrupt = true)
-    public void sceIoCancel(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu.gpr[4];
-
+    public int sceIoCancel(int id) {
         if (log.isDebugEnabled()) {
             log.debug("sceIoCancel - id " + Integer.toHexString(id));
         }
-
         
         IoInfo info = fileIds.get(id);
+        int result;
+        
         if (info == null) {
             log.warn("sceIoCancel - unknown id " + Integer.toHexString(id));
-            cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
+            result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
         } else {
             info.closePending = true;
-            cpu.gpr[2] = 0;
+            result = 0;
         }
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoCancel(cpu.gpr[2], id);
+            ioListener.sceIoCancel(result, id);
         }
+        
+        return result;
     }
 
+    /**
+     * sceIoGetFdList
+     * 
+     * @param out_addr
+     * @param outSize
+     * @param fdNum_addr
+     * 
+     * @return
+     */
     @HLEFunction(nid = 0x5C2BE2CC, version = 150, checkInsideInterrupt = true)
-    public void sceIoGetFdList(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceIoGetFdList(int out_addr, int outSize, int fdNum_addr) {
         Memory mem = Processor.memory;
-
-        int out_addr = cpu.gpr[4];
-        int outSize = cpu.gpr[5];
-        int fdNum_addr = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
         	log.debug(String.format("sceIoGetFdList out_addr=0x%08X, outSize=%d, fdNum_addr=0x%08X", out_addr, outSize, fdNum_addr));
         }
-
-        
 
         int count = 0;
         if (Memory.isAddressGood(out_addr) && outSize > 0) {
@@ -3383,7 +3531,7 @@ public class IoFileMgrForUser extends HLEModule {
         	mem.write32(fdNum_addr, fileIds.size());
         }
 
-        cpu.gpr[2] = count;
+        return count;
     }
 
 }

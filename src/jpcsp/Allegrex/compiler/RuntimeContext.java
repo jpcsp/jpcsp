@@ -38,6 +38,7 @@ import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.VfpuState;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.PspString;
 import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
@@ -1010,6 +1011,10 @@ public class RuntimeContext {
 
     public static String readStringNZ(int address, int maxLength) {
     	return Utilities.readStringNZ(address, maxLength);
+    }
+
+    public static PspString readPspStringNZ(int address, int maxLength) {
+    	return new PspString(address, maxLength);
     }
 
     public static int checkMemoryRead32(int address, int pc) throws StopThreadException {

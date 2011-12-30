@@ -51,6 +51,7 @@ import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEUidClass;
 import jpcsp.HLE.HLEUidObjectMapping;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.PspString;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.StringInfo;
 import jpcsp.HLE.SyscallHandler;
@@ -880,6 +881,23 @@ public class CompilerContext implements ICompilerContext {
 				Opcodes.INVOKESTATIC,
 				runtimeContextInternalName,
 				"readStringNZ", "(II)" + Type.getDescriptor(String.class)
+   			);
+    		parameterReader.incrementCurrentStackSize();
+    	} else if (parameterType == PspString.class) {
+    		parameterReader.loadNextInt();
+
+    		int maxLength = 16 * 1024;
+    		for (Annotation parameterAnnotation : parameterAnnotations) {
+    			if (parameterAnnotation instanceof StringInfo) {
+    				StringInfo stringInfo = ((StringInfo)parameterAnnotation);
+    				maxLength = stringInfo.maxLength();
+    			}
+    		}
+    		loadImm(maxLength);
+   			mv.visitMethodInsn(
+				Opcodes.INVOKESTATIC,
+				runtimeContextInternalName,
+				"readPspStringNZ", "(II)" + Type.getDescriptor(PspString.class)
    			);
     		parameterReader.incrementCurrentStackSize();
     	} else if (parameterType == TPointer.class || parameterType == TPointer32.class || parameterType == TPointer64.class || parameterType == TErrorPointer32.class) {
