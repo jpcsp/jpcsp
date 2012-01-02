@@ -520,7 +520,13 @@ public class sceAtrac3plus extends HLEModule {
 
         	for (int i = 0; i < numLoops; i++) {
         		LoopInfo loop = loops[i];
-        		if (currentSample <= loop.startSample && loop.startSample < nextCurrentSample) {
+                        if (loop.startSample < 0 || loop.endSample > 65535) {
+                            // Invalid sample size. Can't allow looping this one (tested).
+                            loopNum = 0;
+                            currentLoopNum = -1;
+                            nextCurrentSample = currentSample;
+                            break;
+                        } else if (currentSample <= loop.startSample && loop.startSample < nextCurrentSample) {
         			// We are just starting a loop
         			loopStartBytesWrittenFirstBuf = inputFileOffset;
         			loopStartBytesWrittenSecondBuf = secondInputFileOffset;
