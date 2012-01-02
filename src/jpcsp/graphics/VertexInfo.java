@@ -538,8 +538,8 @@ public class VertexInfo {
 	                float z = Float.intBitsToFloat(mem.read32(addr + 8));
 
 	                if (transform2D) {
-	                	// Negative Z are interpreted as 0
-	                	if (z < 0) {
+	                	// Z is limited between 0 and 65535 (tested).
+	                	if (z < 0 || z > 65535) {
 	                		z = 0;
 	                	} else {
 	                		z = (int) z;	// 2D positions are always integer values
