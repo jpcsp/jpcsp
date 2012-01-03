@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.1" encoding="UTF-8" ?>
 
 <Form version="1.5" maxVersion="1.6" type="org.netbeans.modules.form.forminfo.JFrameFormInfo">
   <NonVisualComponents>
@@ -559,7 +559,7 @@
                   <Group type="102" alignment="0" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="jPanel1" min="-2" max="-2" attributes="1"/>
-                      <EmptySpace pref="62" max="32767" attributes="0"/>
+                      <EmptySpace max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -584,6 +584,7 @@
                               <Component id="enableDynamicShadersCheck" alignment="0" min="-2" max="-2" attributes="0"/>
                               <Component id="enableShaderStencilTestCheck" alignment="0" min="-2" max="-2" attributes="0"/>
                               <Component id="enableShaderColorMaskCheck" alignment="0" min="-2" max="-2" attributes="0"/>
+                              <Component id="disableOptimizedVertexInfoReading" alignment="0" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <EmptySpace max="-2" attributes="0"/>
                       </Group>
@@ -615,6 +616,8 @@
                           <Component id="enableShaderStencilTestCheck" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
                           <Component id="enableShaderColorMaskCheck" min="-2" max="-2" attributes="0"/>
+                          <EmptySpace max="-2" attributes="0"/>
+                          <Component id="disableOptimizedVertexInfoReading" min="-2" max="-2" attributes="0"/>
                           <EmptySpace pref="30" max="32767" attributes="0"/>
                       </Group>
                   </Group>
@@ -702,6 +705,13 @@
                   <Properties>
                     <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                       <Connection code="Resource.get(&quot;enableshadercolormask&quot;)" type="code"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JCheckBox" name="disableOptimizedVertexInfoReading">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                      <Connection code="Resource.get(&quot;disableoptimizedvertexinforeading&quot;)" type="code"/>
                     </Property>
                   </Properties>
                 </Component>
@@ -1150,7 +1160,7 @@
         <Container class="javax.swing.JPanel" name="DisplayPanel">
           <Constraints>
             <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout" value="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout$JTabbedPaneConstraintsDescription">
-              <JTabbedPaneConstraints tabName="Display">
+              <JTabbedPaneConstraints tabName="&lt;User Code&gt;">
                 <Property name="tabTitle" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                   <Connection code="Resource.get(&quot;display&quot;)" type="code"/>
                 </Property>
@@ -1177,7 +1187,7 @@
                               </Group>
                           </Group>
                       </Group>
-                      <EmptySpace pref="378" max="32767" attributes="0"/>
+                      <EmptySpace pref="405" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>

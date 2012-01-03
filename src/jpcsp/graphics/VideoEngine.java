@@ -140,6 +140,7 @@ public class VideoEngine {
     private boolean useAsyncVertexCache = true;
     public boolean useOptimisticVertexCache = false;
     private boolean useTextureAnisotropicFilter = false;
+    private boolean disableOptimizedVertexInfoReading = false;
     private static GeCommands helper;
     private int command;
     private int normalArgument;
@@ -277,6 +278,13 @@ public class VideoEngine {
 		@Override
 		protected void settingsValueChanged(boolean value) {
 			setUseTextureAnisotropicFilter(value);
+		}
+	}
+        
+        private class DisableOptimizedVertexInfoReadingListener extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setDisableOptimizedVertexInfoReading(value);
 		}
 	}
 
@@ -473,6 +481,7 @@ public class VideoEngine {
     public void start() {
     	Settings.getInstance().registerSettingsListener(name, "emu.useVertexCache", new UseVertexCacheSettingsListerner());
     	Settings.getInstance().registerSettingsListener(name, "emu.graphics.filters.anisotropic", new UseTextureAnisotropicFilterSettingsListerner());
+        Settings.getInstance().registerSettingsListener(name, "emu.disableoptimizedvertexinforeading", new DisableOptimizedVertexInfoReadingListener());
 
     	display = Modules.sceDisplayModule;
         re = display.getRenderingEngine();
@@ -1722,6 +1731,7 @@ public class VideoEngine {
         boolean needSetDataPointers = true;
 
         // Do not use optimized VertexInfo reading when
+        // - disableOptimizedVertexInfoReading is true
         // - using Vertex Cache unless all the vertices are supported natively
         // - the Vertex are indexed
         // - the PRIM_SPRITE primitive is used where it is not supported natively
@@ -1734,8 +1744,9 @@ public class VideoEngine {
             (type != PRIM_SPRITES || re.canNativeSpritesPrimitive()) &&
             !useTextureFromNormalizedNormal &&
             !mustComputeWeights &&
-            Memory.isAddressGood(context.vinfo.ptr_vertex)) {
-        	//
+            Memory.isAddressGood(context.vinfo.ptr_vertex) &&
+            !disableOptimizedVertexInfoReading()) {
+            //
             // Optimized VertexInfo reading:
             // - do not copy the info already available in the OpenGL format
             //   (native format), load it into nativeBuffer (a direct buffer
@@ -5953,6 +5964,18 @@ public class VideoEngine {
 
     public boolean useAsyncVertexCache() {
     	return useVertexCache && useAsyncVertexCache;
+    }
+    
+    public boolean disableOptimizedVertexInfoReading() {
+        return disableOptimizedVertexInfoReading;
+    }
+    
+    private void setDisableOptimizedVertexInfoReading(boolean disableOptimizedVertexInfoReading) {
+        this.disableOptimizedVertexInfoReading = disableOptimizedVertexInfoReading;
+        
+        if (disableOptimizedVertexInfoReading) {
+            log.info("Using non-optimized VertexInfo reading");
+        }
     }
 
     public int getBase() {

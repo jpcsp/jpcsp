@@ -1723,6 +1723,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         logConfigurationSettingBool("enabledynamicshaders", "emu.enabledynamicshaders", false);
         logConfigurationSettingBool("enableshaderstenciltest", "emu.enableshaderstenciltest", false);
         logConfigurationSettingBool("enableshadercolormask", "emu.enableshadercolormask", false);
+        logConfigurationSettingBool("disableoptimizedvertexinforeading", "emu.disableoptimizedvertexinforeading", false);
 
         logConfigurationPanel("audio");
         logConfigurationSettingBool("disableaudiothreads", "emu.ignoreaudiothreads", false);
