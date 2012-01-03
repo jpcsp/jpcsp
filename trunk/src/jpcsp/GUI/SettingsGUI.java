@@ -83,6 +83,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolFromSettings(enableDynamicShadersCheck, "emu.enabledynamicshaders");
         setBoolFromSettings(enableShaderStencilTestCheck, "emu.enableshaderstenciltest");
         setBoolFromSettings(enableShaderColorMaskCheck, "emu.enableshadercolormask");
+        setBoolFromSettings(disableOptimizedVertexInfoReading, "emu.disableoptimizedvertexinforeading");
         setBoolFromSettings(onlyGEGraphicsCheck, "emu.onlyGEGraphics");
         setBoolFromSettings(useConnector, "emu.useConnector");
         setBoolFromSettings(useFlashFonts, "emu.useFlashFonts");
@@ -173,6 +174,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolToSettings(enableDynamicShadersCheck, "emu.enabledynamicshaders");
         setBoolToSettings(enableShaderStencilTestCheck, "emu.enableshaderstenciltest");
         setBoolToSettings(enableShaderColorMaskCheck, "emu.enableshadercolormask");
+        setBoolToSettings(disableOptimizedVertexInfoReading, "emu.disableoptimizedvertexinforeading");
         setBoolToSettings(onlyGEGraphicsCheck, "emu.onlyGEGraphics");
         setBoolToSettings(useConnector, "emu.useConnector");
         setBoolToSettings(useFlashFonts, "emu.useFlashFonts");
@@ -378,6 +380,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         enableDynamicShadersCheck = new javax.swing.JCheckBox();
         enableShaderStencilTestCheck = new javax.swing.JCheckBox();
         enableShaderColorMaskCheck = new javax.swing.JCheckBox();
+        disableOptimizedVertexInfoReading = new javax.swing.JCheckBox();
         AudioPanel = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
         IgnoreAudioThreadsCheck = new javax.swing.JCheckBox();
@@ -416,7 +419,6 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         jButtonOK.setText(Resource.get("ok"));
         jButtonOK.addActionListener(new java.awt.event.ActionListener() {
-            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonOKActionPerformed(evt);
             }
@@ -424,7 +426,6 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         jButtonCancel.setText(Resource.get("cancel"));
         jButtonCancel.addActionListener(new java.awt.event.ActionListener() {
-            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonCancelActionPerformed(evt);
             }
@@ -432,7 +433,6 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         jButtonApply.setText(Resource.get("apply"));
         jButtonApply.addActionListener(new java.awt.event.ActionListener() {
-            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonApplyActionPerformed(evt);
             }
@@ -454,7 +454,6 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         jButton1.setText("...");
         jButton1.addActionListener(new java.awt.event.ActionListener() {
-            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton1ActionPerformed(evt);
             }
@@ -468,7 +467,6 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         jButton2.setText("...");
         jButton2.addActionListener(new java.awt.event.ActionListener() {
-            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton2ActionPerformed(evt);
             }
@@ -683,6 +681,8 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         enableShaderColorMaskCheck.setText(Resource.get("enableshadercolormask"));
 
+        disableOptimizedVertexInfoReading.setText(Resource.get("disableoptimizedvertexinforeading"));
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -700,7 +700,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addComponent(enableNativeCLUTCheck)
                     .addComponent(enableDynamicShadersCheck)
                     .addComponent(enableShaderStencilTestCheck)
-                    .addComponent(enableShaderColorMaskCheck))
+                    .addComponent(enableShaderColorMaskCheck)
+                    .addComponent(disableOptimizedVertexInfoReading))
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
@@ -729,6 +730,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(enableShaderStencilTestCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(enableShaderColorMaskCheck)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(disableOptimizedVertexInfoReading)
                 .addContainerGap(30, Short.MAX_VALUE))
         );
 
@@ -746,7 +749,7 @@ public class SettingsGUI extends javax.swing.JFrame {
             .addGroup(VideoPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(62, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab(Resource.get("video"), VideoPanel);
@@ -1015,7 +1018,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                         .addGroup(DisplayPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(resolutionBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(antiAliasingBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addContainerGap(378, Short.MAX_VALUE))
+                .addContainerGap(405, Short.MAX_VALUE))
         );
         DisplayPanelLayout.setVerticalGroup(
             DisplayPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1134,13 +1137,14 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JComboBox daylightBox;
     private javax.swing.JLabel daylightLabel;
     private javax.swing.JCheckBox disableBlockingAudioCheck;
+    private javax.swing.JCheckBox disableOptimizedVertexInfoReading;
     private javax.swing.JCheckBox disableUBOCheck;
     private javax.swing.JCheckBox disableVBOCheck;
     private javax.swing.JCheckBox enableDynamicShadersCheck;
     private javax.swing.JCheckBox enableGETextureCheck;
     private javax.swing.JCheckBox enableNativeCLUTCheck;
-    private javax.swing.JCheckBox enableShaderStencilTestCheck;
     private javax.swing.JCheckBox enableShaderColorMaskCheck;
+    private javax.swing.JCheckBox enableShaderStencilTestCheck;
     private javax.swing.JCheckBox enableVAOCheck;
     private javax.swing.JCheckBox extractEboot;
     private javax.swing.JCheckBox extractPGD;
@@ -1154,9 +1158,9 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JCheckBox invalidMemoryCheck;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
+    private javax.swing.JButton jButtonApply;
     private javax.swing.JButton jButtonCancel;
     private javax.swing.JButton jButtonOK;
-    private javax.swing.JButton jButtonApply;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JPanel jPanel1;
