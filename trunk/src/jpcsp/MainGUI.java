@@ -1738,7 +1738,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         logConfigurationSettingBool("useMediaEngine", "emu.useMediaEngine", false);
         logConfigurationSettingBool("useConnector", "emu.useConnector", false);
         logConfigurationSettingBool("useExternalDecoder", "emu.useExternalDecoder", false);
-        logConfigurationSettingBool("useFlashFonts", "emu.useFlashFonts", false);
+        logConfigurationSettingBool("useDebugFont", "emu.useDebugFont", false);
 
         logConfigurationPanel("compiler");
         logConfigurationSettingBool("useCompiler", "emu.compiler", false);

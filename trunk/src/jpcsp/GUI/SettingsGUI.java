@@ -86,7 +86,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolFromSettings(disableOptimizedVertexInfoReading, "emu.disableoptimizedvertexinforeading");
         setBoolFromSettings(onlyGEGraphicsCheck, "emu.onlyGEGraphics");
         setBoolFromSettings(useConnector, "emu.useConnector");
-        setBoolFromSettings(useFlashFonts, "emu.useFlashFonts");
+        setBoolFromSettings(useDebugFont, "emu.useDebugFont");
         setBoolFromSettings(useExternalDecoder, "emu.useExternalDecoder");
         setBoolFromSettings(useMediaEngine, "emu.useMediaEngine");
         setBoolFromSettings(useVertexCache, "emu.useVertexCache");
@@ -177,7 +177,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolToSettings(disableOptimizedVertexInfoReading, "emu.disableoptimizedvertexinforeading");
         setBoolToSettings(onlyGEGraphicsCheck, "emu.onlyGEGraphics");
         setBoolToSettings(useConnector, "emu.useConnector");
-        setBoolToSettings(useFlashFonts, "emu.useFlashFonts");
+        setBoolToSettings(useDebugFont, "emu.useDebugFont");
         setBoolToSettings(useExternalDecoder, "emu.useExternalDecoder");
         setBoolToSettings(useMediaEngine, "emu.useMediaEngine");
         setBoolToSettings(useVertexCache, "emu.useVertexCache");
@@ -395,7 +395,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         useMediaEngine = new javax.swing.JCheckBox();
         useConnector = new javax.swing.JCheckBox();
         useExternalDecoder = new javax.swing.JCheckBox();
-        useFlashFonts = new javax.swing.JCheckBox();
+        useDebugFont = new javax.swing.JCheckBox();
         CompilerPanel = new javax.swing.JPanel();
         jPanel5 = new javax.swing.JPanel();
         useCompiler = new javax.swing.JCheckBox();
@@ -845,7 +845,7 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         useExternalDecoder.setText(Resource.get("useExternalDecoder"));
 
-        useFlashFonts.setText(Resource.get("useFlashFonts"));
+        useDebugFont.setText(Resource.get("useDebugFont"));
 
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
@@ -856,7 +856,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addComponent(useMediaEngine, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(useConnector, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(useExternalDecoder, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(useFlashFonts, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(useDebugFont, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel4Layout.setVerticalGroup(
@@ -868,7 +868,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(useExternalDecoder)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(useFlashFonts)
+                .addComponent(useDebugFont)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -1193,8 +1193,8 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JTextField umdpath;
     private javax.swing.JCheckBox useCompiler;
     private javax.swing.JCheckBox useConnector;
+    private javax.swing.JCheckBox useDebugFont;
     private javax.swing.JCheckBox useExternalDecoder;
-    private javax.swing.JCheckBox useFlashFonts;
     private javax.swing.JCheckBox useMediaEngine;
     private javax.swing.JCheckBox useVertexCache;
     private javax.swing.JComboBox wlanPowerBox;

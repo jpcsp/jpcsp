@@ -917,7 +917,7 @@
                               <Component id="useMediaEngine" alignment="0" max="32767" attributes="1"/>
                               <Component id="useConnector" alignment="0" max="32767" attributes="1"/>
                               <Component id="useExternalDecoder" alignment="0" max="32767" attributes="1"/>
-                              <Component id="useFlashFonts" alignment="0" max="32767" attributes="1"/>
+                              <Component id="useDebugFont" alignment="0" max="32767" attributes="1"/>
                           </Group>
                           <EmptySpace max="32767" attributes="0"/>
                       </Group>
@@ -932,7 +932,7 @@
                           <EmptySpace max="-2" attributes="0"/>
                           <Component id="useExternalDecoder" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
-                          <Component id="useFlashFonts" min="-2" max="-2" attributes="0"/>
+                          <Component id="useDebugFont" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="32767" attributes="0"/>
                       </Group>
                   </Group>
@@ -960,10 +960,10 @@
                     </Property>
                   </Properties>
                 </Component>
-                <Component class="javax.swing.JCheckBox" name="useFlashFonts">
+                <Component class="javax.swing.JCheckBox" name="useDebugFont">
                   <Properties>
                     <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-                      <Connection code="Resource.get(&quot;useFlashFonts&quot;)" type="code"/>
+                      <Connection code="Resource.get(&quot;useDebugFont&quot;)" type="code"/>
                     </Property>
                   </Properties>
                 </Component>
