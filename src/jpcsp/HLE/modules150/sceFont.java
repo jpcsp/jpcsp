@@ -69,10 +69,10 @@ import org.apache.log4j.Logger;
 public class sceFont extends HLEModule {
     private static Logger log = Modules.getLogger("sceFont");
 
-	private class AllowInternalFontsSettingsListerner extends AbstractBoolSettingsListener {
+	private class UseDebugFontSettingsListerner extends AbstractBoolSettingsListener {
 		@Override
 		protected void settingsValueChanged(boolean value) {
-			setAllowInternalFonts(value);
+			setUseDebugFont(value);
 		}
 	}
 
@@ -83,7 +83,7 @@ public class sceFont extends HLEModule {
 
     @Override
     public void start() {
-    	setSettingsListener("emu.useFlashFonts", new AllowInternalFontsSettingsListerner());
+    	setSettingsListener("emu.useDebugFont", new UseDebugFontSettingsListerner());
 
     	fontIndex = -1;
         fontLibIndex = -1;
@@ -211,7 +211,7 @@ public class sceFont extends HLEModule {
     public static final int PSP_FONT_PIXELFORMAT_32 = 4; // 1 pixel in 4 bytes (RGBA)
     public static final int PSP_FONT_MODE_FILE = 0;
     public static final int PSP_FONT_MODE_MEMORY = 1;
-    private boolean allowInternalFonts = false;
+    private boolean useDebugFont = false;
     private static final boolean dumpFonts = false;
     private List<Font> internalFonts;
     private HashMap<Integer, FontLib> fontLibsMap;
@@ -220,12 +220,12 @@ public class sceFont extends HLEModule {
     private List<FontRegistryEntry> fontRegistry;
     protected static final float pointDPI = 72.f;
 
-    protected boolean getAllowInternalFonts() {
-        return allowInternalFonts;
+    protected boolean getUseDebugFont() {
+        return useDebugFont;
     }
 
-    private void setAllowInternalFonts(boolean status) {
-        allowInternalFonts = status;
+    private void setUseDebugFont(boolean status) {
+        useDebugFont = status;
     }
 
     protected void loadFontRegistry() {
@@ -713,7 +713,7 @@ public class sceFont extends HLEModule {
         	return -1;
         }
         pspCharInfo pspCharInfo = null;
-        if (getAllowInternalFonts()) {
+        if (!getUseDebugFont()) {
             pspCharInfo = font.fontInfo.getCharInfo(charCode);
         }
         if (pspCharInfo == null) {
@@ -753,7 +753,7 @@ public class sceFont extends HLEModule {
         }
         // If there's an internal font loaded, use it to display the text.
         // Otherwise, switch to our Debug font.
-        if (getAllowInternalFonts()) {
+        if (!getUseDebugFont()) {
             font.fontInfo.printFont(
                     buffer, bytesPerLine, bufWidth, bufHeight,
                     xPosI, yPosI, pixelFormat, charCode, font.fontLib.getAltCharCode());
@@ -879,7 +879,7 @@ public class sceFont extends HLEModule {
 
         // If there's an internal font loaded, use it to display the text.
         // Otherwise, switch to our Debug font.
-        if (getAllowInternalFonts()) {
+        if (!getUseDebugFont()) {
             font.fontInfo.printFont(
                     buffer, bytesPerLine, bufWidth, bufHeight,
                     xPosI, yPosI, pixelFormat, charCode, font.fontLib.getAltCharCode());
