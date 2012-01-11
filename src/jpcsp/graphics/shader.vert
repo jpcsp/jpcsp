@@ -334,9 +334,9 @@ void DecodePosition2D_2(inout vec3 V)
 // GU_VERTEX_32BITF in 2D
 void DecodePosition2D_3(inout vec3 V)
 {
-    if (V.z < 0.0)
+    if (V.z < 0.0 || V.z > 65535.0)
     {
-        // Negative V.z are interpreted as 0 in 2D
+        // Z is limited between 0 and 65535
         V.z = 0.0;
     }
     else
