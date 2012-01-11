@@ -1212,8 +1212,8 @@ public class VertexInfoReader {
 				videoEngine.doPositionSkinning(vertexInfo, boneWeights, position);
 			}
 			if (vertexInfo.transform2D) {
-				if (position[2] < 0) {
-	            	// Negative Z are interpreted as 0
+				if (position[2] < 0 || position[2] > 65535) {
+	            	// Z is limited between 0 and 65535
 					position[2] = 0;
 				} else {
 					// 2D positions are always integer values: truncate float value
