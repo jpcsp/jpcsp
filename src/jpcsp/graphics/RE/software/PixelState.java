@@ -28,8 +28,8 @@ public class PixelState {
 	public int x;
 	public int y;
 	public int primaryColor;
-	public int u;
-	public int v;
+	public float u;
+	public float v;
 
 	public float triangleWeight1;
 	public float triangleWeight2;

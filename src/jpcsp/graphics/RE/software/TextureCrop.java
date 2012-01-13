@@ -55,5 +55,15 @@ public class TextureCrop {
 		public int readPixel(int u, int v) {
 			return textureAccess.readPixel(u + cropLeft, v + cropTop);
 		}
+
+		@Override
+		public int getWidth() {
+			return textureAccess.getWidth();
+		}
+
+		@Override
+		public int getHeight() {
+			return textureAccess.getHeight();
+		}
 	}
 }

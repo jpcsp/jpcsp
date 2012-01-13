@@ -47,8 +47,10 @@ import jpcsp.memory.ImageReader;
  */
 public abstract class BaseRenderer implements IRenderer {
 	protected static final Logger log = VideoEngine.log;
-	protected static final boolean captureEachPrimitive = true;
+	protected static final boolean captureEachPrimitive = false;
+	protected static final boolean captureZbuffer = false;
     public static final int depthBufferPixelFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED;
+    protected static final int MAX_NUMBER_FILTERS = 11;
 	protected final PixelState pixel = new PixelState();
 	protected int p1x, p1y;
 	protected int p2x, p2y;
@@ -63,7 +65,7 @@ public abstract class BaseRenderer implements IRenderer {
 	protected int destinationHeight;
 	protected IImageWriter imageWriter;
 	protected IImageWriter depthWriter;
-	protected final IPixelFilter[] filters = new IPixelFilter[10];
+	protected final IPixelFilter[] filters = new IPixelFilter[MAX_NUMBER_FILTERS];
 	protected int numberFilters;
 	protected boolean needScissoring;
 	protected boolean transform2D;
@@ -81,8 +83,6 @@ public abstract class BaseRenderer implements IRenderer {
 	protected int screenOffsetY;
 	protected float zscale;
 	protected float zpos;
-	protected int textureWidth;
-	protected int textureHeight;
 
 	protected void setPositions(VertexState v1, VertexState v2) {
 		if (transform2D) {
@@ -257,8 +257,6 @@ public abstract class BaseRenderer implements IRenderer {
 			screenOffsetY = context.offset_y;
 			zscale = context.zscale * 65535.f;
 			zpos = context.zpos * 65535.f;
-		} else {
-			// Nothing special for 2D
 		}
 	}
 
@@ -273,14 +271,17 @@ public abstract class BaseRenderer implements IRenderer {
 			pixel.primaryColor = getColor(context.vertexColor);
 		}
 
+		pxMin = Math.max(0, pxMin);
+		pxMax = Math.min(pxMax, context.fbw);
+		pyMin = Math.max(0, pyMin);
+		pyMax = Math.min(pyMax, 1023);
+
 		destinationWidth = pxMax - pxMin;
         destinationHeight = pyMax - pyMin;
 
-        IPixelFilter textureFilter = null;
+        IPixelFilter textureFilter;
     	if (context.vinfo.texture != 0 && context.textureFlag.isEnabled()) {
     		final int level = 0;
-			textureWidth = context.texture_width[level];
-			textureHeight = context.texture_height[level];
     		int textureBufferWidth = VideoEngine.alignBufferWidth(context.texture_buffer_width[level], context.texture_storage);
     		int textureHeight = context.texture_height[level];
             int sourceWidth = Math.min(textureBufferWidth, tuMax - tuMin);
@@ -311,6 +312,8 @@ public abstract class BaseRenderer implements IRenderer {
 	            IMemoryReader imageReader = ImageReader.getImageReader(textureAddress, textureBufferWidth, textureHeight, textureBufferWidth, context.texture_storage, context.texture_swizzle, context.tex_clut_addr, context.tex_clut_mode, context.tex_clut_num_blocks, context.tex_clut_start, context.tex_clut_shift, context.tex_clut_mask, clut32, clut16);
 	            textureAccess = new RandomTextureAccessReader(imageReader, textureBufferWidth, textureHeight);
         	}
+        	// Avoid an access outside the texture area
+        	textureAccess = new TextureClip(textureAccess, textureBufferWidth, textureHeight);
 
             // Flip and rotate the image
         	textureAccess = TextureFlip.getImageFlip(textureAccess, textureBufferWidth, textureHeight, flipX, flipY, rotate);
@@ -341,19 +344,33 @@ public abstract class BaseRenderer implements IRenderer {
 
             	textureAccess = TextureCrop.getImageCrop(textureAccess, sourceWidth, cropLeft, cropRight, cropTop);
             	textureAccess = TextureResizer.getImageResizer(textureAccess, sourceWidth, sourceHeight, destinationWidth, destinationHeight);
-            } else {
-            	textureAccess = new TextureClip(textureAccess, textureBufferWidth, textureHeight);
             }
-            textureFilter = TextureFunction.getTextureFunction(textureAccess, context);
+
+            if (!transform2D) {
+            	// Perform the texture mapping (UV / texture matrix / environment map)
+            	textureFilter = TextureMapping.getTextureMapping(context);
+            	addFilter(textureFilter);
+            }
+
+            // Read the corresponding texture texel
+            textureFilter = TextureReader.getTextureReader(textureAccess, context);
+            addFilter(textureFilter);
+
+            // Apply the texture function (modulate, decal, blend, replace, add)
+            textureFilter = TextureFunction.getTextureFunction(context);
+            addFilter(textureFilter);
     	} else if (context.useVertexColor) {
+    		// Read the color from the vertex
     		textureFilter = VertexColorFilter.getVertexColorFilter(v1, v2, v3);
+        	addFilter(textureFilter);
 		} else {
 			if (log.isTraceEnabled()) {
 				log.trace(String.format("Using ColorTextureFilter vertexColor=0x%08X", getColor(context.vertexColor)));
 			}
+			// Read the color from the context vertexColor
 			textureFilter = new ColorTextureFilter(context.vertexColor);
+	    	addFilter(textureFilter);
 		}
-    	addFilter(textureFilter);
 	}
 
 	protected void prepareWriters(GeContext context) {
@@ -464,6 +481,8 @@ public abstract class BaseRenderer implements IRenderer {
         if (captureEachPrimitive && State.captureGeNextFrame) {
         	// Capture the GE screen after each primitive
         	Modules.sceDisplayModule.captureGeImage();
+        }
+        if (captureZbuffer && State.captureGeNextFrame) {
         	captureZbufferImage();
         }
 	}

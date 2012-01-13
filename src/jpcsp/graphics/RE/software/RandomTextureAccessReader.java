@@ -25,10 +25,12 @@ import jpcsp.memory.IMemoryReader;
  */
 public class RandomTextureAccessReader implements IRandomTextureAccess {
 	protected int width;
+	protected int height;
 	protected final int[] pixels;
 
 	public RandomTextureAccessReader(IMemoryReader imageReader, int width, int height) {
 		this.width = width;
+		this.height = height;
 		// Read the whole texture into the "pixels" array
 		final int length = width * height;
 		pixels = new int[length];
@@ -40,5 +42,15 @@ public class RandomTextureAccessReader implements IRandomTextureAccess {
 	@Override
 	public int readPixel(int u, int v) {
 		return pixels[v * width + u];
+	}
+
+	@Override
+	public int getWidth() {
+		return width;
+	}
+
+	@Override
+	public int getHeight() {
+		return height;
 	}
 }

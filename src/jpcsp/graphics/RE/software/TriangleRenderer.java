@@ -111,13 +111,13 @@ public class TriangleRenderer extends BaseRenderer {
 	}
 
 	protected void render3D() {
-        for (int y = 0; y < destinationHeight; y++) {
-        	pixel.y = pyMin + y;
-        	for (int x = 0; x < destinationWidth; x++) {
-        		pixel.x = pxMin + x;
+        for (int y = pyMin; y < pyMax; y++) {
+        	pixel.y = y;
+        	for (int x = pxMin; x < pxMax; x++) {
+        		pixel.x = x;
         		if (isInsideTriangle()) {
-        			pixel.u = Math.round(pixel.getTriangleWeightedValue(t1u, t2u, t3u) * textureWidth);
-        			pixel.v = Math.round(pixel.getTriangleWeightedValue(t1v, t2v, t3v) * textureHeight);
+        			pixel.u = pixel.getTriangleWeightedValue(t1u, t2u, t3u);
+        			pixel.v = pixel.getTriangleWeightedValue(t1v, t2v, t3v);
         			pixel.filterPassed = true;
         			pixel.sourceDepth = Math.round(pixel.getTriangleWeightedValue(p1z, p2z, p3z));
             		pixel.destination = imageWriter.readCurrent();
