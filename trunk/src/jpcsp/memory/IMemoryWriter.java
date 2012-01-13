@@ -58,4 +58,6 @@ public interface IMemoryWriter {
 	 * After calling flush(), it is no longer allowed to call writeNext().
 	 */
 	public void flush();
+
+	public int getCurrentAddress();
 }

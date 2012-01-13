@@ -17,25 +17,41 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE.software;
 
 import static jpcsp.graphics.RE.software.PixelColor.getColor;
+
+import org.apache.log4j.Logger;
+
 import jpcsp.graphics.VertexState;
+import jpcsp.graphics.VideoEngine;
 
 /**
  * @author gid15
  *
  */
-public class VertexSourceReader {
-	public static ISourceReader getVertexSourceReader(VertexState v1, VertexState v2, VertexState v3) {
-		ISourceReader reader;
+public class VertexColorFilter {
+	protected static final Logger log = VideoEngine.log;
+
+	public static IPixelFilter getVertexColorFilter(VertexState v1, VertexState v2, VertexState v3) {
+		IPixelFilter filter;
 
 		if (sameColor(v1, v2, v3)) {
-			reader = new ColorSourceReader(v1.c);
+        	if (log.isTraceEnabled()) {
+        		log.trace(String.format("Using ColorTextureFilter color=0x%08X", getColor(v1.c)));
+        	}
+			filter = new ColorTextureFilter(v1.c);
 		} else if (v3 != null) {
-			reader = new VertexTriangleSourceReader(v1, v2, v3);
+        	if (log.isTraceEnabled()) {
+        		log.trace(String.format("Using VertexTriangleTextureFilter color1=0x%08X, color2=0x%08X, color3=0x%08X", getColor(v1.c), getColor(v2.c), getColor(v3.c)));
+        	}
+			filter = new VertexTriangleTextureFilter(v1, v2, v3);
 		} else {
-			reader = new VertexSpriteSourceReader(v1, v2);
+        	if (log.isTraceEnabled()) {
+        		log.trace(String.format("Using ColorTextureFilter for sprite color=0x%08X", getColor(v2.c)));
+        	}
+        	// Only use the color of the 2nd vertex for sprites.
+			filter = new ColorTextureFilter(v2.c);
 		}
 
-		return reader;
+		return filter;
 	}
 
 	private static boolean sameColor(VertexState v1, VertexState v2) {
@@ -64,12 +80,12 @@ public class VertexSourceReader {
 		return true;
 	}
 
-	private static final class VertexTriangleSourceReader implements ISourceReader {
+	private static final class VertexTriangleTextureFilter implements IPixelFilter {
 		private final int[] color1 = new int[4];
 		private final int[] color2 = new int[4];
 		private final int[] color3 = new int[4];
 
-		public VertexTriangleSourceReader(VertexState v1, VertexState v2, VertexState v3) {
+		public VertexTriangleTextureFilter(VertexState v1, VertexState v2, VertexState v3) {
 			for (int i = 0; i < color1.length; i++) {
 				color1[i] = getColor(v1.c[i]);
 				color2[i] = getColor(v2.c[i]);
@@ -78,31 +94,13 @@ public class VertexSourceReader {
 		}
 
 		@Override
-		public int read(PixelState pixel) {
+		public int filter(PixelState pixel) {
 			int a = pixel.getTriangleWeightedValue(color1[3], color2[3], color3[3]);
 			int b = pixel.getTriangleWeightedValue(color1[2], color2[2], color3[2]);
 			int g = pixel.getTriangleWeightedValue(color1[1], color2[1], color3[1]);
 			int r = pixel.getTriangleWeightedValue(color1[0], color2[0], color3[0]);
 
 			return getColor(a, b, g, r);
-		}
-	}
-
-	private static final class VertexSpriteSourceReader implements ISourceReader {
-		private final int[] color1 = new int[4];
-		private final int[] color2 = new int[4];
-
-		public VertexSpriteSourceReader(VertexState v1, VertexState v2) {
-			for (int i = 0; i < color1.length; i++) {
-				color1[i] = getColor(v1.c[i]);
-				color2[i] = getColor(v2.c[i]);
-			}
-		}
-
-		@Override
-		public int read(PixelState pixel) {
-			// TODO Interpolate between color1 and color2
-			return getColor(color1);
 		}
 	}
 }

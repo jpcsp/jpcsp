@@ -27,7 +27,7 @@ import jpcsp.graphics.VideoEngine;
  *
  */
 public class RendererExecutor {
-	private static final int numberThreads = 1;
+	private static final int numberThreads = 0;
 	private static RendererExecutor instance;
 	private LinkedBlockingQueue<IRenderer> renderersQueue = new LinkedBlockingQueue<IRenderer>();
 	private volatile boolean ended;

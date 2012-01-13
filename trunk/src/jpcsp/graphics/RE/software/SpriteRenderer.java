@@ -34,29 +34,31 @@ public class SpriteRenderer extends BaseRenderer {
 	}
 
 	@Override
-	public boolean prepare(GeContext context) {
+	public boolean prepare(GeContext context, CachedTexture texture) {
 		if (context.vinfo.position == 0 || !context.vinfo.transform2D) {
 			// TODO Not yet implemented
 			return false;
 		}
 
+		init(context);
 		setPositions(v1, v2);
 
         if (!insideScissor(context)) {
         	return false;
         }
 
-        setTextures(v1, v2);
-
-        prepareSourceReader(context, v1, v2);
-    	prepareWriters(context);
-        if (sourceReader == null || imageWriter == null || depthWriter == null) {
-        	return false;
-        }
-
         if (log.isTraceEnabled()) {
         	log.trace(String.format("SpriteRenderer"));
         }
+
+        setTextures(v1, v2);
+
+        prepareTextureReader(context, texture, v1, v2);
+    	prepareWriters(context);
+        if (imageWriter == null || depthWriter == null) {
+        	return false;
+        }
+
         prepareFilters(context);
 
         sourceDepth = (int) v2.p[2];
@@ -67,14 +69,15 @@ public class SpriteRenderer extends BaseRenderer {
 	@Override
 	public void render() {
     	pixel.sourceDepth = sourceDepth;
-    	pixel.y = pyMin;
         for (int y = 0; y < destinationHeight; y++) {
-        	pixel.x = pxMin;
+        	pixel.y = pyMin + y;
+    		pixel.v = y;
         	for (int x = 0; x < destinationWidth; x++) {
+            	pixel.x = pxMin + x;
+        		pixel.u = x;
         		pixel.filterPassed = true;
         		pixel.destination = imageWriter.readCurrent();
         		pixel.destinationDepth = depthWriter.readCurrent();
-        		pixel.source = sourceReader.read(pixel);
         		for (int i = 0; i < numberFilters; i++) {
         			pixel.source = filters[i].filter(pixel);
         			if (!pixel.filterPassed) {
@@ -89,11 +92,8 @@ public class SpriteRenderer extends BaseRenderer {
         			imageWriter.skip(1);
         			depthWriter.skip(1);
         		}
-    			pixel.x++;
         	}
-        	pixel.y++;
         }
-        imageWriter.flush();
-        depthWriter.flush();
+        super.render();
 	}
 }

@@ -20,28 +20,15 @@ package jpcsp.graphics.RE.software;
  * @author gid15
  *
  */
-public class PixelState {
-	public int source;
-	public int destination;
-	public int sourceDepth;
-	public int destinationDepth;
-	public int x;
-	public int y;
-	public int primaryColor;
-	public int u;
-	public int v;
+public class NopTextureFilter implements IPixelFilter {
+	private IRandomTextureAccess textureAccess;
 
-	public float triangleWeight1;
-	public float triangleWeight2;
-	public float triangleWeight3;
-
-	public boolean filterPassed;
-
-	public float getTriangleWeightedValue(float value1, float value2, float value3) {
-		return triangleWeight1 * value1 + triangleWeight2 * value2 + triangleWeight3 * value3;
+	public NopTextureFilter(IRandomTextureAccess textureAccess) {
+		this.textureAccess = textureAccess;
 	}
 
-	public int getTriangleWeightedValue(int value1, int value2, int value3) {
-		return Math.round(triangleWeight1 * value1 + triangleWeight2 * value2 + triangleWeight3 * value3);
+	@Override
+	public int filter(PixelState pixel) {
+		return textureAccess.readPixel(pixel.u, pixel.v);
 	}
 }

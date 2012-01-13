@@ -84,16 +84,16 @@ public class MemoryWriter {
 			if (buffer instanceof IntBuffer) {
 				IntBuffer intBuffer = (IntBuffer) buffer;
 				switch (step) {
-				case 1: return new MemoryWriterInt8(intBuffer, address & 0x03);
-				case 2: return new MemoryWriterInt16(intBuffer, (address & 0x02) >> 1);
-				case 4: return new MemoryWriterInt32(intBuffer);
+				case 1: return new MemoryWriterInt8(intBuffer, address);
+				case 2: return new MemoryWriterInt16(intBuffer, address);
+				case 4: return new MemoryWriterInt32(intBuffer, address);
 				}
 			} else if (buffer instanceof ByteBuffer) {
 				ByteBuffer byteBuffer = (ByteBuffer) buffer;
 				switch (step) {
-				case 1: return new MemoryWriterByte8(byteBuffer);
-				case 2: return new MemoryWriterByte16(byteBuffer);
-				case 4: return new MemoryWriterByte32(byteBuffer);
+				case 1: return new MemoryWriterByte8(byteBuffer, address);
+				case 2: return new MemoryWriterByte16(byteBuffer, address);
+				case 4: return new MemoryWriterByte32(byteBuffer, address);
 				}
 			}
 		}
@@ -162,6 +162,11 @@ public class MemoryWriter {
 			address += n * step;
 			length -= n * step;
 		}
+
+		@Override
+		public int getCurrentAddress() {
+			return address;
+		}
 	}
 
 	private static class MemoryWriterIntArray8 implements IMemoryWriter {
@@ -200,11 +205,18 @@ public class MemoryWriter {
 
 		@Override
 		public final void skip(int n) {
-			flush();
-			index += n;
-			offset += index >> 2;
-			index &= 3;
-			value = buffer[offset] & mask[index];
+			if (n > 0) {
+				flush();
+				index += n;
+				offset += index >> 2;
+				index &= 3;
+				value = buffer[offset] & mask[index];
+			}
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return (offset << 2) + index;
 		}
 	}
 
@@ -243,13 +255,20 @@ public class MemoryWriter {
 
 		@Override
 		public void skip(int n) {
-			flush();
-			index += n;
-			offset += index >> 1;
-			index &= 1;
-			if (index != 0) {
-				value = buffer[offset] & 0x0000FFFF;
+			if (n > 0) {
+				flush();
+				index += n;
+				offset += index >> 1;
+				index &= 1;
+				if (index != 0) {
+					value = buffer[offset] & 0x0000FFFF;
+				}
 			}
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return (offset << 2) + (index << 1);
 		}
 	}
 
@@ -258,7 +277,7 @@ public class MemoryWriter {
 		private int[] buffer;
 
 		public MemoryWriterIntArray32(int[] buffer, int addr) {
-			offset = addr / 4;
+			offset = addr >> 2;
 			this.buffer = buffer;
 		}
 
@@ -275,17 +294,24 @@ public class MemoryWriter {
 		public void skip(int n) {
 			offset += n;
 		}
+
+		@Override
+		public int getCurrentAddress() {
+			return offset << 2;
+		}
 	}
 
 	private static class MemoryWriterInt8 implements IMemoryWriter {
 		private int index;
 		private int value;
 		private IntBuffer buffer;
+		private int address;
 		private static final int mask[] = { 0, 0x000000FF, 0x0000FFFF, 0x00FFFFFF, 0xFFFFFFFF };
 
-		public MemoryWriterInt8(IntBuffer buffer, int index) {
+		public MemoryWriterInt8(IntBuffer buffer, int address) {
 			this.buffer = buffer;
-			this.index = index;
+			this.address = address & ~3;
+			index = address & 3;
 			if (index > 0 && buffer.capacity() > 0) {
 				value = buffer.get(buffer.position()) & mask[index];
 			}
@@ -315,16 +341,23 @@ public class MemoryWriter {
 		public void skip(int n) {
 			throw new UnsupportedOperationException();
 		}
+
+		@Override
+		public int getCurrentAddress() {
+			return address + (buffer.position() << 2) + index;
+		}
 	}
 
 	private static class MemoryWriterInt16 implements IMemoryWriter {
 		private int index;
 		private int value;
 		private IntBuffer buffer;
+		private int address;
 
-		public MemoryWriterInt16(IntBuffer buffer, int index) {
+		public MemoryWriterInt16(IntBuffer buffer, int address) {
 			this.buffer = buffer;
-			this.index = index;
+			this.address = address & ~3;
+			this.index = (address & 0x02) >> 1;
 			if (index != 0 && buffer.capacity() > 0) {
 				value = buffer.get(buffer.position()) & 0x0000FFFF;
 			}
@@ -365,13 +398,20 @@ public class MemoryWriter {
 				}
 			}
 		}
+
+		@Override
+		public int getCurrentAddress() {
+			return address + (buffer.position() << 2) + index;
+		}
 	}
 
 	private static class MemoryWriterInt32 implements IMemoryWriter {
 		private IntBuffer buffer;
+		private int address;
 
-		public MemoryWriterInt32(IntBuffer buffer) {
+		public MemoryWriterInt32(IntBuffer buffer, int address) {
 			this.buffer = buffer;
+			this.address = address;
 		}
 
 		@Override
@@ -385,15 +425,24 @@ public class MemoryWriter {
 
 		@Override
 		public void skip(int n) {
-			buffer.position(buffer.position() + n);
+			if (n > 0) {
+				buffer.position(buffer.position() + n);
+			}
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return address + (buffer.position() << 2);
 		}
 	}
 
 	private static class MemoryWriterByte8 implements IMemoryWriter {
 		private ByteBuffer buffer;
+		private int address;
 
-		public MemoryWriterByte8(ByteBuffer buffer) {
+		public MemoryWriterByte8(ByteBuffer buffer, int address) {
 			this.buffer = buffer;
+			this.address = address;
 		}
 
 		@Override
@@ -407,15 +456,24 @@ public class MemoryWriter {
 
 		@Override
 		public final void skip(int n) {
-			buffer.position(buffer.position() + n);
+			if (n > 0) {
+				buffer.position(buffer.position() + n);
+			}
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return address + buffer.position();
 		}
 	}
 
 	private static class MemoryWriterByte16 implements IMemoryWriter {
 		private ByteBuffer buffer;
+		private int address;
 
-		public MemoryWriterByte16(ByteBuffer buffer) {
+		public MemoryWriterByte16(ByteBuffer buffer, int address) {
 			this.buffer = buffer;
+			this.address = address;
 		}
 
 		@Override
@@ -429,15 +487,24 @@ public class MemoryWriter {
 
 		@Override
 		public final void skip(int n) {
-			buffer.position(buffer.position() + (n << 1));
+			if (n > 0) {
+				buffer.position(buffer.position() + (n << 1));
+			}
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return address + buffer.position();
 		}
 	}
 
 	private static class MemoryWriterByte32 implements IMemoryWriter {
 		private ByteBuffer buffer;
+		private int address;
 
-		public MemoryWriterByte32(ByteBuffer buffer) {
+		public MemoryWriterByte32(ByteBuffer buffer, int address) {
 			this.buffer = buffer;
+			this.address = address;
 		}
 
 		@Override
@@ -451,7 +518,14 @@ public class MemoryWriter {
 
 		@Override
 		public final void skip(int n) {
-			buffer.position(buffer.position() + (n << 2));
+			if (n > 0) {
+				buffer.position(buffer.position() + (n << 2));
+			}
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return address + buffer.position();
 		}
 	}
 }

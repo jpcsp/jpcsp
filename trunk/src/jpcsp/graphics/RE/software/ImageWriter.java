@@ -15,6 +15,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
+import jpcsp.Memory;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.memory.IMemoryReader;
@@ -27,6 +28,8 @@ import jpcsp.memory.MemoryWriter;
  *
  */
 public class ImageWriter {
+	private static final boolean checkCurrentAddress = false;
+
 	public static IImageWriter getImageWriter(int address, int width, int bufferWidth, int pixelFormat) {
 		int step = IRenderingEngine.sizeOfTextureType[pixelFormat];
 		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, step);
@@ -86,12 +89,14 @@ public class ImageWriter {
 
 		@Override
 		public void skip(int n) {
-			x += n;
-			while (x >= minWidth) {
-				n += skipWidth;
-				x -= minWidth;
+			if (n > 0) {
+				x += n;
+				while (x >= minWidth) {
+					n += skipWidth;
+					x -= minWidth;
+				}
+				imageWriter.skip(n);
 			}
-			imageWriter.skip(n);
 		}
 
 		@Override
@@ -102,6 +107,11 @@ public class ImageWriter {
 		@Override
 		public int readCurrent() {
 			return imageWriter.readCurrent();
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return imageWriter.getCurrentAddress();
 		}
 	}
 
@@ -186,14 +196,30 @@ public class ImageWriter {
 
 		@Override
 		public final void skip(int n) {
-			memoryWriter.skip(n);
-			memoryReader.skip(n - 1);
-			updateCurrent();
+			if (n > 0) {
+				memoryWriter.skip(n);
+				memoryReader.skip(n - 1);
+				if (checkCurrentAddress) {
+					checkCurrentAddress();
+				}
+				updateCurrent();
+			}
 		}
 
 		@Override
 		public final void flush() {
 			memoryWriter.flush();
+		}
+
+		protected final void checkCurrentAddress() {
+			if (memoryReader.getCurrentAddress() != memoryWriter.getCurrentAddress()) {
+				Memory.log.warn(String.format("ImageEncoder: different read and write addresses: write 0x%08X - read 0x%08X", memoryWriter.getCurrentAddress(), memoryReader.getCurrentAddress()));
+			}
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return memoryWriter.getCurrentAddress();
 		}
 	}
 
@@ -205,6 +231,9 @@ public class ImageWriter {
 		@Override
 		public void writeNext(int value) {
 			memoryWriter.writeNext(value);
+			if (checkCurrentAddress) {
+				checkCurrentAddress();
+			}
 			updateCurrent();
 		}
 	}
@@ -217,6 +246,9 @@ public class ImageWriter {
 		@Override
 		public void writeNext(int value) {
 			memoryWriter.writeNext(color8888to4444(value));
+			if (checkCurrentAddress) {
+				checkCurrentAddress();
+			}
 			updateCurrent();
 		}
 	}
@@ -229,6 +261,9 @@ public class ImageWriter {
 		@Override
 		public void writeNext(int value) {
 			memoryWriter.writeNext(color8888to5551(value));
+			if (checkCurrentAddress) {
+				checkCurrentAddress();
+			}
 			updateCurrent();
 		}
 	}
@@ -241,6 +276,9 @@ public class ImageWriter {
 		@Override
 		public void writeNext(int value) {
 			memoryWriter.writeNext(color8888to565(value));
+			if (checkCurrentAddress) {
+				checkCurrentAddress();
+			}
 			updateCurrent();
 		}
 	}
@@ -253,6 +291,9 @@ public class ImageWriter {
 		@Override
 		public void writeNext(int value) {
 			memoryWriter.writeNext(value);
+			if (checkCurrentAddress) {
+				checkCurrentAddress();
+			}
 			updateCurrent();
 		}
 	}

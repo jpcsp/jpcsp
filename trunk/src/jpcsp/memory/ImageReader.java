@@ -246,6 +246,11 @@ public class ImageReader {
 		public ImageDecoder(IMemoryReader memoryReader) {
 			this.memoryReader = memoryReader;
 		}
+
+		@Override
+		public int getCurrentAddress() {
+			return memoryReader.getCurrentAddress();
+		}
 	}
 
 	/**
