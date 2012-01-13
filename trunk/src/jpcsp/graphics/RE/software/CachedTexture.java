@@ -142,10 +142,12 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 		}
 	}
 
+	@Override
 	public int getWidth() {
 		return width;
 	}
 
+	@Override
 	public int getHeight() {
 		return height;
 	}

@@ -37,4 +37,14 @@ public class TextureClip implements IRandomTextureAccess {
 		}
 		return textureAccess.readPixel(u, v);
 	}
+
+	@Override
+	public int getWidth() {
+		return textureAccess.getWidth();
+	}
+
+	@Override
+	public int getHeight() {
+		return textureAccess.getHeight();
+	}
 }

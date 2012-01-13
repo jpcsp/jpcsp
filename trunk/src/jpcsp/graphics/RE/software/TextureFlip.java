@@ -72,6 +72,16 @@ public class TextureFlip {
 		public int readPixel(int u, int v) {
 			return textureAccess.readPixel(width - u, v);
 		}
+
+		@Override
+		public int getWidth() {
+			return textureAccess.getWidth();
+		}
+
+		@Override
+		public int getHeight() {
+			return textureAccess.getHeight();
+		}
 	}
 
 	private static final class TextureFlipY implements IRandomTextureAccess {
@@ -86,6 +96,16 @@ public class TextureFlip {
 		@Override
 		public int readPixel(int u, int v) {
 			return textureAccess.readPixel(u, height - v);
+		}
+
+		@Override
+		public int getWidth() {
+			return textureAccess.getWidth();
+		}
+
+		@Override
+		public int getHeight() {
+			return textureAccess.getHeight();
 		}
 	}
 
@@ -104,6 +124,16 @@ public class TextureFlip {
 		public int readPixel(int u, int v) {
 			return textureAccess.readPixel(width - u, height - v);
 		}
+
+		@Override
+		public int getWidth() {
+			return textureAccess.getWidth();
+		}
+
+		@Override
+		public int getHeight() {
+			return textureAccess.getHeight();
+		}
 	}
 
 	private static final class TextureRotate implements IRandomTextureAccess {
@@ -116,6 +146,18 @@ public class TextureFlip {
 		@Override
 		public int readPixel(int u, int v) {
 			return textureAccess.readPixel(v, u);
+		}
+
+		@Override
+		public int getWidth() {
+			// Width and Height are swapped
+			return textureAccess.getHeight();
+		}
+
+		@Override
+		public int getHeight() {
+			// Width and Height are swapped
+			return textureAccess.getWidth();
 		}
 	}
 }

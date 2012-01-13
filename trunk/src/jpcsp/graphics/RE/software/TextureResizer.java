@@ -41,9 +41,13 @@ public class TextureResizer {
 		private IRandomTextureAccess textureAccess;
 		private float stepX;
 		private float stepY;
+		private int width;
+		private int height;
 
 		public TextureExtender(IRandomTextureAccess textureAccess, int fromWidth, int fromHeight, int toWidth, int toHeight) {
 			this.textureAccess = textureAccess;
+			width = toWidth;
+			height = toHeight;
 
 			stepX = ((float) fromWidth) / toWidth;
 			stepY = ((float) fromHeight) / toHeight;
@@ -52,6 +56,16 @@ public class TextureResizer {
 		@Override
 		public int readPixel(int u, int v) {
 			return textureAccess.readPixel((int) (u * stepX), (int) (v * stepY));
+		}
+
+		@Override
+		public int getWidth() {
+			return width;
+		}
+
+		@Override
+		public int getHeight() {
+			return height;
 		}
 	}
 }

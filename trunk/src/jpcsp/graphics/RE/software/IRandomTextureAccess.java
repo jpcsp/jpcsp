@@ -37,4 +37,7 @@ public interface IRandomTextureAccess {
 	 * @return    the pixel color in the format GU_COLOR_8888 (ABGR)
 	 */
 	public int readPixel(int u, int v);
+
+	public int getWidth();
+	public int getHeight();
 }
