@@ -1,4 +1,5 @@
 /*
+This file is part of jpcsp.
 
 Jpcsp is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -15,25 +16,25 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
-import jpcsp.memory.IMemoryWriter;
-
 /**
  * @author gid15
  *
- * Interface for writing images to memory.
- * The image is written sequentially to memory from the left top corner
- * to the right bottom corner.
- * The value of the pixel currently stored into memory can be retrieved
- * before writing a new value.
+ * An interface to access a texture in a random pixel order.
+ * I.e., it is not assumed that the pixels are read in a sequential order.
  */
-public interface IImageWriter extends IMemoryWriter {
+public interface IRandomTextureAccess {
 	/**
-	 * Read the current pixel color from memory. This is the color of the pixel
-	 * that will be overwritten by the next IMemoryWriter.writeNext() call.
+	 * Reads a texture pixel color at a given texture coordinate.
 	 * 
 	 * The pixel color is always returned in the format GU_COLOR_8888 (ABGR).
 	 * 
-	 * @return   the color of the current pixel in the format GU_COLOR_8888 (ABGR)
+	 * The (u,v) coordinate must be in the following valid range:
+	 * - (0, 0): the texture upper left corner
+	 * - (width - 1, height - 1): the texture lower right corner
+	 * 
+	 * @param u	  the texture u coordinate (X-Axis coordinate)
+	 * @param v   the texture v coordinate (Y-Axis coordinate)
+	 * @return    the pixel color in the format GU_COLOR_8888 (ABGR)
 	 */
-	public int readCurrent();
+	public int readPixel(int u, int v);
 }

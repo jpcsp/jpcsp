@@ -19,7 +19,14 @@ package jpcsp.graphics.RE.software;
 /**
  * @author gid15
  *
+ * Interface for a pixel filter.
  */
 public interface IPixelFilter {
+	/**
+	 * Filter the value of the current pixel according to the filter function.
+	 *
+	 * @param pixel    the state of the current pixel
+	 * @return         the filtered pixel color in the format GU_COLOR_8888 (ABGR)
+	 */
 	public int filter(PixelState pixel);
 }

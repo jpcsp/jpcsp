@@ -34,6 +34,8 @@ import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_MATRIX_TEXGEN;
 import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_MATRIX_VIEW;
 import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_MATRIX_WORLD;
 import static jpcsp.graphics.GeCommands.*;
+import static jpcsp.util.Utilities.matrixMult;
+import static jpcsp.util.Utilities.vectorMult;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -6015,40 +6017,6 @@ public class VideoEngine {
     	synchronized (videoTextures) {
         	videoTextures.clear();
 		}
-    }
-
-    protected void matrixMult(float[] result, float[] m1, float[] m2) {
-    	// If the result has to be stored into one of the input matrix,
-    	// store the result in a temp array first.
-    	float[] origResult = null;
-    	if (result == m1 || result == m2) {
-    		origResult = result;
-    		result = new float[4 * 4];
-    	}
-
-    	for (int i = 0; i < 4; i++) {
-    		for (int j = 0; j < 4; j++) {
-    			float s = 0;
-    			for (int k = 0; k < 4; k++) {
-    				s += m1[k * 4 + j] * m2[i * 4 + k];
-    			}
-    			result[i * 4 + j] = s;
-    		}
-    	}
-
-    	if (origResult != null) {
-    		System.arraycopy(result, 0, origResult, 0, result.length);
-    	}
-    }
-
-    protected void vectorMult(float[] result, float[] m, float[] v) {
-    	for (int i = 0; i < result.length; i++) {
-    		float s = 0;
-    		for (int j = 0; j < v.length; j++) {
-    			s += v[j] * m[j * 4 + i];
-    		}
-    		result[i] = s;
-    	}
     }
 
 	public boolean isUseTextureAnisotropicFilter() {

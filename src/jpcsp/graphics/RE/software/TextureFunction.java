@@ -32,7 +32,6 @@ import org.apache.log4j.Logger;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VideoEngine;
-import jpcsp.memory.IMemoryReader;
 
 /**
  * @author gid15
@@ -41,8 +40,8 @@ import jpcsp.memory.IMemoryReader;
 public class TextureFunction {
 	protected static final Logger log = VideoEngine.log;
 
-	public static ISourceReader getTextureFunction(IMemoryReader imageReader, GeContext context) {
-		ISourceReader sourceReader = null;
+	public static IPixelFilter getTextureFunction(IRandomTextureAccess textureAccess, GeContext context) {
+		IPixelFilter textureFunction = null;
 
     	if (log.isTraceEnabled()) {
         	log.trace(String.format("Using TextureFunction: func=%d, textureAlphaUsed=%b", context.textureFunc, context.textureAlphaUsed));
@@ -51,69 +50,69 @@ public class TextureFunction {
     	switch (context.textureFunc) {
 			case GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_MODULATE:
 				if (context.textureAlphaUsed) {
-					sourceReader = new TextureEffectModulateRGBA(imageReader);
+					textureFunction = new TextureEffectModulateRGBA(textureAccess);
 				} else {
-					sourceReader = new TextureEffectModulateRGB(imageReader);
+					textureFunction = new TextureEffectModulateRGB(textureAccess);
 				}
 				break;
 			case GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_DECAL:
 				if (context.textureAlphaUsed) {
-					sourceReader = new TextureEffectDecalRGBA(imageReader);
+					textureFunction = new TextureEffectDecalRGBA(textureAccess);
 				} else {
-					sourceReader = new TextureEffectDecalRGB(imageReader);
+					textureFunction = new TextureEffectDecalRGB(textureAccess);
 				}
 				break;
 			case GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_BLEND:
 				if (context.textureAlphaUsed) {
-					sourceReader = new TextureEffectBlendRGBA(imageReader, context.tex_env_color);
+					textureFunction = new TextureEffectBlendRGBA(textureAccess, context.tex_env_color);
 				} else {
-					sourceReader = new TextureEffectBlendRGB(imageReader, context.tex_env_color);
+					textureFunction = new TextureEffectBlendRGB(textureAccess, context.tex_env_color);
 				}
 				break;
 			case GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_REPLACE:
 				if (context.textureAlphaUsed) {
 					// No transformation applied
-					sourceReader = new ImageSourceReader(imageReader);
+					textureFunction = new NopTextureFilter(textureAccess);
 				} else {
-					sourceReader = new TextureEffectReplaceRGB(imageReader);
+					textureFunction = new TextureEffectReplaceRGB(textureAccess);
 				}
 				break;
 			case GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_ADD:
 				if (context.textureAlphaUsed) {
-					sourceReader = new TextureEffectAddRGBA(imageReader);
+					textureFunction = new TextureEffectAddRGBA(textureAccess);
 				} else {
-					sourceReader = new TextureEffectAddRGB(imageReader);
+					textureFunction = new TextureEffectAddRGB(textureAccess);
 				}
 				break;
 		}
 
-		if (sourceReader == null) {
-			sourceReader = new ImageSourceReader(imageReader);
+		if (textureFunction == null) {
+			textureFunction = new NopTextureFilter(textureAccess);
 		}
 
-		return sourceReader;
+		return textureFunction;
 	}
 
-	private static abstract class TextureEffect implements ISourceReader {
-		protected IMemoryReader imageReader;
+	private static abstract class TextureEffect implements IPixelFilter {
+		protected IRandomTextureAccess textureAccess;
 		protected int primaryColorB;
 		protected int primaryColorG;
 		protected int primaryColorR;
 
-		public TextureEffect(IMemoryReader imageReader) {
-			this.imageReader = imageReader;
+		public TextureEffect(IRandomTextureAccess textureAccess) {
+			this.textureAccess = textureAccess;
 		}
 
-		public TextureEffect(IMemoryReader imageReader, float[] primaryColor) {
-			this.imageReader = imageReader;
+		public TextureEffect(IRandomTextureAccess textureAccess, float[] primaryColor) {
+			this.textureAccess = textureAccess;
 			primaryColorB = getColor(primaryColor[2]);
 			primaryColorG = getColor(primaryColor[1]);
 			primaryColorR = getColor(primaryColor[0]);
 		}
 
 		@Override
-		public int read(PixelState pixel) {
-			int textureColor = imageReader.readNext();
+		public int filter(PixelState pixel) {
+			int textureColor = textureAccess.readPixel(pixel.u, pixel.v);
 			return applyEffect(pixel, textureColor);
 		}
 
@@ -121,8 +120,8 @@ public class TextureFunction {
 	}
 
 	private static final class TextureEffectModulateRGB extends TextureEffect {
-		public TextureEffectModulateRGB(IMemoryReader imageReader) {
-			super(imageReader);
+		public TextureEffectModulateRGB(IRandomTextureAccess textureAccess) {
+			super(textureAccess);
 		}
 
 		@Override
@@ -132,8 +131,8 @@ public class TextureFunction {
 	}
 
 	private static final class TextureEffectModulateRGBA extends TextureEffect {
-		public TextureEffectModulateRGBA(IMemoryReader imageReader) {
-			super(imageReader);
+		public TextureEffectModulateRGBA(IRandomTextureAccess textureAccess) {
+			super(textureAccess);
 		}
 
 		@Override
@@ -143,8 +142,8 @@ public class TextureFunction {
 	}
 
 	private static final class TextureEffectDecalRGB extends TextureEffect {
-		public TextureEffectDecalRGB(IMemoryReader imageReader) {
-			super(imageReader);
+		public TextureEffectDecalRGB(IRandomTextureAccess textureAccess) {
+			super(textureAccess);
 		}
 
 		@Override
@@ -154,8 +153,8 @@ public class TextureFunction {
 	}
 
 	private static final class TextureEffectDecalRGBA extends TextureEffect {
-		public TextureEffectDecalRGBA(IMemoryReader imageReader) {
-			super(imageReader);
+		public TextureEffectDecalRGBA(IRandomTextureAccess textureAccess) {
+			super(textureAccess);
 		}
 
 		@Override
@@ -170,8 +169,8 @@ public class TextureFunction {
 	}
 
 	private static final class TextureEffectBlendRGB extends TextureEffect {
-		public TextureEffectBlendRGB(IMemoryReader imageReader, float[] primaryColor) {
-			super(imageReader, primaryColor);
+		public TextureEffectBlendRGB(IRandomTextureAccess textureAccess, float[] primaryColor) {
+			super(textureAccess, primaryColor);
 		}
 
 		@Override
@@ -185,8 +184,8 @@ public class TextureFunction {
 	}
 
 	private static final class TextureEffectBlendRGBA extends TextureEffect {
-		public TextureEffectBlendRGBA(IMemoryReader imageReader, float[] primaryColor) {
-			super(imageReader, primaryColor);
+		public TextureEffectBlendRGBA(IRandomTextureAccess textureAccess, float[] primaryColor) {
+			super(textureAccess, primaryColor);
 		}
 
 		@Override
@@ -200,8 +199,8 @@ public class TextureFunction {
 	}
 
 	private static final class TextureEffectReplaceRGB extends TextureEffect {
-		public TextureEffectReplaceRGB(IMemoryReader imageReader) {
-			super(imageReader);
+		public TextureEffectReplaceRGB(IRandomTextureAccess textureAccess) {
+			super(textureAccess);
 		}
 
 		@Override
@@ -211,8 +210,8 @@ public class TextureFunction {
 	}
 
 	private static final class TextureEffectAddRGB extends TextureEffect {
-		public TextureEffectAddRGB(IMemoryReader imageReader) {
-			super(imageReader);
+		public TextureEffectAddRGB(IRandomTextureAccess textureAccess) {
+			super(textureAccess);
 		}
 
 		@Override
@@ -222,8 +221,8 @@ public class TextureFunction {
 	}
 
 	private static final class TextureEffectAddRGBA extends TextureEffect {
-		public TextureEffectAddRGBA(IMemoryReader imageReader) {
-			super(imageReader);
+		public TextureEffectAddRGBA(IRandomTextureAccess textureAccess) {
+			super(textureAccess);
 		}
 
 		@Override

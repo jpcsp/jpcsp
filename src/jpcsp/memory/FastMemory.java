@@ -299,7 +299,7 @@ public class FastMemory extends Memory {
 
 		// copy 1 int at each loop
 		int countInt = Math.min(length, source.remaining()) >> 2;
-		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, countInt, 4);
+		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, countInt << 2, 4);
 		for (int i = 0; i < countInt; i++) {
 			int data1 = source.get() & 0xFF;
 			int data2 = source.get() & 0xFF;

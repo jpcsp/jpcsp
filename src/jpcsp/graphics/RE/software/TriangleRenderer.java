@@ -35,29 +35,31 @@ public class TriangleRenderer extends BaseRenderer {
 	}
 
 	@Override
-	public boolean prepare(GeContext context) {
-		if (context.vinfo.position == 0 || !context.vinfo.transform2D) {
+	public boolean prepare(GeContext context, CachedTexture texture) {
+		if (context.vinfo.position == 0) {
 			// TODO Not yet implemented
 			return false;
 		}
 
+		init(context);
 		setPositions(v1, v2, v3);
 
         if (!insideScissor(context)) {
         	return false;
         }
 
-        setTextures(v1, v2, v3);
-
-        prepareSourceReader(context, v1, v2, v3);
-        prepareWriters(context);
-        if (sourceReader == null || imageWriter == null || depthWriter == null) {
-        	return false;
-        }
-
         if (log.isTraceEnabled()) {
         	log.trace(String.format("TriangleRenderer"));
         }
+
+        setTextures(v1, v2, v3);
+
+        prepareTextureReader(context, texture, v1, v2, v3);
+        prepareWriters(context);
+        if (imageWriter == null || depthWriter == null) {
+        	return false;
+        }
+
         prepareFilters(context);
 
 		return true;
@@ -65,16 +67,26 @@ public class TriangleRenderer extends BaseRenderer {
 
 	@Override
 	public void render() {
-    	pixel.y = pyMin;
+		if (transform2D) {
+			render2D();
+		} else {
+			render3D();
+		}
+        super.render();
+	}
+
+	protected void render2D() {
         for (int y = 0; y < destinationHeight; y++) {
-        	pixel.x = pxMin;
+        	pixel.y = pyMin + y;
+    		pixel.v = y;
         	for (int x = 0; x < destinationWidth; x++) {
+        		pixel.x = pxMin + x;
+        		pixel.u = x;
         		if (isInsideTriangle()) {
         			pixel.filterPassed = true;
         			pixel.sourceDepth = Math.round(pixel.getTriangleWeightedValue(p1z, p2z, p3z));
             		pixel.destination = imageWriter.readCurrent();
             		pixel.destinationDepth = depthWriter.readCurrent();
-            		pixel.source = sourceReader.read(pixel);
             		for (int i = 0; i < numberFilters; i++) {
             			pixel.source = filters[i].filter(pixel);
             			if (!pixel.filterPassed) {
@@ -91,15 +103,45 @@ public class TriangleRenderer extends BaseRenderer {
             		}
         		} else {
         			// Do not display, skip the pixel
-        			sourceReader.read(pixel);
         			imageWriter.skip(1);
         			depthWriter.skip(1);
         		}
-    			pixel.x++;
         	}
-        	pixel.y++;
         }
-        imageWriter.flush();
-        depthWriter.flush();
+	}
+
+	protected void render3D() {
+        for (int y = 0; y < destinationHeight; y++) {
+        	pixel.y = pyMin + y;
+        	for (int x = 0; x < destinationWidth; x++) {
+        		pixel.x = pxMin + x;
+        		if (isInsideTriangle()) {
+        			pixel.u = Math.round(pixel.getTriangleWeightedValue(t1u, t2u, t3u) * textureWidth);
+        			pixel.v = Math.round(pixel.getTriangleWeightedValue(t1v, t2v, t3v) * textureHeight);
+        			pixel.filterPassed = true;
+        			pixel.sourceDepth = Math.round(pixel.getTriangleWeightedValue(p1z, p2z, p3z));
+            		pixel.destination = imageWriter.readCurrent();
+            		pixel.destinationDepth = depthWriter.readCurrent();
+            		for (int i = 0; i < numberFilters; i++) {
+            			pixel.source = filters[i].filter(pixel);
+            			if (!pixel.filterPassed) {
+            				break;
+            			}
+            		}
+            		if (pixel.filterPassed) {
+	            		imageWriter.writeNext(pixel.source);
+	            		depthWriter.writeNext(pixel.sourceDepth);
+            		} else {
+            			// Filter did not pass, do not update the pixel
+            			imageWriter.skip(1);
+            			depthWriter.skip(1);
+            		}
+        		} else {
+        			// Do not display, skip the pixel
+        			imageWriter.skip(1);
+        			depthWriter.skip(1);
+        		}
+        	}
+        }
 	}
 }

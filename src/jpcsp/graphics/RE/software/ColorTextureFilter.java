@@ -22,19 +22,19 @@ import static jpcsp.graphics.RE.software.PixelColor.getColor;
  * @author gid15
  *
  */
-public class ColorSourceReader implements ISourceReader {
+public class ColorTextureFilter implements IPixelFilter {
 	private int color;
 
-	public ColorSourceReader(int color) {
+	public ColorTextureFilter(int color) {
 		this.color = color;
 	}
 
-	public ColorSourceReader(float[] color) {
+	public ColorTextureFilter(float[] color) {
 		this.color = getColor(color);
 	}
 
 	@Override
-	public int read(PixelState pixel) {
+	public int filter(PixelState pixel) {
 		return color;
 	}
 }

@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.util;
 
+import static java.lang.System.arraycopy;
+
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
@@ -638,5 +640,44 @@ public class Utilities {
         } catch (InterruptedException e) {
         	// Ignore exception
         }
+    }
+
+    public static void matrixMult(float[] result, final float[] m1, final float[] m2) {
+    	// If the result has to be stored into one of the input matrix,
+    	// store the result in a temp array first.
+    	float[] origResult = null;
+    	if (result == m1 || result == m2) {
+    		origResult = result;
+    		result = new float[16];
+    	}
+
+    	int i = 0;
+    	int j = 0;
+    	for (int y = 0; y < 4; y++) {
+    		for (int x = 0; x < 4; x++) {
+    			result[i] = m1[x] * m2[j]
+    			          + m1[x + 4] * m2[j + 1]
+    			          + m1[x + 8] * m2[j + 2]
+    			          + m1[x + 12] * m2[j + 3];
+    			i++;
+    		}
+    		j += 4;
+    	}
+
+    	if (origResult != null) {
+    		arraycopy(result, 0, origResult, 0, result.length);
+    	}
+    }
+
+    public static void vectorMult(final float[] result, final float[] m, final float[] v) {
+    	for (int i = 0; i < result.length; i++) {
+    		float s = v[0] * m[i];
+    		int k = i + 4;
+    		for (int j = 1; j < v.length; j++) {
+    			s += v[j] * m[k];
+    			k += 4;
+    		}
+    		result[i] = s;
+    	}
     }
 }

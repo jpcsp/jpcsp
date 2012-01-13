@@ -18,6 +18,8 @@ package jpcsp.graphics.RE.software;
 
 import java.nio.Buffer;
 import java.nio.IntBuffer;
+import java.nio.ShortBuffer;
+import java.util.HashMap;
 
 import jpcsp.Memory;
 import jpcsp.graphics.VertexInfo;
@@ -31,9 +33,12 @@ import jpcsp.graphics.RE.IRenderingEngine;
  *
  * This RenderingEngine class implements a software-based rendering,
  * not using OpenGL or any GPU.
+ * This is probably the most accurate implementation but also the slowest one.
  */
 public class RESoftware extends BaseRenderingEngine {
+	private static final boolean useTextureCache = true;
     protected int genTextureId;
+    protected int bindTexture;
     protected VertexState v1 = new VertexState();
     protected VertexState v2 = new VertexState();
     protected VertexState v3 = new VertexState();
@@ -41,6 +46,8 @@ public class RESoftware extends BaseRenderingEngine {
     protected VertexState v5 = new VertexState();
     protected VertexState v6 = new VertexState();
     protected RendererExecutor rendererExecutor;
+    protected HashMap<Integer, CachedTexture> cachedTextures = new HashMap<Integer, CachedTexture>();
+    protected int textureBufferWidth;
 
 	@Override
 	public void exit() {
@@ -522,7 +529,7 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	protected void render(IRenderer renderer) {
-		if (renderer.prepare(context)) {
+		if (renderer.prepare(context, cachedTextures.get(bindTexture))) {
 			rendererExecutor.render(renderer);
 		}
 	}
@@ -550,12 +557,21 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	protected boolean isSprite(VertexInfo vinfo, VertexState tv1, VertexState tv2, VertexState tv3, VertexState tv4) {
+		// Sprites are only available in 2D
+		if (!vinfo.transform2D) {
+			return false;
+		}
+
 		// x1 == x2 && y1 == y3 && x4 == x3 && y4 == y2
 		if (tv1.p[0] == tv2.p[0] && tv1.p[1] == tv3.p[1] && tv4.p[0] == tv3.p[0] && tv4.p[1] == tv2.p[1]) {
 			// z1 == z2 && z1 == z3 && z1 == z4
 			if (tv1.p[2] == tv2.p[2] && tv1.p[2] == tv3.p[2] && tv1.p[2] == tv3.p[2]) {
 				// u1 == u2 && v1 == v3 && u4 == u3 && v4 == v2
 				if (vinfo.texture == 0 || (tv1.t[0] == tv2.t[0] && tv1.t[1] == tv3.t[1] && tv4.t[0] == tv3.t[0] && tv4.t[1] == tv2.t[1])) {
+					return true;
+				}
+				// v1 == v2 && u1 == u3 && v4 == v3 && u4 == u2
+				if (vinfo.texture == 0 || (tv1.t[1] == tv2.t[1] && tv1.t[0] == tv3.t[0] && tv4.t[1] == tv3.t[1] && tv4.t[0] == tv2.t[0])) {
 					return true;
 				}
 			}
@@ -567,6 +583,10 @@ public class RESoftware extends BaseRenderingEngine {
 			if (tv1.p[2] == tv2.p[2] && tv1.p[2] == tv3.p[2] && tv1.p[2] == tv3.p[2]) {
 				// v1 == v2 && u1 == u3 && v4 == v3 && u4 == u2
 				if (vinfo.texture == 0 || (tv1.t[1] == tv2.t[1] && tv1.t[0] == tv3.t[0] && tv4.t[1] == tv3.t[1] && tv4.t[0] == tv2.t[0])) {
+					return true;
+				}
+				// u1 == u2 && v1 == v3 && u4 == u3 && v4 == v2
+				if (vinfo.texture == 0 || (tv1.t[0] == tv2.t[0] && tv1.t[1] == tv3.t[1] && tv4.t[0] == tv3.t[0] && tv4.t[1] == tv2.t[1])) {
 					return true;
 				}
 			}
@@ -624,12 +644,12 @@ public class RESoftware extends BaseRenderingEngine {
 
 	protected void drawArraysTriangles(int first, int count) {
 		Memory mem = Memory.getInstance();
-		for (int i = first; i < count; i++) {
+		for (int i = first; i < count; i += 3) {
 			int addr1 = context.vinfo.getAddress(mem, i);
 			context.vinfo.readVertex(mem, addr1, v1);
-			int addr2 = context.vinfo.getAddress(mem, i);
+			int addr2 = context.vinfo.getAddress(mem, i + 1);
 			context.vinfo.readVertex(mem, addr2, v2);
-			int addr3 = context.vinfo.getAddress(mem, i);
+			int addr3 = context.vinfo.getAddress(mem, i + 2);
 			context.vinfo.readVertex(mem, addr3, v3);
 
 			drawTriangle(v1, v2, v3);
@@ -812,8 +832,7 @@ public class RESoftware extends BaseRenderingEngine {
 
 	@Override
 	public void setPixelStore(int rowLength, int alignment) {
-		// TODO Auto-generated method stub
-		
+		textureBufferWidth = rowLength;
 	}
 
 	@Override
@@ -823,28 +842,33 @@ public class RESoftware extends BaseRenderingEngine {
 
 	@Override
 	public void bindTexture(int texture) {
-		// TODO Auto-generated method stub
-		
+		bindTexture = texture;
 	}
 
 	@Override
 	public void deleteTexture(int texture) {
-		// TODO Auto-generated method stub
-		
+		cachedTextures.remove(texture);
 	}
 
 	@Override
-	public void setCompressedTexImage(int level, int internalFormat, int width,
-			int height, int compressedSize, Buffer buffer) {
+	public void setCompressedTexImage(int level, int internalFormat, int width, int height, int compressedSize, Buffer buffer) {
 		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
-	public void setTexImage(int level, int internalFormat, int width,
-			int height, int format, int type, int textureSize, Buffer buffer) {
-		// TODO Auto-generated method stub
-		
+	public void setTexImage(int level, int internalFormat, int width, int height, int format, int type, int textureSize, Buffer buffer) {
+		if (useTextureCache) {
+			// TODO Cache all the texture levels
+			if (level == 0) {
+				CachedTexture cachedTexture = null;
+				if (buffer instanceof IntBuffer) {
+					cachedTexture = CachedTexture.getCachedTexture(textureBufferWidth, height, format, ((IntBuffer) buffer).array(), buffer.arrayOffset(), textureSize >> 2);
+				} else if (buffer instanceof ShortBuffer) {
+					cachedTexture = CachedTexture.getCachedTexture(textureBufferWidth, height, format, ((ShortBuffer) buffer).array(), buffer.arrayOffset(), textureSize >> 1);
+				}
+				cachedTextures.put(bindTexture, cachedTexture);
+			}
+		}
 	}
 
 	@Override
@@ -1076,13 +1100,11 @@ public class RESoftware extends BaseRenderingEngine {
 
 	@Override
 	public boolean isQueryAvailable() {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public boolean isShaderAvailable() {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
@@ -1205,7 +1227,6 @@ public class RESoftware extends BaseRenderingEngine {
 
 	@Override
 	public boolean isVertexArrayAvailable() {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
@@ -1247,7 +1268,7 @@ public class RESoftware extends BaseRenderingEngine {
 
 	@Override
 	public boolean canNativeClut() {
-		return true;
+		return !useTextureCache;
 	}
 
 	@Override

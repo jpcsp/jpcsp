@@ -30,12 +30,13 @@ public interface IRenderer {
 	 * After the preparation, the context cannot be accessed any more.
 	 * 
 	 * @param context     GE context
+	 * @param texture     texture (or null if no texture is available)
 	 * @return            true if something has to be rendered
 	 *                    false if nothing has to be rendered. It is not
 	 *                          valid to call render() when this prepare
 	 *                          method has returned false.
 	 */
-	public boolean prepare(GeContext context);
+	public boolean prepare(GeContext context, CachedTexture texture);
 
 	/**
 	 * Render the primitive. This method is only allowed to access class

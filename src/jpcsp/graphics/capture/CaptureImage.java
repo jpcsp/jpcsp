@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.capture;
 
+import static jpcsp.graphics.RE.software.BaseRenderer.depthBufferPixelFormat;
+
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -68,7 +70,7 @@ public class CaptureImage {
 	}
 
     public void write() throws IOException {
-    	if (bufferStorage >= GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED && bufferStorage <= GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED) {
+    	if (bufferStorage >= GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED && bufferStorage <= GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED && bufferStorage != depthBufferPixelFormat) {
     		// Writing of indexed images not supported
     		return;
     	}
@@ -255,6 +257,13 @@ public class CaptureImage {
     		pixelBytes[1] = (byte) ((pixel     ) & 0xF0); // G
     		pixelBytes[2] = (byte) ((pixel << 4) & 0xF0); // R
     		pixelBytes[3] = (byte) ((pixel >> 8) & 0xF0); // A
+    		break;
+    	case depthBufferPixelFormat:
+    		// Gray color value based on depth value
+    		pixelBytes[0] = (byte) (pixel >> 8);
+    		pixelBytes[1] = pixelBytes[0];
+    		pixelBytes[2] = pixelBytes[0];
+    		pixelBytes[3] = pixelBytes[0];
     		break;
 		default:
 			// Black pixel

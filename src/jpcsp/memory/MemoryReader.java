@@ -84,16 +84,16 @@ public class MemoryReader {
 			if (buffer instanceof IntBuffer) {
 				IntBuffer intBuffer = (IntBuffer) buffer;
 				switch (step) {
-				case 1: return new MemoryReaderInt8(intBuffer, address & 0x03);
-				case 2: return new MemoryReaderInt16(intBuffer, (address & 0x02) >> 1);
-				case 4: return new MemoryReaderInt32(intBuffer);
+				case 1: return new MemoryReaderInt8(intBuffer, address);
+				case 2: return new MemoryReaderInt16(intBuffer, address);
+				case 4: return new MemoryReaderInt32(intBuffer, address);
 				}
 			} else if (buffer instanceof ByteBuffer) {
 				ByteBuffer byteBuffer = (ByteBuffer) buffer;
 				switch (step) {
-				case 1: return new MemoryReaderByte8(byteBuffer);
-				case 2: return new MemoryReaderByte16(byteBuffer);
-				case 4: return new MemoryReaderByte32(byteBuffer);
+				case 1: return new MemoryReaderByte8(byteBuffer, address);
+				case 2: return new MemoryReaderByte16(byteBuffer, address);
+				case 4: return new MemoryReaderByte32(byteBuffer, address);
 				}
 			}
 		}
@@ -166,6 +166,11 @@ public class MemoryReader {
 			address += n * step;
 			length -= n * step;
 		}
+
+		@Override
+		public int getCurrentAddress() {
+			return address;
+		}
 	}
 
 	private final static class MemoryReaderIntArray8 implements IMemoryReader {
@@ -199,10 +204,17 @@ public class MemoryReader {
 
 		@Override
 		public final void skip(int n) {
-			index += n;
-			offset += index >> 2;
-			index &= 3;
-			value = buffer[offset] >> (index << 3);
+			if (n > 0) {
+				index += n;
+				offset += index >> 2;
+				index &= 3;
+				value = buffer[offset] >> (index << 3);
+			}
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return (offset << 2) + index;
 		}
 	}
 
@@ -217,7 +229,7 @@ public class MemoryReader {
 			offset = addr >> 2;
 			index = (addr >> 1) & 1;
 			if (index != 0) {
-				value = buffer[offset++];
+				value = buffer[offset];
 			}
 		}
 
@@ -226,11 +238,12 @@ public class MemoryReader {
 			int n;
 
 			if (index == 0) {
-				value = buffer[offset++];
+				value = buffer[offset];
 				n = value & 0xFFFF;
 				index = 1;
 			} else {
 				index = 0;
+				offset++;
 				n = value >>> 16;
 			}
 
@@ -239,12 +252,19 @@ public class MemoryReader {
 
 		@Override
 		public final void skip(int n) {
-			index += n;
-			offset += index >> 1;
-			index &= 1;
-			if (index != 0) {
-				value = buffer[offset++];
+			if (n > 0) {
+				index += n;
+				offset += index >> 1;
+				index &= 1;
+				if (index != 0) {
+					value = buffer[offset];
+				}
 			}
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return (offset << 2) + (index << 1);
 		}
 	}
 
@@ -266,16 +286,23 @@ public class MemoryReader {
 		public final void skip(int n) {
 			offset += n;
 		}
+
+		@Override
+		public int getCurrentAddress() {
+			return offset << 2;
+		}
 	}
 
 	private final static class MemoryReaderInt8 implements IMemoryReader {
 		private int index;
 		private int value;
 		private IntBuffer buffer;
+		private int address;
 
 		public MemoryReaderInt8(IntBuffer buffer, int index) {
 			this.buffer = buffer;
-			this.index = index;
+			this.address = address & ~3;
+			index = address & 0x03;
 			if (buffer.capacity() > 0) {
 				value = buffer.get() >> (index << 3);
 			}
@@ -298,10 +325,17 @@ public class MemoryReader {
 
 		@Override
 		public final void skip(int n) {
-			index += n;
-			buffer.position(buffer.position() + (index >> 2));
-			index &= 3;
-			value = buffer.get() >> (8 * index);
+			if (n > 0) {
+				index += n;
+				buffer.position(buffer.position() + (index >> 2));
+				index &= 3;
+				value = buffer.get() >> (8 * index);
+			}
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return address + (buffer.position() << 2) + index;
 		}
 	}
 
@@ -309,10 +343,12 @@ public class MemoryReader {
 		private int index;
 		private int value;
 		private IntBuffer buffer;
+		private int address;
 
 		public MemoryReaderInt16(IntBuffer buffer, int index) {
 			this.buffer = buffer;
-			this.index = index;
+			this.address = address & ~3;
+			this.index = (address & 0x02) >> 1;
 			if (index != 0 && buffer.capacity() > 0) {
 				value = buffer.get();
 			}
@@ -336,20 +372,29 @@ public class MemoryReader {
 
 		@Override
 		public final void skip(int n) {
-			index += n;
-			buffer.position(buffer.position() + (index >> 1));
-			index &= 1;
-			if (index != 0) {
-				value = buffer.get();
+			if (n > 0) {
+				index += n;
+				buffer.position(buffer.position() + (index >> 1));
+				index &= 1;
+				if (index != 0) {
+					value = buffer.get();
+				}
 			}
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return address + (buffer.position() << 2) + index;
 		}
 	}
 
 	private final static class MemoryReaderInt32 implements IMemoryReader {
 		private IntBuffer buffer;
+		private int address;
 
-		public MemoryReaderInt32(IntBuffer buffer) {
+		public MemoryReaderInt32(IntBuffer buffer, int address) {
 			this.buffer = buffer;
+			this.address = address;
 		}
 
 		@Override
@@ -359,15 +404,24 @@ public class MemoryReader {
 
 		@Override
 		public final void skip(int n) {
-			buffer.position(buffer.position() + n);
+			if (n > 0) {
+				buffer.position(buffer.position() + n);
+			}
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return address + (buffer.position() << 2);
 		}
 	}
 
 	private final static class MemoryReaderByte8 implements IMemoryReader {
 		private ByteBuffer buffer;
+		private int address;
 
-		public MemoryReaderByte8(ByteBuffer buffer) {
+		public MemoryReaderByte8(ByteBuffer buffer, int address) {
 			this.buffer = buffer;
+			this.address = address;
 		}
 
 		@Override
@@ -377,15 +431,24 @@ public class MemoryReader {
 
 		@Override
 		public final void skip(int n) {
-			buffer.position(buffer.position() + n);
+			if (n > 0) {
+				buffer.position(buffer.position() + n);
+			}
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return address + buffer.position();
 		}
 	}
 
 	private final static class MemoryReaderByte16 implements IMemoryReader {
 		private ByteBuffer buffer;
+		private int address;
 
-		public MemoryReaderByte16(ByteBuffer buffer) {
+		public MemoryReaderByte16(ByteBuffer buffer, int address) {
 			this.buffer = buffer;
+			this.address = address;
 		}
 
 		@Override
@@ -395,15 +458,24 @@ public class MemoryReader {
 
 		@Override
 		public final void skip(int n) {
-			buffer.position(buffer.position() + (n << 1));
+			if (n > 0) {
+				buffer.position(buffer.position() + (n << 1));
+			}
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return address + buffer.position();
 		}
 	}
 
 	private final static class MemoryReaderByte32 implements IMemoryReader {
 		private ByteBuffer buffer;
+		private int address;
 
-		public MemoryReaderByte32(ByteBuffer buffer) {
+		public MemoryReaderByte32(ByteBuffer buffer, int address) {
 			this.buffer = buffer;
+			this.address = address;
 		}
 
 		@Override
@@ -413,7 +485,14 @@ public class MemoryReader {
 
 		@Override
 		public final void skip(int n) {
-			buffer.position(buffer.position() + (n << 2));
+			if (n > 0) {
+				buffer.position(buffer.position() + (n << 2));
+			}
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return address + buffer.position();
 		}
 	}
 }

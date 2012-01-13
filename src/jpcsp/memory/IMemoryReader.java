@@ -44,4 +44,6 @@ public interface IMemoryReader {
 	 * @param n the number of values to be skipped.
 	 */
 	public void skip(int n);
+
+	public int getCurrentAddress();
 }
