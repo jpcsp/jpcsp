@@ -57,6 +57,8 @@ public abstract class BaseRenderer implements IRenderer {
 	protected int p3x, p3y;
 	protected int pxMin, pxMax, pyMin, pyMax;
 	protected float p1z, p2z, p3z;
+	protected float p1w, p2w, p3w;
+	protected float p1wInverted, p2wInverted, p3wInverted;
 	protected float t1u, t1v;
 	protected float t2u, t2v;
 	protected float t3u, t3v;
@@ -93,15 +95,19 @@ public abstract class BaseRenderer implements IRenderer {
 	        p2y = round(v2.p[1]);
 	        p2z = v2.p[2];
 		} else {
-			int[] screenCoordinates = new int[3];
+			float[] screenCoordinates = new float[4];
 			getScreenCoordinates(screenCoordinates, v1.p);
-			p1x = screenCoordinates[0];
-			p1y = screenCoordinates[1];
-			p1z = screenCoordinates[2];
+			p1x = round(screenCoordinates[0]);
+			p1y = round(screenCoordinates[1]);
+			p1z = round(screenCoordinates[2]);
+			p1w = screenCoordinates[3];
+			p1wInverted = 1.f / p1w;
 			getScreenCoordinates(screenCoordinates, v2.p);
-			p2x = screenCoordinates[0];
-			p2y = screenCoordinates[1];
-			p2z = screenCoordinates[2];
+			p2x = round(screenCoordinates[0]);
+			p2y = round(screenCoordinates[1]);
+			p2z = round(screenCoordinates[2]);
+			p2w = screenCoordinates[3];
+			p2wInverted = 1.f / p2w;
 		}
 
         pxMax = max(p1x, p2x);
@@ -118,11 +124,13 @@ public abstract class BaseRenderer implements IRenderer {
 	        p3y = round(v3.p[1]);
 	        p3z = v3.p[2];
 		} else {
-			int[] screenCoordinates = new int[3];
+			float[] screenCoordinates = new float[4];
 			getScreenCoordinates(screenCoordinates, v3.p);
-			p3x = screenCoordinates[0];
-			p3y = screenCoordinates[1];
-			p3z = screenCoordinates[2];
+			p3x = round(screenCoordinates[0]);
+			p3y = round(screenCoordinates[1]);
+			p3z = round(screenCoordinates[2]);
+			p3w = screenCoordinates[3];
+			p3wInverted = 1.f / p3w;
 		}
 
         pxMax = max(pxMax, p3x);
@@ -242,7 +250,7 @@ public abstract class BaseRenderer implements IRenderer {
 			matrixMult(modelViewProjectionMatrix, projectionMatrix, viewMatrix);
 			matrixMult(modelViewProjectionMatrix, modelViewProjectionMatrix, modelMatrix);
 
-			// Compute the reverted Model-View-Projection matrix
+			// Compute the reverted Model-View-Projection matrix: this is just a transposition
 			for (int i = 0; i < 4; i++) {
 				for (int j = 0; j < 4; j++) {
 					revertedModelViewProjectionMatrix[i * 4 + j] = modelViewProjectionMatrix[j * 4 + i];
@@ -446,7 +454,7 @@ public abstract class BaseRenderer implements IRenderer {
         }
 	}
 
-	protected void getScreenCoordinates(int[] screenCoordinates, float[] position) {
+	protected void getScreenCoordinates(float[] screenCoordinates, float[] position) {
 		float[] position4 = new float[4];
 		position4[0] = position[0];
 		position4[1] = position[1];
@@ -455,9 +463,10 @@ public abstract class BaseRenderer implements IRenderer {
 		float[] projectedCoordinates = new float[4];
 		vectorMult(projectedCoordinates, modelViewProjectionMatrix, position4);
 		float w = projectedCoordinates[3];
-		screenCoordinates[0] = round(projectedCoordinates[0] * viewportWidth / w) + viewportX - screenOffsetX;
-		screenCoordinates[1] = round(projectedCoordinates[1] * viewportHeight / w) + viewportY - screenOffsetY;
-		screenCoordinates[2] = round(projectedCoordinates[2] * zscale / w + zpos);
+		screenCoordinates[0] = projectedCoordinates[0] * viewportWidth / w + viewportX - screenOffsetX;
+		screenCoordinates[1] = projectedCoordinates[1] * viewportHeight / w + viewportY - screenOffsetY;
+		screenCoordinates[2] = projectedCoordinates[2] * zscale / w + zpos;
+		screenCoordinates[3] = w;
 
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("X,Y,Z = %f, %f, %f -> Screen %d, %d, %d", projectedCoordinates[0] / w, projectedCoordinates[1] / w, projectedCoordinates[2] / w, screenCoordinates[0], screenCoordinates[1], screenCoordinates[2]));

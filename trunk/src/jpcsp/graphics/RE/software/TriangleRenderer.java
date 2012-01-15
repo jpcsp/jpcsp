@@ -116,8 +116,16 @@ public class TriangleRenderer extends BaseRenderer {
         	for (int x = pxMin; x < pxMax; x++) {
         		pixel.x = x;
         		if (isInsideTriangle()) {
-        			pixel.u = pixel.getTriangleWeightedValue(t1u, t2u, t3u);
-        			pixel.v = pixel.getTriangleWeightedValue(t1v, t2v, t3v);
+        			// Compute the mapped texture u,v coordinates
+        			// based on the Barycentric coordinates.
+        			// Apply a perspective correction by weighting the coordinates
+        			// by their "w" value.
+        			// See http://en.wikipedia.org/wiki/Texture_mapping#Perspective_correctness
+        			float u = pixel.getTriangleWeightedValue(t1u * p1wInverted, t2u * p2wInverted, t3u * p3wInverted);
+        			float v = pixel.getTriangleWeightedValue(t1v * p1wInverted, t2v * p2wInverted, t3v * p3wInverted);
+        			float weight = pixel.getTriangleWeightedValue(p1wInverted, p2wInverted, p3wInverted);
+        			pixel.u = u / weight;
+        			pixel.v = v / weight;
         			pixel.filterPassed = true;
         			pixel.sourceDepth = Math.round(pixel.getTriangleWeightedValue(p1z, p2z, p3z));
             		pixel.destination = imageWriter.readCurrent();
