@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE.software;
 
 import static java.lang.Math.round;
-import static java.lang.System.arraycopy;
 import static jpcsp.graphics.RE.software.PixelColor.getColor;
 import static jpcsp.util.Utilities.matrixMult;
 import static jpcsp.util.Utilities.max;
@@ -52,17 +51,16 @@ public abstract class BaseRenderer implements IRenderer {
     public static final int depthBufferPixelFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED;
     protected static final int MAX_NUMBER_FILTERS = 11;
 	protected final PixelState pixel = new PixelState();
-	protected int p1x, p1y;
-	protected int p2x, p2y;
-	protected int p3x, p3y;
-	protected int pxMin, pxMax, pyMin, pyMax;
-	protected float p1z, p2z, p3z;
-	protected float p1w, p2w, p3w;
-	protected float p1wInverted, p2wInverted, p3wInverted;
+	protected float p1x, p1y, p1z, p1w, p1wInverted;
+	protected float p2x, p2y, p2z, p2w, p2wInverted;
+	protected float p3x, p3y, p3z, p3w, p3wInverted;
+	protected int pxMin, pxMax, pyMin, pyMax, pzMin, pzMax;
 	protected float t1u, t1v;
 	protected float t2u, t2v;
 	protected float t3u, t3v;
 	protected int tuMin, tuMax, tvMin, tvMax;
+	protected float uStart, uStep;
+	protected float vStart, vStep;
 	protected int destinationWidth;
 	protected int destinationHeight;
 	protected IImageWriter imageWriter;
@@ -71,10 +69,6 @@ public abstract class BaseRenderer implements IRenderer {
 	protected int numberFilters;
 	protected boolean needScissoring;
 	protected boolean transform2D;
-	protected final float modelMatrix[] = new float[16];
-	protected final float viewMatrix[] = new float[16];
-	protected final float projectionMatrix[] = new float[16];
-	protected final float textureMatrix[] = new float[16];
 	protected final float modelViewProjectionMatrix[] = new float[16];
 	protected final float revertedModelViewProjectionMatrix[] = new float[16];
 	protected int viewportWidth;
@@ -85,58 +79,82 @@ public abstract class BaseRenderer implements IRenderer {
 	protected int screenOffsetY;
 	protected float zscale;
 	protected float zpos;
+	protected int fbw;
+	protected int nearZ;
+	protected int farZ;
+
+	protected void addPosition(float[] p) {
+		float[] screenCoordinates = new float[4];
+		getScreenCoordinates(screenCoordinates, p);
+		int x = round(screenCoordinates[0]);
+		int y = round(screenCoordinates[1]);
+		int z = round(screenCoordinates[2]);
+		pxMax = max(pxMax, x);
+		pxMin = min(pxMin, x);
+		pyMax = max(pyMax, y);
+		pyMin = min(pyMin, y);
+		pzMax = max(pzMax, z);
+		pzMin = min(pzMin, z);
+	}
 
 	protected void setPositions(VertexState v1, VertexState v2) {
 		if (transform2D) {
-	        p1x = round(v1.p[0]);
-	        p1y = round(v1.p[1]);
+	        p1x = v1.p[0];
+	        p1y = v1.p[1];
 	        p1z = v1.p[2];
-	        p2x = round(v2.p[0]);
-	        p2y = round(v2.p[1]);
+	        p2x = v2.p[0];
+	        p2y = v2.p[1];
 	        p2z = v2.p[2];
 		} else {
 			float[] screenCoordinates = new float[4];
 			getScreenCoordinates(screenCoordinates, v1.p);
-			p1x = round(screenCoordinates[0]);
-			p1y = round(screenCoordinates[1]);
-			p1z = round(screenCoordinates[2]);
+			p1x = screenCoordinates[0];
+			p1y = screenCoordinates[1];
+			p1z = screenCoordinates[2];
 			p1w = screenCoordinates[3];
 			p1wInverted = 1.f / p1w;
 			getScreenCoordinates(screenCoordinates, v2.p);
-			p2x = round(screenCoordinates[0]);
-			p2y = round(screenCoordinates[1]);
-			p2z = round(screenCoordinates[2]);
+			p2x = screenCoordinates[0];
+			p2y = screenCoordinates[1];
+			p2z = screenCoordinates[2];
 			p2w = screenCoordinates[3];
 			p2wInverted = 1.f / p2w;
 		}
 
-        pxMax = max(p1x, p2x);
-        pxMin = min(p1x, p2x);
-        pyMax = max(p1y, p2y);
-        pyMin = min(p1y, p2y);
+        pxMax = round(max(p1x, p2x));
+        pxMin = round(min(p1x, p2x));
+        pyMax = round(max(p1y, p2y));
+        pyMin = round(min(p1y, p2y));
+        pzMax = round(max(p1z, p2z));
+        pzMin = round(min(p1z, p2z));
 	}
 
 	protected void setPositions(VertexState v1, VertexState v2, VertexState v3) {
 		setPositions(v1, v2);
 
 		if (transform2D) {
-			p3x = round(v3.p[0]);
-	        p3y = round(v3.p[1]);
+			p3x = v3.p[0];
+	        p3y = v3.p[1];
 	        p3z = v3.p[2];
 		} else {
 			float[] screenCoordinates = new float[4];
 			getScreenCoordinates(screenCoordinates, v3.p);
-			p3x = round(screenCoordinates[0]);
-			p3y = round(screenCoordinates[1]);
-			p3z = round(screenCoordinates[2]);
+			p3x = screenCoordinates[0];
+			p3y = screenCoordinates[1];
+			p3z = screenCoordinates[2];
 			p3w = screenCoordinates[3];
 			p3wInverted = 1.f / p3w;
 		}
 
-        pxMax = max(pxMax, p3x);
-        pxMin = min(pxMin, p3x);
-        pyMax = max(pyMax, p3y);
-        pyMin = min(pyMin, p3y);
+		int p3xi = round(p3x);
+		int p3yi = round(p3y);
+		int p3zi = round(p3z);
+        pxMax = max(pxMax, p3xi);
+        pxMin = min(pxMin, p3xi);
+        pyMax = max(pyMax, p3yi);
+        pyMin = min(pyMin, p3yi);
+        pzMax = max(pzMax, p3zi);
+        pzMin = min(pzMin, p3zi);
 	}
 
 	protected void setTextures(VertexState v1, VertexState v2) {
@@ -163,22 +181,29 @@ public abstract class BaseRenderer implements IRenderer {
         tvMin = min(tvMin, round(t3v));
 	}
 
-	protected boolean isInsideTriangle() {
+	protected void computeTriangleWeights() {
 		// Based on http://en.wikipedia.org/wiki/Barycentric_coordinates_%28mathematics%29
-		int diff03x = pixel.x - p3x;
-		int diff03y = pixel.y - p3y;
-		int diff13x = p1x - p3x;
-		int diff13y = p1y - p3y;
-		int diff32x = p3x - p2x;
-		int diff23y = p2y - p3y;
+		float diff03x = pixel.x - p3x;
+		float diff03y = pixel.y - p3y;
+		float diff13x = p1x - p3x;
+		float diff13y = p1y - p3y;
+		float diff32x = p3x - p2x;
+		float diff23y = p2y - p3y;
 
-		int denom = diff23y * diff13x + diff32x * diff13y;
+		float denom = diff23y * diff13x + diff32x * diff13y;
 		float invDenom = 1.0f / denom;
 		pixel.triangleWeight1 = (diff23y * diff03x + diff32x * diff03y) * invDenom;
 		pixel.triangleWeight2 = (diff13x * diff03y - diff13y * diff03x) * invDenom;
 		pixel.triangleWeight3 = 1.f - (pixel.triangleWeight1 + pixel.triangleWeight2);
+	}
 
+	protected boolean isInsideTriangle() {
 		return pixel.triangleWeight1 >= 0.f && pixel.triangleWeight2 >= 0.f && pixel.triangleWeight3 >= 0.f;
+	}
+
+	protected boolean isClockwise() {
+		float crossProduct = (p2x - p1x) * (p3y - p1y) - (p2y - p1y) * (p3x - p1x);
+		return crossProduct >= 0.f;
 	}
 
 	protected int getFrameBufferAddress(GeContext context, int x, int y) {
@@ -204,9 +229,32 @@ public abstract class BaseRenderer implements IRenderer {
 		return address + (bytesPerPixel == 0 ? numberOfPixels >> 1 : numberOfPixels * bytesPerPixel);
 	}
 
-	protected boolean insideScissor(GeContext context) {
-        needScissoring = false;
+	protected boolean isVisible(GeContext context) {
         if (!context.clearMode) {
+        	if (!transform2D) {
+        		// Each vertex screen coordinates (without offset) has to be in the range:
+        		// - x: [0..4095]
+        		// - y: [0..4095]
+        		// - z: [..65535]
+        		// If one of the vertex coordinate is not in the valid range, the whole
+        		// primitive is discarded.
+	        	if ((pxMin + screenOffsetX) < 0 ||
+	        	    (pxMax + screenOffsetX) >= 4096 ||
+	        	    (pyMin + screenOffsetY) < 0 ||
+	        	    (pyMax + screenOffsetY) >= 4096 ||
+	        	    pzMax >= 65536) {
+	        		return false;
+	        	}
+
+	        	if (!context.clipPlanesFlag.isEnabled()) {
+	        		// The primitive is discarded when one of the vertex is behind the viewpoint
+	        		// (only the the ClipPlanes flag is not enabled).
+	        		if (pzMin < 0) {
+	        			return false;
+	        		}
+	        	}
+        	}
+
     		if (context.vinfo.texture == 0) {
     			pxMin = Math.max(pxMin, context.scissor_x1);
     			pxMax = Math.min(pxMax, context.scissor_x2);
@@ -214,6 +262,27 @@ public abstract class BaseRenderer implements IRenderer {
     			pyMax = Math.min(pyMax, context.scissor_y2);
     		}
 
+    		pxMin = Math.max(0, pxMin);
+    		pxMax = Math.min(pxMax, context.fbw);
+    		pyMin = Math.max(0, pyMin);
+    		pyMax = Math.min(pyMax, 1024);
+
+    		if (pxMin == pxMax || pyMin == pyMax) {
+    			// Empty area to be displayed
+    			return false;
+    		}
+
+    		if (!insideScissor(context)) {
+    			return false;
+    		}
+        }
+
+        return true;
+	}
+
+	protected boolean insideScissor(GeContext context) {
+        needScissoring = false;
+        if (!context.clearMode) {
     		// Scissoring
         	if (pxMax < context.scissor_x1 || pxMin > context.scissor_x2) {
         		// Completely outside the scissor area, skip
@@ -222,6 +291,12 @@ public abstract class BaseRenderer implements IRenderer {
         	if (pyMax < context.scissor_y1 || pyMin > context.scissor_y2) {
         		// Completely outside the scissor area, skip
         		return false;
+        	}
+        	if (!transform2D) {
+	        	if (pzMax < nearZ || pzMin > farZ) {
+	        		// Completely outside the view area, skip
+	        		return false;
+	        	}
         	}
 
         	if (pxMin < context.scissor_x1 || pxMax > context.scissor_x2) {
@@ -237,18 +312,22 @@ public abstract class BaseRenderer implements IRenderer {
 	}
 
 	protected void init(GeContext context) {
+		pxMax = Integer.MIN_VALUE;
+		pxMin = Integer.MAX_VALUE;
+		pyMax = Integer.MIN_VALUE;
+		pyMin = Integer.MAX_VALUE;
+		pzMax = Integer.MIN_VALUE;
+		pzMin = Integer.MAX_VALUE;
+		fbw = context.fbw;
+		nearZ = round(context.nearZ * 0xFFFF);
+		farZ = round(context.farZ * 0xFFFF);
 		numberFilters = 0;
+
 		transform2D = context.vinfo.transform2D;
 		if (!transform2D) {
-			// Initialization for 3D
-			arraycopy(context.model_uploaded_matrix, 0, modelMatrix, 0, modelMatrix.length);
-			arraycopy(context.view_uploaded_matrix, 0, viewMatrix, 0, viewMatrix.length);
-			arraycopy(context.proj_uploaded_matrix, 0, projectionMatrix, 0, projectionMatrix.length);
-			arraycopy(context.texture_uploaded_matrix, 0, textureMatrix, 0, textureMatrix.length);
-
 			// Pre-compute the Model-View-Projection matrix
-			matrixMult(modelViewProjectionMatrix, projectionMatrix, viewMatrix);
-			matrixMult(modelViewProjectionMatrix, modelViewProjectionMatrix, modelMatrix);
+			matrixMult(modelViewProjectionMatrix, context.proj_uploaded_matrix, context.view_uploaded_matrix);
+			matrixMult(modelViewProjectionMatrix, modelViewProjectionMatrix, context.model_uploaded_matrix);
 
 			// Compute the reverted Model-View-Projection matrix: this is just a transposition
 			for (int i = 0; i < 4; i++) {
@@ -279,38 +358,15 @@ public abstract class BaseRenderer implements IRenderer {
 			pixel.primaryColor = getColor(context.vertexColor);
 		}
 
-		pxMin = Math.max(0, pxMin);
-		pxMax = Math.min(pxMax, context.fbw);
-		pyMin = Math.max(0, pyMin);
-		pyMax = Math.min(pyMax, 1023);
-
 		destinationWidth = pxMax - pxMin;
         destinationHeight = pyMax - pyMin;
 
         IPixelFilter textureFilter;
-    	if (context.vinfo.texture != 0 && context.textureFlag.isEnabled()) {
+    	if (context.textureFlag.isEnabled() && (!transform2D || context.vinfo.texture != 0)) {
     		final int level = 0;
     		int textureBufferWidth = VideoEngine.alignBufferWidth(context.texture_buffer_width[level], context.texture_storage);
     		int textureHeight = context.texture_height[level];
-            int sourceWidth = Math.min(textureBufferWidth, tuMax - tuMin);
-            int sourceHeight = tvMax - tvMin;
-    		int cropLeft = tuMin;
-    		int cropRight = textureBufferWidth - sourceWidth - cropLeft;
-    		int cropTop = tvMin;
-    		int cropBottom = textureHeight - sourceHeight - cropTop;
             int textureAddress = context.texture_base_pointer[level];
-            boolean flipX = false;
-            boolean flipY = false;
-            boolean rotate = false;
-            if (v3 == null) {
-            	flipX = (t1u > t2u) ^ (p1x > p2x);
-            	flipY = (t1v > t2v) ^ (p1y > p2y);
-            }
-            if (flipX && flipY) {
-            	rotate = true;
-            	flipX = false;
-            	flipY = false;
-            }
         	IRandomTextureAccess textureAccess = texture;
         	if (textureAccess == null) {
             	int[] clut32 = VideoEngine.getInstance().readClut32(level);
@@ -323,45 +379,31 @@ public abstract class BaseRenderer implements IRenderer {
         	// Avoid an access outside the texture area
         	textureAccess = new TextureClip(textureAccess, textureBufferWidth, textureHeight);
 
-            // Flip and rotate the image
-        	textureAccess = TextureFlip.getImageFlip(textureAccess, textureBufferWidth, textureHeight, flipX, flipY, rotate);
-            if (transform2D) {
-            	if (rotate) {
-                	int swap = cropLeft;
-                	cropLeft = cropTop;
-                	cropTop = swap;
-
-                	swap = cropRight;
-                	cropRight = cropBottom;
-                	cropBottom = cropRight;
-
-                	swap = sourceWidth;
-            		sourceWidth = sourceHeight;
-            		sourceHeight = swap;
-            	}
-                if (flipX) {
-                	int swap = cropLeft;
-                	cropLeft = cropRight;
-                	cropRight = swap;
-                }
-                if (flipY) {
-                	int swap = cropTop;
-                	cropTop = cropBottom;
-                	cropBottom = swap;
-                }
-
-            	textureAccess = TextureCrop.getImageCrop(textureAccess, sourceWidth, cropLeft, cropRight, cropTop);
-            	textureAccess = TextureResizer.getImageResizer(textureAccess, sourceWidth, sourceHeight, destinationWidth, destinationHeight);
-            }
-
             if (!transform2D) {
             	// Perform the texture mapping (UV / texture matrix / environment map)
-            	textureFilter = TextureMapping.getTextureMapping(context);
+            	textureFilter = TextureMapping.getTextureMapping(context, v1, v2, v3);
             	addFilter(textureFilter);
+            } else {
+            	boolean flipX = false;
+            	boolean flipY = false;
+            	if (v3 == null) {
+            		flipX = (t1u > t2u) ^ (p1x > p2x);
+            		flipY = (t1v > t2v) ^ (p1y > p2y);
+            	}
+            	uStart = flipX ? tuMax : tuMin;
+            	float uEnd = flipX ? tuMin : tuMax;
+            	vStart = flipY ? tvMax : tvMin;
+            	float vEnd = flipY ? tvMin : tvMax;
+            	uStep = (uEnd - uStart) / destinationWidth;
+            	vStep = (vEnd - vStart) / destinationHeight;
             }
 
+            // Apply the texture wrap mode (clamp or repeat)
+            textureFilter = TextureWrap.getTextureWrap(context, level);
+            addFilter(textureFilter);
+
             // Read the corresponding texture texel
-            textureFilter = TextureReader.getTextureReader(textureAccess, context);
+            textureFilter = TextureReader.getTextureReader(textureAccess, context, level);
             addFilter(textureFilter);
 
             // Apply the texture function (modulate, decal, blend, replace, add)
@@ -463,13 +505,14 @@ public abstract class BaseRenderer implements IRenderer {
 		float[] projectedCoordinates = new float[4];
 		vectorMult(projectedCoordinates, modelViewProjectionMatrix, position4);
 		float w = projectedCoordinates[3];
-		screenCoordinates[0] = projectedCoordinates[0] * viewportWidth / w + viewportX - screenOffsetX;
-		screenCoordinates[1] = projectedCoordinates[1] * viewportHeight / w + viewportY - screenOffsetY;
-		screenCoordinates[2] = projectedCoordinates[2] * zscale / w + zpos;
+		float wInverted = 1.f / w;
+		screenCoordinates[0] = projectedCoordinates[0] * wInverted * viewportWidth + viewportX - screenOffsetX;
+		screenCoordinates[1] = projectedCoordinates[1] * wInverted * viewportHeight + viewportY - screenOffsetY;
+		screenCoordinates[2] = projectedCoordinates[2] * wInverted * zscale + zpos;
 		screenCoordinates[3] = w;
 
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("X,Y,Z = %f, %f, %f -> Screen %d, %d, %d", projectedCoordinates[0] / w, projectedCoordinates[1] / w, projectedCoordinates[2] / w, screenCoordinates[0], screenCoordinates[1], screenCoordinates[2]));
+			log.trace(String.format("X,Y,Z = %f, %f, %f, projected X,Y,Z,W = %f, %f, %f, %f -> Screen %d, %d, %d", position[0], position[1], position[2], projectedCoordinates[0] / w, projectedCoordinates[1] / w, projectedCoordinates[2] / w, w, round(screenCoordinates[0]), round(screenCoordinates[1]), round(screenCoordinates[2])));
 		}
 	}
 

@@ -490,4 +490,5 @@ public interface IRenderingEngine {
 	public void setBlendSFix(int sfix, float[] color);
 	public void setBlendDFix(int dfix, float[] color);
 	public void waitForRenderingCompletion();
+	public boolean canReadAllVertexInfo();
 }

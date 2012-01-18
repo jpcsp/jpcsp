@@ -1664,7 +1664,7 @@ public class VideoEngine {
         switch (context.tex_map_mode) {
             case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
             	if (context.vinfo.texture != 0) {
-            	    useTexture = true;
+            		useTexture = true;
             	}
                 break;
 
@@ -1672,26 +1672,26 @@ public class VideoEngine {
                 switch (context.tex_proj_map_mode) {
                     case TMAP_TEXTURE_PROJECTION_MODE_POSITION:
                         if (context.vinfo.position != 0) {
-                            useTexture = true;
+                        	useTexture = true;
                             useTextureFromPosition = true;
                 	        nTexCoord = nVertex;
                         }
                         break;
                     case TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES:
                         if (context.vinfo.texture != 0) {
-                            useTexture = true;
+                        	useTexture = true;
                         }
                         break;
                     case TMAP_TEXTURE_PROJECTION_MODE_NORMAL:
                         if (context.vinfo.normal != 0) {
-                            useTexture = true;
+                        	useTexture = true;
                             useTextureFromNormal = true;
                             nTexCoord = 3;
                         }
                         break;
                     case TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL:
                         if (context.vinfo.normal != 0) {
-                            useTexture = true;
+                        	useTexture = true;
                             useTextureFromNormalizedNormal = true;
                             nTexCoord = 3;
                         }
@@ -1732,390 +1732,396 @@ public class VideoEngine {
 
         boolean needSetDataPointers = true;
 
-        // Do not use optimized VertexInfo reading when
-        // - disableOptimizedVertexInfoReading is true
-        // - using Vertex Cache unless all the vertices are supported natively
-        // - the Vertex are indexed
-        // - the PRIM_SPRITE primitive is used where it is not supported natively
-        // - the normals have to be normalized for the texture mapping
-        // - the weights have to be computed and are not supported natively
-        // - the vertex address is invalid
-        if ((!useVertexCache || re.canAllNativeVertexInfo()) &&
-            context.vinfo.index == 0 &&
-            context.vinfo.morphingVertexCount == 1 &&
-            (type != PRIM_SPRITES || re.canNativeSpritesPrimitive()) &&
-            !useTextureFromNormalizedNormal &&
-            !mustComputeWeights &&
-            Memory.isAddressGood(context.vinfo.ptr_vertex) &&
-            !disableOptimizedVertexInfoReading()) {
-            //
-            // Optimized VertexInfo reading:
-            // - do not copy the info already available in the OpenGL format
-            //   (native format), load it into nativeBuffer (a direct buffer
-            //   is required by OpenGL).
-            // - try to keep the info in "int" format when possible, convert
-            //   to "float" only when necessary
-            // The best case is no reading and no conversion at all when all the
-            // vertex info are available in a format usable by OpenGL.
-            //
-    		vertexReadingStatistics.start();
-            Buffer buffer = vertexInfoReader.read(context.vinfo, context.vinfo.ptr_vertex, numberOfVertex, re.canAllNativeVertexInfo());
-        	vertexReadingStatistics.end();
-
-        	int stride;
-        	int size = context.vinfo.vertexSize * numberOfVertex;
-        	int firstVertex = 0;
-        	boolean useBufferManager;
-        	boolean multiDrawArrays = false;
-        	if (useVertexCache && buffer == null) {
-        		stride = context.vinfo.vertexSize;
-        		useBufferManager = false;
-        		final int vertexAddress = context.vinfo.ptr_vertex;
-        		VertexBuffer vertexBuffer = VertexBufferManager.getInstance().getVertexBuffer(re, vertexAddress, size, stride, re.isVertexArrayAvailable());
-        		Buffer vertexData = mem.getBuffer(vertexAddress, size);
-        		vertexBuffer.load(re, vertexData, vertexAddress, size);
-        		if (re.isVertexArrayAvailable()) {
-        			VertexArray vertexArray = VertexArrayManager.getInstance().getVertexArray(re, context.vinfo.vtype, vertexBuffer, vertexAddress, stride);
-    				needSetDataPointers = vertexArray.bind(re);
-    				firstVertex = vertexArray.getVertexOffset(vertexAddress);
-        		} else {
-            		vertexInfoReader.addNativeOffset(vertexBuffer.getBufferOffset(vertexAddress));
-        		}
-
-        		// Check if multiple PRIM's are defined in sequence and
-        		// try to merge them into a single multiDrawArrays call.
-        		int multiDrawNumberOfVertex = checkMultiDraw(firstVertex, type, numberOfVertex, multiDrawFirst, multiDrawCount);
-				if (multiDrawNumberOfVertex > 0) {
-					multiDrawArrays = true;
-					numberOfVertex = multiDrawNumberOfVertex;
-					size = context.vinfo.vertexSize * multiDrawNumberOfVertex;
-	        		vertexData = mem.getBuffer(vertexAddress, size);
-					vertexBuffer.load(re, vertexData, vertexAddress, size);
-				}
-
-				if (needSetDataPointers) {
-        			vertexBuffer.bind(re);
-        		}
-        	} else {
-        		if (re.isVertexArrayAvailable()) {
-    				re.bindVertexArray(0);
-        		}
-                stride = vertexInfoReader.getStride();
-                useBufferManager = true;
-
-                if (buffer != null) {
-	            	bufferManager.setBufferData(bufferId, stride * numberOfVertex, buffer, IRenderingEngine.RE_STREAM_DRAW);
-	            }
-
-	            if (vertexInfoReader.hasNative()) {
-	                // Copy the VertexInfo from Memory to the nativeBuffer
-	                // (a direct buffer is required by glXXXPointer())
-	        		Buffer vertexData = mem.getBuffer(context.vinfo.ptr_vertex, size);
-	        		size = fixNativeBufferOffset(vertexData, size);
-	            	bufferManager.setBufferData(nativeBufferId, size, vertexData, IRenderingEngine.RE_STREAM_DRAW);
-	            }
-        	}
-
-            re.setVertexInfo(context.vinfo, re.canAllNativeVertexInfo(), context.useVertexColor, useTexture, type);
-
-            if (needSetDataPointers) {
-	            if (context.vinfo.texture != 0 || useTexture) {
-	                boolean textureNative;
-	                int textureOffset;
-	                int textureType;
-	                if (useTextureFromNormal) {
-	                    textureNative = vertexInfoReader.isNormalNative();
-	                    textureOffset = vertexInfoReader.getNormalOffset();
-	                    textureType = vertexInfoReader.getNormalType();
-	                    nTexCoord = vertexInfoReader.getNormalNumberValues();
-	                } else if (useTextureFromPosition) {
-	                    textureNative = vertexInfoReader.isPositionNative();
-	                    textureOffset = vertexInfoReader.getPositionOffset();
-	                    textureType = vertexInfoReader.getPositionType();
-	                    nTexCoord = vertexInfoReader.getPositionNumberValues();
-	                } else {
-	                    textureNative = vertexInfoReader.isTextureNative();
-	                    textureOffset = vertexInfoReader.getTextureOffset();
-	                    textureType = vertexInfoReader.getTextureType();
-	                    nTexCoord = vertexInfoReader.getTextureNumberValues();
-	                }
-	                setTexCoordPointer(useTexture, nTexCoord, textureType, stride, textureOffset, textureNative, useBufferManager);
-	            }
-	            nVertex = vertexInfoReader.getPositionNumberValues();
-	            nColor = vertexInfoReader.getColorNumberValues();
-	            int nWeight = vertexInfoReader.getWeightNumberValues();
-
-	            enableClientState(context.useVertexColor, useTexture);
-	            setColorPointer(context.useVertexColor, nColor, vertexInfoReader.getColorType(), stride, vertexInfoReader.getColorOffset(), vertexInfoReader.isColorNative(), useBufferManager);
-	            setNormalPointer(vertexInfoReader.getNormalType(), stride, vertexInfoReader.getNormalOffset(), vertexInfoReader.isNormalNative(), useBufferManager);
-	            setWeightPointer(nWeight, vertexInfoReader.getWeightType(), stride, vertexInfoReader.getWeightOffset(), vertexInfoReader.isWeightNative(), useBufferManager);
-	            setVertexPointer(nVertex, vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative(), useBufferManager);
-        	}
-
-        	drawArraysStatistics.start();
-        	if (multiDrawArrays) {
-        		re.multiDrawArrays(type, multiDrawFirst, multiDrawCount);
-        	} else {
-        		re.drawArrays(type, firstVertex, numberOfVertex);
-        	}
-        	drawArraysStatistics.end();
+        if (re.canReadAllVertexInfo()) {
+        	// The rendering engine can read the vertex infos by himself.
+            re.setVertexInfo(context.vinfo, true, context.useVertexColor, useTexture, type);
+        	re.drawArrays(type, 0, numberOfVertex);
         } else {
-            // Non-optimized VertexInfo reading
-            VertexInfo cachedVertexInfo = null;
-            if (useVertexCache) {
-        		vertexCacheLookupStatistics.start();
-                cachedVertexInfo = VertexCache.getInstance().getVertex(context.vinfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
-            	vertexCacheLookupStatistics.end();
-            }
+	        // Do not use optimized VertexInfo reading when
+	        // - disableOptimizedVertexInfoReading is true
+	        // - using Vertex Cache unless all the vertices are supported natively
+	        // - the Vertex are indexed
+	        // - the PRIM_SPRITE primitive is used where it is not supported natively
+	        // - the normals have to be normalized for the texture mapping
+	        // - the weights have to be computed and are not supported natively
+	        // - the vertex address is invalid
+	        if ((!useVertexCache || re.canAllNativeVertexInfo()) &&
+	            context.vinfo.index == 0 &&
+	            context.vinfo.morphingVertexCount == 1 &&
+	            (type != PRIM_SPRITES || re.canNativeSpritesPrimitive()) &&
+	            !useTextureFromNormalizedNormal &&
+	            !mustComputeWeights &&
+	            Memory.isAddressGood(context.vinfo.ptr_vertex) &&
+	            !disableOptimizedVertexInfoReading()) {
+	            //
+	            // Optimized VertexInfo reading:
+	            // - do not copy the info already available in the OpenGL format
+	            //   (native format), load it into nativeBuffer (a direct buffer
+	            //   is required by OpenGL).
+	            // - try to keep the info in "int" format when possible, convert
+	            //   to "float" only when necessary
+	            // The best case is no reading and no conversion at all when all the
+	            // vertex info are available in a format usable by OpenGL.
+	            //
+	    		vertexReadingStatistics.start();
+	            Buffer buffer = vertexInfoReader.read(context.vinfo, context.vinfo.ptr_vertex, numberOfVertex, re.canAllNativeVertexInfo());
+	        	vertexReadingStatistics.end();
 
-            ByteBuffer byteBuffer = bufferManager.getBuffer(bufferId);
-            byteBuffer.clear();
-            FloatBuffer floatBuffer = byteBuffer.asFloatBuffer();
-            floatBuffer.clear();
+	        	int stride;
+	        	int size = context.vinfo.vertexSize * numberOfVertex;
+	        	int firstVertex = 0;
+	        	boolean useBufferManager;
+	        	boolean multiDrawArrays = false;
+	        	if (useVertexCache && buffer == null) {
+	        		stride = context.vinfo.vertexSize;
+	        		useBufferManager = false;
+	        		final int vertexAddress = context.vinfo.ptr_vertex;
+	        		VertexBuffer vertexBuffer = VertexBufferManager.getInstance().getVertexBuffer(re, vertexAddress, size, stride, re.isVertexArrayAvailable());
+	        		Buffer vertexData = mem.getBuffer(vertexAddress, size);
+	        		vertexBuffer.load(re, vertexData, vertexAddress, size);
+	        		if (re.isVertexArrayAvailable()) {
+	        			VertexArray vertexArray = VertexArrayManager.getInstance().getVertexArray(re, context.vinfo.vtype, vertexBuffer, vertexAddress, stride);
+	    				needSetDataPointers = vertexArray.bind(re);
+	    				firstVertex = vertexArray.getVertexOffset(vertexAddress);
+	        		} else {
+	            		vertexInfoReader.addNativeOffset(vertexBuffer.getBufferOffset(vertexAddress));
+	        		}
 
-    		if (!useVertexCache && re.isVertexArrayAvailable()) {
-				re.bindVertexArray(0);
-    		}
+	        		// Check if multiple PRIM's are defined in sequence and
+	        		// try to merge them into a single multiDrawArrays call.
+	        		int multiDrawNumberOfVertex = checkMultiDraw(firstVertex, type, numberOfVertex, multiDrawFirst, multiDrawCount);
+					if (multiDrawNumberOfVertex > 0) {
+						multiDrawArrays = true;
+						numberOfVertex = multiDrawNumberOfVertex;
+						size = context.vinfo.vertexSize * multiDrawNumberOfVertex;
+		        		vertexData = mem.getBuffer(vertexAddress, size);
+						vertexBuffer.load(re, vertexData, vertexAddress, size);
+					}
 
-            switch (type) {
-                case PRIM_POINT:
-                case PRIM_LINE:
-                case PRIM_LINES_STRIPS:
-                case PRIM_TRIANGLE:
-                case PRIM_TRIANGLE_STRIPS:
-                case PRIM_TRIANGLE_FANS:
-                    re.setVertexInfo(context.vinfo, false, context.useVertexColor, useTexture, type);
+					if (needSetDataPointers) {
+	        			vertexBuffer.bind(re);
+	        		}
+	        	} else {
+	        		if (re.isVertexArrayAvailable()) {
+	    				re.bindVertexArray(0);
+	        		}
+	                stride = vertexInfoReader.getStride();
+	                useBufferManager = true;
 
-                    float[] normalizedNormal = new float[3];
-                    if (cachedVertexInfo == null) {
-                		vertexReadingStatistics.start();
-                        for (int i = 0; i < numberOfVertex; i++) {
-                            int addr = context.vinfo.getAddress(mem, i);
+	                if (buffer != null) {
+		            	bufferManager.setBufferData(bufferId, stride * numberOfVertex, buffer, IRenderingEngine.RE_STREAM_DRAW);
+		            }
 
-                            context.vinfo.readVertex(mem, addr, v);
+		            if (vertexInfoReader.hasNative()) {
+		                // Copy the VertexInfo from Memory to the nativeBuffer
+		                // (a direct buffer is required by glXXXPointer())
+		        		Buffer vertexData = mem.getBuffer(context.vinfo.ptr_vertex, size);
+		        		size = fixNativeBufferOffset(vertexData, size);
+		            	bufferManager.setBufferData(nativeBufferId, size, vertexData, IRenderingEngine.RE_STREAM_DRAW);
+		            }
+	        	}
 
-                            // Do skinning first as it modifies v.p and v.n
-                            if (mustComputeWeights && context.vinfo.position != 0) {
-                                doSkinning(context.vinfo, v);
-                            }
+	        	re.setVertexInfo(context.vinfo, re.canAllNativeVertexInfo(), context.useVertexColor, useTexture, type);
 
-                            if (useTextureFromNormal) {
-                                floatBuffer.put(v.n, 0, 3);
-                            } else if (useTextureFromNormalizedNormal) {
-                            	float normalLength = (float) Math.sqrt(v.n[0] * v.n[0] + v.n[1] * v.n[1] + v.n[2] * v.n[2]);
-                            	normalizedNormal[0] = v.n[0] / normalLength;
-                            	normalizedNormal[1] = v.n[1] / normalLength;
-                            	normalizedNormal[2] = v.n[2] / normalLength;
-                                floatBuffer.put(normalizedNormal, 0, 3);
-                            } else if (useTextureFromPosition) {
-                                floatBuffer.put(v.p, 0, 3);
-                            } else if (useTexture || context.vinfo.texture != 0) {
-                                floatBuffer.put(v.t);
-                            }
-                            if (context.useVertexColor) {
-                                floatBuffer.put(v.c);
-                            }
-                            if (context.vinfo.normal != 0) {
-                                floatBuffer.put(v.n);
-                            }
-                            if (context.vinfo.position != 0) {
-                                floatBuffer.put(v.p);
-                            }
-                            if (numberOfWeightsForBuffer > 0) {
-                                floatBuffer.put(v.boneWeights, 0, numberOfWeightsForBuffer);
-                            }
+	            if (needSetDataPointers) {
+		            if (context.vinfo.texture != 0 || useTexture) {
+		                boolean textureNative;
+		                int textureOffset;
+		                int textureType;
+		                if (useTextureFromNormal) {
+		                    textureNative = vertexInfoReader.isNormalNative();
+		                    textureOffset = vertexInfoReader.getNormalOffset();
+		                    textureType = vertexInfoReader.getNormalType();
+		                    nTexCoord = vertexInfoReader.getNormalNumberValues();
+		                } else if (useTextureFromPosition) {
+		                    textureNative = vertexInfoReader.isPositionNative();
+		                    textureOffset = vertexInfoReader.getPositionOffset();
+		                    textureType = vertexInfoReader.getPositionType();
+		                    nTexCoord = vertexInfoReader.getPositionNumberValues();
+		                } else {
+		                    textureNative = vertexInfoReader.isTextureNative();
+		                    textureOffset = vertexInfoReader.getTextureOffset();
+		                    textureType = vertexInfoReader.getTextureType();
+		                    nTexCoord = vertexInfoReader.getTextureNumberValues();
+		                }
+		                setTexCoordPointer(useTexture, nTexCoord, textureType, stride, textureOffset, textureNative, useBufferManager);
+		            }
+		            nVertex = vertexInfoReader.getPositionNumberValues();
+		            nColor = vertexInfoReader.getColorNumberValues();
+		            int nWeight = vertexInfoReader.getWeightNumberValues();
 
-                            if (isLogTraceEnabled) {
-                                if (context.vinfo.texture != 0 && context.vinfo.position != 0) {
-                                    log.trace("  vertex#" + i + " (" + ((int) v.t[0]) + "," + ((int) v.t[1]) + ") at (" + ((int) v.p[0]) + "," + ((int) v.p[1]) + "," + ((int) v.p[2]) + ")");
-                                }
-                            }
-                        }
-                    	vertexReadingStatistics.end();
+		            enableClientState(context.useVertexColor, useTexture);
+		            setColorPointer(context.useVertexColor, nColor, vertexInfoReader.getColorType(), stride, vertexInfoReader.getColorOffset(), vertexInfoReader.isColorNative(), useBufferManager);
+		            setNormalPointer(vertexInfoReader.getNormalType(), stride, vertexInfoReader.getNormalOffset(), vertexInfoReader.isNormalNative(), useBufferManager);
+		            setWeightPointer(nWeight, vertexInfoReader.getWeightType(), stride, vertexInfoReader.getWeightOffset(), vertexInfoReader.isWeightNative(), useBufferManager);
+		            setVertexPointer(nVertex, vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative(), useBufferManager);
+	        	}
 
-                        if (useVertexCache) {
-                            cachedVertexInfo = new VertexInfo(context.vinfo);
-                            VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
-                            int size = floatBuffer.position();
-                            floatBuffer.rewind();
-                            needSetDataPointers = cachedVertexInfo.loadVertex(re, floatBuffer, size);
-                        } else {
-                            bufferManager.setBufferData(bufferId, floatBuffer.position() * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
-                        }
-                    } else {
-                        if (isLogDebugEnabled) {
-                            log.debug("Reusing cached Vertex Data");
-                        }
-                        needSetDataPointers = cachedVertexInfo.bindVertex(re);
-                    }
-                    if (needSetDataPointers) {
-                    	setDataPointers(nVertex, context.useVertexColor, nColor, useTexture, nTexCoord, context.vinfo.normal != 0, numberOfWeightsForBuffer, cachedVertexInfo == null);
-                    }
-                	drawArraysStatistics.start();
-                    re.drawArrays(type, 0, numberOfVertex);
-                	drawArraysStatistics.end();
-                    maxSpriteHeight = Integer.MAX_VALUE;
-                    maxSpriteWidth = Integer.MAX_VALUE;
-                    break;
+	        	drawArraysStatistics.start();
+	        	if (multiDrawArrays) {
+	        		re.multiDrawArrays(type, multiDrawFirst, multiDrawCount);
+	        	} else {
+	        		re.drawArrays(type, firstVertex, numberOfVertex);
+	        	}
+	        	drawArraysStatistics.end();
+	        } else {
+	            // Non-optimized VertexInfo reading
+	            VertexInfo cachedVertexInfo = null;
+	            if (useVertexCache) {
+	        		vertexCacheLookupStatistics.start();
+	                cachedVertexInfo = VertexCache.getInstance().getVertex(context.vinfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
+	            	vertexCacheLookupStatistics.end();
+	            }
 
-                case PRIM_SPRITES:
-                    re.setVertexInfo(context.vinfo, false, context.useVertexColor, useTexture, IRenderingEngine.RE_QUADS);
-                	re.disableFlag(IRenderingEngine.GU_CULL_FACE);
+	            ByteBuffer byteBuffer = bufferManager.getBuffer(bufferId);
+	            byteBuffer.clear();
+	            FloatBuffer floatBuffer = byteBuffer.asFloatBuffer();
+	            floatBuffer.clear();
 
-                	float[] mvpMatrix = null;
-                	if (!context.vinfo.transform2D) {
-                		mvpMatrix = new float[4 * 4];
-                		// pre-Compute the MVP (Model-View-Projection) matrix
-                		matrixMult(mvpMatrix, context.model_uploaded_matrix, context.view_uploaded_matrix);
-                		matrixMult(mvpMatrix, mvpMatrix, getProjectionMatrix());
-                	}
+	    		if (!useVertexCache && re.isVertexArrayAvailable()) {
+					re.bindVertexArray(0);
+	    		}
 
-                	if (cachedVertexInfo == null) {
-            			vertexReadingStatistics.start();
-                        for (int i = 0; i < numberOfVertex; i += 2) {
-                            int addr1 = context.vinfo.getAddress(mem, i);
-                            int addr2 = context.vinfo.getAddress(mem, i + 1);
-                            context.vinfo.readVertex(mem, addr1, v1);
-                            context.vinfo.readVertex(mem, addr2, v2);
+	            switch (type) {
+	                case PRIM_POINT:
+	                case PRIM_LINE:
+	                case PRIM_LINES_STRIPS:
+	                case PRIM_TRIANGLE:
+	                case PRIM_TRIANGLE_STRIPS:
+	                case PRIM_TRIANGLE_FANS:
+	                    re.setVertexInfo(context.vinfo, false, context.useVertexColor, useTexture, type);
 
-                            v1.p[2] = v2.p[2];
+	                    float[] normalizedNormal = new float[3];
+	                    if (cachedVertexInfo == null) {
+	                		vertexReadingStatistics.start();
+	                        for (int i = 0; i < numberOfVertex; i++) {
+	                            int addr = context.vinfo.getAddress(mem, i);
 
-                            if (v2.p[1] > maxSpriteHeight) {
-                                maxSpriteHeight = (int) v2.p[1];
-                            }
-                            if (v2.p[1] > maxSpriteWidth) {
-                            	maxSpriteWidth = (int) v2.p[1];
-                            }
+	                            context.vinfo.readVertex(mem, addr, v);
 
-                            //
-                            // Texture flip tested using the GElist application:
-                            // - it depends on the X and Y coordinates:
-                            //   GU_TRANSFORM_3D:
-                            //     X1 < X2 && Y1 < Y2 :     flipped
-                            //     X1 > X2 && Y1 > Y2 :     flipped
-                            //     X1 < X2 && Y1 > Y2 : not flipped
-                            //     X1 > X2 && Y1 < Y2 : not flipped
-                            //   GU_TRANSFORM_2D: opposite results because
-                            //                    the Y-Axis is upside-down in 2D
-                            //     X1 < X2 && Y1 < Y2 : not flipped
-                            //     X1 > X2 && Y1 > Y2 : not flipped
-                            //     X1 < X2 && Y1 > Y2 :     flipped
-                            //     X1 > X2 && Y1 < Y2 :     flipped
-                            // - the tests for GU_TRANSFORM_3D are based on the coordinates
-                            //   after the MVP (Model-View-Projection) transformation
-                            // - texture coordinates are irrelevant
-                            //
-                            float x1, y1, x2, y2;
-                            if (mvpMatrix == null) {
-                            	x1 =  v1.p[0];
-                            	y1 = -v1.p[1]; // Y-Axis is upside-down in 2D
-                            	x2 =  v2.p[0];
-                            	y2 = -v2.p[1]; // Y-Axis is upside-down in 2D
-                            } else {
-                            	// Apply the MVP transformation to both position coordinates
-                            	float[] mvpPosition = new float[2];
-                            	vectorMult(mvpPosition, mvpMatrix, v1.p);
-                            	x1 = mvpPosition[0];
-                            	y1 = mvpPosition[1];
-                            	vectorMult(mvpPosition, mvpMatrix, v2.p);
-                            	x2 = mvpPosition[0];
-                            	y2 = mvpPosition[1];
-                            }
-                            boolean flippedTexture = (y1 < y2 && x1 < x2) ||
-                                                     (y1 > y2 && x1 > x2);
+	                            // Do skinning first as it modifies v.p and v.n
+	                            if (mustComputeWeights && context.vinfo.position != 0) {
+	                                doSkinning(context.bone_uploaded_matrix, context.vinfo, v);
+	                            }
 
-                            if (isLogDebugEnabled) {
-                            	log(String.format("  sprite (%.0f,%.0f)-(%.0f,%.0f) at (%.0f,%.0f,%.0f)-(%.0f,%.0f,%.0f)%s", v1.t[0], v1.t[1], v2.t[0], v2.t[1], v1.p[0], v1.p[1], v1.p[2], v2.p[0], v2.p[1], v2.p[2], flippedTexture ? " flipped" : ""));
-                            }
+	                            if (useTextureFromNormal) {
+	                                floatBuffer.put(v.n, 0, 3);
+	                            } else if (useTextureFromNormalizedNormal) {
+	                            	float normalLength = (float) Math.sqrt(v.n[0] * v.n[0] + v.n[1] * v.n[1] + v.n[2] * v.n[2]);
+	                            	normalizedNormal[0] = v.n[0] / normalLength;
+	                            	normalizedNormal[1] = v.n[1] / normalLength;
+	                            	normalizedNormal[2] = v.n[2] / normalLength;
+	                                floatBuffer.put(normalizedNormal, 0, 3);
+	                            } else if (useTextureFromPosition) {
+	                                floatBuffer.put(v.p, 0, 3);
+	                            } else if (useTexture || context.vinfo.texture != 0) {
+	                                floatBuffer.put(v.t);
+	                            }
+	                            if (context.useVertexColor) {
+	                                floatBuffer.put(v.c);
+	                            }
+	                            if (context.vinfo.normal != 0) {
+	                                floatBuffer.put(v.n);
+	                            }
+	                            if (context.vinfo.position != 0) {
+	                                floatBuffer.put(v.p);
+	                            }
+	                            if (numberOfWeightsForBuffer > 0) {
+	                                floatBuffer.put(v.boneWeights, 0, numberOfWeightsForBuffer);
+	                            }
 
-                            // V1
-                            if (context.vinfo.texture != 0) {
-                                floatBuffer.put(v1.t);
-                            }
-                            if (context.useVertexColor) {
-                                floatBuffer.put(v2.c);
-                            }
-                            if (context.vinfo.normal != 0) {
-                                floatBuffer.put(v2.n);
-                            }
-                            if (context.vinfo.position != 0) {
-                                floatBuffer.put(v1.p);
-                            }
+	                            if (isLogTraceEnabled) {
+	                                if (context.vinfo.texture != 0 && context.vinfo.position != 0) {
+	                                    log.trace("  vertex#" + i + " (" + ((int) v.t[0]) + "," + ((int) v.t[1]) + ") at (" + ((int) v.p[0]) + "," + ((int) v.p[1]) + "," + ((int) v.p[2]) + ")");
+	                                }
+	                            }
+	                        }
+	                    	vertexReadingStatistics.end();
 
-                            if (context.vinfo.texture != 0) {
-                                if (flippedTexture) {
-                                    floatBuffer.put(v2.t[0]).put(v1.t[1]);
-                                } else {
-                                    floatBuffer.put(v1.t[0]).put(v2.t[1]);
-                                }
-                            }
-                            if (context.useVertexColor) {
-                                floatBuffer.put(v2.c);
-                            }
-                            if (context.vinfo.normal != 0) {
-                                floatBuffer.put(v2.n);
-                            }
-                            if (context.vinfo.position != 0) {
-                                floatBuffer.put(v1.p[0]).put(v2.p[1]).put(v2.p[2]);
-                            }
+	                        if (useVertexCache) {
+	                            cachedVertexInfo = new VertexInfo(context.vinfo);
+	                            VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
+	                            int size = floatBuffer.position();
+	                            floatBuffer.rewind();
+	                            needSetDataPointers = cachedVertexInfo.loadVertex(re, floatBuffer, size);
+	                        } else {
+	                            bufferManager.setBufferData(bufferId, floatBuffer.position() * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
+	                        }
+	                    } else {
+	                        if (isLogDebugEnabled) {
+	                            log.debug("Reusing cached Vertex Data");
+	                        }
+	                        needSetDataPointers = cachedVertexInfo.bindVertex(re);
+	                    }
+	                    if (needSetDataPointers) {
+	                    	setDataPointers(nVertex, context.useVertexColor, nColor, useTexture, nTexCoord, context.vinfo.normal != 0, numberOfWeightsForBuffer, cachedVertexInfo == null);
+	                    }
+	                	drawArraysStatistics.start();
+	                    re.drawArrays(type, 0, numberOfVertex);
+	                	drawArraysStatistics.end();
+	                    maxSpriteHeight = Integer.MAX_VALUE;
+	                    maxSpriteWidth = Integer.MAX_VALUE;
+	                    break;
 
-                            // V2
-                            if (context.vinfo.texture != 0) {
-                                floatBuffer.put(v2.t);
-                            }
-                            if (context.useVertexColor) {
-                                floatBuffer.put(v2.c);
-                            }
-                            if (context.vinfo.normal != 0) {
-                                floatBuffer.put(v2.n);
-                            }
-                            if (context.vinfo.position != 0) {
-                                floatBuffer.put(v2.p);
-                            }
+	                case PRIM_SPRITES:
+	                    re.setVertexInfo(context.vinfo, false, context.useVertexColor, useTexture, IRenderingEngine.RE_QUADS);
+	                	re.disableFlag(IRenderingEngine.GU_CULL_FACE);
 
-                            if (context.vinfo.texture != 0) {
-                                if (flippedTexture) {
-                                    floatBuffer.put(v1.t[0]).put(v2.t[1]);
-                                } else {
-                                    floatBuffer.put(v2.t[0]).put(v1.t[1]);
-                                }
-                            }
-                            if (context.useVertexColor) {
-                                floatBuffer.put(v2.c);
-                            }
-                            if (context.vinfo.normal != 0) {
-                                floatBuffer.put(v2.n);
-                            }
-                            if (context.vinfo.position != 0) {
-                                floatBuffer.put(v2.p[0]).put(v1.p[1]).put(v2.p[2]);
-                            }
-                        }
-                    	vertexReadingStatistics.end();
+	                	float[] mvpMatrix = null;
+	                	if (!context.vinfo.transform2D) {
+	                		mvpMatrix = new float[4 * 4];
+	                		// pre-Compute the MVP (Model-View-Projection) matrix
+	                		matrixMult(mvpMatrix, context.model_uploaded_matrix, context.view_uploaded_matrix);
+	                		matrixMult(mvpMatrix, mvpMatrix, getProjectionMatrix());
+	                	}
 
-                        if (useVertexCache) {
-                            cachedVertexInfo = new VertexInfo(context.vinfo);
-                            VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
-                            int size = floatBuffer.position();
-                            floatBuffer.rewind();
-                            needSetDataPointers = cachedVertexInfo.loadVertex(re, floatBuffer, size);
-                        } else {
-                            bufferManager.setBufferData(bufferId, floatBuffer.position() * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
-                        }
-                    } else {
-                        if (isLogDebugEnabled) {
-                            log.debug("Reusing cached Vertex Data");
-                        }
-                        needSetDataPointers = cachedVertexInfo.bindVertex(re);
-                    }
-                	if (needSetDataPointers) {
-                		setDataPointers(nVertex, context.useVertexColor, nColor, useTexture, nTexCoord, context.vinfo.normal != 0, 0, cachedVertexInfo == null);
-                	}
-            		drawArraysStatistics.start();
-                    re.drawArrays(IRenderingEngine.RE_QUADS, 0, numberOfVertex * 2);
-                	drawArraysStatistics.end();
-                    context.cullFaceFlag.updateEnabled();
-                    break;
-            }
+	                	if (cachedVertexInfo == null) {
+	            			vertexReadingStatistics.start();
+	                        for (int i = 0; i < numberOfVertex; i += 2) {
+	                            int addr1 = context.vinfo.getAddress(mem, i);
+	                            int addr2 = context.vinfo.getAddress(mem, i + 1);
+	                            context.vinfo.readVertex(mem, addr1, v1);
+	                            context.vinfo.readVertex(mem, addr2, v2);
+
+	                            v1.p[2] = v2.p[2];
+
+	                            if (v2.p[1] > maxSpriteHeight) {
+	                                maxSpriteHeight = (int) v2.p[1];
+	                            }
+	                            if (v2.p[1] > maxSpriteWidth) {
+	                            	maxSpriteWidth = (int) v2.p[1];
+	                            }
+
+	                            //
+	                            // Texture flip tested using the GElist application:
+	                            // - it depends on the X and Y coordinates:
+	                            //   GU_TRANSFORM_3D:
+	                            //     X1 < X2 && Y1 < Y2 :     flipped
+	                            //     X1 > X2 && Y1 > Y2 :     flipped
+	                            //     X1 < X2 && Y1 > Y2 : not flipped
+	                            //     X1 > X2 && Y1 < Y2 : not flipped
+	                            //   GU_TRANSFORM_2D: opposite results because
+	                            //                    the Y-Axis is upside-down in 2D
+	                            //     X1 < X2 && Y1 < Y2 : not flipped
+	                            //     X1 > X2 && Y1 > Y2 : not flipped
+	                            //     X1 < X2 && Y1 > Y2 :     flipped
+	                            //     X1 > X2 && Y1 < Y2 :     flipped
+	                            // - the tests for GU_TRANSFORM_3D are based on the coordinates
+	                            //   after the MVP (Model-View-Projection) transformation
+	                            // - texture coordinates are irrelevant
+	                            //
+	                            float x1, y1, x2, y2;
+	                            if (mvpMatrix == null) {
+	                            	x1 =  v1.p[0];
+	                            	y1 = -v1.p[1]; // Y-Axis is upside-down in 2D
+	                            	x2 =  v2.p[0];
+	                            	y2 = -v2.p[1]; // Y-Axis is upside-down in 2D
+	                            } else {
+	                            	// Apply the MVP transformation to both position coordinates
+	                            	float[] mvpPosition = new float[2];
+	                            	vectorMult(mvpPosition, mvpMatrix, v1.p);
+	                            	x1 = mvpPosition[0];
+	                            	y1 = mvpPosition[1];
+	                            	vectorMult(mvpPosition, mvpMatrix, v2.p);
+	                            	x2 = mvpPosition[0];
+	                            	y2 = mvpPosition[1];
+	                            }
+	                            boolean flippedTexture = (y1 < y2 && x1 < x2) ||
+	                                                     (y1 > y2 && x1 > x2);
+
+	                            if (isLogDebugEnabled) {
+	                            	log(String.format("  sprite (%.0f,%.0f)-(%.0f,%.0f) at (%.0f,%.0f,%.0f)-(%.0f,%.0f,%.0f)%s", v1.t[0], v1.t[1], v2.t[0], v2.t[1], v1.p[0], v1.p[1], v1.p[2], v2.p[0], v2.p[1], v2.p[2], flippedTexture ? " flipped" : ""));
+	                            }
+
+	                            // V1
+	                            if (context.vinfo.texture != 0) {
+	                                floatBuffer.put(v1.t);
+	                            }
+	                            if (context.useVertexColor) {
+	                                floatBuffer.put(v2.c);
+	                            }
+	                            if (context.vinfo.normal != 0) {
+	                                floatBuffer.put(v2.n);
+	                            }
+	                            if (context.vinfo.position != 0) {
+	                                floatBuffer.put(v1.p);
+	                            }
+
+	                            if (context.vinfo.texture != 0) {
+	                                if (flippedTexture) {
+	                                    floatBuffer.put(v2.t[0]).put(v1.t[1]);
+	                                } else {
+	                                    floatBuffer.put(v1.t[0]).put(v2.t[1]);
+	                                }
+	                            }
+	                            if (context.useVertexColor) {
+	                                floatBuffer.put(v2.c);
+	                            }
+	                            if (context.vinfo.normal != 0) {
+	                                floatBuffer.put(v2.n);
+	                            }
+	                            if (context.vinfo.position != 0) {
+	                                floatBuffer.put(v1.p[0]).put(v2.p[1]).put(v2.p[2]);
+	                            }
+
+	                            // V2
+	                            if (context.vinfo.texture != 0) {
+	                                floatBuffer.put(v2.t);
+	                            }
+	                            if (context.useVertexColor) {
+	                                floatBuffer.put(v2.c);
+	                            }
+	                            if (context.vinfo.normal != 0) {
+	                                floatBuffer.put(v2.n);
+	                            }
+	                            if (context.vinfo.position != 0) {
+	                                floatBuffer.put(v2.p);
+	                            }
+
+	                            if (context.vinfo.texture != 0) {
+	                                if (flippedTexture) {
+	                                    floatBuffer.put(v1.t[0]).put(v2.t[1]);
+	                                } else {
+	                                    floatBuffer.put(v2.t[0]).put(v1.t[1]);
+	                                }
+	                            }
+	                            if (context.useVertexColor) {
+	                                floatBuffer.put(v2.c);
+	                            }
+	                            if (context.vinfo.normal != 0) {
+	                                floatBuffer.put(v2.n);
+	                            }
+	                            if (context.vinfo.position != 0) {
+	                                floatBuffer.put(v2.p[0]).put(v1.p[1]).put(v2.p[2]);
+	                            }
+	                        }
+	                    	vertexReadingStatistics.end();
+
+	                        if (useVertexCache) {
+	                            cachedVertexInfo = new VertexInfo(context.vinfo);
+	                            VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
+	                            int size = floatBuffer.position();
+	                            floatBuffer.rewind();
+	                            needSetDataPointers = cachedVertexInfo.loadVertex(re, floatBuffer, size);
+	                        } else {
+	                            bufferManager.setBufferData(bufferId, floatBuffer.position() * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
+	                        }
+	                    } else {
+	                        if (isLogDebugEnabled) {
+	                            log.debug("Reusing cached Vertex Data");
+	                        }
+	                        needSetDataPointers = cachedVertexInfo.bindVertex(re);
+	                    }
+	                	if (needSetDataPointers) {
+	                		setDataPointers(nVertex, context.useVertexColor, nColor, useTexture, nTexCoord, context.vinfo.normal != 0, 0, cachedVertexInfo == null);
+	                	}
+	            		drawArraysStatistics.start();
+	                    re.drawArrays(IRenderingEngine.RE_QUADS, 0, numberOfVertex * 2);
+	                	drawArraysStatistics.end();
+	                    context.cullFaceFlag.updateEnabled();
+	                    break;
+	            }
+	        }
         }
 
     	vertexStatistics.end();
@@ -4220,39 +4226,39 @@ public class VideoEngine {
         normal[2] = nz;
     }
 
-    private void doSkinning(VertexInfo vinfo, VertexState v) {
+    public static void doSkinning(float[][] boneMatrix, VertexInfo vinfo, VertexState v) {
         float x = 0, y = 0, z = 0;
         float nx = 0, ny = 0, nz = 0;
-        for (int i = 0; i < context.vinfo.skinningWeightCount; ++i) {
+        for (int i = 0; i < vinfo.skinningWeightCount; ++i) {
             if (v.boneWeights[i] != 0.f) {
 
-                x += (v.p[0] * context.bone_uploaded_matrix[i][0]
-                        + v.p[1] * context.bone_uploaded_matrix[i][3]
-                        + v.p[2] * context.bone_uploaded_matrix[i][6]
-                        + context.bone_uploaded_matrix[i][9]) * v.boneWeights[i];
+                x += (v.p[0] * boneMatrix[i][0]
+                        + v.p[1] * boneMatrix[i][3]
+                        + v.p[2] * boneMatrix[i][6]
+                        + boneMatrix[i][9]) * v.boneWeights[i];
 
-                y += (v.p[0] * context.bone_uploaded_matrix[i][1]
-                        + v.p[1] * context.bone_uploaded_matrix[i][4]
-                        + v.p[2] * context.bone_uploaded_matrix[i][7]
-                        + context.bone_uploaded_matrix[i][10]) * v.boneWeights[i];
+                y += (v.p[0] * boneMatrix[i][1]
+                        + v.p[1] * boneMatrix[i][4]
+                        + v.p[2] * boneMatrix[i][7]
+                        + boneMatrix[i][10]) * v.boneWeights[i];
 
-                z += (v.p[0] * context.bone_uploaded_matrix[i][2]
-                        + v.p[1] * context.bone_uploaded_matrix[i][5]
-                        + v.p[2] * context.bone_uploaded_matrix[i][8]
-                        + context.bone_uploaded_matrix[i][11]) * v.boneWeights[i];
+                z += (v.p[0] * boneMatrix[i][2]
+                        + v.p[1] * boneMatrix[i][5]
+                        + v.p[2] * boneMatrix[i][8]
+                        + boneMatrix[i][11]) * v.boneWeights[i];
 
                 // Normals shouldn't be translated :)
-                nx += (v.n[0] * context.bone_uploaded_matrix[i][0]
-                        + v.n[1] * context.bone_uploaded_matrix[i][3]
-                        + v.n[2] * context.bone_uploaded_matrix[i][6]) * v.boneWeights[i];
+                nx += (v.n[0] * boneMatrix[i][0]
+                        + v.n[1] * boneMatrix[i][3]
+                        + v.n[2] * boneMatrix[i][6]) * v.boneWeights[i];
 
-                ny += (v.n[0] * context.bone_uploaded_matrix[i][1]
-                        + v.n[1] * context.bone_uploaded_matrix[i][4]
-                        + v.n[2] * context.bone_uploaded_matrix[i][7]) * v.boneWeights[i];
+                ny += (v.n[0] * boneMatrix[i][1]
+                        + v.n[1] * boneMatrix[i][4]
+                        + v.n[2] * boneMatrix[i][7]) * v.boneWeights[i];
 
-                nz += (v.n[0] * context.bone_uploaded_matrix[i][2]
-                        + v.n[1] * context.bone_uploaded_matrix[i][5]
-                        + v.n[2] * context.bone_uploaded_matrix[i][8]) * v.boneWeights[i];
+                nz += (v.n[0] * boneMatrix[i][2]
+                        + v.n[1] * boneMatrix[i][5]
+                        + v.n[2] * boneMatrix[i][8]) * v.boneWeights[i];
             }
         }
 

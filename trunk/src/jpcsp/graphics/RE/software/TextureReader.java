@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
+import static jpcsp.util.Utilities.round;
 import jpcsp.graphics.GeContext;
 
 /**
@@ -23,13 +24,19 @@ import jpcsp.graphics.GeContext;
  *
  */
 public class TextureReader {
-	public static IPixelFilter getTextureReader(IRandomTextureAccess textureAccess, GeContext context) {
+	public static IPixelFilter getTextureReader(IRandomTextureAccess textureAccess, GeContext context, int mipmapLevel) {
 		IPixelFilter textureReader = null;
 
 		if (context.vinfo.transform2D) {
 			textureReader = new TextureReader2D(textureAccess);
 		} else {
-			textureReader = new TextureReader3D(textureAccess);
+			// Take the texture width and height, not the buffer width.
+			// E.g.: for a texture having
+			//          bufferWidth=200 and width=256,
+			//       a texture coordinate
+			//          u=0.5
+			//       has to be interpreted as 128, and not as 100.
+			textureReader = new TextureReader3D(textureAccess, context.texture_width[mipmapLevel], context.texture_height[mipmapLevel]);
 		}
 
 		return textureReader;
@@ -40,15 +47,15 @@ public class TextureReader {
 		private final float width;
 		private final float height;
 
-		public TextureReader3D(IRandomTextureAccess textureAccess) {
+		public TextureReader3D(IRandomTextureAccess textureAccess, int width, int height) {
 			this.textureAccess = textureAccess;
-			width = textureAccess.getWidth();
-			height = textureAccess.getHeight();
+			this.width = width;
+			this.height = height;
 		}
 
 		@Override
 		public int filter(PixelState pixel) {
-			return textureAccess.readPixel(Math.round(pixel.u * width), Math.round(pixel.v * height));
+			return textureAccess.readPixel(round(pixel.u * width), round(pixel.v * height));
 		}
 	}
 
@@ -61,7 +68,7 @@ public class TextureReader {
 
 		@Override
 		public int filter(PixelState pixel) {
-			return textureAccess.readPixel(Math.round(pixel.u), Math.round(pixel.v));
+			return textureAccess.readPixel(round(pixel.u), round(pixel.v));
 		}
 	}
 }

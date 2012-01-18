@@ -233,6 +233,7 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		addStatistic("setBlendDFix", 193);
 		addStatistic("setUniform3", 194);
 		addStatistic("waitForRenderingCompletion", 195);
+		addStatistic("canReadAllVertexInfo", 196);
 	}
 
 	private void addStatistic(String name, int index) {
@@ -1847,5 +1848,14 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		statistic.start();
 		super.waitForRenderingCompletion();
 		statistic.end();
+	}
+
+	@Override
+	public boolean canReadAllVertexInfo() {
+		DurationStatistics statistic = statistics[196];
+		statistic.start();
+		boolean value = super.canReadAllVertexInfo();
+		statistic.end();
+		return value;
 	}
 }

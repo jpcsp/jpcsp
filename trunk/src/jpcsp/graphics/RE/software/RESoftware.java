@@ -27,6 +27,7 @@ import jpcsp.graphics.VertexState;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.BaseRenderingEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
+import jpcsp.util.DurationStatistics;
 
 /**
  * @author gid15
@@ -48,11 +49,17 @@ public class RESoftware extends BaseRenderingEngine {
     protected RendererExecutor rendererExecutor;
     protected HashMap<Integer, CachedTexture> cachedTextures = new HashMap<Integer, CachedTexture>();
     protected int textureBufferWidth;
+    protected static DurationStatistics drawArraysStatistics = new DurationStatistics("RESoftware drawArrays");
+    protected static DurationStatistics triangleRender3DStatistics = new DurationStatistics("RESoftware TriangleRender3D");
+    protected BoundingBoxRenderer boundingBoxRenderer;
+    protected boolean boundingBoxVisible;
 
 	@Override
 	public void exit() {
-		// TODO Auto-generated method stub
-		
+		if (DurationStatistics.collectStatistics) {
+			log.info(drawArraysStatistics);
+			log.info(triangleRender3DStatistics);
+		}
 	}
 
 	@Override
@@ -434,8 +441,7 @@ public class RESoftware extends BaseRenderingEngine {
 
 	@Override
 	public int setBones(int count, float[] values) {
-		// TODO Auto-generated method stub
-		return 0;
+		return count;
 	}
 
 	@Override
@@ -551,14 +557,28 @@ public class RESoftware extends BaseRenderingEngine {
 		}
 	}
 
-	protected void drawTriangle(VertexState v1, VertexState v2, VertexState v3) {
-        IRenderer renderer = new TriangleRenderer(v1, v2, v3);
-        render(renderer);
+	protected void drawTriangle(VertexState v1, VertexState v2, VertexState v3, boolean invertedFrontFace) {
+        TriangleRenderer renderer = new TriangleRenderer(v1, v2, v3);
+    	if (!renderer.isCulled(context, invertedFrontFace)) {
+    		render(renderer);
+    	}
+	}
+
+	protected void readSkinnedVertex(Memory mem, int addr, VertexState v) {
+		context.vinfo.readVertex(mem, addr, v);
+		if (context.vinfo.weight != 0) {
+			VideoEngine.doSkinning(context.bone_uploaded_matrix, context.vinfo, v);
+		}
 	}
 
 	protected boolean isSprite(VertexInfo vinfo, VertexState tv1, VertexState tv2, VertexState tv3, VertexState tv4) {
 		// Sprites are only available in 2D
 		if (!vinfo.transform2D) {
+			return false;
+		}
+
+		// Sprites are not culled. Keep triangles when the back face culling is enabled.
+		if (!context.clearMode && context.cullFaceFlag.isEnabled()) {
 			return false;
 		}
 
@@ -601,9 +621,9 @@ public class RESoftware extends BaseRenderingEngine {
 		VertexState tv2 = null;
 		VertexState tv3 = null;
 		VertexState tv4 = v1;
-		for (int i = first; i < count; i++) {
-			int addr = context.vinfo.getAddress(mem, i);
-			context.vinfo.readVertex(mem, addr, tv4);
+		for (int i = 0; i < count; i++) {
+			int addr = context.vinfo.getAddress(mem, first + i);
+			readSkinnedVertex(mem, addr, tv4);
 			if (tv3 != null) {
 				// Displaying a sprite (i.e. rectangular area) is faster.
 				// Try to merge adjacent triangles if they form a sprite.
@@ -618,7 +638,8 @@ public class RESoftware extends BaseRenderingEngine {
 					tv3 = null;
 					tv4 = v3;
 				} else {
-					drawTriangle(tv1, tv2, tv3);
+					// The Front face direction is inverted every 2 triangles in the strip.
+					drawTriangle(tv1, tv2, tv3, ((i - 3) & 1) != 0);
 					VertexState v = tv1;
 					tv1 = tv2;
 					tv2 = tv3;
@@ -638,21 +659,23 @@ public class RESoftware extends BaseRenderingEngine {
 		}
 
 		if (tv3 != null) {
-			drawTriangle(tv1, tv2, tv3);
+			drawTriangle(tv1, tv2, tv3, (count & 1) == 0);
 		}
 	}
 
 	protected void drawArraysTriangles(int first, int count) {
 		Memory mem = Memory.getInstance();
-		for (int i = first; i < count; i += 3) {
-			int addr1 = context.vinfo.getAddress(mem, i);
-			context.vinfo.readVertex(mem, addr1, v1);
-			int addr2 = context.vinfo.getAddress(mem, i + 1);
-			context.vinfo.readVertex(mem, addr2, v2);
-			int addr3 = context.vinfo.getAddress(mem, i + 2);
-			context.vinfo.readVertex(mem, addr3, v3);
+		for (int i = 0; i < count; i += 3) {
+			int addr1 = context.vinfo.getAddress(mem, first + i);
+			readSkinnedVertex(mem, addr1, v1);
+			int addr2 = context.vinfo.getAddress(mem, first + i + 1);
+			readSkinnedVertex(mem, addr2, v2);
+			int addr3 = context.vinfo.getAddress(mem, first + i + 2);
+			readSkinnedVertex(mem, addr3, v3);
 
-			drawTriangle(v1, v2, v3);
+			// Culling is done on each triangle.
+			// When one triangle is not displayed, the other triangles can still be displayed.
+			drawTriangle(v1, v2, v3, false);
 		}
 	}
 
@@ -661,15 +684,17 @@ public class RESoftware extends BaseRenderingEngine {
 		VertexState tv1 = null;
 		VertexState tv2 = null;
 		VertexState tv3 = v1;
-		for (int i = first; i < count; i++) {
-			int addr = context.vinfo.getAddress(mem, i);
-			context.vinfo.readVertex(mem, addr, tv3);
+		for (int i = 0; i < count; i++) {
+			int addr = context.vinfo.getAddress(mem, first + i);
+			readSkinnedVertex(mem, addr, tv3);
 			if (tv2 != null) {
-				drawTriangle(tv1, tv2, tv3);
+				// Culling is done on each triangle.
+				// When one triangle is not displayed, the other triangles can still be displayed.
+				drawTriangle(tv1, tv2, tv3, false);
 				VertexState v = tv2;
 				tv2 = tv3;
 				tv3 = v;
-			} else if (v1 == null) {
+			} else if (tv1 == null) {
 				tv1 = tv3;
 				tv3 = v2;
 			} else {
@@ -681,6 +706,7 @@ public class RESoftware extends BaseRenderingEngine {
 
 	@Override
 	public void drawArrays(int primitive, int first, int count) {
+		drawArraysStatistics.start();
 		switch (primitive) {
 			case IRenderingEngine.GU_SPRITES:
 				drawArraysSprites(first, count);
@@ -695,6 +721,7 @@ public class RESoftware extends BaseRenderingEngine {
 				drawArraysTriangleFan(first, count);
 				break;
 		}
+		drawArraysStatistics.end();
 	}
 
 	@Override
@@ -959,32 +986,32 @@ public class RESoftware extends BaseRenderingEngine {
 
 	@Override
 	public boolean hasBoundingBox() {
-		// TODO Auto-generated method stub
-		return false;
+		return true;
 	}
 
 	@Override
 	public void beginBoundingBox(int numberOfVertexBoundingBox) {
-		// TODO Auto-generated method stub
-		
+		boundingBoxRenderer = new BoundingBoxRenderer();
+		boundingBoxVisible = true;
 	}
 
 	@Override
 	public void drawBoundingBox(float[][] values) {
-		// TODO Auto-generated method stub
-		
+		if (boundingBoxVisible) {
+			boundingBoxRenderer.drawBoundingBox(values);
+			if (!boundingBoxRenderer.prepare(context, null)) {
+				boundingBoxVisible = false;
+			}
+		}
 	}
 
 	@Override
 	public void endBoundingBox(VertexInfo vinfo) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public boolean isBoundingBoxVisible() {
-		// TODO Auto-generated method stub
-		return false;
+		return boundingBoxVisible;
 	}
 
 	@Override
@@ -1330,5 +1357,11 @@ public class RESoftware extends BaseRenderingEngine {
 	@Override
 	public void waitForRenderingCompletion() {
 		rendererExecutor.waitForRenderingCompletion();
+	}
+
+	@Override
+	public boolean canReadAllVertexInfo() {
+		// drawArrays doesn't need vertex infos in buffers, it can read directly from memory.
+		return true;
 	}
 }

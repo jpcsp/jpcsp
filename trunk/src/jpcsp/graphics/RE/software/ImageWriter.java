@@ -15,6 +15,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
+import static jpcsp.memory.ImageReader.color4444to8888;
+import static jpcsp.memory.ImageReader.color5551to8888;
+import static jpcsp.memory.ImageReader.color565to8888;
 import jpcsp.Memory;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.RE.IRenderingEngine;
@@ -185,7 +188,7 @@ public class ImageWriter {
 			updateCurrent();
 		}
 
-		protected final void updateCurrent() {
+		protected void updateCurrent() {
 			current = memoryReader.readNext();
 		}
 
@@ -251,6 +254,12 @@ public class ImageWriter {
 			}
 			updateCurrent();
 		}
+
+		@Override
+		protected void updateCurrent() {
+			super.updateCurrent();
+			current = color4444to8888(current);
+		}
 	}
 
 	private static final class PixelFormat5551Encoder extends ImageEncoder {
@@ -266,6 +275,12 @@ public class ImageWriter {
 			}
 			updateCurrent();
 		}
+
+		@Override
+		protected void updateCurrent() {
+			super.updateCurrent();
+			current = color5551to8888(current);
+		}
 	}
 
 	private static final class PixelFormat565Encoder extends ImageEncoder {
@@ -280,6 +295,12 @@ public class ImageWriter {
 				checkCurrentAddress();
 			}
 			updateCurrent();
+		}
+
+		@Override
+		protected void updateCurrent() {
+			super.updateCurrent();
+			current = color565to8888(current);
 		}
 	}
 

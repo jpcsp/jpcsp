@@ -614,7 +614,15 @@ public class Utilities {
 		return Math.min(a, b);
 	}
 
+	public static float min(float a, float b) {
+		return Math.min(a, b);
+	}
+
 	public static int max(int a, int b) {
+		return Math.max(a, b);
+	}
+
+	public static float max(float a, float b) {
 		return Math.max(a, b);
 	}
 
@@ -680,4 +688,25 @@ public class Utilities {
     		result[i] = s;
     	}
     }
+
+    // This is equivalent to Math.round but faster: Math.round is using StrictMath.
+    public static int round(float n) {
+    	return (int) (n + .5f);
+    }
+
+    public static int getPower2(int n) {
+		return Integer.numberOfTrailingZeros(makePow2(n));
+	}
+
+    public static void copy(float[] to, float[] from) {
+		System.arraycopy(from, 0, to, 0, to.length);
+	}
+
+    public static float dot3(float[] a, float[] b) {
+		return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+	}
+
+    public static float length3(float[] a) {
+		return (float) Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
+	}
 }
