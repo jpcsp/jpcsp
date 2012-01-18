@@ -1641,4 +1641,9 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	public void waitForRenderingCompletion() {
 		// Nothing to do here
 	}
+
+	@Override
+	public boolean canReadAllVertexInfo() {
+		return false;
+	}
 }

@@ -56,6 +56,10 @@ public class PixelColor {
 		return (a << 24) | (b << 16) | (g << 8) | r;
 	}
 
+	public final static int getColorBGR(int b, int g, int r) {
+		return (b << 16) | (g << 8) | r;
+	}
+
 	public final static int multiplyComponent(int component1, int component2) {
 		return (component1 * component2) / ONE;
 	}
@@ -66,6 +70,13 @@ public class PixelColor {
 		int g = multiplyComponent(getGreen(color1), g2);
 		int r = multiplyComponent(getRed(color1), r2);
 		return getColor(a, b, g, r);
+	}
+
+	public final static int multiplyBGR(int color1, int b2, int g2, int r2) {
+		int b = multiplyComponent(getBlue(color1), b2);
+		int g = multiplyComponent(getGreen(color1), g2);
+		int r = multiplyComponent(getRed(color1), r2);
+		return getColorBGR(b, g, r);
 	}
 
 	public final static int multiply(int color1, int color2) {
@@ -84,6 +95,22 @@ public class PixelColor {
 		return multiply(color1, getAlpha(color2), getBlue(color2), getGreen(color2), getRed(color2));
 	}
 
+	public final static int multiplyBGR(int color1, int color2) {
+		color1 &= 0x00FFFFFF;
+		color2 &= 0x00FFFFFF;
+		// Handle common and simple cases first
+		switch (color2) {
+			case 0x00000000: return 0;
+			case 0x00FFFFFF: return color1;
+		}
+		switch (color1) {
+			case 0x00000000: return 0;
+			case 0x00FFFFFF: return color2;
+		}
+
+		return multiplyBGR(color1, getBlue(color2), getGreen(color2), getRed(color2));
+	}
+
 	public final static int addComponent(int component1, int component2) {
 		// Add with clamp to ONE
 		return Math.min(component1 + component2, ONE);
@@ -95,6 +122,13 @@ public class PixelColor {
 		int g = addComponent(getGreen(color1), getGreen(color2));
 		int r = addComponent(getRed(color1), getRed(color2));
 		return getColor(a, b, g, r);
+	}
+
+	public final static int addBGR(int color1, int color2) {
+		int b = addComponent(getBlue(color1), getBlue(color2));
+		int g = addComponent(getGreen(color1), getGreen(color2));
+		int r = addComponent(getRed(color1), getRed(color2));
+		return getColorBGR(b, g, r);
 	}
 
 	public final static int substractComponent(int component1, int component2) {
@@ -110,6 +144,13 @@ public class PixelColor {
 		return getColor(a, b, g, r);
 	}
 
+	public final static int substractBGR(int color1, int color2) {
+		int b = substractComponent(getBlue(color1), getBlue(color2));
+		int g = substractComponent(getGreen(color1), getGreen(color2));
+		int r = substractComponent(getRed(color1), getRed(color2));
+		return getColorBGR(b, g, r);
+	}
+
 	public final static int min(int color1, int color2) {
 		int a = Math.min(getAlpha(color1), getAlpha(color2));
 		int b = Math.min(getBlue(color1), getBlue(color2));
@@ -118,12 +159,26 @@ public class PixelColor {
 		return getColor(a, b, g, r);
 	}
 
+	public final static int minBGR(int color1, int color2) {
+		int b = Math.min(getBlue(color1), getBlue(color2));
+		int g = Math.min(getGreen(color1), getGreen(color2));
+		int r = Math.min(getRed(color1), getRed(color2));
+		return getColorBGR(b, g, r);
+	}
+
 	public final static int max(int color1, int color2) {
 		int a = Math.max(getAlpha(color1), getAlpha(color2));
 		int b = Math.max(getBlue(color1), getBlue(color2));
 		int g = Math.max(getGreen(color1), getGreen(color2));
 		int r = Math.max(getRed(color1), getRed(color2));
 		return getColor(a, b, g, r);
+	}
+
+	public final static int maxBGR(int color1, int color2) {
+		int b = Math.max(getBlue(color1), getBlue(color2));
+		int g = Math.max(getGreen(color1), getGreen(color2));
+		int r = Math.max(getRed(color1), getRed(color2));
+		return getColorBGR(b, g, r);
 	}
 
 	private final static int absComponent(int component1, int component2) {
@@ -140,6 +195,13 @@ public class PixelColor {
 		int g = absComponent(getGreen(color1), getGreen(color2));
 		int r = absComponent(getRed(color1), getRed(color2));
 		return getColor(a, b, g, r);
+	}
+
+	public final static int absBGR(int color1, int color2) {
+		int b = absComponent(getBlue(color1), getBlue(color2));
+		int g = absComponent(getGreen(color1), getGreen(color2));
+		int r = absComponent(getRed(color1), getRed(color2));
+		return getColorBGR(b, g, r);
 	}
 
 	public final static int combineComponent(int component1, int component2, int factor) {

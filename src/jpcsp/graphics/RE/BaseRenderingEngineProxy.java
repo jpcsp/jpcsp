@@ -1021,4 +1021,9 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	public void waitForRenderingCompletion() {
 		proxy.waitForRenderingCompletion();
 	}
+
+	@Override
+	public boolean canReadAllVertexInfo() {
+		return proxy.canReadAllVertexInfo();
+	}
 }

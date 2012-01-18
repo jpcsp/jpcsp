@@ -17,11 +17,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.util;
 
 public class DurationStatistics implements Comparable<DurationStatistics> {
-	public static final boolean collectStatistics = false;
+	public static final boolean collectStatistics = true;
     public String name;
     public long cumulatedTimeMillis;
     public long numberCalls;
     private long startTimeMillis;
+    private long maxTimeMillis;
 
     public DurationStatistics() {
     	reset();
@@ -45,15 +46,21 @@ public class DurationStatistics implements Comparable<DurationStatistics> {
     		return;
     	}
 
-    	long duration = System.currentTimeMillis() - startTimeMillis;
+    	long duration = getDurationMillis();
         cumulatedTimeMillis += duration;
         numberCalls++;
+        maxTimeMillis = Math.max(maxTimeMillis, duration);
+    }
+
+    public long getDurationMillis() {
+    	return System.currentTimeMillis() - startTimeMillis;
     }
 
     public void reset() {
     	cumulatedTimeMillis = 0;
     	numberCalls = 0;
     	startTimeMillis = 0;
+    	maxTimeMillis = 0;
     }
 
     @Override
@@ -82,6 +89,7 @@ public class DurationStatistics implements Comparable<DurationStatistics> {
 	            } else {
 	            	result.append(String.format("%.3fs", average));
 	            }
+	            result.append(String.format(", max=%dms", maxTimeMillis));
 	            result.append(")");
 	        }
         }

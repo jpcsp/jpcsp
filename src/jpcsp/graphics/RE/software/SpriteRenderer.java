@@ -35,15 +35,10 @@ public class SpriteRenderer extends BaseRenderer {
 
 	@Override
 	public boolean prepare(GeContext context, CachedTexture texture) {
-		if (context.vinfo.position == 0 || !context.vinfo.transform2D) {
-			// TODO Not yet implemented
-			return false;
-		}
-
 		init(context);
 		setPositions(v1, v2);
 
-        if (!insideScissor(context)) {
+        if (!isVisible(context)) {
         	return false;
         }
 
@@ -69,12 +64,14 @@ public class SpriteRenderer extends BaseRenderer {
 	@Override
 	public void render() {
     	pixel.sourceDepth = sourceDepth;
+    	float v = vStart;
         for (int y = 0; y < destinationHeight; y++) {
         	pixel.y = pyMin + y;
-    		pixel.v = y;
+    		pixel.v = v;
+    		float u = uStart;
         	for (int x = 0; x < destinationWidth; x++) {
             	pixel.x = pxMin + x;
-        		pixel.u = x;
+        		pixel.u = u;
         		pixel.filterPassed = true;
         		pixel.destination = imageWriter.readCurrent();
         		pixel.destinationDepth = depthWriter.readCurrent();
@@ -92,7 +89,9 @@ public class SpriteRenderer extends BaseRenderer {
         			imageWriter.skip(1);
         			depthWriter.skip(1);
         		}
+        		u += uStep;
         	}
+        	v += vStep;
         }
         super.render();
 	}

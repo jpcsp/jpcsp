@@ -17,13 +17,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE.software;
 
 import static jpcsp.graphics.RE.software.PixelColor.ONE;
-import static jpcsp.graphics.RE.software.PixelColor.abs;
-import static jpcsp.graphics.RE.software.PixelColor.add;
+import static jpcsp.graphics.RE.software.PixelColor.absBGR;
+import static jpcsp.graphics.RE.software.PixelColor.addBGR;
 import static jpcsp.graphics.RE.software.PixelColor.getAlpha;
 import static jpcsp.graphics.RE.software.PixelColor.getColor;
-import static jpcsp.graphics.RE.software.PixelColor.min;
-import static jpcsp.graphics.RE.software.PixelColor.multiply;
-import static jpcsp.graphics.RE.software.PixelColor.substract;
+import static jpcsp.graphics.RE.software.PixelColor.getColorBGR;
+import static jpcsp.graphics.RE.software.PixelColor.minBGR;
+import static jpcsp.graphics.RE.software.PixelColor.multiplyBGR;
+import static jpcsp.graphics.RE.software.PixelColor.substractBGR;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.GeContext;
 
@@ -140,7 +141,7 @@ public class AlphaBlendFilter {
 		@Override
 		public int filter(PixelState pixel) {
 			int alpha = getAlpha(pixel.source);
-			return getColor(alpha, alpha, alpha, alpha);
+			return getColorBGR(alpha, alpha, alpha);
 		}
 	}
 
@@ -148,7 +149,7 @@ public class AlphaBlendFilter {
 		@Override
 		public int filter(PixelState pixel) {
 			int alpha = ONE - getAlpha(pixel.source);
-			return getColor(alpha, alpha, alpha, alpha);
+			return getColorBGR(alpha, alpha, alpha);
 		}
 	}
 
@@ -156,7 +157,7 @@ public class AlphaBlendFilter {
 		@Override
 		public int filter(PixelState pixel) {
 			int alpha = getAlpha(pixel.destination);
-			return getColor(alpha, alpha, alpha, alpha);
+			return getColorBGR(alpha, alpha, alpha);
 		}
 	}
 
@@ -164,7 +165,7 @@ public class AlphaBlendFilter {
 		@Override
 		public int filter(PixelState pixel) {
 			int alpha = ONE - getAlpha(pixel.destination);
-			return getColor(alpha, alpha, alpha, alpha);
+			return getColorBGR(alpha, alpha, alpha);
 		}
 	}
 
@@ -172,7 +173,7 @@ public class AlphaBlendFilter {
 		@Override
 		public int filter(PixelState pixel) {
 			int alpha = getAlpha(pixel.source) << 1;
-			return getColor(alpha, alpha, alpha, alpha);
+			return getColorBGR(alpha, alpha, alpha);
 		}
 	}
 
@@ -180,7 +181,7 @@ public class AlphaBlendFilter {
 		@Override
 		public int filter(PixelState pixel) {
 			int alpha = ONE - (getAlpha(pixel.source) << 1);
-			return getColor(alpha, alpha, alpha, alpha);
+			return getColorBGR(alpha, alpha, alpha);
 		}
 	}
 
@@ -188,7 +189,7 @@ public class AlphaBlendFilter {
 		@Override
 		public int filter(PixelState pixel) {
 			int alpha = getAlpha(pixel.destination) << 1;
-			return getColor(alpha, alpha, alpha, alpha);
+			return getColorBGR(alpha, alpha, alpha);
 		}
 	}
 
@@ -196,7 +197,7 @@ public class AlphaBlendFilter {
 		@Override
 		public int filter(PixelState pixel) {
 			int alpha = ONE - (getAlpha(pixel.destination) << 1);
-			return getColor(alpha, alpha, alpha, alpha);
+			return getColorBGR(alpha, alpha, alpha);
 		}
 	}
 
@@ -204,7 +205,7 @@ public class AlphaBlendFilter {
 		private int fixColor;
 
 		public BlendFactorFix(float[] color) {
-			fixColor = getColor(color);
+			fixColor = getColor(color) & 0x00FFFFFF;
 		}
 
 		@Override
@@ -230,9 +231,9 @@ public class AlphaBlendFilter {
 
 		@Override
 		public int filter(PixelState pixel) {
-			int filteredSource = multiply(pixel.source, sourceFactor.filter(pixel));
-			int filteredDestination = multiply(pixel.destination, destinationFactor.filter(pixel));
-			return add(filteredSource, filteredDestination);
+			int filteredSource = multiplyBGR(pixel.source, sourceFactor.filter(pixel));
+			int filteredDestination = multiplyBGR(pixel.destination, destinationFactor.filter(pixel));
+			return addBGR(filteredSource, filteredDestination) | (pixel.source & 0xFF000000);
 		}
 	}
 
@@ -243,9 +244,9 @@ public class AlphaBlendFilter {
 
 		@Override
 		public int filter(PixelState pixel) {
-			int filteredSource = multiply(pixel.source, sourceFactor.filter(pixel));
-			int filteredDestination = multiply(pixel.destination, destinationFactor.filter(pixel));
-			return substract(filteredSource, filteredDestination);
+			int filteredSource = multiplyBGR(pixel.source, sourceFactor.filter(pixel));
+			int filteredDestination = multiplyBGR(pixel.destination, destinationFactor.filter(pixel));
+			return substractBGR(filteredSource, filteredDestination) | (pixel.source & 0xFF000000);
 		}
 	}
 
@@ -256,9 +257,9 @@ public class AlphaBlendFilter {
 
 		@Override
 		public int filter(PixelState pixel) {
-			int filteredSource = multiply(pixel.source, sourceFactor.filter(pixel));
-			int filteredDestination = multiply(pixel.destination, destinationFactor.filter(pixel));
-			return substract(filteredDestination, filteredSource);
+			int filteredSource = multiplyBGR(pixel.source, sourceFactor.filter(pixel));
+			int filteredDestination = multiplyBGR(pixel.destination, destinationFactor.filter(pixel));
+			return substractBGR(filteredDestination, filteredSource) | (pixel.source & 0xFF000000);
 		}
 	}
 
@@ -270,7 +271,7 @@ public class AlphaBlendFilter {
 		@Override
 		public int filter(PixelState pixel) {
 			// Source and destination factors are not applied
-			return min(pixel.source, pixel.destination);
+			return minBGR(pixel.source, pixel.destination) | (pixel.source & 0xFF000000);
 		}
 	}
 
@@ -282,7 +283,7 @@ public class AlphaBlendFilter {
 		@Override
 		public int filter(PixelState pixel) {
 			// Source and destination factors are not applied
-			return min(pixel.source, pixel.destination);
+			return minBGR(pixel.source, pixel.destination) | (pixel.source & 0xFF000000);
 		}
 	}
 
@@ -294,7 +295,7 @@ public class AlphaBlendFilter {
 		@Override
 		public int filter(PixelState pixel) {
 			// Source and destination factors are not applied
-			return abs(pixel.source, pixel.destination);
+			return absBGR(pixel.source, pixel.destination) | (pixel.source & 0xFF000000);
 		}
 	}
 }
