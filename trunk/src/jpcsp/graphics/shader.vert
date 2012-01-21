@@ -80,7 +80,7 @@ void ComputeLight(in int i, in vec3 N, in vec3 V, inout vec3 A, inout vec3 D, in
         if (gl_LightSource[i].spotCutoff < 180.0)
         {
             float spot = dot(normalize(gl_LightSource[i].spotDirection.xyz), -L);
-            att *= (spot < gl_LightSource[i].spotCosCutoff) ? 0.0 : pow(att, gl_LightSource[i].spotExponent);
+            att *= (spot < gl_LightSource[i].spotCosCutoff) ? 0.0 : pow(spot, gl_LightSource[i].spotExponent);
         }
     }
     A += gl_LightSource[i].ambient.rgb  * att;
@@ -527,7 +527,6 @@ void main()
     #else
         vec4 Cp = vec4(0.0);
     #endif
-    vec3 Ve = vec3(gl_ModelViewMatrix * V);
     vec4 Cs = vec4(0.0);
 
     #if !USE_DYNAMIC_DEFINES
@@ -565,6 +564,8 @@ void main()
     #elif NUMBER_BONES > 0
         ApplySkinning(V.xyz, N);
     #endif
+
+    vec3 Ve = vec3(gl_ModelViewMatrix * V);
 
     #if !USE_DYNAMIC_DEFINES || VINFO_NORMAL != 0
         N  = gl_NormalMatrix * N;
