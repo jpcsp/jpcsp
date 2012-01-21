@@ -116,6 +116,8 @@ public class TriangleRenderer extends BaseRenderer {
         	pixel.y = pyMin + y;
     		pixel.v = v;
     		float u = uStart;
+    		pixel.x = pxMin;
+    		computeTriangleWeights();
         	for (int x = 0; x < destinationWidth; x++) {
         		pixel.x = pxMin + x;
         		pixel.u = u;
@@ -144,6 +146,7 @@ public class TriangleRenderer extends BaseRenderer {
         			depthWriter.skip(1);
         		}
         		u += uStep;
+        		deltaXTriangleWeigths();
         	}
         	imageWriter.skip(imageWriterSkipEOL);
         	depthWriter.skip(depthWriterSkipEOL);

@@ -408,15 +408,15 @@ public abstract class BaseRenderer implements IRenderer {
 		}
 	}
 
-	protected void prepareTextureReader(GeContext context, CachedTexture texture, VertexState v1, VertexState v2) {
-		prepareTextureReader(context, texture, v1, v2, null);
-	}
-
 	private static final String getLightState(GeContext context, int l) {
 		if (context.light_enabled[l] == 0) {
 			return "OFF";
 		}
 		return "ON";
+	}
+
+	protected void prepareTextureReader(GeContext context, CachedTexture texture, VertexState v1, VertexState v2) {
+		prepareTextureReader(context, texture, v1, v2, null);
 	}
 
 	protected void prepareTextureReader(GeContext context, CachedTexture texture, VertexState v1, VertexState v2, VertexState v3) {
