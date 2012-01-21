@@ -16,25 +16,35 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
-import static jpcsp.graphics.RE.software.PixelColor.getColor;
+import jpcsp.graphics.GeContext;
 
 /**
  * @author gid15
  *
  */
-public class ColorTextureFilter implements IPixelFilter {
-	private int color;
+public class ScissorDepthFilter {
+	public static IPixelFilter getScissorDepthFilter(GeContext context, int nearZ, int farZ) {
+		IPixelFilter filter = null;
 
-	public ColorTextureFilter(int color) {
-		this.color = color;
+		if (nearZ != 0x0000 || farZ != 0xFFFF) {
+			filter = new ScissorDepth(nearZ, farZ);
+		}
+
+		return filter;
 	}
 
-	public ColorTextureFilter(float[] color) {
-		this.color = getColor(color);
-	}
+	private static final class ScissorDepth implements IPixelFilter {
+		private int nearZ;
+		private int farZ;
 
-	@Override
-	public void filter(PixelState pixel) {
-		pixel.source = color;
+		public ScissorDepth(int nearZ, int farZ) {
+			this.nearZ = nearZ;
+			this.farZ = farZ;
+		}
+
+		@Override
+		public void filter(PixelState pixel) {
+			pixel.filterPassed = pixel.sourceDepth >= nearZ && pixel.sourceDepth <= farZ;
+		}
 	}
 }

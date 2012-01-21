@@ -534,18 +534,19 @@ public class RESoftware extends BaseRenderingEngine {
 		return false;
 	}
 
-	protected void render(IRenderer renderer) {
-		if (renderer.prepare(context, cachedTextures.get(bindTexture))) {
+	protected void render(IRenderer renderer, CachedTexture cachedTexture) {
+		if (renderer.prepare(context, cachedTexture)) {
 			rendererExecutor.render(renderer);
 		}
 	}
 
-	protected void drawSprite(VertexState v1, VertexState v2) {
+	protected void drawSprite(VertexState v1, VertexState v2, CachedTexture cachedTexture) {
 		IRenderer renderer = new SpriteRenderer(v1, v2);
-		render(renderer);
+		render(renderer, cachedTexture);
 	}
 
 	protected void drawArraysSprites(int first, int count) {
+		CachedTexture cachedTexture = cachedTextures.get(bindTexture);
 		Memory mem = Memory.getInstance();
 		for (int i = first; i < count; i += 2) {
 			int addr1 = context.vinfo.getAddress(mem, i);
@@ -553,14 +554,14 @@ public class RESoftware extends BaseRenderingEngine {
 			context.vinfo.readVertex(mem, addr1, v1);
 			context.vinfo.readVertex(mem, addr2, v2);
 
-			drawSprite(v1, v2);
+			drawSprite(v1, v2, cachedTexture);
 		}
 	}
 
-	protected void drawTriangle(VertexState v1, VertexState v2, VertexState v3, boolean invertedFrontFace) {
+	protected void drawTriangle(VertexState v1, VertexState v2, VertexState v3, boolean invertedFrontFace, CachedTexture cachedTexture) {
         TriangleRenderer renderer = new TriangleRenderer(v1, v2, v3);
     	if (!renderer.isCulled(context, invertedFrontFace)) {
-    		render(renderer);
+    		render(renderer, cachedTexture);
     	}
 	}
 
@@ -572,6 +573,7 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	protected boolean isSprite(VertexInfo vinfo, VertexState tv1, VertexState tv2, VertexState tv3, VertexState tv4) {
+if (true) return false;
 		// Sprites are only available in 2D
 		if (!vinfo.transform2D) {
 			return false;
@@ -617,6 +619,7 @@ public class RESoftware extends BaseRenderingEngine {
 
 	protected void drawArraysTriangleStrips(int first, int count) {
 		Memory mem = Memory.getInstance();
+		CachedTexture cachedTexture = cachedTextures.get(bindTexture);
 		VertexState tv1 = null;
 		VertexState tv2 = null;
 		VertexState tv3 = null;
@@ -628,7 +631,7 @@ public class RESoftware extends BaseRenderingEngine {
 				// Displaying a sprite (i.e. rectangular area) is faster.
 				// Try to merge adjacent triangles if they form a sprite.
 				if (isSprite(context.vinfo, tv1, tv2, tv3, tv4)) {
-					drawSprite(tv1, tv4);
+					drawSprite(tv1, tv4, cachedTexture);
 					v5.copy(tv3);
 					v6.copy(tv4);
 					v1.copy(v5);
@@ -639,7 +642,7 @@ public class RESoftware extends BaseRenderingEngine {
 					tv4 = v3;
 				} else {
 					// The Front face direction is inverted every 2 triangles in the strip.
-					drawTriangle(tv1, tv2, tv3, ((i - 3) & 1) != 0);
+					drawTriangle(tv1, tv2, tv3, ((i - 3) & 1) != 0, cachedTexture);
 					VertexState v = tv1;
 					tv1 = tv2;
 					tv2 = tv3;
@@ -659,12 +662,14 @@ public class RESoftware extends BaseRenderingEngine {
 		}
 
 		if (tv3 != null) {
-			drawTriangle(tv1, tv2, tv3, (count & 1) == 0);
+			// The Front face direction is inverted every 2 triangles in the strip.
+			drawTriangle(tv1, tv2, tv3, (count & 1) == 0, cachedTexture);
 		}
 	}
 
 	protected void drawArraysTriangles(int first, int count) {
 		Memory mem = Memory.getInstance();
+		CachedTexture cachedTexture = cachedTextures.get(bindTexture);
 		for (int i = 0; i < count; i += 3) {
 			int addr1 = context.vinfo.getAddress(mem, first + i);
 			readSkinnedVertex(mem, addr1, v1);
@@ -673,14 +678,13 @@ public class RESoftware extends BaseRenderingEngine {
 			int addr3 = context.vinfo.getAddress(mem, first + i + 2);
 			readSkinnedVertex(mem, addr3, v3);
 
-			// Culling is done on each triangle.
-			// When one triangle is not displayed, the other triangles can still be displayed.
-			drawTriangle(v1, v2, v3, false);
+			drawTriangle(v1, v2, v3, false, cachedTexture);
 		}
 	}
 
 	protected void drawArraysTriangleFan(int first, int count) {
 		Memory mem = Memory.getInstance();
+		CachedTexture cachedTexture = cachedTextures.get(bindTexture);
 		VertexState tv1 = null;
 		VertexState tv2 = null;
 		VertexState tv3 = v1;
@@ -688,9 +692,7 @@ public class RESoftware extends BaseRenderingEngine {
 			int addr = context.vinfo.getAddress(mem, first + i);
 			readSkinnedVertex(mem, addr, tv3);
 			if (tv2 != null) {
-				// Culling is done on each triangle.
-				// When one triangle is not displayed, the other triangles can still be displayed.
-				drawTriangle(tv1, tv2, tv3, false);
+				drawTriangle(tv1, tv2, tv3, false, cachedTexture);
 				VertexState v = tv2;
 				tv2 = tv3;
 				tv3 = v;

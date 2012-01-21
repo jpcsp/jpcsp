@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
+import static jpcsp.util.Utilities.round;
+
 /**
  * @author gid15
  *
@@ -109,6 +111,25 @@ public class PixelColor {
 		}
 
 		return multiplyBGR(color1, getBlue(color2), getGreen(color2), getRed(color2));
+	}
+
+	public final static int multiplyBGR(int color, float factor) {
+		color &= 0x00FFFFFF;
+		if (color == ZERO || factor <= 0.f) {
+			return ZERO;
+		}
+		if (factor == 1.f) {
+			return color;
+		}
+
+		int b = multiplyComponent(getBlue(color), factor);
+		int g = multiplyComponent(getGreen(color), factor);
+		int r = multiplyComponent(getRed(color), factor);
+		return getColorBGR(b, g, r);
+	}
+
+	public final static int multiplyComponent(int component, float factor) {
+		return Math.max(ZERO, Math.min(ONE, round(component * factor)));
 	}
 
 	public final static int addComponent(int component1, int component2) {
@@ -210,5 +231,9 @@ public class PixelColor {
 
 	public final static int setAlpha(int color, int alpha) {
 		return (color & 0x00FFFFFF) | (alpha << 24);
+	}
+
+	public final static int setBGR(int color, int bgr) {
+		return (color & 0xFF000000) | bgr;
 	}
 }

@@ -22,8 +22,7 @@ package jpcsp.graphics.RE.software;
  */
 public class NeverPassFilter implements IPixelFilter {
 	@Override
-	public int filter(PixelState pixel) {
+	public void filter(PixelState pixel) {
 		pixel.filterPassed = false;
-		return pixel.source;
 	}
 }

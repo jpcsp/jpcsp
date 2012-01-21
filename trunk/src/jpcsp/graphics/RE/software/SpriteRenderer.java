@@ -76,7 +76,7 @@ public class SpriteRenderer extends BaseRenderer {
         		pixel.destination = imageWriter.readCurrent();
         		pixel.destinationDepth = depthWriter.readCurrent();
         		for (int i = 0; i < numberFilters; i++) {
-        			pixel.source = filters[i].filter(pixel);
+        			filters[i].filter(pixel);
         			if (!pixel.filterPassed) {
         				break;
         			}
@@ -91,6 +91,8 @@ public class SpriteRenderer extends BaseRenderer {
         		}
         		u += uStep;
         	}
+        	imageWriter.skip(imageWriterSkipEOL);
+        	depthWriter.skip(depthWriterSkipEOL);
         	v += vStep;
         }
         super.render();

@@ -626,6 +626,50 @@ public class Utilities {
 		return Math.max(a, b);
 	}
 
+	/**
+	 * Minimum value rounded down.
+	 *
+	 * @param a   first float value
+	 * @param b   second float value
+	 * @return    the largest int value that is less than or equal to both parameters
+	 */
+	public static int minInt(float a, float b) {
+		return floor(min(a, b));
+	}
+
+	/**
+	 * Minimum value rounded down.
+	 *
+	 * @param a   first int value
+	 * @param b   second float value
+	 * @return    the largest int value that is less than or equal to both parameters
+	 */
+	public static int minInt(int a, float b) {
+		return min(a, floor(b));
+	}
+
+	/**
+	 * Maximum value rounded up.
+	 *
+	 * @param a   first float value
+	 * @param b   second float value
+	 * @return    the smallest int value that is greater than or equal to both parameters
+	 */
+	public static int maxInt(float a, float b) {
+		return ceil(max(a, b));
+	}
+
+	/**
+	 * Maximum value rounded up.
+	 *
+	 * @param a   first float value
+	 * @param b   second float value
+	 * @return    the smallest int value that is greater than or equal to both parameters
+	 */
+	public static int maxInt(int a, float b) {
+		return max(a, ceil(b));
+	}
+
 	public static int min(int a, int b, int c) {
 		return Math.min(a, Math.min(b, c));
 	}
@@ -689,9 +733,53 @@ public class Utilities {
     	}
     }
 
+    public static void vectorMult33(final float[] result, final float[] m, final float[] v) {
+    	for (int i = 0; i < 3; i++) {
+    		float s = v[0] * m[i];
+    		int k = i + 4;
+    		for (int j = 1; j < 3; j++) {
+    			s += v[j] * m[k];
+    			k += 4;
+    		}
+    		result[i] = s;
+    	}
+    }
+
+    public static void vectorMult34(final float[] result, final float[] m, final float[] v) {
+    	for (int i = 0; i < 3; i++) {
+    		float s = v[0] * m[i];
+    		int k = i + 4;
+    		for (int j = 1; j < 4; j++) {
+    			s += v[j] * m[k];
+    			k += 4;
+    		}
+    		result[i] = s;
+    	}
+    }
+
+    public static void vectorMult44(final float[] result, final float[] m, final float[] v) {
+    	for (int i = 0; i < 4; i++) {
+    		float s = v[0] * m[i];
+    		int k = i + 4;
+    		for (int j = 1; j < 4; j++) {
+    			s += v[j] * m[k];
+    			k += 4;
+    		}
+    		result[i] = s;
+    	}
+    }
+
     // This is equivalent to Math.round but faster: Math.round is using StrictMath.
     public static int round(float n) {
     	return (int) (n + .5f);
+    }
+
+    public static int floor(float n) {
+    	return (int) Math.floor(n);
+    }
+
+    public static int ceil(float n) {
+    	return (int) Math.ceil(n);
     }
 
     public static int getPower2(int n) {
@@ -706,7 +794,30 @@ public class Utilities {
 		return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 	}
 
+    public static float dot3(float[] a, float x, float y, float z) {
+		return a[0] * x + a[1] * y + a[2] * z;
+	}
+
     public static float length3(float[] a) {
 		return (float) Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
 	}
+
+    public static float invertedLength3(float[] a) {
+    	return 1.f / length3(a);
+    }
+
+    public static void normalize3(float[] result, float[] a) {
+		float lengthInvertex = invertedLength3(a);
+		result[0] = a[0] * lengthInvertex;
+		result[1] = a[1] * lengthInvertex;
+		result[2] = a[2] * lengthInvertex;
+	}
+
+    public static float pow(float a, float b) {
+    	return (float) Math.pow(a, b);
+    }
+
+    public static float clamp(float n, float minValue, float maxValue) {
+    	return max(minValue, min(n, maxValue));
+    }
 }

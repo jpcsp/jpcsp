@@ -16,12 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
-import static java.lang.Math.round;
 import static jpcsp.graphics.RE.software.PixelColor.getColor;
 import static jpcsp.util.Utilities.matrixMult;
 import static jpcsp.util.Utilities.max;
+import static jpcsp.util.Utilities.maxInt;
 import static jpcsp.util.Utilities.min;
-import static jpcsp.util.Utilities.vectorMult;
+import static jpcsp.util.Utilities.minInt;
+import static jpcsp.util.Utilities.round;
+import static jpcsp.util.Utilities.vectorMult44;
 
 import java.nio.Buffer;
 
@@ -38,6 +40,7 @@ import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.IMemoryReaderWriter;
 import jpcsp.memory.ImageReader;
 
 /**
@@ -46,7 +49,10 @@ import jpcsp.memory.ImageReader;
  */
 public abstract class BaseRenderer implements IRenderer {
 	protected static final Logger log = VideoEngine.log;
-	protected static final boolean captureEachPrimitive = false;
+    protected final boolean isLogTraceEnabled;
+    protected final boolean isLogDebugEnabled;
+
+    protected static final boolean captureEachPrimitive = false;
 	protected static final boolean captureZbuffer = false;
     public static final int depthBufferPixelFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED;
     protected static final int MAX_NUMBER_FILTERS = 11;
@@ -63,14 +69,15 @@ public abstract class BaseRenderer implements IRenderer {
 	protected float vStart, vStep;
 	protected int destinationWidth;
 	protected int destinationHeight;
-	protected IImageWriter imageWriter;
-	protected IImageWriter depthWriter;
+	protected IMemoryReaderWriter imageWriter;
+	protected IMemoryReaderWriter depthWriter;
+	protected int imageWriterSkipEOL;
+	protected int depthWriterSkipEOL;
 	protected final IPixelFilter[] filters = new IPixelFilter[MAX_NUMBER_FILTERS];
 	protected int numberFilters;
-	protected boolean needScissoring;
+	protected boolean needScissoringX;
+	protected boolean needScissoringY;
 	protected boolean transform2D;
-	protected final float modelViewProjectionMatrix[] = new float[16];
-	protected final float revertedModelViewProjectionMatrix[] = new float[16];
 	protected int viewportWidth;
 	protected int viewportHeight;
 	protected int viewportX;
@@ -82,38 +89,60 @@ public abstract class BaseRenderer implements IRenderer {
 	protected int fbw;
 	protected int nearZ;
 	protected int farZ;
+	// Pre-computed values for triangle weights
+	private float diff13x;
+	private float diff13y;
+	private float diff32x;
+	private float diff23y;
+	private float denomInverted;
+
+	protected BaseRenderer() {
+		isLogTraceEnabled = log.isTraceEnabled();
+		isLogDebugEnabled = log.isDebugEnabled();
+	}
 
 	protected void addPosition(float[] p) {
 		float[] screenCoordinates = new float[4];
 		getScreenCoordinates(screenCoordinates, p);
-		int x = round(screenCoordinates[0]);
-		int y = round(screenCoordinates[1]);
-		int z = round(screenCoordinates[2]);
-		pxMax = max(pxMax, x);
-		pxMin = min(pxMin, x);
-		pyMax = max(pyMax, y);
-		pyMin = min(pyMin, y);
-		pzMax = max(pzMax, z);
-		pzMin = min(pzMin, z);
+		pxMax = maxInt(pxMax, screenCoordinates[0]);
+		pxMin = minInt(pxMin, screenCoordinates[0]);
+		pyMax = maxInt(pyMax, screenCoordinates[1]);
+		pyMin = minInt(pyMin, screenCoordinates[1]);
+		pzMax = maxInt(pzMax, screenCoordinates[2]);
+		pzMin = minInt(pzMin, screenCoordinates[2]);
 	}
 
 	protected void setPositions(VertexState v1, VertexState v2) {
-		if (transform2D) {
-	        p1x = v1.p[0];
-	        p1y = v1.p[1];
-	        p1z = v1.p[2];
-	        p2x = v2.p[0];
-	        p2y = v2.p[1];
-	        p2z = v2.p[2];
+        pixel.v1x = v1.p[0];
+        pixel.v1y = v1.p[1];
+        pixel.v1z = v1.p[2];
+        pixel.n1x = v1.n[0];
+        pixel.n1y = v1.n[1];
+        pixel.n1z = v1.n[2];
+
+        pixel.v2x = v2.p[0];
+        pixel.v2y = v2.p[1];
+        pixel.v2z = v2.p[2];
+        pixel.n2x = v2.n[0];
+        pixel.n2y = v2.n[1];
+        pixel.n2z = v2.n[2];
+
+        if (transform2D) {
+	        p1x = pixel.v1x;
+	        p1y = pixel.v1y;
+	        p1z = pixel.v1z;
+	        p2x = pixel.v2x;
+	        p2y = pixel.v2y;
+	        p2z = pixel.v2z;
 		} else {
 			float[] screenCoordinates = new float[4];
-			getScreenCoordinates(screenCoordinates, v1.p);
+			getScreenCoordinates(screenCoordinates, pixel.v1x, pixel.v1y, pixel.v1z);
 			p1x = screenCoordinates[0];
 			p1y = screenCoordinates[1];
 			p1z = screenCoordinates[2];
 			p1w = screenCoordinates[3];
 			p1wInverted = 1.f / p1w;
-			getScreenCoordinates(screenCoordinates, v2.p);
+			getScreenCoordinates(screenCoordinates, pixel.v2x, pixel.v2y, pixel.v2z);
 			p2x = screenCoordinates[0];
 			p2y = screenCoordinates[1];
 			p2z = screenCoordinates[2];
@@ -121,24 +150,31 @@ public abstract class BaseRenderer implements IRenderer {
 			p2wInverted = 1.f / p2w;
 		}
 
-        pxMax = round(max(p1x, p2x));
-        pxMin = round(min(p1x, p2x));
-        pyMax = round(max(p1y, p2y));
-        pyMin = round(min(p1y, p2y));
-        pzMax = round(max(p1z, p2z));
-        pzMin = round(min(p1z, p2z));
+        pxMax = maxInt(p1x, p2x);
+        pxMin = minInt(p1x, p2x);
+        pyMax = maxInt(p1y, p2y);
+        pyMin = minInt(p1y, p2y);
+        pzMax = maxInt(p1z, p2z);
+        pzMin = minInt(p1z, p2z);
 	}
 
 	protected void setPositions(VertexState v1, VertexState v2, VertexState v3) {
 		setPositions(v1, v2);
 
-		if (transform2D) {
-			p3x = v3.p[0];
-	        p3y = v3.p[1];
-	        p3z = v3.p[2];
+		pixel.v3x = v3.p[0];
+		pixel.v3y = v3.p[1];
+		pixel.v3z = v3.p[2];
+		pixel.n3x = v3.n[0];
+		pixel.n3y = v3.n[1];
+		pixel.n3z = v3.n[2];
+
+        if (transform2D) {
+			p3x = pixel.v3x;
+	        p3y = pixel.v3y;
+	        p3z = pixel.v3z;
 		} else {
 			float[] screenCoordinates = new float[4];
-			getScreenCoordinates(screenCoordinates, v3.p);
+			getScreenCoordinates(screenCoordinates, pixel.v3x, pixel.v3y, pixel.v3z);
 			p3x = screenCoordinates[0];
 			p3y = screenCoordinates[1];
 			p3z = screenCoordinates[2];
@@ -146,15 +182,12 @@ public abstract class BaseRenderer implements IRenderer {
 			p3wInverted = 1.f / p3w;
 		}
 
-		int p3xi = round(p3x);
-		int p3yi = round(p3y);
-		int p3zi = round(p3z);
-        pxMax = max(pxMax, p3xi);
-        pxMin = min(pxMin, p3xi);
-        pyMax = max(pyMax, p3yi);
-        pyMin = min(pyMin, p3yi);
-        pzMax = max(pzMax, p3zi);
-        pzMin = min(pzMin, p3zi);
+        pxMax = maxInt(pxMax, p3x);
+        pxMin = minInt(pxMin, p3x);
+        pyMax = maxInt(pyMax, p3y);
+        pyMin = minInt(pyMin, p3y);
+        pzMax = maxInt(pzMax, p3z);
+        pzMin = minInt(pzMin, p3z);
 	}
 
 	protected void setTextures(VertexState v1, VertexState v2) {
@@ -163,10 +196,12 @@ public abstract class BaseRenderer implements IRenderer {
         t2u = v2.t[0];
         t2v = v2.t[1];
 
-        tuMax = max(round(t1u), round(t2u));
-        tuMin = min(round(t1u), round(t2u));
-        tvMax = max(round(t1v), round(t2v));
-        tvMin = min(round(t1v), round(t2v));
+        if (transform2D) {
+	        tuMax = max(round(t1u), round(t2u));
+	        tuMin = min(round(t1u), round(t2u));
+	        tvMax = max(round(t1v), round(t2v));
+	        tvMin = min(round(t1v), round(t2v));
+        }
 	}
 
 	protected void setTextures(VertexState v1, VertexState v2, VertexState v3) {
@@ -175,30 +210,48 @@ public abstract class BaseRenderer implements IRenderer {
 		t3u = v3.t[0];
         t3v = v3.t[1];
 
-        tuMax = max(tuMax, round(t3u));
-        tuMin = min(tuMin, round(t3u));
-        tvMax = max(tvMax, round(t3v));
-        tvMin = min(tvMin, round(t3v));
+        if (transform2D) {
+	        tuMax = max(tuMax, round(t3u));
+	        tuMin = min(tuMin, round(t3u));
+	        tvMax = max(tvMax, round(t3v));
+	        tvMin = min(tvMin, round(t3v));
+        }
+	}
+
+	protected void preComputeTriangleWeights() {
+		diff13x = p1x - p3x;
+		diff13y = p1y - p3y;
+		diff32x = p3x - p2x;
+		diff23y = p2y - p3y;
+
+		float denom = diff23y * diff13x + diff32x * diff13y;
+		denomInverted = 1.0f / denom;
 	}
 
 	protected void computeTriangleWeights() {
 		// Based on http://en.wikipedia.org/wiki/Barycentric_coordinates_%28mathematics%29
+		//
+		// All the values independent of the current pixel haven been pre-computed
+		// in preComputeTriangleWeights().
+		//
 		float diff03x = pixel.x - p3x;
 		float diff03y = pixel.y - p3y;
-		float diff13x = p1x - p3x;
-		float diff13y = p1y - p3y;
-		float diff32x = p3x - p2x;
-		float diff23y = p2y - p3y;
-
-		float denom = diff23y * diff13x + diff32x * diff13y;
-		float invDenom = 1.0f / denom;
-		pixel.triangleWeight1 = (diff23y * diff03x + diff32x * diff03y) * invDenom;
-		pixel.triangleWeight2 = (diff13x * diff03y - diff13y * diff03x) * invDenom;
+		pixel.triangleWeight1 = (diff23y * diff03x + diff32x * diff03y) * denomInverted;
+		pixel.triangleWeight2 = (diff13x * diff03y - diff13y * diff03x) * denomInverted;
 		pixel.triangleWeight3 = 1.f - (pixel.triangleWeight1 + pixel.triangleWeight2);
 	}
 
-	protected boolean isInsideTriangle() {
-		return pixel.triangleWeight1 >= 0.f && pixel.triangleWeight2 >= 0.f && pixel.triangleWeight3 >= 0.f;
+	/**
+	 * Update the triangle weights (Barycentric coordinates) by knowing that
+	 *    pixel.x
+	 * has been incremented by 1.
+	 */
+	protected void deltaXTriangleWeigths() {
+		// When pixel.x is incremented by 1, diff03x is also incremented by 1.
+		// Which leads to simple increments of the triangle weights.
+		pixel.triangleWeight1 += diff23y * denomInverted;
+		pixel.triangleWeight2 -= diff13y * denomInverted;
+		pixel.triangleWeight3 = 1.f - (pixel.triangleWeight1 + pixel.triangleWeight2);
 	}
 
 	protected boolean isClockwise() {
@@ -246,6 +299,13 @@ public abstract class BaseRenderer implements IRenderer {
 	        		return false;
 	        	}
 
+	        	// This is probably a rounding error when one triangle
+	        	// extends from back to front over a very large distance
+	        	// (more than the allowed range for Z values).
+	        	if (pzMin < 0 && pzMax > 0 && pzMax - pzMin > 65536) {
+	        		return false;
+	        	}
+
 	        	if (!context.clipPlanesFlag.isEnabled()) {
 	        		// The primitive is discarded when one of the vertex is behind the viewpoint
 	        		// (only the the ClipPlanes flag is not enabled).
@@ -281,7 +341,8 @@ public abstract class BaseRenderer implements IRenderer {
 	}
 
 	protected boolean insideScissor(GeContext context) {
-        needScissoring = false;
+        needScissoringX = false;
+        needScissoringY = false;
         if (!context.clearMode) {
     		// Scissoring
         	if (pxMax < context.scissor_x1 || pxMin > context.scissor_x2) {
@@ -301,10 +362,11 @@ public abstract class BaseRenderer implements IRenderer {
 
         	if (pxMin < context.scissor_x1 || pxMax > context.scissor_x2) {
         		// partially outside the scissor area, use the scissoring filter
-        		needScissoring = true;
-        	} else if (pyMin < context.scissor_y1 || pyMax > context.scissor_y2) {
+        		needScissoringX = true;
+        	}
+        	if (pyMin < context.scissor_y1 || pyMax > context.scissor_y2) {
         		// partially outside the scissor area, use the scissoring filter
-        		needScissoring = true;
+        		needScissoringY = true;
         	}
         }
 
@@ -325,16 +387,14 @@ public abstract class BaseRenderer implements IRenderer {
 
 		transform2D = context.vinfo.transform2D;
 		if (!transform2D) {
-			// Pre-compute the Model-View-Projection matrix
-			matrixMult(modelViewProjectionMatrix, context.proj_uploaded_matrix, context.view_uploaded_matrix);
-			matrixMult(modelViewProjectionMatrix, modelViewProjectionMatrix, context.model_uploaded_matrix);
+			// Copy the View matrix
+			System.arraycopy(context.view_uploaded_matrix, 0, pixel.viewMatrix, 0, pixel.viewMatrix.length);
 
-			// Compute the reverted Model-View-Projection matrix: this is just a transposition
-			for (int i = 0; i < 4; i++) {
-				for (int j = 0; j < 4; j++) {
-					revertedModelViewProjectionMatrix[i * 4 + j] = modelViewProjectionMatrix[j * 4 + i];
-				}
-			}
+			// Pre-compute the Model-View matrix
+			matrixMult(pixel.modelViewMatrix, context.view_uploaded_matrix, context.model_uploaded_matrix);
+
+			// Pre-compute the Model-View-Projection matrix
+			matrixMult(pixel.modelViewProjectionMatrix, context.proj_uploaded_matrix, pixel.modelViewMatrix);
 
 			viewportWidth = context.viewport_width;
 			viewportHeight = context.viewport_height;
@@ -344,6 +404,7 @@ public abstract class BaseRenderer implements IRenderer {
 			screenOffsetY = context.offset_y;
 			zscale = context.zscale * 65535.f;
 			zpos = context.zpos * 65535.f;
+			pixel.hasNormal = context.vinfo.normal != 0;
 		}
 	}
 
@@ -351,15 +412,58 @@ public abstract class BaseRenderer implements IRenderer {
 		prepareTextureReader(context, texture, v1, v2, null);
 	}
 
+	private static final String getLightState(GeContext context, int l) {
+		if (context.light_enabled[l] == 0) {
+			return "OFF";
+		}
+		return "ON";
+	}
+
 	protected void prepareTextureReader(GeContext context, CachedTexture texture, VertexState v1, VertexState v2, VertexState v3) {
 		if (context.useVertexColor && context.vinfo.color != 0) {
-			pixel.primaryColor = getColor(v1.c);
+			pixel.primaryColor = getColor(v2.c);
 		} else {
 			pixel.primaryColor = getColor(context.vertexColor);
 		}
 
-		destinationWidth = pxMax - pxMin;
-        destinationHeight = pyMax - pyMin;
+		// The rendering will be performed into the following ranges:
+		// 3D:
+		//   - x: [pxMin..pxMax] (min and max included)
+		//   - y: [pxMin..pxMax] (min and max included)
+		// 2D:
+		//   - x: [pxMin..pxMax-1] (min included but max excluded)
+		//   - y: [pxMin..pxMax-1] (min included but max excluded)
+        if (transform2D) {
+        	pxMax--;
+        	pyMax--;
+        } else {
+        	// Restrict the drawn area to the scissor area.
+        	// We can just update the min/max values, the TextureMapping filter
+        	// will take are of the correct texture mapping.
+        	// We do no longer need a scissoring filter.
+        	if (needScissoringX) {
+        		pxMin = max(pxMin, context.scissor_x1);
+        		pxMax = min(pxMax, context.scissor_x2);
+        		needScissoringX = false;
+        	}
+        	if (needScissoringY) {
+        		pyMin = max(pyMin, context.scissor_y1);
+        		pyMax = min(pyMax, context.scissor_y2);
+        		needScissoringY = false;
+        	}
+        }
+		destinationWidth = pxMax - pxMin + 1;
+        destinationHeight = pyMax - pyMin + 1;
+
+        if (v3 != null) {
+        	preComputeTriangleWeights();
+        }
+
+        IPixelFilter filter = Lighting.getLighting(context, pixel);
+        boolean added = addFilter(filter);
+        if (added && isLogTraceEnabled) {
+        	log.trace(String.format("Using Lighting Filter %s, %s, %s, %s", getLightState(context, 0), getLightState(context, 1), getLightState(context, 2), getLightState(context, 3)));
+        }
 
         IPixelFilter textureFilter;
     	if (context.textureFlag.isEnabled() && (!transform2D || context.vinfo.texture != 0)) {
@@ -389,6 +493,13 @@ public abstract class BaseRenderer implements IRenderer {
             	if (v3 == null) {
             		flipX = (t1u > t2u) ^ (p1x > p2x);
             		flipY = (t1v > t2v) ^ (p1y > p2y);
+            	} else {
+            		// TODO compute texture flips for a triangle
+            		// In 2D, the texture is already read from top left to bottom right.
+            		// This has to be transformed to the desired triangle texture mapping.
+            	}
+            	if (isLogTraceEnabled) {
+            		log.trace(String.format("2D texture flipX=%b, flipY=%b", flipX, flipY));
             	}
             	uStart = flipX ? tuMax : tuMin;
             	float uEnd = flipX ? tuMin : tuMax;
@@ -409,25 +520,31 @@ public abstract class BaseRenderer implements IRenderer {
             // Apply the texture function (modulate, decal, blend, replace, add)
             textureFilter = TextureFunction.getTextureFunction(context);
             addFilter(textureFilter);
+
+            addFilter(SourceColorFilter.getSourceColorFilter(context, false));
     	} else if (context.useVertexColor) {
     		// Read the color from the vertex
     		textureFilter = VertexColorFilter.getVertexColorFilter(v1, v2, v3);
         	addFilter(textureFilter);
+
+        	addFilter(SourceColorFilter.getSourceColorFilter(context, false));
 		} else {
-			if (log.isTraceEnabled()) {
+			if (isLogTraceEnabled) {
 				log.trace(String.format("Using ColorTextureFilter vertexColor=0x%08X", getColor(context.vertexColor)));
 			}
-			// Read the color from the context vertexColor
-			textureFilter = new ColorTextureFilter(context.vertexColor);
-	    	addFilter(textureFilter);
+            addFilter(SourceColorFilter.getSourceColorFilter(context, true));
 		}
 	}
 
 	protected void prepareWriters(GeContext context) {
         int fbAddress = getFrameBufferAddress(context, pxMin, pyMin);
     	int depthAddress = getDepthBufferAddress(context, pxMin, pyMin);
-        imageWriter = ImageWriter.getImageWriter(fbAddress, destinationWidth, context.fbw, context.psm);
-        depthWriter = ImageWriter.getImageWriter(depthAddress, destinationWidth, context.zbw, depthBufferPixelFormat);
+    	// Request image writers with a width covering the complete buffer width,
+    	// we will skip unnecessary pixels at the end of each line manually (more efficient).
+        imageWriter = ImageWriter.getImageWriter(fbAddress, context.fbw, context.fbw, context.psm);
+        depthWriter = ImageWriter.getImageWriter(depthAddress, context.zbw, context.zbw, depthBufferPixelFormat);
+        imageWriterSkipEOL = context.fbw - destinationWidth;
+        depthWriterSkipEOL = context.zbw - destinationWidth;
 	}
 
 	private boolean addFilter(IPixelFilter filter) {
@@ -446,64 +563,74 @@ public abstract class BaseRenderer implements IRenderer {
         //
         // Add all the enabled tests and filters, in the correct processing order
         //
-        if (needScissoring) {
-        	added = addFilter(ScissorFilter.getScissorFilter(context));
+        if (needScissoringX || needScissoringY) {
+        	added = addFilter(ScissorFilter.getScissorFilter(context, needScissoringX, needScissoringY));
         	if (added && log.isTraceEnabled()) {
         		log.trace(String.format("Using ScissorFilter (%d,%d)-(%d,%d)", context.scissor_x1, context.scissor_y1, context.scissor_x2, context.scissor_y2));
         	}
         }
+        if (!transform2D && !context.clearMode) {
+        	added = addFilter(ScissorDepthFilter.getScissorDepthFilter(context, nearZ, farZ));
+        	if (added && isLogTraceEnabled) {
+        		log.trace(String.format("Using ScissorDepthFilter near=%f, far=%f", context.nearZ, context.farZ));
+        	}
+        }
         if (context.colorTestFlag.isEnabled() && !context.clearMode) {
         	added = addFilter(ColorTestFilter.getColorTestFilter(context));
-        	if (added && log.isTraceEnabled()) {
+        	if (added && isLogTraceEnabled) {
         		log.trace(String.format("Using ColorTestFilter func=%d, ref=0x%02X, mask=0x%02X", context.colorTestFunc, context.colorTestRef, context.colorTestMsk));
         	}
         }
         if (context.alphaTestFlag.isEnabled() && !context.clearMode) {
         	added = addFilter(AlphaTestFilter.getAlphaTestFilter(context));
-        	if (added && log.isTraceEnabled()) {
+        	if (added && isLogTraceEnabled) {
         		log.trace(String.format("Using AlphaTestFilter func=%d, ref=0x%02X", context.alphaFunc, context.alphaRef));
         	}
         }
         if (context.stencilTestFlag.isEnabled() && !context.clearMode) {
         	added = addFilter(StencilTestFilter.getStencilTestFilter(context));
-        	if (added && log.isTraceEnabled()) {
+        	if (added && isLogTraceEnabled) {
         		log.trace(String.format("Using StencilTestFilter func=%d, ref=0x%02X, mask=0x%02X", context.stencilFunc, context.stencilRef, context.stencilMask));
         	}
         }
         if (context.depthTestFlag.isEnabled() && !context.clearMode) {
         	added = addFilter(DepthTestFilter.getDepthTestFilter(context));
-        	if (added && log.isTraceEnabled()) {
+        	if (added && isLogTraceEnabled) {
         		log.trace(String.format("Using DepthTestFilter func=%d", context.depthFunc));
         	}
         }
         if (context.blendFlag.isEnabled() && !context.clearMode) {
         	added = addFilter(AlphaBlendFilter.getAlphaBlendFilter(context));
-        	if (added && log.isTraceEnabled()) {
+        	if (added && isLogTraceEnabled) {
         		log.trace(String.format("Using AlphaBlendFilter func=%d, src=%d, dst=%d, sfix=0x%06X, dfix=0x%06X", context.blendEquation, context.blend_src, context.blend_dst, context.sfix, context.dfix));
         	}
         }
         if (context.colorLogicOpFlag.isEnabled() && !context.clearMode) {
         	added = addFilter(LogicalOperationFilter.getLogicalOperationFilter(context));
-        	if (added && log.isTraceEnabled()) {
+        	if (added && isLogTraceEnabled) {
         		log.trace(String.format("Using LogicalOperationFilter func=%d", context.logicOp));
         	}
         }
         {
         	added = addFilter(MaskFilter.getMaskFilter(context, context.clearMode, context.clearModeColor, context.clearModeStencil, context.clearModeDepth));
-        	if (added && log.isTraceEnabled()) {
+        	if (added && isLogTraceEnabled) {
         		log.trace(String.format("Using MaskFilter colorMask=0x%02X%02X%02X, depthMask=%b, clearMode=%b, clearModeColor=%b, clearModeStencil=%b, clearModeDepth=%b", context.colorMask[0], context.colorMask[1], context.colorMask[2], context.depthMask, context.clearMode, context.clearModeColor, context.clearModeStencil, context.clearModeDepth));
         	}
         }
 	}
 
 	protected void getScreenCoordinates(float[] screenCoordinates, float[] position) {
+		getScreenCoordinates(screenCoordinates, position[0], position[1], position[2]);
+	}
+
+	protected void getScreenCoordinates(float[] screenCoordinates, float x, float y, float z) {
 		float[] position4 = new float[4];
-		position4[0] = position[0];
-		position4[1] = position[1];
-		position4[2] = position[2];
+		position4[0] = x;
+		position4[1] = y;
+		position4[2] = z;
 		position4[3] = 1.f;
 		float[] projectedCoordinates = new float[4];
-		vectorMult(projectedCoordinates, modelViewProjectionMatrix, position4);
+		vectorMult44(projectedCoordinates, pixel.modelViewProjectionMatrix, position4);
 		float w = projectedCoordinates[3];
 		float wInverted = 1.f / w;
 		screenCoordinates[0] = projectedCoordinates[0] * wInverted * viewportWidth + viewportX - screenOffsetX;
@@ -511,18 +638,9 @@ public abstract class BaseRenderer implements IRenderer {
 		screenCoordinates[2] = projectedCoordinates[2] * wInverted * zscale + zpos;
 		screenCoordinates[3] = w;
 
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("X,Y,Z = %f, %f, %f, projected X,Y,Z,W = %f, %f, %f, %f -> Screen %d, %d, %d", position[0], position[1], position[2], projectedCoordinates[0] / w, projectedCoordinates[1] / w, projectedCoordinates[2] / w, w, round(screenCoordinates[0]), round(screenCoordinates[1]), round(screenCoordinates[2])));
+		if (isLogTraceEnabled) {
+			log.trace(String.format("X,Y,Z = %f, %f, %f, projected X,Y,Z,W = %f, %f, %f, %f -> Screen %d, %d, %d", x, y, z, projectedCoordinates[0] / w, projectedCoordinates[1] / w, projectedCoordinates[2] / w, w, round(screenCoordinates[0]), round(screenCoordinates[1]), round(screenCoordinates[2])));
 		}
-	}
-
-	protected void getPosition(float[] modelCoordinates, int screenX, int screenY, int screenZ) {
-		float[] temp = new float[4];
-		temp[0] = screenX;
-		temp[1] = screenY;
-		temp[2] = screenZ;
-		temp[3] = 1.f;
-		vectorMult(modelCoordinates, revertedModelViewProjectionMatrix, temp);
 	}
 
 	@Override

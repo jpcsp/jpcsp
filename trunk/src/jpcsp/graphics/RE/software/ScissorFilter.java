@@ -23,19 +23,29 @@ import jpcsp.graphics.GeContext;
  *
  */
 public class ScissorFilter {
-	public static IPixelFilter getScissorFilter(GeContext context) {
-		IPixelFilter filter;
+	public static IPixelFilter getScissorFilter(GeContext context, boolean scissorX, boolean scissorY) {
+		IPixelFilter filter = null;
 
-		filter = new Scissor(context.scissor_x1, context.scissor_y1, context.scissor_x2, context.scissor_y2);
+		if (scissorX) {
+			if (scissorY) {
+				filter = new ScissorXY(context.scissor_x1, context.scissor_y1, context.scissor_x2, context.scissor_y2);
+			} else {
+				filter = new ScissorX(context.scissor_x1, context.scissor_x2);
+			}
+		} else {
+			if (scissorY) {
+				filter = new ScissorY(context.scissor_y1, context.scissor_y2);
+			}
+		}
 
 		return filter;
 	}
 
-	private static final class Scissor implements IPixelFilter {
+	private static final class ScissorXY implements IPixelFilter {
 		private int x1, y1;
 		private int x2, y2;
 
-		public Scissor(int x1, int y1, int x2, int y2) {
+		public ScissorXY(int x1, int y1, int x2, int y2) {
 			this.x1 = x1;
 			this.y1 = y1;
 			this.x2 = x2;
@@ -43,12 +53,36 @@ public class ScissorFilter {
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
-			if (pixel.x < x1 || pixel.x > x2 || pixel.y < y1 || pixel.y > y2) {
-				pixel.filterPassed = false;
-			}
+		public void filter(PixelState pixel) {
+			pixel.filterPassed = (pixel.x >= x1 && pixel.x <= x2 && pixel.y >= y1 && pixel.y <= y2);
+		}
+	}
 
-			return pixel.source;
+	private static final class ScissorX implements IPixelFilter {
+		private int x1, x2;
+
+		public ScissorX(int x1, int x2) {
+			this.x1 = x1;
+			this.x2 = x2;
+		}
+
+		@Override
+		public void filter(PixelState pixel) {
+			pixel.filterPassed = (pixel.x >= x1 && pixel.x <= x2);
+		}
+	}
+
+	private static final class ScissorY implements IPixelFilter {
+		private int y1, y2;
+
+		public ScissorY(int y1, int y2) {
+			this.y1 = y1;
+			this.y2 = y2;
+		}
+
+		@Override
+		public void filter(PixelState pixel) {
+			pixel.filterPassed = (pixel.y >= y1 && pixel.y <= y2);
 		}
 	}
 }

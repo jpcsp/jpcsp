@@ -57,91 +57,99 @@ public class StencilTestFilter {
 		return filter;
 	}
 
-	private static abstract class StencilTest implements IPixelFilter {
+	private static final class StencilTestPassIfMatches implements IPixelFilter {
 		protected int stencilRef;
 		protected int stencilMask;
 
-		public StencilTest(int stencilRef, int stencilMask) {
+		public StencilTestPassIfMatches(int stencilRef, int stencilMask) {
 			this.stencilRef = stencilRef & stencilMask;
 			this.stencilMask = stencilMask;
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			int stencilValue = PixelColor.getAlpha(pixel.destination);
-			if (!pass(stencilValue & stencilMask)) {
-				pixel.filterPassed = false;
-			}
-
-			return pixel.source;
-		}
-
-		protected abstract boolean pass(int stencilValue);
-	}
-
-	private static final class StencilTestPassIfMatches extends StencilTest {
-		public StencilTestPassIfMatches(int stencilRef, int stencilMask) {
-			super(stencilRef, stencilMask);
-		}
-
-		@Override
-		protected boolean pass(int stencilValue) {
-			return stencilValue == stencilRef;
+			pixel.filterPassed = (stencilValue & stencilMask) == stencilRef;
 		}
 	}
 
-	private static final class StencilTestPassIfDiffers extends StencilTest {
+	private static final class StencilTestPassIfDiffers implements IPixelFilter {
+		protected int stencilRef;
+		protected int stencilMask;
+
 		public StencilTestPassIfDiffers(int stencilRef, int stencilMask) {
-			super(stencilRef, stencilMask);
+			this.stencilRef = stencilRef & stencilMask;
+			this.stencilMask = stencilMask;
 		}
 
 		@Override
-		protected boolean pass(int stencilValue) {
-			return stencilValue != stencilRef;
+		public void filter(PixelState pixel) {
+			int stencilValue = PixelColor.getAlpha(pixel.destination);
+			pixel.filterPassed = (stencilValue & stencilMask) != stencilRef;
 		}
 	}
 
-	private static final class StencilTestPassIfLess extends StencilTest {
+	private static final class StencilTestPassIfLess implements IPixelFilter {
+		protected int stencilRef;
+		protected int stencilMask;
+
 		public StencilTestPassIfLess(int stencilRef, int stencilMask) {
-			super(stencilRef, stencilMask);
+			this.stencilRef = stencilRef & stencilMask;
+			this.stencilMask = stencilMask;
 		}
 
 		@Override
-		protected boolean pass(int stencilValue) {
-			return stencilValue < stencilRef;
+		public void filter(PixelState pixel) {
+			int stencilValue = PixelColor.getAlpha(pixel.destination);
+			pixel.filterPassed = (stencilValue & stencilMask) < stencilRef;
 		}
 	}
 
-	private static final class StencilTestPassIfLessOrEqual extends StencilTest {
+	private static final class StencilTestPassIfLessOrEqual implements IPixelFilter {
+		protected int stencilRef;
+		protected int stencilMask;
+
 		public StencilTestPassIfLessOrEqual(int stencilRef, int stencilMask) {
-			super(stencilRef, stencilMask);
+			this.stencilRef = stencilRef & stencilMask;
+			this.stencilMask = stencilMask;
 		}
 
 		@Override
-		protected boolean pass(int stencilValue) {
-			return stencilValue <= stencilRef;
+		public void filter(PixelState pixel) {
+			int stencilValue = PixelColor.getAlpha(pixel.destination);
+			pixel.filterPassed = (stencilValue & stencilMask) <= stencilRef;
 		}
 	}
 
-	private static final class StencilTestPassIfGreater extends StencilTest {
+	private static final class StencilTestPassIfGreater implements IPixelFilter {
+		protected int stencilRef;
+		protected int stencilMask;
+
 		public StencilTestPassIfGreater(int stencilRef, int stencilMask) {
-			super(stencilRef, stencilMask);
+			this.stencilRef = stencilRef & stencilMask;
+			this.stencilMask = stencilMask;
 		}
 
 		@Override
-		protected boolean pass(int stencilValue) {
-			return stencilValue > stencilRef;
+		public void filter(PixelState pixel) {
+			int stencilValue = PixelColor.getAlpha(pixel.destination);
+			pixel.filterPassed = (stencilValue & stencilMask) > stencilRef;
 		}
 	}
 
-	private static final class StencilTestPassIfGreaterOrEqual extends StencilTest {
+	private static final class StencilTestPassIfGreaterOrEqual implements IPixelFilter {
+		protected int stencilRef;
+		protected int stencilMask;
+
 		public StencilTestPassIfGreaterOrEqual(int stencilRef, int stencilMask) {
-			super(stencilRef, stencilMask);
+			this.stencilRef = stencilRef & stencilMask;
+			this.stencilMask = stencilMask;
 		}
 
 		@Override
-		protected boolean pass(int stencilValue) {
-			return stencilValue >= stencilRef;
+		public void filter(PixelState pixel) {
+			int stencilValue = PixelColor.getAlpha(pixel.destination);
+			pixel.filterPassed = (stencilValue & stencilMask) >= stencilRef;
 		}
 	}
 }

@@ -94,13 +94,13 @@ public class VertexColorFilter {
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			int a = pixel.getTriangleWeightedValue(color1[3], color2[3], color3[3]);
 			int b = pixel.getTriangleWeightedValue(color1[2], color2[2], color3[2]);
 			int g = pixel.getTriangleWeightedValue(color1[1], color2[1], color3[1]);
 			int r = pixel.getTriangleWeightedValue(color1[0], color2[0], color3[0]);
 
-			return getColor(a, b, g, r);
+			pixel.source = getColor(a, b, g, r);
 		}
 	}
 }

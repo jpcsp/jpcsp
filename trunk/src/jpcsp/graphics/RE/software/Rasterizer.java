@@ -16,35 +16,41 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
+import static jpcsp.util.Utilities.maxInt;
+import static jpcsp.util.Utilities.minInt;
+
 /**
  * @author gid15
  *
  */
 public class Rasterizer {
+	// There is no advantage of using a Rasterizer when rendering an area smaller
+	// than the given width and height.
+	// The overhead of the Rasterizer would be too high.
+	public static final int MINIMUM_WIDTH = 4;
+	public static final int MINIMUM_HEIGHT = 4;
 	private Edge[] edges = new Edge[3];
 	private int longEdge;
 	private int shortEdge1;
 	private int shortEdge2;
 	private int currentEdge;
-	float ydiff1;
-	float ydiff2;
 	float xdiff1;
 	float xdiff2;
 	float factor1;
 	float factorStep1;
 	float factor2;
 	float factorStep2;
-	int y2;
+	float y2;
 
-	public Rasterizer(int x1, int y1, int x2, int y2, int x3, int y3) {
+	public Rasterizer(float x1, float y1, float x2, float y2, float x3, float y3, int yMin, int yMax) {
 		edges[0] = new Edge(x1, y1, x2, y2);
 		edges[1] = new Edge(x2, y2, x3, y3);
 		edges[2] = new Edge(x3, y3, x1, y1);
 
 		longEdge = 0;
-		int maxLength = edges[longEdge].getLengthY();
+		float maxLength = edges[longEdge].getLengthY();
 		for (int i = 1; i < edges.length; i++) {
-			int length = edges[i].getLengthY();
+			float length = edges[i].getLengthY();
 			if (length > maxLength) {
 				maxLength = length;
 				longEdge = i;
@@ -68,20 +74,18 @@ public class Rasterizer {
 		}
 	}
 
-	public void setY(int y) {
-		if (y2 < y) {
-			if (currentEdge == shortEdge1 && y > edges[currentEdge].y2) {
-				currentEdge = shortEdge2;
-				init(longEdge, currentEdge);
-				if (y2 >= y) {
-					return;
-				}
+	public void setY(float y) {
+		if (currentEdge == shortEdge1 && y > edges[currentEdge].y2) {
+			currentEdge = shortEdge2;
+			init(longEdge, currentEdge);
+			if (y2 >= y) {
+				return;
 			}
-			int diff = y - y2;
-			factor1 += diff * factorStep1;
-			factor2 += diff * factorStep2;
-			y2 = y;
 		}
+		float diff = y - y2;
+		factor1 += diff * factorStep1;
+		factor2 += diff * factorStep2;
+		y2 = y;
 	}
 
 	private boolean init(int edge1, int edge2) {
@@ -89,8 +93,8 @@ public class Rasterizer {
 			y2 = edges[edge2].y2;
 			return false;
 		}
-		ydiff1 = edges[edge1].y2 - edges[edge1].y1;
-		ydiff2 = edges[edge2].y2 - edges[edge2].y1;
+		float ydiff1 = edges[edge1].y2 - edges[edge1].y1;
+		float ydiff2 = edges[edge2].y2 - edges[edge2].y1;
 		xdiff1 = edges[edge1].x2 - edges[edge1].x1;
 		xdiff2 = edges[edge2].x2 - edges[edge2].x1;
 		factor1 = (edges[edge2].y1 - edges[edge1].y1) / ydiff1;
@@ -136,13 +140,8 @@ public class Rasterizer {
 		}
 
 		public void setRange(float x1, float x2) {
-			xMin = (int) Math.floor(Math.min(x1, x2)); // minimum value rounded down
-			xMax = (int) Math.ceil(Math.max(x1, x2)); // maximum value rounded up
-		}
-
-		public void setRange(int x1, int x2) {
-			xMin = Math.min(x1, x2);
-			xMax = Math.max(x1, x2);
+			xMin = minInt(x1, x2); // minimum value rounded down
+			xMax = maxInt(x1, x2); // maximum value rounded up
 		}
 
 		@Override
@@ -152,10 +151,10 @@ public class Rasterizer {
 	}
 
 	private static class Edge {
-		protected int x1, y1;
-		protected int x2, y2;
+		protected float x1, y1;
+		protected float x2, y2;
 
-		public Edge(int x1, int y1, int x2, int y2) {
+		public Edge(float x1, float y1, float x2, float y2) {
 			if (y1 <= y2) {
 				this.x1 = x1;
 				this.y1 = y1;
@@ -169,7 +168,7 @@ public class Rasterizer {
 			}
 		}
 
-		public int getLengthY() {
+		public float getLengthY() {
 			return y2 - y1;
 		}
 

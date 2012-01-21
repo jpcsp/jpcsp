@@ -3251,6 +3251,7 @@ public class VideoEngine {
         float degreeCutoff = (float) Math.toDegrees(Math.acos(floatArgument));
         if ((degreeCutoff >= 0 && degreeCutoff <= 90) || degreeCutoff == 180) {
         	context.spotLightCutoff[lnum] = degreeCutoff;
+        	context.spotLightCosCutoff[lnum] = floatArgument;
 
             if (old_spotLightCutoff != context.spotLightCutoff[lnum]) {
                 lightingChanged = true;
@@ -5253,7 +5254,9 @@ public class VideoEngine {
         }
 
         /*
-         *  Setup lights on when view transformation is set up
+         *  Setup lights on when view transformation is set up.
+         *  The light positions and directions are defined in the View-Projection world.
+         *  The Model transformation does not apply for the lights.
          */
         if (loadLightingSettings || context.tex_map_mode == TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP) {
             for (int i = 0; i < NUM_LIGHTS; i++) {

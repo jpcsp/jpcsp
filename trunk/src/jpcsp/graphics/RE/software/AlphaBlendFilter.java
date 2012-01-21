@@ -24,6 +24,7 @@ import static jpcsp.graphics.RE.software.PixelColor.getColor;
 import static jpcsp.graphics.RE.software.PixelColor.getColorBGR;
 import static jpcsp.graphics.RE.software.PixelColor.minBGR;
 import static jpcsp.graphics.RE.software.PixelColor.multiplyBGR;
+import static jpcsp.graphics.RE.software.PixelColor.setBGR;
 import static jpcsp.graphics.RE.software.PixelColor.substractBGR;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.GeContext;
@@ -34,8 +35,8 @@ import jpcsp.graphics.GeContext;
  */
 public class AlphaBlendFilter {
 	public static IPixelFilter getAlphaBlendFilter(GeContext context) {
-		IPixelFilter sourceFactor = getFactorFilter(context, context.blend_src, true);
-		IPixelFilter destinationFactor = getFactorFilter(context, context.blend_dst, false);
+		IBlendFactor sourceFactor = getFactorFilter(context, context.blend_src, true);
+		IBlendFactor destinationFactor = getFactorFilter(context, context.blend_dst, false);
 		IPixelFilter filter = null;
 
 		switch (context.blendEquation) {
@@ -67,8 +68,8 @@ public class AlphaBlendFilter {
 		return filter;
 	}
 
-	private static IPixelFilter getFactorFilter(GeContext context, int factor, boolean isSrc) {
-		IPixelFilter filter = NopFilter.NOP;
+	private static IBlendFactor getFactorFilter(GeContext context, int factor, boolean isSrc) {
+		IBlendFactor filter = null;
 
 		switch (factor) {
 			case GeCommands.ALPHA_SOURCE_COLOR:
@@ -109,99 +110,103 @@ public class AlphaBlendFilter {
 		return filter;
 	}
 
-	private static class BlendFactorSrcColor implements IPixelFilter {
+	private interface IBlendFactor {
+		public int getFactor(PixelState pixel);
+	}
+
+	private static class BlendFactorSrcColor implements IBlendFactor {
 		@Override
-		public int filter(PixelState pixel) {
+		public int getFactor(PixelState pixel) {
 			return pixel.source;
 		}
 	}
 
-	private static class BlendFactorOneMinusSrcColor implements IPixelFilter {
+	private static class BlendFactorOneMinusSrcColor implements IBlendFactor {
 		@Override
-		public int filter(PixelState pixel) {
+		public int getFactor(PixelState pixel) {
 			return 0xFFFFFFFF - pixel.source;
 		}
 	}
 
-	private static class BlendFactorDstColor implements IPixelFilter {
+	private static class BlendFactorDstColor implements IBlendFactor {
 		@Override
-		public int filter(PixelState pixel) {
+		public int getFactor(PixelState pixel) {
 			return pixel.destination;
 		}
 	}
 
-	private static class BlendFactorOneMinusDstColor implements IPixelFilter {
+	private static class BlendFactorOneMinusDstColor implements IBlendFactor {
 		@Override
-		public int filter(PixelState pixel) {
+		public int getFactor(PixelState pixel) {
 			return 0xFFFFFFFF - pixel.destination;
 		}
 	}
 
-	private static class BlendFactorSrcAlpha implements IPixelFilter {
+	private static class BlendFactorSrcAlpha implements IBlendFactor {
 		@Override
-		public int filter(PixelState pixel) {
+		public int getFactor(PixelState pixel) {
 			int alpha = getAlpha(pixel.source);
 			return getColorBGR(alpha, alpha, alpha);
 		}
 	}
 
-	private static class BlendFactorOneMinusSrcAlpha implements IPixelFilter {
+	private static class BlendFactorOneMinusSrcAlpha implements IBlendFactor {
 		@Override
-		public int filter(PixelState pixel) {
+		public int getFactor(PixelState pixel) {
 			int alpha = ONE - getAlpha(pixel.source);
 			return getColorBGR(alpha, alpha, alpha);
 		}
 	}
 
-	private static class BlendFactorDstAlpha implements IPixelFilter {
+	private static class BlendFactorDstAlpha implements IBlendFactor {
 		@Override
-		public int filter(PixelState pixel) {
+		public int getFactor(PixelState pixel) {
 			int alpha = getAlpha(pixel.destination);
 			return getColorBGR(alpha, alpha, alpha);
 		}
 	}
 
-	private static class BlendFactorOneMinusDstAlpha implements IPixelFilter {
+	private static class BlendFactorOneMinusDstAlpha implements IBlendFactor {
 		@Override
-		public int filter(PixelState pixel) {
+		public int getFactor(PixelState pixel) {
 			int alpha = ONE - getAlpha(pixel.destination);
 			return getColorBGR(alpha, alpha, alpha);
 		}
 	}
 
-	private static class BlendFactorDoubleSrcAlpha implements IPixelFilter {
+	private static class BlendFactorDoubleSrcAlpha implements IBlendFactor {
 		@Override
-		public int filter(PixelState pixel) {
+		public int getFactor(PixelState pixel) {
 			int alpha = getAlpha(pixel.source) << 1;
 			return getColorBGR(alpha, alpha, alpha);
 		}
 	}
 
-	private static class BlendFactorOneMinusDoubleSrcAlpha implements IPixelFilter {
+	private static class BlendFactorOneMinusDoubleSrcAlpha implements IBlendFactor {
 		@Override
-		public int filter(PixelState pixel) {
+		public int getFactor(PixelState pixel) {
 			int alpha = ONE - (getAlpha(pixel.source) << 1);
 			return getColorBGR(alpha, alpha, alpha);
 		}
 	}
 
-	private static class BlendFactorDoubleDstAlpha implements IPixelFilter {
+	private static class BlendFactorDoubleDstAlpha implements IBlendFactor {
 		@Override
-		public int filter(PixelState pixel) {
+		public int getFactor(PixelState pixel) {
 			int alpha = getAlpha(pixel.destination) << 1;
 			return getColorBGR(alpha, alpha, alpha);
 		}
 	}
 
-	private static class BlendFactorOneMinusDoubleDstAlpha implements IPixelFilter {
+	private static class BlendFactorOneMinusDoubleDstAlpha implements IBlendFactor {
 		@Override
-		public int filter(PixelState pixel) {
+		public int getFactor(PixelState pixel) {
 			int alpha = ONE - (getAlpha(pixel.destination) << 1);
 			return getColorBGR(alpha, alpha, alpha);
 		}
 	}
 
-	private static class BlendFactorFix implements IPixelFilter {
+	private static class BlendFactorFix implements IBlendFactor {
 		private int fixColor;
 
 		public BlendFactorFix(float[] color) {
@@ -209,93 +214,93 @@ public class AlphaBlendFilter {
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
+		public int getFactor(PixelState pixel) {
 			return fixColor;
 		}
 	}
 
 	private static abstract class BlendOperation implements IPixelFilter {
-		protected IPixelFilter sourceFactor;
-		protected IPixelFilter destinationFactor;
+		protected IBlendFactor sourceFactor;
+		protected IBlendFactor destinationFactor;
 
-		public BlendOperation(IPixelFilter sourceFactor, IPixelFilter destinationFactor) {
+		public BlendOperation(IBlendFactor sourceFactor, IBlendFactor destinationFactor) {
 			this.sourceFactor = sourceFactor;
 			this.destinationFactor = destinationFactor;
 		}
 	}
 
 	private static final class BlendOperationAdd extends BlendOperation {
-		public BlendOperationAdd(IPixelFilter sourceFactor, IPixelFilter destinationFactor) {
+		public BlendOperationAdd(IBlendFactor sourceFactor, IBlendFactor destinationFactor) {
 			super(sourceFactor, destinationFactor);
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
-			int filteredSource = multiplyBGR(pixel.source, sourceFactor.filter(pixel));
-			int filteredDestination = multiplyBGR(pixel.destination, destinationFactor.filter(pixel));
-			return addBGR(filteredSource, filteredDestination) | (pixel.source & 0xFF000000);
+		public void filter(PixelState pixel) {
+			int filteredSource = multiplyBGR(pixel.source, sourceFactor.getFactor(pixel));
+			int filteredDestination = multiplyBGR(pixel.destination, destinationFactor.getFactor(pixel));
+			pixel.source = setBGR(pixel.source, addBGR(filteredSource, filteredDestination));
 		}
 	}
 
 	private static final class BlendOperationSubstract extends BlendOperation {
-		public BlendOperationSubstract(IPixelFilter sourceFactor, IPixelFilter destinationFactor) {
+		public BlendOperationSubstract(IBlendFactor sourceFactor, IBlendFactor destinationFactor) {
 			super(sourceFactor, destinationFactor);
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
-			int filteredSource = multiplyBGR(pixel.source, sourceFactor.filter(pixel));
-			int filteredDestination = multiplyBGR(pixel.destination, destinationFactor.filter(pixel));
-			return substractBGR(filteredSource, filteredDestination) | (pixel.source & 0xFF000000);
+		public void filter(PixelState pixel) {
+			int filteredSource = multiplyBGR(pixel.source, sourceFactor.getFactor(pixel));
+			int filteredDestination = multiplyBGR(pixel.destination, destinationFactor.getFactor(pixel));
+			pixel.source = setBGR(pixel.source, substractBGR(filteredSource, filteredDestination));
 		}
 	}
 
 	private static final class BlendOperationReverseSubstract extends BlendOperation {
-		public BlendOperationReverseSubstract(IPixelFilter sourceFactor, IPixelFilter destinationFactor) {
+		public BlendOperationReverseSubstract(IBlendFactor sourceFactor, IBlendFactor destinationFactor) {
 			super(sourceFactor, destinationFactor);
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
-			int filteredSource = multiplyBGR(pixel.source, sourceFactor.filter(pixel));
-			int filteredDestination = multiplyBGR(pixel.destination, destinationFactor.filter(pixel));
-			return substractBGR(filteredDestination, filteredSource) | (pixel.source & 0xFF000000);
+		public void filter(PixelState pixel) {
+			int filteredSource = multiplyBGR(pixel.source, sourceFactor.getFactor(pixel));
+			int filteredDestination = multiplyBGR(pixel.destination, destinationFactor.getFactor(pixel));
+			pixel.source = setBGR(pixel.source, substractBGR(filteredDestination, filteredSource));
 		}
 	}
 
 	private static final class BlendOperationMin extends BlendOperation {
-		public BlendOperationMin(IPixelFilter sourceFactor, IPixelFilter destinationFactor) {
+		public BlendOperationMin(IBlendFactor sourceFactor, IBlendFactor destinationFactor) {
 			super(sourceFactor, destinationFactor);
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			// Source and destination factors are not applied
-			return minBGR(pixel.source, pixel.destination) | (pixel.source & 0xFF000000);
+			pixel.source = setBGR(pixel.source, minBGR(pixel.source, pixel.destination));
 		}
 	}
 
 	private static final class BlendOperationMax extends BlendOperation {
-		public BlendOperationMax(IPixelFilter sourceFactor, IPixelFilter destinationFactor) {
+		public BlendOperationMax(IBlendFactor sourceFactor, IBlendFactor destinationFactor) {
 			super(sourceFactor, destinationFactor);
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			// Source and destination factors are not applied
-			return minBGR(pixel.source, pixel.destination) | (pixel.source & 0xFF000000);
+			pixel.source = setBGR(pixel.source, minBGR(pixel.source, pixel.destination));
 		}
 	}
 
 	private static final class BlendOperationAbs extends BlendOperation {
-		public BlendOperationAbs(IPixelFilter sourceFactor, IPixelFilter destinationFactor) {
+		public BlendOperationAbs(IBlendFactor sourceFactor, IBlendFactor destinationFactor) {
 			super(sourceFactor, destinationFactor);
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			// Source and destination factors are not applied
-			return absBGR(pixel.source, pixel.destination) | (pixel.source & 0xFF000000);
+			pixel.source = setBGR(pixel.source, absBGR(pixel.source, pixel.destination));
 		}
 	}
 }

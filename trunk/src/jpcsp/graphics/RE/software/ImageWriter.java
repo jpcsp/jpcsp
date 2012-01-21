@@ -18,62 +18,52 @@ package jpcsp.graphics.RE.software;
 import static jpcsp.memory.ImageReader.color4444to8888;
 import static jpcsp.memory.ImageReader.color5551to8888;
 import static jpcsp.memory.ImageReader.color565to8888;
-import jpcsp.Memory;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.RE.IRenderingEngine;
-import jpcsp.memory.IMemoryReader;
-import jpcsp.memory.IMemoryWriter;
-import jpcsp.memory.MemoryReader;
-import jpcsp.memory.MemoryWriter;
+import jpcsp.memory.IMemoryReaderWriter;
+import jpcsp.memory.MemoryReaderWriter;
 
 /**
  * @author gid15
  *
  */
 public class ImageWriter {
-	private static final boolean checkCurrentAddress = false;
-
-	public static IImageWriter getImageWriter(int address, int width, int bufferWidth, int pixelFormat) {
+	public static IMemoryReaderWriter getImageWriter(int address, int width, int bufferWidth, int pixelFormat) {
 		int step = IRenderingEngine.sizeOfTextureType[pixelFormat];
-		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, step);
-		IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, step);
+		IMemoryReaderWriter imageWriter = MemoryReaderWriter.getMemoryReaderWriter(address, step);
 
-		IImageWriter imageWriter;
 		switch (pixelFormat) {
 			case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444:
-				imageWriter = new PixelFormat4444Encoder(memoryWriter, memoryReader);
+				imageWriter = new PixelFormat4444Encoder(imageWriter);
 				break;
 			case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
-				imageWriter = new PixelFormat5551Encoder(memoryWriter, memoryReader);
+				imageWriter = new PixelFormat5551Encoder(imageWriter);
 				break;
 			case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
-				imageWriter = new PixelFormat565Encoder(memoryWriter, memoryReader);
+				imageWriter = new PixelFormat565Encoder(imageWriter);
 				break;
 			case GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888:
-				imageWriter = new PixelFormat8888Encoder(memoryWriter, memoryReader);
+				// We can use directly the MemoryReaderWriter, no format convertion needed.
 				break;
 			case BaseRenderer.depthBufferPixelFormat:
-				imageWriter = new DepthFormatEncoder(memoryWriter, memoryReader);
-				break;
-			default:
-				imageWriter = null;
+				// We can use directly the MemoryReaderWriter, no format convertion needed.
 				break;
 		}
 
-		if (bufferWidth > width && imageWriter != null) {
+		if (bufferWidth > width) {
 			imageWriter = new MemoryImageWriter(imageWriter, width, bufferWidth);
 		}
 
 		return imageWriter;
 	}
 
-	private static final class MemoryImageWriter implements IImageWriter {
-		protected IImageWriter imageWriter;
+	private static final class MemoryImageWriter implements IMemoryReaderWriter {
+		protected IMemoryReaderWriter imageWriter;
 		private int minWidth;
 		private int skipWidth;
 		private int x;
 
-		public MemoryImageWriter(IImageWriter imageWriter, int width, int bufferWidth) {
+		public MemoryImageWriter(IMemoryReaderWriter imageWriter, int width, int bufferWidth) {
 			this.imageWriter = imageWriter;
 			minWidth = Math.min(width, bufferWidth);
 			skipWidth = Math.max(0, bufferWidth - width);
@@ -177,145 +167,102 @@ public class ImageWriter {
 		       ((color8888 >> 8) & 0x0000F800);
 	}
 
-	private static abstract class ImageEncoder implements IImageWriter {
-		protected final IMemoryWriter memoryWriter;
-		protected final IMemoryReader memoryReader;
-		protected int current;
+	private static final class PixelFormat4444Encoder implements IMemoryReaderWriter {
+		private IMemoryReaderWriter memoryReaderWriter;
 
-		public ImageEncoder(IMemoryWriter memoryWriter, IMemoryReader memoryReader) {
-			this.memoryWriter = memoryWriter;
-			this.memoryReader = memoryReader;
-			updateCurrent();
-		}
-
-		protected void updateCurrent() {
-			current = memoryReader.readNext();
+		public PixelFormat4444Encoder(IMemoryReaderWriter memoryReaderWriter) {
+			this.memoryReaderWriter = memoryReaderWriter;
 		}
 
 		@Override
-		public final int readCurrent() {
-			return current;
+		public void writeNext(int value) {
+			memoryReaderWriter.writeNext(color8888to4444(value));
 		}
 
 		@Override
-		public final void skip(int n) {
-			if (n > 0) {
-				memoryWriter.skip(n);
-				memoryReader.skip(n - 1);
-				if (checkCurrentAddress) {
-					checkCurrentAddress();
-				}
-				updateCurrent();
-			}
+		public void skip(int n) {
+			memoryReaderWriter.skip(n);
 		}
 
 		@Override
-		public final void flush() {
-			memoryWriter.flush();
-		}
-
-		protected final void checkCurrentAddress() {
-			if (memoryReader.getCurrentAddress() != memoryWriter.getCurrentAddress()) {
-				Memory.log.warn(String.format("ImageEncoder: different read and write addresses: write 0x%08X - read 0x%08X", memoryWriter.getCurrentAddress(), memoryReader.getCurrentAddress()));
-			}
+		public void flush() {
+			memoryReaderWriter.flush();
 		}
 
 		@Override
 		public int getCurrentAddress() {
-			return memoryWriter.getCurrentAddress();
+			return memoryReaderWriter.getCurrentAddress();
+		}
+
+		@Override
+		public int readCurrent() {
+			return color4444to8888(memoryReaderWriter.readCurrent());
 		}
 	}
 
-	private static final class PixelFormat8888Encoder extends ImageEncoder {
-		public PixelFormat8888Encoder(IMemoryWriter memoryWriter, IMemoryReader memoryReader) {
-			super(memoryWriter, memoryReader);
+	private static final class PixelFormat5551Encoder implements IMemoryReaderWriter {
+		private IMemoryReaderWriter memoryReaderWriter;
+
+		public PixelFormat5551Encoder(IMemoryReaderWriter memoryReaderWriter) {
+			this.memoryReaderWriter = memoryReaderWriter;
 		}
 
 		@Override
 		public void writeNext(int value) {
-			memoryWriter.writeNext(value);
-			if (checkCurrentAddress) {
-				checkCurrentAddress();
-			}
-			updateCurrent();
+			memoryReaderWriter.writeNext(color8888to5551(value));
+		}
+
+		@Override
+		public void skip(int n) {
+			memoryReaderWriter.skip(n);
+		}
+
+		@Override
+		public void flush() {
+			memoryReaderWriter.flush();
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return memoryReaderWriter.getCurrentAddress();
+		}
+
+		@Override
+		public int readCurrent() {
+			return color5551to8888(memoryReaderWriter.readCurrent());
 		}
 	}
 
-	private static final class PixelFormat4444Encoder extends ImageEncoder {
-		public PixelFormat4444Encoder(IMemoryWriter memoryWriter, IMemoryReader memoryReader) {
-			super(memoryWriter, memoryReader);
+	private static final class PixelFormat565Encoder implements IMemoryReaderWriter {
+		private IMemoryReaderWriter memoryReaderWriter;
+
+		public PixelFormat565Encoder(IMemoryReaderWriter memoryReaderWriter) {
+			this.memoryReaderWriter = memoryReaderWriter;
 		}
 
 		@Override
 		public void writeNext(int value) {
-			memoryWriter.writeNext(color8888to4444(value));
-			if (checkCurrentAddress) {
-				checkCurrentAddress();
-			}
-			updateCurrent();
+			memoryReaderWriter.writeNext(color8888to565(value));
 		}
 
 		@Override
-		protected void updateCurrent() {
-			super.updateCurrent();
-			current = color4444to8888(current);
-		}
-	}
-
-	private static final class PixelFormat5551Encoder extends ImageEncoder {
-		public PixelFormat5551Encoder(IMemoryWriter memoryWriter, IMemoryReader memoryReader) {
-			super(memoryWriter, memoryReader);
+		public void skip(int n) {
+			memoryReaderWriter.skip(n);
 		}
 
 		@Override
-		public void writeNext(int value) {
-			memoryWriter.writeNext(color8888to5551(value));
-			if (checkCurrentAddress) {
-				checkCurrentAddress();
-			}
-			updateCurrent();
+		public void flush() {
+			memoryReaderWriter.flush();
 		}
 
 		@Override
-		protected void updateCurrent() {
-			super.updateCurrent();
-			current = color5551to8888(current);
-		}
-	}
-
-	private static final class PixelFormat565Encoder extends ImageEncoder {
-		public PixelFormat565Encoder(IMemoryWriter memoryWriter, IMemoryReader memoryReader) {
-			super(memoryWriter, memoryReader);
+		public int getCurrentAddress() {
+			return memoryReaderWriter.getCurrentAddress();
 		}
 
 		@Override
-		public void writeNext(int value) {
-			memoryWriter.writeNext(color8888to565(value));
-			if (checkCurrentAddress) {
-				checkCurrentAddress();
-			}
-			updateCurrent();
-		}
-
-		@Override
-		protected void updateCurrent() {
-			super.updateCurrent();
-			current = color565to8888(current);
-		}
-	}
-
-	private static final class DepthFormatEncoder extends ImageEncoder {
-		public DepthFormatEncoder(IMemoryWriter memoryWriter, IMemoryReader memoryReader) {
-			super(memoryWriter, memoryReader);
-		}
-
-		@Override
-		public void writeNext(int value) {
-			memoryWriter.writeNext(value);
-			if (checkCurrentAddress) {
-				checkCurrentAddress();
-			}
-			updateCurrent();
+		public int readCurrent() {
+			return color565to8888(memoryReaderWriter.readCurrent());
 		}
 	}
 }

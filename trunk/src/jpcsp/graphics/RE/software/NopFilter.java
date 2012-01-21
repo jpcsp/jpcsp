@@ -27,7 +27,7 @@ public class NopFilter implements IPixelFilter {
 	}
 
 	@Override
-	public int filter(PixelState pixel) {
-		return pixel.source;
+	public void filter(PixelState pixel) {
+		// Nothing to do
 	}
 }

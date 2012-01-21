@@ -64,7 +64,7 @@ public class ColorTestFilter {
 			colorTestMskRed = colorTestMsk[0];
 		}
 
-		protected boolean colorMatches(int color) {
+		protected final boolean colorMatches(int color) {
 			return (getBlue(color) & colorTestMskBlue) == colorTestRefBlue &&
 			       (getGreen(color) & colorTestMskGreen) == colorTestRefGreen &&
 			       (getRed(color) & colorTestMskRed) == colorTestRefRed;
@@ -77,11 +77,8 @@ public class ColorTestFilter {
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
-			if (!colorMatches(pixel.source)) {
-				pixel.filterPassed = false;
-		    }
-			return pixel.source;
+		public void filter(PixelState pixel) {
+			pixel.filterPassed = colorMatches(pixel.source);
 		}
 	}
 
@@ -91,11 +88,8 @@ public class ColorTestFilter {
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
-			if (colorMatches(pixel.source)) {
-				pixel.filterPassed = false;
-		    }
-			return pixel.source;
+		public void filter(PixelState pixel) {
+			pixel.filterPassed = !colorMatches(pixel.source);
 		}
 	}
 }

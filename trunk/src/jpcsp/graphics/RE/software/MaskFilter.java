@@ -77,8 +77,8 @@ public class MaskFilter {
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
-			return (pixel.source & notColorMask) | (pixel.destination & colorMask);
+		public void filter(PixelState pixel) {
+			pixel.source = (pixel.source & notColorMask) | (pixel.destination & colorMask);
 		}
 	}
 
@@ -92,17 +92,16 @@ public class MaskFilter {
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			pixel.sourceDepth = pixel.destinationDepth;
-			return super.filter(pixel);
+			super.filter(pixel);
 		}
 	}
 
 	private static final class DepthMask implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			pixel.sourceDepth = pixel.destinationDepth;
-			return pixel.source;
 		}
 	}
 }

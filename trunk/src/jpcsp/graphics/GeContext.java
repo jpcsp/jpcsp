@@ -88,6 +88,7 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
     public float[][] lightSpecularColor = new float[NUM_LIGHTS][4];
     public float[] spotLightExponent = new float[NUM_LIGHTS];
     public float[] spotLightCutoff = new float[NUM_LIGHTS];
+    public float[] spotLightCosCutoff = new float[NUM_LIGHTS];
     public float[] lightConstantAttenuation = new float[NUM_LIGHTS];
     public float[] lightLinearAttenuation = new float[NUM_LIGHTS];
     public float[] lightQuadraticAttenuation = new float[NUM_LIGHTS];

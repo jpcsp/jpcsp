@@ -57,58 +57,45 @@ public class DepthTestFilter {
 		return filter;
 	}
 
-	private static abstract class DepthTest implements IPixelFilter {
+	private static final class DepthTestPassWhenDepthIsEqual implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			if (!pass(pixel)) {
-				pixel.filterPassed = false;
-			}
-
-			return pixel.source;
-		}
-
-		protected abstract boolean pass(PixelState pixel);
-	}
-
-	private static final class DepthTestPassWhenDepthIsEqual extends DepthTest {
-		@Override
-		protected boolean pass(PixelState pixel) {
-			return pixel.sourceDepth == pixel.destinationDepth;
+		public void filter(PixelState pixel) {
+			pixel.filterPassed = pixel.sourceDepth == pixel.destinationDepth;
 		}
 	}
 
-	private static final class DepthTestPassWhenDepthIsNotEqual extends DepthTest {
+	private static final class DepthTestPassWhenDepthIsNotEqual implements IPixelFilter {
 		@Override
-		protected boolean pass(PixelState pixel) {
-			return pixel.sourceDepth != pixel.destinationDepth;
+		public void filter(PixelState pixel) {
+			pixel.filterPassed = pixel.sourceDepth != pixel.destinationDepth;
 		}
 	}
 
-	private static final class DepthTestPassWhenDepthIsLess extends DepthTest {
+	private static final class DepthTestPassWhenDepthIsLess implements IPixelFilter {
 		@Override
-		protected boolean pass(PixelState pixel) {
-			return pixel.sourceDepth < pixel.destinationDepth;
+		public void filter(PixelState pixel) {
+			pixel.filterPassed = pixel.sourceDepth < pixel.destinationDepth;
 		}
 	}
 
-	private static final class DepthTestPassWhenDepthIsLessOrEqual extends DepthTest {
+	private static final class DepthTestPassWhenDepthIsLessOrEqual implements IPixelFilter {
 		@Override
-		protected boolean pass(PixelState pixel) {
-			return pixel.sourceDepth <= pixel.destinationDepth;
+		public void filter(PixelState pixel) {
+			pixel.filterPassed = pixel.sourceDepth <= pixel.destinationDepth;
 		}
 	}
 
-	private static final class DepthTestPassWhenDepthIsGreater extends DepthTest {
+	private static final class DepthTestPassWhenDepthIsGreater implements IPixelFilter {
 		@Override
-		protected boolean pass(PixelState pixel) {
-			return pixel.sourceDepth > pixel.destinationDepth;
+		public void filter(PixelState pixel) {
+			pixel.filterPassed = pixel.sourceDepth > pixel.destinationDepth;
 		}
 	}
 
-	private static final class DepthTestPassWhenDepthIsGreaterOrEqual extends DepthTest {
+	private static final class DepthTestPassWhenDepthIsGreaterOrEqual implements IPixelFilter {
 		@Override
-		protected boolean pass(PixelState pixel) {
-			return pixel.sourceDepth >= pixel.destinationDepth;
+		public void filter(PixelState pixel) {
+			pixel.filterPassed = pixel.sourceDepth >= pixel.destinationDepth;
 		}
 	}
 }
