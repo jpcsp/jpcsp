@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
+import static jpcsp.util.Utilities.max;
+import static jpcsp.util.Utilities.min;
 import static jpcsp.util.Utilities.round;
 import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VertexState;
@@ -117,13 +119,13 @@ public class TriangleRenderer extends BaseRenderer {
         	for (int x = 0; x < destinationWidth; x++) {
         		pixel.x = pxMin + x;
         		pixel.u = u;
-        		if (isInsideTriangle()) {
+        		if (pixel.isInsideTriangle()) {
         			pixel.filterPassed = true;
         			pixel.sourceDepth = round(pixel.getTriangleWeightedValue(p1z, p2z, p3z));
             		pixel.destination = imageWriter.readCurrent();
             		pixel.destinationDepth = depthWriter.readCurrent();
             		for (int i = 0; i < numberFilters; i++) {
-            			pixel.source = filters[i].filter(pixel);
+            			filters[i].filter(pixel);
             			if (!pixel.filterPassed) {
             				break;
             			}
@@ -143,32 +145,51 @@ public class TriangleRenderer extends BaseRenderer {
         		}
         		u += uStep;
         	}
+        	imageWriter.skip(imageWriterSkipEOL);
+        	depthWriter.skip(depthWriterSkipEOL);
         	v += vStep;
         }
 	}
 
 	protected void render3D() {
 		RESoftware.triangleRender3DStatistics.start();
+
 		Range range = new Range();
-		Rasterizer rasterizer = new Rasterizer(round(p1x), round(p1y), round(p2x), round(p2y), round(p3x), round(p3y));
-		rasterizer.setY(pyMin);
+		Rasterizer rasterizer = null;
+		// No need to use a Rasterizer when rendering very small area.
+		// The overhead of the Rasterizer would lead the slower rendering.
+		if (destinationWidth >= Rasterizer.MINIMUM_WIDTH && destinationHeight >= Rasterizer.MINIMUM_HEIGHT) {
+			rasterizer = new Rasterizer(p1x, p1y, p2x, p2y, p3x, p3y, pyMin, pyMax);
+			rasterizer.setY(pyMin);
+		}
+
 		int numberPixels = 0;
-        for (int y = pyMin; y < pyMax; y++) {
+        for (int y = pyMin; y <= pyMax; y++) {
         	pixel.y = y;
-        	rasterizer.getNextRange(range);
-        	int startX = Math.max(range.xMin, pxMin);
-        	int endX = Math.min(range.xMax, pxMax);
+        	int startX = pxMin;
+        	int endX = pxMax;
+        	if (rasterizer != null) {
+            	rasterizer.getNextRange(range);
+            	startX = max(range.xMin, startX);
+            	endX = min(range.xMax, endX);
+        	}
+
         	if (startX >= endX) {
-        		imageWriter.skip(pxMax - pxMin);
-        		depthWriter.skip(pxMax - pxMin);
+        		imageWriter.skip(destinationWidth + imageWriterSkipEOL);
+        		depthWriter.skip(destinationWidth + depthWriterSkipEOL);
         	} else {
-        		numberPixels += endX - startX;
+if (isLogTraceEnabled) {
+	log.trace(String.format("render3D y=%d, x=%d-%d", y, startX, endX));
+}
+        		numberPixels += endX - startX + 1;
         		imageWriter.skip(startX - pxMin);
         		depthWriter.skip(startX - pxMin);
-	        	for (int x = startX; x < endX; x++) {
-	        		pixel.x = x;
-	        		computeTriangleWeights();
-	        		if (isInsideTriangle()) {
+        		pixel.x = startX;
+        		computeTriangleWeights();
+	        	for (int x = startX; x <= endX; x++) {
+	        		if (pixel.isInsideTriangle()) {
+	        			pixel.newPixel();
+		        		pixel.x = x;
 	        			// Compute the mapped texture u,v coordinates
 	        			// based on the Barycentric coordinates.
 	        			// Apply a perspective correction by weighting the coordinates
@@ -184,7 +205,7 @@ public class TriangleRenderer extends BaseRenderer {
 	        			pixel.destination = imageWriter.readCurrent();
 	        			pixel.destinationDepth = depthWriter.readCurrent();
 	        			for (int i = 0; i < numberFilters; i++) {
-	        				pixel.source = filters[i].filter(pixel);
+	        				filters[i].filter(pixel);
 	        				if (!pixel.filterPassed) {
 	        					break;
 	        				}
@@ -198,16 +219,20 @@ public class TriangleRenderer extends BaseRenderer {
 	        				depthWriter.skip(1);
 	        			}
 	        		} else {
+if (isLogTraceEnabled) {
+	log.trace(String.format("render3D ouside (%d,%d), weights %f, %f, %f", x, pixel.y, pixel.triangleWeight1, pixel.triangleWeight2, pixel.triangleWeight3));
+}
 	        			// Do not display, skip the pixel
 	        			imageWriter.skip(1);
 	        			depthWriter.skip(1);
 	        		}
+	        		deltaXTriangleWeigths();
 	        	}
-	    		imageWriter.skip(pxMax - endX);
-	    		depthWriter.skip(pxMax - endX);
+	    		imageWriter.skip((pxMax - endX) + imageWriterSkipEOL);
+	    		depthWriter.skip((pxMax - endX) + depthWriterSkipEOL);
         	}
         }
-        if (numberPixels > 10000) {
+        if (numberPixels > 10000 && log.isInfoEnabled()) {
         	log.info(String.format("render3D: %d pixels, (%d,%d)-(%d,%d), duration %dms", numberPixels, pxMin, pyMin, pxMax, pyMax, RESoftware.triangleRender3DStatistics.getDurationMillis()));
         }
         RESoftware.triangleRender3DStatistics.end();

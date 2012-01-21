@@ -58,87 +58,81 @@ public class AlphaTestFilter {
 		return filter;
 	}
 
-	private static abstract class AlphaFunction implements IPixelFilter {
-		protected int alphaReferenceValue;
+	private static final class AlphaFunctionPassIfMatches implements IPixelFilter {
+		private int alphaReferenceValue;
 
-		public AlphaFunction(int alphaReferenceValue) {
+		public AlphaFunctionPassIfMatches(int alphaReferenceValue) {
 			this.alphaReferenceValue = alphaReferenceValue;
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
-			if (!pass(getAlpha(pixel.source))) {
-				pixel.filterPassed = false;
-			}
-			return pixel.source;
-		}
-
-		protected abstract boolean pass(int alpha);
-	}
-
-	private static final class AlphaFunctionPassIfMatches extends AlphaFunction {
-		public AlphaFunctionPassIfMatches(int alphaReferenceValue) {
-			super(alphaReferenceValue);
-		}
-
-		@Override
-		protected boolean pass(int alpha) {
-			return alpha == alphaReferenceValue;
+		public void filter(PixelState pixel) {
+			pixel.filterPassed = getAlpha(pixel.source) == alphaReferenceValue;
 		}
 	}
 
-	private static final class AlphaFunctionPassIfDiffers extends AlphaFunction {
+	private static final class AlphaFunctionPassIfDiffers implements IPixelFilter {
+		private int alphaReferenceValue;
+
 		public AlphaFunctionPassIfDiffers(int alphaReferenceValue) {
-			super(alphaReferenceValue);
+			this.alphaReferenceValue = alphaReferenceValue;
 		}
 
 		@Override
-		protected boolean pass(int alpha) {
-			return alpha != alphaReferenceValue;
+		public void filter(PixelState pixel) {
+			pixel.filterPassed = getAlpha(pixel.source) != alphaReferenceValue;
 		}
 	}
 
-	private static final class AlphaFunctionPassIfLess extends AlphaFunction {
+	private static final class AlphaFunctionPassIfLess implements IPixelFilter {
+		private int alphaReferenceValue;
+
 		public AlphaFunctionPassIfLess(int alphaReferenceValue) {
-			super(alphaReferenceValue);
+			this.alphaReferenceValue = alphaReferenceValue;
 		}
 
 		@Override
-		protected boolean pass(int alpha) {
-			return alpha < alphaReferenceValue;
+		public void filter(PixelState pixel) {
+			pixel.filterPassed = getAlpha(pixel.source) < alphaReferenceValue;
 		}
 	}
 
-	private static final class AlphaFunctionPassIfLessOrEqual extends AlphaFunction {
+	private static final class AlphaFunctionPassIfLessOrEqual implements IPixelFilter {
+		private int alphaReferenceValue;
+
 		public AlphaFunctionPassIfLessOrEqual(int alphaReferenceValue) {
-			super(alphaReferenceValue);
+			this.alphaReferenceValue = alphaReferenceValue;
 		}
 
 		@Override
-		protected boolean pass(int alpha) {
-			return alpha <= alphaReferenceValue;
+		public void filter(PixelState pixel) {
+			pixel.filterPassed = getAlpha(pixel.source) <= alphaReferenceValue;
 		}
 	}
 
-	private static final class AlphaFunctionPassIfGreater extends AlphaFunction {
+	private static final class AlphaFunctionPassIfGreater implements IPixelFilter {
+		private int alphaReferenceValue;
+
 		public AlphaFunctionPassIfGreater(int alphaReferenceValue) {
-			super(alphaReferenceValue);
+			this.alphaReferenceValue = alphaReferenceValue;
 		}
 
 		@Override
-		protected boolean pass(int alpha) {
-			return alpha > alphaReferenceValue;
+		public void filter(PixelState pixel) {
+			pixel.filterPassed = getAlpha(pixel.source) > alphaReferenceValue;
 		}
 	}
 
-	private static final class AlphaFunctionPassIfGreaterOrEqual extends AlphaFunction {
+	private static final class AlphaFunctionPassIfGreaterOrEqual implements IPixelFilter {
+		private int alphaReferenceValue;
+
 		public AlphaFunctionPassIfGreaterOrEqual(int alphaReferenceValue) {
-			super(alphaReferenceValue);
+			this.alphaReferenceValue = alphaReferenceValue;
 		}
 
 		@Override
-		protected boolean pass(int alpha) {
-			return alpha >= alphaReferenceValue;
+		public void filter(PixelState pixel) {
+			pixel.filterPassed = getAlpha(pixel.source) >= alphaReferenceValue;
 		}
 	}
 }

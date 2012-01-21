@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
-import static jpcsp.graphics.RE.software.PixelColor.ONE;
 import static jpcsp.graphics.RE.software.PixelColor.ZERO;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.GeContext;
@@ -40,7 +39,7 @@ public class LogicalOperationFilter {
 				filter = new LogicalOperationReverseAnd();
 				break;
 			case GeCommands.LOP_COPY:
-				filter = new LogicalOperationCopy();
+				// This is a NOP
 				break;
 			case GeCommands.LOP_INVERTED_AND:
 				filter = new LogicalOperationInvertedAnd();
@@ -85,113 +84,106 @@ public class LogicalOperationFilter {
 
 	private static final class LogicalOperationClear implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			return ZERO;
+		public void filter(PixelState pixel) {
+			pixel.source = ZERO;
 		}
 	}
 
 	private static final class LogicalOperationAnd implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			return pixel.source & pixel.destination;
+		public void filter(PixelState pixel) {
+			pixel.source &= pixel.destination;
 		}
 	}
 
 	private static final class LogicalOperationReverseAnd implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			return pixel.source & (~pixel.destination);
-		}
-	}
-
-	private static final class LogicalOperationCopy implements IPixelFilter {
-		@Override
-		public int filter(PixelState pixel) {
-			return pixel.source;
+		public void filter(PixelState pixel) {
+			pixel.source &= (~pixel.destination);
 		}
 	}
 
 	private static final class LogicalOperationInvertedAnd implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			return (~pixel.source) & pixel.destination;
+		public void filter(PixelState pixel) {
+			pixel.source = (~pixel.source) & pixel.destination;
 		}
 	}
 
 	private static final class LogicalOperationNoOperation implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			return pixel.destination;
+		public void filter(PixelState pixel) {
+			pixel.source = pixel.destination;
 		}
 	}
 
 	private static final class LogicalOperationExclusiveOr implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			return pixel.source ^ pixel.destination;
+		public void filter(PixelState pixel) {
+			pixel.source ^= pixel.destination;
 		}
 	}
 
 	private static final class LogicalOperationOr implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			return pixel.source | pixel.destination;
+		public void filter(PixelState pixel) {
+			pixel.source |= pixel.destination;
 		}
 	}
 
 	private static final class LogicalOperationNegatedOr implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			return ~(pixel.source | pixel.destination);
+		public void filter(PixelState pixel) {
+			pixel.source = ~(pixel.source | pixel.destination);
 		}
 	}
 
 	private static final class LogicalOperationEquivalence implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			return ~(pixel.source ^ pixel.destination);
+		public void filter(PixelState pixel) {
+			pixel.source = ~(pixel.source ^ pixel.destination);
 		}
 	}
 
 	private static final class LogicalOperationInverted implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			return ~pixel.destination;
+		public void filter(PixelState pixel) {
+			pixel.source = ~pixel.destination;
 		}
 	}
 
 	private static final class LogicalOperationReverseOr implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			return pixel.source | (~pixel.destination);
+		public void filter(PixelState pixel) {
+			pixel.source |= (~pixel.destination);
 		}
 	}
 
 	private static final class LogicalOperationInvertedCopy implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			return ~pixel.source;
+		public void filter(PixelState pixel) {
+			pixel.source = ~pixel.source;
 		}
 	}
 
 	private static final class LogicalOperationInvertedOr implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			return (~pixel.source) | pixel.destination;
+		public void filter(PixelState pixel) {
+			pixel.source = (~pixel.source) | pixel.destination;
 		}
 	}
 
 	private static final class LogicalOperationNegatedAnd implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			return ~(pixel.source & pixel.destination);
+		public void filter(PixelState pixel) {
+			pixel.source = ~(pixel.source & pixel.destination);
 		}
 	}
 
 	private static final class LogicalOperationSet implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			return ONE;
+		public void filter(PixelState pixel) {
+			pixel.source = 0xFFFFFFFF;
 		}
 	}
 }

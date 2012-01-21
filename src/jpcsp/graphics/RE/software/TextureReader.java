@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
-import static jpcsp.util.Utilities.round;
 import jpcsp.graphics.GeContext;
 
 /**
@@ -42,6 +41,23 @@ public class TextureReader {
 		return textureReader;
 	}
 
+	/**
+	 * Transform a pixel coordinate (floating-point value "u" or "v") into
+	 * a texel coordinate (integer value to access the texture).
+	 *
+	 * The texel coordinate is calculated by truncating the floating point value,
+	 * not by rounding it. Otherwise transition problems occur at the borders.
+	 * E.g. if a texture has a width of 64, valid texel coordinates range
+	 * from 0 to 63. 64 is already outside of the texture and should not be
+	 * generated when approaching the border to the texture.
+	 *
+	 * @param coordinate     the pixel coordinate
+	 * @return               the texel coordinate
+	 */
+	private static final int pixelToTexel(float coordinate) {
+		return (int) coordinate;
+	}
+
 	private static class TextureReader3D implements IPixelFilter {
 		private final IRandomTextureAccess textureAccess;
 		private final float width;
@@ -54,8 +70,8 @@ public class TextureReader {
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
-			return textureAccess.readPixel(round(pixel.u * width), round(pixel.v * height));
+		public void filter(PixelState pixel) {
+			pixel.source = textureAccess.readPixel(pixelToTexel(pixel.u * width), pixelToTexel(pixel.v * height));
 		}
 	}
 
@@ -67,8 +83,8 @@ public class TextureReader {
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
-			return textureAccess.readPixel(round(pixel.u), round(pixel.v));
+		public void filter(PixelState pixel) {
+			pixel.source = textureAccess.readPixel(pixelToTexel(pixel.u), pixelToTexel(pixel.v));
 		}
 	}
 }

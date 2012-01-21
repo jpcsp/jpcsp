@@ -88,32 +88,29 @@ public class TextureWrap {
 		return round(value) & valueMask;
 	}
 
-	private static class TextureWrapRepeatST implements IPixelFilter {
+	private static final class TextureWrapRepeatST implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			pixel.u = wrap(pixel.u);
 			pixel.v = wrap(pixel.v);
-			return pixel.source;
 		}
 	}
 
-	private static class TextureWrapRepeatS implements IPixelFilter {
+	private static final class TextureWrapRepeatS implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			pixel.u = wrap(pixel.u);
-			return pixel.source;
 		}
 	}
 
-	private static class TextureWrapRepeatT implements IPixelFilter {
+	private static final class TextureWrapRepeatT implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			pixel.v = wrap(pixel.v);
-			return pixel.source;
 		}
 	}
 
-	private static class TextureWrap2DRepeatST implements IPixelFilter {
+	private static final class TextureWrap2DRepeatST implements IPixelFilter {
 		private int widthMask;
 		private int heightMask;
 
@@ -123,14 +120,13 @@ public class TextureWrap {
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			pixel.u = wrap(pixel.u, widthMask);
 			pixel.v = wrap(pixel.v, heightMask);
-			return pixel.source;
 		}
 	}
 
-	private static class TextureWrap2DRepeatS implements IPixelFilter {
+	private static final class TextureWrap2DRepeatS implements IPixelFilter {
 		private int widthMask;
 
 		public TextureWrap2DRepeatS(int width) {
@@ -138,13 +134,12 @@ public class TextureWrap {
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			pixel.u = wrap(pixel.u, widthMask);
-			return pixel.source;
 		}
 	}
 
-	private static class TextureWrap2DRepeatT implements IPixelFilter {
+	private static final class TextureWrap2DRepeatT implements IPixelFilter {
 		private int heightMask;
 
 		public TextureWrap2DRepeatT(int height) {
@@ -152,9 +147,8 @@ public class TextureWrap {
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			pixel.v = wrap(pixel.v, heightMask);
-			return pixel.source;
 		}
 	}
 }

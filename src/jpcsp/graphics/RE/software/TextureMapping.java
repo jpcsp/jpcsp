@@ -19,9 +19,8 @@ package jpcsp.graphics.RE.software;
 import static jpcsp.graphics.GeCommands.LIGHT_AMBIENT_DIFFUSE;
 import static jpcsp.util.Utilities.copy;
 import static jpcsp.util.Utilities.dot3;
-import static jpcsp.util.Utilities.length3;
-import static jpcsp.util.Utilities.matrixMult;
-import static jpcsp.util.Utilities.vectorMult;
+import static jpcsp.util.Utilities.invertedLength3;
+import static jpcsp.util.Utilities.normalize3;
 
 import org.apache.log4j.Logger;
 
@@ -86,10 +85,7 @@ public class TextureMapping {
 			case GeCommands.TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP:
 				int u = context.tex_shade_u;
 				int v = context.tex_shade_v;
-				// Compute the Model-View matrix
-				float[] modelViewMatrix = new float[16];
-				matrixMult(modelViewMatrix, context.view_uploaded_matrix, context.model_uploaded_matrix);
-				textureMapping = new TextureMapEnvironment(modelViewMatrix, context.materialShininess, context.light_pos[u], context.light_pos[v], context.light_type[u], context.light_type[v], v1, v2, v3);
+				textureMapping = new TextureMapEnvironment(context.materialShininess, context.light_pos[u], context.light_pos[v], context.light_type[u], context.light_type[v], v1, v2, v3);
 				break;
 		}
 
@@ -110,10 +106,9 @@ public class TextureMapping {
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			pixel.u = pixel.u * scaleU + translateU;
 			pixel.v = pixel.v * scaleV + translateV;
-			return pixel.source;
 		}
 	}
 
@@ -127,10 +122,9 @@ public class TextureMapping {
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			pixel.u = pixel.u * scaleU;
 			pixel.v = pixel.v * scaleV;
-			return pixel.source;
 		}
 	}
 
@@ -144,10 +138,9 @@ public class TextureMapping {
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			pixel.u += translateU;
 			pixel.v += translateV;
-			return pixel.source;
 		}
 	}
 
@@ -180,19 +173,17 @@ public class TextureMapping {
 			matrix32 = matrix[11];
 		}
 
-		protected int filter(PixelState pixel, float x, float y, float z) {
+		protected void filter(PixelState pixel, float x, float y, float z) {
 			pixel.u = x * matrix00 + y * matrix10 + z * matrix20 + matrix30;
 			pixel.v = x * matrix01 + y * matrix11 + z * matrix21 + matrix31;
 			pixel.q = x * matrix02 + y * matrix12 + z * matrix22 + matrix32;
-			return pixel.source;
 		}
 
-		protected int filter(PixelState pixel, float x, float y) {
+		protected void filter(PixelState pixel, float x, float y) {
 			// We know that "z" is 0
 			pixel.u = x * matrix00 + y * matrix10 + matrix30;
 			pixel.v = x * matrix01 + y * matrix11 + matrix31;
 			pixel.q = x * matrix02 + y * matrix12 + matrix32;
-			return pixel.source;
 		}
 	}
 
@@ -215,11 +206,11 @@ public class TextureMapping {
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			float x = pixel.getTriangleWeightedValue(p1x, p2x, p3x);
 			float y = pixel.getTriangleWeightedValue(p1y, p2y, p3y);
 			float z = pixel.getTriangleWeightedValue(p1z, p2z, p3z);
-			return filter(pixel, x, y, z);
+			filter(pixel, x, y, z);
 		}
 	}
 
@@ -229,8 +220,8 @@ public class TextureMapping {
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
-			return filter(pixel, pixel.u, pixel.v);
+		public void filter(PixelState pixel) {
+			filter(pixel, pixel.u, pixel.v);
 		}
 	}
 
@@ -253,11 +244,11 @@ public class TextureMapping {
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			float x = pixel.getTriangleWeightedValue(n1x, n2x, n3x);
 			float y = pixel.getTriangleWeightedValue(n1y, n2y, n3y);
 			float z = pixel.getTriangleWeightedValue(n1z, n2z, n3z);
-			return filter(pixel, x, y, z);
+			filter(pixel, x, y, z);
 		}
 	}
 
@@ -268,44 +259,37 @@ public class TextureMapping {
 
 		protected TextureMapTextureMatrixNormalizedNormal(float[] matrix, float[] n1, float[] n2, float[] n3) {
 			super(matrix);
-			float invertedLength = getInvertedLength(n1);
+			float invertedLength = invertedLength3(n1);
 			n1x = n1[0] * invertedLength;
 			n1y = n1[1] * invertedLength;
 			n1z = n1[2] * invertedLength;
-			invertedLength = getInvertedLength(n2);
+			invertedLength = invertedLength3(n2);
 			n2x = n2[0] * invertedLength;
 			n2y = n2[1] * invertedLength;
 			n2z = n2[2] * invertedLength;
-			invertedLength = getInvertedLength(n3);
+			invertedLength = invertedLength3(n3);
 			n3x = n3[0] * invertedLength;
 			n3y = n3[1] * invertedLength;
 			n3z = n3[2] * invertedLength;
 		}
 
-		protected static float getInvertedLength(float[] n) {
-			float length = (float) Math.sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
-			return 1.f / length;
-		}
-
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			float x = pixel.getTriangleWeightedValue(n1x, n2x, n3x);
 			float y = pixel.getTriangleWeightedValue(n1y, n2y, n3y);
 			float z = pixel.getTriangleWeightedValue(n1z, n2z, n3z);
-			return filter(pixel, x, y, z);
+			filter(pixel, x, y, z);
 		}
 	}
 
 	private static class TextureMapEnvironment implements IPixelFilter {
-		protected final float[] modelViewMatrix = new float[16];
 		protected float shininess;
 		protected float[] lightPositionU = new float[4];
 		protected float[] lightPositionV = new float[4];
 		protected boolean diffuseLightU;
 		protected boolean diffuseLightV;
 		protected final float[] Ve = new float[3];
-		protected final float[] V = new float[3];
-		protected final float[] N = new float[3];
+		protected final float[] Ne = new float[3];
 		protected final float[] Lu = new float[3];
 		protected final float[] Lv = new float[3];
 		protected final float[] p1 = new float[3];
@@ -315,8 +299,7 @@ public class TextureMapping {
 		protected final float[] n2 = new float[3];
 		protected final float[] n3 = new float[3];
 
-		public TextureMapEnvironment(float[] modelViewMatrix, float shininess, float[] lightPositionU, float[] lightPositionV, int lightTypeU, int lightTypeV, VertexState v1, VertexState v2, VertexState v3) {
-			System.arraycopy(modelViewMatrix, 0, this.modelViewMatrix, 0, this.modelViewMatrix.length);
+		public TextureMapEnvironment(float shininess, float[] lightPositionU, float[] lightPositionV, int lightTypeU, int lightTypeV, VertexState v1, VertexState v2, VertexState v3) {
 			this.shininess = shininess;
 			diffuseLightU = (lightTypeU == LIGHT_AMBIENT_DIFFUSE);
 			diffuseLightV = (lightTypeV == LIGHT_AMBIENT_DIFFUSE);
@@ -330,29 +313,22 @@ public class TextureMapping {
 			copy(n3, v3.n);
 		}
 
-		protected void normalize3(float[] a) {
-			float lengthInvertex = 1.f / length3(a);
-			a[0] *= lengthInvertex;
-			a[1] *= lengthInvertex;
-			a[2] *= lengthInvertex;
-		}
-
 		protected float getP(boolean diffuseLight, float[] L) {
 			float P;
 			if (diffuseLight) {
-				normalize3(L);
-				P = dot3(N, L);
+				normalize3(L, L);
+				P = dot3(Ne, L);
 			} else {
 				L[2] += 1.f;
-				normalize3(L);
-				P = (float) Math.pow(dot3(N, L), shininess);
+				normalize3(L, L);
+				P = (float) Math.pow(dot3(Ne, L), shininess);
 			}
 
 			return P;
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			// Implementation based on shader.vert/ApplyTexture:
 			//
 			//   vec3  Nn = normalize(N);
@@ -365,11 +341,8 @@ public class TextureMapping {
             //   T.xyz = vec3(0.5*vec2(1.0 + Pu, 1.0 + Pv), 1.0);
 			//
 
-			pixel.getTriangleWeightedValue(V, p1, p2, p3);
-			vectorMult(Ve, modelViewMatrix, V);
-
-			pixel.getTriangleWeightedValue(N, n1, n2, n3);
-			normalize3(N);
+			pixel.getVe(Ve);
+			pixel.getNormalizedNe(Ne);
 
 			for (int i = 0; i < 3; i++) {
 				Lu[i] = lightPositionU[i] - Ve[i] * lightPositionU[3];
@@ -382,8 +355,6 @@ public class TextureMapping {
 			pixel.u = (Pu + 1.f) * 0.5f;
 			pixel.v = (Pv + 1.f) * 0.5f;
 			pixel.q = 1.f;
-
-			return pixel.source;
 		}
 	}
 }

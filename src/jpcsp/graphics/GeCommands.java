@@ -169,7 +169,7 @@ public class GeCommands {
     public final static int ALA = 0x5D;// 	ALA 	Ambient Light Alpha
     public final static int LMODE = 0x5E;// 	LMODE 	Light Model
         public final static int LMODE_SINGLE_COLOR = 0X0;
-        public final static int LMODE_SEPARETE_SPECULAR_COLOR = 0X1;
+        public final static int LMODE_SEPARATE_SPECULAR_COLOR = 0X1;
     public final static int LT0 = 0x5F;// 	LT0 	Light Type 0
     public final static int LT1 = 0x60;// 	LT1 	Light Type 1
     public final static int LT2 = 0x61;// 	LT2 	Light Type 2
@@ -181,7 +181,7 @@ public class GeCommands {
         //LIGHT COMPONENT
         public final static int LIGHT_AMBIENT_DIFFUSE = 0X00;
         public final static int LIGHT_DIFFUSE_SPECULAR = 0X01;
-        public final static int LIGHT_UNKNOW1 = 0X02;
+        public final static int LIGHT_POWER_DIFFUSE_SPECULAR = 0X02;
         public final static int LIGHT_UNKNOW2 = 0X03;
     //END SERVES
     public final static int LXP0 = 0x63;// 	LXP0 	Light X Position 0

@@ -13,27 +13,21 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.graphics.RE.software;
-
-import jpcsp.memory.IMemoryWriter;
+package jpcsp.memory;
 
 /**
  * @author gid15
  *
- * Interface for writing images to memory.
- * The image is written sequentially to memory from the left top corner
- * to the right bottom corner.
- * The value of the pixel currently stored into memory can be retrieved
+ * Interface for reading and writing to memory.
+ * The value currently stored into memory can be retrieved
  * before writing a new value.
  */
-public interface IImageWriter extends IMemoryWriter {
+public interface IMemoryReaderWriter extends IMemoryWriter {
 	/**
-	 * Read the current pixel color from memory. This is the color of the pixel
+	 * Read the current value from memory. This is the value
 	 * that will be overwritten by the next IMemoryWriter.writeNext() call.
 	 * 
-	 * The pixel color is always returned in the format GU_COLOR_8888 (ABGR).
-	 * 
-	 * @return   the color of the current pixel in the format GU_COLOR_8888 (ABGR)
+	 * @return   the value that will be overwritten by the next writeNext() call.
 	 */
 	public int readCurrent();
 }

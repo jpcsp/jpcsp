@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE.software;
 
 import static jpcsp.graphics.RE.software.PixelColor.add;
+import static jpcsp.graphics.RE.software.PixelColor.addBGR;
 import static jpcsp.graphics.RE.software.PixelColor.combineComponent;
 import static jpcsp.graphics.RE.software.PixelColor.getAlpha;
 import static jpcsp.graphics.RE.software.PixelColor.getBlue;
@@ -90,34 +91,34 @@ public class TextureFunction {
 
 	private static final class TextureEffectModulateRGB implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			return multiply(pixel.source | 0xFF000000, pixel.primaryColor);
+		public void filter(PixelState pixel) {
+			pixel.source = multiply(pixel.source | 0xFF000000, pixel.primaryColor);
 		}
 	}
 
 	private static final class TextureEffectModulateRGBA implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			return multiply(pixel.source, pixel.primaryColor);
+		public void filter(PixelState pixel) {
+			pixel.source = multiply(pixel.source, pixel.primaryColor);
 		}
 	}
 
 	private static final class TextureEffectDecalRGB implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			return (pixel.source & 0x00FFFFFF) | (pixel.primaryColor & 0xFF000000);
+		public void filter(PixelState pixel) {
+			pixel.source = (pixel.source & 0x00FFFFFF) | (pixel.primaryColor & 0xFF000000);
 		}
 	}
 
 	private static final class TextureEffectDecalRGBA implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			int alpha = getAlpha(pixel.source);
 			int a = getAlpha(pixel.primaryColor);
 			int b = combineComponent(getBlue(pixel.primaryColor), getBlue(pixel.source), alpha);
 			int g = combineComponent(getGreen(pixel.primaryColor), getGreen(pixel.source), alpha);
 			int r = combineComponent(getRed(pixel.primaryColor), getRed(pixel.source), alpha);
-			return getColor(a, b, g, r);
+			pixel.source = getColor(a, b, g, r);
 		}
 	}
 
@@ -133,12 +134,12 @@ public class TextureFunction {
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			int a = getAlpha(pixel.primaryColor);
 			int b = combineComponent(getBlue(pixel.primaryColor), primaryColorB, getBlue(pixel.source));
 			int g = combineComponent(getGreen(pixel.primaryColor), primaryColorG, getGreen(pixel.source));
 			int r = combineComponent(getRed(pixel.primaryColor), primaryColorR, getRed(pixel.source));
-			return getColor(a, b, g, r);
+			pixel.source = getColor(a, b, g, r);
 		}
 	}
 
@@ -154,34 +155,34 @@ public class TextureFunction {
 		}
 
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			int a = multiplyComponent(getAlpha(pixel.source), getAlpha(pixel.primaryColor));
 			int b = combineComponent(getBlue(pixel.primaryColor), primaryColorB, getBlue(pixel.source));
 			int g = combineComponent(getGreen(pixel.primaryColor), primaryColorG, getGreen(pixel.source));
 			int r = combineComponent(getRed(pixel.primaryColor), primaryColorR, getRed(pixel.source));
-			return getColor(a, b, g, r);
+			pixel.source = getColor(a, b, g, r);
 		}
 	}
 
 	private static final class TextureEffectReplaceRGB implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			return (pixel.source & 0x00FFFFFF) | (pixel.primaryColor & 0xFF000000);
+		public void filter(PixelState pixel) {
+			pixel.source = (pixel.source & 0x00FFFFFF) | (pixel.primaryColor & 0xFF000000);
 		}
 	}
 
 	private static final class TextureEffectAddRGB implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
-			return add(pixel.source & 0x00FFFFFF, pixel.primaryColor);
+		public void filter(PixelState pixel) {
+			pixel.source = add(pixel.source & 0x00FFFFFF, pixel.primaryColor);
 		}
 	}
 
 	private static final class TextureEffectAddRGBA implements IPixelFilter {
 		@Override
-		public int filter(PixelState pixel) {
+		public void filter(PixelState pixel) {
 			int a = multiplyComponent(getAlpha(pixel.source), getAlpha(pixel.primaryColor));
-			return setAlpha(add(pixel.source, pixel.primaryColor), a << 24);
+			pixel.source = setAlpha(addBGR(pixel.source, pixel.primaryColor), a);
 		}
 	}
 }
