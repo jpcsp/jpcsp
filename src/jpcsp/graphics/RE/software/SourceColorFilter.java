@@ -28,7 +28,7 @@ public class SourceColorFilter {
 	public static IPixelFilter getSourceColorFilter(GeContext context, boolean usePrimaryColor) {
 		IPixelFilter filter = null;
 
-		if (context.lightMode == GeCommands.LMODE_SEPARATE_SPECULAR_COLOR) {
+		if (!context.vinfo.transform2D && context.lightingFlag.isEnabled() && context.lightMode == GeCommands.LMODE_SEPARATE_SPECULAR_COLOR) {
 			if (usePrimaryColor) {
 				filter = new SourcePrimarySecondary();
 			} else {

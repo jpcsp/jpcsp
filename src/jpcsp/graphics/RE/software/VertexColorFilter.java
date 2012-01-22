@@ -20,7 +20,7 @@ import static jpcsp.graphics.RE.software.PixelColor.getColor;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.graphics.VertexState;
+import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VideoEngine;
 
 /**
@@ -30,49 +30,27 @@ import jpcsp.graphics.VideoEngine;
 public class VertexColorFilter {
 	protected static final Logger log = VideoEngine.log;
 
-	public static IPixelFilter getVertexColorFilter(VertexState v1, VertexState v2, VertexState v3) {
+	public static IPixelFilter getVertexColorFilter(GeContext context, float[] c1, float c2[], float[] c3) {
 		IPixelFilter filter;
 
-		if (sameColor(v1, v2, v3)) {
+		if (sameColor(c1, c2, c3)) {
         	if (log.isTraceEnabled()) {
-        		log.trace(String.format("Using ColorTextureFilter color=0x%08X", getColor(v1.c)));
+        		log.trace(String.format("Using ColorTextureFilter color=0x%08X", getColor(c1)));
         	}
-			filter = new ColorTextureFilter(v1.c);
-		} else if (v3 != null) {
+			filter = new ColorTextureFilter(c1);
+		} else  {
         	if (log.isTraceEnabled()) {
-        		log.trace(String.format("Using VertexTriangleTextureFilter color1=0x%08X, color2=0x%08X, color3=0x%08X", getColor(v1.c), getColor(v2.c), getColor(v3.c)));
+        		log.trace(String.format("Using VertexTriangleTextureFilter color1=0x%08X, color2=0x%08X, color3=0x%08X", getColor(c1), getColor(c2), getColor(c3)));
         	}
-			filter = new VertexTriangleTextureFilter(v1, v2, v3);
-		} else {
-        	if (log.isTraceEnabled()) {
-        		log.trace(String.format("Using ColorTextureFilter for sprite color=0x%08X", getColor(v2.c)));
-        	}
-        	// Only use the color of the 2nd vertex for sprites.
-			filter = new ColorTextureFilter(v2.c);
+			filter = new VertexTriangleTextureFilter(c1, c2, c3);
 		}
 
 		return filter;
 	}
 
-	private static boolean sameColor(VertexState v1, VertexState v2) {
-		if (v2 != null) {
-			for (int i = 0; i < v1.c.length; i++) {
-				if (v1.c[i] != v2.c[i]) {
-					return false;
-				}
-			}
-		}
-
-		return true;
-	}
-
-	private static boolean sameColor(VertexState v1, VertexState v2, VertexState v3) {
-		if (v3 == null) {
-			return sameColor(v1, v2);
-		}
-
-		for (int i = 0; i < v1.c.length; i++) {
-			if (v1.c[i] != v2.c[i] || v1.c[i] != v3.c[i]) {
+	private static boolean sameColor(float[] c1, float[] c2, float[] c3) {
+		for (int i = 0; i < 4; i++) {
+			if (c1[i] != c2[i] || c1[i] != c3[i]) {
 				return false;
 			}
 		}
@@ -85,11 +63,11 @@ public class VertexColorFilter {
 		private final int[] color2 = new int[4];
 		private final int[] color3 = new int[4];
 
-		public VertexTriangleTextureFilter(VertexState v1, VertexState v2, VertexState v3) {
-			for (int i = 0; i < color1.length; i++) {
-				color1[i] = getColor(v1.c[i]);
-				color2[i] = getColor(v2.c[i]);
-				color3[i] = getColor(v3.c[i]);
+		public VertexTriangleTextureFilter(float[] c1, float c2[], float[] c3) {
+			for (int i = 0; i < 4; i++) {
+				color1[i] = getColor(c1[i]);
+				color2[i] = getColor(c2[i]);
+				color3[i] = getColor(c3[i]);
 			}
 		}
 
@@ -100,7 +78,20 @@ public class VertexColorFilter {
 			int g = pixel.getTriangleWeightedValue(color1[1], color2[1], color3[1]);
 			int r = pixel.getTriangleWeightedValue(color1[0], color2[0], color3[0]);
 
-			pixel.source = getColor(a, b, g, r);
+			pixel.primaryColor = getColor(a, b, g, r);
+		}
+	}
+
+	private static final class ColorTextureFilter implements IPixelFilter {
+		private int color;
+
+		public ColorTextureFilter(float[] color) {
+			this.color = getColor(color);
+		}
+
+		@Override
+		public void filter(PixelState pixel) {
+			pixel.primaryColor = color;
 		}
 	}
 }

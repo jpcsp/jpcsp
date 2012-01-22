@@ -50,7 +50,8 @@ public class TriangleRenderer extends BaseRenderer {
 
 	public boolean isCulled(GeContext context, boolean invertedFrontFace) {
 		// Back face culling enabled?
-        if (!context.clearMode && context.cullFaceFlag.isEnabled()) {
+		// It is disabled in clear mode and 2D
+        if (!context.clearMode && !context.vinfo.transform2D && context.cullFaceFlag.isEnabled()) {
     		initialize(context);
 
         	if (context.frontFaceCw) {
@@ -181,9 +182,6 @@ public class TriangleRenderer extends BaseRenderer {
         		imageWriter.skip(destinationWidth + imageWriterSkipEOL);
         		depthWriter.skip(destinationWidth + depthWriterSkipEOL);
         	} else {
-if (isLogTraceEnabled) {
-	log.trace(String.format("render3D y=%d, x=%d-%d", y, startX, endX));
-}
         		numberPixels += endX - startX + 1;
         		imageWriter.skip(startX - pxMin);
         		depthWriter.skip(startX - pxMin);
@@ -222,9 +220,6 @@ if (isLogTraceEnabled) {
 	        				depthWriter.skip(1);
 	        			}
 	        		} else {
-if (isLogTraceEnabled) {
-	log.trace(String.format("render3D ouside (%d,%d), weights %f, %f, %f", x, pixel.y, pixel.triangleWeight1, pixel.triangleWeight2, pixel.triangleWeight3));
-}
 	        			// Do not display, skip the pixel
 	        			imageWriter.skip(1);
 	        			depthWriter.skip(1);
@@ -235,8 +230,8 @@ if (isLogTraceEnabled) {
 	    		depthWriter.skip((pxMax - endX) + depthWriterSkipEOL);
         	}
         }
-        if (numberPixels > 10000 && log.isInfoEnabled()) {
-        	log.info(String.format("render3D: %d pixels, (%d,%d)-(%d,%d), duration %dms", numberPixels, pxMin, pyMin, pxMax, pyMax, RESoftware.triangleRender3DStatistics.getDurationMillis()));
+        if (numberPixels > 10000 && isLogDebugEnabled) {
+        	log.debug(String.format("render3D: %d pixels, (%d,%d)-(%d,%d), duration %dms", numberPixels, pxMin, pyMin, pxMax, pyMax, RESoftware.triangleRender3DStatistics.getDurationMillis()));
         }
         RESoftware.triangleRender3DStatistics.end();
 	}

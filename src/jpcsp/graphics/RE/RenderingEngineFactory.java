@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
+import jpcsp.HLE.Modules;
 import jpcsp.graphics.RE.software.RESoftware;
 import jpcsp.util.DurationStatistics;
 
@@ -26,7 +27,6 @@ import jpcsp.util.DurationStatistics;
 public class RenderingEngineFactory {
 	private static final boolean enableDebugProxy = false;
 	private static final boolean enableStatisticsProxy = false;
-	public static final boolean enableSoftwareRendering = false;
 
 	private static IRenderingEngine createRenderingEngine(boolean enableSoftwareRendering) {
 		// Build the rendering pipeline, from the last entry to the first one.
@@ -84,7 +84,7 @@ public class RenderingEngineFactory {
 	 * @return the rendering engine to be used
 	 */
 	public static IRenderingEngine createRenderingEngine() {
-		return createRenderingEngine(enableSoftwareRendering);
+		return createRenderingEngine(Modules.sceDisplayModule.isUsingSoftwareRenderer());
 	}
 
 	/**
