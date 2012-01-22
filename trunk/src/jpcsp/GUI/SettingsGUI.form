@@ -585,6 +585,7 @@
                               <Component id="enableShaderStencilTestCheck" alignment="0" min="-2" max="-2" attributes="0"/>
                               <Component id="enableShaderColorMaskCheck" alignment="0" min="-2" max="-2" attributes="0"/>
                               <Component id="disableOptimizedVertexInfoReading" alignment="0" min="-2" max="-2" attributes="0"/>
+                              <Component id="useSoftwareRenderer" alignment="0" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <EmptySpace max="-2" attributes="0"/>
                       </Group>
@@ -618,6 +619,8 @@
                           <Component id="enableShaderColorMaskCheck" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
                           <Component id="disableOptimizedVertexInfoReading" min="-2" max="-2" attributes="0"/>
+                          <EmptySpace max="-2" attributes="0"/>
+                          <Component id="useSoftwareRenderer" min="-2" max="-2" attributes="0"/>
                           <EmptySpace pref="30" max="32767" attributes="0"/>
                       </Group>
                   </Group>
@@ -712,6 +715,13 @@
                   <Properties>
                     <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                       <Connection code="Resource.get(&quot;disableoptimizedvertexinforeading&quot;)" type="code"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JCheckBox" name="useSoftwareRenderer">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                      <Connection code="Resource.get(&quot;useSoftwareRenderer&quot;)" type="code"/>
                     </Property>
                   </Properties>
                 </Component>

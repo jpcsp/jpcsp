@@ -54,7 +54,11 @@ public class RESoftware extends BaseRenderingEngine {
     protected BoundingBoxRenderer boundingBoxRenderer;
     protected boolean boundingBoxVisible;
 
-	@Override
+    public RESoftware() {
+    	log.info("Using SoftwareRenderer");
+    }
+
+    @Override
 	public void exit() {
 		if (DurationStatistics.collectStatistics) {
 			log.info(drawArraysStatistics);
@@ -573,7 +577,6 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	protected boolean isSprite(VertexInfo vinfo, VertexState tv1, VertexState tv2, VertexState tv3, VertexState tv4) {
-if (true) return false;
 		// Sprites are only available in 2D
 		if (!vinfo.transform2D) {
 			return false;

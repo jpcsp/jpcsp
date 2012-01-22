@@ -420,12 +420,6 @@ public abstract class BaseRenderer implements IRenderer {
 	}
 
 	protected void prepareTextureReader(GeContext context, CachedTexture texture, VertexState v1, VertexState v2, VertexState v3) {
-		if (context.useVertexColor && context.vinfo.color != 0) {
-			pixel.primaryColor = getColor(v2.c);
-		} else {
-			pixel.primaryColor = getColor(context.vertexColor);
-		}
-
 		// The rendering will be performed into the following ranges:
 		// 3D:
 		//   - x: [pxMin..pxMax] (min and max included)
@@ -461,8 +455,24 @@ public abstract class BaseRenderer implements IRenderer {
 
         IPixelFilter filter = Lighting.getLighting(context, pixel);
         boolean added = addFilter(filter);
-        if (added && isLogTraceEnabled) {
-        	log.trace(String.format("Using Lighting Filter %s, %s, %s, %s", getLightState(context, 0), getLightState(context, 1), getLightState(context, 2), getLightState(context, 3)));
+        if (added) {
+        	if (isLogTraceEnabled) {
+        		log.trace(String.format("Using Lighting Filter %s, %s, %s, %s", getLightState(context, 0), getLightState(context, 1), getLightState(context, 2), getLightState(context, 3)));
+        	}
+        } else {
+        	// No lighting, take the primary color from the vertex
+    		if (context.useVertexColor && context.vinfo.color != 0) {
+    			if (v3 == null) {
+    				// For sprites, take only the color from the 2nd vertex
+    				pixel.primaryColor = getColor(v2.c);
+    			} else {
+    				// For triangles, take the weighted color from the 3 vertices.
+    	    		filter = VertexColorFilter.getVertexColorFilter(context, v1.c, v2.c, v3.c);
+    	        	addFilter(filter);
+    			}
+    		} else {
+    			pixel.primaryColor = getColor(context.vertexColor);
+    		}
         }
 
         IPixelFilter textureFilter;
@@ -522,12 +532,6 @@ public abstract class BaseRenderer implements IRenderer {
             addFilter(textureFilter);
 
             addFilter(SourceColorFilter.getSourceColorFilter(context, false));
-    	} else if (context.useVertexColor) {
-    		// Read the color from the vertex
-    		textureFilter = VertexColorFilter.getVertexColorFilter(v1, v2, v3);
-        	addFilter(textureFilter);
-
-        	addFilter(SourceColorFilter.getSourceColorFilter(context, false));
 		} else {
 			if (isLogTraceEnabled) {
 				log.trace(String.format("Using ColorTextureFilter vertexColor=0x%08X", getColor(context.vertexColor)));
@@ -614,7 +618,7 @@ public abstract class BaseRenderer implements IRenderer {
         {
         	added = addFilter(MaskFilter.getMaskFilter(context, context.clearMode, context.clearModeColor, context.clearModeStencil, context.clearModeDepth));
         	if (added && isLogTraceEnabled) {
-        		log.trace(String.format("Using MaskFilter colorMask=0x%02X%02X%02X, depthMask=%b, clearMode=%b, clearModeColor=%b, clearModeStencil=%b, clearModeDepth=%b", context.colorMask[0], context.colorMask[1], context.colorMask[2], context.depthMask, context.clearMode, context.clearModeColor, context.clearModeStencil, context.clearModeDepth));
+        		log.trace(String.format("Using MaskFilter colorMask=0x%08X, depthMask=%b, clearMode=%b, clearModeColor=%b, clearModeStencil=%b, clearModeDepth=%b", getColor(context.colorMask), context.depthMask, context.clearMode, context.clearModeColor, context.clearModeStencil, context.clearModeDepth));
         	}
         }
 	}

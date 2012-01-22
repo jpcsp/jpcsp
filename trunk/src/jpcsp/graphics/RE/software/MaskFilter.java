@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE.software;
 
 import static jpcsp.graphics.RE.software.PixelColor.ZERO;
+import static jpcsp.graphics.RE.software.PixelColor.getColor;
 import jpcsp.graphics.GeContext;
 
 /**
@@ -28,15 +29,7 @@ public class MaskFilter {
 		IPixelFilter filter = null;
 
 		if (clearMode) {
-			if (!clearModeDepth) {
-				// Depth writes disabled
-				filter = new DepthColorMask(clearModeColor, clearModeStencil);
-			} else if (clearModeColor && clearModeStencil) {
-				filter = NopFilter.NOP;
-			} else {
-				// Depth writes enabled
-				filter = new ColorMask(clearModeColor, clearModeStencil);
-			}
+			filter = getMaskFilter(clearModeDepth, clearModeColor, clearModeStencil);
 		} else {
 			if (context.colorMask[0] == ZERO && context.colorMask[1] == ZERO && context.colorMask[2] == ZERO && context.colorMask[3] == ZERO) {
 				if (context.depthMask) {
@@ -59,6 +52,28 @@ public class MaskFilter {
 		return filter;
 	}
 
+	private static IPixelFilter getMaskFilter(boolean depthMask, boolean colorMask, boolean stencilMask) {
+		IPixelFilter filter = null;
+
+		if (!colorMask && !stencilMask) {
+			if (depthMask) {
+				filter = new NoColorMask();
+			} else {
+				filter = new DepthNoColorMask();
+			}
+		} else if (depthMask && colorMask && stencilMask) {
+			return NopFilter.NOP;
+		} else {
+			if (depthMask) {
+				filter = new ColorMask(colorMask, stencilMask);
+			} else {
+				filter = new DepthColorMask(colorMask, stencilMask);
+			}
+		}
+
+		return filter;
+	}
+
 	private static class ColorMask implements IPixelFilter {
 		private int colorMask;
 		private int notColorMask;
@@ -66,7 +81,7 @@ public class MaskFilter {
 		public ColorMask(int[] colorMask) {
 			// colorMask[i] == ZERO: no masking
 			// colorMask[i] == ONE: complete masking
-			this.colorMask = PixelColor.getColor(colorMask[3], colorMask[2], colorMask[1], colorMask[0]);
+			this.colorMask = getColor(colorMask);
 			notColorMask = ~this.colorMask;
 		}
 
@@ -101,6 +116,21 @@ public class MaskFilter {
 	private static final class DepthMask implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
+			pixel.sourceDepth = pixel.destinationDepth;
+		}
+	}
+
+	private static final class NoColorMask implements IPixelFilter {
+		@Override
+		public void filter(PixelState pixel) {
+			pixel.source = pixel.destination;
+		}
+	}
+
+	private static final class DepthNoColorMask implements IPixelFilter {
+		@Override
+		public void filter(PixelState pixel) {
+			pixel.source = pixel.destination;
 			pixel.sourceDepth = pixel.destinationDepth;
 		}
 	}

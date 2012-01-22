@@ -132,7 +132,7 @@ public class sceDisplay extends HLEModule {
 	    	if (re == null) {
 	    		if (startModules) {
 	    			re = RenderingEngineFactory.createRenderingEngine();
-	    			if (isSoftwareRendering()) {
+	    			if (isUsingSoftwareRenderer()) {
 	    				reDisplay = RenderingEngineFactory.createRenderingEngineForDisplay();
 	    				reDisplay.setGeContext(VideoEngine.getInstance().getContext());
 	    			} else {
@@ -177,7 +177,7 @@ public class sceDisplay extends HLEModule {
 	        	re.startDisplay();
 	            VideoEngine.getInstance().update();
 	            re.endDisplay();
-	        } else if (isSoftwareRendering()) {
+	        } else if (isUsingSoftwareRenderer()) {
 	        	re.startDisplay();
 	        	VideoEngine.getInstance().update();
 	        	re.endDisplay();
@@ -297,6 +297,7 @@ public class sceDisplay extends HLEModule {
 
     private boolean onlyGEGraphics = false;
     private boolean saveGEToTexture = false;
+    private boolean useSoftwareRenderer = false;
     private static final boolean useDebugGL = false;
     private static final int internalTextureFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
     
@@ -414,6 +415,16 @@ public class sceDisplay extends HLEModule {
 		@Override
 		protected void settingsValueChanged(boolean value) {
 			setOnlyGEGraphics(value);
+		}
+    }
+
+    private class SoftwareRendererSettingsListener extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setUseSoftwareRenderer(value);
+			if (isStarted) {
+				resetDisplaySettings = true;
+			}
 		}
     }
 
@@ -550,10 +561,6 @@ public class sceDisplay extends HLEModule {
         isStarted = false;
         resizePending = false;
         tempSize = 0;
-    }
-
-    private boolean isSoftwareRendering() {
-    	return RenderingEngineFactory.enableSoftwareRendering;
     }
 
     public void setScreenResolution(int width, int height) {
@@ -782,6 +789,7 @@ public class sceDisplay extends HLEModule {
         }
 
     	setSettingsListener("emu.onlyGEGraphics", new OnlyGeSettingsListener());
+    	setSettingsListener("emu.useSoftwareRenderer", new SoftwareRendererSettingsListener());
 
     	super.start();
     }
@@ -886,7 +894,7 @@ public class sceDisplay extends HLEModule {
         	log.debug(String.format("hleDisplaySetGeBuf topaddr=0x%08X, bufferwidth=%d, pixelformat=%d, copyGE=%b, with=%d, height=%d", topaddr, bufferwidth, pixelformat, copyGEToMemory, width, height));
         }
 
-        if (isSoftwareRendering()) {
+        if (isUsingSoftwareRenderer()) {
         	copyGEToMemory = false;
         	forceLoadGEToScreen = false;
         }
@@ -941,7 +949,7 @@ public class sceDisplay extends HLEModule {
     	}
 
     	// Always reload the GE memory to the screen, if not rendering in software
-		boolean loadGEToScreen = !isSoftwareRendering();
+		boolean loadGEToScreen = !isUsingSoftwareRenderer();
 
 		if (copyGEToMemory && (topaddrGe != topaddr || pixelformatGe != pixelformat)) {
 			if (VideoEngine.log.isDebugEnabled()) {
@@ -1039,6 +1047,14 @@ public class sceDisplay extends HLEModule {
     private void setOnlyGEGraphics(boolean onlyGEGraphics) {
         this.onlyGEGraphics = onlyGEGraphics;
         VideoEngine.log.info("Only GE Graphics: " + onlyGEGraphics);
+    }
+
+    private void setUseSoftwareRenderer(boolean useSoftwareRenderer) {
+    	this.useSoftwareRenderer = useSoftwareRenderer;
+    }
+
+    public boolean isUsingSoftwareRenderer() {
+    	return useSoftwareRenderer;
     }
 
     public void rotate(int angleId) {
@@ -1170,7 +1186,7 @@ public class sceDisplay extends HLEModule {
     }
 
     public void captureGeImage() {
-    	if (isSoftwareRendering()) {
+    	if (isUsingSoftwareRenderer()) {
     		Buffer buffer = Memory.getInstance().getBuffer(topaddrGe, bufferwidthGe * heightGe * getPixelFormatBytes(pixelformatGe));
     		CaptureManager.captureImage(topaddrGe, 0, buffer, widthGe, heightGe, bufferwidthGe, pixelformatGe, false, 0, false, false);
     		return;
