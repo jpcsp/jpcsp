@@ -360,7 +360,7 @@ public class scePsmfPlayer extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x58B83577, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x58B83577, version = 150)
     public void scePsmfPlayerSetPsmfCB(Processor processor) {
         if (log.isDebugEnabled()) {
             log.debug("scePsmfPlayerSetPsmfCB redirecting to scePsmfPlayerSetPsmf");
@@ -482,7 +482,7 @@ public class scePsmfPlayer extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0xA0B8CA55, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xA0B8CA55, version = 150)
     public void scePsmfPlayerUpdate(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -637,7 +637,7 @@ public class scePsmfPlayer extends HLEModule {
         }
     }
 
-    @HLEFunction(nid = 0xF8EF08A6, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xF8EF08A6, version = 150)
     public void scePsmfPlayerGetCurrentStatus(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -809,7 +809,7 @@ public class scePsmfPlayer extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x2BEB1569, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x2BEB1569, version = 150)
     public void scePsmfPlayerBreak(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -821,7 +821,7 @@ public class scePsmfPlayer extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x76C0F4AE, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x76C0F4AE, version = 150)
     public void scePsmfPlayerSetPsmfOffset(Processor processor) {
         if (log.isDebugEnabled()) {
             log.debug("scePsmfPlayerSetPsmfOffset redirecting to scePsmfPlayerSetPsmf");
@@ -829,7 +829,7 @@ public class scePsmfPlayer extends HLEModule {
         scePsmfPlayerSetPsmf(processor);
     }
 
-    @HLEFunction(nid = 0xA72DB4F9, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xA72DB4F9, version = 150)
     public void scePsmfPlayerSetPsmfOffsetCB(Processor processor) {
         if (log.isDebugEnabled()) {
             log.debug("scePsmfPlayerSetPsmfOffsetCB redirecting to scePsmfPlayerSetPsmfCB");
