@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.util;
 
 public class DurationStatistics implements Comparable<DurationStatistics> {
-	public static final boolean collectStatistics = true;
+	public static final boolean collectStatistics = false;
     public String name;
     public long cumulatedTimeMillis;
     public long numberCalls;
