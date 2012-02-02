@@ -27,36 +27,55 @@ import jpcsp.graphics.RE.software.Rasterizer.Range;
  * @author gid15
  *
  */
-public class TriangleRenderer extends BaseRenderer {
-	protected VertexState v1;
-	protected VertexState v2;
-	protected VertexState v3;
+public class TriangleRenderer extends BasePrimitiveRenderer {
 	protected boolean initialized;
+	private VertexState v1;
+	private VertexState v2;
+	private VertexState v3;
 
-	public TriangleRenderer(VertexState v1, VertexState v2, VertexState v3) {
+	/**
+	 * Create a triangle renderer using the current settings from the
+	 * GE context and a cached texture.
+	 * 
+	 * The GE context values used by the rendering will be copied
+	 * from the GE context during this call. Later updates of the
+	 * GE context values will not be considered.
+	 *
+	 * This triangle renderer can be re-used for rendering multiple
+	 * triangles (i.e. multiple vertex-triples) sharing all the same
+	 * settings from the GE context.
+	 *
+	 * @param context    the current GE context
+	 * @param texture    the texture to be used (or null if no texture used)
+	 */
+	public TriangleRenderer(GeContext context, CachedTexture texture, boolean useVertexTexture) {
+		init(context, texture, useVertexTexture, true);
+	}
+
+	/**
+	 * This method has to be called when using this triangle renderer
+	 * for a new set of vertices.
+	 * The vertices will be rendered using the GE context values defined
+	 * when creating the triangle renderer.
+	 *
+	 * @param v1	first vertex of the triangle
+	 * @param v2	second vertex of the triangle
+	 * @param v3	third vertex of the triangle
+	 */
+	public void setVertex(VertexState v1, VertexState v2, VertexState v3) {
 		this.v1 = v1;
 		this.v2 = v2;
 		this.v3 = v3;
+		setVertexPositions(v1, v2, v3);
 	}
 
-	protected void initialize(GeContext context) {
-		if (!initialized) {
-			init(context);
-			setPositions(v1, v2, v3);
-
-			initialized = true;
-		}
-	}
-
-	public boolean isCulled(GeContext context, boolean invertedFrontFace) {
+	public boolean isCulled(boolean invertedFrontFace) {
 		// Back face culling enabled?
 		// It is disabled in clear mode and 2D
-        if (!context.clearMode && !context.vinfo.transform2D && context.cullFaceFlag.isEnabled()) {
-    		initialize(context);
-
-        	if (context.frontFaceCw) {
+        if (!clearMode && !transform2D && cullFaceEnabled) {
+        	if (frontFaceCw) {
         		// The visible face is clockwise
-        		if (!isClockwise() ^ invertedFrontFace) {
+        		if (!prim.isClockwise() ^ invertedFrontFace) {
         			if (log.isTraceEnabled()) {
         				log.trace("Counterclockwise triangle not displayed");
         			}
@@ -64,7 +83,7 @@ public class TriangleRenderer extends BaseRenderer {
         		}
         	} else {
         		// The visible face is counterclockwise
-        		if (isClockwise() ^ invertedFrontFace) {
+        		if (prim.isClockwise() ^ invertedFrontFace) {
         			if (log.isTraceEnabled()) {
         				log.trace("Clockwise triangle not displayed");
         			}
@@ -77,26 +96,16 @@ public class TriangleRenderer extends BaseRenderer {
 	}
 
 	@Override
-	public boolean prepare(GeContext context, CachedTexture texture) {
+	public boolean prepare() {
         if (log.isTraceEnabled()) {
         	log.trace(String.format("TriangleRenderer"));
         }
 
-		initialize(context);
-
-        if (!isVisible(context)) {
+        if (!isVisible()) {
         	return false;
         }
 
-        setTextures(v1, v2, v3);
-
-        prepareTextureReader(context, texture, v1, v2, v3);
-        prepareWriters(context);
-        if (imageWriter == null || depthWriter == null) {
-        	return false;
-        }
-
-        prepareFilters(context);
+        setVertexTextures(v1, v2, v3);
 
 		return true;
 	}
@@ -112,19 +121,22 @@ public class TriangleRenderer extends BaseRenderer {
 	}
 
 	protected void render2D() {
-		float v = vStart;
-        for (int y = 0; y < destinationHeight; y++) {
-        	pixel.y = pyMin + y;
+		if (isLogTraceEnabled) {
+			log.trace(String.format("Triangle render2D (%d,%d)-(%d,%d) skip=%d", prim.pxMin, prim.pyMin, prim.pxMin + prim.destinationWidth, prim.pyMin + prim.destinationWidth, imageWriterSkipEOL));
+		}
+		float v = prim.vStart;
+        for (int y = 0; y < prim.destinationHeight; y++) {
+        	pixel.y = prim.pyMin + y;
     		pixel.v = v;
-    		float u = uStart;
-    		pixel.x = pxMin;
-    		computeTriangleWeights();
-        	for (int x = 0; x < destinationWidth; x++) {
-        		pixel.x = pxMin + x;
+    		float u = prim.uStart;
+    		pixel.x = prim.pxMin;
+    		prim.computeTriangleWeights(pixel);
+        	for (int x = 0; x < prim.destinationWidth; x++) {
+        		pixel.x = prim.pxMin + x;
         		pixel.u = u;
         		if (pixel.isInsideTriangle()) {
-        			pixel.filterPassed = true;
-        			pixel.sourceDepth = round(pixel.getTriangleWeightedValue(p1z, p2z, p3z));
+        			pixel.newPixel();
+        			pixel.sourceDepth = round(pixel.getTriangleWeightedValue(prim.p1z, prim.p2z, prim.p3z));
             		pixel.destination = imageWriter.readCurrent();
             		pixel.destinationDepth = depthWriter.readCurrent();
             		for (int i = 0; i < numberFilters; i++) {
@@ -133,9 +145,18 @@ public class TriangleRenderer extends BaseRenderer {
             				break;
             			}
             		}
+if (isLogTraceEnabled) {
+	log.trace(String.format("Pixel (%d,%d), passed=%b, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d, filterOnFailed=%s", pixel.x, pixel.y, pixel.filterPassed, pixel.u, pixel.v, pixel.source, pixel.destination, pixel.primaryColor, pixel.secondaryColor, pixel.sourceDepth, pixel.destinationDepth, pixel.filterOnFailed));
+}
             		if (pixel.filterPassed) {
 	            		imageWriter.writeNext(pixel.source);
 	            		depthWriter.writeNext(pixel.sourceDepth);
+        			} else if (pixel.filterOnFailed != null) {
+        				// Filter did not pass, but we have a filter to be executed in that case
+        				pixel.source = pixel.destination;
+        				pixel.filterOnFailed.filter(pixel);
+        				imageWriter.writeNext(pixel.source);
+        				depthWriter.skip(1);
             		} else {
             			// Filter did not pass, do not update the pixel
             			imageWriter.skip(1);
@@ -146,12 +167,12 @@ public class TriangleRenderer extends BaseRenderer {
         			imageWriter.skip(1);
         			depthWriter.skip(1);
         		}
-        		u += uStep;
-        		deltaXTriangleWeigths();
+        		u += prim.uStep;
+        		prim.deltaXTriangleWeigths(pixel);
         	}
         	imageWriter.skip(imageWriterSkipEOL);
         	depthWriter.skip(depthWriterSkipEOL);
-        	v += vStep;
+        	v += prim.vStep;
         }
 	}
 
@@ -162,16 +183,16 @@ public class TriangleRenderer extends BaseRenderer {
 		Rasterizer rasterizer = null;
 		// No need to use a Rasterizer when rendering very small area.
 		// The overhead of the Rasterizer would lead the slower rendering.
-		if (destinationWidth >= Rasterizer.MINIMUM_WIDTH && destinationHeight >= Rasterizer.MINIMUM_HEIGHT) {
-			rasterizer = new Rasterizer(p1x, p1y, p2x, p2y, p3x, p3y, pyMin, pyMax);
-			rasterizer.setY(pyMin);
+		if (prim.destinationWidth >= Rasterizer.MINIMUM_WIDTH && prim.destinationHeight >= Rasterizer.MINIMUM_HEIGHT) {
+			rasterizer = new Rasterizer(prim.p1x, prim.p1y, prim.p2x, prim.p2y, prim.p3x, prim.p3y, prim.pyMin, prim.pyMax);
+			rasterizer.setY(prim.pyMin);
 		}
 
 		int numberPixels = 0;
-        for (int y = pyMin; y <= pyMax; y++) {
+        for (int y = prim.pyMin; y <= prim.pyMax; y++) {
         	pixel.y = y;
-        	int startX = pxMin;
-        	int endX = pxMax;
+        	int startX = prim.pxMin;
+        	int endX = prim.pxMax;
         	if (rasterizer != null) {
             	rasterizer.getNextRange(range);
             	startX = max(range.xMin, startX);
@@ -179,14 +200,14 @@ public class TriangleRenderer extends BaseRenderer {
         	}
 
         	if (startX >= endX) {
-        		imageWriter.skip(destinationWidth + imageWriterSkipEOL);
-        		depthWriter.skip(destinationWidth + depthWriterSkipEOL);
+        		imageWriter.skip(prim.destinationWidth + imageWriterSkipEOL);
+        		depthWriter.skip(prim.destinationWidth + depthWriterSkipEOL);
         	} else {
         		numberPixels += endX - startX + 1;
-        		imageWriter.skip(startX - pxMin);
-        		depthWriter.skip(startX - pxMin);
+        		imageWriter.skip(startX - prim.pxMin);
+        		depthWriter.skip(startX - prim.pxMin);
         		pixel.x = startX;
-        		computeTriangleWeights();
+        		prim.computeTriangleWeights(pixel);
 	        	for (int x = startX; x <= endX; x++) {
 	        		if (pixel.isInsideTriangle()) {
 	        			pixel.newPixel();
@@ -196,13 +217,12 @@ public class TriangleRenderer extends BaseRenderer {
 	        			// Apply a perspective correction by weighting the coordinates
 	        			// by their "w" value.
 	        			// See http://en.wikipedia.org/wiki/Texture_mapping#Perspective_correctness
-	        			float u = pixel.getTriangleWeightedValue(t1u * p1wInverted, t2u * p2wInverted, t3u * p3wInverted);
-	        			float v = pixel.getTriangleWeightedValue(t1v * p1wInverted, t2v * p2wInverted, t3v * p3wInverted);
-	        			float weightInverted = 1.f / pixel.getTriangleWeightedValue(p1wInverted, p2wInverted, p3wInverted);
+	        			float u = pixel.getTriangleWeightedValue(prim.t1u * prim.p1wInverted, prim.t2u * prim.p2wInverted, prim.t3u * prim.p3wInverted);
+	        			float v = pixel.getTriangleWeightedValue(prim.t1v * prim.p1wInverted, prim.t2v * prim.p2wInverted, prim.t3v * prim.p3wInverted);
+	        			float weightInverted = 1.f / pixel.getTriangleWeightedValue(prim.p1wInverted, prim.p2wInverted, prim.p3wInverted);
 	        			pixel.u = u * weightInverted;
 	        			pixel.v = v * weightInverted;
-	        			pixel.filterPassed = true;
-	        			pixel.sourceDepth = round(pixel.getTriangleWeightedValue(p1z, p2z, p3z));
+	        			pixel.sourceDepth = round(pixel.getTriangleWeightedValue(prim.p1z, prim.p2z, prim.p3z));
 	        			pixel.destination = imageWriter.readCurrent();
 	        			pixel.destinationDepth = depthWriter.readCurrent();
 	        			for (int i = 0; i < numberFilters; i++) {
@@ -211,9 +231,18 @@ public class TriangleRenderer extends BaseRenderer {
 	        					break;
 	        				}
 	        			}
+if (isLogTraceEnabled) {
+	log.trace(String.format("Pixel (%d,%d), passed=%b, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d, filterOnFailed=%s", pixel.x, pixel.y, pixel.filterPassed, pixel.u, pixel.v, pixel.source, pixel.destination, pixel.primaryColor, pixel.secondaryColor, pixel.sourceDepth, pixel.destinationDepth, pixel.filterOnFailed));
+}
 	        			if (pixel.filterPassed) {
 	        	    		imageWriter.writeNext(pixel.source);
 	        	    		depthWriter.writeNext(pixel.sourceDepth);
+	        			} else if (pixel.filterOnFailed != null) {
+	        				// Filter did not pass, but we have a filter to be executed in that case
+	        				pixel.source = pixel.destination;
+	        				pixel.filterOnFailed.filter(pixel);
+	        				imageWriter.writeNext(pixel.source);
+	        				depthWriter.skip(1);
 	        			} else {
 	        				// Filter did not pass, do not update the pixel
 	        				imageWriter.skip(1);
@@ -224,14 +253,14 @@ public class TriangleRenderer extends BaseRenderer {
 	        			imageWriter.skip(1);
 	        			depthWriter.skip(1);
 	        		}
-	        		deltaXTriangleWeigths();
+	        		prim.deltaXTriangleWeigths(pixel);
 	        	}
-	    		imageWriter.skip((pxMax - endX) + imageWriterSkipEOL);
-	    		depthWriter.skip((pxMax - endX) + depthWriterSkipEOL);
+	    		imageWriter.skip((prim.pxMax - endX) + imageWriterSkipEOL);
+	    		depthWriter.skip((prim.pxMax - endX) + depthWriterSkipEOL);
         	}
         }
         if (numberPixels > 10000 && isLogDebugEnabled) {
-        	log.debug(String.format("render3D: %d pixels, (%d,%d)-(%d,%d), duration %dms", numberPixels, pxMin, pyMin, pxMax, pyMax, RESoftware.triangleRender3DStatistics.getDurationMillis()));
+        	log.debug(String.format("render3D: %d pixels, (%d,%d)-(%d,%d), duration %dms", numberPixels, prim.pxMin, prim.pyMin, prim.pxMax, prim.pyMax, RESoftware.triangleRender3DStatistics.getDurationMillis()));
         }
         RESoftware.triangleRender3DStatistics.end();
 	}

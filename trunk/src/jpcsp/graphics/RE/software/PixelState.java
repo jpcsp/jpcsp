@@ -34,16 +34,21 @@ public class PixelState {
 	public int y;
 	public int primaryColor;
 	public int secondaryColor;
+	public int materialAmbient;
+	public int materialDiffuse;
+	public int materialSpecular;
 	public float u;
 	public float v;
 	public float q;
 	private final float[] V = new float[] { 0.f, 0.f, 0.f, 1.f };
 	private final float[] Ve = new float[3];
 	private final float[] N = new float[] { 0.f, 0.f, 1.f };
+	private final float[] normalizedN = new float[] { 0.f, 0.f, 1.f };
 	private final float[] Ne = new float[] { 0.f, 0.f, 1.f };
 	private final float[] normalizedNe = new float[] { 0.f, 0.f, 1.f };
 	private boolean computedV;
 	private boolean computedN;
+	private boolean computedNormalizedN;
 	private boolean computedVe;
 	private boolean computedNe;
 	private boolean computedNormalizedNe;
@@ -57,12 +62,14 @@ public class PixelState {
 	public final float[] viewMatrix = new float[16];
 	public final float[] modelViewMatrix = new float[16];
 	public final float[] modelViewProjectionMatrix = new float[16];
+	public final float[] normalMatrix = new float[16];
 
 	public float triangleWeight1;
 	public float triangleWeight2;
 	public float triangleWeight3;
 
 	public boolean filterPassed;
+	public IPixelFilter filterOnFailed;
 
 	public float getTriangleWeightedValue(float value1, float value2, float value3) {
 		return triangleWeight1 * value1 + triangleWeight2 * value2 + triangleWeight3 * value3;
@@ -83,8 +90,12 @@ public class PixelState {
 	}
 
 	public void newPixel() {
+		filterPassed = true;
+		filterOnFailed = null;
+
 		computedV = false;
 		computedN = false;
+		computedNormalizedN = false;
 		computedVe = false;
 		computedNe = false;
 		computedNormalizedNe = false;
@@ -97,6 +108,11 @@ public class PixelState {
 			V[2] = getTriangleWeightedValue(v1z, v2z, v3z);
 			computedV = true;
 		}
+	}
+
+	public float[] getV() {
+		computeV();
+		return V;
 	}
 
 	public void getV(float[] V) {
@@ -115,11 +131,36 @@ public class PixelState {
 		}
 	}
 
+	public float[] getN() {
+		computeN();
+		return N;
+	}
+
 	public void getN(float[] N) {
 		computeN();
 		N[0] = this.N[0];
 		N[1] = this.N[1];
 		N[2] = this.N[2];
+	}
+
+	private void computeNormalizedN() {
+		if (!computedNormalizedN && hasNormal) {
+			computeN();
+			normalize3(normalizedN, N);
+			computedNormalizedN = true;
+		}
+	}
+
+	public float[] getNormalizedN() {
+		computeNormalizedN();
+		return normalizedN;
+	}
+
+	public void getNormalizedN(float[] normalizedN) {
+		computeNormalizedN();
+		normalizedN[0] = this.normalizedN[0];
+		normalizedN[1] = this.normalizedN[1];
+		normalizedN[2] = this.normalizedN[2];
 	}
 
 	private void computeVe() {
@@ -140,10 +181,7 @@ public class PixelState {
 	private void computeNe() {
 		if (!computedNe && hasNormal) {
 			computeN();
-			// TODO We should use the proper gl_NormalMatrix?
-			// Or is the PSP restricting the model-view matrix to an orthogonal matrix?
-			// See http://www.lighthouse3d.com/tutorials/glsl-tutorial/the-normal-matrix/
-			vectorMult33(Ne, modelViewMatrix, N);
+			vectorMult33(Ne, normalMatrix, N);
 			computedNe = true;
 		}
 	}

@@ -16,25 +16,25 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
-import jpcsp.graphics.GeContext;
-
 /**
  * @author gid15
  *
  */
 public class ScissorFilter {
-	public static IPixelFilter getScissorFilter(GeContext context, boolean scissorX, boolean scissorY) {
-		IPixelFilter filter = null;
+	public static IPixelFilter getScissorFilter(int scissorX1, int scissorY1, int scissorX2, int scissorY2, boolean scissorX, boolean scissorY) {
+		IPixelFilter filter;
 
 		if (scissorX) {
 			if (scissorY) {
-				filter = new ScissorXY(context.scissor_x1, context.scissor_y1, context.scissor_x2, context.scissor_y2);
+				filter = new ScissorXY(scissorX1, scissorY1, scissorX2, scissorY2);
 			} else {
-				filter = new ScissorX(context.scissor_x1, context.scissor_x2);
+				filter = new ScissorX(scissorX1, scissorX2);
 			}
 		} else {
 			if (scissorY) {
-				filter = new ScissorY(context.scissor_y1, context.scissor_y2);
+				filter = new ScissorY(scissorY1, scissorY2);
+			} else {
+				filter = NopFilter.NOP;
 			}
 		}
 

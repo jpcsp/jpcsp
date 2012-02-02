@@ -16,27 +16,22 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
-import jpcsp.graphics.GeContext;
-
 /**
  * @author gid15
  *
  */
 public interface IRenderer {
 	/**
-	 * Prepare the renderer: copy all necessary information to perform
-	 * the rendering into class variables, so that the rendering can be
+	 * Prepare the renderer so that the rendering can be
 	 * performed asynchronously, possibly in a different thread.
 	 * After the preparation, the context cannot be accessed any more.
 	 * 
-	 * @param context     GE context
-	 * @param texture     texture (or null if no texture is available)
 	 * @return            true if something has to be rendered
 	 *                    false if nothing has to be rendered. It is not
 	 *                          valid to call render() when this prepare
 	 *                          method has returned false.
 	 */
-	public boolean prepare(GeContext context, CachedTexture texture);
+	public boolean prepare();
 
 	/**
 	 * Render the primitive. This method is only allowed to access class

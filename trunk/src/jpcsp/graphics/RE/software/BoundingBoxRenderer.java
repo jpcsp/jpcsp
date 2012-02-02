@@ -22,10 +22,11 @@ import jpcsp.graphics.GeContext;
  * @author gid15
  *
  */
-public class BoundingBoxRenderer extends BaseRenderer {
+public class BoundingBoxRenderer extends BasePrimitiveRenderer {
 	float[][] boundingBoxPositions;
 
-	public BoundingBoxRenderer() {
+	public BoundingBoxRenderer(GeContext context) {
+		init(context, null, false, false);
 	}
 
 	public void drawBoundingBox(float[][] boundingBoxPositions) {
@@ -33,13 +34,12 @@ public class BoundingBoxRenderer extends BaseRenderer {
 	}
 
 	@Override
-	public boolean prepare(GeContext context, CachedTexture texture) {
-		init(context);
+	public boolean prepare() {
 		for (int i = 0; i < boundingBoxPositions.length; i++) {
 			addPosition(boundingBoxPositions[i]);
 		}
 
-		if (!insideScissor(context)) {
+		if (!insideScissor()) {
 			return false;
 		}
 

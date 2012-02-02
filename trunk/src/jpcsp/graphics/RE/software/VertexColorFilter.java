@@ -20,7 +20,6 @@ import static jpcsp.graphics.RE.software.PixelColor.getColor;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VideoEngine;
 
 /**
@@ -30,7 +29,7 @@ import jpcsp.graphics.VideoEngine;
 public class VertexColorFilter {
 	protected static final Logger log = VideoEngine.log;
 
-	public static IPixelFilter getVertexColorFilter(GeContext context, float[] c1, float c2[], float[] c3) {
+	public static IPixelFilter getVertexColorFilter(float[] c1, float c2[], float[] c3) {
 		IPixelFilter filter;
 
 		if (sameColor(c1, c2, c3)) {

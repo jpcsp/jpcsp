@@ -4230,36 +4230,39 @@ public class VideoEngine {
     public static void doSkinning(float[][] boneMatrix, VertexInfo vinfo, VertexState v) {
         float x = 0, y = 0, z = 0;
         float nx = 0, ny = 0, nz = 0;
+        boolean hasNormal = vinfo.normal != 0;
         for (int i = 0; i < vinfo.skinningWeightCount; ++i) {
-            if (v.boneWeights[i] != 0.f) {
-
+        	float boneWeight = v.boneWeights[i];
+            if (boneWeight != 0.f) {
                 x += (v.p[0] * boneMatrix[i][0]
-                        + v.p[1] * boneMatrix[i][3]
-                        + v.p[2] * boneMatrix[i][6]
-                        + boneMatrix[i][9]) * v.boneWeights[i];
+                    + v.p[1] * boneMatrix[i][3]
+                    + v.p[2] * boneMatrix[i][6]
+                             + boneMatrix[i][9]) * boneWeight;
 
                 y += (v.p[0] * boneMatrix[i][1]
-                        + v.p[1] * boneMatrix[i][4]
-                        + v.p[2] * boneMatrix[i][7]
-                        + boneMatrix[i][10]) * v.boneWeights[i];
+                    + v.p[1] * boneMatrix[i][4]
+                    + v.p[2] * boneMatrix[i][7]
+                             + boneMatrix[i][10]) * boneWeight;
 
                 z += (v.p[0] * boneMatrix[i][2]
-                        + v.p[1] * boneMatrix[i][5]
-                        + v.p[2] * boneMatrix[i][8]
-                        + boneMatrix[i][11]) * v.boneWeights[i];
+                    + v.p[1] * boneMatrix[i][5]
+                    + v.p[2] * boneMatrix[i][8]
+                             + boneMatrix[i][11]) * boneWeight;
 
-                // Normals shouldn't be translated :)
-                nx += (v.n[0] * boneMatrix[i][0]
-                        + v.n[1] * boneMatrix[i][3]
-                        + v.n[2] * boneMatrix[i][6]) * v.boneWeights[i];
+                if (hasNormal) {
+                    // Normals shouldn't be translated :)
+                    nx += (v.n[0] * boneMatrix[i][0]
+                         + v.n[1] * boneMatrix[i][3]
+                         + v.n[2] * boneMatrix[i][6]) * boneWeight;
 
-                ny += (v.n[0] * boneMatrix[i][1]
-                        + v.n[1] * boneMatrix[i][4]
-                        + v.n[2] * boneMatrix[i][7]) * v.boneWeights[i];
+                    ny += (v.n[0] * boneMatrix[i][1]
+                         + v.n[1] * boneMatrix[i][4]
+                         + v.n[2] * boneMatrix[i][7]) * boneWeight;
 
-                nz += (v.n[0] * boneMatrix[i][2]
-                        + v.n[1] * boneMatrix[i][5]
-                        + v.n[2] * boneMatrix[i][8]) * v.boneWeights[i];
+                    nz += (v.n[0] * boneMatrix[i][2]
+                         + v.n[1] * boneMatrix[i][5]
+                         + v.n[2] * boneMatrix[i][8]) * boneWeight;
+                }
             }
         }
 
@@ -4281,9 +4284,11 @@ public class VideoEngine {
         }
          */
 
-        v.n[0] = nx;
-        v.n[1] = ny;
-        v.n[2] = nz;
+        if (hasNormal) {
+            v.n[0] = nx;
+            v.n[1] = ny;
+            v.n[2] = nz;
+        }
     }
 
     private void log(String commandString, float floatArgument) {

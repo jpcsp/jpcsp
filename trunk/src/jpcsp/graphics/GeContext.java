@@ -80,7 +80,6 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
     public float[] tex_envmap_matrix = new float[4 * 4];
     public float[][] light_pos = new float[NUM_LIGHTS][4];
     public float[][] light_dir = new float[NUM_LIGHTS][4];
-    public int[] light_enabled = new int[NUM_LIGHTS];
     public int[] light_type = new int[NUM_LIGHTS];
     public int[] light_kind = new int[NUM_LIGHTS];
     public float[][] lightAmbientColor = new float[NUM_LIGHTS][4];
@@ -206,7 +205,6 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
         light_type[0] = light_type[1] = light_type[2] = light_type[3] = -1;
         light_kind[0] = light_kind[1] = light_kind[2] = light_kind[3] = -1;
         lightSpecularColor[0][0] = lightSpecularColor[1][0] = lightSpecularColor[2][0] = lightSpecularColor[3][0] = -1;
-        light_enabled[0] = light_enabled[1] = light_enabled[2] = light_enabled[3] = -1;
 
         dirty = false;
     }
@@ -342,7 +340,6 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
 		readFloatArray(light_pos);
 		readFloatArray(light_dir);
 
-		read32Array(light_enabled);
 		read32Array(light_type);
 		read32Array(light_kind);
 		readFloatArray(lightAmbientColor);
@@ -513,7 +510,6 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
 		writeFloatArray(light_pos);
 		writeFloatArray(light_dir);
 
-		write32Array(light_enabled);
 		write32Array(light_type);
 		write32Array(light_kind);
 		writeFloatArray(lightAmbientColor);
