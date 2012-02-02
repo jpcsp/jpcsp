@@ -27,34 +27,171 @@ public class StencilTestFilter {
 	public static IPixelFilter getStencilTestFilter(GeContext context) {
 		IPixelFilter filter = null;
 
-		switch (context.stencilFunc) {
-			case GeCommands.STST_FUNCTION_NEVER_PASS_STENCIL_TEST:
-				filter = new NeverPassFilter();
+		IPixelFilter opFail = getStencilOp(context.stencilOpFail, context.stencilRef, true);
+
+		if (opFail == NopFilter.NOP) {
+			switch (context.stencilFunc) {
+				case GeCommands.STST_FUNCTION_NEVER_PASS_STENCIL_TEST:
+					filter = new NeverPassFilter();
+					break;
+				case GeCommands.STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST:
+					filter = NopFilter.NOP;
+					break;
+				case GeCommands.STST_FUNCTION_PASS_TEST_IF_MATCHES:
+					filter = new StencilTestPassIfMatches(context.stencilRef, context.stencilMask);
+					break;
+				case GeCommands.STST_FUNCTION_PASS_TEST_IF_DIFFERS:
+					filter = new StencilTestPassIfDiffers(context.stencilRef, context.stencilMask);
+					break;
+				case GeCommands.STST_FUNCTION_PASS_TEST_IF_LESS:
+					filter = new StencilTestPassIfLess(context.stencilRef, context.stencilMask);
+					break;
+				case GeCommands.STST_FUNCTION_PASS_TEST_IF_LESS_OR_EQUAL:
+					filter = new StencilTestPassIfLessOrEqual(context.stencilRef, context.stencilMask);
+					break;
+				case GeCommands.STST_FUNCTION_PASS_TEST_IF_GREATER:
+					filter = new StencilTestPassIfGreater(context.stencilRef, context.stencilMask);
+					break;
+				case GeCommands.STST_FUNCTION_PASS_TEST_IF_GREATER_OR_EQUAL:
+					filter = new StencilTestPassIfGreaterOrEqual(context.stencilRef, context.stencilMask);
+					break;
+			}
+		} else {
+			switch (context.stencilFunc) {
+				case GeCommands.STST_FUNCTION_NEVER_PASS_STENCIL_TEST:
+					filter = new NeverPassFilterWithOpFail(opFail);
+					break;
+				case GeCommands.STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST:
+					filter = NopFilter.NOP;
+					break;
+				case GeCommands.STST_FUNCTION_PASS_TEST_IF_MATCHES:
+					filter = new StencilTestPassIfMatchesWithOpFail(context.stencilRef, context.stencilMask, opFail);
+					break;
+				case GeCommands.STST_FUNCTION_PASS_TEST_IF_DIFFERS:
+					filter = new StencilTestPassIfDiffersWithOpFail(context.stencilRef, context.stencilMask, opFail);
+					break;
+				case GeCommands.STST_FUNCTION_PASS_TEST_IF_LESS:
+					filter = new StencilTestPassIfLessWithOpFail(context.stencilRef, context.stencilMask, opFail);
+					break;
+				case GeCommands.STST_FUNCTION_PASS_TEST_IF_LESS_OR_EQUAL:
+					filter = new StencilTestPassIfLessOrEqualWithOpFail(context.stencilRef, context.stencilMask, opFail);
+					break;
+				case GeCommands.STST_FUNCTION_PASS_TEST_IF_GREATER:
+					filter = new StencilTestPassIfGreaterWithOpFail(context.stencilRef, context.stencilMask, opFail);
+					break;
+				case GeCommands.STST_FUNCTION_PASS_TEST_IF_GREATER_OR_EQUAL:
+					filter = new StencilTestPassIfGreaterOrEqualWithOpFail(context.stencilRef, context.stencilMask, opFail);
+					break;
+			}
+		}
+
+		return filter;
+	}
+
+	public static IPixelFilter getStencilOp(int stencilOp, int stencilRef, boolean isFailOp) {
+		IPixelFilter filter = NopFilter.NOP;
+
+		switch (stencilOp) {
+			case GeCommands.SOP_KEEP_STENCIL_VALUE:
+				// Nothing to do in case of a failed test
+				if (!isFailOp) {
+					filter = new StencilOpKeep();
+				}
 				break;
-			case GeCommands.STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST:
-				filter = NopFilter.NOP;
+			case GeCommands.SOP_ZERO_STENCIL_VALUE:
+				filter = new StencilOpZero();
 				break;
-			case GeCommands.STST_FUNCTION_PASS_TEST_IF_MATCHES:
-				filter = new StencilTestPassIfMatches(context.stencilRef, context.stencilMask);
+			case GeCommands.SOP_REPLACE_STENCIL_VALUE:
+				if (stencilRef == 0) {
+					// SOP_REPLACE_STENCIL_VALUE with a 0 value is equivalent
+					// to SOP_ZERO_STENCIL_VALUE
+					filter = new StencilOpZero();
+				} else {
+					filter = new StencilOpReplace(stencilRef);
+				}
 				break;
-			case GeCommands.STST_FUNCTION_PASS_TEST_IF_DIFFERS:
-				filter = new StencilTestPassIfDiffers(context.stencilRef, context.stencilMask);
+			case GeCommands.SOP_INVERT_STENCIL_VALUE:
+				filter = new StencilOpInvert();
 				break;
-			case GeCommands.STST_FUNCTION_PASS_TEST_IF_LESS:
-				filter = new StencilTestPassIfLess(context.stencilRef, context.stencilMask);
+			case GeCommands.SOP_INCREMENT_STENCIL_VALUE:
+				filter = new StencilOpIncrement();
 				break;
-			case GeCommands.STST_FUNCTION_PASS_TEST_IF_LESS_OR_EQUAL:
-				filter = new StencilTestPassIfLessOrEqual(context.stencilRef, context.stencilMask);
-				break;
-			case GeCommands.STST_FUNCTION_PASS_TEST_IF_GREATER:
-				filter = new StencilTestPassIfGreater(context.stencilRef, context.stencilMask);
-				break;
-			case GeCommands.STST_FUNCTION_PASS_TEST_IF_GREATER_OR_EQUAL:
-				filter = new StencilTestPassIfGreaterOrEqual(context.stencilRef, context.stencilMask);
+			case GeCommands.SOP_DECREMENT_STENCIL_VALUE:
+				filter = new StencilOpDecrement();
 				break;
 		}
 
 		return filter;
+	}
+
+	public static final class StencilOpKeep implements IPixelFilter {
+		@Override
+		public void filter(PixelState pixel) {
+			pixel.source = (pixel.source & 0x00FFFFFF) | (pixel.destination & 0xFF000000);
+		}
+	}
+
+	public static final class StencilOpZero implements IPixelFilter {
+		@Override
+		public void filter(PixelState pixel) {
+			pixel.source &= 0x00FFFFFF;
+		}
+	}
+
+	public static final class StencilOpReplace implements IPixelFilter {
+		protected int alpha;
+
+		public StencilOpReplace(int stencilRef) {
+			alpha = stencilRef << 24;
+		}
+
+		@Override
+		public void filter(PixelState pixel) {
+			pixel.source = (pixel.source & 0x00FFFFFF) | alpha;
+		}
+	}
+
+	public static final class StencilOpInvert implements IPixelFilter {
+		@Override
+		public void filter(PixelState pixel) {
+			pixel.source = (pixel.source & 0x00FFFFFF) | ~(pixel.destination & 0xFF000000);
+		}
+	}
+
+	public static final class StencilOpIncrement implements IPixelFilter {
+		@Override
+		public void filter(PixelState pixel) {
+			int alpha = pixel.destination & 0xFF000000;
+			if (alpha != 0xFF000000) {
+				alpha += 0x01000000;
+			}
+			pixel.source = (pixel.source & 0x00FFFFFF) | alpha;
+		}
+	}
+
+	public static final class StencilOpDecrement implements IPixelFilter {
+		@Override
+		public void filter(PixelState pixel) {
+			int alpha = pixel.destination & 0xFF000000;
+			if (alpha != 0x00000000) {
+				alpha -= 0x01000000;
+			}
+			pixel.source = (pixel.source & 0x00FFFFFF) | alpha;
+		}
+	}
+
+	private static final class NeverPassFilterWithOpFail implements IPixelFilter {
+		protected IPixelFilter opFail;
+
+		public NeverPassFilterWithOpFail(IPixelFilter opFail) {
+			this.opFail = opFail;
+		}
+
+		@Override
+		public void filter(PixelState pixel) {
+			pixel.filterPassed = false;
+			pixel.filterOnFailed = opFail;
+		}
 	}
 
 	private static final class StencilTestPassIfMatches implements IPixelFilter {
@@ -70,6 +207,27 @@ public class StencilTestFilter {
 		public void filter(PixelState pixel) {
 			int stencilValue = PixelColor.getAlpha(pixel.destination);
 			pixel.filterPassed = (stencilValue & stencilMask) == stencilRef;
+		}
+	}
+
+	private static final class StencilTestPassIfMatchesWithOpFail implements IPixelFilter {
+		protected int stencilRef;
+		protected int stencilMask;
+		protected IPixelFilter opFail;
+
+		public StencilTestPassIfMatchesWithOpFail(int stencilRef, int stencilMask, IPixelFilter opFail) {
+			this.stencilRef = stencilRef & stencilMask;
+			this.stencilMask = stencilMask;
+			this.opFail = opFail;
+		}
+
+		@Override
+		public void filter(PixelState pixel) {
+			int stencilValue = PixelColor.getAlpha(pixel.destination);
+			pixel.filterPassed = (stencilValue & stencilMask) == stencilRef;
+			if (!pixel.filterPassed) {
+				pixel.filterOnFailed = opFail;
+			}
 		}
 	}
 
@@ -89,6 +247,27 @@ public class StencilTestFilter {
 		}
 	}
 
+	private static final class StencilTestPassIfDiffersWithOpFail implements IPixelFilter {
+		protected int stencilRef;
+		protected int stencilMask;
+		protected IPixelFilter opFail;
+
+		public StencilTestPassIfDiffersWithOpFail(int stencilRef, int stencilMask, IPixelFilter opFail) {
+			this.stencilRef = stencilRef & stencilMask;
+			this.stencilMask = stencilMask;
+			this.opFail = opFail;
+		}
+
+		@Override
+		public void filter(PixelState pixel) {
+			int stencilValue = PixelColor.getAlpha(pixel.destination);
+			pixel.filterPassed = (stencilValue & stencilMask) != stencilRef;
+			if (!pixel.filterPassed) {
+				pixel.filterOnFailed = opFail;
+			}
+		}
+	}
+
 	private static final class StencilTestPassIfLess implements IPixelFilter {
 		protected int stencilRef;
 		protected int stencilMask;
@@ -102,6 +281,27 @@ public class StencilTestFilter {
 		public void filter(PixelState pixel) {
 			int stencilValue = PixelColor.getAlpha(pixel.destination);
 			pixel.filterPassed = (stencilValue & stencilMask) < stencilRef;
+		}
+	}
+
+	private static final class StencilTestPassIfLessWithOpFail implements IPixelFilter {
+		protected int stencilRef;
+		protected int stencilMask;
+		protected IPixelFilter opFail;
+
+		public StencilTestPassIfLessWithOpFail(int stencilRef, int stencilMask, IPixelFilter opFail) {
+			this.stencilRef = stencilRef & stencilMask;
+			this.stencilMask = stencilMask;
+			this.opFail = opFail;
+		}
+
+		@Override
+		public void filter(PixelState pixel) {
+			int stencilValue = PixelColor.getAlpha(pixel.destination);
+			pixel.filterPassed = (stencilValue & stencilMask) < stencilRef;
+			if (!pixel.filterPassed) {
+				pixel.filterOnFailed = opFail;
+			}
 		}
 	}
 
@@ -121,6 +321,27 @@ public class StencilTestFilter {
 		}
 	}
 
+	private static final class StencilTestPassIfLessOrEqualWithOpFail implements IPixelFilter {
+		protected int stencilRef;
+		protected int stencilMask;
+		protected IPixelFilter opFail;
+
+		public StencilTestPassIfLessOrEqualWithOpFail(int stencilRef, int stencilMask, IPixelFilter opFail) {
+			this.stencilRef = stencilRef & stencilMask;
+			this.stencilMask = stencilMask;
+			this.opFail = opFail;
+		}
+
+		@Override
+		public void filter(PixelState pixel) {
+			int stencilValue = PixelColor.getAlpha(pixel.destination);
+			pixel.filterPassed = (stencilValue & stencilMask) <= stencilRef;
+			if (!pixel.filterPassed) {
+				pixel.filterOnFailed = opFail;
+			}
+		}
+	}
+
 	private static final class StencilTestPassIfGreater implements IPixelFilter {
 		protected int stencilRef;
 		protected int stencilMask;
@@ -137,6 +358,27 @@ public class StencilTestFilter {
 		}
 	}
 
+	private static final class StencilTestPassIfGreaterWithOpFail implements IPixelFilter {
+		protected int stencilRef;
+		protected int stencilMask;
+		protected IPixelFilter opFail;
+
+		public StencilTestPassIfGreaterWithOpFail(int stencilRef, int stencilMask, IPixelFilter opFail) {
+			this.stencilRef = stencilRef & stencilMask;
+			this.stencilMask = stencilMask;
+			this.opFail = opFail;
+		}
+
+		@Override
+		public void filter(PixelState pixel) {
+			int stencilValue = PixelColor.getAlpha(pixel.destination);
+			pixel.filterPassed = (stencilValue & stencilMask) > stencilRef;
+			if (!pixel.filterPassed) {
+				pixel.filterOnFailed = opFail;
+			}
+		}
+	}
+
 	private static final class StencilTestPassIfGreaterOrEqual implements IPixelFilter {
 		protected int stencilRef;
 		protected int stencilMask;
@@ -150,6 +392,27 @@ public class StencilTestFilter {
 		public void filter(PixelState pixel) {
 			int stencilValue = PixelColor.getAlpha(pixel.destination);
 			pixel.filterPassed = (stencilValue & stencilMask) >= stencilRef;
+		}
+	}
+
+	private static final class StencilTestPassIfGreaterOrEqualWithOpFail implements IPixelFilter {
+		protected int stencilRef;
+		protected int stencilMask;
+		protected IPixelFilter opFail;
+
+		public StencilTestPassIfGreaterOrEqualWithOpFail(int stencilRef, int stencilMask, IPixelFilter opFail) {
+			this.stencilRef = stencilRef & stencilMask;
+			this.stencilMask = stencilMask;
+			this.opFail = opFail;
+		}
+
+		@Override
+		public void filter(PixelState pixel) {
+			int stencilValue = PixelColor.getAlpha(pixel.destination);
+			pixel.filterPassed = (stencilValue & stencilMask) >= stencilRef;
+			if (!pixel.filterPassed) {
+				pixel.filterOnFailed = opFail;
+			}
 		}
 	}
 }

@@ -27,19 +27,20 @@ import jpcsp.graphics.GeContext;
 public class MaskFilter {
 	public static IPixelFilter getMaskFilter(GeContext context, boolean clearMode, boolean clearModeColor, boolean clearModeStencil, boolean clearModeDepth) {
 		IPixelFilter filter = null;
+		boolean depthMask = clearMode ? clearModeDepth : context.depthMask;
 
 		if (clearMode) {
-			filter = getMaskFilter(clearModeDepth, clearModeColor, clearModeStencil);
+			filter = getMaskFilter(depthMask, clearModeColor, clearModeStencil);
 		} else {
 			if (context.colorMask[0] == ZERO && context.colorMask[1] == ZERO && context.colorMask[2] == ZERO && context.colorMask[3] == ZERO) {
-				if (context.depthMask) {
+				if (depthMask) {
 					filter = NopFilter.NOP;
 				} else {
 					// Depth writes disabled
 					filter = new DepthMask();
 				}
 			} else {
-				if (context.depthMask) {
+				if (depthMask) {
 					// Depth writes enabled
 					filter = new ColorMask(context.colorMask);
 				} else {

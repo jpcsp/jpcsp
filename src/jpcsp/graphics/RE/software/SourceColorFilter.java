@@ -16,26 +16,41 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
+import static jpcsp.graphics.GeCommands.LMODE_SEPARATE_SPECULAR_COLOR;
 import static jpcsp.graphics.RE.software.PixelColor.add;
-import jpcsp.graphics.GeCommands;
+
+import org.apache.log4j.Logger;
+
 import jpcsp.graphics.GeContext;
+import jpcsp.graphics.VideoEngine;
 
 /**
  * @author gid15
  *
  */
 public class SourceColorFilter {
+	protected static final Logger log = VideoEngine.log;
+
 	public static IPixelFilter getSourceColorFilter(GeContext context, boolean usePrimaryColor) {
 		IPixelFilter filter = null;
 
-		if (!context.vinfo.transform2D && context.lightingFlag.isEnabled() && context.lightMode == GeCommands.LMODE_SEPARATE_SPECULAR_COLOR) {
+		if (!context.vinfo.transform2D && context.lightingFlag.isEnabled() && context.lightMode == LMODE_SEPARATE_SPECULAR_COLOR) {
 			if (usePrimaryColor) {
+		    	if (log.isTraceEnabled()) {
+		        	log.trace(String.format("Using SourceColorFilter source = primary + secondary"));
+		        }
 				filter = new SourcePrimarySecondary();
 			} else {
+		    	if (log.isTraceEnabled()) {
+		        	log.trace(String.format("Using SourceColorFilter source = source + secondary"));
+		        }
 				filter = new SourceSecondary();
 			}
 		} else {
 			if (usePrimaryColor) {
+		    	if (log.isTraceEnabled()) {
+		        	log.trace(String.format("Using SourceColorFilter source = primary"));
+		        }
 				filter = new SourcePrimary();
 			}
 		}

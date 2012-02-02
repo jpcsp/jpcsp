@@ -734,39 +734,22 @@ public class Utilities {
     }
 
     public static void vectorMult33(final float[] result, final float[] m, final float[] v) {
-    	for (int i = 0; i < 3; i++) {
-    		float s = v[0] * m[i];
-    		int k = i + 4;
-    		for (int j = 1; j < 3; j++) {
-    			s += v[j] * m[k];
-    			k += 4;
-    		}
-    		result[i] = s;
-    	}
+    	result[0] = v[0] * m[0] + v[1] * m[4] + v[2] * m[8];
+    	result[1] = v[0] * m[1] + v[1] * m[5] + v[2] * m[9];
+    	result[2] = v[0] * m[2] + v[1] * m[6] + v[2] * m[10];
     }
 
     public static void vectorMult34(final float[] result, final float[] m, final float[] v) {
-    	for (int i = 0; i < 3; i++) {
-    		float s = v[0] * m[i];
-    		int k = i + 4;
-    		for (int j = 1; j < 4; j++) {
-    			s += v[j] * m[k];
-    			k += 4;
-    		}
-    		result[i] = s;
-    	}
+    	result[0] = v[0] * m[0] + v[1] * m[4] + v[2] * m[8] + v[3] * m[12];
+    	result[1] = v[0] * m[1] + v[1] * m[5] + v[2] * m[9] + v[3] * m[13];
+    	result[2] = v[0] * m[2] + v[1] * m[6] + v[2] * m[10] + v[3] * m[14];
     }
 
     public static void vectorMult44(final float[] result, final float[] m, final float[] v) {
-    	for (int i = 0; i < 4; i++) {
-    		float s = v[0] * m[i];
-    		int k = i + 4;
-    		for (int j = 1; j < 4; j++) {
-    			s += v[j] * m[k];
-    			k += 4;
-    		}
-    		result[i] = s;
-    	}
+    	result[0] = v[0] * m[0] + v[1] * m[4] + v[2] * m[8] + v[3] * m[12];
+    	result[1] = v[0] * m[1] + v[1] * m[5] + v[2] * m[9] + v[3] * m[13];
+    	result[2] = v[0] * m[2] + v[1] * m[6] + v[2] * m[10] + v[3] * m[14];
+    	result[3] = v[0] * m[3] + v[1] * m[7] + v[2] * m[11] + v[3] * m[15];
     }
 
     // This is equivalent to Math.round but faster: Math.round is using StrictMath.
@@ -787,7 +770,7 @@ public class Utilities {
 	}
 
     public static void copy(float[] to, float[] from) {
-		System.arraycopy(from, 0, to, 0, to.length);
+		arraycopy(from, 0, to, 0, to.length);
 	}
 
     public static float dot3(float[] a, float[] b) {
@@ -803,14 +786,18 @@ public class Utilities {
 	}
 
     public static float invertedLength3(float[] a) {
-    	return 1.f / length3(a);
+    	float length = length3(a);
+    	if (length == 0.f) {
+    		return 0.f;
+    	}
+    	return 1.f / length;
     }
 
     public static void normalize3(float[] result, float[] a) {
-		float lengthInvertex = invertedLength3(a);
-		result[0] = a[0] * lengthInvertex;
-		result[1] = a[1] * lengthInvertex;
-		result[2] = a[2] * lengthInvertex;
+		float invertedLength = invertedLength3(a);
+		result[0] = a[0] * invertedLength;
+		result[1] = a[1] * invertedLength;
+		result[2] = a[2] * invertedLength;
 	}
 
     public static float pow(float a, float b) {
@@ -819,5 +806,49 @@ public class Utilities {
 
     public static float clamp(float n, float minValue, float maxValue) {
     	return max(minValue, min(n, maxValue));
+    }
+
+    /**
+     * Invert a 3x3 matrix.
+     * 
+     * Based on
+     *     http://en.wikipedia.org/wiki/Invert_matrix#Inversion_of_3.C3.973_matrices
+     * 
+     * @param result   the inverted matrix (stored as a 4x4 matrix, but only 3x3 is returned)
+     * @param m        the matrix to be inverted (stored as a 4x4 matrix, but only 3x3 is used)
+     * @return         true if the matrix could be inverted
+     *                 false if the matrix could not be inverted
+     */
+    public static boolean invertMatrix3x3(float[] result, float[] m) {
+    	float A = m[5] * m[10] - m[6] * m[9];
+    	float B = m[6] * m[8] - m[4] * m[10];
+    	float C = m[4] * m[9] - m[5] * m[8];
+    	float det = m[0] * A + m[1] * B + m[2] * C;
+
+    	if (det == 0.f) {
+    		// Matrix could not be inverted
+    		return false;
+    	}
+
+    	float invertedDet = 1.f / det;
+    	result[0] = A * invertedDet;
+    	result[1] = (m[2] * m[9] - m[1] * m[10]) * invertedDet;
+    	result[2] = (m[1] * m[6] - m[2] * m[5]) * invertedDet;
+    	result[4] = B * invertedDet;
+    	result[5] = (m[0] * m[10] - m[2] * m[8]) * invertedDet;
+    	result[6] = (m[2] * m[4] - m[0] * m[6]) * invertedDet;
+    	result[8] = C * invertedDet;
+    	result[9] = (m[8] * m[1] - m[0] * m[9]) * invertedDet;
+    	result[10] = (m[0] * m[5] - m[1] * m[4]) * invertedDet;
+
+    	return true;
+    }
+
+    public static void transposeMatrix3x3(float[] result, float[] m) {
+    	for (int i = 0, j = 0; i < 3; i++, j += 4) {
+    		result[i] = m[j];
+    		result[i + 4] = m[j + 1];
+    		result[i + 8] = m[j + 2];
+    	}
     }
 }

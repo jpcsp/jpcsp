@@ -37,6 +37,7 @@ import static jpcsp.util.Utilities.pow;
 import static jpcsp.util.Utilities.vectorMult34;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.GeContext;
+import jpcsp.graphics.GeContext.EnableDisableFlag;
 import jpcsp.graphics.VideoEngine;
 
 import org.apache.log4j.Logger;
@@ -48,17 +49,14 @@ import org.apache.log4j.Logger;
 public class Lighting {
 	protected static final Logger log = VideoEngine.log;
 
-	public static IPixelFilter getLighting(GeContext context, PixelState pixel) {
+	public static IPixelFilter getLighting(GeContext context, float[] viewMatrix) {
 		IPixelFilter lighting = null;
 
 		if (!context.vinfo.transform2D && context.lightingFlag.isEnabled()) {
-			lighting = new LightingFilter(pixel.viewMatrix,
+			lighting = new LightingFilter(viewMatrix,
 			                              context.mat_emissive,
-			                              context.mat_ambient,
-			                              context.mat_diffuse,
-			                              context.mat_specular,
 			                              context.ambient_light,
-			                              context.light_enabled,
+			                              context.lightFlags,
 			                              context.light_pos,
 			                              context.light_kind,
 			                              context.light_type,
@@ -80,13 +78,11 @@ public class Lighting {
 	}
 
 	private static class LightingFilter implements IPixelFilter {
-		private final boolean isLogTraceEnabled;
-		private int materialEmission;
-		private int materialAmbient;
-		private int materialDiffuse;
-		private int materialSpecular;
-		private int ambient;
+		private final int materialEmission;
+		private final int ambient;
+		private final int ambientAlpha;
 		private final boolean[] lightEnabled = new boolean[NUM_LIGHTS];
+		private final boolean someLightsEnabled;
 		private final float[][] ecLightPosition = new float[NUM_LIGHTS][3];
 		private final int[] lightKind = new int[NUM_LIGHTS];
 		private final int[] lightAmbientColor = new int[NUM_LIGHTS];
@@ -114,17 +110,17 @@ public class Lighting {
 		private int Dl;
 		private int Sl;
 
-		public LightingFilter(float[] viewMatrix, float[] materialEmission, float[] materialAmbient, float[] materialDiffuse, float[] materialSpecular, float[] ambient, int[] lightEnabled, float[][] lightPosition, int[] lightKind, int[] lightType, float[][] lightAmbientColor, float[][] lightDiffuseColor, float[][] lightSpecularColor, float[] constantAttenuation, float[] linearAttenuation, float[] quadraticAttenuation, float[] spotCutoff, float[] spotCosCutoff, float[][] spotDirection, float[] spotExponent, float shininess, int lightMode) {
+		public LightingFilter(float[] viewMatrix, float[] materialEmission, float[] ambient, EnableDisableFlag[] lightEnabled, float[][] lightPosition, int[] lightKind, int[] lightType, float[][] lightAmbientColor, float[][] lightDiffuseColor, float[][] lightSpecularColor, float[] constantAttenuation, float[] linearAttenuation, float[] quadraticAttenuation, float[] spotCutoff, float[] spotCosCutoff, float[][] spotDirection, float[] spotExponent, float shininess, int lightMode) {
 			this.materialEmission = getColor(materialEmission);
-			this.materialAmbient = getColor(materialAmbient);
-			this.materialDiffuse = getColor(materialDiffuse);
-			this.materialSpecular = getColor(materialSpecular);
 			this.ambient = getColor(ambient);
+			this.ambientAlpha = getAlpha(this.ambient);
 			this.shininess = shininess;
 			this.separateSpecularColor = lightMode == GeCommands.LMODE_SEPARATE_SPECULAR_COLOR;
 
+			boolean someLightsEnabled = false;
 			for (int l = 0; l < NUM_LIGHTS; l++) {
-				this.lightEnabled[l] = lightEnabled[l] != 0;
+				this.lightEnabled[l] = lightEnabled[l].isEnabled();
+				someLightsEnabled |= this.lightEnabled[l];
 				this.lightKind[l] = lightKind[l];
 				this.lightAmbientColor[l] = getColor(lightAmbientColor[l]);
 				this.lightDiffuseColor[l] = getColor(lightDiffuseColor[l]);
@@ -142,8 +138,7 @@ public class Lighting {
 				vectorMult34(ecLightPosition[l], viewMatrix, lightPosition[l]);
 				vectorMult34(ecSpotDirection[l], viewMatrix, spotDirection[l]);
 			}
-
-			isLogTraceEnabled = log.isTraceEnabled();
+			this.someLightsEnabled = someLightsEnabled;
 		}
 
 		/**
@@ -197,37 +192,46 @@ public class Lighting {
 		 */
 		@Override
 		public void filter(PixelState pixel) {
-			// Get the vector and normal in the eye coordinates
-			pixel.getVe(Ve);
-			pixel.getNormalizedNe(Ne);
+			int primary = materialEmission;
+			int secondary = ZERO;
 
 			Al = ambient;
-			Dl = ZERO;
-			Sl = ZERO;
 
-			for (int l = 0; l < NUM_LIGHTS; l++) {
-				if (lightEnabled[l]) {
-					computeLight(pixel, l);
+			if (someLightsEnabled) {
+				// Get the vector and normal in the eye coordinates
+				pixel.getVe(Ve);
+				pixel.getNormalizedNe(Ne);
+
+				Dl = ZERO;
+				Sl = ZERO;
+
+				for (int l = 0; l < NUM_LIGHTS; l++) {
+					if (lightEnabled[l]) {
+						computeLight(pixel, l);
+					}
+				}
+
+				if (Dl != ZERO) {
+					primary = addBGR(primary, multiplyBGR(Dl, pixel.materialDiffuse));
+				}
+
+				if (Sl != ZERO) {
+					if (separateSpecularColor) {
+						secondary = multiplyBGR(Sl, pixel.materialSpecular);
+					} else {
+						primary = addBGR(primary, multiplyBGR(Sl, pixel.materialSpecular));
+					}
 				}
 			}
 
-			int primary = materialEmission;
-			primary = addBGR(primary, multiplyBGR(Al, materialAmbient));
-			primary = addBGR(primary, multiplyBGR(Dl, materialDiffuse));
-
-			if (separateSpecularColor) {
-				pixel.secondaryColor = multiplyBGR(Sl, materialSpecular);
-			} else {
-				primary = addBGR(primary, multiplyBGR(Sl, materialSpecular));
+			if (Al != ZERO) {
+				primary = addBGR(primary, multiplyBGR(Al, pixel.materialAmbient));
 			}
 
-			primary = setAlpha(primary, multiplyComponent(getAlpha(ambient), getAlpha(materialAmbient)));
+			primary = setAlpha(primary, multiplyComponent(ambientAlpha, getAlpha(pixel.materialAmbient)));
 
 			pixel.primaryColor = primary;
-
-			if (isLogTraceEnabled) {
-				log.trace(String.format("primary=%08X, secondary=%08X", pixel.primaryColor, pixel.secondaryColor));
-			}
+			pixel.secondaryColor = secondary;
 		}
 	}
 }

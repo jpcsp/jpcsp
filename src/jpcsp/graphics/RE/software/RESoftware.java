@@ -53,6 +53,8 @@ public class RESoftware extends BaseRenderingEngine {
     protected static DurationStatistics triangleRender3DStatistics = new DurationStatistics("RESoftware TriangleRender3D");
     protected BoundingBoxRenderer boundingBoxRenderer;
     protected boolean boundingBoxVisible;
+    protected BufferVertexReader bufferVertexReader;
+    protected boolean useVertexTexture;
 
     public RESoftware() {
     	log.info("Using SoftwareRenderer");
@@ -538,19 +540,20 @@ public class RESoftware extends BaseRenderingEngine {
 		return false;
 	}
 
-	protected void render(IRenderer renderer, CachedTexture cachedTexture) {
-		if (renderer.prepare(context, cachedTexture)) {
+	protected void render(IRenderer renderer) {
+		if (renderer.prepare()) {
 			rendererExecutor.render(renderer);
 		}
 	}
 
-	protected void drawSprite(VertexState v1, VertexState v2, CachedTexture cachedTexture) {
-		IRenderer renderer = new SpriteRenderer(v1, v2);
-		render(renderer, cachedTexture);
+	protected void drawSprite(SpriteRenderer spriteRenderer, VertexState v1, VertexState v2) {
+		spriteRenderer.setVertex(v1, v2);
+		render(spriteRenderer);
 	}
 
 	protected void drawArraysSprites(int first, int count) {
 		CachedTexture cachedTexture = cachedTextures.get(bindTexture);
+		SpriteRenderer spriteRenderer = new SpriteRenderer(context, cachedTexture, useVertexTexture);
 		Memory mem = Memory.getInstance();
 		for (int i = first; i < count; i += 2) {
 			int addr1 = context.vinfo.getAddress(mem, i);
@@ -558,22 +561,15 @@ public class RESoftware extends BaseRenderingEngine {
 			context.vinfo.readVertex(mem, addr1, v1);
 			context.vinfo.readVertex(mem, addr2, v2);
 
-			drawSprite(v1, v2, cachedTexture);
+			drawSprite(spriteRenderer, v1, v2);
 		}
 	}
 
-	protected void drawTriangle(VertexState v1, VertexState v2, VertexState v3, boolean invertedFrontFace, CachedTexture cachedTexture) {
-        TriangleRenderer renderer = new TriangleRenderer(v1, v2, v3);
-    	if (!renderer.isCulled(context, invertedFrontFace)) {
-    		render(renderer, cachedTexture);
+	protected void drawTriangle(TriangleRenderer triangleRenderer, VertexState v1, VertexState v2, VertexState v3, boolean invertedFrontFace) {
+        triangleRenderer.setVertex(v1, v2, v3);
+    	if (!triangleRenderer.isCulled(invertedFrontFace)) {
+    		render(triangleRenderer);
     	}
-	}
-
-	protected void readSkinnedVertex(Memory mem, int addr, VertexState v) {
-		context.vinfo.readVertex(mem, addr, v);
-		if (context.vinfo.weight != 0) {
-			VideoEngine.doSkinning(context.bone_uploaded_matrix, context.vinfo, v);
-		}
 	}
 
 	protected boolean isSprite(VertexInfo vinfo, VertexState tv1, VertexState tv2, VertexState tv3, VertexState tv4) {
@@ -620,21 +616,43 @@ public class RESoftware extends BaseRenderingEngine {
 		return false;
 	}
 
+	protected void resetBufferVertexReader() {
+		bufferVertexReader = null;
+	}
+
+	protected void readVertex(Memory mem, int index, VertexState v) {
+		if (bufferVertexReader == null) {
+			int addr = context.vinfo.getAddress(mem, index);
+			context.vinfo.readVertex(mem, addr, v);
+		} else {
+			// This is used for spline and bezier curves:
+			// the VideoEngine is computing the vertices and is pushing them into a buffer.
+			bufferVertexReader.readVertex(index, v);
+		}
+		if (context.vinfo.weight != 0) {
+			VideoEngine.doSkinning(context.bone_uploaded_matrix, context.vinfo, v);
+		}
+	}
+
 	protected void drawArraysTriangleStrips(int first, int count) {
 		Memory mem = Memory.getInstance();
 		CachedTexture cachedTexture = cachedTextures.get(bindTexture);
+		TriangleRenderer triangleRenderer = new TriangleRenderer(context, cachedTexture, useVertexTexture);
+		SpriteRenderer spriteRenderer = null;
 		VertexState tv1 = null;
 		VertexState tv2 = null;
 		VertexState tv3 = null;
 		VertexState tv4 = v1;
 		for (int i = 0; i < count; i++) {
-			int addr = context.vinfo.getAddress(mem, first + i);
-			readSkinnedVertex(mem, addr, tv4);
+			readVertex(mem, first + i, tv4);
 			if (tv3 != null) {
 				// Displaying a sprite (i.e. rectangular area) is faster.
 				// Try to merge adjacent triangles if they form a sprite.
 				if (isSprite(context.vinfo, tv1, tv2, tv3, tv4)) {
-					drawSprite(tv1, tv4, cachedTexture);
+					if (spriteRenderer == null) {
+						spriteRenderer = new SpriteRenderer(context, cachedTexture, useVertexTexture);
+					}
+					drawSprite(spriteRenderer, tv1, tv4);
 					v5.copy(tv3);
 					v6.copy(tv4);
 					v1.copy(v5);
@@ -645,7 +663,7 @@ public class RESoftware extends BaseRenderingEngine {
 					tv4 = v3;
 				} else {
 					// The Front face direction is inverted every 2 triangles in the strip.
-					drawTriangle(tv1, tv2, tv3, ((i - 3) & 1) != 0, cachedTexture);
+					drawTriangle(triangleRenderer, tv1, tv2, tv3, ((i - 3) & 1) != 0);
 					VertexState v = tv1;
 					tv1 = tv2;
 					tv2 = tv3;
@@ -666,36 +684,34 @@ public class RESoftware extends BaseRenderingEngine {
 
 		if (tv3 != null) {
 			// The Front face direction is inverted every 2 triangles in the strip.
-			drawTriangle(tv1, tv2, tv3, (count & 1) == 0, cachedTexture);
+			drawTriangle(triangleRenderer, tv1, tv2, tv3, (count & 1) == 0);
 		}
 	}
 
 	protected void drawArraysTriangles(int first, int count) {
 		Memory mem = Memory.getInstance();
 		CachedTexture cachedTexture = cachedTextures.get(bindTexture);
+		TriangleRenderer triangleRenderer = new TriangleRenderer(context, cachedTexture, useVertexTexture);
 		for (int i = 0; i < count; i += 3) {
-			int addr1 = context.vinfo.getAddress(mem, first + i);
-			readSkinnedVertex(mem, addr1, v1);
-			int addr2 = context.vinfo.getAddress(mem, first + i + 1);
-			readSkinnedVertex(mem, addr2, v2);
-			int addr3 = context.vinfo.getAddress(mem, first + i + 2);
-			readSkinnedVertex(mem, addr3, v3);
+			readVertex(mem, first + i, v1);
+			readVertex(mem, first + i + 1, v2);
+			readVertex(mem, first + i + 2, v3);
 
-			drawTriangle(v1, v2, v3, false, cachedTexture);
+			drawTriangle(triangleRenderer, v1, v2, v3, false);
 		}
 	}
 
 	protected void drawArraysTriangleFan(int first, int count) {
 		Memory mem = Memory.getInstance();
 		CachedTexture cachedTexture = cachedTextures.get(bindTexture);
+		TriangleRenderer triangleRenderer = new TriangleRenderer(context, cachedTexture, useVertexTexture);
 		VertexState tv1 = null;
 		VertexState tv2 = null;
 		VertexState tv3 = v1;
 		for (int i = 0; i < count; i++) {
-			int addr = context.vinfo.getAddress(mem, first + i);
-			readSkinnedVertex(mem, addr, tv3);
+			readVertex(mem, first + i, tv3);
 			if (tv2 != null) {
-				drawTriangle(tv1, tv2, tv3, false, cachedTexture);
+				drawTriangle(triangleRenderer, tv1, tv2, tv3, false);
 				VertexState v = tv2;
 				tv2 = tv3;
 				tv3 = v;
@@ -790,10 +806,11 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setTexCoordPointer(int size, int type, int stride,
-			int bufferSize, Buffer buffer) {
-		// TODO Auto-generated method stub
-		
+	public void setTexCoordPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
+		if (bufferVertexReader == null) {
+			bufferVertexReader = new BufferVertexReader();
+		}
+		bufferVertexReader.setTextureComponentInfo(size, type, stride, bufferSize, buffer);
 	}
 
 	@Override
@@ -803,10 +820,11 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setColorPointer(int size, int type, int stride, int bufferSize,
-			Buffer buffer) {
-		// TODO Auto-generated method stub
-		
+	public void setColorPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
+		if (bufferVertexReader == null) {
+			bufferVertexReader = new BufferVertexReader();
+		}
+		bufferVertexReader.setColorComponentInfo(size, type, stride, bufferSize, buffer);
 	}
 
 	@Override
@@ -816,10 +834,11 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setVertexPointer(int size, int type, int stride,
-			int bufferSize, Buffer buffer) {
-		// TODO Auto-generated method stub
-		
+	public void setVertexPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
+		if (bufferVertexReader == null) {
+			bufferVertexReader = new BufferVertexReader();
+		}
+		bufferVertexReader.setVertexComponentInfo(size, type, stride, bufferSize, buffer);
 	}
 
 	@Override
@@ -829,10 +848,11 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setNormalPointer(int type, int stride, int bufferSize,
-			Buffer buffer) {
-		// TODO Auto-generated method stub
-		
+	public void setNormalPointer(int type, int stride, int bufferSize, Buffer buffer) {
+		if (bufferVertexReader == null) {
+			bufferVertexReader = new BufferVertexReader();
+		}
+		bufferVertexReader.setNormalComponentInfo(type, stride, bufferSize, buffer);
 	}
 
 	@Override
@@ -842,10 +862,11 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setWeightPointer(int size, int type, int stride,
-			int bufferSize, Buffer buffer) {
-		// TODO Auto-generated method stub
-		
+	public void setWeightPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
+		if (bufferVertexReader == null) {
+			bufferVertexReader = new BufferVertexReader();
+		}
+		bufferVertexReader.setWeightComponentInfo(size, type, stride, bufferSize, buffer);
 	}
 
 	@Override
@@ -996,7 +1017,7 @@ public class RESoftware extends BaseRenderingEngine {
 
 	@Override
 	public void beginBoundingBox(int numberOfVertexBoundingBox) {
-		boundingBoxRenderer = new BoundingBoxRenderer();
+		boundingBoxRenderer = new BoundingBoxRenderer(context);
 		boundingBoxVisible = true;
 	}
 
@@ -1004,7 +1025,7 @@ public class RESoftware extends BaseRenderingEngine {
 	public void drawBoundingBox(float[][] values) {
 		if (boundingBoxVisible) {
 			boundingBoxRenderer.drawBoundingBox(values);
-			if (!boundingBoxRenderer.prepare(context, null)) {
+			if (!boundingBoxRenderer.prepare()) {
 				boundingBoxVisible = false;
 			}
 		}
@@ -1122,6 +1143,8 @@ public class RESoftware extends BaseRenderingEngine {
 
 	@Override
 	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, int type) {
+		this.useVertexTexture = useTexture;
+		resetBufferVertexReader();
 	}
 
 	@Override

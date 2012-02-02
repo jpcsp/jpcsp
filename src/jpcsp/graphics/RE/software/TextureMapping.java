@@ -19,14 +19,12 @@ package jpcsp.graphics.RE.software;
 import static jpcsp.graphics.GeCommands.LIGHT_AMBIENT_DIFFUSE;
 import static jpcsp.util.Utilities.copy;
 import static jpcsp.util.Utilities.dot3;
-import static jpcsp.util.Utilities.invertedLength3;
 import static jpcsp.util.Utilities.normalize3;
 
 import org.apache.log4j.Logger;
 
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.GeContext;
-import jpcsp.graphics.VertexState;
 import jpcsp.graphics.VideoEngine;
 
 /**
@@ -36,7 +34,7 @@ import jpcsp.graphics.VideoEngine;
 public class TextureMapping {
 	protected static final Logger log = VideoEngine.log;
 
-	public static IPixelFilter getTextureMapping(GeContext context, VertexState v1, VertexState v2, VertexState v3) {
+	public static IPixelFilter getTextureMapping(GeContext context) {
 		IPixelFilter textureMapping = null;
 
 		switch (context.tex_map_mode) {
@@ -62,7 +60,7 @@ public class TextureMapping {
 				switch (context.tex_proj_map_mode) {
 					case GeCommands.TMAP_TEXTURE_PROJECTION_MODE_POSITION:
 						if (context.vinfo.position != 0) {
-							textureMapping = new TextureMapTextureMatrixPosition(context.texture_uploaded_matrix, v1.p, v2.p, v3.p);
+							textureMapping = new TextureMapTextureMatrixPosition(context.texture_uploaded_matrix);
 						}
 						break;
 					case GeCommands.TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES:
@@ -72,12 +70,12 @@ public class TextureMapping {
 						break;
 					case GeCommands.TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL:
 						if (context.vinfo.normal != 0) {
-							textureMapping = new TextureMapTextureMatrixNormalizedNormal(context.texture_uploaded_matrix, v1.n, v2.n, v3.n);
+							textureMapping = new TextureMapTextureMatrixNormalizedNormal(context.texture_uploaded_matrix);
 						}
 						break;
 					case GeCommands.TMAP_TEXTURE_PROJECTION_MODE_NORMAL:
 						if (context.vinfo.normal != 0) {
-							textureMapping = new TextureMapTextureMatrixNormal(context.texture_uploaded_matrix, v1.n, v2.n, v3.n);
+							textureMapping = new TextureMapTextureMatrixNormal(context.texture_uploaded_matrix);
 						}
 						break;
 				}
@@ -85,7 +83,7 @@ public class TextureMapping {
 			case GeCommands.TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP:
 				int u = context.tex_shade_u;
 				int v = context.tex_shade_v;
-				textureMapping = new TextureMapEnvironment(context.materialShininess, context.light_pos[u], context.light_pos[v], context.light_type[u], context.light_type[v], v1, v2, v3);
+				textureMapping = new TextureMapEnvironment(context.materialShininess, context.light_pos[u], context.light_pos[v], context.light_type[u], context.light_type[v]);
 				break;
 		}
 
@@ -188,29 +186,14 @@ public class TextureMapping {
 	}
 
 	private static class TextureMapTextureMatrixPosition extends TextureMapTextureMatrix {
-		protected float p1x, p1y, p1z;
-		protected float p2x, p2y, p2z;
-		protected float p3x, p3y, p3z;
-
-		protected TextureMapTextureMatrixPosition(float[] matrix, float[] p1, float[] p2, float[] p3) {
+		protected TextureMapTextureMatrixPosition(float[] matrix) {
 			super(matrix);
-			p1x = p1[0];
-			p1y = p1[1];
-			p1z = p1[2];
-			p2x = p2[0];
-			p2y = p2[1];
-			p2z = p2[2];
-			p3x = p3[0];
-			p3y = p3[1];
-			p3z = p3[2];
 		}
 
 		@Override
 		public void filter(PixelState pixel) {
-			float x = pixel.getTriangleWeightedValue(p1x, p2x, p3x);
-			float y = pixel.getTriangleWeightedValue(p1y, p2y, p3y);
-			float z = pixel.getTriangleWeightedValue(p1z, p2z, p3z);
-			filter(pixel, x, y, z);
+			float[] V = pixel.getV();
+			filter(pixel, V[0], V[1], V[2]);
 		}
 	}
 
@@ -226,59 +209,26 @@ public class TextureMapping {
 	}
 
 	private static class TextureMapTextureMatrixNormal extends TextureMapTextureMatrix {
-		protected float n1x, n1y, n1z;
-		protected float n2x, n2y, n2z;
-		protected float n3x, n3y, n3z;
-
-		protected TextureMapTextureMatrixNormal(float[] matrix, float[] n1, float[] n2, float[] n3) {
+		protected TextureMapTextureMatrixNormal(float[] matrix) {
 			super(matrix);
-			n1x = n1[0];
-			n1y = n1[1];
-			n1z = n1[2];
-			n2x = n2[0];
-			n2y = n2[1];
-			n2z = n2[2];
-			n3x = n3[0];
-			n3y = n3[1];
-			n3z = n3[2];
 		}
 
 		@Override
 		public void filter(PixelState pixel) {
-			float x = pixel.getTriangleWeightedValue(n1x, n2x, n3x);
-			float y = pixel.getTriangleWeightedValue(n1y, n2y, n3y);
-			float z = pixel.getTriangleWeightedValue(n1z, n2z, n3z);
-			filter(pixel, x, y, z);
+			float[] N = pixel.getN();
+			filter(pixel, N[0], N[1], N[2]);
 		}
 	}
 
 	private static class TextureMapTextureMatrixNormalizedNormal extends TextureMapTextureMatrix {
-		protected float n1x, n1y, n1z;
-		protected float n2x, n2y, n2z;
-		protected float n3x, n3y, n3z;
-
-		protected TextureMapTextureMatrixNormalizedNormal(float[] matrix, float[] n1, float[] n2, float[] n3) {
+		protected TextureMapTextureMatrixNormalizedNormal(float[] matrix) {
 			super(matrix);
-			float invertedLength = invertedLength3(n1);
-			n1x = n1[0] * invertedLength;
-			n1y = n1[1] * invertedLength;
-			n1z = n1[2] * invertedLength;
-			invertedLength = invertedLength3(n2);
-			n2x = n2[0] * invertedLength;
-			n2y = n2[1] * invertedLength;
-			n2z = n2[2] * invertedLength;
-			invertedLength = invertedLength3(n3);
-			n3x = n3[0] * invertedLength;
-			n3y = n3[1] * invertedLength;
-			n3z = n3[2] * invertedLength;
 		}
 
 		@Override
 		public void filter(PixelState pixel) {
-			float x = pixel.getTriangleWeightedValue(n1x, n2x, n3x);
-			float y = pixel.getTriangleWeightedValue(n1y, n2y, n3y);
-			float z = pixel.getTriangleWeightedValue(n1z, n2z, n3z);
-			filter(pixel, x, y, z);
+			float[] normalizedN = pixel.getNormalizedN();
+			filter(pixel, normalizedN[0], normalizedN[1], normalizedN[2]);
 		}
 	}
 
@@ -292,25 +242,13 @@ public class TextureMapping {
 		protected final float[] Ne = new float[3];
 		protected final float[] Lu = new float[3];
 		protected final float[] Lv = new float[3];
-		protected final float[] p1 = new float[3];
-		protected final float[] p2 = new float[3];
-		protected final float[] p3 = new float[3];
-		protected final float[] n1 = new float[3];
-		protected final float[] n2 = new float[3];
-		protected final float[] n3 = new float[3];
 
-		public TextureMapEnvironment(float shininess, float[] lightPositionU, float[] lightPositionV, int lightTypeU, int lightTypeV, VertexState v1, VertexState v2, VertexState v3) {
+		public TextureMapEnvironment(float shininess, float[] lightPositionU, float[] lightPositionV, int lightTypeU, int lightTypeV) {
 			this.shininess = shininess;
 			diffuseLightU = (lightTypeU == LIGHT_AMBIENT_DIFFUSE);
 			diffuseLightV = (lightTypeV == LIGHT_AMBIENT_DIFFUSE);
 			copy(this.lightPositionU, lightPositionU);
 			copy(this.lightPositionV, lightPositionV);
-			copy(p1, v1.p);
-			copy(p2, v2.p);
-			copy(p3, v3.p);
-			copy(n1, v1.n);
-			copy(n2, v2.n);
-			copy(n3, v3.n);
 		}
 
 		protected float getP(boolean diffuseLight, float[] L) {
