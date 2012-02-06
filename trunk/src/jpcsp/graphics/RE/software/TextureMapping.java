@@ -108,6 +108,16 @@ public class TextureMapping {
 			pixel.u = pixel.u * scaleU + translateU;
 			pixel.v = pixel.v * scaleV + translateV;
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 670254118;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_TEXTURE_U_V;
+		}
 	}
 
 	private static class TextureMapUVScale implements IPixelFilter {
@@ -124,6 +134,16 @@ public class TextureMapping {
 			pixel.u = pixel.u * scaleU;
 			pixel.v = pixel.v * scaleV;
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 66102184;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_TEXTURE_U_V;
+		}
 	}
 
 	private static class TextureMapUVTranslate implements IPixelFilter {
@@ -139,6 +159,16 @@ public class TextureMapping {
 		public void filter(PixelState pixel) {
 			pixel.u += translateU;
 			pixel.v += translateV;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 609727972;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_TEXTURE_U_V;
 		}
 	}
 
@@ -195,6 +225,16 @@ public class TextureMapping {
 			float[] V = pixel.getV();
 			filter(pixel, V[0], V[1], V[2]);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 559249837;
+		}
+
+		@Override
+		public int getFlags() {
+			return DISCARDS_TEXTURE_U_V;
+		}
 	}
 
 	private static class TextureMapTextureMatrixUV extends TextureMapTextureMatrix {
@@ -205,6 +245,16 @@ public class TextureMapping {
 		@Override
 		public void filter(PixelState pixel) {
 			filter(pixel, pixel.u, pixel.v);
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 873419340;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_TEXTURE_U_V;
 		}
 	}
 
@@ -218,6 +268,16 @@ public class TextureMapping {
 			float[] N = pixel.getN();
 			filter(pixel, N[0], N[1], N[2]);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 854835260;
+		}
+
+		@Override
+		public int getFlags() {
+			return DISCARDS_TEXTURE_U_V;
+		}
 	}
 
 	private static class TextureMapTextureMatrixNormalizedNormal extends TextureMapTextureMatrix {
@@ -229,6 +289,16 @@ public class TextureMapping {
 		public void filter(PixelState pixel) {
 			float[] normalizedN = pixel.getNormalizedN();
 			filter(pixel, normalizedN[0], normalizedN[1], normalizedN[2]);
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 971192707;
+		}
+
+		@Override
+		public int getFlags() {
+			return DISCARDS_TEXTURE_U_V;
 		}
 	}
 
@@ -293,6 +363,16 @@ public class TextureMapping {
 			pixel.u = (Pu + 1.f) * 0.5f;
 			pixel.v = (Pv + 1.f) * 0.5f;
 			pixel.q = 1.f;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 490704930;
+		}
+
+		@Override
+		public int getFlags() {
+			return DISCARDS_TEXTURE_U_V;
 		}
 	}
 }

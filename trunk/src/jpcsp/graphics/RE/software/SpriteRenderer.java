@@ -28,6 +28,14 @@ public class SpriteRenderer extends BasePrimitiveRenderer {
 	protected VertexState v2;
 	protected int sourceDepth;
 
+	protected void copy(SpriteRenderer from) {
+		super.copy(from);
+		sourceDepth = from.sourceDepth;
+	}
+
+	private SpriteRenderer() {
+	}
+
 	public SpriteRenderer(GeContext context, CachedTexture texture, boolean useVertexTexture) {
 		init(context, texture, useVertexTexture, false);
 	}
@@ -39,7 +47,7 @@ public class SpriteRenderer extends BasePrimitiveRenderer {
 	}
 
 	@Override
-	public boolean prepare() {
+	public boolean prepare(GeContext context) {
         if (log.isTraceEnabled()) {
         	log.trace(String.format("SpriteRenderer"));
         }
@@ -48,7 +56,7 @@ public class SpriteRenderer extends BasePrimitiveRenderer {
         	return false;
         }
 
-        setVertexTextures(v1, v2);
+        setVertexTextures(context, v1, v2);
 
         sourceDepth = (int) v2.p[2];
 
@@ -57,23 +65,31 @@ public class SpriteRenderer extends BasePrimitiveRenderer {
 
 	@Override
 	public void render() {
-    	float v = prim.vStart;
+		preRender();
+
+		RESoftware.spriteRenderStatistics.start();
+
+		float v = prim.vStart;
         for (int y = 0; y < prim.destinationHeight; y++) {
         	pixel.y = prim.pyMin + y;
     		pixel.v = v;
     		float u = prim.uStart;
         	for (int x = 0; x < prim.destinationWidth; x++) {
-        		pixel.newPixel();
+        		pixel.newPixel2D();
             	pixel.x = prim.pxMin + x;
         		pixel.u = u;
             	pixel.sourceDepth = sourceDepth;
         		pixel.destination = imageWriter.readCurrent();
         		pixel.destinationDepth = depthWriter.readCurrent();
-        		for (int i = 0; i < numberFilters; i++) {
-        			filters[i].filter(pixel);
-        			if (!pixel.filterPassed) {
-        				break;
-        			}
+        		if (compiledFilter != null) {
+        			compiledFilter.filter(pixel);
+        		} else {
+	        		for (int i = 0; i < numberFilters; i++) {
+	        			filters[i].filter(pixel);
+	        			if (!pixel.filterPassed) {
+	        				break;
+	        			}
+	        		}
         		}
 if (isLogTraceEnabled) {
 	log.trace(String.format("Pixel (%d,%d), passed=%b, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d, filterOnFailed=%s", pixel.x, pixel.y, pixel.filterPassed, pixel.u, pixel.v, pixel.source, pixel.destination, pixel.primaryColor, pixel.secondaryColor, pixel.sourceDepth, pixel.destinationDepth, pixel.filterOnFailed));
@@ -89,15 +105,24 @@ if (isLogTraceEnabled) {
     				depthWriter.skip(1);
         		} else {
         			// Filter did not pass, do not update the pixel
-        			imageWriter.skip(1);
-        			depthWriter.skip(1);
+        			writerSkip(1);
         		}
         		u += prim.uStep;
         	}
-        	imageWriter.skip(imageWriterSkipEOL);
-        	depthWriter.skip(depthWriterSkipEOL);
+        	writerSkipEOL();
         	v += prim.vStep;
         }
-        super.render();
+
+		RESoftware.spriteRenderStatistics.end();
+
+		postRender();
+	}
+
+	@Override
+	public IRenderer duplicate() {
+		SpriteRenderer spriteRenderer = new SpriteRenderer();
+		spriteRenderer.copy(this);
+
+		return spriteRenderer;
 	}
 }

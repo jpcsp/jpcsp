@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
+import jpcsp.graphics.GeContext;
+
 /**
  * @author gid15
  *
@@ -31,7 +33,7 @@ public interface IRenderer {
 	 *                          valid to call render() when this prepare
 	 *                          method has returned false.
 	 */
-	public boolean prepare();
+	public boolean prepare(GeContext context);
 
 	/**
 	 * Render the primitive. This method is only allowed to access class
@@ -39,4 +41,6 @@ public interface IRenderer {
 	 * This method can be called asynchronously and in a different thread.
 	 */
 	public void render();
+
+	public IRenderer duplicate();
 }

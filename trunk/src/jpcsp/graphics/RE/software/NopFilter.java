@@ -30,4 +30,14 @@ public class NopFilter implements IPixelFilter {
 	public void filter(PixelState pixel) {
 		// Nothing to do
 	}
+
+	@Override
+	public int getCompilationId() {
+		return 514309563;
+	}
+
+	@Override
+	public int getFlags() {
+		return 0;
+	}
 }

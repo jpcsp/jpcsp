@@ -63,6 +63,16 @@ public class SourceColorFilter {
 		public void filter(PixelState pixel) {
 			pixel.source = pixel.primaryColor;
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 218776433;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class SourcePrimarySecondary implements IPixelFilter {
@@ -70,12 +80,32 @@ public class SourceColorFilter {
 		public void filter(PixelState pixel) {
 			pixel.source = add(pixel.primaryColor, pixel.secondaryColor);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 521641523;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class SourceSecondary implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.source = add(pixel.source, pixel.secondaryColor);
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 766222180;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 }

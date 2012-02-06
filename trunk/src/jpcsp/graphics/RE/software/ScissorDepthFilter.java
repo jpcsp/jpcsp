@@ -46,5 +46,15 @@ public class ScissorDepthFilter {
 		public void filter(PixelState pixel) {
 			pixel.filterPassed = pixel.sourceDepth >= nearZ && pixel.sourceDepth <= farZ;
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 889156152;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_SOURCE_DEPTH;
+		}
 	}
 }

@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
+import static jpcsp.graphics.RE.software.IPixelFilter.DISCARDS_SOURCE_DEPTH;
+import static jpcsp.graphics.RE.software.IPixelFilter.REQUIRES_SOURCE_DEPTH;
+import static jpcsp.graphics.RE.software.IPixelFilter.REQUIRES_TEXTURE_U_V;
 import static jpcsp.graphics.RE.software.PixelColor.getColor;
 import static jpcsp.util.Utilities.invertMatrix3x3;
 import static jpcsp.util.Utilities.matrixMult;
@@ -42,10 +45,24 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	protected PrimitiveState prim = new PrimitiveState();
 	protected boolean needScissoringX;
 	protected boolean needScissoringY;
+	protected boolean needSourceDepth;
+	protected boolean needTextureUV;
+
+	protected void copy(BasePrimitiveRenderer from) {
+		super.copy(from);
+		pixel.copy(from.pixel);
+		prim.copy(from.prim);
+		needScissoringX = from.needScissoringX;
+		needScissoringY = from.needScissoringY;
+		needSourceDepth = from.needSourceDepth;
+		needTextureUV = from.needTextureUV;
+	}
 
 	@Override
 	protected void init(GeContext context, CachedTexture texture, boolean useVertexTexture, boolean isTriangle) {
 		super.init(context, texture, useVertexTexture, isTriangle);
+
+		pixel.init();
 
 		prim.pxMax = Integer.MIN_VALUE;
 		prim.pxMin = Integer.MAX_VALUE;
@@ -55,6 +72,9 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		prim.pzMin = Integer.MAX_VALUE;
 
 		pixel.primaryColor = getColor(context.vertexColor);
+		if (context.textureColorDoubled) {
+			pixel.primaryColor = ColorDoubling.doubleColor(pixel.primaryColor);
+		}
 		pixel.materialAmbient = getColor(context.mat_ambient);
 		pixel.materialDiffuse = getColor(context.mat_diffuse);
 		pixel.materialSpecular = getColor(context.mat_specular);
@@ -101,17 +121,17 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		setPositions(v1, v2);
 	}
 
-	protected void setVertexTextures(VertexState v1, VertexState v2, VertexState v3) {
+	protected void setVertexTextures(GeContext context, VertexState v1, VertexState v2, VertexState v3) {
 		setTextures(v1, v2, v3);
-		setVertexTextures(v1.c, v2.c, v3.c);
+		setVertexTextures(context, v1.c, v2.c, v3.c);
 	}
 
-	protected void setVertexTextures(VertexState v1, VertexState v2) {
+	protected void setVertexTextures(GeContext context, VertexState v1, VertexState v2) {
 		setTextures(v1, v2);
-		setVertexTextures(v1.c, v2.c, null);
+		setVertexTextures(context, v1.c, v2.c, null);
 	}
 
-	private void setVertexTextures(float[] c1, float[] c2, float[] c3) {
+	private void setVertexTextures(GeContext context, float[] c1, float[] c2, float[] c3) {
 		// The rendering will be performed into the following ranges:
 		// 3D:
 		//   - x: [pxMin..pxMax] (min and max included)
@@ -149,12 +169,18 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	    		flipX = (prim.t1u > prim.t2u) ^ (prim.p1x > prim.p2x);
 	    		flipY = (prim.t1v > prim.t2v) ^ (prim.p1y > prim.p2y);
 	    	} else {
-	    		// TODO compute texture flips for a triangle
-	    		// In 2D, the texture is already read from top left to bottom right.
-	    		// This has to be transformed to the desired triangle texture mapping.
+	    		// Compute texture flips for a triangle
+	    		flipX = (prim.t1u > prim.t2u) ^ (prim.p1x > prim.p2x);
+	    		flipY = (prim.t1v > prim.t2v) ^ (prim.p1y > prim.p2y);
+	    		if (!flipX) {
+		    		flipX = (prim.t2u > prim.t3u) ^ (prim.p2x > prim.p3x);
+	    		}
+	    		if (!flipY) {
+		    		flipY = (prim.t2v > prim.t3v) ^ (prim.p2y > prim.p3y);
+	    		}
 	    	}
 	    	if (isLogTraceEnabled) {
-	    		log.trace(String.format("2D texture flipX=%b, flipY=%b", flipX, flipY));
+	    		log.trace(String.format("2D texture flipX=%b, flipY=%b, point (%d,%d)-(%d,%d), texture (%d,%d)-(%d,%d)", flipX, flipY, prim.pxMin, prim.pyMin, prim.pxMax, prim.pyMax, prim.tuMin, prim.tvMin, prim.tuMax, prim.tvMax));
 	    	}
 	    	prim.uStart = flipX ? prim.tuMax : prim.tuMin;
 	    	float uEnd = flipX ? prim.tuMin : prim.tuMax;
@@ -165,12 +191,29 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
         }
 
     	if (setVertexPrimaryColor) {
+    		if (c3 != null) {
+	    		pixel.c1a = getColor(c1[3]);
+	    		pixel.c1b = getColor(c1[2]);
+	    		pixel.c1g = getColor(c1[1]);
+	    		pixel.c1r = getColor(c1[0]);
+	    		pixel.c2a = getColor(c2[3]);
+	    		pixel.c2b = getColor(c2[2]);
+	    		pixel.c2g = getColor(c2[1]);
+	    		pixel.c2r = getColor(c2[0]);
+	    		pixel.c3a = getColor(c3[3]);
+	    		pixel.c3b = getColor(c3[2]);
+	    		pixel.c3g = getColor(c3[1]);
+	    		pixel.c3r = getColor(c3[0]);
+    		}
         	if (primaryColorFilter >= 0) {
     			// For triangles, take the weighted color from the 3 vertices.
         		filters[primaryColorFilter] = VertexColorFilter.getVertexColorFilter(c1, c2, c3);
         	} else {
     			// For sprites, take only the color from the 2nd vertex
     			pixel.primaryColor = getColor(c2);
+    			if (context.textureColorDoubled) {
+    				pixel.primaryColor = ColorDoubling.doubleColor(pixel.primaryColor);
+    			}
         	}
         }
 
@@ -182,6 +225,12 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
     	}
 
     	prepareWriters();
+
+    	int filtersId = getFiltersId();
+    	if (filtersId != compiledFilterId || compiledFilter == null) {
+			compiledFilterId = filtersId;
+    		compiledFilter = FilterCompiler.getCompiledFilter(this, filtersId, context);
+    	}
 
     	if (c3 != null) {
         	prim.preComputeTriangleWeights();
@@ -297,7 +346,6 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	private void prepareWriters() {
         int fbAddress = getTextureAddress(fbp, prim.pxMin, prim.pyMin, fbw, psm);
     	int depthAddress = getTextureAddress(zbp, prim.pxMin, prim.pyMin, zbw, depthBufferPixelFormat);
-log.debug(String.format("depthAddress = 0x%08X - 0x%08X", depthAddress, getTextureAddress(zbp, prim.pxMax, prim.pyMax, zbw, depthBufferPixelFormat)));
     	// Request image writers with a width covering the complete buffer width,
     	// we will skip unnecessary pixels at the end of each line manually (more efficient).
         imageWriter = ImageWriter.getImageWriter(fbAddress, fbw, fbw, psm);
@@ -416,5 +464,23 @@ log.debug(String.format("depthAddress = 0x%08X - 0x%08X", depthAddress, getTextu
 		if (isLogTraceEnabled) {
 			log.trace(String.format("X,Y,Z = %f, %f, %f, projected X,Y,Z,W = %f, %f, %f, %f -> Screen %d, %d, %d", x, y, z, projectedCoordinates[0] / w, projectedCoordinates[1] / w, projectedCoordinates[2] / w, w, round(screenCoordinates[0]), round(screenCoordinates[1]), round(screenCoordinates[2])));
 		}
+	}
+
+	@Override
+	protected void postRender() {
+		super.postRender();
+
+		statisticsFilters(pixel.getNumberPixels());
+	}
+
+	@Override
+	protected void preRender() {
+		super.preRender();
+
+		int flags = getFiltersFlags();
+
+		// Try to avoid to compute expensive values
+		needSourceDepth = hasFlag(flags, REQUIRES_SOURCE_DEPTH) || !hasFlag(flags, DISCARDS_SOURCE_DEPTH);
+		needTextureUV = hasFlag(flags, REQUIRES_TEXTURE_U_V);
 	}
 }

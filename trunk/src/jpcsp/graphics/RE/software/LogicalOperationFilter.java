@@ -87,12 +87,32 @@ public class LogicalOperationFilter {
 		public void filter(PixelState pixel) {
 			pixel.source = ZERO;
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 554769890;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class LogicalOperationAnd implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.source &= pixel.destination;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 768836502;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -101,12 +121,32 @@ public class LogicalOperationFilter {
 		public void filter(PixelState pixel) {
 			pixel.source &= (~pixel.destination);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 386699601;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class LogicalOperationInvertedAnd implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.source = (~pixel.source) & pixel.destination;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 114453925;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -115,12 +155,32 @@ public class LogicalOperationFilter {
 		public void filter(PixelState pixel) {
 			pixel.source = pixel.destination;
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 141119572;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class LogicalOperationExclusiveOr implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.source ^= pixel.destination;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 784656864;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -129,12 +189,32 @@ public class LogicalOperationFilter {
 		public void filter(PixelState pixel) {
 			pixel.source |= pixel.destination;
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 805264331;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class LogicalOperationNegatedOr implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.source = ~(pixel.source | pixel.destination);
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 881209032;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -143,12 +223,32 @@ public class LogicalOperationFilter {
 		public void filter(PixelState pixel) {
 			pixel.source = ~(pixel.source ^ pixel.destination);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 222591357;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class LogicalOperationInverted implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.source = ~pixel.destination;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 390071776;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -157,12 +257,32 @@ public class LogicalOperationFilter {
 		public void filter(PixelState pixel) {
 			pixel.source |= (~pixel.destination);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 169695281;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class LogicalOperationInvertedCopy implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.source = ~pixel.source;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 385348523;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -171,6 +291,16 @@ public class LogicalOperationFilter {
 		public void filter(PixelState pixel) {
 			pixel.source = (~pixel.source) | pixel.destination;
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 908554818;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class LogicalOperationNegatedAnd implements IPixelFilter {
@@ -178,12 +308,32 @@ public class LogicalOperationFilter {
 		public void filter(PixelState pixel) {
 			pixel.source = ~(pixel.source & pixel.destination);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 657340032;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class LogicalOperationSet implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.source = 0xFFFFFFFF;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 276474898;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 }

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
+import static java.lang.System.arraycopy;
 import static jpcsp.util.Utilities.normalize3;
 import static jpcsp.util.Utilities.round;
 import static jpcsp.util.Utilities.vectorMult33;
@@ -25,7 +26,7 @@ import static jpcsp.util.Utilities.vectorMult34;
  * @author gid15
  *
  */
-public class PixelState {
+public final class PixelState {
 	public int source;
 	public int destination;
 	public int sourceDepth;
@@ -40,12 +41,6 @@ public class PixelState {
 	public float u;
 	public float v;
 	public float q;
-	private final float[] V = new float[] { 0.f, 0.f, 0.f, 1.f };
-	private final float[] Ve = new float[3];
-	private final float[] N = new float[] { 0.f, 0.f, 1.f };
-	private final float[] normalizedN = new float[] { 0.f, 0.f, 1.f };
-	private final float[] Ne = new float[] { 0.f, 0.f, 1.f };
-	private final float[] normalizedNe = new float[] { 0.f, 0.f, 1.f };
 	private boolean computedV;
 	private boolean computedN;
 	private boolean computedNormalizedN;
@@ -53,16 +48,26 @@ public class PixelState {
 	private boolean computedNe;
 	private boolean computedNormalizedNe;
 	public boolean hasNormal;
+	private final float[] V = new float[] { 0.f, 0.f, 0.f, 1.f };
+	private final float[] Ve = new float[3];
+	private final float[] N = new float[] { 0.f, 0.f, 1.f };
+	private final float[] normalizedN = new float[] { 0.f, 0.f, 1.f };
+	private final float[] Ne = new float[] { 0.f, 0.f, 1.f };
+	private final float[] normalizedNe = new float[] { 0.f, 0.f, 1.f };
 	public float v1x, v1y, v1z;
 	public float v2x, v2y, v2z;
 	public float v3x, v3y, v3z;
 	public float n1x, n1y, n1z;
 	public float n2x, n2y, n2z;
 	public float n3x, n3y, n3z;
+	public int c1a, c1b, c1g, c1r;
+	public int c2a, c2b, c2g, c2r;
+	public int c3a, c3b, c3g, c3r;
 	public final float[] viewMatrix = new float[16];
 	public final float[] modelViewMatrix = new float[16];
 	public final float[] modelViewProjectionMatrix = new float[16];
 	public final float[] normalMatrix = new float[16];
+	private int numberPixels;
 
 	public float triangleWeight1;
 	public float triangleWeight2;
@@ -70,6 +75,27 @@ public class PixelState {
 
 	public boolean filterPassed;
 	public IPixelFilter filterOnFailed;
+
+	protected void copy(PixelState from) {
+		primaryColor = from.primaryColor;
+		materialAmbient = from.materialAmbient;
+		materialDiffuse = from.materialDiffuse;
+		materialSpecular = from.materialSpecular;
+		hasNormal = from.hasNormal;
+		v1x = from.v1x; v1y = from.v1y; v1z = from.v1z;
+		v2x = from.v2x; v2y = from.v2y; v2z = from.v2z;
+		v3x = from.v3x; v3y = from.v3y; v3z = from.v3z;
+		n1x = from.n1x; n1y = from.n1y; n1z = from.n1z;
+		n2x = from.n2x; n2y = from.n2y; n2z = from.n2z;
+		n3x = from.n3x; n3y = from.n3y; n3z = from.n3z;
+		c1a = from.c1a; c1b = from.c1b; c1g = from.c1g; c1r = from.c1r;
+		c2a = from.c2a; c2b = from.c2b; c2g = from.c2g; c2r = from.c2r;
+		c3a = from.c3a; c3b = from.c3b; c3g = from.c3g; c3r = from.c3r;
+		arraycopy(from.viewMatrix, 0, viewMatrix, 0, viewMatrix.length);
+		arraycopy(from.modelViewMatrix, 0, modelViewMatrix, 0, modelViewMatrix.length);
+		arraycopy(from.modelViewProjectionMatrix, 0, modelViewProjectionMatrix, 0, modelViewProjectionMatrix.length);
+		arraycopy(from.normalMatrix, 0, normalMatrix, 0, normalMatrix.length);
+	}
 
 	public float getTriangleWeightedValue(float value1, float value2, float value3) {
 		return triangleWeight1 * value1 + triangleWeight2 * value2 + triangleWeight3 * value3;
@@ -86,12 +112,19 @@ public class PixelState {
 	}
 
 	public boolean isInsideTriangle() {
-		return triangleWeight1 >= 0.f && triangleWeight2 >= 0.f && triangleWeight3 >= 0.f;
+		final float limit = -1e-6f; // The limit should be 0.0f. Allowing small rounding errors.
+		return triangleWeight1 >= limit && triangleWeight2 >= limit && triangleWeight3 >= limit;
+	}
+
+	public void newPixel2D() {
+		filterPassed = true;
+		filterOnFailed = null;
+
+		numberPixels++;
 	}
 
 	public void newPixel() {
-		filterPassed = true;
-		filterOnFailed = null;
+		newPixel2D();
 
 		computedV = false;
 		computedN = false;
@@ -99,6 +132,14 @@ public class PixelState {
 		computedVe = false;
 		computedNe = false;
 		computedNormalizedNe = false;
+	}
+
+	public void init() {
+		numberPixels = 0;
+	}
+
+	public int getNumberPixels() {
+		return numberPixels;
 	}
 
 	private void computeV() {

@@ -69,6 +69,16 @@ public class AlphaTestFilter {
 		public void filter(PixelState pixel) {
 			pixel.filterPassed = getAlpha(pixel.source) == alphaReferenceValue;
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 960150625;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class AlphaFunctionPassIfDiffers implements IPixelFilter {
@@ -81,6 +91,16 @@ public class AlphaTestFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.filterPassed = getAlpha(pixel.source) != alphaReferenceValue;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 205574712;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -95,6 +115,16 @@ public class AlphaTestFilter {
 		public void filter(PixelState pixel) {
 			pixel.filterPassed = getAlpha(pixel.source) < alphaReferenceValue;
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 254016514;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class AlphaFunctionPassIfLessOrEqual implements IPixelFilter {
@@ -107,6 +137,16 @@ public class AlphaTestFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.filterPassed = getAlpha(pixel.source) <= alphaReferenceValue;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 314931959;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -121,6 +161,16 @@ public class AlphaTestFilter {
 		public void filter(PixelState pixel) {
 			pixel.filterPassed = getAlpha(pixel.source) > alphaReferenceValue;
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 850794903;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class AlphaFunctionPassIfGreaterOrEqual implements IPixelFilter {
@@ -133,6 +183,16 @@ public class AlphaTestFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.filterPassed = getAlpha(pixel.source) >= alphaReferenceValue;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 161777271;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 }

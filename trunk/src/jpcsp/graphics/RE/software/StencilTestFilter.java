@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
+import static jpcsp.graphics.RE.software.BaseRenderer.mixIds;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.GeContext;
 
@@ -129,12 +130,32 @@ public class StencilTestFilter {
 		public void filter(PixelState pixel) {
 			pixel.source = (pixel.source & 0x00FFFFFF) | (pixel.destination & 0xFF000000);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 22562764;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	public static final class StencilOpZero implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.source &= 0x00FFFFFF;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 526794456;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -149,12 +170,32 @@ public class StencilTestFilter {
 		public void filter(PixelState pixel) {
 			pixel.source = (pixel.source & 0x00FFFFFF) | alpha;
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 278836038;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	public static final class StencilOpInvert implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.source = (pixel.source & 0x00FFFFFF) | ~(pixel.destination & 0xFF000000);
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 430888637;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -167,6 +208,16 @@ public class StencilTestFilter {
 			}
 			pixel.source = (pixel.source & 0x00FFFFFF) | alpha;
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 349450655;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	public static final class StencilOpDecrement implements IPixelFilter {
@@ -177,6 +228,16 @@ public class StencilTestFilter {
 				alpha -= 0x01000000;
 			}
 			pixel.source = (pixel.source & 0x00FFFFFF) | alpha;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 994050166;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -191,6 +252,16 @@ public class StencilTestFilter {
 		public void filter(PixelState pixel) {
 			pixel.filterPassed = false;
 			pixel.filterOnFailed = opFail;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return mixIds(991989036, opFail.getCompilationId());
+		}
+
+		@Override
+		public int getFlags() {
+			return opFail.getFlags();
 		}
 	}
 
@@ -207,6 +278,16 @@ public class StencilTestFilter {
 		public void filter(PixelState pixel) {
 			int stencilValue = PixelColor.getAlpha(pixel.destination);
 			pixel.filterPassed = (stencilValue & stencilMask) == stencilRef;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 824428805;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -229,6 +310,16 @@ public class StencilTestFilter {
 				pixel.filterOnFailed = opFail;
 			}
 		}
+
+		@Override
+		public int getCompilationId() {
+			return mixIds(745113575, opFail.getCompilationId());
+		}
+
+		@Override
+		public int getFlags() {
+			return opFail.getFlags();
+		}
 	}
 
 	private static final class StencilTestPassIfDiffers implements IPixelFilter {
@@ -244,6 +335,16 @@ public class StencilTestFilter {
 		public void filter(PixelState pixel) {
 			int stencilValue = PixelColor.getAlpha(pixel.destination);
 			pixel.filterPassed = (stencilValue & stencilMask) != stencilRef;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 772236055;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -266,6 +367,16 @@ public class StencilTestFilter {
 				pixel.filterOnFailed = opFail;
 			}
 		}
+
+		@Override
+		public int getCompilationId() {
+			return mixIds(828935920, opFail.getCompilationId());
+		}
+
+		@Override
+		public int getFlags() {
+			return opFail.getFlags();
+		}
 	}
 
 	private static final class StencilTestPassIfLess implements IPixelFilter {
@@ -281,6 +392,16 @@ public class StencilTestFilter {
 		public void filter(PixelState pixel) {
 			int stencilValue = PixelColor.getAlpha(pixel.destination);
 			pixel.filterPassed = (stencilValue & stencilMask) < stencilRef;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 585428831;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -303,6 +424,16 @@ public class StencilTestFilter {
 				pixel.filterOnFailed = opFail;
 			}
 		}
+
+		@Override
+		public int getCompilationId() {
+			return mixIds(506586036, opFail.getCompilationId());
+		}
+
+		@Override
+		public int getFlags() {
+			return opFail.getFlags();
+		}
 	}
 
 	private static final class StencilTestPassIfLessOrEqual implements IPixelFilter {
@@ -318,6 +449,16 @@ public class StencilTestFilter {
 		public void filter(PixelState pixel) {
 			int stencilValue = PixelColor.getAlpha(pixel.destination);
 			pixel.filterPassed = (stencilValue & stencilMask) <= stencilRef;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 112785132;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -340,6 +481,16 @@ public class StencilTestFilter {
 				pixel.filterOnFailed = opFail;
 			}
 		}
+
+		@Override
+		public int getCompilationId() {
+			return mixIds(809704087, opFail.getCompilationId());
+		}
+
+		@Override
+		public int getFlags() {
+			return opFail.getFlags();
+		}
 	}
 
 	private static final class StencilTestPassIfGreater implements IPixelFilter {
@@ -355,6 +506,16 @@ public class StencilTestFilter {
 		public void filter(PixelState pixel) {
 			int stencilValue = PixelColor.getAlpha(pixel.destination);
 			pixel.filterPassed = (stencilValue & stencilMask) > stencilRef;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 785243230;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -377,6 +538,16 @@ public class StencilTestFilter {
 				pixel.filterOnFailed = opFail;
 			}
 		}
+
+		@Override
+		public int getCompilationId() {
+			return mixIds(867126294, opFail.getCompilationId());
+		}
+
+		@Override
+		public int getFlags() {
+			return opFail.getFlags();
+		}
 	}
 
 	private static final class StencilTestPassIfGreaterOrEqual implements IPixelFilter {
@@ -392,6 +563,16 @@ public class StencilTestFilter {
 		public void filter(PixelState pixel) {
 			int stencilValue = PixelColor.getAlpha(pixel.destination);
 			pixel.filterPassed = (stencilValue & stencilMask) >= stencilRef;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 578049064;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -413,6 +594,16 @@ public class StencilTestFilter {
 			if (!pixel.filterPassed) {
 				pixel.filterOnFailed = opFail;
 			}
+		}
+
+		@Override
+		public int getCompilationId() {
+			return mixIds(440201346, opFail.getCompilationId());
+		}
+
+		@Override
+		public int getFlags() {
+			return opFail.getFlags();
 		}
 	}
 }

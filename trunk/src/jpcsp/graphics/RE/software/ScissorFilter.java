@@ -56,6 +56,16 @@ public class ScissorFilter {
 		public void filter(PixelState pixel) {
 			pixel.filterPassed = (pixel.x >= x1 && pixel.x <= x2 && pixel.y >= y1 && pixel.y <= y2);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 954625645;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class ScissorX implements IPixelFilter {
@@ -70,6 +80,16 @@ public class ScissorFilter {
 		public void filter(PixelState pixel) {
 			pixel.filterPassed = (pixel.x >= x1 && pixel.x <= x2);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 897312919;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class ScissorY implements IPixelFilter {
@@ -83,6 +103,16 @@ public class ScissorFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.filterPassed = (pixel.y >= y1 && pixel.y <= y2);
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 433974911;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 }

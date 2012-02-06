@@ -23,7 +23,7 @@ import jpcsp.graphics.GeContext;
  *
  */
 public class BoundingBoxRenderer extends BasePrimitiveRenderer {
-	float[][] boundingBoxPositions;
+	protected float[][] boundingBoxPositions;
 
 	public BoundingBoxRenderer(GeContext context) {
 		init(context, null, false, false);
@@ -34,7 +34,7 @@ public class BoundingBoxRenderer extends BasePrimitiveRenderer {
 	}
 
 	@Override
-	public boolean prepare() {
+	public boolean prepare(GeContext context) {
 		for (int i = 0; i < boundingBoxPositions.length; i++) {
 			addPosition(boundingBoxPositions[i]);
 		}
@@ -44,5 +44,14 @@ public class BoundingBoxRenderer extends BasePrimitiveRenderer {
 		}
 
 		return true;
+	}
+
+	@Override
+	public void render() {
+	}
+
+	@Override
+	public IRenderer duplicate() {
+		return this;
 	}
 }
