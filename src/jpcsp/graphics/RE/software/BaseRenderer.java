@@ -20,6 +20,9 @@ import static jpcsp.graphics.RE.software.PixelColor.getColor;
 import static jpcsp.util.Utilities.round;
 
 import java.nio.Buffer;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 
@@ -35,6 +38,7 @@ import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryReaderWriter;
 import jpcsp.memory.ImageReader;
+import jpcsp.util.DurationStatistics;
 
 /**
  * @author gid15
@@ -49,6 +53,7 @@ public abstract class BaseRenderer implements IRenderer {
 	protected static final Logger log = VideoEngine.log;
     protected final boolean isLogTraceEnabled;
     protected final boolean isLogDebugEnabled;
+    protected final boolean isLogInfoEnabled;
 
     protected static final boolean captureEachPrimitive = false;
 	protected static final boolean captureZbuffer = false;
@@ -60,6 +65,8 @@ public abstract class BaseRenderer implements IRenderer {
 	protected int depthWriterSkipEOL;
 	protected final IPixelFilter[] filters = new IPixelFilter[MAX_NUMBER_FILTERS];
 	protected int numberFilters;
+	protected IPixelFilter compiledFilter;
+	protected int compiledFilterId;
 	protected boolean transform2D;
 	protected int viewportWidth;
 	protected int viewportHeight;
@@ -83,10 +90,27 @@ public abstract class BaseRenderer implements IRenderer {
 	protected boolean clipPlanesEnabled;
 	protected boolean useVertexTexture;
 	protected int scissorFilter = -1;
+	protected IRandomTextureAccess textureAccess;
+	protected int mipmapLevel = 0;
+	protected IPixelFilter lightingFilter;
+	private static HashMap<Integer, Integer> filtersStatistics = new HashMap<Integer, Integer>();
+	private static HashMap<Integer, String> filterNames = new HashMap<Integer, String>();
+
+	protected void copy(BaseRenderer from) {
+		numberFilters = from.numberFilters;
+		System.arraycopy(from.filters, 0, filters, 0, numberFilters);
+		imageWriter = from.imageWriter;
+		depthWriter = from.depthWriter;
+		imageWriterSkipEOL = from.imageWriterSkipEOL;
+		depthWriterSkipEOL = from.depthWriterSkipEOL;
+		compiledFilter = from.compiledFilter;
+		transform2D = from.transform2D;
+	}
 
 	protected BaseRenderer() {
 		isLogTraceEnabled = log.isTraceEnabled();
 		isLogDebugEnabled = log.isDebugEnabled();
+		isLogInfoEnabled = log.isInfoEnabled();
 	}
 
 	protected int getTextureAddress(int address, int x, int y, int textureWidth, int pixelFormat) {
@@ -145,7 +169,7 @@ public abstract class BaseRenderer implements IRenderer {
 	}
 
 	private void prepareTextureReader(GeContext context, CachedTexture texture, boolean isTriangle) {
-        IPixelFilter lightingFilter = Lighting.getLighting(context, context.view_uploaded_matrix);
+        lightingFilter = Lighting.getLighting(context, context.view_uploaded_matrix);
 
         // Is the lighting model using the material color from the vertex color?
         if (!isNopFilter(lightingFilter) && context.mat_flags != 0 && context.useVertexColor && context.vinfo.color != 0) {
@@ -155,6 +179,7 @@ public abstract class BaseRenderer implements IRenderer {
 				log.trace(String.format("Using VertexColorFilter"));
 			}
         	primaryColorFilter = allocateFilterSlot();
+        	filters[primaryColorFilter] = null;
         	setVertexPrimaryColor = true;
 
 			if (isLogTraceEnabled) {
@@ -163,6 +188,7 @@ public abstract class BaseRenderer implements IRenderer {
         	addFilter(MaterialColorFilter.getMaterialColorFilter(context));
         }
 
+        boolean primaryColorSetGlobally = false;
         boolean added = addFilter(lightingFilter);
         if (added) {
         	if (isLogTraceEnabled) {
@@ -177,20 +203,26 @@ public abstract class BaseRenderer implements IRenderer {
     				// Reserve an empty filter slot. The filter will be set by the
     				// BasePrimitiveRenderer when the vertices are known.
     				primaryColorFilter = allocateFilterSlot();
+    			} else {
+    				// Use the color of the 2nd sprite vertex
+    				primaryColorSetGlobally = true;
     			}
+    		} else {
+    			// Use context.vertexColor as the primary color
+    			primaryColorSetGlobally = true;
     		}
         }
 
         IPixelFilter textureFilter;
+        textureAccess = null;
     	if (context.textureFlag.isEnabled() && (!transform2D || useVertexTexture)) {
-    		final int level = 0;
-    		int textureBufferWidth = VideoEngine.alignBufferWidth(context.texture_buffer_width[level], context.texture_storage);
-    		int textureHeight = context.texture_height[level];
-            int textureAddress = context.texture_base_pointer[level];
-        	IRandomTextureAccess textureAccess = texture;
+    		int textureBufferWidth = VideoEngine.alignBufferWidth(context.texture_buffer_width[mipmapLevel], context.texture_storage);
+    		int textureHeight = context.texture_height[mipmapLevel];
+            int textureAddress = context.texture_base_pointer[mipmapLevel];
+        	textureAccess = texture;
         	if (textureAccess == null) {
-            	int[] clut32 = VideoEngine.getInstance().readClut32(level);
-            	short[] clut16 = VideoEngine.getInstance().readClut16(level);
+            	int[] clut32 = VideoEngine.getInstance().readClut32(mipmapLevel);
+            	short[] clut16 = VideoEngine.getInstance().readClut16(mipmapLevel);
 	        	// Always request the whole buffer width, the texture will be cropped
 	        	// as required in the next step
 	            IMemoryReader imageReader = ImageReader.getImageReader(textureAddress, textureBufferWidth, textureHeight, textureBufferWidth, context.texture_storage, context.texture_swizzle, context.tex_clut_addr, context.tex_clut_mode, context.tex_clut_num_blocks, context.tex_clut_start, context.tex_clut_shift, context.tex_clut_mask, clut32, clut16);
@@ -206,22 +238,26 @@ public abstract class BaseRenderer implements IRenderer {
             }
 
             // Apply the texture wrap mode (clamp or repeat)
-            textureFilter = TextureWrap.getTextureWrap(context, level);
+            textureFilter = TextureWrap.getTextureWrap(context, mipmapLevel);
             addFilter(textureFilter);
 
             // Read the corresponding texture texel
-            textureFilter = TextureReader.getTextureReader(textureAccess, context, level);
+            textureFilter = TextureReader.getTextureReader(textureAccess, context, mipmapLevel);
             addFilter(textureFilter);
 
             // Apply the texture function (modulate, decal, blend, replace, add)
             textureFilter = TextureFunction.getTextureFunction(context);
             addFilter(textureFilter);
 
+            addFilter(ColorDoubling.getColorDoubling(context, false, false));
+
             addFilter(SourceColorFilter.getSourceColorFilter(context, false));
 		} else {
-			if (isLogTraceEnabled) {
+			if (primaryColorSetGlobally && isLogTraceEnabled) {
 				log.trace(String.format("Using ColorTextureFilter vertexColor=0x%08X", getColor(context.vertexColor)));
 			}
+            addFilter(ColorDoubling.getColorDoubling(context, true, primaryColorSetGlobally));
+
             addFilter(SourceColorFilter.getSourceColorFilter(context, true));
 		}
 	}
@@ -254,6 +290,7 @@ public abstract class BaseRenderer implements IRenderer {
         if (transform2D) {
         	// Reserve a filter slot for the scissor
         	scissorFilter = allocateFilterSlot();
+        	filters[scissorFilter] = null;
         }
         if (!transform2D && !context.clearMode) {
         	added = addFilter(ScissorDepthFilter.getScissorDepthFilter(context, nearZ, farZ));
@@ -314,8 +351,10 @@ public abstract class BaseRenderer implements IRenderer {
         }
 	}
 
-	@Override
-	public void render() {
+	protected void preRender() {
+	}
+
+	protected void postRender() {
         imageWriter.flush();
         depthWriter.flush();
 
@@ -328,6 +367,20 @@ public abstract class BaseRenderer implements IRenderer {
         }
 	}
 
+	protected boolean hasFlag(int flags, int flag) {
+		return (flags & flags) != 0;
+	}
+
+	protected int getFiltersFlags() {
+		int flags = 0;
+
+		for (int i = 0; i < numberFilters; i++) {
+			flags |= filters[i].getFlags();
+		}
+
+		return flags;
+	}
+
 	protected void captureZbufferImage() {
 		GeContext context = VideoEngine.getInstance().getContext();
 		int width = context.zbw;
@@ -335,5 +388,99 @@ public abstract class BaseRenderer implements IRenderer {
 		int address = getTextureAddress(zbp, 0, 0, zbw, depthBufferPixelFormat);
 		Buffer buffer = Memory.getInstance().getBuffer(address, width * height * IRenderingEngine.sizeOfTextureType[depthBufferPixelFormat]);
 		CaptureManager.captureImage(address, 0, buffer, width, height, width, depthBufferPixelFormat, false, 0, false, false);
+	}
+
+	protected void writerSkip(int count) {
+		imageWriter.skip(count);
+		depthWriter.skip(count);
+	}
+
+	protected void writerSkipEOL(int count) {
+		imageWriter.skip(count + imageWriterSkipEOL);
+		depthWriter.skip(count + depthWriterSkipEOL);
+	}
+
+	protected void writerSkipEOL() {
+		imageWriter.skip(imageWriterSkipEOL);
+		depthWriter.skip(depthWriterSkipEOL);
+	}
+
+	static protected int mixIds(int id1, int id2, int id3) {
+		return mixIds(mixIds(id1, id2), id3);
+	}
+
+	static protected int mixIds(int id1, int id2) {
+		return id1 + id2;
+	}
+
+	protected int getFiltersId() {
+		int filtersId = 0;
+		for (int i = 0; i < numberFilters; i++) {
+			filtersId = mixIds(filtersId, filters[i].getCompilationId());
+		}
+
+		return filtersId;
+	}
+
+	protected String getFilterName(IPixelFilter filter) {
+		String s = filter.toString();
+		if (s.indexOf('@') >= 0) {
+			return filter.getClass().getName().replace("jpcsp.graphics.RE.software.", "");
+		}
+		return s;
+	}
+
+	protected String getFiltersName() {
+		if (compiledFilter != null) {
+			return getFilterName(compiledFilter);
+		}
+
+		StringBuilder s = new StringBuilder();
+		for (int i = 0; i < numberFilters; i++) {
+			if (i > 0) {
+				s.append(", ");
+			}
+			s.append(getFilterName(filters[i]));
+		}
+
+		return s.toString();
+	}
+
+	protected void statisticsFilters(int numberPixels) {
+		if (!DurationStatistics.collectStatistics || !isLogInfoEnabled) {
+			return;
+		}
+
+		int filtersId = compiledFilter != null ? compiledFilterId : getFiltersId();
+
+		Integer count = filtersStatistics.get(filtersId);
+		if (count == null) {
+			count = 0;
+		}
+		filtersStatistics.put(filtersId, count + numberPixels);
+
+		if (!filterNames.containsKey(filtersId)) {
+			filterNames.put(filtersId, getFiltersName());
+		}
+	}
+
+	public static void exit() {
+		if (!log.isInfoEnabled() || filtersStatistics.isEmpty()) {
+			return;
+		}
+
+		Integer[] filterIds = filtersStatistics.keySet().toArray(new Integer[filtersStatistics.size()]);
+		Arrays.sort(filterIds, new FilterComparator());
+		for (Integer filterId : filterIds) {
+			Integer count = filtersStatistics.get(filterId);
+			log.info(String.format("Filter: count=%d, id=%d, %s", count, filterId, filterNames.get(filterId)));
+		}
+	}
+
+	private static class FilterComparator implements Comparator<Integer> {
+		@Override
+		public int compare(Integer o1, Integer o2) {
+			return filtersStatistics.get(o1).compareTo(filtersStatistics.get(o2));
+		}
 	}
 }

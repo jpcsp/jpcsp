@@ -80,6 +80,16 @@ public class ColorTestFilter {
 		public void filter(PixelState pixel) {
 			pixel.filterPassed = colorMatches(pixel.source);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 226984868;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class ColorTestPassIfColorDiffers extends ColorTest {
@@ -90,6 +100,16 @@ public class ColorTestFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.filterPassed = !colorMatches(pixel.source);
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 894958479;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 }

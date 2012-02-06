@@ -32,6 +32,16 @@ public class TriangleRenderer extends BasePrimitiveRenderer {
 	private VertexState v1;
 	private VertexState v2;
 	private VertexState v3;
+	private float t1uw, t1vw;
+	private float t2uw, t2vw;
+	private float t3uw, t3vw;
+
+	protected void copy(TriangleRenderer from) {
+		super.copy(from);
+		t1uw = from.t1uw; t1vw = from.t1vw;
+		t2uw = from.t2uw; t2vw = from.t2vw;
+		t3uw = from.t3uw; t3vw = from.t3vw;
+	}
 
 	/**
 	 * Create a triangle renderer using the current settings from the
@@ -50,6 +60,9 @@ public class TriangleRenderer extends BasePrimitiveRenderer {
 	 */
 	public TriangleRenderer(GeContext context, CachedTexture texture, boolean useVertexTexture) {
 		init(context, texture, useVertexTexture, true);
+	}
+
+	private TriangleRenderer() {
 	}
 
 	/**
@@ -96,8 +109,8 @@ public class TriangleRenderer extends BasePrimitiveRenderer {
 	}
 
 	@Override
-	public boolean prepare() {
-        if (log.isTraceEnabled()) {
+	public boolean prepare(GeContext context) {
+        if (isLogTraceEnabled) {
         	log.trace(String.format("TriangleRenderer"));
         }
 
@@ -105,25 +118,28 @@ public class TriangleRenderer extends BasePrimitiveRenderer {
         	return false;
         }
 
-        setVertexTextures(v1, v2, v3);
+        setVertexTextures(context, v1, v2, v3);
 
-		return true;
+        return true;
 	}
 
 	@Override
 	public void render() {
+		preRender();
 		if (transform2D) {
 			render2D();
 		} else {
 			render3D();
 		}
-        super.render();
+        postRender();
 	}
 
 	protected void render2D() {
 		if (isLogTraceEnabled) {
 			log.trace(String.format("Triangle render2D (%d,%d)-(%d,%d) skip=%d", prim.pxMin, prim.pyMin, prim.pxMin + prim.destinationWidth, prim.pyMin + prim.destinationWidth, imageWriterSkipEOL));
 		}
+		RESoftware.triangleRender2DStatistics.start();
+
 		float v = prim.vStart;
         for (int y = 0; y < prim.destinationHeight; y++) {
         	pixel.y = prim.pyMin + y;
@@ -135,15 +151,19 @@ public class TriangleRenderer extends BasePrimitiveRenderer {
         		pixel.x = prim.pxMin + x;
         		pixel.u = u;
         		if (pixel.isInsideTriangle()) {
-        			pixel.newPixel();
+        			pixel.newPixel2D();
         			pixel.sourceDepth = round(pixel.getTriangleWeightedValue(prim.p1z, prim.p2z, prim.p3z));
             		pixel.destination = imageWriter.readCurrent();
             		pixel.destinationDepth = depthWriter.readCurrent();
-            		for (int i = 0; i < numberFilters; i++) {
-            			filters[i].filter(pixel);
-            			if (!pixel.filterPassed) {
-            				break;
-            			}
+            		if (compiledFilter != null) {
+            			compiledFilter.filter(pixel);
+            		} else {
+	            		for (int i = 0; i < numberFilters; i++) {
+	            			filters[i].filter(pixel);
+	            			if (!pixel.filterPassed) {
+	            				break;
+	            			}
+	            		}
             		}
 if (isLogTraceEnabled) {
 	log.trace(String.format("Pixel (%d,%d), passed=%b, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d, filterOnFailed=%s", pixel.x, pixel.y, pixel.filterPassed, pixel.u, pixel.v, pixel.source, pixel.destination, pixel.primaryColor, pixel.secondaryColor, pixel.sourceDepth, pixel.destinationDepth, pixel.filterOnFailed));
@@ -159,25 +179,83 @@ if (isLogTraceEnabled) {
         				depthWriter.skip(1);
             		} else {
             			// Filter did not pass, do not update the pixel
-            			imageWriter.skip(1);
-            			depthWriter.skip(1);
+            			writerSkip(1);
             		}
         		} else {
         			// Do not display, skip the pixel
-        			imageWriter.skip(1);
-        			depthWriter.skip(1);
+        			writerSkip(1);
         		}
         		u += prim.uStep;
         		prim.deltaXTriangleWeigths(pixel);
         	}
-        	imageWriter.skip(imageWriterSkipEOL);
-        	depthWriter.skip(depthWriterSkipEOL);
+        	writerSkipEOL();
         	v += prim.vStep;
         }
+		RESoftware.triangleRender2DStatistics.end();
+	}
+
+	protected void render3DPixel(int x) {
+		pixel.newPixel();
+		pixel.x = x;
+
+		if (needTextureUV) {
+			// Compute the mapped texture u,v coordinates
+			// based on the Barycentric coordinates.
+			// Apply a perspective correction by weighting the coordinates
+			// by their "w" value.
+			// See http://en.wikipedia.org/wiki/Texture_mapping#Perspective_correctness
+			float u = pixel.getTriangleWeightedValue(t1uw, t2uw, t3uw);
+			float v = pixel.getTriangleWeightedValue(t1vw, t2vw, t3vw);
+			float weightInverted = 1.f / pixel.getTriangleWeightedValue(prim.p1wInverted, prim.p2wInverted, prim.p3wInverted);
+			pixel.u = u * weightInverted;
+			pixel.v = v * weightInverted;
+		}
+		if (needSourceDepth) {
+			pixel.sourceDepth = round(pixel.getTriangleWeightedValue(prim.p1z, prim.p2z, prim.p3z));
+		}
+		pixel.destination = imageWriter.readCurrent();
+		pixel.destinationDepth = depthWriter.readCurrent();
+		if (compiledFilter != null) {
+			compiledFilter.filter(pixel);
+		} else {
+			for (int i = 0; i < numberFilters; i++) {
+				filters[i].filter(pixel);
+				if (!pixel.filterPassed) {
+					break;
+				}
+			}
+		}
+if (isLogTraceEnabled) {
+log.trace(String.format("Pixel (%d,%d), passed=%b, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d, filterOnFailed=%s", pixel.x, pixel.y, pixel.filterPassed, pixel.u, pixel.v, pixel.source, pixel.destination, pixel.primaryColor, pixel.secondaryColor, pixel.sourceDepth, pixel.destinationDepth, pixel.filterOnFailed));
+}
+		if (pixel.filterPassed) {
+    		imageWriter.writeNext(pixel.source);
+    		depthWriter.writeNext(pixel.sourceDepth);
+		} else if (pixel.filterOnFailed != null) {
+			// Filter did not pass, but we have a filter to be executed in that case
+			pixel.source = pixel.destination;
+			pixel.filterOnFailed.filter(pixel);
+			imageWriter.writeNext(pixel.source);
+			depthWriter.skip(1);
+		} else {
+			// Filter did not pass, do not update the pixel
+			writerSkip(1);
+		}
 	}
 
 	protected void render3D() {
 		RESoftware.triangleRender3DStatistics.start();
+
+		t1uw = prim.t1u * prim.p1wInverted;
+		t1vw = prim.t1v * prim.p1wInverted;
+		t2uw = prim.t2u * prim.p2wInverted;
+		t2vw = prim.t2v * prim.p2wInverted;
+		t3uw = prim.t3u * prim.p3wInverted;
+		t3vw = prim.t3v * prim.p3wInverted;
+
+		if (isLogTraceEnabled) {
+			log.trace(String.format("Triangle render3D (%d,%d)-(%d,%d) skip=%d", prim.pxMin, prim.pyMin, prim.pxMin + prim.destinationWidth, prim.pyMin + prim.destinationWidth, imageWriterSkipEOL));
+		}
 
 		Range range = new Range();
 		Rasterizer rasterizer = null;
@@ -188,7 +266,6 @@ if (isLogTraceEnabled) {
 			rasterizer.setY(prim.pyMin);
 		}
 
-		int numberPixels = 0;
         for (int y = prim.pyMin; y <= prim.pyMax; y++) {
         	pixel.y = y;
         	int startX = prim.pxMin;
@@ -200,68 +277,31 @@ if (isLogTraceEnabled) {
         	}
 
         	if (startX >= endX) {
-        		imageWriter.skip(prim.destinationWidth + imageWriterSkipEOL);
-        		depthWriter.skip(prim.destinationWidth + depthWriterSkipEOL);
+        		writerSkipEOL(prim.destinationWidth);
         	} else {
-        		numberPixels += endX - startX + 1;
-        		imageWriter.skip(startX - prim.pxMin);
-        		depthWriter.skip(startX - prim.pxMin);
+        		writerSkip(startX - prim.pxMin);
         		pixel.x = startX;
         		prim.computeTriangleWeights(pixel);
 	        	for (int x = startX; x <= endX; x++) {
 	        		if (pixel.isInsideTriangle()) {
-	        			pixel.newPixel();
-		        		pixel.x = x;
-	        			// Compute the mapped texture u,v coordinates
-	        			// based on the Barycentric coordinates.
-	        			// Apply a perspective correction by weighting the coordinates
-	        			// by their "w" value.
-	        			// See http://en.wikipedia.org/wiki/Texture_mapping#Perspective_correctness
-	        			float u = pixel.getTriangleWeightedValue(prim.t1u * prim.p1wInverted, prim.t2u * prim.p2wInverted, prim.t3u * prim.p3wInverted);
-	        			float v = pixel.getTriangleWeightedValue(prim.t1v * prim.p1wInverted, prim.t2v * prim.p2wInverted, prim.t3v * prim.p3wInverted);
-	        			float weightInverted = 1.f / pixel.getTriangleWeightedValue(prim.p1wInverted, prim.p2wInverted, prim.p3wInverted);
-	        			pixel.u = u * weightInverted;
-	        			pixel.v = v * weightInverted;
-	        			pixel.sourceDepth = round(pixel.getTriangleWeightedValue(prim.p1z, prim.p2z, prim.p3z));
-	        			pixel.destination = imageWriter.readCurrent();
-	        			pixel.destinationDepth = depthWriter.readCurrent();
-	        			for (int i = 0; i < numberFilters; i++) {
-	        				filters[i].filter(pixel);
-	        				if (!pixel.filterPassed) {
-	        					break;
-	        				}
-	        			}
-if (isLogTraceEnabled) {
-	log.trace(String.format("Pixel (%d,%d), passed=%b, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d, filterOnFailed=%s", pixel.x, pixel.y, pixel.filterPassed, pixel.u, pixel.v, pixel.source, pixel.destination, pixel.primaryColor, pixel.secondaryColor, pixel.sourceDepth, pixel.destinationDepth, pixel.filterOnFailed));
-}
-	        			if (pixel.filterPassed) {
-	        	    		imageWriter.writeNext(pixel.source);
-	        	    		depthWriter.writeNext(pixel.sourceDepth);
-	        			} else if (pixel.filterOnFailed != null) {
-	        				// Filter did not pass, but we have a filter to be executed in that case
-	        				pixel.source = pixel.destination;
-	        				pixel.filterOnFailed.filter(pixel);
-	        				imageWriter.writeNext(pixel.source);
-	        				depthWriter.skip(1);
-	        			} else {
-	        				// Filter did not pass, do not update the pixel
-	        				imageWriter.skip(1);
-	        				depthWriter.skip(1);
-	        			}
+	        			render3DPixel(x);
 	        		} else {
 	        			// Do not display, skip the pixel
-	        			imageWriter.skip(1);
-	        			depthWriter.skip(1);
+        				writerSkip(1);
 	        		}
 	        		prim.deltaXTriangleWeigths(pixel);
 	        	}
-	    		imageWriter.skip((prim.pxMax - endX) + imageWriterSkipEOL);
-	    		depthWriter.skip((prim.pxMax - endX) + depthWriterSkipEOL);
+	        	writerSkipEOL(prim.pxMax - endX);
         	}
         }
-        if (numberPixels > 10000 && isLogDebugEnabled) {
-        	log.debug(String.format("render3D: %d pixels, (%d,%d)-(%d,%d), duration %dms", numberPixels, prim.pxMin, prim.pyMin, prim.pxMax, prim.pyMax, RESoftware.triangleRender3DStatistics.getDurationMillis()));
-        }
         RESoftware.triangleRender3DStatistics.end();
+	}
+
+	@Override
+	public IRenderer duplicate() {
+		TriangleRenderer triangleRenderer = new TriangleRenderer();
+		triangleRenderer.copy(this);
+
+		return triangleRenderer;
 	}
 }

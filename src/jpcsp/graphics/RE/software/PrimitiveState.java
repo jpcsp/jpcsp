@@ -41,6 +41,29 @@ public class PrimitiveState {
 	public float diff23y;
 	public float denomInverted;
 
+	protected void copy(PrimitiveState from) {
+		p1x = from.p1x; p1y = from.p1y; p1z = from.p1z; p1w = from.p1w; p1wInverted = from.p1wInverted;
+		p2x = from.p2x; p2y = from.p2y; p2z = from.p2z; p2w = from.p2w; p2wInverted = from.p2wInverted;
+		p3x = from.p3x; p3y = from.p3y; p3z = from.p3z; p3w = from.p3w; p3wInverted = from.p3wInverted;
+		pxMin = from.pxMin; pxMax = from.pxMax;
+		pyMin = from.pyMin; pyMax = from.pyMax;
+		pzMin = from.pzMin; pzMax = from.pzMax;
+		t1u = from.t1u; t1v = from.t1v;
+		t2u = from.t2u; t2v = from.t2v;
+		t3u = from.t3u; t3v = from.t3v;
+		tuMin = from.tuMin; tuMax = from.tuMax;
+		tvMin = from.tvMin; tvMax = from.tvMax;
+		uStart = from.uStart; uStep = from.uStep;
+		vStart = from.vStart; vStep = from.vStep;
+		destinationWidth = from.destinationWidth;
+		destinationHeight = from.destinationHeight;
+		diff13x = from.diff13x;
+		diff13y = from.diff13y;
+		diff32x = from.diff32x;
+		diff23y = from.diff23y;
+		denomInverted = from.denomInverted;
+	}
+
 	public void preComputeTriangleWeights() {
 		diff13x = p1x - p3x;
 		diff13y = p1y - p3y;
@@ -48,7 +71,7 @@ public class PrimitiveState {
 		diff23y = p2y - p3y;
 
 		float denom = diff23y * diff13x + diff32x * diff13y;
-		denomInverted = 1.0f / denom;
+		denomInverted = 1.f / denom;
 	}
 
 	public void computeTriangleWeights(PixelState pixel) {
@@ -57,7 +80,7 @@ public class PrimitiveState {
 		// All the values independent of the current pixel haven been pre-computed
 		// in preComputeTriangleWeights().
 		//
-		float diff03x = pixel.x - p3x;
+		float diff03x = pixel.x - p3x + 0.01f;
 		float diff03y = pixel.y - p3y;
 		pixel.triangleWeight1 = (diff23y * diff03x + diff32x * diff03y) * denomInverted;
 		pixel.triangleWeight2 = (diff13x * diff03y - diff13y * diff03x) * denomInverted;

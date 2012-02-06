@@ -99,6 +99,7 @@ public class Lighting {
 		private boolean separateSpecularColor;
 		private boolean[] isSpotLight = new boolean[NUM_LIGHTS];
 		private boolean[] isDirectionalLight = new boolean[NUM_LIGHTS];
+		private boolean hasSomeNonDirectionalLight;
 		private final float[] L = new float[3];
 		private final float[] H = new float[3];
 		private final float[] nL = new float[3];
@@ -118,27 +119,33 @@ public class Lighting {
 			this.separateSpecularColor = lightMode == GeCommands.LMODE_SEPARATE_SPECULAR_COLOR;
 
 			boolean someLightsEnabled = false;
+			boolean hasSomeNonDirectionalLight = false;
 			for (int l = 0; l < NUM_LIGHTS; l++) {
-				this.lightEnabled[l] = lightEnabled[l].isEnabled();
-				someLightsEnabled |= this.lightEnabled[l];
-				this.lightKind[l] = lightKind[l];
-				this.lightAmbientColor[l] = getColor(lightAmbientColor[l]);
-				this.lightDiffuseColor[l] = getColor(lightDiffuseColor[l]);
-				this.lightSpecularColor[l] = getColor(lightSpecularColor[l]);
-				this.constantAttenuation[l] = constantAttenuation[l];
-				this.linearAttenuation[l] = linearAttenuation[l];
-				this.quadraticAttenuation[l] = quadraticAttenuation[l];
-				this.spotCutoff[l] = spotCutoff[l];
-				this.spotCosCutoff[l] = spotCosCutoff[l];
-				this.spotExponent[l] = spotExponent[l];
-				isSpotLight[l] = lightType[l] == LIGHT_SPOT && spotCutoff[l] < 180.f;
-				isDirectionalLight[l] = lightType[l] == LIGHT_DIRECTIONAL;
-				// The Model transformation does not apply to the light positions and directions.
-				// Only apply the View transformation to map to the Eye Coordinate system.
-				vectorMult34(ecLightPosition[l], viewMatrix, lightPosition[l]);
-				vectorMult34(ecSpotDirection[l], viewMatrix, spotDirection[l]);
+				boolean isLightEnabled = lightEnabled[l].isEnabled();
+				this.lightEnabled[l] = isLightEnabled;
+				if (isLightEnabled) {
+					someLightsEnabled |= isLightEnabled;
+					this.lightKind[l] = lightKind[l];
+					this.lightAmbientColor[l] = getColor(lightAmbientColor[l]);
+					this.lightDiffuseColor[l] = getColor(lightDiffuseColor[l]);
+					this.lightSpecularColor[l] = getColor(lightSpecularColor[l]);
+					this.constantAttenuation[l] = constantAttenuation[l];
+					this.linearAttenuation[l] = linearAttenuation[l];
+					this.quadraticAttenuation[l] = quadraticAttenuation[l];
+					this.spotCutoff[l] = spotCutoff[l];
+					this.spotCosCutoff[l] = spotCosCutoff[l];
+					this.spotExponent[l] = spotExponent[l];
+					isSpotLight[l] = lightType[l] == LIGHT_SPOT && spotCutoff[l] < 180.f;
+					isDirectionalLight[l] = lightType[l] == LIGHT_DIRECTIONAL;
+					hasSomeNonDirectionalLight |= !isDirectionalLight[l];
+					// The Model transformation does not apply to the light positions and directions.
+					// Only apply the View transformation to map to the Eye Coordinate system.
+					vectorMult34(ecLightPosition[l], viewMatrix, lightPosition[l]);
+					vectorMult34(ecSpotDirection[l], viewMatrix, spotDirection[l]);
+				}
 			}
 			this.someLightsEnabled = someLightsEnabled;
+			this.hasSomeNonDirectionalLight = hasSomeNonDirectionalLight;
 		}
 
 		/**
@@ -149,27 +156,23 @@ public class Lighting {
 		 * @param l
 		 */
 		private void computeLight(PixelState pixel, int l) {
+			boolean isDirectionalLight = this.isDirectionalLight[l];
+
+			if (!pixel.hasNormal && isDirectionalLight) {
+				// A simple case...
+				Al = addBGR(Al, lightAmbientColor[l]);
+				return;
+			}
+
+			float att = 1.f;
 			L[0] = ecLightPosition[l][0];
 			L[1] = ecLightPosition[l][1];
 			L[2] = ecLightPosition[l][2];
-			if (!isDirectionalLight[l]) {
+			if (!isDirectionalLight) {
 				L[0] -= Ve[0];
 				L[1] -= Ve[1];
 				L[2] -= Ve[2];
-			}
-			H[0] = L[0];
-			H[1] = L[1];
-			H[2] = L[2] + 1.f;
-			float att = 1.f;
-			normalize3(nL, L);
-			float NdotL = max(dot3(nL, Ne), 0.f);
-			normalize3(nH, H);
-			float NdotH = max(dot3(nH, Ne), 0.f);
-			float k = shininess;
-			float Dk = lightKind[l] == LIGHT_POWER_DIFFUSE_SPECULAR ? max(pow(NdotL, k), 0.f) : NdotL;
-			float Sk = lightKind[l] != LIGHT_AMBIENT_DIFFUSE ? max(pow(NdotH, k), 0.f) : 0.f;
 
-			if (!isDirectionalLight[l]) {
 				float d = length3(L);
 				att = clamp(1.f / (constantAttenuation[l] + (linearAttenuation[l] + quadraticAttenuation[l] * d) * d), 0.f, 1.f);
 				if (isSpotLight[l]) {
@@ -178,9 +181,23 @@ public class Lighting {
 					att *= spot < spotCosCutoff[l] ? 0.f : pow(spot, spotExponent[l]);
 				}
 			}
+
+			if (pixel.hasNormal) {
+				H[0] = L[0];
+				H[1] = L[1];
+				H[2] = L[2] + 1.f;
+				normalize3(nL, L);
+				float NdotL = max(dot3(nL, Ne), 0.f);
+				normalize3(nH, H);
+				float NdotH = max(dot3(nH, Ne), 0.f);
+				float k = shininess;
+				float Dk = lightKind[l] == LIGHT_POWER_DIFFUSE_SPECULAR ? max(pow(NdotL, k), 0.f) : NdotL;
+				float Sk = lightKind[l] != LIGHT_AMBIENT_DIFFUSE ? max(pow(NdotH, k), 0.f) : 0.f;
+
+				Dl = addBGR(Dl, multiplyBGR(lightDiffuseColor[l], att * Dk));
+				Sl = addBGR(Sl, multiplyBGR(lightSpecularColor[l], att * Sk));
+			}
 			Al = addBGR(Al, multiplyBGR(lightAmbientColor[l], att));
-			Dl = addBGR(Dl, multiplyBGR(lightDiffuseColor[l], att * Dk));
-			Sl = addBGR(Sl, multiplyBGR(lightSpecularColor[l], att * Sk));
 		}
 
 		/* Apply the PSP lighting model.
@@ -192,6 +209,15 @@ public class Lighting {
 		 */
 		@Override
 		public void filter(PixelState pixel) {
+			if (ambient == 0xFFFFFFFF && pixel.materialAmbient == 0xFFFFFFFF) {
+				if (!someLightsEnabled || !separateSpecularColor || !pixel.hasNormal) {
+					// A very simple case...
+					pixel.primaryColor = ambient;
+					pixel.secondaryColor = ZERO;
+					return;
+				}
+			}
+
 			int primary = materialEmission;
 			int secondary = ZERO;
 
@@ -199,8 +225,13 @@ public class Lighting {
 
 			if (someLightsEnabled) {
 				// Get the vector and normal in the eye coordinates
-				pixel.getVe(Ve);
-				pixel.getNormalizedNe(Ne);
+				// (only if they will be used by some light)
+				if (hasSomeNonDirectionalLight) {
+					pixel.getVe(Ve);
+				}
+				if (pixel.hasNormal) {
+					pixel.getNormalizedNe(Ne);
+				}
 
 				Dl = ZERO;
 				Sl = ZERO;
@@ -232,6 +263,16 @@ public class Lighting {
 
 			pixel.primaryColor = primary;
 			pixel.secondaryColor = secondary;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 681882624;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 }

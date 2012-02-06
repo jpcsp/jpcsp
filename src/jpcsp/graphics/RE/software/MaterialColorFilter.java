@@ -60,5 +60,15 @@ public class MaterialColorFilter {
 				pixel.materialSpecular = pixel.primaryColor;
 			}
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 414669041;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 }

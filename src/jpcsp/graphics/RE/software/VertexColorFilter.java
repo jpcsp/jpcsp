@@ -79,6 +79,16 @@ public class VertexColorFilter {
 
 			pixel.primaryColor = getColor(a, b, g, r);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 493722550;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class ColorTextureFilter implements IPixelFilter {
@@ -91,6 +101,16 @@ public class VertexColorFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.primaryColor = color;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 903177108;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 }

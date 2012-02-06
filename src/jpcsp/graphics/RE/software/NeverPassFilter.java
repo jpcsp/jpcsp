@@ -25,4 +25,14 @@ public class NeverPassFilter implements IPixelFilter {
 	public void filter(PixelState pixel) {
 		pixel.filterPassed = false;
 	}
+
+	@Override
+	public int getCompilationId() {
+		return 679240527;
+	}
+
+	@Override
+	public int getFlags() {
+		return 0;
+	}
 }

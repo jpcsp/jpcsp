@@ -96,6 +96,16 @@ public class MaskFilter {
 		public void filter(PixelState pixel) {
 			pixel.source = (pixel.source & notColorMask) | (pixel.destination & colorMask);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 512641045;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class DepthColorMask extends ColorMask {
@@ -112,12 +122,32 @@ public class MaskFilter {
 			pixel.sourceDepth = pixel.destinationDepth;
 			super.filter(pixel);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 853655278;
+		}
+
+		@Override
+		public int getFlags() {
+			return DISCARDS_SOURCE_DEPTH;
+		}
 	}
 
 	private static final class DepthMask implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.sourceDepth = pixel.destinationDepth;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 151783143;
+		}
+
+		@Override
+		public int getFlags() {
+			return DISCARDS_SOURCE_DEPTH;
 		}
 	}
 
@@ -126,6 +156,16 @@ public class MaskFilter {
 		public void filter(PixelState pixel) {
 			pixel.source = pixel.destination;
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 132565727;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class DepthNoColorMask implements IPixelFilter {
@@ -133,6 +173,16 @@ public class MaskFilter {
 		public void filter(PixelState pixel) {
 			pixel.source = pixel.destination;
 			pixel.sourceDepth = pixel.destinationDepth;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 473223297;
+		}
+
+		@Override
+		public int getFlags() {
+			return DISCARDS_SOURCE_DEPTH;
 		}
 	}
 }

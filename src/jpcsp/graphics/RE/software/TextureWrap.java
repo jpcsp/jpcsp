@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE.software;
 
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_REPEAT;
-import static jpcsp.util.Utilities.round;
+import static jpcsp.graphics.RE.software.TextureReader.pixelToTexel;
 import jpcsp.graphics.GeContext;
 
 /**
@@ -71,7 +71,7 @@ public class TextureWrap {
 	 * @param value   the value to be wrapped
 	 * @return        the wrapped value in the range [0..1]
 	 */
-	private static float wrap(float value) {
+	public static float wrap(float value) {
 		if (value >= 0.f) {
 			// value == 4.0 -> return 0.0
 			// value == 4.1 -> return 0.1
@@ -85,7 +85,7 @@ public class TextureWrap {
 	}
 
 	private static int wrap(float value, int valueMask) {
-		return round(value) & valueMask;
+		return pixelToTexel(value) & valueMask;
 	}
 
 	private static final class TextureWrapRepeatST implements IPixelFilter {
@@ -94,6 +94,16 @@ public class TextureWrap {
 			pixel.u = wrap(pixel.u);
 			pixel.v = wrap(pixel.v);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 770460230;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_TEXTURE_U_V;
+		}
 	}
 
 	private static final class TextureWrapRepeatS implements IPixelFilter {
@@ -101,12 +111,32 @@ public class TextureWrap {
 		public void filter(PixelState pixel) {
 			pixel.u = wrap(pixel.u);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 841502345;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_TEXTURE_U_V;
+		}
 	}
 
 	private static final class TextureWrapRepeatT implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.v = wrap(pixel.v);
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 881478743;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_TEXTURE_U_V;
 		}
 	}
 
@@ -124,6 +154,16 @@ public class TextureWrap {
 			pixel.u = wrap(pixel.u, widthMask);
 			pixel.v = wrap(pixel.v, heightMask);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 657251522;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_TEXTURE_U_V;
+		}
 	}
 
 	private static final class TextureWrap2DRepeatS implements IPixelFilter {
@@ -137,6 +177,16 @@ public class TextureWrap {
 		public void filter(PixelState pixel) {
 			pixel.u = wrap(pixel.u, widthMask);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 233194390;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_TEXTURE_U_V;
+		}
 	}
 
 	private static final class TextureWrap2DRepeatT implements IPixelFilter {
@@ -149,6 +199,16 @@ public class TextureWrap {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.v = wrap(pixel.v, heightMask);
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 42874867;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_TEXTURE_U_V;
 		}
 	}
 }

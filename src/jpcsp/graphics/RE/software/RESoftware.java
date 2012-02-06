@@ -51,6 +51,9 @@ public class RESoftware extends BaseRenderingEngine {
     protected int textureBufferWidth;
     protected static DurationStatistics drawArraysStatistics = new DurationStatistics("RESoftware drawArrays");
     protected static DurationStatistics triangleRender3DStatistics = new DurationStatistics("RESoftware TriangleRender3D");
+    protected static DurationStatistics triangleRender2DStatistics = new DurationStatistics("RESoftware TriangleRender2D");
+    protected static DurationStatistics spriteRenderStatistics = new DurationStatistics("RESoftware SpriteRender");
+    protected static DurationStatistics cachedTextureStatistics = new DurationStatistics("RESoftware CachedTexture");
     protected BoundingBoxRenderer boundingBoxRenderer;
     protected boolean boundingBoxVisible;
     protected BufferVertexReader bufferVertexReader;
@@ -65,6 +68,9 @@ public class RESoftware extends BaseRenderingEngine {
 		if (DurationStatistics.collectStatistics) {
 			log.info(drawArraysStatistics);
 			log.info(triangleRender3DStatistics);
+			log.info(triangleRender2DStatistics);
+			log.info(spriteRenderStatistics);
+			log.info(cachedTextureStatistics);
 		}
 	}
 
@@ -541,7 +547,7 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	protected void render(IRenderer renderer) {
-		if (renderer.prepare()) {
+		if (renderer.prepare(context)) {
 			rendererExecutor.render(renderer);
 		}
 	}
@@ -911,6 +917,7 @@ public class RESoftware extends BaseRenderingEngine {
 	@Override
 	public void setTexImage(int level, int internalFormat, int width, int height, int format, int type, int textureSize, Buffer buffer) {
 		if (useTextureCache) {
+			cachedTextureStatistics.start();
 			// TODO Cache all the texture levels
 			if (level == 0) {
 				CachedTexture cachedTexture = null;
@@ -921,6 +928,7 @@ public class RESoftware extends BaseRenderingEngine {
 				}
 				cachedTextures.put(bindTexture, cachedTexture);
 			}
+			cachedTextureStatistics.end();
 		}
 	}
 
@@ -1025,7 +1033,7 @@ public class RESoftware extends BaseRenderingEngine {
 	public void drawBoundingBox(float[][] values) {
 		if (boundingBoxVisible) {
 			boundingBoxRenderer.drawBoundingBox(values);
-			if (!boundingBoxRenderer.prepare()) {
+			if (!boundingBoxRenderer.prepare(context)) {
 				boundingBoxVisible = false;
 			}
 		}

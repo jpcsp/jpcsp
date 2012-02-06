@@ -22,6 +22,11 @@ package jpcsp.graphics.RE.software;
  * Interface for a pixel filter.
  */
 public interface IPixelFilter {
+	public static final int REQUIRES_SOURCE_DEPTH = (1 << 0);
+	public static final int DISCARDS_SOURCE_DEPTH = (1 << 1);
+	public static final int REQUIRES_TEXTURE_U_V = (1 << 2);
+	public static final int DISCARDS_TEXTURE_U_V = (1 << 3);
+
 	/**
 	 * Filter the value of the current pixel according to the filter function.
 	 * Updates the values in the PixelState.
@@ -29,4 +34,8 @@ public interface IPixelFilter {
 	 * @param pixel    the state of the current pixel
 	 */
 	public void filter(PixelState pixel);
+
+	public int getCompilationId();
+
+	public int getFlags();
 }

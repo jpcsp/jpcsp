@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
+import static jpcsp.graphics.RE.software.BaseRenderer.mixIds;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.GeContext;
 
@@ -103,13 +104,32 @@ public class DepthTestFilter {
 			pixel.filterPassed = false;
 			pixel.filterOnFailed = stencilOpZFail;
 		}
-		
+
+		@Override
+		public int getCompilationId() {
+			return mixIds(525741144, stencilOpZFail.getCompilationId());
+		}
+
+		@Override
+		public int getFlags() {
+			return stencilOpZFail.getFlags();
+		}
 	}
 
 	private static final class DepthTestPassWhenDepthIsEqual implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.filterPassed = pixel.sourceDepth == pixel.destinationDepth;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 442547772;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_SOURCE_DEPTH;
 		}
 	}
 
@@ -127,12 +147,32 @@ public class DepthTestFilter {
 				pixel.filterOnFailed = stencilOpZFail;
 			}
 		}
+
+		@Override
+		public int getCompilationId() {
+			return mixIds(920481612, stencilOpZFail.getCompilationId());
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_SOURCE_DEPTH | stencilOpZFail.getFlags();
+		}
 	}
 
 	private static final class DepthTestPassWhenDepthIsNotEqual implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.filterPassed = pixel.sourceDepth != pixel.destinationDepth;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 700601021;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_SOURCE_DEPTH;
 		}
 	}
 
@@ -150,12 +190,32 @@ public class DepthTestFilter {
 				pixel.filterOnFailed = stencilOpZFail;
 			}
 		}
+
+		@Override
+		public int getCompilationId() {
+			return mixIds(404958745, stencilOpZFail.getCompilationId());
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_SOURCE_DEPTH | stencilOpZFail.getFlags();
+		}
 	}
 
 	private static final class DepthTestPassWhenDepthIsLess implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.filterPassed = pixel.sourceDepth < pixel.destinationDepth;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 633626864;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_SOURCE_DEPTH;
 		}
 	}
 
@@ -173,12 +233,32 @@ public class DepthTestFilter {
 				pixel.filterOnFailed = stencilOpZFail;
 			}
 		}
+
+		@Override
+		public int getCompilationId() {
+			return mixIds(337882176, stencilOpZFail.getCompilationId());
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_SOURCE_DEPTH | stencilOpZFail.getFlags();
+		}
 	}
 
 	private static final class DepthTestPassWhenDepthIsLessOrEqual implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.filterPassed = pixel.sourceDepth <= pixel.destinationDepth;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 846794366;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_SOURCE_DEPTH;
 		}
 	}
 
@@ -196,12 +276,32 @@ public class DepthTestFilter {
 				pixel.filterOnFailed = stencilOpZFail;
 			}
 		}
+
+		@Override
+		public int getCompilationId() {
+			return mixIds(243486869, stencilOpZFail.getCompilationId());
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_SOURCE_DEPTH | stencilOpZFail.getFlags();
+		}
 	}
 
 	private static final class DepthTestPassWhenDepthIsGreater implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.filterPassed = pixel.sourceDepth > pixel.destinationDepth;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 228625488;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_SOURCE_DEPTH;
 		}
 	}
 
@@ -219,12 +319,32 @@ public class DepthTestFilter {
 				pixel.filterOnFailed = stencilOpZFail;
 			}
 		}
+
+		@Override
+		public int getCompilationId() {
+			return mixIds(716664343, stencilOpZFail.getCompilationId());
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_SOURCE_DEPTH | stencilOpZFail.getFlags();
+		}
 	}
 
 	private static final class DepthTestPassWhenDepthIsGreaterOrEqual implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.filterPassed = pixel.sourceDepth >= pixel.destinationDepth;
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 987316912;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_SOURCE_DEPTH;
 		}
 	}
 
@@ -241,6 +361,16 @@ public class DepthTestFilter {
 			if (!pixel.filterPassed) {
 				pixel.filterOnFailed = stencilOpZFail;
 			}
+		}
+
+		@Override
+		public int getCompilationId() {
+			return mixIds(572912981, stencilOpZFail.getCompilationId());
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_SOURCE_DEPTH | stencilOpZFail.getFlags();
 		}
 	}
 }

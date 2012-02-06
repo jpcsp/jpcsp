@@ -54,7 +54,7 @@ public class TextureReader {
 	 * @param coordinate     the pixel coordinate
 	 * @return               the texel coordinate
 	 */
-	private static final int pixelToTexel(float coordinate) {
+	public static final int pixelToTexel(float coordinate) {
 		return (int) coordinate;
 	}
 
@@ -73,6 +73,16 @@ public class TextureReader {
 		public void filter(PixelState pixel) {
 			pixel.source = textureAccess.readPixel(pixelToTexel(pixel.u * width), pixelToTexel(pixel.v * height));
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 822505825;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_TEXTURE_U_V;
+		}
 	}
 
 	private static class TextureReader2D implements IPixelFilter {
@@ -85,6 +95,16 @@ public class TextureReader {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.source = textureAccess.readPixel(pixelToTexel(pixel.u), pixelToTexel(pixel.v));
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 967397383;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_TEXTURE_U_V;
 		}
 	}
 }

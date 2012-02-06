@@ -60,6 +60,7 @@ public class RendererExecutor {
 	public void render(IRenderer renderer) {
 		if (numberThreads > 0) {
 			// Queue for rendering in a ThreadRenderer thread
+			renderer = renderer.duplicate();
 			renderersQueue.add(renderer);
 		} else {
 			// Threads are disabled, render immediately

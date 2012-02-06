@@ -94,6 +94,16 @@ public class TextureFunction {
 		public void filter(PixelState pixel) {
 			pixel.source = multiply(pixel.source | 0xFF000000, pixel.primaryColor);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 628774010;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class TextureEffectModulateRGBA implements IPixelFilter {
@@ -101,12 +111,32 @@ public class TextureFunction {
 		public void filter(PixelState pixel) {
 			pixel.source = multiply(pixel.source, pixel.primaryColor);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 755309990;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class TextureEffectDecalRGB implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.source = (pixel.source & 0x00FFFFFF) | (pixel.primaryColor & 0xFF000000);
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 498437966;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -119,6 +149,16 @@ public class TextureFunction {
 			int g = combineComponent(getGreen(pixel.primaryColor), getGreen(pixel.source), alpha);
 			int r = combineComponent(getRed(pixel.primaryColor), getRed(pixel.source), alpha);
 			pixel.source = getColor(a, b, g, r);
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 938842832;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -141,6 +181,16 @@ public class TextureFunction {
 			int r = combineComponent(getRed(pixel.primaryColor), primaryColorR, getRed(pixel.source));
 			pixel.source = getColor(a, b, g, r);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 48392698;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class TextureEffectBlendRGBA implements IPixelFilter {
@@ -162,12 +212,32 @@ public class TextureFunction {
 			int r = combineComponent(getRed(pixel.primaryColor), primaryColorR, getRed(pixel.source));
 			pixel.source = getColor(a, b, g, r);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 840921149;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class TextureEffectReplaceRGB implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
 			pixel.source = (pixel.source & 0x00FFFFFF) | (pixel.primaryColor & 0xFF000000);
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 376875748;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -176,6 +246,16 @@ public class TextureFunction {
 		public void filter(PixelState pixel) {
 			pixel.source = add(pixel.source & 0x00FFFFFF, pixel.primaryColor);
 		}
+
+		@Override
+		public int getCompilationId() {
+			return 69146893;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static final class TextureEffectAddRGBA implements IPixelFilter {
@@ -183,6 +263,16 @@ public class TextureFunction {
 		public void filter(PixelState pixel) {
 			int a = multiplyComponent(getAlpha(pixel.source), getAlpha(pixel.primaryColor));
 			pixel.source = setAlpha(addBGR(pixel.source, pixel.primaryColor), a);
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 594528533;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 }

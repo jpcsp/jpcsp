@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
+import static jpcsp.graphics.RE.software.BaseRenderer.mixIds;
 import static jpcsp.graphics.RE.software.PixelColor.ONE;
 import static jpcsp.graphics.RE.software.PixelColor.absBGR;
 import static jpcsp.graphics.RE.software.PixelColor.addBGR;
@@ -55,13 +56,16 @@ public class AlphaBlendFilter {
 				filter = new BlendOperationReverseSubstract(sourceFactor, destinationFactor);
 				break;
 			case GeCommands.ALPHA_SOURCE_BLEND_OPERATION_MINIMUM_VALUE:
-				filter = new BlendOperationMin(sourceFactor, destinationFactor);
+				// Source and destination factors are not applied
+				filter = new BlendOperationMin();
 				break;
 			case GeCommands.ALPHA_SOURCE_BLEND_OPERATION_MAXIMUM_VALUE:
-				filter = new BlendOperationMax(sourceFactor, destinationFactor);
+				// Source and destination factors are not applied
+				filter = new BlendOperationMax();
 				break;
 			case GeCommands.ALPHA_SOURCE_BLEND_OPERATION_ABSOLUTE_VALUE:
-				filter = new BlendOperationAbs(sourceFactor, destinationFactor);
+				// Source and destination factors are not applied
+				filter = new BlendOperationAbs();
 				break;
 		}
 
@@ -112,12 +116,29 @@ public class AlphaBlendFilter {
 
 	private interface IBlendFactor {
 		public int getFactor(PixelState pixel);
+		public int getCompilationId();
+		public int getFlags();
 	}
 
 	private static class BlendFactorSrcColor implements IBlendFactor {
 		@Override
 		public int getFactor(PixelState pixel) {
 			return pixel.source;
+		}
+
+		@Override
+		public String toString() {
+			return "BlendFactorSrcColor";
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 751674897;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -126,6 +147,21 @@ public class AlphaBlendFilter {
 		public int getFactor(PixelState pixel) {
 			return 0xFFFFFFFF - pixel.source;
 		}
+
+		@Override
+		public String toString() {
+			return "BlendFactorOneMinusSrcColor";
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 227371043;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static class BlendFactorDstColor implements IBlendFactor {
@@ -133,12 +169,42 @@ public class AlphaBlendFilter {
 		public int getFactor(PixelState pixel) {
 			return pixel.destination;
 		}
+
+		@Override
+		public String toString() {
+			return "BlendFactorDstColor";
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 888983579;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static class BlendFactorOneMinusDstColor implements IBlendFactor {
 		@Override
 		public int getFactor(PixelState pixel) {
 			return 0xFFFFFFFF - pixel.destination;
+		}
+
+		@Override
+		public String toString() {
+			return "BlendFactorOneMinusDstColor";
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 896119972;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -148,6 +214,21 @@ public class AlphaBlendFilter {
 			int alpha = getAlpha(pixel.source);
 			return getColorBGR(alpha, alpha, alpha);
 		}
+
+		@Override
+		public String toString() {
+			return "BlendFactorSrcAlpha";
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 303370931;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static class BlendFactorOneMinusSrcAlpha implements IBlendFactor {
@@ -155,6 +236,21 @@ public class AlphaBlendFilter {
 		public int getFactor(PixelState pixel) {
 			int alpha = ONE - getAlpha(pixel.source);
 			return getColorBGR(alpha, alpha, alpha);
+		}
+
+		@Override
+		public String toString() {
+			return "BlendFactorOneMinusSrcAlpha";
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 180178452;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -164,6 +260,21 @@ public class AlphaBlendFilter {
 			int alpha = getAlpha(pixel.destination);
 			return getColorBGR(alpha, alpha, alpha);
 		}
+
+		@Override
+		public String toString() {
+			return "BlendFactorDstAlpha";
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 358356099;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static class BlendFactorOneMinusDstAlpha implements IBlendFactor {
@@ -171,6 +282,21 @@ public class AlphaBlendFilter {
 		public int getFactor(PixelState pixel) {
 			int alpha = ONE - getAlpha(pixel.destination);
 			return getColorBGR(alpha, alpha, alpha);
+		}
+
+		@Override
+		public String toString() {
+			return "BlendFactorOneMinusDstAlpha";
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 698613375;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -180,6 +306,21 @@ public class AlphaBlendFilter {
 			int alpha = getAlpha(pixel.source) << 1;
 			return getColorBGR(alpha, alpha, alpha);
 		}
+
+		@Override
+		public String toString() {
+			return "BlendFactorDoubleSrcAlpha";
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 609334188;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static class BlendFactorOneMinusDoubleSrcAlpha implements IBlendFactor {
@@ -187,6 +328,21 @@ public class AlphaBlendFilter {
 		public int getFactor(PixelState pixel) {
 			int alpha = ONE - (getAlpha(pixel.source) << 1);
 			return getColorBGR(alpha, alpha, alpha);
+		}
+
+		@Override
+		public String toString() {
+			return "BlendFactorOneMinusDoubleSrcAlpha";
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 208600931;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -196,6 +352,21 @@ public class AlphaBlendFilter {
 			int alpha = getAlpha(pixel.destination) << 1;
 			return getColorBGR(alpha, alpha, alpha);
 		}
+
+		@Override
+		public String toString() {
+			return "BlendFactorDoubleDstAlpha";
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 901170246;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
 	}
 
 	private static class BlendFactorOneMinusDoubleDstAlpha implements IBlendFactor {
@@ -203,6 +374,21 @@ public class AlphaBlendFilter {
 		public int getFactor(PixelState pixel) {
 			int alpha = ONE - (getAlpha(pixel.destination) << 1);
 			return getColorBGR(alpha, alpha, alpha);
+		}
+
+		@Override
+		public String toString() {
+			return "BlendFactorOneMinusDoubleDstAlpha";
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 80451709;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -216,6 +402,21 @@ public class AlphaBlendFilter {
 		@Override
 		public int getFactor(PixelState pixel) {
 			return fixColor;
+		}
+
+		@Override
+		public String toString() {
+			return "BlendFactorFix";
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 769918525;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 
@@ -240,6 +441,21 @@ public class AlphaBlendFilter {
 			int filteredDestination = multiplyBGR(pixel.destination, destinationFactor.getFactor(pixel));
 			pixel.source = setBGR(pixel.source, addBGR(filteredSource, filteredDestination));
 		}
+
+		@Override
+		public String toString() {
+			return String.format("BlendOperationAdd(src=%s, dst=%s)", sourceFactor.toString(), destinationFactor.toString());
+		}
+
+		@Override
+		public int getCompilationId() {
+			return mixIds(312712738, sourceFactor.getCompilationId(), destinationFactor.getCompilationId());
+		}
+
+		@Override
+		public int getFlags() {
+			return sourceFactor.getFlags() | destinationFactor.getFlags();
+		}
 	}
 
 	private static final class BlendOperationSubstract extends BlendOperation {
@@ -252,6 +468,21 @@ public class AlphaBlendFilter {
 			int filteredSource = multiplyBGR(pixel.source, sourceFactor.getFactor(pixel));
 			int filteredDestination = multiplyBGR(pixel.destination, destinationFactor.getFactor(pixel));
 			pixel.source = setBGR(pixel.source, substractBGR(filteredSource, filteredDestination));
+		}
+
+		@Override
+		public String toString() {
+			return String.format("BlendOperationSubstract(src=%s, dst=%s)", sourceFactor.toString(), destinationFactor.toString());
+		}
+
+		@Override
+		public int getCompilationId() {
+			return mixIds(746719570, sourceFactor.getCompilationId(), destinationFactor.getCompilationId());
+		}
+
+		@Override
+		public int getFlags() {
+			return sourceFactor.getFlags() | destinationFactor.getFlags();
 		}
 	}
 
@@ -266,41 +497,86 @@ public class AlphaBlendFilter {
 			int filteredDestination = multiplyBGR(pixel.destination, destinationFactor.getFactor(pixel));
 			pixel.source = setBGR(pixel.source, substractBGR(filteredDestination, filteredSource));
 		}
-	}
 
-	private static final class BlendOperationMin extends BlendOperation {
-		public BlendOperationMin(IBlendFactor sourceFactor, IBlendFactor destinationFactor) {
-			super(sourceFactor, destinationFactor);
+		@Override
+		public String toString() {
+			return String.format("BlendOperationReverseSubstract(src=%s, dst=%s)", sourceFactor.toString(), destinationFactor.toString());
 		}
 
 		@Override
+		public int getCompilationId() {
+			return mixIds(573703791, sourceFactor.getCompilationId(), destinationFactor.getCompilationId());
+		}
+
+		@Override
+		public int getFlags() {
+			return sourceFactor.getFlags() | destinationFactor.getFlags();
+		}
+	}
+
+	private static final class BlendOperationMin implements IPixelFilter {
+		@Override
 		public void filter(PixelState pixel) {
-			// Source and destination factors are not applied
 			pixel.source = setBGR(pixel.source, minBGR(pixel.source, pixel.destination));
 		}
-	}
 
-	private static final class BlendOperationMax extends BlendOperation {
-		public BlendOperationMax(IBlendFactor sourceFactor, IBlendFactor destinationFactor) {
-			super(sourceFactor, destinationFactor);
+		@Override
+		public String toString() {
+			return String.format("BlendOperationMin");
 		}
 
 		@Override
+		public int getCompilationId() {
+			return 908977775;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
+	}
+
+	private static final class BlendOperationMax implements IPixelFilter {
+		@Override
 		public void filter(PixelState pixel) {
-			// Source and destination factors are not applied
 			pixel.source = setBGR(pixel.source, minBGR(pixel.source, pixel.destination));
 		}
-	}
 
-	private static final class BlendOperationAbs extends BlendOperation {
-		public BlendOperationAbs(IBlendFactor sourceFactor, IBlendFactor destinationFactor) {
-			super(sourceFactor, destinationFactor);
+		@Override
+		public String toString() {
+			return String.format("BlendOperationMax");
 		}
 
 		@Override
+		public int getCompilationId() {
+			return 173691952;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
+	}
+
+	private static final class BlendOperationAbs implements IPixelFilter {
+		@Override
 		public void filter(PixelState pixel) {
-			// Source and destination factors are not applied
 			pixel.source = setBGR(pixel.source, absBGR(pixel.source, pixel.destination));
+		}
+
+		@Override
+		public String toString() {
+			return String.format("BlendOperationAbs");
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 968835587;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 }
