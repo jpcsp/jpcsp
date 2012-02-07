@@ -190,15 +190,15 @@ public class TextureMapping {
 			matrix00 = matrix[0];
 			matrix01 = matrix[1];
 			matrix02 = matrix[2];
-			matrix10 = matrix[3];
-			matrix11 = matrix[4];
-			matrix12 = matrix[5];
-			matrix20 = matrix[6];
-			matrix21 = matrix[7];
-			matrix22 = matrix[8];
-			matrix30 = matrix[9];
-			matrix31 = matrix[10];
-			matrix32 = matrix[11];
+			matrix10 = matrix[4];
+			matrix11 = matrix[5];
+			matrix12 = matrix[6];
+			matrix20 = matrix[8];
+			matrix21 = matrix[9];
+			matrix22 = matrix[10];
+			matrix30 = matrix[12];
+			matrix31 = matrix[13];
+			matrix32 = matrix[14];
 		}
 
 		protected void filter(PixelState pixel, float x, float y, float z) {

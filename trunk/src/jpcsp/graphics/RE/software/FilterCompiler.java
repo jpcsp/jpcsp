@@ -105,6 +105,9 @@ public class FilterCompiler {
 			case 1335868076:
 				compiledFilter = new CompiledFilter20(context, baseRenderer.textureAccess, baseRenderer.mipmapLevel);
 				break;
+			case 1980347054:
+				compiledFilter = new CompiledFilter21(context, baseRenderer.textureAccess, baseRenderer.mipmapLevel);
+				break;
 		}
 
 		return compiledFilter;
@@ -1106,6 +1109,71 @@ public class FilterCompiler {
 		@Override
 		public int getFlags() {
 			return REQUIRES_SOURCE_DEPTH | DISCARDS_SOURCE_DEPTH | REQUIRES_TEXTURE_U_V;
+		}
+	}
+
+	private static class CompiledFilter21 implements IPixelFilter {
+		private int alphaReferenceValue;
+		private IRandomTextureAccess textureAccess;
+		private int width;
+		private int height;
+
+		public CompiledFilter21(GeContext context, IRandomTextureAccess textureAccess, int mipmapLevel) {
+			alphaReferenceValue = context.alphaRef;
+			this.textureAccess = textureAccess;
+			width = context.texture_width[mipmapLevel];
+			height = context.texture_height[mipmapLevel];
+		}
+
+		@Override
+		public void filter(PixelState pixel) {
+			// VertexColorFilter$VertexTriangleTextureFilter,
+			// TextureWrap$TextureWrapRepeatST,
+			// TextureReader$TextureReader3D,
+			// TextureFunction$TextureEffectModulateRGBA,
+			// ColorDoubling$SourceColorDoubling
+			// AlphaTestFilter$AlphaFunctionPassIfGreater,
+			// DepthTestFilter$DepthTestPassWhenDepthIsGreaterOrEqual,
+			// BlendOperationAdd(src=BlendFactorSrcAlpha, dst=BlendFactorOneMinusSrcAlpha)
+			pixel.filterPassed = pixel.sourceDepth >= pixel.destinationDepth;
+			if (pixel.filterPassed) {
+				int a = pixel.getTriangleWeightedValue(pixel.c1a, pixel.c2a, pixel.c3a);
+				int b = pixel.getTriangleWeightedValue(pixel.c1b, pixel.c2b, pixel.c3b);
+				int g = pixel.getTriangleWeightedValue(pixel.c1g, pixel.c2g, pixel.c3g);
+				int r = pixel.getTriangleWeightedValue(pixel.c1r, pixel.c2r, pixel.c3r);
+				pixel.primaryColor = getColor(a, b, g, r);
+				pixel.u = wrap(pixel.u);
+				pixel.v = wrap(pixel.v);
+				pixel.source = textureAccess.readPixel(pixelToTexel(pixel.u * width), pixelToTexel(pixel.v * height));
+				pixel.source = multiply(pixel.source, pixel.primaryColor);
+				pixel.source = doubleColor(pixel.source);
+				pixel.filterPassed = getAlpha(pixel.source) > alphaReferenceValue;
+				if (pixel.filterPassed) {
+					// BlendOperationAdd(src=BlendFactorSrcAlpha, dst=BlendFactorOneMinusSrcAlpha)
+					int srcAlpha = PixelColor.getAlpha(pixel.source);
+					if (srcAlpha == PixelColor.ZERO) {
+						pixel.source = PixelColor.setBGR(pixel.source, pixel.destination);
+					} else if (srcAlpha == PixelColor.ONE) {
+						// Nothing to change
+					} else {
+						int oneMinusSrcAlpha = PixelColor.ONE - srcAlpha;
+						int filteredSrc = PixelColor.multiplyBGR(pixel.source, srcAlpha, srcAlpha, srcAlpha);
+						int filteredDst = PixelColor.multiplyBGR(pixel.destination, oneMinusSrcAlpha, oneMinusSrcAlpha, oneMinusSrcAlpha);
+						int source = PixelColor.addBGR(filteredSrc, filteredDst);
+						pixel.source = PixelColor.setBGR(pixel.source, source);
+					}
+				}
+			}
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 827868410;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_SOURCE_DEPTH | REQUIRES_TEXTURE_U_V;
 		}
 	}
 }

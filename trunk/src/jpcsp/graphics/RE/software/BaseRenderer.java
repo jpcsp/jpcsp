@@ -447,7 +447,7 @@ public abstract class BaseRenderer implements IRenderer {
 	}
 
 	protected void statisticsFilters(int numberPixels) {
-		if (!DurationStatistics.collectStatistics || !isLogInfoEnabled) {
+		if (!isLogInfoEnabled) {
 			return;
 		}
 

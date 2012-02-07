@@ -95,7 +95,11 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 			if (invertMatrix3x3(invertedModelViewMatrix, pixel.modelViewMatrix)) {
 				transposeMatrix3x3(pixel.normalMatrix, invertedModelViewMatrix);
 			} else {
-				log.error(String.format("ModelView matrix cannot be inverted!"));
+				// What is using the PSP in this case? Assume it just takes the Model-View matrix
+				System.arraycopy(pixel.modelViewMatrix, 0, pixel.normalMatrix, 0, pixel.normalMatrix.length);
+				if (isLogDebugEnabled) {
+					log.debug(String.format("ModelView matrix cannot be inverted, taking the Model-View matrix itself!"));
+				}
 			}
 
 			pixel.hasNormal = context.vinfo.normal != 0;
