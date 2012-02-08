@@ -73,6 +73,7 @@ public class FilterCompiler {
 			case 1653801485: // Scissor XY
 			case 1245727041: // Scissor NOP
 			case 1686043123: // Scissor XY
+			case 1165392389: // Scissor Y
 				compiledFilter = new CompiledFilter11(context, baseRenderer.textureAccess, baseRenderer.mipmapLevel);
 				break;
 			case 1562615929:
@@ -120,6 +121,9 @@ public class FilterCompiler {
 				break;
 			case -1694754135:
 				compiledFilter = new CompiledFilter25(context, baseRenderer.textureAccess, baseRenderer.mipmapLevel);
+				break;
+			case -85474751:
+				compiledFilter = new CompiledFilter26(context, baseRenderer.textureAccess, baseRenderer.mipmapLevel);
 				break;
 		}
 
@@ -1356,6 +1360,61 @@ public class FilterCompiler {
 		@Override
 		public int getFlags() {
 			return REQUIRES_SOURCE_DEPTH | DISCARDS_SOURCE_DEPTH | REQUIRES_TEXTURE_U_V;
+		}
+	}
+
+	private static class CompiledFilter26 implements IPixelFilter {
+		private int alphaReferenceValue;
+		private IRandomTextureAccess textureAccess;
+		private int width;
+		private int height;
+
+		public CompiledFilter26(GeContext context, IRandomTextureAccess textureAccess, int mipmapLevel) {
+			alphaReferenceValue = context.alphaRef;
+			this.textureAccess = textureAccess;
+			width = context.texture_width[mipmapLevel];
+			height = context.texture_height[mipmapLevel];
+		}
+
+		@Override
+		public void filter(PixelState pixel) {
+			// VertexColorFilter$ColorTextureFilter,
+			// TextureWrap$TextureWrapRepeatST,
+			// TextureReader$TextureReader3D,
+			// TextureFunction$TextureEffectModulateRGBA,
+			// AlphaTestFilter$AlphaFunctionPassIfGreaterOrEqual,
+			// BlendOperationAdd(src=BlendFactorSrcAlpha, dst=BlendFactorOneMinusSrcAlpha)
+			pixel.primaryColor = pixel.c1;
+			pixel.u = wrap(pixel.u);
+			pixel.v = wrap(pixel.v);
+			pixel.source = textureAccess.readPixel(pixelToTexel(pixel.u * width), pixelToTexel(pixel.v * height));
+			pixel.source = multiply(pixel.source, pixel.primaryColor);
+			pixel.filterPassed = getAlpha(pixel.source) > alphaReferenceValue;
+			if (pixel.filterPassed) {
+				// BlendOperationAdd(src=BlendFactorSrcAlpha, dst=BlendFactorOneMinusSrcAlpha)
+				int srcAlpha = PixelColor.getAlpha(pixel.source);
+				if (srcAlpha == PixelColor.ZERO) {
+					pixel.source = PixelColor.setBGR(pixel.source, pixel.destination);
+				} else if (srcAlpha == PixelColor.ONE) {
+					// Nothing to change
+				} else {
+					int oneMinusSrcAlpha = PixelColor.ONE - srcAlpha;
+					int filteredSrc = PixelColor.multiplyBGR(pixel.source, srcAlpha, srcAlpha, srcAlpha);
+					int filteredDst = PixelColor.multiplyBGR(pixel.destination, oneMinusSrcAlpha, oneMinusSrcAlpha, oneMinusSrcAlpha);
+					int source = PixelColor.addBGR(filteredSrc, filteredDst);
+					pixel.source = PixelColor.setBGR(pixel.source, source);
+				}
+			}
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 470746940;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 }

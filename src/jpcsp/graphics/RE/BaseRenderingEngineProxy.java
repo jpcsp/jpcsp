@@ -973,8 +973,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public boolean canNativeClut() {
-		return proxy.canNativeClut();
+	public boolean canNativeClut(int textureAddress) {
+		return proxy.canNativeClut(textureAddress);
 	}
 
 	@Override

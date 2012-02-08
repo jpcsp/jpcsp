@@ -388,6 +388,11 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
         		if (prim.pzMin < 0) {
         			return false;
         		}
+        	} else {
+            	// TODO Implement proper triangle clipping against the near plane
+            	if (prim.p1w < 0f || prim.p2w < 0f || prim.p3w < 0f) {
+            		return false;
+            	}
         	}
     	}
 

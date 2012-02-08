@@ -128,7 +128,7 @@ public class REShader extends BaseRenderingEngineFunction {
 
         useNativeClut = Settings.getInstance().readBool("emu.enablenativeclut");
         if (useNativeClut) {
-        	if (!super.canNativeClut()) {
+        	if (!super.canNativeClut(0)) {
     			log.warn("Disabling Native Color Lookup Tables (CLUT)");
         		useNativeClut = false;
         	} else {
@@ -1044,7 +1044,7 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	@Override
-	public boolean canNativeClut() {
+	public boolean canNativeClut(int textureAddress) {
 		// The clut processing is implemented into the fragment shader
 		// and the clut values are passed as a sampler2D
 		return useNativeClut;
@@ -1113,9 +1113,7 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	private void loadClut(int pixelFormat) {
-		// E.g. mask==0xFF requires 256 entries
-		// also mask==0xF0 requires 256 entries
-		int numEntries = Integer.highestOneBit(context.tex_clut_mask) << 1;
+		int numEntries = VideoEngine.getInstance().getClutNumEntries();
 		int clutPixelFormat = context.tex_clut_mode;
 		int bytesPerEntry = sizeOfTextureType[clutPixelFormat];
 
