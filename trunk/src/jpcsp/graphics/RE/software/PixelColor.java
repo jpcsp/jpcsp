@@ -101,13 +101,14 @@ public class PixelColor {
 		color1 &= 0x00FFFFFF;
 		color2 &= 0x00FFFFFF;
 		// Handle common and simple cases first
-		switch (color2) {
-			case 0x00000000: return 0;
-			case 0x00FFFFFF: return color1;
+		if (color1 == ZERO || color2 == ZERO) {
+			return ZERO;
 		}
-		switch (color1) {
-			case 0x00000000: return 0;
-			case 0x00FFFFFF: return color2;
+		if (color1 == 0x00FFFFFF) {
+			return color2;
+		}
+		if (color2 == 0x00FFFFFF) {
+			return color1;
 		}
 
 		return multiplyBGR(color1, getBlue(color2), getGreen(color2), getRed(color2));
@@ -115,6 +116,7 @@ public class PixelColor {
 
 	public final static int multiplyBGR(int color, float factor) {
 		color &= 0x00FFFFFF;
+		// Handle common and simple cases first
 		if (color == ZERO || factor <= 0.f) {
 			return ZERO;
 		}
@@ -138,6 +140,17 @@ public class PixelColor {
 	}
 
 	public final static int add(int color1, int color2) {
+		// Handle common and simple cases first
+		if (color1 == ZERO) {
+			return color2;
+		}
+		if (color2 == ZERO) {
+			return color1;
+		}
+		if (color1 == 0xFFFFFFFF || color2 == 0xFFFFFFFF) {
+			return 0xFFFFFFFF;
+		}
+
 		int a = addComponent(getAlpha(color1), getAlpha(color2));
 		int b = addComponent(getBlue(color1), getBlue(color2));
 		int g = addComponent(getGreen(color1), getGreen(color2));
@@ -146,6 +159,19 @@ public class PixelColor {
 	}
 
 	public final static int addBGR(int color1, int color2) {
+		color1 &= 0x00FFFFFF;
+		color2 &= 0x00FFFFFF;
+		// Handle common and simple cases first
+		if (color1 == ZERO) {
+			return color2;
+		}
+		if (color2 == ZERO) {
+			return color1;
+		}
+		if (color1 == 0x00FFFFFF || color2 == 0x00FFFFFF) {
+			return 0x00FFFFFF;
+		}
+
 		int b = addComponent(getBlue(color1), getBlue(color2));
 		int g = addComponent(getGreen(color1), getGreen(color2));
 		int r = addComponent(getRed(color1), getRed(color2));

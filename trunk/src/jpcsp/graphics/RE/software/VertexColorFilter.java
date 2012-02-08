@@ -41,7 +41,7 @@ public class VertexColorFilter {
         	if (log.isTraceEnabled()) {
         		log.trace(String.format("Using VertexTriangleTextureFilter color1=0x%08X, color2=0x%08X, color3=0x%08X", getColor(c1), getColor(c2), getColor(c3)));
         	}
-			filter = new VertexTriangleTextureFilter(c1, c2, c3);
+			filter = new VertexTriangleTextureFilter();
 		}
 
 		return filter;
@@ -58,26 +58,9 @@ public class VertexColorFilter {
 	}
 
 	private static final class VertexTriangleTextureFilter implements IPixelFilter {
-		private final int[] color1 = new int[4];
-		private final int[] color2 = new int[4];
-		private final int[] color3 = new int[4];
-
-		public VertexTriangleTextureFilter(float[] c1, float c2[], float[] c3) {
-			for (int i = 0; i < 4; i++) {
-				color1[i] = getColor(c1[i]);
-				color2[i] = getColor(c2[i]);
-				color3[i] = getColor(c3[i]);
-			}
-		}
-
 		@Override
 		public void filter(PixelState pixel) {
-			int a = pixel.getTriangleWeightedValue(color1[3], color2[3], color3[3]);
-			int b = pixel.getTriangleWeightedValue(color1[2], color2[2], color3[2]);
-			int g = pixel.getTriangleWeightedValue(color1[1], color2[1], color3[1]);
-			int r = pixel.getTriangleWeightedValue(color1[0], color2[0], color3[0]);
-
-			pixel.primaryColor = getColor(a, b, g, r);
+			pixel.primaryColor = pixel.getTriangleColorWeightedValue();
 		}
 
 		@Override

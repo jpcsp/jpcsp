@@ -196,6 +196,7 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 
     	if (setVertexPrimaryColor) {
     		if (c3 != null) {
+    			pixel.c1 = getColor(c1);
 	    		pixel.c1a = getColor(c1[3]);
 	    		pixel.c1b = getColor(c1[2]);
 	    		pixel.c1g = getColor(c1[1]);
