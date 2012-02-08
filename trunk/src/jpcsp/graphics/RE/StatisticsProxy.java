@@ -1709,10 +1709,10 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public boolean canNativeClut() {
+	public boolean canNativeClut(int textureAddress) {
 		DurationStatistics statistic = statistics[179];
 		statistic.start();
-		boolean value = super.canNativeClut();
+		boolean value = super.canNativeClut(textureAddress);
 		statistic.end();
 		return value;
 	}

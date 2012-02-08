@@ -16,16 +16,25 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
+import static jpcsp.graphics.GeCommands.CMODE_FORMAT_16BIT_ABGR4444;
+import static jpcsp.graphics.GeCommands.CMODE_FORMAT_16BIT_ABGR5551;
+import static jpcsp.graphics.GeCommands.CMODE_FORMAT_16BIT_BGR5650;
+import static jpcsp.graphics.GeCommands.CMODE_FORMAT_32BIT_ABGR8888;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED;
 import static jpcsp.memory.ImageReader.color4444to8888;
 import static jpcsp.memory.ImageReader.color5551to8888;
 import static jpcsp.memory.ImageReader.color565to8888;
 import static jpcsp.util.Utilities.getPower2;
 import jpcsp.Memory;
+import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.memory.FastMemory;
 import jpcsp.util.Utilities;
 
@@ -44,6 +53,8 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 	protected final int offset;
 	protected int[] buffer;
 	protected static int[] memAll;
+	protected boolean useTextureClut;
+	protected int[] clut;
 
 	static {
 		if (Memory.getInstance() instanceof FastMemory) {
@@ -75,7 +86,23 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 	private static CachedTexture getCachedTexture(int width, int height, int pixelFormat, int offset) {
 		CachedTexture cachedTexture;
 
-		if (width == Utilities.makePow2(width)) {
+		if (IRenderingEngine.isTextureTypeIndexed[pixelFormat]) {
+			switch (pixelFormat) {
+				case TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED:
+					cachedTexture = new CachedTextureIndexed8Bit(width, height, pixelFormat, offset);
+					break;
+				case TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED:
+					cachedTexture = new CachedTextureIndexed16Bit(width, height, pixelFormat, offset);
+					break;
+				case TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED:
+					cachedTexture = new CachedTextureIndexed32Bit(width, height, pixelFormat, offset);
+					break;
+				default:
+					VideoEngine.log.error(String.format("CachedTexture: unsupported indexed texture format %d", pixelFormat));
+					return null;
+			}
+			cachedTexture.setClut();
+		} else if (width == Utilities.makePow2(width)) {
 			if (offset == 0) {
 				cachedTexture = new CachedTexturePow2(width, height, pixelFormat);
 			} else {
@@ -128,6 +155,9 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 				}
 				break;
 			case TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888:
+			case TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED:
+			case TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED:
+			case TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED:
 				// Is the texture directly available from the memory array?
 				if (buffer == memAll && offset == bufferOffset) {
 					// We do not need to copy the whole texture, we can reuse the memory array
@@ -141,6 +171,9 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 				VideoEngine.log.error(String.format("CachedTexture setBuffer int unsupported pixel format %d", pixelFormat));
 				break;
 		}
+	}
+
+	protected void setClut() {
 	}
 
 	protected void setBuffer(short[] buffer, int bufferOffset, int bufferLength) {
@@ -251,6 +284,111 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 		@Override
 		public int readPixel(int u, int v) {
 			return buffer[v * width + u + offset];
+		}
+	}
+
+	private static abstract class CachedTextureIndexed extends CachedTexture {
+		private int[] clut;
+		private int shift;
+		private int mask;
+		private int start;
+
+		protected CachedTextureIndexed(int width, int height, int pixelFormat, int offset) {
+			super(width, height, pixelFormat, offset);
+		}
+
+		protected int getClut(int index) {
+			return clut[((index >> shift) & mask) | (start << 4)];
+		}
+
+		public void setClut(int[] clut, int shift, int mask, int start) {
+			this.clut = clut;
+			this.shift = shift;
+			this.mask = mask;
+			this.start = start;
+		}
+
+		@Override
+		public void setClut() {
+			VideoEngine videoEngine = VideoEngine.getInstance();
+			GeContext context = videoEngine.getContext();
+			int clutNumEntries = videoEngine.getClutNumEntries();
+			int[] clut = null;
+			short[] shortClut;
+			switch (context.tex_clut_mode) {
+				case CMODE_FORMAT_16BIT_BGR5650:
+					shortClut = videoEngine.readClut16(0);
+					clut = new int[clutNumEntries];
+					for (int i = 0; i < clut.length; i++) {
+						clut[i] = color565to8888(shortClut[i]);
+					}
+					break;
+				case CMODE_FORMAT_16BIT_ABGR5551:
+					shortClut = videoEngine.readClut16(0);
+					clut = new int[clutNumEntries];
+					for (int i = 0; i < clut.length; i++) {
+						clut[i] = color5551to8888(shortClut[i]);
+					}
+					break;
+				case CMODE_FORMAT_16BIT_ABGR4444:
+					shortClut = videoEngine.readClut16(0);
+					clut = new int[clutNumEntries];
+					for (int i = 0; i < clut.length; i++) {
+						clut[i] = color4444to8888(shortClut[i]);
+					}
+					break;
+				case CMODE_FORMAT_32BIT_ABGR8888:
+					int[] intClut = videoEngine.readClut32(0);
+					clut = new int[clutNumEntries];
+					System.arraycopy(intClut, 0, clut, 0, clut.length);
+					break;
+			}
+
+			if (clut != null) {
+				setClut(clut, context.tex_clut_shift, context.tex_clut_mask, context.tex_clut_start);
+			}
+		}
+	}
+
+	private static class CachedTextureIndexed8Bit extends CachedTextureIndexed {
+		private static final int[] shift8Bit = new int[] { 0, 8, 16, 24 };
+
+		protected CachedTextureIndexed8Bit(int width, int height, int pixelFormat, int offset) {
+			super(width, height, pixelFormat, offset);
+		}
+
+		@Override
+		public int readPixel(int u, int v) {
+			int pixelIndex = v * width + u;
+			int index = buffer[(pixelIndex >> 2) + offset] >> shift8Bit[pixelIndex & 3];
+			return getClut(index & 0xFF);
+		}
+	}
+
+	private static class CachedTextureIndexed16Bit extends CachedTextureIndexed {
+		private static final int[] shift16Bit = new int[] { 0, 16 };
+
+		protected CachedTextureIndexed16Bit(int width, int height, int pixelFormat, int offset) {
+			super(width, height, pixelFormat, offset);
+		}
+
+		@Override
+		public int readPixel(int u, int v) {
+			int pixelIndex = v * width + u;
+			int index = buffer[(pixelIndex >> 1) + offset] >> shift16Bit[pixelIndex & 1];
+			return getClut(index & 0xFFFF);
+		}
+	}
+
+	private static class CachedTextureIndexed32Bit extends CachedTextureIndexed {
+		protected CachedTextureIndexed32Bit(int width, int height, int pixelFormat, int offset) {
+			super(width, height, pixelFormat, offset);
+		}
+
+		@Override
+		public int readPixel(int u, int v) {
+			int index = buffer[v * width + u + offset];
+			return getClut(index);
 		}
 	}
 }

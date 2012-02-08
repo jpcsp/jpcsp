@@ -4406,7 +4406,7 @@ public class VideoEngine {
 					geTexture.copyScreenToTexture(re);
 				}
 
-				if (!re.canNativeClut() || context.texture_swizzle) {
+				if (!re.canNativeClut(tex_addr) || context.texture_swizzle) {
 					// Save the texture to memory, it will be reloaded using the CLUT
 					geTexture.copyTextureToMemory(re);
 					return false;
@@ -4543,7 +4543,7 @@ public class VideoEngine {
         } else {
             TextureCache textureCache = TextureCache.getInstance();
             boolean textureRequiresClut = IRenderingEngine.isTextureTypeIndexed[context.texture_storage];
-        	if (textureRequiresClut && re.canNativeClut()) {
+        	if (textureRequiresClut && re.canNativeClut(tex_addr)) {
         		if (context.texture_storage >= TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED && context.texture_storage <= TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED) {
         			// The Clut will be resolved by the shader
         			textureRequiresClut = false;
@@ -4734,7 +4734,7 @@ public class VideoEngine {
                         break;
                     }
                     case TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED: {
-                        if (re.canNativeClut()) {
+                        if (re.canNativeClut(texaddr)) {
                             final_buffer = getTextureBuffer(texaddr, 1, level, textureBufferWidthInPixels);
                             textureByteAlignment = 1; // 8 bits
                     	} else {
@@ -4745,7 +4745,7 @@ public class VideoEngine {
                         break;
                     }
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED: {
-                        if (re.canNativeClut()) {
+                        if (re.canNativeClut(texaddr)) {
                     		final_buffer = getTextureBuffer(texaddr, 2, level, textureBufferWidthInPixels);
                     		textureByteAlignment = 2; // 16 bits
                     	} else {
@@ -4756,7 +4756,7 @@ public class VideoEngine {
                         break;
                     }
                     case TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED: {
-                        if (re.canNativeClut()) {
+                        if (re.canNativeClut(texaddr)) {
                     		final_buffer = getTextureBuffer(texaddr, 4, level, textureBufferWidthInPixels);
                     		textureByteAlignment = 4; // 32 bits
                     	} else {
@@ -5877,10 +5877,16 @@ public class VideoEngine {
         return (context.vinfo.ptr_vertex >= currentList.list_addr && context.vinfo.ptr_vertex < currentList.getStallAddr());
     }
 
-    public boolean isVRAM(int addr) {
+    public static boolean isVRAM(int addr) {
         addr &= Memory.addressMask;
 
         return addr >= MemoryMap.START_VRAM && addr <= MemoryMap.END_VRAM;
+    }
+
+    public int getClutNumEntries() {
+		// E.g. mask==0xFF requires 256 entries
+		// also mask==0xF0 requires 256 entries
+		return Integer.highestOneBit(context.tex_clut_mask | (context.tex_clut_start << 4)) << 1;
     }
 
     private void hlePerformAction(IAction action, Semaphore sync) {

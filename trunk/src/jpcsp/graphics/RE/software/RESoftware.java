@@ -557,8 +557,17 @@ public class RESoftware extends BaseRenderingEngine {
 		render(spriteRenderer);
 	}
 
-	protected void drawArraysSprites(int first, int count) {
+	protected CachedTexture getCachedTexture() {
 		CachedTexture cachedTexture = cachedTextures.get(bindTexture);
+		if (cachedTexture != null) {
+			cachedTexture.setClut();
+		}
+
+		return cachedTexture;
+	}
+
+	protected void drawArraysSprites(int first, int count) {
+		CachedTexture cachedTexture = getCachedTexture();
 		SpriteRenderer spriteRenderer = new SpriteRenderer(context, cachedTexture, useVertexTexture);
 		Memory mem = Memory.getInstance();
 		for (int i = first; i < count; i += 2) {
@@ -642,7 +651,7 @@ public class RESoftware extends BaseRenderingEngine {
 
 	protected void drawArraysTriangleStrips(int first, int count) {
 		Memory mem = Memory.getInstance();
-		CachedTexture cachedTexture = cachedTextures.get(bindTexture);
+		CachedTexture cachedTexture = getCachedTexture();
 		TriangleRenderer triangleRenderer = new TriangleRenderer(context, cachedTexture, useVertexTexture);
 		SpriteRenderer spriteRenderer = null;
 		VertexState tv1 = null;
@@ -696,7 +705,7 @@ public class RESoftware extends BaseRenderingEngine {
 
 	protected void drawArraysTriangles(int first, int count) {
 		Memory mem = Memory.getInstance();
-		CachedTexture cachedTexture = cachedTextures.get(bindTexture);
+		CachedTexture cachedTexture = getCachedTexture();
 		TriangleRenderer triangleRenderer = new TriangleRenderer(context, cachedTexture, useVertexTexture);
 		for (int i = 0; i < count; i += 3) {
 			readVertex(mem, first + i, v1);
@@ -709,7 +718,7 @@ public class RESoftware extends BaseRenderingEngine {
 
 	protected void drawArraysTriangleFan(int first, int count) {
 		Memory mem = Memory.getInstance();
-		CachedTexture cachedTexture = cachedTextures.get(bindTexture);
+		CachedTexture cachedTexture = getCachedTexture();
 		TriangleRenderer triangleRenderer = new TriangleRenderer(context, cachedTexture, useVertexTexture);
 		VertexState tv1 = null;
 		VertexState tv2 = null;
@@ -1330,7 +1339,10 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	@Override
-	public boolean canNativeClut() {
+	public boolean canNativeClut(int textureAddress) {
+		if (VideoEngine.isVRAM(textureAddress)) {
+			return true;
+		}
 		return !useTextureCache;
 	}
 
@@ -1342,8 +1354,6 @@ public class RESoftware extends BaseRenderingEngine {
 
 	@Override
 	public void setTextureFormat(int pixelFormat, boolean swizzle) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
