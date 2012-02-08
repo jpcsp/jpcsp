@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE.software;
 
 import static java.lang.System.arraycopy;
+import static jpcsp.graphics.RE.software.PixelColor.getColor;
 import static jpcsp.util.Utilities.normalize3;
 import static jpcsp.util.Utilities.round;
 import static jpcsp.util.Utilities.vectorMult33;
@@ -41,13 +42,13 @@ public final class PixelState {
 	public float u;
 	public float v;
 	public float q;
+	public boolean hasNormal;
 	private boolean computedV;
 	private boolean computedN;
 	private boolean computedNormalizedN;
 	private boolean computedVe;
 	private boolean computedNe;
 	private boolean computedNormalizedNe;
-	public boolean hasNormal;
 	private final float[] V = new float[] { 0.f, 0.f, 0.f, 1.f };
 	private final float[] Ve = new float[3];
 	private final float[] N = new float[] { 0.f, 0.f, 1.f };
@@ -60,7 +61,7 @@ public final class PixelState {
 	public float n1x, n1y, n1z;
 	public float n2x, n2y, n2z;
 	public float n3x, n3y, n3z;
-	public int c1a, c1b, c1g, c1r;
+	public int c1a, c1b, c1g, c1r, c1;
 	public int c2a, c2b, c2g, c2r;
 	public int c3a, c3b, c3g, c3r;
 	public final float[] viewMatrix = new float[16];
@@ -88,7 +89,7 @@ public final class PixelState {
 		n1x = from.n1x; n1y = from.n1y; n1z = from.n1z;
 		n2x = from.n2x; n2y = from.n2y; n2z = from.n2z;
 		n3x = from.n3x; n3y = from.n3y; n3z = from.n3z;
-		c1a = from.c1a; c1b = from.c1b; c1g = from.c1g; c1r = from.c1r;
+		c1a = from.c1a; c1b = from.c1b; c1g = from.c1g; c1r = from.c1r; c1 = from.c1;
 		c2a = from.c2a; c2b = from.c2b; c2g = from.c2g; c2r = from.c2r;
 		c3a = from.c3a; c3b = from.c3b; c3g = from.c3g; c3r = from.c3r;
 		arraycopy(from.viewMatrix, 0, viewMatrix, 0, viewMatrix.length);
@@ -105,10 +106,12 @@ public final class PixelState {
 		return round(triangleWeight1 * value1 + triangleWeight2 * value2 + triangleWeight3 * value3);
 	}
 
-	public void getTriangleWeightedValue(float[] result, float[] values1, float[] values2, float[] values3) {
-		result[0] = getTriangleWeightedValue(values1[0], values2[0], values3[0]);
-		result[1] = getTriangleWeightedValue(values1[1], values2[1], values3[1]);
-		result[2] = getTriangleWeightedValue(values1[2], values2[2], values3[2]);
+	public int getTriangleColorWeightedValue() {
+		int a = getTriangleWeightedValue(c1a, c2a, c3a);
+		int b = getTriangleWeightedValue(c1b, c2b, c3b);
+		int g = getTriangleWeightedValue(c1g, c2g, c3g);
+		int r = getTriangleWeightedValue(c1r, c2r, c3r);
+		return getColor(a, b, g, r);
 	}
 
 	public boolean isInsideTriangle() {

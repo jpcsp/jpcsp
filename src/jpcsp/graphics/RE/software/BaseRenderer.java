@@ -38,7 +38,6 @@ import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryReaderWriter;
 import jpcsp.memory.ImageReader;
-import jpcsp.util.DurationStatistics;
 
 /**
  * @author gid15

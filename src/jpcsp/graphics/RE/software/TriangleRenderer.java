@@ -254,7 +254,7 @@ log.trace(String.format("Pixel (%d,%d), passed=%b, tex (%f, %f), source=0x%08X, 
 		t3vw = prim.t3v * prim.p3wInverted;
 
 		if (isLogTraceEnabled) {
-			log.trace(String.format("Triangle render3D (%d,%d)-(%d,%d) skip=%d", prim.pxMin, prim.pyMin, prim.pxMin + prim.destinationWidth, prim.pyMin + prim.destinationWidth, imageWriterSkipEOL));
+			log.trace(String.format("Triangle render3D (%d,%d)-(%d,%d) skip=%d", prim.pxMin, prim.pyMin, prim.pxMin + prim.destinationWidth, prim.pyMin + prim.destinationHeight, imageWriterSkipEOL));
 		}
 
 		Range range = new Range();

@@ -72,6 +72,7 @@ public class FilterCompiler {
 				break;
 			case 1653801485: // Scissor XY
 			case 1245727041: // Scissor NOP
+			case 1686043123: // Scissor XY
 				compiledFilter = new CompiledFilter11(context, baseRenderer.textureAccess, baseRenderer.mipmapLevel);
 				break;
 			case 1562615929:
@@ -107,6 +108,18 @@ public class FilterCompiler {
 				break;
 			case 1980347054:
 				compiledFilter = new CompiledFilter21(context, baseRenderer.textureAccess, baseRenderer.mipmapLevel);
+				break;
+			case 526554363:
+				compiledFilter = new CompiledFilter22(context, baseRenderer.textureAccess, baseRenderer.mipmapLevel, baseRenderer.lightingFilter);
+				break;
+			case 2121447342:
+				compiledFilter = new CompiledFilter23(context, baseRenderer.textureAccess, baseRenderer.mipmapLevel);
+				break;
+			case -742360328:
+				compiledFilter = new CompiledFilter24(context, baseRenderer.textureAccess, baseRenderer.mipmapLevel);
+				break;
+			case -1694754135:
+				compiledFilter = new CompiledFilter25(context, baseRenderer.textureAccess, baseRenderer.mipmapLevel);
 				break;
 		}
 
@@ -256,11 +269,7 @@ public class FilterCompiler {
 			// MaskFilter$DepthMask
 			pixel.filterPassed = pixel.sourceDepth >= pixel.destinationDepth;
 			if (pixel.filterPassed) {
-				int a = pixel.getTriangleWeightedValue(pixel.c1a, pixel.c2a, pixel.c3a);
-				int b = pixel.getTriangleWeightedValue(pixel.c1b, pixel.c2b, pixel.c3b);
-				int g = pixel.getTriangleWeightedValue(pixel.c1g, pixel.c2g, pixel.c3g);
-				int r = pixel.getTriangleWeightedValue(pixel.c1r, pixel.c2r, pixel.c3r);
-				pixel.primaryColor = getColor(a, b, g, r);
+				pixel.primaryColor = pixel.getTriangleColorWeightedValue();
 				pixel.u = pixel.u * scaleU + translateU;
 				pixel.v = pixel.v * scaleV + translateV;
 				pixel.u = wrap(pixel.u);
@@ -314,11 +323,7 @@ public class FilterCompiler {
 			// DepthTestFilter$DepthTestPassWhenDepthIsGreaterOrEqual,
 			pixel.filterPassed = pixel.sourceDepth >= pixel.destinationDepth;
 			if (pixel.filterPassed) {
-				int a = pixel.getTriangleWeightedValue(pixel.c1a, pixel.c2a, pixel.c3a);
-				int b = pixel.getTriangleWeightedValue(pixel.c1b, pixel.c2b, pixel.c3b);
-				int g = pixel.getTriangleWeightedValue(pixel.c1g, pixel.c2g, pixel.c3g);
-				int r = pixel.getTriangleWeightedValue(pixel.c1r, pixel.c2r, pixel.c3r);
-				pixel.primaryColor = getColor(a, b, g, r);
+				pixel.primaryColor = pixel.getTriangleColorWeightedValue();
 				pixel.u = wrap(pixel.u);
 				pixel.v = wrap(pixel.v);
 				pixel.source = textureAccess.readPixel(pixelToTexel(pixel.u * width), pixelToTexel(pixel.v * height));
@@ -362,11 +367,7 @@ public class FilterCompiler {
 			// BlendOperationAdd(src=BlendFactorSrcAlpha, dst=BlendFactorOneMinusSrcAlpha)
 			pixel.filterPassed = pixel.sourceDepth >= pixel.destinationDepth;
 			if (pixel.filterPassed) {
-				int a = pixel.getTriangleWeightedValue(pixel.c1a, pixel.c2a, pixel.c3a);
-				int b = pixel.getTriangleWeightedValue(pixel.c1b, pixel.c2b, pixel.c3b);
-				int g = pixel.getTriangleWeightedValue(pixel.c1g, pixel.c2g, pixel.c3g);
-				int r = pixel.getTriangleWeightedValue(pixel.c1r, pixel.c2r, pixel.c3r);
-				pixel.primaryColor = getColor(a, b, g, r);
+				pixel.primaryColor = pixel.getTriangleColorWeightedValue();
 				pixel.u = wrap(pixel.u);
 				pixel.v = wrap(pixel.v);
 				pixel.source = textureAccess.readPixel(pixelToTexel(pixel.u * width), pixelToTexel(pixel.v * height));
@@ -423,11 +424,7 @@ public class FilterCompiler {
 			// AlphaTestFilter$AlphaFunctionPassIfGreater,
 			// DepthTestFilter$DepthTestPassWhenDepthIsGreaterOrEqual,
 			// MaskFilter$DepthMask
-			int a = pixel.getTriangleWeightedValue(pixel.c1a, pixel.c2a, pixel.c3a);
-			int b = pixel.getTriangleWeightedValue(pixel.c1b, pixel.c2b, pixel.c3b);
-			int g = pixel.getTriangleWeightedValue(pixel.c1g, pixel.c2g, pixel.c3g);
-			int r = pixel.getTriangleWeightedValue(pixel.c1r, pixel.c2r, pixel.c3r);
-			pixel.primaryColor = getColor(a, b, g, r);
+			pixel.primaryColor = pixel.getTriangleColorWeightedValue();
 			pixel.u = wrap(pixel.u);
 			pixel.v = wrap(pixel.v);
 			pixel.source = textureAccess.readPixel(pixelToTexel(pixel.u * width), pixelToTexel(pixel.v * height));
@@ -482,11 +479,7 @@ public class FilterCompiler {
 			// MaskFilter$DepthMask
 			pixel.filterPassed = pixel.sourceDepth >= pixel.destinationDepth;
 			if (pixel.filterPassed) {
-				int a = pixel.getTriangleWeightedValue(pixel.c1a, pixel.c2a, pixel.c3a);
-				int b = pixel.getTriangleWeightedValue(pixel.c1b, pixel.c2b, pixel.c3b);
-				int g = pixel.getTriangleWeightedValue(pixel.c1g, pixel.c2g, pixel.c3g);
-				int r = pixel.getTriangleWeightedValue(pixel.c1r, pixel.c2r, pixel.c3r);
-				pixel.primaryColor = getColor(a, b, g, r);
+				pixel.primaryColor = pixel.getTriangleColorWeightedValue();
 				pixel.u += translateU;
 				pixel.v += translateV;
 				pixel.u = wrap(pixel.u);
@@ -558,7 +551,7 @@ public class FilterCompiler {
 			// MaskFilter$DepthMask
 			pixel.filterPassed = pixel.sourceDepth <= pixel.destinationDepth;
 			if (pixel.filterPassed) {
-				pixel.primaryColor = getColor(pixel.c1a, pixel.c1b, pixel.c1g, pixel.c1r);
+				pixel.primaryColor = pixel.c1;
 				if (materialAmbient) {
 					pixel.materialAmbient = pixel.primaryColor;
 				}
@@ -711,7 +704,7 @@ public class FilterCompiler {
 			// SourceColorFilter$SourcePrimary,
 			// BlendOperationAdd(src=BlendFactorSrcAlpha, dst=BlendFactorOneMinusSrcAlpha),
 			// MaskFilter$DepthMask
-			pixel.primaryColor = getColor(pixel.c1a, pixel.c1b, pixel.c1g, pixel.c1r);
+			pixel.primaryColor = pixel.c1;
 			pixel.source = pixel.primaryColor;
 			// BlendOperationAdd(src=BlendFactorSrcAlpha, dst=BlendFactorOneMinusSrcAlpha)
 			int srcAlpha = PixelColor.getAlpha(pixel.source);
@@ -1034,11 +1027,7 @@ public class FilterCompiler {
 			// DepthTestFilter$DepthTestPassWhenDepthIsGreaterOrEqual,
 			pixel.filterPassed = pixel.sourceDepth >= pixel.destinationDepth;
 			if (pixel.filterPassed) {
-				int a = pixel.getTriangleWeightedValue(pixel.c1a, pixel.c2a, pixel.c3a);
-				int b = pixel.getTriangleWeightedValue(pixel.c1b, pixel.c2b, pixel.c3b);
-				int g = pixel.getTriangleWeightedValue(pixel.c1g, pixel.c2g, pixel.c3g);
-				int r = pixel.getTriangleWeightedValue(pixel.c1r, pixel.c2r, pixel.c3r);
-				pixel.primaryColor = getColor(a, b, g, r);
+				pixel.primaryColor = pixel.getTriangleColorWeightedValue();
 				pixel.u = wrap(pixel.u);
 				pixel.v = wrap(pixel.v);
 				pixel.source = textureAccess.readPixel(pixelToTexel(pixel.u * width), pixelToTexel(pixel.v * height));
@@ -1082,11 +1071,7 @@ public class FilterCompiler {
 			// AlphaTestFilter$AlphaFunctionPassIfGreater,
 			// DepthTestFilter$DepthTestPassWhenDepthIsGreaterOrEqual,
 			// MaskFilter$DepthMask
-			int a = pixel.getTriangleWeightedValue(pixel.c1a, pixel.c2a, pixel.c3a);
-			int b = pixel.getTriangleWeightedValue(pixel.c1b, pixel.c2b, pixel.c3b);
-			int g = pixel.getTriangleWeightedValue(pixel.c1g, pixel.c2g, pixel.c3g);
-			int r = pixel.getTriangleWeightedValue(pixel.c1r, pixel.c2r, pixel.c3r);
-			pixel.primaryColor = getColor(a, b, g, r);
+			pixel.primaryColor = pixel.getTriangleColorWeightedValue();
 			pixel.u = wrap(pixel.u);
 			pixel.v = wrap(pixel.v);
 			pixel.source = textureAccess.readPixel(pixelToTexel(pixel.u * width), pixelToTexel(pixel.v * height));
@@ -1137,11 +1122,7 @@ public class FilterCompiler {
 			// BlendOperationAdd(src=BlendFactorSrcAlpha, dst=BlendFactorOneMinusSrcAlpha)
 			pixel.filterPassed = pixel.sourceDepth >= pixel.destinationDepth;
 			if (pixel.filterPassed) {
-				int a = pixel.getTriangleWeightedValue(pixel.c1a, pixel.c2a, pixel.c3a);
-				int b = pixel.getTriangleWeightedValue(pixel.c1b, pixel.c2b, pixel.c3b);
-				int g = pixel.getTriangleWeightedValue(pixel.c1g, pixel.c2g, pixel.c3g);
-				int r = pixel.getTriangleWeightedValue(pixel.c1r, pixel.c2r, pixel.c3r);
-				pixel.primaryColor = getColor(a, b, g, r);
+				pixel.primaryColor = pixel.getTriangleColorWeightedValue();
 				pixel.u = wrap(pixel.u);
 				pixel.v = wrap(pixel.v);
 				pixel.source = textureAccess.readPixel(pixelToTexel(pixel.u * width), pixelToTexel(pixel.v * height));
@@ -1174,6 +1155,207 @@ public class FilterCompiler {
 		@Override
 		public int getFlags() {
 			return REQUIRES_SOURCE_DEPTH | REQUIRES_TEXTURE_U_V;
+		}
+	}
+
+	private static class CompiledFilter22 implements IPixelFilter {
+		private IPixelFilter lightingFilter;
+		private IRandomTextureAccess textureAccess;
+		private int alphaReferenceValue;
+		private int width;
+		private int height;
+
+		public CompiledFilter22(GeContext context, IRandomTextureAccess textureAccess, int mipmapLevel, IPixelFilter lightingFilter) {
+			this.lightingFilter = lightingFilter;
+			this.textureAccess = textureAccess;
+			alphaReferenceValue = context.alphaRef;
+			width = context.texture_width[mipmapLevel];
+			height = context.texture_height[mipmapLevel];
+		}
+
+		@Override
+		public void filter(PixelState pixel) {
+			// Lighting$LightingFilter,
+			// TextureWrap$TextureWrapRepeatST,
+			// TextureReader$TextureReader3D,
+			// TextureFunction$TextureEffectModulateRGBA,
+			// SourceColorFilter$SourceSecondary,
+			// AlphaTestFilter$AlphaFunctionPassIfGreater,
+			// StencilTestFilter$StencilOpKeep,
+			// MaskFilter$DepthMask
+			lightingFilter.filter(pixel);
+			pixel.u = wrap(pixel.u);
+			pixel.v = wrap(pixel.v);
+			pixel.source = textureAccess.readPixel(pixelToTexel(pixel.u * width), pixelToTexel(pixel.v * height));
+			pixel.source = multiply(pixel.source, pixel.primaryColor);
+			pixel.source = add(pixel.source, pixel.secondaryColor);
+			pixel.filterPassed = getAlpha(pixel.source) > alphaReferenceValue;
+			if (pixel.filterPassed) {
+				pixel.source = (pixel.source & 0x00FFFFFF) | (pixel.destination & 0xFF000000);
+				pixel.sourceDepth = pixel.destinationDepth;
+			}
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 847579027;
+		}
+
+		@Override
+		public int getFlags() {
+			return DISCARDS_SOURCE_DEPTH;
+		}
+	}
+
+	private static class CompiledFilter23 implements IPixelFilter {
+		private int scissorX1;
+		private int scissorY1;
+		private int scissorX2;
+		private int scissorY2;
+
+		public CompiledFilter23(GeContext context, IRandomTextureAccess textureAccess, int mipmapLevel) {
+			scissorX1 = context.scissor_x1;
+			scissorY1 = context.scissor_y1;
+			scissorX2 = context.scissor_x2;
+			scissorY2 = context.scissor_y2;
+		}
+
+		@Override
+		public void filter(PixelState pixel) {
+			// SourceColorFilter$SourcePrimary,
+			// ScissorFilter$ScissorXY,
+			// BlendOperationAdd(src=BlendFactorSrcAlpha, dst=BlendFactorOneMinusSrcAlpha)
+			// MaskFilter$DepthMask
+			pixel.filterPassed = (pixel.x >= scissorX1 && pixel.x <= scissorX2 && pixel.y >= scissorY1 && pixel.y <= scissorY2);
+			if (pixel.filterPassed) {
+				pixel.source = pixel.primaryColor;
+				// BlendOperationAdd(src=BlendFactorSrcAlpha, dst=BlendFactorOneMinusSrcAlpha)
+				int srcAlpha = PixelColor.getAlpha(pixel.source);
+				if (srcAlpha == PixelColor.ZERO) {
+					pixel.source = PixelColor.setBGR(pixel.source, pixel.destination);
+				} else if (srcAlpha == PixelColor.ONE) {
+					// Nothing to change
+				} else {
+					int oneMinusSrcAlpha = PixelColor.ONE - srcAlpha;
+					int filteredSrc = PixelColor.multiplyBGR(pixel.source, srcAlpha, srcAlpha, srcAlpha);
+					int filteredDst = PixelColor.multiplyBGR(pixel.destination, oneMinusSrcAlpha, oneMinusSrcAlpha, oneMinusSrcAlpha);
+					int source = PixelColor.addBGR(filteredSrc, filteredDst);
+					pixel.source = PixelColor.setBGR(pixel.source, source);
+				}
+				pixel.sourceDepth = pixel.destinationDepth;
+			}
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 902218253;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_SOURCE_DEPTH | DISCARDS_SOURCE_DEPTH;
+		}
+	}
+
+	private static class CompiledFilter24 implements IPixelFilter {
+		private IRandomTextureAccess textureAccess;
+		private int width;
+		private int height;
+
+		public CompiledFilter24(GeContext context, IRandomTextureAccess textureAccess, int mipmapLevel) {
+			this.textureAccess = textureAccess;
+			width = context.texture_width[mipmapLevel];
+			height = context.texture_height[mipmapLevel];
+		}
+
+		@Override
+		public void filter(PixelState pixel) {
+			// VertexColorFilter$ColorTextureFilter,
+			// TextureWrap$TextureWrapRepeatST,
+			// TextureReader$TextureReader3D,
+			// TextureFunction$TextureEffectAddRGB,
+			// DepthTestFilter$DepthTestPassWhenDepthIsGreaterOrEqual
+			pixel.filterPassed = pixel.sourceDepth >= pixel.destinationDepth;
+			if (pixel.filterPassed) {
+				pixel.primaryColor = pixel.c1;
+				pixel.u = wrap(pixel.u);
+				pixel.v = wrap(pixel.v);
+				pixel.source = textureAccess.readPixel(pixelToTexel(pixel.u * width), pixelToTexel(pixel.v * height));
+				pixel.source = add(pixel.source & 0x00FFFFFF, pixel.primaryColor);
+			}
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 470746940;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
+		}
+	}
+
+	private static class CompiledFilter25 implements IPixelFilter {
+		private int alphaReferenceValue;
+		private IRandomTextureAccess textureAccess;
+		private int width;
+		private int height;
+		private float scaleU;
+		private float scaleV;
+		private int dstFix;
+
+		public CompiledFilter25(GeContext context, IRandomTextureAccess textureAccess, int mipmapLevel) {
+			alphaReferenceValue = context.alphaRef;
+			this.textureAccess = textureAccess;
+			width = context.texture_width[mipmapLevel];
+			height = context.texture_height[mipmapLevel];
+			scaleU = context.tex_scale_x;
+			scaleV = context.tex_scale_y;
+			dstFix = context.dfix;
+		}
+
+		@Override
+		public void filter(PixelState pixel) {
+			// TextureMapping$TextureMapUVScale,
+			// TextureWrap$TextureWrapRepeatST,
+			// TextureReader$TextureReader3D,
+			// TextureFunction$TextureEffectModulateRGBA,
+			// ColorDoubling$SourceColorDoubling
+			// AlphaTestFilter$AlphaFunctionPassIfGreater,
+			// DepthTestFilter$DepthTestPassWhenDepthIsGreaterOrEqual,
+			// BlendOperationAdd(src=BlendFactorDoubleSrcAlpha, dst=BlendFactorFix),
+			// MaskFilter$DepthMask
+			pixel.filterPassed = pixel.sourceDepth >= pixel.destinationDepth;
+			if (pixel.filterPassed) {
+				pixel.u = pixel.u * scaleU;
+				pixel.v = pixel.v * scaleV;
+				pixel.u = wrap(pixel.u);
+				pixel.v = wrap(pixel.v);
+				pixel.source = textureAccess.readPixel(pixelToTexel(pixel.u * width), pixelToTexel(pixel.v * height));
+				pixel.source = multiply(pixel.source, pixel.primaryColor);
+				pixel.source = doubleColor(pixel.source);
+				pixel.filterPassed = getAlpha(pixel.source) > alphaReferenceValue;
+				if (pixel.filterPassed) {
+					// BlendOperationAdd(src=BlendFactorDoubleSrcAlpha, dst=BlendFactorFix)
+					int srcAlpha = PixelColor.getAlpha(pixel.source) << 1;
+					int filteredSrc = PixelColor.multiplyBGR(pixel.source, srcAlpha, srcAlpha, srcAlpha);
+					int filteredDst = PixelColor.multiplyBGR(pixel.destination, dstFix);
+					int source = PixelColor.addBGR(filteredSrc, filteredDst);
+					pixel.source = PixelColor.setBGR(pixel.source, source);
+					pixel.sourceDepth = pixel.destinationDepth;
+				}
+			}
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 312778981;
+		}
+
+		@Override
+		public int getFlags() {
+			return REQUIRES_SOURCE_DEPTH | DISCARDS_SOURCE_DEPTH | REQUIRES_TEXTURE_U_V;
 		}
 	}
 }
