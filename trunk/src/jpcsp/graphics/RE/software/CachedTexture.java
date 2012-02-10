@@ -36,6 +36,7 @@ import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.memory.FastMemory;
+import jpcsp.memory.IMemoryReader;
 import jpcsp.util.Utilities;
 
 /**
@@ -62,12 +63,21 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 		}
 	}
 
+	public static CachedTexture getCachedTexture(int width, int height, int pixelFormat, IMemoryReader imageReader) {
+		CachedTexture cachedTexture = getCachedTexture(width, height, pixelFormat, 0);
+		cachedTexture.setBuffer(imageReader);
+
+		return cachedTexture;
+	}
+
 	public static CachedTexture getCachedTexture(int width, int height, int pixelFormat, int[] buffer, int bufferOffset, int bufferLength) {
 		int offset = 0;
 		// When the texture is directly available from the memory,
 		// we can reuse the memory array and do not need to copy the whole texture.
-		if (pixelFormat == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 && buffer == memAll) {
-			offset = bufferOffset;
+		if (buffer == memAll) {
+			if (pixelFormat == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 || IRenderingEngine.isTextureTypeIndexed[pixelFormat]) {
+				offset = bufferOffset;
+			}
 		}
 
 		CachedTexture cachedTexture = getCachedTexture(width, height, pixelFormat, offset);
@@ -126,6 +136,13 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 		this.offset = offset;
 		widthPower2 = getPower2(width);
 		heightPower2 = getPower2(height);
+	}
+
+	protected void setBuffer(IMemoryReader imageReader) {
+		buffer = new int[width * height];
+		for (int i = 0; i < buffer.length; i++) {
+			buffer[i] = imageReader.readNext();
+		}
 	}
 
 	protected void setBuffer(int[] buffer, int bufferOffset, int bufferLength) {
@@ -387,7 +404,8 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 
 		@Override
 		public int readPixel(int u, int v) {
-			int index = buffer[v * width + u + offset];
+			int pixelIndex = v * width + u;
+			int index = buffer[pixelIndex + offset];
 			return getClut(index);
 		}
 	}

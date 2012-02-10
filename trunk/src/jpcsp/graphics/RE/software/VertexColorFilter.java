@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE.software;
 
 import static jpcsp.graphics.RE.software.PixelColor.getColor;
+import static jpcsp.util.Utilities.sameColor;
 
 import org.apache.log4j.Logger;
 
@@ -45,16 +46,6 @@ public class VertexColorFilter {
 		}
 
 		return filter;
-	}
-
-	private static boolean sameColor(float[] c1, float[] c2, float[] c3) {
-		for (int i = 0; i < 4; i++) {
-			if (c1[i] != c2[i] || c1[i] != c3[i]) {
-				return false;
-			}
-		}
-
-		return true;
 	}
 
 	private static final class VertexTriangleTextureFilter implements IPixelFilter {

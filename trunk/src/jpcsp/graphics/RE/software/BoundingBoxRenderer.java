@@ -26,7 +26,7 @@ public class BoundingBoxRenderer extends BasePrimitiveRenderer {
 	protected float[][] boundingBoxPositions;
 
 	public BoundingBoxRenderer(GeContext context) {
-		init(context, null, false, false);
+		init(context, null, false);
 	}
 
 	public void drawBoundingBox(float[][] boundingBoxPositions) {

@@ -851,4 +851,24 @@ public class Utilities {
     		result[i + 8] = m[j + 2];
     	}
     }
+
+    public static boolean sameColor(float[] c1, float[] c2, float[] c3) {
+		for (int i = 0; i < 4; i++) {
+			if (c1[i] != c2[i] || c1[i] != c3[i]) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	public static boolean sameColor(float[] c1, float[] c2, float[] c3, float[] c4) {
+		for (int i = 0; i < 4; i++) {
+			if (c1[i] != c2[i] || c1[i] != c3[i] || c1[i] != c4[i]) {
+				return false;
+			}
+		}
+
+		return true;
+	}
 }

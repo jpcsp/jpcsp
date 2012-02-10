@@ -37,7 +37,7 @@ public class SpriteRenderer extends BasePrimitiveRenderer {
 	}
 
 	public SpriteRenderer(GeContext context, CachedTexture texture, boolean useVertexTexture) {
-		init(context, texture, useVertexTexture, false);
+		init(context, texture, useVertexTexture);
 	}
 
 	public void setVertex(VertexState v1, VertexState v2) {
@@ -56,9 +56,15 @@ public class SpriteRenderer extends BasePrimitiveRenderer {
         	return false;
         }
 
+        initRendering(context, false);
+
         setVertexTextures(context, v1, v2);
 
-        sourceDepth = (int) v2.p[2];
+        if (transform2D) {
+        	sourceDepth = (int) v2.p[2];
+        } else {
+        	sourceDepth = (int) prim.p2z;
+        }
 
         return true;
 	}
@@ -72,12 +78,12 @@ public class SpriteRenderer extends BasePrimitiveRenderer {
 		float v = prim.vStart;
         for (int y = 0; y < prim.destinationHeight; y++) {
         	pixel.y = prim.pyMin + y;
-    		pixel.v = v;
     		float u = prim.uStart;
         	for (int x = 0; x < prim.destinationWidth; x++) {
         		pixel.newPixel2D();
             	pixel.x = prim.pxMin + x;
         		pixel.u = u;
+        		pixel.v = v;
             	pixel.sourceDepth = sourceDepth;
         		pixel.destination = imageWriter.readCurrent();
         		pixel.destinationDepth = depthWriter.readCurrent();

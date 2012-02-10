@@ -59,8 +59,8 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	}
 
 	@Override
-	protected void init(GeContext context, CachedTexture texture, boolean useVertexTexture, boolean isTriangle) {
-		super.init(context, texture, useVertexTexture, isTriangle);
+	protected void init(GeContext context, CachedTexture texture, boolean useVertexTexture) {
+		super.init(context, texture, useVertexTexture);
 
 		pixel.init();
 
@@ -71,14 +71,6 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		prim.pzMax = Integer.MIN_VALUE;
 		prim.pzMin = Integer.MAX_VALUE;
 
-		pixel.primaryColor = getColor(context.vertexColor);
-		if (context.textureColorDoubled) {
-			pixel.primaryColor = ColorDoubling.doubleColor(pixel.primaryColor);
-		}
-		pixel.materialAmbient = getColor(context.mat_ambient);
-		pixel.materialDiffuse = getColor(context.mat_diffuse);
-		pixel.materialSpecular = getColor(context.mat_specular);
-
 		if (!transform2D) {
 			// Copy the View matrix
 			System.arraycopy(context.view_uploaded_matrix, 0, pixel.viewMatrix, 0, pixel.viewMatrix.length);
@@ -88,7 +80,26 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 
 			// Pre-compute the Model-View-Projection matrix
 			matrixMult(pixel.modelViewProjectionMatrix, context.proj_uploaded_matrix, pixel.modelViewMatrix);
+		}
+	}
 
+	@Override
+	protected void initRendering(GeContext context, boolean isTriangle) {
+		if (renderingInitialized) {
+			return;
+		}
+
+		super.initRendering(context, isTriangle);
+
+		pixel.primaryColor = getColor(context.vertexColor);
+		if (context.textureColorDoubled) {
+			pixel.primaryColor = ColorDoubling.doubleColor(pixel.primaryColor);
+		}
+		pixel.materialAmbient = getColor(context.mat_ambient);
+		pixel.materialDiffuse = getColor(context.mat_diffuse);
+		pixel.materialSpecular = getColor(context.mat_specular);
+
+		if (!transform2D) {
 			// Pre-compute the matrix to transform a normal to the eye coordinates
 			// See http://www.lighthouse3d.com/tutorials/glsl-tutorial/the-normal-matrix/
 			float[] invertedModelViewMatrix = new float[16];
@@ -192,6 +203,13 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	    	float vEnd = flipY ? prim.tvMin : prim.tvMax;
 	    	prim.uStep = (uEnd - prim.uStart) / prim.destinationWidth;
 	    	prim.vStep = (vEnd - prim.vStart) / prim.destinationHeight;
+        } else if (c3 == null) {
+        	prim.uStart = prim.t1u;
+        	float uEnd = prim.t2u;
+        	prim.vStart = prim.t1v;
+        	float vEnd = prim.t2v;
+	    	prim.uStep = (uEnd - prim.uStart) / (prim.destinationWidth - 1);
+	    	prim.vStep = (vEnd - prim.vStart) / (prim.destinationHeight - 1);
         }
 
     	if (setVertexPrimaryColor) {
