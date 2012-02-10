@@ -836,15 +836,18 @@ public class ImageReader {
 				}
 
 				int r3, g3, b3;
+				boolean color3transparent;
 				if (color0 > color1 || dxtLevel > 1) {
 					r3 = (r0 + r1 * 2) / 3;
 					g3 = (g0 + g1 * 2) / 3;
 					b3 = (b0 + b1 * 2) / 3;
+					color3transparent = false;
 				} else {
 					// Transparent black
 					r3 = 0x00;
 					g3 = 0x00;
 					b3 = 0x00;
+					color3transparent = true;
 				}
 
 				colors[0] = (b0 << 16) | (g0 << 8) | (r0);
@@ -852,7 +855,7 @@ public class ImageReader {
 				colors[2] = (b2 << 16) | (g2 << 8) | (r2);
 				colors[3] = (b3 << 16) | (g3 << 8) | (r3);
 
-				storePixels(strideX, bits);
+				storePixels(strideX, bits, color3transparent);
 			}
 		}
 
@@ -887,7 +890,7 @@ public class ImageReader {
 			}
 		}
 
-		protected abstract void storePixels(int strideX, int bits);
+		protected abstract void storePixels(int strideX, int bits, boolean color3transparent);
 		protected abstract void readAlpha();
 		protected abstract int getAlphaSkipLength();
 	}
@@ -906,11 +909,13 @@ public class ImageReader {
 		}
 
 		@Override
-		protected void storePixels(int strideX, int bits) {
+		protected void storePixels(int strideX, int bits, boolean color3transparent) {
 			colors[0] |= 0xFF000000;
 			colors[1] |= 0xFF000000;
 			colors[2] |= 0xFF000000;
-			// colors[3] is transparent black
+			if (!color3transparent) {
+				colors[3] |= 0xFF000000;
+			}
 
 			for (int y = 0; y < 4; y++) {
 				for (int x = 0; x < 4; x++, bits >>>= 2) {
@@ -947,7 +952,7 @@ public class ImageReader {
 		}
 
 		@Override
-		protected void storePixels(int strideX, int bits) {
+		protected void storePixels(int strideX, int bits, boolean color3transparent) {
 			for (int y = 0; y < 4; y++) {
 				for (int x = 0; x < 4; x++, bits >>>= 2, alpha >>>= 4) {
 					int pixelAlpha = (((int) alpha) & 0xF);
@@ -986,7 +991,7 @@ public class ImageReader {
 		}
 
 		@Override
-		protected void storePixels(int strideX, int bits) {
+		protected void storePixels(int strideX, int bits, boolean color3transparent) {
 			for (int y = 0; y < 4; y++) {
 				for (int x = 0; x < 4; x++, bits >>>= 2, alphaLookup >>>= 2) {
 					int alphaPixel = alpha[((int) alphaLookup & 3)];

@@ -59,7 +59,7 @@ public class TriangleRenderer extends BasePrimitiveRenderer {
 	 * @param texture    the texture to be used (or null if no texture used)
 	 */
 	public TriangleRenderer(GeContext context, CachedTexture texture, boolean useVertexTexture) {
-		init(context, texture, useVertexTexture, true);
+		init(context, texture, useVertexTexture);
 	}
 
 	private TriangleRenderer() {
@@ -117,6 +117,8 @@ public class TriangleRenderer extends BasePrimitiveRenderer {
         if (!isVisible()) {
         	return false;
         }
+
+        initRendering(context, true);
 
         setVertexTextures(context, v1, v2, v3);
 

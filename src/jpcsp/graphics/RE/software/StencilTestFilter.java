@@ -185,7 +185,7 @@ public class StencilTestFilter {
 	public static final class StencilOpInvert implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
-			pixel.source = (pixel.source & 0x00FFFFFF) | ~(pixel.destination & 0xFF000000);
+			pixel.source = (pixel.source & 0x00FFFFFF) | ((~pixel.destination) & 0xFF000000);
 		}
 
 		@Override

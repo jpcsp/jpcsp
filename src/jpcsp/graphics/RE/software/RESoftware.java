@@ -27,7 +27,10 @@ import jpcsp.graphics.VertexState;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.BaseRenderingEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.ImageReader;
 import jpcsp.util.DurationStatistics;
+import jpcsp.util.Utilities;
 
 /**
  * @author gid15
@@ -598,6 +601,23 @@ public class RESoftware extends BaseRenderingEngine {
 			return false;
 		}
 
+		// Sprites have no normal
+		if (vinfo.normal != 0) {
+			return false;
+		}
+
+		// Color doubling not correctly handled on sprites
+		if (context.textureColorDoubled) {
+			return false;
+		}
+
+		if (vinfo.color != 0) {
+			// Color of 4 vertex must be equal
+			if (!Utilities.sameColor(tv1.c, tv2.c, tv3.c, tv4.c)) {
+				return false;
+			}
+		}
+
 		// x1 == x2 && y1 == y3 && x4 == x3 && y4 == y2
 		if (tv1.p[0] == tv2.p[0] && tv1.p[1] == tv3.p[1] && tv4.p[0] == tv3.p[0] && tv4.p[1] == tv2.p[1]) {
 			// z1 == z2 && z1 == z3 && z1 == z4
@@ -920,7 +940,16 @@ public class RESoftware extends BaseRenderingEngine {
 
 	@Override
 	public void setCompressedTexImage(int level, int internalFormat, int width, int height, int compressedSize, Buffer buffer) {
-		// TODO Auto-generated method stub
+		if (useTextureCache) {
+			cachedTextureStatistics.start();
+			// TODO Cache all the texture levels
+			if (level == 0) {
+				IMemoryReader imageReader = ImageReader.getImageReader(context.texture_base_pointer[level], width, height, context.texture_buffer_width[level], internalFormat, false, 0, 0, 0, 0, 0, 0, null, null);
+				CachedTexture cachedTexture = CachedTexture.getCachedTexture(width, height, internalFormat, imageReader);
+				cachedTextures.put(bindTexture, cachedTexture);
+			}
+			cachedTextureStatistics.end();
+		}
 	}
 
 	@Override

@@ -94,6 +94,8 @@ public abstract class BaseRenderer implements IRenderer {
 	protected IPixelFilter lightingFilter;
 	private static HashMap<Integer, Integer> filtersStatistics = new HashMap<Integer, Integer>();
 	private static HashMap<Integer, String> filterNames = new HashMap<Integer, String>();
+	protected boolean renderingInitialized;
+	protected CachedTexture cachedTexture;
 
 	protected void copy(BaseRenderer from) {
 		numberFilters = from.numberFilters;
@@ -128,15 +130,11 @@ public abstract class BaseRenderer implements IRenderer {
 		return addr;
 	}
 
-	protected void init(GeContext context, CachedTexture texture, boolean useVertexTexture, boolean isTriangle) {
-		fbp = getFrameBufferAddress(context.fbp);
-		fbw = context.fbw;
-		psm = context.psm;
-		zbp = getFrameBufferAddress(context.zbp);
-		zbw = context.zbw;
+	protected void init(GeContext context, CachedTexture texture, boolean useVertexTexture) {
+		this.cachedTexture = texture;
+		this.useVertexTexture = useVertexTexture;
 		nearZ = round(context.nearZ * 0xFFFF);
 		farZ = round(context.farZ * 0xFFFF);
-		numberFilters = 0;
 		scissorX1 = context.scissor_x1;
 		scissorY1 = context.scissor_y1;
 		scissorX2 = context.scissor_x2;
@@ -145,7 +143,8 @@ public abstract class BaseRenderer implements IRenderer {
 		cullFaceEnabled = context.cullFaceFlag.isEnabled();
 		frontFaceCw = context.frontFaceCw;
 		clipPlanesEnabled = context.clipPlanesFlag.isEnabled();
-		this.useVertexTexture = useVertexTexture;
+		fbw = context.fbw;
+		zbw = context.zbw;
 
 		transform2D = context.vinfo.transform2D;
 		if (!transform2D) {
@@ -158,9 +157,22 @@ public abstract class BaseRenderer implements IRenderer {
 			zscale = context.zscale * 65535.f;
 			zpos = context.zpos * 65535.f;
 		}
+	}
 
-		prepareTextureReader(context, texture, isTriangle);
+	protected void initRendering(GeContext context, boolean isTriangle) {
+		if (renderingInitialized) {
+			return;
+		}
+
+		fbp = getFrameBufferAddress(context.fbp);
+		psm = context.psm;
+		zbp = getFrameBufferAddress(context.zbp);
+		numberFilters = 0;
+
+		prepareTextureReader(context, cachedTexture, isTriangle);
         prepareFilters(context);
+
+        renderingInitialized = true;
 	}
 
 	private static final String getLightState(GeContext context, int l) {
@@ -171,7 +183,7 @@ public abstract class BaseRenderer implements IRenderer {
         lightingFilter = Lighting.getLighting(context, context.view_uploaded_matrix);
 
         // Is the lighting model using the material color from the vertex color?
-        if (!isNopFilter(lightingFilter) && context.mat_flags != 0 && context.useVertexColor && context.vinfo.color != 0) {
+        if (!isNopFilter(lightingFilter) && context.mat_flags != 0 && context.useVertexColor && context.vinfo.color != 0 && isTriangle) {
 			// Reserve an empty filter slot. The filter will be set by the
 			// BasePrimitiveRenderer when the vertices are known.
 			if (isLogTraceEnabled) {
@@ -300,7 +312,7 @@ public abstract class BaseRenderer implements IRenderer {
         if (context.colorTestFlag.isEnabled() && !context.clearMode) {
         	added = addFilter(ColorTestFilter.getColorTestFilter(context));
         	if (added && isLogTraceEnabled) {
-        		log.trace(String.format("Using ColorTestFilter func=%d, ref=0x%02X, mask=0x%02X", context.colorTestFunc, context.colorTestRef, context.colorTestMsk));
+        		log.trace(String.format("Using ColorTestFilter func=%d, ref=0x%02X%02X%02X, mask=0x%02X%02X%02X", context.colorTestFunc, context.colorTestRef[2], context.colorTestRef[1], context.colorTestRef[0], context.colorTestMsk[2], context.colorTestMsk[1], context.colorTestMsk[0]));
         	}
         }
         if (context.alphaTestFlag.isEnabled() && !context.clearMode) {

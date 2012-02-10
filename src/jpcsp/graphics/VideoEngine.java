@@ -3746,11 +3746,7 @@ public class VideoEngine {
     }
 
     private void executeCommandATST() {
-        context.alphaFunc = normalArgument & 0xFF;
-        if (context.alphaFunc > ATST_PASS_PIXEL_IF_GREATER_OR_EQUAL) {
-            log.warn("sceGuAlphaFunc unhandled func " + context.alphaFunc);
-            context.alphaFunc = ATST_ALWAYS_PASS_PIXEL;
-        }
+        context.alphaFunc = normalArgument & 0x7;
         context.alphaRef = (normalArgument >> 8) & 0xFF;
         re.setAlphaFunc(context.alphaFunc, context.alphaRef);
 
@@ -4306,7 +4302,7 @@ public class VideoEngine {
     private void log(String commandString, float[] matrix) {
         if (isLogDebugEnabled) {
             for (int y = 0; y < 4; y++) {
-                log(commandString + SPACE + String.format("%.1f %.1f %.1f %.1f", matrix[0 + y * 4], matrix[1 + y * 4], matrix[2 + y * 4], matrix[3 + y * 4]));
+                log(commandString + SPACE + String.format("%.4f %.4f %.4f %.4f", matrix[0 + y * 4], matrix[1 + y * 4], matrix[2 + y * 4], matrix[3 + y * 4]));
             }
         }
     }
