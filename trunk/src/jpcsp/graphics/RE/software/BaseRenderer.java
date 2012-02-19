@@ -239,8 +239,9 @@ public abstract class BaseRenderer implements IRenderer {
 	            IMemoryReader imageReader = ImageReader.getImageReader(textureAddress, textureBufferWidth, textureHeight, textureBufferWidth, context.texture_storage, context.texture_swizzle, context.tex_clut_addr, context.tex_clut_mode, context.tex_clut_num_blocks, context.tex_clut_start, context.tex_clut_shift, context.tex_clut_mask, clut32, clut16);
 	            textureAccess = new RandomTextureAccessReader(imageReader, textureBufferWidth, textureHeight);
         	}
+
         	// Avoid an access outside the texture area
-        	textureAccess = new TextureClip(textureAccess, textureBufferWidth, textureHeight);
+        	textureAccess = TextureClip.getTextureClip(context, mipmapLevel, textureAccess, textureBufferWidth, textureHeight);
 
             if (!transform2D) {
             	// Perform the texture mapping (UV / texture matrix / environment map)
