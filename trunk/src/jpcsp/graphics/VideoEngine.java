@@ -1661,51 +1661,53 @@ public class VideoEngine {
         boolean useTextureFromNormal = false;
         boolean useTextureFromNormalizedNormal = false;
         boolean useTextureFromPosition = false;
-        switch (context.tex_map_mode) {
-            case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
-            	if (context.vinfo.texture != 0) {
-            		useTexture = true;
-            	}
-                break;
+        if (context.textureFlag.isEnabled()) {
+	        switch (context.tex_map_mode) {
+	            case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
+	            	if (context.vinfo.texture != 0) {
+	            		useTexture = true;
+	            	}
+	                break;
 
-            case TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX: {
-                switch (context.tex_proj_map_mode) {
-                    case TMAP_TEXTURE_PROJECTION_MODE_POSITION:
-                        if (context.vinfo.position != 0) {
-                        	useTexture = true;
-                            useTextureFromPosition = true;
-                	        nTexCoord = nVertex;
-                        }
-                        break;
-                    case TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES:
-                        if (context.vinfo.texture != 0) {
-                        	useTexture = true;
-                        }
-                        break;
-                    case TMAP_TEXTURE_PROJECTION_MODE_NORMAL:
-                        if (context.vinfo.normal != 0) {
-                        	useTexture = true;
-                            useTextureFromNormal = true;
-                            nTexCoord = 3;
-                        }
-                        break;
-                    case TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL:
-                        if (context.vinfo.normal != 0) {
-                        	useTexture = true;
-                            useTextureFromNormalizedNormal = true;
-                            nTexCoord = 3;
-                        }
-                        break;
-                }
-                break;
-            }
+	            case TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX: {
+	                switch (context.tex_proj_map_mode) {
+	                    case TMAP_TEXTURE_PROJECTION_MODE_POSITION:
+	                        if (context.vinfo.position != 0) {
+	                        	useTexture = true;
+	                            useTextureFromPosition = true;
+	                	        nTexCoord = nVertex;
+	                        }
+	                        break;
+	                    case TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES:
+	                        if (context.vinfo.texture != 0) {
+	                        	useTexture = true;
+	                        }
+	                        break;
+	                    case TMAP_TEXTURE_PROJECTION_MODE_NORMAL:
+	                        if (context.vinfo.normal != 0) {
+	                        	useTexture = true;
+	                            useTextureFromNormal = true;
+	                            nTexCoord = 3;
+	                        }
+	                        break;
+	                    case TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL:
+	                        if (context.vinfo.normal != 0) {
+	                        	useTexture = true;
+	                            useTextureFromNormalizedNormal = true;
+	                            nTexCoord = 3;
+	                        }
+	                        break;
+	                }
+	                break;
+	            }
 
-            case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP:
-                break;
+	            case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP:
+	                break;
 
-            default:
-                log("Unhandled texture matrix mode " + context.tex_map_mode);
-                break;
+	            default:
+	                log("Unhandled texture matrix mode " + context.tex_map_mode);
+	                break;
+	        }
         }
 
     	vertexStatistics.start();
@@ -1882,6 +1884,7 @@ public class VideoEngine {
 					re.bindVertexArray(0);
 	    		}
 
+	    		boolean readTexture = context.textureFlag.isEnabled();
 	            switch (type) {
 	                case PRIM_POINT:
 	                case PRIM_LINE:
@@ -1897,7 +1900,7 @@ public class VideoEngine {
 	                        for (int i = 0; i < numberOfVertex; i++) {
 	                            int addr = context.vinfo.getAddress(mem, i);
 
-	                            context.vinfo.readVertex(mem, addr, v);
+	                            context.vinfo.readVertex(mem, addr, v, readTexture);
 
 	                            // Do skinning first as it modifies v.p and v.n
 	                            if (mustComputeWeights && context.vinfo.position != 0) {
@@ -1980,8 +1983,8 @@ public class VideoEngine {
 	                        for (int i = 0; i < numberOfVertex; i += 2) {
 	                            int addr1 = context.vinfo.getAddress(mem, i);
 	                            int addr2 = context.vinfo.getAddress(mem, i + 1);
-	                            context.vinfo.readVertex(mem, addr1, v1);
-	                            context.vinfo.readVertex(mem, addr2, v2);
+	                            context.vinfo.readVertex(mem, addr1, v1, readTexture);
+	                            context.vinfo.readVertex(mem, addr2, v2, readTexture);
 
 	                            v1.p[2] = v2.p[2];
 
@@ -2331,7 +2334,7 @@ public class VideoEngine {
         for (int i = 0; i < numberOfVertexBoundingBox; i++) {
             int addr = context.vinfo.getAddress(mem, i);
 
-            context.vinfo.readVertex(mem, addr, v);
+            context.vinfo.readVertex(mem, addr, v, false);
             if (isLogDebugEnabled) {
                 log.debug(String.format("%s (%f,%f,%f)", helper.getCommandString(BBOX), v.p[0], v.p[1], v.p[2]));
             }
@@ -4503,8 +4506,8 @@ public class VideoEngine {
             return;
         }
 
-        // Texture not used when disabled (automatically disabled in clear mode).
-        if (!context.textureFlag.isEnabled()) {
+        // Texture not used when disabled or in clear mode.
+        if (!context.textureFlag.isEnabled() || context.clearMode) {
             return;
         }
 
@@ -5758,11 +5761,12 @@ public class VideoEngine {
 	private VertexState[][] getControlPoints(int ucount, int vcount) {
 		VertexState[][] controlPoints = new VertexState[ucount][vcount];
 
+		boolean readTexture = context.textureFlag.isEnabled();
 		Memory mem = Memory.getInstance();
         for (int u = 0; u < ucount; u++) {
             for (int v = 0; v < vcount; v++) {
                 int addr = context.vinfo.getAddress(mem, v * ucount + u);
-                VertexState vs = context.vinfo.readVertex(mem, addr);
+                VertexState vs = context.vinfo.readVertex(mem, addr, readTexture);
                 if (isLogDebugEnabled) {
                 	log(String.format("control point #%d,%d p(%f,%f,%f) t(%f,%f), c(%f,%f,%f)",
                 			u, v,

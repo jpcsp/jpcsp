@@ -111,6 +111,11 @@ public class DepthTestFilter {
 		}
 
 		@Override
+		public String toString() {
+			return String.format("NeverPassFilterWithStencilOpFail(%s)", stencilOpZFail.toString());
+		}
+
+		@Override
 		public int getFlags() {
 			return stencilOpZFail.getFlags();
 		}
@@ -146,6 +151,11 @@ public class DepthTestFilter {
 			if (!pixel.filterPassed) {
 				pixel.filterOnFailed = stencilOpZFail;
 			}
+		}
+
+		@Override
+		public String toString() {
+			return String.format("DepthTestPassWhenDepthIsEqualWithStencilOpFail(%s)", stencilOpZFail.toString());
 		}
 
 		@Override
@@ -192,6 +202,11 @@ public class DepthTestFilter {
 		}
 
 		@Override
+		public String toString() {
+			return String.format("DepthTestPassWhenDepthIsNotEqualWithStencilOpFail(%s)", stencilOpZFail.toString());
+		}
+
+		@Override
 		public int getCompilationId() {
 			return mixIds(404958745, stencilOpZFail.getCompilationId());
 		}
@@ -232,6 +247,11 @@ public class DepthTestFilter {
 			if (!pixel.filterPassed) {
 				pixel.filterOnFailed = stencilOpZFail;
 			}
+		}
+
+		@Override
+		public String toString() {
+			return String.format("DepthTestPassWhenDepthIsLessWithStencilOpFail(%s)", stencilOpZFail.toString());
 		}
 
 		@Override
@@ -278,6 +298,11 @@ public class DepthTestFilter {
 		}
 
 		@Override
+		public String toString() {
+			return String.format("DepthTestPassWhenDepthIsLessOrEqualWithStencilOpFail(%s)", stencilOpZFail.toString());
+		}
+
+		@Override
 		public int getCompilationId() {
 			return mixIds(243486869, stencilOpZFail.getCompilationId());
 		}
@@ -321,6 +346,11 @@ public class DepthTestFilter {
 		}
 
 		@Override
+		public String toString() {
+			return String.format("DepthTestPassWhenDepthIsGreaterWithStencilOpFail(%s)", stencilOpZFail.toString());
+		}
+
+		@Override
 		public int getCompilationId() {
 			return mixIds(716664343, stencilOpZFail.getCompilationId());
 		}
@@ -361,6 +391,11 @@ public class DepthTestFilter {
 			if (!pixel.filterPassed) {
 				pixel.filterOnFailed = stencilOpZFail;
 			}
+		}
+
+		@Override
+		public String toString() {
+			return String.format("DepthTestPassWhenDepthIsGreaterOrEqualWithStencilOpFail(%s)", stencilOpZFail.toString());
 		}
 
 		@Override

@@ -56,6 +56,12 @@ public class DurationStatistics implements Comparable<DurationStatistics> {
     	return System.currentTimeMillis() - startTimeMillis;
     }
 
+    public void add(DurationStatistics durationStatistics) {
+    	cumulatedTimeMillis += durationStatistics.cumulatedTimeMillis;
+    	numberCalls += durationStatistics.numberCalls;
+    	maxTimeMillis = Math.max(maxTimeMillis, durationStatistics.maxTimeMillis);
+    }
+
     public void reset() {
     	cumulatedTimeMillis = 0;
     	numberCalls = 0;

@@ -57,7 +57,7 @@ public abstract class BaseRenderer implements IRenderer {
     protected static final boolean captureEachPrimitive = false;
 	protected static final boolean captureZbuffer = false;
     public static final int depthBufferPixelFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED;
-    protected static final int MAX_NUMBER_FILTERS = 13;
+    protected static final int MAX_NUMBER_FILTERS = 15;
 	protected IMemoryReaderWriter imageWriter;
 	protected IMemoryReaderWriter depthWriter;
 	protected int imageWriterSkipEOL;
@@ -96,6 +96,7 @@ public abstract class BaseRenderer implements IRenderer {
 	private static HashMap<Integer, String> filterNames = new HashMap<Integer, String>();
 	protected boolean renderingInitialized;
 	protected CachedTexture cachedTexture;
+	protected boolean isTriangle;
 
 	protected void copy(BaseRenderer from) {
 		numberFilters = from.numberFilters;
@@ -130,9 +131,10 @@ public abstract class BaseRenderer implements IRenderer {
 		return addr;
 	}
 
-	protected void init(GeContext context, CachedTexture texture, boolean useVertexTexture) {
+	protected void init(GeContext context, CachedTexture texture, boolean useVertexTexture, boolean isTriangle) {
 		this.cachedTexture = texture;
 		this.useVertexTexture = useVertexTexture;
+		this.isTriangle = isTriangle;
 		nearZ = round(context.nearZ * 0xFFFF);
 		farZ = round(context.farZ * 0xFFFF);
 		scissorX1 = context.scissor_x1;
@@ -159,7 +161,7 @@ public abstract class BaseRenderer implements IRenderer {
 		}
 	}
 
-	protected void initRendering(GeContext context, boolean isTriangle) {
+	protected void initRendering(GeContext context) {
 		if (renderingInitialized) {
 			return;
 		}
@@ -169,7 +171,7 @@ public abstract class BaseRenderer implements IRenderer {
 		zbp = getFrameBufferAddress(context.zbp);
 		numberFilters = 0;
 
-		prepareTextureReader(context, cachedTexture, isTriangle);
+		prepareTextureReader(context, cachedTexture);
         prepareFilters(context);
 
         renderingInitialized = true;
@@ -179,7 +181,7 @@ public abstract class BaseRenderer implements IRenderer {
 		return context.lightFlags[l].isEnabled() ? "ON" : "OFF";
 	}
 
-	private void prepareTextureReader(GeContext context, CachedTexture texture, boolean isTriangle) {
+	private void prepareTextureReader(GeContext context, CachedTexture texture) {
         lightingFilter = Lighting.getLighting(context, context.view_uploaded_matrix);
 
         // Is the lighting model using the material color from the vertex color?
@@ -226,7 +228,7 @@ public abstract class BaseRenderer implements IRenderer {
 
         IPixelFilter textureFilter;
         textureAccess = null;
-    	if (context.textureFlag.isEnabled() && (!transform2D || useVertexTexture)) {
+    	if (context.textureFlag.isEnabled() && (!transform2D || useVertexTexture) && !clearMode) {
     		int textureBufferWidth = VideoEngine.alignBufferWidth(context.texture_buffer_width[mipmapLevel], context.texture_storage);
     		int textureHeight = context.texture_height[mipmapLevel];
             int textureAddress = context.texture_base_pointer[mipmapLevel];

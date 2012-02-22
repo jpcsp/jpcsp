@@ -37,6 +37,7 @@ import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.graphics.VertexCache;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.software.BasePrimitiveRenderer;
 import jpcsp.graphics.RE.software.BaseRenderer;
 import jpcsp.graphics.RE.software.RendererExecutor;
 import jpcsp.graphics.textures.TextureCache;
@@ -100,6 +101,7 @@ public class Emulator implements Runnable {
         RuntimeContext.exit();
         Profiler.exit();
         BaseRenderer.exit();
+        BasePrimitiveRenderer.exit();
         if (DurationStatistics.collectStatistics && Modules.ThreadManForUserModule.statistics != null && Modules.sceDisplayModule.statistics != null) {
             long totalMillis = getClock().milliTime();
             long displayMillis = Modules.sceDisplayModule.statistics.cumulatedTimeMillis;

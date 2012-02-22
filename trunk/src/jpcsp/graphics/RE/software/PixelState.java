@@ -137,7 +137,7 @@ public final class PixelState {
 		computedNormalizedNe = false;
 	}
 
-	public void init() {
+	public void reset() {
 		numberPixels = 0;
 	}
 

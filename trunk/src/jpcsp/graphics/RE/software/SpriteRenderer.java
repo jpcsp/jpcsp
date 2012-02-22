@@ -37,7 +37,7 @@ public class SpriteRenderer extends BasePrimitiveRenderer {
 	}
 
 	public SpriteRenderer(GeContext context, CachedTexture texture, boolean useVertexTexture) {
-		init(context, texture, useVertexTexture);
+		init(context, texture, useVertexTexture, false);
 	}
 
 	public void setVertex(VertexState v1, VertexState v2) {
@@ -56,7 +56,7 @@ public class SpriteRenderer extends BasePrimitiveRenderer {
         	return false;
         }
 
-        initRendering(context, false);
+        initRendering(context);
 
         setVertexTextures(context, v1, v2);
 

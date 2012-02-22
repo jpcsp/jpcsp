@@ -255,6 +255,11 @@ public class StencilTestFilter {
 		}
 
 		@Override
+		public String toString() {
+			return String.format("NeverPassFilterWithOpFail(%s)", opFail.toString());
+		}
+
+		@Override
 		public int getCompilationId() {
 			return mixIds(991989036, opFail.getCompilationId());
 		}
@@ -309,6 +314,11 @@ public class StencilTestFilter {
 			if (!pixel.filterPassed) {
 				pixel.filterOnFailed = opFail;
 			}
+		}
+
+		@Override
+		public String toString() {
+			return String.format("StencilTestPassIfMatchesWithOpFail(%s)", opFail.toString());
 		}
 
 		@Override
@@ -369,6 +379,11 @@ public class StencilTestFilter {
 		}
 
 		@Override
+		public String toString() {
+			return String.format("StencilTestPassIfDiffersWithOpFail(%s)", opFail.toString());
+		}
+
+		@Override
 		public int getCompilationId() {
 			return mixIds(828935920, opFail.getCompilationId());
 		}
@@ -423,6 +438,11 @@ public class StencilTestFilter {
 			if (!pixel.filterPassed) {
 				pixel.filterOnFailed = opFail;
 			}
+		}
+
+		@Override
+		public String toString() {
+			return String.format("StencilTestPassIfLessWithOpFail(%s)", opFail.toString());
 		}
 
 		@Override
@@ -483,6 +503,11 @@ public class StencilTestFilter {
 		}
 
 		@Override
+		public String toString() {
+			return String.format("StencilTestPassIfLessOrEqualWithOpFail(%s)", opFail.toString());
+		}
+
+		@Override
 		public int getCompilationId() {
 			return mixIds(809704087, opFail.getCompilationId());
 		}
@@ -540,6 +565,11 @@ public class StencilTestFilter {
 		}
 
 		@Override
+		public String toString() {
+			return String.format("StencilTestPassIfGreaterWithOpFail(%s)", opFail.toString());
+		}
+
+		@Override
 		public int getCompilationId() {
 			return mixIds(867126294, opFail.getCompilationId());
 		}
@@ -594,6 +624,11 @@ public class StencilTestFilter {
 			if (!pixel.filterPassed) {
 				pixel.filterOnFailed = opFail;
 			}
+		}
+
+		@Override
+		public String toString() {
+			return String.format("StencilTestPassIfGreaterOrEqualWithOpFail(%s)", opFail.toString());
 		}
 
 		@Override
