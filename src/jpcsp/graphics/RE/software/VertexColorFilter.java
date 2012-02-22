@@ -29,6 +29,7 @@ import jpcsp.graphics.VideoEngine;
  */
 public class VertexColorFilter {
 	protected static final Logger log = VideoEngine.log;
+	protected static IPixelFilter vertexTriangleTextureFilter = new VertexTriangleTextureFilter();
 
 	public static IPixelFilter getVertexColorFilter(float[] c1, float c2[], float[] c3) {
 		IPixelFilter filter;
@@ -42,7 +43,7 @@ public class VertexColorFilter {
         	if (log.isTraceEnabled()) {
         		log.trace(String.format("Using VertexTriangleTextureFilter color1=0x%08X, color2=0x%08X, color3=0x%08X", getColor(c1), getColor(c2), getColor(c3)));
         	}
-			filter = new VertexTriangleTextureFilter();
+			filter = vertexTriangleTextureFilter;
 		}
 
 		return filter;

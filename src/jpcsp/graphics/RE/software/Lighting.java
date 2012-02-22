@@ -48,6 +48,7 @@ import org.apache.log4j.Logger;
  */
 public class Lighting {
 	protected static final Logger log = VideoEngine.log;
+	protected static final boolean disableLighting = false;
 
 	public static IPixelFilter getLighting(GeContext context, float[] viewMatrix) {
 		IPixelFilter lighting = null;
@@ -121,7 +122,7 @@ public class Lighting {
 			boolean someLightsEnabled = false;
 			boolean hasSomeNonDirectionalLight = false;
 			for (int l = 0; l < NUM_LIGHTS; l++) {
-				boolean isLightEnabled = lightEnabled[l].isEnabled();
+				boolean isLightEnabled = lightEnabled[l].isEnabled() && !disableLighting;
 				this.lightEnabled[l] = isLightEnabled;
 				if (isLightEnabled) {
 					someLightsEnabled |= isLightEnabled;

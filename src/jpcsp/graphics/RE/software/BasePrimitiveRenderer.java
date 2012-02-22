@@ -29,8 +29,13 @@ import static jpcsp.util.Utilities.minInt;
 import static jpcsp.util.Utilities.round;
 import static jpcsp.util.Utilities.transposeMatrix3x3;
 import static jpcsp.util.Utilities.vectorMult44;
+
+import java.util.Arrays;
+import java.util.HashMap;
+
 import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VertexState;
+import jpcsp.util.DurationStatistics;
 
 /**
  * @author gid15
@@ -41,6 +46,8 @@ import jpcsp.graphics.VertexState;
  * information specific for the rendering of one primitive (e.g. one triangle)
  */
 public abstract class BasePrimitiveRenderer extends BaseRenderer {
+	private static HashMap<Integer, DurationStatistics> pixelsStatistics = new HashMap<Integer, DurationStatistics>();
+	private DurationStatistics pixelStatistics = new DurationStatistics();
 	protected final PixelState pixel = new PixelState();
 	protected PrimitiveState prim = new PrimitiveState();
 	protected boolean needScissoringX;
@@ -59,10 +66,8 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	}
 
 	@Override
-	protected void init(GeContext context, CachedTexture texture, boolean useVertexTexture) {
-		super.init(context, texture, useVertexTexture);
-
-		pixel.init();
+	protected void init(GeContext context, CachedTexture texture, boolean useVertexTexture, boolean isTriangle) {
+		super.init(context, texture, useVertexTexture, isTriangle);
 
 		prim.pxMax = Integer.MIN_VALUE;
 		prim.pxMin = Integer.MAX_VALUE;
@@ -84,12 +89,12 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	}
 
 	@Override
-	protected void initRendering(GeContext context, boolean isTriangle) {
+	protected void initRendering(GeContext context) {
 		if (renderingInitialized) {
 			return;
 		}
 
-		super.initRendering(context, isTriangle);
+		super.initRendering(context);
 
 		pixel.primaryColor = getColor(context.vertexColor);
 		if (context.textureColorDoubled) {
@@ -431,6 +436,15 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 			return false;
 		}
 
+		if (isTriangle) {
+			if ((pixel.v1x == pixel.v2x && pixel.v1y == pixel.v2y && pixel.v1z == pixel.v2z) ||
+			    (pixel.v1x == pixel.v3x && pixel.v1y == pixel.v3y && pixel.v1z == pixel.v3z) ||
+			    (pixel.v2x == pixel.v3x && pixel.v2y == pixel.v3y && pixel.v2z == pixel.v3z)) {
+				// 2 vertices are equal in the triangle, nothing has to be displayed
+				return false;
+			}
+		}
+
 		if (!insideScissor()) {
 			return false;
 		}
@@ -490,12 +504,25 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		screenCoordinates[3] = w;
 
 		if (isLogTraceEnabled) {
-			log.trace(String.format("X,Y,Z = %f, %f, %f, projected X,Y,Z,W = %f, %f, %f, %f -> Screen %d, %d, %d", x, y, z, projectedCoordinates[0] / w, projectedCoordinates[1] / w, projectedCoordinates[2] / w, w, round(screenCoordinates[0]), round(screenCoordinates[1]), round(screenCoordinates[2])));
+			log.trace(String.format("X,Y,Z = %f, %f, %f, projected X,Y,Z,W = %f, %f, %f, %f -> Screen %.1f, %.1f, %.1f", x, y, z, projectedCoordinates[0] / w, projectedCoordinates[1] / w, projectedCoordinates[2] / w, w, screenCoordinates[0], screenCoordinates[1], screenCoordinates[2]));
 		}
 	}
 
 	@Override
 	protected void postRender() {
+		if (DurationStatistics.collectStatistics && isLogInfoEnabled) {
+			pixelStatistics.end();
+			final int pixelsGrouping = 1000;
+			int n = pixel.getNumberPixels() / pixelsGrouping;
+			if (!pixelsStatistics.containsKey(n)) {
+				pixelsStatistics.put(n, new DurationStatistics(String.format("Pixels count=%d", n * pixelsGrouping)));
+			}
+			if (isLogTraceEnabled) {
+				log.trace(String.format("Pixels statistics count=%d, real count=%d", n * pixelsGrouping, pixel.getNumberPixels()));
+			}
+			pixelsStatistics.get(n).add(pixelStatistics);
+		}
+
 		super.postRender();
 
 		statisticsFilters(pixel.getNumberPixels());
@@ -503,6 +530,8 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 
 	@Override
 	protected void preRender() {
+		pixel.reset();
+
 		super.preRender();
 
 		int flags = getFiltersFlags();
@@ -510,5 +539,22 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		// Try to avoid to compute expensive values
 		needSourceDepth = hasFlag(flags, REQUIRES_SOURCE_DEPTH) || !hasFlag(flags, DISCARDS_SOURCE_DEPTH);
 		needTextureUV = hasFlag(flags, REQUIRES_TEXTURE_U_V);
+
+		if (DurationStatistics.collectStatistics && isLogInfoEnabled) {
+			pixelStatistics.reset();
+			pixelStatistics.start();
+		}
+	}
+
+	public static void exit() {
+		if (!log.isInfoEnabled() || pixelsStatistics.isEmpty()) {
+			return;
+		}
+
+		DurationStatistics[] sortedPixelsStatistics = pixelsStatistics.values().toArray(new DurationStatistics[pixelsStatistics.size()]);
+		Arrays.sort(sortedPixelsStatistics);
+		for (DurationStatistics durationStatistics : sortedPixelsStatistics) {
+			log.info(durationStatistics);
+		}
 	}
 }

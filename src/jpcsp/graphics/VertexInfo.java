@@ -190,14 +190,14 @@ public class VertexInfo {
         }
     }
 
-    public VertexState readVertex(Memory mem, int addr) {
+    public VertexState readVertex(Memory mem, int addr, boolean readTexture) {
         VertexState v = new VertexState();
-        readVertex(mem, addr, v);
+        readVertex(mem, addr, v, readTexture);
 
         return v;
     }
 
-    public void readVertex(Memory mem, int addr, VertexState v) {
+    public void readVertex(Memory mem, int addr, VertexState v, boolean readTexture) {
         int startAddr = addr;
 
         v.clear();
@@ -230,67 +230,69 @@ public class VertexInfo {
             }
         }
 
-        switch (texture) {
-            case 1:
-                for (int morphCounter = 0; morphCounter < morphingVertexCount; morphCounter++) {
-                    addr = startAddr + (morphCounter * oneVertexSize) + textureOffset;
+        if (readTexture) {
+	        switch (texture) {
+	            case 1:
+	                for (int morphCounter = 0; morphCounter < morphingVertexCount; morphCounter++) {
+	                    addr = startAddr + (morphCounter * oneVertexSize) + textureOffset;
 
-                    // Unsigned 8 bit
-                    float tu = mem.read8(addr);
-                    float tv = mem.read8(addr + 1);
-                    if (!transform2D) {
-                        // To be mapped to [0..2] for 3D
-                        tu /= 0x80;
-                        tv /= 0x80;
+	                    // Unsigned 8 bit
+	                    float tu = mem.read8(addr);
+	                    float tv = mem.read8(addr + 1);
+	                    if (!transform2D) {
+	                        // To be mapped to [0..2] for 3D
+	                        tu /= 0x80;
+	                        tv /= 0x80;
 
-                        v.t[0] += tu * morph_weight[morphCounter];
-                        v.t[1] += tv * morph_weight[morphCounter];
-                    } else {
-                        v.t[0] = tu;
-                        v.t[1] = tv;
-                    }
-                }
-                if (VideoEngine.log.isTraceEnabled()) {
-                    VideoEngine.log.trace("texture type 1 " + v.t[0] + ", " + v.t[1] + " transform2D=" + transform2D);
-                }
-                break;
-            case 2:
-                for (int morphCounter = 0; morphCounter < morphingVertexCount; morphCounter++) {
-                    addr = startAddr + (morphCounter * oneVertexSize) + textureOffset;
+	                        v.t[0] += tu * morph_weight[morphCounter];
+	                        v.t[1] += tv * morph_weight[morphCounter];
+	                    } else {
+	                        v.t[0] = tu;
+	                        v.t[1] = tv;
+	                    }
+	                }
+	                if (VideoEngine.log.isTraceEnabled()) {
+	                    VideoEngine.log.trace("texture type 1 " + v.t[0] + ", " + v.t[1] + " transform2D=" + transform2D);
+	                }
+	                break;
+	            case 2:
+	                for (int morphCounter = 0; morphCounter < morphingVertexCount; morphCounter++) {
+	                    addr = startAddr + (morphCounter * oneVertexSize) + textureOffset;
 
-                    // Unsigned 16 bit
-                    float tu = mem.read16(addr);
-                    float tv = mem.read16(addr + 2);
-                    if (!transform2D) {
-                        // To be mapped to [0..2] for 3D
-                        tu /= 0x8000;
-                        tv /= 0x8000;
+	                    // Unsigned 16 bit
+	                    float tu = mem.read16(addr);
+	                    float tv = mem.read16(addr + 2);
+	                    if (!transform2D) {
+	                        // To be mapped to [0..2] for 3D
+	                        tu /= 0x8000;
+	                        tv /= 0x8000;
 
-                        v.t[0] += tu * morph_weight[morphCounter];
-                        v.t[1] += tv * morph_weight[morphCounter];
-                    } else {
-                        v.t[0] = tu;
-                        v.t[1] = tv;
-                    }
-                }
-                if (VideoEngine.log.isTraceEnabled()) {
-                    VideoEngine.log.trace("texture type 2 " + v.t[0] + ", " + v.t[1] + " transform2D=" + transform2D);
-                }
-                break;
-            case 3:
-                for (int morphCounter = 0; morphCounter < morphingVertexCount; morphCounter++) {
-                    addr = startAddr + (morphCounter * oneVertexSize) + textureOffset;
+	                        v.t[0] += tu * morph_weight[morphCounter];
+	                        v.t[1] += tv * morph_weight[morphCounter];
+	                    } else {
+	                        v.t[0] = tu;
+	                        v.t[1] = tv;
+	                    }
+	                }
+	                if (VideoEngine.log.isTraceEnabled()) {
+	                    VideoEngine.log.trace("texture type 2 " + v.t[0] + ", " + v.t[1] + " transform2D=" + transform2D);
+	                }
+	                break;
+	            case 3:
+	                for (int morphCounter = 0; morphCounter < morphingVertexCount; morphCounter++) {
+	                    addr = startAddr + (morphCounter * oneVertexSize) + textureOffset;
 
-                    float tu = Float.intBitsToFloat(mem.read32(addr));
-                    float tv = Float.intBitsToFloat(mem.read32(addr + 4));
+	                    float tu = Float.intBitsToFloat(mem.read32(addr));
+	                    float tv = Float.intBitsToFloat(mem.read32(addr + 4));
 
-                    v.t[0] += tu * morph_weight[morphCounter];
-                    v.t[1] += tv * morph_weight[morphCounter];
-                }
-                if (VideoEngine.log.isTraceEnabled()) {
-                    VideoEngine.log.trace("texture type 3 " + v.t[0] + ", " + v.t[1] + " transform2D=" + transform2D);
-                }
-                break;
+	                    v.t[0] += tu * morph_weight[morphCounter];
+	                    v.t[1] += tv * morph_weight[morphCounter];
+	                }
+	                if (VideoEngine.log.isTraceEnabled()) {
+	                    VideoEngine.log.trace("texture type 3 " + v.t[0] + ", " + v.t[1] + " transform2D=" + transform2D);
+	                }
+	                break;
+	        }
         }
 
         switch (color) {

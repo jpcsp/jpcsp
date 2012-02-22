@@ -59,7 +59,7 @@ public class TriangleRenderer extends BasePrimitiveRenderer {
 	 * @param texture    the texture to be used (or null if no texture used)
 	 */
 	public TriangleRenderer(GeContext context, CachedTexture texture, boolean useVertexTexture) {
-		init(context, texture, useVertexTexture);
+		init(context, texture, useVertexTexture, true);
 	}
 
 	private TriangleRenderer() {
@@ -118,7 +118,7 @@ public class TriangleRenderer extends BasePrimitiveRenderer {
         	return false;
         }
 
-        initRendering(context, true);
+        initRendering(context);
 
         setVertexTextures(context, v1, v2, v3);
 
@@ -136,61 +136,97 @@ public class TriangleRenderer extends BasePrimitiveRenderer {
         postRender();
 	}
 
+	private void renderPixel() {
+		if (needSourceDepth) {
+			pixel.sourceDepth = round(pixel.getTriangleWeightedValue(prim.p1z, prim.p2z, prim.p3z));
+		}
+		pixel.destination = imageWriter.readCurrent();
+		pixel.destinationDepth = depthWriter.readCurrent();
+		if (compiledFilter != null) {
+			compiledFilter.filter(pixel);
+		} else {
+    		for (int i = 0; i < numberFilters; i++) {
+    			filters[i].filter(pixel);
+    			if (!pixel.filterPassed) {
+    				break;
+    			}
+    		}
+		}
+if (isLogTraceEnabled) {
+log.trace(String.format("Pixel (%d,%d), passed=%b, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d, filterOnFailed=%s", pixel.x, pixel.y, pixel.filterPassed, pixel.u, pixel.v, pixel.source, pixel.destination, pixel.primaryColor, pixel.secondaryColor, pixel.sourceDepth, pixel.destinationDepth, pixel.filterOnFailed));
+}
+		if (pixel.filterPassed) {
+    		imageWriter.writeNext(pixel.source);
+    		depthWriter.writeNext(pixel.sourceDepth);
+		} else if (pixel.filterOnFailed != null) {
+			// Filter did not pass, but we have a filter to be executed in that case
+			pixel.source = pixel.destination;
+			pixel.filterOnFailed.filter(pixel);
+			imageWriter.writeNext(pixel.source);
+			depthWriter.skip(1);
+		} else {
+			// Filter did not pass, do not update the pixel
+			writerSkip(1);
+		}
+	}
+
+	protected void render2DPixel(int x, float u) {
+		pixel.newPixel2D();
+		pixel.x = x;
+		pixel.u = u;
+
+		renderPixel();
+	}
+
 	protected void render2D() {
 		if (isLogTraceEnabled) {
-			log.trace(String.format("Triangle render2D (%d,%d)-(%d,%d) skip=%d", prim.pxMin, prim.pyMin, prim.pxMin + prim.destinationWidth, prim.pyMin + prim.destinationWidth, imageWriterSkipEOL));
+			log.trace(String.format("Triangle render2D (%d,%d)-(%d,%d) skip=%d", prim.pxMin, prim.pyMin, prim.pxMin + prim.destinationWidth, prim.pyMin + prim.destinationHeight, imageWriterSkipEOL));
 		}
 		RESoftware.triangleRender2DStatistics.start();
 
+		Range range = new Range();
+		Rasterizer rasterizer = null;
+		// No need to use a Rasterizer when rendering very small area.
+		// The overhead of the Rasterizer would lead the slower rendering.
+		if (prim.destinationWidth >= Rasterizer.MINIMUM_WIDTH && prim.destinationHeight >= Rasterizer.MINIMUM_HEIGHT) {
+			rasterizer = new Rasterizer(prim.p1x, prim.p1y, prim.p2x, prim.p2y, prim.p3x, prim.p3y, prim.pyMin, prim.pyMax);
+			rasterizer.setY(prim.pyMin);
+		}
+
 		float v = prim.vStart;
-        for (int y = 0; y < prim.destinationHeight; y++) {
-        	pixel.y = prim.pyMin + y;
+        for (int y = prim.pyMin; y <= prim.pyMax; y++) {
+        	pixel.y = y;
     		pixel.v = v;
-    		float u = prim.uStart;
-    		pixel.x = prim.pxMin;
-    		prim.computeTriangleWeights(pixel);
-        	for (int x = 0; x < prim.destinationWidth; x++) {
-        		pixel.x = prim.pxMin + x;
-        		pixel.u = u;
-        		if (pixel.isInsideTriangle()) {
-        			pixel.newPixel2D();
-        			pixel.sourceDepth = round(pixel.getTriangleWeightedValue(prim.p1z, prim.p2z, prim.p3z));
-            		pixel.destination = imageWriter.readCurrent();
-            		pixel.destinationDepth = depthWriter.readCurrent();
-            		if (compiledFilter != null) {
-            			compiledFilter.filter(pixel);
-            		} else {
-	            		for (int i = 0; i < numberFilters; i++) {
-	            			filters[i].filter(pixel);
-	            			if (!pixel.filterPassed) {
-	            				break;
-	            			}
-	            		}
-            		}
-if (isLogTraceEnabled) {
-	log.trace(String.format("Pixel (%d,%d), passed=%b, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d, filterOnFailed=%s", pixel.x, pixel.y, pixel.filterPassed, pixel.u, pixel.v, pixel.source, pixel.destination, pixel.primaryColor, pixel.secondaryColor, pixel.sourceDepth, pixel.destinationDepth, pixel.filterOnFailed));
-}
-            		if (pixel.filterPassed) {
-	            		imageWriter.writeNext(pixel.source);
-	            		depthWriter.writeNext(pixel.sourceDepth);
-        			} else if (pixel.filterOnFailed != null) {
-        				// Filter did not pass, but we have a filter to be executed in that case
-        				pixel.source = pixel.destination;
-        				pixel.filterOnFailed.filter(pixel);
-        				imageWriter.writeNext(pixel.source);
-        				depthWriter.skip(1);
-            		} else {
-            			// Filter did not pass, do not update the pixel
-            			writerSkip(1);
-            		}
-        		} else {
-        			// Do not display, skip the pixel
-        			writerSkip(1);
-        		}
-        		u += prim.uStep;
-        		prim.deltaXTriangleWeigths(pixel);
-        	}
-        	writerSkipEOL();
+    		int startX = prim.pxMin;
+    		int endX = prim.pxMax;
+    		if (rasterizer != null) {
+    			rasterizer.getNextRange(range);
+    			startX = max(range.xMin, startX);
+    			endX = min(range.xMax, endX);
+    		}
+    		if (startX >= endX) {
+    			writerSkipEOL(prim.destinationWidth);
+    		} else {
+    			float u = prim.uStart;
+    			int startSkip = startX - prim.pxMin;
+    			if (startSkip > 0) {
+    				writerSkip(startSkip);
+    				u += startSkip * prim.uStep;
+    			}
+	    		pixel.x = startX;
+	    		prim.computeTriangleWeights(pixel);
+	        	for (int x = startX; x <= endX; x++) {
+	        		if (pixel.isInsideTriangle()) {
+	        			render2DPixel(x, u);
+	        		} else {
+	        			// Do not display, skip the pixel
+	        			writerSkip(1);
+	        		}
+	        		u += prim.uStep;
+	        		prim.deltaXTriangleWeigths(pixel);
+	        	}
+	        	writerSkipEOL(prim.pxMax - endX);
+    		}
         	v += prim.vStep;
         }
 		RESoftware.triangleRender2DStatistics.end();
@@ -212,37 +248,8 @@ if (isLogTraceEnabled) {
 			pixel.u = u * weightInverted;
 			pixel.v = v * weightInverted;
 		}
-		if (needSourceDepth) {
-			pixel.sourceDepth = round(pixel.getTriangleWeightedValue(prim.p1z, prim.p2z, prim.p3z));
-		}
-		pixel.destination = imageWriter.readCurrent();
-		pixel.destinationDepth = depthWriter.readCurrent();
-		if (compiledFilter != null) {
-			compiledFilter.filter(pixel);
-		} else {
-			for (int i = 0; i < numberFilters; i++) {
-				filters[i].filter(pixel);
-				if (!pixel.filterPassed) {
-					break;
-				}
-			}
-		}
-if (isLogTraceEnabled) {
-log.trace(String.format("Pixel (%d,%d), passed=%b, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d, filterOnFailed=%s", pixel.x, pixel.y, pixel.filterPassed, pixel.u, pixel.v, pixel.source, pixel.destination, pixel.primaryColor, pixel.secondaryColor, pixel.sourceDepth, pixel.destinationDepth, pixel.filterOnFailed));
-}
-		if (pixel.filterPassed) {
-    		imageWriter.writeNext(pixel.source);
-    		depthWriter.writeNext(pixel.sourceDepth);
-		} else if (pixel.filterOnFailed != null) {
-			// Filter did not pass, but we have a filter to be executed in that case
-			pixel.source = pixel.destination;
-			pixel.filterOnFailed.filter(pixel);
-			imageWriter.writeNext(pixel.source);
-			depthWriter.skip(1);
-		} else {
-			// Filter did not pass, do not update the pixel
-			writerSkip(1);
-		}
+
+		renderPixel();
 	}
 
 	protected void render3D() {

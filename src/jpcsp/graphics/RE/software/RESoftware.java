@@ -572,12 +572,13 @@ public class RESoftware extends BaseRenderingEngine {
 	protected void drawArraysSprites(int first, int count) {
 		CachedTexture cachedTexture = getCachedTexture();
 		SpriteRenderer spriteRenderer = new SpriteRenderer(context, cachedTexture, useVertexTexture);
+		boolean readTexture = context.textureFlag.isEnabled();
 		Memory mem = Memory.getInstance();
-		for (int i = first; i < count; i += 2) {
+		for (int i = first; i < count - 1; i += 2) {
 			int addr1 = context.vinfo.getAddress(mem, i);
 			int addr2 = context.vinfo.getAddress(mem, i + 1);
-			context.vinfo.readVertex(mem, addr1, v1);
-			context.vinfo.readVertex(mem, addr2, v2);
+			context.vinfo.readVertex(mem, addr1, v1, readTexture);
+			context.vinfo.readVertex(mem, addr2, v2, readTexture);
 
 			drawSprite(spriteRenderer, v1, v2);
 		}
@@ -655,10 +656,10 @@ public class RESoftware extends BaseRenderingEngine {
 		bufferVertexReader = null;
 	}
 
-	protected void readVertex(Memory mem, int index, VertexState v) {
+	protected void readVertex(Memory mem, int index, VertexState v, boolean readTexture) {
 		if (bufferVertexReader == null) {
 			int addr = context.vinfo.getAddress(mem, index);
-			context.vinfo.readVertex(mem, addr, v);
+			context.vinfo.readVertex(mem, addr, v, readTexture);
 		} else {
 			// This is used for spline and bezier curves:
 			// the VideoEngine is computing the vertices and is pushing them into a buffer.
@@ -678,8 +679,9 @@ public class RESoftware extends BaseRenderingEngine {
 		VertexState tv2 = null;
 		VertexState tv3 = null;
 		VertexState tv4 = v1;
+		boolean readTexture = context.textureFlag.isEnabled();
 		for (int i = 0; i < count; i++) {
-			readVertex(mem, first + i, tv4);
+			readVertex(mem, first + i, tv4, readTexture);
 			if (tv3 != null) {
 				// Displaying a sprite (i.e. rectangular area) is faster.
 				// Try to merge adjacent triangles if they form a sprite.
@@ -727,10 +729,11 @@ public class RESoftware extends BaseRenderingEngine {
 		Memory mem = Memory.getInstance();
 		CachedTexture cachedTexture = getCachedTexture();
 		TriangleRenderer triangleRenderer = new TriangleRenderer(context, cachedTexture, useVertexTexture);
+		boolean readTexture = context.textureFlag.isEnabled();
 		for (int i = 0; i < count; i += 3) {
-			readVertex(mem, first + i, v1);
-			readVertex(mem, first + i + 1, v2);
-			readVertex(mem, first + i + 2, v3);
+			readVertex(mem, first + i, v1, readTexture);
+			readVertex(mem, first + i + 1, v2, readTexture);
+			readVertex(mem, first + i + 2, v3, readTexture);
 
 			drawTriangle(triangleRenderer, v1, v2, v3, false);
 		}
@@ -743,8 +746,9 @@ public class RESoftware extends BaseRenderingEngine {
 		VertexState tv1 = null;
 		VertexState tv2 = null;
 		VertexState tv3 = v1;
+		boolean readTexture = context.textureFlag.isEnabled();
 		for (int i = 0; i < count; i++) {
-			readVertex(mem, first + i, tv3);
+			readVertex(mem, first + i, tv3, readTexture);
 			if (tv2 != null) {
 				drawTriangle(triangleRenderer, tv1, tv2, tv3, false);
 				VertexState v = tv2;

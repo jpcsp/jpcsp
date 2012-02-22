@@ -58,7 +58,7 @@ public class TextureWrap {
 	}
 
 	/**
-	 * Wrap the value to the range [0..1].
+	 * Wrap the value to the range [0..1[ (1 is excluded).
 	 *
 	 * E.g.
 	 *    value == 4.0 -> return 0.0
@@ -69,7 +69,7 @@ public class TextureWrap {
 	 *    value == -4.9 -> return 0.1 (and not 0.9)
 	 *
 	 * @param value   the value to be wrapped
-	 * @return        the wrapped value in the range [0..1]
+	 * @return        the wrapped value in the range [0..1[ (1 is excluded)
 	 */
 	public static float wrap(float value) {
 		if (value >= 0.f) {
@@ -78,10 +78,16 @@ public class TextureWrap {
 			// value == 4.9 -> return 0.9
 			return value - (int) value;
 		}
+
 		// value == -4.0 -> return 0.0
 		// value == -4.1 -> return 0.9
 		// value == -4.9 -> return 0.1
-		return value - (float) Math.floor(value);
+		// value == -1e-8 -> return 0.0
+		float wrappedValue = value - (float) Math.floor(value);
+		if (wrappedValue >= 1.f) {
+			wrappedValue -= 1.f;
+		}
+		return wrappedValue;
 	}
 
 	private static int wrap(float value, int valueMask) {
