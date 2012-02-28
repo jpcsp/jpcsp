@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE.software;
 
 import static jpcsp.graphics.RE.software.PixelColor.getColor;
+import static jpcsp.graphics.RE.software.PixelColor.getColorBGR;
 import static jpcsp.util.Utilities.round;
 
 import java.nio.Buffer;
@@ -35,9 +36,11 @@ import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.graphics.capture.CaptureManager;
+import jpcsp.memory.FastMemory;
 import jpcsp.memory.IMemoryReader;
-import jpcsp.memory.IMemoryReaderWriter;
 import jpcsp.memory.ImageReader;
+import jpcsp.util.DurationStatistics;
+import jpcsp.util.Utilities;
 
 /**
  * @author gid15
@@ -58,14 +61,14 @@ public abstract class BaseRenderer implements IRenderer {
 	protected static final boolean captureZbuffer = false;
     public static final int depthBufferPixelFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED;
     protected static final int MAX_NUMBER_FILTERS = 15;
-	protected IMemoryReaderWriter imageWriter;
-	protected IMemoryReaderWriter depthWriter;
-	protected int imageWriterSkipEOL;
-	protected int depthWriterSkipEOL;
+	public int[] memInt;
+    public IRendererWriter rendererWriter;
+	public int imageWriterSkipEOL;
+	public int depthWriterSkipEOL;
 	protected final IPixelFilter[] filters = new IPixelFilter[MAX_NUMBER_FILTERS];
 	protected int numberFilters;
-	protected IPixelFilter compiledFilter;
-	protected int compiledFilterId;
+	protected RendererTemplate compiledRenderer;
+	protected int compiledRendererId;
 	protected boolean transform2D;
 	protected int viewportWidth;
 	protected int viewportHeight;
@@ -75,12 +78,13 @@ public abstract class BaseRenderer implements IRenderer {
 	protected int screenOffsetY;
 	protected float zscale;
 	protected float zpos;
-	protected int nearZ;
-	protected int farZ;
-	protected int scissorX1, scissorY1;
-	protected int scissorX2, scissorY2;
+	public int nearZ;
+	public int farZ;
+	public int scissorX1, scissorY1;
+	public int scissorX2, scissorY2;
 	protected boolean setVertexPrimaryColor;
 	protected int primaryColorFilter = -1;
+	protected boolean sameVertexColor;
 	protected int fbp, fbw, psm;
 	protected int zbp, zbw;
 	protected boolean clearMode;
@@ -89,23 +93,55 @@ public abstract class BaseRenderer implements IRenderer {
 	protected boolean clipPlanesEnabled;
 	protected boolean useVertexTexture;
 	protected int scissorFilter = -1;
-	protected IRandomTextureAccess textureAccess;
+	public IRandomTextureAccess textureAccess;
 	protected int mipmapLevel = 0;
-	protected IPixelFilter lightingFilter;
+	public IPixelFilter lightingFilter;
 	private static HashMap<Integer, Integer> filtersStatistics = new HashMap<Integer, Integer>();
 	private static HashMap<Integer, String> filterNames = new HashMap<Integer, String>();
 	protected boolean renderingInitialized;
 	protected CachedTexture cachedTexture;
 	protected boolean isTriangle;
+	public int colorTestRef;
+	public int colorTestMsk;
+	public int alphaRef;
+	public int stencilRef;
+	public int stencilMask;
+	public int sfix;
+	public int dfix;
+	public int colorMask;
+	public boolean primaryColorSetGlobally;
+	public float texTranslateX;
+	public float texTranslateY;
+	public float texScaleX;
+	public float texScaleY;
+	public int textureWidth;
+	public int textureHeight;
+	public int texEnvColorB;
+	public int texEnvColorG;
+	public int texEnvColorR;
+	public float[] envMapLightPosU;
+	public float[] envMapLightPosV;
+	public boolean envMapDiffuseLightU;
+	public boolean envMapDiffuseLightV;
+	public float envMapShininess;
+	private static final int COMPILATION_ID_TRIANGLE = 940347503;
+	private static final int COMPILATION_ID_3D = 201511776;
+	private static final int COMPILATION_ID_LOG_TRACE = 275887992;
+	private static final int[] COMPILATION_ID_PSM = new int[] {
+		149600676, // TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650
+		446086425, // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551
+		576440430, // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444
+		878826905  // TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888
+	};
 
 	protected void copy(BaseRenderer from) {
 		numberFilters = from.numberFilters;
 		System.arraycopy(from.filters, 0, filters, 0, numberFilters);
-		imageWriter = from.imageWriter;
-		depthWriter = from.depthWriter;
+		rendererWriter = from.rendererWriter;
 		imageWriterSkipEOL = from.imageWriterSkipEOL;
 		depthWriterSkipEOL = from.depthWriterSkipEOL;
-		compiledFilter = from.compiledFilter;
+		compiledRendererId = from.compiledRendererId;
+		compiledRenderer = from.compiledRenderer;
 		transform2D = from.transform2D;
 	}
 
@@ -118,6 +154,7 @@ public abstract class BaseRenderer implements IRenderer {
 	protected int getTextureAddress(int address, int x, int y, int textureWidth, int pixelFormat) {
 		int bytesPerPixel = IRenderingEngine.sizeOfTextureType[pixelFormat];
 		int numberOfPixels = y * textureWidth + x;
+		address &= Memory.addressMask;
 		// bytesPerPixel == 0 means 2 pixels per byte (4bit indexed)
 		return address + (bytesPerPixel == 0 ? numberOfPixels >> 1 : numberOfPixels * bytesPerPixel);
 	}
@@ -158,6 +195,37 @@ public abstract class BaseRenderer implements IRenderer {
 			screenOffsetY = context.offset_y;
 			zscale = context.zscale * 65535.f;
 			zpos = context.zpos * 65535.f;
+			texTranslateX = context.tex_translate_x;
+			texTranslateY = context.tex_translate_y;
+			texScaleX = context.tex_scale_x;
+			texScaleY = context.tex_scale_y;
+			if (context.tex_map_mode == GeCommands.TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP) {
+				envMapLightPosU = new float[4];
+				envMapLightPosV = new float[4];
+				Utilities.copy(envMapLightPosU, context.light_pos[context.tex_shade_u]);
+				Utilities.copy(envMapLightPosV, context.light_pos[context.tex_shade_v]);
+				envMapDiffuseLightU = context.light_type[context.tex_shade_u] == GeCommands.LIGHT_AMBIENT_DIFFUSE;
+				envMapDiffuseLightV = context.light_type[context.tex_shade_v] == GeCommands.LIGHT_AMBIENT_DIFFUSE;
+				envMapShininess = context.materialShininess;
+			}
+		}
+		colorTestRef = getColorBGR(context.colorTestRef);
+		colorTestMsk = getColorBGR(context.colorTestMsk);
+		alphaRef = context.alphaRef;
+		stencilRef = context.stencilRef & context.stencilMask;
+		stencilMask = context.stencilMask;
+		sfix = context.sfix;
+		dfix = context.dfix;
+		colorMask = getColor(context.colorMask);
+		textureWidth = context.texture_width[mipmapLevel];
+		textureHeight = context.texture_height[mipmapLevel];
+		texEnvColorB = getColor(context.tex_env_color[2]);
+		texEnvColorG = getColor(context.tex_env_color[1]);
+		texEnvColorR = getColor(context.tex_env_color[0]);
+
+		Memory mem = Memory.getInstance();
+		if (mem instanceof FastMemory) {
+			memInt = ((FastMemory) mem).getAll();
 		}
 	}
 
@@ -201,7 +269,7 @@ public abstract class BaseRenderer implements IRenderer {
         	addFilter(MaterialColorFilter.getMaterialColorFilter(context));
         }
 
-        boolean primaryColorSetGlobally = false;
+        primaryColorSetGlobally = false;
         boolean added = addFilter(lightingFilter);
         if (added) {
         	if (isLogTraceEnabled) {
@@ -226,7 +294,6 @@ public abstract class BaseRenderer implements IRenderer {
     		}
         }
 
-        IPixelFilter textureFilter;
         textureAccess = null;
     	if (context.textureFlag.isEnabled() && (!transform2D || useVertexTexture) && !clearMode) {
     		int textureBufferWidth = VideoEngine.alignBufferWidth(context.texture_buffer_width[mipmapLevel], context.texture_storage);
@@ -247,21 +314,17 @@ public abstract class BaseRenderer implements IRenderer {
 
             if (!transform2D) {
             	// Perform the texture mapping (UV / texture matrix / environment map)
-            	textureFilter = TextureMapping.getTextureMapping(context);
-            	addFilter(textureFilter);
+            	addFilter(TextureMapping.getTextureMapping(context));
             }
 
             // Apply the texture wrap mode (clamp or repeat)
-            textureFilter = TextureWrap.getTextureWrap(context, mipmapLevel);
-            addFilter(textureFilter);
+            addFilter(TextureWrap.getTextureWrap(context, mipmapLevel));
 
             // Read the corresponding texture texel
-            textureFilter = TextureReader.getTextureReader(textureAccess, context, mipmapLevel);
-            addFilter(textureFilter);
+            addFilter(TextureReader.getTextureReader(textureAccess, context, mipmapLevel));
 
             // Apply the texture function (modulate, decal, blend, replace, add)
-            textureFilter = TextureFunction.getTextureFunction(context);
-            addFilter(textureFilter);
+            addFilter(TextureFunction.getTextureFunction(context));
 
             addFilter(ColorDoubling.getColorDoubling(context, false, false));
 
@@ -369,8 +432,7 @@ public abstract class BaseRenderer implements IRenderer {
 	}
 
 	protected void postRender() {
-        imageWriter.flush();
-        depthWriter.flush();
+		rendererWriter.flush();
 
         if (captureEachPrimitive && State.captureGeNextFrame) {
         	// Capture the GE screen after each primitive
@@ -382,7 +444,7 @@ public abstract class BaseRenderer implements IRenderer {
 	}
 
 	protected boolean hasFlag(int flags, int flag) {
-		return (flags & flags) != 0;
+		return (flags & flag) != 0;
 	}
 
 	protected int getFiltersFlags() {
@@ -405,18 +467,15 @@ public abstract class BaseRenderer implements IRenderer {
 	}
 
 	protected void writerSkip(int count) {
-		imageWriter.skip(count);
-		depthWriter.skip(count);
+		rendererWriter.skip(count, count);
 	}
 
 	protected void writerSkipEOL(int count) {
-		imageWriter.skip(count + imageWriterSkipEOL);
-		depthWriter.skip(count + depthWriterSkipEOL);
+		rendererWriter.skip(count + imageWriterSkipEOL, count + depthWriterSkipEOL);
 	}
 
 	protected void writerSkipEOL() {
-		imageWriter.skip(imageWriterSkipEOL);
-		depthWriter.skip(depthWriterSkipEOL);
+		rendererWriter.skip(imageWriterSkipEOL, depthWriterSkipEOL);
 	}
 
 	static protected int mixIds(int id1, int id2, int id3) {
@@ -433,6 +492,19 @@ public abstract class BaseRenderer implements IRenderer {
 			filtersId = mixIds(filtersId, filters[i].getCompilationId());
 		}
 
+		if (isTriangle) {
+			filtersId = mixIds(filtersId, COMPILATION_ID_TRIANGLE);
+		}
+		if (!transform2D) {
+			filtersId = mixIds(filtersId, COMPILATION_ID_3D);
+		}
+		if (psm >= 0 && psm < COMPILATION_ID_PSM.length) {
+			filtersId = mixIds(filtersId, COMPILATION_ID_PSM[psm]);
+		}
+		if (log.isTraceEnabled()) {
+			filtersId = mixIds(filtersId, COMPILATION_ID_LOG_TRACE);
+		}
+
 		return filtersId;
 	}
 
@@ -445,10 +517,6 @@ public abstract class BaseRenderer implements IRenderer {
 	}
 
 	protected String getFiltersName() {
-		if (compiledFilter != null) {
-			return getFilterName(compiledFilter);
-		}
-
 		StringBuilder s = new StringBuilder();
 		for (int i = 0; i < numberFilters; i++) {
 			if (i > 0) {
@@ -465,7 +533,7 @@ public abstract class BaseRenderer implements IRenderer {
 			return;
 		}
 
-		int filtersId = compiledFilter != null ? compiledFilterId : getFiltersId();
+		int filtersId = compiledRenderer != null ? compiledRendererId : getFiltersId();
 
 		Integer count = filtersStatistics.get(filtersId);
 		if (count == null) {
@@ -479,16 +547,16 @@ public abstract class BaseRenderer implements IRenderer {
 	}
 
 	public static void exit() {
-		if (!log.isInfoEnabled() || filtersStatistics.isEmpty()) {
-			return;
+		if (log.isInfoEnabled() && DurationStatistics.collectStatistics) {
+			Integer[] filterIds = filtersStatistics.keySet().toArray(new Integer[filtersStatistics.size()]);
+			Arrays.sort(filterIds, new FilterComparator());
+			for (Integer filterId : filterIds) {
+				Integer count = filtersStatistics.get(filterId);
+				log.info(String.format("Filter: count=%d, id=%d, %s", count, filterId, filterNames.get(filterId)));
+			}
 		}
 
-		Integer[] filterIds = filtersStatistics.keySet().toArray(new Integer[filtersStatistics.size()]);
-		Arrays.sort(filterIds, new FilterComparator());
-		for (Integer filterId : filterIds) {
-			Integer count = filtersStatistics.get(filterId);
-			log.info(String.format("Filter: count=%d, id=%d, %s", count, filterId, filterNames.get(filterId)));
-		}
+		FilterCompiler.exit();
 	}
 
 	private static class FilterComparator implements Comparator<Integer> {

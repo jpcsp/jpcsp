@@ -127,6 +127,13 @@ public class TriangleRenderer extends BasePrimitiveRenderer {
 
 	@Override
 	public void render() {
+		if (compiledRenderer != null) {
+			compiledRenderer.render(this);
+			return;
+		}
+
+		log.info("Non-compiled rendering!");
+
 		preRender();
 		if (transform2D) {
 			render2D();
@@ -137,33 +144,26 @@ public class TriangleRenderer extends BasePrimitiveRenderer {
 	}
 
 	private void renderPixel() {
-		if (needSourceDepth) {
+		if (needSourceDepthRead) {
 			pixel.sourceDepth = round(pixel.getTriangleWeightedValue(prim.p1z, prim.p2z, prim.p3z));
 		}
-		pixel.destination = imageWriter.readCurrent();
-		pixel.destinationDepth = depthWriter.readCurrent();
-		if (compiledFilter != null) {
-			compiledFilter.filter(pixel);
-		} else {
-    		for (int i = 0; i < numberFilters; i++) {
-    			filters[i].filter(pixel);
-    			if (!pixel.filterPassed) {
-    				break;
-    			}
-    		}
+		rendererWriter.readCurrent(pixel);
+		for (int i = 0; i < numberFilters; i++) {
+			filters[i].filter(pixel);
+			if (!pixel.filterPassed) {
+				break;
+			}
 		}
 if (isLogTraceEnabled) {
 log.trace(String.format("Pixel (%d,%d), passed=%b, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d, filterOnFailed=%s", pixel.x, pixel.y, pixel.filterPassed, pixel.u, pixel.v, pixel.source, pixel.destination, pixel.primaryColor, pixel.secondaryColor, pixel.sourceDepth, pixel.destinationDepth, pixel.filterOnFailed));
 }
 		if (pixel.filterPassed) {
-    		imageWriter.writeNext(pixel.source);
-    		depthWriter.writeNext(pixel.sourceDepth);
+			rendererWriter.writeNext(pixel);
 		} else if (pixel.filterOnFailed != null) {
 			// Filter did not pass, but we have a filter to be executed in that case
 			pixel.source = pixel.destination;
 			pixel.filterOnFailed.filter(pixel);
-			imageWriter.writeNext(pixel.source);
-			depthWriter.skip(1);
+			rendererWriter.writeNextColor(pixel);
 		} else {
 			// Filter did not pass, do not update the pixel
 			writerSkip(1);
@@ -187,7 +187,7 @@ log.trace(String.format("Pixel (%d,%d), passed=%b, tex (%f, %f), source=0x%08X, 
 		Range range = new Range();
 		Rasterizer rasterizer = null;
 		// No need to use a Rasterizer when rendering very small area.
-		// The overhead of the Rasterizer would lead the slower rendering.
+		// The overhead of the Rasterizer would lead to slower rendering.
 		if (prim.destinationWidth >= Rasterizer.MINIMUM_WIDTH && prim.destinationHeight >= Rasterizer.MINIMUM_HEIGHT) {
 			rasterizer = new Rasterizer(prim.p1x, prim.p1y, prim.p2x, prim.p2y, prim.p3x, prim.p3y, prim.pyMin, prim.pyMax);
 			rasterizer.setY(prim.pyMin);
@@ -233,7 +233,7 @@ log.trace(String.format("Pixel (%d,%d), passed=%b, tex (%f, %f), source=0x%08X, 
 	}
 
 	protected void render3DPixel(int x) {
-		pixel.newPixel();
+		pixel.newPixel3D();
 		pixel.x = x;
 
 		if (needTextureUV) {
@@ -269,7 +269,7 @@ log.trace(String.format("Pixel (%d,%d), passed=%b, tex (%f, %f), source=0x%08X, 
 		Range range = new Range();
 		Rasterizer rasterizer = null;
 		// No need to use a Rasterizer when rendering very small area.
-		// The overhead of the Rasterizer would lead the slower rendering.
+		// The overhead of the Rasterizer would lead to slower rendering.
 		if (prim.destinationWidth >= Rasterizer.MINIMUM_WIDTH && prim.destinationHeight >= Rasterizer.MINIMUM_HEIGHT) {
 			rasterizer = new Rasterizer(prim.p1x, prim.p1y, prim.p2x, prim.p2y, prim.p3x, prim.p3y, prim.pyMin, prim.pyMax);
 			rasterizer.setY(prim.pyMin);

@@ -90,7 +90,7 @@ public class TextureWrap {
 		return wrappedValue;
 	}
 
-	private static int wrap(float value, int valueMask) {
+	public static int wrap(float value, int valueMask) {
 		return pixelToTexel(value) & valueMask;
 	}
 

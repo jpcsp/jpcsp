@@ -138,7 +138,7 @@ public class MaskFilter {
 
 		@Override
 		public int getFlags() {
-			return DISCARDS_SOURCE_DEPTH;
+			return DISCARDS_SOURCE_DEPTH | REQUIRES_DESTINATION_DEPTH;
 		}
 	}
 
@@ -155,7 +155,7 @@ public class MaskFilter {
 
 		@Override
 		public int getFlags() {
-			return DISCARDS_SOURCE_DEPTH;
+			return DISCARDS_SOURCE_DEPTH | REQUIRES_DESTINATION_DEPTH;
 		}
 	}
 
@@ -190,7 +190,7 @@ public class MaskFilter {
 
 		@Override
 		public int getFlags() {
-			return DISCARDS_SOURCE_DEPTH;
+			return DISCARDS_SOURCE_DEPTH | REQUIRES_DESTINATION_DEPTH;
 		}
 	}
 }

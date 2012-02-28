@@ -50,6 +50,10 @@ public class PixelColor {
 		return getColor(color[3], color[2], color[1], color[0]);
 	}
 
+	public final static int getColorBGR(int[] color) {
+		return getColorBGR(color[2], color[1], color[0]);
+	}
+
 	public final static int getColor(float color){
 		return (int) (color * ONE);
 	}

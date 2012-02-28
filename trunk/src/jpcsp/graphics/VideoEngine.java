@@ -214,6 +214,7 @@ public class VideoEngine {
     private VertexState v = new VertexState();
     private VertexState v1 = new VertexState();
     private VertexState v2 = new VertexState();
+    private boolean isBoundingBox;
 
     public static class MatrixUpload {
         private final float[] matrix;
@@ -2328,6 +2329,8 @@ public class VideoEngine {
             log.debug(helper.getCommandString(BBOX) + " numberOfVertex=" + numberOfVertexBoundingBox);
         }
 
+        isBoundingBox = true;
+
         initRendering();
 
         re.beginBoundingBox(numberOfVertexBoundingBox);
@@ -2351,6 +2354,8 @@ public class VideoEngine {
         re.endBoundingBox(context.vinfo);
 
         endRendering(context.useVertexColor, false, numberOfVertexBoundingBox);
+
+        isBoundingBox = false;
     }
 
     private void executeCommandBJUMP() {
@@ -3754,31 +3759,23 @@ public class VideoEngine {
         re.setAlphaFunc(context.alphaFunc, context.alphaRef);
 
         if (isLogDebugEnabled) {
-        	log("sceGuAlphaFunc(" + context.alphaFunc + "," + context.alphaRef + ")");
+        	log(String.format("sceGuAlphaFunc(func=%d, ref=0x%02X)", context.alphaFunc, context.alphaRef));
         }
     }
 
     private void executeCommandSTST() {
-    	context.stencilFunc = normalArgument & 0xFF;
-    	if (context.stencilFunc > STST_FUNCTION_PASS_TEST_IF_GREATER_OR_EQUAL) {
-    		log.warn("Unknown stencil function " + context.stencilFunc);
-    		context.stencilFunc = STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST;
+    	context.stencilFunc = normalArgument & 0x7;
+    	context.stencilRef = (normalArgument >> 8) & 0xFF;
+    	switch (context.psm) {
+    		case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650: context.stencilRef = 0; break;
+    		case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551: context.stencilRef &= 0x80; break;
+    		case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: context.stencilRef &= 0xF0; break;
     	}
-
-        if (context.psm == 0) {  // PSM_5650
-            context.stencilRef = 0;
-        } else if (context.psm == 1) {
-            context.stencilRef = (normalArgument >> 8) & 0x10; // PSM_5551
-        } else if (context.psm == 2) {
-            context.stencilRef = (normalArgument >> 8) & 0xF0; // PSM_4444
-        } else if (context.psm == 3) {
-            context.stencilRef = (normalArgument >> 8) & 0xFF; // PSM_8888
-        }
         context.stencilMask = (normalArgument >> 16) & 0xFF;
         re.setStencilFunc(context.stencilFunc, context.stencilRef, context.stencilMask);
 
         if (isLogDebugEnabled) {
-        	log("sceGuStencilFunc(func=" + (normalArgument & 0xFF) + ", ref=" + context.stencilRef + ", mask=" + context.stencilMask + ")");
+        	log(String.format("sceGuStencilFunc(func=%d, ref=0x%02X, mask=0x%02X)", context.stencilFunc, context.stencilRef, context.stencilMask));
         }
     }
 
@@ -5443,7 +5440,7 @@ public class VideoEngine {
         	re.setVertexColor(context.mat_ambient);
         }
 
-        if (context.textureFlag.isEnabled()) {
+        if (context.textureFlag.isEnabled() && !context.clearMode && !isBoundingBox) {
         	re.setTextureWrapMode(context.tex_wrap_s, context.tex_wrap_t);
 
         	int validNumberMipmaps = getValidNumberMipmaps();
