@@ -23,6 +23,7 @@ import static jpcsp.graphics.RE.software.PixelColor.addBGR;
 import static jpcsp.graphics.RE.software.PixelColor.getAlpha;
 import static jpcsp.graphics.RE.software.PixelColor.getColor;
 import static jpcsp.graphics.RE.software.PixelColor.getColorBGR;
+import static jpcsp.graphics.RE.software.PixelColor.maxBGR;
 import static jpcsp.graphics.RE.software.PixelColor.minBGR;
 import static jpcsp.graphics.RE.software.PixelColor.multiplyBGR;
 import static jpcsp.graphics.RE.software.PixelColor.setBGR;
@@ -539,7 +540,7 @@ public class AlphaBlendFilter {
 	private static final class BlendOperationMax implements IPixelFilter {
 		@Override
 		public void filter(PixelState pixel) {
-			pixel.source = setBGR(pixel.source, minBGR(pixel.source, pixel.destination));
+			pixel.source = setBGR(pixel.source, maxBGR(pixel.source, pixel.destination));
 		}
 
 		@Override

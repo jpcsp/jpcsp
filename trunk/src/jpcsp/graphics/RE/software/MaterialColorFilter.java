@@ -38,9 +38,9 @@ public class MaterialColorFilter {
 	}
 
 	private static class MaterialColor implements IPixelFilter {
-		private boolean ambient;
-		private boolean diffuse;
-		private boolean specular;
+		private final boolean ambient;
+		private final boolean diffuse;
+		private final boolean specular;
 
 		public MaterialColor(boolean ambient, boolean diffuse, boolean specular) {
 			this.ambient = ambient;

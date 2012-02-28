@@ -1765,7 +1765,15 @@ public class CompilerContext implements ICompilerContext {
 			case  3: mv.visitInsn(Opcodes.ICONST_3);  break;
 			case  4: mv.visitInsn(Opcodes.ICONST_4);  break;
 			case  5: mv.visitInsn(Opcodes.ICONST_5);  break;
-			default: mv.visitLdcInsn(imm);            break;
+			default:
+				if (Byte.MIN_VALUE <= imm && imm < Byte.MAX_VALUE) {
+					mv.visitIntInsn(Opcodes.BIPUSH, imm);
+				} else if (Short.MIN_VALUE <= imm && imm < Short.MAX_VALUE) {
+					mv.visitIntInsn(Opcodes.SIPUSH, imm);
+				} else {
+					mv.visitLdcInsn(new Integer(imm));
+				}
+				break;
 		}
     }
 

@@ -45,13 +45,19 @@ public class AlphaTestFilter {
 				filter = new AlphaFunctionPassIfLess(context.alphaRef);
 				break;
 			case GeCommands.ATST_PASS_PIXEL_IF_LESS_OR_EQUAL:
-				filter = new AlphaFunctionPassIfLessOrEqual(context.alphaRef);
+				// No test if alphaRef==0xFF
+				if (context.alphaRef < 0xFF) {
+					filter = new AlphaFunctionPassIfLessOrEqual(context.alphaRef);
+				}
 				break;
 			case GeCommands.ATST_PASS_PIXEL_IF_GREATER:
 				filter = new AlphaFunctionPassIfGreater(context.alphaRef);
 				break;
 			case GeCommands.ATST_PASS_PIXEL_IF_GREATER_OR_EQUAL:
-				filter = new AlphaFunctionPassIfGreaterOrEqual(context.alphaRef);
+				// No test if alphaRef==0x00
+				if (context.alphaRef > 0x00) {
+					filter = new AlphaFunctionPassIfGreaterOrEqual(context.alphaRef);
+				}
 				break;
 		}
 
