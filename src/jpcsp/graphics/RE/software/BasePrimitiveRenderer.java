@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE.software;
 
 import static jpcsp.graphics.RE.software.IPixelFilter.DISCARDS_SOURCE_DEPTH;
+import static jpcsp.graphics.RE.software.IPixelFilter.REQUIRES_DESTINATION_DEPTH;
 import static jpcsp.graphics.RE.software.IPixelFilter.REQUIRES_SOURCE_DEPTH;
 import static jpcsp.graphics.RE.software.IPixelFilter.REQUIRES_TEXTURE_U_V;
 import static jpcsp.graphics.RE.software.PixelColor.getColor;
@@ -33,9 +34,11 @@ import static jpcsp.util.Utilities.vectorMult44;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VertexState;
 import jpcsp.util.DurationStatistics;
+import jpcsp.util.Utilities;
 
 /**
  * @author gid15
@@ -48,12 +51,16 @@ import jpcsp.util.DurationStatistics;
 public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	private static HashMap<Integer, DurationStatistics> pixelsStatistics = new HashMap<Integer, DurationStatistics>();
 	private DurationStatistics pixelStatistics = new DurationStatistics();
-	protected final PixelState pixel = new PixelState();
-	protected PrimitiveState prim = new PrimitiveState();
+	public final PixelState pixel = new PixelState();
+	public PrimitiveState prim = new PrimitiveState();
 	protected boolean needScissoringX;
 	protected boolean needScissoringY;
-	protected boolean needSourceDepth;
+	protected boolean needSourceDepthRead;
+	protected boolean needDestinationDepthRead;
+	protected boolean needDepthWrite;
 	protected boolean needTextureUV;
+	public int fbAddress;
+	public int depthAddress;
 
 	protected void copy(BasePrimitiveRenderer from) {
 		super.copy(from);
@@ -61,7 +68,7 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		prim.copy(from.prim);
 		needScissoringX = from.needScissoringX;
 		needScissoringY = from.needScissoringY;
-		needSourceDepth = from.needSourceDepth;
+		needSourceDepthRead = from.needSourceDepthRead;
 		needTextureUV = from.needTextureUV;
 	}
 
@@ -77,6 +84,11 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		prim.pzMin = Integer.MAX_VALUE;
 
 		if (!transform2D) {
+			if (context.tex_map_mode == GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX) {
+				// Copy the Texture matrix
+				System.arraycopy(context.texture_uploaded_matrix, 0, pixel.textureMatrix, 0, pixel.textureMatrix.length);
+			}
+
 			// Copy the View matrix
 			System.arraycopy(context.view_uploaded_matrix, 0, pixel.viewMatrix, 0, pixel.viewMatrix.length);
 
@@ -234,8 +246,9 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	    		pixel.c3r = getColor(c3[0]);
     		}
         	if (primaryColorFilter >= 0) {
+        		sameVertexColor = Utilities.sameColor(c1, c2, c3);
     			// For triangles, take the weighted color from the 3 vertices.
-        		filters[primaryColorFilter] = VertexColorFilter.getVertexColorFilter(c1, c2, c3);
+        		filters[primaryColorFilter] = VertexColorFilter.getVertexColorFilter(sameVertexColor, c1, c2, c3);
         	} else {
     			// For sprites, take only the color from the 2nd vertex
     			pixel.primaryColor = getColor(c2);
@@ -252,12 +265,22 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
     		}
     	}
 
+		// Try to avoid to compute expensive values
+		int flags = getFiltersFlags();
+		needDepthWrite = !hasFlag(flags, DISCARDS_SOURCE_DEPTH);
+		needSourceDepthRead = hasFlag(flags, REQUIRES_SOURCE_DEPTH) || needDepthWrite;
+		needDestinationDepthRead = hasFlag(flags, REQUIRES_DESTINATION_DEPTH);
+		needTextureUV = hasFlag(flags, REQUIRES_TEXTURE_U_V);
+
     	prepareWriters();
 
     	int filtersId = getFiltersId();
-    	if (filtersId != compiledFilterId || compiledFilter == null) {
-			compiledFilterId = filtersId;
-    		compiledFilter = FilterCompiler.getCompiledFilter(this, filtersId, context);
+    	if (filtersId != compiledRendererId || compiledRenderer == null) {
+			compiledRendererId = filtersId;
+			compiledRenderer = FilterCompiler.getInstance().getCompiledRenderer(this, filtersId, context);
+			if (isLogTraceEnabled) {
+				log.trace(String.format("Rendering using compiled renderer %s", compiledRenderer.getClass().getName()));
+			}
     	}
 
     	if (c3 != null) {
@@ -372,12 +395,9 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	}
 
 	private void prepareWriters() {
-        int fbAddress = getTextureAddress(fbp, prim.pxMin, prim.pyMin, fbw, psm);
-    	int depthAddress = getTextureAddress(zbp, prim.pxMin, prim.pyMin, zbw, depthBufferPixelFormat);
-    	// Request image writers with a width covering the complete buffer width,
-    	// we will skip unnecessary pixels at the end of each line manually (more efficient).
-        imageWriter = ImageWriter.getImageWriter(fbAddress, fbw, fbw, psm);
-        depthWriter = ImageWriter.getImageWriter(depthAddress, zbw, zbw, depthBufferPixelFormat);
+        fbAddress = getTextureAddress(fbp, prim.pxMin, prim.pyMin, fbw, psm);
+    	depthAddress = getTextureAddress(zbp, prim.pxMin, prim.pyMin, zbw, depthBufferPixelFormat);
+    	rendererWriter = RendererWriter.getRendererWriter(fbAddress, fbw, psm, depthAddress, zbw, depthBufferPixelFormat, needDestinationDepthRead, needDepthWrite);
         imageWriterSkipEOL = fbw - prim.destinationWidth;
         depthWriterSkipEOL = zbw - prim.destinationWidth;
 	}
@@ -509,7 +529,7 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	}
 
 	@Override
-	protected void postRender() {
+	public void postRender() {
 		if (DurationStatistics.collectStatistics && isLogInfoEnabled) {
 			pixelStatistics.end();
 			final int pixelsGrouping = 1000;
@@ -529,16 +549,10 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	}
 
 	@Override
-	protected void preRender() {
+	public void preRender() {
 		pixel.reset();
 
 		super.preRender();
-
-		int flags = getFiltersFlags();
-
-		// Try to avoid to compute expensive values
-		needSourceDepth = hasFlag(flags, REQUIRES_SOURCE_DEPTH) || !hasFlag(flags, DISCARDS_SOURCE_DEPTH);
-		needTextureUV = hasFlag(flags, REQUIRES_TEXTURE_U_V);
 
 		if (DurationStatistics.collectStatistics && isLogInfoEnabled) {
 			pixelStatistics.reset();

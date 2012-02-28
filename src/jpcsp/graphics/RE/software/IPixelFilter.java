@@ -23,9 +23,10 @@ package jpcsp.graphics.RE.software;
  */
 public interface IPixelFilter {
 	public static final int REQUIRES_SOURCE_DEPTH = (1 << 0);
-	public static final int DISCARDS_SOURCE_DEPTH = (1 << 1);
-	public static final int REQUIRES_TEXTURE_U_V = (1 << 2);
-	public static final int DISCARDS_TEXTURE_U_V = (1 << 3);
+	public static final int REQUIRES_DESTINATION_DEPTH = (1 << 1);
+	public static final int DISCARDS_SOURCE_DEPTH = (1 << 2);
+	public static final int REQUIRES_TEXTURE_U_V = (1 << 3);
+	public static final int DISCARDS_TEXTURE_U_V = (1 << 4);
 
 	/**
 	 * Filter the value of the current pixel according to the filter function.

@@ -64,6 +64,7 @@ public final class PixelState {
 	public int c1a, c1b, c1g, c1r, c1;
 	public int c2a, c2b, c2g, c2r;
 	public int c3a, c3b, c3g, c3r;
+	public final float[] textureMatrix = new float[16];
 	public final float[] viewMatrix = new float[16];
 	public final float[] modelViewMatrix = new float[16];
 	public final float[] modelViewProjectionMatrix = new float[16];
@@ -126,7 +127,7 @@ public final class PixelState {
 		numberPixels++;
 	}
 
-	public void newPixel() {
+	public void newPixel3D() {
 		newPixel2D();
 
 		computedV = false;

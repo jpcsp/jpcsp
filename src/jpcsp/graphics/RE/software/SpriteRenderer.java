@@ -71,6 +71,13 @@ public class SpriteRenderer extends BasePrimitiveRenderer {
 
 	@Override
 	public void render() {
+		if (compiledRenderer != null) {
+			compiledRenderer.render(this);
+			return;
+		}
+
+		log.info("Non-compiled rendering!");
+
 		preRender();
 
 		RESoftware.spriteRenderStatistics.start();
@@ -85,30 +92,23 @@ public class SpriteRenderer extends BasePrimitiveRenderer {
         		pixel.u = u;
         		pixel.v = v;
             	pixel.sourceDepth = sourceDepth;
-        		pixel.destination = imageWriter.readCurrent();
-        		pixel.destinationDepth = depthWriter.readCurrent();
-        		if (compiledFilter != null) {
-        			compiledFilter.filter(pixel);
-        		} else {
-	        		for (int i = 0; i < numberFilters; i++) {
-	        			filters[i].filter(pixel);
-	        			if (!pixel.filterPassed) {
-	        				break;
-	        			}
-	        		}
+            	rendererWriter.readCurrent(pixel);
+        		for (int i = 0; i < numberFilters; i++) {
+        			filters[i].filter(pixel);
+        			if (!pixel.filterPassed) {
+        				break;
+        			}
         		}
 if (isLogTraceEnabled) {
 	log.trace(String.format("Pixel (%d,%d), passed=%b, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d, filterOnFailed=%s", pixel.x, pixel.y, pixel.filterPassed, pixel.u, pixel.v, pixel.source, pixel.destination, pixel.primaryColor, pixel.secondaryColor, pixel.sourceDepth, pixel.destinationDepth, pixel.filterOnFailed));
 }
         		if (pixel.filterPassed) {
-        			imageWriter.writeNext(pixel.source);
-        			depthWriter.writeNext(pixel.sourceDepth);
+        			rendererWriter.writeNext(pixel);
     			} else if (pixel.filterOnFailed != null) {
     				// Filter did not pass, but we have a filter to be executed in that case
     				pixel.source = pixel.destination;
     				pixel.filterOnFailed.filter(pixel);
-    				imageWriter.writeNext(pixel.source);
-    				depthWriter.skip(1);
+    				rendererWriter.writeNextColor(pixel);
         		} else {
         			// Filter did not pass, do not update the pixel
         			writerSkip(1);

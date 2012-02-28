@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE.software;
 
 import static jpcsp.graphics.RE.software.PixelColor.getColor;
-import static jpcsp.util.Utilities.sameColor;
 
 import org.apache.log4j.Logger;
 
@@ -31,10 +30,10 @@ public class VertexColorFilter {
 	protected static final Logger log = VideoEngine.log;
 	protected static IPixelFilter vertexTriangleTextureFilter = new VertexTriangleTextureFilter();
 
-	public static IPixelFilter getVertexColorFilter(float[] c1, float c2[], float[] c3) {
+	public static IPixelFilter getVertexColorFilter(boolean sameVertexColor, float[] c1, float c2[], float[] c3) {
 		IPixelFilter filter;
 
-		if (sameColor(c1, c2, c3)) {
+		if (sameVertexColor) {
         	if (log.isTraceEnabled()) {
         		log.trace(String.format("Using ColorTextureFilter color=0x%08X", getColor(c1)));
         	}

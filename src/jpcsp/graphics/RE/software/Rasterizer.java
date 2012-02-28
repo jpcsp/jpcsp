@@ -131,8 +131,8 @@ public class Rasterizer {
 	}
 
 	public static class Range {
-		int xMin;
-		int xMax;
+		public int xMin;
+		public int xMax;
 
 		public void clear() {
 			xMin = 0;

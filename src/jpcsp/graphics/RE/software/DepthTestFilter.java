@@ -134,7 +134,7 @@ public class DepthTestFilter {
 
 		@Override
 		public int getFlags() {
-			return REQUIRES_SOURCE_DEPTH;
+			return REQUIRES_SOURCE_DEPTH | REQUIRES_DESTINATION_DEPTH;
 		}
 	}
 
@@ -165,7 +165,7 @@ public class DepthTestFilter {
 
 		@Override
 		public int getFlags() {
-			return REQUIRES_SOURCE_DEPTH | stencilOpZFail.getFlags();
+			return REQUIRES_SOURCE_DEPTH | REQUIRES_DESTINATION_DEPTH | stencilOpZFail.getFlags();
 		}
 	}
 
@@ -182,7 +182,7 @@ public class DepthTestFilter {
 
 		@Override
 		public int getFlags() {
-			return REQUIRES_SOURCE_DEPTH;
+			return REQUIRES_SOURCE_DEPTH | REQUIRES_DESTINATION_DEPTH;
 		}
 	}
 
@@ -213,7 +213,7 @@ public class DepthTestFilter {
 
 		@Override
 		public int getFlags() {
-			return REQUIRES_SOURCE_DEPTH | stencilOpZFail.getFlags();
+			return REQUIRES_SOURCE_DEPTH | REQUIRES_DESTINATION_DEPTH | stencilOpZFail.getFlags();
 		}
 	}
 
@@ -230,7 +230,7 @@ public class DepthTestFilter {
 
 		@Override
 		public int getFlags() {
-			return REQUIRES_SOURCE_DEPTH;
+			return REQUIRES_SOURCE_DEPTH | REQUIRES_DESTINATION_DEPTH;
 		}
 	}
 
@@ -261,7 +261,7 @@ public class DepthTestFilter {
 
 		@Override
 		public int getFlags() {
-			return REQUIRES_SOURCE_DEPTH | stencilOpZFail.getFlags();
+			return REQUIRES_SOURCE_DEPTH | REQUIRES_DESTINATION_DEPTH | stencilOpZFail.getFlags();
 		}
 	}
 
@@ -278,7 +278,7 @@ public class DepthTestFilter {
 
 		@Override
 		public int getFlags() {
-			return REQUIRES_SOURCE_DEPTH;
+			return REQUIRES_SOURCE_DEPTH | REQUIRES_DESTINATION_DEPTH;
 		}
 	}
 
@@ -309,7 +309,7 @@ public class DepthTestFilter {
 
 		@Override
 		public int getFlags() {
-			return REQUIRES_SOURCE_DEPTH | stencilOpZFail.getFlags();
+			return REQUIRES_SOURCE_DEPTH | REQUIRES_DESTINATION_DEPTH | stencilOpZFail.getFlags();
 		}
 	}
 
@@ -326,7 +326,7 @@ public class DepthTestFilter {
 
 		@Override
 		public int getFlags() {
-			return REQUIRES_SOURCE_DEPTH;
+			return REQUIRES_SOURCE_DEPTH | REQUIRES_DESTINATION_DEPTH;
 		}
 	}
 
@@ -357,7 +357,7 @@ public class DepthTestFilter {
 
 		@Override
 		public int getFlags() {
-			return REQUIRES_SOURCE_DEPTH | stencilOpZFail.getFlags();
+			return REQUIRES_SOURCE_DEPTH | REQUIRES_DESTINATION_DEPTH | stencilOpZFail.getFlags();
 		}
 	}
 
@@ -374,7 +374,7 @@ public class DepthTestFilter {
 
 		@Override
 		public int getFlags() {
-			return REQUIRES_SOURCE_DEPTH;
+			return REQUIRES_SOURCE_DEPTH | REQUIRES_DESTINATION_DEPTH;
 		}
 	}
 
@@ -405,7 +405,7 @@ public class DepthTestFilter {
 
 		@Override
 		public int getFlags() {
-			return REQUIRES_SOURCE_DEPTH | stencilOpZFail.getFlags();
+			return REQUIRES_SOURCE_DEPTH | REQUIRES_DESTINATION_DEPTH | stencilOpZFail.getFlags();
 		}
 	}
 }

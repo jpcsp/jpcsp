@@ -53,9 +53,9 @@ public class RESoftware extends BaseRenderingEngine {
     protected HashMap<Integer, CachedTexture> cachedTextures = new HashMap<Integer, CachedTexture>();
     protected int textureBufferWidth;
     protected static DurationStatistics drawArraysStatistics = new DurationStatistics("RESoftware drawArrays");
-    protected static DurationStatistics triangleRender3DStatistics = new DurationStatistics("RESoftware TriangleRender3D");
-    protected static DurationStatistics triangleRender2DStatistics = new DurationStatistics("RESoftware TriangleRender2D");
-    protected static DurationStatistics spriteRenderStatistics = new DurationStatistics("RESoftware SpriteRender");
+    public static DurationStatistics triangleRender3DStatistics = new DurationStatistics("RESoftware TriangleRender3D");
+    public static DurationStatistics triangleRender2DStatistics = new DurationStatistics("RESoftware TriangleRender2D");
+    public static DurationStatistics spriteRenderStatistics = new DurationStatistics("RESoftware SpriteRender");
     protected static DurationStatistics cachedTextureStatistics = new DurationStatistics("RESoftware CachedTexture");
     protected BoundingBoxRenderer boundingBoxRenderer;
     protected boolean boundingBoxVisible;
