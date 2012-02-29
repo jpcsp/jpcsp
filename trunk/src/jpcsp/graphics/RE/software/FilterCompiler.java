@@ -108,6 +108,8 @@ public class FilterCompiler {
 		variables.put("blendEquation", new Integer(context.blendEquation));
 		variables.put("blendSrc", new Integer(context.blend_src));
 		variables.put("blendDst", new Integer(context.blend_dst));
+		variables.put("sfix", new Integer(context.sfix));
+		variables.put("dfix", new Integer(context.dfix));
 		variables.put("colorLogicOpFlagEnabled", Boolean.valueOf(context.colorLogicOpFlag.isEnabled()));
 		variables.put("logicOp", new Integer(context.logicOp));
 		variables.put("colorMask", new Integer(PixelColor.getColor(context.colorMask)));
@@ -119,7 +121,6 @@ public class FilterCompiler {
 		variables.put("setVertexPrimaryColor", Boolean.valueOf(renderer.setVertexPrimaryColor));
 		variables.put("primaryColorSetGlobally", Boolean.valueOf(renderer.primaryColorSetGlobally));
 		variables.put("isTriangle", Boolean.valueOf(renderer.isTriangle));
-		variables.put("matFlags", new Integer(PixelColor.getColor(context.mat_flags)));
 		variables.put("matFlagAmbient", Boolean.valueOf((context.mat_flags & CMAT_FLAG_AMBIENT) != 0));
 		variables.put("matFlagDiffuse", Boolean.valueOf((context.mat_flags & CMAT_FLAG_DIFFUSE) != 0));
 		variables.put("matFlagSpecular", Boolean.valueOf((context.mat_flags & CMAT_FLAG_SPECULAR) != 0));

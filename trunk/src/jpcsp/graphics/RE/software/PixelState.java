@@ -93,6 +93,7 @@ public final class PixelState {
 		c1a = from.c1a; c1b = from.c1b; c1g = from.c1g; c1r = from.c1r; c1 = from.c1;
 		c2a = from.c2a; c2b = from.c2b; c2g = from.c2g; c2r = from.c2r;
 		c3a = from.c3a; c3b = from.c3b; c3g = from.c3g; c3r = from.c3r;
+		arraycopy(from.textureMatrix, 0, textureMatrix, 0, textureMatrix.length);
 		arraycopy(from.viewMatrix, 0, viewMatrix, 0, viewMatrix.length);
 		arraycopy(from.modelViewMatrix, 0, modelViewMatrix, 0, modelViewMatrix.length);
 		arraycopy(from.modelViewProjectionMatrix, 0, modelViewProjectionMatrix, 0, modelViewProjectionMatrix.length);

@@ -1410,7 +1410,7 @@ public class VideoEngine {
             context.clearModeStencil = stencil;
             context.clearModeDepth = depth;
             if (isLogDebugEnabled) {
-                log("clear mode : " + (normalArgument >> 8));
+                log(String.format("clear mode: %d (%s%s%s)", normalArgument >> 8, color ? "COLOR" : "", stencil ? " STENCIL" : "", depth ? " DEPTH" : ""));
             }
         }
 

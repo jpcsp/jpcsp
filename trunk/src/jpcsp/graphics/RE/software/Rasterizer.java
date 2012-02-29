@@ -75,6 +75,9 @@ public class Rasterizer {
 	}
 
 	public void setY(float y) {
+		if (y == y2) {
+			return;
+		}
 		if (currentEdge == shortEdge1 && y > edges[currentEdge].y2) {
 			currentEdge = shortEdge2;
 			init(longEdge, currentEdge);
