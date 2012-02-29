@@ -142,7 +142,38 @@ public abstract class BaseRenderer implements IRenderer {
 		depthWriterSkipEOL = from.depthWriterSkipEOL;
 		compiledRendererId = from.compiledRendererId;
 		compiledRenderer = from.compiledRenderer;
+		lightingFilter = from.lightingFilter;
+		textureAccess = from.textureAccess;
+		memInt = from.memInt;
 		transform2D = from.transform2D;
+		nearZ = from.nearZ;
+		farZ = from.farZ;
+		scissorX1 = from.scissorX1;
+		scissorY1 = from.scissorY1;
+		scissorX2 = from.scissorX2;
+		scissorY2 = from.scissorY2;
+		isTriangle = from.isTriangle;
+		colorTestRef = from.colorTestRef;
+		colorTestMsk = from.colorTestMsk;
+		alphaRef = from.alphaRef;
+		stencilRef = from.stencilRef;
+		stencilMask = from.stencilMask;
+		sfix = from.sfix;
+		dfix = from.dfix;
+		colorMask = from.colorMask;
+		primaryColorSetGlobally = from.primaryColorSetGlobally;
+		texTranslateX = from.texTranslateX;
+		texTranslateY = from.texTranslateY;
+		texScaleX = from.texScaleX;
+		texScaleY = from.texScaleY;
+		textureWidth = from.textureWidth;
+		textureHeight = from.textureHeight;
+		texEnvColorB = from.texEnvColorB;
+		texEnvColorG = from.texEnvColorG;
+		texEnvColorR = from.texEnvColorR;
+		envMapDiffuseLightU = from.envMapDiffuseLightU;
+		envMapDiffuseLightV = from.envMapDiffuseLightV;
+		envMapShininess = from.envMapShininess;
 	}
 
 	protected BaseRenderer() {

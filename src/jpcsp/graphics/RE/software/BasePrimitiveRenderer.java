@@ -38,6 +38,7 @@ import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VertexState;
 import jpcsp.util.DurationStatistics;
+import jpcsp.util.LongLongKey;
 import jpcsp.util.Utilities;
 
 /**
@@ -69,7 +70,11 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		needScissoringX = from.needScissoringX;
 		needScissoringY = from.needScissoringY;
 		needSourceDepthRead = from.needSourceDepthRead;
+		needDestinationDepthRead = from.needDestinationDepthRead;
+		needDepthWrite = from.needDepthWrite;
 		needTextureUV = from.needTextureUV;
+		fbAddress = from.fbAddress;
+		depthAddress = from.depthAddress;
 	}
 
 	@Override
@@ -570,5 +575,102 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		for (DurationStatistics durationStatistics : sortedPixelsStatistics) {
 			log.info(durationStatistics);
 		}
+	}
+
+	protected LongLongKey getRendererKey(GeContext context) {
+		LongLongKey key = new LongLongKey();
+
+		key.addKeyComponent(memInt != null);
+		key.addKeyComponent(needSourceDepthRead);
+		key.addKeyComponent(needDestinationDepthRead);
+		key.addKeyComponent(needDepthWrite);
+		key.addKeyComponent(needTextureUV);
+		key.addKeyComponent(needScissoringX);
+		key.addKeyComponent(needScissoringY);
+		key.addKeyComponent(transform2D);
+		key.addKeyComponent(clearMode);
+		if (clearMode) {
+			key.addKeyComponent(context.clearModeColor);
+			key.addKeyComponent(context.clearModeStencil);
+			key.addKeyComponent(context.clearModeDepth);
+		} else {
+			key.addKeyComponent(false);
+			key.addKeyComponent(false);
+			key.addKeyComponent(false);
+		}
+		key.addKeyComponent(nearZ == 0x0000);
+		key.addKeyComponent(farZ == 0xFFFF);
+
+		key.addKeyComponent(context.colorTestFlag.isEnabled() ? context.colorTestFunc : GeCommands.CTST_COLOR_FUNCTION_ALWAYS_PASS_PIXEL, 2);
+
+		if (context.alphaTestFlag.isEnabled()) {
+			key.addKeyComponent(context.alphaFunc, 3);
+			key.addKeyComponent(context.alphaRef == 0x00);
+			key.addKeyComponent(context.alphaRef == 0xFF);
+		} else {
+			key.addKeyComponent(GeCommands.ATST_ALWAYS_PASS_PIXEL, 3);
+			key.addKeyComponent(false);
+			key.addKeyComponent(false);
+		}
+
+		if (context.stencilTestFlag.isEnabled()) {
+			key.addKeyComponent(context.stencilFunc, 3);
+			key.addKeyComponent(context.stencilOpFail, 3);
+			key.addKeyComponent(context.stencilOpZFail, 3);
+			key.addKeyComponent(context.stencilOpZPass, 3);
+		} else {
+			key.addKeyComponent(GeCommands.STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST, 3);
+			key.addKeyComponent(GeCommands.SOP_REPLACE_STENCIL_VALUE, 3);
+			key.addKeyComponent(GeCommands.SOP_REPLACE_STENCIL_VALUE, 3);
+			key.addKeyComponent(GeCommands.SOP_REPLACE_STENCIL_VALUE, 3);
+		}
+
+		key.addKeyComponent(context.depthTestFlag.isEnabled() ? context.depthFunc : GeCommands.ZTST_FUNCTION_ALWAYS_PASS_PIXEL, 3);
+
+		if (context.blendFlag.isEnabled()) {
+			key.addKeyComponent(context.blendEquation, 3);
+			key.addKeyComponent(context.blend_src, 4);
+			key.addKeyComponent(context.blend_dst, 4);
+		} else {
+			// Use an invalid blend equation value
+			key.addKeyComponent(7, 3);
+			key.addKeyComponent(15, 4);
+			key.addKeyComponent(15, 4);
+		}
+
+		key.addKeyComponent(context.colorLogicOpFlag.isEnabled() ? context.logicOp : GeCommands.LOP_COPY, 4);
+
+		key.addKeyComponent(PixelColor.getColor(context.colorMask) == 0x00000000);
+		key.addKeyComponent(context.depthMask);
+		key.addKeyComponent(context.textureFlag.isEnabled());
+		key.addKeyComponent(useVertexTexture);
+		key.addKeyComponent(context.lightingFlag.isEnabled());
+		key.addKeyComponent(sameVertexColor);
+		key.addKeyComponent(setVertexPrimaryColor);
+		key.addKeyComponent(primaryColorSetGlobally);
+		key.addKeyComponent(isTriangle);
+		key.addKeyComponent(context.mat_flags, 3);
+		key.addKeyComponent(context.useVertexColor);
+		key.addKeyComponent(context.textureColorDoubled);
+		key.addKeyComponent(context.lightMode, 1);
+		key.addKeyComponent(context.tex_map_mode, 2);
+		if (context.tex_map_mode == GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX) {
+			key.addKeyComponent(context.tex_proj_map_mode, 2);
+		} else {
+			key.addKeyComponent(0, 2);
+		}
+		key.addKeyComponent(context.tex_translate_x == 0f);
+		key.addKeyComponent(context.tex_translate_y == 0f);
+		key.addKeyComponent(context.tex_scale_x == 1f);
+		key.addKeyComponent(context.tex_scale_y == 1f);
+		key.addKeyComponent(context.tex_wrap_s, 1);
+		key.addKeyComponent(context.tex_wrap_t, 1);
+		key.addKeyComponent(context.textureFunc, 3);
+		key.addKeyComponent(context.textureAlphaUsed);
+		key.addKeyComponent(context.psm, 2);
+		key.addKeyComponent(isLogTraceEnabled);
+		key.addKeyComponent(DurationStatistics.collectStatistics);
+
+		return key;
 	}
 }

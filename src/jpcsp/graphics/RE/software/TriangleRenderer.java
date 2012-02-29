@@ -204,7 +204,7 @@ log.trace(String.format("Pixel (%d,%d), passed=%b, tex (%f, %f), source=0x%08X, 
     			startX = max(range.xMin, startX);
     			endX = min(range.xMax, endX);
     		}
-    		if (startX >= endX) {
+    		if (startX > endX) {
     			writerSkipEOL(prim.destinationWidth);
     		} else {
     			float u = prim.uStart;
@@ -285,7 +285,7 @@ log.trace(String.format("Pixel (%d,%d), passed=%b, tex (%f, %f), source=0x%08X, 
             	endX = min(range.xMax, endX);
         	}
 
-        	if (startX >= endX) {
+        	if (startX > endX) {
         		writerSkipEOL(prim.destinationWidth);
         	} else {
         		writerSkip(startX - prim.pxMin);

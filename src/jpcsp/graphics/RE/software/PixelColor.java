@@ -25,6 +25,22 @@ import static jpcsp.util.Utilities.round;
 public class PixelColor {
 	public static final int ONE = 0xFF;
 	public static final int ZERO = 0x00;
+	private static final int[][] preMultiply = new int[ONE + 1][ONE + 1];
+	private static final int[] preClamp = new int[ONE + ONE + 1];
+
+	static {
+		// Pre-computed multiplication of color components. Might be faster?
+		for (int c1 = 0; c1 <= ONE; c1++) {
+			for (int c2 = 0; c2 <= ONE; c2++) {
+				preMultiply[c1][c2] = (c1 * c2) / ONE;
+			}
+		}
+
+		// Pre-computed clamping of color component. Might be faster?
+		for (int c1 = 0; c1 < preClamp.length; c1++) {
+			preClamp[c1] = Math.min(c1, ONE);
+		}
+	}
 
 	public final static int getAlpha(int color) {
 		return color >>> 24;
@@ -67,7 +83,7 @@ public class PixelColor {
 	}
 
 	public final static int multiplyComponent(int component1, int component2) {
-		return (component1 * component2) / ONE;
+		return preMultiply[component1][component2];
 	}
 
 	public final static int multiply(int color1, int a2, int b2, int g2, int r2) {
@@ -140,7 +156,7 @@ public class PixelColor {
 
 	public final static int addComponent(int component1, int component2) {
 		// Add with clamp to ONE
-		return Math.min(component1 + component2, ONE);
+		return preClamp[component1 + component2];
 	}
 
 	public final static int add(int color1, int color2) {

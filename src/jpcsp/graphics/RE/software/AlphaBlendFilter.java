@@ -19,6 +19,7 @@ package jpcsp.graphics.RE.software;
 import static jpcsp.graphics.RE.software.BaseRenderer.mixIds;
 import static jpcsp.graphics.RE.software.PixelColor.ONE;
 import static jpcsp.graphics.RE.software.PixelColor.absBGR;
+import static jpcsp.graphics.RE.software.PixelColor.add;
 import static jpcsp.graphics.RE.software.PixelColor.addBGR;
 import static jpcsp.graphics.RE.software.PixelColor.getAlpha;
 import static jpcsp.graphics.RE.software.PixelColor.getColor;
@@ -46,6 +47,9 @@ public class AlphaBlendFilter {
 				if (context.blend_src == GeCommands.ALPHA_FIX && context.sfix == 0xFFFFFF &&
 				    context.blend_dst == GeCommands.ALPHA_FIX && context.dfix == 0x000000) {
 					filter = NopFilter.NOP;
+				} else if (context.blend_src == GeCommands.ALPHA_FIX && context.sfix == 0xFFFFFF &&
+						   context.blend_dst == GeCommands.ALPHA_FIX && context.dfix == 0xFFFFFF) {
+					filter = new BlendOperationAddDst();
 				} else {
 					filter = new BlendOperationAdd(sourceFactor, destinationFactor);
 				}
@@ -456,6 +460,28 @@ public class AlphaBlendFilter {
 		@Override
 		public int getFlags() {
 			return sourceFactor.getFlags() | destinationFactor.getFlags();
+		}
+	}
+
+	private static final class BlendOperationAddDst implements IPixelFilter {
+		@Override
+		public void filter(PixelState pixel) {
+			pixel.source = add(pixel.source, pixel.destination & 0x00FFFFFF);
+		}
+
+		@Override
+		public String toString() {
+			return String.format("BlendOperationAddDst");
+		}
+
+		@Override
+		public int getCompilationId() {
+			return 546161068;
+		}
+
+		@Override
+		public int getFlags() {
+			return 0;
 		}
 	}
 

@@ -89,6 +89,8 @@ public class RendererTemplate {
 	public static int blendEquation;
 	public static int blendSrc;
 	public static int blendDst;
+	public static int sfix;
+	public static int dfix;
 	public static boolean colorLogicOpFlagEnabled;
 	public static int logicOp;
 	public static int colorMask;
@@ -100,7 +102,6 @@ public class RendererTemplate {
 	public static boolean setVertexPrimaryColor;
 	public static boolean primaryColorSetGlobally;
 	public static boolean isTriangle;
-	public static int matFlags;
 	public static boolean matFlagAmbient;
 	public static boolean matFlagDiffuse;
 	public static boolean matFlagSpecular;
@@ -280,8 +281,11 @@ public class RendererTemplate {
     			rasterizer.getNextRange(range);
     			startX = max(range.xMin, startX);
     			endX = min(range.xMax, endX);
+        		if (isLogTraceEnabled) {
+        			VideoEngine.log.trace(String.format("Rasterizer line (%d-%d,%d)", startX, endX, pixelY));
+    			}
     		}
-    		if (isTriangle && startX >= endX) {
+    		if (isTriangle && startX > endX) {
     			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
     				fbIndex += prim.destinationWidth + renderer.imageWriterSkipEOL;
     				if (needDepthWrite || needDestinationDepthRead) {
@@ -320,6 +324,9 @@ public class RendererTemplate {
 	        	for (int x = startX; x <= endX; x++) {
 	        		if (isTriangle && !pixel.isInsideTriangle()) {
 	        			// Pixel not inside triangle, skip the pixel
+	            		if (isLogTraceEnabled) {
+	            			VideoEngine.log.trace(String.format("Pixel (%d,%d) outside triangle (%f, %f, %f)", x, pixelY, pixel.triangleWeight1, pixel.triangleWeight2, pixel.triangleWeight3));
+            			}
 	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 	        				fbIndex++;
 	        				if (needDepthWrite || needDestinationDepthRead) {
@@ -398,7 +405,7 @@ public class RendererTemplate {
 		            		//
 		            		// Material Flags
 		            		//
-		            		if (lightingFlagEnabled && !transform2D && matFlags != 0 && useVertexColor && isTriangle) {
+		            		if (lightingFlagEnabled && !transform2D && useVertexColor && isTriangle) {
 		            			if (matFlagAmbient) {
 		            				pixel.materialAmbient = pixelPrimaryColor;
 		            			}
@@ -1043,6 +1050,9 @@ public class RendererTemplate {
 			        					break;
 			        				case GeCommands.ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_EQUAL:
 			        					if (pixelSourceDepth != pixelDestinationDepth) {
+			    		            		if (isLogTraceEnabled) {
+			    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", pixelX, pixelY, pixelU, pixelV, pixelSource, pixelDestination, pixelPrimaryColor, pixelSecondaryColor, pixelSourceDepth, pixelDestinationDepth));
+			    	            			}
 			            					if (stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
 			            						pixelDestination = stencilOpZFail(pixelDestination, stencilRefAlpha);
 			            					}
@@ -1061,6 +1071,9 @@ public class RendererTemplate {
 			        					break;
 			        				case GeCommands.ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_ISNOT_EQUAL:
 			        					if (pixelSourceDepth == pixelDestinationDepth) {
+			    		            		if (isLogTraceEnabled) {
+			    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", pixelX, pixelY, pixelU, pixelV, pixelSource, pixelDestination, pixelPrimaryColor, pixelSecondaryColor, pixelSourceDepth, pixelDestinationDepth));
+			    	            			}
 			            					if (stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
 			            						pixelDestination = stencilOpZFail(pixelDestination, stencilRefAlpha);
 			            					}
@@ -1079,6 +1092,9 @@ public class RendererTemplate {
 			        					break;
 			        				case GeCommands.ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS:
 			        					if (pixelSourceDepth >= pixelDestinationDepth) {
+			    		            		if (isLogTraceEnabled) {
+			    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", pixelX, pixelY, pixelU, pixelV, pixelSource, pixelDestination, pixelPrimaryColor, pixelSecondaryColor, pixelSourceDepth, pixelDestinationDepth));
+			    	            			}
 			            					if (stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
 			            						pixelDestination = stencilOpZFail(pixelDestination, stencilRefAlpha);
 			            					}
@@ -1097,6 +1113,9 @@ public class RendererTemplate {
 			        					break;
 			        				case GeCommands.ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS_OR_EQUAL:
 			        					if (pixelSourceDepth > pixelDestinationDepth) {
+			    		            		if (isLogTraceEnabled) {
+			    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", pixelX, pixelY, pixelU, pixelV, pixelSource, pixelDestination, pixelPrimaryColor, pixelSecondaryColor, pixelSourceDepth, pixelDestinationDepth));
+			    	            			}
 			            					if (stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
 			            						pixelDestination = stencilOpZFail(pixelDestination, stencilRefAlpha);
 			            					}
@@ -1115,6 +1134,9 @@ public class RendererTemplate {
 			        					break;
 			        				case GeCommands.ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER:
 			        					if (pixelSourceDepth <= pixelDestinationDepth) {
+			    		            		if (isLogTraceEnabled) {
+			    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", pixelX, pixelY, pixelU, pixelV, pixelSource, pixelDestination, pixelPrimaryColor, pixelSecondaryColor, pixelSourceDepth, pixelDestinationDepth));
+			    	            			}
 			            					if (stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
 			            						pixelDestination = stencilOpZFail(pixelDestination, stencilRefAlpha);
 			            					}
@@ -1133,6 +1155,9 @@ public class RendererTemplate {
 			        					break;
 			        				case GeCommands.ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL:
 			        					if (pixelSourceDepth < pixelDestinationDepth) {
+			    		            		if (isLogTraceEnabled) {
+			    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", pixelX, pixelY, pixelU, pixelV, pixelSource, pixelDestination, pixelPrimaryColor, pixelSecondaryColor, pixelSourceDepth, pixelDestinationDepth));
+			    	            			}
 			            					if (stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
 			            						pixelDestination = stencilOpZFail(pixelDestination, stencilRefAlpha);
 			            					}
@@ -1160,7 +1185,13 @@ public class RendererTemplate {
 		            			int filteredDst;
 		            			switch (blendEquation) {
 			            			case GeCommands.ALPHA_SOURCE_BLEND_OPERATION_ADD:
-			            				if (blendSrc == GeCommands.ALPHA_SOURCE_ALPHA && blendDst == GeCommands.ALPHA_ONE_MINUS_SOURCE_ALPHA) {
+			            				if (blendSrc == GeCommands.ALPHA_FIX && sfix == 0xFFFFFF &&
+		            				        blendDst == GeCommands.ALPHA_FIX && dfix == 0x000000) {
+			            					// Nothing to do, this is a NOP
+			            				} else if (blendSrc == GeCommands.ALPHA_FIX && sfix == 0xFFFFFF &&
+			            				           blendDst == GeCommands.ALPHA_FIX && dfix == 0xFFFFFF) {
+			            					pixelSource = PixelColor.add(pixelSource, pixelDestination & 0x00FFFFFF);
+			            				} else if (blendSrc == GeCommands.ALPHA_SOURCE_ALPHA && blendDst == GeCommands.ALPHA_ONE_MINUS_SOURCE_ALPHA) {
 			            					// This is the most common case and can be optimized
 			            					int srcAlpha = pixelSource >>> 24;
 			            					if (srcAlpha == ZERO) {
@@ -1355,6 +1386,10 @@ public class RendererTemplate {
 			        					depthIndex++;
 			        					depthOffset = 0;
 			        				}
+		        				} else if (needDestinationDepthRead) {
+    	    	    				depthOffset++;
+    	    	    				depthIndex += depthOffset >> 1;
+    	    	    				depthOffset &= 1;
 		        				}
 		        			} else {
 			            		pixel.source = pixelSource;
