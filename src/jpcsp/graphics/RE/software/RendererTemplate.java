@@ -1255,6 +1255,7 @@ public class RendererTemplate {
 		            					} else {
 		            						pixelSource = (pixelSource & 0x00FFFFFF) | stencilRefAlpha;
 		            					}
+		            					break;
 		            				case GeCommands.SOP_INVERT_STENCIL_VALUE:
 		            					pixelSource = (pixelSource & 0x00FFFFFF) | ((~pixelDestination) & 0xFF000000);
 		            					break;
