@@ -99,7 +99,7 @@ public abstract class BaseRenderer implements IRenderer {
 	private static HashMap<Integer, Integer> filtersStatistics = new HashMap<Integer, Integer>();
 	private static HashMap<Integer, String> filterNames = new HashMap<Integer, String>();
 	protected boolean renderingInitialized;
-	protected CachedTexture cachedTexture;
+	public CachedTextureResampled cachedTexture;
 	protected boolean isTriangle;
 	public int colorTestRef;
 	public int colorTestMsk;
@@ -112,8 +112,8 @@ public abstract class BaseRenderer implements IRenderer {
 	public boolean primaryColorSetGlobally;
 	public float texTranslateX;
 	public float texTranslateY;
-	public float texScaleX;
-	public float texScaleY;
+	public float texScaleX = 1f;
+	public float texScaleY = 1f;
 	public int textureWidth;
 	public int textureHeight;
 	public int texEnvColorB;
@@ -124,9 +124,20 @@ public abstract class BaseRenderer implements IRenderer {
 	public boolean envMapDiffuseLightU;
 	public boolean envMapDiffuseLightV;
 	public float envMapShininess;
+	public int texMinFilter;
+	public int texMagFilter;
+	protected boolean needTextureWrapU;
+	protected boolean needTextureWrapV;
 	private static final int COMPILATION_ID_TRIANGLE = 940347503;
 	private static final int COMPILATION_ID_3D = 201511776;
 	private static final int COMPILATION_ID_LOG_TRACE = 275887992;
+	private static final int COMPILATION_ID_MAG_FILTER_LINEAR = 868761458;
+	private static final int COMPILATION_ID_NEED_WRAP_U = 432488042;
+	private static final int COMPILATION_ID_NEED_WRAP_V = 129018629;
+	private static final int COMPILATION_ID_NEED_TEX_TRANSLATE_X = 559266244;
+	private static final int COMPILATION_ID_NEED_TEX_TRANSLATE_Y = 272598427;
+	private static final int COMPILATION_ID_NEED_TEX_SCALE_X = 515484770;
+	private static final int COMPILATION_ID_NEED_TEX_SCALE_Y = 683121641;
 	private static final int[] COMPILATION_ID_PSM = new int[] {
 		149600676, // TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650
 		446086425, // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551
@@ -174,6 +185,8 @@ public abstract class BaseRenderer implements IRenderer {
 		envMapDiffuseLightU = from.envMapDiffuseLightU;
 		envMapDiffuseLightV = from.envMapDiffuseLightV;
 		envMapShininess = from.envMapShininess;
+		texMinFilter = from.texMinFilter;
+		texMagFilter = from.texMagFilter;
 	}
 
 	protected BaseRenderer() {
@@ -199,7 +212,7 @@ public abstract class BaseRenderer implements IRenderer {
 		return addr;
 	}
 
-	protected void init(GeContext context, CachedTexture texture, boolean useVertexTexture, boolean isTriangle) {
+	protected void init(GeContext context, CachedTextureResampled texture, boolean useVertexTexture, boolean isTriangle) {
 		this.cachedTexture = texture;
 		this.useVertexTexture = useVertexTexture;
 		this.isTriangle = isTriangle;
@@ -226,11 +239,12 @@ public abstract class BaseRenderer implements IRenderer {
 			screenOffsetY = context.offset_y;
 			zscale = context.zscale * 65535.f;
 			zpos = context.zpos * 65535.f;
-			texTranslateX = context.tex_translate_x;
-			texTranslateY = context.tex_translate_y;
-			texScaleX = context.tex_scale_x;
-			texScaleY = context.tex_scale_y;
-			if (context.tex_map_mode == GeCommands.TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP) {
+			if (context.tex_map_mode == GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV) {
+				texTranslateX = context.tex_translate_x;
+				texTranslateY = context.tex_translate_y;
+				texScaleX = context.tex_scale_x;
+				texScaleY = context.tex_scale_y;
+			} else if (context.tex_map_mode == GeCommands.TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP) {
 				envMapLightPosU = new float[4];
 				envMapLightPosV = new float[4];
 				Utilities.copy(envMapLightPosU, context.light_pos[context.tex_shade_u]);
@@ -253,6 +267,8 @@ public abstract class BaseRenderer implements IRenderer {
 		texEnvColorB = getColor(context.tex_env_color[2]);
 		texEnvColorG = getColor(context.tex_env_color[1]);
 		texEnvColorR = getColor(context.tex_env_color[0]);
+		texMinFilter = context.tex_min_filter;
+		texMagFilter = context.tex_mag_filter;
 
 		Memory mem = Memory.getInstance();
 		if (mem instanceof FastMemory) {
@@ -270,7 +286,7 @@ public abstract class BaseRenderer implements IRenderer {
 		zbp = getFrameBufferAddress(context.zbp);
 		numberFilters = 0;
 
-		prepareTextureReader(context, cachedTexture);
+		prepareTextureReader(context);
         prepareFilters(context);
 
         renderingInitialized = true;
@@ -280,7 +296,7 @@ public abstract class BaseRenderer implements IRenderer {
 		return context.lightFlags[l].isEnabled() ? "ON" : "OFF";
 	}
 
-	private void prepareTextureReader(GeContext context, CachedTexture texture) {
+	private void prepareTextureReader(GeContext context) {
         lightingFilter = Lighting.getLighting(context, context.view_uploaded_matrix);
 
         // Is the lighting model using the material color from the vertex color?
@@ -330,14 +346,14 @@ public abstract class BaseRenderer implements IRenderer {
     		int textureBufferWidth = VideoEngine.alignBufferWidth(context.texture_buffer_width[mipmapLevel], context.texture_storage);
     		int textureHeight = context.texture_height[mipmapLevel];
             int textureAddress = context.texture_base_pointer[mipmapLevel];
-        	textureAccess = texture;
-        	if (textureAccess == null) {
+        	if (cachedTexture == null) {
             	int[] clut32 = VideoEngine.getInstance().readClut32(mipmapLevel);
             	short[] clut16 = VideoEngine.getInstance().readClut16(mipmapLevel);
-	        	// Always request the whole buffer width, the texture will be cropped
-	        	// as required in the next step
+	        	// Always request the whole buffer width
 	            IMemoryReader imageReader = ImageReader.getImageReader(textureAddress, textureBufferWidth, textureHeight, textureBufferWidth, context.texture_storage, context.texture_swizzle, context.tex_clut_addr, context.tex_clut_mode, context.tex_clut_num_blocks, context.tex_clut_start, context.tex_clut_shift, context.tex_clut_mask, clut32, clut16);
 	            textureAccess = new RandomTextureAccessReader(imageReader, textureBufferWidth, textureHeight);
+        	} else {
+        		textureAccess = cachedTexture.getOriginalTexture();
         	}
 
         	// Avoid an access outside the texture area
@@ -463,7 +479,9 @@ public abstract class BaseRenderer implements IRenderer {
 	}
 
 	protected void postRender() {
-		rendererWriter.flush();
+		if (rendererWriter != null) {
+			rendererWriter.flush();
+		}
 
         if (captureEachPrimitive && State.captureGeNextFrame) {
         	// Capture the GE screen after each primitive
@@ -535,6 +553,27 @@ public abstract class BaseRenderer implements IRenderer {
 		if (log.isTraceEnabled()) {
 			filtersId = mixIds(filtersId, COMPILATION_ID_LOG_TRACE);
 		}
+		if (texMagFilter == GeCommands.TFLT_LINEAR) {
+			filtersId = mixIds(filtersId, COMPILATION_ID_MAG_FILTER_LINEAR);
+		}
+		if (needTextureWrapU) {
+			filtersId = mixIds(filtersId, COMPILATION_ID_NEED_WRAP_U);
+		}
+		if (needTextureWrapV) {
+			filtersId = mixIds(filtersId, COMPILATION_ID_NEED_WRAP_V);
+		}
+		if (texTranslateX != 0f) {
+			filtersId = mixIds(filtersId, COMPILATION_ID_NEED_TEX_TRANSLATE_X);
+		}
+		if (texTranslateY != 0f) {
+			filtersId = mixIds(filtersId, COMPILATION_ID_NEED_TEX_TRANSLATE_Y);
+		}
+		if (texScaleX != 1f) {
+			filtersId = mixIds(filtersId, COMPILATION_ID_NEED_TEX_SCALE_X);
+		}
+		if (texScaleY != 1f) {
+			filtersId = mixIds(filtersId, COMPILATION_ID_NEED_TEX_SCALE_Y);
+		}
 
 		return filtersId;
 	}
@@ -560,7 +599,7 @@ public abstract class BaseRenderer implements IRenderer {
 	}
 
 	protected void statisticsFilters(int numberPixels) {
-		if (!isLogInfoEnabled) {
+		if (!DurationStatistics.collectStatistics || !isLogInfoEnabled) {
 			return;
 		}
 

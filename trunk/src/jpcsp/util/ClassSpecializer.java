@@ -22,6 +22,7 @@ import static org.objectweb.asm.tree.AbstractInsnNode.TABLESWITCH_INSN;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.ListIterator;
@@ -111,8 +112,10 @@ public class ClassSpecializer {
 		StringWriter debugOutput = null;
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("Specializing class %s", name));
-			for (String key : variables.keySet()) {
-				log.trace(String.format("Variable %s=%s", key, variables.get(key)));
+			String[] variableNames = variables.keySet().toArray(new String[variables.size()]);
+			Arrays.sort(variableNames);
+			for (String variableName : variableNames) {
+				log.trace(String.format("Variable %s=%s", variableName, variables.get(variableName)));
 			}
 
 			debugOutput = new StringWriter();
@@ -195,7 +198,11 @@ public class ClassSpecializer {
 					if (insn == deleteUpToInsn) {
 						deleteUpToInsn = null;
 					} else {
-						lit.remove();
+						// Do not delete labels, they could be used as a target from a previous jump.
+						// Also keep line numbers for easier debugging.
+						if (insn.getType() != AbstractInsnNode.LABEL && insn.getType() != AbstractInsnNode.LINE) {
+							lit.remove();
+						}
 						continue;
 					}
 				}

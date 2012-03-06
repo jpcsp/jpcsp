@@ -34,10 +34,11 @@ public class VertexColorFilter {
 		IPixelFilter filter;
 
 		if (sameVertexColor) {
+			float[] c = (c3 != null ? c3 : c2);
         	if (log.isTraceEnabled()) {
-        		log.trace(String.format("Using ColorTextureFilter color=0x%08X", getColor(c1)));
+        		log.trace(String.format("Using ColorTextureFilter color=0x%08X", getColor(c)));
         	}
-			filter = new ColorTextureFilter(c1);
+			filter = new ColorTextureFilter(c);
 		} else  {
         	if (log.isTraceEnabled()) {
         		log.trace(String.format("Using VertexTriangleTextureFilter color1=0x%08X, color2=0x%08X, color3=0x%08X", getColor(c1), getColor(c2), getColor(c3)));

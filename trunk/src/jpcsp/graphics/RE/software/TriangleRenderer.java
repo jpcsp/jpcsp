@@ -58,7 +58,7 @@ public class TriangleRenderer extends BasePrimitiveRenderer {
 	 * @param context    the current GE context
 	 * @param texture    the texture to be used (or null if no texture used)
 	 */
-	public TriangleRenderer(GeContext context, CachedTexture texture, boolean useVertexTexture) {
+	public TriangleRenderer(GeContext context, CachedTextureResampled texture, boolean useVertexTexture) {
 		init(context, texture, useVertexTexture, true);
 	}
 

@@ -3595,17 +3595,12 @@ public class VideoEngine {
     }
 
     private void executeCommandTWRAP() {
-    	context.tex_wrap_s = normalArgument & 0xFF;
-    	context.tex_wrap_t = (normalArgument >> 8) & 0xFF;
+    	context.tex_wrap_s = normalArgument & 0x1;
+    	context.tex_wrap_t = (normalArgument >> 8) & 0x1;
 
-        if (context.tex_wrap_s > TWRAP_WRAP_MODE_CLAMP) {
-            log.warn(helper.getCommandString(TWRAP) + " unknown wrap mode " + context.tex_wrap_s);
-            context.tex_wrap_s = TWRAP_WRAP_MODE_REPEAT;
-        }
-        if (context.tex_wrap_t > TWRAP_WRAP_MODE_CLAMP) {
-            log.warn(helper.getCommandString(TWRAP) + " unknown wrap mode " + context.tex_wrap_t);
-            context.tex_wrap_t = TWRAP_WRAP_MODE_REPEAT;
-        }
+    	if (isLogDebugEnabled) {
+    		log.debug(String.format("sceGuTexWrap(%d, %d)", context.tex_wrap_s, context.tex_wrap_t));
+    	}
     }
 
     private void executeCommandTBIAS() {

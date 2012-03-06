@@ -138,6 +138,9 @@ public class FilterCompiler {
 		variables.put("textureFunc", new Integer(context.textureFunc));
 		variables.put("textureAlphaUsed", Boolean.valueOf(context.textureAlphaUsed));
 		variables.put("psm", new Integer(context.psm));
+		variables.put("texMagFilter", new Integer(context.tex_mag_filter));
+		variables.put("needTextureWrapU", Boolean.valueOf(renderer.needTextureWrapU));
+		variables.put("needTextureWrapV", Boolean.valueOf(renderer.needTextureWrapV));
 		variables.put("isLogTraceEnabled", Boolean.valueOf(log.isTraceEnabled()));
 		variables.put("collectStatistics", Boolean.valueOf(DurationStatistics.collectStatistics));
 

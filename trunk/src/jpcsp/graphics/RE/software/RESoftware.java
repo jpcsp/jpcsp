@@ -50,7 +50,7 @@ public class RESoftware extends BaseRenderingEngine {
     protected VertexState v5 = new VertexState();
     protected VertexState v6 = new VertexState();
     protected RendererExecutor rendererExecutor;
-    protected HashMap<Integer, CachedTexture> cachedTextures = new HashMap<Integer, CachedTexture>();
+    protected HashMap<Integer, CachedTextureResampled> cachedTextures = new HashMap<Integer, CachedTextureResampled>();
     protected int textureBufferWidth;
     protected static DurationStatistics drawArraysStatistics = new DurationStatistics("RESoftware drawArrays");
     public static DurationStatistics triangleRender3DStatistics = new DurationStatistics("RESoftware TriangleRender3D");
@@ -560,8 +560,8 @@ public class RESoftware extends BaseRenderingEngine {
 		render(spriteRenderer);
 	}
 
-	protected CachedTexture getCachedTexture() {
-		CachedTexture cachedTexture = cachedTextures.get(bindTexture);
+	protected CachedTextureResampled getCachedTexture() {
+		CachedTextureResampled cachedTexture = cachedTextures.get(bindTexture);
 		if (cachedTexture != null) {
 			cachedTexture.setClut();
 		}
@@ -570,7 +570,7 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	protected void drawArraysSprites(int first, int count) {
-		CachedTexture cachedTexture = getCachedTexture();
+		CachedTextureResampled cachedTexture = getCachedTexture();
 		SpriteRenderer spriteRenderer = new SpriteRenderer(context, cachedTexture, useVertexTexture);
 		boolean readTexture = context.textureFlag.isEnabled();
 		Memory mem = Memory.getInstance();
@@ -672,7 +672,7 @@ public class RESoftware extends BaseRenderingEngine {
 
 	protected void drawArraysTriangleStrips(int first, int count) {
 		Memory mem = Memory.getInstance();
-		CachedTexture cachedTexture = getCachedTexture();
+		CachedTextureResampled cachedTexture = getCachedTexture();
 		TriangleRenderer triangleRenderer = new TriangleRenderer(context, cachedTexture, useVertexTexture);
 		SpriteRenderer spriteRenderer = null;
 		VertexState tv1 = null;
@@ -727,7 +727,7 @@ public class RESoftware extends BaseRenderingEngine {
 
 	protected void drawArraysTriangles(int first, int count) {
 		Memory mem = Memory.getInstance();
-		CachedTexture cachedTexture = getCachedTexture();
+		CachedTextureResampled cachedTexture = getCachedTexture();
 		TriangleRenderer triangleRenderer = new TriangleRenderer(context, cachedTexture, useVertexTexture);
 		boolean readTexture = context.textureFlag.isEnabled();
 		for (int i = 0; i < count; i += 3) {
@@ -741,7 +741,7 @@ public class RESoftware extends BaseRenderingEngine {
 
 	protected void drawArraysTriangleFan(int first, int count) {
 		Memory mem = Memory.getInstance();
-		CachedTexture cachedTexture = getCachedTexture();
+		CachedTextureResampled cachedTexture = getCachedTexture();
 		TriangleRenderer triangleRenderer = new TriangleRenderer(context, cachedTexture, useVertexTexture);
 		VertexState tv1 = null;
 		VertexState tv2 = null;
@@ -950,7 +950,8 @@ public class RESoftware extends BaseRenderingEngine {
 			if (level == 0) {
 				IMemoryReader imageReader = ImageReader.getImageReader(context.texture_base_pointer[level], width, height, context.texture_buffer_width[level], internalFormat, false, 0, 0, 0, 0, 0, 0, null, null);
 				CachedTexture cachedTexture = CachedTexture.getCachedTexture(width, height, internalFormat, imageReader);
-				cachedTextures.put(bindTexture, cachedTexture);
+				CachedTextureResampled cachedTextureResampled = new CachedTextureResampled(cachedTexture);
+				cachedTextures.put(bindTexture, cachedTextureResampled);
 			}
 			cachedTextureStatistics.end();
 		}
@@ -968,7 +969,8 @@ public class RESoftware extends BaseRenderingEngine {
 				} else if (buffer instanceof ShortBuffer) {
 					cachedTexture = CachedTexture.getCachedTexture(textureBufferWidth, height, format, ((ShortBuffer) buffer).array(), buffer.arrayOffset(), textureSize >> 1);
 				}
-				cachedTextures.put(bindTexture, cachedTexture);
+				CachedTextureResampled cachedTextureResampled = new CachedTextureResampled(cachedTexture);
+				cachedTextures.put(bindTexture, cachedTextureResampled);
 			}
 			cachedTextureStatistics.end();
 		}

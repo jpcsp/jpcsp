@@ -36,7 +36,7 @@ public class SpriteRenderer extends BasePrimitiveRenderer {
 	private SpriteRenderer() {
 	}
 
-	public SpriteRenderer(GeContext context, CachedTexture texture, boolean useVertexTexture) {
+	public SpriteRenderer(GeContext context, CachedTextureResampled texture, boolean useVertexTexture) {
 		init(context, texture, useVertexTexture, false);
 	}
 
