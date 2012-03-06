@@ -61,9 +61,9 @@ public final class PixelState {
 	public float n1x, n1y, n1z;
 	public float n2x, n2y, n2z;
 	public float n3x, n3y, n3z;
-	public int c1a, c1b, c1g, c1r, c1;
+	public int c1a, c1b, c1g, c1r;
 	public int c2a, c2b, c2g, c2r;
-	public int c3a, c3b, c3g, c3r;
+	public int c3a, c3b, c3g, c3r, c3;
 	public final float[] textureMatrix = new float[16];
 	public final float[] viewMatrix = new float[16];
 	public final float[] modelViewMatrix = new float[16];
@@ -90,9 +90,9 @@ public final class PixelState {
 		n1x = from.n1x; n1y = from.n1y; n1z = from.n1z;
 		n2x = from.n2x; n2y = from.n2y; n2z = from.n2z;
 		n3x = from.n3x; n3y = from.n3y; n3z = from.n3z;
-		c1a = from.c1a; c1b = from.c1b; c1g = from.c1g; c1r = from.c1r; c1 = from.c1;
+		c1a = from.c1a; c1b = from.c1b; c1g = from.c1g; c1r = from.c1r;
 		c2a = from.c2a; c2b = from.c2b; c2g = from.c2g; c2r = from.c2r;
-		c3a = from.c3a; c3b = from.c3b; c3g = from.c3g; c3r = from.c3r;
+		c3a = from.c3a; c3b = from.c3b; c3g = from.c3g; c3r = from.c3r; c3 = from.c3;
 		arraycopy(from.textureMatrix, 0, textureMatrix, 0, textureMatrix.length);
 		arraycopy(from.viewMatrix, 0, viewMatrix, 0, viewMatrix.length);
 		arraycopy(from.modelViewMatrix, 0, modelViewMatrix, 0, modelViewMatrix.length);

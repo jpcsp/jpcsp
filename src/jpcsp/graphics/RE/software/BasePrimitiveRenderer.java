@@ -78,7 +78,7 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	}
 
 	@Override
-	protected void init(GeContext context, CachedTexture texture, boolean useVertexTexture, boolean isTriangle) {
+	protected void init(GeContext context, CachedTextureResampled texture, boolean useVertexTexture, boolean isTriangle) {
 		super.init(context, texture, useVertexTexture, isTriangle);
 
 		prim.pxMax = Integer.MIN_VALUE;
@@ -114,9 +114,6 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		super.initRendering(context);
 
 		pixel.primaryColor = getColor(context.vertexColor);
-		if (context.textureColorDoubled) {
-			pixel.primaryColor = ColorDoubling.doubleColor(pixel.primaryColor);
-		}
 		pixel.materialAmbient = getColor(context.mat_ambient);
 		pixel.materialDiffuse = getColor(context.mat_diffuse);
 		pixel.materialSpecular = getColor(context.mat_specular);
@@ -169,6 +166,9 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	}
 
 	private void setVertexTextures(GeContext context, float[] c1, float[] c2, float[] c3) {
+		textureWidth = context.texture_width[mipmapLevel];
+		textureHeight = context.texture_height[mipmapLevel];
+
 		// The rendering will be performed into the following ranges:
 		// 3D:
 		//   - x: [pxMin..pxMax] (min and max included)
@@ -226,6 +226,7 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	    	prim.uStep = (uEnd - prim.uStart) / prim.destinationWidth;
 	    	prim.vStep = (vEnd - prim.vStart) / prim.destinationHeight;
         } else if (c3 == null) {
+        	// 3D sprite
         	prim.uStart = prim.t1u;
         	float uEnd = prim.t2u;
         	prim.vStart = prim.t1v;
@@ -236,7 +237,6 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 
     	if (setVertexPrimaryColor) {
     		if (c3 != null) {
-    			pixel.c1 = getColor(c1);
 	    		pixel.c1a = getColor(c1[3]);
 	    		pixel.c1b = getColor(c1[2]);
 	    		pixel.c1g = getColor(c1[1]);
@@ -249,9 +249,15 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	    		pixel.c3b = getColor(c3[2]);
 	    		pixel.c3g = getColor(c3[1]);
 	    		pixel.c3r = getColor(c3[0]);
+    			pixel.c3 = getColor(c3);
     		}
         	if (primaryColorFilter >= 0) {
-        		sameVertexColor = Utilities.sameColor(c1, c2, c3);
+        		if (context.shadeModel == GeCommands.SHADE_TYPE_FLAT) {
+        			// Flat shade model: always use the color of the 3rd triangle vertex
+        			sameVertexColor = true;
+        		} else {
+        			sameVertexColor = Utilities.sameColor(c1, c2, c3);
+        		}
     			// For triangles, take the weighted color from the 3 vertices.
         		filters[primaryColorFilter] = VertexColorFilter.getVertexColorFilter(sameVertexColor, c1, c2, c3);
         	} else {
@@ -275,9 +281,43 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		needDepthWrite = !hasFlag(flags, DISCARDS_SOURCE_DEPTH);
 		needSourceDepthRead = hasFlag(flags, REQUIRES_SOURCE_DEPTH) || needDepthWrite;
 		needDestinationDepthRead = hasFlag(flags, REQUIRES_DESTINATION_DEPTH);
+		if (zbw <= 0) {
+			needDepthWrite = false;
+			needSourceDepthRead = false;
+			needDestinationDepthRead = false;
+		}
 		needTextureUV = hasFlag(flags, REQUIRES_TEXTURE_U_V);
+		if (transform2D) {
+			needTextureWrapU = prim.tuMin < 0 || prim.tuMax >= context.texture_buffer_width[mipmapLevel];
+			needTextureWrapV = prim.tvMin < 0 || prim.tvMax >= context.texture_height[mipmapLevel];
+		} else {
+			if (context.tex_map_mode != GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV) {
+				needTextureWrapU = true;
+				needTextureWrapV = true;
+			} else {
+				float tuMin, tuMax;
+				float tvMin, tvMax;
+				if (isTriangle) {
+					tuMin = Utilities.min(prim.t1u, Utilities.min(prim.t2u, prim.t3u));
+					tuMax = Utilities.max(prim.t1u, Utilities.max(prim.t2u, prim.t3u));
+					tvMin = Utilities.min(prim.t1v, Utilities.min(prim.t2v, prim.t3v));
+					tvMax = Utilities.max(prim.t1v, Utilities.max(prim.t2v, prim.t3v));
+				} else {
+					tuMin = Utilities.min(prim.t1u, prim.t2u);
+					tuMax = Utilities.max(prim.t1u, prim.t2u);
+					tvMin = Utilities.min(prim.t1v, prim.t2v);
+					tvMax = Utilities.max(prim.t1v, prim.t2v);
+				}
+				tuMin = tuMin * texScaleX + texTranslateX;
+				tuMax = tuMax * texScaleX + texTranslateX;
+				tvMin = tvMin * texScaleY + texTranslateY;
+				tvMax = tvMax * texScaleY + texTranslateY;
+				needTextureWrapU = tuMin < 0f || tuMax >= 0.99999f;
+				needTextureWrapV = tvMin < 0f || tvMax >= 0.99999f;
+			}
+		}
 
-    	prepareWriters();
+		prepareWriters();
 
     	int filtersId = getFiltersId();
     	if (filtersId != compiledRendererId || compiledRenderer == null) {
@@ -402,7 +442,9 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	private void prepareWriters() {
         fbAddress = getTextureAddress(fbp, prim.pxMin, prim.pyMin, fbw, psm);
     	depthAddress = getTextureAddress(zbp, prim.pxMin, prim.pyMin, zbw, depthBufferPixelFormat);
-    	rendererWriter = RendererWriter.getRendererWriter(fbAddress, fbw, psm, depthAddress, zbw, depthBufferPixelFormat, needDestinationDepthRead, needDepthWrite);
+    	if (!RendererTemplate.isRendererWriterNative(memInt, psm)) {
+    		rendererWriter = RendererWriter.getRendererWriter(fbAddress, fbw, psm, depthAddress, zbw, depthBufferPixelFormat, needDestinationDepthRead, needDepthWrite);
+    	}
         imageWriterSkipEOL = fbw - prim.destinationWidth;
         depthWriterSkipEOL = zbw - prim.destinationWidth;
 	}
@@ -668,6 +710,8 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		key.addKeyComponent(context.textureFunc, 3);
 		key.addKeyComponent(context.textureAlphaUsed);
 		key.addKeyComponent(context.psm, 2);
+		key.addKeyComponent(context.tex_min_filter, 3);
+		key.addKeyComponent(context.tex_mag_filter, 1);
 		key.addKeyComponent(isLogTraceEnabled);
 		key.addKeyComponent(DurationStatistics.collectStatistics);
 

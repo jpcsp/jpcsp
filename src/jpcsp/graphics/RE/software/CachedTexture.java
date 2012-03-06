@@ -243,7 +243,7 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 	 *
 	 * A specialized class when the width is a power of 2 (faster).
 	 */
-	private static class CachedTexturePow2 extends CachedTexture {
+	protected static class CachedTexturePow2 extends CachedTexture {
 		public CachedTexturePow2(int width, int height, int pixelFormat) {
 			super(width, height, pixelFormat, 0);
 		}

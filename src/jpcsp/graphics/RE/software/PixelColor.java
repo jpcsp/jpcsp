@@ -150,6 +150,22 @@ public class PixelColor {
 		return getColorBGR(b, g, r);
 	}
 
+	public final static int multiply(int color, float factor) {
+		// Handle common and simple cases first
+		if (color == ZERO || factor <= 0.f) {
+			return ZERO;
+		}
+		if (factor == 1.f) {
+			return color;
+		}
+
+		int a = multiplyComponent(getAlpha(color), factor);
+		int b = multiplyComponent(getBlue(color), factor);
+		int g = multiplyComponent(getGreen(color), factor);
+		int r = multiplyComponent(getRed(color), factor);
+		return getColor(a, b, g, r);
+	}
+
 	public final static int multiplyComponent(int component, float factor) {
 		return Math.max(ZERO, Math.min(ONE, round(component * factor)));
 	}
