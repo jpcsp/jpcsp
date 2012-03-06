@@ -149,7 +149,7 @@ public class IoFileMgrForUser extends HLEModule {
     private final static String idPurpose = "IOFileManager-File";
 
     protected static enum IoOperation {
-        open(5), close(1), seek, ioctl(2), remove, rename, mkdir,
+        open(5), close(1), seek, ioctl(2), remove, rename, mkdir, dread,
         // Duration of read operation: approx. 4 ms per 0x10000 bytes (tested on real PSP)
         read(4, 0x10000),
         // Duration of write operation: approx. 5 ms per 0x10000 bytes
@@ -2674,7 +2674,7 @@ public class IoFileMgrForUser extends HLEModule {
         for (IIoListener ioListener : ioListeners) {
             ioListener.sceIoDread(result, id, dirent_addr);
         }
-        delayIoOperation(IoOperation.read);
+        delayIoOperation(IoOperation.dread);
         return result;
     }
 
