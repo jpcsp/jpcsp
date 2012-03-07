@@ -298,4 +298,8 @@ public class PixelColor {
 	public final static int setBGR(int color, int bgr) {
 		return (color & 0xFF000000) | bgr;
 	}
+
+	public final static int doubleColor(int color) {
+		return addBGR(color, color) | (color & 0xFF000000);
+	}
 }

@@ -20,6 +20,7 @@ import static jpcsp.util.Utilities.sleep;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import jpcsp.State;
 import jpcsp.graphics.VideoEngine;
 
 /**
@@ -58,12 +59,12 @@ public class RendererExecutor {
 	}
 
 	public void render(IRenderer renderer) {
-		if (numberThreads > 0) {
+		if (numberThreads > 0 && !State.captureGeNextFrame) {
 			// Queue for rendering in a ThreadRenderer thread
 			renderer = renderer.duplicate();
 			renderersQueue.add(renderer);
 		} else {
-			// Threads are disabled, render immediately
+			// Threads are disabled or capture is active, render immediately
 			renderer.render();
 		}
 	}

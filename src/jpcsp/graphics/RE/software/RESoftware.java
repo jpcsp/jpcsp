@@ -572,7 +572,7 @@ public class RESoftware extends BaseRenderingEngine {
 	protected void drawArraysSprites(int first, int count) {
 		CachedTextureResampled cachedTexture = getCachedTexture();
 		SpriteRenderer spriteRenderer = new SpriteRenderer(context, cachedTexture, useVertexTexture);
-		boolean readTexture = context.textureFlag.isEnabled();
+		boolean readTexture = context.textureFlag.isEnabled() && !context.clearMode;
 		Memory mem = Memory.getInstance();
 		for (int i = first; i < count - 1; i += 2) {
 			int addr1 = context.vinfo.getAddress(mem, i);
@@ -679,7 +679,7 @@ public class RESoftware extends BaseRenderingEngine {
 		VertexState tv2 = null;
 		VertexState tv3 = null;
 		VertexState tv4 = v1;
-		boolean readTexture = context.textureFlag.isEnabled();
+		boolean readTexture = context.textureFlag.isEnabled() && !context.clearMode;
 		for (int i = 0; i < count; i++) {
 			readVertex(mem, first + i, tv4, readTexture);
 			if (tv3 != null) {
@@ -729,7 +729,7 @@ public class RESoftware extends BaseRenderingEngine {
 		Memory mem = Memory.getInstance();
 		CachedTextureResampled cachedTexture = getCachedTexture();
 		TriangleRenderer triangleRenderer = new TriangleRenderer(context, cachedTexture, useVertexTexture);
-		boolean readTexture = context.textureFlag.isEnabled();
+		boolean readTexture = context.textureFlag.isEnabled() && !context.clearMode;
 		for (int i = 0; i < count; i += 3) {
 			readVertex(mem, first + i, v1, readTexture);
 			readVertex(mem, first + i + 1, v2, readTexture);
@@ -746,7 +746,7 @@ public class RESoftware extends BaseRenderingEngine {
 		VertexState tv1 = null;
 		VertexState tv2 = null;
 		VertexState tv3 = v1;
-		boolean readTexture = context.textureFlag.isEnabled();
+		boolean readTexture = context.textureFlag.isEnabled() && !context.clearMode;
 		for (int i = 0; i < count; i++) {
 			readVertex(mem, first + i, tv3, readTexture);
 			if (tv2 != null) {

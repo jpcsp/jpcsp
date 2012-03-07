@@ -28,20 +28,9 @@ import static jpcsp.util.Utilities.vectorMult34;
  *
  */
 public final class PixelState {
-	public int source;
-	public int destination;
-	public int sourceDepth;
-	public int destinationDepth;
-	public int x;
-	public int y;
-	public int primaryColor;
-	public int secondaryColor;
 	public int materialAmbient;
 	public int materialDiffuse;
 	public int materialSpecular;
-	public float u;
-	public float v;
-	public float q;
 	public boolean hasNormal;
 	private boolean computedV;
 	private boolean computedN;
@@ -65,7 +54,6 @@ public final class PixelState {
 	public int c2a, c2b, c2g, c2r;
 	public int c3a, c3b, c3g, c3r, c3;
 	public final float[] textureMatrix = new float[16];
-	public final float[] viewMatrix = new float[16];
 	public final float[] modelViewMatrix = new float[16];
 	public final float[] modelViewProjectionMatrix = new float[16];
 	public final float[] normalMatrix = new float[16];
@@ -75,11 +63,7 @@ public final class PixelState {
 	public float triangleWeight2;
 	public float triangleWeight3;
 
-	public boolean filterPassed;
-	public IPixelFilter filterOnFailed;
-
 	protected void copy(PixelState from) {
-		primaryColor = from.primaryColor;
 		materialAmbient = from.materialAmbient;
 		materialDiffuse = from.materialDiffuse;
 		materialSpecular = from.materialSpecular;
@@ -94,10 +78,11 @@ public final class PixelState {
 		c2a = from.c2a; c2b = from.c2b; c2g = from.c2g; c2r = from.c2r;
 		c3a = from.c3a; c3b = from.c3b; c3g = from.c3g; c3r = from.c3r; c3 = from.c3;
 		arraycopy(from.textureMatrix, 0, textureMatrix, 0, textureMatrix.length);
-		arraycopy(from.viewMatrix, 0, viewMatrix, 0, viewMatrix.length);
 		arraycopy(from.modelViewMatrix, 0, modelViewMatrix, 0, modelViewMatrix.length);
 		arraycopy(from.modelViewProjectionMatrix, 0, modelViewProjectionMatrix, 0, modelViewProjectionMatrix.length);
-		arraycopy(from.normalMatrix, 0, normalMatrix, 0, normalMatrix.length);
+		if (hasNormal) {
+			arraycopy(from.normalMatrix, 0, normalMatrix, 0, normalMatrix.length);
+		}
 	}
 
 	public float getTriangleWeightedValue(float value1, float value2, float value3) {
@@ -122,9 +107,6 @@ public final class PixelState {
 	}
 
 	public void newPixel2D() {
-		filterPassed = true;
-		filterOnFailed = null;
-
 		numberPixels++;
 	}
 

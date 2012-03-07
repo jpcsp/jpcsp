@@ -17,27 +17,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE.software;
 
 /**
+ * A place holder for one color (in ABGR8888 format) and
+ * one depth value (16-bit unsigned value).
+ *
  * @author gid15
  *
  */
-public class NopFilter implements IPixelFilter {
-	public static final IPixelFilter NOP = new NopFilter();
-
-	private NopFilter() {
-	}
-
-	@Override
-	public void filter(PixelState pixel) {
-		// Nothing to do
-	}
-
-	@Override
-	public int getCompilationId() {
-		return 514309563;
-	}
-
-	@Override
-	public int getFlags() {
-		return 0;
-	}
+public class ColorDepth {
+	public int color;
+	public int depth;
 }

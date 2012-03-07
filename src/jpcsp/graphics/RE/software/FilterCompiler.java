@@ -29,6 +29,7 @@ import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.util.ClassSpecializer;
 import jpcsp.util.DurationStatistics;
+import jpcsp.util.LongLongKey;
 
 /**
  * @author gid15
@@ -39,7 +40,8 @@ import jpcsp.util.DurationStatistics;
 public class FilterCompiler {
 	private static Logger log = VideoEngine.log;
 	private static FilterCompiler instance;
-	private HashMap<Integer, RendererTemplate> compiledRenderers = new HashMap<Integer, RendererTemplate>();
+	private HashMap<LongLongKey, RendererTemplate> compiledRenderers = new HashMap<LongLongKey, RendererTemplate>();
+	private static int classNameId = 0;
 
 	public static FilterCompiler getInstance() {
 		if (instance == null) {
@@ -51,7 +53,7 @@ public class FilterCompiler {
 	private FilterCompiler() {
 	}
 
-	public RendererTemplate getCompiledRenderer(BasePrimitiveRenderer renderer, int id, GeContext context) {
+	public RendererTemplate getCompiledRenderer(BasePrimitiveRenderer renderer, LongLongKey id, GeContext context) {
 		RendererTemplate compiledRenderer = compiledRenderers.get(id);
 		if (compiledRenderer == null) {
 			compiledRenderer = compileRenderer(renderer, id, context);
@@ -63,16 +65,13 @@ public class FilterCompiler {
 		return compiledRenderer;
 	}
 
-	private static String getCompiledRendererClassName(int id) {
-		if (id < 0) {
-			return String.format("RendererM%d", -id);
-		}
-		return String.format("Renderer%d", id);
+	private static String getNewCompiledRendererClassName() {
+		return String.format("Renderer%d", classNameId++);
 	}
 
-	private RendererTemplate compileRenderer(BasePrimitiveRenderer renderer, int id, GeContext context) {
+	private RendererTemplate compileRenderer(BasePrimitiveRenderer renderer, LongLongKey id, GeContext context) {
 		if (log.isInfoEnabled()) {
-			log.info(String.format("Compiling Renderer %d", id));
+			log.info(String.format("Compiling Renderer %s", id));
 		}
 
 		HashMap<String, Object> variables = new HashMap<String, Object>();
@@ -144,7 +143,7 @@ public class FilterCompiler {
 		variables.put("isLogTraceEnabled", Boolean.valueOf(log.isTraceEnabled()));
 		variables.put("collectStatistics", Boolean.valueOf(DurationStatistics.collectStatistics));
 
-		String specializedClassName = getCompiledRendererClassName(id);
+		String specializedClassName = getNewCompiledRendererClassName();
 		ClassSpecializer cs = new ClassSpecializer();
 		Class<?> specializedClass = cs.specialize(specializedClassName, RendererTemplate.class, variables);
 		RendererTemplate compiledRenderer = null;

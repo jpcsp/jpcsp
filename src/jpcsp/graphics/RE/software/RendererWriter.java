@@ -75,20 +75,20 @@ public class RendererWriter {
 		}
 
 		@Override
-		public void readCurrent(PixelState pixel) {
-			pixel.destination = fbWriter.readCurrent();
-			pixel.destinationDepth = depthWriter.readCurrent();
+		public void readCurrent(ColorDepth colorDepth) {
+			colorDepth.color = fbWriter.readCurrent();
+			colorDepth.depth = depthWriter.readCurrent();
 		}
 
 		@Override
-		public void writeNext(PixelState pixel) {
-			fbWriter.writeNext(pixel.source);
-			depthWriter.writeNext(pixel.sourceDepth);
+		public void writeNext(ColorDepth colorDepth) {
+			fbWriter.writeNext(colorDepth.color);
+			depthWriter.writeNext(colorDepth.depth);
 		}
 
 		@Override
-		public void writeNextColor(PixelState pixel) {
-			fbWriter.writeNext(pixel.source);
+		public void writeNextColor(int color) {
+			fbWriter.writeNext(color);
 			depthWriter.skip(1);
 		}
 
@@ -113,18 +113,18 @@ public class RendererWriter {
 		}
 
 		@Override
-		public void readCurrent(PixelState pixel) {
-			pixel.destination = fbWriter.readCurrent();
+		public void readCurrent(ColorDepth colorDepth) {
+			colorDepth.color = fbWriter.readCurrent();
 		}
 
 		@Override
-		public void writeNext(PixelState pixel) {
-			fbWriter.writeNext(pixel.source);
+		public void writeNext(ColorDepth colorDepth) {
+			fbWriter.writeNext(colorDepth.color);
 		}
 
 		@Override
-		public void writeNextColor(PixelState pixel) {
-			fbWriter.writeNext(pixel.source);
+		public void writeNextColor(int color) {
+			fbWriter.writeNext(color);
 		}
 
 		@Override
@@ -152,12 +152,12 @@ public class RendererWriter {
 		}
 
 		@Override
-		public void readCurrent(PixelState pixel) {
-			pixel.destination = memInt[fbIndex];
+		public void readCurrent(ColorDepth colorDepth) {
+			colorDepth.color = memInt[fbIndex];
 			if (depthOffset == 0) {
-				pixel.destinationDepth = memInt[depthIndex] & 0x0000FFFF;
+				colorDepth.depth = memInt[depthIndex] & 0x0000FFFF;
 			} else {
-				pixel.destinationDepth = memInt[depthIndex] >>> 16;
+				colorDepth.depth = memInt[depthIndex] >>> 16;
 			}
 		}
 
@@ -172,19 +172,19 @@ public class RendererWriter {
 		}
 
 		@Override
-		public void writeNext(PixelState pixel) {
-			memInt[fbIndex] = pixel.source;
+		public void writeNext(ColorDepth colorDepth) {
+			memInt[fbIndex] = colorDepth.color;
 			if (depthOffset == 0) {
-				memInt[depthIndex] = (memInt[depthIndex] & 0xFFFF0000) | (pixel.sourceDepth & 0x0000FFFF);
+				memInt[depthIndex] = (memInt[depthIndex] & 0xFFFF0000) | (colorDepth.depth & 0x0000FFFF);
 			} else {
-				memInt[depthIndex] = (memInt[depthIndex] & 0x0000FFFF) | (pixel.sourceDepth << 16);
+				memInt[depthIndex] = (memInt[depthIndex] & 0x0000FFFF) | (colorDepth.depth << 16);
 			}
 			next();
 	 	}
 
 		@Override
-		public void writeNextColor(PixelState pixel) {
-			memInt[fbIndex] = pixel.source;
+		public void writeNextColor(int color) {
+			memInt[fbIndex] = color;
 			next();
 		}
 
@@ -215,8 +215,8 @@ public class RendererWriter {
 		}
 
 		@Override
-		public void readCurrent(PixelState pixel) {
-			pixel.destination = memInt[fbIndex];
+		public void readCurrent(ColorDepth colorDepth) {
+			colorDepth.color = memInt[fbIndex];
 		}
 
 		private void next() {
@@ -230,19 +230,19 @@ public class RendererWriter {
 		}
 
 		@Override
-		public void writeNext(PixelState pixel) {
-			memInt[fbIndex] = pixel.source;
+		public void writeNext(ColorDepth colorDepth) {
+			memInt[fbIndex] = colorDepth.color;
 			if (depthOffset == 0) {
-				memInt[depthIndex] = (memInt[depthIndex] & 0xFFFF0000) | (pixel.sourceDepth & 0x0000FFFF);
+				memInt[depthIndex] = (memInt[depthIndex] & 0xFFFF0000) | (colorDepth.depth & 0x0000FFFF);
 			} else {
-				memInt[depthIndex] = (memInt[depthIndex] & 0x0000FFFF) | (pixel.sourceDepth << 16);
+				memInt[depthIndex] = (memInt[depthIndex] & 0x0000FFFF) | (colorDepth.depth << 16);
 			}
 			next();
 	 	}
 
 		@Override
-		public void writeNextColor(PixelState pixel) {
-			memInt[fbIndex] = pixel.source;
+		public void writeNextColor(int color) {
+			memInt[fbIndex] = color;
 			next();
 		}
 
@@ -273,12 +273,12 @@ public class RendererWriter {
 		}
 
 		@Override
-		public void readCurrent(PixelState pixel) {
-			pixel.destination = memInt[fbIndex];
+		public void readCurrent(ColorDepth colorDepth) {
+			colorDepth.color = memInt[fbIndex];
 			if (depthOffset == 0) {
-				pixel.destinationDepth = memInt[depthIndex] & 0x0000FFFF;
+				colorDepth.depth = memInt[depthIndex] & 0x0000FFFF;
 			} else {
-				pixel.destinationDepth = memInt[depthIndex] >>> 16;
+				colorDepth.depth = memInt[depthIndex] >>> 16;
 			}
 		}
 
@@ -293,14 +293,14 @@ public class RendererWriter {
 		}
 
 		@Override
-		public void writeNext(PixelState pixel) {
-			memInt[fbIndex] = pixel.source;
+		public void writeNext(ColorDepth colorDepth) {
+			memInt[fbIndex] = colorDepth.color;
 			next();
 	 	}
 
 		@Override
-		public void writeNextColor(PixelState pixel) {
-			memInt[fbIndex] = pixel.source;
+		public void writeNextColor(int color) {
+			memInt[fbIndex] = color;
 			next();
 		}
 
@@ -327,19 +327,19 @@ public class RendererWriter {
 		}
 
 		@Override
-		public void readCurrent(PixelState pixel) {
-			pixel.destination = memInt[fbIndex];
+		public void readCurrent(ColorDepth colorDepth) {
+			colorDepth.color = memInt[fbIndex];
 		}
 
 		@Override
-		public void writeNext(PixelState pixel) {
-			memInt[fbIndex] = pixel.source;
+		public void writeNext(ColorDepth colorDepth) {
+			memInt[fbIndex] = colorDepth.color;
 			fbIndex++;
 	 	}
 
 		@Override
-		public void writeNextColor(PixelState pixel) {
-			memInt[fbIndex] = pixel.source;
+		public void writeNextColor(int color) {
+			memInt[fbIndex] = color;
 			fbIndex++;
 		}
 

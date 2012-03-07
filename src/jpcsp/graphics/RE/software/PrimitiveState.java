@@ -74,14 +74,14 @@ public class PrimitiveState {
 		denomInverted = 1.f / denom;
 	}
 
-	public void computeTriangleWeights(PixelState pixel) {
+	public void computeTriangleWeights(PixelState pixel, int x, int y) {
 		// Based on http://en.wikipedia.org/wiki/Barycentric_coordinates_%28mathematics%29
 		//
 		// All the values independent of the current pixel haven been pre-computed
 		// in preComputeTriangleWeights().
 		//
-		float diff03x = pixel.x - p3x + 0.01f;
-		float diff03y = pixel.y - p3y;
+		float diff03x = x - p3x + 0.01f;
+		float diff03y = y - p3y;
 		pixel.triangleWeight1 = (diff23y * diff03x + diff32x * diff03y) * denomInverted;
 		pixel.triangleWeight2 = (diff13x * diff03y - diff13y * diff03x) * denomInverted;
 		pixel.triangleWeight3 = 1.f - (pixel.triangleWeight1 + pixel.triangleWeight2);

@@ -871,4 +871,58 @@ public class Utilities {
 
 		return true;
 	}
+
+	/**
+	 * Transform a pixel coordinate (floating-point value "u" or "v") into
+	 * a texel coordinate (integer value to access the texture).
+	 *
+	 * The texel coordinate is calculated by truncating the floating point value,
+	 * not by rounding it. Otherwise transition problems occur at the borders.
+	 * E.g. if a texture has a width of 64, valid texel coordinates range
+	 * from 0 to 63. 64 is already outside of the texture and should not be
+	 * generated when approaching the border to the texture.
+	 *
+	 * @param coordinate     the pixel coordinate
+	 * @return               the texel coordinate
+	 */
+	public static final int pixelToTexel(float coordinate) {
+		return (int) coordinate;
+	}
+
+	/**
+	 * Wrap the value to the range [0..1[ (1 is excluded).
+	 *
+	 * E.g.
+	 *    value == 4.0 -> return 0.0
+	 *    value == 4.1 -> return 0.1
+	 *    value == 4.9 -> return 0.9
+	 *    value == -4.0 -> return 0.0
+	 *    value == -4.1 -> return 0.9 (and not 0.1)
+	 *    value == -4.9 -> return 0.1 (and not 0.9)
+	 *
+	 * @param value   the value to be wrapped
+	 * @return        the wrapped value in the range [0..1[ (1 is excluded)
+	 */
+	public static float wrap(float value) {
+		if (value >= 0.f) {
+			// value == 4.0 -> return 0.0
+			// value == 4.1 -> return 0.1
+			// value == 4.9 -> return 0.9
+			return value - (int) value;
+		}
+
+		// value == -4.0 -> return 0.0
+		// value == -4.1 -> return 0.9
+		// value == -4.9 -> return 0.1
+		// value == -1e-8 -> return 0.0
+		float wrappedValue = value - (float) Math.floor(value);
+		if (wrappedValue >= 1.f) {
+			wrappedValue -= 1.f;
+		}
+		return wrappedValue;
+	}
+
+	public static int wrap(float value, int valueMask) {
+		return pixelToTexel(value) & valueMask;
+	}
 }
