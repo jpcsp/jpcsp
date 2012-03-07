@@ -17,22 +17,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE.software;
 
 /**
+ * A place holder for a primary and a secondary colors, both in ABGR8888 format.
+ *
  * @author gid15
  *
  */
-public class NeverPassFilter implements IPixelFilter {
-	@Override
-	public void filter(PixelState pixel) {
-		pixel.filterPassed = false;
-	}
-
-	@Override
-	public int getCompilationId() {
-		return 679240527;
-	}
-
-	@Override
-	public int getFlags() {
-		return 0;
-	}
+public class PrimarySecondaryColors {
+	public int primaryColor;
+	public int secondaryColor;
 }

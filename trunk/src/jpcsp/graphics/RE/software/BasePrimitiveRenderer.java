@@ -16,10 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE.software;
 
-import static jpcsp.graphics.RE.software.IPixelFilter.DISCARDS_SOURCE_DEPTH;
-import static jpcsp.graphics.RE.software.IPixelFilter.REQUIRES_DESTINATION_DEPTH;
-import static jpcsp.graphics.RE.software.IPixelFilter.REQUIRES_SOURCE_DEPTH;
-import static jpcsp.graphics.RE.software.IPixelFilter.REQUIRES_TEXTURE_U_V;
+import static jpcsp.graphics.RE.software.PixelColor.doubleColor;
 import static jpcsp.graphics.RE.software.PixelColor.getColor;
 import static jpcsp.util.Utilities.invertMatrix3x3;
 import static jpcsp.util.Utilities.matrixMult;
@@ -60,8 +57,11 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	protected boolean needDestinationDepthRead;
 	protected boolean needDepthWrite;
 	protected boolean needTextureUV;
+	protected boolean needTextureWrapU;
+	protected boolean needTextureWrapV;
 	public int fbAddress;
 	public int depthAddress;
+    public IRendererWriter rendererWriter;
 
 	protected void copy(BasePrimitiveRenderer from) {
 		super.copy(from);
@@ -73,8 +73,11 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		needDestinationDepthRead = from.needDestinationDepthRead;
 		needDepthWrite = from.needDepthWrite;
 		needTextureUV = from.needTextureUV;
+		needTextureWrapU = from.needTextureWrapU;
+		needTextureWrapV = from.needTextureWrapV;
 		fbAddress = from.fbAddress;
 		depthAddress = from.depthAddress;
+		rendererWriter = from.rendererWriter;
 	}
 
 	@Override
@@ -89,14 +92,6 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		prim.pzMin = Integer.MAX_VALUE;
 
 		if (!transform2D) {
-			if (context.tex_map_mode == GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX) {
-				// Copy the Texture matrix
-				System.arraycopy(context.texture_uploaded_matrix, 0, pixel.textureMatrix, 0, pixel.textureMatrix.length);
-			}
-
-			// Copy the View matrix
-			System.arraycopy(context.view_uploaded_matrix, 0, pixel.viewMatrix, 0, pixel.viewMatrix.length);
-
 			// Pre-compute the Model-View matrix
 			matrixMult(pixel.modelViewMatrix, context.view_uploaded_matrix, context.model_uploaded_matrix);
 
@@ -113,26 +108,32 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 
 		super.initRendering(context);
 
-		pixel.primaryColor = getColor(context.vertexColor);
 		pixel.materialAmbient = getColor(context.mat_ambient);
 		pixel.materialDiffuse = getColor(context.mat_diffuse);
 		pixel.materialSpecular = getColor(context.mat_specular);
 
 		if (!transform2D) {
-			// Pre-compute the matrix to transform a normal to the eye coordinates
-			// See http://www.lighthouse3d.com/tutorials/glsl-tutorial/the-normal-matrix/
-			float[] invertedModelViewMatrix = new float[16];
-			if (invertMatrix3x3(invertedModelViewMatrix, pixel.modelViewMatrix)) {
-				transposeMatrix3x3(pixel.normalMatrix, invertedModelViewMatrix);
-			} else {
-				// What is using the PSP in this case? Assume it just takes the Model-View matrix
-				System.arraycopy(pixel.modelViewMatrix, 0, pixel.normalMatrix, 0, pixel.normalMatrix.length);
-				if (isLogDebugEnabled) {
-					log.debug(String.format("ModelView matrix cannot be inverted, taking the Model-View matrix itself!"));
-				}
+			if (context.tex_map_mode == GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX) {
+				// Copy the Texture matrix
+				System.arraycopy(context.texture_uploaded_matrix, 0, pixel.textureMatrix, 0, pixel.textureMatrix.length);
 			}
 
 			pixel.hasNormal = context.vinfo.normal != 0;
+
+			if (pixel.hasNormal) {
+				// Pre-compute the matrix to transform a normal to the eye coordinates
+				// See http://www.lighthouse3d.com/tutorials/glsl-tutorial/the-normal-matrix/
+				float[] invertedModelViewMatrix = new float[16];
+				if (invertMatrix3x3(invertedModelViewMatrix, pixel.modelViewMatrix)) {
+					transposeMatrix3x3(pixel.normalMatrix, invertedModelViewMatrix);
+				} else {
+					// What is using the PSP in this case? Assume it just takes the Model-View matrix
+					System.arraycopy(pixel.modelViewMatrix, 0, pixel.normalMatrix, 0, pixel.normalMatrix.length);
+					if (isLogDebugEnabled) {
+						log.debug(String.format("ModelView matrix cannot be inverted, taking the Model-View matrix itself!"));
+					}
+				}
+			}
 		}
 	}
 
@@ -251,7 +252,7 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	    		pixel.c3r = getColor(c3[0]);
     			pixel.c3 = getColor(c3);
     		}
-        	if (primaryColorFilter >= 0) {
+        	if (isTriangle) {
         		if (context.shadeModel == GeCommands.SHADE_TYPE_FLAT) {
         			// Flat shade model: always use the color of the 3rd triangle vertex
         			sameVertexColor = true;
@@ -259,34 +260,25 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
         			sameVertexColor = Utilities.sameColor(c1, c2, c3);
         		}
     			// For triangles, take the weighted color from the 3 vertices.
-        		filters[primaryColorFilter] = VertexColorFilter.getVertexColorFilter(sameVertexColor, c1, c2, c3);
         	} else {
     			// For sprites, take only the color from the 2nd vertex
-    			pixel.primaryColor = getColor(c2);
+    			primaryColor = getColor(c2);
     			if (context.textureColorDoubled) {
-    				pixel.primaryColor = ColorDoubling.doubleColor(pixel.primaryColor);
+    				primaryColor = doubleColor(primaryColor);
     			}
         	}
         }
 
-    	if (scissorFilter >= 0) {
-    		filters[scissorFilter] = ScissorFilter.getScissorFilter(scissorX1, scissorY1, scissorX2, scissorY2, needScissoringX, needScissoringY);
-    		if (log.isTraceEnabled()) {
-    			log.trace(String.format("Using ScissorFilter (%d,%d)-(%d,%d)", scissorX1, scissorY1, scissorX2, scissorY2));
-    		}
-    	}
-
 		// Try to avoid to compute expensive values
-		int flags = getFiltersFlags();
-		needDepthWrite = !hasFlag(flags, DISCARDS_SOURCE_DEPTH);
-		needSourceDepthRead = hasFlag(flags, REQUIRES_SOURCE_DEPTH) || needDepthWrite;
-		needDestinationDepthRead = hasFlag(flags, REQUIRES_DESTINATION_DEPTH);
+		needDepthWrite = getNeedDepthWrite(context);
+		needSourceDepthRead = needDepthWrite || getNeedSourceDepthRead(context);
+		needDestinationDepthRead = getNeedDestinationDepthRead(context);
 		if (zbw <= 0) {
 			needDepthWrite = false;
 			needSourceDepthRead = false;
 			needDestinationDepthRead = false;
 		}
-		needTextureUV = hasFlag(flags, REQUIRES_TEXTURE_U_V);
+		needTextureUV = getNeedTextureUV(context);
 		if (transform2D) {
 			needTextureWrapU = prim.tuMin < 0 || prim.tuMax >= context.texture_buffer_width[mipmapLevel];
 			needTextureWrapV = prim.tvMin < 0 || prim.tvMax >= context.texture_height[mipmapLevel];
@@ -319,10 +311,10 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 
 		prepareWriters();
 
-    	int filtersId = getFiltersId();
-    	if (filtersId != compiledRendererId || compiledRenderer == null) {
-			compiledRendererId = filtersId;
-			compiledRenderer = FilterCompiler.getInstance().getCompiledRenderer(this, filtersId, context);
+		LongLongKey rendererKey = getRendererKey();
+    	if (compiledRenderer == null || !rendererKey.equals(compiledRendererKey)) {
+			compiledRendererKey = rendererKey;
+			compiledRenderer = FilterCompiler.getInstance().getCompiledRenderer(this, rendererKey, context);
 			if (isLogTraceEnabled) {
 				log.trace(String.format("Rendering using compiled renderer %s", compiledRenderer.getClass().getName()));
 			}
@@ -331,6 +323,71 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
     	if (c3 != null) {
         	prim.preComputeTriangleWeights();
         }
+	}
+
+	private boolean getNeedSourceDepthRead(GeContext context) {
+		if (!clearMode && context.depthTestFlag.isEnabled()) {
+			if (context.depthFunc != GeCommands.ZTST_FUNCTION_NEVER_PASS_PIXEL && context.depthFunc != GeCommands.ZTST_FUNCTION_ALWAYS_PASS_PIXEL) {
+				return true;
+			}
+		}
+
+		if (!clearMode && !transform2D) {
+			if (nearZ != 0x0000 || farZ != 0xFFFF) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private boolean getNeedDestinationDepthRead(GeContext context) {
+		if (!clearMode && context.depthTestFlag.isEnabled()) {
+			if (context.depthFunc != GeCommands.ZTST_FUNCTION_NEVER_PASS_PIXEL && context.depthFunc != GeCommands.ZTST_FUNCTION_ALWAYS_PASS_PIXEL) {
+				return true;
+			}
+		}
+
+		if (clearMode) {
+			// Depth writes disabled
+			if (!context.clearModeDepth) {
+				return true;
+			}
+		} else if (!context.depthTestFlag.isEnabled()) {
+			// Depth writes are disabled when the depth test is not enabled.
+			return true;
+		} else if (!context.depthMask) {
+			// Depth writes disabled
+			return true;
+		}
+
+		return false;
+	}
+
+	private boolean getNeedDepthWrite(GeContext context) {
+		if (clearMode) {
+			// Depth writes disabled
+			if (!context.clearModeDepth) {
+				return false;
+			}
+		} else if (!context.depthTestFlag.isEnabled()) {
+			// Depth writes are disabled when the depth test is not enabled.
+			return false;
+		} else if (!context.depthMask) {
+			// Depth writes disabled
+			return false;
+		}
+
+		return true;
+	}
+
+	private boolean getNeedTextureUV(GeContext context) {
+    	if (context.textureFlag.isEnabled() && (!transform2D || useVertexTexture) && !clearMode) {
+    		// UV always required by the texture reader
+    		return true;
+    	}
+
+		return false;
 	}
 
 	private void setPositions(VertexState v1, VertexState v2) {
@@ -590,6 +647,10 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 			pixelsStatistics.get(n).add(pixelStatistics);
 		}
 
+		if (rendererWriter != null) {
+			rendererWriter.flush();
+		}
+
 		super.postRender();
 
 		statisticsFilters(pixel.getNumberPixels());
@@ -607,6 +668,23 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		}
 	}
 
+	protected void writerSkip(int count) {
+		rendererWriter.skip(count, count);
+	}
+
+	protected void writerSkipEOL(int count) {
+		rendererWriter.skip(count + imageWriterSkipEOL, count + depthWriterSkipEOL);
+	}
+
+	protected void writerSkipEOL() {
+		rendererWriter.skip(imageWriterSkipEOL, depthWriterSkipEOL);
+	}
+
+	@Override
+	public void render() {
+		compiledRenderer.render(this);
+	}
+
 	public static void exit() {
 		if (!log.isInfoEnabled() || pixelsStatistics.isEmpty()) {
 			return;
@@ -619,101 +697,17 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		}
 	}
 
-	protected LongLongKey getRendererKey(GeContext context) {
-		LongLongKey key = new LongLongKey();
+	protected LongLongKey getRendererKey() {
+		LongLongKey key = new LongLongKey(baseRendererKey);
 
-		key.addKeyComponent(memInt != null);
 		key.addKeyComponent(needSourceDepthRead);
 		key.addKeyComponent(needDestinationDepthRead);
 		key.addKeyComponent(needDepthWrite);
 		key.addKeyComponent(needTextureUV);
 		key.addKeyComponent(needScissoringX);
 		key.addKeyComponent(needScissoringY);
-		key.addKeyComponent(transform2D);
-		key.addKeyComponent(clearMode);
-		if (clearMode) {
-			key.addKeyComponent(context.clearModeColor);
-			key.addKeyComponent(context.clearModeStencil);
-			key.addKeyComponent(context.clearModeDepth);
-		} else {
-			key.addKeyComponent(false);
-			key.addKeyComponent(false);
-			key.addKeyComponent(false);
-		}
-		key.addKeyComponent(nearZ == 0x0000);
-		key.addKeyComponent(farZ == 0xFFFF);
-
-		key.addKeyComponent(context.colorTestFlag.isEnabled() ? context.colorTestFunc : GeCommands.CTST_COLOR_FUNCTION_ALWAYS_PASS_PIXEL, 2);
-
-		if (context.alphaTestFlag.isEnabled()) {
-			key.addKeyComponent(context.alphaFunc, 3);
-			key.addKeyComponent(context.alphaRef == 0x00);
-			key.addKeyComponent(context.alphaRef == 0xFF);
-		} else {
-			key.addKeyComponent(GeCommands.ATST_ALWAYS_PASS_PIXEL, 3);
-			key.addKeyComponent(false);
-			key.addKeyComponent(false);
-		}
-
-		if (context.stencilTestFlag.isEnabled()) {
-			key.addKeyComponent(context.stencilFunc, 3);
-			key.addKeyComponent(context.stencilOpFail, 3);
-			key.addKeyComponent(context.stencilOpZFail, 3);
-			key.addKeyComponent(context.stencilOpZPass, 3);
-		} else {
-			key.addKeyComponent(GeCommands.STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST, 3);
-			key.addKeyComponent(GeCommands.SOP_REPLACE_STENCIL_VALUE, 3);
-			key.addKeyComponent(GeCommands.SOP_REPLACE_STENCIL_VALUE, 3);
-			key.addKeyComponent(GeCommands.SOP_REPLACE_STENCIL_VALUE, 3);
-		}
-
-		key.addKeyComponent(context.depthTestFlag.isEnabled() ? context.depthFunc : GeCommands.ZTST_FUNCTION_ALWAYS_PASS_PIXEL, 3);
-
-		if (context.blendFlag.isEnabled()) {
-			key.addKeyComponent(context.blendEquation, 3);
-			key.addKeyComponent(context.blend_src, 4);
-			key.addKeyComponent(context.blend_dst, 4);
-		} else {
-			// Use an invalid blend equation value
-			key.addKeyComponent(7, 3);
-			key.addKeyComponent(15, 4);
-			key.addKeyComponent(15, 4);
-		}
-
-		key.addKeyComponent(context.colorLogicOpFlag.isEnabled() ? context.logicOp : GeCommands.LOP_COPY, 4);
-
-		key.addKeyComponent(PixelColor.getColor(context.colorMask) == 0x00000000);
-		key.addKeyComponent(context.depthMask);
-		key.addKeyComponent(context.textureFlag.isEnabled());
-		key.addKeyComponent(useVertexTexture);
-		key.addKeyComponent(context.lightingFlag.isEnabled());
-		key.addKeyComponent(sameVertexColor);
-		key.addKeyComponent(setVertexPrimaryColor);
-		key.addKeyComponent(primaryColorSetGlobally);
-		key.addKeyComponent(isTriangle);
-		key.addKeyComponent(context.mat_flags, 3);
-		key.addKeyComponent(context.useVertexColor);
-		key.addKeyComponent(context.textureColorDoubled);
-		key.addKeyComponent(context.lightMode, 1);
-		key.addKeyComponent(context.tex_map_mode, 2);
-		if (context.tex_map_mode == GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX) {
-			key.addKeyComponent(context.tex_proj_map_mode, 2);
-		} else {
-			key.addKeyComponent(0, 2);
-		}
-		key.addKeyComponent(context.tex_translate_x == 0f);
-		key.addKeyComponent(context.tex_translate_y == 0f);
-		key.addKeyComponent(context.tex_scale_x == 1f);
-		key.addKeyComponent(context.tex_scale_y == 1f);
-		key.addKeyComponent(context.tex_wrap_s, 1);
-		key.addKeyComponent(context.tex_wrap_t, 1);
-		key.addKeyComponent(context.textureFunc, 3);
-		key.addKeyComponent(context.textureAlphaUsed);
-		key.addKeyComponent(context.psm, 2);
-		key.addKeyComponent(context.tex_min_filter, 3);
-		key.addKeyComponent(context.tex_mag_filter, 1);
-		key.addKeyComponent(isLogTraceEnabled);
-		key.addKeyComponent(DurationStatistics.collectStatistics);
+		key.addKeyComponent(needTextureWrapU);
+		key.addKeyComponent(needTextureWrapV);
 
 		return key;
 	}

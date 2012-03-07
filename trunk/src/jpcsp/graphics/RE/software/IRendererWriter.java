@@ -21,9 +21,9 @@ package jpcsp.graphics.RE.software;
  *
  */
 public interface IRendererWriter {
-	public void readCurrent(PixelState pixel);
-	public void writeNext(PixelState pixel);
-	public void writeNextColor(PixelState pixel);
+	public void readCurrent(ColorDepth colorDepth);
+	public void writeNext(ColorDepth colorDepth);
+	public void writeNextColor(int color);
 	public void skip(int fbCount, int depthCount);
 	public void flush();
 }

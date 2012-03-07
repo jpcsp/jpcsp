@@ -40,6 +40,7 @@ import jpcsp.memory.FastMemory;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.ImageReader;
 import jpcsp.util.DurationStatistics;
+import jpcsp.util.LongLongKey;
 import jpcsp.util.Utilities;
 
 /**
@@ -62,13 +63,11 @@ public abstract class BaseRenderer implements IRenderer {
     public static final int depthBufferPixelFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED;
     protected static final int MAX_NUMBER_FILTERS = 15;
 	public int[] memInt;
-    public IRendererWriter rendererWriter;
 	public int imageWriterSkipEOL;
 	public int depthWriterSkipEOL;
-	protected final IPixelFilter[] filters = new IPixelFilter[MAX_NUMBER_FILTERS];
-	protected int numberFilters;
 	protected RendererTemplate compiledRenderer;
-	protected int compiledRendererId;
+	protected LongLongKey compiledRendererKey;
+	protected LongLongKey baseRendererKey;
 	protected boolean transform2D;
 	protected int viewportWidth;
 	protected int viewportHeight;
@@ -83,7 +82,6 @@ public abstract class BaseRenderer implements IRenderer {
 	public int scissorX1, scissorY1;
 	public int scissorX2, scissorY2;
 	protected boolean setVertexPrimaryColor;
-	protected int primaryColorFilter = -1;
 	protected boolean sameVertexColor;
 	protected int fbp, fbw, psm;
 	protected int zbp, zbw;
@@ -92,12 +90,11 @@ public abstract class BaseRenderer implements IRenderer {
 	protected boolean frontFaceCw;
 	protected boolean clipPlanesEnabled;
 	protected boolean useVertexTexture;
-	protected int scissorFilter = -1;
 	public IRandomTextureAccess textureAccess;
 	protected int mipmapLevel = 0;
-	public IPixelFilter lightingFilter;
-	private static HashMap<Integer, Integer> filtersStatistics = new HashMap<Integer, Integer>();
-	private static HashMap<Integer, String> filterNames = new HashMap<Integer, String>();
+	public Lighting lighting;
+	private static HashMap<LongLongKey, Integer> filtersStatistics = new HashMap<LongLongKey, Integer>();
+	private static HashMap<LongLongKey, String> filterNames = new HashMap<LongLongKey, String>();
 	protected boolean renderingInitialized;
 	public CachedTextureResampled cachedTexture;
 	protected boolean isTriangle;
@@ -126,34 +123,14 @@ public abstract class BaseRenderer implements IRenderer {
 	public float envMapShininess;
 	public int texMinFilter;
 	public int texMagFilter;
-	protected boolean needTextureWrapU;
-	protected boolean needTextureWrapV;
-	private static final int COMPILATION_ID_TRIANGLE = 940347503;
-	private static final int COMPILATION_ID_3D = 201511776;
-	private static final int COMPILATION_ID_LOG_TRACE = 275887992;
-	private static final int COMPILATION_ID_MAG_FILTER_LINEAR = 868761458;
-	private static final int COMPILATION_ID_NEED_WRAP_U = 432488042;
-	private static final int COMPILATION_ID_NEED_WRAP_V = 129018629;
-	private static final int COMPILATION_ID_NEED_TEX_TRANSLATE_X = 559266244;
-	private static final int COMPILATION_ID_NEED_TEX_TRANSLATE_Y = 272598427;
-	private static final int COMPILATION_ID_NEED_TEX_SCALE_X = 515484770;
-	private static final int COMPILATION_ID_NEED_TEX_SCALE_Y = 683121641;
-	private static final int[] COMPILATION_ID_PSM = new int[] {
-		149600676, // TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650
-		446086425, // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551
-		576440430, // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444
-		878826905  // TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888
-	};
+	public int primaryColor;
 
 	protected void copy(BaseRenderer from) {
-		numberFilters = from.numberFilters;
-		System.arraycopy(from.filters, 0, filters, 0, numberFilters);
-		rendererWriter = from.rendererWriter;
 		imageWriterSkipEOL = from.imageWriterSkipEOL;
 		depthWriterSkipEOL = from.depthWriterSkipEOL;
-		compiledRendererId = from.compiledRendererId;
+		compiledRendererKey = from.compiledRendererKey;
 		compiledRenderer = from.compiledRenderer;
-		lightingFilter = from.lightingFilter;
+		lighting = from.lighting;
 		textureAccess = from.textureAccess;
 		memInt = from.memInt;
 		transform2D = from.transform2D;
@@ -187,6 +164,7 @@ public abstract class BaseRenderer implements IRenderer {
 		envMapShininess = from.envMapShininess;
 		texMinFilter = from.texMinFilter;
 		texMagFilter = from.texMagFilter;
+		primaryColor = from.primaryColor;
 	}
 
 	protected BaseRenderer() {
@@ -254,6 +232,16 @@ public abstract class BaseRenderer implements IRenderer {
 				envMapShininess = context.materialShininess;
 			}
 		}
+	}
+
+	protected void initRendering(GeContext context) {
+		if (renderingInitialized) {
+			return;
+		}
+
+		fbp = getFrameBufferAddress(context.fbp);
+		psm = context.psm;
+		zbp = getFrameBufferAddress(context.zbp);
 		colorTestRef = getColorBGR(context.colorTestRef);
 		colorTestMsk = getColorBGR(context.colorTestMsk);
 		alphaRef = context.alphaRef;
@@ -269,69 +257,55 @@ public abstract class BaseRenderer implements IRenderer {
 		texEnvColorR = getColor(context.tex_env_color[0]);
 		texMinFilter = context.tex_min_filter;
 		texMagFilter = context.tex_mag_filter;
+		primaryColor = getColor(context.vertexColor);
 
 		Memory mem = Memory.getInstance();
 		if (mem instanceof FastMemory) {
 			memInt = ((FastMemory) mem).getAll();
 		}
-	}
 
-	protected void initRendering(GeContext context) {
-		if (renderingInitialized) {
-			return;
+		baseRendererKey = getBaseRendererKey(context);
+
+		if (!transform2D && context.lightingFlag.isEnabled()) {
+			lighting = new Lighting(context.view_uploaded_matrix,
+			               context.mat_emissive,
+			               context.ambient_light,
+			               context.lightFlags,
+			               context.light_pos,
+			               context.light_kind,
+			               context.light_type,
+			               context.lightAmbientColor,
+			               context.lightDiffuseColor,
+			               context.lightSpecularColor,
+			               context.lightConstantAttenuation,
+			               context.lightLinearAttenuation,
+			               context.lightQuadraticAttenuation,
+			               context.spotLightCutoff,
+			               context.spotLightCosCutoff,
+			               context.light_dir,
+			               context.spotLightExponent,
+			               context.materialShininess,
+			               context.lightMode,
+			               context.vinfo.normal != 0);
 		}
 
-		fbp = getFrameBufferAddress(context.fbp);
-		psm = context.psm;
-		zbp = getFrameBufferAddress(context.zbp);
-		numberFilters = 0;
-
-		prepareTextureReader(context);
-        prepareFilters(context);
-
-        renderingInitialized = true;
-	}
-
-	private static final String getLightState(GeContext context, int l) {
-		return context.lightFlags[l].isEnabled() ? "ON" : "OFF";
-	}
-
-	private void prepareTextureReader(GeContext context) {
-        lightingFilter = Lighting.getLighting(context, context.view_uploaded_matrix);
-
         // Is the lighting model using the material color from the vertex color?
-        if (!isNopFilter(lightingFilter) && context.mat_flags != 0 && context.useVertexColor && context.vinfo.color != 0 && isTriangle) {
+        if (!transform2D && context.lightingFlag.isEnabled() && context.mat_flags != 0 && context.useVertexColor && context.vinfo.color != 0 && isTriangle) {
 			// Reserve an empty filter slot. The filter will be set by the
 			// BasePrimitiveRenderer when the vertices are known.
 			if (isLogTraceEnabled) {
 				log.trace(String.format("Using VertexColorFilter"));
 			}
-        	primaryColorFilter = allocateFilterSlot();
-        	filters[primaryColorFilter] = null;
         	setVertexPrimaryColor = true;
-
-			if (isLogTraceEnabled) {
-				log.trace(String.format("Using MaterialColorFilter material flags=%d", context.mat_flags));
-			}
-        	addFilter(MaterialColorFilter.getMaterialColorFilter(context));
         }
 
         primaryColorSetGlobally = false;
-        boolean added = addFilter(lightingFilter);
-        if (added) {
-        	if (isLogTraceEnabled) {
-        		log.trace(String.format("Using Lighting Filter %s, %s, %s, %s", getLightState(context, 0), getLightState(context, 1), getLightState(context, 2), getLightState(context, 3)));
-        	}
-        } else {
+        if (transform2D || !context.lightingFlag.isEnabled()) {
         	// No lighting, take the primary color from the vertex.
         	// This will be done by the BasePrimitiveRenderer when the vertices are known.
     		if (context.useVertexColor && context.vinfo.color != 0) {
     			setVertexPrimaryColor = true;
-    			if (isTriangle) {
-    				// Reserve an empty filter slot. The filter will be set by the
-    				// BasePrimitiveRenderer when the vertices are known.
-    				primaryColorFilter = allocateFilterSlot();
-    			} else {
+    			if (!isTriangle) {
     				// Use the color of the 2nd sprite vertex
     				primaryColorSetGlobally = true;
     			}
@@ -358,131 +332,108 @@ public abstract class BaseRenderer implements IRenderer {
 
         	// Avoid an access outside the texture area
         	textureAccess = TextureClip.getTextureClip(context, mipmapLevel, textureAccess, textureBufferWidth, textureHeight);
+		}
 
-            if (!transform2D) {
-            	// Perform the texture mapping (UV / texture matrix / environment map)
-            	addFilter(TextureMapping.getTextureMapping(context));
-            }
+        renderingInitialized = true;
+	}
 
-            // Apply the texture wrap mode (clamp or repeat)
-            addFilter(TextureWrap.getTextureWrap(context, mipmapLevel));
+	private LongLongKey getBaseRendererKey(GeContext context) {
+		LongLongKey key = new LongLongKey();
 
-            // Read the corresponding texture texel
-            addFilter(TextureReader.getTextureReader(textureAccess, context, mipmapLevel));
-
-            // Apply the texture function (modulate, decal, blend, replace, add)
-            addFilter(TextureFunction.getTextureFunction(context));
-
-            addFilter(ColorDoubling.getColorDoubling(context, false, false));
-
-            addFilter(SourceColorFilter.getSourceColorFilter(context, false));
+		key.addKeyComponent(memInt != null);
+		key.addKeyComponent(transform2D);
+		key.addKeyComponent(clearMode);
+		if (clearMode) {
+			key.addKeyComponent(context.clearModeColor);
+			key.addKeyComponent(context.clearModeStencil);
+			key.addKeyComponent(context.clearModeDepth);
 		} else {
-			if (primaryColorSetGlobally && isLogTraceEnabled) {
-				log.trace(String.format("Using ColorTextureFilter vertexColor=0x%08X", getColor(context.vertexColor)));
-			}
-            addFilter(ColorDoubling.getColorDoubling(context, true, primaryColorSetGlobally));
-
-            addFilter(SourceColorFilter.getSourceColorFilter(context, true));
+			key.addKeyComponent(false);
+			key.addKeyComponent(false);
+			key.addKeyComponent(false);
 		}
-	}
+		key.addKeyComponent(nearZ == 0x0000);
+		key.addKeyComponent(farZ == 0xFFFF);
 
-	private int allocateFilterSlot() {
-		return numberFilters++;
-	}
+		key.addKeyComponent(context.colorTestFlag.isEnabled() ? context.colorTestFunc : GeCommands.CTST_COLOR_FUNCTION_ALWAYS_PASS_PIXEL, 2);
 
-	private boolean isNopFilter(IPixelFilter filter) {
-		return filter == null || filter == NopFilter.NOP;
-	}
-
-	private boolean addFilter(IPixelFilter filter) {
-		if (isNopFilter(filter)) {
-			return false;
+		if (context.alphaTestFlag.isEnabled()) {
+			key.addKeyComponent(context.alphaFunc, 3);
+			key.addKeyComponent(context.alphaRef == 0x00);
+			key.addKeyComponent(context.alphaRef == 0xFF);
+		} else {
+			key.addKeyComponent(GeCommands.ATST_ALWAYS_PASS_PIXEL, 3);
+			key.addKeyComponent(false);
+			key.addKeyComponent(false);
 		}
 
-		int filterSlot = allocateFilterSlot();
-		filters[filterSlot] = filter;
+		if (context.stencilTestFlag.isEnabled()) {
+			key.addKeyComponent(context.stencilFunc, 3);
+			key.addKeyComponent(context.stencilOpFail, 3);
+			key.addKeyComponent(context.stencilOpZFail, 3);
+			key.addKeyComponent(context.stencilOpZPass, 3);
+		} else {
+			key.addKeyComponent(GeCommands.STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST, 3);
+			key.addKeyComponent(GeCommands.SOP_REPLACE_STENCIL_VALUE, 3);
+			key.addKeyComponent(GeCommands.SOP_REPLACE_STENCIL_VALUE, 3);
+			key.addKeyComponent(GeCommands.SOP_REPLACE_STENCIL_VALUE, 3);
+		}
 
-		return true;
-	}
+		key.addKeyComponent(context.depthTestFlag.isEnabled() ? context.depthFunc : GeCommands.ZTST_FUNCTION_ALWAYS_PASS_PIXEL, 3);
 
-	private void prepareFilters(GeContext context) {
-		boolean added;
+		if (context.blendFlag.isEnabled()) {
+			key.addKeyComponent(context.blendEquation, 3);
+			key.addKeyComponent(context.blend_src, 4);
+			key.addKeyComponent(context.blend_dst, 4);
+		} else {
+			// Use an invalid blend equation value
+			key.addKeyComponent(7, 3);
+			key.addKeyComponent(15, 4);
+			key.addKeyComponent(15, 4);
+		}
 
-        //
-        // Add all the enabled tests and filters, in the correct processing order
-        //
-        if (transform2D) {
-        	// Reserve a filter slot for the scissor
-        	scissorFilter = allocateFilterSlot();
-        	filters[scissorFilter] = null;
-        }
-        if (!transform2D && !context.clearMode) {
-        	added = addFilter(ScissorDepthFilter.getScissorDepthFilter(context, nearZ, farZ));
-        	if (added && isLogTraceEnabled) {
-        		log.trace(String.format("Using ScissorDepthFilter near=%f, far=%f", context.nearZ, context.farZ));
-        	}
-        }
-        if (context.colorTestFlag.isEnabled() && !context.clearMode) {
-        	added = addFilter(ColorTestFilter.getColorTestFilter(context));
-        	if (added && isLogTraceEnabled) {
-        		log.trace(String.format("Using ColorTestFilter func=%d, ref=0x%02X%02X%02X, mask=0x%02X%02X%02X", context.colorTestFunc, context.colorTestRef[2], context.colorTestRef[1], context.colorTestRef[0], context.colorTestMsk[2], context.colorTestMsk[1], context.colorTestMsk[0]));
-        	}
-        }
-        if (context.alphaTestFlag.isEnabled() && !context.clearMode) {
-        	added = addFilter(AlphaTestFilter.getAlphaTestFilter(context));
-        	if (added && isLogTraceEnabled) {
-        		log.trace(String.format("Using AlphaTestFilter func=%d, ref=0x%02X", context.alphaFunc, context.alphaRef));
-        	}
-        }
-        if (context.stencilTestFlag.isEnabled() && !context.clearMode) {
-        	added = addFilter(StencilTestFilter.getStencilTestFilter(context));
-        	if (added && isLogTraceEnabled) {
-        		log.trace(String.format("Using StencilTestFilter func=%d, ref=0x%02X, mask=0x%02X, stencilOpFail=%d, stencilOpZFail=%d, stencilOpZPass=%d", context.stencilFunc, context.stencilRef, context.stencilMask, context.stencilOpFail, context.stencilOpZFail, context.stencilOpZPass));
-        	}
-        }
-        if (context.depthTestFlag.isEnabled() && !context.clearMode) {
-        	added = addFilter(DepthTestFilter.getDepthTestFilter(context));
-        	if (added && isLogTraceEnabled) {
-        		log.trace(String.format("Using DepthTestFilter func=%d", context.depthFunc));
-        	}
-        }
-        if (context.blendFlag.isEnabled() && !context.clearMode) {
-        	added = addFilter(AlphaBlendFilter.getAlphaBlendFilter(context));
-        	if (added && isLogTraceEnabled) {
-        		log.trace(String.format("Using AlphaBlendFilter func=%d, src=%d, dst=%d, sfix=0x%06X, dfix=0x%06X", context.blendEquation, context.blend_src, context.blend_dst, context.sfix, context.dfix));
-        	}
-        }
-        if (context.stencilTestFlag.isEnabled() && !context.clearMode) {
-        	// Execute the stencilOpZPass operation when both the stencil and the depth tests
-        	// were successful. This has to be executed only after the AlphaBlendFilter because
-        	// it still requires the unmodified destination alpha.
-        	added = addFilter(StencilTestFilter.getStencilOp(context.stencilOpZPass, context.stencilRef, false));
-        	if (added && isLogTraceEnabled) {
-        		log.trace(String.format("Using StencilOpFilter stencilOpZPass=%d, ref=0x%02X", context.stencilOpZPass, context.stencilRef));
-        	}
-        }
-        if (context.colorLogicOpFlag.isEnabled() && !context.clearMode) {
-        	added = addFilter(LogicalOperationFilter.getLogicalOperationFilter(context));
-        	if (added && isLogTraceEnabled) {
-        		log.trace(String.format("Using LogicalOperationFilter func=%d", context.logicOp));
-        	}
-        }
-        {
-        	added = addFilter(MaskFilter.getMaskFilter(context, context.clearMode, context.clearModeColor, context.clearModeStencil, context.clearModeDepth));
-        	if (added && isLogTraceEnabled) {
-        		log.trace(String.format("Using MaskFilter colorMask=0x%08X, depthMask=%b, clearMode=%b, clearModeColor=%b, clearModeStencil=%b, clearModeDepth=%b", getColor(context.colorMask), context.depthMask, context.clearMode, context.clearModeColor, context.clearModeStencil, context.clearModeDepth));
-        	}
-        }
+		key.addKeyComponent(context.colorLogicOpFlag.isEnabled() ? context.logicOp : GeCommands.LOP_COPY, 4);
+
+		key.addKeyComponent(PixelColor.getColor(context.colorMask) == 0x00000000);
+		key.addKeyComponent(context.depthMask);
+		key.addKeyComponent(context.textureFlag.isEnabled());
+		key.addKeyComponent(useVertexTexture);
+		key.addKeyComponent(context.lightingFlag.isEnabled());
+		key.addKeyComponent(sameVertexColor);
+		key.addKeyComponent(setVertexPrimaryColor);
+		key.addKeyComponent(primaryColorSetGlobally);
+		key.addKeyComponent(isTriangle);
+		key.addKeyComponent(context.mat_flags, 3);
+		key.addKeyComponent(context.useVertexColor);
+		key.addKeyComponent(context.textureColorDoubled);
+		key.addKeyComponent(context.lightMode, 1);
+		key.addKeyComponent(context.tex_map_mode, 2);
+		if (context.tex_map_mode == GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX) {
+			key.addKeyComponent(context.tex_proj_map_mode, 2);
+		} else {
+			key.addKeyComponent(0, 2);
+		}
+		key.addKeyComponent(context.tex_translate_x == 0f);
+		key.addKeyComponent(context.tex_translate_y == 0f);
+		key.addKeyComponent(context.tex_scale_x == 1f);
+		key.addKeyComponent(context.tex_scale_y == 1f);
+		key.addKeyComponent(context.tex_wrap_s, 1);
+		key.addKeyComponent(context.tex_wrap_t, 1);
+		key.addKeyComponent(context.textureFunc, 3);
+		key.addKeyComponent(context.textureAlphaUsed);
+		key.addKeyComponent(context.psm, 2);
+		key.addKeyComponent(context.tex_min_filter, 3);
+		key.addKeyComponent(context.tex_mag_filter, 1);
+		key.addKeyComponent(isLogTraceEnabled);
+		key.addKeyComponent(DurationStatistics.collectStatistics);
+
+		return key;
 	}
 
 	protected void preRender() {
 	}
 
 	protected void postRender() {
-		if (rendererWriter != null) {
-			rendererWriter.flush();
-		}
-
         if (captureEachPrimitive && State.captureGeNextFrame) {
         	// Capture the GE screen after each primitive
         	Modules.sceDisplayModule.captureGeImage();
@@ -490,20 +441,6 @@ public abstract class BaseRenderer implements IRenderer {
         if (captureZbuffer && State.captureGeNextFrame) {
         	captureZbufferImage();
         }
-	}
-
-	protected boolean hasFlag(int flags, int flag) {
-		return (flags & flag) != 0;
-	}
-
-	protected int getFiltersFlags() {
-		int flags = 0;
-
-		for (int i = 0; i < numberFilters; i++) {
-			flags |= filters[i].getFlags();
-		}
-
-		return flags;
 	}
 
 	protected void captureZbufferImage() {
@@ -515,123 +452,38 @@ public abstract class BaseRenderer implements IRenderer {
 		CaptureManager.captureImage(address, 0, buffer, width, height, width, depthBufferPixelFormat, false, 0, false, false);
 	}
 
-	protected void writerSkip(int count) {
-		rendererWriter.skip(count, count);
-	}
-
-	protected void writerSkipEOL(int count) {
-		rendererWriter.skip(count + imageWriterSkipEOL, count + depthWriterSkipEOL);
-	}
-
-	protected void writerSkipEOL() {
-		rendererWriter.skip(imageWriterSkipEOL, depthWriterSkipEOL);
-	}
-
-	static protected int mixIds(int id1, int id2, int id3) {
-		return mixIds(mixIds(id1, id2), id3);
-	}
-
-	static protected int mixIds(int id1, int id2) {
-		return id1 + id2;
-	}
-
-	protected int getFiltersId() {
-		int filtersId = 0;
-		for (int i = 0; i < numberFilters; i++) {
-			filtersId = mixIds(filtersId, filters[i].getCompilationId());
-		}
-
-		if (isTriangle) {
-			filtersId = mixIds(filtersId, COMPILATION_ID_TRIANGLE);
-		}
-		if (!transform2D) {
-			filtersId = mixIds(filtersId, COMPILATION_ID_3D);
-		}
-		if (psm >= 0 && psm < COMPILATION_ID_PSM.length) {
-			filtersId = mixIds(filtersId, COMPILATION_ID_PSM[psm]);
-		}
-		if (log.isTraceEnabled()) {
-			filtersId = mixIds(filtersId, COMPILATION_ID_LOG_TRACE);
-		}
-		if (texMagFilter == GeCommands.TFLT_LINEAR) {
-			filtersId = mixIds(filtersId, COMPILATION_ID_MAG_FILTER_LINEAR);
-		}
-		if (needTextureWrapU) {
-			filtersId = mixIds(filtersId, COMPILATION_ID_NEED_WRAP_U);
-		}
-		if (needTextureWrapV) {
-			filtersId = mixIds(filtersId, COMPILATION_ID_NEED_WRAP_V);
-		}
-		if (texTranslateX != 0f) {
-			filtersId = mixIds(filtersId, COMPILATION_ID_NEED_TEX_TRANSLATE_X);
-		}
-		if (texTranslateY != 0f) {
-			filtersId = mixIds(filtersId, COMPILATION_ID_NEED_TEX_TRANSLATE_Y);
-		}
-		if (texScaleX != 1f) {
-			filtersId = mixIds(filtersId, COMPILATION_ID_NEED_TEX_SCALE_X);
-		}
-		if (texScaleY != 1f) {
-			filtersId = mixIds(filtersId, COMPILATION_ID_NEED_TEX_SCALE_Y);
-		}
-
-		return filtersId;
-	}
-
-	protected String getFilterName(IPixelFilter filter) {
-		String s = filter.toString();
-		if (s.indexOf('@') >= 0) {
-			return filter.getClass().getName().replace("jpcsp.graphics.RE.software.", "");
-		}
-		return s;
-	}
-
-	protected String getFiltersName() {
-		StringBuilder s = new StringBuilder();
-		for (int i = 0; i < numberFilters; i++) {
-			if (i > 0) {
-				s.append(", ");
-			}
-			s.append(getFilterName(filters[i]));
-		}
-
-		return s.toString();
-	}
-
 	protected void statisticsFilters(int numberPixels) {
 		if (!DurationStatistics.collectStatistics || !isLogInfoEnabled) {
 			return;
 		}
 
-		int filtersId = compiledRenderer != null ? compiledRendererId : getFiltersId();
-
-		Integer count = filtersStatistics.get(filtersId);
+		Integer count = filtersStatistics.get(compiledRendererKey);
 		if (count == null) {
 			count = 0;
 		}
-		filtersStatistics.put(filtersId, count + numberPixels);
+		filtersStatistics.put(compiledRendererKey, count + numberPixels);
 
-		if (!filterNames.containsKey(filtersId)) {
-			filterNames.put(filtersId, getFiltersName());
+		if (!filterNames.containsKey(compiledRendererKey)) {
+			filterNames.put(compiledRendererKey, compiledRenderer.getClass().getName());
 		}
 	}
 
 	public static void exit() {
 		if (log.isInfoEnabled() && DurationStatistics.collectStatistics) {
-			Integer[] filterIds = filtersStatistics.keySet().toArray(new Integer[filtersStatistics.size()]);
-			Arrays.sort(filterIds, new FilterComparator());
-			for (Integer filterId : filterIds) {
-				Integer count = filtersStatistics.get(filterId);
-				log.info(String.format("Filter: count=%d, id=%d, %s", count, filterId, filterNames.get(filterId)));
+			LongLongKey[] filterKeys = filtersStatistics.keySet().toArray(new LongLongKey[filtersStatistics.size()]);
+			Arrays.sort(filterKeys, new FilterComparator());
+			for (LongLongKey filterKey : filterKeys) {
+				Integer count = filtersStatistics.get(filterKey);
+				log.info(String.format("Filter: count=%d, id=%s, %s", count, filterKey, filterNames.get(filterKey)));
 			}
 		}
 
 		FilterCompiler.exit();
 	}
 
-	private static class FilterComparator implements Comparator<Integer> {
+	private static class FilterComparator implements Comparator<LongLongKey> {
 		@Override
-		public int compare(Integer o1, Integer o2) {
+		public int compare(LongLongKey o1, LongLongKey o2) {
 			return filtersStatistics.get(o1).compareTo(filtersStatistics.get(o2));
 		}
 	}

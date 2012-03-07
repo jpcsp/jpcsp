@@ -18,7 +18,7 @@ package jpcsp.graphics.RE.software;
 
 import static jpcsp.graphics.RE.software.PixelColor.add;
 import static jpcsp.graphics.RE.software.PixelColor.multiply;
-import static jpcsp.graphics.RE.software.TextureReader.pixelToTexel;
+import static jpcsp.util.Utilities.pixelToTexel;
 import static jpcsp.util.Utilities.makePow2;
 import static jpcsp.util.Utilities.round;
 

@@ -19,7 +19,7 @@ package jpcsp.graphics.RE.software;
 import static jpcsp.graphics.GeCommands.LMODE_SEPARATE_SPECULAR_COLOR;
 import static jpcsp.graphics.GeCommands.SOP_REPLACE_STENCIL_VALUE;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
-import static jpcsp.graphics.RE.software.ColorDoubling.doubleColor;
+import static jpcsp.graphics.RE.software.PixelColor.doubleColor;
 import static jpcsp.graphics.RE.software.PixelColor.ONE;
 import static jpcsp.graphics.RE.software.PixelColor.ZERO;
 import static jpcsp.graphics.RE.software.PixelColor.absBGR;
@@ -40,8 +40,8 @@ import static jpcsp.graphics.RE.software.PixelColor.multiplyComponent;
 import static jpcsp.graphics.RE.software.PixelColor.setAlpha;
 import static jpcsp.graphics.RE.software.PixelColor.setBGR;
 import static jpcsp.graphics.RE.software.PixelColor.substractBGR;
-import static jpcsp.graphics.RE.software.TextureReader.pixelToTexel;
-import static jpcsp.graphics.RE.software.TextureWrap.wrap;
+import static jpcsp.util.Utilities.pixelToTexel;
+import static jpcsp.util.Utilities.wrap;
 import static jpcsp.util.Utilities.clamp;
 import static jpcsp.util.Utilities.dot3;
 import static jpcsp.util.Utilities.max;
@@ -262,10 +262,12 @@ public class RendererTemplate {
 		final float textureWidthFloat = renderer.textureWidth;
 		final float textureHeightFloat = renderer.textureHeight;
 		final int alphaRef = renderer.alphaRef;
-		final int sourceDepth = (int) prim.p2z;
+		final int primSourceDepth = (int) prim.p2z;
 		float u = 0f;
 		float v = prim.vStart;
 		boolean depthTestFailed = false;
+		ColorDepth colorDepth = new ColorDepth();
+		PrimarySecondaryColors colors = new PrimarySecondaryColors();
 
 		Range range = null;
 		Rasterizer rasterizer = null;
@@ -305,19 +307,16 @@ public class RendererTemplate {
 
 		// Use local variables instead of "pixel" members.
 		// The Java JIT is then producing a slightly faster code.
-		int pixelSource = pixel.source;
-		int pixelSourceDepth = pixel.sourceDepth;
-		int pixelDestination = 0;
-		int pixelDestinationDepth = 0;
-		int pixelPrimaryColor = pixel.primaryColor;
-		int pixelSecondaryColor = pixel.secondaryColor;
-		int pixelX = 0;
-		int pixelY = 0;
+		int sourceColor = 0;
+		int sourceDepth = 0;
+		int destinationColor = 0;
+		int destinationDepth = 0;
+		int primaryColor = renderer.primaryColor;
+		int secondaryColor = 0;
 		float pixelU = 0f;
 		float pixelV = 0f;
 
         for (int y = prim.pyMin; y <= prim.pyMax; y++) {
-        	pixelY = y;
     		int startX = prim.pxMin;
     		int endX = prim.pxMax;
     		if (isTriangle && rasterizer != null) {
@@ -325,7 +324,7 @@ public class RendererTemplate {
     			startX = max(range.xMin, startX);
     			endX = min(range.xMax, endX);
         		if (isLogTraceEnabled) {
-        			VideoEngine.log.trace(String.format("Rasterizer line (%d-%d,%d)", startX, endX, pixelY));
+        			VideoEngine.log.trace(String.format("Rasterizer line (%d-%d,%d)", startX, endX, y));
     			}
     		}
     		if (isTriangle && startX > endX) {
@@ -360,9 +359,7 @@ public class RendererTemplate {
 	    					u += startSkip * prim.uStep;
 	    				}
 	    			}
-		    		pixel.x = startX;
-		    		pixel.y = pixelY;
-	    			prim.computeTriangleWeights(pixel);
+	    			prim.computeTriangleWeights(pixel, startX, y);
 	    		}
 	        	for (int x = startX; x <= endX; x++) {
 	            	// Use a dummy "do { } while (false);" loop to allow to exit
@@ -377,7 +374,7 @@ public class RendererTemplate {
 		        		if (isTriangle && !pixel.isInsideTriangle()) {
 		        			// Pixel not inside triangle, skip the pixel
 		            		if (isLogTraceEnabled) {
-		            			VideoEngine.log.trace(String.format("Pixel (%d,%d) outside triangle (%f, %f, %f)", x, pixelY, pixel.triangleWeight1, pixel.triangleWeight2, pixel.triangleWeight3));
+		            			VideoEngine.log.trace(String.format("Pixel (%d,%d) outside triangle (%f, %f, %f)", x, y, pixel.triangleWeight1, pixel.triangleWeight2, pixel.triangleWeight3));
 	            			}
 		        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        				fbIndex++;
@@ -400,14 +397,13 @@ public class RendererTemplate {
 	        			} else {
 	        				pixel.newPixel3D();
 	        			}
-	        			pixelX = x;
 
 	            		//
 	            		// ScissorTest (performed as soon as the pixel screen coordinates are available)
 	            		//
 	            		if (transform2D) {
 			            	if (needScissoringX && needScissoringY) {
-			        			if (!(pixelX >= renderer.scissorX1 && pixelX <= renderer.scissorX2 && pixelY >= renderer.scissorY1 && pixelY <= renderer.scissorY2)) {
+			        			if (!(x >= renderer.scissorX1 && x <= renderer.scissorX2 && y >= renderer.scissorY1 && y <= renderer.scissorY2)) {
 				        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 				        				fbIndex++;
 				        				if (needDepthWrite || needDestinationDepthRead) {
@@ -421,7 +417,7 @@ public class RendererTemplate {
 			        				continue;
 			        			}
 			            	} else if (needScissoringX) {
-			        			if (!(pixelX >= renderer.scissorX1 && pixelX <= renderer.scissorX2)) {
+			        			if (!(x >= renderer.scissorX1 && x <= renderer.scissorX2)) {
 				        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 				        				fbIndex++;
 				        				if (needDepthWrite || needDestinationDepthRead) {
@@ -435,7 +431,7 @@ public class RendererTemplate {
 			        				continue;
 			        			}
 			            	} else if (needScissoringY) {
-			        			if (!(pixelY >= renderer.scissorY1 && pixelY <= renderer.scissorY2)) {
+			        			if (!(y >= renderer.scissorY1 && y <= renderer.scissorY2)) {
 				        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 				        				fbIndex++;
 				        				if (needDepthWrite || needDestinationDepthRead) {
@@ -456,9 +452,9 @@ public class RendererTemplate {
 		            	//
 		            	if (needSourceDepthRead) {
 		        			if (isTriangle) {
-		        				pixelSourceDepth = round(pixel.getTriangleWeightedValue(prim.p1z, prim.p2z, prim.p3z));
+		        				sourceDepth = round(pixel.getTriangleWeightedValue(prim.p1z, prim.p2z, prim.p3z));
 		        			} else {
-		        				pixelSourceDepth = sourceDepth;
+		        				sourceDepth = primSourceDepth;
 		        			}
 		        		}
 
@@ -467,7 +463,7 @@ public class RendererTemplate {
 	            		//
 	            		if (!transform2D && !clearMode && needSourceDepthRead) {
 		            		if (nearZ != 0x0000 || farZ != 0xFFFF) {
-		            			if (pixelSourceDepth < renderer.nearZ || pixelSourceDepth > renderer.farZ) {
+		            			if (sourceDepth < renderer.nearZ || sourceDepth > renderer.farZ) {
 		    	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		    	        				fbIndex++;
 		    	        				if (needDepthWrite || needDestinationDepthRead) {
@@ -487,19 +483,19 @@ public class RendererTemplate {
 		            	// Pixel destination color and depth
 		            	//
 		        		if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
-	        				pixelDestination = memInt[fbIndex];
+	        				destinationColor = memInt[fbIndex];
 	        				if (needDestinationDepthRead) {
 	        					if (depthOffset == 0) {
-	        						pixelDestinationDepth = memInt[depthIndex] & 0x0000FFFF;
+	        						destinationDepth = memInt[depthIndex] & 0x0000FFFF;
 	        					} else {
-	        						pixelDestinationDepth = memInt[depthIndex] >>> 16;
+	        						destinationDepth = memInt[depthIndex] >>> 16;
 	        					}
 	        				}
 	        			} else {
-	        				rendererWriter.readCurrent(pixel);
-			            	pixelDestination = pixel.destination;
+	        				rendererWriter.readCurrent(colorDepth);
+			            	destinationColor = colorDepth.color;
 			            	if (needDestinationDepthRead) {
-			            		pixelDestinationDepth = pixel.destinationDepth;
+			            		destinationDepth = colorDepth.depth;
 			            	}
 	        			}
 
@@ -531,14 +527,14 @@ public class RendererTemplate {
 		        					// No filter required
 		        					break;
 		        				case GeCommands.ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_EQUAL:
-		        					if (pixelSourceDepth != pixelDestinationDepth) {
+		        					if (sourceDepth != destinationDepth) {
 		            					if (stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
 		            						// Will be handled after the stencil test
 		            						depthTestFailed = true;
 		            						break;
 		            					}
 		    		            		if (isLogTraceEnabled) {
-		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", pixelX, pixelY, pixelU, pixelV, pixelSource, pixelDestination, pixelPrimaryColor, pixelSecondaryColor, pixelSourceDepth, pixelDestinationDepth));
+		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
 		    	            			}
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
@@ -554,14 +550,14 @@ public class RendererTemplate {
 		        					}
 		        					break;
 		        				case GeCommands.ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_ISNOT_EQUAL:
-		        					if (pixelSourceDepth == pixelDestinationDepth) {
+		        					if (sourceDepth == destinationDepth) {
 		            					if (stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
 		            						// Will be handled after the stencil test
 		            						depthTestFailed = true;
 		            						break;
 		            					}
 		    		            		if (isLogTraceEnabled) {
-		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", pixelX, pixelY, pixelU, pixelV, pixelSource, pixelDestination, pixelPrimaryColor, pixelSecondaryColor, pixelSourceDepth, pixelDestinationDepth));
+		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
 		    	            			}
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
@@ -577,14 +573,14 @@ public class RendererTemplate {
 		        					}
 		        					break;
 		        				case GeCommands.ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS:
-		        					if (pixelSourceDepth >= pixelDestinationDepth) {
+		        					if (sourceDepth >= destinationDepth) {
 		            					if (stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
 		            						// Will be handled after the stencil test
 		            						depthTestFailed = true;
 		            						break;
 		            					}
 		    		            		if (isLogTraceEnabled) {
-		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", pixelX, pixelY, pixelU, pixelV, pixelSource, pixelDestination, pixelPrimaryColor, pixelSecondaryColor, pixelSourceDepth, pixelDestinationDepth));
+		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
 		    	            			}
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
@@ -600,14 +596,14 @@ public class RendererTemplate {
 		        					}
 		        					break;
 		        				case GeCommands.ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS_OR_EQUAL:
-		        					if (pixelSourceDepth > pixelDestinationDepth) {
+		        					if (sourceDepth > destinationDepth) {
 		            					if (stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
 		            						// Will be handled after the stencil test
 		            						depthTestFailed = true;
 		            						break;
 		            					}
 		    		            		if (isLogTraceEnabled) {
-		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", pixelX, pixelY, pixelU, pixelV, pixelSource, pixelDestination, pixelPrimaryColor, pixelSecondaryColor, pixelSourceDepth, pixelDestinationDepth));
+		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
 		    	            			}
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
@@ -623,14 +619,14 @@ public class RendererTemplate {
 		        					}
 		        					break;
 		        				case GeCommands.ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER:
-		        					if (pixelSourceDepth <= pixelDestinationDepth) {
+		        					if (sourceDepth <= destinationDepth) {
 		            					if (stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
 		            						// Will be handled after the stencil test
 		            						depthTestFailed = true;
 		            						break;
 		            					}
 		    		            		if (isLogTraceEnabled) {
-		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", pixelX, pixelY, pixelU, pixelV, pixelSource, pixelDestination, pixelPrimaryColor, pixelSecondaryColor, pixelSourceDepth, pixelDestinationDepth));
+		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
 		    	            			}
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
@@ -646,14 +642,14 @@ public class RendererTemplate {
 		        					}
 		        					break;
 		        				case GeCommands.ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL:
-		        					if (pixelSourceDepth < pixelDestinationDepth) {
+		        					if (sourceDepth < destinationDepth) {
 		            					if (stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
 		            						// Will be handled after the stencil test
 		            						depthTestFailed = true;
 		            						break;
 		            					}
 		    		            		if (isLogTraceEnabled) {
-		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", pixelX, pixelY, pixelU, pixelV, pixelSource, pixelDestination, pixelPrimaryColor, pixelSecondaryColor, pixelSourceDepth, pixelDestinationDepth));
+		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
 		    	            			}
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
@@ -677,9 +673,9 @@ public class RendererTemplate {
 	            		if (setVertexPrimaryColor) {
 	            			if (isTriangle) {
 	            				if (sameVertexColor) {
-	            					pixelPrimaryColor = pixel.c3;
+	            					primaryColor = pixel.c3;
 	            				} else {
-	            					pixelPrimaryColor = pixel.getTriangleColorWeightedValue();
+	            					primaryColor = pixel.getTriangleColorWeightedValue();
 	            				}
 	            			}
 	            		}
@@ -689,13 +685,13 @@ public class RendererTemplate {
 	            		//
 	            		if (lightingFlagEnabled && !transform2D && useVertexColor && isTriangle) {
 	            			if (matFlagAmbient) {
-	            				pixel.materialAmbient = pixelPrimaryColor;
+	            				pixel.materialAmbient = primaryColor;
 	            			}
 	            			if (matFlagDiffuse) {
-	            				pixel.materialDiffuse = pixelPrimaryColor;
+	            				pixel.materialDiffuse = primaryColor;
 	            			}
 	            			if (matFlagSpecular) {
-	            				pixel.materialSpecular = pixelPrimaryColor;
+	            				pixel.materialSpecular = primaryColor;
 	            			}
 	            		}
 
@@ -703,9 +699,9 @@ public class RendererTemplate {
 	            		// Lighting
 	            		//
 	            		if (lightingFlagEnabled && !transform2D) {
-	            			renderer.lightingFilter.filter(pixel);
-	            			pixelPrimaryColor = pixel.primaryColor;
-	            			pixelSecondaryColor = pixel.secondaryColor;
+	            			renderer.lighting.applyLighting(colors, pixel);
+	            			primaryColor = colors.primaryColor;
+	            			secondaryColor = colors.secondaryColor;
 	            		}
 
 	        			//
@@ -758,26 +754,26 @@ public class RendererTemplate {
 	            								final float[] V = pixel.getV();
 	            								pixelU = V[0] * pixel.textureMatrix[0] + V[1] * pixel.textureMatrix[4] + V[2] * pixel.textureMatrix[8] + pixel.textureMatrix[12];
 	            								pixelV = V[0] * pixel.textureMatrix[1] + V[1] * pixel.textureMatrix[5] + V[2] * pixel.textureMatrix[9] + pixel.textureMatrix[13];
-	            								pixel.q = V[0] * pixel.textureMatrix[2] + V[1] * pixel.textureMatrix[6] + V[2] * pixel.textureMatrix[10] + pixel.textureMatrix[14];
+	            								//pixelQ = V[0] * pixel.textureMatrix[2] + V[1] * pixel.textureMatrix[6] + V[2] * pixel.textureMatrix[10] + pixel.textureMatrix[14];
 	            								break;
 	            							case GeCommands.TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES:
 	            								float tu = pixelU;
 	            								float tv = pixelV;
 	            								pixelU = tu * pixel.textureMatrix[0] + tv * pixel.textureMatrix[4] + pixel.textureMatrix[12];
 	            								pixelV = tu * pixel.textureMatrix[1] + tv * pixel.textureMatrix[5] + pixel.textureMatrix[13];
-	            								pixel.q = tu * pixel.textureMatrix[2] + tv * pixel.textureMatrix[6] + pixel.textureMatrix[14];
+	            								//pixelQ = tu * pixel.textureMatrix[2] + tv * pixel.textureMatrix[6] + pixel.textureMatrix[14];
 	            								break;
 	            							case GeCommands.TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL:
 	            								final float[] normalizedN = pixel.getNormalizedN();
 	            								pixelU = normalizedN[0] * pixel.textureMatrix[0] + normalizedN[1] * pixel.textureMatrix[4] + normalizedN[2] * pixel.textureMatrix[8] + pixel.textureMatrix[12];
 	            								pixelV = normalizedN[0] * pixel.textureMatrix[1] + normalizedN[1] * pixel.textureMatrix[5] + normalizedN[2] * pixel.textureMatrix[9] + pixel.textureMatrix[13];
-	            								pixel.q = normalizedN[0] * pixel.textureMatrix[2] + normalizedN[1] * pixel.textureMatrix[6] + normalizedN[2] * pixel.textureMatrix[10] + pixel.textureMatrix[14];
+	            								//pixelQ = normalizedN[0] * pixel.textureMatrix[2] + normalizedN[1] * pixel.textureMatrix[6] + normalizedN[2] * pixel.textureMatrix[10] + pixel.textureMatrix[14];
 	            								break;
 	            							case GeCommands.TMAP_TEXTURE_PROJECTION_MODE_NORMAL:
 	            								final float[] N = pixel.getN();
 	            								pixelU = N[0] * pixel.textureMatrix[0] + N[1] * pixel.textureMatrix[4] + N[2] * pixel.textureMatrix[8] + pixel.textureMatrix[12];
 	            								pixelV = N[0] * pixel.textureMatrix[1] + N[1] * pixel.textureMatrix[5] + N[2] * pixel.textureMatrix[9] + pixel.textureMatrix[13];
-	            								pixel.q = N[0] * pixel.textureMatrix[2] + N[1] * pixel.textureMatrix[6] + N[2] * pixel.textureMatrix[10] + pixel.textureMatrix[14];
+	            								//pixelQ = N[0] * pixel.textureMatrix[2] + N[1] * pixel.textureMatrix[6] + N[2] * pixel.textureMatrix[10] + pixel.textureMatrix[14];
 	            								break;
 	            						}
 	            						break;
@@ -826,7 +822,7 @@ public class RendererTemplate {
 
 	            						pixelU = (Pu + 1f) * 0.5f;
 	            						pixelV = (Pv + 1f) * 0.5f;
-	            						pixel.q = 1f;
+	            						//pixelQ = 1f;
 	            						break;
 	            				}
 	            			}
@@ -877,9 +873,9 @@ public class RendererTemplate {
 	    					// TextureReader
 		            		//
 	    					if (transform2D) {
-    							pixelSource = textureAccess.readPixel(pixelToTexel(pixelU), pixelToTexel(pixelV));
+    							sourceColor = textureAccess.readPixel(pixelToTexel(pixelU), pixelToTexel(pixelV));
 	    					} else {
-    							pixelSource = textureAccess.readPixel(pixelToTexel(pixelU * textureWidthFloat), pixelToTexel(pixelV * textureHeightFloat));
+    							sourceColor = textureAccess.readPixel(pixelToTexel(pixelU * textureWidthFloat), pixelToTexel(pixelV * textureHeightFloat));
 	    					}
 
 		            		//
@@ -888,49 +884,49 @@ public class RendererTemplate {
 	    					switch (textureFunc) {
 		    					case GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_MODULATE:
 		    						if (textureAlphaUsed) {
-		    							pixelSource = multiply(pixelSource, pixelPrimaryColor);
+		    							sourceColor = multiply(sourceColor, primaryColor);
 		    						} else {
-		    							pixelSource = multiply(pixelSource | 0xFF000000, pixelPrimaryColor);
+		    							sourceColor = multiply(sourceColor | 0xFF000000, primaryColor);
 		    						}
 		    						break;
 		    					case GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_DECAL:
 		    						if (textureAlphaUsed) {
-		    							alpha = getAlpha(pixelSource);
-		    							a = getAlpha(pixelPrimaryColor);
-		    							b = combineComponent(getBlue(pixelPrimaryColor), getBlue(pixelSource), alpha);
-		    							g = combineComponent(getGreen(pixelPrimaryColor), getGreen(pixelSource), alpha);
-		    							r = combineComponent(getRed(pixelPrimaryColor), getRed(pixelSource), alpha);
-		    							pixelSource = getColor(a, b, g, r);
+		    							alpha = getAlpha(sourceColor);
+		    							a = getAlpha(primaryColor);
+		    							b = combineComponent(getBlue(primaryColor), getBlue(sourceColor), alpha);
+		    							g = combineComponent(getGreen(primaryColor), getGreen(sourceColor), alpha);
+		    							r = combineComponent(getRed(primaryColor), getRed(sourceColor), alpha);
+		    							sourceColor = getColor(a, b, g, r);
 		    						} else {
-		    							pixelSource = (pixelSource & 0x00FFFFFF) | (pixelPrimaryColor & 0xFF000000);
+		    							sourceColor = (sourceColor & 0x00FFFFFF) | (primaryColor & 0xFF000000);
 		    						}
 		    						break;
 		    					case GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_BLEND:
 		    						if (textureAlphaUsed) {
-		    							a = multiplyComponent(getAlpha(pixelSource), getAlpha(pixelPrimaryColor));
-		    							b = combineComponent(getBlue(pixelPrimaryColor), renderer.texEnvColorB, getBlue(pixelSource));
-		    							g = combineComponent(getGreen(pixelPrimaryColor), renderer.texEnvColorG, getGreen(pixelSource));
-		    							r = combineComponent(getRed(pixelPrimaryColor), renderer.texEnvColorR, getRed(pixelSource));
-		    							pixelSource = getColor(a, b, g, r);
+		    							a = multiplyComponent(getAlpha(sourceColor), getAlpha(primaryColor));
+		    							b = combineComponent(getBlue(primaryColor), renderer.texEnvColorB, getBlue(sourceColor));
+		    							g = combineComponent(getGreen(primaryColor), renderer.texEnvColorG, getGreen(sourceColor));
+		    							r = combineComponent(getRed(primaryColor), renderer.texEnvColorR, getRed(sourceColor));
+		    							sourceColor = getColor(a, b, g, r);
 		    						} else {
-		    							a = getAlpha(pixelPrimaryColor);
-		    							b = combineComponent(getBlue(pixelPrimaryColor), renderer.texEnvColorB, getBlue(pixelSource));
-		    							g = combineComponent(getGreen(pixelPrimaryColor), renderer.texEnvColorG, getGreen(pixelSource));
-		    							r = combineComponent(getRed(pixelPrimaryColor), renderer.texEnvColorR, getRed(pixelSource));
-		    							pixelSource = getColor(a, b, g, r);
+		    							a = getAlpha(primaryColor);
+		    							b = combineComponent(getBlue(primaryColor), renderer.texEnvColorB, getBlue(sourceColor));
+		    							g = combineComponent(getGreen(primaryColor), renderer.texEnvColorG, getGreen(sourceColor));
+		    							r = combineComponent(getRed(primaryColor), renderer.texEnvColorR, getRed(sourceColor));
+		    							sourceColor = getColor(a, b, g, r);
 		    						}
 		    						break;
 		    					case GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_REPLACE:
 		    						if (!textureAlphaUsed) {
-		    							pixelSource = (pixelSource & 0x00FFFFFF) | (pixelPrimaryColor & 0xFF000000);
+		    							sourceColor = (sourceColor & 0x00FFFFFF) | (primaryColor & 0xFF000000);
 		    						}
 		    						break;
 		    					case GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_ADD:
 		    						if (textureAlphaUsed) {
-		    							a = multiplyComponent(getAlpha(pixelSource), getAlpha(pixelPrimaryColor));
-		    							pixelSource = setAlpha(addBGR(pixelSource, pixelPrimaryColor), a);
+		    							a = multiplyComponent(getAlpha(sourceColor), getAlpha(primaryColor));
+		    							sourceColor = setAlpha(addBGR(sourceColor, primaryColor), a);
 		    						} else {
-		    							pixelSource = add(pixelSource & 0x00FFFFFF, pixelPrimaryColor);
+		    							sourceColor = add(sourceColor & 0x00FFFFFF, primaryColor);
 		    						}
 		    						break;
 	    					}
@@ -940,10 +936,10 @@ public class RendererTemplate {
 		            		//
 	            			if (textureColorDoubled) {
 	            				if (!transform2D && lightingFlagEnabled && lightMode == LMODE_SEPARATE_SPECULAR_COLOR) {
-	            					pixelSource = doubleColor(pixelSource);
-	            					pixelSecondaryColor = doubleColor(pixelSecondaryColor);
+	            					sourceColor = doubleColor(sourceColor);
+	            					secondaryColor = doubleColor(secondaryColor);
 	            				} else {
-	            					pixelSource = doubleColor(pixelSource);
+	            					sourceColor = doubleColor(sourceColor);
 	            				}
 	            			}
 
@@ -951,7 +947,7 @@ public class RendererTemplate {
 	            			// SourceColor
 		            		//
 	            			if (!transform2D && lightingFlagEnabled && lightMode == LMODE_SEPARATE_SPECULAR_COLOR) {
-	            				pixelSource = add(pixelSource, pixelSecondaryColor);
+	            				sourceColor = add(sourceColor, secondaryColor);
 	            			}
 	            		} else {
 		            		//
@@ -959,10 +955,10 @@ public class RendererTemplate {
 		            		//
 	            			if (textureColorDoubled) {
 	            				if (!transform2D && lightingFlagEnabled && lightMode == LMODE_SEPARATE_SPECULAR_COLOR) {
-	            					pixelPrimaryColor = doubleColor(pixelPrimaryColor);
-	            					pixelSecondaryColor = doubleColor(pixelSecondaryColor);
+	            					primaryColor = doubleColor(primaryColor);
+	            					secondaryColor = doubleColor(secondaryColor);
 	            				} else if (!primaryColorSetGlobally) {
-	        						pixelPrimaryColor = doubleColor(pixelPrimaryColor);
+	        						primaryColor = doubleColor(primaryColor);
 	            				}
 	            			}
 
@@ -970,9 +966,9 @@ public class RendererTemplate {
 	            			// SourceColor
 		            		//
 	            			if (!transform2D && lightingFlagEnabled && lightMode == LMODE_SEPARATE_SPECULAR_COLOR) {
-	            				pixelSource = add(pixelPrimaryColor, pixelSecondaryColor);
+	            				sourceColor = add(primaryColor, secondaryColor);
 	            			} else {
-	            				pixelSource = pixelPrimaryColor;
+	            				sourceColor = primaryColor;
 	            			}
 	            		}
 
@@ -997,7 +993,7 @@ public class RendererTemplate {
 		    	        			}
 			        				continue;
 		            			case GeCommands.CTST_COLOR_FUNCTION_PASS_PIXEL_IF_COLOR_MATCHES:
-		            				if ((pixelSource & renderer.colorTestMsk) != renderer.colorTestRef) {
+		            				if ((sourceColor & renderer.colorTestMsk) != renderer.colorTestRef) {
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
 		        	        				if (needDepthWrite || needDestinationDepthRead) {
@@ -1012,7 +1008,7 @@ public class RendererTemplate {
 		            				}
 		            				break;
 		            			case GeCommands.CTST_COLOR_FUNCTION_PASS_PIXEL_IF_COLOR_DIFFERS:
-		            				if ((pixelSource & renderer.colorTestMsk) == renderer.colorTestRef) {
+		            				if ((sourceColor & renderer.colorTestMsk) == renderer.colorTestRef) {
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
 		        	        				if (needDepthWrite || needDestinationDepthRead) {
@@ -1050,7 +1046,7 @@ public class RendererTemplate {
 		    	        			}
 			        				continue;
 		            			case GeCommands.ATST_PASS_PIXEL_IF_MATCHES:
-		            				if (getAlpha(pixelSource) != alphaRef) {
+		            				if (getAlpha(sourceColor) != alphaRef) {
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
 		        	        				if (needDepthWrite || needDestinationDepthRead) {
@@ -1065,7 +1061,7 @@ public class RendererTemplate {
 		            				}
 		            				break;
 		            			case GeCommands.ATST_PASS_PIXEL_IF_DIFFERS:
-		            				if (getAlpha(pixelSource) == alphaRef) {
+		            				if (getAlpha(sourceColor) == alphaRef) {
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
 		        	        				if (needDepthWrite || needDestinationDepthRead) {
@@ -1080,7 +1076,7 @@ public class RendererTemplate {
 		            				}
 		            				break;
 		            			case GeCommands.ATST_PASS_PIXEL_IF_LESS:
-		            				if (getAlpha(pixelSource) >= alphaRef) {
+		            				if (getAlpha(sourceColor) >= alphaRef) {
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
 		        	        				if (needDepthWrite || needDestinationDepthRead) {
@@ -1097,7 +1093,7 @@ public class RendererTemplate {
 		            			case GeCommands.ATST_PASS_PIXEL_IF_LESS_OR_EQUAL:
 		            				// No test if alphaRef==0xFF
 		            				if (RendererTemplate.alphaRef < 0xFF) {
-			            				if (getAlpha(pixelSource) > alphaRef) {
+			            				if (getAlpha(sourceColor) > alphaRef) {
 			        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 			        	        				fbIndex++;
 			        	        				if (needDepthWrite || needDestinationDepthRead) {
@@ -1113,7 +1109,7 @@ public class RendererTemplate {
 		            				}
 		            				break;
 		            			case GeCommands.ATST_PASS_PIXEL_IF_GREATER:
-		            				if (getAlpha(pixelSource) <= alphaRef) {
+		            				if (getAlpha(sourceColor) <= alphaRef) {
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
 		        	        				if (needDepthWrite || needDestinationDepthRead) {
@@ -1130,7 +1126,7 @@ public class RendererTemplate {
 		            			case GeCommands.ATST_PASS_PIXEL_IF_GREATER_OR_EQUAL:
 		            				// No test if alphaRef==0x00
 		            				if (RendererTemplate.alphaRef > 0x00) {
-			            				if (getAlpha(pixelSource) < alphaRef) {
+			            				if (getAlpha(sourceColor) < alphaRef) {
 			        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 			        	        				fbIndex++;
 			        	        				if (needDepthWrite || needDestinationDepthRead) {
@@ -1155,7 +1151,7 @@ public class RendererTemplate {
 	            			switch (stencilFunc) {
 	            				case GeCommands.STST_FUNCTION_NEVER_PASS_STENCIL_TEST:
 	            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-	            						pixelDestination = stencilOpFail(pixelDestination, stencilRefAlpha);
+	            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
 	            					}
 	        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 	        	        				fbIndex++;
@@ -1172,9 +1168,9 @@ public class RendererTemplate {
 	            					// Nothing to do
 	            					break;
 	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_MATCHES:
-	            					if ((getAlpha(pixelDestination) & renderer.stencilMask) != renderer.stencilRef) {
+	            					if ((getAlpha(destinationColor) & renderer.stencilMask) != renderer.stencilRef) {
 		            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-		            						pixelDestination = stencilOpFail(pixelDestination, stencilRefAlpha);
+		            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
 		            					}
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
@@ -1190,9 +1186,9 @@ public class RendererTemplate {
 	            					}
 	            					break;
 	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_DIFFERS:
-	            					if ((getAlpha(pixelDestination) & renderer.stencilMask) == renderer.stencilRef) {
+	            					if ((getAlpha(destinationColor) & renderer.stencilMask) == renderer.stencilRef) {
 		            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-		            						pixelDestination = stencilOpFail(pixelDestination, stencilRefAlpha);
+		            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
 		            					}
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
@@ -1208,9 +1204,9 @@ public class RendererTemplate {
 	            					}
 	            					break;
 	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_LESS:
-	            					if ((getAlpha(pixelDestination) & renderer.stencilMask) >= renderer.stencilRef) {
+	            					if ((getAlpha(destinationColor) & renderer.stencilMask) >= renderer.stencilRef) {
 		            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-		            						pixelDestination = stencilOpFail(pixelDestination, stencilRefAlpha);
+		            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
 		            					}
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
@@ -1226,9 +1222,9 @@ public class RendererTemplate {
 	            					}
 	            					break;
 	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_LESS_OR_EQUAL:
-	            					if ((getAlpha(pixelDestination) & renderer.stencilMask) > renderer.stencilRef) {
+	            					if ((getAlpha(destinationColor) & renderer.stencilMask) > renderer.stencilRef) {
 		            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-		            						pixelDestination = stencilOpFail(pixelDestination, stencilRefAlpha);
+		            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
 		            					}
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
@@ -1244,9 +1240,9 @@ public class RendererTemplate {
 	            					}
 	            					break;
 	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_GREATER:
-	            					if ((getAlpha(pixelDestination) & renderer.stencilMask) <= renderer.stencilRef) {
+	            					if ((getAlpha(destinationColor) & renderer.stencilMask) <= renderer.stencilRef) {
 		            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-		            						pixelDestination = stencilOpFail(pixelDestination, stencilRefAlpha);
+		            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
 		            					}
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
@@ -1262,9 +1258,9 @@ public class RendererTemplate {
 	            					}
 	            					break;
 	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_GREATER_OR_EQUAL:
-	            					if ((getAlpha(pixelDestination) & renderer.stencilMask) < renderer.stencilRef) {
+	            					if ((getAlpha(destinationColor) & renderer.stencilMask) < renderer.stencilRef) {
 		            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-		            						pixelDestination = stencilOpFail(pixelDestination, stencilRefAlpha);
+		            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
 		            					}
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
@@ -1288,9 +1284,9 @@ public class RendererTemplate {
 	            		if (depthTestFlagEnabled && !clearMode && stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE && depthFunc != GeCommands.ZTST_FUNCTION_ALWAYS_PASS_PIXEL) {
 	            			if (depthFunc == GeCommands.ZTST_FUNCTION_NEVER_PASS_PIXEL || depthTestFailed) {
     		            		if (isLogTraceEnabled) {
-    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed with stencilOpZFail, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", pixelX, pixelY, pixelU, pixelV, pixelSource, pixelDestination, pixelPrimaryColor, pixelSecondaryColor, pixelSourceDepth, pixelDestinationDepth));
+    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed with stencilOpZFail, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
     	            			}
-        						pixelDestination = stencilOpZFail(pixelDestination, stencilRefAlpha);
+        						destinationColor = stencilOpZFail(destinationColor, stencilRefAlpha);
         	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
         	        				fbIndex++;
         	        				if (needDepthWrite || needDestinationDepthRead) {
@@ -1318,48 +1314,48 @@ public class RendererTemplate {
 		            					// Nothing to do, this is a NOP
 		            				} else if (blendSrc == GeCommands.ALPHA_FIX && sfix == 0xFFFFFF &&
 		            				           blendDst == GeCommands.ALPHA_FIX && dfix == 0xFFFFFF) {
-		            					pixelSource = PixelColor.add(pixelSource, pixelDestination & 0x00FFFFFF);
+		            					sourceColor = PixelColor.add(sourceColor, destinationColor & 0x00FFFFFF);
 		            				} else if (blendSrc == GeCommands.ALPHA_SOURCE_ALPHA && blendDst == GeCommands.ALPHA_ONE_MINUS_SOURCE_ALPHA) {
 		            					// This is the most common case and can be optimized
-		            					int srcAlpha = pixelSource >>> 24;
+		            					int srcAlpha = sourceColor >>> 24;
 		            					if (srcAlpha == ZERO) {
 		            						// Set color of destination
-		            						pixelSource = (pixelSource & 0xFF000000) | (pixelDestination & 0x00FFFFFF);
+		            						sourceColor = (sourceColor & 0xFF000000) | (destinationColor & 0x00FFFFFF);
 		            					} else if (srcAlpha == ONE) {
 		            						// Nothing to change
 		            					} else {
 		            						int oneMinusSrcAlpha = ONE - srcAlpha;
-		            						filteredSrc = multiplyBGR(pixelSource, srcAlpha, srcAlpha, srcAlpha);
-		            						filteredDst = multiplyBGR(pixelDestination, oneMinusSrcAlpha, oneMinusSrcAlpha, oneMinusSrcAlpha);
-		            						pixelSource = setBGR(pixelSource, addBGR(filteredSrc, filteredDst));
+		            						filteredSrc = multiplyBGR(sourceColor, srcAlpha, srcAlpha, srcAlpha);
+		            						filteredDst = multiplyBGR(destinationColor, oneMinusSrcAlpha, oneMinusSrcAlpha, oneMinusSrcAlpha);
+		            						sourceColor = setBGR(sourceColor, addBGR(filteredSrc, filteredDst));
 		            					}
 		            				} else {
-			            				filteredSrc = multiplyBGR(pixelSource, blendSrc(pixelSource, pixelDestination, renderer.sfix));
-			            				filteredDst = multiplyBGR(pixelDestination, blendDst(pixelSource, pixelDestination, renderer.dfix));
-			            				pixelSource = setBGR(pixelSource, addBGR(filteredSrc, filteredDst));
+			            				filteredSrc = multiplyBGR(sourceColor, blendSrc(sourceColor, destinationColor, renderer.sfix));
+			            				filteredDst = multiplyBGR(destinationColor, blendDst(sourceColor, destinationColor, renderer.dfix));
+			            				sourceColor = setBGR(sourceColor, addBGR(filteredSrc, filteredDst));
 		            				}
 		            				break;
 		            			case GeCommands.ALPHA_SOURCE_BLEND_OPERATION_SUBTRACT:
-		            				filteredSrc = multiplyBGR(pixelSource, blendSrc(pixelSource, pixelDestination, renderer.sfix));
-		            				filteredDst = multiplyBGR(pixelDestination, blendDst(pixelSource, pixelDestination, renderer.dfix));
-		            				pixelSource = setBGR(pixelSource, substractBGR(filteredSrc, filteredDst));
+		            				filteredSrc = multiplyBGR(sourceColor, blendSrc(sourceColor, destinationColor, renderer.sfix));
+		            				filteredDst = multiplyBGR(destinationColor, blendDst(sourceColor, destinationColor, renderer.dfix));
+		            				sourceColor = setBGR(sourceColor, substractBGR(filteredSrc, filteredDst));
 		            				break;
 		            			case GeCommands.ALPHA_SOURCE_BLEND_OPERATION_REVERSE_SUBTRACT:
-		            				filteredSrc = multiplyBGR(pixelSource, blendSrc(pixelSource, pixelDestination, renderer.sfix));
-		            				filteredDst = multiplyBGR(pixelDestination, blendDst(pixelSource, pixelDestination, renderer.dfix));
-		            				pixelSource = setBGR(pixelSource, substractBGR(filteredDst, filteredSrc));
+		            				filteredSrc = multiplyBGR(sourceColor, blendSrc(sourceColor, destinationColor, renderer.sfix));
+		            				filteredDst = multiplyBGR(destinationColor, blendDst(sourceColor, destinationColor, renderer.dfix));
+		            				sourceColor = setBGR(sourceColor, substractBGR(filteredDst, filteredSrc));
 		            				break;
 		            			case GeCommands.ALPHA_SOURCE_BLEND_OPERATION_MINIMUM_VALUE:
 		            				// Source and destination factors are not applied
-		            				pixelSource = setBGR(pixelSource, minBGR(pixelSource, pixelDestination));
+		            				sourceColor = setBGR(sourceColor, minBGR(sourceColor, destinationColor));
 		            				break;
 		            			case GeCommands.ALPHA_SOURCE_BLEND_OPERATION_MAXIMUM_VALUE:
 		            				// Source and destination factors are not applied
-		            				pixelSource = setBGR(pixelSource, maxBGR(pixelSource, pixelDestination));
+		            				sourceColor = setBGR(sourceColor, maxBGR(sourceColor, destinationColor));
 		            				break;
 		            			case GeCommands.ALPHA_SOURCE_BLEND_OPERATION_ABSOLUTE_VALUE:
 		            				// Source and destination factors are not applied
-		            				pixelSource = setBGR(pixelSource, absBGR(pixelSource, pixelDestination));
+		            				sourceColor = setBGR(sourceColor, absBGR(sourceColor, destinationColor));
 		            				break;
 	            			}
 	            		}
@@ -1370,36 +1366,36 @@ public class RendererTemplate {
 	            		if (stencilTestFlagEnabled && !clearMode) {
 	            			switch (stencilOpZPass) {
 	            				case GeCommands.SOP_KEEP_STENCIL_VALUE:
-	            					pixelSource = (pixelSource & 0x00FFFFFF) | (pixelDestination & 0xFF000000);
+	            					sourceColor = (sourceColor & 0x00FFFFFF) | (destinationColor & 0xFF000000);
 	            					break;
 	            				case GeCommands.SOP_ZERO_STENCIL_VALUE:
-	            					pixelSource &= 0x00FFFFFF;
+	            					sourceColor &= 0x00FFFFFF;
 	            					break;
 	            				case GeCommands.SOP_REPLACE_STENCIL_VALUE:
 	            					if (stencilRef == 0) {
 	            						// SOP_REPLACE_STENCIL_VALUE with a 0 value is equivalent
 	            						// to SOP_ZERO_STENCIL_VALUE
-	                					pixelSource &= 0x00FFFFFF;
+	                					sourceColor &= 0x00FFFFFF;
 	            					} else {
-	            						pixelSource = (pixelSource & 0x00FFFFFF) | stencilRefAlpha;
+	            						sourceColor = (sourceColor & 0x00FFFFFF) | stencilRefAlpha;
 	            					}
 	            					break;
 	            				case GeCommands.SOP_INVERT_STENCIL_VALUE:
-	            					pixelSource = (pixelSource & 0x00FFFFFF) | ((~pixelDestination) & 0xFF000000);
+	            					sourceColor = (sourceColor & 0x00FFFFFF) | ((~destinationColor) & 0xFF000000);
 	            					break;
 	            				case GeCommands.SOP_INCREMENT_STENCIL_VALUE:
-	            					alpha = pixelDestination & 0xFF000000;
+	            					alpha = destinationColor & 0xFF000000;
 	            					if (alpha != 0xFF000000) {
 	            						alpha += 0x01000000;
 	            					}
-	            					pixelSource = (pixelSource & 0x00FFFFFF) | alpha;
+	            					sourceColor = (sourceColor & 0x00FFFFFF) | alpha;
 	            					break;
 	            				case GeCommands.SOP_DECREMENT_STENCIL_VALUE:
-	            					alpha = pixelDestination & 0xFF000000;
+	            					alpha = destinationColor & 0xFF000000;
 	            					if (alpha != 0x00000000) {
 	            						alpha -= 0x01000000;
 	            					}
-	            					pixelSource = (pixelSource & 0x00FFFFFF) | alpha;
+	            					sourceColor = (sourceColor & 0x00FFFFFF) | alpha;
 	            					break;
 	            			}
 	            		}
@@ -1410,52 +1406,52 @@ public class RendererTemplate {
 	            		if (colorLogicOpFlagEnabled && !clearMode) {
 	            			switch (logicOp) {
 		            			case GeCommands.LOP_CLEAR:
-		            				pixelSource = ZERO;
+		            				sourceColor = ZERO;
 		            				break;
 		            			case GeCommands.LOP_AND:
-		            				pixelSource &= pixelDestination;
+		            				sourceColor &= destinationColor;
 		            				break;
 		            			case GeCommands.LOP_REVERSE_AND:
-		            				pixelSource &= (~pixelDestination);
+		            				sourceColor &= (~destinationColor);
 		            				break;
 		            			case GeCommands.LOP_COPY:
 		            				// This is a NOP
 		            				break;
 		            			case GeCommands.LOP_INVERTED_AND:
-		            				pixelSource = (~pixelSource) & pixelDestination;
+		            				sourceColor = (~sourceColor) & destinationColor;
 		            				break;
 		            			case GeCommands.LOP_NO_OPERATION:
-		            				pixelSource = pixelDestination;
+		            				sourceColor = destinationColor;
 		            				break;
 		            			case GeCommands.LOP_EXLUSIVE_OR:
-		            				pixelSource ^= pixelDestination;
+		            				sourceColor ^= destinationColor;
 		            				break;
 		            			case GeCommands.LOP_OR:
-		            				pixelSource |= pixelDestination;
+		            				sourceColor |= destinationColor;
 		            				break;
 		            			case GeCommands.LOP_NEGATED_OR:
-		            				pixelSource = ~(pixelSource | pixelDestination);
+		            				sourceColor = ~(sourceColor | destinationColor);
 		            				break;
 		            			case GeCommands.LOP_EQUIVALENCE:
-		            				pixelSource = ~(pixelSource ^ pixelDestination);
+		            				sourceColor = ~(sourceColor ^ destinationColor);
 		            				break;
 		            			case GeCommands.LOP_INVERTED:
-		            				pixelSource = ~pixelDestination;
+		            				sourceColor = ~destinationColor;
 		            				break;
 		            			case GeCommands.LOP_REVERSE_OR:
-		            				pixelSource |= (~pixelDestination);
+		            				sourceColor |= (~destinationColor);
 		            				break;
 		            			case GeCommands.LOP_INVERTED_COPY:
-		            				pixelSource = ~pixelSource;
+		            				sourceColor = ~sourceColor;
 		            				break;
 		            			case GeCommands.LOP_INVERTED_OR:
-		            				pixelSource = (~pixelSource) | pixelDestination;
+		            				sourceColor = (~sourceColor) | destinationColor;
 		            				break;
 		            			case GeCommands.LOP_NEGATED_AND:
-		            				pixelSource = ~(pixelSource & pixelDestination);
+		            				sourceColor = ~(sourceColor & destinationColor);
 		            				break;
 		            			case GeCommands.LOP_SET:
-		            				pixelSource = 0xFFFFFFFF;
+		            				sourceColor = 0xFFFFFFFF;
 		            				break;
 		            		}
 	            		}
@@ -1466,18 +1462,18 @@ public class RendererTemplate {
 	            		if (clearMode) {
 	            			if (clearModeColor) {
 	            				if (!clearModeStencil) {
-	            					pixelSource = (pixelSource & 0x00FFFFFF) | (pixelDestination & 0xFF000000);
+	            					sourceColor = (sourceColor & 0x00FFFFFF) | (destinationColor & 0xFF000000);
 	            				}
 	            			} else {
 	            				if (clearModeStencil) {
-	            					pixelSource = (pixelSource & 0xFF000000) | (pixelDestination & 0x00FFFFFF);
+	            					sourceColor = (sourceColor & 0xFF000000) | (destinationColor & 0x00FFFFFF);
 	            				} else {
-	            					pixelSource = pixelDestination;
+	            					sourceColor = destinationColor;
 	            				}
 	            			}
 	            		} else {
 	            			if (colorMask != 0x00000000) {
-	            				pixelSource = (pixelSource & notColorMask) | (pixelDestination & colorMask);
+	            				sourceColor = (sourceColor & notColorMask) | (destinationColor & colorMask);
 	            			}
 	            		}
 
@@ -1487,13 +1483,13 @@ public class RendererTemplate {
 	            		if (needDepthWrite) {
 		            		if (clearMode) {
 		            			if (!clearModeDepth) {
-		            				pixelSourceDepth = pixelDestinationDepth;
+		            				sourceDepth = destinationDepth;
 		            			}
 		            		} else if (!depthTestFlagEnabled) {
 		            			// Depth writes are disabled when the depth test is not enabled.
-		            			pixelSourceDepth = pixelDestinationDepth;
+		            			sourceDepth = destinationDepth;
 		            		} else if (!depthMask) {
-		            			pixelSourceDepth = pixelDestinationDepth;
+		            			sourceDepth = destinationDepth;
 		            		}
 	            		}
 
@@ -1501,17 +1497,17 @@ public class RendererTemplate {
 	            		// Filter passed
 	            		//
 	            		if (isLogTraceEnabled) {
-	            			VideoEngine.log.trace(String.format("Pixel (%d,%d), passed=true, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", pixelX, pixelY, pixelU, pixelV, pixelSource, pixelDestination, pixelPrimaryColor, pixelSecondaryColor, pixelSourceDepth, pixelDestinationDepth));
+	            			VideoEngine.log.trace(String.format("Pixel (%d,%d), passed=true, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
             			}
 	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
-	        				memInt[fbIndex] = pixelSource;
+	        				memInt[fbIndex] = sourceColor;
 	        				fbIndex++;
 	        				if (needDepthWrite) {
 		        				if (depthOffset == 0) {
-		        					memInt[depthIndex] = (memInt[depthIndex] & 0xFFFF0000) | (pixelSourceDepth & 0x0000FFFF);
+		        					memInt[depthIndex] = (memInt[depthIndex] & 0xFFFF0000) | (sourceDepth & 0x0000FFFF);
 		        					depthOffset = 1;
 		        				} else {
-		        					memInt[depthIndex] = (memInt[depthIndex] & 0x0000FFFF) | (pixelSourceDepth << 16);
+		        					memInt[depthIndex] = (memInt[depthIndex] & 0x0000FFFF) | (sourceDepth << 16);
 		        					depthIndex++;
 		        					depthOffset = 0;
 		        				}
@@ -1521,12 +1517,12 @@ public class RendererTemplate {
 	    	    				depthOffset &= 1;
 	        				}
 	        			} else {
-		            		pixel.source = pixelSource;
 		            		if (needDepthWrite) {
-		            			pixel.sourceDepth = pixelSourceDepth;
-			            		rendererWriter.writeNext(pixel);
+		            			colorDepth.color = sourceColor;
+		            			colorDepth.depth = sourceDepth;
+			            		rendererWriter.writeNext(colorDepth);
 		            		} else {
-			            		rendererWriter.writeNextColor(pixel);
+			            		rendererWriter.writeNextColor(sourceColor);
 		            		}
 	        			}
 	            	} while (false);

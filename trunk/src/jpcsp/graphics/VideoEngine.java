@@ -1885,7 +1885,7 @@ public class VideoEngine {
 					re.bindVertexArray(0);
 	    		}
 
-	    		boolean readTexture = context.textureFlag.isEnabled();
+	    		boolean readTexture = context.textureFlag.isEnabled() && !context.clearMode;
 	            switch (type) {
 	                case PRIM_POINT:
 	                case PRIM_LINE:

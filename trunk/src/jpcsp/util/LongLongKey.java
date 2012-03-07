@@ -26,6 +26,15 @@ public class LongLongKey {
 	private long key2;
 	private int shift;
 
+	public LongLongKey() {
+	}
+
+	public LongLongKey(LongLongKey key) {
+		key1 = key.key1;
+		key2 = key.key2;
+		shift = key.shift;
+	}
+
 	public void reset() {
 		key1 = 0;
 		key2 = 0;
