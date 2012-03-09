@@ -240,6 +240,7 @@ public class RendererTemplate {
 		final PrimitiveState prim = renderer.prim;
 		final IRendererWriter rendererWriter = renderer.rendererWriter;
 		final IRandomTextureAccess textureAccess = resampleTexture(renderer);
+		final Lighting lighting = renderer.lighting;
 
 		doRenderStart(renderer);
 
@@ -699,7 +700,7 @@ public class RendererTemplate {
 	            		// Lighting
 	            		//
 	            		if (lightingFlagEnabled && !transform2D) {
-	            			renderer.lighting.applyLighting(colors, pixel);
+	            			lighting.applyLighting(colors, pixel);
 	            			primaryColor = colors.primaryColor;
 	            			secondaryColor = colors.secondaryColor;
 	            		}

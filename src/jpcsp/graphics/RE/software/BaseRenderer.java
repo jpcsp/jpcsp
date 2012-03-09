@@ -82,7 +82,6 @@ public abstract class BaseRenderer implements IRenderer {
 	public int scissorX1, scissorY1;
 	public int scissorX2, scissorY2;
 	protected boolean setVertexPrimaryColor;
-	protected boolean sameVertexColor;
 	protected int fbp, fbw, psm;
 	protected int zbp, zbw;
 	protected boolean clearMode;
@@ -234,6 +233,10 @@ public abstract class BaseRenderer implements IRenderer {
 		}
 	}
 
+	protected boolean isUsingTexture(GeContext context) {
+		return context.textureFlag.isEnabled() && (!transform2D || useVertexTexture) && !clearMode;
+	}
+
 	protected void initRendering(GeContext context) {
 		if (renderingInitialized) {
 			return;
@@ -291,11 +294,6 @@ public abstract class BaseRenderer implements IRenderer {
 
         // Is the lighting model using the material color from the vertex color?
         if (!transform2D && context.lightingFlag.isEnabled() && context.mat_flags != 0 && context.useVertexColor && context.vinfo.color != 0 && isTriangle) {
-			// Reserve an empty filter slot. The filter will be set by the
-			// BasePrimitiveRenderer when the vertices are known.
-			if (isLogTraceEnabled) {
-				log.trace(String.format("Using VertexColorFilter"));
-			}
         	setVertexPrimaryColor = true;
         }
 
@@ -316,7 +314,7 @@ public abstract class BaseRenderer implements IRenderer {
         }
 
         textureAccess = null;
-    	if (context.textureFlag.isEnabled() && (!transform2D || useVertexTexture) && !clearMode) {
+    	if (isUsingTexture(context)) {
     		int textureBufferWidth = VideoEngine.alignBufferWidth(context.texture_buffer_width[mipmapLevel], context.texture_storage);
     		int textureHeight = context.texture_height[mipmapLevel];
             int textureAddress = context.texture_base_pointer[mipmapLevel];
@@ -399,7 +397,6 @@ public abstract class BaseRenderer implements IRenderer {
 		key.addKeyComponent(context.textureFlag.isEnabled());
 		key.addKeyComponent(useVertexTexture);
 		key.addKeyComponent(context.lightingFlag.isEnabled());
-		key.addKeyComponent(sameVertexColor);
 		key.addKeyComponent(setVertexPrimaryColor);
 		key.addKeyComponent(primaryColorSetGlobally);
 		key.addKeyComponent(isTriangle);

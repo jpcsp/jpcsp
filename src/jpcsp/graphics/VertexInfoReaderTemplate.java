@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics;
 
+import static jpcsp.util.Utilities.round;
 import jpcsp.Memory;
 import jpcsp.graphics.RE.software.PixelColor;
 
@@ -529,112 +530,112 @@ public class VertexInfoReaderTemplate {
 		            }
 		        }
             }
-        }
 
-        if (normal != 0) {
-    		//
-    		// Normal
-    		//
-	        switch (normal) {
-	            case 1: {
-                    float x = (byte) mem.read8(addr++);
-                    float y = (byte) mem.read8(addr++);
-                    float z = (byte) mem.read8(addr++);
-                    if (!transform2D) {
-                        // To be mapped to [-1..1] for 3D
-                        x /= 0x7f;
-                        y /= 0x7f;
-                        z /= 0x7f;
-                    }
-                    v.n[0] = x;
-                    v.n[1] = y;
-                    v.n[2] = z;
-                    break;
-                }
-	            case 2: {
-	                addr = (addr + 1) & ~1;
-                    // TODO Check if this value is signed like position or unsigned like texture
-                    // Signed 16 bit
-                    float x = (short) mem.read16(addr);
-                    float y = (short) mem.read16(addr + 2);
-                    float z = (short) mem.read16(addr + 4);
-                    addr += 6;
-                    if (!transform2D) {
-                        // To be mapped to [-1..1] for 3D
-                        x /= 0x7fff;
-                        y /= 0x7fff;
-                        z /= 0x7fff;
-                    }
-                    v.n[0] = x;
-                    v.n[1] = y;
-                    v.n[2] = z;
-                    break;
-	            }
-	            case 3: {
-                    addr = (addr + 3) & ~3;
-                    v.n[0] = Float.intBitsToFloat(mem.read32(addr));
-                    v.n[1] = Float.intBitsToFloat(mem.read32(addr + 4));
-                    v.n[2] = Float.intBitsToFloat(mem.read32(addr + 8));
-                    addr += 12;
-                    break;
-	            }
+	        if (normal != 0) {
+	    		//
+	    		// Normal
+	    		//
+		        switch (normal) {
+		            case 1: {
+	                    float x = (byte) mem.read8(addr++);
+	                    float y = (byte) mem.read8(addr++);
+	                    float z = (byte) mem.read8(addr++);
+	                    if (!transform2D) {
+	                        // To be mapped to [-1..1] for 3D
+	                        x /= 0x7f;
+	                        y /= 0x7f;
+	                        z /= 0x7f;
+	                    }
+	                    v.n[0] = x;
+	                    v.n[1] = y;
+	                    v.n[2] = z;
+	                    break;
+	                }
+		            case 2: {
+		                addr = (addr + 1) & ~1;
+	                    // TODO Check if this value is signed like position or unsigned like texture
+	                    // Signed 16 bit
+	                    float x = (short) mem.read16(addr);
+	                    float y = (short) mem.read16(addr + 2);
+	                    float z = (short) mem.read16(addr + 4);
+	                    addr += 6;
+	                    if (!transform2D) {
+	                        // To be mapped to [-1..1] for 3D
+	                        x /= 0x7fff;
+	                        y /= 0x7fff;
+	                        z /= 0x7fff;
+	                    }
+	                    v.n[0] = x;
+	                    v.n[1] = y;
+	                    v.n[2] = z;
+	                    break;
+		            }
+		            case 3: {
+	                    addr = (addr + 3) & ~3;
+	                    v.n[0] = Float.intBitsToFloat(mem.read32(addr));
+	                    v.n[1] = Float.intBitsToFloat(mem.read32(addr + 4));
+	                    v.n[2] = Float.intBitsToFloat(mem.read32(addr + 8));
+	                    addr += 12;
+	                    break;
+		            }
+		        }
 	        }
-        }
 
-        if (position != 0) {
-    		//
-    		// Position
-    		//
-	        switch (position) {
-	            case 1: {
-                    if (transform2D) {
-                        // X and Y are signed 8 bit, Z is unsigned 8 bit
-                        v.p[0] = (byte) mem.read8(addr++);
-                        v.p[1] = (byte) mem.read8(addr++);
-                        v.p[2] = mem.read8(addr++);
-                    } else {
-                        // Signed 8 bit, to be mapped to [-1..1] for 3D
-                    	v.p[0] = ((byte) mem.read8(addr++)) / 127f;
-                    	v.p[1] = ((byte) mem.read8(addr++)) / 127f;
-                    	v.p[2] = ((byte) mem.read8(addr++)) / 127f;
-                    }
-                    break;
-                }
-	            case 2: {
-	                addr = (addr + 1) & ~1;
-                    if (transform2D) {
-                        // X and Y are signed 16 bit, Z is unsigned 16 bit
-                        v.p[0] = (short) mem.read16(addr);
-                        v.p[1] = (short) mem.read16(addr + 2);
-                        v.p[2] = mem.read16(addr + 4);
-                    } else {
-                        // Signed 16 bit, to be mapped to [-1..1] for 3D
-                    	v.p[0] = ((short) mem.read16(addr)) / 32767f;
-                    	v.p[1] = ((short) mem.read16(addr + 2)) / 32767f;
-                    	v.p[2] = ((short) mem.read16(addr + 4)) / 32767f;
-                    }
-                    addr += 6;
-                    break;
-                }
-	            case 3: { // GU_VERTEX_32BITF
-                    addr = (addr + 3) & ~3;
-                    float x = Float.intBitsToFloat(mem.read32(addr));
-                    float y = Float.intBitsToFloat(mem.read32(addr + 4));
-                    float z = Float.intBitsToFloat(mem.read32(addr + 8));
-                    addr += 12;
-                    if (transform2D) {
-                        // Z is limited between 0 and 65535 (tested).
-                        if (z < 0 || z > 65535) {
-                            z = 0;
-                        } else {
-                            z = (int) z;	// 2D positions are always integer values
-                        }
-                    }
-                    v.p[0] = x;
-                    v.p[1] = y;
-                    v.p[2] = z;
-                    break;
-                }
+	        if (position != 0) {
+	    		//
+	    		// Position
+	    		//
+		        switch (position) {
+		            case 1: {
+	                    if (transform2D) {
+	                        // X and Y are signed 8 bit, Z is unsigned 8 bit
+	                        v.p[0] = (byte) mem.read8(addr++);
+	                        v.p[1] = (byte) mem.read8(addr++);
+	                        v.p[2] = mem.read8(addr++);
+	                    } else {
+	                        // Signed 8 bit, to be mapped to [-1..1] for 3D
+	                    	v.p[0] = ((byte) mem.read8(addr++)) / 127f;
+	                    	v.p[1] = ((byte) mem.read8(addr++)) / 127f;
+	                    	v.p[2] = ((byte) mem.read8(addr++)) / 127f;
+	                    }
+	                    break;
+	                }
+		            case 2: {
+		                addr = (addr + 1) & ~1;
+	                    if (transform2D) {
+	                        // X and Y are signed 16 bit, Z is unsigned 16 bit
+	                        v.p[0] = (short) mem.read16(addr);
+	                        v.p[1] = (short) mem.read16(addr + 2);
+	                        v.p[2] = mem.read16(addr + 4);
+	                    } else {
+	                        // Signed 16 bit, to be mapped to [-1..1] for 3D
+	                    	v.p[0] = ((short) mem.read16(addr)) / 32767f;
+	                    	v.p[1] = ((short) mem.read16(addr + 2)) / 32767f;
+	                    	v.p[2] = ((short) mem.read16(addr + 4)) / 32767f;
+	                    }
+	                    addr += 6;
+	                    break;
+	                }
+		            case 3: { // GU_VERTEX_32BITF
+	                    addr = (addr + 3) & ~3;
+	                    float x = Float.intBitsToFloat(mem.read32(addr));
+	                    float y = Float.intBitsToFloat(mem.read32(addr + 4));
+	                    float z = Float.intBitsToFloat(mem.read32(addr + 8));
+	                    addr += 12;
+	                    if (transform2D) {
+	                        // Z is limited between 0 and 65535 (tested).
+	                        if (z < 0 || z > 65535) {
+	                            z = 0;
+	                        } else {
+	                            z = (int) z;	// 2D positions are always integer values
+	                        }
+	                    }
+	                    v.p[0] = x;
+	                    v.p[1] = y;
+	                    v.p[2] = z;
+	                    break;
+	                }
+		        }
 	        }
         }
 
@@ -647,7 +648,11 @@ public class VertexInfoReaderTemplate {
                 VideoEngine.log.trace(String.format("Weight(%d) %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f", skinningWeightCount, v.boneWeights[0], v.boneWeights[1], v.boneWeights[2], v.boneWeights[3], v.boneWeights[4], v.boneWeights[5], v.boneWeights[6], v.boneWeights[7]));
             }
             if (texture != 0) {
-                VideoEngine.log.trace(String.format("texture type %d %f, %f", texture, v.t[0], v.t[1]));
+            	if (transform2D) {
+            		VideoEngine.log.trace(String.format("texture type %d %d, %d", texture, round(v.t[0]), round(v.t[1])));
+            	} else {
+            		VideoEngine.log.trace(String.format("texture type %d %f, %f", texture, v.t[0], v.t[1]));
+            	}
             }
             if (color != 0) {
                 VideoEngine.log.trace(String.format("color type %d 0x%08X", color, PixelColor.getColor(v.c)));
@@ -656,7 +661,11 @@ public class VertexInfoReaderTemplate {
                 VideoEngine.log.trace(String.format("normal type %d %f, %f, %f", normal, v.n[0], v.n[1], v.n[2]));
             }
             if (position != 0) {
-                VideoEngine.log.trace(String.format("vertex type %d %f, %f, %f", position, v.p[0], v.p[1], v.p[2]));
+            	if (transform2D) {
+            		VideoEngine.log.trace(String.format("vertex type %d %d, %d, %d", position, round(v.p[0]), round(v.p[1]), round(v.p[2])));
+            	} else {
+            		VideoEngine.log.trace(String.format("vertex type %d %f, %f, %f", position, v.p[0], v.p[1], v.p[2]));
+            	}
             }
         }
     }

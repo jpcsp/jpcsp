@@ -104,4 +104,9 @@ public class PrimitiveState {
 		float crossProduct = (p2x - p1x) * (p3y - p1y) - (p2y - p1y) * (p3x - p1x);
 		return crossProduct >= 0.f;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("Prim[pos (%d-%d),(%d,%d), tex (%d-%d),(%d-%d)]", pxMin, pxMax, pyMin, pyMax, tuMin, tuMax, tvMin, tvMax);
+	}
 }

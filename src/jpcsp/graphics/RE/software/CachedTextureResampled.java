@@ -72,8 +72,7 @@ public class CachedTextureResampled {
 	private CachedTexture resampleTexture(int width, int height) {
 		if (resampleInfos.size() >= 5 && VideoEngine.log.isInfoEnabled()) {
 			VideoEngine.log.info(String.format("Resampling texture from (%d,%d) to (%d,%d), pixelFormat=%d, resampled %d times", cachedTextureOriginal.width, cachedTextureOriginal.height, width, height, cachedTextureOriginal.pixelFormat, resampleInfos.size()));
-		}
-		if (VideoEngine.log.isDebugEnabled()) {
+		} else if (VideoEngine.log.isDebugEnabled()) {
 			VideoEngine.log.debug(String.format("Resampling texture from (%d,%d) to (%d,%d), pixelFormat=%d, resampled %d times", cachedTextureOriginal.width, cachedTextureOriginal.height, width, height, cachedTextureOriginal.pixelFormat, resampleInfos.size()));
 		}
 
