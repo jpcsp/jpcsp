@@ -24,6 +24,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.ListIterator;
 
@@ -104,6 +105,7 @@ import org.objectweb.asm.util.TraceClassVisitor;
 public class ClassSpecializer {
 	private static Logger log = Logger.getLogger("classSpecializer");
 	private static SpecializedClassLoader classLoader = new SpecializedClassLoader();
+	private static HashSet<Class<?>> tracedClasses = new HashSet<Class<?>>();
 
 	public Class<?> specialize(String name, Class<?> c, HashMap<String, Object> variables) {
 		ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
@@ -111,6 +113,21 @@ public class ClassSpecializer {
 
 		StringWriter debugOutput = null;
 		if (log.isTraceEnabled()) {
+			// Dump the class to be specialized (only once)
+			if (!tracedClasses.contains(c)) {
+				StringWriter classTrace = new StringWriter();
+				ClassVisitor classTraceCv = new TraceClassVisitor(new PrintWriter(classTrace));
+				try {
+					ClassReader cr = new ClassReader(c.getName().replace('.', '/'));
+					cr.accept(classTraceCv, 0);
+					log.trace(String.format("Dump of class to be specialized: %s", c.getName()));
+					log.trace(classTrace);
+				} catch (IOException e) {
+					// Ignore Exception
+				}
+				tracedClasses.add(c);
+			}
+
 			log.trace(String.format("Specializing class %s", name));
 			String[] variableNames = variables.keySet().toArray(new String[variables.size()]);
 			Arrays.sort(variableNames);
@@ -217,7 +234,7 @@ public class ClassSpecializer {
 						boolean processed = false;
 						value = variables.get(fieldInsn.name);
 						AbstractInsnNode nextInsn = insn.getNext();
-						if (analyseIfTestInt(insn)) {
+						if (analyseIfTestInt(method, insn)) {
 							processed = true;
 						} else if (nextInsn != null && nextInsn.getType() == TABLESWITCH_INSN) {
 							TableSwitchInsnNode switchInsn = (TableSwitchInsnNode) nextInsn;
@@ -235,11 +252,9 @@ public class ClassSpecializer {
 								label = switchInsn.dflt;
 							}
 							if (label != null) {
+								// Replace the table switch instruction by a GOTO to the switch label
+								method.instructions.set(insn, new JumpInsnNode(Opcodes.GOTO, label));
 								processed = true;
-								// Delete up to the switch label.
-								// The other switch cases will be eliminated
-								// by the dead code removal.
-								deleteUpToInsn = label;
 							}
 						} else if (nextInsn != null && nextInsn.getType() == AbstractInsnNode.INSN) {
 							int opcode = nextInsn.getOpcode();
@@ -260,35 +275,33 @@ public class ClassSpecializer {
 								case Opcodes.FCONST_2: f = 2f; isFloatConstant = true; break;
 							}
 							if (isIntConstant) {
-								if (analyseIfTestInt(nextInsn, n)) {
+								if (analyseIfTestInt(method, insn, nextInsn, n)) {
 									processed = true;
 								}
 							} else if (isFloatConstant) {
-								if (analyseIfTestFloat(nextInsn, f)) {
+								if (analyseIfTestFloat(method, insn, nextInsn, f)) {
 									processed = true;
 								}
 							}
 						} else if (nextInsn != null && nextInsn.getType() == AbstractInsnNode.INT_INSN) {
 							IntInsnNode intInsn = (IntInsnNode) nextInsn;
-							if (analyseIfTestInt(nextInsn, intInsn.operand)) {
+							if (analyseIfTestInt(method, insn, nextInsn, intInsn.operand)) {
 								processed = true;
 							}
 						} else if (nextInsn != null && nextInsn.getType() == AbstractInsnNode.LDC_INSN) {
 							LdcInsnNode ldcInsn = (LdcInsnNode) nextInsn;
 							if (isIntValue(ldcInsn.cst)) {
-								if (analyseIfTestInt(nextInsn, getIntValue(ldcInsn.cst))) {
+								if (analyseIfTestInt(method, insn, nextInsn, getIntValue(ldcInsn.cst))) {
 									processed = true;
 								}
 							} else if (isFloatValue(ldcInsn.cst)) {
-								if (analyseIfTestFloat(nextInsn, getFloatValue(ldcInsn.cst))) {
+								if (analyseIfTestFloat(method, insn, nextInsn, getFloatValue(ldcInsn.cst))) {
 									processed = true;
 								}
 							}
 						}
 
-						if (processed) {
-							lit.remove();
-						} else {
+						if (!processed) {
 							// Replace the field access by its constant value
 							AbstractInsnNode constantInsn = getConstantInsn(value);
 							if (constantInsn != null) {
@@ -427,14 +440,14 @@ public class ClassSpecializer {
 			}
 		}
 
-		private boolean analyseIfTestInt(AbstractInsnNode insn) {
-			return analyseIfTestInt(insn, null);
+		private boolean analyseIfTestInt(MethodNode method, AbstractInsnNode insn) {
+			return analyseIfTestInt(method, insn, insn, null);
 		}
 
-		private boolean analyseIfTestInt(AbstractInsnNode insn, Integer testValue) {
+		private boolean analyseIfTestInt(MethodNode method, AbstractInsnNode insn, AbstractInsnNode valueInsn, Integer testValue) {
 			boolean eliminateJump = false;
 
-			AbstractInsnNode nextInsn = insn.getNext();
+			AbstractInsnNode nextInsn = valueInsn.getNext();
 			if (nextInsn != null && nextInsn.getType() == JUMP_INSN) {
 				JumpInsnNode jumpInsn = (JumpInsnNode) nextInsn;
 				boolean doJump = false;
@@ -515,20 +528,23 @@ public class ClassSpecializer {
 
 				if (eliminateJump) {
 					if (doJump) {
-						deleteUpToInsn = jumpInsn.label;
+						// Replace the expression test by a fixed GOTO.
+						// The skipped instructions will be eliminated by dead code analysis.
+						method.instructions.set(insn, new JumpInsnNode(Opcodes.GOTO, jumpInsn.label));
 					} else {
-						deleteUpToInsn = jumpInsn.getNext();
+						method.instructions.remove(insn);
 					}
+					deleteUpToInsn = jumpInsn.getNext();
 				}
 			}
 
 			return eliminateJump;
 		}
 
-		private boolean analyseIfTestFloat(AbstractInsnNode insn, float testValue) {
+		private boolean analyseIfTestFloat(MethodNode method, AbstractInsnNode insn, AbstractInsnNode valueInsn, float testValue) {
 			boolean eliminateJump = false;
 
-			AbstractInsnNode nextInsn = insn.getNext();
+			AbstractInsnNode nextInsn = valueInsn.getNext();
 			if (nextInsn != null && (nextInsn.getOpcode() == Opcodes.FCMPL || nextInsn.getOpcode() == Opcodes.FCMPG)) {
 				AbstractInsnNode nextNextInsn = nextInsn.getNext();
 				if (nextNextInsn != null && nextNextInsn.getType() == JUMP_INSN) {
@@ -575,10 +591,13 @@ public class ClassSpecializer {
 
 					if (eliminateJump) {
 						if (doJump) {
-							deleteUpToInsn = jumpInsn.label;
+							// Replace the expression test by a fixed GOTO.
+							// The skipped instructions will be eliminated by dead code analysis.
+							method.instructions.set(insn, new JumpInsnNode(Opcodes.GOTO, jumpInsn.label));
 						} else {
-							deleteUpToInsn = jumpInsn.getNext();
+							method.instructions.remove(insn);
 						}
+						deleteUpToInsn = jumpInsn.getNext();
 					}
 				}
 			}

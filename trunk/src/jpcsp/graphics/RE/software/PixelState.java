@@ -102,7 +102,7 @@ public final class PixelState {
 	}
 
 	public boolean isInsideTriangle() {
-		final float limit = -1e-6f; // The limit should be 0.0f. Allowing small rounding errors.
+		final float limit = -1e-5f; // The limit should be 0.0f. Allowing small rounding errors.
 		return triangleWeight1 >= limit && triangleWeight2 >= limit && triangleWeight3 >= limit;
 	}
 

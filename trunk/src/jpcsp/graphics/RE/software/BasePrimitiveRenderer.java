@@ -59,6 +59,7 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	protected boolean needTextureUV;
 	protected boolean needTextureWrapU;
 	protected boolean needTextureWrapV;
+	protected boolean sameVertexColor;
 	public int fbAddress;
 	public int depthAddress;
     public IRendererWriter rendererWriter;
@@ -75,6 +76,7 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		needTextureUV = from.needTextureUV;
 		needTextureWrapU = from.needTextureWrapU;
 		needTextureWrapV = from.needTextureWrapV;
+		sameVertexColor = from.sameVertexColor;
 		fbAddress = from.fbAddress;
 		depthAddress = from.depthAddress;
 		rendererWriter = from.rendererWriter;
@@ -199,44 +201,88 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
         prim.destinationWidth = prim.pxMax - prim.pxMin + 1;
         prim.destinationHeight = prim.pyMax - prim.pyMin + 1;
 
-        if (transform2D) {
-	    	boolean flipX = false;
-	    	boolean flipY = false;
-	    	if (c3 == null) {
-	    		// Compute texture flips for a sprite
-	    		flipX = (prim.t1u > prim.t2u) ^ (prim.p1x > prim.p2x);
-	    		flipY = (prim.t1v > prim.t2v) ^ (prim.p1y > prim.p2y);
-	    	} else {
-	    		// Compute texture flips for a triangle
-	    		flipX = (prim.t1u > prim.t2u) ^ (prim.p1x > prim.p2x);
-	    		flipY = (prim.t1v > prim.t2v) ^ (prim.p1y > prim.p2y);
-	    		if (!flipX) {
-		    		flipX = (prim.t2u > prim.t3u) ^ (prim.p2x > prim.p3x);
-	    		}
-	    		if (!flipY) {
-		    		flipY = (prim.t2v > prim.t3v) ^ (prim.p2y > prim.p3y);
-	    		}
-	    	}
-	    	if (isLogTraceEnabled) {
-	    		log.trace(String.format("2D texture flipX=%b, flipY=%b, point (%d,%d)-(%d,%d), texture (%d,%d)-(%d,%d)", flipX, flipY, prim.pxMin, prim.pyMin, prim.pxMax, prim.pyMax, prim.tuMin, prim.tvMin, prim.tuMax, prim.tvMax));
-	    	}
-	    	prim.uStart = flipX ? prim.tuMax : prim.tuMin;
-	    	float uEnd = flipX ? prim.tuMin : prim.tuMax;
-	    	prim.vStart = flipY ? prim.tvMax : prim.tvMin;
-	    	float vEnd = flipY ? prim.tvMin : prim.tvMax;
-	    	prim.uStep = (uEnd - prim.uStart) / prim.destinationWidth;
-	    	prim.vStep = (vEnd - prim.vStart) / prim.destinationHeight;
-        } else if (c3 == null) {
-        	// 3D sprite
-        	prim.uStart = prim.t1u;
-        	float uEnd = prim.t2u;
-        	prim.vStart = prim.t1v;
-        	float vEnd = prim.t2v;
-	    	prim.uStep = (uEnd - prim.uStart) / (prim.destinationWidth - 1);
-	    	prim.vStep = (vEnd - prim.vStart) / (prim.destinationHeight - 1);
+        if (isUsingTexture(context)) {
+	        if (transform2D) {
+		    	boolean flipX = false;
+		    	boolean flipY = false;
+		    	if (c3 == null) {
+		    		// Compute texture flips for a sprite
+		    		flipX = (prim.t1u > prim.t2u) ^ (prim.p1x > prim.p2x);
+		    		flipY = (prim.t1v > prim.t2v) ^ (prim.p1y > prim.p2y);
+		    	} else {
+		    		// Compute texture flips for a triangle
+		    		flipX = (prim.t1u > prim.t2u) ^ (prim.p1x > prim.p2x);
+		    		flipY = (prim.t1v > prim.t2v) ^ (prim.p1y > prim.p2y);
+		    		if (!flipX) {
+			    		flipX = (prim.t2u > prim.t3u) ^ (prim.p2x > prim.p3x);
+		    		}
+		    		if (!flipY) {
+			    		flipY = (prim.t2v > prim.t3v) ^ (prim.p2y > prim.p3y);
+		    		}
+		    	}
+		    	if (isLogTraceEnabled) {
+		    		log.trace(String.format("2D texture flipX=%b, flipY=%b, point (%d,%d)-(%d,%d), texture (%d,%d)-(%d,%d)", flipX, flipY, prim.pxMin, prim.pyMin, prim.pxMax, prim.pyMax, prim.tuMin, prim.tvMin, prim.tuMax, prim.tvMax));
+		    	}
+		    	prim.uStart = flipX ? prim.tuMax : prim.tuMin;
+		    	float uEnd = flipX ? prim.tuMin : prim.tuMax;
+		    	prim.vStart = flipY ? prim.tvMax : prim.tvMin;
+		    	float vEnd = flipY ? prim.tvMin : prim.tvMax;
+		    	prim.uStep = (uEnd - prim.uStart) / prim.destinationWidth;
+		    	prim.vStep = (vEnd - prim.vStart) / prim.destinationHeight;
+	        } else if (!isTriangle) {
+	        	// 3D sprite
+	        	prim.uStart = prim.t1u;
+	        	float uEnd = prim.t2u;
+	        	prim.vStart = prim.t1v;
+	        	float vEnd = prim.t2v;
+		    	prim.uStep = (uEnd - prim.uStart) / (prim.destinationWidth - 1);
+		    	prim.vStep = (vEnd - prim.vStart) / (prim.destinationHeight - 1);
+	        }
+
+	        // Perform scissoring and update uStart/uStep and vStart/vStep
+	        if (transform2D || !isTriangle) {
+	        	if (needScissoringX) {
+					int deltaX = scissorX1 - prim.pxMin;
+					if (deltaX > 0) {
+						prim.uStart += prim.uStep * deltaX;
+						prim.pxMin += deltaX;
+						if (transform2D) {
+							prim.tuMin += round(prim.uStep * deltaX);
+						}
+					}
+					deltaX = prim.pxMax - scissorX2;
+					if (deltaX > 0) {
+						prim.pxMax -= deltaX;
+						if (transform2D) {
+							prim.tuMax -= round(prim.uStep * deltaX);
+						}
+					}
+			        prim.destinationWidth = prim.pxMax - prim.pxMin + 1;
+					needScissoringX = false;
+	        	}
+	        	if (needScissoringY) {
+					int deltaY = scissorY1 - prim.pyMin;
+					if (deltaY > 0) {
+						prim.vStart += prim.vStep * deltaY;
+						prim.pyMin += deltaY;
+						if (transform2D) {
+							prim.tvMin += round(prim.vStep * deltaY);
+						}
+					}
+					deltaY = prim.pyMax - scissorY2;
+					if (deltaY > 0) {
+						prim.pyMax -= deltaY;
+						if (transform2D) {
+							prim.tvMax -= round(prim.vStep * deltaY);
+						}
+					}
+			        prim.destinationHeight = prim.pyMax - prim.pyMin + 1;
+					needScissoringY = false;
+	        	}
+	        }
         }
 
-    	if (setVertexPrimaryColor) {
+        if (setVertexPrimaryColor) {
     		if (c3 != null) {
 	    		pixel.c1a = getColor(c1[3]);
 	    		pixel.c1b = getColor(c1[2]);
@@ -280,7 +326,7 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		}
 		needTextureUV = getNeedTextureUV(context);
 		if (transform2D) {
-			needTextureWrapU = prim.tuMin < 0 || prim.tuMax >= context.texture_buffer_width[mipmapLevel];
+			needTextureWrapU = prim.tuMin < 0 || prim.tuMax >= context.texture_width[mipmapLevel];
 			needTextureWrapV = prim.tvMin < 0 || prim.tvMax >= context.texture_height[mipmapLevel];
 		} else {
 			if (context.tex_map_mode != GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV) {
@@ -545,15 +591,10 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 
 		if (!useVertexTexture) {
 			prim.pxMin = Math.max(prim.pxMin, scissorX1);
-			prim.pxMax = Math.min(prim.pxMax, scissorX2 + 1);
+			prim.pxMax = Math.min(prim.pxMax, Math.min(scissorX2 + 1, fbw));
 			prim.pyMin = Math.max(prim.pyMin, scissorY1);
 			prim.pyMax = Math.min(prim.pyMax, scissorY2 + 1);
 		}
-
-		prim.pxMin = Math.max(0, prim.pxMin);
-		prim.pxMax = Math.min(prim.pxMax, fbw);
-		prim.pyMin = Math.max(0, prim.pyMin);
-		prim.pyMax = Math.min(prim.pyMax, 1024);
 
 		if (prim.pxMin == prim.pxMax || prim.pyMin == prim.pyMax) {
 			// Empty area to be displayed
@@ -708,6 +749,7 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		key.addKeyComponent(needScissoringY);
 		key.addKeyComponent(needTextureWrapU);
 		key.addKeyComponent(needTextureWrapV);
+		key.addKeyComponent(sameVertexColor);
 
 		return key;
 	}
