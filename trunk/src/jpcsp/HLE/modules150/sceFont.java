@@ -578,7 +578,10 @@ public class sceFont extends HLEModule {
         }
     }
 
-    private boolean isFontMatchingStyle(Font font, pspFontStyle fontStyle) {
+    private boolean isFontMatchingStyle(Font font, pspFontStyle fontStyle, boolean optimum) {
+    	if (font != null && font.fontInfo != null && font.fontInfo.getFontStyle() != null) {
+    		return font.fontInfo.getFontStyle().isMatching(fontStyle, optimum);
+    	}
         // Faking: always matching
         return true;
     }
@@ -789,9 +792,16 @@ public class sceFont extends HLEModule {
             errorCodePtr.setValue(0);
         }     
         for (int i = 0; i < internalFonts.size(); i++) {
-            if (isFontMatchingStyle(internalFonts.get(i), fontStyle)) {
+            if (isFontMatchingStyle(internalFonts.get(i), fontStyle, true)) {
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("sceFontFindOptimumFont found font at index %d: %s", i, internalFonts.get(i).toString()));
+                }
                 return i;
             }
+        }
+
+        if (errorCodePtr.isAddressGood()) {
+        	errorCodePtr.setValue(-1);
         }
         return -1;
     }
@@ -1016,7 +1026,7 @@ public class sceFont extends HLEModule {
         }        
         int fontsNum = internalFonts.size();
         for (int i = 0; i < fontsNum; i++) {
-            if (isFontMatchingStyle(internalFonts.get(i), fontStyle)) {
+            if (isFontMatchingStyle(internalFonts.get(i), fontStyle, false)) {
                 return i;
             }
         }

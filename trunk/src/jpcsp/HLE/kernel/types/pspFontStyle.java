@@ -89,6 +89,65 @@ public class pspFontStyle extends pspAbstractMemoryMappedStructure {
 		return 168;
 	}
 
+	public boolean isMatching(pspFontStyle fontStyle, boolean optimum) {
+		// A value 0 in each field of the fontStyle means "any value"
+		if (fontStyle.fontH != 0f) {
+			if (Math.round(fontStyle.fontH) != Math.round(fontH)) {
+				return false;
+			}
+		}
+		if (fontStyle.fontV != 0f) {
+			if (Math.round(fontStyle.fontV) != Math.round(fontV)) {
+				return false;
+			}
+		}
+		if (fontStyle.fontHRes != 0f) {
+			if (Math.round(fontStyle.fontHRes) != Math.round(fontHRes)) {
+				return false;
+			}
+		}
+		if (fontStyle.fontVRes != 0f) {
+			if (Math.round(fontStyle.fontVRes) != Math.round(fontVRes)) {
+				return false;
+			}
+		}
+		if (fontStyle.fontWeight != fontWeight) {
+			return false;
+		}
+		if (fontStyle.fontFamily != 0 && fontStyle.fontFamily != fontFamily) {
+			return false;
+		}
+		// These attributes are not used when find an optimum font (sceFontFindOptimumFont)
+		if (!optimum) {
+			if (fontStyle.fontStyle != 0 && fontStyle.fontStyle != this.fontStyle) {
+				return false;
+			}
+			if (fontStyle.fontStyleSub != 0 && fontStyle.fontStyleSub != fontStyleSub) {
+				return false;
+			}
+		}
+		if (fontStyle.fontLanguage != 0 && fontStyle.fontLanguage != fontLanguage) {
+			return false;
+		}
+		if (fontStyle.fontRegion != 0 && fontStyle.fontRegion != fontRegion) {
+			return false;
+		}
+		if (fontStyle.fontCountry != 0 && fontStyle.fontCountry != fontCountry) {
+			return false;
+		}
+		if (fontStyle.fontName.length() > 0 && !fontStyle.fontName.equals(fontName)) {
+			return false;
+		}
+		if (fontStyle.fontFileName.length() > 0 && !fontStyle.fontFileName.equals(fontFileName)) {
+			return false;
+		}
+		if (fontStyle.fontAttributes != 0 && fontStyle.fontAttributes != fontAttributes) {
+			return false;
+		}
+
+		return true;
+	}
+
 	@Override
 	public String toString() {
 		return String.format("fontH %f, fontV %f, fontHRes %f, fontVRes %f, fontWeight %f, fontFamily %d, fontStyle %d, fontStyleSub %d, fontLanguage %d, fontRegion %d, fontCountry %d, fontName '%s', fontFileName '%s', fontAttributes %d, fontExpire %d", fontH, fontV, fontHRes, fontVRes, fontWeight, fontFamily, fontStyle, fontStyleSub, fontLanguage, fontRegion, fontCountry, fontName, fontFileName, fontAttributes, fontExpire);
