@@ -2182,7 +2182,7 @@ public class VideoEngine {
 
         memoryForGEUpdated();
 
-        if (!display.isGeAddress(context.textureTx_destinationAddress) || bpp != bppGe) {
+        if (!display.isGeAddress(context.textureTx_destinationAddress) || bpp != bppGe || display.isUsingSoftwareRenderer()) {
             if (isLogDebugEnabled) {
                 if (bpp != bppGe) {
                     log(helper.getCommandString(TRXKICK) + " BPP not compatible with GE");
