@@ -505,7 +505,7 @@ public class MediaEngine {
     }
 
     public static String getExtAudioBasePath(int mpegStreamSize) {
-    	return String.format("%s%s\\Mpeg-%d\\", Connector.baseDirectory, State.discId, mpegStreamSize);
+    	return String.format("%s%s%cMpeg-%d%c", Connector.baseDirectory, State.discId, File.separatorChar, mpegStreamSize, File.separatorChar);
     }
 
     public static String getExtAudioPath(int mpegStreamSize, String suffix) {

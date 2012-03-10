@@ -64,7 +64,7 @@ public class MpegCodec {
 	}
 
 	public static String getMpegBaseDirectory(String id) {
-		return String.format("%s%s\\%s\\", Connector.baseDirectory, State.discId, id);
+		return String.format("%s%s%c%s%c", Connector.baseDirectory, State.discId, File.separatorChar, id, File.separatorChar);
 	}
 
 	public void init(int mpegVersion, int streamSize, long lastTimestamp) {
