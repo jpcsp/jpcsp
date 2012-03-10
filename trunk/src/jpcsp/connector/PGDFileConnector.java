@@ -46,7 +46,7 @@ public class PGDFileConnector {
     }
 
     public String getBaseDirectory(String id) {
-        return String.format("%s%s\\PGD\\%s\\", Connector.baseDirectory, State.discId, id);
+        return String.format("%s%s%cPGD%c%s%c", Connector.baseDirectory, State.discId, File.separatorChar, File.separatorChar, id, File.separatorChar);
     }
 
     public String generateID(int startSector) {

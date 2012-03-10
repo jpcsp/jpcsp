@@ -157,7 +157,7 @@ public class PSP {
 
         if(CryptoEngine.getExtractEbootStatus()) {
             try {
-                String ebootPath = Connector.baseDirectory + "EBOOT\\";
+                String ebootPath = Connector.baseDirectory + "EBOOT" + File.separatorChar;
                 new File(ebootPath).mkdirs();
                 RandomAccessFile raf = new RandomAccessFile(ebootPath + "EBOOT.BIN", "rw");
                 raf.write(outBuf, 0, retsize);
