@@ -19,6 +19,7 @@ package jpcsp.HLE.modules150;
 import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
 import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
+import static jpcsp.util.Utilities.makePow2;
 
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEUnimplemented;
@@ -90,7 +91,7 @@ import org.lwjgl.opengl.PixelFormat;
 
 public class sceDisplay extends HLEModule {
     protected static Logger log = Modules.getLogger("sceDisplay");
-    
+
     @SuppressWarnings("serial")
 	class AWTGLCanvas_sceDisplay extends AWTGLCanvas {
 
@@ -173,18 +174,33 @@ public class sceDisplay extends HLEModule {
 	            createTex = false;
 	        }
 
-	        if (onlyGEGraphics) {
-	        	re.startDisplay();
-	            VideoEngine.getInstance().update();
-	            re.endDisplay();
-	        } else if (isUsingSoftwareRenderer()) {
-	        	re.startDisplay();
-	        	VideoEngine.getInstance().update();
-	        	re.endDisplay();
+	    	// If we are not rendering this frame, skip the next sceDisplaySetFrameBuf call,
+	    	// assuming the application is doing double buffering.
+			skipNextFrameBufferSwitch = VideoEngine.getInstance().isSkipThisFrame();
+
+	        if (isUsingSoftwareRenderer()) {
+	        	// Software rendering: the processing of the GE list is done by the
+	        	// SoftwareRenderingDisplayThread.
+	        	// We just need to display the frame buffer.
+	        	if (softwareRenderingDisplayThread == null) {
+	        		re.startDisplay();
+	        		VideoEngine.getInstance().update();
+	        		re.endDisplay();
+	        	}
 	        	reDisplay.startDisplay();
 	        	drawFrameBufferFromMemory();
 	        	reDisplay.endDisplay();
+	        } else if (onlyGEGraphics) {
+	        	// Hardware rendering where only the currently rendered GE list is displayed,
+	        	// not the frame buffer from memory.
+	        	re.startDisplay();
+	            VideoEngine.getInstance().update();
+	            re.endDisplay();
 	        } else {
+	        	// Hardware rendering:
+	        	// 1) GE list is rendered to the screen
+	        	// 2) the result of the rendering is stored into the GE frame buffer
+	        	// 3) the active FB frame buffer is reloaded from memory to the screen for final display
 	        	if (log.isDebugEnabled()) {
 	        		log.debug("sceDisplay.paintGL - start display");
 	        	}
@@ -234,11 +250,13 @@ public class sceDisplay extends HLEModule {
 	        	}
 	        }
 
+	        // Perform OpenGL double buffering
 	        try {
 	        	canvas.swapBuffers();
 			} catch (LWJGLException e) {
 			}
 
+	        // Update the current FPS every second
 	        reportFPSStats();
 
 	        if (statistics != null) {
@@ -300,7 +318,7 @@ public class sceDisplay extends HLEModule {
     private boolean useSoftwareRenderer = false;
     private static final boolean useDebugGL = false;
     private static final int internalTextureFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
-    
+
     // sceDisplayModes enum
     public static final int PSP_DISPLAY_MODE_LCD  = 0;
     public static final int PSP_DISPLAY_MODE_VESA1A = 0x1A;
@@ -404,12 +422,20 @@ public class sceDisplay extends HLEModule {
 
     // Async Display
     private AsyncDisplayThread asyncDisplayThread;
+    private SoftwareRenderingDisplayThread softwareRenderingDisplayThread;
 
     // VBLANK Multi.
     private List<WaitVblankInfo> waitingOnVblank;
 
     // Anti-alias samples.
     private int antiAliasSamplesNum;
+
+    // Frame skipping
+    private int desiredFps = 0;
+    private int maxFramesSkippedInSequence = 3;
+    private int framesSkippedInSequence;
+    private LinkedList<Long> frameTimestamps = new LinkedList<Long>();
+    private boolean skipNextFrameBufferSwitch;
 
     private class OnlyGeSettingsListener extends AbstractBoolSettingsListener {
 		@Override
@@ -438,27 +464,26 @@ public class sceDisplay extends HLEModule {
     	}
     }
 
-    private static class AsyncDisplayThread extends Thread {
-		private Semaphore displaySemaphore;
-		private boolean run;
+    private static abstract class AbstractDisplayThread extends Thread {
+		private Semaphore displaySemaphore = new Semaphore(1);
+		protected boolean run = true;
 
-		public AsyncDisplayThread() {
-			displaySemaphore = new Semaphore(1);
-			run = true;
-		}
+    	public AbstractDisplayThread() {
+    		// Force the creation of a VideoEngine instance in this thread
+    		VideoEngine.getInstance();
+    	}
 
 		@Override
 		public void run() {
-			jpcsp.HLE.modules.sceDisplay display = Modules.sceDisplayModule;
 			while (run) {
 				waitForDisplay();
 				if (run) {
-		        	if (!display.isOnlyGEGraphics() || VideoEngine.getInstance().hasDrawLists()) {
-		        		display.canvas.repaint();
-					}
+					doDisplay();
 				}
 			}
 		}
+
+		protected abstract void doDisplay();
 
 		public void display() {
 			displaySemaphore.release();
@@ -486,7 +511,28 @@ public class sceDisplay extends HLEModule {
 		}
 	}
 
-	private class DisplayVblankAction implements IAction {
+    private static class AsyncDisplayThread extends AbstractDisplayThread {
+		@Override
+		protected void doDisplay() {
+        	if (!Modules.sceDisplayModule.isOnlyGEGraphics() || VideoEngine.getInstance().hasDrawLists()) {
+        		Modules.sceDisplayModule.canvas.repaint();
+			}
+		}
+    }
+
+    private static class SoftwareRenderingDisplayThread  extends AbstractDisplayThread {
+    	@Override
+		protected void doDisplay() {
+			IRenderingEngine re = Modules.sceDisplayModule.getRenderingEngine();
+			if (re != null && VideoEngine.getInstance().hasDrawLists()) {
+	        	re.startDisplay();
+	        	VideoEngine.getInstance().update();
+	        	re.endDisplay();
+			}
+		}
+    }
+
+    private class DisplayVblankAction implements IAction {
 		@Override
 		public void execute() {
 			hleVblankStart();
@@ -561,6 +607,14 @@ public class sceDisplay extends HLEModule {
         isStarted = false;
         resizePending = false;
         tempSize = 0;
+    }
+
+    public void setDesiredFPS(int desiredFPS) {
+    	this.desiredFps = desiredFPS;
+    }
+
+    public int getDesiredFPS() {
+    	return desiredFps;
     }
 
     public void setScreenResolution(int width, int height) {
@@ -863,6 +917,12 @@ public class sceDisplay extends HLEModule {
 
     public void setGeDirty(boolean dirty) {
         geDirty = dirty;
+
+        if (dirty && softwareRenderingDisplayThread != null) {
+        	// Start immediately the software rendering.
+        	// No need to wait for the OpenGL display call.
+        	softwareRenderingDisplayThread.display();
+        }
     }
 
     public void hleDisplaySetGeMode(int width, int height) {
@@ -894,7 +954,9 @@ public class sceDisplay extends HLEModule {
         	log.debug(String.format("hleDisplaySetGeBuf topaddr=0x%08X, bufferwidth=%d, pixelformat=%d, copyGE=%b, with=%d, height=%d", topaddr, bufferwidth, pixelformat, copyGEToMemory, width, height));
         }
 
-        if (isUsingSoftwareRenderer()) {
+        // Do not copy the GE to memory or reload it if we are using the software
+        // renderer or skipping this frame.
+        if (isUsingSoftwareRenderer() || VideoEngine.getInstance().isSkipThisFrame()) {
         	copyGEToMemory = false;
         	forceLoadGEToScreen = false;
         }
@@ -948,8 +1010,9 @@ public class sceDisplay extends HLEModule {
     		re.bindVertexArray(0);
     	}
 
-    	// Always reload the GE memory to the screen, if not rendering in software
-		boolean loadGEToScreen = !isUsingSoftwareRenderer();
+    	// Always reload the GE memory to the screen,
+    	// if not rendering in software and not skipping this frame.
+		boolean loadGEToScreen = !isUsingSoftwareRenderer() && !VideoEngine.getInstance().isSkipThisFrame();
 
 		if (copyGEToMemory && (topaddrGe != topaddr || pixelformatGe != pixelformat)) {
 			if (VideoEngine.log.isDebugEnabled()) {
@@ -1051,6 +1114,23 @@ public class sceDisplay extends HLEModule {
 
     private void setUseSoftwareRenderer(boolean useSoftwareRenderer) {
     	this.useSoftwareRenderer = useSoftwareRenderer;
+
+    	// Start/stop the software rendering display thread
+    	if (useSoftwareRenderer) {
+    		if (softwareRenderingDisplayThread == null) {
+//    			softwareRenderingDisplayThread = new SoftwareRenderingDisplayThread();
+//    			softwareRenderingDisplayThread.setDaemon(true);
+//    			softwareRenderingDisplayThread.setName("Software Rendering Display Thread");
+//    			softwareRenderingDisplayThread.start();
+//    			log.debug("Starting Software Rendering Display Thread");
+    		}
+    	} else {
+    		if (softwareRenderingDisplayThread != null) {
+    			log.debug("Stopping Software Rendering Display Thread");
+    			softwareRenderingDisplayThread.exit();
+    			softwareRenderingDisplayThread = null;
+    		}
+    	}
     }
 
     public boolean isUsingSoftwareRenderer() {
@@ -1237,9 +1317,8 @@ public class sceDisplay extends HLEModule {
     }
 
     private void reportFPSStats() {
-        frameCount++;
-        long timeNow = System.nanoTime();
-        long realElapsedTime = (timeNow - prevStatsTime) / 1000000L;
+        long timeNow = System.currentTimeMillis();
+        long realElapsedTime = timeNow - prevStatsTime;
 
         if (realElapsedTime > 1000L) {
             reportCount++;
@@ -1671,7 +1750,8 @@ public class sceDisplay extends HLEModule {
             isFbShowing = false;
             gotBadFbBufParams = true;
             return SceKernelErrors.ERROR_INVALID_SIZE;
-        }else if (pixelformat < 0 || pixelformat > 3) {
+        }
+        if (pixelformat < 0 || pixelformat > 3) {
             log.warn(
                 "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
                 ", bufferwidth=" + bufferwidth +
@@ -1680,7 +1760,8 @@ public class sceDisplay extends HLEModule {
             isFbShowing = false;
             gotBadFbBufParams = true;
             return -1;
-        } else if (syncType != PSP_DISPLAY_SETBUF_IMMEDIATE && syncType != PSP_DISPLAY_SETBUF_NEXTFRAME) {
+        }
+        if (syncType != PSP_DISPLAY_SETBUF_IMMEDIATE && syncType != PSP_DISPLAY_SETBUF_NEXTFRAME) {
             log.warn(
                 "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
                 ", bufferwidth=" + bufferwidth +
@@ -1689,7 +1770,8 @@ public class sceDisplay extends HLEModule {
             isFbShowing = false;
             gotBadFbBufParams = true;
             return SceKernelErrors.ERROR_INVALID_MODE;
-        } else if ((topaddr == 0)) {
+        }
+        if (topaddr == 0) {
             // If topaddr is NULL, the PSP's screen will be displayed as fully black
             // as the output is blocked. Under these circumstances, bufferwidth can be 0.
             log.warn(
@@ -1700,55 +1782,87 @@ public class sceDisplay extends HLEModule {
             isFbShowing = false;
             gotBadFbBufParams = true;
             return 0;
-        } else if (Memory.isAddressGood(topaddr)){
-            if(topaddr < MemoryMap.START_VRAM || topaddr >= MemoryMap.END_VRAM) {
-                log.warn("sceDisplaySetFrameBuf (topaddr=0x" + Integer.toHexString(topaddr) + ")"
-                        + " is using main memory.");
-            }
-
-            if (gotBadFbBufParams) {
-                gotBadFbBufParams = false;
-                log.info(
-                    "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
-                    ", bufferwidth=" + bufferwidth +
-                    ", pixelformat=" + pixelformat +
-                    ", syncType=" + syncType + ") ok");
-            }
-
-            if (pixelformat != pixelformatFb ||
-                bufferwidth != bufferwidthFb ||
-                Utilities.makePow2(height) != Utilities.makePow2(height)) {
-                createTex = true;
-            }
-
-            topaddrFb     = topaddr;
-            bufferwidthFb = bufferwidth;
-            pixelformatFb = pixelformat;
-            sync          = syncType;
-
-            bottomaddrFb =
-                topaddr + bufferwidthFb * height *
-                getPixelFormatBytes(pixelformatFb);
-            pixelsFb = getPixels(topaddrFb, bottomaddrFb);
-
-            texS = (float)width / (float)bufferwidth;
-            texT = (float)height / (float)Utilities.makePow2(height);
-
-            detailsDirty = true;
-
-            if (State.captureGeNextFrame && CaptureManager.hasListExecuted()) {
-                CaptureManager.captureFrameBufDetails();
-                CaptureManager.endCapture();
-                State.captureGeNextFrame = false;
-            }
-
-            isFbShowing = true;
-
-            VideoEngine.getInstance().hleSetFrameBuf(topaddrFb, bufferwidthFb, pixelformatFb);
-
-            return 0;
         }
-        return SceKernelErrors.ERROR_INVALID_POINTER;
+        if (!Memory.isAddressGood(topaddr)) {
+            return SceKernelErrors.ERROR_INVALID_POINTER;
+        }
+
+        if (topaddr != topaddrFb) {
+        	// New frame counting for FPS
+            frameCount++;
+        }
+
+        // Keep track of how many frames have been skipped in sequence
+        // (i.e. since the last rendering).
+        if (skipNextFrameBufferSwitch) {
+        	framesSkippedInSequence++;
+        } else {
+        	framesSkippedInSequence = 0;
+        }
+
+        if (desiredFps > 0) {
+        	// Remember the time stamps of the frames displayed during the last second.
+    		long currentFrameTimestamp = Emulator.getClock().currentTimeMillis();
+    		frameTimestamps.addLast(currentFrameTimestamp);
+    		// Remove the time stamps older than 1 second
+    		while (currentFrameTimestamp - frameTimestamps.getFirst().longValue() > 1000L) {
+    			frameTimestamps.removeFirst();
+    		}
+
+    		// The current FPS is the number of frames displayed during the last second.
+    		int currentFps = frameTimestamps.size();
+
+    		// Skip the rendering of the next frame if we are below the desired FPS
+    		// and if we have not already skipped too many frames since the last rendering.
+    		if (currentFps < desiredFps && framesSkippedInSequence < maxFramesSkippedInSequence) {
+    			VideoEngine.getInstance().setSkipThisFrame(true);
+    		} else {
+    			VideoEngine.getInstance().setSkipThisFrame(false);
+    		}
+    	}
+
+        if (skipNextFrameBufferSwitch) {
+        	// The rendering of the previous frame has been skipped.
+        	// Reuse the frame buffer of the current frame to avoid flickering.
+        	if (topaddr != topaddrFb) {
+        		Memory.getInstance().memcpy(topaddr, topaddrFb, bottomaddrFb - topaddrFb);
+        	}
+    		skipNextFrameBufferSwitch = false;
+    	}
+
+        if (gotBadFbBufParams) {
+            gotBadFbBufParams = false;
+            log.info(String.format("sceDisplaySetFrameBuf(topaddr=0x%08X, bufferwidth=%d, pixelformat=%d, syncType=%d ok", topaddr, bufferwidth, pixelformat, syncType));
+        }
+
+        if (pixelformat != pixelformatFb || bufferwidth != bufferwidthFb || makePow2(height) != makePow2(height)) {
+            createTex = true;
+        }
+
+        topaddrFb     = topaddr;
+        bufferwidthFb = bufferwidth;
+        pixelformatFb = pixelformat;
+        sync          = syncType;
+
+        bottomaddrFb = topaddr + bufferwidthFb * height * getPixelFormatBytes(pixelformatFb);
+        pixelsFb = getPixels(topaddrFb, bottomaddrFb);
+
+        texS = (float) width / (float) bufferwidth;
+        texT = (float) height / (float) makePow2(height);
+
+        detailsDirty = true;
+
+        if (State.captureGeNextFrame && CaptureManager.hasListExecuted()) {
+            CaptureManager.captureFrameBufDetails();
+            CaptureManager.endCapture();
+            State.captureGeNextFrame = false;
+        }
+
+        isFbShowing = true;
+
+        VideoEngine.getInstance().hleSetFrameBuf(topaddrFb, bufferwidthFb, pixelformatFb);
+
+        return 0;
 	}
 
     /**

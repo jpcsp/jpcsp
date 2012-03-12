@@ -99,7 +99,6 @@ public class RESoftware extends BaseRenderingEngine {
 
 	@Override
 	public void endDisplay() {
-		waitForRenderingCompletion();
 	}
 
 	@Override

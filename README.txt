@@ -76,6 +76,8 @@ Please keep in mind that JPCSP does not support or endorse piracy.
 ...............................................................................
 JPCSP v0.7 (????????):
 
+-> Added support for rendering in software mode, not using the GPU;
+
 -> Added Game Pad support;
 
 -> Major performance improvements in the graphic processing (see new Video options);
@@ -103,6 +105,9 @@ JPCSP v0.7 (????????):
 
 -> Major code cleanup in the module architecture (now using Java reflection).
 
+-> New method used for computing FPS. The FPS value is now more reliable but usually lower
+   than on previous releases. It doesn't mean that the Jpcsp performance is now worse,
+   but just that the previous FPS counter was over-optimistic.
 
 
 JPCSP v0.6 (September 18, 2010):
@@ -251,7 +256,7 @@ The "Help" menu contains the "About" window.
 
 
 
-3. Command-Line options:
+4. Command-Line options:
 
 Usage: java -Xmx512m -jar jpcsp.jar <OPTIONS>
 
@@ -264,7 +269,7 @@ Usage: java -Xmx512m -jar jpcsp.jar <OPTIONS>
 
 
 
-4. Requirements:
+5. Requirements:
 
 Minimum:
 - OS: Windows 32bit or 64bit / Linux 32bit or 64bit / Mac OSX; 
@@ -281,7 +286,7 @@ Recommended:
 
 
 
-5. Advanced features:
+6. Advanced features:
 
 - Font Override:
 It is possible to override the font used in the log window by editing the 
@@ -429,7 +434,7 @@ multiple of these options can be specified (e.g., only "write" or "read32|write3
 When "pause" is specified, the emulator is pausing when reading/writing the selected
 addresses. Otherwise, the emulator is just logging at INFO level the memory access.
 
-6. Explanation of the advanced Video options:
+7. Explanation of the advanced Video options:
 
 I must also admit that the Video configuration options
 (under "Options" > "Configuration" > "Video") are not always self-explanatory.
@@ -517,13 +522,24 @@ So, to the different options:
 - Enable the shader implementation for the "Color Mask":
     if your application is logging the warning
         "Unimplemented Red/Green/Blue mask 0xNN"
-    your might try this option. It might increase the quality of the rendered graphics,
-    but is onyl relevant when using shaders.
+    you might try this option. It might increase the quality of the rendered graphics,
+    but is only relevant when using shaders.
     It is only available as an option because it has a negative impact on the
     performance (lower FPS).
+- Disable optmized VertexInfo reading:
+    you might try this option if graphics are sometimes corrupted.
+    This option has a negative impact on the performance (lower FPS), but
+    provides higher compatibility.
+- Use Software Rendering:
+    this option enables the emulation of all the PSP graphics in software by the emulator.
+    The hardware of your graphics card is not used (well, it will just be used
+    at the very end of the rendering to show the rendered image).
+    The software rendering is much slower than the hardware-based rendering using
+    a modern graphics card (GPU). But it allows a much higher degree of compatibility
+    and avoids rendering problems related to buggy OpenGL drivers.
 
 
-7. PSP fonts
+8. PSP fonts
 
 When enabling the option "Use non-native fonts from flash0 folder"
 (under "Options" > "Configuration" > "Media"), OpenSource fonts are used as a
@@ -531,6 +547,18 @@ replacement for the PSP native fonts. The fonts do not match 100% the PSP but
 provide a quite good approximation. For 100% compatibility, the original fonts
 from your PSP can be used. Copy the files under "flash0:/fonts" on your PSP to
 Jpcsp "flash0/fonts" directory.
+
+
+9. FPS
+
+Starting with r2471, a new FPS counter has been introduced. It produces more reliable
+FPS values reflecting the real number of different frames displayed by the PSP during
+the last second.
+The FPS counter used in previous releases was over-optimistic and was reporting
+too high FPS values. Don't worry if you see reports or videos from previous releases
+showing a higher FPS number. It doesn't mean that Jpcsp's performance is getting
+worse: the frames are displayed at the same speed as before (assuming same hardware
+and same compatibility options), the FPS counter is just showing a more accurate value.
 
 ...............................................................................
 

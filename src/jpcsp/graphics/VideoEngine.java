@@ -215,6 +215,10 @@ public class VideoEngine {
     private VertexState v1 = new VertexState();
     private VertexState v2 = new VertexState();
     private boolean isBoundingBox;
+    private boolean skipThisFrame;
+    // It is not safe in every application to simply skip the whole list.
+    // This could be a compatibility option.
+    private boolean skipListWhenSkippingFrame = false;
 
     public static class MatrixUpload {
         private final float[] matrix;
@@ -606,8 +610,6 @@ public class VideoEngine {
 			}
         } while (currentList != null);
 
-        currentList = null;
-
         if (State.captureGeNextFrame) {
             // Can't end capture until we get a sceDisplaySetFrameBuf after the list has executed
             CaptureManager.markListExecuted();
@@ -619,6 +621,8 @@ public class VideoEngine {
         }
 
         endUpdate();
+
+        currentList = null;
 
         return somethingDisplayed;
     }
@@ -698,6 +702,8 @@ public class VideoEngine {
     	if (re.isVertexArrayAvailable()) {
     		re.bindVertexArray(0);
     	}
+
+    	re.waitForRenderingCompletion();
 
     	context.reTextureGenS.setEnabled(false);
     	context.reTextureGenT.setEnabled(false);
@@ -863,7 +869,15 @@ public class VideoEngine {
     //   - Either continue drawing to the end of the list (bad if the list contains an infinite loop)
     //   - Or we want to be able to restart drawing when the user presses the run button
     private void executeList() {
-        listHasEnded = false;
+    	if (skipThisFrame && skipListWhenSkippingFrame) {
+    		listHasEnded = true;
+    		currentList.status = PSP_GE_LIST_DONE;
+        	Modules.sceGe_userModule.hleGeListSyncDone(currentList);
+        	executeHleAction();
+        	return;
+    	}
+
+    	listHasEnded = false;
         currentList.status = PSP_GE_LIST_DRAWING;
 
         if (isLogDebugEnabled) {
@@ -888,7 +902,7 @@ public class VideoEngine {
 
         if (Emulator.pause && !listHasEnded) {
         	if (isLogInfoEnabled) {
-        		VideoEngine.log.info("Emulator paused - cancelling current list id=" + currentList.id);
+        		log.info("Emulator paused - cancelling current list id=" + currentList.id);
         	}
             currentList.status = PSP_GE_LIST_CANCEL_DONE;
         }
@@ -1616,6 +1630,11 @@ public class VideoEngine {
         	return;
         }
 
+        if (skipThisFrame) {
+            endRendering(numberOfVertex);
+            return;
+        }
+
         updateGeBuf();
         somethingDisplayed = true;
         primCount++;
@@ -2141,7 +2160,7 @@ public class VideoEngine {
             textureChanged = true;
         }
 
-        endRendering(context.useVertexColor, useTexture, numberOfVertex);
+        endRendering(numberOfVertex);
     }
 
     private void executeCommandTRXKICK() {
@@ -2329,6 +2348,10 @@ public class VideoEngine {
             log.debug(helper.getCommandString(BBOX) + " numberOfVertex=" + numberOfVertexBoundingBox);
         }
 
+        if (skipThisFrame) {
+        	return;
+        }
+
         isBoundingBox = true;
 
         initRendering();
@@ -2353,7 +2376,7 @@ public class VideoEngine {
         }
         re.endBoundingBox(context.vinfo);
 
-        endRendering(context.useVertexColor, false, numberOfVertexBoundingBox);
+        endRendering(numberOfVertexBoundingBox);
 
         isBoundingBox = false;
     }
@@ -2361,7 +2384,9 @@ public class VideoEngine {
     private void executeCommandBJUMP() {
         boolean takeConditionalJump = false;
 
-        if (re.hasBoundingBox()) {
+        if (skipThisFrame) {
+        	takeConditionalJump = true;
+        } else if (re.hasBoundingBox()) {
         	takeConditionalJump = !re.isBoundingBoxVisible();
         }
 
@@ -5483,14 +5508,12 @@ public class VideoEngine {
         }
     }
 
-    private void endRendering(boolean useVertexColor, boolean useTexture, int numberOfVertex) {
-        Memory mem = Memory.getInstance();
-
+    private void endRendering(int numberOfVertex) {
         // VADDR/IADDR are updated after vertex rendering
         // (IADDR when indexed and VADDR when not).
         // Some games rely on this and don't reload VADDR/IADDR between 2 PRIM/BBOX calls.
         if (context.vinfo.index == 0) {
-            context.vinfo.ptr_vertex = context.vinfo.getAddress(mem, numberOfVertex);
+            context.vinfo.ptr_vertex = context.vinfo.getAddress(Memory.getInstance(), numberOfVertex);
         } else {
             context.vinfo.ptr_index += numberOfVertex * context.vinfo.index;
         }
@@ -5747,7 +5770,7 @@ public class VideoEngine {
         	drawArraysStatistics.end();
         }
 
-        endRendering(useVertexColor, useTexture, ucount * vcount);
+        endRendering(ucount * vcount);
 	}
 
 	private VertexState[][] getControlPoints(int ucount, int vcount) {
@@ -6039,7 +6062,15 @@ public class VideoEngine {
 		this.useTextureAnisotropicFilter = useTextureAnisotropicFilter;
 	}
 
-    private class SaveContextAction implements IAction {
+	public void setSkipThisFrame(boolean skipThisFrame) {
+		this.skipThisFrame = skipThisFrame;
+	}
+
+	public boolean isSkipThisFrame() {
+		return skipThisFrame;
+	}
+
+	private class SaveContextAction implements IAction {
         private int addr;
         private Semaphore sync;
 
