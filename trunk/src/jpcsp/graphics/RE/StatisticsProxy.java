@@ -39,7 +39,6 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 
 		addStatistic("attachShader", 0);
 		addStatistic("beginBoundingBox", 1);
-		addStatistic("beginDraw", 2);
 		addStatistic("beginQuery", 3);
 		addStatistic("bindBuffer", 4);
 		addStatistic("bindBufferBase", 5);
@@ -62,12 +61,6 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		addStatistic("disableVertexAttribArray", 22);
 		addStatistic("drawArrays", 23);
 		addStatistic("drawBoundingBox", 24);
-		addStatistic("drawColor", 25);
-		addStatistic("drawColor", 26);
-		addStatistic("drawTexCoord", 27);
-		addStatistic("drawVertex", 28);
-		addStatistic("drawVertex", 29);
-		addStatistic("drawVertex3", 30);
 		addStatistic("enableClientState", 31);
 		addStatistic("enableFlag", 32);
 		addStatistic("enableVertexAttribArray", 33);
@@ -75,7 +68,6 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		addStatistic("endClearMode", 35);
 		addStatistic("endDirectRendering", 36);
 		addStatistic("endDisplay", 37);
-		addStatistic("endDraw", 38);
 		addStatistic("endModelViewMatrixUpdate", 39);
 		addStatistic("endQuery", 40);
 		addStatistic("genBuffer", 41);
@@ -99,7 +91,6 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		addStatistic("isQueryAvailable", 59);
 		addStatistic("isShaderAvailable", 60);
 		addStatistic("linkProgram", 61);
-		addStatistic("readPixels", 62);
 		addStatistic("setAlphaFunc", 63);
 		addStatistic("setBlendColor", 64);
 		addStatistic("setBlendEquation", 65);
@@ -288,14 +279,6 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void beginDraw(int type) {
-		DurationStatistics statistic = statistics[2];
-		statistic.start();
-		super.beginDraw(type);
-		statistic.end();
-	}
-
-	@Override
 	public void beginQuery(int id) {
 		DurationStatistics statistic = statistics[3];
 		statistic.start();
@@ -477,54 +460,6 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void drawColor(float value1, float value2, float value3, float value4) {
-		DurationStatistics statistic = statistics[25];
-		statistic.start();
-		super.drawColor(value1, value2, value3, value4);
-		statistic.end();
-	}
-
-	@Override
-	public void drawColor(float value1, float value2, float value3) {
-		DurationStatistics statistic = statistics[26];
-		statistic.start();
-		super.drawColor(value1, value2, value3);
-		statistic.end();
-	}
-
-	@Override
-	public void drawTexCoord(float value1, float value2) {
-		DurationStatistics statistic = statistics[27];
-		statistic.start();
-		super.drawTexCoord(value1, value2);
-		statistic.end();
-	}
-
-	@Override
-	public void drawVertex(float value1, float value2) {
-		DurationStatistics statistic = statistics[28];
-		statistic.start();
-		super.drawVertex(value1, value2);
-		statistic.end();
-	}
-
-	@Override
-	public void drawVertex(int value1, int value2) {
-		DurationStatistics statistic = statistics[29];
-		statistic.start();
-		super.drawVertex(value1, value2);
-		statistic.end();
-	}
-
-	@Override
-	public void drawVertex3(float[] values) {
-		DurationStatistics statistic = statistics[30];
-		statistic.start();
-		super.drawVertex3(values);
-		statistic.end();
-	}
-
-	@Override
 	public void enableClientState(int type) {
 		DurationStatistics statistic = statistics[31];
 		statistic.start();
@@ -577,14 +512,6 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		DurationStatistics statistic = statistics[37];
 		statistic.start();
 		super.endDisplay();
-		statistic.end();
-	}
-
-	@Override
-	public void endDraw() {
-		DurationStatistics statistic = statistics[38];
-		statistic.start();
-		super.endDraw();
 		statistic.end();
 	}
 
@@ -790,14 +717,6 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		boolean value = super.linkProgram(program);
 		statistic.end();
 		return value;
-	}
-
-	@Override
-	public void readPixels(int x, int y, int width, int height, int format, int type, Buffer buffer) {
-		DurationStatistics statistic = statistics[62];
-		statistic.start();
-		super.readPixels(x, y, width, height, format, type, buffer);
-		statistic.end();
 	}
 
 	@Override

@@ -1223,53 +1223,13 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void beginDraw(int primitive) {
-		GL11.glBegin(primitiveToGL[primitive]);
-	}
-
-	@Override
 	public void beginQuery(int id) {
 		GL15.glBeginQuery(GL15.GL_SAMPLES_PASSED, id);
 	}
 
 	@Override
-	public void drawVertex3(float[] values) {
-		GL11.glVertex3f(values[0], values[1], values[2]);
-	}
-
-	@Override
-	public void endDraw() {
-		GL11.glEnd();
-	}
-
-	@Override
 	public void endQuery() {
 		GL15.glEndQuery(GL15.GL_SAMPLES_PASSED);
-	}
-
-	@Override
-	public void drawColor(float value1, float value2, float value3) {
-		GL11.glColor3f(value1, value2, value3);
-	}
-
-	@Override
-	public void drawColor(float value1, float value2, float value3, float value4) {
-		GL11.glColor4f(value1, value2, value3, value4);
-	}
-
-	@Override
-	public void drawTexCoord(float value1, float value2) {
-		GL11.glTexCoord2f(value1, value2);
-	}
-
-	@Override
-	public void drawVertex(int value1, int value2) {
-		GL11.glVertex2i(value1, value2);
-	}
-
-	@Override
-	public void drawVertex(float value1, float value2) {
-		GL11.glVertex2f(value1, value2);
 	}
 
 	@Override
@@ -1335,29 +1295,6 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 		} else if (buffer instanceof FloatBuffer) {
 			FloatBuffer directBuffer = allocateDirectBuffer((FloatBuffer) buffer);
 			GL11.glGetTexImage(GL11.GL_TEXTURE_2D, level, textureFormatToGL[format], textureTypeToGL[type], (FloatBuffer) buffer);
-			copyBuffer((FloatBuffer) buffer, directBuffer);
-		} else {
-			throw new IllegalArgumentException();
-		}
-	}
-
-	@Override
-	public void readPixels(int x, int y, int width, int height, int format,	int type, Buffer buffer) {
-		if (buffer instanceof ByteBuffer) {
-			ByteBuffer directBuffer = allocateDirectBuffer((ByteBuffer) buffer);
-			GL11.glReadPixels(x, y, width, height, textureFormatToGL[format], textureTypeToGL[type], (ByteBuffer) buffer);
-			copyBuffer((ByteBuffer) buffer, directBuffer);
-		} else if (buffer instanceof IntBuffer) {
-			IntBuffer directBuffer = allocateDirectBuffer((IntBuffer) buffer);
-			GL11.glReadPixels(x, y, width, height, textureFormatToGL[format], textureTypeToGL[type], (IntBuffer) buffer);
-			copyBuffer((IntBuffer) buffer, directBuffer);
-		} else if (buffer instanceof ShortBuffer) {
-			ShortBuffer directBuffer = allocateDirectBuffer((ShortBuffer) buffer);
-			GL11.glReadPixels(x, y, width, height, textureFormatToGL[format], textureTypeToGL[type], (ShortBuffer) buffer);
-			copyBuffer((ShortBuffer) buffer, directBuffer);
-		} else if (buffer instanceof FloatBuffer) {
-			FloatBuffer directBuffer = allocateDirectBuffer((FloatBuffer) buffer);
-			GL11.glReadPixels(x, y, width, height, textureFormatToGL[format], textureTypeToGL[type], (FloatBuffer) buffer);
 			copyBuffer((FloatBuffer) buffer, directBuffer);
 		} else {
 			throw new IllegalArgumentException();

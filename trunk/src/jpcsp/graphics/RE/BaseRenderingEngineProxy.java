@@ -688,48 +688,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void beginDraw(int type) {
-		proxy.beginDraw(type);
-	}
-
-	@Override
 	public void beginQuery(int id) {
 		proxy.beginQuery(id);
-	}
-
-	@Override
-	public void drawColor(float value1, float value2, float value3) {
-		proxy.drawColor(value1, value2, value3);
-	}
-
-	@Override
-	public void drawColor(float value1, float value2, float value3, float value4) {
-		proxy.drawColor(value1, value2, value3, value4);
-	}
-
-	@Override
-	public void drawTexCoord(float value1, float value2) {
-		proxy.drawTexCoord(value1, value2);
-	}
-
-	@Override
-	public void drawVertex(int value1, int value2) {
-		proxy.drawVertex(value1, value2);
-	}
-
-	@Override
-	public void drawVertex(float value1, float value2) {
-		proxy.drawVertex(value1, value2);
-	}
-
-	@Override
-	public void drawVertex3(float[] values) {
-		proxy.drawVertex3(values);
-	}
-
-	@Override
-	public void endDraw() {
-		proxy.endDraw();
 	}
 
 	@Override
@@ -790,11 +750,6 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	@Override
 	public void getTexImage(int level, int format, int type, Buffer buffer) {
 		proxy.getTexImage(level, format, type, buffer);
-	}
-
-	@Override
-	public void readPixels(int x, int y, int width, int height, int format, int type, Buffer buffer) {
-		proxy.readPixels(x, y, width, height, format, type, buffer);
 	}
 
 	@Override

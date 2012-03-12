@@ -476,10 +476,11 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public int genTexture() {
+		int value = super.genTexture();
 		if (isLogDebugEnabled) {
-			log.debug(String.format("genTexture"));
+			log.debug(String.format("genTexture %d", value));
 		}
-		return super.genTexture();
+		return value;
 	}
 
 	@Override
@@ -658,14 +659,6 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 			log.debug(String.format("getTexImage level=%d, format=%d, type=%d, buffer remaining=%d, buffer class=%s", level, format, type, buffer.remaining(), buffer.getClass().getName()));
 		}
 		super.getTexImage(level, format, type, buffer);
-	}
-
-	@Override
-	public void readPixels(int x, int y, int width, int height, int format, int type, Buffer buffer) {
-		if (isLogDebugEnabled) {
-			log.debug(String.format("readPixels x=%d, y=%d, width=%d, height=%d, format=%d, type=%d", x, y, width, height, format, type));
-		}
-		super.readPixels(x, y, width, height, format, type, buffer);
 	}
 
 	@Override

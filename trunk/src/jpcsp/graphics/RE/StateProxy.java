@@ -1043,12 +1043,6 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void beginDraw(int type) {
-		invalidateMaterialColors();
-		super.beginDraw(type);
-	}
-
-	@Override
 	public void drawArrays(int type, int first, int count) {
 		invalidateMaterialColors();
 		super.drawArrays(type, first, count);

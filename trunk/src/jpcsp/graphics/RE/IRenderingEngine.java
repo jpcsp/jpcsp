@@ -437,15 +437,6 @@ public interface IRenderingEngine {
 	public void endQuery();
 	public boolean getQueryResultAvailable(int id);
 	public int getQueryResult(int id);
-	public void beginDraw(int type);
-	public void endDraw();
-	public void drawVertex3(float[] values);
-	public void drawVertex(int value1, int value2);
-	public void drawVertex(float value1, float value2);
-	public void drawTexCoord(float value1, float value2);
-	public void drawColor(float value1, float value2, float value3);
-	public void drawColor(float value1, float value2, float value3, float value4);
-	public void readPixels(int x, int y, int width, int height, int format, int type, Buffer buffer);
 	public void clear(float red, float green, float blue, float alpha);
 	public IREBufferManager getBufferManager();
 	public boolean canAllNativeVertexInfo();
