@@ -109,6 +109,7 @@ JPCSP v0.7 (????????):
    than on previous releases. It doesn't mean that the Jpcsp performance is now worse,
    but just that the previous FPS counter was over-optimistic.
 
+-> Added Frame skipping option;
 
 JPCSP v0.6 (September 18, 2010):
 
@@ -549,7 +550,7 @@ from your PSP can be used. Copy the files under "flash0:/fonts" on your PSP to
 Jpcsp "flash0/fonts" directory.
 
 
-9. FPS
+9. FPS and Frame Skipping
 
 Starting with r2471, a new FPS counter has been introduced. It produces more reliable
 FPS values reflecting the real number of different frames displayed by the PSP during
@@ -559,6 +560,16 @@ too high FPS values. Don't worry if you see reports or videos from previous rele
 showing a higher FPS number. It doesn't mean that Jpcsp's performance is getting
 worse: the frames are displayed at the same speed as before (assuming same hardware
 and same compatibility options), the FPS counter is just showing a more accurate value.
+
+In the Options menu, under Video, a frame skipping feature is available. It allows to define
+a desired FPS value. Jpcsp will then skip as many frames as required to try to reach
+this FPS value. The desired FPS value can only be reached if the application is able
+to produce frames at this rate. Some applications can run at 60 FPS, others only
+at 30 FPS and a few run at full speed with even a lower FPS rate. The PSP does not
+require a fixed FPS rate for an application to run correctly, there is no general rule.
+Also, Jpcsp will only skip a maximum of 75% of the frames, a minimum of 25% will always
+be displayed. Skipping more than 75% of the frames would make the application run very jerky.
+
 
 ...............................................................................
 
