@@ -2252,7 +2252,7 @@ public class VideoEngine {
             if (State.captureGeNextFrame) {
                 log.warn("TRXKICK outside of Ge Address space not supported in capture yet");
             }
-        } else {
+        } else if (!skipThisFrame) { // TRXKICK in GE space can be skipped when skipping this frame
             int width = context.textureTx_width;
             int height = context.textureTx_height;
             int dx = context.textureTx_dx;
@@ -2467,6 +2467,11 @@ public class VideoEngine {
             log(helper.getCommandString(BEZIER) + " ucount=" + ucount + ", vcount=" + vcount);
         }
 
+        if (skipThisFrame) {
+            endRendering(ucount * vcount);
+            return;
+        }
+
         updateGeBuf();
         somethingDisplayed = true;
         loadTexture();
@@ -2485,6 +2490,11 @@ public class VideoEngine {
         if (isLogDebugEnabled) {
             log(helper.getCommandString(SPLINE) + " sp_ucount=" + sp_ucount + ", sp_vcount=" + sp_vcount +
                     " sp_utype=" + sp_utype + ", sp_vtype=" + sp_vtype);
+        }
+
+        if (skipThisFrame) {
+            endRendering(sp_ucount * sp_vcount);
+            return;
         }
 
         updateGeBuf();
