@@ -47,11 +47,11 @@ public class sceDmac extends HLEModule {
         }
 
         // If copying to the VRAM or the frame buffer, do not cache the texture
-        if (VideoEngine.getInstance().isVRAM(dest) || Modules.sceDisplayModule.isFbAddress(dest)) {
+        if (VideoEngine.isVRAM(dest) || Modules.sceDisplayModule.isFbAddress(dest)) {
         	VideoEngine.getInstance().addVideoTexture(dest, dest + size);
         }
         // If copying from the VRAM, force the saving of the GE to memory
-        if (VideoEngine.getInstance().isVRAM(source) && Modules.sceDisplayModule.getSaveGEToTexture()) {
+        if (VideoEngine.isVRAM(source) && Modules.sceDisplayModule.getSaveGEToTexture()) {
         	VideoEngine.getInstance().addVideoTexture(source, source + size);
         }
 

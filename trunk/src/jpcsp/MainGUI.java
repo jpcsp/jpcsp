@@ -229,6 +229,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         filtersGroup = new javax.swing.ButtonGroup();
         resGroup = new javax.swing.ButtonGroup();
+        frameSkipGroup = new javax.swing.ButtonGroup();
         mainToolBar = new javax.swing.JToolBar();
         RunButton = new javax.swing.JToggleButton();
         PauseButton = new javax.swing.JToggleButton();
@@ -253,6 +254,14 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         FiltersMenu = new javax.swing.JMenu();
         noneCheck = new javax.swing.JCheckBoxMenuItem();
         anisotropicCheck = new javax.swing.JCheckBoxMenuItem();
+        FrameSkipMenu = new javax.swing.JMenu();
+        FrameSkipNone = new javax.swing.JCheckBoxMenuItem();
+        FPS5 = new javax.swing.JCheckBoxMenuItem();
+        FPS10 = new javax.swing.JCheckBoxMenuItem();
+        FPS15 = new javax.swing.JCheckBoxMenuItem();
+        FPS20 = new javax.swing.JCheckBoxMenuItem();
+        FPS30 = new javax.swing.JCheckBoxMenuItem();
+        FPS60 = new javax.swing.JCheckBoxMenuItem();
         ShotItem = new javax.swing.JMenuItem();
         RotateItem = new javax.swing.JMenuItem();
         AudioOpt = new javax.swing.JMenu();
@@ -490,6 +499,81 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         FiltersMenu.add(anisotropicCheck);
 
         VideoOpt.add(FiltersMenu);
+
+        FrameSkipMenu.setText(Resource.get("frameSkipping"));
+
+        frameSkipGroup.add(FrameSkipNone);
+        FrameSkipNone.setSelected(true);
+        FrameSkipNone.setText(Resource.get("none"));
+        FrameSkipNone.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	frameSkipNoneActionPerformed(evt);
+            }
+        });
+        FrameSkipMenu.add(FrameSkipNone);
+
+        frameSkipGroup.add(FPS5);
+        FPS5.setText("5 FPS");
+        FPS5.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	frameSkipFPS5ActionPerformed(evt);
+            }
+        });
+        FrameSkipMenu.add(FPS5);
+
+        frameSkipGroup.add(FPS10);
+        FPS10.setText("10 FPS");
+        FPS10.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	frameSkipFPS10ActionPerformed(evt);
+            }
+        });
+        FrameSkipMenu.add(FPS10);
+
+        frameSkipGroup.add(FPS15);
+        FPS15.setText("15 FPS");
+        FPS15.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	frameSkipFPS15ActionPerformed(evt);
+            }
+        });
+        FrameSkipMenu.add(FPS15);
+
+        frameSkipGroup.add(FPS20);
+        FPS20.setText("20 FPS");
+        FPS20.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	frameSkipFPS20ActionPerformed(evt);
+            }
+        });
+        FrameSkipMenu.add(FPS20);
+
+        frameSkipGroup.add(FPS30);
+        FPS30.setText("30 FPS");
+        FPS30.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	frameSkipFPS30ActionPerformed(evt);
+            }
+        });
+        FrameSkipMenu.add(FPS30);
+
+        frameSkipGroup.add(FPS60);
+        FPS60.setText("60 FPS");
+        FPS60.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	frameSkipFPS60ActionPerformed(evt);
+            }
+        });
+        FrameSkipMenu.add(FPS60);
+
+        VideoOpt.add(FrameSkipMenu);
 
         ShotItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F5, 0));
         ShotItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/ScreenshotIcon.png"))); // NOI18N
@@ -1987,6 +2071,41 @@ private void anisotropicCheckActionPerformed(java.awt.event.ActionEvent evt) {//
     Settings.getInstance().writeBool("emu.graphics.filters.anisotropic", anisotropicCheck.isSelected());
 }//GEN-LAST:event_anisotropicCheckActionPerformed
 
+private void frameSkipNoneActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_frameSkipNoneActionPerformed
+	Modules.sceDisplayModule.setDesiredFPS(0);
+    Settings.getInstance().writeInt("emu.graphics.frameskip.desiredFPS", Modules.sceDisplayModule.getDesiredFPS());
+}//GEN-LAST:event_frameSkipNoneActionPerformed
+
+private void frameSkipFPS5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_frameSkipFPS5ActionPerformed
+	Modules.sceDisplayModule.setDesiredFPS(5);
+    Settings.getInstance().writeInt("emu.graphics.frameskip.desiredFPS", Modules.sceDisplayModule.getDesiredFPS());
+}//GEN-LAST:event_frameSkipFPS5ActionPerformed
+
+private void frameSkipFPS10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_frameSkipFPS10ActionPerformed
+	Modules.sceDisplayModule.setDesiredFPS(10);
+    Settings.getInstance().writeInt("emu.graphics.frameskip.desiredFPS", Modules.sceDisplayModule.getDesiredFPS());
+}//GEN-LAST:event_frameSkipFPS10ActionPerformed
+
+private void frameSkipFPS15ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_frameSkipFPS15ActionPerformed
+	Modules.sceDisplayModule.setDesiredFPS(15);
+    Settings.getInstance().writeInt("emu.graphics.frameskip.desiredFPS", Modules.sceDisplayModule.getDesiredFPS());
+}//GEN-LAST:event_frameSkipFPS15ActionPerformed
+
+private void frameSkipFPS20ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_frameSkipFPS20ActionPerformed
+	Modules.sceDisplayModule.setDesiredFPS(20);
+    Settings.getInstance().writeInt("emu.graphics.frameskip.desiredFPS", Modules.sceDisplayModule.getDesiredFPS());
+}//GEN-LAST:event_frameSkipFPS20ActionPerformed
+
+private void frameSkipFPS30ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_frameSkipFPS30ActionPerformed
+	Modules.sceDisplayModule.setDesiredFPS(30);
+    Settings.getInstance().writeInt("emu.graphics.frameskip.desiredFPS", Modules.sceDisplayModule.getDesiredFPS());
+}//GEN-LAST:event_frameSkipFPS30ActionPerformed
+
+private void frameSkipFPS60ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_frameSkipFPS60ActionPerformed
+	Modules.sceDisplayModule.setDesiredFPS(60);
+    Settings.getInstance().writeInt("emu.graphics.frameskip.desiredFPS", Modules.sceDisplayModule.getDesiredFPS());
+}//GEN-LAST:event_frameSkipFPS60ActionPerformed
+
 private void setViewportResizeScaleFactor(int viewportResizeScaleFactor) {
 	Modules.sceDisplayModule.setViewportResizeScaleFactor(viewportResizeScaleFactor);
 	pack();
@@ -2230,6 +2349,14 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JButton ResetButton;
     private javax.swing.JMenuItem ResetProfiler;
     private javax.swing.JMenu ResizeMenu;
+    private javax.swing.JMenu FrameSkipMenu;
+    private javax.swing.JCheckBoxMenuItem FrameSkipNone;
+    private javax.swing.JCheckBoxMenuItem FPS5;
+    private javax.swing.JCheckBoxMenuItem FPS10;
+    private javax.swing.JCheckBoxMenuItem FPS15;
+    private javax.swing.JCheckBoxMenuItem FPS20;
+    private javax.swing.JCheckBoxMenuItem FPS30;
+    private javax.swing.JCheckBoxMenuItem FPS60;
     private javax.swing.JMenuItem RotateItem;
     private javax.swing.JToggleButton RunButton;
     private javax.swing.JMenuItem Russian;
@@ -2250,6 +2377,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JCheckBoxMenuItem oneTimeResize;
     private javax.swing.JMenuItem openUmd;
     private javax.swing.ButtonGroup resGroup;
+    private javax.swing.ButtonGroup frameSkipGroup;
     private javax.swing.JCheckBoxMenuItem threeTimesResize;
     private javax.swing.JCheckBoxMenuItem twoTimesResize;
     // End of variables declaration//GEN-END:variables
