@@ -1122,61 +1122,6 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void beginDraw(int type) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void endDraw() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void drawVertex3(float[] values) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void drawVertex(int value1, int value2) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void drawVertex(float value1, float value2) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void drawTexCoord(float value1, float value2) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void drawColor(float value1, float value2, float value3) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void drawColor(float value1, float value2, float value3, float value4) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void readPixels(int x, int y, int width, int height, int format,
-			int type, Buffer buffer) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
 	public void clear(float red, float green, float blue, float alpha) {
 		// TODO Auto-generated method stub
 		

@@ -2192,7 +2192,6 @@ public class VideoEngine {
         	return;
         }
 
-        usingTRXKICK = true;
         updateGeBuf();
 
         int pixelFormatGe = context.psm;
@@ -2209,6 +2208,8 @@ public class VideoEngine {
                     log(helper.getCommandString(TRXKICK) + " not in Ge Address space");
                 }
             }
+
+            usingTRXKICK = true;
 
             // Remove the destination address from the texture cache
             if (canCacheTexture(context.textureTx_destinationAddress)) {
@@ -2267,14 +2268,12 @@ public class VideoEngine {
                 log(helper.getCommandString(TRXKICK) + " in Ge Address space: dx=" + dx + ", dy=" + dy + ", width=" + width + ", height=" + height + ", lineWidth=" + lineWidth + ", bpp=" + bpp);
             }
 
-            int texture = re.genTexture();
-            re.bindTexture(texture);
-			re.setTextureFormat(pixelFormatGe, false);
+            if (re.isVertexArrayAvailable()) {
+            	re.bindVertexArray(0);
+            }
 
-            re.startDirectRendering(true, false, true, true, false, 480, 272);
-            re.setPixelStore(lineWidth, bpp);
-
-            int textureSize = lineWidth * height * bpp;
+            int bufferHeight = Utilities.makePow2(height);
+            int textureSize = lineWidth * bufferHeight * bpp;
             Buffer buffer = Memory.getInstance().getBuffer(context.textureTx_sourceAddress, textureSize);
 
             if (State.captureGeNextFrame) {
@@ -2289,32 +2288,63 @@ public class VideoEngine {
             //
             // This the reason why we are also using glTexSubImage2D.
             //
-            int bufferHeight = Utilities.makePow2(height);
-            re.setTexImage(0,pixelFormatGe, lineWidth, bufferHeight, pixelFormatGe, pixelFormatGe, 0, null);
+            int texture = re.genTexture();
+            re.bindTexture(texture);
+			re.setTextureFormat(pixelFormatGe, false);
+            re.setTexImage(0, pixelFormatGe, lineWidth, bufferHeight, pixelFormatGe, pixelFormatGe, 0, null);
+            re.setTextureMipmapMinFilter(TFLT_NEAREST);
+            re.setTextureMipmapMagFilter(TFLT_NEAREST);
+            re.setTextureMipmapMinLevel(0);
+            re.setTextureMipmapMaxLevel(0);
+            re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
+            re.setPixelStore(lineWidth, bpp);
             re.setTexSubImage(0, context.textureTx_sx, context.textureTx_sy, width, height, pixelFormatGe, pixelFormatGe, textureSize, buffer);
 
-            re.beginDraw(PRIM_SPRITES);
-            re.drawColor(1.0f, 1.0f, 1.0f, 1.0f);
+            re.startDirectRendering(true, false, true, true, false, 480, 272);
+            re.setTextureFormat(pixelFormatGe, false);
 
             float texCoordX = width / (float) lineWidth;
             float texCoordY = height / (float) bufferHeight;
 
-            re.drawTexCoord(0.0f, 0.0f);
-            re.drawVertex(dx, dy);
+            IREBufferManager bufferManager = re.getBufferManager();
+            ByteBuffer drawByteBuffer = bufferManager.getBuffer(bufferId);
+            drawByteBuffer.clear();
+            FloatBuffer drawFloatBuffer = drawByteBuffer.asFloatBuffer();
+            drawFloatBuffer.clear();
+            drawFloatBuffer.put(texCoordX);
+            drawFloatBuffer.put(texCoordY);
+            drawFloatBuffer.put(width);
+            drawFloatBuffer.put(height);
 
-            re.drawTexCoord(texCoordX, 0.0f);
-            re.drawVertex(dx + width, dy);
+            drawFloatBuffer.put(0);
+            drawFloatBuffer.put(texCoordY);
+            drawFloatBuffer.put(0);
+            drawFloatBuffer.put(height);
 
-            re.drawTexCoord(texCoordX, texCoordY);
-            re.drawVertex(dx + width, dy + height);
+            drawFloatBuffer.put(0);
+            drawFloatBuffer.put(0);
+            drawFloatBuffer.put(0);
+            drawFloatBuffer.put(0);
 
-            re.drawTexCoord(0.0f, texCoordY);
-            re.drawVertex(dx, dy + height);
+            drawFloatBuffer.put(texCoordX);
+            drawFloatBuffer.put(0);
+            drawFloatBuffer.put(width);
+            drawFloatBuffer.put(0);
 
-            re.endDraw();
+            re.setVertexInfo(null, false, false, true, IRenderingEngine.RE_QUADS);
+            re.enableClientState(IRenderingEngine.RE_TEXTURE);
+            re.disableClientState(IRenderingEngine.RE_COLOR);
+            re.disableClientState(IRenderingEngine.RE_NORMAL);
+            re.enableClientState(IRenderingEngine.RE_VERTEX);
+            bufferManager.setTexCoordPointer(bufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 0);
+            bufferManager.setVertexPointer(bufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 2 * SIZEOF_FLOAT);
+            bufferManager.setBufferData(bufferId, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
+            re.drawArrays(IRenderingEngine.RE_QUADS, 0, 4);
 
             re.endDirectRendering();
             re.deleteTexture(texture);
+
+            somethingDisplayed = true;
         }
     }
 
