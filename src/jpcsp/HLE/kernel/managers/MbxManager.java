@@ -340,8 +340,6 @@ public class MbxManager {
             log.warn("sceKernelReferMbxStatus unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_BOX;
         } else {
-            int maxSize = mem.read32(info_addr);
-            info.size = maxSize;
             info.write(mem, info_addr);
             cpu.gpr[2] = 0;
         }

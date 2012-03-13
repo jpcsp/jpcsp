@@ -16,14 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
-import jpcsp.util.Utilities;
 
-public class SceKernelCallbackInfo {
-
-    public static final int size = 56;
+public class SceKernelCallbackInfo extends pspAbstractMemoryMappedStructureVariableLength {
     public final String name;
     public final int threadId;
     public final int callback_addr;
@@ -50,15 +46,16 @@ public class SceKernelCallbackInfo {
         //this.gpreg = (mod == 0) ? gpr[GP] : mod->unk_68;
     }
 
-    public void write(Memory mem, int address) {
-        mem.write32(address, size);
-        Utilities.writeStringNZ(mem, address + 4, 32, name);
-        mem.write32(address + 36, threadId);
-        mem.write32(address + 40, callback_addr);
-        mem.write32(address + 44, callback_arg_addr);
-        mem.write32(address + 48, notifyCount);
-        mem.write32(address + 52, notifyArg);
-    }
+	@Override
+	protected void write() {
+		super.write();
+		writeStringNZ(32, name);
+		write32(threadId);
+		write32(callback_addr);
+		write32(callback_arg_addr);
+		write32(notifyCount);
+		write32(notifyArg);
+	}
 
     /** Call this to switch in the callback, in a given thread context.
      */

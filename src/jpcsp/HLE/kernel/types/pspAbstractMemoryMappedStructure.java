@@ -41,7 +41,7 @@ public abstract class pspAbstractMemoryMappedStructure {
         offset = 0;
     }
 
-    private void start(Memory mem, int address) {
+    protected void start(Memory mem, int address) {
         start(mem);
         baseAddress = address;
     }

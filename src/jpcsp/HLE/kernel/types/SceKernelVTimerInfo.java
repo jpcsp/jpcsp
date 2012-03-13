@@ -24,8 +24,7 @@ import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.scheduler.VTimerInterruptAction;
 import jpcsp.scheduler.VTimerInterruptResultAction;
 
-public class SceKernelVTimerInfo extends pspAbstractMemoryMappedStructure {
-	public int size;
+public class SceKernelVTimerInfo extends pspAbstractMemoryMappedStructureVariableLength {
 	public String name;
 	public int active;
 	public long base;
@@ -41,12 +40,10 @@ public class SceKernelVTimerInfo extends pspAbstractMemoryMappedStructure {
 	private int internalMemory;
 	private SysMemInfo sysMemInfo;
 
-	private static final int DEFAULT_SIZE = 72;
 	public static final int ACTIVE_RUNNING = 1;
 	public static final int ACTIVE_STOPPED = 0;
 
 	public SceKernelVTimerInfo(String name) {
-		size = DEFAULT_SIZE;
 		this.name = name;
 		active = ACTIVE_STOPPED;
 
@@ -77,27 +74,8 @@ public class SceKernelVTimerInfo extends pspAbstractMemoryMappedStructure {
 	}
 
 	@Override
-	protected void read() {
-		size = read32();
-		setMaxSize(size);
-		name = readStringNZ(32);
-		active = read32();
-		base = read64();
-		current = read64();
-		schedule = read64();
-		handlerAddress = read32();
-		handlerArgument = read32();
-	}
-
-	@Override
-	public int sizeof() {
-		return size;
-	}
-
-	@Override
 	protected void write() {
-		setMaxSize(size);
-		write32(size);
+		super.write();
 		writeStringNZ(32, name);
 		write32(active);
 		write64(base);

@@ -18,8 +18,7 @@ package jpcsp.HLE.kernel.types;
 
 import jpcsp.Memory;
 
-public class pspUtilityDialogCommon extends pspAbstractMemoryMappedStructure {
-	public int size;
+public class pspUtilityDialogCommon extends pspAbstractMemoryMappedStructureVariableLength {
 	public int language;
 	public int buttonSwap;
 		public final static int BUTTON_ACCEPT_CIRCLE = 0;
@@ -32,8 +31,7 @@ public class pspUtilityDialogCommon extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void read() {
-		size           = read32();
-		setMaxSize(size);
+		super.read();
 		language       = read32();
 		buttonSwap     = read32();
 		graphicsThread = read32();
@@ -46,8 +44,7 @@ public class pspUtilityDialogCommon extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void write() {
-	    setMaxSize(size);
-		write32(size);
+		super.write();
 		write32(language);
 		write32(buttonSwap);
 		write32(graphicsThread);
@@ -68,6 +65,10 @@ public class pspUtilityDialogCommon extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public int sizeof() {
-		return 12 * 4;
+		return Math.min(12 * 4, super.sizeof());
+	}
+
+	public int totalSizeof() {
+		return super.sizeof();
 	}
 }

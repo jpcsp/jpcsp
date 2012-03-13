@@ -16,15 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-public class pspGeListOptParam extends pspAbstractMemoryMappedStructure {
-    public int size;
+public class pspGeListOptParam extends pspAbstractMemoryMappedStructureVariableLength {
     public int contextAddr;
     public int stackDepth;
     public int stackAddr;
 
     @Override
     protected void read() {
-        size = read32();
+    	super.read();
         contextAddr = read32();
         stackDepth = read32();
         stackAddr = read32();
@@ -32,14 +31,9 @@ public class pspGeListOptParam extends pspAbstractMemoryMappedStructure {
 
     @Override
     protected void write() {
-        write32(size);
+    	super.write();
         write32(contextAddr);
         write32(stackDepth);
         write32(stackAddr);
     }
-
-    @Override
-	public int sizeof() {
-		return size;
-	}
 }

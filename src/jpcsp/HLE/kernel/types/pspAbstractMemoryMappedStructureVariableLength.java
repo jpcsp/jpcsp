@@ -16,27 +16,34 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-public class SceKernelSMOption extends pspAbstractMemoryMappedStructureVariableLength {
-	public int mpidStack;
-	public int stackSize;
-	public int priority;
-	public int attribute;
+/**
+ * Abstract class representing a memory based structure starting
+ * with a 32-bit value indicating the maximum memory length available
+ * for the structure values.
+ * 
+ * @author gid15
+ *
+ */
+public abstract class pspAbstractMemoryMappedStructureVariableLength extends pspAbstractMemoryMappedStructure {
+	private int length;
 
 	@Override
 	protected void read() {
-		super.read();
-		mpidStack = read32();
-		stackSize = read32();
-		priority = read32();
-		attribute = read32();
+		readLength();
 	}
 
 	@Override
 	protected void write() {
-		super.write();
-		write32(mpidStack);
-		write32(stackSize);
-		write32(priority);
-		write32(attribute);
+		readLength();
+	}
+
+	private void readLength() {
+		length = read32();
+		setMaxSize(length);
+	}
+
+	@Override
+	public int sizeof() {
+		return length;
 	}
 }

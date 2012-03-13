@@ -133,7 +133,7 @@ public class SceUtilityOskParams extends pspAbstractMemoryMappedStructure {
 	protected void read() {
 		base = new pspUtilityDialogCommon();
 		read(base);
-		setMaxSize(base.size);
+		setMaxSize(base.totalSizeof());
 
 		oskDataCount = read32();
 		oskDataAddr = read32();
@@ -149,8 +149,8 @@ public class SceUtilityOskParams extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void write() {
-		setMaxSize(base.size);
 		write(base);
+		setMaxSize(base.totalSizeof());
 
 		write32(oskDataCount);
 		write32(oskDataAddr);
@@ -163,7 +163,7 @@ public class SceUtilityOskParams extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public int sizeof() {
-		return base.size;
+		return base.totalSizeof();
 	}
 
 	@Override

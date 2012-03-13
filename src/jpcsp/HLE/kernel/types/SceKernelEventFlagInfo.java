@@ -16,10 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import jpcsp.Memory;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 
-public class SceKernelEventFlagInfo {
+public class SceKernelEventFlagInfo extends pspAbstractMemoryMappedStructureVariableLength {
     public final String name;
     public final int attr;
     public final int initPattern;
@@ -28,8 +27,7 @@ public class SceKernelEventFlagInfo {
 
     public final int uid;
 
-    public SceKernelEventFlagInfo(String name, int attr, int initPattern, int currentPattern)
-    {
+    public SceKernelEventFlagInfo(String name, int attr, int initPattern, int currentPattern) {
         this.name = name;
         this.attr = attr;
         this.initPattern = initPattern;
@@ -39,19 +37,13 @@ public class SceKernelEventFlagInfo {
         uid = SceUidManager.getNewUid("ThreadMan-eventflag");
     }
 
-    public void write(Memory mem, int address)
-    {
-        mem.write32(address, 52); // size
-
-        int i, len = name.length();
-        for (i = 0; i < 32 && i < len; i++)
-            mem.write8(address + 4 + i, (byte)name.charAt(i));
-        for (; i < 32; i++)
-            mem.write8(address + 4 + i, (byte)0);
-
-        mem.write32(address + 36, attr);
-        mem.write32(address + 40, initPattern);
-        mem.write32(address + 44, currentPattern);
-        mem.write32(address + 48, numWaitThreads);
-    }
+	@Override
+	protected void write() {
+		super.write();
+		writeStringNZ(32, name);
+		write32(attr);
+		write32(initPattern);
+		write32(currentPattern);
+		write32(numWaitThreads);
+	}
 }

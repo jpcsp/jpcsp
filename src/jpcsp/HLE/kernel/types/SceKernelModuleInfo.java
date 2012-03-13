@@ -18,11 +18,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 /** usermode version of SceModule */
-public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructure {
+public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructureVariableLength {
 
     // PSP info
     // http://psp.jim.sh/pspsdk-doc/structSceKernelModuleInfo.html
-    public int size = 96;
     public byte nsegment;
     public byte[] reserved = new byte[3]; // these never get touched, nsegment is not 32-bit in this struct
     public int[] segmentaddr = new int[4];
@@ -65,8 +64,7 @@ public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructure {
 
     @Override
 	protected void read() {
-        size = read32();
-        setMaxSize(size);
+    	super.read();
 
         nsegment        = (byte)(read8() & 0xFF);
         reserved[0]     = (byte)(read8() & 0xFF);
@@ -94,9 +92,9 @@ public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructure {
 
     @Override
 	protected void write() {
-        setMaxSize(size);
-        write32(size);
-        write8(nsegment);
+    	super.write();
+
+    	write8(nsegment);
         writeSkip(3);
         write32(segmentaddr[0]);
         write32(segmentaddr[1]);
@@ -116,10 +114,5 @@ public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructure {
         write8(version[0]);
         write8(version[1]);
         writeStringNZ(28, name);
-    }
-
-    @Override
-	public int sizeof() {
-        return size;
     }
 }

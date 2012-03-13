@@ -144,7 +144,7 @@ public class SceUtilityHtmlViewerParams extends pspAbstractMemoryMappedStructure
 	protected void read() {
         base = new pspUtilityDialogCommon();
         read(base);
-        setMaxSize(base.size);
+        setMaxSize(base.totalSizeof());
 
         dataAddr = read32();
         dataSize = read32();
@@ -187,8 +187,8 @@ public class SceUtilityHtmlViewerParams extends pspAbstractMemoryMappedStructure
 
     @Override
 	protected void write() {
-        setMaxSize(base.size);
         write(base);
+        setMaxSize(base.totalSizeof());
 
         write32(dataAddr);
         write32(dataSize);
@@ -219,7 +219,7 @@ public class SceUtilityHtmlViewerParams extends pspAbstractMemoryMappedStructure
 
     @Override
 	public int sizeof() {
-        return base.size;
+        return base.totalSizeof();
     }
 
     @Override

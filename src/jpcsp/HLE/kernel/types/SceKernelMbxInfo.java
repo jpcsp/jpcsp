@@ -19,11 +19,10 @@ package jpcsp.HLE.kernel.types;
 import jpcsp.Memory;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 
-public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructure {
+public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructureVariableLength {
     //Mbx info
-    public int size;
-    public String name;
-    public int attr;
+    public final String name;
+    public final int attr;
     public int numWaitThreads;
     private int numMessages;
     private int firstMessageAddr;
@@ -45,30 +44,13 @@ public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructure {
     }
 
 	@Override
-	protected void read() {
-		size = read32();
-		setMaxSize(size);
-		name = readStringNZ(32);
-		attr = read32();
-		numWaitThreads = read32();
-		numMessages = read32();
-		firstMessageAddr = read32();
-	}
-
-	@Override
 	protected void write() {
-		setMaxSize(size);
-		write32(size);
+		super.write();
 		writeStringNZ(32, name);
 		write32(attr);
 		write32(numWaitThreads);
 		write32(numMessages);
 		write32(firstMessageAddr);
-	}
-
-	@Override
-	public int sizeof() {
-		return size;
 	}
 
     public int removeMsg(Memory mem) {

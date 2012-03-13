@@ -20,15 +20,13 @@ import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
-import jpcsp.util.Utilities;
 
-public class SceKernelMppInfo {
+public class SceKernelMppInfo extends pspAbstractMemoryMappedStructureVariableLength {
 
     // PSP info
-    public int size = 56;
-    public String name;
-    public int attr;
-    public int bufSize;
+    public final String name;
+    public final int attr;
+    public final int bufSize;
     public int freeSize;
     public int numSendWaitThreads;
     public int numReceiveWaitThreads;
@@ -51,8 +49,9 @@ public class SceKernelMppInfo {
         numReceiveWaitThreads = 0;
 
         sysMemInfo = Modules.SysMemUserForUserModule.malloc(partitionid, "ThreadMan-MsgPipe", memType, size, 0);
-        if (sysMemInfo == null)
+        if (sysMemInfo == null) {
             throw new RuntimeException("SceKernelFplInfo: not enough free mem");
+        }
         address = sysMemInfo.addr;
 
         uid = SceUidManager.getNewUid("ThreadMan-MsgPipe");
@@ -77,25 +76,16 @@ public class SceKernelMppInfo {
         return info;
     }
 
-    public void read(Memory mem, int address) {
-        size  	                = mem.read32(address);
-        name                    = Utilities.readStringNZ(mem, address + 4, 32);
-        attr                    = mem.read32(address + 36);
-        bufSize                 = mem.read32(address + 40);
-        freeSize                = mem.read32(address + 44);
-        numSendWaitThreads      = mem.read32(address + 48);
-        numReceiveWaitThreads   = mem.read32(address + 52);
-    }
-
-    public void write(Memory mem, int address) {
-        mem.write32(address, size);
-        Utilities.writeStringNZ(mem, address + 4, 32, name);
-        mem.write32(address + 36, attr);
-        mem.write32(address + 40, bufSize);
-        mem.write32(address + 44, freeSize);
-        mem.write32(address + 48, numSendWaitThreads);
-        mem.write32(address + 52, numReceiveWaitThreads);
-    }
+	@Override
+	protected void write() {
+		super.write();
+		writeStringNZ(32, name);
+		write32(attr);
+		write32(bufSize);
+		write32(freeSize);
+		write32(numSendWaitThreads);
+		write32(numReceiveWaitThreads);
+	}
 
     public int availableReadSize() {
         return bufSize - freeSize;

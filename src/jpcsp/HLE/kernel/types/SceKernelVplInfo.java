@@ -27,12 +27,11 @@ import jpcsp.HLE.kernel.managers.VplManager;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.util.Utilities;
 
-public class SceKernelVplInfo {
+public class SceKernelVplInfo extends pspAbstractMemoryMappedStructureVariableLength {
     // PSP info
-    public int size = 52;
-    public String name;
-    public int attr;
-    public int poolSize;
+    public final String name;
+    public final int attr;
+    public final int poolSize;
     public int freeSize;
     public int numWaitThreads;
 
@@ -101,23 +100,15 @@ public class SceKernelVplInfo {
         Modules.SysMemUserForUserModule.free(sysMemInfo);
     }
 
-    public void read(Memory mem, int address) {
-        size  	        = mem.read32(address);
-        name            = Utilities.readStringNZ(mem, address + 4, 32);
-        attr            = mem.read32(address + 36);
-        poolSize        = mem.read32(address + 40);
-        freeSize        = mem.read32(address + 44);
-        numWaitThreads  = mem.read32(address + 48);
-    }
-
-    public void write(Memory mem, int address) {
-        mem.write32(address, size);
-        Utilities.writeStringNZ(mem, address + 4, 32, name);
-        mem.write32(address + 36, attr);
-        mem.write32(address + 40, poolSize);
-        mem.write32(address + 44, freeSize);
-        mem.write32(address + 48, numWaitThreads);
-    }
+	@Override
+	protected void write() {
+		super.write();
+		writeStringNZ(32, name);
+		write32(attr);
+		write32(poolSize);
+		write32(freeSize);
+		write32(numWaitThreads);
+	}
 
     /** @return true on success */
     public boolean free(int addr) {

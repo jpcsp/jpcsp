@@ -27,7 +27,7 @@ public class SceUtilityNpSigninParams extends pspAbstractMemoryMappedStructure {
 	protected void read() {
 		base = new pspUtilityDialogCommon();
 		read(base);
-		setMaxSize(base.size);
+		setMaxSize(base.totalSizeof());
 
 		unknown1 = read32();
 		unknown2 = read32();
@@ -37,8 +37,8 @@ public class SceUtilityNpSigninParams extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void write() {
-        setMaxSize(base.size);
 	    write(base);
+        setMaxSize(base.totalSizeof());
 
 	    write32(unknown1);
 	    write32(unknown2);
@@ -48,6 +48,6 @@ public class SceUtilityNpSigninParams extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public int sizeof() {
-		return base.size;
+		return base.totalSizeof();
 	}
 }

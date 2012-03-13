@@ -60,9 +60,9 @@ public class SceUtilityNetconfParams extends pspAbstractMemoryMappedStructure {
     protected void read() {
         base = new pspUtilityDialogCommon();
         read(base);
-        setMaxSize(base.size);
+        setMaxSize(base.totalSizeof());
 
-        netAction         = read32();
+        netAction = read32();
         netconfDataAddr = read32();
         if (netconfDataAddr != 0) {
 			netconfData = new SceUtilityNetconfData();
@@ -77,8 +77,8 @@ public class SceUtilityNetconfParams extends pspAbstractMemoryMappedStructure {
 
     @Override
     protected void write() {
-        setMaxSize(base.size);
         write(base);
+        setMaxSize(base.totalSizeof());
 
         write32(netAction);
         write32(netconfDataAddr);
@@ -92,7 +92,7 @@ public class SceUtilityNetconfParams extends pspAbstractMemoryMappedStructure {
 
     @Override
     public int sizeof() {
-        return base.size;
+        return base.totalSizeof();
     }
 
     @Override
