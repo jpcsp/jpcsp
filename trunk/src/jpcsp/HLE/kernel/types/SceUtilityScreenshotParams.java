@@ -177,7 +177,7 @@ public class SceUtilityScreenshotParams extends pspAbstractMemoryMappedStructure
 	protected void read() {
         base = new pspUtilityDialogCommon();
         read(base);
-        setMaxSize(base.size);
+        setMaxSize(base.totalSizeof());
 
         startupType = read32();
         status = read32();
@@ -223,8 +223,8 @@ public class SceUtilityScreenshotParams extends pspAbstractMemoryMappedStructure
 
     @Override
 	protected void write() {
-        setMaxSize(base.size);
         write(base);
+        setMaxSize(base.totalSizeof());
 
         write32(startupType);
         write32(status);
@@ -268,7 +268,7 @@ public class SceUtilityScreenshotParams extends pspAbstractMemoryMappedStructure
 
     @Override
 	public int sizeof() {
-        return base.size;
+        return base.totalSizeof();
     }
 
     @Override

@@ -36,9 +36,8 @@ import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.HLE.modules150.ThreadManForUser.Callback;
-import jpcsp.util.Utilities;
 
-public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
+public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariableLength implements Comparator<SceKernelThreadInfo> {
 
     public static final int PSP_MODULE_USER = 0;
     public static final int PSP_MODULE_NO_STOP = 0x00000001;
@@ -355,41 +354,43 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         return waitType;
     }
 
-    public void write(Memory mem, int address) {
-        mem.write32(address, 104); // size
-        Utilities.writeStringNZ(mem, address + 4, 32, name);
-        mem.write32(address + 36, attr);
-        mem.write32(address + 40, status);
-        mem.write32(address + 44, entry_addr);
-        mem.write32(address + 48, stackAddr);
-        mem.write32(address + 52, stackSize);
-        mem.write32(address + 56, gpReg_addr);
-        mem.write32(address + 60, initPriority);
-        mem.write32(address + 64, currentPriority);
-        mem.write32(address + 68, getPSPWaitType());
-        mem.write32(address + 72, waitId);
-        mem.write32(address + 76, wakeupCount);
-        mem.write32(address + 80, exitStatus);
-        mem.write64(address + 84, runClocks);
-        mem.write32(address + 92, intrPreemptCount);
-        mem.write32(address + 96, threadPreemptCount);
-        mem.write32(address + 100, releaseCount);
-    }
+	@Override
+	protected void write() {
+		super.write();
+		writeStringNZ(32, name);
+		write32(attr);
+		write32(status);
+		write32(entry_addr);
+		write32(stackAddr);
+		write32(stackSize);
+		write32(gpReg_addr);
+		write32(initPriority);
+		write32(currentPriority);
+		write32(getPSPWaitType());
+		write32(waitId);
+		write32(wakeupCount);
+		write32(exitStatus);
+		write64(runClocks);
+		write32(intrPreemptCount);
+		write32(threadPreemptCount);
+		write32(releaseCount);
+	}
 
     // SceKernelThreadRunStatus.
     // Represents a smaller subset of SceKernelThreadInfo containing only the most volatile parts
     // of the thread (mostly used for debugging).
     public void writeRunStatus(Memory mem, int address) {
-        mem.write32(address, 40); // size
-        mem.write32(address + 4, status);
-        mem.write32(address + 8, currentPriority);
-        mem.write32(address + 12, waitType);
-        mem.write32(address + 16, waitId);
-        mem.write32(address + 20, wakeupCount);
-        mem.write64(address + 24, runClocks);
-        mem.write32(address + 28, intrPreemptCount);
-        mem.write32(address + 32, threadPreemptCount);
-        mem.write32(address + 36, releaseCount);
+    	start(mem, address);
+    	super.write();
+    	write32(status);
+    	write32(currentPriority);
+    	write32(waitType);
+    	write32(waitId);
+    	write32(wakeupCount);
+    	write64(runClocks);
+    	write32(intrPreemptCount);
+    	write32(threadPreemptCount);
+    	write32(releaseCount);
     }
 
     public void setSystemStack(int stackAddr, int stackSize) {

@@ -16,26 +16,18 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-public class SceKernelFplOptParam extends pspAbstractMemoryMappedStructure {
-	public int size;
+public class SceKernelFplOptParam extends pspAbstractMemoryMappedStructureVariableLength {
 	public int align;
 
 	@Override
 	protected void read() {
-		size = read32();
-		setMaxSize(size);
+		super.read();
 		align = read32();
 	}
 
 	@Override
 	protected void write() {
-		setMaxSize(size);
-		write32(size);
+		super.write();
 		write32(align);
-	}
-
-    @Override
-	public int sizeof() {
-		return size;
 	}
 }

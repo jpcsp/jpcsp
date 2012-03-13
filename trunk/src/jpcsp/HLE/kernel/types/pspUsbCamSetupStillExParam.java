@@ -19,8 +19,7 @@ package jpcsp.HLE.kernel.types;
 /*
  * Parameter Structure for sceUsbCamSetupStillEx().
  */
-public class pspUsbCamSetupStillExParam extends pspAbstractMemoryMappedStructure {
-	public int size;       // Size of the pspUsbCamSetupStillParam structure
+public class pspUsbCamSetupStillExParam extends pspAbstractMemoryMappedStructureVariableLength {
 	public int unknown1;   // Unknown, set it to 9 at the moment.
 	public int resolution; // Resolution. One of PSP_USBCAM_RESOLUTION_EX_*
 	public int jpegsize;   // Size of the jpeg image
@@ -40,8 +39,7 @@ public class pspUsbCamSetupStillExParam extends pspAbstractMemoryMappedStructure
 
 	@Override
 	protected void read() {
-		size = read32();
-		setMaxSize(size);
+		super.read();
 		unknown1 = read32();
 		resolution = read32();
 		jpegsize = read32();
@@ -60,8 +58,7 @@ public class pspUsbCamSetupStillExParam extends pspAbstractMemoryMappedStructure
 
 	@Override
 	protected void write() {
-		setMaxSize(size);
-		write32(size);
+		super.write();
 		write32(unknown1);
 		write32(resolution);
 		write32(jpegsize);
@@ -79,12 +76,7 @@ public class pspUsbCamSetupStillExParam extends pspAbstractMemoryMappedStructure
 	}
 
 	@Override
-	public int sizeof() {
-		return size;
-	}
-
-	@Override
 	public String toString() {
-		return String.format("pspUsbCamSetupStillExParam[size=%d, resolution=%d, jpegsize=%d, complevel=%d, flip=%d, mirror=%d, delay=%d]", size, resolution, jpegsize, complevel, flip, mirror, delay);
+		return String.format("pspUsbCamSetupStillExParam[size=%d, resolution=%d, jpegsize=%d, complevel=%d, flip=%d, mirror=%d, delay=%d]", sizeof(), resolution, jpegsize, complevel, flip, mirror, delay);
 	}
 }

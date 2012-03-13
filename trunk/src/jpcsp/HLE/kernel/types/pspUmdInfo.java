@@ -16,29 +16,21 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-public class pspUmdInfo extends pspAbstractMemoryMappedStructure {
+public class pspUmdInfo extends pspAbstractMemoryMappedStructureVariableLength {
 	public static final int PSP_UMD_TYPE_GAME  = 0x10;
 	public static final int PSP_UMD_TYPE_VIDEO = 0x20;
 	public static final int PSP_UMD_TYPE_AUDIO = 0x40;
-	public int size;
 	public int type;
 
 	@Override
 	protected void read() {
-		size = read32();
-		setMaxSize(size);
+		super.read();
 		type = read32();
 	}
 
 	@Override
 	protected void write() {
-		setMaxSize(size);
-		write32(size);
+		super.write();
 		write32(type);
-	}
-
-	@Override
-	public int sizeof() {
-		return size;
 	}
 }

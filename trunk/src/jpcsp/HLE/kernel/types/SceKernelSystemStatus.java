@@ -16,9 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-public class SceKernelSystemStatus extends pspAbstractMemoryMappedStructure {
-	/** Size of the structure (should be set prior to the call) */
-	public int size;
+public class SceKernelSystemStatus extends pspAbstractMemoryMappedStructureVariableLength {
 	/** The status ? */
 	public int status;
 	/** The number of cpu clocks in the idle thread */
@@ -32,8 +30,7 @@ public class SceKernelSystemStatus extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void read() {
-		size = read32();
-		setMaxSize(size);
+		super.read();
 		status = read32();
 		idleClocks = read64();
 		comesOutOfIdleCount = read32();
@@ -43,17 +40,11 @@ public class SceKernelSystemStatus extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void write() {
-		setMaxSize(size);
-		write32(size);
+		super.write();
 		write32(status);
 		write64(idleClocks);
 		write32(comesOutOfIdleCount);
 		write32(threadSwitchCount);
 		write32(vfpuSwitchCount);
-	}
-
-	@Override
-	public int sizeof() {
-		return size;
 	}
 }

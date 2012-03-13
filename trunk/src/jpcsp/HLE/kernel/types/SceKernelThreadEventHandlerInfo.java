@@ -20,19 +20,17 @@ import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 
-public class SceKernelThreadEventHandlerInfo extends pspAbstractMemoryMappedStructure {
-	public int size;
-	public String name;
-	public int thid;
+public class SceKernelThreadEventHandlerInfo extends pspAbstractMemoryMappedStructureVariableLength {
+	public final String name;
+	public final int thid;
 	public int mask;
     public int handler;
-    public int common;
+    public final int common;
 
     // Internal info.
 	public final int uid;
     public int result;  // Return value from the handler's callback.
 
-	private static final int DEFAULT_SIZE = 52;
 	private static final String uidPurpose = "ThreadMan-ThreadEventHandler";
 
     // Thread Event IDs.
@@ -48,7 +46,6 @@ public class SceKernelThreadEventHandlerInfo extends pspAbstractMemoryMappedStru
     public final static int THREAD_EVENT_ALL = 0xF;
 
 	public SceKernelThreadEventHandlerInfo(String name, int thid, int mask, int handler, int common) {
-		size = DEFAULT_SIZE;
 		this.name = name;
 		this.thid = thid;
 		this.mask = mask;
@@ -73,40 +70,23 @@ public class SceKernelThreadEventHandlerInfo extends pspAbstractMemoryMappedStru
     }
 
     private class AfterEventHandler implements IAction {
-			@Override
-			public void execute() {
-				result = Emulator.getProcessor().cpu.gpr[2];
+		@Override
+		public void execute() {
+			result = Emulator.getProcessor().cpu.gpr[2];
 
-				if (Modules.log.isInfoEnabled()) {
-					Modules.log.info(String.format("Thread Event Handler exit detected (thid=%X, result=0x%08X)", thid, result));
-				}
+			if (Modules.log.isInfoEnabled()) {
+				Modules.log.info(String.format("Thread Event Handler exit detected (thid=%X, result=0x%08X)", thid, result));
 			}
-        }
-
-	@Override
-	protected void read() {
-		size = read32();
-		setMaxSize(size);
-		name = readStringNZ(32);
-		thid = read32();
-		mask = read32();
-        handler = read32();
-        common = read32();
-	}
+		}
+    }
 
 	@Override
 	protected void write() {
-		setMaxSize(size);
-		write32(size);
+		super.write();
         writeStringNZ(32, name);
 		write32(thid);
 		write32(mask);
 		write32(handler);
         write32(common);
-	}
-
-	@Override
-	public int sizeof() {
-		return size;
 	}
 }

@@ -32,7 +32,7 @@ public class SceUtilityGameSharingParams extends pspAbstractMemoryMappedStructur
     protected void read() {
         base = new pspUtilityDialogCommon();
         read(base);
-        setMaxSize(base.size);
+        setMaxSize(base.totalSizeof());
 
         readUnknown(8);
         gameSharingName = readStringNZ(8);
@@ -49,8 +49,8 @@ public class SceUtilityGameSharingParams extends pspAbstractMemoryMappedStructur
 
     @Override
     protected void write() {
-        setMaxSize(base.size);
         write(base);
+        setMaxSize(base.totalSizeof());
 
         writeUnknown(8);
         writeStringNZ(8, gameSharingName);
@@ -67,7 +67,7 @@ public class SceUtilityGameSharingParams extends pspAbstractMemoryMappedStructur
 
     @Override
     public int sizeof() {
-        return base.size;
+        return base.totalSizeof();
     }
 
     @Override

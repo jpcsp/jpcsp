@@ -235,7 +235,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
     protected void read() {
         base = new pspUtilityDialogCommon();
         read(base);
-        setMaxSize(base.size);
+        setMaxSize(base.totalSizeof());
 
         mode = read32();
         bind = read32();
@@ -296,8 +296,8 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 
     @Override
     protected void write() {
-        setMaxSize(base.size);
         write(base);
+        setMaxSize(base.totalSizeof());
 
         write32(mode);
         write32(bind);
@@ -682,7 +682,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 
     @Override
     public int sizeof() {
-        return base.size;
+        return base.totalSizeof();
     }
 
     public String getModeName() {

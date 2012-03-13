@@ -16,8 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-public class SceKernelLMOption extends pspAbstractMemoryMappedStructure {
-	public int size;
+public class SceKernelLMOption extends pspAbstractMemoryMappedStructureVariableLength {
 	public int mpidText;
 	public int mpidData;
 	public int flags;
@@ -27,8 +26,7 @@ public class SceKernelLMOption extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void read() {
-		size = read32();
-		setMaxSize(size);
+		super.read();
 		mpidText = read32();
 		mpidData = read32();
 		flags = read32();
@@ -38,14 +36,8 @@ public class SceKernelLMOption extends pspAbstractMemoryMappedStructure {
 	}
 
 	@Override
-	public int sizeof() {
-		return size;
-	}
-
-	@Override
 	protected void write() {
-		setMaxSize(size);
-		write32(size);
+		super.write();
 		write32(mpidText);
 		write32(mpidData);
 		write32(flags);

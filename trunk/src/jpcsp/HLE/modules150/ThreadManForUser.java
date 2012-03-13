@@ -2187,18 +2187,12 @@ public class ThreadManForUser extends HLEModule {
             log.warn("sceKernelReferCallbackStatus unknown uid 0x" + Integer.toHexString(uid));
             return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_CALLBACK;
         }
-        
+
         if (!infoPointer.isAddressGood()) {
             log.warn("sceKernelReferCallbackStatus bad info address 0x" + Integer.toHexString(infoPointer.getAddress()));
             return SceKernelErrors.ERROR_KERNEL_ILLEGAL_ADDR;
         } 
-        
-        int size = infoPointer.getMemory().read32(infoPointer.getAddress());
-        if (size < SceKernelCallbackInfo.size) {
-            log.warn("sceKernelReferCallbackStatus bad info size got " + size + " want " + SceKernelCallbackInfo.size);
-            return -1;
-        }
-        
+
         info.write(infoPointer.getMemory(), infoPointer.getAddress());
         return 0;
     }
@@ -2847,8 +2841,6 @@ public class ThreadManForUser extends HLEModule {
         } else if (!Memory.isAddressGood(infoAddr)) {
             cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_ADDR;
         } else {
-            int size = mem.read32(infoAddr);
-            sceKernelAlarmInfo.size = size;
             sceKernelAlarmInfo.write(mem, infoAddr);
             cpu.gpr[2] = 0;
         }
@@ -3276,8 +3268,6 @@ public class ThreadManForUser extends HLEModule {
         } else if (!Memory.isAddressGood(infoAddr)) {
             cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_ADDR;
         } else {
-            int size = mem.read32(infoAddr);
-            sceKernelVTimerInfo.size = size;
             sceKernelVTimerInfo.write(mem, infoAddr);
             cpu.gpr[2] = 0;
         }

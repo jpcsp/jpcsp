@@ -16,16 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import jpcsp.Memory;
 import jpcsp.HLE.kernel.managers.SceUidManager;
-import jpcsp.util.Utilities;
 
-public class SceKernelMutexInfo {
-
-    public int size = 52;
-    public String name;
-    public int attr;
-    public int initCount;
+public class SceKernelMutexInfo extends pspAbstractMemoryMappedStructureVariableLength {
+    public final String name;
+    public final int attr;
+    public final int initCount;
     public int lockedCount;
     public int numWaitThreads;
 
@@ -43,23 +39,15 @@ public class SceKernelMutexInfo {
         uid = SceUidManager.getNewUid("ThreadMan-Mutex");
     }
 
-    public void read(Memory mem, int address) {
-        size = mem.read32(address);
-        name = Utilities.readStringNZ(mem, address + 4, 31);
-        attr = mem.read32(address + 36);
-        initCount = mem.read32(address + 40);
-        lockedCount = mem.read32(address + 44);
-        numWaitThreads = mem.read32(address + 48);
-    }
-
-    public void write(Memory mem, int address) {
-        mem.write32(address, size);
-        Utilities.writeStringNZ(mem, address + 4, 32, name);
-        mem.write32(address + 36, attr);
-        mem.write32(address + 40, initCount);
-        mem.write32(address + 44, lockedCount);
-        mem.write32(address + 48, numWaitThreads);
-    }
+	@Override
+	protected void write() {
+		super.write();
+		writeStringNZ(32, name);
+		write32(attr);
+		write32(initCount);
+		write32(lockedCount);
+		write32(numWaitThreads);
+	}
 
     @Override
     public String toString() {

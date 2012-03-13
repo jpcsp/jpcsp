@@ -16,11 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import jpcsp.Memory;
 import jpcsp.HLE.kernel.managers.SceUidManager;
-import jpcsp.util.Utilities;
 
-public class SceKernelSemaInfo {
+public class SceKernelSemaInfo extends pspAbstractMemoryMappedStructureVariableLength {
     public final String name;
     public final int attr;
     public final int initCount;
@@ -30,8 +28,7 @@ public class SceKernelSemaInfo {
 
     public final int uid;
 
-    public SceKernelSemaInfo(String name, int attr, int initCount, int maxCount)
-    {
+    public SceKernelSemaInfo(String name, int attr, int initCount, int maxCount) {
         this.name = name;
         this.attr = attr;
         this.initCount = initCount;
@@ -42,14 +39,14 @@ public class SceKernelSemaInfo {
         uid = SceUidManager.getNewUid("ThreadMan-sema");
     }
 
-    public void write(Memory mem, int address)
-    {
-        mem.write32(address, 56); // size
-        Utilities.writeStringNZ(mem, address + 4, 32, name);
-        mem.write32(address + 36, attr);
-        mem.write32(address + 40, initCount);
-        mem.write32(address + 44, currentCount);
-        mem.write32(address + 48, maxCount);
-        mem.write32(address + 52, numWaitThreads);
-    }
+	@Override
+	protected void write() {
+		super.write();
+		writeStringNZ(32, name);
+		write32(attr);
+		write32(initCount);
+		write32(currentCount);
+		write32(maxCount);
+		write32(numWaitThreads);
+	}
 }

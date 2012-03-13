@@ -19,8 +19,7 @@ package jpcsp.HLE.kernel.types;
 /*
  * Parameter Structure for sceUsbCamSetupVideo().
  */
-public class pspUsbCamSetupVideoParam extends pspAbstractMemoryMappedStructure {
-	public int size;       // Size of the pspUsbCamSetupVideoParam structure
+public class pspUsbCamSetupVideoParam extends pspAbstractMemoryMappedStructureVariableLength {
 	public int resolution; // Resolution. One of PSP_USBCAM_RESOLUTION_*
 	public int framerate;  // Framerate. One of PSP_USBCAM_FRAMERATE_*
 	public int wb;         // White balance. One of PSP_USBCAM_WB_*
@@ -35,8 +34,7 @@ public class pspUsbCamSetupVideoParam extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void read() {
-		size = read32();
-		setMaxSize(size);
+		super.read();
 		resolution = read32();
 		framerate = read32();
 		wb = read32();
@@ -52,8 +50,7 @@ public class pspUsbCamSetupVideoParam extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void write() {
-		setMaxSize(size);
-		write32(size);
+		super.write();
 		write32(resolution);
 		write32(framerate);
 		write32(wb);
@@ -68,12 +65,7 @@ public class pspUsbCamSetupVideoParam extends pspAbstractMemoryMappedStructure {
 	}
 
 	@Override
-	public int sizeof() {
-		return size;
-	}
-
-	@Override
 	public String toString() {
-		return String.format("pspUsbCamSetupVideoParam[size=%d, resolution=%d, framerate=%d, wb=%d, saturation=%d, brightness=%d, contrast=%d, sharpness=%d, effectmode=%d, framesize=%d, evlevel=%d]", size, resolution, framerate, wb, saturation, brightness, contrast, sharpness, effectmode, framesize, evlevel);
+		return String.format("pspUsbCamSetupVideoParam[size=%d, resolution=%d, framerate=%d, wb=%d, saturation=%d, brightness=%d, contrast=%d, sharpness=%d, effectmode=%d, framesize=%d, evlevel=%d]", sizeof(), resolution, framerate, wb, saturation, brightness, contrast, sharpness, effectmode, framesize, evlevel);
 	}
 }

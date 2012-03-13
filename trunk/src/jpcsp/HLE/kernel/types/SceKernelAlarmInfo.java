@@ -21,8 +21,7 @@ import jpcsp.HLE.kernel.types.interrupts.AlarmInterruptHandler;
 import jpcsp.scheduler.AlarmInterruptAction;
 import jpcsp.scheduler.AlarmInterruptResultAction;
 
-public class SceKernelAlarmInfo extends pspAbstractMemoryMappedStructure {
-	public int size;
+public class SceKernelAlarmInfo extends pspAbstractMemoryMappedStructureVariableLength {
 	public long schedule;
 	public int handlerAddress;
 	public int handlerArgument;
@@ -32,10 +31,7 @@ public class SceKernelAlarmInfo extends pspAbstractMemoryMappedStructure {
 	public final AlarmInterruptAction alarmInterruptAction;
 	public final AlarmInterruptResultAction alarmInterruptResultAction;
 
-	private static final int DEFAULT_SIZE = 20;
-
 	public SceKernelAlarmInfo(long schedule, int handlerAddress, int handlerArgument) {
-		size = DEFAULT_SIZE;
 		this.schedule = schedule;
 		this.handlerAddress = handlerAddress;
 		this.handlerArgument = handlerArgument;
@@ -48,8 +44,7 @@ public class SceKernelAlarmInfo extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void read() {
-		size = read32();
-		setMaxSize(size);
+		super.read();
 		schedule = read64();
 		handlerAddress = read32();
 		handlerArgument = read32();
@@ -57,16 +52,9 @@ public class SceKernelAlarmInfo extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void write() {
-		setMaxSize(size);
-		write32(size);
+		super.write();
 		write64(schedule);
 		write32(handlerAddress);
 		write32(handlerArgument);
 	}
-
-	@Override
-	public int sizeof() {
-		return size;
-	}
-
 }

@@ -16,19 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
-import jpcsp.util.Utilities;
 
-public class SceKernelFplInfo {
+public class SceKernelFplInfo extends pspAbstractMemoryMappedStructureVariableLength {
     // PSP info
-    public int size = 56;
-    public String name;
-    public int attr;
-    public int blockSize;
-    public int numBlocks;
+    public final String name;
+    public final int attr;
+    public final int blockSize;
+    public final int numBlocks;
     public int freeBlocks;
     public int numWaitThreads;
 
@@ -62,8 +59,9 @@ public class SceKernelFplInfo {
         int alignedBlockSize = (blockSize + (memAlign - 1)) & (~(memAlign - 1));
         int totalFplSize = alignedBlockSize * numBlocks;
         sysMemInfo = Modules.SysMemUserForUserModule.malloc(partitionid, String.format("ThreadMan-Fpl-0x%x-%s", uid, name), memType, totalFplSize, 0);
-        if (sysMemInfo == null)
+        if (sysMemInfo == null) {
             throw new RuntimeException("SceKernelFplInfo: not enough free mem");
+        }
 
         // Initialise the block addresses
         for (int i = 0; i < numBlocks; i++) {
@@ -86,31 +84,16 @@ public class SceKernelFplInfo {
         return info;
     }
 
-    public void read(Memory mem, int address) {
-        size 	        = mem.read32(address);
-        name            = Utilities.readStringNZ(address + 4, 31);
-        attr            = mem.read32(address + 36);
-        blockSize       = mem.read32(address + 40);
-        numBlocks       = mem.read32(address + 44);
-        freeBlocks      = mem.read32(address + 48);
-        numWaitThreads  = mem.read32(address + 52);
-    }
-
-    public void write(Memory mem, int address) {
-        mem.write32(address, size);
-
-        int i;
-        for (i = 0; i < 32 && i < name.length(); i++)
-            mem.write8(address + 4 + i, (byte)name.charAt(i));
-        for (; i < 32; i++)
-            mem.write8(address + 4 + i, (byte)0);
-
-        mem.write32(address + 36, attr);
-        mem.write32(address + 40, blockSize);
-        mem.write32(address + 44, numBlocks);
-        mem.write32(address + 48, freeBlocks);
-        mem.write32(address + 52, numWaitThreads);
-    }
+	@Override
+	protected void write() {
+		super.write();
+		writeStringNZ(32, name);
+		write32(attr);
+		write32(blockSize);
+		write32(numBlocks);
+		write32(freeBlocks);
+		write32(numWaitThreads);
+	}
 
     public boolean isBlockAllocated(int blockId) {
         return blockAllocated[blockId];

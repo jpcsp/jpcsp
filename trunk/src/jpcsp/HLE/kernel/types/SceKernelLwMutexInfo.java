@@ -18,16 +18,13 @@ package jpcsp.HLE.kernel.types;
 
 import jpcsp.Memory;
 import jpcsp.HLE.kernel.managers.SceUidManager;
-import jpcsp.util.Utilities;
 
-public class SceKernelLwMutexInfo {
-
-    public int size = 60;
-    public String name;
-    public int attr;
-    public int lwMutexUid;
-    public int lwMutexOpaqueWorkAreaAddr;
-    public int initCount;
+public class SceKernelLwMutexInfo extends pspAbstractMemoryMappedStructureVariableLength {
+    public final String name;
+    public final int attr;
+    public final int lwMutexUid;
+    public final int lwMutexOpaqueWorkAreaAddr;
+    public final int initCount;
     public int lockedCount;
     public int numWaitThreads;
 
@@ -36,6 +33,7 @@ public class SceKernelLwMutexInfo {
 
     public SceKernelLwMutexInfo(int workArea, String name, int count, int attr) {
         Memory mem = Memory.getInstance();
+        this.lwMutexUid = 0;
         this.lwMutexOpaqueWorkAreaAddr = workArea;
         this.name = name;
         this.attr = attr;
@@ -48,27 +46,17 @@ public class SceKernelLwMutexInfo {
         mem.write32(lwMutexOpaqueWorkAreaAddr, uid);
     }
 
-    public void read(Memory mem, int address) {
-        size = mem.read32(address);
-        name = Utilities.readStringNZ(mem, address + 4, 31);
-        attr = mem.read32(address + 36);
-        lwMutexUid = mem.read32(address + 40);
-        lwMutexOpaqueWorkAreaAddr = mem.read32(address + 44);
-        initCount = mem.read32(address + 48);
-        lockedCount = mem.read32(address + 52);
-        numWaitThreads = mem.read32(address + 56);
-    }
-
-    public void write(Memory mem, int address) {
-        mem.write32(address, size);
-        Utilities.writeStringNZ(mem, address + 4, 32, name);
-        mem.write32(address + 36, attr);
-        mem.write32(address + 40, lwMutexUid);
-        mem.write32(address + 44, lwMutexOpaqueWorkAreaAddr);
-        mem.write32(address + 48, initCount);
-        mem.write32(address + 52, lockedCount);
-        mem.write32(address + 56, numWaitThreads);
-    }
+	@Override
+	protected void write() {
+		super.write();
+		writeStringNZ(32, name);
+		write32(attr);
+		write32(lwMutexUid);
+		write32(lwMutexOpaqueWorkAreaAddr);
+		write32(initCount);
+		write32(lockedCount);
+		write32(numWaitThreads);
+	}
 
     @Override
     public String toString() {

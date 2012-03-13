@@ -19,8 +19,7 @@ package jpcsp.HLE.kernel.types;
 /*
  * Parameter Structure for sceUsbCamSetupStill().
  */
-public class pspUsbCamSetupStillParam extends pspAbstractMemoryMappedStructure {
-	public int size;       // Size of the pspUsbCamSetupStillParam structure
+public class pspUsbCamSetupStillParam extends pspAbstractMemoryMappedStructureVariableLength {
 	public int resolution; // Resolution. One of PSP_USBCAM_RESOLUTION_*
 	public int jpegsize;   // Size of the jpeg image
 	public int reverseflags; // Reverse effect to apply. Zero or more of PSP_USBCAM_FLIP, PSP_USBCAM_MIRROR
@@ -31,8 +30,7 @@ public class pspUsbCamSetupStillParam extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void read() {
-		size = read32();
-		setMaxSize(size);
+		super.read();
 		resolution = read32();
 		jpegsize = read32();
 		reverseflags = read32();
@@ -42,8 +40,7 @@ public class pspUsbCamSetupStillParam extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void write() {
-		setMaxSize(size);
-		write32(size);
+		super.write();
 		write32(resolution);
 		write32(jpegsize);
 		write32(reverseflags);
@@ -52,12 +49,7 @@ public class pspUsbCamSetupStillParam extends pspAbstractMemoryMappedStructure {
 	}
 
 	@Override
-	public int sizeof() {
-		return size;
-	}
-
-	@Override
 	public String toString() {
-		return String.format("pspUsbCamSetupStillParam[size=%d, resolution=%d, jpegsize=%d, reverseflags=%d, delay=%d, complevel=%d]", size, resolution, jpegsize, reverseflags, delay, complevel);
+		return String.format("pspUsbCamSetupStillParam[size=%d, resolution=%d, jpegsize=%d, reverseflags=%d, delay=%d, complevel=%d]", sizeof(), resolution, jpegsize, reverseflags, delay, complevel);
 	}
 }

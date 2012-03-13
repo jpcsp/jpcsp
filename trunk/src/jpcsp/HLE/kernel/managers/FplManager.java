@@ -212,11 +212,11 @@ public class FplManager {
             if ((optsize >= 4) && (optsize <= 8)) {
                 SceKernelFplOptParam optParams = new SceKernelFplOptParam();
                 optParams.read(mem, opt_addr);
-                if(optParams.align > 0) {
+                if (optParams.align > 0) {
                     memAlign = optParams.align;
                 }
                 if (log.isDebugEnabled()) {
-                	log.debug("sceKernelCreateFpl options: struct size=" + optParams.size + ", alignment=0x" + Integer.toHexString(optParams.align));
+                	log.debug("sceKernelCreateFpl options: struct size=" + optParams.sizeof() + ", alignment=0x" + Integer.toHexString(optParams.align));
                 }
             } else {
                 log.warn("sceKernelCreateFpl option at 0x" + Integer.toHexString(opt_addr) + " (size=" + optsize + ")");

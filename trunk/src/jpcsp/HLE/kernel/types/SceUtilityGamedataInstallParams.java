@@ -30,7 +30,7 @@ public class SceUtilityGamedataInstallParams extends pspAbstractMemoryMappedStru
     protected void read() {
         base = new pspUtilityDialogCommon();
         read(base);
-        setMaxSize(base.size);
+        setMaxSize(base.totalSizeof());
 
         unk1 = read32();
         gameName = readStringNZ(13);
@@ -45,8 +45,8 @@ public class SceUtilityGamedataInstallParams extends pspAbstractMemoryMappedStru
 
     @Override
     protected void write() {
-        setMaxSize(base.size);
         write(base);
+        setMaxSize(base.totalSizeof());
 
         write32(unk1);
         writeStringNZ(13, gameName);
@@ -61,7 +61,7 @@ public class SceUtilityGamedataInstallParams extends pspAbstractMemoryMappedStru
 
     @Override
     public int sizeof() {
-        return base.size;
+        return base.totalSizeof();
     }
 
     @Override
