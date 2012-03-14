@@ -146,6 +146,7 @@ public class sceDisplay extends HLEModule {
 	    	}
 
 	    	if (startModules) {
+	    		saveGEToTexture = Settings.getInstance().readBool("emu.enablegetexture");
 	    		if (saveGEToTexture) {
 	    			GETextureManager.getInstance().reset(reDisplay);
 	    		}
