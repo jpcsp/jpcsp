@@ -790,7 +790,7 @@ public class sceFont extends HLEModule {
         }
         if (errorCodePtr.isAddressGood()) {
             errorCodePtr.setValue(0);
-        }     
+        }
         for (int i = 0; i < internalFonts.size(); i++) {
             if (isFontMatchingStyle(internalFonts.get(i), fontStyle, true)) {
                 if (log.isDebugEnabled()) {
@@ -798,6 +798,20 @@ public class sceFont extends HLEModule {
                 }
                 return i;
             }
+        }
+
+        // No font found for the given style, try to find a font without the given font size.
+        if (fontStyle.fontH != 0f || fontStyle.fontV != 0f) {
+	        fontStyle.fontH = 0f;
+	        fontStyle.fontV = 0f;
+	        for (int i = 0; i < internalFonts.size(); i++) {
+	            if (isFontMatchingStyle(internalFonts.get(i), fontStyle, true)) {
+	                if (log.isDebugEnabled()) {
+	                    log.debug(String.format("sceFontFindOptimumFont found font at index %d: %s", i, internalFonts.get(i).toString()));
+	                }
+	                return i;
+	            }
+	        }
         }
 
         if (errorCodePtr.isAddressGood()) {
