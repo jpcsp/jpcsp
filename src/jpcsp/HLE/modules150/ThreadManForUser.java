@@ -1396,24 +1396,20 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = HLESyscallNid, version = 150)
-    public void hleKernelExitThread(Processor processor) {
+    public void hleKernelExitThread(int exitStatus) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("Thread exit detected SceUID=%x name='%s' return:0x%08X", currentThread.uid, currentThread.name, processor.cpu.gpr[2]));
+            log.debug(String.format("Thread exit detected SceUID=%x name='%s' return:0x%08X", currentThread.uid, currentThread.name, exitStatus));
         }
-        // NOTE: When a thread exits by itself (without calling sceKernelExitThread),
-        // it's exitStatus becomes it's return value.
-        // When this is detected, the $a0 register should be overwritten with the thread's $v0
-        // register contents BEFORE calling sceKernelExitThread.
-        sceKernelExitThread(processor, processor.cpu.gpr[2]);
+        sceKernelExitThread(exitStatus);
     }
 
-    public void hleKernelExitDeleteThread() {
-        Processor processor = Emulator.getProcessor();
+    public int hleKernelExitDeleteThread() {
+    	int exitStatus = Emulator.getProcessor().cpu.gpr[_v0];
         if (log.isDebugEnabled()) {
-            log.debug(String.format("hleKernelExitDeleteThread SceUID=%x name='%s' return:0x%08X", currentThread.uid, currentThread.name, processor.cpu.gpr[_v0]));
+            log.debug(String.format("hleKernelExitDeleteThread SceUID=%x name='%s' return:0x%08X", currentThread.uid, currentThread.name, exitStatus));
         }
 
-        sceKernelExitDeleteThread(processor, processor.cpu.gpr[_v0]);
+        return sceKernelExitDeleteThread(exitStatus);
     }
 
     @HLEFunction(nid = HLESyscallNid, version = 150)
@@ -1426,22 +1422,42 @@ public class ThreadManForUser extends HLEModule {
     	Modules.sceNetApctlModule.hleNetApctlThread(processor);
     }
 
-    /** Note: Some functions allow uid = 0 = current thread, others don't.
-     * if uid = 0 then $v0 is set to ERROR_ILLEGAL_THREAD and false is returned
-     * if uid < 0 then $v0 is set to ERROR_NOT_FOUND_THREAD and false is returned */
-    private boolean checkThreadID(int uid) {
+    /**
+     * Check the validity of the thread UID.
+     * Do not allow uid=0.
+     * 
+     * @param uid   thread UID to be checked
+     * @return      valid thread UID
+     */
+    public int checkThreadID(int uid) {
         if (uid == 0) {
-            log.warn("checkThreadID illegal thread (uid=0) caller:" + getCallingFunction());
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_THREAD;
-            return false;
-        } else if (uid < 0) {
-            log.warn("checkThreadID not found thread " + Integer.toHexString(uid) + " (uid<0) caller:" + getCallingFunction());
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
-            return false;
-        } else {
-            SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
-            return true;
+    		log.warn("checkThreadID illegal thread uid=0");
+            throw new SceKernelErrorException(ERROR_KERNEL_ILLEGAL_THREAD);
         }
+        return checkThreadIDAllow0(uid);
+    }
+
+    /**
+     * Check the validity of the thread UID.
+     * Allow uid=0.
+     * 
+     * @param uid   thread UID to be checked
+     * @return      valid thread UID (0 has been replaced by the UID of the currentThread)
+     */
+    public int checkThreadIDAllow0(int uid) {
+        if (uid == 0) {
+        	uid = currentThread.uid;
+        }
+    	if (!threadMap.containsKey(uid)) {
+    		log.warn(String.format("checkThreadID not found thread 0x%08X", uid));
+            throw new SceKernelErrorException(ERROR_KERNEL_NOT_FOUND_THREAD);
+    	}
+
+        if (!SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true)) {
+            throw new SceKernelErrorException(ERROR_KERNEL_NOT_FOUND_THREAD);
+        }
+
+        return uid;
     }
 
     public SceKernelThreadInfo hleKernelCreateThread(String name, int entry_addr,
@@ -1586,10 +1602,7 @@ public class ThreadManForUser extends HLEModule {
         }
     }
 
-    private void hleKernelWaitThreadEnd(int uid, int timeoutAddr, boolean callbacks) {
-        if (!checkThreadID(uid)) {
-            return;
-        }
+    private void hleKernelWaitThreadEnd(@CheckArgument("checkThreadID") int uid, int timeoutAddr, boolean callbacks) {
         if (log.isDebugEnabled()) {
             log.debug(String.format("hleKernelWaitThreadEnd SceUID=0x%X, callbacks=%b", uid, callbacks));
         }
@@ -2222,37 +2235,22 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0xD59EAD2F, version = 150)
-    public void sceKernelWakeupThread(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int uid = cpu.gpr[4];
-
-        // @NOTE: Doesn't set the return value??
-        if (!checkThreadID(uid)) {
-            return;
-        }
+    public int sceKernelWakeupThread(@CheckArgument("checkThreadID") int uid) {
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
-        } else {
-            cpu.gpr[2] = 0;
-            hleKernelWakeupThread(thread);
+            return ERROR_KERNEL_NOT_FOUND_THREAD;
         }
+
+        hleKernelWakeupThread(thread);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xFCCFAD26, version = 150)
-    public int sceKernelCancelWakeupThread(int uid) {
-        if (uid == 0) {
-            uid = currentThread.uid;
-        }
-        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
-        SceKernelThreadInfo thread = threadMap.get(uid);
-        if (thread == null) {
-            log.warn("sceKernelCancelWakeupThread SceUID=" + Integer.toHexString(uid) + ") unknown thread");
-            return ERROR_KERNEL_NOT_FOUND_THREAD;
-        }
-        
+    public int sceKernelCancelWakeupThread(@CheckArgument("checkThreadIDAllow0") int uid) {
+        SceKernelThreadInfo thread = getThread(uid);
+
         if (log.isDebugEnabled()) {
             log.debug("sceKernelCancelWakeupThread SceUID=" + Integer.toHexString(uid) + ") wakeupCount=" + thread.wakeupCount);
         }
@@ -2264,78 +2262,60 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x9944F31F, version = 150)
-    public int sceKernelSuspendThread(int uid) {
-        if (!checkThreadID(uid)) {
-        	// ?
-            return 0;
-        }
-        SceKernelThreadInfo thread = threadMap.get(uid);
-        if (thread == null) {
-            log.warn("sceKernelSuspendThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
-            return ERROR_KERNEL_NOT_FOUND_THREAD;
-        }
-        
-        if (uid == currentThread.uid) {
-            log.warn("sceKernelSuspendThread on self is not allowed");
-            return ERROR_KERNEL_ILLEGAL_THREAD;
-        }
-        
+    public int sceKernelSuspendThread(@CheckArgument("checkThreadID") int uid) {
+        SceKernelThreadInfo thread = getThreadCurrentIsInvalid(uid);
+
         if (thread.isSuspended()) {
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("sceKernelSuspendThread thread already suspended: thread=%s", thread.toString()));
         	}
         	return ERROR_KERNEL_THREAD_ALREADY_SUSPEND;
         }
-        
+
         if (thread.isStopped()) {
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("sceKernelSuspendThread thread already stopped: thread=%s", thread.toString()));
         	}
         	return ERROR_KERNEL_THREAD_ALREADY_DORMANT;
         }
-        
+
         if (log.isDebugEnabled()) {
             log.debug("sceKernelSuspendThread SceUID=" + Integer.toHexString(uid));
         }
+
         if (thread.isWaiting()) {
         	hleChangeThreadState(thread, PSP_THREAD_WAITING_SUSPEND);
         } else {
         	hleChangeThreadState(thread, PSP_THREAD_SUSPEND);
         }
+
         return 0;
     }
 
     @HLEFunction(nid = 0x75156E8F, version = 150)
-    public void sceKernelResumeThread(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceKernelResumeThread(@CheckArgument("checkThreadID") int uid) {
+        SceKernelThreadInfo thread = getThread(uid);
 
-        int uid = cpu.gpr[4];
-
-        // @NOTE: doesn't return a value?
-        if (!checkThreadID(uid)) {
-            return;
-        }
-        SceKernelThreadInfo thread = threadMap.get(uid);
-        if (thread == null) {
-            log.warn("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
-        } else if (!thread.isSuspended()) {
+        if (!thread.isSuspended()) {
             log.warn("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " not suspended (status=" + thread.status + ")");
-            cpu.gpr[2] = ERROR_KERNEL_THREAD_IS_NOT_SUSPEND;
-        } else if (isBannedThread(thread)) {
-            log.warn("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' banned, not resuming");
-            cpu.gpr[2] = 0;
-        } else {
-            if (log.isDebugEnabled()) {
-                log.debug("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "'");
-            }
-            if (thread.isWaiting()) {
-                hleChangeThreadState(thread, PSP_THREAD_WAITING);
-            } else {
-            	hleChangeThreadState(thread, PSP_THREAD_READY);
-            }
-            cpu.gpr[2] = 0;
+            return ERROR_KERNEL_THREAD_IS_NOT_SUSPEND;
         }
+        if (isBannedThread(thread)) {
+            log.warn("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' banned, not resuming");
+            return 0;
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "'");
+        }
+
+        if (thread.isWaiting()) {
+            hleChangeThreadState(thread, PSP_THREAD_WAITING);
+        } else {
+        	hleChangeThreadState(thread, PSP_THREAD_READY);
+        }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x278C0DF5, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
@@ -3309,77 +3289,58 @@ public class ThreadManForUser extends HLEModule {
 
     /** mark a thread for deletion. */
     @HLEFunction(nid = 0x9FA03CD3, version = 150, checkInsideInterrupt = true)
-    public void sceKernelDeleteThread(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int uid = cpu.gpr[4];
-
-        if (uid == 0) {
-            uid = currentThread.uid;
-        }
-        if (!checkThreadID(uid)) {
-            return;
-        }
+    public int sceKernelDeleteThread(@CheckArgument("checkThreadIDAllow0") int uid) {
         SceKernelThreadInfo thread = threadMap.get(uid);
-        if (thread == null) {
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
-        } else if (!thread.isStopped()) {
-            cpu.gpr[2] = ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
-        } else {
-        	if (log.isDebugEnabled()) {
-        		log.debug("sceKernelDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
-        	}
-            // Mark thread for deletion
-            setToBeDeletedThread(thread);
-            cpu.gpr[2] = 0;
-
-            triggerThreadEvent(thread, currentThread, THREAD_EVENT_DELETE);
+        if (!thread.isStopped()) {
+            return ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
         }
+
+        if (log.isDebugEnabled()) {
+    		log.debug("sceKernelDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
+    	}
+        // Mark thread for deletion
+        setToBeDeletedThread(thread);
+
+        triggerThreadEvent(thread, currentThread, THREAD_EVENT_DELETE);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xF475845D, version = 150, checkInsideInterrupt = true)
-    public void sceKernelStartThread(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int uid = cpu.gpr[4];
-        int len = cpu.gpr[5];
-        int data_addr = cpu.gpr[6];
-
-        if (!checkThreadID(uid)) {
-            return;
-        }
+    public int sceKernelStartThread(@CheckArgument("checkThreadID") int uid, int len, int data_addr) {
         SceKernelThreadInfo thread = threadMap.get(uid);
-        if (thread == null) {
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
-        } else if (isBannedThread(thread)) {
+        if (isBannedThread(thread)) {
             log.warn("sceKernelStartThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' banned, not starting");
             // Banned, fake start.
-            cpu.gpr[2] = 0;
             hleRescheduleCurrentThread();
-        } else if (!thread.isStopped()) {
-            cpu.gpr[2] = ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
-        } else {
-        	// Remember the currentThread as it might be changed when starting the thread
-            SceKernelThreadInfo callingThread = currentThread;
-
-            log.debug("sceKernelStartThread redirecting to hleKernelStartThread");
-            cpu.gpr[2] = 0;
-            hleKernelStartThread(thread, len, data_addr, thread.gpReg_addr);
-            thread.exitStatus = ERROR_KERNEL_THREAD_IS_NOT_DORMANT; // Update the exit status.
-
-            triggerThreadEvent(thread, callingThread, THREAD_EVENT_START);
+            return 0;
         }
+        if (!thread.isStopped()) {
+            return ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
+        }
+
+        // Remember the currentThread as it might be changed when starting the thread
+        SceKernelThreadInfo callingThread = currentThread;
+
+        log.debug("sceKernelStartThread redirecting to hleKernelStartThread");
+
+        hleKernelStartThread(thread, len, data_addr, thread.gpReg_addr);
+        thread.exitStatus = ERROR_KERNEL_THREAD_IS_NOT_DORMANT; // Update the exit status.
+
+        triggerThreadEvent(thread, callingThread, THREAD_EVENT_START);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x532A522E, version = 150)
-    public void _sceKernelExitThread(Processor processor, int exitStatus) {
+    public int _sceKernelExitThread(int exitStatus) {
         // _sceKernelExitThread is equivalent to sceKernelExitThread
-        sceKernelExitThread(processor, exitStatus);
+        return sceKernelExitThread(exitStatus);
     }
 
     /** exit the current thread */
     @HLEFunction(nid = 0xAA73C935, version = 150, checkInsideInterrupt = true)
-    public void sceKernelExitThread(Processor processor, int exitStatus) {
+    public int sceKernelExitThread(int exitStatus) {
         SceKernelThreadInfo thread = currentThread;
 
         if (log.isDebugEnabled()) {
@@ -3393,17 +3354,17 @@ public class ThreadManForUser extends HLEModule {
         }
 
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
-        
-        processor.parameterReader.setReturnValueInt(0);
 
         hleChangeThreadState(thread, PSP_THREAD_STOPPED);
         RuntimeContext.onThreadExit(thread);
         hleRescheduleCurrentThread();
+
+        return 0;
     }
 
     /** exit the current thread, then delete it */
     @HLEFunction(nid = 0x809CE29B, version = 150, checkInsideInterrupt = true)
-    public void sceKernelExitDeleteThread(Processor processor, int exitStatus) {
+    public int sceKernelExitDeleteThread(int exitStatus) {
         SceKernelThreadInfo thread = currentThread;
         if (log.isDebugEnabled()) {
             log.debug("sceKernelExitDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' exitStatus:0x" + Integer.toHexString(exitStatus));
@@ -3414,39 +3375,32 @@ public class ThreadManForUser extends HLEModule {
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_DELETE);
         
-        processor.parameterReader.setReturnValueInt(0);
-
         hleChangeThreadState(thread, PSP_THREAD_STOPPED);
         RuntimeContext.onThreadExit(thread);
         setToBeDeletedThread(thread);
         hleRescheduleCurrentThread();
+
+        return 0;
     }
 
     /** terminate thread */
     @HLEFunction(nid = 0x616403BA, version = 150)
-    public void sceKernelTerminateThread(Processor processor, int uid) {
-        if (!checkThreadID(uid)) {
-            return;
-        }
-
+    public int sceKernelTerminateThread(@CheckArgument("checkThreadID") int uid) {
         SceKernelThreadInfo thread = getThreadCurrentIsInvalid(uid);
 
         log.debug("sceKernelTerminateThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
 
-        processor.parameterReader.setReturnValueInt(0);
         terminateThread(thread);
         thread.exitStatus = ERROR_KERNEL_THREAD_IS_TERMINATED; // Update the exit status.
+
+        return 0;
     }
 
     /** terminate thread, then mark it for deletion */
     @HLEFunction(nid = 0x383F7BCC, version = 150, checkInsideInterrupt = true)
-    public void sceKernelTerminateDeleteThread(Processor processor, int uid) {
-        if (!checkThreadID(uid)) {
-            return;
-        }
-        
+    public int sceKernelTerminateDeleteThread(@CheckArgument("checkThreadID") int uid) {
         SceKernelThreadInfo thread = getThreadCurrentIsInvalid(uid);
 
         log.debug("sceKernelTerminateDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
@@ -3454,9 +3408,10 @@ public class ThreadManForUser extends HLEModule {
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_DELETE);
 
-        processor.parameterReader.setReturnValueInt(0);
         terminateThread(thread);
         setToBeDeletedThread(thread);
+
+        return 0;
     }
 
     /**
@@ -3526,7 +3481,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x71BC9871, version = 150)
-    public void sceKernelChangeThreadPriority(Processor processor, int uid, @CheckArgument("checkThreadPriority") int priority) {
+    public int sceKernelChangeThreadPriority(@CheckArgument("checkThreadIDAllow0") int uid, @CheckArgument("checkThreadPriority") int priority) {
         SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = getThread(uid);
 
@@ -3541,8 +3496,9 @@ public class ThreadManForUser extends HLEModule {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid) + " newPriority:0x" + Integer.toHexString(priority) + " oldPriority:0x" + Integer.toHexString(thread.currentPriority));
         }
-        processor.parameterReader.setReturnValueInt(0);
         hleKernelChangeThreadPriority(thread, priority);
+
+        return 0;
     }
 
     public int checkThreadPriority(int priority) {
@@ -3583,22 +3539,7 @@ public class ThreadManForUser extends HLEModule {
     }
     
     protected SceKernelThreadInfo getThread(int uid) {
-        if (uid == 0) {
-            uid = currentThread.uid;
-        }
-        
-        if (uid < 0) {
-            log.warn(getCallingFunctionName(+1) + " SceUID=" + Integer.toHexString(uid) + " is invalid");
-            throw(new SceKernelErrorException(ERROR_KERNEL_ILLEGAL_THREAD));
-        }
-        
-        SceKernelThreadInfo thread = threadMap.get(uid);
-        if (thread == null) {
-            log.warn(getCallingFunctionName(+1) + " unknown uid=0x" + Integer.toHexString(uid));
-            throw(new SceKernelErrorException(ERROR_KERNEL_NOT_FOUND_THREAD));
-        }
-        
-        return thread;
+        return threadMap.get(uid);
     }
 
     /**
@@ -3638,19 +3579,8 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x2C34E053, version = 150)
-    public int sceKernelReleaseWaitThread(int uid) {
-    	if (uid == 0) {
-        	throw(new SceKernelErrorException(SceKernelErrors.ERROR_KERNEL_ILLEGAL_THREAD));
-    	}
-
-        SceKernelThreadInfo thread = getThread(uid);
-
-        if (thread == currentThread) {
-        	if (log.isDebugEnabled()) {
-                log.debug(String.format("sceKernelReleaseWaitThread(0x%X): can't release itself: %s", uid, thread));
-        	}
-        	return SceKernelErrors.ERROR_KERNEL_ILLEGAL_THREAD;
-        }
+    public int sceKernelReleaseWaitThread(@CheckArgument("checkThreadID") int uid) {
+        SceKernelThreadInfo thread = getThreadCurrentIsInvalid(uid);
 
         if (!thread.isWaiting()) {
             if (log.isDebugEnabled()) {
@@ -3704,7 +3634,7 @@ public class ThreadManForUser extends HLEModule {
 
     /** @return ERROR_NOT_FOUND_THREAD on uid < 0, uid == 0 and thread not found */
     @HLEFunction(nid = 0x3B183E26, version = 150)
-    public int sceKernelGetThreadExitStatus(int uid) {
+    public int sceKernelGetThreadExitStatus(@CheckArgument("checkThreadID") int uid) {
         SceKernelThreadInfo thread = getThread(uid);
         if (!thread.isStopped()) {
             if (log.isDebugEnabled()) {
@@ -3723,7 +3653,7 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = 0xD13BDE95, version = 150, checkInsideInterrupt = true)
     public int sceKernelCheckThreadStack(Processor processor) {
         int size = getThreadCurrentStackSize(processor);
-        
+
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceKernelCheckThreadStack returning size=0x%X", size));
         }
@@ -3735,7 +3665,7 @@ public class ThreadManForUser extends HLEModule {
      * @return amount of unused stack space of a thread.
      * */
     @HLEFunction(nid = 0x52089CA1, version = 150, checkInsideInterrupt = true)
-    public int sceKernelGetThreadStackFreeSize(int uid) {
+    public int sceKernelGetThreadStackFreeSize(@CheckArgument("checkThreadIDAllow0") int uid) {
     	SceKernelThreadInfo thread = getThread(uid);
 
     	// The stack is filled with 0xFF when the thread starts.
@@ -3761,33 +3691,27 @@ public class ThreadManForUser extends HLEModule {
     /** Get the status information for the specified thread
      **/
     @HLEFunction(nid = 0x17C1684E, version = 150)
-    public int sceKernelReferThreadStatus(int uid, TPointer ptr) {
-        if (log.isDebugEnabled()) {
-            log.debug(
-            	"sceKernelReferThreadStatus uid=0x" + Integer.toHexString(uid) +
-            	" addr=0x" + Integer.toHexString(ptr.getAddress())
-            );
-        }
-        
+    public int sceKernelReferThreadStatus(@CheckArgument("checkThreadIDAllow0") int uid, TPointer ptr) {
         SceKernelThreadInfo thread = getThread(uid);
 
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelReferThreadStatus for thread %s", thread.toString()));
+    	if (log.isDebugEnabled()) {
+            log.debug(String.format("sceKernelReferThreadStatus thread=%s, addr=%s", thread, ptr));
         }
-        getThread(uid).write(ptr.getMemory(), ptr.getAddress());
+
+    	thread.write(ptr.getMemory(), ptr.getAddress());
+
         return 0;
     }
 
     @HLEFunction(nid = 0xFFC36A14, version = 150, checkInsideInterrupt = true)
-    public int sceKernelReferThreadRunStatus(int uid, TPointer ptr) {
-        if (log.isDebugEnabled()) {
-            log.debug(
-            	"sceKernelReferThreadRunStatus uid=0x" + Integer.toHexString(uid) +
-            	" addr=0x" + Integer.toHexString(ptr.getAddress())
-            );
+    public int sceKernelReferThreadRunStatus(@CheckArgument("checkThreadIDAllow0") int uid, TPointer ptr) {
+    	SceKernelThreadInfo thread = getThread(uid);
+
+    	if (log.isDebugEnabled()) {
+            log.debug(String.format("sceKernelReferThreadRunStatus thread=%s, addr=%s", thread, ptr));
         }
 
-        getThread(uid).writeRunStatus(ptr.getMemory(), ptr.getAddress());
+        thread.writeRunStatus(ptr.getMemory(), ptr.getAddress());
         
         return 0;
     }

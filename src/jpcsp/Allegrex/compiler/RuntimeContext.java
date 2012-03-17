@@ -18,6 +18,7 @@ package jpcsp.Allegrex.compiler;
 
 import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common._sp;
+import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.util.Utilities.sleep;
 
 import java.util.ArrayList;
@@ -691,7 +692,9 @@ public class RuntimeContext {
     	try {
     		updateStaticVariables();
     		executable.exec(ThreadManForUser.THREAD_EXIT_HANDLER_ADDRESS, 0, false);
-    		threadMan.hleKernelExitThread(processor);
+            // NOTE: When a thread exits by itself (without calling sceKernelExitThread),
+            // it's exitStatus becomes it's return value.
+    		threadMan.hleKernelExitThread(processor.cpu.gpr[_v0]);
     	} catch (StopThreadException e) {
     		// Ignore Exception
     	} catch (Throwable e) {
