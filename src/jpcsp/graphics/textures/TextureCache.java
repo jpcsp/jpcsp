@@ -19,21 +19,30 @@ package jpcsp.graphics.textures;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.log4j.Logger;
+
+import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.util.CacheStatistics;
 
 public class TextureCache {
 	public static final int cacheMaxSize = 1000;
 	public static final float cacheLoadFactor = 0.75f;
+	private static Logger log = VideoEngine.log;
 	private static TextureCache instance = null;
 	private LinkedHashMap<Integer, Texture> cache;
 	public CacheStatistics statistics = new CacheStatistics("Texture", cacheMaxSize);
 	// Remember which textures have already been hashed during one display
 	// (for applications reusing the same texture multiple times in one display)
 	private Set<Integer> textureAlreadyHashed;
+	// Remember which textures are located in VRAM. Only these textures have to be
+	// scanned when checking for textures updated while rendering to GE.
+	private LinkedList<Texture> vramTextures = new LinkedList<Texture>();
 
 	public static TextureCache getInstance() {
 		if (instance == null) {
@@ -72,6 +81,7 @@ public class TextureCache {
 		Texture previousTexture = cache.get(key);
 		if (previousTexture != null) {
 		    previousTexture.deleteTexture(re);
+		    vramTextures.remove(previousTexture);
 		} else {
 			// Check if the cache is not growing too large
 			if (cache.size() >= cacheMaxSize) {
@@ -79,7 +89,9 @@ public class TextureCache {
 				Iterator<Map.Entry<Integer, Texture>> it = cache.entrySet().iterator();
 				if (it.hasNext()) {
 					Map.Entry<Integer, Texture> entry = it.next();
-					entry.getValue().deleteTexture(re);
+					Texture lruTexture = entry.getValue();
+					lruTexture.deleteTexture(re);
+					vramTextures.remove(lruTexture);
 					it.remove();
 
 					statistics.entriesRemoved++;
@@ -88,6 +100,9 @@ public class TextureCache {
 		}
 
         cache.put(key, texture);
+        if (isVramTexture(texture)) {
+        	vramTextures.add(texture);
+        }
 
         if (cache.size() > statistics.maxSizeUsed) {
             statistics.maxSizeUsed = cache.size();
@@ -134,5 +149,25 @@ public class TextureCache {
 		}
 		cache.clear();
 		resetTextureAlreadyHashed();
+	}
+
+	private boolean isVramTexture(Texture texture) {
+		return VideoEngine.isVRAM(texture.getAddr());
+	}
+
+	public void deleteVramTextures(IRenderingEngine re, int addr, int length) {
+		for (ListIterator<Texture> lit = vramTextures.listIterator(); lit.hasNext(); ) {
+			Texture texture = lit.next();
+			if (texture.isInsideMemory(addr, addr + length)) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Delete VRAM texture inside GE %s", texture.toString()));
+				}
+				texture.deleteTexture(re);
+				lit.remove();
+				Integer key = getKey(texture.getAddr(), texture.getClutAddr());
+				cache.remove(key);
+				statistics.entriesRemoved++;
+			}
+		}
 	}
 }
