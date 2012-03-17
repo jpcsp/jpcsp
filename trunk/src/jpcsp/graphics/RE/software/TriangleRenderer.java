@@ -111,6 +111,9 @@ public class TriangleRenderer extends BasePrimitiveRenderer {
         }
 
         if (!isVisible()) {
+        	if (isLogTraceEnabled) {
+        		log.trace(String.format("Triangle not visible"));
+        	}
         	return false;
         }
 

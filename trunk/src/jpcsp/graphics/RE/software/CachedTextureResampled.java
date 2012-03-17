@@ -57,7 +57,11 @@ public class CachedTextureResampled {
 		return resample(width, height);
 	}
 
-	private CachedTexture resample(int width, int height) {
+	/**
+	 * This method has to be synchronized because it can be used but multiple
+	 * renderer threads in parallel (see RendererExecutor).
+	 */
+	private synchronized CachedTexture resample(int width, int height) {
 		// Was the texture already resampled at the given size?
 		for (ResampleInfo resampleInfo : resampleInfos) {
 			if (resampleInfo.matches(width, height)) {

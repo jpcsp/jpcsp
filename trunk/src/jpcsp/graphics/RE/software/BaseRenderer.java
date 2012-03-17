@@ -139,6 +139,7 @@ public abstract class BaseRenderer implements IRenderer {
 		scissorY1 = from.scissorY1;
 		scissorX2 = from.scissorX2;
 		scissorY2 = from.scissorY2;
+		cachedTexture = from.cachedTexture;
 		isTriangle = from.isTriangle;
 		colorTestRef = from.colorTestRef;
 		colorTestMsk = from.colorTestMsk;
@@ -230,6 +231,10 @@ public abstract class BaseRenderer implements IRenderer {
 				envMapDiffuseLightV = context.light_type[context.tex_shade_v] == GeCommands.LIGHT_AMBIENT_DIFFUSE;
 				envMapShininess = context.materialShininess;
 			}
+		}
+
+		if (isLogTraceEnabled) {
+			log.trace(String.format("Context: %s", context.toString()));
 		}
 	}
 
