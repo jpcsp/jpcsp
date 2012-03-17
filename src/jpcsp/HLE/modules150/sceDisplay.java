@@ -1801,6 +1801,7 @@ public class sceDisplay extends HLEModule {
         	framesSkippedInSequence = 0;
         }
 
+        boolean skipThisFrame = false;
         if (desiredFps > 0) {
         	// Remember the time stamps of the frames displayed during the last second.
     		long currentFrameTimestamp = Emulator.getClock().currentTimeMillis();
@@ -1816,11 +1817,10 @@ public class sceDisplay extends HLEModule {
     		// Skip the rendering of the next frame if we are below the desired FPS
     		// and if we have not already skipped too many frames since the last rendering.
     		if (currentFps < desiredFps && framesSkippedInSequence < maxFramesSkippedInSequence) {
-    			VideoEngine.getInstance().setSkipThisFrame(true);
-    		} else {
-    			VideoEngine.getInstance().setSkipThisFrame(false);
+    			skipThisFrame = true;
     		}
     	}
+		VideoEngine.getInstance().setSkipThisFrame(skipThisFrame);
 
         if (skipNextFrameBufferSwitch) {
         	// The rendering of the previous frame has been skipped.
