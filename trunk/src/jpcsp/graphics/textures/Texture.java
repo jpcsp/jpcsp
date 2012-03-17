@@ -42,6 +42,8 @@ public class Texture {
 	private final static int hashStride = 64 + 8;
 	private short[] cachedValues16;
 	private int[] cachedValues32;
+	private int bufferLengthInBytes;
+	private int lineWidthInBytes;
 
 	public Texture(TextureCache textureCache, int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels, boolean mipmapShareClut, short[] values16, int[] values32) {
 		this.textureCache = textureCache;
@@ -59,6 +61,36 @@ public class Texture {
 		this.mipmapLevels = mipmapLevels;
 		this.mipmapShareClut = mipmapShareClut;
 
+		bufferLengthInBytes = lineWidth * height;
+		lineWidthInBytes = lineWidth;
+		switch (pixelStorage) {
+			case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
+			case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
+			case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444:
+			case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED:
+				bufferLengthInBytes *= 2;
+				lineWidthInBytes *= 2;
+				break;
+			case GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888:
+			case GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED:
+				bufferLengthInBytes *= 4;
+				lineWidthInBytes *= 4;
+				break;
+			case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT1:
+				bufferLengthInBytes = VideoEngine.getCompressedTextureSize(lineWidth, height, 8);
+				break;
+			case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT3:
+			case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT5:
+				bufferLengthInBytes = VideoEngine.getCompressedTextureSize(lineWidth, height, 4);
+				break;
+			case GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED:
+				bufferLengthInBytes /= 2;
+				lineWidthInBytes /= 2;
+				break;
+			case GeCommands.TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED:
+				break;
+		}
+
 		if (values16 != null) {
 			cachedValues16 = new short[lineWidth];
 			System.arraycopy(values16, 0, cachedValues16, 0, lineWidth);
@@ -66,7 +98,7 @@ public class Texture {
 			cachedValues32 = new int[lineWidth];
 			System.arraycopy(values32, 0, cachedValues32, 0, lineWidth);
 		} else {
-			hashCode = hashCode(addr, lineWidth, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks, mipmapLevels);
+			hashCode = hashCode(addr, bufferLengthInBytes, lineWidthInBytes, clutAddr, clutNumBlocks, mipmapLevels);
 		}
 	}
 
@@ -74,53 +106,18 @@ public class Texture {
 	 * Compute the Texture hashCode value,
 	 * based on the pixel buffer and the clut table.
 	 *
-	 * @param addr          pixel buffer
-	 * @param lineWidth     texture buffer width
-	 * @param width         texture width
-	 * @param height        texture height
-	 * @param pixelStorage  texture storage
-	 * @param clutAddr      clut table address
-	 * @param clutMode      clut mode
-	 * @param clutStart     clut start
-	 * @param clutShift     clut shift
-	 * @param clutMask      clut mask
-	 * @param clutNumBlocks clut number of blocks
-	 * @param mipmapLevels  number of mipmaps
-	 * @return              hashcode value
+	 * @param addr                pixel buffer
+	 * @param bufferLengthInBytes texture buffer length in bytes
+	 * @param lineWidthInBytes    texture buffer line width in bytes
+	 * @param clutAddr            clut table address
+	 * @param clutNumBlocks       clut number of blocks
+	 * @param mipmapLevels        number of mipmaps
+	 * @return                    hashcode value
 	 */
-	private static int hashCode(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels) {
+	private static int hashCode(int addr, int bufferLengthInBytes, int lineWidthInBytes, int clutAddr, int clutNumBlocks, int mipmapLevels) {
 		int hashCode = mipmapLevels;
 
 		if (addr != 0) {
-			int bufferLengthInBytes = lineWidth * height;
-			int lineWidthInBytes = lineWidth;
-			switch (pixelStorage) {
-				case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
-				case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
-				case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444:
-				case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED:
-					bufferLengthInBytes *= 2;
-					lineWidthInBytes *= 2;
-					break;
-				case GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888:
-				case GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED:
-					bufferLengthInBytes *= 4;
-					lineWidthInBytes *= 4;
-					break;
-				case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT1:
-					bufferLengthInBytes = VideoEngine.getCompressedTextureSize(lineWidth, height, 8);
-					break;
-				case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT3:
-				case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT5:
-					bufferLengthInBytes = VideoEngine.getCompressedTextureSize(lineWidth, height, 4);
-					break;
-				case GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED:
-					bufferLengthInBytes /= 2;
-					lineWidthInBytes /= 2;
-					break;
-				case GeCommands.TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED:
-					break;
-			}
 			if (VideoEngine.log.isDebugEnabled()) {
 				VideoEngine.log.debug("Texture.hashCode: " + bufferLengthInBytes + " bytes");
 			}
@@ -176,7 +173,7 @@ public class Texture {
 			if (values32 != null) {
 				return equals(values32);
 			}
-			int hashCode = hashCode(addr, lineWidth, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks, mipmapLevels);
+			int hashCode = hashCode(addr, bufferLengthInBytes, lineWidthInBytes, clutAddr, clutNumBlocks, mipmapLevels);
 			if (hashCode != hashCode()) {
 				return false;
 			}
@@ -260,5 +257,21 @@ public class Texture {
 	
 	public int getMipmapLevels() {
 		return mipmapLevels;
+	}
+
+	public boolean isInsideMemory(int fromAddr, int toAddr) {
+		if (addr >= fromAddr && addr < toAddr) {
+			return true;
+		}
+		if (addr + bufferLengthInBytes >= fromAddr && addr + bufferLengthInBytes < toAddr) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("Texture[0x%08X, %dx%d, bufferWidth=%d, %s]", addr, width, height, lineWidth, VideoEngine.getPsmName(pixelStorage));
 	}
 }
