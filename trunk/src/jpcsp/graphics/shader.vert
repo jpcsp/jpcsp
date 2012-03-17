@@ -334,16 +334,8 @@ void DecodePosition2D_2(inout vec3 V)
 // GU_VERTEX_32BITF in 2D
 void DecodePosition2D_3(inout vec3 V)
 {
-    if (V.z < 0.0 || V.z > 65535.0)
-    {
-        // Z is limited between 0 and 65535
-        V.z = 0.0;
-    }
-    else
-    {
-        // 2D positions are always integer values
-        V.z = float(int(V.z));
-    }
+	// Z is an integer value clamped between 0 and 65535
+	V.z = float(int(clamp(V.z, 0.0, 65535.0)));
 }
 #endif
 
