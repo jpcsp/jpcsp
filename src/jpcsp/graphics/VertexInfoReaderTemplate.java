@@ -623,11 +623,14 @@ public class VertexInfoReaderTemplate {
 	                    float z = Float.intBitsToFloat(mem.read32(addr + 8));
 	                    addr += 12;
 	                    if (transform2D) {
-	                        // Z is limited between 0 and 65535 (tested).
-	                        if (z < 0 || z > 65535) {
-	                            z = 0;
+	        				// Z is an integer value clamped between 0 and 65535
+	                        if (z < 0f) {
+	                            z = 0f;
+	                        } else if (z > 65535f) {
+	                        	z = 65535f;
 	                        } else {
-	                            z = (int) z;	// 2D positions are always integer values
+	                        	// 2D positions are always integer values
+	                            z = (int) z;
 	                        }
 	                    }
 	                    v.p[0] = x;
