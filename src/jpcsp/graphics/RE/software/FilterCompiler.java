@@ -86,6 +86,8 @@ public class FilterCompiler {
 		variables.put("needDestinationDepthRead", Boolean.valueOf(renderer.needDestinationDepthRead));
 		variables.put("needDepthWrite", Boolean.valueOf(renderer.needDepthWrite));
 		variables.put("needTextureUV", Boolean.valueOf(renderer.needTextureUV));
+		variables.put("simpleTextureUV", Boolean.valueOf(renderer.simpleTextureUV));
+		variables.put("swapTextureUV", Boolean.valueOf(renderer.swapTextureUV));
 		variables.put("needScissoringX", Boolean.valueOf(renderer.needScissoringX));
 		variables.put("needScissoringY", Boolean.valueOf(renderer.needScissoringY));
 		variables.put("nearZ", new Integer(renderer.nearZ));
@@ -140,6 +142,7 @@ public class FilterCompiler {
 		variables.put("texMagFilter", new Integer(context.tex_mag_filter));
 		variables.put("needTextureWrapU", Boolean.valueOf(renderer.needTextureWrapU));
 		variables.put("needTextureWrapV", Boolean.valueOf(renderer.needTextureWrapV));
+		variables.put("needSourceDepthClamp", Boolean.valueOf(renderer.needSourceDepthClamp));
 		variables.put("isLogTraceEnabled", Boolean.valueOf(renderer.isLogTraceEnabled));
 		variables.put("collectStatistics", Boolean.valueOf(DurationStatistics.collectStatistics));
 

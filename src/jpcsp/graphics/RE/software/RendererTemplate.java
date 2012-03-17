@@ -64,6 +64,8 @@ public class RendererTemplate {
 	public static boolean needDestinationDepthRead;
 	public static boolean needDepthWrite;
 	public static boolean needTextureUV;
+	public static boolean simpleTextureUV;
+	public static boolean swapTextureUV;
 	public static boolean needScissoringX;
 	public static boolean needScissoringY;
 	public static boolean transform2D;
@@ -123,6 +125,7 @@ public class RendererTemplate {
 	public static int texMagFilter;
 	public static boolean needTextureWrapU;
 	public static boolean needTextureWrapV;
+	public static boolean needSourceDepthClamp;
 	public static boolean isLogTraceEnabled;
 	public static boolean collectStatistics;
 
@@ -203,36 +206,35 @@ public class RendererTemplate {
 	}
 
 	private static IRandomTextureAccess resampleTexture(final BasePrimitiveRenderer renderer) {
+		IRandomTextureAccess textureAccess = renderer.textureAccess;
+
 		if (textureFlagEnabled && (!transform2D || useVertexTexture) && !clearMode) {
 			if (texMagFilter == GeCommands.TFLT_LINEAR) {
-				if (needTextureUV && (!isTriangle || transform2D)) {
+				if (needTextureUV && simpleTextureUV) {
 					if (renderer.cachedTexture != null) {
 						final PrimitiveState prim = renderer.prim;
-						float resampleFactorWidth = 1f / Math.abs(prim.uStep);
-						float resampleFactorHeight = 1f / Math.abs(prim.vStep);
+						final float resampleFactorWidth = 1f / Math.abs(prim.uStep);
+						final float resampleFactorHeight = 1f / Math.abs(prim.vStep);
 						if (resampleFactorWidth >= .5f && resampleFactorHeight >= .5f && resampleFactorWidth <= 2f && resampleFactorHeight <= 2f) {
-							renderer.textureAccess = renderer.cachedTexture.resample(resampleFactorWidth, resampleFactorHeight);
+							textureAccess = renderer.cachedTexture.resample(resampleFactorWidth, resampleFactorHeight);
 							prim.uStart *= resampleFactorWidth;
 							prim.vStart *= resampleFactorHeight;
 							prim.uStep = prim.uStep < 0f ? -1f : 1f;
 							prim.vStep = prim.vStep < 0f ? -1f : 1f;
-							renderer.textureWidth = renderer.textureAccess.getWidth();
-							renderer.textureHeight = renderer.textureAccess.getHeight();
 						}
 					}
 				} else {
-					if (resampleTextureForMag && renderer.cachedTexture != null) {
-						float resampleFactorWidth = 2f;
-						float resampleFactorHeight = 2f;
-						renderer.textureAccess = renderer.cachedTexture.resample(resampleFactorWidth, resampleFactorHeight);
-						renderer.textureWidth = renderer.textureAccess.getWidth();
-						renderer.textureHeight = renderer.textureAccess.getHeight();
+					if (resampleTextureForMag && !transform2D && renderer.cachedTexture != null) {
+						textureAccess = renderer.cachedTexture.resample(2f, 2f);
 					}
 				}
+
+				renderer.textureWidth = textureAccess.getWidth();
+				renderer.textureHeight = textureAccess.getHeight();
 			}
 		}
 
-		return renderer.textureAccess;
+		return textureAccess;
 	}
 
 	private static void doRender(final BasePrimitiveRenderer renderer) {
@@ -264,7 +266,7 @@ public class RendererTemplate {
 		final float textureHeightFloat = renderer.textureHeight;
 		final int alphaRef = renderer.alphaRef;
 		final int primSourceDepth = (int) prim.p2z;
-		float u = 0f;
+		float u = prim.uStart;
 		float v = prim.vStart;
 		boolean depthTestFailed = false;
 		ColorDepth colorDepth = new ColorDepth();
@@ -279,7 +281,14 @@ public class RendererTemplate {
 		float t3uw = 0f;
 		float t3vw = 0f;
 		if (isTriangle) {
-			if (!transform2D) {
+			if (transform2D) {
+				t1uw = prim.t1u;
+				t1vw = prim.t1v;
+				t2uw = prim.t2u;
+				t2vw = prim.t2v;
+				t3uw = prim.t3u;
+				t3vw = prim.t3v;
+			} else {
 				t1uw = prim.t1u * prim.p1wInverted;
 				t1vw = prim.t1v * prim.p1wInverted;
 				t2uw = prim.t2u * prim.p2wInverted;
@@ -340,8 +349,12 @@ public class RendererTemplate {
     				rendererWriter.skip(prim.destinationWidth + renderer.imageWriterSkipEOL, prim.destinationWidth + renderer.depthWriterSkipEOL);
     			}
     		} else {
-    			if (needTextureUV && (!isTriangle || transform2D)) {
-    				u = prim.uStart;
+    			if (needTextureUV && simpleTextureUV) {
+    				if (swapTextureUV) {
+    					v = prim.vStart;
+    				} else {
+    					u = prim.uStart;
+    				}
     			}
 	    		if (isTriangle) {
 	    			int startSkip = startX - prim.pxMin;
@@ -356,8 +369,12 @@ public class RendererTemplate {
 	        			} else {
 		    				rendererWriter.skip(startSkip, startSkip);
 	        			}
-	    				if (transform2D) {
-	    					u += startSkip * prim.uStep;
+	    				if (simpleTextureUV) {
+	    					if (swapTextureUV) {
+	    						v += startSkip * prim.vStep;
+	    					} else {
+	    						u += startSkip * prim.uStep;
+	    					}
 	    				}
 	    			}
 	    			prim.computeTriangleWeights(pixel, startX, y);
@@ -709,20 +726,22 @@ public class RendererTemplate {
 	        			// Pixel texture U,V
 	        			//
 	        			if (needTextureUV) {
-		            		if (isTriangle && !transform2D) {
-		            			// Compute the mapped texture u,v coordinates
-		            			// based on the Barycentric coordinates.
-		            			// Apply a perspective correction by weighting the coordinates
-		            			// by their "w" value.
-		            			// See http://en.wikipedia.org/wiki/Texture_mapping#Perspective_correctness
-		            			u = pixel.getTriangleWeightedValue(t1uw, t2uw, t3uw);
-		            			v = pixel.getTriangleWeightedValue(t1vw, t2vw, t3vw);
-		            			float weightInverted = 1.f / pixel.getTriangleWeightedValue(prim.p1wInverted, prim.p2wInverted, prim.p3wInverted);
-		            			pixelU = u * weightInverted;
-		            			pixelV = v * weightInverted;
-		            		} else {
+		            		if (simpleTextureUV) {
 			            		pixelU = u;
 			            		pixelV = v;
+		            		} else {
+		            			// Compute the mapped texture u,v coordinates
+		            			// based on the Barycentric coordinates.
+		            			pixelU = pixel.getTriangleWeightedValue(t1uw, t2uw, t3uw);
+		            			pixelV = pixel.getTriangleWeightedValue(t1vw, t2vw, t3vw);
+		            			if (!transform2D) {
+			            			// In 3D, apply a perspective correction by weighting
+		            				// the coordinates by their "w" value. See
+			            			// http://en.wikipedia.org/wiki/Texture_mapping#Perspective_correctness
+		            				float weightInverted = 1.f / pixel.getTriangleWeightedValue(prim.p1wInverted, prim.p2wInverted, prim.p3wInverted);
+		            				pixelU *= weightInverted;
+		            				pixelV *= weightInverted;
+		            			}
 		            		}
 		            	}
 
@@ -1048,6 +1067,9 @@ public class RendererTemplate {
 			        				continue;
 		            			case GeCommands.ATST_PASS_PIXEL_IF_MATCHES:
 		            				if (getAlpha(sourceColor) != alphaRef) {
+		    		            		if (isLogTraceEnabled) {
+		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), alpha test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
+		    	            			}
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
 		        	        				if (needDepthWrite || needDestinationDepthRead) {
@@ -1063,6 +1085,9 @@ public class RendererTemplate {
 		            				break;
 		            			case GeCommands.ATST_PASS_PIXEL_IF_DIFFERS:
 		            				if (getAlpha(sourceColor) == alphaRef) {
+		    		            		if (isLogTraceEnabled) {
+		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), alpha test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
+		    	            			}
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
 		        	        				if (needDepthWrite || needDestinationDepthRead) {
@@ -1078,6 +1103,9 @@ public class RendererTemplate {
 		            				break;
 		            			case GeCommands.ATST_PASS_PIXEL_IF_LESS:
 		            				if (getAlpha(sourceColor) >= alphaRef) {
+		    		            		if (isLogTraceEnabled) {
+		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), alpha test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
+		    	            			}
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
 		        	        				if (needDepthWrite || needDestinationDepthRead) {
@@ -1095,6 +1123,9 @@ public class RendererTemplate {
 		            				// No test if alphaRef==0xFF
 		            				if (RendererTemplate.alphaRef < 0xFF) {
 			            				if (getAlpha(sourceColor) > alphaRef) {
+			    		            		if (isLogTraceEnabled) {
+			    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), alpha test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
+			    	            			}
 			        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 			        	        				fbIndex++;
 			        	        				if (needDepthWrite || needDestinationDepthRead) {
@@ -1111,6 +1142,9 @@ public class RendererTemplate {
 		            				break;
 		            			case GeCommands.ATST_PASS_PIXEL_IF_GREATER:
 		            				if (getAlpha(sourceColor) <= alphaRef) {
+		    		            		if (isLogTraceEnabled) {
+		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), alpha test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
+		    	            			}
 		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 		        	        				fbIndex++;
 		        	        				if (needDepthWrite || needDestinationDepthRead) {
@@ -1128,6 +1162,9 @@ public class RendererTemplate {
 		            				// No test if alphaRef==0x00
 		            				if (RendererTemplate.alphaRef > 0x00) {
 			            				if (getAlpha(sourceColor) < alphaRef) {
+			    		            		if (isLogTraceEnabled) {
+			    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), alpha test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
+			    	            			}
 			        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 			        	        				fbIndex++;
 			        	        				if (needDepthWrite || needDestinationDepthRead) {
@@ -1500,6 +1537,10 @@ public class RendererTemplate {
 	            		if (isLogTraceEnabled) {
 	            			VideoEngine.log.trace(String.format("Pixel (%d,%d), passed=true, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
             			}
+	            		if (needDepthWrite && needSourceDepthClamp) {
+	            			// Clamp between 0 and 65535
+	            			sourceDepth = Math.max(0, Math.min(sourceDepth, 65535));
+	            		}
 	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 	        				memInt[fbIndex] = sourceColor;
 	        				fbIndex++;
@@ -1528,8 +1569,12 @@ public class RendererTemplate {
 	        			}
 	            	} while (false);
 
-	            	if (needTextureUV && (!isTriangle || transform2D)) {
-	            		u += prim.uStep;
+	            	if (needTextureUV && simpleTextureUV) {
+	            		if (swapTextureUV) {
+	            			v += prim.vStep;
+	            		} else {
+	            			u += prim.uStep;
+	            		}
 	            	}
 	            	if (isTriangle) {
 	            		prim.deltaXTriangleWeigths(pixel);
@@ -1549,8 +1594,12 @@ public class RendererTemplate {
     			}
     		}
 
-    		if (needTextureUV && (!isTriangle || transform2D)) {
-        		v += prim.vStep;
+    		if (needTextureUV && simpleTextureUV) {
+    			if (swapTextureUV) {
+    				u += prim.uStep;
+    			} else {
+    				v += prim.vStep;
+    			}
         	}
         }
 

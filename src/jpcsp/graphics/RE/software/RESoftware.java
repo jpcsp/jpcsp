@@ -622,14 +622,17 @@ public class RESoftware extends BaseRenderingEngine {
 		if (tv1.p[0] == tv2.p[0] && tv1.p[1] == tv3.p[1] && tv4.p[0] == tv3.p[0] && tv4.p[1] == tv2.p[1]) {
 			// z1 == z2 && z1 == z3 && z1 == z4
 			if (tv1.p[2] == tv2.p[2] && tv1.p[2] == tv3.p[2] && tv1.p[2] == tv3.p[2]) {
+				if (vinfo.texture == 0) {
+					return true;
+				}
 				// u1 == u2 && v1 == v3 && u4 == u3 && v4 == v2
-				if (vinfo.texture == 0 || (tv1.t[0] == tv2.t[0] && tv1.t[1] == tv3.t[1] && tv4.t[0] == tv3.t[0] && tv4.t[1] == tv2.t[1])) {
+				if (tv1.t[0] == tv2.t[0] && tv1.t[1] == tv3.t[1] && tv4.t[0] == tv3.t[0] && tv4.t[1] == tv2.t[1]) {
 					return true;
 				}
 				// v1 == v2 && u1 == u3 && v4 == v3 && u4 == u2
-				if (vinfo.texture == 0 || (tv1.t[1] == tv2.t[1] && tv1.t[0] == tv3.t[0] && tv4.t[1] == tv3.t[1] && tv4.t[0] == tv2.t[0])) {
-					return true;
-				}
+//				if (tv1.t[1] == tv2.t[1] && tv1.t[0] == tv3.t[0] && tv4.t[1] == tv3.t[1] && tv4.t[0] == tv2.t[0]) {
+//					return true;
+//				}
 			}
 		}
 
@@ -637,14 +640,17 @@ public class RESoftware extends BaseRenderingEngine {
 		if (tv1.p[1] == tv2.p[1] && tv1.p[0] == tv3.p[0] && tv4.p[1] == tv3.p[1] && tv4.p[0] == tv2.p[0]) {
 			// z1 == z2 && z1 == z3 && z1 == z4
 			if (tv1.p[2] == tv2.p[2] && tv1.p[2] == tv3.p[2] && tv1.p[2] == tv3.p[2]) {
+				if (vinfo.texture == 0) {
+					return true;
+				}
 				// v1 == v2 && u1 == u3 && v4 == v3 && u4 == u2
-				if (vinfo.texture == 0 || (tv1.t[1] == tv2.t[1] && tv1.t[0] == tv3.t[0] && tv4.t[1] == tv3.t[1] && tv4.t[0] == tv2.t[0])) {
+				if (tv1.t[1] == tv2.t[1] && tv1.t[0] == tv3.t[0] && tv4.t[1] == tv3.t[1] && tv4.t[0] == tv2.t[0]) {
 					return true;
 				}
 				// u1 == u2 && v1 == v3 && u4 == u3 && v4 == v2
-				if (vinfo.texture == 0 || (tv1.t[0] == tv2.t[0] && tv1.t[1] == tv3.t[1] && tv4.t[0] == tv3.t[0] && tv4.t[1] == tv2.t[1])) {
-					return true;
-				}
+//				if (tv1.t[0] == tv2.t[0] && tv1.t[1] == tv3.t[1] && tv4.t[0] == tv3.t[0] && tv4.t[1] == tv2.t[1]) {
+//					return true;
+//				}
 			}
 		}
 

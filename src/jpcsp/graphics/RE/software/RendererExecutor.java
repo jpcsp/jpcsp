@@ -30,10 +30,10 @@ import jpcsp.graphics.VideoEngine;
 public class RendererExecutor {
 	private static final int numberThreads = 1;
 	private static RendererExecutor instance;
-	private LinkedBlockingQueue<IRenderer> renderersQueue = new LinkedBlockingQueue<IRenderer>();
+	private final LinkedBlockingQueue<IRenderer> renderersQueue = new LinkedBlockingQueue<IRenderer>();
 	private volatile boolean ended;
 	private volatile int numberThreadsRendering;
-	private Object numberThreadsRenderingLock = new Object();
+	private final Object numberThreadsRenderingLock = new Object();
 
 	public static RendererExecutor getInstance() {
 		if (instance == null) {

@@ -57,9 +57,12 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	protected boolean needDestinationDepthRead;
 	protected boolean needDepthWrite;
 	protected boolean needTextureUV;
+	protected boolean swapTextureUV;
+	protected boolean simpleTextureUV;
 	protected boolean needTextureWrapU;
 	protected boolean needTextureWrapV;
 	protected boolean sameVertexColor;
+	protected boolean needSourceDepthClamp;
 	public int fbAddress;
 	public int depthAddress;
     public IRendererWriter rendererWriter;
@@ -74,12 +77,14 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		needDestinationDepthRead = from.needDestinationDepthRead;
 		needDepthWrite = from.needDepthWrite;
 		needTextureUV = from.needTextureUV;
+		simpleTextureUV = from.simpleTextureUV;
 		needTextureWrapU = from.needTextureWrapU;
 		needTextureWrapV = from.needTextureWrapV;
 		sameVertexColor = from.sameVertexColor;
 		fbAddress = from.fbAddress;
 		depthAddress = from.depthAddress;
 		rendererWriter = from.rendererWriter;
+		needSourceDepthClamp = from.needSourceDepthClamp;
 	}
 
 	@Override
@@ -202,45 +207,91 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
         prim.destinationHeight = prim.pyMax - prim.pyMin + 1;
 
         if (isUsingTexture(context)) {
-	        if (transform2D) {
-		    	boolean flipX = false;
-		    	boolean flipY = false;
-		    	if (c3 == null) {
-		    		// Compute texture flips for a sprite
-		    		flipX = (prim.t1u > prim.t2u) ^ (prim.p1x > prim.p2x);
-		    		flipY = (prim.t1v > prim.t2v) ^ (prim.p1y > prim.p2y);
-		    	} else {
-		    		// Compute texture flips for a triangle
-		    		flipX = (prim.t1u > prim.t2u) ^ (prim.p1x > prim.p2x);
-		    		flipY = (prim.t1v > prim.t2v) ^ (prim.p1y > prim.p2y);
-		    		if (!flipX) {
-			    		flipX = (prim.t2u > prim.t3u) ^ (prim.p2x > prim.p3x);
-		    		}
-		    		if (!flipY) {
-			    		flipY = (prim.t2v > prim.t3v) ^ (prim.p2y > prim.p3y);
-		    		}
-		    	}
-		    	if (isLogTraceEnabled) {
-		    		log.trace(String.format("2D texture flipX=%b, flipY=%b, point (%d,%d)-(%d,%d), texture (%d,%d)-(%d,%d)", flipX, flipY, prim.pxMin, prim.pyMin, prim.pxMax, prim.pyMax, prim.tuMin, prim.tvMin, prim.tuMax, prim.tvMax));
-		    	}
-		    	prim.uStart = flipX ? prim.tuMax : prim.tuMin;
-		    	float uEnd = flipX ? prim.tuMin : prim.tuMax;
-		    	prim.vStart = flipY ? prim.tvMax : prim.tvMin;
-		    	float vEnd = flipY ? prim.tvMin : prim.tvMax;
-		    	prim.uStep = (uEnd - prim.uStart) / prim.destinationWidth;
-		    	prim.vStep = (vEnd - prim.vStart) / prim.destinationHeight;
-	        } else if (!isTriangle) {
-	        	// 3D sprite
-	        	prim.uStart = prim.t1u;
-	        	float uEnd = prim.t2u;
-	        	prim.vStart = prim.t1v;
-	        	float vEnd = prim.t2v;
-		    	prim.uStep = (uEnd - prim.uStart) / (prim.destinationWidth - 1);
-		    	prim.vStep = (vEnd - prim.vStart) / (prim.destinationHeight - 1);
-	        }
+			simpleTextureUV = !isTriangle;
 
-	        // Perform scissoring and update uStart/uStep and vStart/vStep
-	        if (transform2D || !isTriangle) {
+			if (!simpleTextureUV && isTriangle && transform2D) {
+				// Check if the 2D triangle can be rendered using a simple texture UV mapping:
+				// this is only possible when the triangle has a square angle.
+				//
+				// 1---2     1---2     1             1
+				// |  /       \  |     | \         / |
+				// | /         \ |     |  \       /  |
+				// 3             3     3---2     3---2
+				//
+				// 1---3     1---3     1             1
+				// |  /       \  |     | \         / |
+				// | /         \ |     |  \       /  |
+				// 2             2     2---3     2---3
+				//
+				if (prim.p1x == prim.p2x && prim.t1u == prim.t2u) {
+					if (prim.p1y == prim.p3y && prim.t1v == prim.t3v) {
+						simpleTextureUV = true;
+					} else if (prim.p2y == prim.p3y && prim.t2v == prim.t3v){
+						simpleTextureUV = true;
+					}
+				} else if (prim.p1x == prim.p3x && prim.t1u == prim.t3u) {
+					if (prim.p1y == prim.p2y && prim.t1v == prim.t2v) {
+						simpleTextureUV = true;
+					} else if (prim.p2y == prim.p3y && prim.t2v == prim.t3v){
+						simpleTextureUV = true;
+					}
+				} else if (prim.p2x == prim.p3x && prim.t2u == prim.t3u) {
+					if (prim.p1y == prim.p2y && prim.t1v == prim.t2v) {
+						simpleTextureUV = true;
+					} else if (prim.p1y == prim.p1y && prim.t2v == prim.t3v){
+						simpleTextureUV = true;
+					}
+				}
+			}
+
+			if (simpleTextureUV) {
+		        if (transform2D) {
+			    	boolean flipX = false;
+			    	boolean flipY = false;
+			    	if (isTriangle) {
+			    		// Compute texture flips for a triangle
+			    		if (prim.t1u != prim.t2u) {
+			    			flipX = (prim.t1u > prim.t2u) ^ (prim.p1x > prim.p2x);
+			    		}
+			    		if (prim.t1v != prim.t2v) {
+			    			flipY = (prim.t1v > prim.t2v) ^ (prim.p1y > prim.p2y);
+			    		}
+			    		if (!flipX && prim.t2u != prim.t3u) {
+				    		flipX = (prim.t2u > prim.t3u) ^ (prim.p2x > prim.p3x);
+			    		}
+			    		if (!flipY && prim.t2v != prim.t3v) {
+				    		flipY = (prim.t2v > prim.t3v) ^ (prim.p2y > prim.p3y);
+			    		}
+			    	} else {
+			    		// Compute texture flips for a sprite
+			    		flipX = (prim.t1u > prim.t2u) ^ (prim.p1x > prim.p2x);
+			    		flipY = (prim.t1v > prim.t2v) ^ (prim.p1y > prim.p2y);
+			    		if (flipX && flipY) {
+			    			swapTextureUV = true;
+			    			flipX = false;
+			    			flipY = false;
+			    		}
+			    	}
+			    	if (isLogTraceEnabled) {
+			    		log.trace(String.format("2D texture flipX=%b, flipY=%b, swapUV=%b, point (%d,%d)-(%d,%d), texture (%d,%d)-(%d,%d)", flipX, flipY, swapTextureUV, prim.pxMin, prim.pyMin, prim.pxMax, prim.pyMax, prim.tuMin, prim.tvMin, prim.tuMax, prim.tvMax));
+			    	}
+			    	prim.uStart = flipX ? prim.tuMax : prim.tuMin;
+			    	float uEnd = flipX ? prim.tuMin : prim.tuMax;
+			    	prim.vStart = flipY ? prim.tvMax : prim.tvMin;
+			    	float vEnd = flipY ? prim.tvMin : prim.tvMax;
+			    	prim.uStep = (uEnd - prim.uStart) / (swapTextureUV ? prim.destinationHeight : prim.destinationWidth);
+			    	prim.vStep = (vEnd - prim.vStart) / (swapTextureUV ? prim.destinationWidth : prim.destinationHeight);
+		        } else {
+		        	// 3D sprite
+		        	prim.uStart = prim.t1u;
+		        	float uEnd = prim.t2u;
+		        	prim.vStart = prim.t1v;
+		        	float vEnd = prim.t2v;
+			    	prim.uStep = (uEnd - prim.uStart) / (prim.destinationWidth - 1);
+			    	prim.vStep = (vEnd - prim.vStart) / (prim.destinationHeight - 1);
+		        }
+
+		        // Perform scissoring and update uStart/uStep and vStart/vStep
 	        	if (needScissoringX) {
 					int deltaX = scissorX1 - prim.pxMin;
 					if (deltaX > 0) {
@@ -279,7 +330,7 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 			        prim.destinationHeight = prim.pyMax - prim.pyMin + 1;
 					needScissoringY = false;
 	        	}
-	        }
+			}
         }
 
         if (setVertexPrimaryColor) {
@@ -352,6 +403,14 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 				tvMax = tvMax * texScaleY + texTranslateY;
 				needTextureWrapU = tuMin < 0f || tuMax >= 0.99999f;
 				needTextureWrapV = tvMin < 0f || tvMax >= 0.99999f;
+			}
+		}
+		needSourceDepthClamp = false;
+		if (needDepthWrite && needSourceDepthRead && isTriangle) {
+			if (prim.p1z < 0f || prim.p2z < 0f || prim.p3z < 0f) {
+				needSourceDepthClamp = true;
+			} else if (prim.p1z > 65535f || prim.p2z > 65535f || prim.p3z > 65535f) {
+				needSourceDepthClamp = true;
 			}
 		}
 
@@ -565,6 +624,9 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
         	    (prim.pyMin + screenOffsetY) < 0 ||
         	    (prim.pyMax + screenOffsetY) >= 4096 ||
         	    prim.pzMax >= 65536) {
+        		if (isLogTraceEnabled) {
+        			log.trace(String.format("Screen coordinates outside valid range %d-%d, %d-%d, %d", prim.pxMin + screenOffsetX, prim.pxMax + screenOffsetX, prim.pyMin + screenOffsetY, prim.pyMax + screenOffsetY, prim.pzMax));
+        		}
         		return false;
         	}
 
@@ -572,6 +634,9 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
         	// extends from back to front over a very large distance
         	// (more than the allowed range for Z values).
         	if (prim.pzMin < 0 && prim.pzMax > 0 && prim.pzMax - prim.pzMin > 65536) {
+        		if (isLogTraceEnabled) {
+        			log.trace(String.format("Z range too large: %d, %d", prim.pzMin, prim.pzMax));
+        		}
         		return false;
         	}
 
@@ -579,11 +644,17 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
         		// The primitive is discarded when one of the vertex is behind the viewpoint
         		// (only the the ClipPlanes flag is not enabled).
         		if (prim.pzMin < 0) {
+        			if (isLogTraceEnabled) {
+        				log.trace(String.format("Z behind clip plane %d", prim.pzMin));
+        			}
         			return false;
         		}
         	} else {
             	// TODO Implement proper triangle clipping against the near plane
             	if (prim.p1w < 0f || prim.p2w < 0f || prim.p3w < 0f) {
+        			if (isLogTraceEnabled) {
+        				log.trace(String.format("W negative %f, %f, %f", prim.p1w, prim.p2w, prim.p3w));
+        			}
             		return false;
             	}
         	}
@@ -598,6 +669,9 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 
 		if (prim.pxMin == prim.pxMax || prim.pyMin == prim.pyMax) {
 			// Empty area to be displayed
+			if (isLogTraceEnabled) {
+				log.trace("Empty area");
+			}
 			return false;
 		}
 
@@ -606,11 +680,17 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 			    (pixel.v1x == pixel.v3x && pixel.v1y == pixel.v3y && pixel.v1z == pixel.v3z) ||
 			    (pixel.v2x == pixel.v3x && pixel.v2y == pixel.v3y && pixel.v2z == pixel.v3z)) {
 				// 2 vertices are equal in the triangle, nothing has to be displayed
+				if (isLogTraceEnabled) {
+					log.trace("2 vertices equal in triangle");
+				}
 				return false;
 			}
 		}
 
 		if (!insideScissor()) {
+			if (isLogTraceEnabled) {
+				log.trace("Not inside scissor");
+			}
 			return false;
 		}
 
@@ -624,15 +704,24 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
         // Scissoring (also applied in clear mode)
     	if (prim.pxMax < scissorX1 || prim.pxMin > scissorX2) {
     		// Completely outside the scissor area, skip
+			if (isLogTraceEnabled) {
+				log.trace(String.format("X outside scissor area %d-%d, %d-%d", prim.pxMin, prim.pxMax, scissorX1, scissorX2));
+			}
     		return false;
     	}
     	if (prim.pyMax < scissorY1 || prim.pyMin > scissorY2) {
     		// Completely outside the scissor area, skip
+			if (isLogTraceEnabled) {
+				log.trace(String.format("Y outside scissor area %d-%d, %d-%d", prim.pyMin, prim.pyMax, scissorY1, scissorY2));
+			}
     		return false;
     	}
     	if (!transform2D) {
-        	if (prim.pzMax < nearZ || prim.pzMin > farZ) {
+        	if ((nearZ > 0x0000 && prim.pzMax < nearZ) || (farZ < 0xFFFF && prim.pzMin > farZ)) {
         		// Completely outside the view area, skip
+    			if (isLogTraceEnabled) {
+    				log.trace(String.format("Z outside view area %d-%d, %d-%d", prim.pzMin, prim.pzMax, nearZ, farZ));
+    			}
         		return false;
         	}
     	}
@@ -669,7 +758,7 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		screenCoordinates[3] = w;
 
 		if (isLogTraceEnabled) {
-			log.trace(String.format("X,Y,Z = %f, %f, %f, projected X,Y,Z,W = %f, %f, %f, %f -> Screen %.1f, %.1f, %.1f", x, y, z, projectedCoordinates[0] / w, projectedCoordinates[1] / w, projectedCoordinates[2] / w, w, screenCoordinates[0], screenCoordinates[1], screenCoordinates[2]));
+			log.trace(String.format("X,Y,Z = %f, %f, %f, projected X,Y,Z,W = %f, %f, %f, %f -> Screen %.3f, %.3f, %.3f", x, y, z, projectedCoordinates[0] / w, projectedCoordinates[1] / w, projectedCoordinates[2] / w, w, screenCoordinates[0], screenCoordinates[1], screenCoordinates[2]));
 		}
 	}
 
@@ -745,11 +834,14 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		key.addKeyComponent(needDestinationDepthRead);
 		key.addKeyComponent(needDepthWrite);
 		key.addKeyComponent(needTextureUV);
+		key.addKeyComponent(simpleTextureUV);
+		key.addKeyComponent(swapTextureUV);
 		key.addKeyComponent(needScissoringX);
 		key.addKeyComponent(needScissoringY);
 		key.addKeyComponent(needTextureWrapU);
 		key.addKeyComponent(needTextureWrapV);
 		key.addKeyComponent(sameVertexColor);
+		key.addKeyComponent(needSourceDepthClamp);
 
 		return key;
 	}

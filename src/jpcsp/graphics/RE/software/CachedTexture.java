@@ -32,6 +32,7 @@ import static jpcsp.memory.ImageReader.color5551to8888;
 import static jpcsp.memory.ImageReader.color565to8888;
 import static jpcsp.util.Utilities.getPower2;
 import jpcsp.Memory;
+import jpcsp.HLE.Modules;
 import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
@@ -76,7 +77,12 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 		// we can reuse the memory array and do not need to copy the whole texture.
 		if (buffer == memAll) {
 			if (pixelFormat == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 || IRenderingEngine.isTextureTypeIndexed[pixelFormat]) {
-				offset = bufferOffset;
+				// Do not reuse the memory buffer when the texture is inside the current GE,
+				// copy the texture (this is better matching the PSP texture cache behavior).
+				int textureAddress = bufferOffset << 2;
+				if (!Modules.sceDisplayModule.isGeAddress(textureAddress)) {
+					offset = bufferOffset;
+				}
 			}
 		}
 
