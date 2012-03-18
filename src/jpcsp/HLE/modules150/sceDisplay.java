@@ -1016,35 +1016,8 @@ public class sceDisplay extends HLEModule {
 		boolean loadGEToScreen = !isUsingSoftwareRenderer() && !VideoEngine.getInstance().isSkipThisFrame();
 
 		if (copyGEToMemory && (topaddrGe != topaddr || pixelformatGe != pixelformat)) {
-			if (VideoEngine.log.isDebugEnabled()) {
-				VideoEngine.log.debug(String.format("Copy GE Screen to Memory 0x%08X-0x%08X", topaddrGe, bottomaddrGe));
-			}
-
-			if (statisticsCopyGeToMemory != null) {
-				statisticsCopyGeToMemory.start();
-			}
-
-			if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(topaddrGe)) {
-				GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrGe, bufferwidthGe, widthGe, heightGe, pixelformatGe, true);
-				geTexture.copyScreenToTexture(re);
-			} else {
-	        	// Set texFb as the current texture
-			    re.bindTexture(resizedTexFb);
-				re.setTextureFormat(pixelformatGe, false);
-
-			    // Copy screen to the current texture
-			    re.copyTexSubImage(0, 0, 0, 0, 0, getResizedWidth(Math.min(bufferwidthGe, widthGe)), getResizedHeight(heightGe));
-
-			    // Re-render GE/current texture upside down
-			    drawFrameBuffer(true, true, bufferwidthGe, pixelformatGe, widthGe, heightGe);
-
-			    copyScreenToPixels(pixelsGe, bufferwidthGe, pixelformatGe, widthGe, heightGe);
-			    loadGEToScreen = true;
-			}
-
-			if (statisticsCopyGeToMemory != null) {
-				statisticsCopyGeToMemory.end();
-			}
+			copyGeToMemory(false);
+		    loadGEToScreen = true;
 		}
 
 		topaddrGe     = topaddr;
@@ -1364,6 +1337,42 @@ public class sceDisplay extends HLEModule {
 
 		if (statisticsCopyMemoryToGe != null) {
 			statisticsCopyMemoryToGe.end();
+		}
+    }
+
+    public void copyGeToMemory(boolean preserveScreen) {
+		if (VideoEngine.log.isDebugEnabled()) {
+			VideoEngine.log.debug(String.format("Copy GE Screen to Memory 0x%08X-0x%08X", topaddrGe, bottomaddrGe));
+		}
+
+		if (statisticsCopyGeToMemory != null) {
+			statisticsCopyGeToMemory.start();
+		}
+
+		if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(topaddrGe)) {
+			GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrGe, bufferwidthGe, widthGe, heightGe, pixelformatGe, true);
+			geTexture.copyScreenToTexture(re);
+		} else {
+        	// Set texFb as the current texture
+		    re.bindTexture(resizedTexFb);
+			re.setTextureFormat(pixelformatGe, false);
+
+		    // Copy screen to the current texture
+		    re.copyTexSubImage(0, 0, 0, 0, 0, getResizedWidth(Math.min(bufferwidthGe, widthGe)), getResizedHeight(heightGe));
+
+		    // Re-render GE/current texture upside down
+		    drawFrameBuffer(true, true, bufferwidthGe, pixelformatGe, widthGe, heightGe);
+
+		    copyScreenToPixels(pixelsGe, bufferwidthGe, pixelformatGe, widthGe, heightGe);
+
+		    if (preserveScreen) {
+		    	// Redraw the screen
+		    	drawFrameBuffer(true, false, bufferwidthGe, pixelformatGe, widthGe, heightGe);
+		    }
+		}
+
+		if (statisticsCopyGeToMemory != null) {
+			statisticsCopyGeToMemory.end();
 		}
     }
 

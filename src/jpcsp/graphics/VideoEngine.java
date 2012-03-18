@@ -4653,6 +4653,12 @@ public class VideoEngine {
                         + ", texture_swizzle=" + context.texture_swizzle);
             }
 
+            // If the texture is the current GE
+            // first save the GE to memory before loading the texture.
+            if (tex_addr == (context.fbp | MemoryMap.START_VRAM) && context.texture_storage == context.psm && context.texture_buffer_width[0] == context.fbw) {
+            	display.copyGeToMemory(true);
+            }
+
             Buffer final_buffer = null;
             int texclut = context.tex_clut_addr;
             int texaddr;
