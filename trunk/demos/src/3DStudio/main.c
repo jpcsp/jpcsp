@@ -365,8 +365,10 @@ struct Point
 	float z;
 };
 
-struct Color rectangle1color;
-struct Color rectangle2color;
+struct Color rectangle1VertexColor;
+struct Color rectangle2VertexColor;
+struct Color rectangle1TextureColor;
+struct Color rectangle2TextureColor;
 struct Color mipmapLevelsColor[] = {{ 0x00, 0x00, 0xFF, 0xFF },
                                     { 0x00, 0xFF, 0xFF, 0xFF },
                                     { 0xFF, 0x00, 0xFF, 0xFF },
@@ -572,7 +574,14 @@ char *faceNames[] = { "Unchanged", "GU_CW", "GU_CCW" };
 int patchPrim = 0;
 char *patchPrimNames[] = { "GU_TRIANGLE_STRIP", "GU_LINE_STRIP", "GU_POINTS" };
 
+int psm = GU_PSM_8888;
 int fbw = BUF_WIDTH;
+int zbw = BUF_WIDTH;
+int fbpOffset = 0;
+int zbpOffset = 0;
+
+u16 zTestPixelDepth;
+u32 geTestPixelValue;
 
 void addColorAttribute(char *label, struct Color *pcolor, int x, int y, int hasAlpha, int step)
 {
@@ -754,7 +763,7 @@ unsigned int getTextureColor(struct Color *pcolor, int textureType, int x, int y
 }
 
 
-void createTexture(struct Color *pcolor, int textureType, unsigned int *texture, int width, int height)
+void createTexture32(struct Color *pcolor, int textureType, unsigned int *texture, int width, int height)
 {
 	int x, y;
 
@@ -764,6 +773,41 @@ void createTexture(struct Color *pcolor, int textureType, unsigned int *texture,
 		{
 			int color = getTextureColor(pcolor, textureType, x, y);
 			texture[y * width + x] = color;
+		}
+	}
+}
+
+
+void createTexture16(struct Color *pcolor, int textureType, unsigned short *texture, int width, int height, int tpsm)
+{
+	int x, y;
+
+	for (y = 0; y < height; y++)
+	{
+		for (x = 0; x < width; x++)
+		{
+			int color = getTextureColor(pcolor, textureType, x, y);
+			switch (tpsm)
+			{
+				case GU_PSM_5650:
+					color = ((color >> 3) & 0x0000001F) |
+					        ((color >> 5) & 0x000007E0) |
+					        ((color >> 8) & 0x0000F800);
+					break;
+				case GU_PSM_5551:
+					color = ((color >>  3) & 0x0000001F) |
+					        ((color >>  6) & 0x000003E0) |
+					        ((color >>  9) & 0x00007C00) |
+					        ((color >> 16) & 0x00008000);
+					break;
+				case GU_PSM_4444:
+					color = ((color >>  4) & 0x0000000F) |
+					        ((color >>  8) & 0x000000F0) |
+					        ((color >> 12) & 0x00000F00) |
+					        ((color >> 16) & 0x0000F000);
+					break;
+			}
+			texture[y * width + x] = (unsigned short) color;
 		}
 	}
 }
@@ -841,16 +885,16 @@ void drawRectangles()
 		for (i = 0; i < NUMBER_CLUT_ENTRIES; i++)
 		{
 			struct Color color;
-			color.r = (rectangle1color.r * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
-			color.g = (rectangle1color.g * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
-			color.b = (rectangle1color.b * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
-			color.a = (rectangle1color.a * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
+			color.r = (rectangle1TextureColor.r * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
+			color.g = (rectangle1TextureColor.g * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
+			color.b = (rectangle1TextureColor.b * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
+			color.a = (rectangle1TextureColor.a * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
 			clut1[i] = getColor(&color);
 
-			color.r = (rectangle2color.r * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
-			color.g = (rectangle2color.g * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
-			color.b = (rectangle2color.b * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
-			color.a = (rectangle2color.a * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
+			color.r = (rectangle2TextureColor.r * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
+			color.g = (rectangle2TextureColor.g * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
+			color.b = (rectangle2TextureColor.b * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
+			color.a = (rectangle2TextureColor.a * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
 			clut2[i] = getColor(&color);
 
 			for (level = 1; level < NUMBER_MIPMAPS; level++)
@@ -868,24 +912,32 @@ void drawRectangles()
 	for (level = 0, width = TEXTURE_WIDTH, height = TEXTURE_HEIGHT; level < NUMBER_MIPMAPS && width > 0 && height > 0; level++, width /= 2, height /= 2)
 	{
 		struct Color *pcolor;
-		pcolor = (level <= 0 ? &rectangle1color : &mipmapLevelsColor[level - 1]);
+		pcolor = (level <= 0 ? &rectangle1TextureColor : &mipmapLevelsColor[level - 1]);
 		if (tpsm1 >= GU_PSM_T4 && tpsm1 <= GU_PSM_T32)
 		{
 			createIndexedTexture(pcolor, textureType1, texture1[level], width, height, clut1, level, tpsm1);
 		}
+		else if (tpsm1 == GU_PSM_5650 || tpsm1 == GU_PSM_5551 || tpsm1 == GU_PSM_4444)
+		{
+			createTexture16(pcolor, textureType1, (unsigned short *) texture1[level], width, height, tpsm1);
+		}
 		else
 		{
-			createTexture(pcolor, textureType1, texture1[level], width, height);
+			createTexture32(pcolor, textureType1, texture1[level], width, height);
 		}
 
-		pcolor = (level <= 0 ? &rectangle2color : &mipmapLevelsColor[level - 1]);
+		pcolor = (level <= 0 ? &rectangle2TextureColor : &mipmapLevelsColor[level - 1]);
 		if (tpsm2 >= GU_PSM_T4 && tpsm2 <= GU_PSM_T32)
 		{
 			createIndexedTexture(pcolor, textureType2, texture2[level], width, height, clut2, level, tpsm2);
 		}
+		else if (tpsm2 == GU_PSM_5650 || tpsm2 == GU_PSM_5551 || tpsm2 == GU_PSM_4444)
+		{
+			createTexture16(pcolor, textureType2, (unsigned short *) texture2[level], width, height, tpsm2);
+		}
 		else
 		{
-			createTexture(pcolor, textureType2, texture2[level], width, height);
+			createTexture32(pcolor, textureType2, texture2[level], width, height);
 		}
 
 		numberMipmaps = level;
@@ -893,16 +945,19 @@ void drawRectangles()
 
 	if (vertexColorFlag)
 	{
-		setVerticesColor(&rectangle1color, vertices1, sizeof(vertices1));
-		setVerticesColor(&rectangle2color, vertices2, sizeof(vertices2));
+		setVerticesColor(&rectangle1VertexColor, vertices1, sizeof(vertices1));
+		setVerticesColor(&rectangle2VertexColor, vertices2, sizeof(vertices2));
 	}
+
+//	sceGuDispBuffer(displayWidth, displayHeight, fbp1 + fbpOffset, fbw);
+	sceGuDrawBuffer(psm, fbp0 + fbpOffset, fbw);
+	sceGuDepthBuffer(zbp + zbpOffset, zbw);
 
 	int clearFlags = 0;
 	if (clearFlagColor   != 0) clearFlags |= GU_COLOR_BUFFER_BIT;
 	if (clearFlagDepth   != 0) clearFlags |= GU_DEPTH_BUFFER_BIT;
 	if (clearFlagStencil != 0) clearFlags |= GU_STENCIL_BUFFER_BIT;
 
-	sceGuDrawBuffer(GU_PSM_8888, fbp0, fbw);
 	sceGuPixelMask(getColor(&pixelMask));
 
 	if (clearMode == 0)
@@ -1029,10 +1084,12 @@ void drawRectangles()
 	{
 		rectangle1point.x = 0;
 		rectangle1point.y = 0;
-		rectangle1point.z = 0;
+		rectangle1point.z = rectangle1PrimType != GU_SPRITES ? 0 : (int) (  0 + rectangle1translation.z * 10 + 0.5);
+		int width = rectangle1PrimType != GU_SPRITES ? rectangle1width : rectangle1width * 10;
+		int height = rectangle1PrimType != GU_SPRITES ? rectangle1height : rectangle1height * 10;
 		if (vertexColorFlag)
 		{
-			setRectanglePoint(&rectangle1point, &rectangle1normal, vertices1, rectangle1width, rectangle1height, textureScale, textureScale);
+			setRectanglePoint(&rectangle1point, &rectangle1normal, vertices1, width, height, textureScale, textureScale);
 			if (rectangle1PrimType == GU_SPRITES)
 			{
 				numberVertex1 /= 2;
@@ -1046,7 +1103,7 @@ void drawRectangles()
 		}
 		else
 		{
-			setNoColorRectanglePoint(&rectangle1point, &rectangle1normal, (struct VertexNoColor *) vertices1, rectangle1width, rectangle1height, textureScale, textureScale);
+			setNoColorRectanglePoint(&rectangle1point, &rectangle1normal, (struct VertexNoColor *) vertices1, width, height, textureScale, textureScale);
 			if (rectangle1PrimType == GU_SPRITES)
 			{
 				numberVertex1 /= 2;
@@ -1062,9 +1119,9 @@ void drawRectangles()
 	}
 	else if (rectangle1rendering == RENDERING_2D)
 	{
-		rectangle1point.x = 350 + rectangle1translation.x;
-		rectangle1point.y = 100 + rectangle1translation.y;
-		rectangle1point.z =   0 + rectangle1translation.z;
+		rectangle1point.x = (int) (350 + rectangle1translation.x * 10 + 0.5);
+		rectangle1point.y = (int) (100 + rectangle1translation.y * 10 + 0.5);
+		rectangle1point.z = (int) (  0 + rectangle1translation.z * 10 + 0.5);
 		if (vertexColorFlag)
 		{
 			setRectanglePoint(&rectangle1point, &rectangle1normal, vertices1, rectangle1width * 50, rectangle1height * 50, TEXTURE_WIDTH, TEXTURE_HEIGHT);
@@ -1157,10 +1214,12 @@ void drawRectangles()
 	{
 		rectangle2point.x = 0;
 		rectangle2point.y = 0;
-		rectangle2point.z = 0;
+		rectangle2point.z = rectangle2PrimType != GU_SPRITES ? 0 : (int) (  0 + rectangle2translation.z * 10 + 0.5);
+		int width = rectangle2PrimType != GU_SPRITES ? rectangle2width : rectangle2width * 10;
+		int height = rectangle2PrimType != GU_SPRITES ? rectangle2height : rectangle2height * 10;
 		if (vertexColorFlag)
 		{
-			setRectanglePoint(&rectangle2point, &rectangle2normal, vertices2, rectangle2width, rectangle2height, textureScale, textureScale);
+			setRectanglePoint(&rectangle2point, &rectangle2normal, vertices2, width, height, textureScale, textureScale);
 			if (rectangle2PrimType == GU_SPRITES)
 			{
 				numberVertex2 /= 2;
@@ -1174,7 +1233,7 @@ void drawRectangles()
 		}
 		else
 		{
-			setNoColorRectanglePoint(&rectangle2point, &rectangle2normal, (struct VertexNoColor *) vertices2, rectangle2width, rectangle2height, textureScale, textureScale);
+			setNoColorRectanglePoint(&rectangle2point, &rectangle2normal, (struct VertexNoColor *) vertices2, width, height, textureScale, textureScale);
 			if (rectangle2PrimType == GU_SPRITES)
 			{
 				numberVertex2 /= 2;
@@ -1190,9 +1249,9 @@ void drawRectangles()
 	}
 	else if (rectangle2rendering == RENDERING_2D)
 	{
-		rectangle2point.x = 400 + rectangle2translation.x;
-		rectangle2point.y = 150 + rectangle2translation.y;
-		rectangle2point.z =   0 + rectangle2translation.z;
+		rectangle2point.x = (int) (400 + rectangle2translation.x * 10 + 0.5);
+		rectangle2point.y = (int) (150 + rectangle2translation.y * 10 + 0.5);
+		rectangle2point.z = (int) (  0 + rectangle2translation.z * 10 + 0.5);
 		if (vertexColorFlag)
 		{
 			setRectanglePoint(&rectangle2point, &rectangle2normal, vertices2, rectangle2width * 50, rectangle2height * 50, TEXTURE_WIDTH, TEXTURE_HEIGHT);
@@ -1244,7 +1303,9 @@ void drawDebugPrintBuffer()
 	sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
 	sceGuEnable(GU_ALPHA_TEST);
 	sceGuAlphaFunc(GU_GREATER, 0x00, 0xFF);
+	sceGuDepthMask(0);
 	sceGuPixelMask(0x00000000);
+	sceGuTexMode(GU_PSM_8888, 0, 0, 0);
 	sceGuTexImage(0, SCR_TEXTURE_WIDTH, SCR_TEXTURE_HEIGHT, BUF_WIDTH, debugPrintBuffer);
 	debugPrintVertices[0].u = 0;
 	debugPrintVertices[0].v = 0;
@@ -1269,13 +1330,11 @@ void draw()
 
 	drawAttributes();
 
-	u16 *zTestPixelAddress = (u16 *) (zbp + 0x04000000 + (zTestPixelY * BUF_WIDTH + zTestPixelX) * 2);
-	u16 zTestPixelDepth = *zTestPixelAddress;
+	u16 *zTestPixelAddress = (u16 *) (zbp + 0x44000000 + (zTestPixelY * BUF_WIDTH + zTestPixelX) * 2);
 	pspDebugScreenSetXY(35, 0);
 	pspDebugScreenPrintf("Depth (%d,%d)=0x%04X", zTestPixelX, zTestPixelY, zTestPixelDepth);
 
-	u32 *geTestPixelAddress = (u32 *) (fbp0 + 0x04000000 + (geTestPixelY * BUF_WIDTH + geTestPixelX) * 4);
-	u32 geTestPixelValue = *geTestPixelAddress;
+	u32 *geTestPixelAddress = (u32 *) (fbp0 + 0x44000000 + (geTestPixelY * BUF_WIDTH + geTestPixelX) * 4);
 	pspDebugScreenSetXY(35, 1);
 	pspDebugScreenPrintf("GE (%d,%d)=0x%08X", geTestPixelX, geTestPixelY, geTestPixelValue);
 
@@ -1283,6 +1342,9 @@ void draw()
 
 	sceGuFinish();
 	sceGuSync(0, 0);
+
+	zTestPixelDepth = *zTestPixelAddress;
+	geTestPixelValue = *geTestPixelAddress;
 
 	sceDisplayWaitVblank();
 	fbp0 = sceGuSwapBuffers();
@@ -1293,9 +1355,9 @@ void init()
 {
 	pspDebugScreenInit();
 
-	fbp0 = getStaticVramBuffer(BUF_WIDTH, SCR_HEIGHT, GU_PSM_8888);
-	fbp1 = getStaticVramBuffer(BUF_WIDTH, SCR_HEIGHT, GU_PSM_8888);
-	zbp  = getStaticVramBuffer(BUF_WIDTH, SCR_HEIGHT, GU_PSM_4444);
+	fbp0 = getStaticVramBuffer((BUF_WIDTH + 64), SCR_HEIGHT, GU_PSM_8888);
+	fbp1 = getStaticVramBuffer((BUF_WIDTH + 64), SCR_HEIGHT, GU_PSM_8888);
+	zbp  = getStaticVramBuffer((BUF_WIDTH + 64), SCR_HEIGHT, GU_PSM_4444);
  
 	sceGuInit();
 	sceGuStart(GU_DIRECT,list);
@@ -1404,6 +1466,12 @@ void init()
 	y++;
 
 	addAttribute("FrameBuffer Width", &fbw, NULL, x, y, 0, 1024, 1, NULL);
+	addAttribute(", Offset", &fbpOffset, NULL, x + 22, y, -1024, 1024, 4, NULL);
+	addAttribute(", Format", &psm, NULL, x + 35, y, GU_PSM_5650, GU_PSM_8888, 1, NULL);
+	setAttributeValueNames(&tpsmNames[0]);
+	y++;
+	addAttribute("DepthBuffer Width", &zbw, NULL, x, y, 0, 1024, 1, NULL);
+	addAttribute(", Offset", &zbpOffset, NULL, x + 22, y, -1024, 1024, 4, NULL);
 	y++;
 
 	addAttribute("sceGuAlphaFunc", &alphaFunc, NULL, x, y, 0, 7, 1, NULL);
@@ -1441,10 +1509,14 @@ void init()
 	addAttribute(", Mask", &stencilMask, NULL, x + 38, y, 0, 0xFF, 0x10, "%02X");
 	y++;
 
-	rectangle1color.r = 0x00;
-	rectangle1color.g = 0xFF;
-	rectangle1color.b = 0x00;
-	rectangle1color.a = 0xFF;
+	rectangle1VertexColor.r = 0x00;
+	rectangle1VertexColor.g = 0xFF;
+	rectangle1VertexColor.b = 0x00;
+	rectangle1VertexColor.a = 0xFF;
+	rectangle1TextureColor.r = 0x00;
+	rectangle1TextureColor.g = 0xFF;
+	rectangle1TextureColor.b = 0x00;
+	rectangle1TextureColor.a = 0xFF;
 	rectangle1point.x = 0;
 	rectangle1point.y = 0;
 	rectangle1point.z = 0;
@@ -1473,7 +1545,9 @@ void init()
 	addAttribute(", Y", NULL, &rectangle1normal.y, x + 20, y, -10, 10, 0.1, NULL);
 	addAttribute(", Z", NULL, &rectangle1normal.z, x + 29, y, -10, 10, 0.1, NULL);
 	y++;
-	addColorAttribute("R", &rectangle1color, x + 6, y, 1, 0x10);
+	addColorAttribute("Vertex R", &rectangle1VertexColor, x + 6, y, 1, 0x10);
+	y++;
+	addColorAttribute("Texture R", &rectangle1TextureColor, x + 6, y, 1, 0x10);
 	y++;
 	addAttribute("Type", &rectangle1PrimType, NULL, x + 6, y, 0, 6, 1, NULL);
 	setAttributeValueNames(&primTypeNames[0]);
@@ -1507,14 +1581,18 @@ void init()
 	setAttributeValueNames(&texFilterNames[0]);
 	y++;
 
-	addAttribute("Texture Format", &tpsm1, NULL, x + 6, y, GU_PSM_8888, GU_PSM_T32, 1, NULL);
+	addAttribute("Texture Format", &tpsm1, NULL, x + 6, y, GU_PSM_5650, GU_PSM_T32, 1, NULL);
 	setAttributeValueNames(&tpsmNames[0]);
 	y++;
 
-	rectangle2color.r = 0xFF;
-	rectangle2color.g = 0x00;
-	rectangle2color.b = 0x00;
-	rectangle2color.a = 0xFF;
+	rectangle2VertexColor.r = 0xFF;
+	rectangle2VertexColor.g = 0x00;
+	rectangle2VertexColor.b = 0x00;
+	rectangle2VertexColor.a = 0xFF;
+	rectangle2TextureColor.r = 0xFF;
+	rectangle2TextureColor.g = 0x00;
+	rectangle2TextureColor.b = 0x00;
+	rectangle2TextureColor.a = 0xFF;
 	rectangle2point.x = rectangle1point.x;
 	rectangle2point.y = rectangle1point.y;
 	rectangle2point.z = rectangle1point.z;
@@ -1543,7 +1621,9 @@ void init()
 	addAttribute(", Y", NULL, &rectangle2normal.y, x + 20, y, -10, 10, 0.1, NULL);
 	addAttribute(", Z", NULL, &rectangle2normal.z, x + 29, y, -10, 10, 0.1, NULL);
 	y++;
-	addColorAttribute("R", &rectangle2color, x + 6, y, 1, 0x10);
+	addColorAttribute("Vertex R", &rectangle2VertexColor, x + 6, y, 1, 0x10);
+	y++;
+	addColorAttribute("Texture R", &rectangle2TextureColor, x + 6, y, 1, 0x10);
 	y++;
 	addAttribute("Type", &rectangle2PrimType, NULL, x + 6, y, 0, 6, 1, NULL);
 	setAttributeValueNames(&primTypeNames[0]);
@@ -1577,7 +1657,7 @@ void init()
 	setAttributeValueNames(&texFilterNames[0]);
 	y++;
 
-	addAttribute("Texture Format", &tpsm2, NULL, x + 6, y, GU_PSM_8888, GU_PSM_T32, 1, NULL);
+	addAttribute("Texture Format", &tpsm2, NULL, x + 6, y, GU_PSM_5650, GU_PSM_T32, 1, NULL);
 	setAttributeValueNames(&tpsmNames[0]);
 	y++;
 
