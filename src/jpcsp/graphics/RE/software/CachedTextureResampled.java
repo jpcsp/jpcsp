@@ -33,6 +33,8 @@ import jpcsp.graphics.RE.software.CachedTexture.CachedTexturePow2;
  *
  */
 public class CachedTextureResampled {
+	private static final boolean disableResampleAllTextures = false;
+	private static final boolean disableResampleVRAMTexture = true;
 	protected LinkedList<ResampleInfo> resampleInfos = new LinkedList<CachedTextureResampled.ResampleInfo>();
 	protected CachedTexture cachedTextureOriginal;
 
@@ -44,6 +46,18 @@ public class CachedTextureResampled {
 
 	public CachedTexture getOriginalTexture() {
 		return cachedTextureOriginal;
+	}
+
+	public boolean canResample(float widthFactor, float heightFactor) {
+		if (disableResampleAllTextures) {
+			return false;
+		}
+
+		if (disableResampleVRAMTexture && cachedTextureOriginal.isVRAMTexture()) {
+			return false;
+		}
+
+		return widthFactor >= .5f && heightFactor >= .5f && widthFactor <= 2f && heightFactor <= 2f;
 	}
 
 	public CachedTexture resample(float widthFactor, float heightFactor) {
@@ -80,6 +94,8 @@ public class CachedTextureResampled {
 			VideoEngine.log.debug(String.format("Resampling texture from (%d,%d) to (%d,%d), pixelFormat=%d, resampled %d times", cachedTextureOriginal.width, cachedTextureOriginal.height, width, height, cachedTextureOriginal.pixelFormat, resampleInfos.size()));
 		}
 
+		RESoftware.textureResamplingStatistics.start();
+
 		int widthPow2 = makePow2(width);
 		int heightPow2 = makePow2(height);
 		int[] buffer = new int[widthPow2 * heightPow2];
@@ -102,6 +118,8 @@ public class CachedTextureResampled {
 
 		ResampleInfo resampleInfo = new ResampleInfo(width, height, cachedTextureResampled);
 		resampleInfos.add(resampleInfo);
+
+		RESoftware.textureResamplingStatistics.end();
 
 		return cachedTextureResampled;
 	}
