@@ -253,7 +253,7 @@ public abstract class BaseRenderer implements IRenderer {
 		colorTestRef = getColorBGR(context.colorTestRef);
 		colorTestMsk = getColorBGR(context.colorTestMsk);
 		alphaRef = context.alphaRef;
-		stencilRef = context.stencilRef & context.stencilMask;
+		stencilRef = context.stencilRef;
 		stencilMask = context.stencilMask;
 		sfix = context.sfix;
 		dfix = context.dfix;
@@ -377,9 +377,10 @@ public abstract class BaseRenderer implements IRenderer {
 			key.addKeyComponent(context.stencilOpZPass, 3);
 		} else {
 			key.addKeyComponent(GeCommands.STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST, 3);
-			key.addKeyComponent(GeCommands.SOP_REPLACE_STENCIL_VALUE, 3);
-			key.addKeyComponent(GeCommands.SOP_REPLACE_STENCIL_VALUE, 3);
-			key.addKeyComponent(GeCommands.SOP_REPLACE_STENCIL_VALUE, 3);
+			// Use invalid stencil operations
+			key.addKeyComponent(7, 3);
+			key.addKeyComponent(7, 3);
+			key.addKeyComponent(7, 3);
 		}
 
 		key.addKeyComponent(context.depthTestFlag.isEnabled() ? context.depthFunc : GeCommands.ZTST_FUNCTION_ALWAYS_PASS_PIXEL, 3);

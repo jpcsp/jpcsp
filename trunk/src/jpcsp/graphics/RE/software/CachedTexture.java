@@ -57,6 +57,7 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 	protected static int[] memAll;
 	protected boolean useTextureClut;
 	protected int[] clut;
+	protected boolean isVRAMTexture;
 
 	static {
 		if (Memory.getInstance() instanceof FastMemory) {
@@ -88,6 +89,13 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 
 		CachedTexture cachedTexture = getCachedTexture(width, height, pixelFormat, offset);
 		cachedTexture.setBuffer(buffer, bufferOffset, bufferLength);
+
+		if (buffer == memAll) {
+			int textureAddress = bufferOffset << 2;
+			if (VideoEngine.isVRAM(textureAddress)) {
+				cachedTexture.setVRAMTexture(true);
+			}
+		}
 
 		return cachedTexture;
 	}
@@ -242,6 +250,14 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 
 	public int getPixelFormat() {
 		return pixelFormat;
+	}
+
+	public boolean isVRAMTexture() {
+		return isVRAMTexture;
+	}
+
+	public void setVRAMTexture(boolean isVRAMTexture) {
+		this.isVRAMTexture = isVRAMTexture;
 	}
 
 	/**

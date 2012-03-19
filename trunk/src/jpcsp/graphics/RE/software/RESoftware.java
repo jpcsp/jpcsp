@@ -57,6 +57,7 @@ public class RESoftware extends BaseRenderingEngine {
     public static DurationStatistics triangleRender2DStatistics = new DurationStatistics("RESoftware TriangleRender2D");
     public static DurationStatistics spriteRenderStatistics = new DurationStatistics("RESoftware SpriteRender");
     protected static DurationStatistics cachedTextureStatistics = new DurationStatistics("RESoftware CachedTexture");
+    public static DurationStatistics textureResamplingStatistics = new DurationStatistics("RESftware Texture resampling");
     protected BoundingBoxRenderer boundingBoxRenderer;
     protected boolean boundingBoxVisible;
     protected BufferVertexReader bufferVertexReader;
@@ -74,6 +75,7 @@ public class RESoftware extends BaseRenderingEngine {
 			log.info(triangleRender2DStatistics);
 			log.info(spriteRenderStatistics);
 			log.info(cachedTextureStatistics);
+			log.info(textureResamplingStatistics);
 		}
 	}
 

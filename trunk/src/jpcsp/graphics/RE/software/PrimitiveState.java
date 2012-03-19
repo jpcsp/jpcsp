@@ -33,6 +33,9 @@ public class PrimitiveState {
 	public float vStart, vStep;
 	public int destinationWidth;
 	public int destinationHeight;
+	public boolean needResample;
+	public float resampleFactorWidth;
+	public float resampleFactorHeight;
 
 	// Pre-computed values for triangle weights
 	public float diff13x;

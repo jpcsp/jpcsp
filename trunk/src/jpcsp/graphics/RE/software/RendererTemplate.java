@@ -207,30 +207,32 @@ public class RendererTemplate {
 
 	private static IRandomTextureAccess resampleTexture(final BasePrimitiveRenderer renderer) {
 		IRandomTextureAccess textureAccess = renderer.textureAccess;
+		renderer.prim.needResample = false;
 
 		if (textureFlagEnabled && (!transform2D || useVertexTexture) && !clearMode) {
 			if (texMagFilter == GeCommands.TFLT_LINEAR) {
+				final PrimitiveState prim = renderer.prim;
 				if (needTextureUV && simpleTextureUV) {
 					if (renderer.cachedTexture != null) {
-						final PrimitiveState prim = renderer.prim;
-						final float resampleFactorWidth = 1f / Math.abs(prim.uStep);
-						final float resampleFactorHeight = 1f / Math.abs(prim.vStep);
-						if (resampleFactorWidth >= .5f && resampleFactorHeight >= .5f && resampleFactorWidth <= 2f && resampleFactorHeight <= 2f) {
-							textureAccess = renderer.cachedTexture.resample(resampleFactorWidth, resampleFactorHeight);
-							prim.uStart *= resampleFactorWidth;
-							prim.vStart *= resampleFactorHeight;
-							prim.uStep = prim.uStep < 0f ? -1f : 1f;
-							prim.vStep = prim.vStep < 0f ? -1f : 1f;
+						if (Math.abs(prim.uStep) != 1f || Math.abs(prim.vStep) != 1f) {
+							prim.resampleFactorWidth = 1f / Math.abs(prim.uStep);
+							prim.resampleFactorHeight = 1f / Math.abs(prim.vStep);
+							if (renderer.cachedTexture.canResample(prim.resampleFactorWidth, prim.resampleFactorHeight)) {
+								prim.needResample = true;
+								prim.uStart *= prim.resampleFactorWidth;
+								prim.vStart *= prim.resampleFactorHeight;
+								prim.uStep = prim.uStep < 0f ? -1f : 1f;
+								prim.vStep = prim.vStep < 0f ? -1f : 1f;
+							}
 						}
 					}
 				} else {
 					if (resampleTextureForMag && !transform2D && renderer.cachedTexture != null) {
-						textureAccess = renderer.cachedTexture.resample(2f, 2f);
+						prim.resampleFactorWidth = 2f;
+						prim.resampleFactorHeight = 2f;
+						prim.needResample = renderer.cachedTexture.canResample(prim.resampleFactorWidth, prim.resampleFactorHeight);
 					}
 				}
-
-				renderer.textureWidth = textureAccess.getWidth();
-				renderer.textureHeight = textureAccess.getHeight();
 			}
 		}
 
@@ -241,8 +243,8 @@ public class RendererTemplate {
 		final PixelState pixel = renderer.pixel;
 		final PrimitiveState prim = renderer.prim;
 		final IRendererWriter rendererWriter = renderer.rendererWriter;
-		final IRandomTextureAccess textureAccess = resampleTexture(renderer);
 		final Lighting lighting = renderer.lighting;
+		IRandomTextureAccess textureAccess = resampleTexture(renderer);
 
 		doRenderStart(renderer);
 
@@ -253,6 +255,7 @@ public class RendererTemplate {
 				stencilRefAlpha = renderer.stencilRef << 24;
 			}
 		}
+		int stencilRefMasked = renderer.stencilRef & renderer.stencilMask;
 
 		int notColorMask = 0xFFFFFFFF;
 		if (!clearMode && colorMask != 0x00000000) {
@@ -260,15 +263,14 @@ public class RendererTemplate {
 		}
 
 		int alpha, a, b, g, r;
-		final int textureWidthMask = renderer.textureWidth - 1;
-		final int textureHeightMask = renderer.textureHeight - 1;
-		final float textureWidthFloat = renderer.textureWidth;
-		final float textureHeightFloat = renderer.textureHeight;
+		int textureWidthMask = renderer.textureWidth - 1;
+		int textureHeightMask = renderer.textureHeight - 1;
+		float textureWidthFloat = renderer.textureWidth;
+		float textureHeightFloat = renderer.textureHeight;
 		final int alphaRef = renderer.alphaRef;
 		final int primSourceDepth = (int) prim.p2z;
 		float u = prim.uStart;
 		float v = prim.vStart;
-		boolean depthTestFailed = false;
 		ColorDepth colorDepth = new ColorDepth();
 		PrimarySecondaryColors colors = new PrimarySecondaryColors();
 
@@ -325,6 +327,7 @@ public class RendererTemplate {
 		int secondaryColor = 0;
 		float pixelU = 0f;
 		float pixelV = 0f;
+		boolean needResample = prim.needResample;
 
         for (int y = prim.pyMin; y <= prim.pyMax; y++) {
     		int startX = prim.pxMin;
@@ -518,17 +521,165 @@ public class RendererTemplate {
 	        			}
 
 	            		//
-	            		// DepthTest (performed as soon as depths are known, failed test with stencil operation has to be delayed after the stencil test)
+	            		// StencilTest (performed as soon as destination color is known)
+	            		//
+	            		if (stencilTestFlagEnabled && !clearMode) {
+	            			switch (stencilFunc) {
+	            				case GeCommands.STST_FUNCTION_NEVER_PASS_STENCIL_TEST:
+	            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
+	            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
+	            					}
+	        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
+	        	        				fbIndex++;
+	        	        				if (needDepthWrite || needDestinationDepthRead) {
+	        	    	    				depthOffset++;
+	        	    	    				depthIndex += depthOffset >> 1;
+	        	    	    				depthOffset &= 1;
+	        	        				}
+	        	        			} else {
+	        		        			rendererWriter.skip(1, 1);
+	        	        			}
+			        				continue;
+	            				case GeCommands.STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST:
+	            					// Nothing to do
+	            					break;
+	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_MATCHES:
+	            					if ((getAlpha(destinationColor) & renderer.stencilMask) != stencilRefMasked) {
+		    		            		if (isLogTraceEnabled) {
+		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), stencil test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
+		    	            			}
+		            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
+		            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
+		            					}
+		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
+		        	        				fbIndex++;
+		        	        				if (needDepthWrite || needDestinationDepthRead) {
+		        	    	    				depthOffset++;
+		        	    	    				depthIndex += depthOffset >> 1;
+		        	    	    				depthOffset &= 1;
+		        	        				}
+		        	        			} else {
+		        		        			rendererWriter.skip(1, 1);
+		        	        			}
+				        				continue;
+	            					}
+	            					break;
+	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_DIFFERS:
+	            					if ((getAlpha(destinationColor) & renderer.stencilMask) == stencilRefMasked) {
+		    		            		if (isLogTraceEnabled) {
+		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), stencil test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
+		    	            			}
+		            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
+		            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
+		            					}
+		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
+		        	        				fbIndex++;
+		        	        				if (needDepthWrite || needDestinationDepthRead) {
+		        	    	    				depthOffset++;
+		        	    	    				depthIndex += depthOffset >> 1;
+		        	    	    				depthOffset &= 1;
+		        	        				}
+		        	        			} else {
+		        		        			rendererWriter.skip(1, 1);
+		        	        			}
+				        				continue;
+	            					}
+	            					break;
+	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_LESS:
+	            					if ((getAlpha(destinationColor) & renderer.stencilMask) >= stencilRefMasked) {
+		    		            		if (isLogTraceEnabled) {
+		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), stencil test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
+		    	            			}
+		            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
+		            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
+		            					}
+		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
+		        	        				fbIndex++;
+		        	        				if (needDepthWrite || needDestinationDepthRead) {
+		        	    	    				depthOffset++;
+		        	    	    				depthIndex += depthOffset >> 1;
+		        	    	    				depthOffset &= 1;
+		        	        				}
+		        	        			} else {
+		        		        			rendererWriter.skip(1, 1);
+		        	        			}
+				        				continue;
+	            					}
+	            					break;
+	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_LESS_OR_EQUAL:
+	            					if ((getAlpha(destinationColor) & renderer.stencilMask) > stencilRefMasked) {
+		    		            		if (isLogTraceEnabled) {
+		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), stencil test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
+		    	            			}
+		            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
+		            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
+		            					}
+		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
+		        	        				fbIndex++;
+		        	        				if (needDepthWrite || needDestinationDepthRead) {
+		        	    	    				depthOffset++;
+		        	    	    				depthIndex += depthOffset >> 1;
+		        	    	    				depthOffset &= 1;
+		        	        				}
+		        	        			} else {
+		        		        			rendererWriter.skip(1, 1);
+		        	        			}
+				        				continue;
+	            					}
+	            					break;
+	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_GREATER:
+	            					if ((getAlpha(destinationColor) & renderer.stencilMask) <= stencilRefMasked) {
+		    		            		if (isLogTraceEnabled) {
+		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), stencil test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
+		    	            			}
+		            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
+		            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
+		            					}
+		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
+		        	        				fbIndex++;
+		        	        				if (needDepthWrite || needDestinationDepthRead) {
+		        	    	    				depthOffset++;
+		        	    	    				depthIndex += depthOffset >> 1;
+		        	    	    				depthOffset &= 1;
+		        	        				}
+		        	        			} else {
+		        		        			rendererWriter.skip(1, 1);
+		        	        			}
+				        				continue;
+	            					}
+	            					break;
+	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_GREATER_OR_EQUAL:
+	            					if ((getAlpha(destinationColor) & renderer.stencilMask) < stencilRefMasked) {
+		    		            		if (isLogTraceEnabled) {
+		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), stencil test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
+		    	            			}
+		            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
+		            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
+		            					}
+		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
+		        	        				fbIndex++;
+		        	        				if (needDepthWrite || needDestinationDepthRead) {
+		        	    	    				depthOffset++;
+		        	    	    				depthIndex += depthOffset >> 1;
+		        	    	    				depthOffset &= 1;
+		        	        				}
+		        	        			} else {
+		        		        			rendererWriter.skip(1, 1);
+		        	        			}
+				        				continue;
+	            					}
+	            					break;
+	                		}
+	            		}
+
+	            		//
+	            		// DepthTest (performed as soon as depths are known, but after the stencil test)
 	            		//
 	            		if (depthTestFlagEnabled && !clearMode) {
-			        		if (stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE && depthFunc != GeCommands.ZTST_FUNCTION_NEVER_PASS_PIXEL && depthFunc != GeCommands.ZTST_FUNCTION_ALWAYS_PASS_PIXEL) {
-			        			depthTestFailed = false;
-			        		}
 	            			switch (depthFunc) {
 		        				case GeCommands.ZTST_FUNCTION_NEVER_PASS_PIXEL:
 	            					if (stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-	            						// Will be handled after the stencil test
-	            						break;
+	            						destinationColor = stencilOpZFail(destinationColor, stencilRefAlpha);
 	            					}
 	        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
 	        	        				fbIndex++;
@@ -547,9 +698,7 @@ public class RendererTemplate {
 		        				case GeCommands.ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_EQUAL:
 		        					if (sourceDepth != destinationDepth) {
 		            					if (stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-		            						// Will be handled after the stencil test
-		            						depthTestFailed = true;
-		            						break;
+		            						destinationColor = stencilOpZFail(destinationColor, stencilRefAlpha);
 		            					}
 		    		            		if (isLogTraceEnabled) {
 		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
@@ -570,9 +719,7 @@ public class RendererTemplate {
 		        				case GeCommands.ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_ISNOT_EQUAL:
 		        					if (sourceDepth == destinationDepth) {
 		            					if (stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-		            						// Will be handled after the stencil test
-		            						depthTestFailed = true;
-		            						break;
+		            						destinationColor = stencilOpZFail(destinationColor, stencilRefAlpha);
 		            					}
 		    		            		if (isLogTraceEnabled) {
 		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
@@ -593,9 +740,7 @@ public class RendererTemplate {
 		        				case GeCommands.ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS:
 		        					if (sourceDepth >= destinationDepth) {
 		            					if (stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-		            						// Will be handled after the stencil test
-		            						depthTestFailed = true;
-		            						break;
+		            						destinationColor = stencilOpZFail(destinationColor, stencilRefAlpha);
 		            					}
 		    		            		if (isLogTraceEnabled) {
 		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
@@ -616,9 +761,7 @@ public class RendererTemplate {
 		        				case GeCommands.ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS_OR_EQUAL:
 		        					if (sourceDepth > destinationDepth) {
 		            					if (stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-		            						// Will be handled after the stencil test
-		            						depthTestFailed = true;
-		            						break;
+		            						destinationColor = stencilOpZFail(destinationColor, stencilRefAlpha);
 		            					}
 		    		            		if (isLogTraceEnabled) {
 		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
@@ -639,9 +782,7 @@ public class RendererTemplate {
 		        				case GeCommands.ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER:
 		        					if (sourceDepth <= destinationDepth) {
 		            					if (stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-		            						// Will be handled after the stencil test
-		            						depthTestFailed = true;
-		            						break;
+		            						destinationColor = stencilOpZFail(destinationColor, stencilRefAlpha);
 		            					}
 		    		            		if (isLogTraceEnabled) {
 		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
@@ -662,9 +803,7 @@ public class RendererTemplate {
 		        				case GeCommands.ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL:
 		        					if (sourceDepth < destinationDepth) {
 		            					if (stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-		            						// Will be handled after the stencil test
-		            						depthTestFailed = true;
-		            						break;
+		            						destinationColor = stencilOpZFail(destinationColor, stencilRefAlpha);
 		            					}
 		    		            		if (isLogTraceEnabled) {
 		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
@@ -847,7 +986,25 @@ public class RendererTemplate {
 	            				}
 	            			}
 
-		            		//
+	            			//
+	            			// Texture resampling (as late as possible)
+	            			//
+            				if (texMagFilter == GeCommands.TFLT_LINEAR) {
+		            			if (needResample) {
+		            				// Perform the resampling as late as possible.
+		            				// We might be lucky that all the pixel are eliminated
+		            				// by the depth or stencil tests. In which case,
+		            				// we don't need to resample.
+									textureAccess = renderer.cachedTexture.resample(prim.resampleFactorWidth, prim.resampleFactorHeight);
+									textureWidthMask = textureAccess.getWidth() - 1;
+									textureHeightMask = textureAccess.getHeight() - 1;
+									textureWidthFloat = textureAccess.getWidth();
+									textureHeightFloat = textureAccess.getHeight();
+									needResample = false;
+		            			}
+            				}
+
+            				//
 	            			// TextureWrap
 		            		//
 	            			if (needTextureWrapU) {
@@ -889,7 +1046,7 @@ public class RendererTemplate {
 		            			}
 	            			}
 
-		            		//
+            				//
 	    					// TextureReader
 		            		//
 	    					if (transform2D) {
@@ -1183,163 +1340,6 @@ public class RendererTemplate {
 	            		}
 
 	            		//
-	            		// StencilTest
-	            		//
-	            		if (stencilTestFlagEnabled && !clearMode) {
-	            			switch (stencilFunc) {
-	            				case GeCommands.STST_FUNCTION_NEVER_PASS_STENCIL_TEST:
-	            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-	            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
-	            					}
-	        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
-	        	        				fbIndex++;
-	        	        				if (needDepthWrite || needDestinationDepthRead) {
-	        	    	    				depthOffset++;
-	        	    	    				depthIndex += depthOffset >> 1;
-	        	    	    				depthOffset &= 1;
-	        	        				}
-	        	        			} else {
-	        		        			rendererWriter.skip(1, 1);
-	        	        			}
-			        				continue;
-	            				case GeCommands.STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST:
-	            					// Nothing to do
-	            					break;
-	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_MATCHES:
-	            					if ((getAlpha(destinationColor) & renderer.stencilMask) != renderer.stencilRef) {
-		            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-		            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
-		            					}
-		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
-		        	        				fbIndex++;
-		        	        				if (needDepthWrite || needDestinationDepthRead) {
-		        	    	    				depthOffset++;
-		        	    	    				depthIndex += depthOffset >> 1;
-		        	    	    				depthOffset &= 1;
-		        	        				}
-		        	        			} else {
-		        		        			rendererWriter.skip(1, 1);
-		        	        			}
-				        				continue;
-	            					}
-	            					break;
-	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_DIFFERS:
-	            					if ((getAlpha(destinationColor) & renderer.stencilMask) == renderer.stencilRef) {
-		            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-		            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
-		            					}
-		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
-		        	        				fbIndex++;
-		        	        				if (needDepthWrite || needDestinationDepthRead) {
-		        	    	    				depthOffset++;
-		        	    	    				depthIndex += depthOffset >> 1;
-		        	    	    				depthOffset &= 1;
-		        	        				}
-		        	        			} else {
-		        		        			rendererWriter.skip(1, 1);
-		        	        			}
-				        				continue;
-	            					}
-	            					break;
-	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_LESS:
-	            					if ((getAlpha(destinationColor) & renderer.stencilMask) >= renderer.stencilRef) {
-		            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-		            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
-		            					}
-		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
-		        	        				fbIndex++;
-		        	        				if (needDepthWrite || needDestinationDepthRead) {
-		        	    	    				depthOffset++;
-		        	    	    				depthIndex += depthOffset >> 1;
-		        	    	    				depthOffset &= 1;
-		        	        				}
-		        	        			} else {
-		        		        			rendererWriter.skip(1, 1);
-		        	        			}
-				        				continue;
-	            					}
-	            					break;
-	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_LESS_OR_EQUAL:
-	            					if ((getAlpha(destinationColor) & renderer.stencilMask) > renderer.stencilRef) {
-		            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-		            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
-		            					}
-		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
-		        	        				fbIndex++;
-		        	        				if (needDepthWrite || needDestinationDepthRead) {
-		        	    	    				depthOffset++;
-		        	    	    				depthIndex += depthOffset >> 1;
-		        	    	    				depthOffset &= 1;
-		        	        				}
-		        	        			} else {
-		        		        			rendererWriter.skip(1, 1);
-		        	        			}
-				        				continue;
-	            					}
-	            					break;
-	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_GREATER:
-	            					if ((getAlpha(destinationColor) & renderer.stencilMask) <= renderer.stencilRef) {
-		            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-		            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
-		            					}
-		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
-		        	        				fbIndex++;
-		        	        				if (needDepthWrite || needDestinationDepthRead) {
-		        	    	    				depthOffset++;
-		        	    	    				depthIndex += depthOffset >> 1;
-		        	    	    				depthOffset &= 1;
-		        	        				}
-		        	        			} else {
-		        		        			rendererWriter.skip(1, 1);
-		        	        			}
-				        				continue;
-	            					}
-	            					break;
-	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_GREATER_OR_EQUAL:
-	            					if ((getAlpha(destinationColor) & renderer.stencilMask) < renderer.stencilRef) {
-		            					if (stencilOpFail != GeCommands.SOP_KEEP_STENCIL_VALUE) {
-		            						destinationColor = stencilOpFail(destinationColor, stencilRefAlpha);
-		            					}
-		        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
-		        	        				fbIndex++;
-		        	        				if (needDepthWrite || needDestinationDepthRead) {
-		        	    	    				depthOffset++;
-		        	    	    				depthIndex += depthOffset >> 1;
-		        	    	    				depthOffset &= 1;
-		        	        				}
-		        	        			} else {
-		        		        			rendererWriter.skip(1, 1);
-		        	        			}
-				        				continue;
-	            					}
-	            					break;
-	                		}
-	            		}
-
-	            		//
-	            		// Failed Depth Test with Stencil Operation (has to be executed after the stencil test)
-	            		//
-	            		if (depthTestFlagEnabled && !clearMode && stencilTestFlagEnabled && stencilOpZFail != GeCommands.SOP_KEEP_STENCIL_VALUE && depthFunc != GeCommands.ZTST_FUNCTION_ALWAYS_PASS_PIXEL) {
-	            			if (depthFunc == GeCommands.ZTST_FUNCTION_NEVER_PASS_PIXEL || depthTestFailed) {
-    		            		if (isLogTraceEnabled) {
-    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), depth test failed with stencilOpZFail, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
-    	            			}
-        						destinationColor = stencilOpZFail(destinationColor, stencilRefAlpha);
-        	        			if (hasMemInt && psm == TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
-        	        				fbIndex++;
-        	        				if (needDepthWrite || needDestinationDepthRead) {
-        	    	    				depthOffset++;
-        	    	    				depthIndex += depthOffset >> 1;
-        	    	    				depthOffset &= 1;
-        	        				}
-        	        			} else {
-        		        			rendererWriter.skip(1, 1);
-        	        			}
-        						continue;
-	            			}
-	            		}
-
-	            		//
 	            		// AlphaBlend
 	            		//
 	            		if (blendFlagEnabled && !clearMode) {
@@ -1436,6 +1436,10 @@ public class RendererTemplate {
 	            					sourceColor = (sourceColor & 0x00FFFFFF) | alpha;
 	            					break;
 	            			}
+	            		} else if (!clearMode) {
+	            			// Write the alpha/stencil value to the frame buffer
+	            			// only when the stencil test is enabled
+	            			sourceColor = (sourceColor & 0x00FFFFFF) | (destinationColor & 0xFF000000);
 	            		}
 
 	            		//
