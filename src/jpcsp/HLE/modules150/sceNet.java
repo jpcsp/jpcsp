@@ -21,12 +21,11 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.hardware.Wlan;
 import jpcsp.memory.IMemoryReader;
-import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
-import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -111,12 +110,13 @@ public class sceNet extends HLEModule {
         if (Memory.isAddressGood(etherAddr) && Memory.isAddressGood(strAddr)) {
             // Convert 6-byte Mac address into string representation (XX:XX:XX:XX:XX:XX).
             StringBuilder str = new StringBuilder();
-            IMemoryReader memoryReader = MemoryReader.getMemoryReader(etherAddr, Wlan.MAC_ADDRESS_LENGTH, 1);
-            for (int i = 0; i < Wlan.MAC_ADDRESS_LENGTH; i++) {
+            pspNetMacAddress macAddress = new pspNetMacAddress();
+            macAddress.read(mem, etherAddr);
+            for (int i = 0; i < macAddress.sizeof(); i++) {
                 if (i > 0) {
                 	str.append(":");
                 }
-                str.append(String.format("%02x", memoryReader.readNext()));
+                str.append(String.format("%02x", macAddress.macAddress[i]));
             }
             Utilities.writeStringZ(mem, strAddr, str.toString());
             cpu.gpr[2] = 0;
@@ -154,14 +154,14 @@ public class sceNet extends HLEModule {
             // Convert string Mac address string representation (XX:XX:XX:XX:XX:XX)
         	// into 6-byte representation.
         	IMemoryReader memoryReader = MemoryReader.getMemoryReader(strAddr, 17, 1);
-        	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(etherAddr, Wlan.MAC_ADDRESS_LENGTH, 1);
-            for (int i = 0; i < Wlan.MAC_ADDRESS_LENGTH; i++) {
+        	pspNetMacAddress macAddress = new pspNetMacAddress();
+            for (int i = 0; i < macAddress.sizeof(); i++) {
             	int n1 = parseHexDigit((char) memoryReader.readNext());
             	int n2 = parseHexDigit((char) memoryReader.readNext());
             	memoryReader.skip(1); // skip ':'
-            	memoryWriter.writeNext((n1 << 4) + n2);
+            	macAddress.macAddress[i] = (byte) ((n1 << 4) + n2);
             }
-            memoryWriter.flush();
+            macAddress.write(Memory.getInstance(), etherAddr);
             cpu.gpr[2] = 0;
         } else {
         	cpu.gpr[2] = -1;
@@ -247,10 +247,9 @@ public class sceNet extends HLEModule {
 
         if (Memory.isAddressGood(etherAddr)) {
             // Return WLAN MAC address
-        	byte[] netAddr = Wlan.getMacAddress();
-            for (int i = 0; i < netAddr.length; i++) {
-                mem.write8(etherAddr + i, netAddr[i]);
-            }
+        	pspNetMacAddress macAddress = new pspNetMacAddress();
+        	macAddress.setMacAddress(Wlan.getMacAddress());
+        	macAddress.write(mem, etherAddr);
             cpu.gpr[2] = 0;
         } else {
         	cpu.gpr[2] = -1;

@@ -16,7 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+
 import java.util.HashMap;
 
 import jpcsp.Memory;
@@ -108,6 +112,15 @@ public class sceNetAdhocctl extends HLEModule {
         }
     }
 
+    /**
+     * Initialise the Adhoc control library
+     *
+     * @param stacksize - Stack size of the adhocctl thread. Set to 0x2000
+     * @param priority - Priority of the adhocctl thread. Set to 0x30
+     * @param product - Pass a filled in ::productStruct
+     *
+     * @return 0 on success, < 0 on error
+     */
     @HLEFunction(nid = 0xE26F226E, version = 150)
     public void sceNetAdhocctlInit(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -131,6 +144,11 @@ public class sceNetAdhocctl extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    /**
+     * Terminate the Adhoc control library
+     *
+     * @return 0 on success, < on error.
+     */
     @HLEFunction(nid = 0x9D689E13, version = 150)
     public void sceNetAdhocctlTerm(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -144,28 +162,36 @@ public class sceNetAdhocctl extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    @HLEFunction(nid = 0x0AD043ED, version = 150)
-    public void sceNetAdhocctlConnect(Processor processor) {
-        CpuState cpu = processor.cpu;
+    /**
+     * Connect to the Adhoc control
+     *
+     * @param name - The name of the connection (maximum 8 alphanumeric characters).
+     *
+     * @return 0 on success, < 0 on error.
+     */
+    @HLEFunction(nid = 0x0AD043ED, version = 150, checkInsideInterrupt = true)
+    public int sceNetAdhocctlConnect(TPointer groupNameAddr) {
         Memory mem = Memory.getInstance();
 
-        int groupNameAddr = cpu.gpr[4];
+        String groupName = null;
+        groupName = Utilities.readStringNZ(mem, groupNameAddr.getAddress(), 8);
 
-        log.warn("PARTIAL: sceNetAdhocctlConnect (groupNameAddr=0x" + Integer.toHexString(groupNameAddr) + ")");
+        log.warn(String.format("PARTIAL: sceNetAdhocctlConnect groupNameAddr=%s('%s')", groupNameAddr.toString(), groupName));
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (Memory.isAddressGood(groupNameAddr)) {
-            String groupName = Utilities.readStringNZ(mem, groupNameAddr, 8);
-            adhocctlCurrentGroup = groupName;
-        }
+        adhocctlCurrentGroup = groupName;
         adhocctlCurrentState = PSP_ADHOCCTL_STATE_CONNECTED;
         notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_CONNECTED, 0);
-        cpu.gpr[2] = 0;
+
+        return 0;
     }
 
+    /**
+     * Connect to the Adhoc control (as a host)
+     *
+     * @param name - The name of the connection (maximum 8 alphanumeric characters).
+     *
+     * @return 0 on success, < 0 on error.
+     */
     @HLEFunction(nid = 0xEC0635C1, version = 150)
     public void sceNetAdhocctlCreate(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -188,6 +214,13 @@ public class sceNetAdhocctl extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    /**
+     * Connect to the Adhoc control (as a client)
+     *
+     * @param scaninfo - A valid ::SceNetAdhocctlScanInfo struct that has been filled by sceNetAchocctlGetScanInfo
+     *
+     * @return 0 on success, < 0 on error.
+     */
     @HLEFunction(nid = 0x5E7F79C9, version = 150)
     public void sceNetAdhocctlJoin(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -219,6 +252,11 @@ public class sceNetAdhocctl extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    /**
+     * Scan the adhoc channels
+     *
+     * @return 0 on success, < 0 on error.
+     */
     @HLEFunction(nid = 0x08FFF7A0, version = 150)
     public void sceNetAdhocctlScan(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -234,6 +272,11 @@ public class sceNetAdhocctl extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    /**
+     * Disconnect from the Adhoc control
+     *
+     * @return 0 on success, < 0 on error
+     */
     @HLEFunction(nid = 0x34401D65, version = 150)
     public void sceNetAdhocctlDisconnect(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -249,6 +292,14 @@ public class sceNetAdhocctl extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    /**
+     * Register an adhoc event handler
+     *
+     * @param handler - The event handler.
+     * @param unknown - Pass NULL.
+     *
+     * @return Handler id on success, < 0 on error.
+     */
     @HLEFunction(nid = 0x20B317A0, version = 150)
     public void sceNetAdhocctlAddHandler(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -268,6 +319,13 @@ public class sceNetAdhocctl extends HLEModule {
         cpu.gpr[2] = handle;
     }
 
+    /**
+     * Delete an adhoc event handler
+     *
+     * @param id - The handler id as returned by sceNetAdhocctlAddHandler.
+     *
+     * @return 0 on success, < 0 on error.
+     */
     @HLEFunction(nid = 0x6402490B, version = 150)
     public void sceNetAdhocctlDelHandler(Processor processor) {
        CpuState cpu = processor.cpu;
@@ -284,6 +342,13 @@ public class sceNetAdhocctl extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    /**
+     * Get the state of the Adhoc control
+     *
+     * @param event - Pointer to an integer to receive the status. Can continue when it becomes 1.
+     *
+     * @return 0 on success, < 0 on error
+     */
     @HLEFunction(nid = 0x75ECD386, version = 150)
     public void sceNetAdhocctlGetState(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -303,6 +368,13 @@ public class sceNetAdhocctl extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    /**
+     * Get the adhoc ID
+     *
+     * @param product - A pointer to a  ::productStruct
+     *
+     * @return 0 on success, < 0 on error.
+     */
     @HLEFunction(nid = 0x362CBE8F, version = 150)
     public void sceNetAdhocctlGetAdhocId(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -312,15 +384,32 @@ public class sceNetAdhocctl extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Get a list of peers
+     *
+     * @param length - The length of the list.
+     * @param buf - An allocated area of size length.
+     *
+     * @return 0 on success, < 0 on error.
+     */
     @HLEFunction(nid = 0xE162CB14, version = 150)
-    public void sceNetAdhocctlGetPeerList(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocctlGetPeerList(TPointer32 lengthAddr, @CanBeNull TPointer buf) {
+        log.warn(String.format("UNIMPLEMENTED: sceNetAdhocctlGetPeerList length=%s(%d), buf=%s", lengthAddr.toString(), lengthAddr.getValue(), buf.toString()));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocctlGetPeerList");
+        lengthAddr.setValue(0);
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
+    /**
+     * Get peer information
+     *
+     * @param mac - The mac address of the peer.
+     * @param size - Size of peerinfo.
+     * @param peerinfo - Pointer to store the information.
+     *
+     * @return 0 on success, < 0 on error.
+     */
     @HLEFunction(nid = 0x8DB83FDC, version = 150)
     public void sceNetAdhocctlGetPeerInfo(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -330,6 +419,15 @@ public class sceNetAdhocctl extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Get mac address from nickname
+     *
+     * @param nickname - The nickname.
+     * @param length - The length of the list.
+     * @param buf - An allocated area of size length.
+     *
+     * @return 0 on success, < 0 on error.
+     */
     @HLEFunction(nid = 0x99560ABE, version = 150)
     public void sceNetAdhocctlGetAddrByName(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -339,6 +437,14 @@ public class sceNetAdhocctl extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Get nickname from a mac address
+     *
+     * @param mac - The mac address.
+     * @param nickname - Pointer to a char buffer where the nickname will be stored.
+     *
+     * @return 0 on success, < 0 on error.
+     */
     @HLEFunction(nid = 0x8916C003, version = 150)
     public void sceNetAdhocctlGetNameByAddr(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -348,6 +454,13 @@ public class sceNetAdhocctl extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Get Adhocctl parameter
+     *
+     * @param params - Pointer to a ::SceNetAdhocctlParams
+     *
+     * @return 0 on success, < 0 on error.
+     */
     @HLEFunction(nid = 0xDED9D28E, version = 150)
     public void sceNetAdhocctlGetParameter(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -357,6 +470,14 @@ public class sceNetAdhocctl extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Get the results of a scan
+     *
+     * @param length - The length of the list.
+     * @param buf - An allocated area of size length.
+     *
+     * @return 0 on success, < 0 on error.
+     */
     @HLEFunction(nid = 0x81AEE1BE, version = 150)
     public void sceNetAdhocctlGetScanInfo(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -366,6 +487,18 @@ public class sceNetAdhocctl extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Connect to the Adhoc control game mode (as a host)
+     *
+     * @param name - The name of the connection (maximum 8 alphanumeric characters).
+     * @param unknown - Pass 1.
+     * @param num - The total number of players (including the host).
+     * @param macs - A pointer to a list of the participating mac addresses, host first, then clients.
+     * @param timeout - Timeout in microseconds.
+     * @param unknown2 - pass 0.
+     *
+     * @return 0 on success, < 0 on error.
+     */
     @HLEFunction(nid = 0xA5C055CE, version = 150)
     public void sceNetAdhocctlCreateEnterGameMode(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -384,6 +517,16 @@ public class sceNetAdhocctl extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Connect to the Adhoc control game mode (as a client)
+     *
+     * @param name - The name of the connection (maximum 8 alphanumeric characters).
+     * @param hostmac - The mac address of the host.
+     * @param timeout - Timeout in microseconds.
+     * @param unknown - pass 0.
+     *
+     * @return 0 on success, < 0 on error.
+     */
     @HLEFunction(nid = 0x1FF89745, version = 150)
     public void sceNetAdhocctlJoinEnterGameMode(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -393,6 +536,11 @@ public class sceNetAdhocctl extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Exit game mode.
+     *
+     * @return 0 on success, < 0 on error.
+     */
     @HLEFunction(nid = 0xCF8E084D, version = 150)
     public void sceNetAdhocctlExitGameMode(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -402,6 +550,13 @@ public class sceNetAdhocctl extends HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Get game mode information
+     *
+     * @param gamemodeinfo - Pointer to store the info.
+     *
+     * @return 0 on success, < 0 on error.
+     */
     @HLEFunction(nid = 0x5A014CE0, version = 150)
     public void sceNetAdhocctlGetGameModeInfo(Processor processor) {
         CpuState cpu = processor.cpu;
