@@ -192,7 +192,7 @@ public class sceUmdUser extends HLEModule {
         // The callback will be executed at the next sceXXXXCB() syscall.
         int notifyArg;
         if (iso != null) {
-        	notifyArg = PSP_UMD_PRESENT | PSP_UMD_READABLE;
+        	notifyArg = PSP_UMD_PRESENT | PSP_UMD_READY | PSP_UMD_READABLE;
         } else {
         	notifyArg = PSP_UMD_NOT_PRESENT | PSP_UMD_NOT_READY;
         }
