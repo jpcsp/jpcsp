@@ -26,6 +26,7 @@ import static jpcsp.graphics.RE.software.PixelColor.absBGR;
 import static jpcsp.graphics.RE.software.PixelColor.add;
 import static jpcsp.graphics.RE.software.PixelColor.addBGR;
 import static jpcsp.graphics.RE.software.PixelColor.combineComponent;
+import static jpcsp.graphics.RE.software.PixelColor.doubleComponent;
 import static jpcsp.graphics.RE.software.PixelColor.getAlpha;
 import static jpcsp.graphics.RE.software.PixelColor.getBlue;
 import static jpcsp.graphics.RE.software.PixelColor.getColor;
@@ -1696,16 +1697,16 @@ public class RendererTemplate {
 				alpha = ONE - getAlpha(destination);
 				return getColorBGR(alpha, alpha, alpha);
 			case GeCommands.ALPHA_DOUBLE_SOURCE_ALPHA:
-				alpha = getAlpha(source) << 1;
+				alpha = doubleComponent(getAlpha(source));
 				return getColorBGR(alpha, alpha, alpha);
 			case GeCommands.ALPHA_ONE_MINUS_DOUBLE_SOURCE_ALPHA:
-				alpha = ONE - (getAlpha(source) << 1);
+				alpha = ONE - doubleComponent(getAlpha(source));
 				return getColorBGR(alpha, alpha, alpha);
 			case GeCommands.ALPHA_DOUBLE_DESTINATION_ALPHA:
-				alpha = getAlpha(destination) << 1;
+				alpha = doubleComponent(getAlpha(destination));
 				return getColorBGR(alpha, alpha, alpha);
 			case GeCommands.ALPHA_ONE_MINUS_DOUBLE_DESTINATION_ALPHA:
-				alpha = ONE - (getAlpha(destination) << 1);
+				alpha = ONE - doubleComponent(getAlpha(destination));
 				return getColorBGR(alpha, alpha, alpha);
 			case GeCommands.ALPHA_FIX:
 				return fix;
@@ -1734,16 +1735,16 @@ public class RendererTemplate {
 				alpha = ONE - getAlpha(destination);
 				return getColorBGR(alpha, alpha, alpha);
 			case GeCommands.ALPHA_DOUBLE_SOURCE_ALPHA:
-				alpha = getAlpha(source) << 1;
+				alpha = doubleComponent(getAlpha(source));
 				return getColorBGR(alpha, alpha, alpha);
 			case GeCommands.ALPHA_ONE_MINUS_DOUBLE_SOURCE_ALPHA:
-				alpha = ONE - (getAlpha(source) << 1);
+				alpha = ONE - doubleComponent(getAlpha(source));
 				return getColorBGR(alpha, alpha, alpha);
 			case GeCommands.ALPHA_DOUBLE_DESTINATION_ALPHA:
-				alpha = getAlpha(destination) << 1;
+				alpha = doubleComponent(getAlpha(destination));
 				return getColorBGR(alpha, alpha, alpha);
 			case GeCommands.ALPHA_ONE_MINUS_DOUBLE_DESTINATION_ALPHA:
-				alpha = ONE - (getAlpha(destination) << 1);
+				alpha = ONE - doubleComponent(getAlpha(destination));
 				return getColorBGR(alpha, alpha, alpha);
 			case GeCommands.ALPHA_FIX:
 				return fix;

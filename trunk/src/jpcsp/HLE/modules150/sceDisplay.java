@@ -1341,7 +1341,12 @@ public class sceDisplay extends HLEModule {
     }
 
     public void copyGeToMemory(boolean preserveScreen) {
-		if (VideoEngine.log.isDebugEnabled()) {
+    	if (isUsingSoftwareRenderer()) {
+    		// GE is already in memory when using the software renderer
+    		return;
+    	}
+
+    	if (VideoEngine.log.isDebugEnabled()) {
 			VideoEngine.log.debug(String.format("Copy GE Screen to Memory 0x%08X-0x%08X", topaddrGe, bottomaddrGe));
 		}
 
