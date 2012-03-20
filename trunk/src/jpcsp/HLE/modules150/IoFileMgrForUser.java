@@ -3187,7 +3187,7 @@ public class IoFileMgrForUser extends HLEModule {
                 } else if (Memory.isAddressGood(outdata_addr)) {
                     // 0 = Driver busy.
                     // 1 = Driver ready.
-                    mem.write32(outdata_addr, 1);
+                    mem.write32(outdata_addr, 4);
                     result = 0;
                 } else {
                 	result = -1;
