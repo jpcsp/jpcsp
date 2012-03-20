@@ -302,4 +302,8 @@ public class PixelColor {
 	public final static int doubleColor(int color) {
 		return addBGR(color, color) | (color & 0xFF000000);
 	}
+
+	public final static int doubleComponent(int component) {
+		return addComponent(component, component);
+	}
 }

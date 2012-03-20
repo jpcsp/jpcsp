@@ -61,6 +61,7 @@ import jpcsp.HLE.modules.sceGe_user;
 import jpcsp.graphics.GeContext.EnableDisableFlag;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.graphics.RE.buffer.IREBufferManager;
+import jpcsp.graphics.RE.software.PixelColor;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.graphics.textures.GETexture;
 import jpcsp.graphics.textures.GETextureManager;
@@ -5833,11 +5834,11 @@ public class VideoEngine {
                 int addr = context.vinfo.getAddress(mem, v * ucount + u);
                 VertexState vs = context.vinfo.readVertex(mem, addr, readTexture);
                 if (isLogDebugEnabled) {
-                	log(String.format("control point #%d,%d p(%f,%f,%f) t(%f,%f), c(%f,%f,%f)",
+                	log(String.format("control point #%d,%d p(%f,%f,%f) t(%f,%f), c(0x%08X)",
                 			u, v,
                 			vs.p[0], vs.p[1], vs.p[2],
                 			vs.t[0], vs.t[1],
-                			vs.c[0], vs.c[1], vs.c[2]));
+                			PixelColor.getColor(vs.c)));
                 }
                 controlPoints[u][v] = vs;
             }
