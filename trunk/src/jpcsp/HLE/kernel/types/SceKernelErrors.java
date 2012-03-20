@@ -361,6 +361,8 @@ public class SceKernelErrors {
     public final static int ERROR_NET_RESOLVER_ALREADY_STOPPED                  = 0x8041040a;
     public final static int ERROR_NET_RESOLVER_INVALID_HOST                     = 0x80410414;
 
+    public final static int ERROR_NET_ADHOC_NO_DATA_AVAILABLE                   = 0x80410709;
+
     public final static int ERROR_WLAN_BAD_PARAMS                               = 0x80410d13;
 
     public final static int ERROR_SAS_INVALID_VOICE                             = 0x80420010;

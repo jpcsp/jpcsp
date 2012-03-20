@@ -16,11 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 
@@ -109,12 +114,12 @@ public class sceNetAdhoc extends HLEModule {
      * @return The ID of the PDP object (< 0 on error)
      */
     @HLEFunction(nid = 0x6F92741B, version = 150)
-    public void sceNetAdhocPdpCreate(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocPdpCreate(int macAddr, int port, int unk2, int unk3) {
+    	pspNetMacAddress macAddress = new pspNetMacAddress();
+    	macAddress.read(Memory.getInstance(), macAddr);
+        log.warn(String.format("UNIMPLEMENTED: sceNetAdhocPdpCreate macAddr=0x%08X(%s), port=%d, unk2=%d, unk3=%d", macAddr, macAddress.toString(), port, unk2, unk3));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocPdpCreate");
-
-        cpu.gpr[2] = 1;
+        return 1;
     }
 
     /**
@@ -153,12 +158,11 @@ public class sceNetAdhoc extends HLEModule {
      * @return Number of bytes received, < 0 on error.
      */
     @HLEFunction(nid = 0xDFE53E03, version = 150)
-    public void sceNetAdhocPdpRecv(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocPdpRecv(int id, int srcMacAddr, int portAddr, int data, int dataLengthAddr, int timeout, int nonblock) {
+    	Memory mem = Memory.getInstance();
+        log.warn(String.format("UNIMPLEMENTED: sceNetAdhocPdpRecv id=%d, srcMacAddr=0x%08X, portAddr=0x%08X, data=0x%08X, dataLengthAddr=0x%08X(%d), timeout=%d, nonblock=%d", id, srcMacAddr, portAddr, data, dataLengthAddr, mem.read32(dataLengthAddr), timeout, nonblock));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocPdpRecv");
-
-        cpu.gpr[2] = 0;
+        return SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE;
     }
 
     /**
@@ -196,12 +200,12 @@ public class sceNetAdhoc extends HLEModule {
      * @return 0 on success, < 0 on error
      */
     @HLEFunction(nid = 0xC7C1FC57, version = 150)
-    public void sceNetAdhocGetPdpStat(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocGetPdpStat(TPointer32 sizeAddr, @CanBeNull TPointer buf) {
+        log.warn(String.format("UNIMPLEMENTED: sceNetAdhocGetPdpStat sizeAddr=%s(%d), buf=%s", sizeAddr.toString(), sizeAddr.getValue(), buf.toString()));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocGetPdpStat");
+        sizeAddr.setValue(0);
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     /**
