@@ -89,7 +89,7 @@ public class pspFontStyle extends pspAbstractMemoryMappedStructure {
 		return 168;
 	}
 
-	public boolean isMatching(pspFontStyle fontStyle, boolean optimum) {
+	public boolean isMatching(pspFontStyle fontStyle) {
 		// A value 0 in each field of the fontStyle means "any value"
 		if (fontStyle.fontH != 0f) {
 			if (Math.round(fontStyle.fontH) != Math.round(fontH)) {
@@ -117,14 +117,11 @@ public class pspFontStyle extends pspAbstractMemoryMappedStructure {
 		if (fontStyle.fontFamily != 0 && fontStyle.fontFamily != fontFamily) {
 			return false;
 		}
-		// These attributes are not used when find an optimum font (sceFontFindOptimumFont)
-		if (!optimum) {
-			if (fontStyle.fontStyle != 0 && fontStyle.fontStyle != this.fontStyle) {
-				return false;
-			}
-			if (fontStyle.fontStyleSub != 0 && fontStyle.fontStyleSub != fontStyleSub) {
-				return false;
-			}
+		if (fontStyle.fontStyle != 0 && fontStyle.fontStyle != this.fontStyle) {
+			return false;
+		}
+		if (fontStyle.fontStyleSub != 0 && fontStyle.fontStyleSub != fontStyleSub) {
+			return false;
 		}
 		if (fontStyle.fontLanguage != 0 && fontStyle.fontLanguage != fontLanguage) {
 			return false;
