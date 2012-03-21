@@ -4583,16 +4583,16 @@ public class VideoEngine {
 
         re.setTextureFormat(context.texture_storage, context.texture_swizzle);
 
+    	if (loadGETexture(tex_addr)) {
+            re.setTextureMipmapMagFilter(context.tex_mag_filter);
+            re.setTextureMipmapMinFilter(context.tex_min_filter);
+            checkTextureMinFilter(false, context.texture_num_mip_maps);
+    		textureChanged = false;
+    		return;
+    	}
+
         Texture texture;
 		if (!canCacheTexture(tex_addr)) {
-        	if (loadGETexture(tex_addr)) {
-                re.setTextureMipmapMagFilter(context.tex_mag_filter);
-                re.setTextureMipmapMinFilter(context.tex_min_filter);
-                checkTextureMinFilter(false, context.texture_num_mip_maps);
-        		textureChanged = false;
-        		return;
-        	}
-
         	texture = null;
 
             // Generate a texture id if we don't have one
