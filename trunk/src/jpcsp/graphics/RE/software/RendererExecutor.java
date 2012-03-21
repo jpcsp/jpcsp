@@ -20,7 +20,6 @@ import static jpcsp.util.Utilities.sleep;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import jpcsp.State;
 import jpcsp.graphics.VideoEngine;
 
 /**
@@ -59,7 +58,7 @@ public class RendererExecutor {
 	}
 
 	public void render(IRenderer renderer) {
-		if (numberThreads > 0 && !State.captureGeNextFrame) {
+		if (numberThreads > 0 && !VideoEngine.log.isTraceEnabled()) {
 			// Queue for rendering in a ThreadRenderer thread
 			renderer = renderer.duplicate();
 			renderersQueue.add(renderer);

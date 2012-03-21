@@ -137,10 +137,10 @@ public class PixelColor {
 	public final static int multiplyBGR(int color, float factor) {
 		color &= 0x00FFFFFF;
 		// Handle common and simple cases first
-		if (color == ZERO || factor <= 0.f) {
+		if (color == ZERO || factor <= 0f) {
 			return ZERO;
 		}
-		if (factor == 1.f) {
+		if (factor == 1f) {
 			return color;
 		}
 
@@ -152,11 +152,17 @@ public class PixelColor {
 
 	public final static int multiply(int color, float factor) {
 		// Handle common and simple cases first
-		if (color == ZERO || factor <= 0.f) {
+		if (color == ZERO || factor <= 0f) {
 			return ZERO;
 		}
-		if (factor == 1.f) {
+		if (factor == 1f) {
 			return color;
+		}
+		if (factor == .5f) {
+			return divideBy2(color);
+		}
+		if (factor == .25f) {
+			return divideBy4(color);
 		}
 
 		int a = multiplyComponent(getAlpha(color), factor);
@@ -305,5 +311,13 @@ public class PixelColor {
 
 	public final static int doubleComponent(int component) {
 		return addComponent(component, component);
+	}
+
+	public final static int divideBy2(int color) {
+		return (color >>> 1) & 0x7F7F7F7F;
+	}
+
+	public final static int divideBy4(int color) {
+		return (color >>> 2) & 0x3F3F3F3F;
 	}
 }

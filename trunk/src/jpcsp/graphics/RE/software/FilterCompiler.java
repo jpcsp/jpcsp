@@ -127,9 +127,9 @@ public class FilterCompiler {
 		variables.put("matFlagSpecular", Boolean.valueOf((context.mat_flags & CMAT_FLAG_SPECULAR) != 0));
 		variables.put("useVertexColor", Boolean.valueOf(context.useVertexColor));
 		variables.put("textureColorDoubled", Boolean.valueOf(context.textureColorDoubled));
-		variables.put("lightMode", new Integer(PixelColor.getColor(context.lightMode)));
-		variables.put("texMapMode", new Integer(PixelColor.getColor(context.tex_map_mode)));
-		variables.put("texProjMapMode", new Integer(PixelColor.getColor(context.tex_proj_map_mode)));
+		variables.put("lightMode", new Integer(context.lightMode));
+		variables.put("texMapMode", new Integer(context.tex_map_mode));
+		variables.put("texProjMapMode", new Integer(context.tex_proj_map_mode));
 		variables.put("texTranslateX", new Float(context.tex_translate_x));
 		variables.put("texTranslateY", new Float(context.tex_translate_y));
 		variables.put("texScaleX", new Float(context.tex_scale_x));

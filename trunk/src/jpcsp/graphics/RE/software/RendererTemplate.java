@@ -224,6 +224,8 @@ public class RendererTemplate {
 								prim.vStart *= prim.resampleFactorHeight;
 								prim.uStep = prim.uStep < 0f ? -1f : 1f;
 								prim.vStep = prim.vStep < 0f ? -1f : 1f;
+							} else if (isLogTraceEnabled) {
+								VideoEngine.log.trace(String.format("Cannot resample with factors %f, %f", prim.resampleFactorWidth, prim.resampleFactorHeight));
 							}
 						}
 					}

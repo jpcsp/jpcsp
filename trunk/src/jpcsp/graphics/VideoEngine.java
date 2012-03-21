@@ -4639,7 +4639,7 @@ public class VideoEngine {
         }
 
         // Load the texture if not yet loaded
-        if (texture == null || !texture.isLoaded()) {
+        if (texture == null || !texture.isLoaded() || State.captureGeNextFrame) {
             if (isLogDebugEnabled) {
                 log(helper.getCommandString(TFLUSH)
                         + " " + String.format("0x%08X", context.texture_base_pointer[0])
