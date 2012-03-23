@@ -349,23 +349,13 @@ public class sceNetAdhocctl extends HLEModule {
      *
      * @return 0 on success, < 0 on error
      */
-    @HLEFunction(nid = 0x75ECD386, version = 150)
-    public void sceNetAdhocctlGetState(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
+    @HLEFunction(nid = 0x75ECD386, version = 150, checkInsideInterrupt = true)
+    public int sceNetAdhocctlGetState(TPointer32 stateAddr) {
+        log.warn(String.format("PARTIAL: sceNetAdhocctlGetState stateAddr=%s returning %d", stateAddr, adhocctlCurrentState));
 
-        int stateAddr = cpu.gpr[4];
+        stateAddr.setValue(adhocctlCurrentState);
 
-        log.warn("PARTIAL: sceNetAdhocctlGetState (stateAddr=0x" + Integer.toHexString(stateAddr) + ")");
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (Memory.isAddressGood(stateAddr)) {
-            mem.write32(stateAddr, adhocctlCurrentState);
-        }
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
     /**

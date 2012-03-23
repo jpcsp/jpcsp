@@ -158,7 +158,23 @@ public class sceNetInet extends HLEModule {
     @Override
 	public String getName() { return "sceNetInet"; }
 
-	protected static abstract class BlockingState implements IAction {
+    public static InetSocketAddress getBroadcastInetSocketAddress(int port) throws UnknownHostException {
+		// When SO_ONESBCAST is not enabled, map the broadcast address
+		// to the broadcast address from the network of the local IP address.
+		// E.g.
+		//  - localHostIP: A.B.C.D
+		//  - subnetMask: 255.255.255.0
+		// -> localBroadcastIP: A.B.C.255
+		InetAddress localInetAddress = InetAddress.getByName(sceNetApctl.getLocalHostIP());
+		int localAddress = bytesToInternetAddress(localInetAddress.getAddress());
+		int subnetMask = Integer.reverseBytes(sceNetApctl.getSubnetMaskInt());
+		int localBroadcastAddress = localAddress & subnetMask;
+		localBroadcastAddress |= INADDR_BROADCAST & ~subnetMask;
+
+		return new InetSocketAddress(InetAddress.getByAddress(internetAddressToBytes(localBroadcastAddress)), port);
+    }
+
+    protected static abstract class BlockingState implements IAction {
 		public pspInetSocket inetSocket;
 		public int threadId;
 		public boolean threadBlocked;
@@ -402,19 +418,7 @@ public class sceNetInet extends HLEModule {
 			if (address == INADDR_ANY) {
 				socketAddress = new InetSocketAddress(port);
 			} else if (address == INADDR_BROADCAST && !isOnesBroadcast()) {
-				// When SO_ONESBCAST is not enabled, map the broadcast address
-				// to the broadcast address from the network of the local IP address.
-				// E.g.
-				//  - localHostIP: A.B.C.D
-				//  - subnetMask: 255.255.255.0
-				// -> localBroadcastIP: A.B.C.255
-				InetAddress localInetAddress = InetAddress.getByName(sceNetApctl.getLocalHostIP());
-				int localAddress = bytesToInternetAddress(localInetAddress.getAddress());
-				int subnetMask = Integer.reverseBytes(sceNetApctl.getSubnetMaskInt());
-				int localBroadcastAddress = localAddress & subnetMask;
-				localBroadcastAddress |= address & ~subnetMask;
-
-				socketAddress = new InetSocketAddress(InetAddress.getByAddress(internetAddressToBytes(localBroadcastAddress)), port);
+				socketAddress = getBroadcastInetSocketAddress(port);
 			} else {
 				socketAddress = new InetSocketAddress(InetAddress.getByAddress(internetAddressToBytes(address)), port);
 			}

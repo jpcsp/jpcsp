@@ -182,6 +182,8 @@ public class ThreadManForUser extends HLEModule {
     public static final int CALLBACK_EXIT_HANDLER_ADDRESS = MemoryMap.START_RAM + 0x30;
     public static final int ASYNC_LOOP_ADDRESS = MemoryMap.START_RAM + 0x40;
     public static final int NET_APCTL_LOOP_ADDRESS = MemoryMap.START_RAM + 0x60;
+    public static final int NET_ADHOC_MATCHING_EVENT_LOOP_ADDRESS = MemoryMap.START_RAM + 0x80;
+    public static final int NET_ADHOC_MATCHING_INPUT_LOOP_ADDRESS = MemoryMap.START_RAM + 0xA0;
     private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
     private boolean USE_THREAD_BANLIST = false;
     private static final boolean LOG_CONTEXT_SWITCHING = true;
@@ -234,11 +236,13 @@ public class ThreadManForUser extends HLEModule {
         callbackMap = new HashMap<Integer, SceKernelCallbackInfo>();
         callbackManager.Initialize();
 
-        install_idle_threads();
-        install_thread_exit_handler();
-        install_callback_exit_handler();
-        install_async_loop_handler();
-        install_net_apctl_loop_handler();
+        installIdleThreads();
+        installThreadExitHandler();
+        installCallbackExitHandler();
+        installAsyncLoopHandler();
+        installNetApctlLoopHandler();
+        installNetAdhocMatchingEventLoopHandler();
+        installNetAdhocMatchingInputLoopHandler();
 
         alarms = new HashMap<Integer, SceKernelAlarmInfo>();
         vtimers = new HashMap<Integer, SceKernelVTimerInfo>();
@@ -325,7 +329,7 @@ public class ThreadManForUser extends HLEModule {
         currentThread.restoreContext();
     }
 
-    private void install_idle_threads() {
+    private void installIdleThreads() {
         Memory mem = Memory.getInstance();
 
         // Generate 2 idle threads which can toggle between each other when there are no ready threads
@@ -367,7 +371,7 @@ public class ThreadManForUser extends HLEModule {
         hleChangeThreadState(idle1, PSP_THREAD_READY);
     }
 
-    private void install_thread_exit_handler() {
+    private void installThreadExitHandler() {
         Memory mem = Memory.getInstance();
 
         int instruction_syscall = // syscall 0x6f000 [hleKernelExitThread]
@@ -380,7 +384,7 @@ public class ThreadManForUser extends HLEModule {
         mem.write32(THREAD_EXIT_HANDLER_ADDRESS + 4, instruction_jr);
     }
 
-    private void install_callback_exit_handler() {
+    private void installCallbackExitHandler() {
         Memory mem = Memory.getInstance();
 
         int instruction_syscall = // syscall 0x6f001 [hleKernelExitCallback]
@@ -393,11 +397,11 @@ public class ThreadManForUser extends HLEModule {
         mem.write32(CALLBACK_EXIT_HANDLER_ADDRESS + 4, instruction_jr);
     }
 
-    private void install_async_loop_handler() {
+    private void installLoopHandler(String hleFunctionName, int address) {
         Memory mem = Memory.getInstance();
 
         int instruction_syscall = // syscall 0x6f002 [hleKernelAsyncLoop]
-                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((this.getHleFunctionByName("hleKernelAsyncLoop").getSyscallCode() & 0x000fffff) << 6);
+                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((this.getHleFunctionByName(hleFunctionName).getSyscallCode() & 0x000fffff) << 6);
 
         int instruction_b = (AllegrexOpcodes.BEQ << 26) | 0xFFFE; // branch back to syscall
         int instruction_nop = (AllegrexOpcodes.SLL << 26); // nop
@@ -405,30 +409,47 @@ public class ThreadManForUser extends HLEModule {
         // Add a "jr $ra" instruction to indicate the end of the CodeBlock to the compiler
         int instruction_jr = AllegrexOpcodes.JR | (31 << 21);
 
-        mem.write32(ASYNC_LOOP_ADDRESS + 0, instruction_syscall);
-        mem.write32(ASYNC_LOOP_ADDRESS + 4, instruction_b);
-        mem.write32(ASYNC_LOOP_ADDRESS + 8, instruction_nop);
-        mem.write32(ASYNC_LOOP_ADDRESS + 12, instruction_jr);
-        mem.write32(ASYNC_LOOP_ADDRESS + 16, instruction_nop);
+        mem.write32(address + 0, instruction_syscall);
+        mem.write32(address + 4, instruction_b);
+        mem.write32(address + 8, instruction_nop);
+        mem.write32(address + 12, instruction_jr);
+        mem.write32(address + 16, instruction_nop);
     }
 
-    private void install_net_apctl_loop_handler() {
-        Memory mem = Memory.getInstance();
+    private void installAsyncLoopHandler() {
+    	installLoopHandler("hleKernelAsyncLoop", ASYNC_LOOP_ADDRESS);
+    }
 
-        int instruction_syscall = // syscall 0x6f002 [hleKernelAsyncLoop]
-                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((this.getHleFunctionByName("hleKernelNetApctlLoop").getSyscallCode() & 0x000fffff) << 6);
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public void hleKernelAsyncLoop(Processor processor) {
+        Modules.IoFileMgrForUserModule.hleAsyncThread(processor);
+    }
 
-        int instruction_b = (AllegrexOpcodes.BEQ << 26) | 0xFFFE; // branch back to syscall
-        int instruction_nop = (AllegrexOpcodes.SLL << 26); // nop
+    private void installNetApctlLoopHandler() {
+    	installLoopHandler("hleKernelNetApctlLoop", NET_APCTL_LOOP_ADDRESS);
+    }
 
-        // Add a "jr $ra" instruction to indicate the end of the CodeBlock to the compiler
-        int instruction_jr = AllegrexOpcodes.JR | (31 << 21);
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public void hleKernelNetApctlLoop(Processor processor) {
+    	Modules.sceNetApctlModule.hleNetApctlThread(processor);
+    }
 
-        mem.write32(NET_APCTL_LOOP_ADDRESS + 0, instruction_syscall);
-        mem.write32(NET_APCTL_LOOP_ADDRESS + 4, instruction_b);
-        mem.write32(NET_APCTL_LOOP_ADDRESS + 8, instruction_nop);
-        mem.write32(NET_APCTL_LOOP_ADDRESS + 12, instruction_jr);
-        mem.write32(NET_APCTL_LOOP_ADDRESS + 16, instruction_nop);
+    private void installNetAdhocMatchingEventLoopHandler() {
+    	installLoopHandler("hleKernelNetAdhocMatchingEventLoop", NET_ADHOC_MATCHING_EVENT_LOOP_ADDRESS);
+    }
+
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public void hleKernelNetAdhocMatchingEventLoop(Processor processor) {
+    	Modules.sceNetAdhocMatchingModule.hleNetAdhocMatchingEventThread(processor);
+    }
+
+    private void installNetAdhocMatchingInputLoopHandler() {
+    	installLoopHandler("hleKernelNetAdhocMatchingInputLoop", NET_ADHOC_MATCHING_INPUT_LOOP_ADDRESS);
+    }
+
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public void hleKernelNetAdhocMatchingInputLoop(Processor processor) {
+    	Modules.sceNetAdhocMatchingModule.hleNetAdhocMatchingInputThread(processor);
     }
 
     /** to be called when exiting the emulation */
@@ -1410,16 +1431,6 @@ public class ThreadManForUser extends HLEModule {
         }
 
         return sceKernelExitDeleteThread(exitStatus);
-    }
-
-    @HLEFunction(nid = HLESyscallNid, version = 150)
-    public void hleKernelAsyncLoop(Processor processor) {
-        Modules.IoFileMgrForUserModule.hleAsyncThread(processor);
-    }
-
-    @HLEFunction(nid = HLESyscallNid, version = 150)
-    public void hleKernelNetApctlLoop(Processor processor) {
-    	Modules.sceNetApctlModule.hleNetApctlThread(processor);
     }
 
     /**

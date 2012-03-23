@@ -57,6 +57,7 @@ import jpcsp.HLE.StringInfo;
 import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.TErrorPointer32;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer16;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.TPointer64;
 import jpcsp.HLE.kernel.managers.IntrManager;
@@ -805,6 +806,7 @@ public class CompilerContext implements ICompilerContext {
      * long:      parameterValue = (cpu.gpr[paramIndex++] & 0xFFFFFFFFL) + ((long) cpu.gpr[paramIndex++]) << 32)
      * boolean:   parameterValue = cpu.gpr[paramIndex++]
      * TPointer,
+     * TPointer16,
      * TPointer32,
      * TPointer64,
      * TErrorPointer32:
@@ -903,7 +905,7 @@ public class CompilerContext implements ICompilerContext {
 				"readPspStringNZ", "(II)" + Type.getDescriptor(PspString.class)
    			);
     		parameterReader.incrementCurrentStackSize();
-    	} else if (parameterType == TPointer.class || parameterType == TPointer32.class || parameterType == TPointer64.class || parameterType == TErrorPointer32.class) {
+    	} else if (parameterType == TPointer.class || parameterType == TPointer16.class || parameterType == TPointer32.class || parameterType == TPointer64.class || parameterType == TErrorPointer32.class) {
     		// if (checkMemoryAccess()) {
     		//     if (canBeNullParam && address == 0) {
     		//         goto addressGood;

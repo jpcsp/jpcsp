@@ -540,7 +540,7 @@ public class Utilities {
     				dump.append(" ");
     			}
     		}
-    		addAsciiDump(dump, charReader, bytesPerLine - lengthLastLine);
+    		addAsciiDump(dump, charReader, lengthLastLine);
     	} else {
     		addAsciiDump(dump, charReader, bytesPerLine);
     	}
