@@ -16,12 +16,35 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.hardware;
 
+import static jpcsp.HLE.modules150.sceNet.convertMacAddressToString;
+import static jpcsp.HLE.modules150.sceNet.convertStringToMacAddress;
+
+import java.util.Random;
+
+import jpcsp.settings.Settings;
+
 public class Wlan {
     public static int PSP_WLAN_SWITCH_OFF = 0;
     public static int PSP_WLAN_SWITCH_ON = 1;
     private static int switchState = PSP_WLAN_SWITCH_ON;
     public final static int MAC_ADDRESS_LENGTH = 6;
     private static byte[] macAddress = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06 };
+    private final static String settingsMacAddress = "macAddress";
+
+    public static void initialize() {
+    	String macAddressString = Settings.getInstance().readString(settingsMacAddress);
+    	if (macAddressString == null || macAddressString.length() <= 0) {
+    		// MAC Address not yet set, generate a random one
+    		Random random = new Random();
+    		for (int i = 0; i < macAddress.length; i++) {
+    			macAddress[i] = (byte) random.nextInt(256);
+    		}
+    		// And save the new MAC address to the settings.
+    		Settings.getInstance().writeString(settingsMacAddress, convertMacAddressToString(macAddress));
+    	} else {
+    		macAddress = convertStringToMacAddress(macAddressString);
+    	}
+    }
 
     public static int getSwitchState() {
 		return switchState;

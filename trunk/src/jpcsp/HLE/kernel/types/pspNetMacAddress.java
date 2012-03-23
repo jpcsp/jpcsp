@@ -44,6 +44,22 @@ public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
 		return macAddress.length;
 	}
 
+	/**
+	 * Is the MAC address the special ANY MAC address (FF:FF:FF:FF:FF:FF)?
+	 * 
+	 * @return    true if this is the special ANY MAC address
+	 *            false otherwise
+	 */
+	public boolean isAnyMacAddress() {
+		for (int i = 0; i < macAddress.length; i++) {
+			if (macAddress[i] != (byte) 0xFF) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	@Override
 	public String toString() {
         StringBuilder str = new StringBuilder();

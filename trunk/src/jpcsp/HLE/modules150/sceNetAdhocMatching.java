@@ -16,27 +16,469 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
+import java.util.HashMap;
+
 import jpcsp.HLE.CanBeNull;
+import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.Emulator;
+import jpcsp.Memory;
 import jpcsp.Processor;
+import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.HLE.modules.ThreadManForUser;
+import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
+import jpcsp.HLE.modules150.sceNetAdhoc.AdhocMessage;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
 public class sceNetAdhocMatching extends HLEModule {
     protected static Logger log = Modules.getLogger("sceNetAdhocMatching");
-    protected int currentMatchingId = 1;
+    private int currentMatchingId;
+    protected HashMap<Integer, MatchingObject> matchingObjects;
+    private static final int loopThreadRegisterArgument = Common._s0; // $s0 is presserved across calls
+
+    /**
+     * Matching events used in pspAdhocMatchingCallback
+     */
+    /** Hello event. optdata contains data if optlen > 0. */
+    public static final int PSP_ADHOC_MATCHING_EVENT_HELLO = 1;
+    /** Join request. optdata contains data if optlen > 0. */
+    public static final int PSP_ADHOC_MATCHING_EVENT_JOIN = 2;
+    /** Target left matching. */
+    public static final int PSP_ADHOC_MATCHING_EVENT_LEFT = 3;
+    /** Join request rejected. */
+    public static final int PSP_ADHOC_MATCHING_EVENT_REJECT = 4;
+    /** Join request cancelled. */
+    public static final int PSP_ADHOC_MATCHING_EVENT_CANCEL = 5;
+    /** Join request accepted. optdata contains data if optlen > 0. */
+    public static final int PSP_ADHOC_MATCHING_EVENT_ACCEPT = 6;
+    /** Matching is complete. */
+    public static final int PSP_ADHOC_MATCHING_EVENT_COMPLETE = 7;
+    /** Ping timeout event. */
+    public static final int PSP_ADHOC_MATCHING_EVENT_TIMEOUT = 8;
+    /** Error event. */
+    public static final int PSP_ADHOC_MATCHING_EVENT_ERROR = 9;
+    /** Peer disconnect event. */
+    public static final int PSP_ADHOC_MATCHING_EVENT_DISCONNECT = 10;
+    /** Data received event. optdata contains data if optlen > 0. */
+    public static final int PSP_ADHOC_MATCHING_EVENT_DATA = 11;
+    /** Data acknowledged event. */
+    public static final int PSP_ADHOC_MATCHING_EVENT_DATA_CONFIRM = 12;
+    /** Data timeout event. */
+    public static final int PSP_ADHOC_MATCHING_EVENT_DATA_TIMEOUT = 13;
+
+    /**
+     * Matching modes used in sceNetAdhocMatchingCreate
+     */
+    /** Host */
+    public static final int PSP_ADHOC_MATCHING_MODE_HOST = 1;
+    /** Client */
+    public static final int PSP_ADHOC_MATCHING_MODE_CLIENT = 2;
+    /** Peer to peer */
+    public static final int PSP_ADHOC_MATCHING_MODE_PTP = 3;
+
+    /**
+     * An AdhocMatchingEventMessage is consisting of:
+     * - 6 bytes for the MAC address of the message sender
+     * - 1 byte for the event PSP_ADHOC_MATCHING_EVENT_xxx
+     * - n bytes for the message data
+     */
+    protected static class AdhocMatchingEventMessage extends AdhocMessage {
+    	protected int event;
+
+    	public AdhocMatchingEventMessage(byte[] message, int length) {
+    		if (length >= macAddress.length + 1) {
+    			System.arraycopy(message, 0, macAddress, 0, macAddress.length);
+    			event = message[macAddress.length] & 0xFF;
+    			data = new byte[length - macAddress.length - 1];
+    			System.arraycopy(message, macAddress.length + 1, data, 0, data.length);
+    		}
+		}
+
+		public AdhocMatchingEventMessage(int address, int length, int event) {
+			super(address, length);
+			this.event = event;
+		}
+
+		public int getEvent() {
+			return event;
+		}
+
+		@Override
+		public byte[] getMessage() {
+    		byte[] message = new byte[getMessageLength()];
+    		System.arraycopy(macAddress, 0, message, 0, macAddress.length);
+    		message[macAddress.length] = (byte) event;
+    		System.arraycopy(data, 0, message, macAddress.length + 1, data.length);
+
+    		return message;
+		}
+
+		@Override
+		public int getMessageLength() {
+			return super.getMessageLength() + 1;
+		}
+    }
+
+    private class MatchingObject {
+    	private final int id;
+    	private int mode;
+    	private int maxPeers;
+    	private int port;
+    	private int bufSize;
+    	private SysMemInfo buf;
+    	private int helloDelay;
+    	private int pingDelay;
+    	private int initCount;
+    	private int msgDelay;
+    	private int callback;
+    	private DatagramSocket socket;
+    	private boolean started;
+    	private long lastHelloMicros;
+    	private int helloOptLen;
+    	private int helloOptData;
+    	private SceKernelThreadInfo eventThread;
+    	private SceKernelThreadInfo inputThread;
+
+    	public MatchingObject() {
+    		id = currentMatchingId++;
+    	}
+
+		public int getMode() {
+			return mode;
+		}
+
+		public void setMode(int mode) {
+			this.mode = mode;
+		}
+
+		public int getMaxPeers() {
+			return maxPeers;
+		}
+
+		public void setMaxPeers(int maxPeers) {
+			this.maxPeers = maxPeers;
+		}
+
+		public int getPort() {
+			return port;
+		}
+
+		public void setPort(int port) {
+			this.port = port;
+		}
+
+		public int getBufSize() {
+			return bufSize;
+		}
+
+		public void setBufSize(int bufSize) {
+			this.bufSize = bufSize;
+			if (buf != null) {
+				Modules.SysMemUserForUserModule.free(buf);
+				buf = null;
+			}
+			buf = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, getName(), SysMemUserForUser.PSP_SMEM_Low, bufSize, 0);
+		}
+
+		public int getHelloDelay() {
+			return helloDelay;
+		}
+
+		public void setHelloDelay(int helloDelay) {
+			this.helloDelay = helloDelay;
+		}
+
+		public int getPingDelay() {
+			return pingDelay;
+		}
+
+		public void setPingDelay(int pingDelay) {
+			this.pingDelay = pingDelay;
+		}
+
+		public int getInitCount() {
+			return initCount;
+		}
+
+		public void setInitCount(int initCount) {
+			this.initCount = initCount;
+		}
+
+		public int getMsgDelay() {
+			return msgDelay;
+		}
+
+		public void setMsgDelay(int msgDelay) {
+			this.msgDelay = msgDelay;
+		}
+
+		public int getCallback() {
+			return callback;
+		}
+
+		public void setCallback(int callback) {
+			this.callback = callback;
+		}
+
+		public int getId() {
+			return id;
+		}
+
+		public int start(int evthPri, int evthStack, int inthPri, int inthStack, int optLen, int optData) {
+			try {
+				openSocket();
+				helloOptLen = optLen;
+				helloOptData = optData;
+
+	            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+				if (eventThread == null) {
+		            eventThread = threadMan.hleKernelCreateThread("SceNetAdhocMatchingEvent",
+		                          ThreadManForUser.NET_ADHOC_MATCHING_EVENT_LOOP_ADDRESS,
+					              evthPri, evthStack, threadMan.getCurrentThread().attr, 0);
+		            eventThread.cpuContext.gpr[loopThreadRegisterArgument] = getId();
+					threadMan.hleKernelStartThread(eventThread, 0, 0, eventThread.gpReg_addr);
+				}
+				if (inputThread == null) {
+					inputThread = threadMan.hleKernelCreateThread("SceNetAdhocMatchingInput",
+					              ThreadManForUser.NET_ADHOC_MATCHING_INPUT_LOOP_ADDRESS,
+					              inthPri, inthStack, threadMan.getCurrentThread().attr, 0);
+					inputThread.cpuContext.gpr[loopThreadRegisterArgument] = getId();
+					threadMan.hleKernelStartThread(inputThread, 0, 0, inputThread.gpReg_addr);
+				}
+
+				started = true;
+			} catch (SocketException e) {
+				log.error("start", e);
+			} catch (IOException e) {
+				log.error("start", e);
+			}
+
+			return 0;
+		}
+
+		public int delete() {
+			closeSocket();
+
+			if (buf != null) {
+				Modules.SysMemUserForUserModule.free(buf);
+				buf = null;
+			}
+
+			return 0;
+		}
+
+		public int stop() {
+			closeSocket();
+
+			return 0;
+		}
+
+		private void openSocket() throws SocketException, UnknownHostException {
+			if (socket == null) {
+				int realPort = port + Modules.sceNetAdhocModule.netServerPortShift;
+				socket = new DatagramSocket(realPort);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Listening on port %d(%d)", port, realPort));
+				}
+				socket.setBroadcast(true);
+				socket.setSoTimeout(1);
+			}
+		}
+
+		private void sendHello(int optLen, int optData) throws IOException {
+			int realPort = port + Modules.sceNetAdhocModule.netClientPortShift;
+			InetSocketAddress broadcastAddress = sceNetInet.getBroadcastInetSocketAddress(realPort);
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Sending hello to port %d(%d)", port, realPort));
+			}
+			AdhocMatchingEventMessage adhocMatchingEventMessage = new AdhocMatchingEventMessage(optData, optLen, PSP_ADHOC_MATCHING_EVENT_HELLO);
+			DatagramPacket packet = new DatagramPacket(adhocMatchingEventMessage.getMessage(), adhocMatchingEventMessage.getMessageLength(), broadcastAddress);
+			socket.send(packet);
+
+			lastHelloMicros = Emulator.getClock().microTime();
+		}
+
+		private void closeSocket() {
+			started = false;
+			if (socket != null) {
+				socket.close();
+				socket = null;
+			}
+		}
+
+		public int send(pspNetMacAddress macAddress, int dataLen, int data) {
+			// Faked, all data sent
+			return dataLen;
+		}
+
+		public int selectTarget(pspNetMacAddress macAddress, int optLen, int optData) {
+			int result = 0;
+
+			try {
+				openSocket();
+				int realPort = port + Modules.sceNetAdhocModule.netClientPortShift;
+				InetSocketAddress broadcastAddress = sceNetInet.getBroadcastInetSocketAddress(realPort);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Sending accept to port %d(%d)", port, realPort));
+				}
+				AdhocMatchingEventMessage adhocMatchingEventMessage = new AdhocMatchingEventMessage(optData, optLen, PSP_ADHOC_MATCHING_EVENT_ACCEPT);
+				DatagramPacket packet = new DatagramPacket(adhocMatchingEventMessage.getMessage(), adhocMatchingEventMessage.getMessageLength(), broadcastAddress);
+				socket.send(packet);
+			} catch (SocketException e) {
+				log.error("selectTarget", e);
+			} catch (UnknownHostException e) {
+				log.error("selectTarget", e);
+			} catch (IOException e) {
+				log.error("selectTarget", e);
+			}
+
+			return result;
+		}
+
+		public int cancelTarget(pspNetMacAddress macAddress) {
+			return cancelTarget(macAddress, 0, 0);
+		}
+
+		public int cancelTarget(pspNetMacAddress macAddress, int optLen, int optData) {
+			return 0;
+		}
+
+	    private void notifyCallbackEvent(int event, int macAddr, int optLen, int optData) {
+	    	if (getCallback() == 0) {
+	    		return;
+	    	}
+
+	    	Modules.ThreadManForUserModule.executeCallback(eventThread, getCallback(), null, true, getId(), event, macAddr, optLen, optData);
+	    }
+
+		public boolean eventLoop() {
+			if (socket == null || !started) {
+				return false;
+			}
+
+			if (Emulator.getClock().microTime() - lastHelloMicros >= getHelloDelay()) {
+				try {
+					sendHello(helloOptLen, helloOptData);
+				} catch (IOException e) {
+					log.error("eventLoop hello", e);
+				}
+			}
+
+			return true;
+		}
+
+		public boolean inputLoop() {
+			if (socket == null || !started) {
+				return false;
+			}
+
+			try {
+				byte[] bytes = new byte[AdhocMatchingEventMessage.getMessageLength(getBufSize())];
+				DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
+				socket.receive(packet);
+				AdhocMatchingEventMessage adhocMatchingEventMessage = new AdhocMatchingEventMessage(packet.getData(), packet.getLength());
+				int event = adhocMatchingEventMessage.getEvent();
+				int macAddr = buf.addr;
+				int optData = buf.addr + 8;
+				int optLen = adhocMatchingEventMessage.getDataLength();
+				adhocMatchingEventMessage.writeDataToMemory(optData);
+				pspNetMacAddress macAddress = new pspNetMacAddress();
+				macAddress.setMacAddress(adhocMatchingEventMessage.getMacAddress());
+				macAddress.write(Memory.getInstance(), macAddr);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Received message length=%d, type=%d, mac=%s, port=%d: %s", adhocMatchingEventMessage.getDataLength(), event, macAddress, packet.getPort(), Utilities.getMemoryDump(optData, optLen, 4, 16)));
+				}
+				notifyCallbackEvent(event, macAddr, optLen, optData);
+			} catch (SocketTimeoutException e) {
+				// Nothing available
+				if (log.isTraceEnabled()) {
+					log.trace(String.format("Sync: nothing available on port %d", socket.getPort()));
+				}
+			} catch (IOException e) {
+				log.error("inputLoop", e);
+			}
+
+			return true;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("MatchingObject[id=%d, mode=%d, maxPeers=%d, port=%d, callback=0x%08X]", id, mode, maxPeers, port, callback);
+		}
+    }
 
     @Override
     public String getName() {
         return "sceNetAdhocMatching";
     }
 
-    /**
+	@Override
+	public void start() {
+		matchingObjects = new HashMap<Integer, sceNetAdhocMatching.MatchingObject>();
+		currentMatchingId = 1;
+
+		super.start();
+	}
+
+	public int checkMatchingId(int matchingId) {
+		if (!matchingObjects.containsKey(matchingId)) {
+			throw new SceKernelErrorException(SceKernelErrors.ERROR_NET_ADHOC_INVALID_MATCHING_ID);
+		}
+
+		return matchingId;
+	}
+
+	public void hleNetAdhocMatchingEventThread(Processor processor) {
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("hleNetAdhocMatchingEventThread"));
+		}
+
+		int matchingId = processor.cpu.gpr[loopThreadRegisterArgument];
+		MatchingObject matchingObject = matchingObjects.get(matchingId);
+		if (matchingObject != null && matchingObject.eventLoop()) {
+			Modules.ThreadManForUserModule.hleKernelDelayThread(10000, false);
+		} else {
+			// Exit thread with status 0
+			processor.cpu.gpr[Common._v0] = 0;
+			Modules.ThreadManForUserModule.hleKernelExitDeleteThread();
+		}
+	}
+
+	public void hleNetAdhocMatchingInputThread(Processor processor) {
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("hleNetAdhocMatchingInputThread"));
+		}
+
+		int matchingId = processor.cpu.gpr[loopThreadRegisterArgument];
+		MatchingObject matchingObject = matchingObjects.get(matchingId);
+		if (matchingObject != null && matchingObject.inputLoop()) {
+			Modules.ThreadManForUserModule.hleKernelDelayThread(10000, false);
+		} else {
+			// Exit thread with status 0
+			processor.cpu.gpr[Common._v0] = 0;
+			Modules.ThreadManForUserModule.hleKernelExitDeleteThread();
+		}
+	}
+
+	/**
      * Initialise the Adhoc matching library
      *
      * @param memsize - Internal memory pool size. Lumines uses 0x20000
@@ -44,14 +486,10 @@ public class sceNetAdhocMatching extends HLEModule {
      * @return 0 on success, < 0 on error
      */
     @HLEFunction(nid = 0x2A2A1E07, version = 150)
-    public void sceNetAdhocMatchingInit(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocMatchingInit(int memsize) {
+        log.warn(String.format("IGNORING: sceNetAdhocMatchingInit: memsize=0x%X", memsize));
 
-        int poolSize = cpu.gpr[4];
-
-        log.warn("IGNORING: sceNetAdhocMatchingInit: poolSize=0x" + Integer.toHexString(poolSize));
-
-        cpu.gpr[2] = 0;
+		return 0;
     }
 
     /**
@@ -60,12 +498,10 @@ public class sceNetAdhocMatching extends HLEModule {
      * @return 0 on success, < 0 on error
      */
     @HLEFunction(nid = 0x7945ECDA, version = 150)
-    public void sceNetAdhocMatchingTerm(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceNetAdhocMatchingTerm() {
         log.warn("IGNORING: sceNetAdhocMatchingTerm");
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
     /**
@@ -87,7 +523,19 @@ public class sceNetAdhocMatching extends HLEModule {
     public int sceNetAdhocMatchingCreate(int mode, int maxPeers, int port, int bufSize, int helloDelay, int pingDelay, int initCount, int msgDelay, @CanBeNull TPointer callback) {
         log.warn(String.format("UNIMPLEMENTED: sceNetAdhocMatchingCreate mode=%d, maxPeers=%d, port=%d, bufSize=%d, helloDelay=%d, pingDelay=%d, initCount=%d, msgDelay=%d, callback=%s", mode, maxPeers, port, bufSize, helloDelay, pingDelay, initCount, msgDelay, callback));
 
-        return currentMatchingId++;
+        MatchingObject matchingObject = new MatchingObject();
+        matchingObject.setMode(mode);
+        matchingObject.setMaxPeers(maxPeers);
+        matchingObject.setPort(port);
+        matchingObject.setBufSize(bufSize);
+        matchingObject.setHelloDelay(helloDelay);
+        matchingObject.setPingDelay(pingDelay);
+        matchingObject.setInitCount(initCount);
+        matchingObject.setMsgDelay(msgDelay);
+        matchingObject.setCallback(callback.getAddress());
+        matchingObjects.put(matchingObject.getId(), matchingObject);
+
+        return matchingObject.getId();
     }
 
     /**
@@ -104,12 +552,10 @@ public class sceNetAdhocMatching extends HLEModule {
      * @return 0 on success, < 0 on error
      */
     @HLEFunction(nid = 0x93EF3843, version = 150)
-    public void sceNetAdhocMatchingStart(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocMatchingStart(@CheckArgument("checkMatchingId") int matchingId, int evthPri, int evthStack, int inthPri, int inthStack, int optLen, @CanBeNull TPointer optData) {
+    	log.warn(String.format("UNIMPLEMENTED: sceNetAdhocMatchingStart matchingId=%d, evthPri=%d, evthStack=0x%X, inthPri=%d, inthStack=0x%X, optLen=%d, optData=%s: %s", matchingId, evthPri, evthStack, inthPri, inthStack, optLen, optData, Utilities.getMemoryDump(optData.getAddress(), optLen, 4, 16)));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocMatchingStart");
-
-        cpu.gpr[2] = 0;
+        return matchingObjects.get(matchingId).start(evthPri, evthStack, inthPri, inthStack, optLen, optData.getAddress());
     }
 
     /**
@@ -120,10 +566,10 @@ public class sceNetAdhocMatching extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x32B156B3, version = 150)
-    public int sceNetAdhocMatchingStop(int matchingId) {
+    public int sceNetAdhocMatchingStop(@CheckArgument("checkMatchingId") int matchingId) {
         log.warn(String.format("UNIMPLEMENTED: sceNetAdhocMatchingStop matchingId=%d", matchingId));
 
-        return 0;
+        return matchingObjects.get(matchingId).stop();
     }
 
     /**
@@ -134,10 +580,10 @@ public class sceNetAdhocMatching extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0xF16EAF4F, version = 150)
-    public int sceNetAdhocMatchingDelete(int matchingId) {
-        log.warn(String.format("UNIMPLEMENTED: sceNetAdhocMatchingDelete matchingId=%d", matchingId));
+    public int sceNetAdhocMatchingDelete(@CheckArgument("checkMatchingId") int matchingId) {
+        log.warn(String.format("PARTIAL: sceNetAdhocMatchingDelete matchingId=%d", matchingId));
 
-        return 0;
+        return matchingObjects.remove(matchingId).delete();
     }
 
     /**
@@ -151,12 +597,12 @@ public class sceNetAdhocMatching extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0xF79472D7, version = 150)
-    public void sceNetAdhocMatchingSendData(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocMatchingSendData(@CheckArgument("checkMatchingId") int matchingId, TPointer macAddr, int dataLen, TPointer data) {
+    	pspNetMacAddress macAddress = new pspNetMacAddress();
+    	macAddress.read(Memory.getInstance(), macAddr.getAddress());
+        log.warn(String.format("UNIMPLEMENTED: sceNetAdhocMatchingSendData matchingId=%d, macAddr=%s(%s), dataLen=%d, data=%s", matchingId, macAddr, macAddress, dataLen, data));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocMatchingSendData");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return matchingObjects.get(matchingId).send(macAddress, dataLen, data.getAddress());
     }
 
     /**
@@ -168,12 +614,12 @@ public class sceNetAdhocMatching extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0xEC19337D, version = 150)
-    public void sceNetAdhocMatchingAbortSendData(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocMatchingAbortSendData(@CheckArgument("checkMatchingId") int matchingId, TPointer macAddr) {
+    	pspNetMacAddress macAddress = new pspNetMacAddress();
+    	macAddress.read(Memory.getInstance(), macAddr.getAddress());
+        log.warn(String.format("UNIMPLEMENTED: sceNetAdhocMatchingAbortSendData matchingId=%d, macAddr=%s(%s)", matchingId, macAddr, macAddress));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocMatchingAbortSendData");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -187,12 +633,12 @@ public class sceNetAdhocMatching extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x5E3D4B79, version = 150)
-    public void sceNetAdhocMatchingSelectTarget(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocMatchingSelectTarget(@CheckArgument("checkMatchingId") int matchingId, TPointer macAddr, int optLen, @CanBeNull TPointer optData) {
+    	pspNetMacAddress macAddress = new pspNetMacAddress();
+    	macAddress.read(Memory.getInstance(), macAddr.getAddress());
+        log.warn(String.format("UNIMPLEMENTED: sceNetAdhocMatchingSelectTarget matchingId=%d, macAddr=%s(%s), optLen=%d, optData=%s", matchingId, macAddr, macAddress, optLen, optData));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocMatchingSelectTarget");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return matchingObjects.get(matchingId).selectTarget(macAddress, optLen, optData.getAddress());
     }
 
     /**
@@ -204,12 +650,12 @@ public class sceNetAdhocMatching extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0xEA3C6108, version = 150)
-    public void sceNetAdhocMatchingCancelTarget(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocMatchingCancelTarget(@CheckArgument("checkMatchingId") int matchingId, TPointer macAddr) {
+    	pspNetMacAddress macAddress = new pspNetMacAddress();
+    	macAddress.read(Memory.getInstance(), macAddr.getAddress());
+        log.warn(String.format("UNIMPLEMENTED: sceNetAdhocMatchingCancelTarget matchingId=%d, macAddr=%s(%s)", matchingId, macAddr, macAddress));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocMatchingCancelTarget");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return matchingObjects.get(matchingId).cancelTarget(macAddress);
     }
 
     /**
@@ -223,12 +669,12 @@ public class sceNetAdhocMatching extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x8F58BEDF, version = 150)
-    public void sceNetAdhocMatchingCancelTargetWithOpt(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocMatchingCancelTargetWithOpt(@CheckArgument("checkMatchingId") int matchingId, TPointer macAddr, int optLen, @CanBeNull TPointer optData) {
+    	pspNetMacAddress macAddress = new pspNetMacAddress();
+    	macAddress.read(Memory.getInstance(), macAddr.getAddress());
+        log.warn(String.format("UNIMPLEMENTED: sceNetAdhocMatchingCancelTargetWithOpt matchingId=%d, macAddr=%s(%s), optLen=%d, optData=%s", matchingId, macAddr, macAddress, optLen, optData));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocMatchingCancelTargetWithOpt");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return matchingObjects.get(matchingId).cancelTarget(macAddress, optLen, optData.getAddress());
     }
 
     /**
@@ -277,7 +723,7 @@ public class sceNetAdhocMatching extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0xC58BCD9E, version = 150)
-    public int sceNetAdhocMatchingGetMembers(int matchingId, TPointer32 lengthAddr, @CanBeNull TPointer buf) {
+    public int sceNetAdhocMatchingGetMembers(@CheckArgument("checkMatchingId") int matchingId, TPointer32 lengthAddr, @CanBeNull TPointer buf) {
         log.warn(String.format("UNIMPLEMENTED: sceNetAdhocMatchingGetMembers matchingId=%d, lengthAddr=%s(%d), buf=%s", matchingId, lengthAddr.toString(), lengthAddr.getValue(), buf.toString()));
 
         lengthAddr.setValue(0);
@@ -314,5 +760,4 @@ public class sceNetAdhocMatching extends HLEModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-
 }
