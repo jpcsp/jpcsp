@@ -3849,15 +3849,15 @@ public class VideoEngine {
 
         if (context.stencilOpFail > SOP_DECREMENT_STENCIL_VALUE) {
         	log.warn("Unknown stencil operation " + context.stencilOpFail);
-        	context.stencilOpFail = SOP_KEEP_STENCIL_VALUE;
+        	context.stencilOpFail &= 0x7;
         }
         if (context.stencilOpZFail > SOP_DECREMENT_STENCIL_VALUE) {
         	log.warn("Unknown stencil operation " + context.stencilOpZFail);
-        	context.stencilOpZFail = SOP_KEEP_STENCIL_VALUE;
+        	context.stencilOpZFail &= 0x7;
         }
         if (context.stencilOpZPass > SOP_DECREMENT_STENCIL_VALUE) {
         	log.warn("Unknown stencil operation " + context.stencilOpZPass);
-        	context.stencilOpZPass = SOP_KEEP_STENCIL_VALUE;
+        	context.stencilOpZPass &= 0x7;
         }
 
         re.setStencilOp(context.stencilOpFail, context.stencilOpZFail, context.stencilOpZPass);
@@ -3872,8 +3872,8 @@ public class VideoEngine {
 
         context.depthFunc = normalArgument & 0xFF;
         if (context.depthFunc > ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL) {
-        	error(String.format("%s unknown depth function %d", commandToString(ZTST), context.depthFunc));
-        	context.depthFunc = ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS;
+        	log.warn(String.format("Unknown ztst function %d", context.depthFunc));
+        	context.depthFunc &= 0x7;
         }
 
         if (oldDepthFunc != context.depthFunc) {

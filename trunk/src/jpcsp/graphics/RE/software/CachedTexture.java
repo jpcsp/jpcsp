@@ -47,8 +47,8 @@ import jpcsp.util.Utilities;
  * The whole texture is read at initialization.
  */
 public abstract class CachedTexture implements IRandomTextureAccess {
-	protected final int width;
-	protected final int height;
+	protected int width;
+	protected int height;
 	protected final int pixelFormat;
 	protected final int widthPower2;
 	protected final int heightPower2;
@@ -266,6 +266,12 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 	 * A specialized class when the width is a power of 2 (faster).
 	 */
 	protected static class CachedTexturePow2 extends CachedTexture {
+		public CachedTexturePow2(int widthPow2, int heightPow2, int width, int height, int pixelFormat) {
+			super(widthPow2, heightPow2, pixelFormat, 0);
+			this.width = width;
+			this.height = height;
+		}
+
 		public CachedTexturePow2(int width, int height, int pixelFormat) {
 			super(width, height, pixelFormat, 0);
 		}
@@ -430,5 +436,10 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 			int index = buffer[pixelIndex + offset];
 			return getClut(index);
 		}
+	}
+
+	@Override
+	public String toString() {
+		return String.format("CachedTexture[(%d x %d), %s]", getWidth(), getHeight(), VideoEngine.getPsmName(getPixelFormat()));
 	}
 }

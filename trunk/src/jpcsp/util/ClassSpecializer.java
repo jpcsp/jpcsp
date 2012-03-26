@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.util;
 
 import static org.objectweb.asm.tree.AbstractInsnNode.JUMP_INSN;
+import static org.objectweb.asm.tree.AbstractInsnNode.LABEL;
+import static org.objectweb.asm.tree.AbstractInsnNode.LINE;
 import static org.objectweb.asm.tree.AbstractInsnNode.TABLESWITCH_INSN;
 
 import java.io.IOException;
@@ -27,6 +29,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.ListIterator;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.objectweb.asm.ClassReader;
@@ -217,7 +220,7 @@ public class ClassSpecializer {
 					} else {
 						// Do not delete labels, they could be used as a target from a previous jump.
 						// Also keep line numbers for easier debugging.
-						if (insn.getType() != AbstractInsnNode.LABEL && insn.getType() != AbstractInsnNode.LINE) {
+						if (insn.getType() != LABEL && insn.getType() != LINE) {
 							lit.remove();
 						}
 						continue;
@@ -341,6 +344,8 @@ public class ClassSpecializer {
 			optimizeJumps(method);
 			removeDeadCode(method);
 			optimizeJumps(method);
+			removeUnusedLabels(method);
+			removeUselessLineNumbers(method);
 		}
 
 		/**
@@ -356,7 +361,7 @@ public class ClassSpecializer {
 		private void optimizeJumps(MethodNode method) {
 			for (ListIterator<?> lit = method.instructions.iterator(); lit.hasNext(); ) {
 				AbstractInsnNode insn = (AbstractInsnNode) lit.next();
-				if (insn.getType() == AbstractInsnNode.JUMP_INSN) {
+				if (insn.getType() == JUMP_INSN) {
 					JumpInsnNode jumpInsn = (JumpInsnNode) insn;
 					LabelNode label = jumpInsn.label;
 					AbstractInsnNode target;
@@ -437,6 +442,59 @@ public class ClassSpecializer {
 				}
 			} catch (AnalyzerException e) {
 				// Ignore error
+			}
+		}
+
+		/**
+		 * Remove unused labels, i.e. labels that are not referenced.
+		 * 
+		 * @param method  the method to be updated
+		 */
+		private void removeUnusedLabels(MethodNode method) {
+			// Scan for all the used labels
+			Set<LabelNode> usedLabels = new HashSet<LabelNode>();
+			for (ListIterator<?> lit = method.instructions.iterator(); lit.hasNext(); ) {
+				AbstractInsnNode insn = (AbstractInsnNode) lit.next();
+				if (insn.getType() == JUMP_INSN) {
+					JumpInsnNode jumpInsn = (JumpInsnNode) insn;
+					usedLabels.add(jumpInsn.label);
+				} else if (insn.getType() == TABLESWITCH_INSN) {
+					TableSwitchInsnNode tableSwitchInsn = (TableSwitchInsnNode) insn;
+					for (Iterator<?> it = tableSwitchInsn.labels.iterator(); it.hasNext(); ) {
+						LabelNode labelNode = (LabelNode) it.next();
+						if (labelNode != null) {
+							usedLabels.add(labelNode);
+						}
+					}
+				}
+			}
+
+			// Remove all the label instructions not being identified in the scan
+			for (ListIterator<?> lit = method.instructions.iterator(); lit.hasNext(); ) {
+				AbstractInsnNode insn = (AbstractInsnNode) lit.next();
+				if (insn.getType() == LABEL) {
+					if (!usedLabels.contains(insn)) {
+						lit.remove();
+					}
+				}
+			}
+		}
+
+		/**
+		 * Remove unused line numbers, i.e. line numbers where there is no code.
+		 * 
+		 * @param method  the method to be updated
+		 */
+		private void removeUselessLineNumbers(MethodNode method) {
+			// Remove all the line numbers being immediately followed by another line number.
+			for (ListIterator<?> lit = method.instructions.iterator(); lit.hasNext(); ) {
+				AbstractInsnNode insn = (AbstractInsnNode) lit.next();
+				if (insn.getType() == LINE) {
+					AbstractInsnNode nextInsn = insn.getNext();
+					if (nextInsn != null && nextInsn.getType() == LINE) {
+						lit.remove();
+					}
+				}
 			}
 		}
 
