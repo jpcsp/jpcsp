@@ -49,11 +49,11 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 	}
 
     @HLEFunction(nid = 0x37431849, version = 380, checkInsideInterrupt = true)
-    public void sceKernelTryLockLwMutex_600(int workAreaAddr, int count) {
+    public int sceKernelTryLockLwMutex_600(int workAreaAddr, int count) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelTryLockLwMutex_600 redirecting to sceKernelTryLockLwMutex");
         }
-		Managers.lwmutex.sceKernelTryLockLwMutex(workAreaAddr, count);
+		return Managers.lwmutex.sceKernelTryLockLwMutex(workAreaAddr, count);
 	}
 
     @HLEFunction(nid = 0x1839852A, version = 380)
