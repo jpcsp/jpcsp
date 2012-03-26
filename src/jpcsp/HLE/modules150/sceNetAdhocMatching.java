@@ -485,8 +485,6 @@ public class sceNetAdhocMatching extends HLEModule {
 						packet = new DatagramPacket(adhocMatchingEventMessage.getMessage(), adhocMatchingEventMessage.getMessageLength(), broadcastAddress);
 						socket.send(packet);
 
-						notifyCallbackEvent(PSP_ADHOC_MATCHING_EVENT_COMPLETE, macAddr, optLen, optData);
-
 						pendingComplete = true;
 						connected = true;
 						inConnection = false;
