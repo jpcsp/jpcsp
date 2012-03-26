@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.modules150.sceNet.convertMacAddressToString;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -68,25 +70,41 @@ public class sceNetAdhoc extends HLEModule {
     /**
      * An AdhocMessage is consisting of:
      * - 6 bytes for the MAC address of the message sender
+     * - 6 bytes for the MAC address of the message recipient
      * - n bytes for the message data
      */
     public static class AdhocMessage {
-    	protected byte[] macAddress = new byte[Wlan.MAC_ADDRESS_LENGTH];
+    	protected byte[] fromMacAddress = new byte[Wlan.MAC_ADDRESS_LENGTH];
+    	protected byte[] toMacAddress = new byte[Wlan.MAC_ADDRESS_LENGTH];
     	protected byte[] data = new byte[0];
+    	protected static final int HEADER_SIZE = Wlan.MAC_ADDRESS_LENGTH + Wlan.MAC_ADDRESS_LENGTH;
+    	protected static final byte[] ANY_MAC_ADDRESS = new byte[] {
+    			(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF
+    	};
 
     	protected AdhocMessage() {
     	}
 
     	public AdhocMessage(byte[] message, int length) {
-    		if (length >= macAddress.length) {
-    			System.arraycopy(message, 0, macAddress, 0, macAddress.length);
-    			data = new byte[length - macAddress.length];
-    			System.arraycopy(message, macAddress.length, data, 0, data.length);
+    		if (length >= HEADER_SIZE) {
+    			System.arraycopy(message, 0, fromMacAddress, 0, fromMacAddress.length);
+    			System.arraycopy(message, fromMacAddress.length, toMacAddress, 0, toMacAddress.length);
+    			data = new byte[length - HEADER_SIZE];
+    			System.arraycopy(message, HEADER_SIZE, data, 0, data.length);
     		}
     	}
 
     	public AdhocMessage(int address, int length) {
-    		System.arraycopy(Wlan.getMacAddress(), 0, macAddress, 0, macAddress.length);
+    		init(address, length, ANY_MAC_ADDRESS);
+    	}
+
+    	public AdhocMessage(int address, int length, byte[] toMacAddress) {
+    		init(address, length, toMacAddress);
+    	}
+
+    	private void init(int address, int length, byte[] toMacAddress) {
+    		System.arraycopy(Wlan.getMacAddress(), 0, fromMacAddress, 0, fromMacAddress.length);
+    		System.arraycopy(toMacAddress, 0, this.toMacAddress, 0, this.toMacAddress.length);
     		IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 1);
     		data = new byte[length];
     		for (int i = 0; i < length; i++) {
@@ -96,8 +114,9 @@ public class sceNetAdhoc extends HLEModule {
 
     	public byte[] getMessage() {
     		byte[] message = new byte[getMessageLength()];
-    		System.arraycopy(macAddress, 0, message, 0, macAddress.length);
-    		System.arraycopy(data, 0, message, macAddress.length, data.length);
+    		System.arraycopy(fromMacAddress, 0, message, 0, fromMacAddress.length);
+    		System.arraycopy(toMacAddress, 0, message, fromMacAddress.length, toMacAddress.length);
+    		System.arraycopy(data, 0, message, HEADER_SIZE, data.length);
 
     		return message;
     	}
@@ -107,7 +126,7 @@ public class sceNetAdhoc extends HLEModule {
     	}
 
     	public static int getMessageLength(int dataLength) {
-    		return Wlan.MAC_ADDRESS_LENGTH + dataLength;
+    		return HEADER_SIZE + dataLength;
     	}
 
     	public void writeDataToMemory(int address) {
@@ -118,9 +137,26 @@ public class sceNetAdhoc extends HLEModule {
     		return data.length;
     	}
 
-    	public byte[] getMacAddress() {
-    		return macAddress;
+    	public byte[] getFromMacAddress() {
+    		return fromMacAddress;
     	}
+
+    	public byte[] getToMacAddress() {
+    		return toMacAddress;
+    	}
+
+    	private static boolean isAnyMacAddress(byte[] macAddress) {
+    		return isSameMacAddress(macAddress, ANY_MAC_ADDRESS);
+    	}
+
+    	public boolean isForMe() {
+    		return isAnyMacAddress(toMacAddress) || isSameMacAddress(toMacAddress, Wlan.getMacAddress());
+    	}
+
+		@Override
+		public String toString() {
+			return String.format("AdhocMessage[fromMacAddress=%s, toMacAddress=%d, dataLength=%d]", convertMacAddressToString(fromMacAddress), convertMacAddressToString(toMacAddress), getDataLength());
+		}
     }
 
     private class PdpObject {
@@ -181,7 +217,10 @@ public class sceNetAdhoc extends HLEModule {
 		}
 
 		private SocketAddress getSocketAddress(pspNetMacAddress macAddress, int macPort) throws UnknownHostException {
-			return new InetSocketAddress(InetAddress.getLocalHost(), macPort);
+			if (netClientPortShift > 0 || netServerPortShift > 0) {
+				return new InetSocketAddress(InetAddress.getLocalHost(), macPort);
+			}
+			return sceNetInet.getBroadcastInetSocketAddress(macPort);
 		}
 
 		private void setTimeout(int timeout, int nonblock) throws SocketException {
@@ -205,7 +244,7 @@ public class sceNetAdhoc extends HLEModule {
 				setBroadcast(destMacAddress);
 				int realPort = destPort + netClientPortShift;
 				SocketAddress socketAddress = getSocketAddress(destMacAddress, realPort);
-				AdhocMessage adhocMessage = new AdhocMessage(data.getAddress(), length);
+				AdhocMessage adhocMessage = new AdhocMessage(data.getAddress(), length, destMacAddress.macAddress);
 				DatagramPacket packet = new DatagramPacket(adhocMessage.getMessage(), adhocMessage.getMessageLength(), socketAddress);
 				socket.send(packet);
 				if (log.isDebugEnabled()) {
@@ -258,15 +297,21 @@ public class sceNetAdhoc extends HLEModule {
 					DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
 					socket.receive(packet);
 					AdhocMessage adhocMessage = new AdhocMessage(packet.getData(), packet.getLength());
-					adhocMessage.writeDataToMemory(data.getAddress());
-					dataLengthAddr.setValue(adhocMessage.getDataLength());
-					srcMacAddress.setMacAddress(adhocMessage.getMacAddress());
-					int clientPort = packet.getPort() - netClientPortShift;
-					portAddr.setValue(clientPort);
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("Successfully received %d bytes from %s on port %d(%d): %s", adhocMessage.getDataLength(), srcMacAddress, clientPort, packet.getPort(), Utilities.getMemoryDump(data.getAddress(), dataLengthAddr.getValue(), 4, 16)));
+					if (adhocMessage.isForMe()) {
+						adhocMessage.writeDataToMemory(data.getAddress());
+						dataLengthAddr.setValue(adhocMessage.getDataLength());
+						srcMacAddress.setMacAddress(adhocMessage.getFromMacAddress());
+						int clientPort = packet.getPort() - netClientPortShift;
+						portAddr.setValue(clientPort);
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("Successfully received %d bytes from %s on port %d(%d): %s", adhocMessage.getDataLength(), srcMacAddress, clientPort, packet.getPort(), Utilities.getMemoryDump(data.getAddress(), dataLengthAddr.getValue(), 4, 16)));
+						}
+						result = 0;
+					} else {
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("Received message not for me: %s", adhocMessage));
+						}
 					}
-					result = 0;
 				} catch (SocketException e) {
 					log.error("recv", e);
 				} catch (SocketTimeoutException e) {
@@ -288,13 +333,19 @@ public class sceNetAdhoc extends HLEModule {
 					DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
 					socket.receive(packet);
 					AdhocMessage adhocMessage = new AdhocMessage(packet.getData(), packet.getLength());
-					int bufferAddr = buffer.addr + rcvdData;
-					adhocMessage.writeDataToMemory(bufferAddr);
-					rcvdData += adhocMessage.getDataLength();
-					rcvdMacAddress.setMacAddress(adhocMessage.getMacAddress());
-					rcvdPort = packet.getPort() - netClientPortShift;
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("Successfully received %d bytes from %s on port %d(%d): %s", adhocMessage.getDataLength(), rcvdMacAddress, rcvdPort, packet.getPort(), Utilities.getMemoryDump(bufferAddr, adhocMessage.getDataLength(), 4, 16)));
+					if (adhocMessage.isForMe()) {
+						int bufferAddr = buffer.addr + rcvdData;
+						adhocMessage.writeDataToMemory(bufferAddr);
+						rcvdData += adhocMessage.getDataLength();
+						rcvdMacAddress.setMacAddress(adhocMessage.getFromMacAddress());
+						rcvdPort = packet.getPort() - netClientPortShift;
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("Successfully received %d bytes from %s on port %d(%d): %s", adhocMessage.getDataLength(), rcvdMacAddress, rcvdPort, packet.getPort(), Utilities.getMemoryDump(bufferAddr, adhocMessage.getDataLength(), 4, 16)));
+						}
+					} else {
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("Received message not for me: %s", adhocMessage));
+						}
 					}
 				} catch (SocketException e) {
 					log.error("update", e);
@@ -309,6 +360,9 @@ public class sceNetAdhoc extends HLEModule {
 		private void openSocket() throws SocketException {
 			if (socket == null) {
 				int realPort = port + netServerPortShift;
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Opening socket on port %d(%d)", port, realPort));
+				}
 				socket = new DatagramSocket(realPort);
 			}
 		}
@@ -338,6 +392,20 @@ public class sceNetAdhoc extends HLEModule {
 	    currentFreePort = 0x4000;
 
 	    super.start();
+	}
+
+	public static boolean isSameMacAddress(byte[] macAddress1, byte[] macAddress2) {
+		if (macAddress1.length != macAddress2.length) {
+			return false;
+		}
+
+		for (int i = 0; i < macAddress1.length; i++) {
+			if (macAddress1[i] != macAddress2[i]) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
     private int getFreePort() {

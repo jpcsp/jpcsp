@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.modules150.sceNet.convertMacAddressToString;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -84,6 +86,9 @@ public class sceNetAdhocMatching extends HLEModule {
     /** Data timeout event. */
     public static final int PSP_ADHOC_MATCHING_EVENT_DATA_TIMEOUT = 13;
 
+    /** Internal ping message. */
+    private static final int PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING = 100;
+
     /**
      * Matching modes used in sceNetAdhocMatchingCreate
      */
@@ -102,18 +107,25 @@ public class sceNetAdhocMatching extends HLEModule {
      */
     protected static class AdhocMatchingEventMessage extends AdhocMessage {
     	protected int event;
+    	protected static final int HEADER_SIZE_MATCHING = HEADER_SIZE + 1;
 
     	public AdhocMatchingEventMessage(byte[] message, int length) {
-    		if (length >= macAddress.length + 1) {
-    			System.arraycopy(message, 0, macAddress, 0, macAddress.length);
-    			event = message[macAddress.length] & 0xFF;
-    			data = new byte[length - macAddress.length - 1];
-    			System.arraycopy(message, macAddress.length + 1, data, 0, data.length);
+    		if (length >= HEADER_SIZE_MATCHING) {
+    			System.arraycopy(message, 0, fromMacAddress, 0, fromMacAddress.length);
+    			System.arraycopy(message, fromMacAddress.length, toMacAddress, 0, toMacAddress.length);
+    			event = message[HEADER_SIZE] & 0xFF;
+    			data = new byte[length - HEADER_SIZE_MATCHING];
+    			System.arraycopy(message, HEADER_SIZE_MATCHING, data, 0, data.length);
     		}
 		}
 
 		public AdhocMatchingEventMessage(int address, int length, int event) {
 			super(address, length);
+			this.event = event;
+		}
+
+		public AdhocMatchingEventMessage(int address, int length, byte[] toMacAddress, int event) {
+			super(address, length, toMacAddress);
 			this.event = event;
 		}
 
@@ -124,16 +136,22 @@ public class sceNetAdhocMatching extends HLEModule {
 		@Override
 		public byte[] getMessage() {
     		byte[] message = new byte[getMessageLength()];
-    		System.arraycopy(macAddress, 0, message, 0, macAddress.length);
-    		message[macAddress.length] = (byte) event;
-    		System.arraycopy(data, 0, message, macAddress.length + 1, data.length);
+    		System.arraycopy(fromMacAddress, 0, message, 0, fromMacAddress.length);
+    		System.arraycopy(toMacAddress, 0, message, fromMacAddress.length, toMacAddress.length);
+    		message[HEADER_SIZE] = (byte) event;
+    		System.arraycopy(data, 0, message, HEADER_SIZE_MATCHING, data.length);
 
     		return message;
 		}
 
 		@Override
 		public int getMessageLength() {
-			return super.getMessageLength() + 1;
+			return super.getMessageLength() + (HEADER_SIZE_MATCHING - HEADER_SIZE);
+		}
+
+		@Override
+		public String toString() {
+			return String.format("AdhocMatchingEventMessage[fromMacAddress=%s, toMacAddress=%d, event=%d, dataLength=%d]", convertMacAddressToString(fromMacAddress), convertMacAddressToString(toMacAddress), getEvent(), getDataLength());
 		}
     }
 
@@ -152,10 +170,15 @@ public class sceNetAdhocMatching extends HLEModule {
     	private DatagramSocket socket;
     	private boolean started;
     	private long lastHelloMicros;
+    	private long lastPingMicros;
     	private int helloOptLen;
     	private int helloOptData;
     	private SceKernelThreadInfo eventThread;
     	private SceKernelThreadInfo inputThread;
+    	private byte[] pendingJoinRequest;
+    	private boolean inConnection;
+    	private boolean connected;
+    	private boolean pendingComplete;
 
     	public MatchingObject() {
     		id = currentMatchingId++;
@@ -316,6 +339,19 @@ public class sceNetAdhocMatching extends HLEModule {
 			lastHelloMicros = Emulator.getClock().microTime();
 		}
 
+		private void sendPing() throws IOException {
+			int realPort = port + Modules.sceNetAdhocModule.netClientPortShift;
+			InetSocketAddress broadcastAddress = sceNetInet.getBroadcastInetSocketAddress(realPort);
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Sending ping to port %d(%d)", port, realPort));
+			}
+			AdhocMatchingEventMessage adhocMatchingEventMessage = new AdhocMatchingEventMessage(0, 0, PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING);
+			DatagramPacket packet = new DatagramPacket(adhocMatchingEventMessage.getMessage(), adhocMatchingEventMessage.getMessageLength(), broadcastAddress);
+			socket.send(packet);
+
+			lastPingMicros = Emulator.getClock().microTime();
+		}
+
 		private void closeSocket() {
 			started = false;
 			if (socket != null) {
@@ -336,12 +372,23 @@ public class sceNetAdhocMatching extends HLEModule {
 				openSocket();
 				int realPort = port + Modules.sceNetAdhocModule.netClientPortShift;
 				InetSocketAddress broadcastAddress = sceNetInet.getBroadcastInetSocketAddress(realPort);
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("Sending accept to port %d(%d)", port, realPort));
+				int event;
+				if (pendingJoinRequest != null && sceNetAdhoc.isSameMacAddress(pendingJoinRequest, macAddress.macAddress)) {
+					event = PSP_ADHOC_MATCHING_EVENT_ACCEPT;
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Sending accept to port %d(%d)", port, realPort));
+					}
+				} else {
+					event = PSP_ADHOC_MATCHING_EVENT_JOIN;
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Sending join to port %d(%d)", port, realPort));
+					}
 				}
-				AdhocMatchingEventMessage adhocMatchingEventMessage = new AdhocMatchingEventMessage(optData, optLen, PSP_ADHOC_MATCHING_EVENT_ACCEPT);
+				AdhocMatchingEventMessage adhocMatchingEventMessage = new AdhocMatchingEventMessage(optData, optLen, macAddress.macAddress, event);
 				DatagramPacket packet = new DatagramPacket(adhocMatchingEventMessage.getMessage(), adhocMatchingEventMessage.getMessageLength(), broadcastAddress);
 				socket.send(packet);
+
+				inConnection = true;
 			} catch (SocketException e) {
 				log.error("selectTarget", e);
 			} catch (UnknownHostException e) {
@@ -366,6 +413,9 @@ public class sceNetAdhocMatching extends HLEModule {
 	    		return;
 	    	}
 
+	    	if (log.isDebugEnabled()) {
+	    		log.debug(String.format("Notify callback 0x%08X, event=%d, macAddr=0x%08X, optLen=%d, optData=0x%08X", getCallback(), event, macAddr, optLen, optData));
+	    	}
 	    	Modules.ThreadManForUserModule.executeCallback(eventThread, getCallback(), null, true, getId(), event, macAddr, optLen, optData);
 	    }
 
@@ -374,11 +424,23 @@ public class sceNetAdhocMatching extends HLEModule {
 				return false;
 			}
 
-			if (Emulator.getClock().microTime() - lastHelloMicros >= getHelloDelay()) {
-				try {
-					sendHello(helloOptLen, helloOptData);
-				} catch (IOException e) {
-					log.error("eventLoop hello", e);
+			if (!inConnection) {
+				if (connected) {
+					if (Emulator.getClock().microTime() - lastPingMicros >= getPingDelay()) {
+						try {
+							sendPing();
+						} catch (IOException e) {
+							log.error("eventLoop ping", e);
+						}
+					}
+				} else {
+					if (Emulator.getClock().microTime() - lastHelloMicros >= getHelloDelay()) {
+						try {
+							sendHello(helloOptLen, helloOptData);
+						} catch (IOException e) {
+							log.error("eventLoop hello", e);
+						}
+					}
 				}
 			}
 
@@ -395,18 +457,54 @@ public class sceNetAdhocMatching extends HLEModule {
 				DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
 				socket.receive(packet);
 				AdhocMatchingEventMessage adhocMatchingEventMessage = new AdhocMatchingEventMessage(packet.getData(), packet.getLength());
-				int event = adhocMatchingEventMessage.getEvent();
-				int macAddr = buf.addr;
-				int optData = buf.addr + 8;
-				int optLen = adhocMatchingEventMessage.getDataLength();
-				adhocMatchingEventMessage.writeDataToMemory(optData);
-				pspNetMacAddress macAddress = new pspNetMacAddress();
-				macAddress.setMacAddress(adhocMatchingEventMessage.getMacAddress());
-				macAddress.write(Memory.getInstance(), macAddr);
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("Received message length=%d, type=%d, mac=%s, port=%d: %s", adhocMatchingEventMessage.getDataLength(), event, macAddress, packet.getPort(), Utilities.getMemoryDump(optData, optLen, 4, 16)));
+				if (adhocMatchingEventMessage.isForMe()) {
+					int event = adhocMatchingEventMessage.getEvent();
+					int macAddr = buf.addr;
+					int optData = buf.addr + 8;
+					int optLen = adhocMatchingEventMessage.getDataLength();
+					adhocMatchingEventMessage.writeDataToMemory(optData);
+					pspNetMacAddress macAddress = new pspNetMacAddress();
+					macAddress.setMacAddress(adhocMatchingEventMessage.getFromMacAddress());
+					macAddress.write(Memory.getInstance(), macAddr);
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Received message length=%d, type=%d, fromMac=%s, port=%d: %s", adhocMatchingEventMessage.getDataLength(), event, macAddress, packet.getPort(), Utilities.getMemoryDump(optData, optLen, 4, 16)));
+					}
+					if (event == PSP_ADHOC_MATCHING_EVENT_JOIN) {
+						pendingJoinRequest = adhocMatchingEventMessage.getFromMacAddress();
+						inConnection = true;
+					}
+					notifyCallbackEvent(event, macAddr, optLen, optData);
+
+					if (event == PSP_ADHOC_MATCHING_EVENT_ACCEPT) {
+						int realPort = port + Modules.sceNetAdhocModule.netClientPortShift;
+						InetSocketAddress broadcastAddress = sceNetInet.getBroadcastInetSocketAddress(realPort);
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("Sending complete to port %d(%d)", port, realPort));
+						}
+						adhocMatchingEventMessage = new AdhocMatchingEventMessage(optData, optLen, macAddress.macAddress, PSP_ADHOC_MATCHING_EVENT_COMPLETE);
+						packet = new DatagramPacket(adhocMatchingEventMessage.getMessage(), adhocMatchingEventMessage.getMessageLength(), broadcastAddress);
+						socket.send(packet);
+
+						notifyCallbackEvent(PSP_ADHOC_MATCHING_EVENT_COMPLETE, macAddr, optLen, optData);
+
+						pendingComplete = true;
+						connected = true;
+						inConnection = false;
+					} else if (event == PSP_ADHOC_MATCHING_EVENT_COMPLETE) {
+						if (!pendingComplete) {
+							int realPort = port + Modules.sceNetAdhocModule.netClientPortShift;
+							InetSocketAddress broadcastAddress = sceNetInet.getBroadcastInetSocketAddress(realPort);
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("Sending complete to port %d(%d)", port, realPort));
+							}
+							adhocMatchingEventMessage = new AdhocMatchingEventMessage(optData, optLen, macAddress.macAddress, PSP_ADHOC_MATCHING_EVENT_COMPLETE);
+							packet = new DatagramPacket(adhocMatchingEventMessage.getMessage(), adhocMatchingEventMessage.getMessageLength(), broadcastAddress);
+							socket.send(packet);
+						}
+						connected = true;
+						inConnection = false;
+					}
 				}
-				notifyCallbackEvent(event, macAddr, optLen, optData);
 			} catch (SocketTimeoutException e) {
 				// Nothing available
 				if (log.isTraceEnabled()) {
