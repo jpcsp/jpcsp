@@ -401,7 +401,6 @@ public class ModuleMgrForUser extends HLEModule {
             log.debug("sceKernelStartModule(uid=0x" + Integer.toHexString(uid) + ", argsize=" + argsize + ", argp=0x" + Integer.toHexString(argp_addr) + ", status=0x" + Integer.toHexString(status_addr) + ", option=0x" + Integer.toHexString(option_addr) + ")");
         }
 
-        
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
         SceKernelSMOption smOption = null;
         if (option_addr != 0) {
@@ -490,8 +489,13 @@ public class ModuleMgrForUser extends HLEModule {
 
         log.info("sceKernelStopModule(uid=0x" + Integer.toHexString(uid) + ", argsize=" + argsize + ", argp=0x" + Integer.toHexString(argp_addr) + ", status=0x" + Integer.toHexString(status_addr) + ", option=0x" + Integer.toHexString(option_addr) + ")");
 
-        
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
+        SceKernelSMOption smOption = null;
+        if (option_addr != 0) {
+            smOption = new SceKernelSMOption();
+            smOption.read(mem, option_addr);
+        }
+
         if (sceModule == null) {
             log.warn("sceKernelStopModule - unknown module UID 0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_KERNEL_UNKNOWN_MODULE;
@@ -511,9 +515,29 @@ public class ModuleMgrForUser extends HLEModule {
                 if (Memory.isAddressGood(status_addr)) {
                     mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
                 }
+
+                int priority = 0x20;
+                if (smOption != null && smOption.priority > 0) {
+                    priority = smOption.priority;
+                } else if (sceModule.module_stop_thread_priority > 0) {
+                    priority = sceModule.module_stop_thread_priority;
+                }
+
+                int stackSize = 0x40000;
+                if (smOption != null && smOption.stackSize > 0) {
+                    stackSize = smOption.stackSize;
+                } else if (sceModule.module_stop_thread_stacksize > 0) {
+                    stackSize = sceModule.module_stop_thread_stacksize;
+                }
+
+                int attribute = sceModule.module_stop_thread_attr;
+                if (smOption != null) {
+                    attribute = smOption.attribute;
+                }
+
                 SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStop",
-                        sceModule.module_stop_func, sceModule.module_stop_thread_priority,
-                        sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, option_addr);
+                        sceModule.module_stop_func, priority,
+                        stackSize, attribute, 0);
                 thread.moduleid = sceModule.modid;
                 cpu.gpr[2] = 0;
                 sceModule.stop();
