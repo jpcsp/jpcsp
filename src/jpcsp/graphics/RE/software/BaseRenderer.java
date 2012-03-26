@@ -159,6 +159,8 @@ public abstract class BaseRenderer implements IRenderer {
 		texEnvColorB = from.texEnvColorB;
 		texEnvColorG = from.texEnvColorG;
 		texEnvColorR = from.texEnvColorR;
+		envMapLightPosU = from.envMapLightPosU;
+		envMapLightPosV = from.envMapLightPosV;
 		envMapDiffuseLightU = from.envMapDiffuseLightU;
 		envMapDiffuseLightV = from.envMapDiffuseLightV;
 		envMapShininess = from.envMapShininess;

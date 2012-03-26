@@ -213,7 +213,7 @@ public class RendererTemplate {
 		if (textureFlagEnabled && (!transform2D || useVertexTexture) && !clearMode) {
 			if (texMagFilter == GeCommands.TFLT_LINEAR) {
 				final PrimitiveState prim = renderer.prim;
-				if (needTextureUV && simpleTextureUV) {
+				if (needTextureUV && simpleTextureUV && transform2D) {
 					if (renderer.cachedTexture != null) {
 						if (Math.abs(prim.uStep) != 1f || Math.abs(prim.vStep) != 1f) {
 							prim.resampleFactorWidth = 1f / Math.abs(prim.uStep);

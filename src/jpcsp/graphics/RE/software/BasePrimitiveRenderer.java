@@ -287,8 +287,19 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		        	float uEnd = prim.t2u;
 		        	prim.vStart = prim.t1v;
 		        	float vEnd = prim.t2v;
-			    	prim.uStep = (uEnd - prim.uStart) / (prim.destinationWidth - 1);
-			    	prim.vStep = (vEnd - prim.vStart) / (prim.destinationHeight - 1);
+		        	if (prim.p1x == prim.p2x) {
+		        		prim.uStep = 1f;
+		        	} else {
+		        		prim.uStep = (uEnd - prim.uStart) / Math.abs(prim.p2x - prim.p1x);
+		        	}
+		        	if (prim.p1y == prim.p2y) {
+		        		prim.vStep = 1f;
+		        	} else {
+		        		prim.vStep = (vEnd - prim.vStart) / Math.abs(prim.p2y - prim.p1y);
+		        	}
+			    	if (isLogTraceEnabled) {
+			    		log.trace(String.format("3D sprite uStart=%f, uStep=%f, vStart=%f, vStep=%f, texTranslateX=%f, texTranslateY=%f, texScaleX=%f, texScaleY=%f, point (%d,%d)-(%d,%d), texture (%d,%d)-(%d,%d)", prim.uStart, prim.uStep, prim.vStart, prim.vStep, texTranslateX, texTranslateY, texScaleX, texScaleY, prim.pxMin, prim.pyMin, prim.pxMax, prim.pyMax, prim.tuMin, prim.tvMin, prim.tuMax, prim.tvMax));
+			    	}
 		        }
 
 		        // Perform scissoring and update uStart/uStep and vStart/vStep
@@ -401,8 +412,8 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 				tuMax = tuMax * texScaleX + texTranslateX;
 				tvMin = tvMin * texScaleY + texTranslateY;
 				tvMax = tvMax * texScaleY + texTranslateY;
-				needTextureWrapU = tuMin < 0f || tuMax >= 0.99999f;
-				needTextureWrapV = tvMin < 0f || tvMax >= 0.99999f;
+				needTextureWrapU = tuMin < 0f || tuMin >= 0.99999f || tuMax < 0f || tuMax >= 0.99999f;
+				needTextureWrapV = tvMin < 0f || tvMin >= 0.99999f || tvMax < 0f || tvMax >= 0.99999f;
 			}
 		}
 		needSourceDepthClamp = false;
@@ -495,6 +506,19 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		return false;
 	}
 
+	/**
+	 * Transform a floating-point 2D position coordinate to a screen coordinate.
+	 * The PSP (tested using 3DStudio) is applying the following transformation:
+	 *    0.562 transformed to 0
+	 *    0.563 transformed to 1
+	 * 
+	 * @param value  floating-point 2D position coordinate
+	 * @return       screen coordinate
+	 */
+	private static final int positionCoordinate2D(float value) {
+		return (int) (value + 0.437f);
+	}
+
 	private void setPositions(VertexState v1, VertexState v2) {
         pixel.v1x = v1.p[0];
         pixel.v1y = v1.p[1];
@@ -517,6 +541,20 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
         	prim.p2x = pixel.v2x;
         	prim.p2y = pixel.v2y;
         	prim.p2z = pixel.v2z;
+
+        	// TODO Need more investigation
+//        	prim.pxMax = max(positionCoordinate2D(prim.p1x), positionCoordinate2D(prim.p2x));
+//        	prim.pxMin = min(positionCoordinate2D(prim.p1x), positionCoordinate2D(prim.p2x));
+//        	prim.pyMax = max(positionCoordinate2D(prim.p1y), positionCoordinate2D(prim.p2y));
+//        	prim.pyMin = min(positionCoordinate2D(prim.p1y), positionCoordinate2D(prim.p2y));
+//        	prim.pzMax = max(positionCoordinate2D(prim.p1z), positionCoordinate2D(prim.p2z));
+//        	prim.pzMin = min(positionCoordinate2D(prim.p1z), positionCoordinate2D(prim.p2z));
+			prim.pxMax = maxInt(prim.p1x, prim.p2x);
+	        prim.pxMin = minInt(prim.p1x, prim.p2x);
+	        prim.pyMax = maxInt(prim.p1y, prim.p2y);
+	        prim.pyMin = minInt(prim.p1y, prim.p2y);
+	        prim.pzMax = maxInt(prim.p1z, prim.p2z);
+	        prim.pzMin = minInt(prim.p1z, prim.p2z);
 		} else {
 			float[] screenCoordinates = new float[4];
 			getScreenCoordinates(screenCoordinates, pixel.v1x, pixel.v1y, pixel.v1z);
@@ -531,14 +569,14 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 			prim.p2z = screenCoordinates[2];
 			prim.p2w = screenCoordinates[3];
 			prim.p2wInverted = 1.f / prim.p2w;
-		}
 
-        prim.pxMax = maxInt(prim.p1x, prim.p2x);
-        prim.pxMin = minInt(prim.p1x, prim.p2x);
-        prim.pyMax = maxInt(prim.p1y, prim.p2y);
-        prim.pyMin = minInt(prim.p1y, prim.p2y);
-        prim.pzMax = maxInt(prim.p1z, prim.p2z);
-        prim.pzMin = minInt(prim.p1z, prim.p2z);
+			prim.pxMax = maxInt(prim.p1x, prim.p2x);
+	        prim.pxMin = minInt(prim.p1x, prim.p2x);
+	        prim.pyMax = maxInt(prim.p1y, prim.p2y);
+	        prim.pyMin = minInt(prim.p1y, prim.p2y);
+	        prim.pzMax = maxInt(prim.p1z, prim.p2z);
+	        prim.pzMin = minInt(prim.p1z, prim.p2z);
+		}
 	}
 
 	private void setPositions(VertexState v1, VertexState v2, VertexState v3) {
@@ -555,7 +593,21 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
         	prim.p3x = pixel.v3x;
         	prim.p3y = pixel.v3y;
         	prim.p3z = pixel.v3z;
-		} else {
+
+        	// TODO Need more investigation
+//        	prim.pxMax = max(prim.pxMax, positionCoordinate2D(prim.p3x));
+//        	prim.pxMin = min(prim.pxMin, positionCoordinate2D(prim.p3x));
+//        	prim.pyMax = max(prim.pyMax, positionCoordinate2D(prim.p3y));
+//        	prim.pyMin = min(prim.pyMin, positionCoordinate2D(prim.p3y));
+//        	prim.pzMax = max(prim.pzMax, positionCoordinate2D(prim.p3z));
+//        	prim.pzMin = min(prim.pzMin, positionCoordinate2D(prim.p3z));
+	        prim.pxMax = maxInt(prim.pxMax, prim.p3x);
+	        prim.pxMin = minInt(prim.pxMin, prim.p3x);
+	        prim.pyMax = maxInt(prim.pyMax, prim.p3y);
+	        prim.pyMin = minInt(prim.pyMin, prim.p3y);
+	        prim.pzMax = maxInt(prim.pzMax, prim.p3z);
+	        prim.pzMin = minInt(prim.pzMin, prim.p3z);
+        } else {
 			float[] screenCoordinates = new float[4];
 			getScreenCoordinates(screenCoordinates, pixel.v3x, pixel.v3y, pixel.v3z);
 			prim.p3x = screenCoordinates[0];
@@ -563,14 +615,14 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 			prim.p3z = screenCoordinates[2];
 			prim.p3w = screenCoordinates[3];
 			prim.p3wInverted = 1.f / prim.p3w;
-		}
 
-        prim.pxMax = maxInt(prim.pxMax, prim.p3x);
-        prim.pxMin = minInt(prim.pxMin, prim.p3x);
-        prim.pyMax = maxInt(prim.pyMax, prim.p3y);
-        prim.pyMin = minInt(prim.pyMin, prim.p3y);
-        prim.pzMax = maxInt(prim.pzMax, prim.p3z);
-        prim.pzMin = minInt(prim.pzMin, prim.p3z);
+	        prim.pxMax = maxInt(prim.pxMax, prim.p3x);
+	        prim.pxMin = minInt(prim.pxMin, prim.p3x);
+	        prim.pyMax = maxInt(prim.pyMax, prim.p3y);
+	        prim.pyMin = minInt(prim.pyMin, prim.p3y);
+	        prim.pzMax = maxInt(prim.pzMax, prim.p3z);
+	        prim.pzMin = minInt(prim.pzMin, prim.p3z);
+		}
 	}
 
 	private void setTextures(VertexState v1, VertexState v2) {

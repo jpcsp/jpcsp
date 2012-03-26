@@ -121,7 +121,7 @@ public class CachedTextureResampled {
 			resampleTexture(buffer, width, height, widthSkipEOL, widthFactor, heightFactor);
 		}
 
-		CachedTexture cachedTextureResampled = new CachedTexturePow2(widthPow2, heightPow2, GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888);
+		CachedTexture cachedTextureResampled = new CachedTexturePow2(widthPow2, heightPow2, width, height, GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888);
 		cachedTextureResampled.setBuffer(buffer, 0, buffer.length);
 
 		ResampleInfo resampleInfo = new ResampleInfo(width, height, cachedTextureResampled);
