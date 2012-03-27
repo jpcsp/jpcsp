@@ -19,6 +19,7 @@ package jpcsp.util;
 import static org.objectweb.asm.tree.AbstractInsnNode.JUMP_INSN;
 import static org.objectweb.asm.tree.AbstractInsnNode.LABEL;
 import static org.objectweb.asm.tree.AbstractInsnNode.LINE;
+import static org.objectweb.asm.tree.AbstractInsnNode.LOOKUPSWITCH_INSN;
 import static org.objectweb.asm.tree.AbstractInsnNode.TABLESWITCH_INSN;
 
 import java.io.IOException;
@@ -45,6 +46,7 @@ import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.LookupSwitchInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
@@ -259,6 +261,30 @@ public class ClassSpecializer {
 								method.instructions.set(insn, new JumpInsnNode(Opcodes.GOTO, label));
 								processed = true;
 							}
+						} else if (nextInsn != null && nextInsn.getType() == LOOKUPSWITCH_INSN) {
+							LookupSwitchInsnNode switchInsn = (LookupSwitchInsnNode) nextInsn;
+							LabelNode label = null;
+							if (isIntValue(value)) {
+								int n = getIntValue(value);
+								int i = 0;
+								for (Object value : switchInsn.keys) {
+									if (value instanceof Integer) {
+										if (((Integer) value).intValue() == n) {
+											label = (LabelNode) switchInsn.labels.get(i);
+											break;
+										}
+									}
+									i++;
+								}
+							}
+							if (label == null) {
+								label = switchInsn.dflt;
+							}
+							if (label != null) {
+								// Replace the table switch instruction by a GOTO to the switch label
+								method.instructions.set(insn, new JumpInsnNode(Opcodes.GOTO, label));
+								processed = true;
+							}
 						} else if (nextInsn != null && nextInsn.getType() == AbstractInsnNode.INSN) {
 							int opcode = nextInsn.getOpcode();
 							int n = 0;
@@ -461,6 +487,14 @@ public class ClassSpecializer {
 				} else if (insn.getType() == TABLESWITCH_INSN) {
 					TableSwitchInsnNode tableSwitchInsn = (TableSwitchInsnNode) insn;
 					for (Iterator<?> it = tableSwitchInsn.labels.iterator(); it.hasNext(); ) {
+						LabelNode labelNode = (LabelNode) it.next();
+						if (labelNode != null) {
+							usedLabels.add(labelNode);
+						}
+					}
+				} else if (insn.getType() == LOOKUPSWITCH_INSN) {
+					LookupSwitchInsnNode loopupSwitchInsn = (LookupSwitchInsnNode) insn;
+					for (Iterator<?> it = loopupSwitchInsn.labels.iterator(); it.hasNext(); ) {
 						LabelNode labelNode = (LabelNode) it.next();
 						if (labelNode != null) {
 							usedLabels.add(labelNode);
