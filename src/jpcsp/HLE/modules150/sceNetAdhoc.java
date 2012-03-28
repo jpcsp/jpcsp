@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import static jpcsp.HLE.modules150.sceNet.convertMacAddressToString;
+import static jpcsp.HLE.modules150.sceNetAdhoc.AdhocPtpMessage.PTP_MESSAGE_TYPE_OPEN;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -40,6 +41,7 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.Modules;
@@ -64,8 +66,12 @@ public class sceNetAdhoc extends HLEModule {
     public int netServerPortShift = 0;
 
     protected HashMap<Integer, PdpObject> pdpObjects;
-    private int currentPdpId;
+    protected HashMap<Integer, PtpObject> ptpObjects;
     private int currentFreePort;
+	public static final byte[] ANY_MAC_ADDRESS = new byte[] {
+		(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF
+	};
+	private static final String uidPurpose = "sceNetAdhoc";
 
     /**
      * An AdhocMessage is consisting of:
@@ -73,24 +79,27 @@ public class sceNetAdhoc extends HLEModule {
      * - 6 bytes for the MAC address of the message recipient
      * - n bytes for the message data
      */
-    public static class AdhocMessage {
+    public static abstract class AdhocMessage {
     	protected byte[] fromMacAddress = new byte[Wlan.MAC_ADDRESS_LENGTH];
     	protected byte[] toMacAddress = new byte[Wlan.MAC_ADDRESS_LENGTH];
     	protected byte[] data = new byte[0];
+    	protected byte[] additionalHeaderData;
     	protected static final int HEADER_SIZE = Wlan.MAC_ADDRESS_LENGTH + Wlan.MAC_ADDRESS_LENGTH;
-    	protected static final byte[] ANY_MAC_ADDRESS = new byte[] {
-    			(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF
-    	};
+    	protected int additionalHeaderLength;
 
-    	protected AdhocMessage() {
+    	public AdhocMessage() {
+    		additionalHeaderLength = getAdditionalHeaderLength();
     	}
 
     	public AdhocMessage(byte[] message, int length) {
-    		if (length >= HEADER_SIZE) {
+    		additionalHeaderLength = getAdditionalHeaderLength();
+    		if (length >= HEADER_SIZE + additionalHeaderLength) {
     			System.arraycopy(message, 0, fromMacAddress, 0, fromMacAddress.length);
     			System.arraycopy(message, fromMacAddress.length, toMacAddress, 0, toMacAddress.length);
-    			data = new byte[length - HEADER_SIZE];
-    			System.arraycopy(message, HEADER_SIZE, data, 0, data.length);
+    			additionalHeaderData = new byte[additionalHeaderLength];
+    			System.arraycopy(message, HEADER_SIZE, additionalHeaderData, 0, additionalHeaderData.length);
+    			data = new byte[length - getHeaderSize()];
+    			System.arraycopy(message, getHeaderSize(), data, 0, data.length);
     		}
     	}
 
@@ -102,9 +111,29 @@ public class sceNetAdhoc extends HLEModule {
     		init(address, length, toMacAddress);
     	}
 
+    	protected int getHeaderSize() {
+    		return HEADER_SIZE + additionalHeaderLength;
+    	}
+
+    	protected void setAdditionalHeaderDataByte(int b) {
+    		if (additionalHeaderLength >= 1) {
+    			additionalHeaderData[0] = (byte) b;
+    		}
+    	}
+
+    	protected int getAdditionalHeaderDataByte() {
+    		if (additionalHeaderLength < 1) {
+    			return 0;
+    		}
+
+    		return additionalHeaderData[0] & 0xFF;
+    	}
+
     	private void init(int address, int length, byte[] toMacAddress) {
+    		additionalHeaderLength = getAdditionalHeaderLength();
     		System.arraycopy(Wlan.getMacAddress(), 0, fromMacAddress, 0, fromMacAddress.length);
     		System.arraycopy(toMacAddress, 0, this.toMacAddress, 0, this.toMacAddress.length);
+    		additionalHeaderData = new byte[additionalHeaderLength];
     		IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 1);
     		data = new byte[length];
     		for (int i = 0; i < length; i++) {
@@ -116,13 +145,14 @@ public class sceNetAdhoc extends HLEModule {
     		byte[] message = new byte[getMessageLength()];
     		System.arraycopy(fromMacAddress, 0, message, 0, fromMacAddress.length);
     		System.arraycopy(toMacAddress, 0, message, fromMacAddress.length, toMacAddress.length);
-    		System.arraycopy(data, 0, message, HEADER_SIZE, data.length);
+    		System.arraycopy(additionalHeaderData, 0, message, HEADER_SIZE, additionalHeaderData.length);
+    		System.arraycopy(data, 0, message, getHeaderSize(), data.length);
 
     		return message;
     	}
 
     	public int getMessageLength() {
-    		return getMessageLength(data.length);
+    		return getMessageLength(data.length + additionalHeaderLength);
     	}
 
     	public static int getMessageLength(int dataLength) {
@@ -149,42 +179,88 @@ public class sceNetAdhoc extends HLEModule {
     		return isSameMacAddress(macAddress, ANY_MAC_ADDRESS);
     	}
 
+    	public byte[] getAdditionalHeaderData() {
+    		return additionalHeaderData;
+    	}
+
+    	protected abstract int getAdditionalHeaderLength();
+
     	public boolean isForMe() {
     		return isAnyMacAddress(toMacAddress) || isSameMacAddress(toMacAddress, Wlan.getMacAddress());
     	}
 
 		@Override
 		public String toString() {
-			return String.format("AdhocMessage[fromMacAddress=%s, toMacAddress=%d, dataLength=%d]", convertMacAddressToString(fromMacAddress), convertMacAddressToString(toMacAddress), getDataLength());
+			return String.format("AdhocMessage[fromMacAddress=%s, toMacAddress=%s, dataLength=%d]", convertMacAddressToString(fromMacAddress), convertMacAddressToString(toMacAddress), getDataLength());
 		}
     }
 
-    private class PdpObject {
-    	/** pdp ID */
-    	private final int pdpId;
-    	/** MAC address */
-    	private pspNetMacAddress macAddress;
-    	/** Port */
-    	private int port;
-    	/** Bytes received */
-    	private int rcvdData;
-    	/** Buffer size */
-    	private int bufSize;
-    	private DatagramSocket socket;
-    	private SysMemInfo buffer;
-    	private pspNetMacAddress rcvdMacAddress = new pspNetMacAddress();
-    	private int rcvdPort;
+    protected static class AdhocPdpMessage extends AdhocMessage {
+    	private static final int ADDITIONAL_HEADER_LENGTH = 0;
 
-    	public PdpObject() {
-    		pdpId = currentPdpId++;
-    	}
-
-		public pspNetMacAddress getMacAddress() {
-			return macAddress;
+		public AdhocPdpMessage(byte[] message, int length) {
+			super(message, length);
 		}
 
-		public void setMacAddress(pspNetMacAddress macAddress) {
-			this.macAddress = macAddress;
+		public AdhocPdpMessage(int address, int length, byte[] toMacAddress) {
+			super(address, length, toMacAddress);
+		}
+
+		@Override
+		protected int getAdditionalHeaderLength() {
+			return ADDITIONAL_HEADER_LENGTH;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("AdhocPdpMessage[fromMacAddress=%s, toMacAddress=%s, dataLength=%d]", convertMacAddressToString(fromMacAddress), convertMacAddressToString(toMacAddress), getDataLength());
+		}
+    }
+
+    protected static class AdhocPtpMessage extends AdhocMessage {
+    	private static final int ADDITIONAL_HEADER_LENGTH = 1;
+    	protected static final int PTP_MESSAGE_TYPE_OPEN = 1;
+
+    	public AdhocPtpMessage(int type) {
+    		super();
+    		setAdditionalHeaderDataByte(type);
+    	}
+
+    	public AdhocPtpMessage(int address, int length, int type) {
+			super(address, length);
+			setAdditionalHeaderDataByte(type);
+		}
+
+		public int getType() {
+			return getAdditionalHeaderDataByte();
+		}
+
+		@Override
+		protected int getAdditionalHeaderLength() {
+			return ADDITIONAL_HEADER_LENGTH;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("AdhocPtpMessage[fromMacAddress=%s, toMacAddress=%s, dataLength=%d, type=%d]", convertMacAddressToString(fromMacAddress), convertMacAddressToString(toMacAddress), getDataLength(), getType());
+		}
+    }
+
+    protected static abstract class AdhocObject {
+    	/** uid */
+    	private final int id;
+    	private int port;
+    	protected DatagramSocket socket;
+    	/** Buffer size */
+    	private int bufSize;
+    	protected SysMemInfo buffer;
+
+    	public AdhocObject() {
+    		id = SceUidManager.getNewUid(uidPurpose);
+    	}
+
+    	public int getId() {
+			return id;
 		}
 
 		public int getPort() {
@@ -195,12 +271,8 @@ public class sceNetAdhoc extends HLEModule {
 			this.port = port;
 		}
 
-		public int getRcvdData() {
-			return rcvdData;
-		}
-
-		public int getPdpId() {
-			return pdpId;
+		public int getBufSize() {
+			return bufSize;
 		}
 
 		public void setBufSize(int bufSize) {
@@ -209,21 +281,38 @@ public class sceNetAdhoc extends HLEModule {
 				Modules.SysMemUserForUserModule.free(buffer);
 				buffer = null;
 			}
-			buffer = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, getName(), SysMemUserForUser.PSP_SMEM_Low, bufSize, 0);
+			buffer = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, Modules.sceNetAdhocModule.getName(), SysMemUserForUser.PSP_SMEM_Low, bufSize, 0);
 		}
 
-		public void delete() {
+    	public void delete() {
 			closeSocket();
-		}
-
-		private SocketAddress getSocketAddress(pspNetMacAddress macAddress, int macPort) throws UnknownHostException {
-			if (netClientPortShift > 0 || netServerPortShift > 0) {
-				return new InetSocketAddress(InetAddress.getLocalHost(), macPort);
+			if (buffer != null) {
+				Modules.SysMemUserForUserModule.free(buffer);
+				buffer = null;
 			}
-			return sceNetInet.getBroadcastInetSocketAddress(macPort);
+			SceUidManager.releaseUid(id, uidPurpose);
+    	}
+
+    	protected void openSocket() throws SocketException {
+			if (socket == null) {
+				int realPort = port + Modules.sceNetAdhocModule.netServerPortShift;
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Opening socket on port %d(%d)", port, realPort));
+				}
+				socket = new DatagramSocket(realPort);
+				socket.setBroadcast(true);
+				socket.setSoTimeout(1);
+			}
 		}
 
-		private void setTimeout(int timeout, int nonblock) throws SocketException {
+		protected void closeSocket() {
+			if (socket != null) {
+				socket.close();
+				socket = null;
+			}
+		}
+
+		protected void setTimeout(int timeout, int nonblock) throws SocketException {
 			if (nonblock != 0) {
 				socket.setSoTimeout(1);
 			} else {
@@ -231,8 +320,46 @@ public class sceNetAdhoc extends HLEModule {
 			}
 		}
 
-		private void setBroadcast(pspNetMacAddress macAddress) throws SocketException {
+		protected void setBroadcast(pspNetMacAddress macAddress) throws SocketException {
 			socket.setBroadcast(macAddress.isAnyMacAddress());
+		}
+
+		protected void send(AdhocMessage adhocMessage) throws IOException {
+			send(adhocMessage, getPort());
+		}
+
+		protected void send(AdhocMessage adhocMessage, int destPort) throws IOException {
+			openSocket();
+
+			int realPort = destPort + Modules.sceNetAdhocModule.netClientPortShift;
+			SocketAddress socketAddress = Modules.sceNetAdhocModule.getSocketAddress(adhocMessage.getToMacAddress(), realPort);
+			DatagramPacket packet = new DatagramPacket(adhocMessage.getMessage(), adhocMessage.getMessageLength(), socketAddress);
+			socket.send(packet);
+
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Successfully sent %d bytes to port %d(%d)", adhocMessage.getDataLength(), destPort, realPort));
+			}
+		}
+    }
+
+    protected class PdpObject extends AdhocObject {
+    	/** MAC address */
+    	private pspNetMacAddress macAddress;
+    	/** Bytes received */
+    	private int rcvdData;
+    	private pspNetMacAddress rcvdMacAddress = new pspNetMacAddress();
+    	private int rcvdPort;
+
+		public pspNetMacAddress getMacAddress() {
+			return macAddress;
+		}
+
+		public void setMacAddress(pspNetMacAddress macAddress) {
+			this.macAddress = macAddress;
+		}
+
+		public int getRcvdData() {
+			return rcvdData;
 		}
 
 		public int send(pspNetMacAddress destMacAddress, int destPort, TPointer data, int length, int timeout, int nonblock) {
@@ -242,14 +369,8 @@ public class sceNetAdhoc extends HLEModule {
 				openSocket();
 				setTimeout(timeout, nonblock);
 				setBroadcast(destMacAddress);
-				int realPort = destPort + netClientPortShift;
-				SocketAddress socketAddress = getSocketAddress(destMacAddress, realPort);
-				AdhocMessage adhocMessage = new AdhocMessage(data.getAddress(), length, destMacAddress.macAddress);
-				DatagramPacket packet = new DatagramPacket(adhocMessage.getMessage(), adhocMessage.getMessageLength(), socketAddress);
-				socket.send(packet);
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("Successfully sent %d bytes to port %d(%d)", length, destPort, realPort));
-				}
+				AdhocMessage adhocMessage = new AdhocPdpMessage(data.getAddress(), length, destMacAddress.macAddress);
+				send(adhocMessage, destPort);
 			} catch (SocketException e) {
 				log.error("send", e);
 			} catch (UnknownHostException e) {
@@ -296,7 +417,7 @@ public class sceNetAdhoc extends HLEModule {
 					byte[] bytes = new byte[AdhocMessage.getMessageLength(length)];
 					DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
 					socket.receive(packet);
-					AdhocMessage adhocMessage = new AdhocMessage(packet.getData(), packet.getLength());
+					AdhocMessage adhocMessage = new AdhocPdpMessage(packet.getData(), packet.getLength());
 					if (adhocMessage.isForMe()) {
 						adhocMessage.writeDataToMemory(data.getAddress());
 						dataLengthAddr.setValue(adhocMessage.getDataLength());
@@ -325,14 +446,14 @@ public class sceNetAdhoc extends HLEModule {
 		}
 
 		public void update() {
-			if (rcvdData < bufSize) {
+			if (rcvdData < getBufSize()) {
 				try {
 					openSocket();
 					socket.setSoTimeout(1);
-					byte[] bytes = new byte[AdhocMessage.getMessageLength(bufSize - rcvdData)];
+					byte[] bytes = new byte[AdhocMessage.getMessageLength(getBufSize() - rcvdData)];
 					DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
 					socket.receive(packet);
-					AdhocMessage adhocMessage = new AdhocMessage(packet.getData(), packet.getLength());
+					AdhocMessage adhocMessage = new AdhocPdpMessage(packet.getData(), packet.getLength());
 					if (adhocMessage.isForMe()) {
 						int bufferAddr = buffer.addr + rcvdData;
 						adhocMessage.writeDataToMemory(bufferAddr);
@@ -357,26 +478,67 @@ public class sceNetAdhoc extends HLEModule {
 			}
 		}
 
-		private void openSocket() throws SocketException {
-			if (socket == null) {
-				int realPort = port + netServerPortShift;
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("Opening socket on port %d(%d)", port, realPort));
-				}
-				socket = new DatagramSocket(realPort);
-			}
-		}
-
-		private void closeSocket() {
-			if (socket != null) {
-				socket.close();
-				socket = null;
-			}
-		}
-
 		@Override
 		public String toString() {
-			return String.format("PdpObject[id=%d, macAddress=%s, port=%d, bufSize=%d, rcvdData=%d]", pdpId, macAddress, port, bufSize, rcvdData);
+			return String.format("PdpObject[id=%d, macAddress=%s, port=%d, bufSize=%d, rcvdData=%d]", getId(), macAddress, getPort(), getBufSize(), rcvdData);
+		}
+    }
+
+    protected class PtpObject extends PdpObject {
+    	/** Destination MAC address */
+    	private pspNetMacAddress destMacAddress;
+    	/** Destination port */
+    	private int destPort;
+    	/** Retry delay */
+    	private int retryDelay;
+    	/** Retry count */
+    	private int retryCount;
+
+    	public pspNetMacAddress getDestMacAddress() {
+			return destMacAddress;
+		}
+
+    	public void setDestMacAddress(pspNetMacAddress destMacAddress) {
+			this.destMacAddress = destMacAddress;
+		}
+
+    	public int getDestPort() {
+			return destPort;
+		}
+
+    	public void setDestPort(int destPort) {
+			this.destPort = destPort;
+		}
+
+		public int getRetryDelay() {
+			return retryDelay;
+		}
+
+		public void setRetryDelay(int retryDelay) {
+			this.retryDelay = retryDelay;
+		}
+
+		public int getRetryCount() {
+			return retryCount;
+		}
+
+		public void setRetryCount(int retryCount) {
+			this.retryCount = retryCount;
+		}
+
+		public int open() {
+			int result = 0;
+
+			try {
+				AdhocPtpMessage adhocPtpMessage = new AdhocPtpMessage(PTP_MESSAGE_TYPE_OPEN);
+				send(adhocPtpMessage, destPort);
+			} catch (SocketException e) {
+				log.error("open", e);
+			} catch (IOException e) {
+				log.error("open", e);
+			}
+
+			return result;
 		}
     }
 
@@ -388,10 +550,16 @@ public class sceNetAdhoc extends HLEModule {
     @Override
 	public void start() {
 	    pdpObjects = new HashMap<Integer, sceNetAdhoc.PdpObject>();
-	    currentPdpId = 1;
 	    currentFreePort = 0x4000;
 
 	    super.start();
+	}
+
+	public SocketAddress getSocketAddress(byte[] macAddress, int macPort) throws UnknownHostException {
+		if (netClientPortShift > 0 || netServerPortShift > 0) {
+			return new InetSocketAddress(InetAddress.getLocalHost(), macPort);
+		}
+		return sceNetInet.getBroadcastInetSocketAddress(macPort);
 	}
 
 	public static boolean isSameMacAddress(byte[] macAddress1, byte[] macAddress2) {
@@ -531,9 +699,9 @@ public class sceNetAdhoc extends HLEModule {
     	pdpObject.setMacAddress(macAddress);
     	pdpObject.setPort(port);
     	pdpObject.setBufSize(bufSize);
-    	pdpObjects.put(pdpObject.getPdpId(), pdpObject);
+    	pdpObjects.put(pdpObject.getId(), pdpObject);
 
-    	return pdpObject.getPdpId();
+    	return pdpObject.getId();
     }
 
     /**
@@ -650,7 +818,7 @@ public class sceNetAdhoc extends HLEModule {
         		addr += 4;
 
         		/** pdp ID */
-        		mem.write32(addr, pdpObject.getPdpId());
+        		mem.write32(addr, pdpObject.getId());
         		addr += 4;
 
         		/** MAC address */
@@ -695,12 +863,33 @@ public class sceNetAdhoc extends HLEModule {
      * @return A socket ID on success, < 0 on error.
      */
     @HLEFunction(nid = 0x877F6D66, version = 150)
-    public void sceNetAdhocPtpOpen(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocPtpOpen(TPointer srcMacAddr, int srcPort, TPointer destMacAddr, int destPort, int bufSize, int retryDelay, int retryCount, int unk1) {
+    	Memory mem = Memory.getInstance();
+    	pspNetMacAddress srcMacAddress = new pspNetMacAddress();
+    	srcMacAddress.read(mem, srcMacAddr.getAddress());
+    	pspNetMacAddress destMacAddress = new pspNetMacAddress();
+    	destMacAddress.read(mem, destMacAddr.getAddress());
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocPtpOpen");
+    	log.warn(String.format("UNIMPLEMENTED: sceNetAdhocPtpOpen scrMacAddr=%s(%s), srcPort=%d, destMacAddr=%s(%s), destPort=%d, bufSize=0x%X, retryDelay=%d, retryCount=%d, unk1=%d", srcMacAddr, srcMacAddress, srcPort, destMacAddr, destMacAddress, destPort, bufSize, retryDelay, retryCount, unk1));
 
-        cpu.gpr[2] = 0xDEADC0DE;
+    	PtpObject ptpObject = new PtpObject();
+    	ptpObject.setMacAddress(srcMacAddress);
+    	ptpObject.setPort(srcPort);
+    	ptpObject.setDestMacAddress(destMacAddress);
+    	ptpObject.setDestPort(destPort);
+    	ptpObject.setBufSize(bufSize);
+    	ptpObject.setRetryDelay(retryDelay);
+    	ptpObject.setRetryCount(retryCount);
+    	int result = ptpObject.open();
+    	if (result != 0) {
+    		// Open failed...
+    		ptpObject.delete();
+    		return result;
+    	}
+
+    	ptpObjects.put(ptpObject.getId(), ptpObject);
+
+    	return ptpObject.getId();
     }
 
     /**
@@ -735,12 +924,14 @@ public class sceNetAdhoc extends HLEModule {
      * @return A socket ID on success, < 0 on error.
      */
     @HLEFunction(nid = 0xE08BDAC1, version = 150)
-    public void sceNetAdhocPtpListen(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocPtpListen(TPointer srcMacAddr, int srcPort, int bufSize, int retryDelay, int retryCount, int queue, int unk1) {
+    	Memory mem = Memory.getInstance();
+    	pspNetMacAddress srcMacAddress = new pspNetMacAddress();
+    	srcMacAddress.read(mem, srcMacAddr.getAddress());
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocPtpListen");
+    	log.warn(String.format("UNIMPLEMENTED: sceNetAdhocPtpListen scrMacAddr=%s(%s), srcPort=%d, bufSize=0x%X, retryDelay=%d, retryCount=%d, queue=%d, unk1=%d", srcMacAddr, srcMacAddress, srcPort, bufSize, retryDelay, retryCount, queue, unk1));
 
-        cpu.gpr[2] = 0xDEADC0DE;
+    	return -1;
     }
 
     /**

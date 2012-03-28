@@ -184,6 +184,7 @@ public class ThreadManForUser extends HLEModule {
     public static final int NET_APCTL_LOOP_ADDRESS = MemoryMap.START_RAM + 0x60;
     public static final int NET_ADHOC_MATCHING_EVENT_LOOP_ADDRESS = MemoryMap.START_RAM + 0x80;
     public static final int NET_ADHOC_MATCHING_INPUT_LOOP_ADDRESS = MemoryMap.START_RAM + 0xA0;
+    public static final int NET_ADHOC_CTL_LOOP_ADDRESS = MemoryMap.START_RAM + 0xC0;
     private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
     private boolean USE_THREAD_BANLIST = false;
     private static final boolean LOG_CONTEXT_SWITCHING = true;
@@ -243,6 +244,7 @@ public class ThreadManForUser extends HLEModule {
         installNetApctlLoopHandler();
         installNetAdhocMatchingEventLoopHandler();
         installNetAdhocMatchingInputLoopHandler();
+        installNetAdhocCtlLoopHandler();
 
         alarms = new HashMap<Integer, SceKernelAlarmInfo>();
         vtimers = new HashMap<Integer, SceKernelVTimerInfo>();
@@ -450,6 +452,15 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = HLESyscallNid, version = 150)
     public void hleKernelNetAdhocMatchingInputLoop(Processor processor) {
     	Modules.sceNetAdhocMatchingModule.hleNetAdhocMatchingInputThread(processor);
+    }
+
+    private void installNetAdhocCtlLoopHandler() {
+    	installLoopHandler("hleKernelNetAdhocctlLoop", NET_ADHOC_CTL_LOOP_ADDRESS);
+    }
+
+    @HLEFunction(nid = HLESyscallNid, version = 150)
+    public void hleKernelNetAdhocctlLoop(Processor processor) {
+    	Modules.sceNetAdhocctlModule.hleNetAdhocctlThread(processor);
     }
 
     /** to be called when exiting the emulation */
