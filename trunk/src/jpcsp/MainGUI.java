@@ -2004,7 +2004,7 @@ private void PortugueseBRActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 }//GEN-LAST:event_PortugueseBRActionPerformed
 
 private void cwcheatActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cwcheatActionPerformed
-    CheatsGUI cwCheats = new CheatsGUI("CWCheat");
+    CheatsGUI cwCheats = new CheatsGUI();
     startWindowDialog(cwCheats);
 }//GEN-LAST:event_cwcheatActionPerformed
 

@@ -14,8 +14,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.GUI;
+
+import static jpcsp.util.Utilities.parseHexLong;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -23,169 +24,470 @@ import java.awt.event.KeyListener;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.util.Utilities;
 
 public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
-
     private static final long serialVersionUID = 6791588139795694296L;
+    private static final int cheatsThreadSleepMillis = 5;
 
     private static class CheatsThread extends Thread {
+    	private String[] codes;
+    	private int currentCode;
+    	private final CheatsGUI cheats;
+    	private volatile boolean exit;
 
-        public CheatsThread() {
+        public CheatsThread(CheatsGUI cheats) {
+        	this.cheats = cheats;
+        }
+
+        public void exit() {
+        	exit = true;
+        }
+
+        private String getNextCode() {
+        	String code;
+
+        	while (true) {
+        		if (currentCode >= codes.length) {
+        			code = null;
+        			break;
+        		}
+
+        		code = codes[currentCode++].trim();
+
+            	if (code.startsWith("_L")) {
+            		code = code.substring(2).trim();
+            		break;
+            	} else if (code.startsWith("0")) {
+            		break;
+            	}
+        	}
+
+        	return code;
+        }
+
+        private void skipCodes(int count) {
+        	for (int i = 0; i < count; i++) {
+        		if (getNextCode() == null) {
+        			break;
+        		}
+        	}
+        }
+
+        private void skipAllCodes() {
+        	currentCode = codes.length;
         }
 
         @Override
         public void run() {
             Memory mem = Memory.getInstance();
-            CheatsGUI cheats = CheatsGUI.getInstance();
 
-            while (cheats.isON()) {
-                if (cheats.getCodeType().equals("CWCheat")) {
-                    String[] codes = cheats.getCodesList();
-                    int comm = 0;
-                    int arg = 0;
+            while (!exit) {
+            	// Sleep a little bit to not use the CPU at 100%
+            	Utilities.sleep(cheatsThreadSleepMillis, 0);
 
-                    for (int i = 0; i < codes.length; i++) {
-                        comm = (int)Long.parseLong(codes[i].split(" ")[0].substring(2), 16);
-                        arg = (int)Long.parseLong(codes[i].split(" ")[1].substring(2), 16);
+                codes = cheats.getCodesList();
 
-                        if ((comm >> 28) == 0) { // 8-bit write.
-                            int addr = MemoryMap.START_USERSPACE + comm;
-                            if (Memory.isAddressGood(addr)) {
-                                mem.write8(addr, (byte) arg);
-                            }
-                        } else if ((comm >> 28) == 0x1) { // 16-bit write.
-                            int addr = MemoryMap.START_USERSPACE + (comm - 0x10000000);
-                            if (Memory.isAddressGood(addr)) {
-                                mem.write16(addr, (short) arg);
-                            }
-                        } else if ((comm >> 28) == 0x2) { // 32-bit write.
-                            int addr = MemoryMap.START_USERSPACE + (comm - 0x20000000);
-                            if (Memory.isAddressGood(addr)) {
-                                mem.write32(addr, arg);
-                            }
-                        } else if ((comm >> 8) == 0x301000) { // 8-bit increment.
-                            int addr = MemoryMap.START_USERSPACE + arg;
-                            int data = (comm & 0xFF);
-                            if (Memory.isAddressGood(addr)) {
-                                byte tmp = (byte) (mem.read8(addr) + data);
-                                mem.write8(addr, tmp);
-                            }
-                        } else if ((comm >> 8) == 0x302000) { // 8-bit decrement.
-                            int addr = MemoryMap.START_USERSPACE + arg;
-                            int data = (comm & 0xFF);
-                            if (Memory.isAddressGood(addr)) {
-                                byte tmp = (byte) (mem.read8(addr) - data);
-                                mem.write8(addr, tmp);
-                            }
-                        } else if ((comm >> 16) == 0x3030) { // 16-bit increment.
-                            int addr = MemoryMap.START_USERSPACE + arg;
-                            int data = (comm & 0xFFFF);
-                            if (Memory.isAddressGood(addr)) {
-                                short tmp = (short) (mem.read16(addr) + data);
-                                mem.write16(addr, tmp);
-                            }
-                        } else if ((comm >> 16) == 0x3040) { // 16-bit decrement.
-                            int addr = MemoryMap.START_USERSPACE + arg;
-                            int data = (comm & 0xFFFF);
-                            if (Memory.isAddressGood(addr)) {
-                                short tmp = (short) (mem.read16(addr) - data);
-                                mem.write16(addr, tmp);
-                            }
-                        } else if (comm == 0x30500000) { // 32-bit increment.
-                            int addr = MemoryMap.START_USERSPACE + arg;
-                            int data = (int)Long.parseLong(codes[i + 1].split(" ")[0].substring(2), 16);
-                            if (Memory.isAddressGood(addr)) {
-                                int tmp = (mem.read32(addr) + data);
-                                mem.write32(addr, tmp);
-                            }
-                        } else if (comm == 0x30600000) { // 32-bit decrement.
-                            int addr = MemoryMap.START_USERSPACE + arg;
-                            int data = (int)Long.parseLong(codes[i + 1].split(" ")[0].substring(2), 16);
-                            if (Memory.isAddressGood(addr)) {
-                                int tmp = (mem.read32(addr) - data);
-                                mem.write32(addr, tmp);
-                            }
-                        } else if ((comm >> 28) == 0x7) { // Boolean commands.
-                            int addr = MemoryMap.START_USERSPACE + (comm - 0x70000000);
-                            if ((arg >> 16) == 0x0) { // 8-bit OR.
-                                if (Memory.isAddressGood(addr)) {
-                                    byte val1 = (byte) (arg & 0xFF);
-                                    byte val2 = (byte) mem.read8(addr);
-                                    mem.write8(addr, (byte) (val1 | val2));
-                                }
-                            } else if ((arg >> 16) == 0x2) { // 8-bit AND.
-                                if (Memory.isAddressGood(addr)) {
-                                    byte val1 = (byte) (arg & 0xFF);
-                                    byte val2 = (byte) mem.read8(addr);
-                                    mem.write8(addr, (byte) (val1 & val2));
-                                }
-                            } else if ((arg >> 16) == 0x4) { // 8-bit XOR.
-                                if (Memory.isAddressGood(addr)) {
-                                    byte val1 = (byte) (arg & 0xFF);
-                                    byte val2 = (byte) mem.read8(addr);
-                                    mem.write8(addr, (byte) (val1 ^ val2));
-                                }
-                            } else if ((arg >> 16) == 0x1) { // 16-bit OR.
-                                if (Memory.isAddressGood(addr)) {
-                                    short val1 = (short) (arg & 0xFFFF);
-                                    short val2 = (short) mem.read16(addr);
-                                    mem.write16(addr, (short) (val1 | val2));
-                                }
-                            } else if ((arg >> 16) == 0x3) { // 16-bit AND.
-                                if (Memory.isAddressGood(addr)) {
-                                    short val1 = (short) (arg & 0xFFFF);
-                                    short val2 = (short) mem.read16(addr);
-                                    mem.write16(addr, (short) (val1 & val2));
-                                }
-                            } else if ((arg >> 16) == 0x5) { // 16-bit XOR.
-                                if (Memory.isAddressGood(addr)) {
-                                    short val1 = (short) (arg & 0xFFFF);
-                                    short val2 = (short) mem.read16(addr);
-                                    mem.write16(addr, (short) (val1 ^ val2));
-                                }
-                            }
-                        } else if ((comm >> 28) == 0x5) { // Memcpy command.
-                            int srcAddr = MemoryMap.START_USERSPACE + (comm - 0x50000000);
-                            int destAddr = (int)Long.parseLong(codes[i + 1].split(" ")[0].substring(2), 16);
-                            if (Memory.isAddressGood(srcAddr) && Memory.isAddressGood(destAddr)) {
-                                mem.memcpy(destAddr, srcAddr, arg);
-                            }
-                        } else if ((comm >> 28) == 0x4) { // 32-bit patch code.
-                            int addr = MemoryMap.START_USERSPACE + (comm - 0x40000000);
-                            int data = (int)Long.parseLong(codes[i + 1].split(" ")[0].substring(2), 16);
-                            int dataAdd = (int)Long.parseLong(codes[i + 1].split(" ")[1].substring(2), 16);
+                currentCode = 0;
+                while (true) {
+                	String code = getNextCode();
+                	if (code == null) {
+                		break;
+                	}
 
-                            int maxAddr = (arg >> 16) & 0xFFFF;
-                            int stepAddr = (arg & 0xFFFF) * 4;
-                            for (int a = 0; a < maxAddr; a++) {
-                                if (Memory.isAddressGood(addr)) {
-                                    mem.write32(addr, data);
-                                }
-                                addr += stepAddr;
-                                data += dataAdd;
-                            }
-                        } else if ((comm >> 28) == 0x8) { // 8-bit and 16-bit patch code.
-                            int addr = MemoryMap.START_USERSPACE + (comm - 0x40000000);
-                            int data = (int)Long.parseLong(codes[i + 1].split(" ")[0].substring(2), 16);
-                            int dataAdd = (int)Long.parseLong(codes[i + 1].split(" ")[1].substring(2), 16);
+                	String[] parts = code.split(" ");
+                	if (parts == null || parts.length < 2) {
+                		continue;
+                	}
 
-                            int maxAddr = (arg >> 16) & 0xFFFF;
-                            int stepAddr = (arg & 0xFFFF) * 4;
-                            for (int a = 0; a < maxAddr; a++) {
-                                if (Memory.isAddressGood(addr)) {
-                                    if ((data >> 16) == 0x1000) {
-                                        mem.write16(addr, (short) (data & 0xFFFF));
-                                    } else {
-                                        mem.write8(addr, (byte) (data & 0xFF));
+                	int value;
+                	int comm = (int) parseHexLong(parts[0].trim());
+                    int arg = (int) parseHexLong(parts[1].trim());
+                    int addr = MemoryMap.START_USERSPACE | (comm & 0x0FFFFFFF);
+
+                    switch (comm >>> 28) {
+                    	case 0: // 8-bit write.
+                    		if (Memory.isAddressGood(addr)) {
+                    			mem.write8(addr, (byte) arg);
+                    		}
+                    		break;
+                    	case 0x1: // 16-bit write.
+                    		if (Memory.isAddressGood(addr)) {
+                    			mem.write16(addr, (short) arg);
+                    		}
+                    		break;
+                    	case 0x2: // 32-bit write.
+                    		if (Memory.isAddressGood(addr)) {
+                    			mem.write32(addr, arg);
+                    		}
+                    		break;
+                    	case 0x3: // Increment/Decrement
+                    		addr = MemoryMap.START_USERSPACE | arg;
+                    		value = 0;
+                    		int increment = 0;
+                    		// Read value from memory
+                    		switch ((comm >> 20) & 0xF) {
+                    			case 1:
+                    			case 2: // 8-bit
+                    				value = mem.read8(addr);
+                    				increment = comm & 0xFF;
+                    				break;
+                    			case 3:
+                    			case 4: // 16-bit
+                    				value = mem.read16(addr);
+                    				increment = comm & 0xFFFF;
+                    				break;
+                    			case 5:
+                    			case 6: // 32-bit
+                    				value = mem.read32(addr);
+                                    code = getNextCode();
+                                    parts = code.split(" ");
+                                    if (parts != null && parts.length >= 1) {
+                                    	increment = (int) parseHexLong(parts[0].trim());
                                     }
+                    				break;
+                    		}
+                    		// Increment/Decrement value
+                    		switch ((comm >> 20) & 0xF) {
+                    			case 1:
+                    			case 3:
+                    			case 5: // Increment
+                    				value += increment;
+                    				break;
+                    			case 2:
+                    			case 4:
+                    			case 6: // Decrement
+                    				value -= increment;
+                    				break;
+                    		}
+                    		// Write value back to memory
+                    		switch ((comm >> 20) & 0xF) {
+                    			case 1:
+                    			case 2: // 8-bit
+                    				mem.write8(addr, (byte) value);
+                    				break;
+                    			case 3:
+                    			case 4: // 16-bit
+                    				mem.write16(addr, (short) value);
+                    				break;
+                    			case 5:
+                    			case 6: // 32-bit
+                    				mem.write32(addr, value);
+                    				break;
+                    		}
+                    		break;
+                    	case 0x4: // 32-bit patch code.
+                    		code = getNextCode();
+                            parts = code.split(" ");
+                            if (parts != null && parts.length >= 1) {
+                            	int data = (int) parseHexLong(parts[0].trim());
+                            	int dataAdd = (int) parseHexLong(parts[1].trim());
+
+                            	int maxAddr = (arg >> 16) & 0xFFFF;
+                                int stepAddr = (arg & 0xFFFF) * 4;
+                                for (int a = 0; a < maxAddr; a++) {
+                                    if (Memory.isAddressGood(addr)) {
+                                        mem.write32(addr, data);
+                                    }
+                                    addr += stepAddr;
+                                    data += dataAdd;
                                 }
-                                addr += stepAddr;
-                                data += dataAdd;
                             }
-                        }
+                            break;
+                    	case 0x5: // Memcpy command.
+                    		code = getNextCode();
+                            parts = code.split(" ");
+                            if (parts != null && parts.length >= 1) {
+                            	int destAddr = (int) parseHexLong(parts[0].trim());
+                                if (Memory.isAddressGood(addr) && Memory.isAddressGood(destAddr)) {
+                                    mem.memcpy(destAddr, addr, arg);
+                                }
+                            }
+                            break;
+                    	case 0x6: // Pointer commands
+                    		code = getNextCode();
+                            parts = code.split(" ");
+                            if (parts != null && parts.length >= 2) {
+                            	int arg2 = (int) parseHexLong(parts[0].trim());
+                            	int offset = (int) parseHexLong(parts[1].trim());
+                            	int baseOffset = (arg2 >>> 20) * 4;
+                            	int base = mem.read32(addr + baseOffset);
+                            	int count = arg2 & 0xFFFF;
+                            	int type = (arg2 >> 16) & 0xF;
+                            	for (int i = 1; i < count; i++) {
+                            		if (i + 1 < count) {
+                            			code = getNextCode();
+        	                            parts = code.split(" ");
+        	                            if (parts != null && parts.length >= 2) {
+        	                            	int arg3 = (int) parseHexLong(parts[0].trim());
+        	                            	int arg4 = (int) parseHexLong(parts[1].trim());
+        	                            	int comm3 = arg3 >>> 28;
+        	                            	switch (comm3) {
+        	                            		case 0x1: // type copy byte
+        	                            			int srcAddr = mem.read32(addr) + offset;
+        	                            			int dstAddr = mem.read32(addr + baseOffset) + (arg3 & 0x0FFFFFFF);
+        	                            			mem.memcpy(dstAddr, srcAddr, arg);
+        	                            			type = -1; // Done
+        	                            			break;
+        	                            		case 0x2:
+        	                            		case 0x3: // type pointer walk
+        	                            			int walkOffset = arg3 & 0x0FFFFFFF;
+        	                            			if (comm3 == 0x3) {
+        	                            				walkOffset = -walkOffset;
+        	                            			}
+        	                            			base = mem.read32(base + walkOffset);
+        	                            			int comm4 = arg4 >>> 28;
+        	                            			switch (comm4) {
+        	                            				case 0x2:
+        	                            				case 0x3: // type pointer walk
+        	                            					walkOffset = arg4 & 0x0FFFFFFF;
+        	                            					if (comm4 == 0x3) {
+        	                            						walkOffset = -walkOffset;
+        	                            					}
+        	                            					base = mem.read32(base + walkOffset);
+        	                            					break;
+        	                            			}
+        	                            			break;
+        	                            		case 0x9: // type multi address write
+        	                            			base += arg3 & 0x0FFFFFFF;
+        	                            			arg += arg4; // CHECKME Not sure about this?
+        	                            			break;
+        	                            	}
+        	                            }
+                            		}
+                            	}
+
+                            	switch (type) {
+                        			case 0: // 8-bit write
+                        				mem.write8(base + offset, (byte) arg);
+                        				break;
+                        			case 1: // 16-bit write
+                        				mem.write16(base + offset, (short) arg);
+                        				break;
+                        			case 2: // 32-bit write
+                        				mem.write32(base + offset, arg);
+                        				break;
+                        			case 3: // 8-bit inverse write
+                        				mem.write8(base - offset, (byte) arg);
+                        				break;
+                        			case 4: // 16-bit inverse write
+                        				mem.write16(base - offset, (short) arg);
+                        				break;
+                        			case 5: // 32-bit inverse write
+                        				mem.write32(base - offset, arg);
+                        				break;
+                        			case -1: // Operation already performed, nothing to do
+                        				break;
+                        		}
+                            }
+                    		break;
+                    	case 0x7: // Boolean commands.
+                            switch (arg >> 16) {
+	                            case 0x0000: // 8-bit OR.
+	                                if (Memory.isAddressGood(addr)) {
+	                                    byte val1 = (byte) (arg & 0xFF);
+	                                    byte val2 = (byte) mem.read8(addr);
+	                                    mem.write8(addr, (byte) (val1 | val2));
+	                                }
+	                                break;
+	                            case 0x0002: // 8-bit AND.
+	                                if (Memory.isAddressGood(addr)) {
+	                                    byte val1 = (byte) (arg & 0xFF);
+	                                    byte val2 = (byte) mem.read8(addr);
+	                                    mem.write8(addr, (byte) (val1 & val2));
+	                                }
+	                                break;
+	                            case 0x0004: // 8-bit XOR.
+	                                if (Memory.isAddressGood(addr)) {
+	                                    byte val1 = (byte) (arg & 0xFF);
+	                                    byte val2 = (byte) mem.read8(addr);
+	                                    mem.write8(addr, (byte) (val1 ^ val2));
+	                                }
+	                                break;
+	                            case 0x0001: // 16-bit OR.
+	                                if (Memory.isAddressGood(addr)) {
+	                                    short val1 = (short) (arg & 0xFFFF);
+	                                    short val2 = (short) mem.read16(addr);
+	                                    mem.write16(addr, (short) (val1 | val2));
+	                                }
+	                                break;
+	                            case 0x0003: // 16-bit AND.
+	                                if (Memory.isAddressGood(addr)) {
+	                                    short val1 = (short) (arg & 0xFFFF);
+	                                    short val2 = (short) mem.read16(addr);
+	                                    mem.write16(addr, (short) (val1 & val2));
+	                                }
+	                                break;
+	                            case 0x0005: // 16-bit XOR.
+	                                if (Memory.isAddressGood(addr)) {
+	                                    short val1 = (short) (arg & 0xFFFF);
+	                                    short val2 = (short) mem.read16(addr);
+	                                    mem.write16(addr, (short) (val1 ^ val2));
+	                                }
+	                                break;
+                            }
+                            break;
+                    	case 0x8: // 8-bit and 16-bit patch code.
+                    		code = getNextCode();
+                            parts = code.split(" ");
+                            if (parts != null && parts.length >= 1) {
+                            	int data = (int) parseHexLong(parts[0].trim());
+                            	int dataAdd = (int) parseHexLong(parts[1].trim());
+
+                            	boolean is8Bit = (data >> 16) == 0x0000;
+                            	int maxAddr = (arg >> 16) & 0xFFFF;
+                                int stepAddr = (arg & 0xFFFF) * (is8Bit ? 1 : 2);
+                                for (int a = 0; a < maxAddr; a++) {
+                                    if (Memory.isAddressGood(addr)) {
+                                    	if (is8Bit) {
+                                    		mem.write8(addr, (byte) (data & 0xFF));
+                                    	} else {
+                                    		mem.write16(addr, (short) (data & 0xFFFF));
+                                    	}
+                                    }
+                                    addr += stepAddr;
+                                    data += dataAdd;
+                                }
+                            }
+                            break;
+                    	case 0xB: // Time command
+                    		// CHECKME Not sure what to do for this code?
+                    		break;
+                    	case 0xC: // Code stopper
+                    		if (Memory.isAddressGood(addr)) {
+                    			value = mem.read32(addr);
+                    			if (value != arg) {
+                    				skipAllCodes();
+                    			}
+                    		}
+                    		break;
+                    	case 0xD: // Test commands & Jocker codes
+                    		switch (arg >>> 28) {
+                    			case 0:
+                    			case 2: // Test commands, single skip
+		                        	boolean is8Bit = (arg >> 28) == 0x2;
+		                        	if (Memory.isAddressGood(addr)) {
+		                        		int memoryValue = is8Bit ? mem.read8(addr) : mem.read16(addr);
+		                        		int testValue = arg & (is8Bit ? 0xFF : 0xFFFF);
+		                        		boolean executeNextLine = false;
+		                        		switch ((arg >> 20) & 0xF) {
+		                        			case 0x0: // Equal
+		                        				executeNextLine = memoryValue == testValue;
+		                        				break;
+		                        			case 0x1: // Not Equal
+		                        				executeNextLine = memoryValue != testValue;
+		                        				break;
+		                        			case 0x2: // Less Than
+		                        				executeNextLine = memoryValue < testValue;
+		                        				break;
+		                        			case 0x3: // Greater Than
+		                        				executeNextLine = memoryValue > testValue;
+		                        				break;
+		                        		}
+		                        		if (!executeNextLine) {
+		                        			skipCodes(1);
+		                        		}
+		                        	}
+		                        	break;
+                    			case 4:
+                    			case 5:
+                    			case 6:
+                    			case 7: // Address Test commands
+		                        	int addr1 = addr;
+		                        	int addr2 = MemoryMap.START_USERSPACE | (arg & 0x0FFFFFFF);
+		                        	if (Memory.isAddressGood(addr1) && Memory.isAddressGood(addr2)) {
+			                            code = getNextCode();
+			                            parts = code.split(" ");
+			                            if (parts != null && parts.length >= 1) {
+			                            	int skip = (int) parseHexLong(parts[0].trim());
+			                            	int type = (int) parseHexLong(parts[1].trim());
+			                            	int value1 = 0;
+			                            	int value2 = 0;
+			                            	switch (type & 0xF) {
+			                            		case 0: // 8 bit
+			                            			value1 = mem.read8(addr1);
+			                            			value2 = mem.read8(addr2);
+			                            			break;
+			                            		case 1: // 16 bit
+			                            			value1 = mem.read16(addr1);
+			                            			value2 = mem.read16(addr2);
+			                            			break;
+			                            		case 2: // 32 bit
+			                            			value1 = mem.read32(addr1);
+			                            			value2 = mem.read32(addr2);
+			                            			break;
+			                            	}
+			                            	boolean executeNextLines = false;
+			                            	switch (arg >>> 28) {
+			                            		case 4: // Equal
+			                            			executeNextLines = value1 == value2;
+			                            			break;
+			                            		case 5: // Not Equal
+			                            			executeNextLines = value1 != value2;
+			                            			break;
+			                            		case 6: // Less Than
+			                            			executeNextLines = value1 < value2;
+			                            			break;
+			                            		case 7: // Greater Than
+			                            			executeNextLines = value1 > value2;
+			                            			break;
+			                            	}
+			                            	if (!executeNextLines) {
+			                            		skipCodes(skip);
+			                            	}
+			                            }
+		                        	}
+		                        	break;
+                    			case 1: // Joker code
+                    			case 3: // Inverse Joker code
+                    				int testButtons = arg & 0x0FFFFFFF;
+                    				int buttons = jpcsp.State.controller.getButtons();
+                    				boolean executeNextLines = false;
+                    				if ((arg >>> 28) == 1) {
+                    					executeNextLines = testButtons == buttons;
+                    				} else {
+                    					executeNextLines = testButtons != buttons;
+                    				}
+                    				if (!executeNextLines) {
+                        				int skip = (comm & 0xFF) + 1;
+                    					skipCodes(skip);
+                    				}
+                    				break;
+                    		}
+                    		break;
+                    	case 0xE: // Test commands, multiple skip
+                        	boolean is8Bit = (comm >> 24) == 0x1;
+                        	addr = MemoryMap.START_USERSPACE | (arg & 0x0FFFFFFF);
+                        	if (Memory.isAddressGood(addr)) {
+                        		int memoryValue = is8Bit ? mem.read8(addr) : mem.read16(addr);
+                        		int testValue = comm & (is8Bit ? 0xFF : 0xFFFF);
+                        		boolean executeNextLines = false;
+                        		switch (arg >>> 28) {
+                        			case 0x0: // Equal
+                        				executeNextLines = memoryValue == testValue;
+                        				break;
+                        			case 0x1: // Not Equal
+                        				executeNextLines = memoryValue != testValue;
+                        				break;
+                        			case 0x2: // Less Than
+                        				executeNextLines = memoryValue < testValue;
+                        				break;
+                        			case 0x3: // Greater Than
+                        				executeNextLines = memoryValue > testValue;
+                        				break;
+                        		}
+                        		if (!executeNextLines) {
+                        			int skip = (comm >> 16) & (is8Bit ? 0xFF : 0xFFF);
+                        			skipCodes(skip);
+                        		}
+                        	}
+                        	break;
                     }
                 }
             }
+
+            // Exiting...
+            cheats.onCheatsThreadEnded();
         }
     }
 
@@ -193,16 +495,12 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
     private javax.swing.JRadioButton jRadioONOFF;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTextArea jTextArea1;
-    private String codeType = "";
-    private boolean toggle = false;
-    private static CheatsGUI instance;
-    private Thread cheatsThread = null;
+    private boolean cheatsOn = false;
+    private CheatsThread cheatsThread = null;
 
-    public CheatsGUI(String type) {
+    public CheatsGUI() {
         initComponents();
-        setTitle("Cheats - " + type);
-        codeType = type;
-        instance = this;
+        setTitle("Cheats - CWCheat");
     }
 
     @Override
@@ -262,24 +560,6 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
         pack();
     }
 
-    public static CheatsGUI getInstance() {
-        return instance;
-    }
-
-    public String getCodeType() {
-        return codeType;
-    }
-
-    public boolean isON() {
-        return toggle;
-    }
-
-    public boolean checkCWCheatFormat(String text) {
-        return (text.charAt(0) == '0' && text.charAt(1) == 'x' &&
-                text.charAt(11) == '0' && text.charAt(12) == 'x' &&
-                text.length() == 21);
-    }
-
     public String[] getCodesList() {
         String text = jTextArea1.getText();
         String[] codes = text.split("\n");
@@ -292,27 +572,32 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
     }
 
     private void jRadioONOFFActionPerformed(java.awt.event.ActionEvent evt) {
-        if (cheatsThread == null && !jTextArea1.getText().equals("")) {
+        cheatsOn = !cheatsOn;
+        jTextArea1.setEditable(!cheatsOn);
+
+        if (cheatsOn && cheatsThread == null && !jTextArea1.getText().equals("")) {
             jTextArea1.setEditable(false);
-            cheatsThread = new CheatsThread();
+            cheatsThread = new CheatsThread(this);
             cheatsThread.setPriority(Thread.MIN_PRIORITY);
             cheatsThread.setName("HLECheatThread");
+            cheatsThread.setDaemon(true);
             cheatsThread.start();
+        } else if (!cheatsOn && cheatsThread != null) {
+        	cheatsThread.exit();
         }
-        if (!toggle) {
-            jTextArea1.setEditable(false);
-            cheatsThread.run();
-            toggle = true;
-        } else {
-            jTextArea1.setEditable(true);
-            Thread.yield();
-            toggle = false;
-        }
+    }
+
+    public void onCheatsThreadEnded() {
+    	cheatsThread = null;
     }
 
     @Override
 	public void dispose() {
-		Emulator.getMainGUI().endWindowDialog();
+    	if (cheatsThread != null) {
+    		cheatsThread.exit();
+    	}
+
+    	Emulator.getMainGUI().endWindowDialog();
 		super.dispose();
 	}
 }
