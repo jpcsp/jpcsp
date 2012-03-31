@@ -53,9 +53,16 @@ public class VertexInfoCompiler {
 		}
 		VertexInfoReaderTemplate compiledVertexInfoReader = compiledVertexInfoReaders.get(key);
 		if (compiledVertexInfoReader == null) {
-			compiledVertexInfoReader = compileVertexInfoReader(key, vtype, readTexture);
-			if (compiledVertexInfoReader != null) {
-				compiledVertexInfoReaders.put(key, compiledVertexInfoReader);
+			// Synchronize this block as it can be called by different threads in parallel
+			// (GUI and AsyncVertexCache threads)
+			synchronized (compiledVertexInfoReaders) {
+				compiledVertexInfoReader = compiledVertexInfoReaders.get(key);
+				if (compiledVertexInfoReader == null) {
+					compiledVertexInfoReader = compileVertexInfoReader(key, vtype, readTexture);
+					if (compiledVertexInfoReader != null) {
+						compiledVertexInfoReaders.put(key, compiledVertexInfoReader);
+					}
+				}
 			}
 		}
 
