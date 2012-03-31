@@ -51,6 +51,7 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
+import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
@@ -209,7 +210,7 @@ public class IoFileMgrForUser extends HLEModule {
     private IoWaitStateChecker ioWaitStateChecker;
 
     private int defaultAsyncPriority;
-    private final static int asyncThreadRegisterArgument = 16; // $s0 is preserved across calls
+    private final static int asyncThreadRegisterArgument = Common._s0; // $s0 is preserved across calls
 
     private PGDFileConnector pgdFileConnector;
     private boolean allowExtractPGD;
@@ -236,6 +237,7 @@ public class IoFileMgrForUser extends HLEModule {
         public long result; // The return value from the last operation on this file, used by sceIoWaitAsync
         public boolean closePending = false; // sceIoCloseAsync has been called on this file
         public boolean asyncPending; // Thread has not switched since an async operation was called on this file
+        public boolean asyncResultPending; // Async IO result is available and has not yet been retrieved
         public long asyncDoneMillis; // When the async operation can be completed
         public int asyncThreadPriority = defaultAsyncPriority;
         public SceKernelThreadInfo asyncThread;
@@ -971,7 +973,7 @@ public class IoFileMgrForUser extends HLEModule {
             if (log.isDebugEnabled()) {
                 log.debug(String.format("hleAsyncThread non-existing uid=%x", uid));
             }
-            cpu.gpr[2] = 0; // Exit status
+            cpu.gpr[Common._v0] = 0; // Exit status
             // Exit and delete the thread to free its resources (e.g. its stack)
             threadMan.hleKernelExitDeleteThread();
         } else {
@@ -1014,6 +1016,7 @@ public class IoFileMgrForUser extends HLEModule {
             return;
         }
         info.asyncPending = true;
+        info.asyncResultPending = false;
         long now = Emulator.getClock().currentTimeMillis();
         info.asyncDoneMillis = now + ioOperation.getDelayMillis(size);
         info.asyncAction = asyncAction;
@@ -1063,6 +1066,7 @@ public class IoFileMgrForUser extends HLEModule {
                 done = false;
             } else {
                 info.asyncPending = false;
+                info.asyncResultPending = true;
                 if (info.cbid >= 0) {
                     // Trigger Async callback.
                     threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, info.cbid, info.notifyArg);
@@ -1087,6 +1091,7 @@ public class IoFileMgrForUser extends HLEModule {
 
                         // Return error at next call to sceIoWaitAsync
                         info.result = ERROR_KERNEL_NO_ASYNC_OP;
+                        info.asyncResultPending = false;
 
                         // Return success
                         thread.cpuContext.gpr[2] = 0;
@@ -1167,14 +1172,9 @@ public class IoFileMgrForUser extends HLEModule {
         if (wait) {
             waitForAsync = true;                
         }
-        
-        // This case happens when the game switches thread before calling waitAsync,
-        // example: sceIoReadAsync -> sceKernelDelayThread -> sceIoWaitAsync
-        // Technically we should wait at least some time, since tests show
-        // a load of sceKernelDelayThread before sceIoWaitAsync won't make
-        // the async io complete (maybe something to do with thread priorities).
+
         if (!info.asyncPending) {
-            log.debug("hleIoWaitAsync - already context switched, not waiting");
+            log.debug("hleIoWaitAsync - async already completed, not waiting");
             waitForAsync = false;
         }
         
@@ -1213,6 +1213,10 @@ public class IoFileMgrForUser extends HLEModule {
             	}
                 mem.write64(res_addr, info.result);
             }
+
+            // Async result can only be retrieved once
+            info.asyncResultPending = false;
+            info.result = ERROR_KERNEL_NO_ASYNC_OP;
 
             // For sceIoPollAsync, only call the ioListeners.
             for (IIoListener ioListener : ioListeners) {
@@ -1416,7 +1420,7 @@ public class IoFileMgrForUser extends HLEModule {
         IoInfo info = fileIds.get(id);
         if (async) {
             if (info != null) {
-                if (info.asyncPending) {
+                if (info.asyncPending || info.asyncResultPending) {
                     log.warn("sceIoCloseAsync - id " + Integer.toHexString(id) + " PSP_ERROR_ASYNC_BUSY");
                     result = ERROR_KERNEL_ASYNC_BUSY;
                 } else {
@@ -1480,7 +1484,7 @@ public class IoFileMgrForUser extends HLEModule {
                 if (info == null) {
                     log.warn("hleIoWrite - unknown id " + Integer.toHexString(id));
                     result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
-                } else if (info.asyncPending) {
+                } else if (info.asyncPending || info.asyncResultPending) {
                     log.warn("hleIoWrite - id " + Integer.toHexString(id) + " PSP_ERROR_ASYNC_BUSY");
                     result = ERROR_KERNEL_ASYNC_BUSY;
                 } else if ((data_addr < MemoryMap.START_RAM) && (data_addr + size > MemoryMap.END_RAM)) {
@@ -1544,7 +1548,7 @@ public class IoFileMgrForUser extends HLEModule {
                 if (info == null) {
                     log.warn("hleIoRead - unknown id " + Integer.toHexString(id));
                     result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
-                } else if (info.asyncPending) {
+                } else if (info.asyncPending || info.asyncResultPending) {
                     log.warn("hleIoRead - id " + Integer.toHexString(id) + " PSP_ERROR_ASYNC_BUSY");
                     result = ERROR_KERNEL_ASYNC_BUSY;
                 } else if ((data_addr < MemoryMap.START_RAM) && (data_addr + size > MemoryMap.END_RAM)) {
@@ -1621,7 +1625,7 @@ public class IoFileMgrForUser extends HLEModule {
                 if (info == null) {
                     log.warn("seek - unknown id " + Integer.toHexString(id));
                     result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
-                } else if (info.asyncPending) {
+                } else if (info.asyncPending || info.asyncResultPending) {
                     log.warn("seek - id " + Integer.toHexString(id) + " PSP_ERROR_ASYNC_BUSY");
                     result = ERROR_KERNEL_ASYNC_BUSY;
                 } else if (info.readOnlyFile == null) {
@@ -1731,7 +1735,7 @@ public class IoFileMgrForUser extends HLEModule {
         if (info == null) {
             log.warn("hleIoIoctl - unknown id " + Integer.toHexString(id));
             result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
-        } else if (info.asyncPending) {
+        } else if (info.asyncPending || info.asyncResultPending) {
             // Can't execute another operation until the previous one completed
             log.warn("hleIoIoctl - id " + Integer.toHexString(id) + " PSP_ERROR_ASYNC_BUSY");
             result = ERROR_KERNEL_ASYNC_BUSY;
