@@ -1684,7 +1684,10 @@ public class VideoEngine {
         boolean useTextureFromNormal = false;
         boolean useTextureFromNormalizedNormal = false;
         boolean useTextureFromPosition = false;
-        if (context.textureFlag.isEnabled()) {
+        // Use the texture from the vertex only is the texture flag is enabled or
+        // if the use of VAO is enabled
+        // (a VAO depends only on the vinfo.vtype structure, not on the texture flag setting)
+        if (context.textureFlag.isEnabled() || re.isVertexArrayAvailable()) {
 	        switch (context.tex_map_mode) {
 	            case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
 	            	if (context.vinfo.texture != 0) {
@@ -1849,7 +1852,7 @@ public class VideoEngine {
 	        	re.setVertexInfo(context.vinfo, re.canAllNativeVertexInfo(), context.useVertexColor, useTexture, type);
 
 	            if (needSetDataPointers) {
-		            if (context.vinfo.texture != 0 || useTexture) {
+		            if (useTexture) {
 		                boolean textureNative;
 		                int textureOffset;
 		                int textureType;
@@ -4117,7 +4120,7 @@ public class VideoEngine {
     }
 
     private void enableClientState(boolean useVertexColor, boolean useTexture) {
-        if (context.vinfo.texture != 0 || useTexture) {
+        if (useTexture) {
             re.enableClientState(IRenderingEngine.RE_TEXTURE);
         } else {
         	re.disableClientState(IRenderingEngine.RE_TEXTURE);
