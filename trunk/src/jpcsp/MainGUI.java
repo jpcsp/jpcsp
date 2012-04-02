@@ -2209,6 +2209,8 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
         System.err.println("  -u, --loadumd FILE         Load a UMD. Example: umdimages/cube.iso");
         System.err.println("  -r, --run                  Run loaded file or umd. Use with -f or -u option.");
         System.err.println("  -t, --tests                Run the automated tests.");
+        System.err.println("  --netClientPortShift N     Increase Network client ports by N (when running 2 Jpcsp on the same computer)");
+        System.err.println("  --netServerPortShift N     Increase Network server ports by N (when running 2 Jpcsp on the same computer)");
     }
 
     private void processArgs(String[] args) {
@@ -2256,6 +2258,24 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
             } else if (args[i].equals("-r") || args[i].equals("--run")) {
                 i++;
                 RunEmu();
+            } else if (args[i].equals("--netClientPortShift")) {
+                i++;
+                if (i < args.length) {
+                	int netClientPortShift = Integer.parseInt(args[i]);
+                	Modules.sceNetAdhocModule.netClientPortShift = netClientPortShift;
+                	i++;
+                } else {
+                	printUsage();
+                }
+            } else if (args[i].equals("--netServerPortShift")) {
+                i++;
+                if (i < args.length) {
+                	int netServerPortShift = Integer.parseInt(args[i]);
+                	Modules.sceNetAdhocModule.netServerPortShift = netServerPortShift;
+                	i++;
+                } else {
+                	printUsage();
+                }
             } else {
                 printUsage();
                 break;

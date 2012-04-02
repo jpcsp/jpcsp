@@ -130,7 +130,7 @@ public class sceNetAdhocMatching extends HLEModule {
 
 		@Override
 		public String toString() {
-			return String.format("AdhocMatchingEventMessage[fromMacAddress=%s, toMacAddress=%d, event=%d, dataLength=%d]", convertMacAddressToString(fromMacAddress), convertMacAddressToString(toMacAddress), getEvent(), getDataLength());
+			return String.format("AdhocMatchingEventMessage[fromMacAddress=%s, toMacAddress=%s, event=%d, dataLength=%d]", convertMacAddressToString(fromMacAddress), convertMacAddressToString(toMacAddress), getEvent(), getDataLength());
 		}
     }
 
