@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.TPointer;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -130,27 +131,19 @@ public class sceNet extends HLEModule {
     }
 
     @HLEFunction(nid = 0x89360950, version = 150, checkInsideInterrupt = true)
-    public void sceNetEtherNtostr(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetEtherNtostr(TPointer etherAddr, TPointer strAddr) {
         Memory mem = Processor.memory;
-        
-        int etherAddr = cpu.gpr[4];
-        int strAddr = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-            log.debug("sceNetEtherNtostr (etherAddr=0x" + Integer.toHexString(etherAddr)
-                    + ", strAddr=0x" + Integer.toHexString(strAddr) + ")");
+            log.debug(String.format("sceNetEtherNtostr etherAddr=%s, strAddr=%s: %s", etherAddr, strAddr, Utilities.getMemoryDump(etherAddr.getAddress(), Wlan.MAC_ADDRESS_LENGTH, 1, Wlan.MAC_ADDRESS_LENGTH)));
         }
-   
-        if (Memory.isAddressGood(etherAddr) && Memory.isAddressGood(strAddr)) {
-            // Convert 6-byte Mac address into string representation (XX:XX:XX:XX:XX:XX).
-            pspNetMacAddress macAddress = new pspNetMacAddress();
-            macAddress.read(mem, etherAddr);
-            Utilities.writeStringZ(mem, strAddr, convertMacAddressToString(macAddress.macAddress));
-            cpu.gpr[2] = 0;
-        } else {
-        	cpu.gpr[2] = -1;
-        }
+
+        // Convert 6-byte Mac address into string representation (XX:XX:XX:XX:XX:XX).
+        pspNetMacAddress macAddress = new pspNetMacAddress();
+        macAddress.read(mem, etherAddr.getAddress());
+        Utilities.writeStringZ(mem, strAddr.getAddress(), convertMacAddressToString(macAddress.macAddress));
+
+        return 0;
     }
 
     protected static int parseHexDigit(char c) {
@@ -167,28 +160,19 @@ public class sceNet extends HLEModule {
     }
 
     @HLEFunction(nid = 0xD27961C9, version = 150, checkInsideInterrupt = true)
-    public void sceNetEtherStrton(Processor processor) {
-        CpuState cpu = processor.cpu;
-        
-        int strAddr = cpu.gpr[4];
-        int etherAddr = cpu.gpr[5];
-
+    public int sceNetEtherStrton(TPointer strAddr, TPointer etherAddr) {
+    	String str = Utilities.readStringNZ(strAddr.getAddress(), 17);
         if (log.isDebugEnabled()) {
-            log.debug("sceNetEtherStrton (strAddr=0x" + Integer.toHexString(strAddr)
-                    + ", etherAddr=0x" + Integer.toHexString(etherAddr) + ")");
+            log.debug(String.format("sceNetEtherStrton strAddr=%s(%s), etherAddr=%s", strAddr, str, etherAddr));
         }
 
-        if (Memory.isAddressGood(strAddr) && Memory.isAddressGood(etherAddr)) {
-            // Convert string Mac address string representation (XX:XX:XX:XX:XX:XX)
-        	// into 6-byte representation.
-        	String str = Utilities.readStringNZ(strAddr, 17);
-        	pspNetMacAddress macAddress = new pspNetMacAddress();
-        	macAddress.setMacAddress(convertStringToMacAddress(str));
-            macAddress.write(Memory.getInstance(), etherAddr);
-            cpu.gpr[2] = 0;
-        } else {
-        	cpu.gpr[2] = -1;
-        }
+        // Convert string Mac address string representation (XX:XX:XX:XX:XX:XX)
+    	// into 6-byte representation.
+    	pspNetMacAddress macAddress = new pspNetMacAddress();
+    	macAddress.setMacAddress(convertStringToMacAddress(str));
+        macAddress.write(Memory.getInstance(), etherAddr.getAddress());
+
+        return 0;
     }
 
     protected int networkSwap32(int value) {
