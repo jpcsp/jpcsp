@@ -150,7 +150,7 @@ public class IoFileMgrForUser extends HLEModule {
     private final static String idPurpose = "IOFileManager-File";
 
     protected static enum IoOperation {
-        open(5), close(1), seek, ioctl(2), remove, rename, mkdir, dread,
+        open(5), close(1), seek(1), ioctl(2), remove, rename, mkdir, dread,
         // Duration of read operation: approx. 4 ms per 0x10000 bytes (tested on real PSP)
         read(4, 0x10000),
         // Duration of write operation: approx. 5 ms per 0x10000 bytes
@@ -195,7 +195,9 @@ public class IoFileMgrForUser extends HLEModule {
         		return getDelayMillis();
         	}
 
-        	return (int) (((long) delayMillis) * size / sizeUnit);
+        	// Return a delay based on the given size.
+        	// Return at least the delayMillis.
+        	return Math.max((int) (((long) delayMillis) * size / sizeUnit), delayMillis);
         }
     }
 
@@ -983,9 +985,15 @@ public class IoFileMgrForUser extends HLEModule {
             boolean asyncCompleted = doStepAsync(info);
             if (threadMan.getCurrentThread() == info.asyncThread) {
                 if (asyncCompleted) {
+                	if (log.isDebugEnabled()) {
+                		log.debug(String.format("Async IO completed"));
+                	}
                     // Wait for a new Async IO... wakeup is done by triggerAsyncThread()
                     threadMan.hleKernelSleepThread(false);
                 } else {
+                	if (log.isDebugEnabled()) {
+                		log.debug(String.format("Async IO not yet completed"));
+                	}
                     // Wait for the Async IO to complete...
                     threadMan.hleKernelDelayThread(info.getAsyncRestMillis() * 1000, false);
                 }
