@@ -857,12 +857,22 @@ public class sceNetAdhocctl extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x8916C003, version = 150)
-    public void sceNetAdhocctlGetNameByAddr(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocctlGetNameByAddr(TPointer macAddr, TPointer nickNameAddr) {
+    	Memory mem = Memory.getInstance();
+    	pspNetMacAddress macAddress = new pspNetMacAddress();
+    	macAddress.read(mem, macAddr.getAddress());
+        log.warn(String.format("PARTIAL: sceNetAdhocctlGetNameByAddr macAddr=%s(%s), nickNameAddr=%s", macAddr, macAddress, nickNameAddr));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocctlGetNameByAddr");
+        String nickName = "";
+        for (AdhocctlPeer peer : peers) {
+        	if (sceNetAdhoc.isSameMacAddress(macAddress.macAddress, peer.macAddress)) {
+        		nickName = peer.nickName;
+        	}
+        }
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        Utilities.writeStringNZ(mem, nickNameAddr.getAddress(), NICK_NAME_LENGTH, nickName);
+
+        return 0;
     }
 
     /**
@@ -873,12 +883,17 @@ public class sceNetAdhocctl extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0xDED9D28E, version = 150)
-    public void sceNetAdhocctlGetParameter(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocctlGetParameter(TPointer paramsAddr) {
+    	Memory mem = Memory.getInstance();
+        log.warn(String.format("PARTIAL: sceNetAdhocctlGetParameter paramsAddr=%s", paramsAddr));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocctlGetParameter");
+        int addr = paramsAddr.getAddress();
+        mem.write32(addr, adhocctlCurrentChannel);
+        Utilities.writeStringNZ(mem, addr + 4, GROUP_NAME_LENGTH, adhocctlCurrentGroup);
+        Utilities.writeStringNZ(mem, addr + 12, IBSS_NAME_LENGTH, adhocctlCurrentIBSS);
+        Utilities.writeStringNZ(mem, addr + 18, NICK_NAME_LENGTH, sceUtility.getSystemParamNickname());
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     /**
