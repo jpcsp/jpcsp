@@ -336,7 +336,7 @@ public class UmdIsoReader {
     		fileStart = (int) Utilities.parseHexLong(filePath.substring(0, sep));
     		fileLength = Utilities.parseHexLong(filePath.substring(sep + 5));
             timestamp = new Date();
-            fileName = "";
+            fileName = null;
     		if (fileStart < 0 || fileStart >= numSectors) {
     			throw new IOException("File '" + filePath + "': Invalid Start Sector");
     		}
