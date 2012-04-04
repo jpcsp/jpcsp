@@ -447,7 +447,7 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 
         if (GLContext.getCapabilities().OpenGL30) {
         	int contextFlags = GL11.glGetInteger(GL30.GL_CONTEXT_FLAGS);
-        	String s = String.format("GL_CONTEXT_FLAGS; 0x%X", contextFlags);
+        	String s = String.format("GL_CONTEXT_FLAGS: 0x%X", contextFlags);
         	if ((contextFlags & GL30.GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT) != 0) {
         		s += " (GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT)";
         	}
