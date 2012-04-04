@@ -1126,7 +1126,6 @@ public class sceUtility extends HLEModule {
 
 		@Override
 		protected boolean executeUpdateVisible(Processor processor) {
-			// TODO to be implemented
 			boolean keepVisible = false;
 
 			if (netconfParams.netAction == SceUtilityNetconfParams.PSP_UTILITY_NETCONF_CONNECT_APNET ||
@@ -1143,6 +1142,20 @@ public class sceUtility extends HLEModule {
 						// When connecting with infrastructure, simulate a connection
 						// using the first network configuration entry.
 						Modules.sceNetApctlModule.hleNetApctlConnect(1);
+					}
+				}
+			} else if (netconfParams.netAction == SceUtilityNetconfParams.PSP_UTILITY_NETCONF_CONNECT_ADHOC) {
+				int state = Modules.sceNetAdhocctlModule.hleNetAdhocctlGetState();
+
+				// The Netconf dialog stays visible until the network reaches
+				// the state PSP_ADHOCCTL_STATE_CONNECTED.
+				if (state == sceNetAdhocctl.PSP_ADHOCCTL_STATE_CONNECTED) {
+					keepVisible = false;
+				} else {
+					keepVisible = true;
+					if (state == sceNetAdhocctl.PSP_ADHOCCTL_STATE_DISCONNECTED && netconfParams.netconfData != null) {
+						// Connect to the given group name
+						Modules.sceNetAdhocctlModule.hleNetAdhocctlConnect(netconfParams.netconfData.confTitle);
 					}
 				}
 			}

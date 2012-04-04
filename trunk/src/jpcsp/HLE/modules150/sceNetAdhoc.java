@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import static jpcsp.HLE.modules150.sceNet.convertMacAddressToString;
+import static jpcsp.HLE.modules150.sceNetAdhoc.AdhocPtpMessage.PTP_MESSAGE_TYPE_CONNECT_CONFIRM;
 import static jpcsp.HLE.modules150.sceNetAdhoc.AdhocPtpMessage.PTP_MESSAGE_TYPE_DATA;
 import static jpcsp.HLE.modules150.sceNetAdhoc.AdhocPtpMessage.PTP_MESSAGE_TYPE_CONNECT;
 
@@ -30,6 +31,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.HashMap;
+import java.util.LinkedList;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
@@ -47,6 +49,7 @@ import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
@@ -56,6 +59,7 @@ import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
+import jpcsp.scheduler.Scheduler;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -71,6 +75,8 @@ public class sceNetAdhoc extends HLEModule {
 
     // Polling period (micro seconds) for blocking operations
     protected static final int BLOCKED_OPERATION_POLLING_MICROS = 10000;
+    // Period to update the Game Mode
+    protected static final int GAME_MODE_UPDATE_MICROS = 1000000;
 
     protected HashMap<Integer, PdpObject> pdpObjects;
     protected HashMap<Integer, PtpObject> ptpObjects;
@@ -79,6 +85,13 @@ public class sceNetAdhoc extends HLEModule {
 		(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF
 	};
 	private static final String uidPurpose = "sceNetAdhoc";
+	private GameModeScheduledAction gameModeScheduledAction;
+	protected GameModeArea masterGameModeArea;
+	protected LinkedList<GameModeArea> replicaGameModeAreas;
+	private static final String replicaIdPurpose = "sceNetAdhoc-Replica";
+    private static final int adhocGameModePort = 31000;
+    private DatagramSocket gameModeSocket;
+
 
     /**
      * An AdhocMessage is consisting of:
@@ -158,6 +171,23 @@ public class sceNetAdhoc extends HLEModule {
     		}
     	}
 
+    	public void setDataInt32(int value) {
+    		data = new byte[4];
+    		for (int i = 0; i < 4; i++) {
+    			data[i] = (byte) (value >> (i * 8));
+    		}
+    	}
+
+    	public int getDataInt32() {
+    		int value = 0;
+
+    		for (int i = 0; i < 4 && i < data.length; i++) {
+    			value |= (data[i] & 0xFF) << (i * 8);
+    		}
+
+    		return value;
+    	}
+
     	public byte[] getMessage() {
     		byte[] message = new byte[getMessageLength()];
     		System.arraycopy(fromMacAddress, 0, message, 0, fromMacAddress.length);
@@ -178,6 +208,10 @@ public class sceNetAdhoc extends HLEModule {
 
     	public void writeDataToMemory(int address) {
     		writeBytes(address, getDataLength(), data, 0);
+    	}
+
+    	public void writeDataToMemory(int address, int maxLength) {
+    		writeBytes(address, Math.min(getDataLength(), maxLength), data, 0);
     	}
 
     	public int getDataLength() {
@@ -245,7 +279,8 @@ public class sceNetAdhoc extends HLEModule {
     protected static class AdhocPtpMessage extends AdhocMessage {
     	private static final int ADDITIONAL_HEADER_LENGTH = 1;
     	protected static final int PTP_MESSAGE_TYPE_CONNECT = 1;
-    	protected static final int PTP_MESSAGE_TYPE_DATA = 2;
+    	protected static final int PTP_MESSAGE_TYPE_CONNECT_CONFIRM = 2;
+    	protected static final int PTP_MESSAGE_TYPE_DATA = 3;
 
 		public AdhocPtpMessage(byte[] message, int length) {
 			super(message, length);
@@ -331,11 +366,19 @@ public class sceNetAdhoc extends HLEModule {
 
     	protected void openSocket() throws SocketException {
 			if (socket == null) {
-				int realPort = port + Modules.sceNetAdhocModule.netServerPortShift;
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("Opening socket on port %d(%d)", port, realPort));
+				if (port == 0) {
+					socket = new DatagramSocket();
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Opening socket on free local port %d", socket.getLocalPort()));
+					}
+					setPort(socket.getLocalPort());
+				} else {
+					int realPort = port + Modules.sceNetAdhocModule.netServerPortShift;
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Opening socket on port %d(%d)", port, realPort));
+					}
+					socket = new DatagramSocket(realPort);
 				}
-				socket = new DatagramSocket(realPort);
 				socket.setBroadcast(true);
 				socket.setSoTimeout(1);
 			}
@@ -408,7 +451,7 @@ public class sceNetAdhoc extends HLEModule {
 		}
 
 		public int send(pspNetMacAddress destMacAddress, int destPort, TPointer data, int length, int timeout, int nonblock) {
-			int result = length;
+			int result = 0;
 
 			try {
 				openSocket();
@@ -426,7 +469,6 @@ public class sceNetAdhoc extends HLEModule {
 				log.error("send", e);
 			}
 
-			// Faked: sending all data
 			return result;
 		}
 
@@ -441,8 +483,12 @@ public class sceNetAdhoc extends HLEModule {
 				}
 				Memory.getInstance().memcpy(data.getAddress(), buffer.addr, length);
 				dataLengthAddr.setValue(length);
-				srcMacAddress.setMacAddress(rcvdMacAddress.macAddress);
-				portAddr.setValue(rcvdPort);
+				if (srcMacAddress != null) {
+					srcMacAddress.setMacAddress(rcvdMacAddress.macAddress);
+				}
+				if (portAddr != null) {
+					portAddr.setValue(rcvdPort);
+				}
 
 				// Update the buffer
 				if (length < rcvdData) {
@@ -466,9 +512,13 @@ public class sceNetAdhoc extends HLEModule {
 					if (adhocMessage.isForMe()) {
 						adhocMessage.writeDataToMemory(data.getAddress());
 						dataLengthAddr.setValue(adhocMessage.getDataLength());
-						srcMacAddress.setMacAddress(adhocMessage.getFromMacAddress());
+						if (srcMacAddress != null) {
+							srcMacAddress.setMacAddress(adhocMessage.getFromMacAddress());
+						}
 						int clientPort = packet.getPort() - netClientPortShift;
-						portAddr.setValue(clientPort);
+						if (portAddr != null) {
+							portAddr.setValue(clientPort);
+						}
 						if (log.isDebugEnabled()) {
 							log.debug(String.format("Successfully received %d bytes from %s on port %d(%d): %s", adhocMessage.getDataLength(), srcMacAddress, clientPort, packet.getPort(), Utilities.getMemoryDump(data.getAddress(), dataLengthAddr.getValue(), 4, 16)));
 						}
@@ -540,6 +590,8 @@ public class sceNetAdhoc extends HLEModule {
     	private int retryCount;
     	/** Queue size */
     	private int queue;
+    	/** Bytes sent */
+    	private int sentData;
 
     	public PtpObject() {
     		super();
@@ -594,6 +646,10 @@ public class sceNetAdhoc extends HLEModule {
 			this.queue = queue;
 		}
 
+		public int getSentData() {
+			return sentData;
+		}
+
 		public int open() {
 			int result = 0;
 
@@ -612,6 +668,9 @@ public class sceNetAdhoc extends HLEModule {
 			try {
 				AdhocPtpMessage adhocPtpMessage = new AdhocPtpMessage(PTP_MESSAGE_TYPE_CONNECT);
 				send(adhocPtpMessage);
+
+				BlockedPtpAction blockedPtpAction = new BlockedPtpConnect(this, timeout);
+				blockedPtpAction.blockCurrentThread();
 			} catch (SocketException e) {
 				log.error("connect", e);
 			} catch (IOException e) {
@@ -637,9 +696,8 @@ public class sceNetAdhoc extends HLEModule {
 			int result = 0;
 
 			if (nonblock == 0) {
-				long schedule = Emulator.getClock().microTime() + BLOCKED_OPERATION_POLLING_MICROS;
-				Emulator.getScheduler().addAction(schedule, new BlockedPtpAccept(this, peerMacAddr, peerPortAddr, timeout));
-				Modules.ThreadManForUserModule.hleBlockCurrentThread();
+				BlockedPtpAction blockedPtpAction = new BlockedPtpAccept(this, peerMacAddr, peerPortAddr, timeout);
+				blockedPtpAction.blockCurrentThread();
 			}
 
 			return result;
@@ -675,9 +733,24 @@ public class sceNetAdhoc extends HLEModule {
 							PtpObject ptpObject = new PtpObject(this);
 							ptpObject.setDestMacAddress(peerMacAddress);
 							ptpObject.setDestPort(peerPort);
+							ptpObject.setPort(0);
 
 							// Return the ID of the new PTP Object
-							thread.cpuContext.gpr[Common._v0] = ptpObject.getId();
+							setReturnValue(thread, ptpObject.getId());
+
+							// Get a new free port
+							ptpObject.setPort(0);
+							ptpObject.openSocket();
+
+							// Send a connect confirmation message including the new port
+							AdhocPtpMessage confirmMessage = new AdhocPtpMessage(PTP_MESSAGE_TYPE_CONNECT_CONFIRM);
+							confirmMessage.setDataInt32(ptpObject.getPort());
+							ptpObject.send(confirmMessage);
+
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("accept completed, creating new Ptp object %s", ptpObject));
+							}
+
 							acceptCompleted = true;
 							break;
 					}
@@ -695,6 +768,51 @@ public class sceNetAdhoc extends HLEModule {
 			}
 
 			return acceptCompleted;
+		}
+
+		public boolean pollConnect(SceKernelThreadInfo thread) {
+			boolean connectCompleted = false;
+
+			try {
+				byte[] bytes = new byte[getBufSize()];
+				DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
+				socket.receive(packet);
+				AdhocPtpMessage adhocPtpMessage = new AdhocPtpMessage(packet.getData(), packet.getLength());
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("pollConnect: received message %s", adhocPtpMessage));
+				}
+				if (adhocPtpMessage.isForMe()) {
+					switch (adhocPtpMessage.getType()) {
+						case PTP_MESSAGE_TYPE_CONNECT_CONFIRM:
+							// Connect successfully completed, retrieve the new destination port
+							int port = adhocPtpMessage.getDataInt32();
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("Received connect confirmation, changing destination port from %d to %d", getDestPort(), port));
+							}
+							setDestPort(port);
+							setReturnValue(thread, 0);
+							connectCompleted = true;
+							break;
+					}
+				} else {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("pollConnect: received a message not for me: %s", adhocPtpMessage));
+					}
+				}
+			} catch (SocketException e) {
+				log.error("pollConnect", e);
+			} catch (SocketTimeoutException e) {
+				// Ignore exception
+				AdhocPtpMessage adhocPtpMessage = new AdhocPtpMessage(PTP_MESSAGE_TYPE_CONNECT);
+				try {
+					send(adhocPtpMessage);
+				} catch (IOException e1) {
+				}
+			} catch (IOException e) {
+				log.error("pollConnect", e);
+			}
+
+			return connectCompleted;
 		}
 
 		protected void send(AdhocPtpMessage adhocPtpMessage) throws IOException {
@@ -715,6 +833,15 @@ public class sceNetAdhoc extends HLEModule {
 
 			return result;
 		}
+
+		public int recv(TPointer data, TPointer32 dataLengthAddr, int timeout, int nonblock) {
+			return recv(null, null, data, dataLengthAddr, timeout, nonblock);
+		}
+
+		@Override
+		public String toString() {
+			return String.format("PtpObject[id=%d, srcMacAddress=%s, srcPort=%d, destMacAddress=%s, destPort=%d, bufSize=%d, retryDelay=%d, retryCount=%d, queue=%d, rcvdData=%d]", getId(), getMacAddress(), getPort(), getDestMacAddress(), getDestPort(), getBufSize(), getRetryDelay(), getRetryCount(), getQueue(), getRcvdData());
+		}
     }
 
     protected static abstract class BlockedPtpAction implements IAction {
@@ -733,30 +860,36 @@ public class sceNetAdhoc extends HLEModule {
     			log.debug(String.format("BlockedPtdAccept for thread %s", thread));
     		}
     	}
-		@Override
+
+    	public void blockCurrentThread() {
+			long schedule = Emulator.getClock().microTime() + BLOCKED_OPERATION_POLLING_MICROS;
+			Emulator.getScheduler().addAction(schedule, this);
+			Modules.ThreadManForUserModule.hleBlockCurrentThread();
+    	}
+
+    	@Override
 		public void execute() {
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("BlockedPtpObject: poll on %s, thread %s", ptpObject, thread));
+				log.debug(String.format("BlockedPtpAction: poll on %s, thread %s", ptpObject, thread));
 			}
 
 			if (poll()) {
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("BlockedPtpObject: unblocking thread %s", thread));
+					log.debug(String.format("BlockedPtpAction: unblocking thread %s", thread));
 				}
-				thread.cpuContext.gpr[Common._v0] = ptpObject.getId();
 				Modules.ThreadManForUserModule.hleUnblockThread(threadUid);
 			} else {
 				long now = Emulator.getClock().microTime();
 				if (now >= timeoutMicros) {
 					if (log.isDebugEnabled()) {
-						log.debug(String.format("BlockedPtpObject: timeout for thread %s", thread));
+						log.debug(String.format("BlockedPtpAction: timeout for thread %s", thread));
 					}
 					// Unblock thread and return timeout error
-					thread.cpuContext.gpr[Common._v0] = SceKernelErrors.ERROR_NET_ADHOC_TIMEOUT;
+					setReturnValue(thread, SceKernelErrors.ERROR_NET_ADHOC_TIMEOUT);
 					Modules.ThreadManForUserModule.hleUnblockThread(threadUid);
 				} else {
 					if (log.isDebugEnabled()) {
-						log.debug(String.format("BlockedPtpObject: continue polling"));
+						log.debug(String.format("BlockedPtpAction: continue polling"));
 					}
 					long schedule = now + BLOCKED_OPERATION_POLLING_MICROS;
 					Emulator.getScheduler().addAction(schedule, this);
@@ -783,7 +916,138 @@ public class sceNetAdhoc extends HLEModule {
 		}
     }
 
-    @Override
+    protected static class BlockedPtpConnect extends BlockedPtpAction {
+    	public BlockedPtpConnect(PtpObject ptpObject, int timeout) {
+    		super(ptpObject, timeout);
+    	}
+
+		@Override
+		protected boolean poll() {
+			return ptpObject.pollConnect(thread);
+		}
+    }
+
+    protected static class GameModeScheduledAction implements IAction {
+    	private final int scheduleRepeatMicros;
+    	private long nextSchedule;
+
+    	public GameModeScheduledAction(int scheduleRepeatMicros) {
+    		this.scheduleRepeatMicros = scheduleRepeatMicros;
+    	}
+
+    	public void stop() {
+    		Scheduler.getInstance().removeAction(nextSchedule, this);
+    	}
+
+    	public void start() {
+    		Scheduler.getInstance().addAction(this);
+    	}
+
+    	public void updateNow() {
+    		stop();
+    		start();
+    	}
+
+    	@Override
+		public void execute() {
+    		Modules.sceNetAdhocModule.hleGameModeUpdate();
+
+    		nextSchedule = Scheduler.getNow() + scheduleRepeatMicros;
+    		Scheduler.getInstance().addAction(nextSchedule, this);
+		}
+    }
+
+    protected static class GameModeArea {
+    	public pspNetMacAddress macAddress;
+    	public int addr;
+    	public int size;
+    	public int id;
+
+    	public GameModeArea(int addr, int size) {
+    		this.addr = addr;
+    		this.size = size;
+    		id = -1;
+    	}
+
+    	public GameModeArea(pspNetMacAddress macAddress, int addr, int size) {
+    		this.macAddress = macAddress;
+    		this.addr = addr;
+    		this.size = size;
+    		id = SceUidManager.getNewUid(replicaIdPurpose);
+    	}
+
+    	public void delete() {
+    		if (id >= 0) {
+    			SceUidManager.releaseUid(id, replicaIdPurpose);
+    			id = -1;
+    		}
+    	}
+
+
+    	@Override
+		public String toString() {
+			if (macAddress == null) {
+				return String.format("Master GameModeArea addr=0x%08X, size=0x%X", addr, size);
+			}
+			return String.format("Replica GameModeArea id=%d, macAddress=%s, addr=0x%08X, size=0x%X", id, macAddress, addr, size);
+		}
+    }
+
+    protected static class AdhocGameModeMessage extends AdhocMessage {
+    	private static final int ADDITIONAL_HEADER_LENGTH = 0;
+
+    	public AdhocGameModeMessage(GameModeArea gameModeArea) {
+    		super(gameModeArea.addr, gameModeArea.size);
+    		if (gameModeArea.macAddress != null) {
+    			setToMacAddress(gameModeArea.macAddress.macAddress);
+    		}
+    	}
+
+    	public AdhocGameModeMessage(byte[] message, int length) {
+    		super(message, length);
+    	}
+
+    	@Override
+		protected int getAdditionalHeaderLength() {
+			return ADDITIONAL_HEADER_LENGTH;
+		}
+    }
+
+	protected static String getPollEventName(int event) {
+		return String.format("Unknown 0x%X", event);
+	}
+
+	protected static class pspAdhocPollId extends pspAbstractMemoryMappedStructure {
+		public int id;
+		public int events;
+		public int revents;
+
+		@Override
+		protected void read() {
+			id = read32();
+			events = read32();
+			revents = read32();
+		}
+
+		@Override
+		protected void write() {
+			write32(id);
+			write32(events);
+			write32(revents);
+		}
+
+		@Override
+		public int sizeof() {
+			return 12;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("PollId[id=%d, events=0x%X(%s), revents=0x%X(%s)]", id, events, getPollEventName(events), revents, getPollEventName(revents));
+		}
+	}
+
+	@Override
     public String getName() {
         return "sceNetAdhoc";
     }
@@ -793,11 +1057,107 @@ public class sceNetAdhoc extends HLEModule {
 	    pdpObjects = new HashMap<Integer, sceNetAdhoc.PdpObject>();
 	    ptpObjects = new HashMap<Integer, sceNetAdhoc.PtpObject>();
 	    currentFreePort = 0x4000;
+	    replicaGameModeAreas = new LinkedList<sceNetAdhoc.GameModeArea>();
 
 	    super.start();
 	}
 
-	public SocketAddress getSocketAddress(byte[] macAddress, int macPort) throws UnknownHostException {
+    public void hleGameModeUpdate() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("hleGameModeUpdate"));
+    	}
+
+		try {
+			if (gameModeSocket == null) {
+				gameModeSocket = new DatagramSocket(adhocGameModePort + Modules.sceNetAdhocModule.netServerPortShift);
+	    		// For broadcast
+				gameModeSocket.setBroadcast(true);
+	    		// Non-blocking (timeout = 0 would mean blocking)
+				gameModeSocket.setSoTimeout(1);
+			}
+
+			// Send master area
+			if (masterGameModeArea != null) {
+				try {
+					AdhocGameModeMessage adhocGameModeMessage = new AdhocGameModeMessage(masterGameModeArea);
+			    	SocketAddress socketAddress = Modules.sceNetAdhocModule.getSocketAddress(sceNetAdhoc.ANY_MAC_ADDRESS, adhocGameModePort + Modules.sceNetAdhocModule.netClientPortShift);
+			    	DatagramPacket packet = new DatagramPacket(adhocGameModeMessage.getMessage(), adhocGameModeMessage.getMessageLength(), socketAddress);
+			    	gameModeSocket.send(packet);
+
+			    	if (log.isDebugEnabled()) {
+			    		log.debug(String.format("GameMode message sent to all: %s", adhocGameModeMessage));
+			    	}
+				} catch (SocketTimeoutException e) {
+					// Ignore exception
+				}
+			}
+
+			// Receive all waiting messages
+			do {
+				try {
+					byte[] bytes = new byte[10000];
+			    	DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
+			    	gameModeSocket.receive(packet);
+			    	AdhocGameModeMessage adhocGameModeMessage = new AdhocGameModeMessage(packet.getData(), packet.getLength());
+
+			    	if (log.isDebugEnabled()) {
+			    		log.debug(String.format("GameMode received: %s", adhocGameModeMessage));
+			    	}
+
+			    	for (GameModeArea gameModeArea : replicaGameModeAreas) {
+			    		if (isSameMacAddress(gameModeArea.macAddress.macAddress, adhocGameModeMessage.fromMacAddress)) {
+			    			if (log.isDebugEnabled()) {
+			    				log.debug(String.format("Updating GameMode Area with message data: %s", gameModeArea));
+			    			}
+			    			adhocGameModeMessage.writeDataToMemory(gameModeArea.addr, gameModeArea.size);
+			    			break;
+			    		}
+			    	}
+				} catch (SocketTimeoutException e) {
+					// No more messages available
+					break;
+				}
+			} while (true);
+		} catch (IOException e) {
+			log.error("hleGameModeUpdate", e);
+		}
+    }
+
+    protected void startGameMode() {
+    	if (gameModeScheduledAction == null) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Starting GameMode"));
+    		}
+    		gameModeScheduledAction = new GameModeScheduledAction(GAME_MODE_UPDATE_MICROS);
+    		gameModeScheduledAction.start();
+    	}
+    }
+
+    protected void stopGameMode() {
+    	if (gameModeScheduledAction != null) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Stopping GameMode"));
+    		}
+    		gameModeScheduledAction.stop();
+    		gameModeScheduledAction = null;
+    	}
+
+    	if (gameModeSocket != null) {
+    		gameModeSocket.close();
+    		gameModeSocket = null;
+    	}
+    }
+
+    protected void updateGameModeNow() {
+    	startGameMode();
+    	gameModeScheduledAction.updateNow();
+    }
+
+    private static void setReturnValue(SceKernelThreadInfo thread, int value) {
+    	thread.cpuContext.gpr[Common._v0] = value;
+    }
+
+    public SocketAddress getSocketAddress(byte[] macAddress, int macPort) throws UnknownHostException {
 		if (netClientPortShift > 0 || netServerPortShift > 0) {
 			return new InetSocketAddress(InetAddress.getLocalHost(), macPort);
 		}
@@ -866,6 +1226,8 @@ public class sceNetAdhoc extends HLEModule {
     public int sceNetAdhocInit() {
         log.warn("IGNORING: sceNetAdhocInit");
 
+        log.info(String.format("Using MAC address=%s, nick name='%s'", sceNet.convertMacAddressToString(Wlan.getMacAddress()), sceUtility.getSystemParamNickname()));
+
         return 0;
     }
 
@@ -882,12 +1244,38 @@ public class sceNetAdhoc extends HLEModule {
     }
 
     @HLEFunction(nid = 0x7A662D6B, version = 150)
-    public void sceNetAdhocPollSocket(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocPollSocket(TPointer socketsAddr, int count, int timeout, int nonblock) {
+    	Memory mem = Memory.getInstance();
+        log.warn(String.format("PARTIAL: sceNetAdhocPollSocket socketsAddr=%s, count=%d, timeout=%d, nonblock=%d", socketsAddr, count, timeout, nonblock));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocPollSocket");
+        int countEvents = 0;
+        for (int i = 0; i < count; i++) {
+        	pspAdhocPollId pollId = new pspAdhocPollId();
+        	pollId.read(mem, socketsAddr.getAddress() + i * pollId.sizeof());
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        	PdpObject pdpObject = pdpObjects.get(pollId.id);
+        	if (pdpObject == null) {
+        		pdpObject = ptpObjects.get(pollId.id);
+        	}
+        	if (pdpObject != null) {
+        		pdpObject.update();
+        	}
+
+        	pollId.revents = 0;
+        	if (pdpObject.getRcvdData() > 0) {
+        		pollId.revents |= 0x2;
+        	}
+
+        	if (pollId.revents != 0) {
+        		countEvents++;
+        	}
+
+        	pollId.write(mem);
+
+        	log.info(String.format("sceNetAdhocPollSocket pollId[%d]=%s", i, pollId));
+        }
+
+        return countEvents;
     }
 
     @HLEFunction(nid = 0x73BFD52D, version = 150)
@@ -939,7 +1327,11 @@ public class sceNetAdhoc extends HLEModule {
     	pdpObject.setBufSize(bufSize);
     	pdpObjects.put(pdpObject.getId(), pdpObject);
 
-    	return pdpObject.getId();
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceNetAdhocPdpCreate: returning id=%d", pdpObject.getId()));
+		}
+
+		return pdpObject.getId();
     }
 
     /**
@@ -960,7 +1352,7 @@ public class sceNetAdhoc extends HLEModule {
     	pspNetMacAddress destMacAddress = new pspNetMacAddress();
     	destMacAddress.read(Memory.getInstance(), destMacAddr.getAddress());
 
-    	log.warn(String.format("UNIMPLEMENTED: sceNetAdhocPdpSend id=%d, destMacAddr=%s(%s), port=%d, data=%s, len=%d, timeout=%d, nonblock=%d, data: %s", id, destMacAddr, destMacAddress, port, data, len, timeout, nonblock, Utilities.getMemoryDump(data.getAddress(), len, 4, 16)));
+    	log.warn(String.format("PARTIAL: sceNetAdhocPdpSend id=%d, destMacAddr=%s(%s), port=%d, data=%s, len=%d, timeout=%d, nonblock=%d, data: %s", id, destMacAddr, destMacAddress, port, data, len, timeout, nonblock, Utilities.getMemoryDump(data.getAddress(), len, 4, 16)));
 
     	return pdpObjects.get(id).send(destMacAddress, port, data, len, timeout, nonblock);
     }
@@ -981,7 +1373,7 @@ public class sceNetAdhoc extends HLEModule {
     @HLEFunction(nid = 0xDFE53E03, version = 150)
     public int sceNetAdhocPdpRecv(@CheckArgument("checkPdpId") int id, TPointer srcMacAddr, TPointer16 portAddr, TPointer data, TPointer32 dataLengthAddr, int timeout, int nonblock) {
 
-    	log.warn(String.format("UNIMPLEMENTED: sceNetAdhocPdpRecv id=%d, srcMacAddr=%s, portAddr=%s, data=%s, dataLengthAddr=%s(%d), timeout=%d, nonblock=%d", id, srcMacAddr, portAddr, data, dataLengthAddr, dataLengthAddr.getValue(), timeout, nonblock));
+    	log.warn(String.format("PARTIAL: sceNetAdhocPdpRecv id=%d, srcMacAddr=%s, portAddr=%s, data=%s, dataLengthAddr=%s(%d), timeout=%d, nonblock=%d", id, srcMacAddr, portAddr, data, dataLengthAddr, dataLengthAddr.getValue(), timeout, nonblock));
 
     	pspNetMacAddress srcMacAddress = new pspNetMacAddress();
         int result = pdpObjects.get(id).recv(srcMacAddress, portAddr, data, dataLengthAddr, timeout, nonblock);
@@ -1026,11 +1418,12 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0xC7C1FC57, version = 150)
     public int sceNetAdhocGetPdpStat(TPointer32 sizeAddr, @CanBeNull TPointer buf) {
+    	final int objectInfoSize = 20;
         log.warn(String.format("PARTIAL: sceNetAdhocGetPdpStat sizeAddr=%s(%d), buf=%s", sizeAddr.toString(), sizeAddr.getValue(), buf.toString()));
 
         if (buf.getAddress() == 0) {
         	// Return size required
-        	sizeAddr.setValue(20 * pdpObjects.size());
+        	sizeAddr.setValue(objectInfoSize * pdpObjects.size());
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("sceNetAdhocGetPdpStat returning size=%d", sizeAddr.getValue()));
         	}
@@ -1038,11 +1431,12 @@ public class sceNetAdhoc extends HLEModule {
         	Memory mem = Memory.getInstance();
         	int addr = buf.getAddress();
         	int endAddr = addr + sizeAddr.getValue();
+        	sizeAddr.setValue(objectInfoSize * pdpObjects.size());
         	for (int pdpId : pdpObjects.keySet()) {
         		PdpObject pdpObject = pdpObjects.get(pdpId);
 
         		// Check if enough space available to write the next structure
-        		if (addr + 20 > endAddr || pdpObject == null) {
+        		if (addr + objectInfoSize > endAddr || pdpObject == null) {
         			break;
         		}
 
@@ -1072,13 +1466,13 @@ public class sceNetAdhoc extends HLEModule {
         		addr += 4;
         	}
 
-        	for (int nextAddr = buf.getAddress(); nextAddr < addr; nextAddr += 20) {
-        		if (nextAddr + 20 >= addr) {
+        	for (int nextAddr = buf.getAddress(); nextAddr < addr; nextAddr += objectInfoSize) {
+        		if (nextAddr + objectInfoSize >= addr) {
         			// Last one
         			mem.write32(nextAddr, 0);
         		} else {
         			// Pointer to next one
-        			mem.write32(nextAddr, nextAddr + 20);
+        			mem.write32(nextAddr, nextAddr + objectInfoSize);
         		}
         	}
         }
@@ -1108,7 +1502,7 @@ public class sceNetAdhoc extends HLEModule {
     	pspNetMacAddress destMacAddress = new pspNetMacAddress();
     	destMacAddress.read(mem, destMacAddr.getAddress());
 
-    	log.warn(String.format("UNIMPLEMENTED: sceNetAdhocPtpOpen scrMacAddr=%s(%s), srcPort=%d, destMacAddr=%s(%s), destPort=%d, bufSize=0x%X, retryDelay=%d, retryCount=%d, unk1=%d", srcMacAddr, srcMacAddress, srcPort, destMacAddr, destMacAddress, destPort, bufSize, retryDelay, retryCount, unk1));
+    	log.warn(String.format("PARTIAL: sceNetAdhocPtpOpen scrMacAddr=%s(%s), srcPort=%d, destMacAddr=%s(%s), destPort=%d, bufSize=0x%X, retryDelay=%d, retryCount=%d, unk1=%d", srcMacAddr, srcMacAddress, srcPort, destMacAddr, destMacAddress, destPort, bufSize, retryDelay, retryCount, unk1));
 
     	PtpObject ptpObject = new PtpObject();
     	ptpObject.setMacAddress(srcMacAddress);
@@ -1141,7 +1535,7 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0xFC6FC07B, version = 150)
     public int sceNetAdhocPtpConnect(@CheckArgument("checkPtpId") int id, int timeout, int nonblock) {
-        log.warn(String.format("UNIMPLEMENTED: sceNetAdhocPtpConnect id=%d, timeout=%d, nonblock=%d", id, timeout, nonblock));
+        log.warn(String.format("PARTIAL: sceNetAdhocPtpConnect id=%d, timeout=%d, nonblock=%d", id, timeout, nonblock));
 
         return ptpObjects.get(id).connect(timeout, nonblock);
     }
@@ -1165,7 +1559,7 @@ public class sceNetAdhoc extends HLEModule {
     	pspNetMacAddress srcMacAddress = new pspNetMacAddress();
     	srcMacAddress.read(mem, srcMacAddr.getAddress());
 
-    	log.warn(String.format("UNIMPLEMENTED: sceNetAdhocPtpListen scrMacAddr=%s(%s), srcPort=%d, bufSize=0x%X, retryDelay=%d, retryCount=%d, queue=%d, unk1=%d", srcMacAddr, srcMacAddress, srcPort, bufSize, retryDelay, retryCount, queue, unk1));
+    	log.warn(String.format("PARTIAL: sceNetAdhocPtpListen scrMacAddr=%s(%s), srcPort=%d, bufSize=0x%X, retryDelay=%d, retryCount=%d, queue=%d, unk1=%d", srcMacAddr, srcMacAddress, srcPort, bufSize, retryDelay, retryCount, queue, unk1));
 
     	PtpObject ptpObject = new PtpObject();
     	ptpObject.setMacAddress(srcMacAddress);
@@ -1183,6 +1577,10 @@ public class sceNetAdhoc extends HLEModule {
 
     	ptpObjects.put(ptpObject.getId(), ptpObject);
 
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceNetAdhocPtpListen: returning id=%d", ptpObject.getId()));
+		}
+
     	return ptpObject.getId();
     }
 
@@ -1199,7 +1597,7 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0x9DF81198, version = 150)
     public int sceNetAdhocPtpAccept(@CheckArgument("checkPtpId") int id, TPointer peerMacAddr, TPointer16 peerPortAddr, int timeout, int nonblock) {
-        log.warn(String.format("UNIMPLEMENTED: sceNetAdhocPtpAccept id=%d, peerMacAddr=%s, peerPort=%s, timeout=%d, nonblock=%d", id, peerMacAddr, peerPortAddr, timeout, nonblock));
+        log.warn(String.format("PARTIAL: sceNetAdhocPtpAccept id=%d, peerMacAddr=%s, peerPort=%s, timeout=%d, nonblock=%d", id, peerMacAddr, peerPortAddr, timeout, nonblock));
 
         return ptpObjects.get(id).accept(peerMacAddr.getAddress(), peerPortAddr.getAddress(), timeout, nonblock);
     }
@@ -1217,7 +1615,7 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0x4DA4C788, version = 150)
     public int sceNetAdhocPtpSend(@CheckArgument("checkPtpId") int id, TPointer data, TPointer32 dataSizeAddr, int timeout, int nonblock) {
-        log.warn(String.format("UNIMPLEMENTED: sceNetAdhocPtpSend id=%d, data=%s, dataSizeAddr=%s(%d), timeout=%d, nonblock=%d: %s", id, data, dataSizeAddr, dataSizeAddr.getValue(), timeout, nonblock, Utilities.getMemoryDump(data.getAddress(), dataSizeAddr.getValue(), 4, 16)));
+        log.warn(String.format("PARTIAL: sceNetAdhocPtpSend id=%d, data=%s, dataSizeAddr=%s(%d), timeout=%d, nonblock=%d: %s", id, data, dataSizeAddr, dataSizeAddr.getValue(), timeout, nonblock, Utilities.getMemoryDump(data.getAddress(), dataSizeAddr.getValue(), 4, 16)));
 
         return ptpObjects.get(id).send(data.getAddress(), dataSizeAddr, timeout, nonblock);
     }
@@ -1235,12 +1633,9 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0x8BEA2B3E, version = 150)
     public int sceNetAdhocPtpRecv(@CheckArgument("checkPtpId") int id, TPointer data, TPointer32 dataSizeAddr, int timeout, int nonblock) {
-        log.warn(String.format("UNIMPLEMENTED: sceNetAdhocPtpRecv id=%d, data=%s, dataSizeAddr=%s(%d), timeout=%d, nonblock=%d", id, data, dataSizeAddr, dataSizeAddr.getValue(), timeout, nonblock));
+        log.warn(String.format("PARTIAL: sceNetAdhocPtpRecv id=%d, data=%s, dataSizeAddr=%s(%d), timeout=%d, nonblock=%d", id, data, dataSizeAddr, dataSizeAddr.getValue(), timeout, nonblock));
 
-        // Faked: returning 0 bytes read
-        dataSizeAddr.setValue(0);
-
-        return 0;
+        return ptpObjects.get(id).recv(data, dataSizeAddr, timeout, nonblock);
     }
 
     /**
@@ -1254,7 +1649,7 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0x9AC2EEAC, version = 150)
     public int sceNetAdhocPtpFlush(@CheckArgument("checkPtpId") int id, int timeout, int nonblock) {
-        log.warn(String.format("UNIMPLEMENTED: sceNetAdhocPtpFlush id=%d, timeout=%d, nonblock=%d", id, timeout, nonblock));
+        log.warn(String.format("PARTIAL: sceNetAdhocPtpFlush id=%d, timeout=%d, nonblock=%d", id, timeout, nonblock));
 
         // Faked: return successful completion
         return 0;
@@ -1269,12 +1664,12 @@ public class sceNetAdhoc extends HLEModule {
      * @return A socket ID on success, < 0 on error.
      */
     @HLEFunction(nid = 0x157E6225, version = 150)
-    public void sceNetAdhocPtpClose(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocPtpClose(@CheckArgument("checkPtpId") int id, int unknown) {
+        log.warn(String.format("PARTIAL: sceNetAdhocPtpClose id=%d, unknown=%d", id, unknown));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocPtpClose");
+        ptpObjects.remove(id).delete();
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -1299,12 +1694,83 @@ public class sceNetAdhoc extends HLEModule {
      * @return 0 on success, < 0 on error
      */
     @HLEFunction(nid = 0xB9685118, version = 150)
-    public void sceNetAdhocGetPtpStat(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocGetPtpStat(TPointer32 sizeAddr, @CanBeNull TPointer buf) {
+    	final int objectInfoSize = 36;
+        log.warn(String.format("PARTIAL: sceNetAdhocGetPtpStat sizeAddr=%s(%d), buf=%s", sizeAddr.toString(), sizeAddr.getValue(), buf.toString()));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocGetPtpStat");
+        if (buf.getAddress() == 0) {
+        	// Return size required
+        	sizeAddr.setValue(objectInfoSize * ptpObjects.size());
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceNetAdhocGetPtpStat returning size=%d", sizeAddr.getValue()));
+        	}
+        } else {
+        	Memory mem = Memory.getInstance();
+        	int addr = buf.getAddress();
+        	int endAddr = addr + sizeAddr.getValue();
+        	sizeAddr.setValue(objectInfoSize * ptpObjects.size());
+        	for (int pdpId : ptpObjects.keySet()) {
+        		PtpObject ptpObject = ptpObjects.get(pdpId);
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        		// Check if enough space available to write the next structure
+        		if (addr + objectInfoSize > endAddr || ptpObject == null) {
+        			break;
+        		}
+
+        		ptpObject.update();
+
+        		if (log.isDebugEnabled()) {
+        			log.debug(String.format("sceNetAdhocGetPtpStat returning %s at 0x%08X", ptpObject, addr));
+        		}
+
+        		/** Pointer to next PDP structure in list: will be written later */
+        		addr += 4;
+
+        		/** ptp ID */
+        		mem.write32(addr, ptpObject.getId());
+        		addr += 4;
+
+        		/** MAC address */
+        		ptpObject.getMacAddress().write(mem, addr);
+        		addr += ptpObject.getMacAddress().sizeof();
+
+        		/** Dest MAC address */
+        		ptpObject.getDestMacAddress().write(mem, addr);
+        		addr += ptpObject.getDestMacAddress().sizeof();
+
+        		/** Port */
+        		mem.write16(addr, (short) ptpObject.getPort());
+        		addr += 2;
+
+        		/** Dest Port */
+        		mem.write16(addr, (short) ptpObject.getDestPort());
+        		addr += 2;
+
+        		/** Bytes sent */
+        		mem.write32(addr, ptpObject.getSentData());
+        		addr += 4;
+
+        		/** Bytes received */
+        		mem.write32(addr, ptpObject.getRcvdData());
+        		addr += 4;
+
+        		/** Unknown */
+        		mem.write32(addr, 0);
+        		addr += 4;
+        	}
+
+        	for (int nextAddr = buf.getAddress(); nextAddr < addr; nextAddr += objectInfoSize) {
+        		if (nextAddr + objectInfoSize >= addr) {
+        			// Last one
+        			mem.write32(nextAddr, 0);
+        		} else {
+        			// Pointer to next one
+        			mem.write32(nextAddr, nextAddr + objectInfoSize);
+        		}
+        	}
+        }
+
+        return 0;
     }
 
     /**
@@ -1316,12 +1782,13 @@ public class sceNetAdhoc extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x7F75C338, version = 150)
-    public void sceNetAdhocGameModeCreateMaster(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocGameModeCreateMaster(TPointer data, int size) {
+        log.warn(String.format("PARTIAL: sceNetAdhocGameModeCreateMaster data=%s, size=%d", data, size));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocGameModeCreateMaster");
+        masterGameModeArea = new GameModeArea(data.getAddress(), size);
+        startGameMode();
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -1334,12 +1801,36 @@ public class sceNetAdhoc extends HLEModule {
      * @return The id of the replica on success, < 0 on error.
      */
     @HLEFunction(nid = 0x3278AB0C, version = 150)
-    public void sceNetAdhocGameModeCreateReplica(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocGameModeCreateReplica(TPointer macAddr, TPointer data, int size) {
+    	pspNetMacAddress macAddress = new pspNetMacAddress();
+    	macAddress.read(Memory.getInstance(), macAddr.getAddress());
+        log.warn(String.format("PARTIAL: sceNetAdhocGameModeCreateReplica macAddr=%s(%s), data=%s, size=%d", macAddr, macAddress, data, size));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocGameModeCreateReplica");
+        boolean found = false;
+        int result = 0;
+        for (GameModeArea gameModeArea : replicaGameModeAreas) {
+        	if (isSameMacAddress(gameModeArea.macAddress.macAddress, macAddress.macAddress)) {
+        		// Updating the exiting replica
+        		gameModeArea.addr = data.getAddress();
+        		gameModeArea.size = size;
+        		result = gameModeArea.id;
+        		found = true;
+        		break;
+        	}
+        }
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        if (!found) {
+        	GameModeArea gameModeArea = new GameModeArea(macAddress, data.getAddress(), size);
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("Adding GameMode Replica %s", gameModeArea));
+        	}
+        	result = gameModeArea.id;
+        	replicaGameModeAreas.add(gameModeArea);
+        }
+
+        startGameMode();
+
+        return result;
     }
 
     /**
@@ -1348,12 +1839,12 @@ public class sceNetAdhoc extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x98C204C8, version = 150)
-    public void sceNetAdhocGameModeUpdateMaster(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocGameModeUpdateMaster() {
+        log.warn("PARTIAL: sceNetAdhocGameModeUpdateMaster");
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocGameModeUpdateMaster");
+        updateGameModeNow();
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -1365,12 +1856,12 @@ public class sceNetAdhoc extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0xFA324B4E, version = 150)
-    public void sceNetAdhocGameModeUpdateReplica(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocGameModeUpdateReplica(int id, int unknown) {
+        log.warn(String.format("PARTIAL: sceNetAdhocGameModeUpdateReplica id=%d, unknown=%d", id, unknown));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocGameModeUpdateReplica");
+        updateGameModeNow();
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -1379,12 +1870,15 @@ public class sceNetAdhoc extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0xA0229362, version = 150)
-    public void sceNetAdhocGameModeDeleteMaster(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocGameModeDeleteMaster() {
+        log.warn("PARTIAL: sceNetAdhocGameModeDeleteMaster");
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocGameModeDeleteMaster");
+        masterGameModeArea = null;
+        if (replicaGameModeAreas.size() <= 0) {
+        	stopGameMode();
+        }
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -1395,11 +1889,20 @@ public class sceNetAdhoc extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x0B2228E9, version = 150)
-    public void sceNetAdhocGameModeDeleteReplica(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocGameModeDeleteReplica(int id) {
+        log.warn(String.format("PARTIAL: sceNetAdhocGameModeDeleteReplica id=%d", id));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocGameModeDeleteReplica");
+        for (GameModeArea gameModeArea : replicaGameModeAreas) {
+        	if (gameModeArea.id == id) {
+        		replicaGameModeAreas.remove(gameModeArea);
+        		break;
+        	}
+        }
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        if (replicaGameModeAreas.size() <= 0 && masterGameModeArea == null) {
+        	stopGameMode();
+        }
+
+        return 0;
     }
 }
