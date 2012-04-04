@@ -511,11 +511,11 @@ public class sceNetAdhocMatching extends HLEModule {
 	}
 
 	public void hleNetAdhocMatchingEventThread(Processor processor) {
+		int matchingId = processor.cpu.gpr[loopThreadRegisterArgument];
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("hleNetAdhocMatchingEventThread"));
+			log.trace(String.format("hleNetAdhocMatchingEventThread matchingId=%d", matchingId));
 		}
 
-		int matchingId = processor.cpu.gpr[loopThreadRegisterArgument];
 		MatchingObject matchingObject = matchingObjects.get(matchingId);
 		if (matchingObject != null && matchingObject.eventLoop()) {
 			Modules.ThreadManForUserModule.hleKernelDelayThread(10000, false);
@@ -527,11 +527,11 @@ public class sceNetAdhocMatching extends HLEModule {
 	}
 
 	public void hleNetAdhocMatchingInputThread(Processor processor) {
+		int matchingId = processor.cpu.gpr[loopThreadRegisterArgument];
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("hleNetAdhocMatchingInputThread"));
+			log.trace(String.format("hleNetAdhocMatchingInputThread matchingId=%d", matchingId));
 		}
 
-		int matchingId = processor.cpu.gpr[loopThreadRegisterArgument];
 		MatchingObject matchingObject = matchingObjects.get(matchingId);
 		if (matchingObject != null && matchingObject.inputLoop()) {
 			Modules.ThreadManForUserModule.hleKernelDelayThread(10000, false);
