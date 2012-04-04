@@ -396,7 +396,8 @@ public class sceNetAdhoc extends HLEModule {
 			if (nonblock != 0) {
 				socket.setSoTimeout(1);
 			} else {
-				socket.setSoTimeout(timeout);
+				// SoTimeout accepts milliseconds, PSP timeout is given in microseconds
+				socket.setSoTimeout(Math.max(timeout / 1000, 1));
 			}
 		}
 
