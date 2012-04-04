@@ -22,6 +22,7 @@ import static jpcsp.HLE.modules150.sceNetAdhoc.AdhocPtpMessage.PTP_MESSAGE_TYPE_
 import static jpcsp.HLE.modules150.sceNetAdhoc.AdhocPtpMessage.PTP_MESSAGE_TYPE_CONNECT;
 
 import java.io.IOException;
+import java.net.BindException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -355,7 +356,7 @@ public class sceNetAdhoc extends HLEModule {
 			buffer = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, Modules.sceNetAdhocModule.getName(), SysMemUserForUser.PSP_SMEM_Low, bufSize, 0);
 		}
 
-    	public void delete() {
+		public void delete() {
 			closeSocket();
 			if (buffer != null) {
 				Modules.SysMemUserForUserModule.free(buffer);
@@ -448,6 +449,26 @@ public class sceNetAdhoc extends HLEModule {
 
 		public int getRcvdData() {
 			return rcvdData;
+		}
+
+		public int create(pspNetMacAddress macAddress, int port, int bufSize) {
+			int result = getId();
+
+			setMacAddress(macAddress);
+			setPort(port);
+			setBufSize(bufSize);
+			try {
+				openSocket();
+			} catch (BindException e) {
+				if (log.isDebugEnabled()) {
+					log.debug("create", e);
+				}
+				result = SceKernelErrors.ERROR_NET_ADHOC_PORT_IN_USE;
+			} catch (SocketException e) {
+				log.error("create", e);
+			}
+
+			return result;
 		}
 
 		public int send(pspNetMacAddress destMacAddress, int destPort, TPointer data, int length, int timeout, int nonblock) {
@@ -695,7 +716,15 @@ public class sceNetAdhoc extends HLEModule {
 		public int accept(int peerMacAddr, int peerPortAddr, int timeout, int nonblock) {
 			int result = 0;
 
-			if (nonblock == 0) {
+			SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
+			if (pollAccept(peerMacAddr, peerPortAddr, thread)) {
+				// Accept completed immediately
+				result = thread.cpuContext.gpr[Common._v0];
+			} else if (nonblock != 0) {
+				// Accept cannot be completed in non-blocking mode
+				result = SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE;
+			} else {
+				// Block current thread
 				BlockedPtpAction blockedPtpAction = new BlockedPtpAccept(this, peerMacAddr, peerPortAddr, timeout);
 				blockedPtpAction.blockCurrentThread();
 			}
@@ -1322,16 +1351,20 @@ public class sceNetAdhoc extends HLEModule {
 		}
 
 		PdpObject pdpObject = new PdpObject();
-    	pdpObject.setMacAddress(macAddress);
-    	pdpObject.setPort(port);
-    	pdpObject.setBufSize(bufSize);
-    	pdpObjects.put(pdpObject.getId(), pdpObject);
+    	int result = pdpObject.create(macAddress, port, bufSize);
+    	if (result == pdpObject.getId()) {
+    		pdpObjects.put(pdpObject.getId(), pdpObject);
 
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetAdhocPdpCreate: returning id=%d", pdpObject.getId()));
-		}
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("sceNetAdhocPdpCreate: returning id=%d", result));
+    		}
+    	} else {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("sceNetAdhocPdpCreate: returning error=0x%08X", result));
+    		}
+    	}
 
-		return pdpObject.getId();
+		return result;
     }
 
     /**
