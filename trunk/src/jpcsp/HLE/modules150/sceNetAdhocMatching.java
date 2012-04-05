@@ -45,6 +45,7 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules150.sceNetAdhoc.AdhocMessage;
 import jpcsp.HLE.modules150.sceNetAdhoc.AdhocObject;
+import jpcsp.hardware.Wlan;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -238,6 +239,9 @@ public class sceNetAdhocMatching extends HLEModule {
 					threadMan.hleKernelStartThread(inputThread, 0, 0, inputThread.gpReg_addr);
 				}
 
+				// Add myself as the first member
+				addMember(Wlan.getMacAddress());
+
 				started = true;
 			} catch (SocketException e) {
 				log.error("start", e);
@@ -247,7 +251,19 @@ public class sceNetAdhocMatching extends HLEModule {
 		}
 
 		public int stop() {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Sending disconnect to port %d", getPort()));
+			}
+
+			try {
+				AdhocMatchingEventMessage adhocMatchingEventMessage = new AdhocMatchingEventMessage(0, 0, PSP_ADHOC_MATCHING_EVENT_DISCONNECT);
+				send(adhocMatchingEventMessage);
+			} catch (IOException e) {
+				log.error("stop", e);
+			}
+
 			closeSocket();
+			removeMember(Wlan.getMacAddress());
 
 			return 0;
 		}
@@ -403,12 +419,24 @@ public class sceNetAdhocMatching extends HLEModule {
 				}
 			}
 
-			pspNetMacAddress macAddress = new pspNetMacAddress();
-			macAddress.setMacAddress(macAddr);
-			members.add(macAddress);
+			pspNetMacAddress member = new pspNetMacAddress();
+			member.setMacAddress(macAddr);
+			members.add(member);
 
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("Adding member %s", macAddress));
+				log.debug(String.format("Adding member %s", member));
+			}
+		}
+
+		private void removeMember(byte[] macAddr) {
+			for (pspNetMacAddress member : members) {
+				if (sceNetAdhoc.isSameMacAddress(macAddr, member.macAddress)) {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Removing member %s", member));
+					}
+					members.remove(member);
+					break;
+				}
 			}
 		}
 
@@ -470,6 +498,11 @@ public class sceNetAdhocMatching extends HLEModule {
 						}
 						adhocMatchingEventMessage = new AdhocMatchingEventMessage(0, 0, macAddress.macAddress, PSP_ADHOC_MATCHING_EVENT_DATA_CONFIRM);
 						send(adhocMatchingEventMessage);
+					} else if (event == PSP_ADHOC_MATCHING_EVENT_DISCONNECT) {
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("Received disconnect from %s", macAddress));
+						}
+						removeMember(adhocMatchingEventMessage.getFromMacAddress());
 					}
 				}
 			} catch (SocketTimeoutException e) {

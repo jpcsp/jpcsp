@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import jpcsp.HLE.modules150.sceNet;
 import jpcsp.hardware.Wlan;
 
 public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
@@ -62,14 +63,6 @@ public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public String toString() {
-        StringBuilder str = new StringBuilder();
-        for (int i = 0; i < sizeof(); i++) {
-            if (i > 0) {
-            	str.append(":");
-            }
-            str.append(String.format("%02X", macAddress[i]));
-        }
-
-        return str.toString();
+		return sceNet.convertMacAddressToString(macAddress);
 	}
 }
