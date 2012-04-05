@@ -78,7 +78,7 @@ public class sceNetAdhoc extends HLEModule {
     // Polling period (micro seconds) for blocking operations
     protected static final int BLOCKED_OPERATION_POLLING_MICROS = 10000;
     // Period to update the Game Mode
-    protected static final int GAME_MODE_UPDATE_MICROS = 1000000;
+    protected static final int GAME_MODE_UPDATE_MICROS = 12000;
 
     protected HashMap<Integer, PdpObject> pdpObjects;
     protected HashMap<Integer, PtpObject> ptpObjects;
@@ -1061,6 +1061,10 @@ public class sceNetAdhoc extends HLEModule {
     		setNewData(data);
     	}
 
+    	public void resetNewData() {
+    		newData = null;
+    	}
+
     	public byte[] getNewData() {
     		return newData;
     	}
@@ -1072,7 +1076,6 @@ public class sceNetAdhoc extends HLEModule {
     	public void writeNewData() {
     		if (newData != null) {
     			writeBytes(addr, Math.min(size, newData.length), newData, 0);
-    			newData = null;
     		}
     	}
 
@@ -1095,6 +1098,7 @@ public class sceNetAdhoc extends HLEModule {
     	public AdhocGameModeMessage(GameModeArea gameModeArea) {
     		super();
     		setData(gameModeArea.getNewData());
+    		gameModeArea.resetNewData();
     		if (gameModeArea.macAddress != null) {
     			setToMacAddress(gameModeArea.macAddress.macAddress);
     		}
@@ -1177,6 +1181,12 @@ public class sceNetAdhoc extends HLEModule {
 
 	    super.start();
 	}
+
+    public void hleExitGameMode() {
+    	masterGameModeArea = null;
+    	replicaGameModeAreas.clear();
+    	stopGameMode();
+    }
 
     public void hleGameModeUpdate() {
     	if (log.isDebugEnabled()) {
@@ -1998,6 +2008,7 @@ public class sceNetAdhoc extends HLEModule {
         				log.debug(String.format("Updating GameMode Area with new data: %s", gameModeArea));
         			}
         			gameModeArea.writeNewData();
+        			gameModeArea.resetNewData();
                 	if (log.isTraceEnabled()) {
                 		log.trace(String.format("Replica GameMode Area updated: %s", Utilities.getMemoryDump(gameModeArea.addr, gameModeArea.size, 4, 16)));
                 	}
