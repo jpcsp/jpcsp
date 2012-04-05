@@ -41,10 +41,12 @@ public class sceNet extends HLEModule {
     protected int netMemSize;
 
     /**
-     * Convert a 6-byte MAC address into a string representation (XX:XX:XX:XX:XX:XX).
+     * Convert a 6-byte MAC address into a string representation (xx:xx:xx:xx:xx:xx)
+     * in lowercase.
+     * The PSP always returns MAC addresses in lowercase.
      *
      * @param macAddress  MAC address
-     * @return            string representation of the MAC address: XX:XX:XX:XX:XX:XX.
+     * @return            string representation of the MAC address: x:xx:xx:xx:xx:xx (in lowercase).
      */
     public static String convertMacAddressToString(byte[] macAddress) {
         StringBuilder str = new StringBuilder();
@@ -52,17 +54,18 @@ public class sceNet extends HLEModule {
             if (i > 0) {
             	str.append(":");
             }
-            str.append(String.format("%02X", macAddress[i]));
+            str.append(String.format("%02x", macAddress[i]));
         }
 
         return str.toString();
     }
 
     /**
-     * Convert a string MAC address representation (XX:XX:XX:XX:XX:XX)
+     * Convert a string MAC address representation (xx:xx:xx:xx:xx:x)
      * into a 6-byte representation.
+     * Both lower and uppercase representations are accepted.
      *
-     * @param str    String representation in format XX:XX:XX:XX:XX:XX
+     * @param str    String representation in format xx:xx:xx:xx:xx:xx (in lower or uppercase)
      * @return       6-byte representation
      */
     public static byte[] convertStringToMacAddress(String str) {
