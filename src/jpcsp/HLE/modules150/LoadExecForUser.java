@@ -87,6 +87,20 @@ public class LoadExecForUser extends HLEModule {
                 SceModule module = Emulator.getInstance().load(name, moduleBuffer, true);
                 Emulator.getClock().resume();
 
+                // After a sceKernelLoadExec, host0: is relative to the directory where
+                // the loaded file (prx) was located.
+                // E.g.:
+                //  after
+                //    sceKernelLoadExec("disc0:/PSP_GAME/USRDIR/A.PRX")
+                //  the following file access
+                //    sceIoOpen("host0:B")
+                //  is actually referencing the file
+                //    disc0:/PSP_GAME/USRDIR/B
+                int pathIndex = name.lastIndexOf("/");
+                if (pathIndex >= 0) {
+                	Modules.IoFileMgrForUserModule.setHost0Path(name.substring(0, pathIndex + 1));
+                }
+
                 if ((module.fileFormat & Loader.FORMAT_ELF) != Loader.FORMAT_ELF) {
                     log.warn("sceKernelLoadExec - failed, target is not an ELF");
                     throw new SceKernelErrorException(ERROR_KERNEL_ILLEGAL_LOADEXEC_FILENAME);

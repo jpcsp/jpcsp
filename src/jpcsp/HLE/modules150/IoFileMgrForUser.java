@@ -210,6 +210,7 @@ public class IoFileMgrForUser extends HLEModule {
     private String filepath; // current working directory on PC
     private UmdIsoReader iso;
     private IoWaitStateChecker ioWaitStateChecker;
+    private String host0Path;
 
     private int defaultAsyncPriority;
     private final static int asyncThreadRegisterArgument = Common._s0; // $s0 is preserved across calls
@@ -537,10 +538,15 @@ public class IoFileMgrForUser extends HLEModule {
             ioListeners = new IIoListener[0];
         }
         ioWaitStateChecker = new IoWaitStateChecker();
+        host0Path = null;
 
         setSettingsListener("emu.extractPGD", new ExtractPGDSettingsListerner());
 
         super.start();
+    }
+
+    public void setHost0Path(String path) {
+    	host0Path = path;
     }
 
     private void setAllowExtractPGDStatus(boolean status) {
@@ -571,6 +577,32 @@ public class IoFileMgrForUser extends HLEModule {
     	SceUidManager.releaseId(id, idPurpose);
     }
 
+    /**
+     * Resolve and remove the "/.." in file names.
+     * E.g.:
+     *   disc0:/PSP_GAME/USRDIR/A/../B
+     * transformed into
+     *   disc0:/PSP_GAME/USRDIR/B
+     * 
+     * @param fileName    File name, possibly containing "/.."
+     * @return            File name without "/.."
+     */
+    private String removeDotDotInFilename(String fileName) {
+    	while (true) {
+    		int dotDotIndex = fileName.indexOf("/..");
+    		if (dotDotIndex < 0) {
+    			break;
+    		}
+    		int parentIndex = fileName.substring(0, dotDotIndex).lastIndexOf("/");
+    		if (parentIndex < 0) {
+    			break;
+    		}
+    		fileName = fileName.substring(0, parentIndex) + fileName.substring(dotDotIndex + 3);
+    	}
+
+    	return fileName;
+    }
+
     /*
      *  Local file handling functions.
      */
@@ -585,6 +617,11 @@ public class IoFileMgrForUser extends HLEModule {
         		return pspfilename.replace("flash0:", "flash0");
         	}
         	return pspfilename.replace("flash0:", "flash0/");
+        }
+
+        if (host0Path != null && pspfilename.startsWith("host0:") && !pspfilename.startsWith("host0:/")) {
+        	pspfilename = pspfilename.replace("host0:", host0Path);
+        	pspfilename = removeDotDotInFilename(pspfilename);
         }
 
         if (filepath == null) {
