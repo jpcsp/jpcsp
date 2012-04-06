@@ -411,10 +411,6 @@ public class sceNetAdhoc extends HLEModule {
 			}
 		}
 
-		protected void setBroadcast(pspNetMacAddress macAddress) throws SocketException {
-			socket.setBroadcast(macAddress.isAnyMacAddress());
-		}
-
 		protected void send(AdhocMessage adhocMessage) throws IOException {
 			send(adhocMessage, getPort());
 		}
@@ -488,7 +484,6 @@ public class sceNetAdhoc extends HLEModule {
 			try {
 				openSocket();
 				setTimeout(timeout, nonblock);
-				setBroadcast(destMacAddress);
 				AdhocMessage adhocMessage = new AdhocPdpMessage(data.getAddress(), length, destMacAddress.macAddress);
 				send(adhocMessage, destPort);
 			} catch (SocketException e) {
