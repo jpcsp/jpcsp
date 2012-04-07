@@ -739,8 +739,9 @@ public class Loader {
             int R_TYPE    = (int)( rel.getR_info()        & 0xFF);
             int OFS_BASE  = (int)((rel.getR_info() >>  8) & 0xFF);
             int ADDR_BASE = (int)((rel.getR_info() >> 16) & 0xFF);
+            long R_OFFSET = rel.getR_offset();
             if (log.isTraceEnabled()) {
-            	log.trace(String.format("Relocation #%d type=%d,base=%08X,addr=%08X", i, R_TYPE, OFS_BASE, ADDR_BASE));
+            	log.trace(String.format("Relocation #%d type=%d, Offset PH#%d, Base Offset PH#%d, Offset 0x%08X", i, R_TYPE, OFS_BASE, ADDR_BASE, R_OFFSET));
             }
 
             // Check if R_TYPE is 0xFF (break code) and break the loop
@@ -757,7 +758,7 @@ public class Loader {
             int phBaseOffset = (int)elf.getProgramHeader(ADDR_BASE).getP_vaddr();
 
             // Address of data to relocate
-            int data_addr = (int)(baseAddress + rel.getR_offset() + phOffset);
+            int data_addr = (int)(baseAddress + R_OFFSET + phOffset);
             // Value of data to relocate
             int data = readUnaligned32(mem, data_addr);
             long result = 0; // Used to hold the result of relocation, OR this back into data
@@ -770,7 +771,7 @@ public class Loader {
 
             int A = 0; // addend
             int S = (int) baseAddress + phBaseOffset;
-            int GP_ADDR = (int) baseAddress + (int) rel.getR_offset();
+            int GP_ADDR = (int) baseAddress + (int) R_OFFSET;
             int GP_OFFSET = GP_ADDR - ((int) baseAddress & 0xFFFF0000);
 
             switch (R_TYPE) {
