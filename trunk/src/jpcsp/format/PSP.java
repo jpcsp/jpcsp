@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 
+import jpcsp.State;
 import jpcsp.connector.Connector;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.util.Utilities;
@@ -151,13 +152,13 @@ public class PSP {
                 | ((inBuf[0xD2] & 0xFF) << 8) | (inBuf[0xD3] & 0xFF);
 
         int retsize = crypto.DecryptPRX1(inBuf, outBuf, inSize, fileTag);
-        if(retsize <= 0) {
+        if (retsize <= 0) {
             retsize = crypto.DecryptPRX2(inBuf, outBuf, inSize, fileTag);
         }
 
-        if(CryptoEngine.getExtractEbootStatus()) {
+        if (CryptoEngine.getExtractEbootStatus()) {
             try {
-                String ebootPath = Connector.baseDirectory + "EBOOT" + File.separatorChar;
+                String ebootPath = Connector.baseDirectory + State.discId + File.separatorChar;
                 new File(ebootPath).mkdirs();
                 RandomAccessFile raf = new RandomAccessFile(ebootPath + "EBOOT.BIN", "rw");
                 raf.write(outBuf, 0, retsize);

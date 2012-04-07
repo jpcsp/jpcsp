@@ -60,6 +60,7 @@ import javax.swing.UIManager;
 import jpcsp.Allegrex.compiler.Profiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.autotests.AutoTestsRunner;
+import jpcsp.connector.Connector;
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.Debugger.ImageViewer;
 import jpcsp.Debugger.InstructionCounter;
@@ -1586,11 +1587,16 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             RuntimeContext.setIsHomebrew(psf.isLikelyHomebrew());
             Modules.SysMemUserForUserModule.setMemory64MB(psf.getNumeric("MEMSIZE") == 1);
 
-            if ((!discId.equals(State.DISCID_UNKNOWN_UMD) && loadUnpackedUMD(discId + ".BIN")) ||
-                    loadUMD(iso, "PSP_GAME/SYSDIR/BOOT.BIN") ||
-                    loadUMD(iso, "PSP_GAME/SYSDIR/EBOOT.BIN")) {
+            State.discId = discId;
 
-                State.discId = discId;
+            if ((!discId.equals(State.DISCID_UNKNOWN_UMD) && loadUnpackedUMD(discId + ".BIN")) ||
+                // Try to load a previously decrypted EBOOT.BIN (faster)
+                (!discId.equals(State.DISCID_UNKNOWN_UMD) && loadUnpackedUMD(Connector.baseDirectory + discId + File.separatorChar + "EBOOT.BIN")) ||
+                // Try to load the EBOOT.BIN (before the BOOT.BIN, same games have an invalid BOOT.BIN but a valid EBOOT.BIN)
+                loadUMD(iso, "PSP_GAME/SYSDIR/EBOOT.BIN") ||
+                // As the last chance, try to load the BOOT.BIN
+                loadUMD(iso, "PSP_GAME/SYSDIR/BOOT.BIN")) {
+
                 State.title = title;
 
                 Settings.getInstance().loadPatchSettings();
@@ -1607,6 +1613,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
                 StepLogger.clear();
                 StepLogger.setName(file.getPath());
             } else {
+            	State.discId = State.DISCID_UNKNOWN_NOTHING_LOADED;
                 throw new GeneralJpcspException(Resource.get("encryptedBoot"));
             }
         } catch (GeneralJpcspException e) {
