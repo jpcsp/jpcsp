@@ -46,6 +46,8 @@ import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules150.sceNetAdhoc.AdhocMessage;
 import jpcsp.HLE.modules150.sceNetAdhoc.AdhocObject;
 import jpcsp.hardware.Wlan;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -111,8 +113,8 @@ public class sceNetAdhocMatching extends HLEModule {
 			super(message, length);
 		}
 
-		public AdhocMatchingEventMessage(int address, int length, int event) {
-			super(address, length);
+		public AdhocMatchingEventMessage(int event) {
+			super();
 			setAdditionalHeaderDataByte(event);
 		}
 
@@ -147,8 +149,7 @@ public class sceNetAdhocMatching extends HLEModule {
     	private boolean started;
     	private long lastHelloMicros;
     	private long lastPingMicros;
-    	private int helloOptLen;
-    	private int helloOptData;
+    	private byte[] helloOptData;
     	private SceKernelThreadInfo eventThread;
     	private SceKernelThreadInfo inputThread;
     	private byte[] pendingJoinRequest;
@@ -219,9 +220,8 @@ public class sceNetAdhocMatching extends HLEModule {
 
 		public int start(int evthPri, int evthStack, int inthPri, int inthStack, int optLen, int optData) {
 			try {
+				setHelloOpt(optLen, optData);
 				openSocket();
-				helloOptLen = optLen;
-				helloOptData = optData;
 
 	            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 				if (eventThread == null) {
@@ -251,15 +251,17 @@ public class sceNetAdhocMatching extends HLEModule {
 		}
 
 		public int stop() {
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("Sending disconnect to port %d", getPort()));
-			}
+			if (connected) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Sending disconnect to port %d", getPort()));
+				}
 
-			try {
-				AdhocMatchingEventMessage adhocMatchingEventMessage = new AdhocMatchingEventMessage(0, 0, PSP_ADHOC_MATCHING_EVENT_DISCONNECT);
-				send(adhocMatchingEventMessage);
-			} catch (IOException e) {
-				log.error("stop", e);
+				try {
+					AdhocMatchingEventMessage adhocMatchingEventMessage = new AdhocMatchingEventMessage(PSP_ADHOC_MATCHING_EVENT_DISCONNECT);
+					send(adhocMatchingEventMessage);
+				} catch (IOException e) {
+					log.error("stop", e);
+				}
 			}
 
 			closeSocket();
@@ -268,11 +270,14 @@ public class sceNetAdhocMatching extends HLEModule {
 			return 0;
 		}
 
-		private void sendHello(int optLen, int optData) throws IOException {
+		private void sendHello() throws IOException {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Sending hello to port %d", getPort()));
 			}
-			AdhocMatchingEventMessage adhocMatchingEventMessage = new AdhocMatchingEventMessage(optData, optLen, PSP_ADHOC_MATCHING_EVENT_HELLO);
+			AdhocMatchingEventMessage adhocMatchingEventMessage = new AdhocMatchingEventMessage(PSP_ADHOC_MATCHING_EVENT_HELLO);
+			if (getHelloOptLen() > 0) {
+				adhocMatchingEventMessage.setData(helloOptData);
+			}
 			send(adhocMatchingEventMessage);
 
 			lastHelloMicros = Emulator.getClock().microTime();
@@ -282,7 +287,7 @@ public class sceNetAdhocMatching extends HLEModule {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Sending ping to port %d", getPort()));
 			}
-			AdhocMatchingEventMessage adhocMatchingEventMessage = new AdhocMatchingEventMessage(0, 0, PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING);
+			AdhocMatchingEventMessage adhocMatchingEventMessage = new AdhocMatchingEventMessage(PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING);
 			send(adhocMatchingEventMessage);
 
 			lastPingMicros = Emulator.getClock().microTime();
@@ -292,6 +297,9 @@ public class sceNetAdhocMatching extends HLEModule {
 		protected void closeSocket() {
 			super.closeSocket();
 			started = false;
+			connected = false;
+			inConnection = false;
+			pendingComplete = false;
 		}
 
 		public int send(pspNetMacAddress macAddress, int dataLen, int data) {
@@ -352,24 +360,26 @@ public class sceNetAdhocMatching extends HLEModule {
 		}
 
 		public int getHelloOptLen() {
-			return helloOptLen;
+			return helloOptData == null ? 0 : helloOptData.length;
 		}
 
-		public void setHelloOptLen(int helloOptLen) {
-			this.helloOptLen = helloOptLen;
-		}
-
-		public int getHelloOptData() {
+		public byte[] getHelloOptData() {
 			return helloOptData;
 		}
 
-		public void setHelloOptData(int helloOptData) {
-			this.helloOptData = helloOptData;
-		}
-
 		public void setHelloOpt(int optLen, int optData) {
-			setHelloOptLen(optLen);
-			setHelloOptData(optData);
+			if (optLen <= 0 || optData == 0) {
+				this.helloOptData = null;
+				return;
+			}
+
+			// Copy the HelloOpt into an internal buffer, the user memory can be overwritten
+			// after this call.
+			IMemoryReader memoryReader = MemoryReader.getMemoryReader(optData, optLen, 1);
+			helloOptData = new byte[optLen];
+			for (int i = 0; i < optLen; i++) {
+				helloOptData[i] = (byte) memoryReader.readNext();
+			}
 		}
 
 	    private void notifyCallbackEvent(int event, int macAddr, int optLen, int optData) {
@@ -400,7 +410,7 @@ public class sceNetAdhocMatching extends HLEModule {
 				} else if (getMode() != PSP_ADHOC_MATCHING_MODE_CLIENT) {
 					if (Emulator.getClock().microTime() - lastHelloMicros >= getHelloDelay()) {
 						try {
-							sendHello(helloOptLen, helloOptData);
+							sendHello();
 						} catch (IOException e) {
 							log.error("eventLoop hello", e);
 						}
@@ -791,14 +801,13 @@ public class sceNetAdhocMatching extends HLEModule {
 
         MatchingObject matchingObject = matchingObjects.get(matchingId);
         int helloOptLen = matchingObject.getHelloOptLen();
-        int helloOptData = matchingObject.getHelloOptData();
 
         int bufSize = optLenAddr.getValue();
         optLenAddr.setValue(helloOptLen);
 
-        if (helloOptData != 0 && optData.getAddress() != 0 && bufSize > 0) {
+        if (helloOptLen > 0 && optData.getAddress() != 0 && bufSize > 0) {
         	int length = Math.min(bufSize, helloOptLen);
-        	Memory.getInstance().memcpy(optData.getAddress(), helloOptData, length);
+        	sceNetAdhoc.writeBytes(optData.getAddress(), length, matchingObject.getHelloOptData(), 0);
         }
 
         return 0;
