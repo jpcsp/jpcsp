@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.hardware;
 
-import static jpcsp.HLE.modules150.sceNet.convertMacAddressToString;
 import static jpcsp.HLE.modules150.sceNet.convertStringToMacAddress;
 
 import java.util.Random;
@@ -34,13 +33,14 @@ public class Wlan {
     public static void initialize() {
     	String macAddressString = Settings.getInstance().readString(settingsMacAddress);
     	if (macAddressString == null || macAddressString.length() <= 0) {
-    		// MAC Address not yet set, generate a random one
+    		// MAC Address not set from the settings file, generate a random one
     		Random random = new Random();
     		for (int i = 0; i < macAddress.length; i++) {
     			macAddress[i] = (byte) random.nextInt(256);
     		}
-    		// And save the new MAC address to the settings.
-    		Settings.getInstance().writeString(settingsMacAddress, convertMacAddressToString(macAddress));
+    		// Do not save the new MAC address to the settings so that different instances
+    		// of Jpcsp are using different MAC addresses (required for Adhoc networking).
+    		//Settings.getInstance().writeString(settingsMacAddress, convertMacAddressToString(macAddress));
     	} else {
     		macAddress = convertStringToMacAddress(macAddressString);
     	}
