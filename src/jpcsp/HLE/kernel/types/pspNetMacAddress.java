@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import jpcsp.HLE.modules150.sceNet;
+import jpcsp.HLE.modules150.sceNetAdhoc;
 import jpcsp.hardware.Wlan;
 
 public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
@@ -59,6 +60,19 @@ public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
 		}
 
 		return true;
+	}
+
+	@Override
+	public boolean equals(Object object) {
+		if (object instanceof pspNetMacAddress) {
+			pspNetMacAddress macAddress = (pspNetMacAddress) object;
+			return sceNetAdhoc.isSameMacAddress(macAddress.macAddress, this.macAddress);
+		}
+		return super.equals(object);
+	}
+
+	public boolean equals(byte[] macAddress) {
+		return sceNetAdhoc.isSameMacAddress(macAddress, this.macAddress);
 	}
 
 	@Override
