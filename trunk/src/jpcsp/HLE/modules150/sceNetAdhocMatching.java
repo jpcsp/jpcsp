@@ -359,9 +359,17 @@ public class sceNetAdhocMatching extends HLEModule {
 			int result = 0;
 
 			try {
-				int event = PSP_ADHOC_MATCHING_EVENT_CANCEL;
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("Sending cancel to port %d", getPort()));
+				int event;
+				if (connected) {
+					event = PSP_ADHOC_MATCHING_EVENT_LEFT;
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Sending leave to port %d", getPort()));
+					}
+				} else {
+					event = PSP_ADHOC_MATCHING_EVENT_CANCEL;
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Sending cancel to port %d", getPort()));
+					}
 				}
 				AdhocMatchingEventMessage adhocMatchingEventMessage = new AdhocMatchingEventMessage(optData, optLen, macAddress.macAddress, event);
 				send(adhocMatchingEventMessage);
@@ -373,6 +381,8 @@ public class sceNetAdhocMatching extends HLEModule {
 				log.error("cancelTarget", e);
 			}
 			removeMember(macAddress.macAddress);
+			connected = false;
+			inConnection = false;
 
 			return result;
 		}
@@ -799,7 +809,7 @@ public class sceNetAdhocMatching extends HLEModule {
     public int sceNetAdhocMatchingCancelTargetWithOpt(@CheckArgument("checkMatchingId") int matchingId, TPointer macAddr, int optLen, @CanBeNull TPointer optData) {
     	pspNetMacAddress macAddress = new pspNetMacAddress();
     	macAddress.read(Memory.getInstance(), macAddr.getAddress());
-        log.warn(String.format("PARTIAL: sceNetAdhocMatchingCancelTargetWithOpt matchingId=%d, macAddr=%s(%s), optLen=%d, optData=%s", matchingId, macAddr, macAddress, optLen, optData));
+        log.warn(String.format("PARTIAL: sceNetAdhocMatchingCancelTargetWithOpt matchingId=%d, macAddr=%s(%s), optLen=%d, optData=%s: %s", matchingId, macAddr, macAddress, optLen, optData, Utilities.getMemoryDump(optData.getAddress(), optLen, 4, 16)));
 
         return matchingObjects.get(matchingId).cancelTarget(macAddress, optLen, optData.getAddress());
     }
