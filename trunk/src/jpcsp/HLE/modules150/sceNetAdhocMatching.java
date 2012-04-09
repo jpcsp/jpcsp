@@ -356,7 +356,25 @@ public class sceNetAdhocMatching extends HLEModule {
 		}
 
 		public int cancelTarget(pspNetMacAddress macAddress, int optLen, int optData) {
-			return 0;
+			int result = 0;
+
+			try {
+				int event = PSP_ADHOC_MATCHING_EVENT_CANCEL;
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Sending cancel to port %d", getPort()));
+				}
+				AdhocMatchingEventMessage adhocMatchingEventMessage = new AdhocMatchingEventMessage(optData, optLen, macAddress.macAddress, event);
+				send(adhocMatchingEventMessage);
+			} catch (SocketException e) {
+				log.error("cancelTarget", e);
+			} catch (UnknownHostException e) {
+				log.error("cancelTarget", e);
+			} catch (IOException e) {
+				log.error("cancelTarget", e);
+			}
+			removeMember(macAddress.macAddress);
+
+			return result;
 		}
 
 		public int getHelloOptLen() {
