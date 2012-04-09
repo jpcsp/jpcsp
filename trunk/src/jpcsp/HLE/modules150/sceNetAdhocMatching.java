@@ -541,6 +541,10 @@ public class sceNetAdhocMatching extends HLEModule {
 							log.debug(String.format("Received disconnect from %s", macAddress));
 						}
 						removeMember(adhocMatchingEventMessage.getFromMacAddress());
+						if (members.size() <= 1) {
+							connected = false;
+							inConnection = false;
+						}
 					}
 				}
 			} catch (SocketTimeoutException e) {

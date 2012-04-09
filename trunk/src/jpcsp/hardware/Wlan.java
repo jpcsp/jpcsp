@@ -38,11 +38,21 @@ public class Wlan {
     		for (int i = 0; i < macAddress.length; i++) {
     			macAddress[i] = (byte) random.nextInt(256);
     		}
+    		// Both least significant bits of the first byte have a special meaning
+    		// (see http://en.wikipedia.org/wiki/Mac_address):
+    		// bit 0: 0=Unicast / 1=Multicast
+    		// bit 1: 0=Globally unique / 1=Locally administered
+    		macAddress[0] &= 0xFC;
     		// Do not save the new MAC address to the settings so that different instances
     		// of Jpcsp are using different MAC addresses (required for Adhoc networking).
     		//Settings.getInstance().writeString(settingsMacAddress, convertMacAddressToString(macAddress));
     	} else {
     		macAddress = convertStringToMacAddress(macAddressString);
+    		// Both least significant bits of the first byte have a special meaning
+    		// (see http://en.wikipedia.org/wiki/Mac_address):
+    		// bit 0: 0=Unicast / 1=Multicast
+    		// bit 1: 0=Globally unique / 1=Locally administered
+    		macAddress[0] &= 0xFC;
     	}
     }
 
