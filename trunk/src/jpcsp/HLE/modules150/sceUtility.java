@@ -1158,6 +1158,21 @@ public class sceUtility extends HLEModule {
 						Modules.sceNetAdhocctlModule.hleNetAdhocctlConnect(netconfParams.netconfData.confTitle);
 					}
 				}
+			} else if (netconfParams.netAction == SceUtilityNetconfParams.PSP_UTILITY_NETCONF_CONNECT_ADHOC_UNKNOWN4 ||
+			           netconfParams.netAction == SceUtilityNetconfParams.PSP_UTILITY_NETCONF_CONNECT_APHOC_UNKNOWN5) {
+				int state = Modules.sceNetAdhocctlModule.hleNetAdhocctlGetState();
+
+				// The Netconf dialog stays visible until the network reaches
+				// the state PSP_ADHOCCTL_STATE_CONNECTED.
+				if (state == sceNetAdhocctl.PSP_ADHOCCTL_STATE_CONNECTED) {
+					keepVisible = false;
+				} else {
+					keepVisible = true;
+					if (state == sceNetAdhocctl.PSP_ADHOCCTL_STATE_DISCONNECTED && netconfParams.netconfData != null) {
+						// Connect to the given group name
+						Modules.sceNetAdhocctlModule.hleNetAdhocctlConnect(netconfParams.netconfData.confTitle);
+					}
+				}
 			}
 
 			return keepVisible;

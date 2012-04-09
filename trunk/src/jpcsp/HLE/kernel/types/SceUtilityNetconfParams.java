@@ -23,6 +23,8 @@ public class SceUtilityNetconfParams extends pspAbstractMemoryMappedStructure {
         public final static int PSP_UTILITY_NETCONF_GET_STATUS_APNET = 1;
         public final static int PSP_UTILITY_NETCONF_CONNECT_ADHOC = 2;
         public final static int PSP_UTILITY_NETCONF_CONNECT_APNET_LASTUSED = 3;
+        public final static int PSP_UTILITY_NETCONF_CONNECT_ADHOC_UNKNOWN4 = 4;
+        public final static int PSP_UTILITY_NETCONF_CONNECT_APHOC_UNKNOWN5 = 5;
     public int netconfDataAddr;
     public SceUtilityNetconfData netconfData;
     public int netHotspot;          // Flag to allow hotspot connections (PSPSDK).
