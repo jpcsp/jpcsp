@@ -641,10 +641,13 @@ public class sceNetAdhocctl extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x0AD043ED, version = 150, checkInsideInterrupt = true)
-    public int sceNetAdhocctlConnect(TPointer groupNameAddr) {
+    public int sceNetAdhocctlConnect(@CanBeNull TPointer groupNameAddr) {
         Memory mem = Memory.getInstance();
 
-        String groupName = Utilities.readStringNZ(mem, groupNameAddr.getAddress(), GROUP_NAME_LENGTH);
+        String groupName = "";
+        if (groupNameAddr.getAddress() != 0) {
+        	groupName = Utilities.readStringNZ(mem, groupNameAddr.getAddress(), GROUP_NAME_LENGTH);
+        }
 
         log.warn(String.format("PARTIAL: sceNetAdhocctlConnect groupNameAddr=%s('%s')", groupNameAddr, groupName));
 
