@@ -357,6 +357,8 @@ public class SceKernelErrors {
 
     public final static int ERROR_POWER_VMEM_IN_USE                             = 0x802b0200;
 
+    public final static int ERROR_NET_BUFFER_TOO_SMALL                          = 0x80400706;
+
     public final static int ERROR_NET_RESOLVER_BAD_ID                           = 0x80410408;
     public final static int ERROR_NET_RESOLVER_ALREADY_STOPPED                  = 0x8041040a;
     public final static int ERROR_NET_RESOLVER_INVALID_HOST                     = 0x80410414;

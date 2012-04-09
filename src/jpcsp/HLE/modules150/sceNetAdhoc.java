@@ -80,6 +80,9 @@ public class sceNetAdhoc extends HLEModule {
     // Period to update the Game Mode
     protected static final int GAME_MODE_UPDATE_MICROS = 12000;
 
+    protected static final int PSP_ADHOC_POLL_READY_TO_SEND = 1;
+    protected static final int PSP_ADHOC_POLL_DATA_AVAILABLE = 2;
+
     protected HashMap<Integer, PdpObject> pdpObjects;
     protected HashMap<Integer, PtpObject> ptpObjects;
     private int currentFreePort;
@@ -429,13 +432,19 @@ public class sceNetAdhoc extends HLEModule {
 		}
     }
 
+    protected static class AdhocBufferMessage {
+    	public int length;
+    	public int offset;
+    	public pspNetMacAddress macAddress = new pspNetMacAddress();
+    	public int port;
+    }
+
     protected class PdpObject extends AdhocObject {
     	/** MAC address */
     	private pspNetMacAddress macAddress;
     	/** Bytes received */
     	private int rcvdData;
-    	private pspNetMacAddress rcvdMacAddress = new pspNetMacAddress();
-    	private int rcvdPort;
+    	private LinkedList<AdhocBufferMessage> rcvdMessages = new LinkedList<AdhocBufferMessage>();
 
     	public PdpObject() {
     		super();
@@ -499,68 +508,70 @@ public class sceNetAdhoc extends HLEModule {
 			return result;
 		}
 
+		private void addReceivedMessage(AdhocMessage adhocMessage, int port) {
+			AdhocBufferMessage bufferMessage = new AdhocBufferMessage();
+			bufferMessage.length = adhocMessage.getDataLength();
+			bufferMessage.macAddress.setMacAddress(adhocMessage.getFromMacAddress());
+			bufferMessage.port = port - netClientPortShift;
+			bufferMessage.offset = rcvdData;
+			adhocMessage.writeDataToMemory(buffer.addr + bufferMessage.offset);
+
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Successfully received %d bytes from %s on port %d(%d): %s", bufferMessage.length, bufferMessage.macAddress, bufferMessage.port, port, Utilities.getMemoryDump(buffer.addr + bufferMessage.offset, bufferMessage.length, 4, 16)));
+			}
+
+			rcvdData += bufferMessage.length;
+			rcvdMessages.add(bufferMessage);
+		}
+
+		private void removeFirstReceivedMessage() {
+			AdhocBufferMessage bufferMessage = rcvdMessages.removeFirst();
+			if (bufferMessage == null) {
+				return;
+			}
+
+			if (rcvdData > bufferMessage.length) {
+				// Move the remaining buffer data to the beginning of the buffer
+				Memory.getInstance().memcpy(buffer.addr, buffer.addr + bufferMessage.length, rcvdData - bufferMessage.length);
+				for (AdhocBufferMessage rcvdMessage : rcvdMessages) {
+					rcvdMessage.offset -= bufferMessage.length;
+				}
+			}
+			rcvdData -= bufferMessage.length;
+		}
+
 		public int recv(pspNetMacAddress srcMacAddress, TPointer16 portAddr, TPointer data, TPointer32 dataLengthAddr, int timeout, int nonblock) {
 			int result = SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE;
 			int length = dataLengthAddr.getValue();
 
-			if (rcvdData > 0) {
-				// Copy the data already received
-				if (rcvdData < length) {
-					length = rcvdData;
-				}
-				Memory.getInstance().memcpy(data.getAddress(), buffer.addr, length);
-				dataLengthAddr.setValue(length);
-				if (srcMacAddress != null) {
-					srcMacAddress.setMacAddress(rcvdMacAddress.macAddress);
-				}
-				if (portAddr != null) {
-					portAddr.setValue(rcvdPort);
-				}
+			if (rcvdMessages.isEmpty()) {
+				update();
+			}
 
-				// Update the buffer
-				if (length < rcvdData) {
-					// Move the remaining buffer data to the beginning of the buffer
-					Memory.getInstance().memmove(buffer.addr, buffer.addr + length, rcvdData - length);
-				}
-				rcvdData -= length;
-
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("Returned received data: %d bytes from %s on port %d: %s", length, srcMacAddress, portAddr.getValue(), Utilities.getMemoryDump(data.getAddress(), dataLengthAddr.getValue(), 4, 16)));
-				}
-				result = 0;
-			} else {
-				try {
-					openSocket();
-					setTimeout(timeout, nonblock);
-					byte[] bytes = new byte[AdhocMessage.getMessageLength(length)];
-					DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
-					socket.receive(packet);
-					AdhocMessage adhocMessage = createMessage(packet);
-					if (isForMe(adhocMessage)) {
-						adhocMessage.writeDataToMemory(data.getAddress());
-						dataLengthAddr.setValue(adhocMessage.getDataLength());
-						if (srcMacAddress != null) {
-							srcMacAddress.setMacAddress(adhocMessage.getFromMacAddress());
-						}
-						int clientPort = packet.getPort() - netClientPortShift;
-						if (portAddr != null) {
-							portAddr.setValue(clientPort);
-						}
-						if (log.isDebugEnabled()) {
-							log.debug(String.format("Successfully received %d bytes from %s on port %d(%d): %s", adhocMessage.getDataLength(), adhocMessage.getFromMacAddress(), clientPort, packet.getPort(), Utilities.getMemoryDump(data.getAddress(), dataLengthAddr.getValue(), 4, 16)));
-						}
-						result = 0;
-					} else {
-						if (log.isDebugEnabled()) {
-							log.debug(String.format("Received message not for me: %s", adhocMessage));
-						}
+			if (!rcvdMessages.isEmpty()) {
+				AdhocBufferMessage bufferMessage = rcvdMessages.getFirst();
+				if (length < bufferMessage.length) {
+					// Buffer is too small to contain all the available data.
+					// Return the buffer size that would be required.
+					dataLengthAddr.setValue(bufferMessage.length);
+					result = SceKernelErrors.ERROR_NET_BUFFER_TOO_SMALL;
+				} else {
+					// Copy the data already received
+					dataLengthAddr.setValue(bufferMessage.length);
+					Memory.getInstance().memcpy(data.getAddress(), buffer.addr + bufferMessage.offset, bufferMessage.length);
+					if (srcMacAddress != null) {
+						srcMacAddress.setMacAddress(bufferMessage.macAddress.macAddress);
 					}
-				} catch (SocketException e) {
-					log.error("recv", e);
-				} catch (SocketTimeoutException e) {
-					// Timeout
-				} catch (IOException e) {
-					log.error("recv", e);
+					if (portAddr != null) {
+						portAddr.setValue(bufferMessage.port);
+					}
+
+					removeFirstReceivedMessage();
+
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Returned received data: %d bytes from %s on port %d: %s", dataLengthAddr.getValue(), bufferMessage.macAddress, portAddr.getValue(), Utilities.getMemoryDump(data.getAddress(), dataLengthAddr.getValue(), 4, 16)));
+					}
+					result = 0;
 				}
 			}
 
@@ -577,14 +588,7 @@ public class sceNetAdhoc extends HLEModule {
 					socket.receive(packet);
 					AdhocMessage adhocMessage = createMessage(packet);
 					if (isForMe(adhocMessage)) {
-						int bufferAddr = buffer.addr + rcvdData;
-						adhocMessage.writeDataToMemory(bufferAddr);
-						rcvdData += adhocMessage.getDataLength();
-						rcvdMacAddress.setMacAddress(adhocMessage.getFromMacAddress());
-						rcvdPort = packet.getPort() - netClientPortShift;
-						if (log.isDebugEnabled()) {
-							log.debug(String.format("Successfully received %d bytes from %s on port %d(%d): %s", adhocMessage.getDataLength(), rcvdMacAddress, rcvdPort, packet.getPort(), Utilities.getMemoryDump(bufferAddr, adhocMessage.getDataLength(), 4, 16)));
-						}
+						addReceivedMessage(adhocMessage, packet.getPort());
 					} else {
 						if (log.isDebugEnabled()) {
 							log.debug(String.format("Received message not for me: %s", adhocMessage));
@@ -1384,8 +1388,12 @@ public class sceNetAdhoc extends HLEModule {
         	}
 
         	pollId.revents = 0;
-        	if (pdpObject.getRcvdData() > 0) {
-        		pollId.revents |= 0x2;
+        	if ((pollId.events & PSP_ADHOC_POLL_DATA_AVAILABLE) != 0 && pdpObject.getRcvdData() > 0) {
+        		pollId.revents |= PSP_ADHOC_POLL_DATA_AVAILABLE;
+        	}
+        	if ((pollId.events & PSP_ADHOC_POLL_READY_TO_SEND) != 0) {
+        		// Data can always be sent
+        		pollId.revents |= PSP_ADHOC_POLL_READY_TO_SEND;
         	}
 
         	if (pollId.revents != 0) {
