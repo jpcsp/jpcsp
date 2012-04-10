@@ -20,6 +20,7 @@ import static jpcsp.HLE.modules150.sceNet.convertStringToMacAddress;
 
 import java.util.Random;
 
+import jpcsp.HLE.modules150.sceUtility;
 import jpcsp.settings.Settings;
 
 public class Wlan {
@@ -29,6 +30,8 @@ public class Wlan {
     public final static int MAC_ADDRESS_LENGTH = 6;
     private static byte[] macAddress = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06 };
     private final static String settingsMacAddress = "macAddress";
+    public static int PSP_ADHOC_CHANNEL_AUTO = 0;
+    public static int PSP_ADHOC_CHANNEL_DEFAULT = 11;
 
     public static void initialize() {
     	String macAddressString = Settings.getInstance().readString(settingsMacAddress);
@@ -70,5 +73,14 @@ public class Wlan {
 
     public static void setMacAddress(byte[] newMacAddress) {
     	System.arraycopy(newMacAddress, 0, macAddress, 0, MAC_ADDRESS_LENGTH);
+    }
+
+    public static int getAdhocChannel() {
+    	int channel = sceUtility.getSystemParamAdhocChannel();
+    	if (channel == PSP_ADHOC_CHANNEL_AUTO) {
+    		channel = PSP_ADHOC_CHANNEL_DEFAULT;
+    	}
+
+    	return channel;
     }
 }

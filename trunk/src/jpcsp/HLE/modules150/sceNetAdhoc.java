@@ -341,7 +341,7 @@ public class sceNetAdhoc extends HLEModule {
     	public AdhocObject(AdhocObject adhocObject) {
     		id = SceUidManager.getNewUid(uidPurpose);
     		port = adhocObject.port;
-    		bufSize = adhocObject.bufSize;
+    		setBufSize(adhocObject.bufSize);
     	}
 
     	public int getId() {
@@ -443,7 +443,7 @@ public class sceNetAdhoc extends HLEModule {
     	/** MAC address */
     	private pspNetMacAddress macAddress;
     	/** Bytes received */
-    	private int rcvdData;
+    	protected int rcvdData;
     	private LinkedList<AdhocBufferMessage> rcvdMessages = new LinkedList<AdhocBufferMessage>();
 
     	public PdpObject() {
@@ -508,7 +508,9 @@ public class sceNetAdhoc extends HLEModule {
 			return result;
 		}
 
-		private void addReceivedMessage(AdhocMessage adhocMessage, int port) {
+		// For Pdp sockets, data is stored in the internal buffer as a sequence of packets.
+		// The organization in packets must be kept for reading.
+		protected void addReceivedMessage(AdhocMessage adhocMessage, int port) {
 			AdhocBufferMessage bufferMessage = new AdhocBufferMessage();
 			bufferMessage.length = adhocMessage.getDataLength();
 			bufferMessage.macAddress.setMacAddress(adhocMessage.getFromMacAddress());
@@ -540,6 +542,8 @@ public class sceNetAdhoc extends HLEModule {
 			rcvdData -= bufferMessage.length;
 		}
 
+		// For Pdp sockets, data in read one packets at a time.
+		// The called has to provide enough space to fully read the next packet.
 		public int recv(pspNetMacAddress srcMacAddress, TPointer16 portAddr, TPointer data, TPointer32 dataLengthAddr, int timeout, int nonblock) {
 			int result = SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE;
 			int length = dataLengthAddr.getValue();
@@ -579,7 +583,8 @@ public class sceNetAdhoc extends HLEModule {
 		}
 
 		public void update() {
-			if (rcvdData < getBufSize()) {
+			// Receive all messages available
+			while (rcvdData < getBufSize()) {
 				try {
 					openSocket();
 					socket.setSoTimeout(1);
@@ -596,10 +601,13 @@ public class sceNetAdhoc extends HLEModule {
 					}
 				} catch (SocketException e) {
 					log.error("update", e);
+					break;
 				} catch (SocketTimeoutException e) {
 					// Timeout
+					break;
 				} catch (IOException e) {
 					log.error("update", e);
+					break;
 				}
 			}
 		}
@@ -708,8 +716,14 @@ public class sceNetAdhoc extends HLEModule {
 				AdhocPtpMessage adhocPtpMessage = new AdhocPtpMessage(PTP_MESSAGE_TYPE_CONNECT);
 				send(adhocPtpMessage);
 
-				BlockedPtpAction blockedPtpAction = new BlockedPtpConnect(this, timeout);
-				blockedPtpAction.blockCurrentThread();
+				if (!pollConnect(Modules.ThreadManForUserModule.getCurrentThread())) {
+					if (nonblock != 0) {
+						result = SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE;
+					} else {
+						BlockedPtpAction blockedPtpAction = new BlockedPtpConnect(this, timeout);
+						blockedPtpAction.blockCurrentThread();
+					}
+				}
 			} catch (SocketException e) {
 				log.error("connect", e);
 			} catch (IOException e) {
@@ -818,6 +832,14 @@ public class sceNetAdhoc extends HLEModule {
 			return acceptCompleted;
 		}
 
+		private void processConnectConfirm(AdhocPtpMessage adhocPtpMessage) {
+			int port = adhocPtpMessage.getDataInt32();
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Received connect confirmation, changing destination port from %d to %d", getDestPort(), port));
+			}
+			setDestPort(port);
+		}
+
 		public boolean pollConnect(SceKernelThreadInfo thread) {
 			boolean connectCompleted = false;
 
@@ -833,11 +855,7 @@ public class sceNetAdhoc extends HLEModule {
 					switch (adhocPtpMessage.getType()) {
 						case PTP_MESSAGE_TYPE_CONNECT_CONFIRM:
 							// Connect successfully completed, retrieve the new destination port
-							int port = adhocPtpMessage.getDataInt32();
-							if (log.isDebugEnabled()) {
-								log.debug(String.format("Received connect confirmation, changing destination port from %d to %d", getDestPort(), port));
-							}
-							setDestPort(port);
+							processConnectConfirm(adhocPtpMessage);
 							setReturnValue(thread, 0);
 							connectCompleted = true;
 							break;
@@ -882,8 +900,39 @@ public class sceNetAdhoc extends HLEModule {
 			return result;
 		}
 
+		// For Ptp sockets, data in read as a byte stream. Data is not organized in packets.
+		// Read as much data as the provided buffer can contain.
 		public int recv(TPointer data, TPointer32 dataLengthAddr, int timeout, int nonblock) {
-			return recv(null, null, data, dataLengthAddr, timeout, nonblock);
+			int result = SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE;
+			int length = dataLengthAddr.getValue();
+
+			if (length > 0) {
+				if (getRcvdData() <= 0) {
+					update();
+				}
+
+				if (getRcvdData() > 0) {
+					if (length > getRcvdData()) {
+						length = getRcvdData();
+					}
+					// Copy the data already received
+					dataLengthAddr.setValue(length);
+					Memory mem = Memory.getInstance();
+					mem.memcpy(data.getAddress(), buffer.addr, length);
+					if (getRcvdData() > length) {
+						// Shift the remaining buffer data to the beginning of the buffer
+						mem.memmove(buffer.addr, buffer.addr + length, getRcvdData() - length);
+					}
+					rcvdData -= length;
+
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Returned received data: %d bytes: %s", length, Utilities.getMemoryDump(data.getAddress(), length, 4, 16)));
+					}
+					result = 0;
+				}
+			}
+
+			return result;
 		}
 
 		@Override
@@ -894,8 +943,12 @@ public class sceNetAdhoc extends HLEModule {
 		@Override
 		protected boolean isForMe(AdhocMessage adhocMessage) {
 			if (adhocMessage instanceof AdhocPtpMessage) {
-				int type = ((AdhocPtpMessage) adhocMessage).getType();
-				if (type != AdhocPtpMessage.PTP_MESSAGE_TYPE_DATA) {
+				AdhocPtpMessage adhocPtpMessage = (AdhocPtpMessage) adhocMessage;
+				int type = adhocPtpMessage.getType();
+				if (type == AdhocPtpMessage.PTP_MESSAGE_TYPE_CONNECT_CONFIRM) {
+					processConnectConfirm(adhocPtpMessage);
+					return false;
+				} else if (type != AdhocPtpMessage.PTP_MESSAGE_TYPE_DATA) {
 					return false;
 				}
 			}
@@ -906,6 +959,19 @@ public class sceNetAdhoc extends HLEModule {
 		@Override
 		public String toString() {
 			return String.format("PtpObject[id=%d, srcMacAddress=%s, srcPort=%d, destMacAddress=%s, destPort=%d, bufSize=%d, retryDelay=%d, retryCount=%d, queue=%d, rcvdData=%d]", getId(), getMacAddress(), getPort(), getDestMacAddress(), getDestPort(), getBufSize(), getRetryDelay(), getRetryCount(), getQueue(), getRcvdData());
+		}
+
+		// For Ptp sockets, data is stored in the internal buffer as a continuous byte stream.
+		// The organization in packets doesn't matter.
+		@Override
+		protected void addReceivedMessage(AdhocMessage adhocMessage, int port) {
+			int length = Math.min(adhocMessage.getDataLength(), getBufSize() - getRcvdData());
+			int addr = buffer.addr + getRcvdData();
+			adhocMessage.writeDataToMemory(addr, length);
+			rcvdData += length;
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Successfully received message %s: %s", adhocMessage, Utilities.getMemoryDump(addr, length, 4, 16)));
+			}
 		}
     }
 
@@ -1843,6 +1909,7 @@ public class sceNetAdhoc extends HLEModule {
         	int addr = buf.getAddress();
         	int endAddr = addr + sizeAddr.getValue();
         	sizeAddr.setValue(objectInfoSize * ptpObjects.size());
+        	pspNetMacAddress nonExistingDestMacAddress = new pspNetMacAddress();
         	for (int pdpId : ptpObjects.keySet()) {
         		PtpObject ptpObject = ptpObjects.get(pdpId);
 
@@ -1869,8 +1936,13 @@ public class sceNetAdhoc extends HLEModule {
         		addr += ptpObject.getMacAddress().sizeof();
 
         		/** Dest MAC address */
-        		ptpObject.getDestMacAddress().write(mem, addr);
-        		addr += ptpObject.getDestMacAddress().sizeof();
+        		if (ptpObject.getDestMacAddress() != null) {
+        			ptpObject.getDestMacAddress().write(mem, addr);
+        			addr += ptpObject.getDestMacAddress().sizeof();
+        		} else {
+        			nonExistingDestMacAddress.write(mem, addr);
+        			addr += nonExistingDestMacAddress.sizeof();
+        		}
 
         		/** Port */
         		mem.write16(addr, (short) ptpObject.getPort());

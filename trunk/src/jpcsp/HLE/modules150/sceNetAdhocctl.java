@@ -36,8 +36,6 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.kernel.managers.IntrManager;
-import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceNetAdhocctlPeerInfo;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
@@ -91,7 +89,7 @@ public class sceNetAdhocctl extends HLEModule {
     protected SceKernelThreadInfo adhocctlThread;
     private boolean doScan;
     private long scanStartMillis;
-    private static final int SCAN_DURATION_MILLIS = 1200;
+    private static final int SCAN_DURATION_MILLIS = 700;
     private boolean doDisconnect;
     private boolean doJoin;
     private boolean gameModeJoinComplete;
@@ -140,6 +138,11 @@ public class sceNetAdhocctl extends HLEModule {
         protected void setError(int error) {
             currentError = error;
         }
+
+		@Override
+		public String toString() {
+			return String.format("AdhocctlHandler[handle=0x%X, entry=0x%08X, arg=0x%08X]", getHandle(), entryAddr, currentArg);
+		}
     }
 
     protected static class AdhocctlPeer {
@@ -314,7 +317,7 @@ public class sceNetAdhocctl extends HLEModule {
 		requiredGameModeMacs = new LinkedList<pspNetMacAddress>();
 		adhocctlCurrentIBSS = "Jpcsp";
 		adhocctlCurrentMode = PSP_ADHOCCTL_MODE_NORMAL;
-		adhocctlCurrentChannel = sceUtility.getSystemParamAdhocChannel();
+		adhocctlCurrentChannel = Wlan.getAdhocChannel();
 
 		super.start();
 	}
@@ -420,8 +423,8 @@ public class sceNetAdhocctl extends HLEModule {
     			// Poll every 100ms
     			threadMan.hleKernelDelayThread(100000, false);
     		} else {
-    			// Poll every 1s
-    			threadMan.hleKernelDelayThread(1000000, false);
+    			// Poll every 500ms
+    			threadMan.hleKernelDelayThread(500000, false);
     		}
     	}
     }
@@ -541,12 +544,6 @@ public class sceNetAdhocctl extends HLEModule {
 		}
     }
 
-    protected void triggerAdhocctlThread() {
-    	if (adhocctlThread != null) {
-    		Modules.ThreadManForUserModule.hleKernelWakeupThread(adhocctlThread);
-    	}
-    }
-
     protected void setState(int state) {
     	adhocctlCurrentState = state;
     }
@@ -555,7 +552,6 @@ public class sceNetAdhocctl extends HLEModule {
     	adhocctlCurrentGroup = groupName;
     	adhocctlCurrentMode = mode;
     	gameModeJoinComplete = false;
-    	triggerAdhocctlThread();
     }
 
     public void hleNetAdhocctlConnect(String groupName) {
@@ -578,6 +574,9 @@ public class sceNetAdhocctl extends HLEModule {
 
     protected void notifyAdhocctlHandler(int event, int error) {
         for (AdhocctlHandler handler : adhocctlHandlerMap.values()) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("Notifying handler %s with event=%d, error=%d", handler, event, error));
+        	}
             handler.setEvent(event);
             handler.setError(error);
             handler.triggerAdhocctlHandler();
@@ -628,7 +627,6 @@ public class sceNetAdhocctl extends HLEModule {
         log.warn("PARTIAL: sceNetAdhocctlTerm");
 
         doTerminate = true;
-        triggerAdhocctlThread();
 
         return 0;
     }
@@ -717,7 +715,6 @@ public class sceNetAdhocctl extends HLEModule {
         log.warn("PARTIAL: sceNetAdhocctlScan");
 
         doScan = true;
-        triggerAdhocctlThread();
 
         return 0;
     }
@@ -732,7 +729,6 @@ public class sceNetAdhocctl extends HLEModule {
         log.warn("PARTIAL: sceNetAdhocctlDisconnect");
 
         doDisconnect = true;
-        triggerAdhocctlThread();
 
         return 0;
     }
@@ -745,23 +741,15 @@ public class sceNetAdhocctl extends HLEModule {
      *
      * @return Handler id on success, < 0 on error.
      */
-    @HLEFunction(nid = 0x20B317A0, version = 150)
-    public void sceNetAdhocctlAddHandler(Processor processor) {
-        CpuState cpu = processor.cpu;
+    @HLEFunction(nid = 0x20B317A0, version = 150, checkInsideInterrupt = true)
+    public int sceNetAdhocctlAddHandler(TPointer adhocctlHandlerAddr, int adhocctlHandlerArg) {
+        log.warn(String.format("PARTIAL: sceNetAdhocctlAddHandler adhocctlHandlerAddr=%s, adhocctlHandlerArg=0x%08X", adhocctlHandlerAddr, adhocctlHandlerArg));
 
-        int adhocctlHandlerAddr = cpu.gpr[4];
-        int adhocctlHandlerArg = cpu.gpr[5];
-
-        log.warn("PARTIAL: sceNetAdhocctlAddHandler (adhocctlHandlerAddr=0x" + Integer.toHexString(adhocctlHandlerAddr) + ", adhocctlHandlerArg=0x" + Integer.toHexString(adhocctlHandlerArg) + ")");
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        AdhocctlHandler adhocctlHandler = new AdhocctlHandler(adhocctlHandlerCount++, adhocctlHandlerAddr, adhocctlHandlerArg);
+        AdhocctlHandler adhocctlHandler = new AdhocctlHandler(adhocctlHandlerCount++, adhocctlHandlerAddr.getAddress(), adhocctlHandlerArg);
         int handle = adhocctlHandler.getHandle();
         adhocctlHandlerMap.put(handle, adhocctlHandler);
-        cpu.gpr[2] = handle;
+
+        return handle;
     }
 
     /**
@@ -771,20 +759,13 @@ public class sceNetAdhocctl extends HLEModule {
      *
      * @return 0 on success, < 0 on error.
      */
-    @HLEFunction(nid = 0x6402490B, version = 150)
-    public void sceNetAdhocctlDelHandler(Processor processor) {
-       CpuState cpu = processor.cpu;
+    @HLEFunction(nid = 0x6402490B, version = 150, checkInsideInterrupt = true)
+    public int sceNetAdhocctlDelHandler(int adhocctlHandler) {
+        log.warn(String.format("PARTIAL: sceNetAdhocctlDelHandler adhocctlHandler=0x%08X", adhocctlHandler));
 
-        int adhocctlHandler = cpu.gpr[4];
-
-        log.warn("PARTIAL: sceNetAdhocctlDelHandler (adhocctlHandler=0x" + Integer.toHexString(adhocctlHandler) + ")");
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         adhocctlHandlerMap.remove(adhocctlHandler);
-        cpu.gpr[2] = 0;
+
+        return 0;
     }
 
     /**
@@ -799,9 +780,6 @@ public class sceNetAdhocctl extends HLEModule {
         log.warn(String.format("PARTIAL: sceNetAdhocctlGetState stateAddr=%s returning %d", stateAddr, adhocctlCurrentState));
 
         stateAddr.setValue(adhocctlCurrentState);
-
-        // Update peer list
-        triggerAdhocctlThread();
 
         return 0;
     }
@@ -836,6 +814,7 @@ public class sceNetAdhocctl extends HLEModule {
     public int sceNetAdhocctlGetPeerList(TPointer32 sizeAddr, @CanBeNull TPointer buf) {
         log.warn(String.format("PARTIAL: sceNetAdhocctlGetPeerList sizeAddr=%s(%d), buf=%s", sizeAddr, sizeAddr.getValue(), buf.toString()));
 
+        int size = sizeAddr.getValue();
 		SceNetAdhocctlPeerInfo peerInfo = new SceNetAdhocctlPeerInfo();
     	sizeAddr.setValue(peerInfo.sizeof() * peers.size());
     	if (log.isDebugEnabled()) {
@@ -845,7 +824,7 @@ public class sceNetAdhocctl extends HLEModule {
     	if (buf.getAddress() != 0) {
         	Memory mem = Memory.getInstance();
         	int addr = buf.getAddress();
-        	int endAddr = addr + sizeAddr.getValue();
+        	int endAddr = addr + size;
         	for (AdhocctlPeer peer : peers) {
         		// Check if enough space available to write the next structure
         		if (addr + peerInfo.sizeof() > endAddr || peer == null) {
@@ -875,9 +854,6 @@ public class sceNetAdhocctl extends HLEModule {
         		}
         	}
         }
-
-        // Update peer list
-        triggerAdhocctlThread();
 
         return 0;
     }
@@ -911,9 +887,6 @@ public class sceNetAdhocctl extends HLEModule {
         	}
         }
 
-        // Update peer list
-        triggerAdhocctlThread();
-
         return 0;
     }
 
@@ -927,12 +900,60 @@ public class sceNetAdhocctl extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x99560ABE, version = 150)
-    public void sceNetAdhocctlGetAddrByName(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocctlGetAddrByName(TPointer nickNameAddr, TPointer32 sizeAddr, @CanBeNull TPointer buf) {
+    	Memory mem = Memory.getInstance();
+    	String nickName = Utilities.readStringNZ(mem, nickNameAddr.getAddress(), NICK_NAME_LENGTH);
+        log.warn(String.format("PARTIAL: sceNetAdhocctlGetAddrByName nickNameAddr=%s('%s'), sizeAddr=%s(%d), buf=%s", nickNameAddr, nickName, sizeAddr, sizeAddr.getValue(), buf));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocctlGetAddrByName");
+        // Search for peers matching the given nick name
+        LinkedList<AdhocctlPeer> matchingPeers = new LinkedList<sceNetAdhocctl.AdhocctlPeer>();
+        for (AdhocctlPeer peer : peers) {
+        	if (nickName.equals(peer.nickName)) {
+        		matchingPeers.add(peer);
+        	}
+        }
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        int size = sizeAddr.getValue();
+        SceNetAdhocctlPeerInfo peerInfo = new SceNetAdhocctlPeerInfo();
+    	sizeAddr.setValue(peerInfo.sizeof() * matchingPeers.size());
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceNetAdhocctlGetAddrByName returning size=%d", sizeAddr.getValue()));
+    	}
+
+    	if (buf.getAddress() != 0) {
+        	int addr = buf.getAddress();
+        	int endAddr = addr + size;
+        	for (AdhocctlPeer peer : matchingPeers) {
+        		// Check if enough space available to write the next structure
+        		if (addr + peerInfo.sizeof() > endAddr) {
+        			break;
+        		}
+
+        		if (log.isDebugEnabled()) {
+        			log.debug(String.format("sceNetAdhocctlGetAddrByName returning %s at 0x%08X", peer, addr));
+        		}
+
+        		peerInfo.nickName = peer.nickName;
+        		peerInfo.macAddress = new pspNetMacAddress();
+        		peerInfo.macAddress.setMacAddress(peer.macAddress);
+        		peerInfo.timestamp = peer.timestamp;
+        		peerInfo.write(mem, addr);
+
+        		addr += peerInfo.sizeof();
+        	}
+
+        	for (int nextAddr = buf.getAddress(); nextAddr < addr; nextAddr += peerInfo.sizeof()) {
+        		if (nextAddr + peerInfo.sizeof() >= addr) {
+        			// Last one
+        			mem.write32(nextAddr, 0);
+        		} else {
+        			// Pointer to next one
+        			mem.write32(nextAddr, nextAddr + peerInfo.sizeof());
+        		}
+        	}
+        }
+
+        return 0;
     }
 
     /**
@@ -1135,7 +1156,6 @@ public class sceNetAdhocctl extends HLEModule {
         log.warn("PARTIAL: sceNetAdhocctlExitGameMode");
 
         doDisconnect = true;
-        triggerAdhocctlThread();
         Modules.sceNetAdhocModule.hleExitGameMode();
 
         return 0;
