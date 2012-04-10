@@ -184,10 +184,12 @@ public class Utilities {
      public static void writeStringNZ(Memory mem, int address, int n, String s) {
         int offset = 0;
         IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, n, 1);
-        byte[] bytes = s.getBytes(charset);
-        while (offset < bytes.length && offset < n) {
-            memoryWriter.writeNext(bytes[offset]);
-            offset++;
+        if (s != null) {
+            byte[] bytes = s.getBytes(charset);
+            while (offset < bytes.length && offset < n) {
+                memoryWriter.writeNext(bytes[offset]);
+                offset++;
+            }
         }
         while (offset < n) {
             memoryWriter.writeNext(0);

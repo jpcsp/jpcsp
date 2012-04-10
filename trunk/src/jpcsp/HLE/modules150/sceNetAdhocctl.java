@@ -77,6 +77,7 @@ public class sceNetAdhocctl extends HLEModule {
     public static final int NICK_NAME_LENGTH = 128;
     public static final int GROUP_NAME_LENGTH = 8;
     public static final int IBSS_NAME_LENGTH = 6;
+    public static final int ADHOC_ID_LENGTH = 9;
 
 	protected int adhocctlCurrentState;
     protected String adhocctlCurrentGroup;
@@ -600,7 +601,7 @@ public class sceNetAdhocctl extends HLEModule {
 
         if (Memory.isAddressGood(product.getAddress())) {
             adhocctlCurrentType = mem.read32(product.getAddress()); // 0 - Commercial type / 1 - Debug type.
-            adhocctlCurrentAdhocID = Utilities.readStringNZ(mem, product.getAddress() + 4, 9);
+            adhocctlCurrentAdhocID = Utilities.readStringNZ(mem, product.getAddress() + 4, ADHOC_ID_LENGTH);
             if (log.isDebugEnabled()) {
             	log.debug(String.format("Found product data: type=%d, AdhocID='%s'", adhocctlCurrentType, adhocctlCurrentAdhocID));
             }
@@ -797,7 +798,7 @@ public class sceNetAdhocctl extends HLEModule {
     	log.warn(String.format("PARTIAL: sceNetAdhocctlGetAdhocId addr=%s", addr));
 
     	mem.write32(addr.getAddress(), adhocctlCurrentType);
-    	Utilities.writeStringNZ(mem, addr.getAddress() + 4, 9, adhocctlCurrentAdhocID);
+    	Utilities.writeStringNZ(mem, addr.getAddress() + 4, ADHOC_ID_LENGTH, adhocctlCurrentAdhocID);
 
         return 0;
     }
