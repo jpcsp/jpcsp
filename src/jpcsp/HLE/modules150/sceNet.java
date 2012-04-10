@@ -267,22 +267,19 @@ public class sceNet extends HLEModule {
     }
 
     @HLEFunction(nid = 0xCC393E48, version = 150, checkInsideInterrupt = true)
-    public void sceNetGetMallocStat(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetGetMallocStat(TPointer statAddr) {
         Memory mem = Processor.memory;
 
-        int statAddr = cpu.gpr[4];
-        
-        log.warn("PARTIAL: sceNetGetMallocStat (statAddr=0x" + Integer.toHexString(statAddr) + ")");
+        log.warn(String.format("PARTIAL: sceNetGetMallocStat statAddr=%s", statAddr));
 
-             
-        if(Memory.isAddressGood(statAddr)) {
-            // Faking. Assume no free size.
-            mem.write32(statAddr, netMemSize);      // Poolsize from sceNetInit.
-            mem.write32(statAddr + 4, netMemSize);  // Currently in use size.
-            mem.write32(statAddr + 8, 0);           // Free size.
-        }
-        cpu.gpr[2] = 0;
+        // Faking. Assume the pool is half free.
+        int freeSize = netMemSize / 2;
+
+        int addr = statAddr.getAddress();
+        mem.write32(addr, netMemSize);                 // Poolsize from sceNetInit.
+        mem.write32(addr + 4, netMemSize - freeSize);  // Currently in use size.
+        mem.write32(addr + 8, freeSize);               // Free size.
+
+        return 0;
     }
-
 }

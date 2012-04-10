@@ -286,7 +286,7 @@ public class SettingsGUI extends javax.swing.JFrame {
     }
 
     public static String[] getSysparamAdhocChannels() {
-    	return new String[] { "Auto", "1", "2", "3", "4" };
+    	return new String[] { "Auto", "1", "6", "11" };
     }
 
     private ComboBoxModel makeMethodMaxInstructions() {
