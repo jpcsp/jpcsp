@@ -829,7 +829,7 @@ public class sceNetAdhocMatching extends HLEModule {
      */
     @HLEFunction(nid = 0xB5D96C2A, version = 150)
     public int sceNetAdhocMatchingGetHelloOpt(@CheckArgument("checkMatchingId") int matchingId, TPointer32 optLenAddr, @CanBeNull TPointer optData) {
-        log.warn(String.format("PARTIAL: sceNetAdhocMatchingGetHelloOpt matchingId=%d, optlenAddr=%d, optData=%s", matchingId, optLenAddr, optData));
+        log.warn(String.format("PARTIAL: sceNetAdhocMatchingGetHelloOpt matchingId=%d, optlenAddr=%s, optData=%s", matchingId, optLenAddr, optData));
 
         MatchingObject matchingObject = matchingObjects.get(matchingId);
         int helloOptLen = matchingObject.getHelloOptLen();
