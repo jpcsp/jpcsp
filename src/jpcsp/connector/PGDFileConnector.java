@@ -114,6 +114,8 @@ public class PGDFileConnector {
                     outputFile.write(buffer, 0, length);
                     readLength += length;
                 }
+                // Rewind to the beginning of the file
+                fileInput.seek(0);
 
                 // Inform the user how to decrypt the file using JpcspConnector
                 String msg = "";
