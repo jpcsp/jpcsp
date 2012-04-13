@@ -1475,12 +1475,10 @@ public class sceNetAdhoc extends HLEModule {
     }
 
     @HLEFunction(nid = 0x73BFD52D, version = 150)
-    public void sceNetAdhocSetSocketAlert(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNetAdhocSetSocketAlert(int id, int unknown) {
+        log.warn(String.format("UNIMPLEMENTED: sceNetAdhocSetSocketAlert id=%d, unknown=0x%X", id, unknown));
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocSetSocketAlert");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0x4D2CE199, version = 150)
@@ -1961,7 +1959,7 @@ public class sceNetAdhoc extends HLEModule {
         		addr += 4;
 
         		/** Unknown */
-        		mem.write32(addr, 0);
+        		mem.write32(addr, 4); // PSP seems to return value 4 here
         		addr += 4;
         	}
 
