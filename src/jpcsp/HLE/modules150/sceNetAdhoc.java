@@ -833,7 +833,7 @@ public class sceNetAdhoc extends HLEModule {
 		}
 
 		private void processConnectConfirm(AdhocPtpMessage adhocPtpMessage) {
-			int port = adhocPtpMessage.getDataInt32();
+			int port = adhocPtpMessage.getDataInt32() - netClientPortShift;
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Received connect confirmation, changing destination port from %d to %d", getDestPort(), port));
 			}
