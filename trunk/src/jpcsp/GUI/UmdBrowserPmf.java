@@ -454,7 +454,7 @@ public class UmdBrowserPmf {
 				while (!endOfVideo && !done) {
 					stepVideo();
 
-					if (display != null) {
+					if (display != null && getImage() != null) {
 						display.setIcon(new ImageIcon(getImage()));
 					}
 				}
