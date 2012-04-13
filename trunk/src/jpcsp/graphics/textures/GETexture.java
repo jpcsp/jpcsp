@@ -69,7 +69,10 @@ public class GETexture {
 		this.useViewportResize = useViewportResize;
 		changed = true;
 		resizeScale = getViewportResizeScaleFactor();
-		bufferLength = getTexImageWidth() * getTexImageHeight() * bytesPerPixel;
+	}
+
+	private int getTextureBufferLength() {
+		return getTexImageWidth() * getTexImageHeight() * bytesPerPixel;
 	}
 
 	private float getViewportResizeScaleFactor() {
@@ -237,7 +240,14 @@ public class GETexture {
 	}
 
 	private void prepareBuffer() {
+		// Is the current buffer large enough?
+		if (buffer != null && bufferLength < getTextureBufferLength()) {
+			// Reallocate a new larger buffer
+			buffer = null;
+		}
+
 		if (buffer == null) {
+			bufferLength = getTextureBufferLength();
 			ByteBuffer byteBuffer = ByteBuffer.allocateDirect(bufferLength).order(ByteOrder.LITTLE_ENDIAN);
 			if (Memory.getInstance().getMainMemoryByteBuffer() instanceof IntBuffer) {
 				buffer = byteBuffer.asIntBuffer();
