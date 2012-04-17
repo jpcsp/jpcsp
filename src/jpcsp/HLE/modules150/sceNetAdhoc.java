@@ -82,6 +82,8 @@ public class sceNetAdhoc extends HLEModule {
 
     protected static final int PSP_ADHOC_POLL_READY_TO_SEND = 1;
     protected static final int PSP_ADHOC_POLL_DATA_AVAILABLE = 2;
+    protected static final int PSP_ADHOC_POLL_CAN_CONNECT = 4;
+    protected static final int PSP_ADHOC_POLL_CAN_ACCEPT = 8;
 
     protected HashMap<Integer, PdpObject> pdpObjects;
     protected HashMap<Integer, PtpObject> ptpObjects;
@@ -519,7 +521,7 @@ public class sceNetAdhoc extends HLEModule {
 			adhocMessage.writeDataToMemory(buffer.addr + bufferMessage.offset);
 
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("Successfully received %d bytes from %s on port %d(%d): %s", bufferMessage.length, bufferMessage.macAddress, bufferMessage.port, port, Utilities.getMemoryDump(buffer.addr + bufferMessage.offset, bufferMessage.length, 4, 16)));
+				log.debug(String.format("Successfully received %d bytes from %s on port %d(%d): %s", bufferMessage.length, bufferMessage.macAddress, bufferMessage.port, port, Utilities.getMemoryDump(buffer.addr + bufferMessage.offset, bufferMessage.length, 1, 16)));
 			}
 
 			rcvdData += bufferMessage.length;
@@ -545,7 +547,7 @@ public class sceNetAdhoc extends HLEModule {
 		// For Pdp sockets, data in read one packets at a time.
 		// The called has to provide enough space to fully read the next packet.
 		public int recv(pspNetMacAddress srcMacAddress, TPointer16 portAddr, TPointer data, TPointer32 dataLengthAddr, int timeout, int nonblock) {
-			int result = SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE;
+			int result = nonblock != 0 ? SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE : SceKernelErrors.ERROR_NET_ADHOC_TIMEOUT;
 			int length = dataLengthAddr.getValue();
 
 			if (rcvdMessages.isEmpty()) {
@@ -592,8 +594,14 @@ public class sceNetAdhoc extends HLEModule {
 					DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
 					socket.receive(packet);
 					AdhocMessage adhocMessage = createMessage(packet);
-					if (isForMe(adhocMessage)) {
-						addReceivedMessage(adhocMessage, packet.getPort());
+					if (isForMe(adhocMessage, packet.getPort())) {
+						if (getRcvdData() + adhocMessage.getDataLength() <= getBufSize()) {
+							addReceivedMessage(adhocMessage, packet.getPort());
+						} else {
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("Discarded message, receive buffer full (%d of %d): %s", getRcvdData(), getBufSize(), adhocMessage));
+							}
+						}
 					} else {
 						if (log.isDebugEnabled()) {
 							log.debug(String.format("Received message not for me: %s", adhocMessage));
@@ -616,7 +624,7 @@ public class sceNetAdhoc extends HLEModule {
 			return new AdhocPdpMessage(packet.getData(), packet.getLength());
 		}
 
-		protected boolean isForMe(AdhocMessage adhocMessage) {
+		protected boolean isForMe(AdhocMessage adhocMessage, int port) {
 			return adhocMessage.isForMe();
 		}
 
@@ -639,6 +647,9 @@ public class sceNetAdhoc extends HLEModule {
     	private int queue;
     	/** Bytes sent */
     	private int sentData;
+    	private AdhocPtpMessage connectRequest;
+    	private int connectRequestPort;
+    	private AdhocPtpMessage connectConfirm;
 
     	public PtpObject() {
     		super();
@@ -695,6 +706,14 @@ public class sceNetAdhoc extends HLEModule {
 
 		public int getSentData() {
 			return sentData;
+		}
+
+		public boolean isConnectRequestReceived() {
+			return connectRequest != null;
+		}
+
+		public boolean isConnectConfirmReceived() {
+			return connectConfirm != null;
 		}
 
 		public int open() {
@@ -769,19 +788,31 @@ public class sceNetAdhoc extends HLEModule {
 			Memory mem = Memory.getInstance();
 
 			try {
-				byte[] bytes = new byte[getBufSize()];
-				DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
-				socket.receive(packet);
-				AdhocPtpMessage adhocPtpMessage = new AdhocPtpMessage(packet.getData(), packet.getLength());
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("pollAccept: received message %s", adhocPtpMessage));
+				// Process a previously received connect message, if available
+				AdhocPtpMessage adhocPtpMessage = connectRequest;
+				int adhocPtpMessagePort = connectRequestPort;
+				if (adhocPtpMessage == null) {
+					byte[] bytes = new byte[getBufSize()];
+					DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
+					socket.receive(packet);
+					adhocPtpMessage = new AdhocPtpMessage(packet.getData(), packet.getLength());
+					adhocPtpMessagePort = packet.getPort();
+
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("pollAccept: received message %s", adhocPtpMessage));
+					}
+				} else {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("pollAccept: processing pending message %s", adhocPtpMessage));
+					}
 				}
+
 				if (adhocPtpMessage.isForMe()) {
 					switch (adhocPtpMessage.getType()) {
 						case AdhocPtpMessage.PTP_MESSAGE_TYPE_CONNECT:
 							pspNetMacAddress peerMacAddress = new pspNetMacAddress();
 							peerMacAddress.setMacAddress(adhocPtpMessage.getFromMacAddress());
-							int peerPort = packet.getPort() - netClientPortShift;
+							int peerPort = adhocPtpMessagePort - netClientPortShift;
 
 							if (peerMacAddr != 0) {
 								peerMacAddress.write(mem, peerMacAddr);
@@ -814,6 +845,7 @@ public class sceNetAdhoc extends HLEModule {
 							}
 
 							acceptCompleted = true;
+							connectRequest = null;
 							break;
 					}
 				} else {
@@ -832,31 +864,37 @@ public class sceNetAdhoc extends HLEModule {
 			return acceptCompleted;
 		}
 
-		private void processConnectConfirm(AdhocPtpMessage adhocPtpMessage) {
-			int port = adhocPtpMessage.getDataInt32() - netClientPortShift;
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("Received connect confirmation, changing destination port from %d to %d", getDestPort(), port));
-			}
-			setDestPort(port);
-		}
-
 		public boolean pollConnect(SceKernelThreadInfo thread) {
 			boolean connectCompleted = false;
 
 			try {
-				byte[] bytes = new byte[getBufSize()];
-				DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
-				socket.receive(packet);
-				AdhocPtpMessage adhocPtpMessage = new AdhocPtpMessage(packet.getData(), packet.getLength());
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("pollConnect: received message %s", adhocPtpMessage));
+				// Process a previously received confirm message, if available
+				AdhocPtpMessage adhocPtpMessage = connectConfirm;
+				if (adhocPtpMessage == null) {
+					byte[] bytes = new byte[getBufSize()];
+					DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
+					socket.receive(packet);
+					adhocPtpMessage = new AdhocPtpMessage(packet.getData(), packet.getLength());
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("pollConnect: received message %s", adhocPtpMessage));
+					}
+				} else {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("pollConnect: processing pending message %s", adhocPtpMessage));
+					}
 				}
+
 				if (adhocPtpMessage.isForMe()) {
 					switch (adhocPtpMessage.getType()) {
 						case PTP_MESSAGE_TYPE_CONNECT_CONFIRM:
 							// Connect successfully completed, retrieve the new destination port
-							processConnectConfirm(adhocPtpMessage);
+							int port = adhocPtpMessage.getDataInt32() - netClientPortShift;
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("Received connect confirmation, changing destination port from %d to %d", getDestPort(), port));
+							}
+							setDestPort(port);
 							setReturnValue(thread, 0);
+							connectConfirm = null;
 							connectCompleted = true;
 							break;
 					}
@@ -941,19 +979,29 @@ public class sceNetAdhoc extends HLEModule {
 		}
 
 		@Override
-		protected boolean isForMe(AdhocMessage adhocMessage) {
+		protected boolean isForMe(AdhocMessage adhocMessage, int port) {
 			if (adhocMessage instanceof AdhocPtpMessage) {
 				AdhocPtpMessage adhocPtpMessage = (AdhocPtpMessage) adhocMessage;
 				int type = adhocPtpMessage.getType();
 				if (type == AdhocPtpMessage.PTP_MESSAGE_TYPE_CONNECT_CONFIRM) {
-					processConnectConfirm(adhocPtpMessage);
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Received connect confirm, processing later"));
+					}
+					connectConfirm = (AdhocPtpMessage) adhocMessage;
+					return false;
+				} else if (type == AdhocPtpMessage.PTP_MESSAGE_TYPE_CONNECT) {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Received connect request, processing later"));
+					}
+					connectRequest = (AdhocPtpMessage) adhocMessage;
+					connectRequestPort = port;
 					return false;
 				} else if (type != AdhocPtpMessage.PTP_MESSAGE_TYPE_DATA) {
 					return false;
 				}
 			}
 
-			return super.isForMe(adhocMessage);
+			return super.isForMe(adhocMessage, port);
 		}
 
 		@Override
@@ -970,7 +1018,7 @@ public class sceNetAdhoc extends HLEModule {
 			adhocMessage.writeDataToMemory(addr, length);
 			rcvdData += length;
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("Successfully received message %s: %s", adhocMessage, Utilities.getMemoryDump(addr, length, 4, 16)));
+				log.debug(String.format("Successfully received message %s: %s", adhocMessage, Utilities.getMemoryDump(addr, length, 1, 16)));
 			}
 		}
     }
@@ -1446,8 +1494,10 @@ public class sceNetAdhoc extends HLEModule {
         	pollId.read(mem, socketsAddr.getAddress() + i * pollId.sizeof());
 
         	PdpObject pdpObject = pdpObjects.get(pollId.id);
+        	PtpObject ptpObject = null;
         	if (pdpObject == null) {
-        		pdpObject = ptpObjects.get(pollId.id);
+        		ptpObject = ptpObjects.get(pollId.id);
+        		pdpObject = ptpObject;
         	}
         	if (pdpObject != null) {
         		pdpObject.update();
@@ -1460,6 +1510,16 @@ public class sceNetAdhoc extends HLEModule {
         	if ((pollId.events & PSP_ADHOC_POLL_READY_TO_SEND) != 0) {
         		// Data can always be sent
         		pollId.revents |= PSP_ADHOC_POLL_READY_TO_SEND;
+        	}
+        	if ((pollId.events & PSP_ADHOC_POLL_CAN_CONNECT) != 0) {
+    			if (ptpObject != null && ptpObject.isConnectConfirmReceived()) {
+    				pollId.revents |= PSP_ADHOC_POLL_CAN_CONNECT;
+        		}
+        	}
+        	if ((pollId.events & PSP_ADHOC_POLL_CAN_ACCEPT) != 0) {
+    			if (ptpObject != null && ptpObject.isConnectRequestReceived()) {
+    				pollId.revents |= PSP_ADHOC_POLL_CAN_ACCEPT;
+        		}
         	}
 
         	if (pollId.revents != 0) {
@@ -1719,7 +1779,11 @@ public class sceNetAdhoc extends HLEModule {
 
     	ptpObjects.put(ptpObject.getId(), ptpObject);
 
-    	return ptpObject.getId();
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceNetAdhocPtpOpen: returning id=%d", ptpObject.getId()));
+		}
+
+		return ptpObject.getId();
     }
 
     /**

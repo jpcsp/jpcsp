@@ -36,6 +36,8 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceNetAdhocctlPeerInfo;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
@@ -79,6 +81,7 @@ public class sceNetAdhocctl extends HLEModule {
     public static final int IBSS_NAME_LENGTH = 6;
     public static final int ADHOC_ID_LENGTH = 9;
 
+    protected boolean initialized;
 	protected int adhocctlCurrentState;
     protected String adhocctlCurrentGroup;
     protected String adhocctlCurrentIBSS;
@@ -101,20 +104,21 @@ public class sceNetAdhocctl extends HLEModule {
     protected LinkedList<pspNetMacAddress> gameModeMacs;
     protected LinkedList<pspNetMacAddress> requiredGameModeMacs;
 
-    private HashMap<Integer, AdhocctlHandler> adhocctlHandlerMap = new HashMap<Integer, AdhocctlHandler>();
-    private int adhocctlHandlerCount = 0;
+    private HashMap<Integer, AdhocctlHandler> adhocctlIdMap = new HashMap<Integer, AdhocctlHandler>();
+    private static final String adhocctlHandlerIdPurpose = "sceNetAdhocctl-Handler";
 
     protected class AdhocctlHandler {
         private int entryAddr;
         private int currentEvent;
         private int currentError;
         private int currentArg;
-        private int handle;
+        private final int id;
 
-        private AdhocctlHandler(int num, int addr, int arg) {
+        private AdhocctlHandler(int addr, int arg) {
             entryAddr = addr;
             currentArg = arg;
-            handle = makeFakeAdhocctHandle(num);
+            // PSP returns a handler ID between 0 and 3
+            id = SceUidManager.getNewId(adhocctlHandlerIdPurpose, 0, 3);
         }
 
         protected void triggerAdhocctlHandler() {
@@ -124,12 +128,8 @@ public class sceNetAdhocctl extends HLEModule {
             }
         }
 
-        protected int makeFakeAdhocctHandle(int num) {
-            return 0x0000AD00 | (num & 0xFFFF);
-        }
-
-        protected int getHandle() {
-            return handle;
+        protected int getId() {
+            return id;
         }
 
         protected void setEvent(int event) {
@@ -140,9 +140,13 @@ public class sceNetAdhocctl extends HLEModule {
             currentError = error;
         }
 
+        protected void delete() {
+        	SceUidManager.releaseId(id, adhocctlHandlerIdPurpose);
+        }
+
 		@Override
 		public String toString() {
-			return String.format("AdhocctlHandler[handle=0x%X, entry=0x%08X, arg=0x%08X]", getHandle(), entryAddr, currentArg);
+			return String.format("AdhocctlHandler[id=%d, entry=0x%08X, arg=0x%08X]", getId(), entryAddr, currentArg);
 		}
     }
 
@@ -319,6 +323,7 @@ public class sceNetAdhocctl extends HLEModule {
 		adhocctlCurrentIBSS = "Jpcsp";
 		adhocctlCurrentMode = PSP_ADHOCCTL_MODE_NORMAL;
 		adhocctlCurrentChannel = Wlan.getAdhocChannel();
+		initialized = false;
 
 		super.start();
 	}
@@ -574,7 +579,7 @@ public class sceNetAdhocctl extends HLEModule {
     }
 
     protected void notifyAdhocctlHandler(int event, int error) {
-        for (AdhocctlHandler handler : adhocctlHandlerMap.values()) {
+        for (AdhocctlHandler handler : adhocctlIdMap.values()) {
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("Notifying handler %s with event=%d, error=%d", handler, event, error));
         	}
@@ -615,6 +620,8 @@ public class sceNetAdhocctl extends HLEModule {
         adhocctlThread = threadMan.hleKernelCreateThread("SceNetAdhocctl", ThreadManForUser.NET_ADHOC_CTL_LOOP_ADDRESS, priority, stackSize, 0, 0);
         threadMan.hleKernelStartThread(adhocctlThread, 0, 0, adhocctlThread.gpReg_addr);
 
+        initialized = true;
+
         return 0;
     }
 
@@ -628,6 +635,7 @@ public class sceNetAdhocctl extends HLEModule {
         log.warn("PARTIAL: sceNetAdhocctlTerm");
 
         doTerminate = true;
+        initialized = false;
 
         return 0;
     }
@@ -650,6 +658,10 @@ public class sceNetAdhocctl extends HLEModule {
 
         log.warn(String.format("PARTIAL: sceNetAdhocctlConnect groupNameAddr=%s('%s')", groupNameAddr, groupName));
 
+        if (!initialized) {
+        	return SceKernelErrors.ERROR_NET_ADHOCCTL_NOT_INITIALIZED;
+        }
+
         hleNetAdhocctlConnect(groupName);
 
         return 0;
@@ -670,6 +682,10 @@ public class sceNetAdhocctl extends HLEModule {
     	}
         log.warn(String.format("PARTIAL: sceNetAdhocctlCreate groupNameAddr=%s('%s')", groupNameAddr, groupName));
 
+        if (!initialized) {
+        	return SceKernelErrors.ERROR_NET_ADHOCCTL_NOT_INITIALIZED;
+        }
+
         setGroupName(groupName, PSP_ADHOCCTL_MODE_NORMAL);
 
         return 0;
@@ -685,6 +701,10 @@ public class sceNetAdhocctl extends HLEModule {
     @HLEFunction(nid = 0x5E7F79C9, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocctlJoin(TPointer scanInfoAddr) {
         log.warn(String.format("PARTIAL: sceNetAdhocctlJoin scanInfoAddr=%s", scanInfoAddr));
+
+        if (!initialized) {
+        	return SceKernelErrors.ERROR_NET_ADHOCCTL_NOT_INITIALIZED;
+        }
 
         if (scanInfoAddr.isAddressGood()) {
         	Memory mem = Memory.getInstance();
@@ -746,11 +766,18 @@ public class sceNetAdhocctl extends HLEModule {
     public int sceNetAdhocctlAddHandler(TPointer adhocctlHandlerAddr, int adhocctlHandlerArg) {
         log.warn(String.format("PARTIAL: sceNetAdhocctlAddHandler adhocctlHandlerAddr=%s, adhocctlHandlerArg=0x%08X", adhocctlHandlerAddr, adhocctlHandlerArg));
 
-        AdhocctlHandler adhocctlHandler = new AdhocctlHandler(adhocctlHandlerCount++, adhocctlHandlerAddr.getAddress(), adhocctlHandlerArg);
-        int handle = adhocctlHandler.getHandle();
-        adhocctlHandlerMap.put(handle, adhocctlHandler);
+        AdhocctlHandler adhocctlHandler = new AdhocctlHandler(adhocctlHandlerAddr.getAddress(), adhocctlHandlerArg);
+        int id = adhocctlHandler.getId();
+        if (id == SceUidManager.INVALID_ID) {
+        	return SceKernelErrors.ERROR_NET_ADHOCCTL_TOO_MANY_HANDLERS;
+        }
 
-        return handle;
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceNetAdhocctlAddHandler returning id=%d", id));
+        }
+        adhocctlIdMap.put(id, adhocctlHandler);
+
+        return id;
     }
 
     /**
@@ -761,10 +788,13 @@ public class sceNetAdhocctl extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x6402490B, version = 150, checkInsideInterrupt = true)
-    public int sceNetAdhocctlDelHandler(int adhocctlHandler) {
-        log.warn(String.format("PARTIAL: sceNetAdhocctlDelHandler adhocctlHandler=0x%08X", adhocctlHandler));
+    public int sceNetAdhocctlDelHandler(int id) {
+        log.warn(String.format("PARTIAL: sceNetAdhocctlDelHandler id=%d", id));
 
-        adhocctlHandlerMap.remove(adhocctlHandler);
+        AdhocctlHandler handler = adhocctlIdMap.remove(id);
+        if (handler != null) {
+        	handler.delete();
+        }
 
         return 0;
     }
