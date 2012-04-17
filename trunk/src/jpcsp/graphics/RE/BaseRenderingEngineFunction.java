@@ -188,6 +188,12 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
             }
         }
 
+        if (stencil) {
+        	re.enableFlag(GU_STENCIL_TEST);
+        	re.setStencilFunc(GeCommands.STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST, 0, 0);
+        	re.setStencilOp(GeCommands.SOP_KEEP_STENCIL_VALUE, GeCommands.SOP_KEEP_STENCIL_VALUE, GeCommands.SOP_ZERO_STENCIL_VALUE);
+    	}
+
         if (depth) {
         	re.enableFlag(GU_DEPTH_TEST);
         	context.depthFunc = GeCommands.ZTST_FUNCTION_ALWAYS_PASS_PIXEL;
