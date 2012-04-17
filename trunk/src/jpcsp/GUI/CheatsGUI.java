@@ -78,6 +78,11 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
         	currentCode = codes.length;
         }
 
+        private static int getAddress(int value) {
+        	// The User space base address has to be added to given value
+        	return (value + MemoryMap.START_USERSPACE) & Memory.addressMask;
+        }
+
         @Override
         public void run() {
             Memory mem = Memory.getInstance();
@@ -103,7 +108,7 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                 	int value;
                 	int comm = (int) parseHexLong(parts[0].trim());
                     int arg = (int) parseHexLong(parts[1].trim());
-                    int addr = MemoryMap.START_USERSPACE | (comm & 0x0FFFFFFF);
+                    int addr = getAddress(comm & 0x0FFFFFFF);
 
                     switch (comm >>> 28) {
                     	case 0: // 8-bit write.
@@ -122,7 +127,7 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                     		}
                     		break;
                     	case 0x3: // Increment/Decrement
-                    		addr = MemoryMap.START_USERSPACE | arg;
+                    		addr = getAddress(arg);
                     		value = 0;
                     		int increment = 0;
                     		// Read value from memory
@@ -394,7 +399,7 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                     			case 6:
                     			case 7: // Address Test commands
 		                        	int addr1 = addr;
-		                        	int addr2 = MemoryMap.START_USERSPACE | (arg & 0x0FFFFFFF);
+		                        	int addr2 = getAddress(arg & 0x0FFFFFFF);
 		                        	if (Memory.isAddressGood(addr1) && Memory.isAddressGood(addr2)) {
 			                            code = getNextCode();
 			                            parts = code.split(" ");
@@ -457,7 +462,7 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                     		break;
                     	case 0xE: // Test commands, multiple skip
                         	boolean is8Bit = (comm >> 24) == 0x1;
-                        	addr = MemoryMap.START_USERSPACE | (arg & 0x0FFFFFFF);
+                        	addr = getAddress(arg & 0x0FFFFFFF);
                         	if (Memory.isAddressGood(addr)) {
                         		int memoryValue = is8Bit ? mem.read8(addr) : mem.read16(addr);
                         		int testValue = comm & (is8Bit ? 0xFF : 0xFFFF);
