@@ -370,6 +370,9 @@ public class SceKernelErrors {
 
     public final static int ERROR_NET_ADHOC_INVALID_MATCHING_ID                 = 0x80410807;
 
+    public final static int ERROR_NET_ADHOCCTL_NOT_INITIALIZED                  = 0x80410b08;
+    public final static int ERROR_NET_ADHOCCTL_TOO_MANY_HANDLERS                = 0x80410b12;
+
     public final static int ERROR_WLAN_BAD_PARAMS                               = 0x80410d13;
 
     public final static int ERROR_SAS_INVALID_VOICE                             = 0x80420010;
