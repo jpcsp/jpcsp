@@ -1154,7 +1154,7 @@ public class ThreadManForUser extends HLEModule {
             // HACK auto delete module mgr threads
             if (thread.name.equals("root") || // should probably find the real name and change it
                     thread.name.equals("SceModmgrStart") ||
-                    thread.name.equals("SceKernelModmgrStop")) {
+                    thread.name.equals("SceModmgrStop")) {
                 thread.doDelete = true;
             }
 
