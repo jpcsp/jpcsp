@@ -448,11 +448,11 @@ public class UmdVideoPlayer implements KeyListener {
             }
         }
 
-        if (videoCoder != null && videoCoder.open() < 0) {
+        if (videoCoder != null && videoCoder.open(null, null) < 0) {
             Emulator.log.error("could not open video decoder for container: " + fileName);
             return false;
         }
-        if (audioCoder != null && audioCoder.open() < 0) {
+        if (audioCoder != null && audioCoder.open(null, null) < 0) {
             Emulator.log.info("AT3+ audio format is not yet supported by Jpcsp (file=" + fileName + ")");
             return false;
         }

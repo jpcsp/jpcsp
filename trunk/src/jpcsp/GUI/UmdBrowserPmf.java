@@ -172,11 +172,11 @@ public class UmdBrowserPmf {
 	     * Now we have found the audio and video streams in this file.
 	     * Let's open up our decoder so it can do work.
 	     */
-	    if (videoCoder != null && videoCoder.open() < 0) {
+	    if (videoCoder != null && videoCoder.open(null, null) < 0) {
 	    	Emulator.log.error("could not open video decoder for container: " + fileName);
 	    	return false;
 	    }
-	    if (audioCoder != null && audioCoder.open() < 0) {
+	    if (audioCoder != null && audioCoder.open(null, null) < 0) {
 	    	Emulator.log.info("AT3+ audio format is not yet supported by Jpcsp (file=" + fileName + ")");
 	    	return false;
 	    }
