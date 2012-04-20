@@ -9,15 +9,14 @@
 	<classpathentry kind="lib" path="lib/asm-all-4.0_RC1.jar"/>
 	<classpathentry kind="lib" path="lib/jaxen-1.1.1.jar"/>
 	<classpathentry kind="lib" path="lib/jdom1.1.jar"/>
-	<classpathentry kind="lib" path="lib/xuggle-xuggler.jar"/>
 	<classpathentry kind="lib" path="lib/commons-cli.jar"/>
 	<classpathentry kind="lib" path="lib/logback-classic.jar"/>
 	<classpathentry kind="lib" path="lib/logback-core.jar"/>
 	<classpathentry kind="lib" path="lib/slf4j-api.jar"/>
-	<classpathentry kind="lib" path="lib/xuggle-xuggler-test.jar"/>
 	<classpathentry kind="lib" path="lib/jinput.jar"/>
 	<classpathentry kind="lib" path="lib/lwjgl_util.jar"/>
 	<classpathentry kind="lib" path="lib/lwjgl.jar" sourcepath="lib/lwjgl-source-2.7.1.zip"/>
 	<classpathentry kind="lib" path="lib/bcprov-jdk16-145.jar"/>
+	<classpathentry kind="lib" path="lib/xuggle-xuggler-noarch-5.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

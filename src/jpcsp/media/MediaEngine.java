@@ -334,7 +334,7 @@ public class MediaEngine {
         if (decodeVideo) {
             if (videoStreamID == -1) {
                 log.error("MediaEngine: No video streams found!");
-            } else if (videoCoder.open() < 0) {
+            } else if (videoCoder.open(null, null) < 0) {
             	videoCoder.delete();
             	videoCoder = null;
                 log.error("MediaEngine: Can't open video decoder!");
@@ -359,7 +359,7 @@ public class MediaEngine {
             		log.error("MediaEngine: No audio streams found!");
             		audioStreamState = new StreamState(this, -1, null, sceMpeg.audioFirstTimestamp);
             	}
-            } else if (audioCoder.open() < 0) {
+            } else if (audioCoder.open(null, null) < 0) {
             	audioCoder.delete();
             	audioCoder = null;
                 log.error("MediaEngine: Can't open audio decoder!");
@@ -612,7 +612,7 @@ public class MediaEngine {
             extContainer.close();
             extContainer = null;
             return false;
-        } else if (audioCoder.open() < 0) {
+        } else if (audioCoder.open(null, null) < 0) {
             log.error("MediaEngine: Can't open audio decoder!");
             extContainer.close();
             extContainer = null;
