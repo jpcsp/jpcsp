@@ -536,9 +536,9 @@ public class sceNetAdhocMatching extends HLEModule {
 						}
 						adhocMatchingEventMessage = new AdhocMatchingEventMessage(0, 0, macAddress.macAddress, PSP_ADHOC_MATCHING_EVENT_DATA_CONFIRM);
 						send(adhocMatchingEventMessage);
-					} else if (event == PSP_ADHOC_MATCHING_EVENT_DISCONNECT) {
+					} else if (event == PSP_ADHOC_MATCHING_EVENT_DISCONNECT || event == PSP_ADHOC_MATCHING_EVENT_LEFT) {
 						if (log.isDebugEnabled()) {
-							log.debug(String.format("Received disconnect from %s", macAddress));
+							log.debug(String.format("Received disconnect/leave from %s", macAddress));
 						}
 						removeMember(adhocMatchingEventMessage.getFromMacAddress());
 						if (members.size() <= 1) {
