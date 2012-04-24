@@ -764,7 +764,7 @@ public class sceDisplay extends HLEModule {
         	// Some problem occurred during the OpenGL/LWJGL initialization...
         	if (!ignoreLWJGLError)
         	{
-        		throw new RuntimeException("Your display format is not compatible with Jpcsp or the anti-aliasing settings is not supported by your display");
+        		throw new RuntimeException("Jpcsp cannot display.\nThe cause could be that you are using an old graphic card driver (try to update it)\nor your display format is not compatible with Jpcsp (try to change your display format, Jpcsp requires 32 bit color depth)\nor the anti-aliasing settings is not supported by your display (leave the Jpcsp anti-aliasing to its default setting)");
         	}
         }
 
