@@ -25,6 +25,7 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -44,10 +45,16 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceMpegAu;
 import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.HLE.modules150.IoFileMgrForUser.IIoListener;
 import jpcsp.connector.MpegCodec;
+import jpcsp.filesystems.SeekableDataInput;
+import jpcsp.filesystems.umdiso.UmdIsoFile;
+import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryWriter;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.util.Debug;
 import jpcsp.util.Utilities;
@@ -211,6 +218,8 @@ public class sceMpeg extends HLEModule {
     protected boolean[] allocatedEsBuffers;
     protected HashMap<Integer, StreamInfo> streamMap;
     protected static final String streamPurpose = "sceMpeg-Stream";
+    private MpegIoListener ioListener;
+    private boolean insideRingbufferPut;
 
     private class StreamInfo {
     	private int uid;
@@ -236,6 +245,101 @@ public class sceMpeg extends HLEModule {
     		uid = -1;
     		type = -1;
     	}
+    }
+
+    private static class MpegIoListener implements IIoListener {
+		@Override
+		public void sceIoSync(int result, int device_addr, String device, int unknown) {
+		}
+
+		@Override
+		public void sceIoPollAsync(int result, int uid, int res_addr) {
+		}
+
+		@Override
+		public void sceIoWaitAsync(int result, int uid, int res_addr) {
+		}
+
+		@Override
+		public void sceIoOpen(int result, int filename_addr, String filename, int flags, int permissions, String mode) {
+		}
+
+		@Override
+		public void sceIoClose(int result, int uid) {
+		}
+
+		@Override
+		public void sceIoWrite(int result, int uid, int data_addr, int size, int bytesWritten) {
+		}
+
+		@Override
+		public void sceIoRead(int result, int uid, int data_addr, int size, int bytesRead, long position, SeekableDataInput dataInput) {
+			Modules.sceMpegModule.onIoRead(dataInput, bytesRead);
+		}
+
+		@Override
+		public void sceIoCancel(int result, int uid) {
+		}
+
+		@Override
+		public void sceIoSeek32(int result, int uid, int offset, int whence) {
+		}
+
+		@Override
+		public void sceIoSeek64(long result, int uid, long offset, int whence) {
+		}
+
+		@Override
+		public void sceIoMkdir(int result, int path_addr, String path, int permissions) {
+		}
+
+		@Override
+		public void sceIoRmdir(int result, int path_addr, String path) {
+		}
+
+		@Override
+		public void sceIoChdir(int result, int path_addr, String path) {
+		}
+
+		@Override
+		public void sceIoDopen(int result, int path_addr, String path) {
+		}
+
+		@Override
+		public void sceIoDread(int result, int uid, int dirent_addr) {
+		}
+
+		@Override
+		public void sceIoDclose(int result, int uid) {
+		}
+
+		@Override
+		public void sceIoDevctl(int result, int device_addr, String device, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen) {
+		}
+
+		@Override
+		public void sceIoIoctl(int result, int uid, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen) {
+		}
+
+		@Override
+		public void sceIoAssign(int result, int dev1_addr, String dev1, int dev2_addr, String dev2, int dev3_addr, String dev3, int mode, int unk1, int unk2) {
+		}
+
+		@Override
+		public void sceIoGetStat(int result, int path_addr, String path, int stat_addr) {
+		}
+
+		@Override
+		public void sceIoRemove(int result, int path_addr, String path) {
+		}
+
+		@Override
+		public void sceIoChstat(int result, int path_addr, String path, int stat_addr, int bits) {
+		}
+
+		@Override
+		public void sceIoRename(int result, int path_addr, String path, int new_path_addr, String newpath) {
+		}
     }
 
     public static boolean isEnableConnector() {
@@ -290,7 +394,57 @@ public class sceMpeg extends HLEModule {
         isCurrentMpegAnalyzed = status;
     }
 
-    protected void analyseMpeg(int buffer_addr) {
+    private void unregisterIoListener() {
+    	if (ioListener != null) {
+    		Modules.IoFileMgrForUserModule.unregisterIoListener(ioListener);
+    		ioListener = null;
+    	}
+    }
+
+    protected void onIoRead(SeekableDataInput dataInput, int bytesRead) {
+    	// if we are in the first sceMpegRingbufferPut and the MPEG header has not yet
+    	// been analyzed, try to read the MPEG header.
+		if (!isCurrentMpegAnalyzed() && insideRingbufferPut) {
+			if (dataInput instanceof UmdIsoFile) {
+		    	// Assume the MPEG header is located in the sector just before the
+				// data currently read
+				UmdIsoFile umdIsoFile = (UmdIsoFile) dataInput;
+				int headerSectorNumber = umdIsoFile.getCurrentSectorNumber();
+				headerSectorNumber -= bytesRead / UmdIsoFile.sectorLength;
+				// One sector before the data current read
+				headerSectorNumber--;
+
+				UmdIsoReader umdIsoReader = Modules.IoFileMgrForUserModule.getIsoReader();
+				if (umdIsoReader != null) {
+					try {
+						// Read the MPEG header sector and analyze it
+						byte[] headerSector = umdIsoReader.readSector(headerSectorNumber);
+						int tmpAddress = mpegRingbuffer.dataUpperBound - headerSector.length;
+						IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(tmpAddress, headerSector.length, 1);
+						for (int i = 0; i < headerSector.length; i++) {
+							memoryWriter.writeNext(headerSector[i] & 0xFF);
+						}
+						memoryWriter.flush();
+						Memory mem = Memory.getInstance();
+						if (mem.read32(tmpAddress) == PSMF_MAGIC) {
+							analyseMpeg(tmpAddress);
+						}
+
+						// We do no longer need the IoListener...
+						if (isCurrentMpegAnalyzed()) {
+							unregisterIoListener();
+						}
+					} catch (IOException e) {
+						if (log.isDebugEnabled()) {
+							log.debug("onIoRead", e);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	protected void analyseMpeg(int buffer_addr) {
         Memory mem = Memory.getInstance();
 
         mpegStreamAddr = buffer_addr;
@@ -335,7 +489,7 @@ public class sceMpeg extends HLEModule {
         audioFrameCount = 0;
         endOfAudioReached = false;
         endOfVideoReached = false;
-        if ((mpegStreamSize > 0) && !isCurrentMpegAnalyzed()) {
+        if (!isCurrentMpegAnalyzed() && mpegStreamSize > 0 && mpegOffset >= 0 && mpegOffset <= mpegStreamSize && mpegOffset <= 2048) {
             if (checkMediaEngineState()) {
             	me.init(buffer_addr, mpegStreamSize, mpegOffset);
             	meChannel = new PacketChannel();
@@ -344,12 +498,10 @@ public class sceMpeg extends HLEModule {
                 mpegCodec.init(mpegVersion, mpegStreamSize, mpegLastTimestamp);
                 mpegCodec.writeVideo(buffer_addr, mpegOffset);
             }
+
+            // Mpeg header has already been initialized/processed
+            setCurrentMpegAnalyzed(true);
         }
-        // When used with scePsmf, some applications attempt to use sceMpegQueryStreamOffset
-        // and sceMpegQueryStreamSize, which forces a packet overwrite in the Media Engine and in
-        // the MPEG ringbuffer.
-        // Mark the current MPEG as analyzed to filter this, and restore it at sceMpegFinish.
-        setCurrentMpegAnalyzed(true);
 
         if (log.isDebugEnabled()) {
 	    	log.debug(String.format("Stream offset: %d, Stream size: 0x%X", mpegOffset, mpegStreamSize));
@@ -429,6 +581,7 @@ public class sceMpeg extends HLEModule {
             mpegCodec.finish();
         }
         setCurrentMpegAnalyzed(false);
+        unregisterIoListener();
         VideoEngine.getInstance().resetVideoTextures();
     }
 
@@ -632,6 +785,7 @@ public class sceMpeg extends HLEModule {
         audioFrameCount = 0;
         videoPixelMode = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
         defaultFrameWidth = frameWidth;
+        insideRingbufferPut = false;
 
         return 0;
     }
@@ -2129,7 +2283,7 @@ public class sceMpeg extends HLEModule {
         mpegRingbuffer.read(mem, mpegRingbufferAddr);
 
         if (packetsAdded > 0) {
-            if (checkMediaEngineState() && (meChannel != null)) {
+        	if (checkMediaEngineState() && (meChannel != null)) {
                 meChannel.write(mpegRingbuffer.data, packetsAdded * mpegRingbuffer.packetSize);
             } else if (isEnableConnector()) {
                 mpegCodec.writeVideo(mpegRingbuffer.data, packetsAdded * mpegRingbuffer.packetSize);
@@ -2144,6 +2298,7 @@ public class sceMpeg extends HLEModule {
             mpegRingbuffer.write(mem, mpegRingbufferAddr);
         }
 
+        insideRingbufferPut = false;
         if (log.isDebugEnabled()) {
             log.debug("sceMpegRingbufferPut packetsAdded=" + packetsAdded + ", packetsRead=" + mpegRingbuffer.packetsRead);
         }
@@ -2174,18 +2329,27 @@ public class sceMpeg extends HLEModule {
         if (numPackets < 0) {
             return 0;
         }
-        
+
         int numberPackets = Math.min(available, numPackets);
 
-        // Do not read more packets than available in the MPEG stream
-        int mpegStreamPackets = (mpegStreamSize + mpegRingbuffer.packetSize - 1) / mpegRingbuffer.packetSize;
-        int remainingPackets = mpegStreamPackets - mpegRingbuffer.packetsRead;
-        if (remainingPackets < 0) {
-        	remainingPackets = 0;
+        if (isCurrentMpegAnalyzed()) {
+        	// Do not read more packets than available in the MPEG stream
+        	int mpegStreamPackets = (mpegStreamSize + mpegRingbuffer.packetSize - 1) / mpegRingbuffer.packetSize;
+        	int remainingPackets = mpegStreamPackets - mpegRingbuffer.packetsRead;
+        	if (remainingPackets < 0) {
+        		remainingPackets = 0;
+        	}
+        	numberPackets = Math.min(numberPackets, remainingPackets);
+        } else {
+        	// The MPEG header has not yet been analyzed, try to read it using an IoListener...
+        	if (ioListener == null) {
+        		ioListener = new MpegIoListener();
+        		Modules.IoFileMgrForUserModule.registerIoListener(ioListener);
+        	}
         }
-        numberPackets = Math.min(numberPackets, remainingPackets);
 
         mpegRingbuffer.read(mem, mpegRingbufferAddr);
+        insideRingbufferPut = true;
         Modules.ThreadManForUserModule.executeCallback(null, mpegRingbuffer.callback_addr, afterRingbufferPutCallback, false, mpegRingbuffer.data, numberPackets, mpegRingbuffer.callback_args);
         
         return Emulator.getProcessor().cpu.gpr[2];
@@ -2350,5 +2514,4 @@ public class sceMpeg extends HLEModule {
 
         return 0xDEADC0DE;
     }
-
 }
