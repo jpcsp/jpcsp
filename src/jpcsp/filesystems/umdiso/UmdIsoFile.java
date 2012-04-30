@@ -318,7 +318,11 @@ public class UmdIsoFile extends SeekableInputStream {
 		return totalLength;
 	}
 
-	@Override
+    public int getCurrentSectorNumber() {
+    	return currentSectorNumber;
+    }
+
+    @Override
 	public String toString() {
 		return String.format("UmdIsoFile(name='%s', length=0x%X, startSector=0x%X)", getName(), length(), startSectorNumber);
 	}
