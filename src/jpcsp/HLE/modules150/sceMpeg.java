@@ -489,7 +489,7 @@ public class sceMpeg extends HLEModule {
         audioFrameCount = 0;
         endOfAudioReached = false;
         endOfVideoReached = false;
-        if (!isCurrentMpegAnalyzed() && mpegStreamSize > 0 && mpegOffset >= 0 && mpegOffset <= mpegStreamSize && mpegOffset <= 2048) {
+        if (!isCurrentMpegAnalyzed() && mpegStreamSize > 0 && mpegOffset >= 0 && mpegOffset <= mpegStreamSize && mpegOffset <= MPEG_HEADER_BUFFER_MINIMUM_SIZE) {
             if (checkMediaEngineState()) {
             	me.init(buffer_addr, mpegStreamSize, mpegOffset);
             	meChannel = new PacketChannel();
