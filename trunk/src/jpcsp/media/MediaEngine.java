@@ -312,7 +312,9 @@ public class MediaEngine {
         // Keep trying to read
         container.setReadRetryCount(-1);
 
-        if (container.open(channel, IContainer.Type.READ, null) < 0) {
+        // query stream meta data only for video, not for audio (is requiring the entire
+        // stream to be available for the audio, which is often not the case with Atrac3 audio)
+        if (container.open(channel, IContainer.Type.READ, null, false, decodeVideo) < 0) {
             log.error("MediaEngine: Invalid container format!");
         }
 
