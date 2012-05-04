@@ -17,8 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.managers;
 
 import jpcsp.Emulator;
-import jpcsp.Memory;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.TPointer64;
 
 import org.apache.log4j.Logger;
@@ -62,72 +62,37 @@ public class SystemTimeManager {
         return micros32;
     }
 
-    public void sceKernelUSec2SysClock(int usec, int clock_addr) {
-        Memory mem = Memory.getInstance();
-        if (Memory.isAddressGood(clock_addr)) {
-            mem.write64(clock_addr, usec);
-        } else {
-            log.warn("sceKernelUSec2SysClock bad clock pointer 0x" + Integer.toHexString(clock_addr));
-        }
-        Emulator.getProcessor().cpu.gpr[2] = 0;
+    public int sceKernelUSec2SysClock(int usec, TPointer64 sysClockAddr) {
+    	sysClockAddr.setValue(usec);
+        return 0;
     }
 
-    public void sceKernelUSec2SysClockWide(long usec) {
+    public long sceKernelUSec2SysClockWide(int usec) {
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelUSec2SysClockWide usec:" + usec);
+            log.debug(String.format("sceKernelUSec2SysClockWide usec=%d", usec));
         }
-        Emulator.getProcessor().cpu.gpr[2] = (int) (usec & 0xffffffffL);
-        Emulator.getProcessor().cpu.gpr[3] = (int) ((usec >> 32) & 0xffffffffL);
+        return usec & 0xFFFFFFFFL;
     }
 
-    public void sceKernelSysClock2USec(int clock_addr, int low_addr, int high_addr) {
-        Memory mem = Memory.getInstance();
-        if (!Memory.isAddressGood(clock_addr)) {
-            log.warn("sceKernelSysClock2USec bad clock pointer 0x" + Integer.toHexString(clock_addr));
-        } else {
-            boolean ok = false;
-            long clocks = mem.read64(clock_addr);
-
-            if (Memory.isAddressGood(low_addr)) {
-                mem.write32(low_addr, (int) (clocks / 1000000));
-                ok = true;
-            }
-
-            if (Memory.isAddressGood(high_addr)) {
-                mem.write32(high_addr, (int) (clocks % 1000000));
-                ok = true;
-            }
-
-            if (!ok) {
-                log.warn("sceKernelSysClock2USec bad output pointers " + " 0x" + Integer.toHexString(low_addr) + " 0x" + Integer.toHexString(high_addr));
-            }
-
-            Emulator.getProcessor().cpu.gpr[2] = 0;
+    public int sceKernelSysClock2USec(TPointer64 sysClockAddr, TPointer32 secAddr, TPointer32 microSecAddr) {
+        long sysClock = sysClockAddr.getValue();
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceKernelSysClock2USec sysClockAddr=%s(%d), secAddr=%s, microSecAddr=%s", sysClockAddr, sysClock, secAddr, microSecAddr));
         }
+    	secAddr.setValue((int) (sysClock / 1000000));
+    	microSecAddr.setValue((int) (sysClock % 1000000));
+
+        return 0;
     }
 
-    public void sceKernelSysClock2USecWide(int sysclockLow, int sysclockHigh, int low_addr, int high_addr) {
-        // sysclockLow and sysclockHigh are for example
-        // the result from sceKernelGetSystemTimeWide()
-        long clocks = (sysclockLow) & 0xFFFFFFFFL | (((long) sysclockHigh) << 32);
-
-        Memory mem = Memory.getInstance();
-        boolean ok = false;
-        if (Memory.isAddressGood(low_addr)) {
-            mem.write32(low_addr, (int) (clocks / 1000000));
-            ok = true;
+    public int sceKernelSysClock2USecWide(long sysClock, TPointer32 secAddr, TPointer32 microSecAddr) {
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceKernelSysClock2USecWide sysClock=%d, secAddr=%s, microSecAddr=%s", sysClock, secAddr, microSecAddr));
         }
+    	secAddr.setValue((int) (sysClock / 1000000));
+    	microSecAddr.setValue((int) (sysClock % 1000000));
 
-        if (Memory.isAddressGood(high_addr)) {
-            mem.write32(high_addr, (int) (clocks % 1000000));
-            ok = true;
-        }
-
-        if (!ok) {
-            log.warn("sceKernelSysClock2USecWide bad output pointers " + " 0x" + Integer.toHexString(low_addr) + " 0x" + Integer.toHexString(high_addr));
-        }
-
-        Emulator.getProcessor().cpu.gpr[2] = 0;
+        return 0;
     }
 
     public static long getSystemTime() {
@@ -137,7 +102,7 @@ public class SystemTimeManager {
 
     public int sceKernelGetSystemTime(TPointer64 time_addr) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelGetSystemTime pointer=0x%08X", time_addr.getAddress()));
+            log.debug(String.format("sceKernelGetSystemTime pointer=%s", time_addr));
         }
 
         long systemTime = getSystemTime();
@@ -163,5 +128,4 @@ public class SystemTimeManager {
 
     private SystemTimeManager() {
     }
-    
 }

@@ -307,6 +307,9 @@ public class ThreadManForUser extends HLEModule {
         if (module != null && module.module_start_thread_priority > 0) {
             rootInitPriority = module.module_start_thread_priority;
         }
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("Creating root thread: entry=0x%08X, priority=%d, stackSize=0x%X, attr=0x%X", entry_addr, rootInitPriority, rootStackSize, attr));
+        }
         currentThread = new SceKernelThreadInfo("root", entry_addr, rootInitPriority, rootStackSize, attr);
         currentThread.moduleid = moduleid;
         threadMap.put(currentThread.uid, currentThread);
@@ -2700,27 +2703,23 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x110DEC9A, version = 150)
-    public void sceKernelUSec2SysClock(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.systime.sceKernelUSec2SysClock(cpu.gpr[4], cpu.gpr[5]);
+    public int sceKernelUSec2SysClock(int usec, TPointer64 sysClockAddr) {
+        return Managers.systime.sceKernelUSec2SysClock(usec, sysClockAddr);
     }
 
     @HLEFunction(nid = 0xC8CD158C, version = 150)
-    public void sceKernelUSec2SysClockWide(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.systime.sceKernelUSec2SysClockWide(cpu.gpr[4]);
+    public long sceKernelUSec2SysClockWide(int usec) {
+        return Managers.systime.sceKernelUSec2SysClockWide(usec);
     }
 
     @HLEFunction(nid = 0xBA6B92E2, version = 150)
-    public void sceKernelSysClock2USec(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.systime.sceKernelSysClock2USec(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+    public int sceKernelSysClock2USec(TPointer64 sysClockAddr, TPointer32 secAddr, TPointer32 microSecAddr) {
+        return Managers.systime.sceKernelSysClock2USec(sysClockAddr, secAddr, microSecAddr);
     }
 
     @HLEFunction(nid = 0xE1619D7C, version = 150)
-    public void sceKernelSysClock2USecWide(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.systime.sceKernelSysClock2USecWide(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
+    public int sceKernelSysClock2USecWide(long sysClock, TPointer32 secAddr, TPointer32 microSecAddr) {
+        return Managers.systime.sceKernelSysClock2USecWide(sysClock, secAddr, microSecAddr);
     }
 
     @HLEFunction(nid = 0xDB738F35, version = 150)
