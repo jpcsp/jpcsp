@@ -57,9 +57,9 @@ public class UmdIsoFile extends SeekableInputStream {
         }
 
         if (lengthInBytes == 0) {
-        	this.currentSector = null;
+        	currentSector = null;
         } else {
-        	this.currentSector = reader.readSector(startSector);
+        	currentSector = reader.readSector(startSector);
         }
 
         this.name = name;
@@ -71,7 +71,7 @@ public class UmdIsoFile extends SeekableInputStream {
 
     @Override
     public int read() throws IOException {
-        if(currentOffset >= maxOffset) {
+        if (currentOffset >= maxOffset) {
             throw new EOFException();
         }
         checkSectorAvailable();
@@ -88,7 +88,7 @@ public class UmdIsoFile extends SeekableInputStream {
     @Override
     public long skip(long n) throws IOException {
         long oldOffset = currentOffset;
-        if(n < 0) {
+        if (n < 0) {
             return n;
         }
         seek(currentOffset + n);
@@ -111,8 +111,8 @@ public class UmdIsoFile extends SeekableInputStream {
         int oldSectorNumber = currentSectorNumber;
         long newOffset = endOffset;
         int newSectorNumber = startSectorNumber + (int)(newOffset / sectorLength);
-        if(oldSectorNumber != newSectorNumber) {
-            currentSector = internalReader.readSector(newSectorNumber);
+        if (oldSectorNumber != newSectorNumber) {
+            currentSector = internalReader.readSector(newSectorNumber, currentSector);
         }
         currentOffset = newOffset;
         currentSectorNumber = newSectorNumber;
@@ -127,7 +127,7 @@ public class UmdIsoFile extends SeekableInputStream {
 
     @Override
     public byte readByte() throws IOException {
-        if(currentOffset >= maxOffset) {
+        if (currentOffset >= maxOffset) {
             throw new EOFException();
         }
         return (byte)read();
@@ -271,7 +271,7 @@ public class UmdIsoFile extends SeekableInputStream {
     private void checkSectorAvailable() throws IOException {
     	if (sectorOffset == sectorLength && currentOffset < maxOffset) {
     		currentSectorNumber++;
-    		currentSector = internalReader.readSector(currentSectorNumber);
+    		currentSector = internalReader.readSector(currentSectorNumber, currentSector);
     		sectorOffset = 0;
     	}
     }

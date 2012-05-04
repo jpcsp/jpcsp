@@ -40,6 +40,7 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
+import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
@@ -318,10 +319,13 @@ public class Utilities {
      }
 
      public static void readFully(SeekableDataInput input, int address, int length) throws IOException {
-         final int blockSize = 1024 * 1024;  // 1Mb
+         final int blockSize = 16 * UmdIsoFile.sectorLength;  // 32Kb
+         byte[] buffer = null;
          while (length > 0) {
              int size = Math.min(length, blockSize);
-             byte[] buffer = new byte[size];
+             if (buffer == null || size != buffer.length) {
+            	 buffer = new byte[size];
+             }
              input.readFully(buffer);
              Memory.getInstance().copyToMemory(address, ByteBuffer.wrap(buffer), size);
              address += size;
