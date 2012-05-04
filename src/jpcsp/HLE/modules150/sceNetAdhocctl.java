@@ -75,11 +75,13 @@ public class sceNetAdhocctl extends HLEModule {
 
     public static final int PSP_ADHOCCTL_MODE_NORMAL = 0;
     public static final int PSP_ADHOCCTL_MODE_GAMEMODE = 1;
+    public static final int PSP_ADHOCCTL_MODE_NONE = -1;
 
     public static final int NICK_NAME_LENGTH = 128;
     public static final int GROUP_NAME_LENGTH = 8;
     public static final int IBSS_NAME_LENGTH = 6;
     public static final int ADHOC_ID_LENGTH = 9;
+    public static final int MAX_GAME_MODE_MACS = 16;
 
     protected boolean initialized;
 	protected int adhocctlCurrentState;
@@ -193,6 +195,7 @@ public class sceNetAdhocctl extends HLEModule {
     	private int mode;
     	private int channel;
     	private boolean gameModeComplete;
+    	private byte[][] gameModeMacs;
 
     	public AdhocctlMessage(String nickName, byte[] macAddress, String groupName) {
     		this.nickName = nickName;
@@ -202,6 +205,7 @@ public class sceNetAdhocctl extends HLEModule {
     		mode = Modules.sceNetAdhocctlModule.adhocctlCurrentMode;
     		channel = Modules.sceNetAdhocctlModule.adhocctlCurrentChannel;
     		gameModeComplete = false;
+    		gameModeMacs = null;
     	}
 
     	public AdhocctlMessage(byte[] message, int length) {
@@ -220,10 +224,23 @@ public class sceNetAdhocctl extends HLEModule {
     		offset += 4;
     		gameModeComplete = copyBoolFromMessage(message, offset);
     		offset++;
+    		int numberGameModeMacs = copyInt32FromMessage(message, offset);
+    		offset += 4;
+    		if (numberGameModeMacs > 0) {
+    			gameModeMacs = copyMacsFromMessage(message, offset, numberGameModeMacs);
+    			offset += MAC_ADDRESS_LENGTH * numberGameModeMacs;
+    		}
     	}
 
-    	public void setGameModeComplete(boolean gameModeComplete) {
+    	public void setGameModeComplete(boolean gameModeComplete, LinkedList<pspNetMacAddress> requiredGameModeMacs) {
     		this.gameModeComplete = gameModeComplete;
+    		int numberGameModeMacs = requiredGameModeMacs.size();
+    		gameModeMacs = new byte[numberGameModeMacs][MAC_ADDRESS_LENGTH];
+    		int i = 0;
+    		for (pspNetMacAddress macAddress : requiredGameModeMacs) {
+    			gameModeMacs[i] = macAddress.macAddress;
+    			i++;
+    		}
     	}
 
     	private String copyFromMessage(byte[] message, int offset, int length) {
@@ -256,6 +273,16 @@ public class sceNetAdhocctl extends HLEModule {
     		System.arraycopy(message, offset, bytes, 0, bytes.length);
     	}
 
+    	private byte[][] copyMacsFromMessage(byte[] message, int offset, int numberMacs) {
+    		byte[][] macs = new byte[numberMacs][MAC_ADDRESS_LENGTH];
+    		for (int i = 0; i < numberMacs; i++) {
+    			copyFromMessage(message, offset, macs[i]);
+    			offset += macs[i].length;
+    		}
+
+    		return macs;
+    	}
+
     	private void copyToMessage(byte[] message, int offset, String s) {
     		if (s != null) {
 	    		int length = s.length();
@@ -281,6 +308,13 @@ public class sceNetAdhocctl extends HLEModule {
     		message[offset] = (byte) (value ? 1 : 0);
     	}
 
+    	private void copyMacsToMessage(byte[] message, int offset, byte[][] macs) {
+    		for (int i = 0; i < macs.length; i++) {
+    			copyToMessage(message, offset, macs[i]);
+    			offset += macs[i].length;
+    		}
+    	}
+
     	public byte[] getMessage() {
     		byte[] message = new byte[getMessageLength()];
 
@@ -299,17 +333,38 @@ public class sceNetAdhocctl extends HLEModule {
     		offset += 4;
     		copyBoolToMessage(message, offset, gameModeComplete);
     		offset++;
+    		if (gameModeMacs == null) {
+    			copyInt32ToMessage(message, offset, 0);
+    			offset += 4;
+    		} else {
+    			copyInt32ToMessage(message, offset, gameModeMacs.length);
+    			offset += 4;
+    			copyMacsToMessage(message, offset, gameModeMacs);
+    			offset += gameModeMacs.length * MAC_ADDRESS_LENGTH;
+    		}
 
     		return message;
     	}
 
     	public static int getMessageLength() {
-    		return NICK_NAME_LENGTH + MAC_ADDRESS_LENGTH + GROUP_NAME_LENGTH + IBSS_NAME_LENGTH + 4 + 4 + 1;
+    		return NICK_NAME_LENGTH + MAC_ADDRESS_LENGTH + GROUP_NAME_LENGTH + IBSS_NAME_LENGTH + 4 + 4 + 1 + 4 + MAX_GAME_MODE_MACS * MAC_ADDRESS_LENGTH;
     	}
 
 		@Override
 		public String toString() {
-			return String.format("AdhocctlMessage[nickName='%s', macAddress=%s, groupName='%s', IBSS='%s', mode=%d, channel=%d, gameModeComplete=%b]", nickName, sceNet.convertMacAddressToString(macAddress), groupName, ibss, mode, channel, gameModeComplete);
+			StringBuilder macs = new StringBuilder();
+			if (gameModeMacs != null) {
+				macs.append(", gameModeMacs=[");
+				for (int i = 0; i < gameModeMacs.length; i++) {
+					if (i > 0) {
+						macs.append(", ");
+					}
+					macs.append(sceNet.convertMacAddressToString(gameModeMacs[i]));
+				}
+				macs.append("]");
+			}
+
+			return String.format("AdhocctlMessage[nickName='%s', macAddress=%s, groupName='%s', IBSS='%s', mode=%d, channel=%d, gameModeComplete=%b%s]", nickName, sceNet.convertMacAddressToString(macAddress), groupName, ibss, mode, channel, gameModeComplete, macs.toString());
 		}
     }
 
@@ -321,7 +376,7 @@ public class sceNetAdhocctl extends HLEModule {
 		gameModeMacs = new LinkedList<pspNetMacAddress>();
 		requiredGameModeMacs = new LinkedList<pspNetMacAddress>();
 		adhocctlCurrentIBSS = "Jpcsp";
-		adhocctlCurrentMode = PSP_ADHOCCTL_MODE_NORMAL;
+		adhocctlCurrentMode = PSP_ADHOCCTL_MODE_NONE;
 		adhocctlCurrentChannel = Wlan.getAdhocChannel();
 		initialized = false;
 
@@ -367,11 +422,11 @@ public class sceNetAdhocctl extends HLEModule {
     	if (doTerminate) {
     		setState(PSP_ADHOCCTL_STATE_DISCONNECTED);
     		notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_DISCONNECTED, 0);
-    		adhocctlCurrentGroup = null;
+    		setGroupName(null, PSP_ADHOCCTL_MODE_NONE);
     	} else if (doDisconnect) {
     		setState(PSP_ADHOCCTL_STATE_DISCONNECTED);
     		notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_DISCONNECTED, 0);
-    		adhocctlCurrentGroup = null;
+    		setGroupName(null, PSP_ADHOCCTL_MODE_NONE);
     		doDisconnect = false;
     	} else if (doScan) {
     		setState(PSP_ADHOCCTL_STATE_SCAN);
@@ -385,6 +440,11 @@ public class sceNetAdhocctl extends HLEModule {
     					log.debug(String.format("All GameMode MACs have joined, GameMode Join is now complete"));
     				}
     				gameModeJoinComplete = true;
+
+    				// Make sure the list of game mode MACs is in the same order as the one
+    				// given at sceNetAdhocctlCreateEnterGameMode
+    				gameModeMacs.clear();
+    				gameModeMacs.addAll(requiredGameModeMacs);
     			}
 
     			if (gameModeJoinComplete) {
@@ -437,7 +497,7 @@ public class sceNetAdhocctl extends HLEModule {
 
     private void openSocket() throws SocketException {
     	if (adhocctlSocket == null) {
-    		adhocctlSocket = new DatagramSocket(adhocctlBroadcastPort + Modules.sceNetAdhocModule.netServerPortShift);
+    		adhocctlSocket = new DatagramSocket(Modules.sceNetAdhocModule.getRealPortFromServerPort(adhocctlBroadcastPort));
     		// For broadcast
     		adhocctlSocket.setBroadcast(true);
     		// Non-blocking (timeout = 0 would mean blocking)
@@ -456,9 +516,10 @@ public class sceNetAdhocctl extends HLEModule {
 			AdhocctlMessage adhocctlMessage = new AdhocctlMessage(sceUtility.getSystemParamNickname(), Wlan.getMacAddress(), adhocctlCurrentGroup);
 			if (adhocctlCurrentMode == PSP_ADHOCCTL_MODE_GAMEMODE && requiredGameModeMacs.size() > 0) {
 				// The Join for GameMode is complete when all the required MACs have joined
-				adhocctlMessage.setGameModeComplete(gameModeMacs.size() >= requiredGameModeMacs.size());
+				boolean gameModeComplete = gameModeMacs.size() >= requiredGameModeMacs.size();
+				adhocctlMessage.setGameModeComplete(gameModeComplete, requiredGameModeMacs);
 			}
-	    	SocketAddress socketAddress = Modules.sceNetAdhocModule.getSocketAddress(sceNetAdhoc.ANY_MAC_ADDRESS, adhocctlBroadcastPort + Modules.sceNetAdhocModule.netClientPortShift);
+	    	SocketAddress socketAddress = Modules.sceNetAdhocModule.getSocketAddress(sceNetAdhoc.ANY_MAC_ADDRESS, Modules.sceNetAdhocModule.getRealPortFromClientPort(sceNetAdhoc.ANY_MAC_ADDRESS, adhocctlBroadcastPort));
 	    	DatagramPacket packet = new DatagramPacket(adhocctlMessage.getMessage(), AdhocctlMessage.getMessageLength(), socketAddress);
 	    	adhocctlSocket.send(packet);
 
@@ -537,6 +598,17 @@ public class sceNetAdhocctl extends HLEModule {
 		    			addGameModeMac(adhocctlMessage.macAddress);
 		    			if (requiredGameModeMacs.size() <= 0) {
 		    				gameModeJoinComplete = adhocctlMessage.gameModeComplete;
+		    				if (gameModeJoinComplete) {
+		    					byte[][] macs = adhocctlMessage.gameModeMacs;
+		    					if (macs != null) {
+		    						// Make sure the list of game mode MACs is in the same order as the one
+		    						// given at sceNetAdhocctlCreateEnterGameMode
+		    						gameModeMacs.clear();
+		    						for (int i = 0; i < macs.length; i++) {
+		    							addGameModeMac(macs[i]);
+		    						}
+		    					}
+	    					}
 		    			}
 		    		}
 		    	}
@@ -558,6 +630,7 @@ public class sceNetAdhocctl extends HLEModule {
     	adhocctlCurrentGroup = groupName;
     	adhocctlCurrentMode = mode;
     	gameModeJoinComplete = false;
+		gameModeMacs.clear();
     }
 
     public void hleNetAdhocctlConnect(String groupName) {

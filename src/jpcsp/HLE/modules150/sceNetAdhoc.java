@@ -70,10 +70,10 @@ public class sceNetAdhoc extends HLEModule {
     protected static Logger log = Modules.getLogger("sceNetAdhoc");
 
     // For test purpose when running 2 different Jpcsp instances on the same computer:
-    // one computer has to have netClientPortShift=0 and netServerPortShift=1,
-    // the other computer, netClientPortShift=1 and netServerPortShift=0.
-    public int netClientPortShift = 0;
-    public int netServerPortShift = 0;
+    // one computer has to have netClientPortShift=0 and netServerPortShift=100,
+    // the other computer, netClientPortShift=100 and netServerPortShift=0.
+    private int netClientPortShift = 0;
+    private int netServerPortShift = 0;
 
     // Polling period (micro seconds) for blocking operations
     protected static final int BLOCKED_OPERATION_POLLING_MICROS = 10000;
@@ -98,7 +98,6 @@ public class sceNetAdhoc extends HLEModule {
 	private static final String replicaIdPurpose = "sceNetAdhoc-Replica";
     private static final int adhocGameModePort = 31000;
     private DatagramSocket gameModeSocket;
-
 
     /**
      * An AdhocMessage is consisting of:
@@ -389,7 +388,7 @@ public class sceNetAdhoc extends HLEModule {
 					}
 					setPort(socket.getLocalPort());
 				} else {
-					int realPort = port + Modules.sceNetAdhocModule.netServerPortShift;
+					int realPort = Modules.sceNetAdhocModule.getRealPortFromServerPort(port);
 					if (log.isDebugEnabled()) {
 						log.debug(String.format("Opening socket on port %d(%d)", port, realPort));
 					}
@@ -423,7 +422,7 @@ public class sceNetAdhoc extends HLEModule {
 		protected void send(AdhocMessage adhocMessage, int destPort) throws IOException {
 			openSocket();
 
-			int realPort = destPort + Modules.sceNetAdhocModule.netClientPortShift;
+			int realPort = Modules.sceNetAdhocModule.getRealPortFromClientPort(adhocMessage.getToMacAddress(), destPort);
 			SocketAddress socketAddress = Modules.sceNetAdhocModule.getSocketAddress(adhocMessage.getToMacAddress(), realPort);
 			DatagramPacket packet = new DatagramPacket(adhocMessage.getMessage(), adhocMessage.getMessageLength(), socketAddress);
 			socket.send(packet);
@@ -516,7 +515,7 @@ public class sceNetAdhoc extends HLEModule {
 			AdhocBufferMessage bufferMessage = new AdhocBufferMessage();
 			bufferMessage.length = adhocMessage.getDataLength();
 			bufferMessage.macAddress.setMacAddress(adhocMessage.getFromMacAddress());
-			bufferMessage.port = port - netClientPortShift;
+			bufferMessage.port = getClientPortFromRealPort(adhocMessage.getFromMacAddress(), port);
 			bufferMessage.offset = rcvdData;
 			adhocMessage.writeDataToMemory(buffer.addr + bufferMessage.offset);
 
@@ -650,6 +649,7 @@ public class sceNetAdhoc extends HLEModule {
     	private AdhocPtpMessage connectRequest;
     	private int connectRequestPort;
     	private AdhocPtpMessage connectConfirm;
+    	private boolean connected;
 
     	public PtpObject() {
     		super();
@@ -812,7 +812,7 @@ public class sceNetAdhoc extends HLEModule {
 						case AdhocPtpMessage.PTP_MESSAGE_TYPE_CONNECT:
 							pspNetMacAddress peerMacAddress = new pspNetMacAddress();
 							peerMacAddress.setMacAddress(adhocPtpMessage.getFromMacAddress());
-							int peerPort = adhocPtpMessagePort - netClientPortShift;
+							int peerPort = getClientPortFromRealPort(adhocPtpMessage.getFromMacAddress(), adhocPtpMessagePort);
 
 							if (peerMacAddr != 0) {
 								peerMacAddress.write(mem, peerMacAddr);
@@ -888,7 +888,7 @@ public class sceNetAdhoc extends HLEModule {
 					switch (adhocPtpMessage.getType()) {
 						case PTP_MESSAGE_TYPE_CONNECT_CONFIRM:
 							// Connect successfully completed, retrieve the new destination port
-							int port = adhocPtpMessage.getDataInt32() - netClientPortShift;
+							int port = getClientPortFromRealPort(adhocPtpMessage.getFromMacAddress(), adhocPtpMessage.getDataInt32());
 							if (log.isDebugEnabled()) {
 								log.debug(String.format("Received connect confirmation, changing destination port from %d to %d", getDestPort(), port));
 							}
@@ -914,6 +914,10 @@ public class sceNetAdhoc extends HLEModule {
 				}
 			} catch (IOException e) {
 				log.error("pollConnect", e);
+			}
+
+			if (connectCompleted) {
+				connected = true;
 			}
 
 			return connectCompleted;
@@ -984,10 +988,16 @@ public class sceNetAdhoc extends HLEModule {
 				AdhocPtpMessage adhocPtpMessage = (AdhocPtpMessage) adhocMessage;
 				int type = adhocPtpMessage.getType();
 				if (type == AdhocPtpMessage.PTP_MESSAGE_TYPE_CONNECT_CONFIRM) {
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("Received connect confirm, processing later"));
+					if (connected) {
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("Received connect confirmation but already connected, discarding"));
+						}
+					} else {
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("Received connect confirmation, processing later"));
+						}
+						connectConfirm = (AdhocPtpMessage) adhocMessage;
 					}
-					connectConfirm = (AdhocPtpMessage) adhocMessage;
 					return false;
 				} else if (type == AdhocPtpMessage.PTP_MESSAGE_TYPE_CONNECT) {
 					if (log.isDebugEnabled()) {
@@ -1020,6 +1030,12 @@ public class sceNetAdhoc extends HLEModule {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Successfully received message %s: %s", adhocMessage, Utilities.getMemoryDump(addr, length, 1, 16)));
 			}
+		}
+
+		@Override
+		protected void closeSocket() {
+			super.closeSocket();
+			connected = false;
 		}
     }
 
@@ -1295,6 +1311,42 @@ public class sceNetAdhoc extends HLEModule {
 	    super.start();
 	}
 
+    public void setNetClientPortShift(int netClientPortShift) {
+    	this.netClientPortShift = netClientPortShift;
+    	log.info(String.format("Using netClientPortShift=%d", netClientPortShift));
+    }
+
+    public void setNetServerPortShift(int netServerPortShift) {
+    	this.netServerPortShift = netServerPortShift;
+    	log.info(String.format("Using netServerPortShift=%d", netServerPortShift));
+    }
+
+    public int getClientPortFromRealPort(byte[] clientMacAddress, int realPort) {
+    	if (isMyMacAddress(clientMacAddress)) {
+    		// if the client is my-self, then this is actually a server port...
+    		return getServerPortFromRealPort(realPort);
+    	}
+
+    	return realPort - netClientPortShift;
+    }
+
+    public int getRealPortFromClientPort(byte[] clientMacAddress, int clientPort) {
+    	if (isMyMacAddress(clientMacAddress)) {
+    		// if the client is my-self, then this is actually a server port...
+    		return getRealPortFromServerPort(clientPort);
+    	}
+
+    	return clientPort + netClientPortShift;
+    }
+
+    public int getServerPortFromRealPort(int realPort) {
+    	return realPort - netServerPortShift;
+    }
+
+    public int getRealPortFromServerPort(int serverPort) {
+    	return serverPort + netServerPortShift;
+    }
+
     public void hleExitGameMode() {
     	masterGameModeArea = null;
     	replicaGameModeAreas.clear();
@@ -1308,7 +1360,7 @@ public class sceNetAdhoc extends HLEModule {
 
 		try {
 			if (gameModeSocket == null) {
-				gameModeSocket = new DatagramSocket(adhocGameModePort + Modules.sceNetAdhocModule.netServerPortShift);
+				gameModeSocket = new DatagramSocket(Modules.sceNetAdhocModule.getRealPortFromServerPort(adhocGameModePort));
 	    		// For broadcast
 				gameModeSocket.setBroadcast(true);
 	    		// Non-blocking (timeout = 0 would mean blocking)
@@ -1319,7 +1371,7 @@ public class sceNetAdhoc extends HLEModule {
 			if (masterGameModeArea != null && masterGameModeArea.hasNewData()) {
 				try {
 					AdhocGameModeMessage adhocGameModeMessage = new AdhocGameModeMessage(masterGameModeArea);
-			    	SocketAddress socketAddress = Modules.sceNetAdhocModule.getSocketAddress(sceNetAdhoc.ANY_MAC_ADDRESS, adhocGameModePort + Modules.sceNetAdhocModule.netClientPortShift);
+			    	SocketAddress socketAddress = Modules.sceNetAdhocModule.getSocketAddress(sceNetAdhoc.ANY_MAC_ADDRESS, Modules.sceNetAdhocModule.getRealPortFromClientPort(sceNetAdhoc.ANY_MAC_ADDRESS, adhocGameModePort));
 			    	DatagramPacket packet = new DatagramPacket(adhocGameModeMessage.getMessage(), adhocGameModeMessage.getMessageLength(), socketAddress);
 			    	gameModeSocket.send(packet);
 
@@ -1412,7 +1464,11 @@ public class sceNetAdhoc extends HLEModule {
 		return true;
 	}
 
-    private int getFreePort() {
+	public static boolean isMyMacAddress(byte[] macAddress) {
+		return isSameMacAddress(Wlan.getMacAddress(), macAddress);
+	}
+
+	private int getFreePort() {
     	int freePort = currentFreePort;
     	if (netClientPortShift > 0 || netServerPortShift > 0) {
     		currentFreePort += 2;
