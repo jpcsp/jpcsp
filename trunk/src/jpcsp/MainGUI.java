@@ -2269,7 +2269,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 i++;
                 if (i < args.length) {
                 	int netClientPortShift = Integer.parseInt(args[i]);
-                	Modules.sceNetAdhocModule.netClientPortShift = netClientPortShift;
+                	Modules.sceNetAdhocModule.setNetClientPortShift(netClientPortShift);
                 	i++;
                 } else {
                 	printUsage();
@@ -2278,7 +2278,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 i++;
                 if (i < args.length) {
                 	int netServerPortShift = Integer.parseInt(args[i]);
-                	Modules.sceNetAdhocModule.netServerPortShift = netServerPortShift;
+                	Modules.sceNetAdhocModule.setNetServerPortShift(netServerPortShift);
                 	i++;
                 } else {
                 	printUsage();
