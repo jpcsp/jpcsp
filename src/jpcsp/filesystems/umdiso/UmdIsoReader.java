@@ -174,21 +174,21 @@ public class UmdIsoReader {
      * @throws IOException
      */
     public void readSector(int sectorNumber, byte[] buffer, int offset) throws IOException {
-        if((sectorNumber < 0)||(sectorNumber >= numSectors)) {
+        if ((sectorNumber < 0)||(sectorNumber >= numSectors)) {
             throw new ArrayIndexOutOfBoundsException("Sector number " + sectorNumber + " out of bounds.");
         }
 
-        if(format == FileFormat.Uncompressed) {
+        if (format == FileFormat.Uncompressed) {
             fileReader.seek(((long) sectorLength) * sectorNumber);
             fileReader.read(buffer, offset, sectorLength);
             return;
         }
 
-        if(format == FileFormat.CompressedCSO) {
+        if (format == FileFormat.CompressedCSO) {
             long sectorOffset = sectorOffsets[sectorNumber];
             long sectorEnd    = sectorOffsets[sectorNumber+1];
 
-            if((sectorOffset&0x80000000)!=0) {
+            if ((sectorOffset & 0x80000000) != 0) {
                 long realOffset = (sectorOffset&0x7fffffff) << offsetShift;
                 fileReader.seek(realOffset);
                 fileReader.read(buffer, offset, sectorLength);
@@ -199,7 +199,7 @@ public class UmdIsoReader {
             sectorOffset = (sectorOffset & 0x7fffffff ) << offsetShift;
 
             int compressedLength = (int)(sectorEnd - sectorOffset);
-            if(compressedLength < 0) {
+            if (compressedLength < 0) {
             	for (int i = 0; i < sectorLength; i++) {
             		buffer[offset + i] = 0;
             	}
@@ -230,7 +230,21 @@ public class UmdIsoReader {
      * @throws IOException
      */
     public byte[] readSector(int sectorNumber) throws IOException {
-    	byte[] buffer = new byte[sectorLength];
+    	return readSector(sectorNumber, null);
+    }
+
+    /**
+     * Read one sector
+     * @param sectorNumber - the sector number to be read
+     * @param buffer - try to reuse this buffer if possible
+     * @return a new byte array of size sectorLength containing the sector
+     *         or the buffer if it could be reused.
+     * @throws IOException
+     */
+    public byte[] readSector(int sectorNumber, byte[] buffer) throws IOException {
+    	if (buffer == null || buffer.length != sectorLength) {
+    		buffer = new byte[sectorLength];
+    	}
     	readSector(sectorNumber, buffer, 0);
 
     	return buffer;
