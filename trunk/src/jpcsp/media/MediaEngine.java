@@ -312,6 +312,10 @@ public class MediaEngine {
         // Keep trying to read
         container.setReadRetryCount(-1);
 
+        // This defines the size of the buffer used by ffmpeg to read from our channel.
+        // 4Kb seems to work best to avoid ffmpeg reading past the end of the available buffer.
+        container.setInputBufferLength(4096);
+
         // query stream meta data only for video, not for audio (is requiring the entire
         // stream to be available for the audio, which is often not the case with Atrac3 audio)
         if (container.open(channel, IContainer.Type.READ, null, false, decodeVideo) < 0) {
