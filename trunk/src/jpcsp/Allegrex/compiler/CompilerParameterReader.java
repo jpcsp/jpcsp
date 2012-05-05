@@ -18,6 +18,7 @@ package jpcsp.Allegrex.compiler;
 
 import static jpcsp.Allegrex.Common._sp;
 
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
@@ -32,7 +33,8 @@ public class CompilerParameterReader extends ParameterReader {
 	private ICompilerContext compilerContext;
 	private boolean hasErrorPointer = false;
 	private int currentParameterIndex = 0;
-	private int currentStackSize = 0;
+	private int currentStackPopIndex = 0;
+	final private int[] currentStackPop = new int[10];
 
 	public CompilerParameterReader(ICompilerContext compilerContext) {
 		super(null, null);
@@ -82,15 +84,19 @@ public class CompilerParameterReader extends ParameterReader {
 	}
 
 	public void popAllStack(int additionalCount) {
-		int count = currentStackSize + additionalCount;
-		while (count >= 2) {
-			compilerContext.getMethodVisitor().visitInsn(Opcodes.POP2);
-			count -= 2;
+		final MethodVisitor mv = compilerContext.getMethodVisitor();
+
+		while (additionalCount >= 2) {
+			mv.visitInsn(Opcodes.POP2);
+			additionalCount -= 2;
 		}
 
-		while (count > 0) {
-			compilerContext.getMethodVisitor().visitInsn(Opcodes.POP);
-			count--;
+		if (additionalCount > 0) {
+			mv.visitInsn(Opcodes.POP);
+		}
+
+		for (int i = currentStackPopIndex - 1; i >= 0; i--) {
+			mv.visitInsn(currentStackPop[i]);
 		}
 	}
 
@@ -111,7 +117,22 @@ public class CompilerParameterReader extends ParameterReader {
 	}
 
 	public void incrementCurrentStackSize(int size) {
-		currentStackSize += size;
+		if (size == 1 && currentStackPopIndex > 0 && currentStackPop[currentStackPopIndex - 1] == Opcodes.POP) {
+			// Merge previous POP with this one into a POP2
+			currentStackPop[currentStackPopIndex - 1] = Opcodes.POP2;
+		} else {
+			// When size == 2 (e.g. for a "long" value), do not merge with a previous POP,
+			// use an own POP2 for this "long" value.
+			// Otherwise, VerifyError would be raised with message
+			// "Attempt to split long or double on the stack"
+			while (size >= 2) {
+				currentStackPop[currentStackPopIndex++] = Opcodes.POP2;
+				size -= 2;
+			}
+			if (size > 0) {
+				currentStackPop[currentStackPopIndex++] = Opcodes.POP;
+			}
+		}
 	}
 
 	public void incrementCurrentStackSize() {
