@@ -26,11 +26,13 @@ import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_JUMPING;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_USE_VFPU_PFXD;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_USE_VFPU_PFXS;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_USE_VFPU_PFXT;
+import jpcsp.Emulator;
 import jpcsp.Processor;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.VfpuState.Vcr.PfxDst;
 import jpcsp.Allegrex.VfpuState.Vcr.PfxSrc;
 import jpcsp.Allegrex.compiler.ICompilerContext;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.SyscallHandler;
 
 import org.objectweb.asm.Label;
@@ -135,14 +137,20 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int imm16 = (insn>>0)&65535;
-	//int rs = (insn>>21)&31;
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
+	int addr = processor.cpu.gpr[rs] + (short) imm16;
+	int size = 64;
+	if (Emulator.log.isInfoEnabled()) {
+		Emulator.log.info(String.format("%s addr=0x%08X, size=%d", name(), addr, size));
+	}
 
+	RuntimeContext.invalidateRange(addr, size);
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	// Nothing to compile
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
