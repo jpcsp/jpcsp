@@ -32,8 +32,12 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 import javax.swing.BorderFactory;
@@ -385,6 +389,23 @@ public class UmdBrowser extends JDialog {
 		setSize(Settings.getInstance().readWindowSize(windowNameForSettings, 1000, 350));
 	}
 
+	private String getUmdBrowseCacheDirectory(String name) {
+		// Return "tmp/UmdBrowserCache/<name>/"
+		return String.format("%1$s%2$cUmdBrowserCache%2$c%3$s%2$c", Settings.getInstance().readString("emu.tmppath"), File.separatorChar, name);
+	}
+
+	private void writeUmdBrowseCacheFile(String cacheDirectory, String name, byte[] content) {
+		try {
+			OutputStream os = new FileOutputStream(cacheDirectory + name);
+			os.write(content);
+			os.close();
+		} catch (FileNotFoundException e) {
+			Emulator.log.error(e);
+		} catch (IOException e) {
+			Emulator.log.error(e);
+		}
+	}
+
 	private void loadUmdInfo(int rowIndex) {
 		if (umdInfoLoaded[rowIndex]) {
 			return;
@@ -402,21 +423,48 @@ public class UmdBrowser extends JDialog {
             }
 
             if (!programs[rowIndex].isDirectory()) {
-                UmdIsoReader iso = new UmdIsoReader(programs[rowIndex].getPath());
+            	String cacheDirectory = getUmdBrowseCacheDirectory(programs[rowIndex].getName());
+            	File sfoFile = new File(cacheDirectory + "param.sfo");
+            	if (sfoFile.canRead()) {
+            		// Read the param.sfo and ICON0.PNG from the UmdBrowserCache
+            		byte[] sfo = new byte[(int) sfoFile.length()];
+            		InputStream is = new FileInputStream(sfoFile);
+            		is.read(sfo);
+            		is.close();
+            		psfs[rowIndex] = new PSF();
+            		psfs[rowIndex].read(ByteBuffer.wrap(sfo));
 
-                UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
-                byte[] sfo = new byte[(int)paramSfo.length()];
-                paramSfo.read(sfo);
-                paramSfo.close();
-                ByteBuffer buf = ByteBuffer.wrap(sfo);
-                psfs[rowIndex] = new PSF();
-                psfs[rowIndex].read(buf);
+            		File icon0File = new File(cacheDirectory + "ICON0.PNG");
+            		if (icon0File.canRead()) {
+            			icons[rowIndex] = new ImageIcon(icon0File.getPath());
+            		} else {
+                        icons[rowIndex] = new ImageIcon(getClass().getResource("/jpcsp/images/icon0.png"));
+            		}
+            	} else {
+            		// Read the param.sfo and ICON0.PNG from the ISO and
+            		// store them in the UmdBrowserCache.
 
-                UmdIsoFile icon0umd = iso.getFile("PSP_GAME/ICON0.PNG");
-                byte[] icon0 = new byte[(int) icon0umd.length()];
-                icon0umd.read(icon0);
-                icon0umd.close();
-                icons[rowIndex] = new ImageIcon(icon0);
+            		// Create the UmdBrowse Cache directories
+            		new File(cacheDirectory).mkdirs();
+
+            		UmdIsoReader iso = new UmdIsoReader(programs[rowIndex].getPath());
+
+	                UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
+	                byte[] sfo = new byte[(int)paramSfo.length()];
+	                paramSfo.read(sfo);
+	                paramSfo.close();
+	                writeUmdBrowseCacheFile(cacheDirectory, "param.sfo", sfo);
+	                ByteBuffer buf = ByteBuffer.wrap(sfo);
+	                psfs[rowIndex] = new PSF();
+	                psfs[rowIndex].read(buf);
+
+	                UmdIsoFile icon0umd = iso.getFile("PSP_GAME/ICON0.PNG");
+	                byte[] icon0 = new byte[(int) icon0umd.length()];
+	                icon0umd.read(icon0);
+	                icon0umd.close();
+	                writeUmdBrowseCacheFile(cacheDirectory, "ICON0.PNG", icon0);
+	                icons[rowIndex] = new ImageIcon(icon0);
+            	}
             }
 		} catch (FileNotFoundException e) {
             // Check if we're dealing with a UMD_VIDEO.
