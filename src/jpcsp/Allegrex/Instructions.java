@@ -3923,9 +3923,13 @@ public void interpret(Processor processor, int insn) {
 public void compile(ICompilerContext context, int insn) {
 	int rs = context.getRsRegisterIndex();
 	int simm16 = context.getImm16(true);
-	context.prepareMemWrite8(rs, simm16);
-	context.loadRt();
-	context.memWrite8(rs, simm16);
+	if (context.isRtRegister0()) {
+		context.memWriteZero8(rs, simm16);
+	} else {
+		context.prepareMemWrite8(rs, simm16);
+		context.loadRt();
+		context.memWrite8(rs, simm16);
+	}
 }
 @Override
 public String disasm(int address, int insn) {

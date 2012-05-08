@@ -127,6 +127,7 @@ public interface ICompilerContext {
     public void prepareMemWrite32(int registerIndex, int offset);
     public void prepareMemWrite16(int registerIndex, int offset);
     public void prepareMemWrite8(int registerIndex, int offset);
+    public void memWriteZero8(int registerIndex, int offset);
     public void convertUnsignedIntToLong();
     public void startPfxCompiled();
     public void endPfxCompiled();

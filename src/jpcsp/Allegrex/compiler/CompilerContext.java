@@ -234,9 +234,13 @@ public class CompilerContext implements ICompilerContext {
 
     @Override
     public void loadRegister(int reg) {
-    	loadGpr();
-    	loadImm(reg);
-        mv.visitInsn(Opcodes.IALOAD);
+    	if (reg == _zr) {
+    		loadImm(0);
+    	} else {
+	    	loadGpr();
+	    	loadImm(reg);
+	        mv.visitInsn(Opcodes.IALOAD);
+    	}
     }
 
     @Override
@@ -2091,12 +2095,23 @@ public class CompilerContext implements ICompilerContext {
 
 	@Override
 	public void prepareMemWrite16(int registerIndex, int offset) {
-		loadMemory();
+		if (RuntimeContext.memoryInt == null) {
+			loadMemory();
+		} else {
+			loadMemoryInt();
+		}
 
 		loadRegister(registerIndex);
 		if (offset != 0) {
 			loadImm(offset);
 			mv.visitInsn(Opcodes.IADD);
+		}
+
+		if (RuntimeContext.memoryInt != null) {
+			if (checkMemoryAccess()) {
+				loadImm(codeInstruction.getAddress());
+				mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryWrite16", "(II)I");
+			}
 		}
 
 		memWritePrepared = true;
@@ -2105,7 +2120,11 @@ public class CompilerContext implements ICompilerContext {
 	@Override
 	public void memWrite16(int registerIndex, int offset) {
 		if (!memWritePrepared) {
-			loadMemory();
+			if (RuntimeContext.memoryInt == null) {
+				loadMemory();
+			} else {
+				loadMemoryInt();
+			}
 			mv.visitInsn(Opcodes.SWAP);
 
 			loadRegister(registerIndex);
@@ -2113,22 +2132,77 @@ public class CompilerContext implements ICompilerContext {
 				loadImm(offset);
 				mv.visitInsn(Opcodes.IADD);
 			}
+
+			if (RuntimeContext.memoryInt != null) {
+				if (checkMemoryAccess()) {
+					loadImm(codeInstruction.getAddress());
+					mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryWrite16", "(II)I");
+				}
+			}
 			mv.visitInsn(Opcodes.SWAP);
 		}
 
-		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "write16", "(IS)V");
+		if (RuntimeContext.memoryInt == null) {
+			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "write16", "(IS)V");
+		} else {
+			// tmp2 = value & 0xFFFF;
+			// tmp1 = (address & 2) << 3;
+			// memoryInt[address >> 2] = (memoryInt[address >> 2] & ((0xFFFF << tmp1) ^ 0xFFFFFFFF)) | (tmp2 << tmp1);
+			loadImm(0xFFFF);
+			mv.visitInsn(Opcodes.IAND);
+			storeTmp2();
+			mv.visitInsn(Opcodes.DUP);
+			loadImm(2);
+			mv.visitInsn(Opcodes.IAND);
+			loadImm(3);
+			mv.visitInsn(Opcodes.ISHL);
+			storeTmp1();
+			if (checkMemoryAccess()) {
+				loadImm(2);
+				mv.visitInsn(Opcodes.ISHR);
+			} else {
+				loadImm(2);
+				mv.visitInsn(Opcodes.ISHL);
+				loadImm(4);
+				mv.visitInsn(Opcodes.IUSHR);
+			}
+			mv.visitInsn(Opcodes.DUP2);
+			mv.visitInsn(Opcodes.IALOAD);
+			loadImm(0xFFFF);
+			loadTmp1();
+			mv.visitInsn(Opcodes.ISHL);
+			loadImm(-1);
+			mv.visitInsn(Opcodes.IXOR);
+			mv.visitInsn(Opcodes.IAND);
+			loadTmp2();
+			loadTmp1();
+			mv.visitInsn(Opcodes.ISHL);
+			mv.visitInsn(Opcodes.IOR);
+			mv.visitInsn(Opcodes.IASTORE);
+		}
 
 		memWritePrepared = false;
 	}
 
 	@Override
 	public void prepareMemWrite8(int registerIndex, int offset) {
-		loadMemory();
+		if (RuntimeContext.memoryInt == null) {
+			loadMemory();
+		} else {
+			loadMemoryInt();
+		}
 
 		loadRegister(registerIndex);
 		if (offset != 0) {
 			loadImm(offset);
 			mv.visitInsn(Opcodes.IADD);
+		}
+
+		if (RuntimeContext.memoryInt != null) {
+			if (checkMemoryAccess()) {
+				loadImm(codeInstruction.getAddress());
+				mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryWrite8", "(II)I");
+			}
 		}
 
 		memWritePrepared = true;
@@ -2137,7 +2211,11 @@ public class CompilerContext implements ICompilerContext {
 	@Override
 	public void memWrite8(int registerIndex, int offset) {
 		if (!memWritePrepared) {
-			loadMemory();
+			if (RuntimeContext.memoryInt == null) {
+				loadMemory();
+			} else {
+				loadMemoryInt();
+			}
 			mv.visitInsn(Opcodes.SWAP);
 
 			loadRegister(registerIndex);
@@ -2145,12 +2223,110 @@ public class CompilerContext implements ICompilerContext {
 				loadImm(offset);
 				mv.visitInsn(Opcodes.IADD);
 			}
+
+			if (RuntimeContext.memoryInt != null) {
+				if (checkMemoryAccess()) {
+					loadImm(codeInstruction.getAddress());
+					mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryWrite8", "(II)I");
+				}
+			}
 			mv.visitInsn(Opcodes.SWAP);
 		}
 
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "write8", "(IB)V");
+		if (RuntimeContext.memoryInt == null) {
+	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "write8", "(IB)V");
+		} else {
+			// tmp2 = value & 0xFF;
+			// tmp1 = (address & 3) << 3;
+			// memoryInt[address >> 2] = (memoryInt[address >> 2] & ((0xFF << tmp1) ^ 0xFFFFFFFF)) | (tmp2 << tmp1);
+			loadImm(0xFF);
+			mv.visitInsn(Opcodes.IAND);
+			storeTmp2();
+			mv.visitInsn(Opcodes.DUP);
+			loadImm(3);
+			mv.visitInsn(Opcodes.IAND);
+			loadImm(3);
+			mv.visitInsn(Opcodes.ISHL);
+			storeTmp1();
+			if (checkMemoryAccess()) {
+				loadImm(2);
+				mv.visitInsn(Opcodes.ISHR);
+			} else {
+				loadImm(2);
+				mv.visitInsn(Opcodes.ISHL);
+				loadImm(4);
+				mv.visitInsn(Opcodes.IUSHR);
+			}
+			mv.visitInsn(Opcodes.DUP2);
+			mv.visitInsn(Opcodes.IALOAD);
+			loadImm(0xFF);
+			loadTmp1();
+			mv.visitInsn(Opcodes.ISHL);
+			loadImm(-1);
+			mv.visitInsn(Opcodes.IXOR);
+			mv.visitInsn(Opcodes.IAND);
+			loadTmp2();
+			loadTmp1();
+			mv.visitInsn(Opcodes.ISHL);
+			mv.visitInsn(Opcodes.IOR);
+			mv.visitInsn(Opcodes.IASTORE);
+		}
 
 		memWritePrepared = false;
+	}
+
+	@Override
+	public void memWriteZero8(int registerIndex, int offset) {
+		if (RuntimeContext.memoryInt == null) {
+			loadMemory();
+		} else {
+			loadMemoryInt();
+		}
+
+		loadRegister(registerIndex);
+		if (offset != 0) {
+			loadImm(offset);
+			mv.visitInsn(Opcodes.IADD);
+		}
+
+		if (RuntimeContext.memoryInt != null) {
+			if (checkMemoryAccess()) {
+				loadImm(codeInstruction.getAddress());
+				mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryWrite8", "(II)I");
+			}
+		}
+
+		if (RuntimeContext.memoryInt == null) {
+			loadImm(0);
+	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "write8", "(IB)V");
+		} else {
+			// tmp1 = (address & 3) << 3;
+			// memoryInt[address >> 2] = (memoryInt[address >> 2] & ((0xFF << tmp1) ^ 0xFFFFFFFF));
+			mv.visitInsn(Opcodes.DUP);
+			loadImm(3);
+			mv.visitInsn(Opcodes.IAND);
+			loadImm(3);
+			mv.visitInsn(Opcodes.ISHL);
+			storeTmp1();
+			if (checkMemoryAccess()) {
+				loadImm(2);
+				mv.visitInsn(Opcodes.ISHR);
+			} else {
+				loadImm(2);
+				mv.visitInsn(Opcodes.ISHL);
+				loadImm(4);
+				mv.visitInsn(Opcodes.IUSHR);
+			}
+			mv.visitInsn(Opcodes.DUP2);
+			mv.visitInsn(Opcodes.IALOAD);
+			loadImm(0xFF);
+			loadTmp1();
+			mv.visitInsn(Opcodes.ISHL);
+			loadImm(-1);
+			mv.visitInsn(Opcodes.IXOR);
+			mv.visitInsn(Opcodes.IAND);
+			mv.visitInsn(Opcodes.IASTORE);
+		}
 	}
 
 	@Override

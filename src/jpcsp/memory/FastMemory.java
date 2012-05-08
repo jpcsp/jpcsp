@@ -193,7 +193,7 @@ public class FastMemory extends Memory {
 			if ((address & 0x02) == 0) {
 				memData = (memData & 0xFFFF0000) | (data & 0xFFFF);
 			} else {
-				memData = (memData & 0x0000FFFF) | ((data & 0xFFFF) << 16);
+				memData = (memData & 0x0000FFFF) | (data << 16);
 			}
 
 			if (traceWrite) {
