@@ -1911,7 +1911,14 @@ public class VideoEngine {
 	    		}
 
 	    		boolean readTexture = context.textureFlag.isEnabled() && !context.clearMode;
-	            switch (type) {
+	    		if (useVertexCache) {
+	    			// When using the vertex cache, do not try to optimize the texture reading.
+	    			// The cached vertex could be reused in other situations where the texture
+	    			// is required.
+	    			readTexture = true;
+	    		}
+
+	    		switch (type) {
 	                case PRIM_POINT:
 	                case PRIM_LINE:
 	                case PRIM_LINES_STRIPS:
@@ -5822,6 +5829,11 @@ public class VideoEngine {
     		drawArraysStatistics.start();
             re.drawArrays(type, 0, (context.patch_div_s + 1) * 2);
         	drawArraysStatistics.end();
+        }
+
+        if (State.captureGeNextFrame) {
+            display.captureGeImage();
+            textureChanged = true;
         }
 
         endRendering(ucount * vcount);
