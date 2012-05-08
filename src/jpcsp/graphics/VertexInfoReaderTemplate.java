@@ -664,11 +664,7 @@ public class VertexInfoReaderTemplate {
                 VideoEngine.log.trace(String.format("normal type %d %f, %f, %f", normal, v.n[0], v.n[1], v.n[2]));
             }
             if (position != 0) {
-            	if (transform2D) {
-            		VideoEngine.log.trace(String.format("vertex type %d %d, %d, %d", position, round(v.p[0]), round(v.p[1]), round(v.p[2])));
-            	} else {
-            		VideoEngine.log.trace(String.format("vertex type %d %f, %f, %f", position, v.p[0], v.p[1], v.p[2]));
-            	}
+        		VideoEngine.log.trace(String.format("vertex type %d %f, %f, %f", position, v.p[0], v.p[1], v.p[2]));
             }
         }
     }
