@@ -553,37 +553,37 @@ public class Loader {
 
         	if ((flags & SHF_ALLOCATE) != 0) {
                 switch (shdr.getSh_type()) {
-                    case Elf32SectionHeader.SHT_PROGBITS: // 1
-                    {
+                    case Elf32SectionHeader.SHT_PROGBITS: { // 1
                         // Load this section into memory
                         // now loaded using program header type 1
-                        if (!Memory.isAddressGood(memOffset)) {
-                            log.warn(String.format("Section header (type 1) has invalid memory offset 0x%08X!", memOffset));
-                        }
-
-                        // Update memory area consumed by the module
-                        if (memOffset < module.loadAddressLow) {
-                            log.warn(String.format("%s: section allocates more than program %08X - %08X", shdr.getSh_namez(), memOffset, (memOffset + len)));
-                            module.loadAddressLow = memOffset;
-                        }
-                        if (memOffset + len > module.loadAddressHigh) {
-                            log.warn(String.format("%s: section allocates more than program %08X - %08X", shdr.getSh_namez(), memOffset, (memOffset + len)));
-                            module.loadAddressHigh = memOffset + len;
+                        if (len == 0) {
+                        	if (log.isDebugEnabled()) {
+                        		log.debug(String.format("%s: ignoring zero-length type 1 section %08X", shdr.getSh_namez(), memOffset));
+                        	}
+                        } else if (!Memory.isAddressGood(memOffset)) {
+                            log.error(String.format("Section header (type 1) has invalid memory offset 0x%08X!", memOffset));
+                        } else {
+	                        // Update memory area consumed by the module
+	                        if (memOffset < module.loadAddressLow) {
+	                            log.warn(String.format("%s: section allocates more than program %08X - %08X", shdr.getSh_namez(), memOffset, (memOffset + len)));
+	                            module.loadAddressLow = memOffset;
+	                        }
+	                        if (memOffset + len > module.loadAddressHigh) {
+	                            log.warn(String.format("%s: section allocates more than program %08X - %08X", shdr.getSh_namez(), memOffset, (memOffset + len)));
+	                            module.loadAddressHigh = memOffset + len;
+	                        }
                         }
                         break;
                     }
 
-                    case Elf32SectionHeader.SHT_NOBITS: // 8
-                    {
+                    case Elf32SectionHeader.SHT_NOBITS: { // 8
                         // Zero out this portion of memory
-                        if (!Memory.isAddressGood(memOffset)) {
-                            log.warn(String.format("Section header (type 8) has invalid memory offset 0x%08X!", memOffset));
-                        }
-
                         if (len == 0) {
                         	if (log.isDebugEnabled()) {
                         		log.debug(String.format("%s: ignoring zero-length type 8 section %08X", shdr.getSh_namez(), memOffset));
                         	}
+                        } else if (!Memory.isAddressGood(memOffset)) {
+                            log.error(String.format("Section header (type 8) has invalid memory offset 0x%08X!", memOffset));
                         } else {
                         	if (log.isDebugEnabled()) {
                         		log.debug(String.format("%s: clearing section %08X - %08X (len %08X)", shdr.getSh_namez(), memOffset, (memOffset + len), len));

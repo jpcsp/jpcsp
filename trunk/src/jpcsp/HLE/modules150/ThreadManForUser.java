@@ -2189,6 +2189,10 @@ public class ThreadManForUser extends HLEModule {
         	return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_CALLBACK;
         }
 
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceKernelGetCallbackCount returning count=%d", callback.notifyCount));
+        }
+
         return callback.notifyCount;
     }
 
