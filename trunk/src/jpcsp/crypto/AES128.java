@@ -26,6 +26,9 @@ import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
+import jpcsp.HLE.Modules;
+
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class AES128 {
@@ -34,9 +37,21 @@ public class AES128 {
     private static byte[] const_Rb = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x87};
     private byte[] contentKey;
     private ByteArrayOutputStream barros;
+    private static Cipher cipher;
+
+    private static void init() {
+    	if (cipher == null) {
+            Security.addProvider(new BouncyCastleProvider());
+    		try {
+				cipher = Cipher.getInstance("AES/CBC/NoPadding", "BC");
+			} catch (Exception e) {
+				Modules.log.error("AES128 Cipher", e);
+			}
+    	}
+    }
 
     public AES128() {
-        Security.addProvider(new BouncyCastleProvider());
+    	init();
     }
 
     // Private encrypting method for CMAC (IV == 0).
@@ -45,7 +60,7 @@ public class AES128 {
         byte[] iv = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
         IvParameterSpec ivec = new IvParameterSpec(iv);
         try {
-            Cipher c = Cipher.getInstance("AES/CBC/NoPadding", "BC");
+            Cipher c = cipher;
             c.init(Cipher.ENCRYPT_MODE, keySpec, ivec);
             ByteArrayInputStream inStream = new ByteArrayInputStream(in);
             CipherInputStream cIn = new CipherInputStream(inStream, c);
@@ -66,7 +81,7 @@ public class AES128 {
         Key keySpec = new SecretKeySpec(encKey, "AES");
         IvParameterSpec ivec = new IvParameterSpec(iv);
         try {
-            Cipher c = Cipher.getInstance("AES/CBC/NoPadding", "BC");
+            Cipher c = cipher;
             c.init(Cipher.ENCRYPT_MODE, keySpec, ivec);
             ByteArrayInputStream inStream = new ByteArrayInputStream(in);
             CipherInputStream cIn = new CipherInputStream(inStream, c);
@@ -86,18 +101,22 @@ public class AES128 {
         Key keySpec = new SecretKeySpec(decKey, "AES");
         IvParameterSpec ivec = new IvParameterSpec(iv);
         try {
-            Cipher c = Cipher.getInstance("AES/CBC/NoPadding", "BC");
+            Cipher c = cipher;
             c.init(Cipher.DECRYPT_MODE, keySpec, ivec);
-            ByteArrayInputStream inStream = new ByteArrayInputStream(in);
-            CipherInputStream cIn = new CipherInputStream(inStream, c);
-            DataInputStream dIn = new DataInputStream(cIn);
-            byte[] bytes = new byte[in.length];
-            for (int i = 0; i < in.length; i++) {
-                bytes[i] = (byte) dIn.read();
+
+            if ((in.length % 16) != 0) {
+            	int padLength = 16 - (in.length % 16);
+            	byte[] paddedIn = new byte[in.length + padLength];
+            	System.arraycopy(in, 0, paddedIn, 0, in.length);
+            	for (int i = 0; i < padLength; i++) {
+            		paddedIn[in.length + i] = (byte) 0;
+            	}
+            	in = paddedIn;
             }
-            return bytes;
+
+            return c.doFinal(in);
         } catch (Exception e) {
-            e.printStackTrace();
+        	Modules.log.error("decryptCBC", e);
             return null;
         }
     }
