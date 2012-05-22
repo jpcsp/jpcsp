@@ -712,23 +712,17 @@ public class CryptoEngine {
         private byte[] s = new byte[0x14];
         
         private ECDSASig () {
-            r = new byte[0x14];
-            s = new byte[0x14];
         }
     }
     
     private class ECDSAPoint {
-        private byte[] x;
-        private byte[] y;
+        private byte[] x = new byte[0x14];
+        private byte[] y = new byte[0x14];
         
         private ECDSAPoint() {
-            x = new byte[0x14];
-            y = new byte[0x14];
         }
         
         private ECDSAPoint(byte[] data) {
-            x = new byte[0x14];
-            y = new byte[0x14];
             System.arraycopy(data, 0, x, 0, 0x14);
             System.arraycopy(data, 0x14, y, 0, 0x14);
         }
@@ -742,12 +736,11 @@ public class CryptoEngine {
     }
     
     private class ECDSAKeygenCtx {
-        private byte[] private_key;
+        private byte[] private_key = new byte[0x14];
         private ECDSAPoint public_key;
         private ByteBuffer out;
         
         private ECDSAKeygenCtx (ByteBuffer output) {
-            private_key = new byte[0x14];
             public_key = new ECDSAPoint();
             out = output;
         }
@@ -810,7 +803,6 @@ public class CryptoEngine {
         public SDCtx1() {
             mode = 0;
             unk = 0;
-            buf = new byte[16];
         }
     }
 
@@ -823,8 +815,6 @@ public class CryptoEngine {
 
         public SDCtx2() {
             mode = 0;
-            key = new byte[16];
-            pad = new byte[16];
             padSize = 0;
         }
     }
@@ -839,7 +829,6 @@ public class CryptoEngine {
         public BBCipherCtx() {
             mode = 0;
             unk = 0;
-            buf = new byte[16];
         }
     }
 
@@ -852,8 +841,6 @@ public class CryptoEngine {
 
         public BBMacCtx() {
             mode = 0;
-            key = new byte[16];
-            pad = new byte[16];
             padSize = 0;
         }
     }
@@ -988,14 +975,9 @@ public class CryptoEngine {
 
         // Decrypt and extract the new AES and CMAC keys from the top of the data.
         byte[] encryptedKeys = new byte[32];
-        byte[] decryptedKeys = new byte[32];
-        for (int i = 0; i < 16; i++) {
-            encryptedKeys[i] = (byte) header.AES128Key[i];
-        }
-        for (int i = 0; i < 16; i++) {
-            encryptedKeys[i + 16] = (byte) header.CMACKey[i];
-        }
-        decryptedKeys = aes.decryptCBC(encryptedKeys, k, iv);
+        System.arraycopy(header.AES128Key, 0, encryptedKeys, 0, 16);
+        System.arraycopy(header.CMACKey, 0, encryptedKeys, 16, 16);
+        byte[] decryptedKeys = aes.decryptCBC(encryptedKeys, k, iv);
 
         // Check for a valid signature.
         int sigCheck = executeKIRKCmd10(sigIn, size);
@@ -1010,7 +992,7 @@ public class CryptoEngine {
         // Get the newly decrypted AES key and proceed with the
         // full data decryption.
         byte[] aesBuf = new byte[16];
-        System.arraycopy(decryptedKeys, 0, aesBuf, 0, 16);
+        System.arraycopy(decryptedKeys, 0, aesBuf, 0, aesBuf.length);
         // Skip the CMD1 header.
         int headerSize = 0x90;
         int headerOffset = 0x40;
@@ -1021,11 +1003,8 @@ public class CryptoEngine {
 
         // Decrypt all the ELF data.
         byte[] inBuf = new byte[elfDataSize];
-        for (int i = 0; i < elfDataSize; i++) {
-            inBuf[i] = in.array()[elfDataOffset + headerOffset + headerSize + i];
-        }
-        byte[] outBuf = new byte[elfDataSize];
-        outBuf = aes.decryptCBC(inBuf, aesBuf, iv);
+        System.arraycopy(in.array(), elfDataOffset + headerOffset + headerSize, inBuf, 0, elfDataSize);
+        byte[] outBuf = aes.decryptCBC(inBuf, aesBuf, iv);
 
         out.clear();
         out.put(outBuf);
@@ -1067,9 +1046,8 @@ public class CryptoEngine {
         byte[] iv = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
         byte[] inBuf = new byte[size];
-        byte[] outBuf = new byte[size];
         in.get(inBuf, 0, size);
-        outBuf = aes.encryptCBC(inBuf, encKey, iv);
+        byte[] outBuf = aes.encryptCBC(inBuf, encKey, iv);
 
         out.clear();
         out.put(outBuf);
@@ -1112,9 +1090,8 @@ public class CryptoEngine {
         byte[] iv = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
         byte[] inBuf = new byte[size];
-        byte[] outBuf = new byte[size];
         in.get(inBuf, 0, size);
-        outBuf = aes.encryptCBC(inBuf, encKey, iv);
+        byte[] outBuf = aes.encryptCBC(inBuf, encKey, iv);
 
         out.clear();
         out.put(outBuf);
@@ -1155,9 +1132,8 @@ public class CryptoEngine {
         byte[] iv = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
         byte[] inBuf = new byte[size];
-        byte[] outBuf = new byte[size];
         in.get(inBuf, 0, size);
-        outBuf = aes.decryptCBC(inBuf, decKey, iv);
+        byte[] outBuf = aes.decryptCBC(inBuf, decKey, iv);
 
         out.clear();
         out.put(outBuf);
@@ -1200,9 +1176,8 @@ public class CryptoEngine {
         byte[] iv = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
         byte[] inBuf = new byte[size];
-        byte[] outBuf = new byte[size];
         in.get(inBuf, 0, size);
-        outBuf = aes.decryptCBC(inBuf, decKey, iv);
+        byte[] outBuf = aes.decryptCBC(inBuf, decKey, iv);
 
         out.clear();
         out.put(outBuf);
@@ -1236,33 +1211,24 @@ public class CryptoEngine {
         // Convert the AES CMD1 key into a real byte array.
         byte[] k = new byte[16];
         for (int i = 0; i < kirkAESKey0.length; i++) {
-            k[i] = (byte) (kirkAESKey0[i] & 0xFF);
+            k[i] = (byte) kirkAESKey0[i];
         }
 
         // Decrypt and extract the new AES and CMAC keys from the top of the data.
         byte[] encryptedKeys = new byte[32];
-        byte[] decryptedKeys = new byte[32];
-        for (int i = 0; i < 16; i++) {
-            encryptedKeys[i] = (byte) header.AES128Key[i];
-        }
-        for (int i = 0; i < 16; i++) {
-            encryptedKeys[i + 16] = (byte) header.CMACKey[i];
-        }
-        decryptedKeys = aes.decryptCBC(encryptedKeys, k, iv);
+        System.arraycopy(header.AES128Key, 0, encryptedKeys, 0, 16);
+        System.arraycopy(header.CMACKey, 0, encryptedKeys, 16, 16);
+        byte[] decryptedKeys = aes.decryptCBC(encryptedKeys, k, iv);
 
         byte[] cmacHeaderHash = new byte[16];
         byte[] cmacDataHash = new byte[16];
 
         byte[] cmacBuf = new byte[16];
-        for (int i = 0; i < 16; i++) {
-            cmacBuf[i] = decryptedKeys[i + 16];
-        }
+        System.arraycopy(decryptedKeys, 16, cmacBuf, 0, cmacBuf.length);
 
         // Position the buffer at the CMAC keys offset.
         byte[] inBuf = new byte[in.capacity() - 0x60];
-        for (int i = 0; i < inBuf.length; i++) {
-            inBuf[i] = in.array()[i + 0x60];
-        }
+        System.arraycopy(in.array(), 0x60, inBuf, 0, inBuf.length);
 
         // Calculate CMAC header hash.
         aes.doInitCMAC(cmacBuf);
