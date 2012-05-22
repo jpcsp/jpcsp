@@ -229,6 +229,7 @@ public class SysMemUserForUser extends HLEModule {
             log.warn(String.format("malloc cannot allocate partition=%d, type=%s, size=0x%X, addr=0x%08X", partitionid, getTypeName(type), size, addr));
 			if (log.isTraceEnabled()) {
 				log.trace("Free list: " + freeMemoryChunks);
+				log.trace("Allocated blocks:\n" + getDebugAllocatedMem() + "\n");
 			}
 			sysMemInfo = null;
 		} else {

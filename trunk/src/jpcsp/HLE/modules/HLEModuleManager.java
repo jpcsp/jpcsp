@@ -130,7 +130,8 @@ public class HLEModuleManager {
         sceHeap(Modules.sceHeapModule),
         KDebugForKernel(Modules.KDebugForKernelModule),
         sceCcc(Modules.sceCccModule, new String[] { "libccc" }),
-        scePauth(Modules.scePauthModule);
+        scePauth(Modules.scePauthModule),
+        sceMd5(Modules.sceMd5Module, new String[] { "libmd5" });
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
