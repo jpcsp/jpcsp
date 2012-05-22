@@ -45,6 +45,7 @@ import jpcsp.HLE.modules.sceHttp;
 import jpcsp.HLE.modules.sceHttps;
 import jpcsp.HLE.modules.sceImpose;
 import jpcsp.HLE.modules.sceJpeg;
+import jpcsp.HLE.modules.sceMd5;
 import jpcsp.HLE.modules.sceMp3;
 import jpcsp.HLE.modules.sceMp4;
 import jpcsp.HLE.modules.sceMpeg;
@@ -145,6 +146,7 @@ public class Modules {
     public static KDebugForKernel KDebugForKernelModule = new KDebugForKernel();
     public static sceCcc sceCccModule = new sceCcc();
     public static scePauth scePauthModule = new scePauth();
+    public static sceMd5 sceMd5Module = new sceMd5();
 
     public static Logger log = Logger.getLogger("hle");
 
