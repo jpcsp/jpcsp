@@ -56,6 +56,7 @@ public class CodeBlock {
 	private final static String[] interfacesForExecutable = new String[] { Type.getInternalName(IExecutable.class) };
 	private final static String[] exceptions = new String[] { Type.getInternalName(Exception.class) };
 	private int instanceIndex;
+	private boolean interpreted = false;
 
 	public CodeBlock(int startAddress, int instanceCount) {
 		this.startAddress = startAddress;
@@ -565,4 +566,12 @@ public class CodeBlock {
     	instanceIndex++;
     	return instanceIndex;
     }
+
+	public boolean isInterpreted() {
+		return interpreted;
+	}
+
+	public void setInterpreted(boolean interpreted) {
+		this.interpreted = interpreted;
+	}
 }
