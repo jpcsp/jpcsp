@@ -1001,9 +1001,12 @@ public class CryptoEngine {
         int elfDataSize = Integer.reverseBytes(header.dataSize);
         int elfDataOffset = Integer.reverseBytes(header.dataOffset);
 
+        // Input buffer for decryption must have a length aligned on 16 bytes
+        int paddedElfDataSize = (elfDataSize + 15) & -16;
+
         // Decrypt all the ELF data.
-        byte[] inBuf = new byte[elfDataSize];
-        System.arraycopy(in.array(), elfDataOffset + headerOffset + headerSize, inBuf, 0, elfDataSize);
+        byte[] inBuf = new byte[paddedElfDataSize];
+        System.arraycopy(in.array(), elfDataOffset + headerOffset + headerSize, inBuf, 0, paddedElfDataSize);
         byte[] outBuf = aes.decryptCBC(inBuf, aesBuf, iv);
 
         out.clear();

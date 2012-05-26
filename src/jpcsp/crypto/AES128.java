@@ -103,17 +103,6 @@ public class AES128 {
         try {
             Cipher c = cipher;
             c.init(Cipher.DECRYPT_MODE, keySpec, ivec);
-
-            if ((in.length % 16) != 0) {
-            	int padLength = 16 - (in.length % 16);
-            	byte[] paddedIn = new byte[in.length + padLength];
-            	System.arraycopy(in, 0, paddedIn, 0, in.length);
-            	for (int i = 0; i < padLength; i++) {
-            		paddedIn[in.length + i] = (byte) 0;
-            	}
-            	in = paddedIn;
-            }
-
             return c.doFinal(in);
         } catch (Exception e) {
         	Modules.log.error("decryptCBC", e);
