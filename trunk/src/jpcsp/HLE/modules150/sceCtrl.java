@@ -297,7 +297,7 @@ public class sceCtrl extends HLEModule {
         // If more samples are available than requested, read the more recent ones
         int available = getNumberOfAvailableSamples();
         int readIndex;
-        if (available > count) {
+        if (available > count || peek) {
             readIndex = incrementSampleIndex(currentSamplingIndex, -count);
         } else {
             count = available;
