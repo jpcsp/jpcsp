@@ -138,6 +138,7 @@ public class Compiler implements ICompiler {
 	private NativeCodeManager nativeCodeManager;
     private boolean ignoreInvalidMemory = false;
     public int defaultMethodMaxInstructions = 3000;
+    private static final int maxRecompileExecutable = 50;
 
 	private class IgnoreInvalidMemoryAccessSettingsListerner extends AbstractBoolSettingsListener {
 		@Override
@@ -196,10 +197,18 @@ public class Compiler implements ICompiler {
 
     public void invalidateCodeBlock(CodeBlock codeBlock) {
     	IExecutable executable = codeBlock.getExecutable();
-    	if (executable != null) {
-    		// Force a recompilation of the codeBlock at the next execution
-        	RecompileExecutable recompileExecutable = new RecompileExecutable(codeBlock);
-        	executable.setExecutable(recompileExecutable);
+    	if (executable != null && !codeBlock.isInterpreted()) {
+    		// If the application is invalidating the same code block too many times,
+    		// do no longer try to recompile it each time, interpret it.
+    		if (codeBlock.getInstanceIndex() > maxRecompileExecutable) {
+    			codeBlock.setInterpreted(true);
+    			InterpretExecutable interpretExecutable = new InterpretExecutable(codeBlock);
+    			executable.setExecutable(interpretExecutable);
+    		} else {
+	    		// Force a recompilation of the codeBlock at the next execution
+	        	RecompileExecutable recompileExecutable = new RecompileExecutable(codeBlock);
+	        	executable.setExecutable(recompileExecutable);
+    		}
     	}
     }
 
