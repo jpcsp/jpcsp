@@ -3729,6 +3729,9 @@ public class VideoEngine {
         if ((context.fog_far != 0.0f) && (context.fog_dist != 0.0f)) {
             float end = context.fog_far;
             float start = end - (1 / context.fog_dist);
+            if (isLogDebugEnabled) {
+            	log(String.format("sceGuFog(near=%f, far=%f, X)", start, end));
+            }
             re.setFogDist(start, end);
         }
     }
@@ -3741,7 +3744,7 @@ public class VideoEngine {
         re.setFogColor(context.fog_color);
 
         if (isLogDebugEnabled) {
-            log(String.format("sceGuFog(X, X, color=%08X) (no alpha)", normalArgument));
+            log(String.format("sceGuFog(X, X, color=0x%06X) (no alpha)", normalArgument));
         }
     }
 
