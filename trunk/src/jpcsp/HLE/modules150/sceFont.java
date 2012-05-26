@@ -508,21 +508,21 @@ public class sceFont extends HLEModule {
             return handle;
         }
 
-        private void triggerAllocCallback(int size) {
+        protected void triggerAllocCallback(int size) {
             Modules.ThreadManForUserModule.executeCallback(null, allocFuncAddr, new AfterAllocCallback(), true, userDataAddr, size);
         }
 
-        private void triggerFreeCallback() {
+        protected void triggerFreeCallback() {
             if (Memory.isAddressGood(memFontAddr)) {
                 Modules.ThreadManForUserModule.executeCallback(null, freeFuncAddr, null, true, userDataAddr, memFontAddr);
             }
         }
 
-        private void triggerOpenCallback(int fileNameAddr, int errorCodeAddr) {
+        protected void triggerOpenCallback(int fileNameAddr, int errorCodeAddr) {
             Modules.ThreadManForUserModule.executeCallback(null, allocFuncAddr, new AfterOpenCallback(), true, userDataAddr, fileNameAddr, errorCodeAddr);
         }
 
-        private void triggerCloseCallback() {
+        protected void triggerCloseCallback() {
             if (fileFontHandle != 0) {
                 Modules.ThreadManForUserModule.executeCallback(null, freeFuncAddr, null, true, userDataAddr, fileFontHandle);
             }
@@ -626,7 +626,7 @@ public class sceFont extends HLEModule {
         if (errorCodePtr.isAddressGood()) {
             errorCodePtr.setValue(0);
         } 
-        fontLib.triggerAllocCallback(memoryFontLength);
+//        fontLib.triggerAllocCallback(memoryFontLength);
         return fontLib.openFont(openFontFile(memoryFontPtr.getAddress(), memoryFontLength)).getHandle();
     }
 
@@ -701,6 +701,10 @@ public class sceFont extends HLEModule {
         mem.write8(fontInfoAddr + 262, (byte) 0); // Padding.
         mem.write8(fontInfoAddr + 263, (byte) 0); // Padding.
 
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceFontGetFontInfo returning maxGlyphWidthI=%d, maxGlyphHeightI=%d, maxGlyphAscenderI=%d, maxGlyphDescenderI=%d, maxGlyphLeftXI=%d, maxGlyphBaseYI=%d, minGlyphCenterXI=%d, maxGlyphTopYI=%d, maxGlyphAdvanceXI=%d, maxGlyphAdvanceYI=%d, fontStyle=[%s]", maxGlyphWidthI, maxGlyphHeightI, maxGlyphAscenderI, maxGlyphDescenderI, maxGlyphLeftXI, maxGlyphBaseYI, minGlyphCenterXI, maxGlyphTopYI, maxGlyphAdvanceXI, maxGlyphAdvanceYI, fontStyle));
+        }
+
         return 0;
     }
 
@@ -729,6 +733,11 @@ public class sceFont extends HLEModule {
             pspCharInfo.sfp26AdvanceV = pspCharInfo.bitmapHeight << 6;
         }
         pspCharInfo.write(charInfoPtr.getMemory(), charInfoPtr.getAddress());    
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceFontGetCharInfo returning %s", pspCharInfo));
+        }
+
         return 0;
     }
 

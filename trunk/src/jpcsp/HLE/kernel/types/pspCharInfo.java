@@ -99,4 +99,23 @@ public class pspCharInfo extends pspAbstractMemoryMappedStructure {
 	public int sizeof() {
 		return 60;
 	}
+
+	@Override
+	public String toString() {
+		bitmapWidth = read32();
+		bitmapHeight = read32();
+		bitmapLeft = read32();
+		bitmapTop = read32();
+		sfp26Width = read32();
+		sfp26Height = read32();
+		sfp26Ascender = read32();
+		sfp26Descender = read32();
+		sfp26BearingHX = read32();
+		sfp26BearingHY = read32();
+		sfp26BearingVX = read32();
+		sfp26BearingVY = read32();
+		sfp26AdvanceH = read32();
+		sfp26AdvanceV = read32();
+		return String.format("bitmapWidth=%d, bitmapHeight=%d, bitmapLeft=%d, bitmapTop=%d, sfp26Width=%d, sfp26Height=%d, sfp26Ascender=%d, sfp26Descender=%d, sfp26BearingHX=%d, sfp26BearingHY=%d, sfp26BearingVX=%d, sfp26BearingVY=%d, sfp26AdvanceH=%d, sfp26AdvanceV=%d", bitmapWidth, bitmapHeight, bitmapLeft, bitmapTop, sfp26Width, sfp26Height, sfp26Ascender, sfp26Descender, sfp26BearingHX, sfp26BearingHY, sfp26BearingVX, sfp26BearingVY, sfp26AdvanceH, sfp26AdvanceV);
+	}
 }
