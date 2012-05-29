@@ -597,15 +597,6 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
 
     @Override
     public String toString() {
-        StringBuilder s = new StringBuilder();
-
-        s.append(name);
-        s.append("(");
-        s.append("Status " + getStatusName());
-        s.append(", Wait " + getWaitName());
-        s.append(", doCallbacks " + doCallbacks);
-        s.append(")");
-
-        return s.toString();
+    	return String.format("%s(uid=0x%X, Status=%s, Wait=%s, doCallbacks=%b)", name, uid, getStatusName(), getWaitName(), doCallbacks);
     }
 }
