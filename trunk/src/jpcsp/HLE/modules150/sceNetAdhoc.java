@@ -721,6 +721,11 @@ public class sceNetAdhoc extends HLEModule {
 
 			try {
 				openSocket();
+			} catch (BindException e) {
+				if (log.isDebugEnabled()) {
+					log.debug("open", e);
+				}
+				result = SceKernelErrors.ERROR_NET_ADHOC_PORT_IN_USE;
 			} catch (SocketException e) {
 				log.error("open", e);
 			}
@@ -757,6 +762,11 @@ public class sceNetAdhoc extends HLEModule {
 
 			try {
 				openSocket();
+			} catch (BindException e) {
+				if (log.isDebugEnabled()) {
+					log.debug("listen", e);
+				}
+				result = SceKernelErrors.ERROR_NET_ADHOC_PORT_IN_USE;
 			} catch (SocketException e) {
 				log.error("listen", e);
 			}
