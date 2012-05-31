@@ -74,6 +74,7 @@ Please keep in mind that JPCSP does not support or endorse piracy.
 			   [What's new (changelog)]
 ...............................................................................
 ...............................................................................
+
 JPCSP v0.7 (????????):
 
 -> Added support for rendering in software mode, not using the GPU;
@@ -110,6 +111,11 @@ JPCSP v0.7 (????????):
    but just that the previous FPS counter was over-optimistic.
 
 -> Added Frame skipping option;
+
+-> Added cheat import from cheat.db
+
+
+
 
 JPCSP v0.6 (September 18, 2010):
 
@@ -183,7 +189,7 @@ JPCSP v0.5 (March 09, 2010):
 -> Inclusion of multi-language packs:
 	- Added English, French, German, Spanish, Catalan and Lithuanian packs;
 
--> Beggining of threaded IOAsync operations implementation;
+-> Beginning of threaded IOAsync operations implementation;
 
 -> General fixes for module loading;
 
