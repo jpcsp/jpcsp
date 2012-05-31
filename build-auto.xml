@@ -140,18 +140,6 @@
 		<szip platform.name="windows-x86" />
 	</target>
 	<target name="dist-windows-amd64">
-		<antcall target="dist-generic">
-			<param name="platform.name" value="windows-amd64" />
-		</antcall>
-		<szip platform.name="windows-amd64" />
-	</target>
-	<target name="dist-linux-x86">
-		<antcall target="dist-generic">
-			<param name="platform.name" value="linux-x86" />
-		</antcall>
-		<szip platform.name="linux-x86" />
-	</target>
-	<target name="dist-linux-amd64">
 		<!-- Use Xuggle 3.4 instead of 5.4, see windows-amd64/README-Xuggle-5.4.txt -->
 		<path id="Jpcsp.classpath">
 			<pathelement location="lib/jinput.jar" />
@@ -172,6 +160,19 @@
 			<pathelement location="lib/xuggle-xuggler-test-3.4.jar" />
 			<pathelement location="lib/bcprov-jdk16-145.jar" />
 		</path>
+		<antcall target="dist-generic">
+			<param name="platform.name" value="windows-amd64" />
+			<reference refid="Jpcsp.classpath" />
+		</antcall>
+		<szip platform.name="windows-amd64" />
+	</target>
+	<target name="dist-linux-x86">
+		<antcall target="dist-generic">
+			<param name="platform.name" value="linux-x86" />
+		</antcall>
+		<szip platform.name="linux-x86" />
+	</target>
+	<target name="dist-linux-amd64">
 		<antcall target="dist-generic">
 			<param name="platform.name" value="linux-amd64" />
 		</antcall>
