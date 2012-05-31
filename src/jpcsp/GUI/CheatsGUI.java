@@ -18,12 +18,24 @@ package jpcsp.GUI;
 
 import static jpcsp.util.Utilities.parseHexLong;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+
+import javax.swing.JButton;
+import javax.swing.JRadioButton;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.State;
 import jpcsp.util.Utilities;
 
 public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
@@ -496,10 +508,11 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
         }
     }
 
-    private javax.swing.JButton jButtonClear;
-    private javax.swing.JRadioButton jRadioONOFF;
-    private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTextArea jTextArea1;
+    private JButton jButtonClear;
+    private JRadioButton jRadioONOFF;
+    private JScrollPane jScrollPane1;
+    private JTextArea jTextArea1;
+    private JButton jButtonImportFromCheatDB;
     private boolean cheatsOn = false;
     private CheatsThread cheatsThread = null;
 
@@ -521,47 +534,73 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
     }
 
     private void initComponents() {
-        jButtonClear = new javax.swing.JButton();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        jTextArea1 = new javax.swing.JTextArea();
-        jRadioONOFF = new javax.swing.JRadioButton();
+        jButtonClear = new JButton();
+        jScrollPane1 = new JScrollPane();
+        jTextArea1 = new JTextArea();
+        jRadioONOFF = new JRadioButton();
+        jButtonImportFromCheatDB = new JButton();
 
         setTitle("Cheats");
-        setResizable(false);
+        setResizable(true);
 
         jButtonClear.setText("Clear");
         jButtonClear.addActionListener(new java.awt.event.ActionListener() {
-
             @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonClearActionPerformed(evt);
             }
         });
 
-        jTextArea1.setColumns(20);
+        jTextArea1.setColumns(30);
         jTextArea1.setEditable(true);
         jTextArea1.setFont(new java.awt.Font("Monospaced", 1, 14));
-        jTextArea1.setRows(5);
+        jTextArea1.setRows(20);
 
         jScrollPane1.setViewportView(jTextArea1);
         jTextArea1.getAccessibleContext().setAccessibleName("cheatPane");
 
         jRadioONOFF.setText("On/Off");
         jRadioONOFF.addActionListener(new java.awt.event.ActionListener() {
-
             @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jRadioONOFFActionPerformed(evt);
             }
         });
 
+        jButtonImportFromCheatDB.setText("Import from cheat.db");
+        jButtonImportFromCheatDB.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent evt) {
+				jButtonImportFromCheatDBActionPerformed(evt);
+			}
+		});
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
-                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING).addGroup(layout.createSequentialGroup().addContainerGap().addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING).addGroup(layout.createSequentialGroup().addComponent(jRadioONOFF).addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 63, Short.MAX_VALUE).addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED).addComponent(jButtonClear, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)).addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 314, Short.MAX_VALUE)).addContainerGap()));
+                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(layout.createSequentialGroup().addContainerGap()
+                		.addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                				.addGroup(layout.createSequentialGroup()
+                						.addComponent(jRadioONOFF)
+                						.addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 63, Short.MAX_VALUE)
+                						.addComponent(jButtonImportFromCheatDB)
+                						.addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 63, Short.MAX_VALUE)
+                						.addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                						.addComponent(jButtonClear, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE))
+        						.addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 314, Short.MAX_VALUE))
+						.addContainerGap()));
         layout.setVerticalGroup(
-                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING).addGroup(layout.createSequentialGroup().addContainerGap().addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 229, javax.swing.GroupLayout.PREFERRED_SIZE).addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING).addGroup(layout.createSequentialGroup().addGap(18, 18, 18).addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE).addComponent(jButtonClear))).addGroup(layout.createSequentialGroup().addGap(6, 6, 6).addComponent(jRadioONOFF))).addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)));
-
+                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(layout.createSequentialGroup()
+                		.addContainerGap()
+                		.addComponent(jScrollPane1)
+                		.addGap(6)
+                		.addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                				.addComponent(jButtonClear)
+                				.addComponent(jRadioONOFF)
+                				.addComponent(jButtonImportFromCheatDB))
+						.addContainerGap()));
         pack();
     }
 
@@ -590,6 +629,44 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
         } else if (!cheatsOn && cheatsThread != null) {
         	cheatsThread.exit();
         }
+    }
+
+    private void addCheatLine(String line) {
+    	String cheatCodes = jTextArea1.getText();
+    	if (cheatCodes == null || cheatCodes.length() <= 0) {
+    		cheatCodes = line;
+    	} else {
+    		cheatCodes += "\n" + line;
+    	}
+    	jTextArea1.setText(cheatCodes);
+    }
+
+    private void jButtonImportFromCheatDBActionPerformed(ActionEvent evt) {
+    	File cheatDBFile = new File("cheat.db");
+    	if (cheatDBFile.canRead()) {
+    		try {
+				BufferedReader reader = new BufferedReader(new FileReader(cheatDBFile));
+				boolean insideApplicationid = false;
+				while (reader.ready()) {
+					String line = reader.readLine();
+					if (line == null) {
+						// end of file
+						break;
+					}
+					line = line.trim();
+					if (line.startsWith("_S ")) {
+						String applicationId = line.substring(2).trim().replace("-", "");
+						insideApplicationid = applicationId.equalsIgnoreCase(State.discId);
+					}
+					if (insideApplicationid) {
+						// Add the line to the cheat codes
+						addCheatLine(line);
+					}
+				}
+			} catch (IOException e) {
+				Emulator.log.error("Import from cheat.db", e);
+			}
+    	}
     }
 
     public void onCheatsThreadEnded() {
