@@ -951,7 +951,8 @@ public class IoFileMgrForUser extends HLEModule {
 
     // Handle returning/storing result for sync/async operations
     private long updateResult(IoInfo info, long result, boolean async, boolean resultIs64bit, IoOperation ioOperation, IAction asyncAction, int size) {
-        if (info != null) {
+    	// No async IO is started when returning error code ERROR_KERNEL_ASYNC_BUSY
+    	if (info != null && result != ERROR_KERNEL_ASYNC_BUSY) {
             if (async) {
                 if (!info.asyncPending) {
                     startIoAsync(info, result, ioOperation, asyncAction, size);
@@ -1087,6 +1088,10 @@ public class IoFileMgrForUser extends HLEModule {
                     threadMan.getCurrentThread().attr, 0);
             // Copy uid to Async Thread argument register
             info.asyncThread.cpuContext.gpr[asyncThreadRegisterArgument] = info.uid;
+
+            if (log.isDebugEnabled()) {
+            	log.debug(String.format("Starting Async IO thread %s", info.asyncThread));
+            }
             // This must be the last action of the hleIoXXX call because it can context-switch
             // Inherit $gp from this process ($gp can be used by interrupts)
             threadMan.hleKernelStartThread(info.asyncThread, 0, 0, info.asyncThread.gpReg_addr);
