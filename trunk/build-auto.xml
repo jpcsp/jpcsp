@@ -152,6 +152,26 @@
 		<szip platform.name="linux-x86" />
 	</target>
 	<target name="dist-linux-amd64">
+		<!-- Use Xuggle 3.4 instead of 5.4, see windows-amd64/README-Xuggle-5.4.txt -->
+		<path id="Jpcsp.classpath">
+			<pathelement location="lib/jinput.jar" />
+			<pathelement location="lib/lwjgl_util.jar" />
+			<pathelement location="lib/lwjgl.jar" />
+			<pathelement location="lib/javassist.jar" />
+			<pathelement location="lib/jgz-0.2.jar" />
+			<pathelement location="lib/jide-oss-2.8.4.jar" />
+			<pathelement location="lib/log4j-1.2.15.jar" />
+			<pathelement location="lib/asm-all-4.0_RC1.jar" />
+			<pathelement location="lib/jaxen-1.1.1.jar" />
+			<pathelement location="lib/jdom1.1.jar" />
+			<pathelement location="lib/xuggle-xuggler-3.4.jar" />
+			<pathelement location="lib/commons-cli.jar" />
+			<pathelement location="lib/logback-classic.jar" />
+			<pathelement location="lib/logback-core.jar" />
+			<pathelement location="lib/slf4j-api.jar" />
+			<pathelement location="lib/xuggle-xuggler-test-3.4.jar" />
+			<pathelement location="lib/bcprov-jdk16-145.jar" />
+		</path>
 		<antcall target="dist-generic">
 			<param name="platform.name" value="linux-amd64" />
 		</antcall>
