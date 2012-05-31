@@ -87,8 +87,10 @@ public class AsyncVertexCache extends VertexCache {
 	}
 
 	public void addAsyncCheck(int prim, int vtype, int count, int indices, int vertices) {
-		AsyncEntry asyncEntry = new AsyncEntry(prim, vtype, count, indices, vertices);
-		asyncVertexCacheThread.addAsyncEntry(asyncEntry);
+		if (Memory.isAddressGood(vertices)) {
+			AsyncEntry asyncEntry = new AsyncEntry(prim, vtype, count, indices, vertices);
+			asyncVertexCacheThread.addAsyncEntry(asyncEntry);
+		}
 	}
 
 	@Override
