@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.GUI;
 
+import static jpcsp.media.MediaEngine.streamCoderOpen;
+
 import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.FileNotFoundException;
@@ -172,11 +174,11 @@ public class UmdBrowserPmf {
 	     * Now we have found the audio and video streams in this file.
 	     * Let's open up our decoder so it can do work.
 	     */
-	    if (videoCoder != null && videoCoder.open(null, null) < 0) {
+	    if (videoCoder != null && streamCoderOpen(videoCoder) < 0) {
 	    	Emulator.log.error("could not open video decoder for container: " + fileName);
 	    	return false;
 	    }
-	    if (audioCoder != null && audioCoder.open(null, null) < 0) {
+	    if (audioCoder != null && streamCoderOpen(audioCoder) < 0) {
 	    	Emulator.log.info("AT3+ audio format is not yet supported by Jpcsp (file=" + fileName + ")");
 	    	return false;
 	    }
