@@ -1558,6 +1558,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
                 consolewin.clearScreenMessages();
             }
             Emulator.log.info(String.format("Java version: %s (%s)", System.getProperty("java.version"), System.getProperty("java.runtime.version")));
+            Emulator.log.info(String.format("Java library path: %s", System.getProperty("java.library.path")));
             
             Modules.SysMemUserForUserModule.reset();
             Emulator.log.info(MetaInformation.FULL_NAME);

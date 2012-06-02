@@ -652,24 +652,12 @@ public class CompilerContext implements ICompilerContext {
         mv.visitFieldInsn(Opcodes.PUTFIELD, Type.getInternalName(CpuState.class), "pc", Type.getDescriptor(int.class));
     }
 
-    public void visitJump() {
-    	flushInstructionCount(true, false);
-    	checkSync();
-
-    	//
-        //      jr x
-        //
-        // translates to:
-        //
-        //      while (true) {
-        //          if (x == returnAddress || isJump) {
-        //              return x;
-        //          }
-        //          x = RuntimeContext.jump(x, returnAddress)
+    private void visitReturnToAddress() {
+        //      while (x != returnAddress && x != alternativeReturnAddress && !isJump) {
+        //          x = RuntimeContext.jump(x, returnAddress, alternativeReturnAddress)
         //      }
-        //
+    	//      return x;
         Label returnLabel = new Label();
-        Label jumpLabel = new Label();
         Label jumpLoop = new Label();
 
         mv.visitLabel(jumpLoop);
@@ -680,17 +668,33 @@ public class CompilerContext implements ICompilerContext {
         loadLocalVar(LOCAL_ALTERVATIVE_RETURN_ADDRESS);
         visitJump(Opcodes.IF_ICMPEQ, returnLabel);
         loadLocalVar(LOCAL_IS_JUMP);
-        visitJump(Opcodes.IFEQ, jumpLabel);
+        visitJump(Opcodes.IFNE, returnLabel);
 
-        mv.visitLabel(returnLabel);
-        endMethod();
-        mv.visitInsn(Opcodes.IRETURN);
-
-        mv.visitLabel(jumpLabel);
         loadLocalVar(LOCAL_RETURN_ADDRESS);
         loadLocalVar(LOCAL_ALTERVATIVE_RETURN_ADDRESS);
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "jump", "(III)I");
         visitJump(Opcodes.GOTO, jumpLoop);
+
+        mv.visitLabel(returnLabel);
+        endMethod();
+        mv.visitInsn(Opcodes.IRETURN);
+    }
+
+    public void visitJump() {
+    	flushInstructionCount(true, false);
+    	checkSync();
+
+    	//
+        //      jr x
+        //
+        // translates to:
+        //
+        //      while (x != returnAddress && x != alternativeReturnAddress && !isJump) {
+        //          x = RuntimeContext.jump(x, returnAddress, alternativeReturnAddress)
+        //      }
+    	//      return x;
+        //
+    	visitReturnToAddress();
     }
 
     public void prepareCall(int address, int returnAddress, int returnRegister, boolean useAltervativeReturnAddress) {
@@ -722,7 +726,7 @@ public class CompilerContext implements ICompilerContext {
         }
     }
 
-    public void visitCall(int address, int returnAddress, int returnRegister, boolean useAltervativeReturnAddress) {
+    public void visitCall(int address, int returnAddress, int returnRegister, boolean useAltervativeReturnAddress, boolean returnRegisterModified) {
     	flushInstructionCount(false, false);
 
         if (preparedCallNativeCodeBlock != null) {
@@ -738,32 +742,31 @@ public class CompilerContext implements ICompilerContext {
     		}
     	} else {
     		if (useAltervativeReturnAddress) {
-	    		loadLocalVar(LOCAL_RETURN_ADDRESS);
+    			loadLocalVar(LOCAL_RETURN_ADDRESS);
+    		}
+    		if (returnRegisterModified) {
+    			loadRegister(returnRegister);
+    		} else {
 	    		loadImm(returnAddress);
 		        if (!preparedCall && returnRegister != _zr) {
 		        	prepareRegisterForStore(returnRegister);
 		    		loadImm(returnAddress);
 		            storeRegister(returnRegister);
 		        }
-	    	} else {
-	    		loadImm(returnAddress);
-		        if (!preparedCall && returnRegister != _zr) {
-		        	prepareRegisterForStore(returnRegister);
-		    		loadImm(returnAddress);
-		            storeRegister(returnRegister);
-		        }
+    		}
+    		if (!useAltervativeReturnAddress) {
 		    	mv.visitInsn(Opcodes.DUP);			// alternativeReturnAddress = returnAddress
 	    	}
 	        mv.visitInsn(Opcodes.ICONST_0);		// isJump = false
 	        mv.visitMethodInsn(Opcodes.INVOKESTATIC, getClassName(address, instanceIndex), getStaticExecMethodName(), getStaticExecMethodDesc());
-	        if (useAltervativeReturnAddress) {
-	        	Label doNotReturnImmediately = new Label();
+	        if (useAltervativeReturnAddress || returnRegisterModified) {
+	        	Label continueWithReturnAddress = new Label();
 	        	mv.visitInsn(Opcodes.DUP);
-	        	loadLocalVar(LOCAL_RETURN_ADDRESS);
-	    		mv.visitJumpInsn(Opcodes.IF_ICMPNE, doNotReturnImmediately);
-	    		endMethod();
-	    		mv.visitInsn(Opcodes.IRETURN);
-	        	mv.visitLabel(doNotReturnImmediately);
+	        	loadImm(returnAddress);
+	        	mv.visitJumpInsn(Opcodes.IF_ICMPEQ, continueWithReturnAddress);
+	        	visitReturnToAddress();
+	    		mv.visitLabel(continueWithReturnAddress);
+
 	        	mv.visitInsn(Opcodes.POP);
 	        } else {
 	        	mv.visitInsn(Opcodes.POP);

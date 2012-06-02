@@ -17,6 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.Allegrex.compiler;
 
 import static jpcsp.Allegrex.Common._ra;
+import static jpcsp.Allegrex.Common._zr;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RD;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RT;
 import jpcsp.Emulator;
 import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
@@ -247,10 +250,26 @@ public class CodeInstruction {
         return Opcodes.GOTO;
     }
 
+    /**
+     * Check if the delay slot instruction is modifying the given register.
+     * 
+     * @param context        the current compiler context
+     * @param registerIndex  the register to be checked
+     * @return               true if the delay slot instruction is modifying the register
+     *                       false otherwise.
+     */
+    private boolean isDelaySlotWritingRegister(CompilerContext context, int registerIndex) {
+    	CodeInstruction delaySlotCodeInstruction = getDelaySlotCodeInstruction(context);
+    	if (delaySlotCodeInstruction == null) {
+    		return false;
+    	}
+    	return delaySlotCodeInstruction.isWritingRegister(registerIndex);
+    }
+
     private int getBranchingOpcodeCall0(CompilerContext context, MethodVisitor mv) {
         context.prepareCall(getBranchingTo(), getAddress() + 8, _ra, false);
         compileDelaySlot(context, mv);
-        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, false);
+        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, false, isDelaySlotWritingRegister(context, _ra));
 
         return Opcodes.NOP;
     }
@@ -280,7 +299,7 @@ public class CodeInstruction {
         compileDelaySlot(context, mv);
         CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
         context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction);
-        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, true);
+        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, true, isDelaySlotWritingRegister(context, _ra));
 
         return Opcodes.NOP;
     }
@@ -291,7 +310,7 @@ public class CodeInstruction {
         CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
         context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction);
         compileDelaySlot(context, mv);
-        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, true);
+        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, true, isDelaySlotWritingRegister(context, _ra));
 
         return Opcodes.NOP;
     }
@@ -482,9 +501,6 @@ public class CodeInstruction {
             branchingOpcode = getBranchingOpcodeBVL(context, mv, Opcodes.IFEQ, Opcodes.IFNE);
         } else if (insn == Instructions.BVTL) {
             branchingOpcode = getBranchingOpcodeBVL(context, mv, Opcodes.IFNE, Opcodes.IFEQ);
-        } else if (insn == Instructions.BC1F || insn == Instructions.BC1FL ||
-                   insn == Instructions.BC1T || insn == Instructions.BC1TL ) {
-            Compiler.log.error("Unimplemented Instruction " + insn.disasm(getAddress(), getOpcode()));
         } else {
             Compiler.log.error("CodeInstruction.getBranchingOpcode: unknown instruction " + insn.disasm(getAddress(), getOpcode()));
         }
@@ -579,6 +595,27 @@ public class CodeInstruction {
 
 	public int getImm3() {
         return (opcode >> 16) & 0x7;
+	}
+
+	public boolean isWritingRegister(int registerIndex) {
+		// Register $zr is never written
+		if (registerIndex == _zr) {
+			return false;
+		}
+
+		if (hasFlags(FLAG_WRITES_RT)) {
+			if (getRtRegisterIndex() == registerIndex) {
+				return true;
+			}
+		}
+
+		if (hasFlags(FLAG_WRITES_RD)) {
+			if (getRdRegisterIndex() == registerIndex) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	@Override

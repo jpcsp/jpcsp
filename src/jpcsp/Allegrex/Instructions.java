@@ -26,6 +26,8 @@ import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_JUMPING;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_USE_VFPU_PFXD;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_USE_VFPU_PFXS;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_USE_VFPU_PFXT;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RD;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_WRITES_RT;
 import jpcsp.Emulator;
 import jpcsp.Processor;
 import jpcsp.Allegrex.Common.Instruction;
@@ -633,7 +635,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRT("mtic", rt);
 }
 };
-public static final Instruction ADD = new Instruction(22) {
+public static final Instruction ADD = new Instruction(22, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "ADD"; }
@@ -681,7 +683,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRSRT("add", rd, rs, rt);
 }
 };
-public static final Instruction ADDU = new Instruction(23) {
+public static final Instruction ADDU = new Instruction(23, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "ADDU"; }
@@ -712,7 +714,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRSRT("addu", rd, rs, rt);
 }
 };
-public static final Instruction ADDI = new Instruction(24) {
+public static final Instruction ADDI = new Instruction(24, FLAG_WRITES_RT) {
 
 @Override
 public final String name() { return "ADDI"; }
@@ -744,7 +746,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRTRSIMM("addi", rt, rs, (short)imm16);
 }
 };
-public static final Instruction ADDIU = new Instruction(25) {
+public static final Instruction ADDIU = new Instruction(25, FLAG_WRITES_RT) {
 
 @Override
 public final String name() { return "ADDIU"; }
@@ -791,7 +793,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRTRSIMM("addiu", rt, rs, (short)imm16);
 }
 };
-public static final Instruction AND = new Instruction(26) {
+public static final Instruction AND = new Instruction(26, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "AND"; }
@@ -832,7 +834,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRSRT("and", rd, rs, rt);
 }
 };
-public static final Instruction ANDI = new Instruction(27) {
+public static final Instruction ANDI = new Instruction(27, FLAG_WRITES_RT) {
 
 @Override
 public final String name() { return "ANDI"; }
@@ -874,7 +876,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRTRSIMM("andi", rt, rs, imm16);
 }
 };
-public static final Instruction NOR = new Instruction(28) {
+public static final Instruction NOR = new Instruction(28, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "NOR"; }
@@ -913,7 +915,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRSRT("nor", rd, rs, rt);
 }
 };
-public static final Instruction OR = new Instruction(29) {
+public static final Instruction OR = new Instruction(29, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "OR"; }
@@ -960,7 +962,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRSRT("or", rd, rs, rt);
 }
 };
-public static final Instruction ORI = new Instruction(30) {
+public static final Instruction ORI = new Instruction(30, FLAG_WRITES_RT) {
 
 @Override
 public final String name() { return "ORI"; }
@@ -1007,7 +1009,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRTRSIMM("ori", rt, rs, imm16);
 }
 };
-public static final Instruction XOR = new Instruction(31) {
+public static final Instruction XOR = new Instruction(31, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "XOR"; }
@@ -1058,7 +1060,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRSRT("xor", rd, rs, rt);
 }
 };
-public static final Instruction XORI = new Instruction(32) {
+public static final Instruction XORI = new Instruction(32, FLAG_WRITES_RT) {
 
 @Override
 public final String name() { return "XORI"; }
@@ -1105,7 +1107,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRTRSIMM("xori", rt, rs, imm16);
 }
 };
-public static final Instruction SLL = new Instruction(33) {
+public static final Instruction SLL = new Instruction(33, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "SLL"; }
@@ -1149,7 +1151,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRTSA("sll", rd, rt, sa);
 }
 };
-public static final Instruction SLLV = new Instruction(34) {
+public static final Instruction SLLV = new Instruction(34, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "SLLV"; }
@@ -1194,7 +1196,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRTRS("sllv", rd, rt, rs);
 }
 };
-public static final Instruction SRA = new Instruction(35) {
+public static final Instruction SRA = new Instruction(35, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "SRA"; }
@@ -1238,7 +1240,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRTSA("sra", rd, rt, sa);
 }
 };
-public static final Instruction SRAV = new Instruction(36) {
+public static final Instruction SRAV = new Instruction(36, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "SRAV"; }
@@ -1283,7 +1285,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRTRS("srav", rd, rt, rs);
 }
 };
-public static final Instruction SRL = new Instruction(37) {
+public static final Instruction SRL = new Instruction(37, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "SRL"; }
@@ -1327,7 +1329,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRTSA("srl", rd, rt, sa);
 }
 };
-public static final Instruction SRLV = new Instruction(38) {
+public static final Instruction SRLV = new Instruction(38, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "SRLV"; }
@@ -1372,7 +1374,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRTRS("srlv", rd, rt, rs);
 }
 };
-public static final Instruction ROTR = new Instruction(39) {
+public static final Instruction ROTR = new Instruction(39, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "ROTR"; }
@@ -1422,7 +1424,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRTSA("rotr", rd, rt, sa);
 }
 };
-public static final Instruction ROTRV = new Instruction(40) {
+public static final Instruction ROTRV = new Instruction(40, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "ROTRV"; }
@@ -1474,7 +1476,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRTRS("rotrv", rd, rt, rs);
 }
 };
-public static final Instruction SLT = new Instruction(41) {
+public static final Instruction SLT = new Instruction(41, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "SLT"; }
@@ -1534,7 +1536,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRSRT("slt", rd, rs, rt);
 }
 };
-public static final Instruction SLTI = new Instruction(42) {
+public static final Instruction SLTI = new Instruction(42, FLAG_WRITES_RT) {
 
 @Override
 public final String name() { return "SLTI"; }
@@ -1589,7 +1591,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRTRSIMM("slti", rt, rs, (int)(short)imm16);
 }
 };
-public static final Instruction SLTU = new Instruction(43) {
+public static final Instruction SLTU = new Instruction(43, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "SLTU"; }
@@ -1652,7 +1654,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRSRT("sltu", rd, rs, rt);
 }
 };
-public static final Instruction SLTIU = new Instruction(44) {
+public static final Instruction SLTIU = new Instruction(44, FLAG_WRITES_RT) {
 
 @Override
 public final String name() { return "SLTIU"; }
@@ -1715,7 +1717,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRTRSIMM("sltiu", rt, rs, (int)(short)imm16);
 }
 };
-public static final Instruction SUB = new Instruction(45) {
+public static final Instruction SUB = new Instruction(45, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "SUB"; }
@@ -1765,7 +1767,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRSRT("sub", rd, rs, rt);
 }
 };
-public static final Instruction SUBU = new Instruction(46) {
+public static final Instruction SUBU = new Instruction(46, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "SUBU"; }
@@ -1796,7 +1798,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRSRT("subu", rd, rs, rt);
 }
 };
-public static final Instruction LUI = new Instruction(47) {
+public static final Instruction LUI = new Instruction(47, FLAG_WRITES_RT) {
 
 @Override
 public final String name() { return "LUI"; }
@@ -1828,7 +1830,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRTIMM("lui", rt, imm16);
 }
 };
-public static final Instruction SEB = new Instruction(48) {
+public static final Instruction SEB = new Instruction(48, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "SEB"; }
@@ -1862,7 +1864,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRT("seb", rd, rt);
 }
 };
-public static final Instruction SEH = new Instruction(49) {
+public static final Instruction SEH = new Instruction(49, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "SEH"; }
@@ -1896,7 +1898,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRT("seh", rd, rt);
 }
 };
-public static final Instruction BITREV = new Instruction(50) {
+public static final Instruction BITREV = new Instruction(50, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "BITREV"; }
@@ -1925,7 +1927,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRT("bitrev", rd, rt);
 }
 };
-public static final Instruction WSBH = new Instruction(51) {
+public static final Instruction WSBH = new Instruction(51, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "WSBH"; }
@@ -1954,7 +1956,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRT("wsbh", rd, rt);
 }
 };
-public static final Instruction WSBW = new Instruction(52) {
+public static final Instruction WSBW = new Instruction(52, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "WSBW"; }
@@ -1983,7 +1985,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRT("wsbw", rd, rt);
 }
 };
-public static final Instruction MOVZ = new Instruction(53) {
+public static final Instruction MOVZ = new Instruction(53, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "MOVZ"; }
@@ -2020,7 +2022,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRSRT("movz", rd, rs, rt);
 }
 };
-public static final Instruction MOVN = new Instruction(54) {
+public static final Instruction MOVN = new Instruction(54, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "MOVN"; }
@@ -2057,7 +2059,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRSRT("movn", rd, rs, rt);
 }
 };
-public static final Instruction MAX = new Instruction(55) {
+public static final Instruction MAX = new Instruction(55, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "MAX"; }
@@ -2101,7 +2103,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRSRT("max", rd, rs, rt);
 }
 };
-public static final Instruction MIN = new Instruction(56) {
+public static final Instruction MIN = new Instruction(56, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "MIN"; }
@@ -2145,7 +2147,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRSRT("min", rd, rs, rt);
 }
 };
-public static final Instruction CLZ = new Instruction(57) {
+public static final Instruction CLZ = new Instruction(57, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "CLZ"; }
@@ -2183,7 +2185,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRS("clz", rd, rs);
 }
 };
-public static final Instruction CLO = new Instruction(58) {
+public static final Instruction CLO = new Instruction(58, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "CLO"; }
@@ -2223,7 +2225,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRDRS("clo", rd, rs);
 }
 };
-public static final Instruction EXT = new Instruction(59) {
+public static final Instruction EXT = new Instruction(59, FLAG_WRITES_RT) {
 
 @Override
 public final String name() { return "EXT"; }
@@ -2275,7 +2277,7 @@ public String disasm(int address, int insn) {
 return Common.disasmEXT(rt, rs, lsb, msb);
 }
 };
-public static final Instruction INS = new Instruction(60) {
+public static final Instruction INS = new Instruction(60, FLAG_WRITES_RT) {
 
 @Override
 public final String name() { return "INS"; }
@@ -2687,7 +2689,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRSRT("divu", rs, rt);
 }
 };
-public static final Instruction MFHI = new Instruction(69) {
+public static final Instruction MFHI = new Instruction(69, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "MFHI"; }
@@ -2721,7 +2723,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRD("mfhi", rd);
 }
 };
-public static final Instruction MFLO = new Instruction(70) {
+public static final Instruction MFLO = new Instruction(70, FLAG_WRITES_RD) {
 
 @Override
 public final String name() { return "MFLO"; }
@@ -3662,7 +3664,7 @@ public String disasm(int address, int insn) {
 	return Common.disasmVCCOFFSET("bvtl", imm3, imm16, address);
 }
 };
-public static final Instruction LB = new Instruction(101) {
+public static final Instruction LB = new Instruction(101, FLAG_WRITES_RT) {
 
 @Override
 public final String name() { return "LB"; }
@@ -3698,7 +3700,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRTIMMRS("lb", rt, rs, (int)(short)imm16);
 }
 };
-public static final Instruction LBU = new Instruction(102) {
+public static final Instruction LBU = new Instruction(102, FLAG_WRITES_RT) {
 
 @Override
 public final String name() { return "LBU"; }
@@ -3733,7 +3735,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRTIMMRS("lbu", rt, rs, (int)(short)imm16);
 }
 };
-public static final Instruction LH = new Instruction(103) {
+public static final Instruction LH = new Instruction(103, FLAG_WRITES_RT) {
 
 @Override
 public final String name() { return "LH"; }
@@ -3769,7 +3771,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRTIMMRS("lh", rt, rs, (int)(short)imm16);
 }
 };
-public static final Instruction LHU = new Instruction(104) {
+public static final Instruction LHU = new Instruction(104, FLAG_WRITES_RT) {
 
 @Override
 public final String name() { return "LHU"; }
@@ -3804,7 +3806,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRTIMMRS("lhu", rt, rs, (int)(short)imm16);
 }
 };
-public static final Instruction LW = new Instruction(105) {
+public static final Instruction LW = new Instruction(105, FLAG_WRITES_RT) {
 
 @Override
 public final String name() { return "LW"; }
@@ -3839,7 +3841,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRTIMMRS("lw", rt, rs, (int)(short)imm16);
 }
 };
-public static final Instruction LWL = new Instruction(106) {
+public static final Instruction LWL = new Instruction(106, FLAG_WRITES_RT) {
 
 @Override
 public final String name() { return "LWL"; }
@@ -3870,7 +3872,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRTIMMRS("lwl", rt, rs, (int)(short)imm16);
 }
 };
-public static final Instruction LWR = new Instruction(107) {
+public static final Instruction LWR = new Instruction(107, FLAG_WRITES_RT) {
 
 @Override
 public final String name() { return "LWR"; }
