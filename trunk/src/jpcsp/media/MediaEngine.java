@@ -324,8 +324,9 @@ public class MediaEngine {
         container.setReadRetryCount(-1);
 
         // This defines the size of the buffer used by ffmpeg to read from our channel.
-        // 4Kb seems to work best to avoid ffmpeg reading past the end of the available buffer.
-        container.setInputBufferLength(4096);
+        // 32Kb seems to work best to avoid ffmpeg reading past the end of the available buffer.
+        // This is the same buffer size as used by Xuggle 3.4.
+        container.setInputBufferLength(32 * 1024);
 
         // query stream meta data only for video, not for audio (is requiring the entire
         // stream to be available for the audio, which is often not the case with Atrac3 audio)
