@@ -1688,52 +1688,59 @@ public class VideoEngine {
         // if the use of VAO is enabled
         // (a VAO depends only on the vinfo.vtype structure, not on the texture flag setting)
         if (context.textureFlag.isEnabled() || re.isVertexArrayAvailable()) {
-	        switch (context.tex_map_mode) {
-	            case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
-	            	if (context.vinfo.texture != 0) {
-	            		useTexture = true;
-	            	}
-	                break;
+        	if (context.vinfo.transform2D) {
+        		// 2D is always using UV-mapping
+            	if (context.vinfo.texture != 0) {
+            		useTexture = true;
+            	}
+        	} else {
+		        switch (context.tex_map_mode) {
+		            case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
+		            	if (context.vinfo.texture != 0) {
+		            		useTexture = true;
+		            	}
+		                break;
 
-	            case TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX: {
-	                switch (context.tex_proj_map_mode) {
-	                    case TMAP_TEXTURE_PROJECTION_MODE_POSITION:
-	                        if (context.vinfo.position != 0) {
-	                        	useTexture = true;
-	                            useTextureFromPosition = true;
-	                	        nTexCoord = nVertex;
-	                        }
-	                        break;
-	                    case TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES:
-	                        if (context.vinfo.texture != 0) {
-	                        	useTexture = true;
-	                        }
-	                        break;
-	                    case TMAP_TEXTURE_PROJECTION_MODE_NORMAL:
-	                        if (context.vinfo.normal != 0) {
-	                        	useTexture = true;
-	                            useTextureFromNormal = true;
-	                            nTexCoord = 3;
-	                        }
-	                        break;
-	                    case TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL:
-	                        if (context.vinfo.normal != 0) {
-	                        	useTexture = true;
-	                            useTextureFromNormalizedNormal = true;
-	                            nTexCoord = 3;
-	                        }
-	                        break;
-	                }
-	                break;
-	            }
+		            case TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX: {
+		                switch (context.tex_proj_map_mode) {
+		                    case TMAP_TEXTURE_PROJECTION_MODE_POSITION:
+		                        if (context.vinfo.position != 0) {
+		                        	useTexture = true;
+		                            useTextureFromPosition = true;
+		                	        nTexCoord = nVertex;
+		                        }
+		                        break;
+		                    case TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES:
+		                        if (context.vinfo.texture != 0) {
+		                        	useTexture = true;
+		                        }
+		                        break;
+		                    case TMAP_TEXTURE_PROJECTION_MODE_NORMAL:
+		                        if (context.vinfo.normal != 0) {
+		                        	useTexture = true;
+		                            useTextureFromNormal = true;
+		                            nTexCoord = 3;
+		                        }
+		                        break;
+		                    case TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL:
+		                        if (context.vinfo.normal != 0) {
+		                        	useTexture = true;
+		                            useTextureFromNormalizedNormal = true;
+		                            nTexCoord = 3;
+		                        }
+		                        break;
+		                }
+		                break;
+		            }
 
-	            case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP:
-	                break;
+		            case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP:
+		                break;
 
-	            default:
-	                log("Unhandled texture matrix mode " + context.tex_map_mode);
-	                break;
-	        }
+		            default:
+		                log.warn(String.format("Unhandled texture matrix mode %d", context.tex_map_mode));
+		                break;
+		        }
+        	}
         }
 
     	vertexStatistics.start();
@@ -3559,6 +3566,12 @@ public class VideoEngine {
             textureMatrixUpload.setChanged(true);
         }
 
+        if (context.tex_map_mode == TMAP_TEXTURE_MAP_MODE_UNKNOW) {
+        	if (isLogWarnEnabled) {
+        		log.warn(String.format("sceGuTexMapMode unknown mode=%d, assuming TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV", context.tex_map_mode));
+        	}
+        	context.tex_map_mode = TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
+        }
         if (isLogDebugEnabled) {
             log("sceGuTexMapMode(mode=" + context.tex_map_mode + ", X, X)");
             log("sceGuTexProjMapMode(mode=" + context.tex_proj_map_mode + ")");
@@ -5343,7 +5356,7 @@ public class VideoEngine {
          *  The light positions and directions are defined in the View-Projection world.
          *  The Model transformation does not apply for the lights.
          */
-        if (loadLightingSettings || context.tex_map_mode == TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP) {
+        if (loadLightingSettings || (context.tex_map_mode == TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP && !context.vinfo.transform2D)) {
             for (int i = 0; i < NUM_LIGHTS; i++) {
                 if (context.lightFlags[i].isEnabled() || (context.tex_map_mode == TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP && (context.tex_shade_u == i || context.tex_shade_v == i))) {
                 	re.setLightPosition(i, context.light_pos[i]);
@@ -5477,7 +5490,7 @@ public class VideoEngine {
                     }
 
                     default:
-                        log("Unhandled texture matrix mode " + context.tex_map_mode);
+                        log.warn(String.format("Unhandled texture matrix mode %d", context.tex_map_mode));
                 }
             }
 
