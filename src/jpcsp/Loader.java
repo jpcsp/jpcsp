@@ -43,6 +43,7 @@ import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.format.DeferredStub;
+import jpcsp.format.DeferredVStubHI16LO16;
 import jpcsp.format.Elf32;
 import jpcsp.format.Elf32EntHeader;
 import jpcsp.format.Elf32ProgramHeader;
@@ -923,18 +924,11 @@ public class Loader {
                 String moduleName = deferredStub.getModuleName();
                 int nid           = deferredStub.getNid();
                 int importAddress = deferredStub.getImportAddress();
-                int exportAddress;
 
                 // Attempt to fixup stub to point to an already loaded module export
-                exportAddress = nidMapper.moduleNidToAddress(moduleName, nid);
-                if (exportAddress != -1)
-                {
-                    int instruction = // j <jumpAddress>
-                        ((jpcsp.AllegrexOpcodes.J & 0x3f) << 26)
-                        | ((exportAddress >>> 2) & 0x03ffffff);
-
-                    mem.write32(importAddress, instruction);
-                    mem.write32(importAddress + 4, 0); // write a nop over our "unmapped import detection special syscall"
+                int exportAddress = nidMapper.moduleNidToAddress(moduleName, nid);
+                if (exportAddress != -1) {
+                	deferredStub.resolve(mem, exportAddress);
                     it.remove();
                     numberofmappedNIDS++;
 
@@ -942,10 +936,8 @@ public class Loader {
                     	log.debug(String.format("Mapped import at 0x%08X to export at 0x%08X [0x%08X] (attempt %d)",
                     			importAddress, exportAddress, nid, module.importFixupAttempts));
                     }
-                }
-
-                // Ignore patched nids
-                else if (nid == 0) {
+                } else if (nid == 0) {
+                	// Ignore patched nids
                     log.warn(String.format("Ignoring import at 0x%08X [0x%08X] (attempt %d)",
                         importAddress, nid, module.importFixupAttempts));
 
@@ -1019,14 +1011,38 @@ public class Loader {
                 	log.debug(String.format("Processing Import #%d: %s", i, stubHeader.toString()));
                 }
 
-                if (stubHeader.getSize() > 5) {
-                    stubHeadersAddress += stubHeader.getSize() * 4;
+                if (stubHeader.hasVStub()) {
                     if (log.isDebugEnabled()) {
-                    	log.debug(String.format("'%s' has size %d", stubHeader.getModuleNamez(), stubHeader.getSize()));
+                    	log.debug(String.format("'%s' has size %d: %s", stubHeader.getModuleNamez(), stubHeader.getSize(), Utilities.getMemoryDump(stubHeadersAddress, stubHeader.getSize() * 4, 4, 16)));
                     }
-                } else {
-                    stubHeadersAddress += Elf32StubHeader.sizeof();
+                	int vStub = (int) stubHeader.getVStub();
+                	if (vStub != 0) {
+                		if (log.isDebugEnabled()) {
+                			log.debug(String.format("Vstub: %s", Utilities.getMemoryDump(vStub, 16, 4, 16)));
+                		}
+                    	int relocAddr = mem.read32(vStub);
+                    	int vStubSize = stubHeader.getVStubSize();
+                    	IMemoryReader nidReader = MemoryReader.getMemoryReader(vStub + 4, vStubSize * 4, 4);
+                    	IMemoryReader relocReader = MemoryReader.getMemoryReader(relocAddr, vStubSize * 8, 4);
+                    	for (int j = 0; j < vStubSize; j++) {
+	                    	int nid = nidReader.readNext();
+	                    	int reloc1 = relocReader.readNext();
+	                    	int reloc2 = relocReader.readNext();
+	                    	if ((reloc1 >>> 26) == AllegrexOpcodes.BNE && (reloc2 >>> 26) == AllegrexOpcodes.BLEZ) {
+	                    		int hi16 = (reloc1 & 0x03FFFFFF) << 2;
+	                    		int lo16 = (reloc2 & 0x03FFFFFF) << 2;
+	                    		if (log.isDebugEnabled()) {
+	                    			log.debug(String.format("Vstub reloc NID 0x%08X at 0x%08X, 0x%08X", nid, hi16, lo16));
+	                    		}
+		                    	DeferredVStubHI16LO16 deferredStub = new DeferredVStubHI16LO16(stubHeader.getModuleNamez(), hi16, lo16, nid);
+		                    	module.unresolvedImports.add(deferredStub);
+	                    	} else {
+	                    		log.warn(String.format("Unknown Vstub relocation nid 0x%08X, reloc1=0x%08X, reloc2=0x%08X", nid, reloc1, reloc2));
+	                    	}
+                    	}
+                    }
                 }
+                stubHeadersAddress += stubHeader.getSize() * 4;
 
                 if (!Memory.isAddressGood((int) stubHeader.getOffsetNid()) || !Memory.isAddressGood((int) stubHeader.getOffsetText())) {
                 	log.warn(String.format("Incorrect s_nid or s_text address in StubHeader #%d: %s", i, stubHeader.toString()));
@@ -1169,56 +1185,65 @@ public class Loader {
 	                            break;
 	                    }
 	                }
+                }
 
-	                int variableTableAddr = exportAddr + functionCount * 4;
-	                IMemoryReader variableReader = MemoryReader.getMemoryReader(variableTableAddr, 4);
-	                for (int j = 0; j < variableCount; j++) {
-	                    int nid = nidReader.readNext();
-	                    int variableAddr = variableReader.readNext();
+                int variableTableAddr = exportAddr + functionCount * 4;
+                IMemoryReader variableReader = MemoryReader.getMemoryReader(variableTableAddr, 4);
+                for (int j = 0; j < variableCount; j++) {
+                    int nid = nidReader.readNext();
+                    int variableAddr = variableReader.readNext();
 
-	                    switch (nid) {
-	                        case 0xF01D73A7: // module_info
-	                            // Seems to be ignored by the PSP
-	                            if (log.isDebugEnabled()) {
-	                                log.debug(String.format("module_info found: nid=0x%08X, addr=0x%08X", nid, variableAddr));
-	                            }
-	                            break;
-	                        case 0x0F7C276C: // module_start_thread_parameter
-	                            module.module_start_thread_priority = mem.read32(variableAddr + 4);
-	                            module.module_start_thread_stacksize = mem.read32(variableAddr + 8);
-	                            module.module_start_thread_attr = mem.read32(variableAddr + 12);
-	                            if (log.isDebugEnabled()) {
-	                                log.debug(String.format("module_start_thread_parameter found: nid=0x%08X, priority=%d, stacksize=%d, attr=0x%08X", nid, module.module_start_thread_priority, module.module_start_thread_stacksize, module.module_start_thread_attr));
-	                            }
-	                            break;
-	                        case 0xCF0CC697: // module_stop_thread_parameter
-	                            module.module_stop_thread_priority = mem.read32(variableAddr + 4);
-	                            module.module_stop_thread_stacksize = mem.read32(variableAddr + 8);
-	                            module.module_stop_thread_attr = mem.read32(variableAddr + 12);
-	                            if (log.isDebugEnabled()) {
-	                                log.debug(String.format("module_stop_thread_parameter found: nid=0x%08X, priority=%d, stacksize=%d, attr=0x%08X", nid, module.module_stop_thread_priority, module.module_stop_thread_stacksize, module.module_stop_thread_attr));
-	                            }
-	                            break;
-	                        case 0xF4F4299D: // module_reboot_before_thread_parameter
-	                            module.module_reboot_before_thread_priority = mem.read32(variableAddr + 4);
-	                            module.module_reboot_before_thread_stacksize = mem.read32(variableAddr + 8);
-	                            module.module_reboot_before_thread_attr = mem.read32(variableAddr + 12);
-	                            if (log.isDebugEnabled()) {
-	                                log.debug(String.format("module_reboot_before_thread_parameter found: nid=0x%08X, priority=%d, stacksize=%d, attr=0x%08X", nid, module.module_reboot_before_thread_priority, module.module_reboot_before_thread_stacksize, module.module_reboot_before_thread_attr));
-	                            }
-	                            break;
-	                        case 0x11B97506: // module_sdk_version
-	                            // Currently ignored
-	                            int sdk_version = mem.read32(variableAddr);
-	                            if (log.isDebugEnabled()) {
-	                                log.warn(String.format("module_sdk_version found: nid=0x%08X, sdk_version=0x%08X", nid, sdk_version));
-	                            }
-	                            break;
-	                        default:
-	                            log.warn(String.format("Unknown variable entry found: nid=0x%08X, addr=0x%08X", nid, variableAddr));
-	                            break;
-	                    }
-	                }
+                    switch (nid) {
+                        case 0xF01D73A7: // module_info
+                            // Seems to be ignored by the PSP
+                            if (log.isDebugEnabled()) {
+                                log.debug(String.format("module_info found: nid=0x%08X, addr=0x%08X", nid, variableAddr));
+                            }
+                            break;
+                        case 0x0F7C276C: // module_start_thread_parameter
+                            module.module_start_thread_priority = mem.read32(variableAddr + 4);
+                            module.module_start_thread_stacksize = mem.read32(variableAddr + 8);
+                            module.module_start_thread_attr = mem.read32(variableAddr + 12);
+                            if (log.isDebugEnabled()) {
+                                log.debug(String.format("module_start_thread_parameter found: nid=0x%08X, priority=%d, stacksize=%d, attr=0x%08X", nid, module.module_start_thread_priority, module.module_start_thread_stacksize, module.module_start_thread_attr));
+                            }
+                            break;
+                        case 0xCF0CC697: // module_stop_thread_parameter
+                            module.module_stop_thread_priority = mem.read32(variableAddr + 4);
+                            module.module_stop_thread_stacksize = mem.read32(variableAddr + 8);
+                            module.module_stop_thread_attr = mem.read32(variableAddr + 12);
+                            if (log.isDebugEnabled()) {
+                                log.debug(String.format("module_stop_thread_parameter found: nid=0x%08X, priority=%d, stacksize=%d, attr=0x%08X", nid, module.module_stop_thread_priority, module.module_stop_thread_stacksize, module.module_stop_thread_attr));
+                            }
+                            break;
+                        case 0xF4F4299D: // module_reboot_before_thread_parameter
+                            module.module_reboot_before_thread_priority = mem.read32(variableAddr + 4);
+                            module.module_reboot_before_thread_stacksize = mem.read32(variableAddr + 8);
+                            module.module_reboot_before_thread_attr = mem.read32(variableAddr + 12);
+                            if (log.isDebugEnabled()) {
+                                log.debug(String.format("module_reboot_before_thread_parameter found: nid=0x%08X, priority=%d, stacksize=%d, attr=0x%08X", nid, module.module_reboot_before_thread_priority, module.module_reboot_before_thread_stacksize, module.module_reboot_before_thread_attr));
+                            }
+                            break;
+                        case 0x11B97506: // module_sdk_version
+                            // Currently ignored
+                            int sdk_version = mem.read32(variableAddr);
+                            if (log.isDebugEnabled()) {
+                                log.warn(String.format("module_sdk_version found: nid=0x%08X, sdk_version=0x%08X", nid, sdk_version));
+                            }
+                            break;
+                        default:
+                            // Only accept exports from custom modules (attr != 0x4000) and with valid export addresses.
+                            if (Memory.isAddressGood(variableAddr) && ((entHeader.getAttr() & 0x4000) != 0x4000)) {
+                                nidMapper.addModuleNid(moduleName, nid, variableAddr);
+                                entCount++;
+                                if (log.isDebugEnabled()) {
+                                    log.debug(String.format("Export found at 0x%08X [0x%08X]", variableAddr, nid));
+                                }
+                            } else {
+                            	log.warn(String.format("Unknown variable entry found: nid=0x%08X, addr=0x%08X", nid, variableAddr));
+                            }
+                            break;
+                    }
                 }
             }
         }

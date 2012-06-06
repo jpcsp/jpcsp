@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format;
 
+import jpcsp.AllegrexOpcodes;
+import jpcsp.Memory;
+
 public class DeferredStub {
     private String moduleName;
     private int importAddress;
@@ -39,7 +42,16 @@ public class DeferredStub {
         return nid;
     }
 
-	@Override
+    public void resolve(Memory mem, int address) {
+        int instruction = // j <jumpAddress>
+                ((AllegrexOpcodes.J & 0x3f) << 26)
+                | ((address >>> 2) & 0x03ffffff);
+
+        mem.write32(importAddress, instruction);
+        mem.write32(importAddress + 4, 0); // write a nop over our "unmapped import detection special syscall"
+    }
+
+    @Override
 	public String toString() {
 		return String.format("0x%08X [0x%08X] Module '%s'", getImportAddress(), getNid(), getModuleName());
 	}
