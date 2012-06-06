@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format;
 
 import static jpcsp.util.Utilities.formatString;
+import static jpcsp.util.Utilities.readUByte;
 import static jpcsp.util.Utilities.readUHalf;
 import static jpcsp.util.Utilities.readUWord;
 
@@ -27,18 +28,23 @@ import jpcsp.Memory;
 
 public class Elf32StubHeader
 {
-    // Resolved version of s_modulename and in a Java String
+    // Resolved version of s_modulename in a Java String
     private String s_modulenamez;
 
     private long s_modulename;
     private int s_version;
     private int s_flags;
-    private int s_size; // var count in upper 8bits?
+    private int s_size;
+    private int s_vstub_size;
     private int s_imports;
     private long s_nid;
     private long s_text;
+    private long s_vstub;
 
-    public static int sizeof() { return 20; }
+    public static int sizeof() {
+    	return 20;
+    }
+
     public Elf32StubHeader(ByteBuffer f) throws IOException
     {
         s_modulenamez = "";
@@ -46,10 +52,14 @@ public class Elf32StubHeader
         s_modulename = readUWord(f);
         s_version = readUHalf(f);
         s_flags = readUHalf(f);
-        s_size = readUHalf(f);
+        s_size = readUByte(f);
+        s_vstub_size = readUByte(f);
         s_imports = readUHalf(f);
         s_nid = readUWord(f);
         s_text = readUWord(f);
+        if (hasVStub()) {
+        	s_vstub = readUWord(f);
+        }
     }
 
     public Elf32StubHeader(Memory mem, int address)
@@ -59,10 +69,14 @@ public class Elf32StubHeader
         s_modulename = mem.read32(address);
         s_version = mem.read16(address + 4);
         s_flags = mem.read16(address + 6);
-        s_size = mem.read8(address + 8);     //Only 1 byte (needs to be checked)
+        s_size = mem.read8(address + 8);
+        s_vstub_size = mem.read8(address + 9);
         s_imports = mem.read16(address + 10);
         s_nid = mem.read32(address + 12);
         s_text = mem.read32(address + 16);
+        if (hasVStub()) {
+        	s_vstub = mem.read32(address + 20);
+        }
     }
 
     @Override
@@ -78,6 +92,9 @@ public class Elf32StubHeader
         str.append("s_imports" + "\t\t" +  formatString("short", Long.toHexString(s_imports & 0xFFFF).toUpperCase()) + "\n");
         str.append("s_nid" + "\t\t\t" +  formatString("long", Long.toHexString(s_nid & 0xFFFFFFFFL).toUpperCase()) + "\n");
         str.append("s_text" + "\t\t\t" +  formatString("long", Long.toHexString(s_text & 0xFFFFFFFFL).toUpperCase()) + "\n");
+        if (hasVStub()) {
+            str.append("s_vstub" + "\t\t\t" +  formatString("long", Long.toHexString(s_vstub & 0xFFFFFFFFL).toUpperCase()) + "\n");
+        }
         return str.toString();
     }
 
@@ -105,6 +122,10 @@ public class Elf32StubHeader
         return s_size;
     }
 
+    public int getVStubSize() {
+    	return s_vstub_size;
+    }
+
     /** The number of imports from this module */
     public int getImports() {
         return s_imports;
@@ -116,5 +137,13 @@ public class Elf32StubHeader
 
     public long getOffsetText() {
         return s_text;
+    }
+
+    public long getVStub() {
+    	return s_vstub;
+    }
+
+    public boolean hasVStub() {
+    	return s_size >= 6;
     }
 }
