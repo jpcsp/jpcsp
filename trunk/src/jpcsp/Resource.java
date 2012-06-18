@@ -19,6 +19,7 @@ package jpcsp;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
@@ -45,7 +46,7 @@ public class Resource {
 	 *            The basename of the resource bundle to add.
 	 */
 	private static void add(List<ResourceBundle> bundles, String basename) {
-		bundles.add(ResourceBundle.getBundle(basename));
+		bundles.add(ResourceBundle.getBundle(basename, Locale.ROOT));
 	}
 
 	/**
