@@ -43,6 +43,7 @@ public class CaptureImage {
 	private int imageaddr;
 	private int level;
 	private Buffer buffer;
+	private IMemoryReader imageReader;
 	private int width;
 	private int height;
 	private int bufferWidth;
@@ -52,6 +53,8 @@ public class CaptureImage {
 	private boolean invert;
 	private boolean overwriteFile;
 	private String fileNamePrefix;
+	private String directory = "tmp/";
+	private String fileName;
 	private static HashMap<Integer, Integer> lastFileIndex = new HashMap<Integer, Integer>();
 
 	public CaptureImage(int imageaddr, int level, Buffer buffer, int width, int height, int bufferWidth, int bufferStorage, boolean compressedImage, int compressedImageSize, boolean invert, boolean overwriteFile, String fileNamePrefix) {
@@ -69,35 +72,63 @@ public class CaptureImage {
 		this.fileNamePrefix = fileNamePrefix == null ? "Image" : fileNamePrefix;
 	}
 
-    public void write() throws IOException {
+	public CaptureImage(int imageaddr, int level, IMemoryReader imageReader, int width, int height, int bufferWidth, boolean invert, boolean overwriteFile, String fileNamePrefix) {
+		this.imageaddr = imageaddr;
+		this.level = level;
+		this.imageReader = imageReader;
+		this.width = width;
+		this.height = height;
+		this.bufferWidth = bufferWidth;
+		this.bufferStorage = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+		this.compressedImage = false;
+		this.compressedImageSize = 0;
+		this.invert = invert;
+		this.overwriteFile = overwriteFile;
+		this.fileNamePrefix = fileNamePrefix == null ? "Image" : fileNamePrefix;
+	}
+
+	public void setDirectory(String directory) {
+		this.directory = directory;
+	}
+
+	public String getFileName() {
+		if (fileName == null) {
+	    	String levelName = "";
+	    	if (level > 0) {
+	    		levelName = "_" + level;
+	    	}
+
+	    	int scanIndex = 0;
+	    	Integer lastIndex = lastFileIndex.get(imageaddr);
+	    	if (lastIndex != null) {
+	    		scanIndex = lastIndex.intValue() + 1;
+	    	}
+	    	for (int i = scanIndex; ; i++) {
+	    		String id = (i == 0 ? "" : "-" + i);
+	    		fileName = String.format("%s%s%08X%s%s.bmp", directory, fileNamePrefix, imageaddr, levelName, id);
+	    		if (overwriteFile) {
+	    			break;
+	    		}
+
+	    		File file = new File(fileName);
+	    		if (!file.exists()) {
+	    			lastFileIndex.put(imageaddr, i);
+	    			break;
+	    		}
+	    	}
+		}
+
+		return fileName;
+	}
+
+	public boolean fileExists() {
+		return new File(getFileName()).exists();
+	}
+
+	public void write() throws IOException {
     	if (bufferStorage >= GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED && bufferStorage <= GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED && bufferStorage != depthBufferPixelFormat) {
     		// Writing of indexed images not supported
     		return;
-    	}
-
-    	String levelName = "";
-    	if (level > 0) {
-    		levelName = "_" + level;
-    	}
-
-    	String fileName = null;
-    	int scanIndex = 0;
-    	Integer lastIndex = lastFileIndex.get(imageaddr);
-    	if (lastIndex != null) {
-    		scanIndex = lastIndex.intValue() + 1;
-    	}
-    	for (int i = scanIndex; ; i++) {
-    		String id = (i == 0 ? "" : "-" + i);
-    		fileName = String.format("tmp/%s%08X%s%s.bmp", fileNamePrefix, imageaddr, levelName, id);
-    		if (overwriteFile) {
-    			break;
-    		}
-
-    		File file = new File(fileName);
-    		if (!file.exists()) {
-    			lastFileIndex.put(imageaddr, i);
-    			break;
-    		}
     	}
 
     	if (compressedImage) {
@@ -107,6 +138,9 @@ public class CaptureImage {
 		if (width > bufferWidth) {
 			width = bufferWidth;
 		}
+
+		// The image in the BMP file has always to be upside-down as compared to the PSP image
+		boolean imageInvert = !invert;
 
 		// Unfortunately, I was not able to generate the image file
 		// using the ImageIO API :-(
@@ -118,9 +152,10 @@ public class CaptureImage {
 		byte[] fileHeader = new byte[14];
 		byte[] dibHeader = new byte[56];
 		int rowPad = (4 - ((width * 4) & 3)) & 3;
-		int imageSize = height * ((width * 4) + rowPad);
+		int imageRawBytes = (width * 4) + rowPad;
+		int imageSize = height * imageRawBytes;
 		int fileSize = fileHeader.length + dibHeader.length + imageSize;
-		OutputStream outBmp = new BufferedOutputStream(new FileOutputStream(fileName), fileSize);
+		OutputStream outBmp = new BufferedOutputStream(new FileOutputStream(getFileName()), fileSize);
 
 		fileHeader[0] = 'B';                                  // Magic number
 		fileHeader[1] = 'M';                                  // Magic number
@@ -129,10 +164,10 @@ public class CaptureImage {
 
 		storeLittleEndianInt(dibHeader, 0, dibHeader.length); // Number of bytes in the DIB header (from this point)
 		storeLittleEndianInt(dibHeader, 4, width);            // Width of the bitmap in pixels
-		storeLittleEndianInt(dibHeader, 8, -height);          // Height of the bitmap in pixels
+		storeLittleEndianInt(dibHeader, 8, height);           // Height of the bitmap in pixels
 		storeLittleEndianShort(dibHeader, 12, 1);             // Number of color planes being used
 		storeLittleEndianShort(dibHeader, 14, 32);            // Number of bits per pixel
-		storeLittleEndianInt(dibHeader, 16, 3);               // BI_BITFIELDS, no Pixel Array compression used
+		storeLittleEndianInt(dibHeader, 16, 0);               // BI_BITFIELDS, no Pixel Array compression used
 		storeLittleEndianInt(dibHeader, 20, imageSize);       // Size of the raw data in the Pixel Array (including padding)
 		storeLittleEndianInt(dibHeader, 24, 2835);            // Horizontal physical resolution of the image (pixels/meter)
 		storeLittleEndianInt(dibHeader, 28, 2835);            // Vertical physical resolution of the image (pixels/meter)
@@ -149,10 +184,23 @@ public class CaptureImage {
 		byte[] pixelBytes = new byte[4];
 		byte[] blackPixelBytes = new byte[pixelBytes.length];
 		boolean imageType32Bit = bufferStorage == GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
-    	if (buffer instanceof IntBuffer && imageType32Bit) {
+		if (imageReader != null) {
+			byte[] completeImageBytes = new byte[imageSize];
+			for (int y = 0; y < height; y++) {
+				int pixelIndex = (imageInvert ? (height - y - 1) : y) * imageRawBytes;
+				for (int x = 0; x < width; x++, pixelIndex += 4) {
+					int pixel = imageReader.readNext();
+					completeImageBytes[pixelIndex + 0] = (byte) (pixel >> 16); // B
+					completeImageBytes[pixelIndex + 1] = (byte) (pixel >>  8); // G
+					completeImageBytes[pixelIndex + 2] = (byte) (pixel      ); // R
+					completeImageBytes[pixelIndex + 3] = (byte) (pixel >> 24); // A
+				}
+			}
+			outBmp.write(completeImageBytes);
+		} else if (buffer instanceof IntBuffer && imageType32Bit) {
     		IntBuffer intBuffer = (IntBuffer) buffer;
 			for (int y = 0; y < height; y++) {
-				intBuffer.position((invert ? (height - y - 1) : y) * bufferWidth);
+				intBuffer.position((imageInvert ? (height - y - 1) : y) * bufferWidth);
 				for (int x = 0; x < width; x++) {
 					try {
 						int pixel = intBuffer.get();
@@ -170,7 +218,7 @@ public class CaptureImage {
     	} else if (buffer instanceof IntBuffer && !imageType32Bit) {
     		IntBuffer intBuffer = (IntBuffer) buffer;
 			for (int y = 0; y < height; y++) {
-				intBuffer.position((invert ? (height - y - 1) : y) * bufferWidth / 2);
+				intBuffer.position((imageInvert ? (height - y - 1) : y) * bufferWidth / 2);
 				for (int x = 0; x < width; x += 2) {
 					try {
 						int twoPixels = intBuffer.get();
@@ -188,7 +236,7 @@ public class CaptureImage {
     	} else if (buffer instanceof ShortBuffer && !imageType32Bit) {
     		ShortBuffer shortBuffer = (ShortBuffer) buffer;
 			for (int y = 0; y < height; y++) {
-				shortBuffer.position((invert ? (height - y - 1) : y) * bufferWidth);
+				shortBuffer.position((imageInvert ? (height - y - 1) : y) * bufferWidth);
 				for (int x = 0; x < width; x++) {
 					short pixel = shortBuffer.get();
 					getPixelBytes(pixel, bufferStorage, pixelBytes);
@@ -198,7 +246,7 @@ public class CaptureImage {
 			}
     	} else if (imageType32Bit) {
 			for (int y = 0; y < height; y++) {
-	    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(imageaddr + (invert ? (height - y - 1) : y) * bufferWidth * 4, bufferWidth * 4, 4);
+	    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(imageaddr + (imageInvert ? (height - y - 1) : y) * bufferWidth * 4, bufferWidth * 4, 4);
 				for (int x = 0; x < width; x++) {
 					int pixel = memoryReader.readNext();
 					pixelBytes[0] = (byte) (pixel >> 16); // B
@@ -211,7 +259,7 @@ public class CaptureImage {
 			}
     	} else {
 			for (int y = 0; y < height; y++) {
-	    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(imageaddr + (invert ? (height - y - 1) : y) * bufferWidth * 2, bufferWidth * 2, 2);
+	    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(imageaddr + (imageInvert ? (height - y - 1) : y) * bufferWidth * 2, bufferWidth * 2, 2);
 				for (int x = 0; x < width; x++) {
 					short pixel = (short) memoryReader.readNext();
 					getPixelBytes(pixel, bufferStorage, pixelBytes);
@@ -220,10 +268,13 @@ public class CaptureImage {
 				outBmp.write(rowPadBytes);
 			}
     	}
-    	buffer.rewind();
+
+		if (buffer != null) {
+			buffer.rewind();
+		}
 		outBmp.close();
 
-        VideoEngine.log.debug(String.format("Saved image to %s", fileName));
+        VideoEngine.log.debug(String.format("Saved image to %s", getFileName()));
     }
 
     private void storeLittleEndianInt(byte[] buffer, int offset, int value) {

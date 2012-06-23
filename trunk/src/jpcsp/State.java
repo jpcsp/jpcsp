@@ -42,6 +42,7 @@ public class State extends jpcsp.HLE.Modules {
 
     public static boolean captureGeNextFrame;
     public static boolean replayGeNextFrame;
+    public static boolean exportGeNextFrame;
 
     static {
         memory = Memory.getInstance();
@@ -50,5 +51,6 @@ public class State extends jpcsp.HLE.Modules {
         discId = DISCID_UNKNOWN_NOTHING_LOADED;
         captureGeNextFrame = false;
         replayGeNextFrame = false;
+        exportGeNextFrame = false;
     }
 }
