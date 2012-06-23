@@ -38,7 +38,11 @@ public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
 	}
 
 	public void setMacAddress(byte[] macAddress) {
-		System.arraycopy(macAddress, 0, this.macAddress, 0, Math.min(macAddress.length, this.macAddress.length));
+		setMacAddress(macAddress, 0);
+	}
+
+	public void setMacAddress(byte[] macAddress, int offset) {
+		System.arraycopy(macAddress, offset, this.macAddress, 0, Math.min(macAddress.length - offset, this.macAddress.length));
 	}
 
 	@Override

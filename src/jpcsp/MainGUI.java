@@ -90,6 +90,7 @@ import jpcsp.hardware.Audio;
 import jpcsp.hardware.Screen;
 import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
+import jpcsp.network.ProOnline;
 import jpcsp.settings.Settings;
 import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.MetaInformation;
@@ -2238,19 +2239,15 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     }
 
     private void processArgs(String[] args) {
-        int i = 0;
-        while (i < args.length) {
+        for (int i = 0; i < args.length; i++) {
 			//System.err.println("Args: " + args[0]);
 			if (args[i].equals("-t") || args[i].equals("--tests")) {
-				i++;
-				
 				//(new AutoTestsRunner()).run();
 				//loadFile(new File("pspautotests/tests/rtc/rtc.elf"));
 				//RunEmu();
 				
 				throw(new RuntimeException("Shouldn't get there"));
 			} else if (args[i].equals("-d") || args[i].equals("--debugger")) {
-                i++;
                 // hack: reuse this function
                 EnterDebuggerActionPerformed(null);
             } else if (args[i].equals("-f") || args[i].equals("--loadfile")) {
@@ -2261,7 +2258,6 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                     	Modules.sceDisplayModule.setCalledFromCommandLine();
                         loadFile(file);
                     }
-                    i++;
                 } else {
                     printUsage();
                     break;
@@ -2274,32 +2270,33 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                     	Modules.sceDisplayModule.setCalledFromCommandLine();
                         loadUMD(file);
                     }
-                    i++;
                 } else {
                     printUsage();
                     break;
                 }
             } else if (args[i].equals("-r") || args[i].equals("--run")) {
-                i++;
                 RunEmu();
             } else if (args[i].equals("--netClientPortShift")) {
                 i++;
                 if (i < args.length) {
                 	int netClientPortShift = Integer.parseInt(args[i]);
                 	Modules.sceNetAdhocModule.setNetClientPortShift(netClientPortShift);
-                	i++;
                 } else {
                 	printUsage();
+                	break;
                 }
             } else if (args[i].equals("--netServerPortShift")) {
                 i++;
                 if (i < args.length) {
                 	int netServerPortShift = Integer.parseInt(args[i]);
                 	Modules.sceNetAdhocModule.setNetServerPortShift(netServerPortShift);
-                	i++;
                 } else {
                 	printUsage();
+                	break;
                 }
+            } else if (args[i].equals("--ProOnline")) {
+            	ProOnline.setEnabled(true);
+            	ProOnline.getInstance().init();
             } else {
                 printUsage();
                 break;
