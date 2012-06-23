@@ -45,6 +45,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.hardware.Wlan;
+import jpcsp.network.ProOnline;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -662,6 +663,14 @@ public class sceNetAdhocctl extends HLEModule {
         }
     }
 
+    public String hleNetAdhocctlGetAdhocID() {
+    	return adhocctlCurrentAdhocID;
+    }
+
+    public String hleNetAdhocctlGetGroupName() {
+    	return adhocctlCurrentGroup;
+    }
+
     /**
      * Initialise the Adhoc control library
      *
@@ -693,6 +702,10 @@ public class sceNetAdhocctl extends HLEModule {
         adhocctlThread = threadMan.hleKernelCreateThread("SceNetAdhocctl", ThreadManForUser.NET_ADHOC_CTL_LOOP_ADDRESS, priority, stackSize, 0, 0);
         threadMan.hleKernelStartThread(adhocctlThread, 0, 0, adhocctlThread.gpReg_addr);
 
+        if (ProOnline.isEnabled()) {
+        	ProOnline.getInstance().proNetAdhocctlInit();
+        }
+
         initialized = true;
 
         return 0;
@@ -709,6 +722,10 @@ public class sceNetAdhocctl extends HLEModule {
 
         doTerminate = true;
         initialized = false;
+
+        if (ProOnline.isEnabled()) {
+        	ProOnline.getInstance().proNetAdhocctlTerm();
+        }
 
         return 0;
     }
@@ -737,6 +754,10 @@ public class sceNetAdhocctl extends HLEModule {
 
         hleNetAdhocctlConnect(groupName);
 
+        if (ProOnline.isEnabled()) {
+        	ProOnline.getInstance().proNetAdhocctlConnect();
+        }
+
         return 0;
     }
 
@@ -760,6 +781,10 @@ public class sceNetAdhocctl extends HLEModule {
         }
 
         setGroupName(groupName, PSP_ADHOCCTL_MODE_NORMAL);
+
+        if (ProOnline.isEnabled()) {
+        	ProOnline.getInstance().proNetAdhocctlCreate();
+        }
 
         return 0;
     }
@@ -823,6 +848,10 @@ public class sceNetAdhocctl extends HLEModule {
         log.warn("PARTIAL: sceNetAdhocctlDisconnect");
 
         doDisconnect = true;
+
+        if (ProOnline.isEnabled()) {
+        	ProOnline.getInstance().proNetAdhocctlDisconnect();
+        }
 
         return 0;
     }
