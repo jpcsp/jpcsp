@@ -95,7 +95,7 @@ public class sceNetAdhocctl extends HLEModule {
     protected boolean doTerminate;
     protected SceKernelThreadInfo adhocctlThread;
     private boolean doScan;
-    private long scanStartMillis;
+    private volatile long scanStartMillis;
     private static final int SCAN_DURATION_MILLIS = 700;
     private boolean doDisconnect;
     private boolean doJoin;
@@ -157,6 +157,16 @@ public class sceNetAdhocctl extends HLEModule {
     	public String nickName;
     	public byte[] macAddress;
     	public long timestamp;
+
+    	public AdhocctlPeer(String nickName, byte[] macAddress) {
+    		this.nickName = nickName;
+    		this.macAddress = macAddress.clone();
+    		updateTimestamp();
+    	}
+
+    	public void updateTimestamp() {
+    		timestamp = Emulator.getClock().microTime();
+    	}
 
     	public boolean equals(String nickName, byte[] macAddress) {
     		return nickName.equals(this.nickName) && sceNetAdhoc.isSameMacAddress(macAddress, this.macAddress);
@@ -475,7 +485,7 @@ public class sceNetAdhocctl extends HLEModule {
     		if (now - scanStartMillis > SCAN_DURATION_MILLIS) {
     			// Return to DISCONNECTED state and trigger SCAN event
     			setState(PSP_ADHOCCTL_STATE_DISCONNECTED);
-                notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_SCAN, 0);
+    	        notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_SCAN, 0);
     		}
     	}
 
@@ -550,21 +560,19 @@ public class sceNetAdhocctl extends HLEModule {
 	    	// Ignore messages coming from myself
 	    	if (!sceNetAdhoc.isSameMacAddress(Wlan.getMacAddress(), adhocctlMessage.macAddress)) {
 		    	if (adhocctlMessage.groupName.equals(adhocctlCurrentGroup)) {
-			    	boolean found = false;
+			    	boolean peerFound = false;
 			    	for (AdhocctlPeer peer : peers) {
 			    		if (peer.equals(adhocctlMessage.nickName, adhocctlMessage.macAddress)) {
 			    			// Update the timestamp
-			    			peer.timestamp = Emulator.getClock().microTime();
+			    			peer.updateTimestamp();
 
-			    			found = true;
+			    			peerFound = true;
 			    			break;
 			    		}
 			    	}
 
-			    	if (!found) {
-			    		AdhocctlPeer peer = new AdhocctlPeer();
-			    		peer.nickName = adhocctlMessage.nickName;
-			    		peer.macAddress = adhocctlMessage.macAddress;
+			    	if (!peerFound) {
+			    		AdhocctlPeer peer = new AdhocctlPeer(adhocctlMessage.nickName, adhocctlMessage.macAddress);
 			    		peers.add(peer);
 
 			    		if (log.isDebugEnabled()) {
@@ -574,26 +582,9 @@ public class sceNetAdhocctl extends HLEModule {
 		    	}
 
 		    	if (adhocctlMessage.ibss.equals(adhocctlCurrentIBSS)) {
-		    		boolean found = false;
-		    		for (AdhocctlNetwork network : networks) {
-		    			if (network.equals(adhocctlMessage.channel, adhocctlMessage.groupName, adhocctlMessage.ibss, adhocctlMessage.mode)) {
-		    				found = true;
-		    				break;
-		    			}
-		    		}
-
-		    		if (!found) {
-		    			AdhocctlNetwork network = new AdhocctlNetwork();
-		    			network.channel = adhocctlMessage.channel;
-		    			network.name = adhocctlMessage.groupName;
-		    			network.bssid = adhocctlMessage.ibss;
-		    			network.mode = adhocctlMessage.mode;
-		    			networks.add(network);
-
-		    			if (log.isDebugEnabled()) {
-			    			log.debug(String.format("New network discovered %s", network));
-			    		}
-		    		}
+		    		pspNetMacAddress mac = new pspNetMacAddress();
+		    		mac.setMacAddress(adhocctlMessage.macAddress);
+		    		hleNetAdhocctlAddNetwork(adhocctlMessage.groupName, mac, adhocctlMessage.channel, adhocctlMessage.ibss, adhocctlMessage.mode);
 
 		    		if (adhocctlMessage.mode == PSP_ADHOCCTL_MODE_GAMEMODE) {
 		    			addGameModeMac(adhocctlMessage.macAddress);
@@ -669,6 +660,40 @@ public class sceNetAdhocctl extends HLEModule {
 
     public String hleNetAdhocctlGetGroupName() {
     	return adhocctlCurrentGroup;
+    }
+
+    public void hleNetAdhocctlAddNetwork(String groupName, pspNetMacAddress mac, int mode) {
+    	hleNetAdhocctlAddNetwork(groupName, mac, adhocctlCurrentChannel, adhocctlCurrentIBSS, mode);
+    }
+
+    public void hleNetAdhocctlAddNetwork(String groupName, pspNetMacAddress mac, int channel, String ibss, int mode) {
+		boolean found = false;
+		for (AdhocctlNetwork network : networks) {
+			if (network.equals(channel, groupName, ibss, mode)) {
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			AdhocctlNetwork network = new AdhocctlNetwork();
+			network.channel = channel;
+			network.name = groupName;
+			network.bssid = ibss;
+			network.mode = mode;
+			networks.add(network);
+
+			if (log.isDebugEnabled()) {
+    			log.debug(String.format("New network discovered %s", network));
+    		}
+		}
+    }
+
+    public void hleNetAdhocctlScanComplete() {
+    	// Force a completion of the scan at the next run of hleNetAdhocctlThread.
+    	// Note: the scan completion has to be executed from a PSP thread because it
+    	// is triggering a callback.
+    	scanStartMillis = 0;
     }
 
     /**
@@ -834,6 +859,10 @@ public class sceNetAdhocctl extends HLEModule {
         log.warn("PARTIAL: sceNetAdhocctlScan");
 
         doScan = true;
+
+        if (ProOnline.isEnabled()) {
+        	ProOnline.getInstance().proNetAdhocctlScan();
+        }
 
         return 0;
     }
