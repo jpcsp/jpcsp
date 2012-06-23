@@ -114,6 +114,11 @@ JPCSP v0.7 (????????):
 
 -> Added cheat import from cheat.db
 
+-> Added export function for the current 3D scene in Wavefront .obj/.mtl format,
+   including the textures
+
+-> Added texture modding
+
 
 
 
@@ -440,6 +445,33 @@ The last line is to enable traces of the corresponding reads and writes. One or
 multiple of these options can be specified (e.g., only "write" or "read32|write32").
 When "pause" is specified, the emulator is pausing when reading/writing the selected
 addresses. Otherwise, the emulator is just logging at INFO level the memory access.
+
+
+- Export 3D scene:
+You can export the current 3D scene of an application by selecting the corresponding
+file menu option. This will export the current 3D scene in Wavefront format (.obj/.mtl),
+including the textures used in the scene. The textures are stored in 32-bit .bmp format.
+You can then import the .obj file in a 3D modeling application (e.g. http://www.blender.org/).
+Lamps cannot be exported in Wavefront format, so you will probably need to manually add
+lighting to the imported scene.
+
+
+- Texture modding:
+You can try to modify one or multiple of the textures to perform modding of your application
+without changing its code.
+Following these steps:
+  a. export the 3D scene. The exported files will be located under the "export" directory.
+  b. change one or multiple texture files (.bmp). Keep the name of these files unchanged.
+  c. move the modified texture files to the following directory:
+        tmp/<DiscID>/Textures/Image0XXXXXXX.bmp
+     The DiscID has to be replaced by the 9-character Disc-ID of the application.
+     The DiscID is displayed, for example, by the UMD Browser.
+     Only move the textures you have really modified. The loading of texture files
+     is slower.
+  d. Restart your application. The modded texture files should be loaded instead of the
+     application native ones.
+
+
 
 7. Explanation of the advanced Video options:
 

@@ -265,6 +265,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         FPS60 = new javax.swing.JCheckBoxMenuItem();
         ShotItem = new javax.swing.JMenuItem();
         RotateItem = new javax.swing.JMenuItem();
+        ExportItem = new javax.swing.JMenuItem();
         AudioOpt = new javax.swing.JMenu();
         MuteOpt = new javax.swing.JCheckBoxMenuItem();
         ControlsConf = new javax.swing.JMenuItem();
@@ -421,6 +422,16 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         FileMenu.add(LoadSnap);
+
+        ExportItem.setText(Resource.get("export3D"));
+        ExportItem.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ExportItemActionPerformed(evt);
+            }
+        });
+        FileMenu.add(ExportItem);
+
         FileMenu.add(jSeparator1);
 
         ExitEmu.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_E, java.awt.event.InputEvent.CTRL_MASK));
@@ -1922,6 +1933,11 @@ private void RotateItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
         return;
     }
 }//GEN-LAST:event_RotateItemActionPerformed
+
+private void ExportItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExportItemActionPerformed
+	State.exportGeNextFrame = true;
+}//GEN-LAST:event_ExportItemActionPerformed
+
     private byte safeRead8(int address) {
         byte value = 0;
 		if (Memory.isAddressGood(address)) {
@@ -2386,6 +2402,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JCheckBoxMenuItem FPS30;
     private javax.swing.JCheckBoxMenuItem FPS60;
     private javax.swing.JMenuItem RotateItem;
+    private javax.swing.JMenuItem ExportItem;
     private javax.swing.JToggleButton RunButton;
     private javax.swing.JMenuItem Russian;
     private javax.swing.JMenuItem SaveSnap;
