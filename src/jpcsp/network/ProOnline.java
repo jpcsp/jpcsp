@@ -29,6 +29,7 @@ import java.net.UnknownHostException;
 import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
+import jpcsp.HLE.modules.sceNetAdhocctl;
 import jpcsp.HLE.modules.sceUtility;
 import jpcsp.hardware.Wlan;
 import jpcsp.network.upnp.UPnP;
@@ -125,6 +126,19 @@ public class ProOnline {
 			       (copyInt8FromBytes(bytes) << 24);
 		}
 
+		protected pspNetMacAddress copyMacFromBytes(byte[] bytes) {
+			pspNetMacAddress mac = new pspNetMacAddress();
+			mac.setMacAddress(bytes, offset);
+			offset += MAC_ADDRESS_LENGTH;
+
+			return mac;
+		}
+
+		protected void copyToBytes(byte[] bytes, pspNetMacAddress mac) {
+			System.arraycopy(mac.macAddress, 0, bytes, offset, MAC_ADDRESS_LENGTH);
+			offset += MAC_ADDRESS_LENGTH;
+		}
+
 		protected void init(byte[] bytes, int length) {
 			offset = 0;
 			if (length >= getLength()) {
@@ -150,6 +164,12 @@ public class ProOnline {
 		}
 	}
 
+	private static class SceNetAdhocctlScanPacketC2S extends SceNetAdhocctlPacketBase {
+		public SceNetAdhocctlScanPacketC2S() {
+			opcode = OPCODE_SCAN;
+		}
+	}
+
 	private static class SceNetAdhocctlLoginPacketC2S extends SceNetAdhocctlPacketBase {
 		pspNetMacAddress mac = new pspNetMacAddress();
 		String nickName;
@@ -165,8 +185,7 @@ public class ProOnline {
 		@Override
 		protected void getBytes(byte[] bytes) {
 			super.getBytes(bytes);
-			System.arraycopy(mac.macAddress, 0, bytes, offset, MAC_ADDRESS_LENGTH);
-			offset += MAC_ADDRESS_LENGTH;
+			copyToBytes(bytes, mac);
 			copyToBytes(bytes, nickName, NICK_NAME_LENGTH);
 			copyToBytes(bytes, game, ADHOC_ID_LENGTH);
 		}
@@ -211,20 +230,24 @@ public class ProOnline {
 			super.init(bytes, length);
 			if (length >= getLength()) {
 				nickName = copyStringFromBytes(bytes, NICK_NAME_LENGTH);
-				mac.setMacAddress(bytes, offset);
-				offset += MAC_ADDRESS_LENGTH;
+				mac = copyMacFromBytes(bytes);
 				ip = copyInt32FromBytes(bytes);
 			}
 		}
 
 		@Override
 		public int getLength() {
-			return super.getLength() + GROUP_NAME_LENGTH;
+			return super.getLength() + NICK_NAME_LENGTH + MAC_ADDRESS_LENGTH + 4;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("ConnectPacketS2C[nickName='%s', mac=%s, ip=%s]", nickName, mac, convertIpToString(ip));
 		}
 	}
 
 	private static class SceNetAdhocctlConnectBSSIDPacketS2C extends SceNetAdhocctlPacketBase {
-		pspNetMacAddress mac = new pspNetMacAddress();
+		pspNetMacAddress mac;
 
 		public SceNetAdhocctlConnectBSSIDPacketS2C(byte[] bytes, int length) {
 			init(bytes, length);
@@ -234,14 +257,57 @@ public class ProOnline {
 		protected void init(byte[] bytes, int length) {
 			super.init(bytes, length);
 			if (length >= getLength()) {
-				mac.setMacAddress(bytes, offset);
-				offset += MAC_ADDRESS_LENGTH;
+				mac = copyMacFromBytes(bytes);
 			}
 		}
 
 		@Override
 		public int getLength() {
 			return super.getLength() + MAC_ADDRESS_LENGTH;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("ConnectBSSIDPacketS2C[mac=%s]", mac);
+		}
+	}
+
+	private static class SceNetAdhocctlScanPacketS2C extends SceNetAdhocctlPacketBase {
+		String group;
+		pspNetMacAddress mac;
+
+		public SceNetAdhocctlScanPacketS2C(byte[] bytes, int length) {
+			init(bytes, length);
+		}
+
+		@Override
+		protected void init(byte[] bytes, int length) {
+			super.init(bytes, length);
+			if (length >= getLength()) {
+				group = copyStringFromBytes(bytes, GROUP_NAME_LENGTH);
+				mac = copyMacFromBytes(bytes);
+			}
+		}
+
+		@Override
+		public int getLength() {
+			return super.getLength() + GROUP_NAME_LENGTH + MAC_ADDRESS_LENGTH;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("ScanPacketS2C[group='%s', mac=%s]", group, mac);
+		}
+	}
+
+	private static class SceNetAdhocctlScanCompletePacketS2C extends SceNetAdhocctlPacketBase {
+		public SceNetAdhocctlScanCompletePacketS2C(byte[] bytes, int length) {
+			init(bytes, length);
+		}
+
+		@Override
+		public String toString() {
+			return String.format("ScanCompletePacketS2C");
 		}
 	}
 
@@ -262,6 +328,9 @@ public class ProOnline {
 	protected void sendToMetaServer(SceNetAdhocctlPacketBase packet) throws IOException {
 		metaSocket.getOutputStream().write(packet.getBytes());
 		metaSocket.getOutputStream().flush();
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("Sent packet to meta server: %s", packet));
+		}
 	}
 
 	protected void safeSendToMetaServer(SceNetAdhocctlPacketBase packet) {
@@ -273,6 +342,10 @@ public class ProOnline {
 	}
 
 	public void proNetAdhocctlInit() {
+		if (log.isDebugEnabled()) {
+			log.debug("proNetAdhocctlInit");
+		}
+
 		try {
 			metaSocket = new Socket(metaServer, metaPort);
 			metaSocket.setReuseAddress(true);
@@ -294,10 +367,18 @@ public class ProOnline {
 	}
 
 	public void proNetAdhocctlConnect() {
+		if (log.isDebugEnabled()) {
+			log.debug("proNetAdhocctlConnect");
+		}
+
 		proNetAdhocctlCreate();
 	}
 
 	public void proNetAdhocctlCreate() {
+		if (log.isDebugEnabled()) {
+			log.debug("proNetAdhocctlCreate");
+		}
+
 		try {
 			sendToMetaServer(new SceNetAdhocctlConnectPacketC2S());
 		} catch (IOException e) {
@@ -306,6 +387,10 @@ public class ProOnline {
 	}
 
 	public void proNetAdhocctlDisconnect() {
+		if (log.isDebugEnabled()) {
+			log.debug("proNetAdhocctlDisconnect");
+		}
+
 		try {
 			sendToMetaServer(new SceNetAdhocctlDisconnectPacketC2S());
 		} catch (IOException e) {
@@ -314,13 +399,33 @@ public class ProOnline {
 	}
 
 	public void proNetAdhocctlTerm() {
+		if (log.isDebugEnabled()) {
+			log.debug("proNetAdhocctlTerm");
+		}
+
 		exit = true;
+	}
+
+	public void proNetAdhocctlScan() {
+		if (log.isDebugEnabled()) {
+			log.debug("proNetAdhocctlScan");
+		}
+
+		try {
+			sendToMetaServer(new SceNetAdhocctlScanPacketC2S());
+		} catch (IOException e) {
+			log.error("proNetAdhocctlScan", e);
+		}
 	}
 
 	protected void friendFinder() {
 		long lastPing = Emulator.getClock().currentTimeMillis();
 		byte[] buffer = new byte[1024];
 		int offset = 0;
+
+		if (log.isDebugEnabled()) {
+			log.debug("Starting friendFinder");
+		}
 
 		while (!exit) {
 			long now = Emulator.getClock().currentTimeMillis();
@@ -341,17 +446,58 @@ public class ProOnline {
 			}
 
 			if (offset > 0) {
+				if (log.isTraceEnabled()) {
+					log.trace(String.format("Received from meta server: OPCODE %d", buffer[0]));
+				}
+
 				int consumed = 0;
 				switch (buffer[0]) {
-					case OPCODE_CONNECT_BSSID:
+					case OPCODE_CONNECT_BSSID: {
 						SceNetAdhocctlConnectBSSIDPacketS2C packet = new SceNetAdhocctlConnectBSSIDPacketS2C(buffer, offset);
 						if (offset >= packet.getLength()) {
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("Incoming OPCODE_CONNECT_BSSID %s", packet));
+							}
 							log.info(String.format("Received MAC address %s", packet.mac));
 							consumed = packet.getLength();
 						}
 						break;
+					}
+					case OPCODE_CONNECT: {
+						SceNetAdhocctlConnectPacketS2C packet = new SceNetAdhocctlConnectPacketS2C(buffer, offset);
+						if (offset >= packet.getLength()) {
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("Incoming OPCODE_CONNECT %s", packet));
+							}
+							addFriend(packet.nickName, packet.mac, packet.ip);
+							consumed = packet.getLength();
+						}
+					}
+					case OPCODE_SCAN: {
+						SceNetAdhocctlScanPacketS2C packet = new SceNetAdhocctlScanPacketS2C(buffer, offset);
+						if (offset >= packet.getLength()) {
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("Incoming OPCODE_SCAN %s", packet));
+							}
+							Modules.sceNetAdhocctlModule.hleNetAdhocctlAddNetwork(packet.group, packet.mac, sceNetAdhocctl.PSP_ADHOCCTL_MODE_NORMAL);
+							consumed = packet.getLength();
+						}
+						break;
+					}
+					case OPCODE_SCAN_COMPLETE: {
+						SceNetAdhocctlScanCompletePacketS2C packet = new SceNetAdhocctlScanCompletePacketS2C(buffer, offset);
+						if (offset >= packet.getLength()) {
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("Incoming OPCODE_SCAN_COMPLETE %s", packet));
+							}
+							Modules.sceNetAdhocctlModule.hleNetAdhocctlScanComplete();
+							consumed = packet.getLength();
+						}
+						break;
+					}
 					default:
 						log.error(String.format("Received unknown opcode %d", buffer[0]));
+						// Skip the opcode...
 						consumed = 1;
 						break;
 				}
@@ -363,11 +509,25 @@ public class ProOnline {
 			}
 		}
 
+		if (log.isDebugEnabled()) {
+			log.debug("Exiting friendFinder");
+		}
+
 		try {
 			metaSocket.close();
 		} catch (IOException e) {
 			log.error("friendFinder", e);
 		}
 		metaSocket = null;
+	}
+
+	public static String convertIpToString(int ip) {
+		return String.format("%d.%d.%d.%d", ip & 0xFF, (ip >> 8) & 0xFF, (ip >> 16) % 0xFF, (ip >> 24) & 0xFF);
+	}
+
+	protected void addFriend(String nickName, pspNetMacAddress mac, int ip) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Adding friend nickName='%s', mac=%s, ip=%s", nickName, mac, convertIpToString(ip)));
+		}
 	}
 }

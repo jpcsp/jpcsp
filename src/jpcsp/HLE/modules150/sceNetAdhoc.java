@@ -543,8 +543,8 @@ public class sceNetAdhoc extends HLEModule {
 			rcvdData -= bufferMessage.length;
 		}
 
-		// For Pdp sockets, data in read one packets at a time.
-		// The called has to provide enough space to fully read the next packet.
+		// For Pdp sockets, data is read one packet at a time.
+		// The caller has to provide enough space to fully read the available packet.
 		public int recv(pspNetMacAddress srcMacAddress, TPointer16 portAddr, TPointer data, TPointer32 dataLengthAddr, int timeout, int nonblock) {
 			int result = nonblock != 0 ? SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE : SceKernelErrors.ERROR_NET_ADHOC_TIMEOUT;
 			int length = dataLengthAddr.getValue();
