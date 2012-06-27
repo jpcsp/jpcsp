@@ -2314,6 +2314,11 @@ public class VideoEngine {
 					break;
             }
 
+            // Textures on PSP are upside-down as compared to the export format:
+            // (0,0) is the upper-left corner of the texture on a PSP,
+            // (0,0) is the lower-left corner of the texture in the export format.
+            transformedV.t[1] = 1f - transformedV.t[1];
+
             exporter.exportVertex(v, transformedV);
     	}
 
@@ -2330,6 +2335,7 @@ public class VideoEngine {
 	    	IMemoryReader imageReader = ImageReader.getImageReader(textureAddr, textureWidth, textureHeight, textureBufferWidth, context.texture_storage, context.texture_swizzle, context.tex_clut_addr, context.tex_clut_mode, context.tex_clut_num_blocks, context.tex_clut_start, context.tex_clut_shift, context.tex_clut_mask, clut_buffer32, clut_buffer16);
 	    	CaptureImage captureImage = new CaptureImage(textureAddr, level, imageReader, textureWidth, textureHeight, textureBufferWidth, false, true, null);
 	    	captureImage.setDirectory("export/");
+	    	captureImage.setFileFormat("png");
 	    	try {
 	        	if (!captureImage.fileExists()) {
 	        		captureImage.write();

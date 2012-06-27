@@ -17,7 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.capture;
 
 import static jpcsp.graphics.RE.software.BaseRenderer.depthBufferPixelFormat;
+import static jpcsp.memory.ImageReader.colorABGRtoARGB;
 
+import java.awt.image.BufferedImage;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -29,6 +31,8 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.HashMap;
+
+import javax.imageio.ImageIO;
 
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
@@ -54,6 +58,8 @@ public class CaptureImage {
 	private boolean overwriteFile;
 	private String fileNamePrefix;
 	private String directory = "tmp/";
+	private static final String bmpFileFormat = "bmp";
+	private String fileFormat = bmpFileFormat;
 	private String fileName;
 	private static HashMap<Integer, Integer> lastFileIndex = new HashMap<Integer, Integer>();
 
@@ -87,6 +93,10 @@ public class CaptureImage {
 		this.fileNamePrefix = fileNamePrefix == null ? "Image" : fileNamePrefix;
 	}
 
+	public void setFileFormat(String fileFormat) {
+		this.fileFormat = fileFormat;
+	}
+
 	public void setDirectory(String directory) {
 		this.directory = directory;
 	}
@@ -105,7 +115,7 @@ public class CaptureImage {
 	    	}
 	    	for (int i = scanIndex; ; i++) {
 	    		String id = (i == 0 ? "" : "-" + i);
-	    		fileName = String.format("%s%s%08X%s%s.bmp", directory, fileNamePrefix, imageaddr, levelName, id);
+	    		fileName = String.format("%s%s%08X%s%s.%s", directory, fileNamePrefix, imageaddr, levelName, id, fileFormat);
 	    		if (overwriteFile) {
 	    			break;
 	    		}
@@ -139,50 +149,63 @@ public class CaptureImage {
 			width = bufferWidth;
 		}
 
-		// The image in the BMP file has always to be upside-down as compared to the PSP image
-		boolean imageInvert = !invert;
+		boolean imageInvert = invert;
 
-		// Unfortunately, I was not able to generate the image file
-		// using the ImageIO API :-(
-		// This is why I'm generating a BMP file manually...
-		//
-		// See http://en.wikipedia.org/wiki/BMP_file_format
-		// for detailed information about the BMP file format
-		//
-		byte[] fileHeader = new byte[14];
-		byte[] dibHeader = new byte[56];
-		int rowPad = (4 - ((width * 4) & 3)) & 3;
-		int imageRawBytes = (width * 4) + rowPad;
-		int imageSize = height * imageRawBytes;
-		int fileSize = fileHeader.length + dibHeader.length + imageSize;
-		OutputStream outBmp = new BufferedOutputStream(new FileOutputStream(getFileName()), fileSize);
-
-		fileHeader[0] = 'B';                                  // Magic number
-		fileHeader[1] = 'M';                                  // Magic number
-		storeLittleEndianInt(fileHeader, 2, fileSize);        // Size of the BMP file
-		storeLittleEndianInt(fileHeader, 10, fileHeader.length + dibHeader.length); // Offset where the Pixel Array (bitmap data) can be found
-
-		storeLittleEndianInt(dibHeader, 0, dibHeader.length); // Number of bytes in the DIB header (from this point)
-		storeLittleEndianInt(dibHeader, 4, width);            // Width of the bitmap in pixels
-		storeLittleEndianInt(dibHeader, 8, height);           // Height of the bitmap in pixels
-		storeLittleEndianShort(dibHeader, 12, 1);             // Number of color planes being used
-		storeLittleEndianShort(dibHeader, 14, 32);            // Number of bits per pixel
-		storeLittleEndianInt(dibHeader, 16, 0);               // BI_BITFIELDS, no Pixel Array compression used
-		storeLittleEndianInt(dibHeader, 20, imageSize);       // Size of the raw data in the Pixel Array (including padding)
-		storeLittleEndianInt(dibHeader, 24, 2835);            // Horizontal physical resolution of the image (pixels/meter)
-		storeLittleEndianInt(dibHeader, 28, 2835);            // Vertical physical resolution of the image (pixels/meter)
-		storeLittleEndianInt(dibHeader, 32, 0);               // Number of colors in the palette
-		storeLittleEndianInt(dibHeader, 36, 0);               // 0 means all colors are important
-		storeLittleEndianInt(dibHeader, 40, 0x00FF0000);      // Red channel bit mask in big-endian (valid because BI_BITFIELDS is specified)
-		storeLittleEndianInt(dibHeader, 44, 0x0000FF00);      // Green channel bit mask in big-endian (valid because BI_BITFIELDS is specified)
-		storeLittleEndianInt(dibHeader, 48, 0x000000FF);      // Blue channel bit mask in big-endian (valid because BI_BITFIELDS is specified)
-		storeLittleEndianInt(dibHeader, 52, 0xFF000000);      // Alpha channel bit mask in big-endian
-
-		outBmp.write(fileHeader);
-		outBmp.write(dibHeader);
-		byte[] rowPadBytes = new byte[rowPad];
+		// ImageIO doesn't support the bmp file format
+		boolean useImageIO = !fileFormat.equals(bmpFileFormat);
+		BufferedImage im = null;
+		OutputStream outBmp = null;
+		int imageSize = width * height * 4;
+		int imageRawBytes = width;
 		byte[] pixelBytes = new byte[4];
 		byte[] blackPixelBytes = new byte[pixelBytes.length];
+		byte[] rowPadBytes = null;
+		int[] lineARGB = null;
+		if (useImageIO) {
+			im = new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
+			lineARGB = new int[width];
+		} else {
+			// The image in the BMP file has always to be upside-down as compared to the PSP image
+			imageInvert = !imageInvert;
+
+			// See http://en.wikipedia.org/wiki/BMP_file_format
+			// for detailed information about the BMP file format
+			//
+			byte[] fileHeader = new byte[14];
+			byte[] dibHeader = new byte[56];
+			int rowPad = (4 - ((width * 4) & 3)) & 3;
+			imageRawBytes = (width * 4) + rowPad;
+			imageSize = height * imageRawBytes;
+			int fileSize = fileHeader.length + dibHeader.length + imageSize;
+			outBmp = new BufferedOutputStream(new FileOutputStream(getFileName()), fileSize);
+
+			fileHeader[0] = 'B';                                  // Magic number
+			fileHeader[1] = 'M';                                  // Magic number
+			storeLittleEndianInt(fileHeader, 2, fileSize);        // Size of the BMP file
+			storeLittleEndianInt(fileHeader, 10, fileHeader.length + dibHeader.length); // Offset where the Pixel Array (bitmap data) can be found
+
+			storeLittleEndianInt(dibHeader, 0, dibHeader.length); // Number of bytes in the DIB header (from this point)
+			storeLittleEndianInt(dibHeader, 4, width);            // Width of the bitmap in pixels
+			storeLittleEndianInt(dibHeader, 8, height);           // Height of the bitmap in pixels
+			storeLittleEndianShort(dibHeader, 12, 1);             // Number of color planes being used
+			storeLittleEndianShort(dibHeader, 14, 32);            // Number of bits per pixel
+			storeLittleEndianInt(dibHeader, 16, 0);               // BI_BITFIELDS, no Pixel Array compression used
+			storeLittleEndianInt(dibHeader, 20, imageSize);       // Size of the raw data in the Pixel Array (including padding)
+			storeLittleEndianInt(dibHeader, 24, 2835);            // Horizontal physical resolution of the image (pixels/meter)
+			storeLittleEndianInt(dibHeader, 28, 2835);            // Vertical physical resolution of the image (pixels/meter)
+			storeLittleEndianInt(dibHeader, 32, 0);               // Number of colors in the palette
+			storeLittleEndianInt(dibHeader, 36, 0);               // 0 means all colors are important
+			storeLittleEndianInt(dibHeader, 40, 0x00FF0000);      // Red channel bit mask in big-endian (valid because BI_BITFIELDS is specified)
+			storeLittleEndianInt(dibHeader, 44, 0x0000FF00);      // Green channel bit mask in big-endian (valid because BI_BITFIELDS is specified)
+			storeLittleEndianInt(dibHeader, 48, 0x000000FF);      // Blue channel bit mask in big-endian (valid because BI_BITFIELDS is specified)
+			storeLittleEndianInt(dibHeader, 52, 0xFF000000);      // Alpha channel bit mask in big-endian
+
+			outBmp.write(fileHeader);
+			outBmp.write(dibHeader);
+
+			rowPadBytes = new byte[rowPad];
+		}
+
 		boolean imageType32Bit = bufferStorage == GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 		if (imageReader != null) {
 			byte[] completeImageBytes = new byte[imageSize];
@@ -190,13 +213,23 @@ public class CaptureImage {
 				int pixelIndex = (imageInvert ? (height - y - 1) : y) * imageRawBytes;
 				for (int x = 0; x < width; x++, pixelIndex += 4) {
 					int pixel = imageReader.readNext();
-					completeImageBytes[pixelIndex + 0] = (byte) (pixel >> 16); // B
-					completeImageBytes[pixelIndex + 1] = (byte) (pixel >>  8); // G
-					completeImageBytes[pixelIndex + 2] = (byte) (pixel      ); // R
-					completeImageBytes[pixelIndex + 3] = (byte) (pixel >> 24); // A
+					if (outBmp != null) {
+						completeImageBytes[pixelIndex + 0] = (byte) (pixel >> 16); // B
+						completeImageBytes[pixelIndex + 1] = (byte) (pixel >>  8); // G
+						completeImageBytes[pixelIndex + 2] = (byte) (pixel      ); // R
+						completeImageBytes[pixelIndex + 3] = (byte) (pixel >> 24); // A
+					}
+					if (im != null) {
+						lineARGB[x] = colorABGRtoARGB(pixel);
+					}
+				}
+				if (im != null) {
+					im.setRGB(0, y, width, 1, lineARGB, 0, width);
 				}
 			}
-			outBmp.write(completeImageBytes);
+			if (outBmp != null) {
+				outBmp.write(completeImageBytes);
+			}
 		} else if (buffer instanceof IntBuffer && imageType32Bit) {
     		IntBuffer intBuffer = (IntBuffer) buffer;
 			for (int y = 0; y < height; y++) {
@@ -204,16 +237,28 @@ public class CaptureImage {
 				for (int x = 0; x < width; x++) {
 					try {
 						int pixel = intBuffer.get();
-						pixelBytes[0] = (byte) (pixel >> 16); // B
-						pixelBytes[1] = (byte) (pixel >>  8); // G
-						pixelBytes[2] = (byte) (pixel      ); // R
-						pixelBytes[3] = (byte) (pixel >> 24); // A
-						outBmp.write(pixelBytes);
+						if (outBmp != null) {
+							pixelBytes[0] = (byte) (pixel >> 16); // B
+							pixelBytes[1] = (byte) (pixel >>  8); // G
+							pixelBytes[2] = (byte) (pixel      ); // R
+							pixelBytes[3] = (byte) (pixel >> 24); // A
+							outBmp.write(pixelBytes);
+						}
+						if (im != null) {
+							lineARGB[x] = colorABGRtoARGB(pixel);
+						}
 					} catch (BufferUnderflowException e) {
-						outBmp.write(blackPixelBytes);
+						if (outBmp != null) {
+							outBmp.write(blackPixelBytes);
+						}
 					}
 				}
-				outBmp.write(rowPadBytes);
+				if (outBmp != null) {
+					outBmp.write(rowPadBytes);
+				}
+				if (im != null) {
+					im.setRGB(0, y, width, 1, lineARGB, 0, width);
+				}
 			}
     	} else if (buffer instanceof IntBuffer && !imageType32Bit) {
     		IntBuffer intBuffer = (IntBuffer) buffer;
@@ -223,15 +268,32 @@ public class CaptureImage {
 					try {
 						int twoPixels = intBuffer.get();
 						getPixelBytes((short) twoPixels, bufferStorage, pixelBytes);
-						outBmp.write(pixelBytes);
+						if (outBmp != null) {
+							outBmp.write(pixelBytes);
+						}
+						if (im != null) {
+							lineARGB[x] = getARGB(pixelBytes);
+						}
 						getPixelBytes((short) (twoPixels >>> 16), bufferStorage, pixelBytes);
-						outBmp.write(pixelBytes);
+						if (outBmp != null) {
+							outBmp.write(pixelBytes);
+						}
+						if (im != null) {
+							lineARGB[x + 1] = getARGB(pixelBytes);
+						}
 					} catch (BufferUnderflowException e) {
-						outBmp.write(blackPixelBytes);
-						outBmp.write(blackPixelBytes);
+						if (outBmp != null) {
+							outBmp.write(blackPixelBytes);
+							outBmp.write(blackPixelBytes);
+						}
 					}
 				}
-				outBmp.write(rowPadBytes);
+				if (outBmp != null) {
+					outBmp.write(rowPadBytes);
+				}
+				if (im != null) {
+					im.setRGB(0, y, width, 1, lineARGB, 0, width);
+				}
 			}
     	} else if (buffer instanceof ShortBuffer && !imageType32Bit) {
     		ShortBuffer shortBuffer = (ShortBuffer) buffer;
@@ -240,22 +302,42 @@ public class CaptureImage {
 				for (int x = 0; x < width; x++) {
 					short pixel = shortBuffer.get();
 					getPixelBytes(pixel, bufferStorage, pixelBytes);
-					outBmp.write(pixelBytes);
+					if (outBmp != null) {
+						outBmp.write(pixelBytes);
+					}
+					if (im != null) {
+						lineARGB[x] = getARGB(pixelBytes);
+					}
 				}
-				outBmp.write(rowPadBytes);
+				if (outBmp != null) {
+					outBmp.write(rowPadBytes);
+				}
+				if (im != null) {
+					im.setRGB(0, y, width, 1, lineARGB, 0, width);
+				}
 			}
     	} else if (imageType32Bit) {
 			for (int y = 0; y < height; y++) {
 	    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(imageaddr + (imageInvert ? (height - y - 1) : y) * bufferWidth * 4, bufferWidth * 4, 4);
 				for (int x = 0; x < width; x++) {
 					int pixel = memoryReader.readNext();
-					pixelBytes[0] = (byte) (pixel >> 16); // B
-					pixelBytes[1] = (byte) (pixel >>  8); // G
-					pixelBytes[2] = (byte) (pixel      ); // R
-					pixelBytes[3] = (byte) (pixel >> 24); // A
-					outBmp.write(pixelBytes);
+					if (outBmp != null) {
+						pixelBytes[0] = (byte) (pixel >> 16); // B
+						pixelBytes[1] = (byte) (pixel >>  8); // G
+						pixelBytes[2] = (byte) (pixel      ); // R
+						pixelBytes[3] = (byte) (pixel >> 24); // A
+						outBmp.write(pixelBytes);
+					}
+					if (im != null) {
+						lineARGB[x] = colorABGRtoARGB(pixel);
+					}
 				}
-				outBmp.write(rowPadBytes);
+				if (outBmp != null) {
+					outBmp.write(rowPadBytes);
+				}
+				if (im != null) {
+					im.setRGB(0, y, width, 1, lineARGB, 0, width);
+				}
 			}
     	} else {
 			for (int y = 0; y < height; y++) {
@@ -263,16 +345,34 @@ public class CaptureImage {
 				for (int x = 0; x < width; x++) {
 					short pixel = (short) memoryReader.readNext();
 					getPixelBytes(pixel, bufferStorage, pixelBytes);
-					outBmp.write(pixelBytes);
+					if (outBmp != null) {
+						outBmp.write(pixelBytes);
+					}
+					if (im != null) {
+						lineARGB[x] = getARGB(pixelBytes);
+					}
 				}
-				outBmp.write(rowPadBytes);
+				if (outBmp != null) {
+					outBmp.write(rowPadBytes);
+				}
+				if (im != null) {
+					im.setRGB(0, y, width, 1, lineARGB, 0, width);
+				}
 			}
     	}
 
 		if (buffer != null) {
 			buffer.rewind();
 		}
-		outBmp.close();
+		if (outBmp != null) {
+			outBmp.close();
+		}
+
+		if (useImageIO && im != null) {
+			if (!ImageIO.write(im, fileFormat, new File(getFileName()))) {
+				VideoEngine.log.error(String.format("Cannot save image in format %s using ImageIO: %s", fileFormat, getFileName()));
+			}
+		}
 
         VideoEngine.log.debug(String.format("Saved image to %s", getFileName()));
     }
@@ -324,6 +424,13 @@ public class CaptureImage {
 			pixelBytes[3] = 0;
 			break;
     	}
+    }
+
+    private int getARGB(byte[] pixelBytes) {
+    	return ((pixelBytes[3] & 0xFF) << 24) |
+    	       ((pixelBytes[2] & 0xFF) << 16) |
+    	       ((pixelBytes[1] & 0xFF) << 8) |
+    	       ((pixelBytes[0] & 0xFF));
     }
 
     private void storePixel(IntBuffer buffer, int x, int y, int color) {
