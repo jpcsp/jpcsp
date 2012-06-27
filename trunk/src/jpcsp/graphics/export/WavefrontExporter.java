@@ -93,18 +93,36 @@ public class WavefrontExporter implements IGraphicsExporter {
 		// Export faces
 		exportObj.info("");
 		switch (primitiveType) {
-    		case PRIM_TRIANGLE:
-				for (int i = 0; i < numberOfVertex; i += 3) {
-					exportFace(i, i + 1, i + 2);
-				}
-				break;
-			case PRIM_TRIANGLE_STRIPS:
-				for (int i = 0; i < numberOfVertex - 2; i++) {
-					exportFace(i, i + 1, i + 2);
-				}
-				break;
-    	}
+    		case PRIM_TRIANGLE: {
+				boolean clockwise = context.frontFaceCw;
 
+				for (int i = 0; i < numberOfVertex; i += 3) {
+					if (clockwise) {
+						exportFace(i + 1, i, i + 2);
+					} else {
+						exportFace(i, i + 1, i + 2);
+					}
+				}
+				break;
+    		}
+			case PRIM_TRIANGLE_STRIPS: {
+				for (int i = 0; i < numberOfVertex - 2; i++) {
+					// Front face is alternating every 2 triangle strips
+					boolean clockwise = (i % 2) == 0;
+
+					if (!context.frontFaceCw) {
+						clockwise = !clockwise;
+					}
+
+					if (clockwise) {
+						exportFace(i + 1, i, i + 2);
+					} else {
+						exportFace(i, i + 1, i + 2);
+					}
+				}
+				break;
+			}
+    	}
 	}
 
 	@Override
