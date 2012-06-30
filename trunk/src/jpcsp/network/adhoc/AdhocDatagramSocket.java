@@ -70,6 +70,7 @@ public class AdhocDatagramSocket extends AdhocSocket {
 		DatagramPacket packet = new DatagramPacket(buffer, size);
 		socket.receive(packet);
 		setReceivedPort(packet.getPort());
+		setReceivedAddress(packet.getAddress());
 
 		return packet.getLength();
 	}

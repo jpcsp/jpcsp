@@ -21,6 +21,7 @@ import static jpcsp.network.jpcsp.JpcspAdhocPtpMessage.PTP_MESSAGE_TYPE_CONNECT_
 import static jpcsp.network.jpcsp.JpcspAdhocPtpMessage.PTP_MESSAGE_TYPE_DATA;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
@@ -222,7 +223,7 @@ public class JpcspPtpObject extends PtpObject {
 	}
 
 	@Override
-	protected boolean isForMe(AdhocMessage adhocMessage, int port) {
+	protected boolean isForMe(AdhocMessage adhocMessage, int port, InetAddress address) {
 		if (adhocMessage instanceof JpcspAdhocPtpMessage) {
 			JpcspAdhocPtpMessage adhocPtpMessage = (JpcspAdhocPtpMessage) adhocMessage;
 			int type = adhocPtpMessage.getType();
@@ -250,7 +251,7 @@ public class JpcspPtpObject extends PtpObject {
 			}
 		}
 
-		return super.isForMe(adhocMessage, port);
+		return super.isForMe(adhocMessage, port, address);
 	}
 
 	// For Ptp sockets, data is stored in the internal buffer as a continuous byte stream.

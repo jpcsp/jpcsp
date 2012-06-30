@@ -18,6 +18,7 @@ package jpcsp.network.adhoc;
 
 import java.io.IOException;
 import java.net.BindException;
+import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
@@ -120,6 +121,9 @@ public abstract class PdpObject extends AdhocObject {
 		bufferMessage.offset = rcvdData;
 		adhocMessage.writeDataToMemory(buffer.addr + bufferMessage.offset);
 
+		// Update the timestamp of the peer
+		Modules.sceNetAdhocctlModule.hleNetAdhocctlPeerUpdateTimestamp(adhocMessage.getFromMacAddress());
+
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Successfully received %d bytes from %s on port %d(%d): %s", bufferMessage.length, bufferMessage.macAddress, bufferMessage.port, port, Utilities.getMemoryDump(buffer.addr + bufferMessage.offset, bufferMessage.length, 1, 16)));
 		}
@@ -193,8 +197,9 @@ public abstract class PdpObject extends AdhocObject {
 				byte[] bytes = new byte[getBufSize() - rcvdData + AdhocMessage.MAX_HEADER_SIZE];
 				int length = socket.receive(bytes, bytes.length);
 				int receivedPort = socket.getReceivedPort();
+				InetAddress receivedAddress = socket.getReceivedAddress();
 				AdhocMessage adhocMessage = createAdhocMessage(bytes, length);
-				if (isForMe(adhocMessage, receivedPort)) {
+				if (isForMe(adhocMessage, receivedPort, receivedAddress)) {
 					if (getRcvdData() + adhocMessage.getDataLength() <= getBufSize()) {
 						addReceivedMessage(adhocMessage, receivedPort);
 					} else {
@@ -224,7 +229,7 @@ public abstract class PdpObject extends AdhocObject {
 		return networkAdapter.createAdhocPdpMessage(message, length);
 	}
 
-	protected boolean isForMe(AdhocMessage adhocMessage, int port) {
+	protected boolean isForMe(AdhocMessage adhocMessage, int port, InetAddress address) {
 		return adhocMessage.isForMe();
 	}
 
