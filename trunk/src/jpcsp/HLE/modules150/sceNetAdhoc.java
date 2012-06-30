@@ -16,19 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import static jpcsp.HLE.modules150.sceNet.convertMacAddressToString;
-import static jpcsp.HLE.modules150.sceNetAdhoc.AdhocPtpMessage.PTP_MESSAGE_TYPE_CONNECT_CONFIRM;
-import static jpcsp.HLE.modules150.sceNetAdhoc.AdhocPtpMessage.PTP_MESSAGE_TYPE_DATA;
-import static jpcsp.HLE.modules150.sceNetAdhoc.AdhocPtpMessage.PTP_MESSAGE_TYPE_CONNECT;
+import static jpcsp.util.Utilities.writeBytes;
 
 import java.io.IOException;
-import java.net.BindException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.HashMap;
@@ -44,30 +37,29 @@ import jpcsp.HLE.TPointer32;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
-import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
-import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructureVariableLength;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.hardware.Wlan;
 import jpcsp.memory.IMemoryReader;
-import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
-import jpcsp.memory.MemoryWriter;
+import jpcsp.network.INetworkAdapter;
+import jpcsp.network.adhoc.AdhocMessage;
+import jpcsp.network.adhoc.PdpObject;
+import jpcsp.network.adhoc.PtpObject;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
 public class sceNetAdhoc extends HLEModule {
-    protected static Logger log = Modules.getLogger("sceNetAdhoc");
+    public static Logger log = Modules.getLogger("sceNetAdhoc");
 
     // For test purpose when running 2 different Jpcsp instances on the same computer:
     // one computer has to have netClientPortShift=0 and netServerPortShift=100,
@@ -75,8 +67,6 @@ public class sceNetAdhoc extends HLEModule {
     private int netClientPortShift = 0;
     private int netServerPortShift = 0;
 
-    // Polling period (micro seconds) for blocking operations
-    protected static final int BLOCKED_OPERATION_POLLING_MICROS = 10000;
     // Period to update the Game Mode
     protected static final int GAME_MODE_UPDATE_MICROS = 12000;
 
@@ -91,1046 +81,12 @@ public class sceNetAdhoc extends HLEModule {
 	public static final byte[] ANY_MAC_ADDRESS = new byte[] {
 		(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF
 	};
-	private static final String uidPurpose = "sceNetAdhoc";
 	private GameModeScheduledAction gameModeScheduledAction;
 	protected GameModeArea masterGameModeArea;
 	protected LinkedList<GameModeArea> replicaGameModeAreas;
 	private static final String replicaIdPurpose = "sceNetAdhoc-Replica";
     private static final int adhocGameModePort = 31000;
     private DatagramSocket gameModeSocket;
-
-    /**
-     * An AdhocMessage is consisting of:
-     * - 6 bytes for the MAC address of the message sender
-     * - 6 bytes for the MAC address of the message recipient
-     * - n bytes for the message data
-     */
-    public static abstract class AdhocMessage {
-    	protected byte[] fromMacAddress = new byte[Wlan.MAC_ADDRESS_LENGTH];
-    	protected byte[] toMacAddress = new byte[Wlan.MAC_ADDRESS_LENGTH];
-    	protected byte[] data = new byte[0];
-    	protected byte[] additionalHeaderData;
-    	protected static final int HEADER_SIZE = Wlan.MAC_ADDRESS_LENGTH + Wlan.MAC_ADDRESS_LENGTH;
-    	protected int additionalHeaderLength;
-
-    	public AdhocMessage() {
-    		init(0, 0, ANY_MAC_ADDRESS);
-    	}
-
-    	public AdhocMessage(byte[] fromMacAddress, byte[] toMacAddress) {
-    		init(0, 0, toMacAddress);
-    	}
-
-    	public AdhocMessage(byte[] message, int length) {
-    		additionalHeaderLength = getAdditionalHeaderLength();
-    		if (length >= HEADER_SIZE + additionalHeaderLength) {
-    			System.arraycopy(message, 0, fromMacAddress, 0, fromMacAddress.length);
-    			System.arraycopy(message, fromMacAddress.length, toMacAddress, 0, toMacAddress.length);
-    			additionalHeaderData = new byte[additionalHeaderLength];
-    			System.arraycopy(message, HEADER_SIZE, additionalHeaderData, 0, additionalHeaderData.length);
-    			data = new byte[length - getHeaderSize()];
-    			System.arraycopy(message, getHeaderSize(), data, 0, data.length);
-    		}
-    	}
-
-    	public AdhocMessage(int address, int length) {
-    		init(address, length, ANY_MAC_ADDRESS);
-    	}
-
-    	public AdhocMessage(int address, int length, byte[] toMacAddress) {
-    		init(address, length, toMacAddress);
-    	}
-
-    	protected int getHeaderSize() {
-    		return HEADER_SIZE + additionalHeaderLength;
-    	}
-
-    	protected void setAdditionalHeaderDataByte(int b) {
-    		if (additionalHeaderLength >= 1) {
-    			additionalHeaderData[0] = (byte) b;
-    		}
-    	}
-
-    	protected int getAdditionalHeaderDataByte() {
-    		if (additionalHeaderLength < 1) {
-    			return 0;
-    		}
-
-    		return additionalHeaderData[0] & 0xFF;
-    	}
-
-    	private void init(int address, int length, byte[] toMacAddress) {
-    		init(address, length, Wlan.getMacAddress(), toMacAddress);
-    	}
-
-    	private void init(int address, int length, byte[] fromMacAddress, byte[] toMacAddress) {
-    		additionalHeaderLength = getAdditionalHeaderLength();
-    		setFromMacAddress(fromMacAddress);
-    		setToMacAddress(toMacAddress);
-    		additionalHeaderData = new byte[additionalHeaderLength];
-    		data = new byte[length];
-    		if (length > 0 && address != 0) {
-	    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 1);
-	    		for (int i = 0; i < length; i++) {
-	    			data[i] = (byte) memoryReader.readNext();
-	    		}
-    		}
-    	}
-
-    	public void setData(byte[] data) {
-    		this.data = new byte[data.length];
-    		System.arraycopy(data, 0, this.data, 0, data.length);
-    	}
-
-    	public void setDataInt32(int value) {
-    		data = new byte[4];
-    		for (int i = 0; i < 4; i++) {
-    			data[i] = (byte) (value >> (i * 8));
-    		}
-    	}
-
-    	public int getDataInt32() {
-    		int value = 0;
-
-    		for (int i = 0; i < 4 && i < data.length; i++) {
-    			value |= (data[i] & 0xFF) << (i * 8);
-    		}
-
-    		return value;
-    	}
-
-    	public byte[] getMessage() {
-    		byte[] message = new byte[getMessageLength()];
-    		System.arraycopy(fromMacAddress, 0, message, 0, fromMacAddress.length);
-    		System.arraycopy(toMacAddress, 0, message, fromMacAddress.length, toMacAddress.length);
-    		System.arraycopy(additionalHeaderData, 0, message, HEADER_SIZE, additionalHeaderData.length);
-    		System.arraycopy(data, 0, message, getHeaderSize(), data.length);
-
-    		return message;
-    	}
-
-    	public int getMessageLength() {
-    		return getMessageLength(data.length + additionalHeaderLength);
-    	}
-
-    	public static int getMessageLength(int dataLength) {
-    		return HEADER_SIZE + dataLength;
-    	}
-
-    	public void writeDataToMemory(int address) {
-    		writeBytes(address, getDataLength(), data, 0);
-    	}
-
-    	public void writeDataToMemory(int address, int maxLength) {
-    		writeBytes(address, Math.min(getDataLength(), maxLength), data, 0);
-    	}
-
-    	public byte[] getData() {
-    		return data;
-    	}
-
-    	public int getDataLength() {
-    		return data.length;
-    	}
-
-    	public byte[] getFromMacAddress() {
-    		return fromMacAddress;
-    	}
-
-    	public byte[] getToMacAddress() {
-    		return toMacAddress;
-    	}
-
-    	public void setFromMacAddress(byte[] fromMacAddress) {
-    		System.arraycopy(fromMacAddress, 0, this.fromMacAddress, 0, this.fromMacAddress.length);
-    	}
-
-    	public void setToMacAddress(byte[] toMacAddress) {
-    		System.arraycopy(toMacAddress, 0, this.toMacAddress, 0, this.toMacAddress.length);
-    	}
-
-    	private static boolean isAnyMacAddress(byte[] macAddress) {
-    		return isSameMacAddress(macAddress, ANY_MAC_ADDRESS);
-    	}
-
-    	public byte[] getAdditionalHeaderData() {
-    		return additionalHeaderData;
-    	}
-
-    	protected abstract int getAdditionalHeaderLength();
-
-    	public boolean isForMe() {
-    		return isAnyMacAddress(toMacAddress) || isSameMacAddress(toMacAddress, Wlan.getMacAddress());
-    	}
-
-		@Override
-		public String toString() {
-			return String.format("AdhocMessage[fromMacAddress=%s, toMacAddress=%s, dataLength=%d]", convertMacAddressToString(fromMacAddress), convertMacAddressToString(toMacAddress), getDataLength());
-		}
-    }
-
-    protected static class AdhocPdpMessage extends AdhocMessage {
-    	private static final int ADDITIONAL_HEADER_LENGTH = 0;
-
-		public AdhocPdpMessage(byte[] message, int length) {
-			super(message, length);
-		}
-
-		public AdhocPdpMessage(int address, int length, byte[] toMacAddress) {
-			super(address, length, toMacAddress);
-		}
-
-		@Override
-		protected int getAdditionalHeaderLength() {
-			return ADDITIONAL_HEADER_LENGTH;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("AdhocPdpMessage[fromMacAddress=%s, toMacAddress=%s, dataLength=%d]", convertMacAddressToString(fromMacAddress), convertMacAddressToString(toMacAddress), getDataLength());
-		}
-    }
-
-    protected static class AdhocPtpMessage extends AdhocMessage {
-    	private static final int ADDITIONAL_HEADER_LENGTH = 1;
-    	protected static final int PTP_MESSAGE_TYPE_CONNECT = 1;
-    	protected static final int PTP_MESSAGE_TYPE_CONNECT_CONFIRM = 2;
-    	protected static final int PTP_MESSAGE_TYPE_DATA = 3;
-
-		public AdhocPtpMessage(byte[] message, int length) {
-			super(message, length);
-		}
-
-    	public AdhocPtpMessage(int type) {
-    		super();
-    		setAdditionalHeaderDataByte(type);
-    	}
-
-    	public AdhocPtpMessage(int address, int length, int type) {
-    		super(address, length);
-    		setAdditionalHeaderDataByte(type);
-    	}
-
-    	public int getType() {
-			return getAdditionalHeaderDataByte();
-		}
-
-		@Override
-		protected int getAdditionalHeaderLength() {
-			return ADDITIONAL_HEADER_LENGTH;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("AdhocPtpMessage[fromMacAddress=%s, toMacAddress=%s, dataLength=%d, type=%d]", convertMacAddressToString(fromMacAddress), convertMacAddressToString(toMacAddress), getDataLength(), getType());
-		}
-    }
-
-    protected static abstract class AdhocObject {
-    	/** uid */
-    	private final int id;
-    	private int port;
-    	protected DatagramSocket socket;
-    	/** Buffer size */
-    	private int bufSize;
-    	protected SysMemInfo buffer;
-
-    	public AdhocObject() {
-    		id = SceUidManager.getNewUid(uidPurpose);
-    	}
-
-    	public AdhocObject(AdhocObject adhocObject) {
-    		id = SceUidManager.getNewUid(uidPurpose);
-    		port = adhocObject.port;
-    		setBufSize(adhocObject.bufSize);
-    	}
-
-    	public int getId() {
-			return id;
-		}
-
-		public int getPort() {
-			return port;
-		}
-
-		public void setPort(int port) {
-			this.port = port;
-		}
-
-		public int getBufSize() {
-			return bufSize;
-		}
-
-		public void setBufSize(int bufSize) {
-			this.bufSize = bufSize;
-			if (buffer != null) {
-				Modules.SysMemUserForUserModule.free(buffer);
-				buffer = null;
-			}
-			buffer = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, Modules.sceNetAdhocModule.getName(), SysMemUserForUser.PSP_SMEM_Low, bufSize, 0);
-		}
-
-		public void delete() {
-			closeSocket();
-			if (buffer != null) {
-				Modules.SysMemUserForUserModule.free(buffer);
-				buffer = null;
-			}
-			SceUidManager.releaseUid(id, uidPurpose);
-    	}
-
-    	protected void openSocket() throws SocketException {
-			if (socket == null) {
-				if (port == 0) {
-					socket = new DatagramSocket();
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("Opening socket on free local port %d", socket.getLocalPort()));
-					}
-					setPort(socket.getLocalPort());
-				} else {
-					int realPort = Modules.sceNetAdhocModule.getRealPortFromServerPort(port);
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("Opening socket on port %d(%d)", port, realPort));
-					}
-					socket = new DatagramSocket(realPort);
-				}
-				socket.setBroadcast(true);
-				socket.setSoTimeout(1);
-			}
-		}
-
-		protected void closeSocket() {
-			if (socket != null) {
-				socket.close();
-				socket = null;
-			}
-		}
-
-		protected void setTimeout(int timeout, int nonblock) throws SocketException {
-			if (nonblock != 0) {
-				socket.setSoTimeout(1);
-			} else {
-				// SoTimeout accepts milliseconds, PSP timeout is given in microseconds
-				socket.setSoTimeout(Math.max(timeout / 1000, 1));
-			}
-		}
-
-		protected void send(AdhocMessage adhocMessage) throws IOException {
-			send(adhocMessage, getPort());
-		}
-
-		protected void send(AdhocMessage adhocMessage, int destPort) throws IOException {
-			openSocket();
-
-			int realPort = Modules.sceNetAdhocModule.getRealPortFromClientPort(adhocMessage.getToMacAddress(), destPort);
-			SocketAddress socketAddress = Modules.sceNetAdhocModule.getSocketAddress(adhocMessage.getToMacAddress(), realPort);
-			DatagramPacket packet = new DatagramPacket(adhocMessage.getMessage(), adhocMessage.getMessageLength(), socketAddress);
-			socket.send(packet);
-
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("Successfully sent %d bytes to port %d(%d): %s", adhocMessage.getDataLength(), destPort, realPort, adhocMessage));
-			}
-		}
-    }
-
-    protected static class AdhocBufferMessage {
-    	public int length;
-    	public int offset;
-    	public pspNetMacAddress macAddress = new pspNetMacAddress();
-    	public int port;
-    }
-
-    protected class PdpObject extends AdhocObject {
-    	/** MAC address */
-    	private pspNetMacAddress macAddress;
-    	/** Bytes received */
-    	protected int rcvdData;
-    	private LinkedList<AdhocBufferMessage> rcvdMessages = new LinkedList<AdhocBufferMessage>();
-
-    	public PdpObject() {
-    		super();
-    	}
-
-    	public PdpObject(PdpObject pdpObject) {
-    		super(pdpObject);
-    		macAddress = pdpObject.macAddress;
-    	}
-
-    	public pspNetMacAddress getMacAddress() {
-			return macAddress;
-		}
-
-		public void setMacAddress(pspNetMacAddress macAddress) {
-			this.macAddress = macAddress;
-		}
-
-		public int getRcvdData() {
-			return rcvdData;
-		}
-
-		public int create(pspNetMacAddress macAddress, int port, int bufSize) {
-			int result = getId();
-
-			setMacAddress(macAddress);
-			setPort(port);
-			setBufSize(bufSize);
-			try {
-				openSocket();
-			} catch (BindException e) {
-				if (log.isDebugEnabled()) {
-					log.debug("create", e);
-				}
-				result = SceKernelErrors.ERROR_NET_ADHOC_PORT_IN_USE;
-			} catch (SocketException e) {
-				log.error("create", e);
-			}
-
-			return result;
-		}
-
-		public int send(pspNetMacAddress destMacAddress, int destPort, TPointer data, int length, int timeout, int nonblock) {
-			int result = 0;
-
-			try {
-				openSocket();
-				setTimeout(timeout, nonblock);
-				AdhocMessage adhocMessage = new AdhocPdpMessage(data.getAddress(), length, destMacAddress.macAddress);
-				send(adhocMessage, destPort);
-			} catch (SocketException e) {
-				log.error("send", e);
-			} catch (UnknownHostException e) {
-				log.error("send", e);
-			} catch (SocketTimeoutException e) {
-				log.error("send", e);
-			} catch (IOException e) {
-				log.error("send", e);
-			}
-
-			return result;
-		}
-
-		// For Pdp sockets, data is stored in the internal buffer as a sequence of packets.
-		// The organization in packets must be kept for reading.
-		protected void addReceivedMessage(AdhocMessage adhocMessage, int port) {
-			AdhocBufferMessage bufferMessage = new AdhocBufferMessage();
-			bufferMessage.length = adhocMessage.getDataLength();
-			bufferMessage.macAddress.setMacAddress(adhocMessage.getFromMacAddress());
-			bufferMessage.port = getClientPortFromRealPort(adhocMessage.getFromMacAddress(), port);
-			bufferMessage.offset = rcvdData;
-			adhocMessage.writeDataToMemory(buffer.addr + bufferMessage.offset);
-
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("Successfully received %d bytes from %s on port %d(%d): %s", bufferMessage.length, bufferMessage.macAddress, bufferMessage.port, port, Utilities.getMemoryDump(buffer.addr + bufferMessage.offset, bufferMessage.length, 1, 16)));
-			}
-
-			rcvdData += bufferMessage.length;
-			rcvdMessages.add(bufferMessage);
-		}
-
-		private void removeFirstReceivedMessage() {
-			AdhocBufferMessage bufferMessage = rcvdMessages.removeFirst();
-			if (bufferMessage == null) {
-				return;
-			}
-
-			if (rcvdData > bufferMessage.length) {
-				// Move the remaining buffer data to the beginning of the buffer
-				Memory.getInstance().memcpy(buffer.addr, buffer.addr + bufferMessage.length, rcvdData - bufferMessage.length);
-				for (AdhocBufferMessage rcvdMessage : rcvdMessages) {
-					rcvdMessage.offset -= bufferMessage.length;
-				}
-			}
-			rcvdData -= bufferMessage.length;
-		}
-
-		// For Pdp sockets, data is read one packet at a time.
-		// The caller has to provide enough space to fully read the available packet.
-		public int recv(pspNetMacAddress srcMacAddress, TPointer16 portAddr, TPointer data, TPointer32 dataLengthAddr, int timeout, int nonblock) {
-			int result = nonblock != 0 ? SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE : SceKernelErrors.ERROR_NET_ADHOC_TIMEOUT;
-			int length = dataLengthAddr.getValue();
-
-			if (rcvdMessages.isEmpty()) {
-				update();
-			}
-
-			if (!rcvdMessages.isEmpty()) {
-				AdhocBufferMessage bufferMessage = rcvdMessages.getFirst();
-				if (length < bufferMessage.length) {
-					// Buffer is too small to contain all the available data.
-					// Return the buffer size that would be required.
-					dataLengthAddr.setValue(bufferMessage.length);
-					result = SceKernelErrors.ERROR_NET_BUFFER_TOO_SMALL;
-				} else {
-					// Copy the data already received
-					dataLengthAddr.setValue(bufferMessage.length);
-					Memory.getInstance().memcpy(data.getAddress(), buffer.addr + bufferMessage.offset, bufferMessage.length);
-					if (srcMacAddress != null) {
-						srcMacAddress.setMacAddress(bufferMessage.macAddress.macAddress);
-					}
-					if (portAddr != null) {
-						portAddr.setValue(bufferMessage.port);
-					}
-
-					removeFirstReceivedMessage();
-
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("Returned received data: %d bytes from %s on port %d: %s", dataLengthAddr.getValue(), bufferMessage.macAddress, portAddr.getValue(), Utilities.getMemoryDump(data.getAddress(), dataLengthAddr.getValue(), 4, 16)));
-					}
-					result = 0;
-				}
-			}
-
-			return result;
-		}
-
-		public void update() {
-			// Receive all messages available
-			while (rcvdData < getBufSize()) {
-				try {
-					openSocket();
-					socket.setSoTimeout(1);
-					byte[] bytes = new byte[AdhocMessage.getMessageLength(getBufSize() - rcvdData)];
-					DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
-					socket.receive(packet);
-					AdhocMessage adhocMessage = createMessage(packet);
-					if (isForMe(adhocMessage, packet.getPort())) {
-						if (getRcvdData() + adhocMessage.getDataLength() <= getBufSize()) {
-							addReceivedMessage(adhocMessage, packet.getPort());
-						} else {
-							if (log.isDebugEnabled()) {
-								log.debug(String.format("Discarded message, receive buffer full (%d of %d): %s", getRcvdData(), getBufSize(), adhocMessage));
-							}
-						}
-					} else {
-						if (log.isDebugEnabled()) {
-							log.debug(String.format("Received message not for me: %s", adhocMessage));
-						}
-					}
-				} catch (SocketException e) {
-					log.error("update", e);
-					break;
-				} catch (SocketTimeoutException e) {
-					// Timeout
-					break;
-				} catch (IOException e) {
-					log.error("update", e);
-					break;
-				}
-			}
-		}
-
-		protected AdhocMessage createMessage(DatagramPacket packet) {
-			return new AdhocPdpMessage(packet.getData(), packet.getLength());
-		}
-
-		protected boolean isForMe(AdhocMessage adhocMessage, int port) {
-			return adhocMessage.isForMe();
-		}
-
-		@Override
-		public String toString() {
-			return String.format("PdpObject[id=%d, macAddress=%s, port=%d, bufSize=%d, rcvdData=%d]", getId(), macAddress, getPort(), getBufSize(), rcvdData);
-		}
-    }
-
-    protected class PtpObject extends PdpObject {
-    	/** Destination MAC address */
-    	private pspNetMacAddress destMacAddress;
-    	/** Destination port */
-    	private int destPort;
-    	/** Retry delay */
-    	private int retryDelay;
-    	/** Retry count */
-    	private int retryCount;
-    	/** Queue size */
-    	private int queue;
-    	/** Bytes sent */
-    	private int sentData;
-    	private AdhocPtpMessage connectRequest;
-    	private int connectRequestPort;
-    	private AdhocPtpMessage connectConfirm;
-    	private boolean connected;
-
-    	public PtpObject() {
-    		super();
-    	}
-
-    	public PtpObject(PtpObject ptpObject) {
-    		super(ptpObject);
-    		destMacAddress = ptpObject.destMacAddress;
-    		destPort = ptpObject.destPort;
-    		retryDelay = ptpObject.retryDelay;
-    		retryCount = ptpObject.retryCount;
-    		queue = ptpObject.queue;
-    	}
-
-    	public pspNetMacAddress getDestMacAddress() {
-			return destMacAddress;
-		}
-
-    	public void setDestMacAddress(pspNetMacAddress destMacAddress) {
-			this.destMacAddress = destMacAddress;
-		}
-
-    	public int getDestPort() {
-			return destPort;
-		}
-
-    	public void setDestPort(int destPort) {
-			this.destPort = destPort;
-		}
-
-		public int getRetryDelay() {
-			return retryDelay;
-		}
-
-		public void setRetryDelay(int retryDelay) {
-			this.retryDelay = retryDelay;
-		}
-
-		public int getRetryCount() {
-			return retryCount;
-		}
-
-		public void setRetryCount(int retryCount) {
-			this.retryCount = retryCount;
-		}
-
-		public int getQueue() {
-			return queue;
-		}
-
-		public void setQueue(int queue) {
-			this.queue = queue;
-		}
-
-		public int getSentData() {
-			return sentData;
-		}
-
-		public boolean isConnectRequestReceived() {
-			return connectRequest != null;
-		}
-
-		public boolean isConnectConfirmReceived() {
-			return connectConfirm != null;
-		}
-
-		public int open() {
-			int result = 0;
-
-			try {
-				openSocket();
-			} catch (BindException e) {
-				if (log.isDebugEnabled()) {
-					log.debug("open", e);
-				}
-				result = SceKernelErrors.ERROR_NET_ADHOC_PORT_IN_USE;
-			} catch (SocketException e) {
-				log.error("open", e);
-			}
-
-			return result;
-		}
-
-		public int connect(int timeout, int nonblock) {
-			int result = 0;
-
-			try {
-				AdhocPtpMessage adhocPtpMessage = new AdhocPtpMessage(PTP_MESSAGE_TYPE_CONNECT);
-				send(adhocPtpMessage);
-
-				if (!pollConnect(Modules.ThreadManForUserModule.getCurrentThread())) {
-					if (nonblock != 0) {
-						result = SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE;
-					} else {
-						BlockedPtpAction blockedPtpAction = new BlockedPtpConnect(this, timeout);
-						blockedPtpAction.blockCurrentThread();
-					}
-				}
-			} catch (SocketException e) {
-				log.error("connect", e);
-			} catch (IOException e) {
-				log.error("connect", e);
-			}
-
-			return result;
-		}
-
-		public int listen() {
-			int result = 0;
-
-			try {
-				openSocket();
-			} catch (BindException e) {
-				if (log.isDebugEnabled()) {
-					log.debug("listen", e);
-				}
-				result = SceKernelErrors.ERROR_NET_ADHOC_PORT_IN_USE;
-			} catch (SocketException e) {
-				log.error("listen", e);
-			}
-
-			return result;
-		}
-
-		public int accept(int peerMacAddr, int peerPortAddr, int timeout, int nonblock) {
-			int result = 0;
-
-			SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
-			if (pollAccept(peerMacAddr, peerPortAddr, thread)) {
-				// Accept completed immediately
-				result = thread.cpuContext.gpr[Common._v0];
-			} else if (nonblock != 0) {
-				// Accept cannot be completed in non-blocking mode
-				result = SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE;
-			} else {
-				// Block current thread
-				BlockedPtpAction blockedPtpAction = new BlockedPtpAccept(this, peerMacAddr, peerPortAddr, timeout);
-				blockedPtpAction.blockCurrentThread();
-			}
-
-			return result;
-		}
-
-		public boolean pollAccept(int peerMacAddr, int peerPortAddr, SceKernelThreadInfo thread) {
-			boolean acceptCompleted = false;
-			Memory mem = Memory.getInstance();
-
-			try {
-				// Process a previously received connect message, if available
-				AdhocPtpMessage adhocPtpMessage = connectRequest;
-				int adhocPtpMessagePort = connectRequestPort;
-				if (adhocPtpMessage == null) {
-					byte[] bytes = new byte[getBufSize()];
-					DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
-					socket.receive(packet);
-					adhocPtpMessage = new AdhocPtpMessage(packet.getData(), packet.getLength());
-					adhocPtpMessagePort = packet.getPort();
-
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("pollAccept: received message %s", adhocPtpMessage));
-					}
-				} else {
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("pollAccept: processing pending message %s", adhocPtpMessage));
-					}
-				}
-
-				if (adhocPtpMessage.isForMe()) {
-					switch (adhocPtpMessage.getType()) {
-						case AdhocPtpMessage.PTP_MESSAGE_TYPE_CONNECT:
-							pspNetMacAddress peerMacAddress = new pspNetMacAddress();
-							peerMacAddress.setMacAddress(adhocPtpMessage.getFromMacAddress());
-							int peerPort = getClientPortFromRealPort(adhocPtpMessage.getFromMacAddress(), adhocPtpMessagePort);
-
-							if (peerMacAddr != 0) {
-								peerMacAddress.write(mem, peerMacAddr);
-							}
-							if (peerPortAddr != 0) {
-								mem.write16(peerPortAddr, (short) peerPort);
-							}
-
-							// As a result of the "accept" call, create a new PTP Object
-							PtpObject ptpObject = new PtpObject(this);
-							ptpObject.setDestMacAddress(peerMacAddress);
-							ptpObject.setDestPort(peerPort);
-							ptpObject.setPort(0);
-							ptpObjects.put(ptpObject.getId(), ptpObject);
-
-							// Return the ID of the new PTP Object
-							setReturnValue(thread, ptpObject.getId());
-
-							// Get a new free port
-							ptpObject.setPort(0);
-							ptpObject.openSocket();
-
-							// Send a connect confirmation message including the new port
-							AdhocPtpMessage confirmMessage = new AdhocPtpMessage(PTP_MESSAGE_TYPE_CONNECT_CONFIRM);
-							confirmMessage.setDataInt32(ptpObject.getPort());
-							ptpObject.send(confirmMessage);
-
-							if (log.isDebugEnabled()) {
-								log.debug(String.format("accept completed, creating new Ptp object %s", ptpObject));
-							}
-
-							acceptCompleted = true;
-							connectRequest = null;
-							break;
-					}
-				} else {
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("pollAccept: received a message not for me: %s", adhocPtpMessage));
-					}
-				}
-			} catch (SocketException e) {
-				log.error("pollAccept", e);
-			} catch (SocketTimeoutException e) {
-				// Ignore exception
-			} catch (IOException e) {
-				log.error("pollAccept", e);
-			}
-
-			return acceptCompleted;
-		}
-
-		public boolean pollConnect(SceKernelThreadInfo thread) {
-			boolean connectCompleted = false;
-
-			try {
-				// Process a previously received confirm message, if available
-				AdhocPtpMessage adhocPtpMessage = connectConfirm;
-				if (adhocPtpMessage == null) {
-					byte[] bytes = new byte[getBufSize()];
-					DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
-					socket.receive(packet);
-					adhocPtpMessage = new AdhocPtpMessage(packet.getData(), packet.getLength());
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("pollConnect: received message %s", adhocPtpMessage));
-					}
-				} else {
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("pollConnect: processing pending message %s", adhocPtpMessage));
-					}
-				}
-
-				if (adhocPtpMessage.isForMe()) {
-					switch (adhocPtpMessage.getType()) {
-						case PTP_MESSAGE_TYPE_CONNECT_CONFIRM:
-							// Connect successfully completed, retrieve the new destination port
-							int port = getClientPortFromRealPort(adhocPtpMessage.getFromMacAddress(), adhocPtpMessage.getDataInt32());
-							if (log.isDebugEnabled()) {
-								log.debug(String.format("Received connect confirmation, changing destination port from %d to %d", getDestPort(), port));
-							}
-							setDestPort(port);
-							setReturnValue(thread, 0);
-							connectConfirm = null;
-							connectCompleted = true;
-							break;
-					}
-				} else {
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("pollConnect: received a message not for me: %s", adhocPtpMessage));
-					}
-				}
-			} catch (SocketException e) {
-				log.error("pollConnect", e);
-			} catch (SocketTimeoutException e) {
-				// Ignore exception
-				AdhocPtpMessage adhocPtpMessage = new AdhocPtpMessage(PTP_MESSAGE_TYPE_CONNECT);
-				try {
-					send(adhocPtpMessage);
-				} catch (IOException e1) {
-				}
-			} catch (IOException e) {
-				log.error("pollConnect", e);
-			}
-
-			if (connectCompleted) {
-				connected = true;
-			}
-
-			return connectCompleted;
-		}
-
-		protected void send(AdhocPtpMessage adhocPtpMessage) throws IOException {
-			adhocPtpMessage.setFromMacAddress(getMacAddress().macAddress);
-			adhocPtpMessage.setToMacAddress(getDestMacAddress().macAddress);
-			send(adhocPtpMessage, getDestPort());
-		}
-
-		public int send(int data, TPointer32 dataSizeAddr, int timeout, int nonblock) {
-			int result = 0;
-
-			try {
-				AdhocPtpMessage adhocPtpMessage = new AdhocPtpMessage(data, dataSizeAddr.getValue(), PTP_MESSAGE_TYPE_DATA);
-				send(adhocPtpMessage);
-			} catch (IOException e) {
-				log.error("send", e);
-			}
-
-			return result;
-		}
-
-		// For Ptp sockets, data in read as a byte stream. Data is not organized in packets.
-		// Read as much data as the provided buffer can contain.
-		public int recv(TPointer data, TPointer32 dataLengthAddr, int timeout, int nonblock) {
-			int result = SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE;
-			int length = dataLengthAddr.getValue();
-
-			if (length > 0) {
-				if (getRcvdData() <= 0) {
-					update();
-				}
-
-				if (getRcvdData() > 0) {
-					if (length > getRcvdData()) {
-						length = getRcvdData();
-					}
-					// Copy the data already received
-					dataLengthAddr.setValue(length);
-					Memory mem = Memory.getInstance();
-					mem.memcpy(data.getAddress(), buffer.addr, length);
-					if (getRcvdData() > length) {
-						// Shift the remaining buffer data to the beginning of the buffer
-						mem.memmove(buffer.addr, buffer.addr + length, getRcvdData() - length);
-					}
-					rcvdData -= length;
-
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("Returned received data: %d bytes: %s", length, Utilities.getMemoryDump(data.getAddress(), length, 4, 16)));
-					}
-					result = 0;
-				}
-			}
-
-			return result;
-		}
-
-		@Override
-		protected AdhocMessage createMessage(DatagramPacket packet) {
-			return new AdhocPtpMessage(packet.getData(), packet.getLength());
-		}
-
-		@Override
-		protected boolean isForMe(AdhocMessage adhocMessage, int port) {
-			if (adhocMessage instanceof AdhocPtpMessage) {
-				AdhocPtpMessage adhocPtpMessage = (AdhocPtpMessage) adhocMessage;
-				int type = adhocPtpMessage.getType();
-				if (type == AdhocPtpMessage.PTP_MESSAGE_TYPE_CONNECT_CONFIRM) {
-					if (connected) {
-						if (log.isDebugEnabled()) {
-							log.debug(String.format("Received connect confirmation but already connected, discarding"));
-						}
-					} else {
-						if (log.isDebugEnabled()) {
-							log.debug(String.format("Received connect confirmation, processing later"));
-						}
-						connectConfirm = (AdhocPtpMessage) adhocMessage;
-					}
-					return false;
-				} else if (type == AdhocPtpMessage.PTP_MESSAGE_TYPE_CONNECT) {
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("Received connect request, processing later"));
-					}
-					connectRequest = (AdhocPtpMessage) adhocMessage;
-					connectRequestPort = port;
-					return false;
-				} else if (type != AdhocPtpMessage.PTP_MESSAGE_TYPE_DATA) {
-					return false;
-				}
-			}
-
-			return super.isForMe(adhocMessage, port);
-		}
-
-		@Override
-		public String toString() {
-			return String.format("PtpObject[id=%d, srcMacAddress=%s, srcPort=%d, destMacAddress=%s, destPort=%d, bufSize=%d, retryDelay=%d, retryCount=%d, queue=%d, rcvdData=%d]", getId(), getMacAddress(), getPort(), getDestMacAddress(), getDestPort(), getBufSize(), getRetryDelay(), getRetryCount(), getQueue(), getRcvdData());
-		}
-
-		// For Ptp sockets, data is stored in the internal buffer as a continuous byte stream.
-		// The organization in packets doesn't matter.
-		@Override
-		protected void addReceivedMessage(AdhocMessage adhocMessage, int port) {
-			int length = Math.min(adhocMessage.getDataLength(), getBufSize() - getRcvdData());
-			int addr = buffer.addr + getRcvdData();
-			adhocMessage.writeDataToMemory(addr, length);
-			rcvdData += length;
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("Successfully received message %s: %s", adhocMessage, Utilities.getMemoryDump(addr, length, 1, 16)));
-			}
-		}
-
-		@Override
-		protected void closeSocket() {
-			super.closeSocket();
-			connected = false;
-		}
-    }
-
-    protected static abstract class BlockedPtpAction implements IAction {
-    	protected final PtpObject ptpObject;
-    	protected final long timeoutMicros;
-    	protected final int threadUid;
-    	protected final SceKernelThreadInfo thread;
-
-    	protected BlockedPtpAction(PtpObject ptpObject, int timeout) {
-    		this.ptpObject = ptpObject;
-    		timeoutMicros = Emulator.getClock().microTime() + timeout;
-    		threadUid = Modules.ThreadManForUserModule.getCurrentThreadID();
-			thread = Modules.ThreadManForUserModule.getThreadById(threadUid);
-
-    		if (log.isDebugEnabled()) {
-    			log.debug(String.format("BlockedPtdAccept for thread %s", thread));
-    		}
-    	}
-
-    	public void blockCurrentThread() {
-			long schedule = Emulator.getClock().microTime() + BLOCKED_OPERATION_POLLING_MICROS;
-			Emulator.getScheduler().addAction(schedule, this);
-			Modules.ThreadManForUserModule.hleBlockCurrentThread();
-    	}
-
-    	@Override
-		public void execute() {
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("BlockedPtpAction: poll on %s, thread %s", ptpObject, thread));
-			}
-
-			if (poll()) {
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("BlockedPtpAction: unblocking thread %s", thread));
-				}
-				Modules.ThreadManForUserModule.hleUnblockThread(threadUid);
-			} else {
-				long now = Emulator.getClock().microTime();
-				if (now >= timeoutMicros) {
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("BlockedPtpAction: timeout for thread %s", thread));
-					}
-					// Unblock thread and return timeout error
-					setReturnValue(thread, SceKernelErrors.ERROR_NET_ADHOC_TIMEOUT);
-					Modules.ThreadManForUserModule.hleUnblockThread(threadUid);
-				} else {
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("BlockedPtpAction: continue polling"));
-					}
-					long schedule = now + BLOCKED_OPERATION_POLLING_MICROS;
-					Emulator.getScheduler().addAction(schedule, this);
-				}
-			}
-		}
-
-		protected abstract boolean poll();
-    }
-
-    protected static class BlockedPtpAccept extends BlockedPtpAction {
-    	private final int peerMacAddr;
-    	private final int peerPortAddr;
-
-    	public BlockedPtpAccept(PtpObject ptpObject, int peerMacAddr, int peerPortAddr, int timeout) {
-    		super(ptpObject, timeout);
-    		this.peerMacAddr = peerMacAddr;
-    		this.peerPortAddr = peerPortAddr;
-    	}
-
-		@Override
-		protected boolean poll() {
-			return ptpObject.pollAccept(peerMacAddr, peerPortAddr, thread);
-		}
-    }
-
-    protected static class BlockedPtpConnect extends BlockedPtpAction {
-    	public BlockedPtpConnect(PtpObject ptpObject, int timeout) {
-    		super(ptpObject, timeout);
-    	}
-
-		@Override
-		protected boolean poll() {
-			return ptpObject.pollConnect(thread);
-		}
-    }
 
     protected static class GameModeScheduledAction implements IAction {
     	private final int scheduleRepeatMicros;
@@ -1157,7 +113,7 @@ public class sceNetAdhoc extends HLEModule {
 		}
     }
 
-    protected static class GameModeArea {
+    public static class GameModeArea {
     	public pspNetMacAddress macAddress;
     	public int addr;
     	public int size;
@@ -1231,28 +187,6 @@ public class sceNetAdhoc extends HLEModule {
 		}
     }
 
-    protected static class AdhocGameModeMessage extends AdhocMessage {
-    	private static final int ADDITIONAL_HEADER_LENGTH = 0;
-
-    	public AdhocGameModeMessage(GameModeArea gameModeArea) {
-    		super();
-    		setData(gameModeArea.getNewData());
-    		gameModeArea.resetNewData();
-    		if (gameModeArea.macAddress != null) {
-    			setToMacAddress(gameModeArea.macAddress.macAddress);
-    		}
-    	}
-
-    	public AdhocGameModeMessage(byte[] message, int length) {
-    		super(message, length);
-    	}
-
-    	@Override
-		protected int getAdditionalHeaderLength() {
-			return ADDITIONAL_HEADER_LENGTH;
-		}
-    }
-
 	protected static String getPollEventName(int event) {
 		return String.format("Unknown 0x%X", event);
 	}
@@ -1313,8 +247,8 @@ public class sceNetAdhoc extends HLEModule {
 
     @Override
 	public void start() {
-	    pdpObjects = new HashMap<Integer, sceNetAdhoc.PdpObject>();
-	    ptpObjects = new HashMap<Integer, sceNetAdhoc.PtpObject>();
+	    pdpObjects = new HashMap<Integer, PdpObject>();
+	    ptpObjects = new HashMap<Integer, PtpObject>();
 	    currentFreePort = 0x4000;
 	    replicaGameModeAreas = new LinkedList<sceNetAdhoc.GameModeArea>();
 
@@ -1357,6 +291,10 @@ public class sceNetAdhoc extends HLEModule {
     	return serverPort + netServerPortShift;
     }
 
+    public boolean hasNetPortShiftActive() {
+    	return netServerPortShift > 0 || netClientPortShift > 0;
+    }
+
     public void hleExitGameMode() {
     	masterGameModeArea = null;
     	replicaGameModeAreas.clear();
@@ -1380,7 +318,7 @@ public class sceNetAdhoc extends HLEModule {
 			// Send master area
 			if (masterGameModeArea != null && masterGameModeArea.hasNewData()) {
 				try {
-					AdhocGameModeMessage adhocGameModeMessage = new AdhocGameModeMessage(masterGameModeArea);
+					AdhocMessage adhocGameModeMessage = getNetworkAdapter().createAdhocGameModeMessage(masterGameModeArea);
 			    	SocketAddress socketAddress = Modules.sceNetAdhocModule.getSocketAddress(sceNetAdhoc.ANY_MAC_ADDRESS, Modules.sceNetAdhocModule.getRealPortFromClientPort(sceNetAdhoc.ANY_MAC_ADDRESS, adhocGameModePort));
 			    	DatagramPacket packet = new DatagramPacket(adhocGameModeMessage.getMessage(), adhocGameModeMessage.getMessageLength(), socketAddress);
 			    	gameModeSocket.send(packet);
@@ -1399,14 +337,14 @@ public class sceNetAdhoc extends HLEModule {
 					byte[] bytes = new byte[10000];
 			    	DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
 			    	gameModeSocket.receive(packet);
-			    	AdhocGameModeMessage adhocGameModeMessage = new AdhocGameModeMessage(packet.getData(), packet.getLength());
+			    	AdhocMessage adhocGameModeMessage = getNetworkAdapter().createAdhocGameModeMessage(packet.getData(), packet.getLength());
 
 			    	if (log.isDebugEnabled()) {
 			    		log.debug(String.format("GameMode received: %s", adhocGameModeMessage));
 			    	}
 
 			    	for (GameModeArea gameModeArea : replicaGameModeAreas) {
-			    		if (isSameMacAddress(gameModeArea.macAddress.macAddress, adhocGameModeMessage.fromMacAddress)) {
+			    		if (isSameMacAddress(gameModeArea.macAddress.macAddress, adhocGameModeMessage.getFromMacAddress())) {
 			    			if (log.isDebugEnabled()) {
 			    				log.debug(String.format("Received new Data for GameMode Area %s", gameModeArea));
 			    			}
@@ -1449,15 +387,8 @@ public class sceNetAdhoc extends HLEModule {
     	}
     }
 
-    private static void setReturnValue(SceKernelThreadInfo thread, int value) {
-    	thread.cpuContext.gpr[Common._v0] = value;
-    }
-
-    public SocketAddress getSocketAddress(byte[] macAddress, int macPort) throws UnknownHostException {
-		if (netClientPortShift > 0 || netServerPortShift > 0) {
-			return new InetSocketAddress(InetAddress.getLocalHost(), macPort);
-		}
-		return sceNetInet.getBroadcastInetSocketAddress(macPort);
+    public SocketAddress getSocketAddress(byte[] macAddress, int realPort) throws UnknownHostException {
+    	return getNetworkAdapter().getSocketAddress(macAddress, realPort);
 	}
 
 	public static boolean isSameMacAddress(byte[] macAddress1, byte[] macAddress2) {
@@ -1472,6 +403,10 @@ public class sceNetAdhoc extends HLEModule {
 		}
 
 		return true;
+	}
+
+	public static boolean isAnyMacAddress(byte[] macAddress) {
+		return isSameMacAddress(macAddress, ANY_MAC_ADDRESS);
 	}
 
 	public static boolean isMyMacAddress(byte[] macAddress) {
@@ -1493,14 +428,6 @@ public class sceNetAdhoc extends HLEModule {
 		return freePort;
     }
 
-	public static void writeBytes(int address, int length, byte[] bytes, int offset) {
-		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, length, 1);
-		for (int i = 0; i < length; i++) {
-			memoryWriter.writeNext(bytes[i + offset] & 0xFF);
-		}
-		memoryWriter.flush();
-	}
-
 	public int checkPdpId(int pdpId) {
 		if (!pdpObjects.containsKey(pdpId)) {
 			if (log.isDebugEnabled()) {
@@ -1521,6 +448,14 @@ public class sceNetAdhoc extends HLEModule {
 		}
 
 		return ptpId;
+	}
+
+	public void hleAddPtpObject(PtpObject ptpObject) {
+		ptpObjects.put(ptpObject.getId(), ptpObject);
+	}
+
+	protected INetworkAdapter getNetworkAdapter() {
+		return Modules.sceNetModule.getNetworkAdapter();
 	}
 
 	/**
@@ -1578,12 +513,12 @@ public class sceNetAdhoc extends HLEModule {
         		pollId.revents |= PSP_ADHOC_POLL_READY_TO_SEND;
         	}
         	if ((pollId.events & PSP_ADHOC_POLL_CAN_CONNECT) != 0) {
-    			if (ptpObject != null && ptpObject.isConnectConfirmReceived()) {
+    			if (ptpObject != null && ptpObject.canConnect()) {
     				pollId.revents |= PSP_ADHOC_POLL_CAN_CONNECT;
         		}
         	}
         	if ((pollId.events & PSP_ADHOC_POLL_CAN_ACCEPT) != 0) {
-    			if (ptpObject != null && ptpObject.isConnectRequestReceived()) {
+    			if (ptpObject != null && ptpObject.canAccept()) {
     				pollId.revents |= PSP_ADHOC_POLL_CAN_ACCEPT;
         		}
         	}
@@ -1641,7 +576,7 @@ public class sceNetAdhoc extends HLEModule {
 			}
 		}
 
-		PdpObject pdpObject = new PdpObject();
+		PdpObject pdpObject = getNetworkAdapter().createPdpObject();
     	int result = pdpObject.create(macAddress, port, bufSize);
     	if (result == pdpObject.getId()) {
     		pdpObjects.put(pdpObject.getId(), pdpObject);
@@ -1828,7 +763,7 @@ public class sceNetAdhoc extends HLEModule {
 
     	log.warn(String.format("PARTIAL: sceNetAdhocPtpOpen scrMacAddr=%s(%s), srcPort=%d, destMacAddr=%s(%s), destPort=%d, bufSize=0x%X, retryDelay=%d, retryCount=%d, unk1=%d", srcMacAddr, srcMacAddress, srcPort, destMacAddr, destMacAddress, destPort, bufSize, retryDelay, retryCount, unk1));
 
-    	PtpObject ptpObject = new PtpObject();
+    	PtpObject ptpObject = getNetworkAdapter().createPtpObject();
     	ptpObject.setMacAddress(srcMacAddress);
     	ptpObject.setPort(srcPort);
     	ptpObject.setDestMacAddress(destMacAddress);
@@ -1889,7 +824,7 @@ public class sceNetAdhoc extends HLEModule {
 
     	log.warn(String.format("PARTIAL: sceNetAdhocPtpListen scrMacAddr=%s(%s), srcPort=%d, bufSize=0x%X, retryDelay=%d, retryCount=%d, queue=%d, unk1=%d", srcMacAddr, srcMacAddress, srcPort, bufSize, retryDelay, retryCount, queue, unk1));
 
-    	PtpObject ptpObject = new PtpObject();
+    	PtpObject ptpObject = getNetworkAdapter().createPtpObject();
     	ptpObject.setMacAddress(srcMacAddress);
     	ptpObject.setPort(srcPort);
     	ptpObject.setBufSize(bufSize);

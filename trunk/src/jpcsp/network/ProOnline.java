@@ -37,7 +37,7 @@ import jpcsp.network.upnp.UPnP;
 import org.apache.log4j.Logger;
 
 public class ProOnline {
-	protected static Logger log = Logger.getLogger("ProOnline");
+	public static Logger log = Logger.getLogger("ProOnline");
 	private static ProOnline instance;
 	private static boolean enabled = false;
 	private UPnP upnp;
