@@ -57,4 +57,12 @@ public class ProOnlinePdpObject extends PdpObject {
 	protected AdhocSocket createSocket() {
 		return new AdhocDatagramSocket();
 	}
+
+	@Override
+	public int create(pspNetMacAddress macAddress, int port, int bufSize) {
+		// Open the UDP port in the router
+		proOnline.sceNetPortOpen("UDP", port);
+
+		return super.create(macAddress, port, bufSize);
+	}
 }

@@ -19,6 +19,7 @@ package jpcsp.network.proonline;
 import static jpcsp.HLE.modules150.sceNetAdhoc.isSameMacAddress;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -59,6 +60,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	private volatile boolean exit;
 	private List<MacIp> macIps = new LinkedList<MacIp>();
 	private PacketFactory packetFactory = new PacketFactory();
+	private PortManager portManager;
 
 	public static boolean isEnabled() {
 		return enabled;
@@ -86,6 +88,17 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 
 		upnp = new UPnP();
 		upnp.discover();
+
+		portManager = new PortManager(upnp);
+	}
+
+	@Override
+	public void stop() {
+		// Delete all the port/host mappings
+		portManager.clear();
+		portManager = null;
+
+		super.stop();
 	}
 
 	protected void sendToMetaServer(SceNetAdhocctlPacketBaseC2S packet) throws IOException {
@@ -119,8 +132,9 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 
 			sendToMetaServer(loginPacket);
 
+			exit = false;
 			Thread friendFinderThread = new FriendFinder();
-			friendFinderThread.setName("ProLine Friend Finder");
+			friendFinderThread.setName("ProOnline Friend Finder");
 			friendFinderThread.setDaemon(true);
 			friendFinderThread.start();
 		} catch (UnknownHostException e) {
@@ -185,6 +199,10 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		} catch (IOException e) {
 			log.error("proNetAdhocctlScan", e);
 		}
+	}
+
+	public void sceNetPortOpen(String protocol, int port) {
+		portManager.addPort(port, protocol);
 	}
 
 	protected void friendFinder() {
@@ -274,22 +292,51 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		if (!found) {
 			MacIp macIp = new MacIp(mac.macAddress, ip);
 			macIps.add(macIp);
+
+			portManager.addHost(convertIpToString(ip));
 		}
 	}
 
 	@Override
 	public SocketAddress getSocketAddress(byte[] macAddress, int realPort) throws UnknownHostException {
-		for (MacIp macIp : macIps) {
-			if (isSameMacAddress(macAddress, macIp.mac)) {
-				return new InetSocketAddress(macIp.inetAddress, realPort);
-			}
+		InetAddress inetAddress = getInetAddress(macAddress);
+		if (inetAddress == null) {
+			return sceNetInet.getBroadcastInetSocketAddress(realPort);
 		}
 
-		return sceNetInet.getBroadcastInetSocketAddress(realPort);
+		return new InetSocketAddress(inetAddress, realPort);
 	}
 
 	public List<MacIp> getMacIps() {
 		return macIps;
+	}
+
+	public InetAddress getInetAddress(byte[] macAddress) {
+		MacIp macIp = getMacIp(macAddress);
+		if (macIp == null) {
+			return null;
+		}
+
+		return macIp.inetAddress;
+	}
+
+	public int getIp(byte[] macAddress) {
+		MacIp macIp = getMacIp(macAddress);
+		if (macIp == null) {
+			return 0;
+		}
+
+		return macIp.ip;
+	}
+
+	public MacIp getMacIp(byte[] macAddress) {
+		for (MacIp macIp : macIps) {
+			if (isSameMacAddress(macAddress, macIp.mac)) {
+				return macIp;
+			}
+		}
+
+		return null;
 	}
 
 	@Override
@@ -304,22 +351,22 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 
 	@Override
 	public AdhocMessage createAdhocPdpMessage(int address, int length, byte[] destMacAddress) {
-		return new ProOnlineAdhocMessage(address, length, destMacAddress);
+		return new ProOnlineAdhocMessage(this, address, length, destMacAddress);
 	}
 
 	@Override
 	public AdhocMessage createAdhocPdpMessage(byte[] message, int length) {
-		return new ProOnlineAdhocMessage(message, length);
+		return new ProOnlineAdhocMessage(this, message, length);
 	}
 
 	@Override
 	public AdhocMessage createAdhocPtpMessage(int address, int length) {
-		return new ProOnlineAdhocMessage(address, length);
+		return new ProOnlineAdhocMessage(this, address, length);
 	}
 
 	@Override
 	public AdhocMessage createAdhocPtpMessage(byte[] message, int length) {
-		return new ProOnlineAdhocMessage(message, length);
+		return new ProOnlineAdhocMessage(this, message, length);
 	}
 
 	@Override
