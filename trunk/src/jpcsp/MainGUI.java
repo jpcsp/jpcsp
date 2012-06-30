@@ -1620,6 +1620,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
                 // Try to load a previously decrypted EBOOT.BIN (faster)
                 (!discId.equals(State.DISCID_UNKNOWN_UMD) && loadUnpackedUMD(Connector.baseDirectory + discId + File.separatorChar + "EBOOT.BIN")) ||
                 // Try to load the EBOOT.BIN (before the BOOT.BIN, same games have an invalid BOOT.BIN but a valid EBOOT.BIN)
+                loadUMD(iso, "PSP_GAME/SYSDIR/EBOOT.OLD") ||
                 loadUMD(iso, "PSP_GAME/SYSDIR/EBOOT.BIN") ||
                 // As the last chance, try to load the BOOT.BIN
                 loadUMD(iso, "PSP_GAME/SYSDIR/BOOT.BIN")) {
