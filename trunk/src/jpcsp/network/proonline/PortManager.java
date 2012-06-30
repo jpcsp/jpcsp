@@ -19,6 +19,7 @@ package jpcsp.network.proonline;
 import java.util.LinkedList;
 import java.util.List;
 
+import jpcsp.HLE.modules.sceNetApctl;
 import jpcsp.network.upnp.UPnP;
 
 /**
@@ -29,7 +30,7 @@ public class PortManager {
 	private List<String> hosts = new LinkedList<String>();
 	private List<PortInfo> portInfos = new LinkedList<PortInfo>();
 	private UPnP upnp;
-	private String externalIPAddress;
+	private String localIPAddress;
 	private final static int portLeaseDuration = 0;
 	private final static String portDescription = "Jpcsp ProOnline Network";
 
@@ -54,30 +55,27 @@ public class PortManager {
 
 	public PortManager(UPnP upnp) {
 		this.upnp = upnp;
+		localIPAddress = sceNetApctl.getLocalHostIP();
 	}
 
-	protected String getExternalIPAddress() {
-		if (externalIPAddress == null) {
-			externalIPAddress = upnp.getIGD().getExternalIPAddress(upnp);
-		}
-
-		return externalIPAddress;
+	protected String getLocalIPAddress() {
+		return localIPAddress;
 	}
 
-	public void addHost(String host) {
+	public synchronized void addHost(String host) {
 		if (hosts.contains(host)) {
 			return;
 		}
 
 		// Open all the ports to this new host
 		for (PortInfo portInfo : portInfos) {
-			upnp.getIGD().addPortMapping(upnp, host, portInfo.port, portInfo.protocol, portInfo.port, getExternalIPAddress(), portDescription, portLeaseDuration);
+			upnp.getIGD().addPortMapping(upnp, host, portInfo.port, portInfo.protocol, portInfo.port, getLocalIPAddress(), portDescription, portLeaseDuration);
 		}
 
 		hosts.add(host);
 	}
 
-	public void removeHost(String host) {
+	public synchronized void removeHost(String host) {
 		if (!hosts.contains(host)) {
 			return;
 		}
@@ -90,7 +88,7 @@ public class PortManager {
 		hosts.remove(host);
 	}
 
-	public void addPort(int port, String protocol) {
+	public synchronized void addPort(int port, String protocol) {
 		PortInfo portInfo = new PortInfo(port, protocol);
 		if (portInfos.contains(portInfo)) {
 			return;
@@ -98,13 +96,13 @@ public class PortManager {
 
 		// All the new port mapping for all the hosts
 		for (String host : hosts) {
-			upnp.getIGD().addPortMapping(upnp, host, port, protocol, port, getExternalIPAddress(), portDescription, portLeaseDuration);
+			upnp.getIGD().addPortMapping(upnp, host, port, protocol, port, getLocalIPAddress(), portDescription, portLeaseDuration);
 		}
 
 		portInfos.add(portInfo);
 	}
 
-	public void removePort(int port, String protocol) {
+	public synchronized void removePort(int port, String protocol) {
 		PortInfo portInfo = new PortInfo(port, protocol);
 		if (!portInfos.contains(portInfo)) {
 			return;
@@ -118,7 +116,7 @@ public class PortManager {
 		portInfos.remove(portInfo);
 	}
 
-	public void clear() {
+	public synchronized void clear() {
 		// Remove all the hosts
 		while (!hosts.isEmpty()) {
 			String host = hosts.get(0);

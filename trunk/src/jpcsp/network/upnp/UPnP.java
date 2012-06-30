@@ -133,22 +133,26 @@ public class UPnP {
 		StringBuilder body = new StringBuilder();
 
 		body.append(String.format("<?xml version=\"1.0\"?>\r\n"));
-		body.append(String.format("<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">"));
-		body.append(String.format("<s:Body>"));
-		body.append(String.format("<u:%s xmlns:u=\"%s\">", action, serviceType));
+		body.append(String.format("<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\r\n"));
+		body.append(String.format("<s:Body>\r\n"));
+		body.append(String.format("  <u:%s xmlns:u=\"%s\">\r\n", action, serviceType));
 		if (arguments != null) {
 			for (String name : arguments.keySet()) {
 				String value = arguments.get(name);
 				if (value == null) {
-					body.append(String.format("<%s />", name));
+					body.append(String.format("    <%s />\r\n", name));
 				} else {
-					body.append(String.format("<%s>%s</%s>", name, value, name));
+					body.append(String.format("    <%s>%s</%s>\r\n", name, value, name));
 				}
 			}
 		}
-		body.append(String.format("</u:%s>", action));
-		body.append(String.format("</s:Body>"));
+		body.append(String.format("  </u:%s>\r\n", action));
+		body.append(String.format("</s:Body>\r\n"));
 		body.append(String.format("</s:Envelope>\r\n"));
+
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("Sending UPnP command: %s", body.toString()));
+		}
 
 		try {
 			URL url = new URL(controlUrl);

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 
 import jpcsp.network.INetworkAdapter;
-import jpcsp.network.adhoc.AdhocDatagramSocket;
 import jpcsp.network.adhoc.AdhocSocket;
 import jpcsp.network.adhoc.MatchingObject;
 
@@ -29,12 +28,23 @@ import jpcsp.network.adhoc.MatchingObject;
  *
  */
 public class ProOnlineMatchingObject extends MatchingObject {
+	ProOnlineNetworkAdapter proOnline;
+
 	public ProOnlineMatchingObject(INetworkAdapter networkAdapter) {
 		super(networkAdapter);
+		proOnline = (ProOnlineNetworkAdapter) networkAdapter;
 	}
 
 	@Override
 	protected AdhocSocket createSocket() throws UnknownHostException, IOException {
-		return new AdhocDatagramSocket();
+		return new ProOnlineAdhocDatagramSocket(proOnline);
+	}
+
+	@Override
+	public void create() {
+		// Open the UDP port in the router
+		proOnline.sceNetPortOpen("UDP", getPort());
+
+		super.create();
 	}
 }

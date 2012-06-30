@@ -16,11 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.proonline;
 
-import static jpcsp.HLE.modules150.sceNetAdhoc.isAnyMacAddress;
-import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.network.INetworkAdapter;
-import jpcsp.network.adhoc.AdhocDatagramSocket;
 import jpcsp.network.adhoc.AdhocSocket;
 import jpcsp.network.adhoc.PdpObject;
 
@@ -37,25 +34,8 @@ public class ProOnlinePdpObject extends PdpObject {
 	}
 
 	@Override
-	public int send(pspNetMacAddress destMacAddress, int destPort, TPointer data, int length, int timeout, int nonblock) {
-		if (isAnyMacAddress(destMacAddress.macAddress)) {
-			// Broadcast to all MAC's/IP's
-			for (MacIp macIp : proOnline.getMacIps()) {
-				int result = super.send(macIp.macAddress, destPort, data, length, timeout, nonblock);
-				if (result != 0) {
-					return result;
-				}
-			}
-
-			return 0;
-		}
-
-		return super.send(destMacAddress, destPort, data, length, timeout, nonblock);
-	}
-
-	@Override
 	protected AdhocSocket createSocket() {
-		return new AdhocDatagramSocket();
+		return new ProOnlineAdhocDatagramSocket(proOnline);
 	}
 
 	@Override

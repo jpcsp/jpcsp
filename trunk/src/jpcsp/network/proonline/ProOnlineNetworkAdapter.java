@@ -31,6 +31,7 @@ import java.util.List;
 import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
+import jpcsp.HLE.modules.sceNetAdhoc;
 import jpcsp.HLE.modules150.sceNetInet;
 import jpcsp.HLE.modules150.sceNetAdhoc.GameModeArea;
 import jpcsp.network.BaseNetworkAdapter;
@@ -61,6 +62,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	private List<MacIp> macIps = new LinkedList<MacIp>();
 	private PacketFactory packetFactory = new PacketFactory();
 	private PortManager portManager;
+	private InetAddress broadcastInetAddress;
 
 	public static boolean isEnabled() {
 		return enabled;
@@ -86,19 +88,13 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 
 		log.info("ProOnline start");
 
+		try {
+			broadcastInetAddress = InetAddress.getByAddress(new byte[] { 1, 1, 1, 1 });
+		} catch (UnknownHostException e) {
+			log.error("Unable to set the broadcast address", e);
+		}
 		upnp = new UPnP();
 		upnp.discover();
-
-		portManager = new PortManager(upnp);
-	}
-
-	@Override
-	public void stop() {
-		// Delete all the port/host mappings
-		portManager.clear();
-		portManager = null;
-
-		super.stop();
 	}
 
 	protected void sendToMetaServer(SceNetAdhocctlPacketBaseC2S packet) throws IOException {
@@ -120,10 +116,12 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	@Override
 	public void sceNetAdhocctlInit() {
 		if (log.isDebugEnabled()) {
-			log.debug("proNetAdhocctlInit");
+			log.debug("sceNetAdhocctlInit");
 		}
 
 		try {
+			portManager = new PortManager(upnp);
+
 			metaSocket = new Socket(metaServer, metaPort);
 			metaSocket.setReuseAddress(true);
 			metaSocket.setSoTimeout(500);
@@ -138,16 +136,16 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 			friendFinderThread.setDaemon(true);
 			friendFinderThread.start();
 		} catch (UnknownHostException e) {
-			log.error("proNetAdhocctlInit", e);
+			log.error("sceNetAdhocctlInit", e);
 		} catch (IOException e) {
-			log.error("proNetAdhocctlInit", e);
+			log.error("sceNetAdhocctlInit", e);
 		}
 	}
 
 	@Override
 	public void sceNetAdhocctlConnect() {
 		if (log.isDebugEnabled()) {
-			log.debug("proNetAdhocctlConnect");
+			log.debug("sceNetAdhocctlConnect");
 		}
 
 		sceNetAdhocctlCreate();
@@ -156,34 +154,38 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	@Override
 	public void sceNetAdhocctlCreate() {
 		if (log.isDebugEnabled()) {
-			log.debug("proNetAdhocctlCreate");
+			log.debug("sceNetAdhocctlCreate");
 		}
 
 		try {
 			sendToMetaServer(new PacketFactory.SceNetAdhocctlConnectPacketC2S());
 		} catch (IOException e) {
-			log.error("proNetAdhocctlCreate", e);
+			log.error("sceNetAdhocctlCreate", e);
 		}
 	}
 
 	@Override
 	public void sceNetAdhocctlDisconnect() {
 		if (log.isDebugEnabled()) {
-			log.debug("proNetAdhocctlDisconnect");
+			log.debug("sceNetAdhocctlDisconnect");
 		}
 
 		try {
 			sendToMetaServer(new PacketFactory.SceNetAdhocctlDisconnectPacketC2S());
 		} catch (IOException e) {
-			log.error("proNetAdhocctlDisconnect", e);
+			log.error("sceNetAdhocctlDisconnect", e);
 		}
 	}
 
 	@Override
 	public void sceNetAdhocctlTerm() {
 		if (log.isDebugEnabled()) {
-			log.debug("proNetAdhocctlTerm");
+			log.debug("sceNetAdhocctlTerm");
 		}
+
+		// Delete all the port/host mappings
+		portManager.clear();
+		portManager = null;
 
 		exit = true;
 	}
@@ -191,17 +193,20 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	@Override
 	public void sceNetAdhocctlScan() {
 		if (log.isDebugEnabled()) {
-			log.debug("proNetAdhocctlScan");
+			log.debug("sceNetAdhocctlScan");
 		}
 
 		try {
 			sendToMetaServer(new PacketFactory.SceNetAdhocctlScanPacketC2S());
 		} catch (IOException e) {
-			log.error("proNetAdhocctlScan", e);
+			log.error("sceNetAdhocctlScan", e);
 		}
 	}
 
 	public void sceNetPortOpen(String protocol, int port) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceNetPortOpen %s, port=%d", protocol, port));
+		}
 		portManager.addPort(port, protocol);
 	}
 
@@ -297,6 +302,26 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		}
 	}
 
+	public boolean isBroadcast(SocketAddress socketAddress) {
+		if (socketAddress instanceof InetSocketAddress) {
+			InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;
+			return inetSocketAddress.getAddress().equals(broadcastInetAddress);
+		}
+
+		return false;
+	}
+
+	public int getBroadcastPort(SocketAddress socketAddress) {
+		if (socketAddress instanceof InetSocketAddress) {
+			InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;
+			if (inetSocketAddress.getAddress().equals(broadcastInetAddress)) {
+				return inetSocketAddress.getPort();
+			}
+		}
+
+		return -1;
+	}
+
 	@Override
 	public SocketAddress getSocketAddress(byte[] macAddress, int realPort) throws UnknownHostException {
 		InetAddress inetAddress = getInetAddress(macAddress);
@@ -312,6 +337,10 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	}
 
 	public InetAddress getInetAddress(byte[] macAddress) {
+		if (sceNetAdhoc.isAnyMacAddress(macAddress)) {
+			return broadcastInetAddress;
+		}
+
 		MacIp macIp = getMacIp(macAddress);
 		if (macIp == null) {
 			return null;

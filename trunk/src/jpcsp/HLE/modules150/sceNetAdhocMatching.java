@@ -200,6 +200,7 @@ public class sceNetAdhocMatching extends HLEModule {
         matchingObject.setInitCount(initCount);
         matchingObject.setMsgDelay(msgDelay);
         matchingObject.setCallback(callback.getAddress());
+        matchingObject.create();
         matchingObjects.put(matchingObject.getId(), matchingObject);
 
         return matchingObject.getId();
