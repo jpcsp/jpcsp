@@ -61,6 +61,7 @@ public class CaptureImage {
 	private static final String bmpFileFormat = "bmp";
 	private String fileFormat = bmpFileFormat;
 	private String fileName;
+	private String fileNameSuffix = "";
 	private static HashMap<Integer, Integer> lastFileIndex = new HashMap<Integer, Integer>();
 
 	public CaptureImage(int imageaddr, int level, Buffer buffer, int width, int height, int bufferWidth, int bufferStorage, boolean compressedImage, int compressedImageSize, boolean invert, boolean overwriteFile, String fileNamePrefix) {
@@ -115,7 +116,7 @@ public class CaptureImage {
 	    	}
 	    	for (int i = scanIndex; ; i++) {
 	    		String id = (i == 0 ? "" : "-" + i);
-	    		fileName = String.format("%s%s%08X%s%s.%s", directory, fileNamePrefix, imageaddr, levelName, id, fileFormat);
+	    		fileName = String.format("%s%s%08X%s%s%s.%s", directory, fileNamePrefix, imageaddr, fileNameSuffix, levelName, id, fileFormat);
 	    		if (overwriteFile) {
 	    			break;
 	    		}
@@ -133,6 +134,10 @@ public class CaptureImage {
 
 	public boolean fileExists() {
 		return new File(getFileName()).exists();
+	}
+
+	public void setFileNameSuffix(String fileNameSuffix) {
+		this.fileNameSuffix = fileNameSuffix;
 	}
 
 	public void write() throws IOException {

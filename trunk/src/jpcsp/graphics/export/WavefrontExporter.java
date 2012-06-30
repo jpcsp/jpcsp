@@ -19,6 +19,10 @@ package jpcsp.graphics.export;
 import static jpcsp.graphics.GeCommands.PRIM_TRIANGLE;
 import static jpcsp.graphics.GeCommands.PRIM_TRIANGLE_STRIPS;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Locale;
 
 import org.apache.log4j.Logger;
@@ -36,8 +40,8 @@ public class WavefrontExporter implements IGraphicsExporter {
 	// Use "." as decimal separator for floating point values
 	private static Locale l = Locale.ENGLISH;
 	private GeContext context;
-    private Logger exportObj;
-    private Logger exportMtl;
+    private BufferedWriter exportObj;
+    private BufferedWriter exportMtl;
     private int exportVertexCount;
     private int exportTextureCount;
     private int exportNormalCount;
@@ -46,22 +50,75 @@ public class WavefrontExporter implements IGraphicsExporter {
     // Blender does not import normals (as of blender 2.63)
     private static final boolean exportNormal = false;
 
-	@Override
-	public void startExport(GeContext context) {
+    protected void exportObjLine(String line) {
+    	if (exportObj != null) {
+	    	try {
+				exportObj.write(line);
+		    	exportObj.newLine();
+			} catch (IOException e) {
+				log.error("Error writing export.obj file", e);
+			}
+    	}
+    }
+
+    protected void exportMtlLine(String line) {
+    	if (exportMtl != null) {
+	    	try {
+				exportMtl.write(line);
+		    	exportMtl.newLine();
+			} catch (IOException e) {
+				log.error("Error writing export.mtl file", e);
+			}
+    	}
+    }
+
+    public static String getExportDirectory() {
+    	for (int i = 1; true; i++) {
+    		String directory = String.format("%sExport-%d%c", IGraphicsExporter.exportDirectory, i, File.separatorChar);
+    		if (!new File(directory).exists()) {
+    			return directory;
+    		}
+    	}
+    }
+
+    @Override
+	public void startExport(GeContext context, String directory) {
 		this.context = context;
 
-		exportObj = Logger.getLogger("exportGeObj");
-		exportMtl = Logger.getLogger("exportGeMtl");
+		try {
+			// Prepare the export writers
+			exportObj = new BufferedWriter(new FileWriter(String.format("%sexport.obj", directory)));
+			exportMtl = new BufferedWriter(new FileWriter(String.format("%sexport.mtl", directory)));
+		} catch (IOException e) {
+			log.error("Error creating the export files", e);
+		}
 		exportVertexCount = 1;
 		exportModelCount = 1;
 		exportTextureCount = 1;
 		exportMaterialCount = 1;
 
-		exportObj.info(String.format("mtllib export.mtl"));
+		exportObjLine(String.format("mtllib export.mtl"));
 	}
 
 	@Override
 	public void endExport() {
+		if (exportObj != null) {
+			try {
+				exportObj.close();
+			} catch (IOException e) {
+				// Ignore error
+			}
+			exportObj = null;
+		}
+
+		if (exportMtl != null) {
+			try {
+				exportMtl.close();
+			} catch (IOException e) {
+				// Ignore error
+			}
+			exportMtl = null;
+		}
 	}
 
 	@Override
@@ -70,28 +127,28 @@ public class WavefrontExporter implements IGraphicsExporter {
     		log.trace(String.format("Exporting Object model%d", exportModelCount));
     	}
 
-    	exportObj.info(String.format("# modelCount=%d, vertexCount=%d, textureCount=%d, normalCount=%d", exportModelCount, exportVertexCount, exportTextureCount, exportNormalCount));
+    	exportObjLine(String.format("# modelCount=%d, vertexCount=%d, textureCount=%d, normalCount=%d", exportModelCount, exportVertexCount, exportTextureCount, exportNormalCount));
 	}
 
 	@Override
 	public void exportVertex(VertexState originalV, VertexState transformedV) {
-		exportObj.info(String.format(l, "v %f %f %f", transformedV.p[0], transformedV.p[1], transformedV.p[2]));
+		exportObjLine(String.format(l, "v %f %f %f", transformedV.p[0], transformedV.p[1], transformedV.p[2]));
         if (context.vinfo.texture != 0) {
-        	exportObj.info(String.format(l, "vt %f %f", transformedV.t[0], transformedV.t[1]));
+        	exportObjLine(String.format(l, "vt %f %f", transformedV.t[0], transformedV.t[1]));
         }
         if (exportNormal && context.vinfo.normal != 0) {
-        	exportObj.info(String.format(l, "vn %f %f %f", transformedV.n[0], transformedV.n[1], transformedV.n[2]));
+        	exportObjLine(String.format(l, "vn %f %f %f", transformedV.n[0], transformedV.n[1], transformedV.n[2]));
         }
 	}
 
 	@Override
 	public void endVertex(int numberOfVertex, int primitiveType) {
 		// Export object material
-		exportObj.info(String.format("g model%d", exportModelCount));
-		exportObj.info(String.format("usemtl material%d", exportMaterialCount));
+		exportObjLine(String.format("g model%d", exportModelCount));
+		exportObjLine(String.format("usemtl material%d", exportMaterialCount));
 
 		// Export faces
-		exportObj.info("");
+		exportObjLine("");
 		switch (primitiveType) {
     		case PRIM_TRIANGLE: {
 				boolean clockwise = context.frontFaceCw;
@@ -142,15 +199,15 @@ public class WavefrontExporter implements IGraphicsExporter {
 	public void exportTexture(String fileName) {
     	// Export material definition
     	int illum = 1;
-		exportMtl.info(String.format("newmtl material%d", exportMaterialCount));
-    	exportMtl.info(String.format("illum %d", illum));
+		exportMtlLine(String.format("newmtl material%d", exportMaterialCount));
+		exportMtlLine(String.format("illum %d", illum));
 
     	exportColor(l, "Ka", context.mat_ambient);
     	exportColor(l, "Kd", context.mat_diffuse);
     	exportColor(l, "Ks", context.mat_specular);
 
     	if (fileName != null) {
-    		exportMtl.info(String.format("map_Kd %s", fileName));
+    		exportMtlLine(String.format("map_Kd %s", fileName));
     	}
 	}
 
@@ -166,23 +223,23 @@ public class WavefrontExporter implements IGraphicsExporter {
 	        	int t1 = i1 + exportTextureCount;
 	        	int t2 = i2 + exportTextureCount;
 	        	int t3 = i3 + exportTextureCount;
-        		exportObj.info(String.format("f %d/%d/%d %d/%d/%d %d/%d/%d", p1, t1, n1, p2, t2, n2, p3, t3, n3));
+	        	exportObjLine(String.format("f %d/%d/%d %d/%d/%d %d/%d/%d", p1, t1, n1, p2, t2, n2, p3, t3, n3));
 	    	} else {
-        		exportObj.info(String.format("f %d//%d %d//%d %d//%d", p1, n1, p2, n2, p3, n3));
+	    		exportObjLine(String.format("f %d//%d %d//%d %d//%d", p1, n1, p2, n2, p3, n3));
 	    	}
     	} else {
     		if (context.vinfo.texture != 0) {
 	        	int t1 = i1 + exportTextureCount;
 	        	int t2 = i2 + exportTextureCount;
 	        	int t3 = i3 + exportTextureCount;
-        		exportObj.info(String.format("f %d/%d %d/%d %d/%d", p1, t1, p2, t2, p3, t3));
+	        	exportObjLine(String.format("f %d/%d %d/%d %d/%d", p1, t1, p2, t2, p3, t3));
 	    	} else {
-        		exportObj.info(String.format("f %d %d %d", p1, p2, p3));
+	    		exportObjLine(String.format("f %d %d %d", p1, p2, p3));
 	    	}
     	}
     }
 
     private void exportColor(Locale l, String name, float[] color) {
-		exportMtl.info(String.format(l, "%s %f %f %f", name, color[0], color[1], color[2]));
+    	exportMtlLine(String.format(l, "%s %f %f %f", name, color[0], color[1], color[2]));
     }
 }
