@@ -22,27 +22,13 @@
 <param name='ConversionPattern' value='%m%n' />
 </layout>
 </appender>
-  <appender name='KprintfTxtAppender' class='org.apache.log4j.FileAppender'>
-    <param name='File' value='kprintf.txt' />
-    <param name='Append' value='false' />
-    <layout class='org.apache.log4j.PatternLayout'>
-      <param name='ConversionPattern' value='%m' />
-    </layout>
-  </appender>
-  <appender name='ExportGeObjAppender' class='org.apache.log4j.FileAppender'>
-    <param name='File' value='export/export.obj' />
-    <param name='Append' value='false' />
-    <layout class='org.apache.log4j.PatternLayout'>
-      <param name='ConversionPattern' value='%m%n' />
-    </layout>
-  </appender>
-  <appender name='ExportGeMtlAppender' class='org.apache.log4j.FileAppender'>
-    <param name='File' value='export/export.mtl' />
-    <param name='Append' value='false' />
-    <layout class='org.apache.log4j.PatternLayout'>
-      <param name='ConversionPattern' value='%m%n' />
-    </layout>
-  </appender>
+<appender name='KprintfTxtAppender' class='org.apache.log4j.FileAppender'>
+<param name='File' value='kprintf.txt' />
+<param name='Append' value='false' />
+<layout class='org.apache.log4j.PatternLayout'>
+<param name='ConversionPattern' value='%m' />
+</layout>
+</appender>
   <appender name="TxtAppender" class="org.apache.log4j.FileAppender">
     <param name="File" value="log.txt" />
     <param name="Append" value="false" />
@@ -72,16 +58,6 @@
 <logger name='kprintf' additivity='false'>
 <level value='info' />
 <appender-ref ref='KprintfTxtAppender' />
-</logger>
-
-<!-- Output for Ge export -->
-<logger name="exportGeObj" additivity='false'>
-<level value='info' />
-<appender-ref ref='ExportGeObjAppender' />
-</logger>
-<logger name="exportGeMtl" additivity='false'>
-<level value='info' />
-<appender-ref ref='ExportGeMtlAppender' />
 </logger>
 
 <root>
