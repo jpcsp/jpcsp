@@ -90,7 +90,7 @@ import jpcsp.hardware.Audio;
 import jpcsp.hardware.Screen;
 import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
-import jpcsp.network.ProOnline;
+import jpcsp.network.proonline.ProOnlineNetworkAdapter;
 import jpcsp.settings.Settings;
 import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.MetaInformation;
@@ -2315,8 +2315,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 	break;
                 }
             } else if (args[i].equals("--ProOnline")) {
-            	ProOnline.setEnabled(true);
-            	ProOnline.getInstance().init();
+            	ProOnlineNetworkAdapter.setEnabled(true);
             } else {
                 printUsage();
                 break;

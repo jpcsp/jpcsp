@@ -23,6 +23,13 @@ import jpcsp.hardware.Wlan;
 public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
 	public final byte[] macAddress = new byte[Wlan.MAC_ADDRESS_LENGTH];
 
+	public pspNetMacAddress() {
+	}
+
+	public pspNetMacAddress(byte[] macAddress) {
+		setMacAddress(macAddress);
+	}
+
 	@Override
 	protected void read() {
 		for (int i = 0; i < macAddress.length; i++) {

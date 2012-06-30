@@ -45,7 +45,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.hardware.Wlan;
-import jpcsp.network.ProOnline;
+import jpcsp.network.INetworkAdapter;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -106,6 +106,7 @@ public class sceNetAdhocctl extends HLEModule {
     protected LinkedList<AdhocctlNetwork> networks;
     protected LinkedList<pspNetMacAddress> gameModeMacs;
     protected LinkedList<pspNetMacAddress> requiredGameModeMacs;
+    protected INetworkAdapter networkAdapter;
 
     private HashMap<Integer, AdhocctlHandler> adhocctlIdMap = new HashMap<Integer, AdhocctlHandler>();
     private static final String adhocctlHandlerIdPurpose = "sceNetAdhocctl-Handler";
@@ -390,6 +391,7 @@ public class sceNetAdhocctl extends HLEModule {
 		adhocctlCurrentMode = PSP_ADHOCCTL_MODE_NONE;
 		adhocctlCurrentChannel = Wlan.getAdhocChannel();
 		initialized = false;
+		networkAdapter = Modules.sceNetModule.getNetworkAdapter();
 
 		super.start();
 	}
@@ -560,31 +562,11 @@ public class sceNetAdhocctl extends HLEModule {
 	    	// Ignore messages coming from myself
 	    	if (!sceNetAdhoc.isSameMacAddress(Wlan.getMacAddress(), adhocctlMessage.macAddress)) {
 		    	if (adhocctlMessage.groupName.equals(adhocctlCurrentGroup)) {
-			    	boolean peerFound = false;
-			    	for (AdhocctlPeer peer : peers) {
-			    		if (peer.equals(adhocctlMessage.nickName, adhocctlMessage.macAddress)) {
-			    			// Update the timestamp
-			    			peer.updateTimestamp();
-
-			    			peerFound = true;
-			    			break;
-			    		}
-			    	}
-
-			    	if (!peerFound) {
-			    		AdhocctlPeer peer = new AdhocctlPeer(adhocctlMessage.nickName, adhocctlMessage.macAddress);
-			    		peers.add(peer);
-
-			    		if (log.isDebugEnabled()) {
-			    			log.debug(String.format("New peer discovered %s", peer));
-			    		}
-			    	}
+		    		hleNetAdhocctlAddPeer(adhocctlMessage.nickName, new pspNetMacAddress(adhocctlMessage.macAddress));
 		    	}
 
 		    	if (adhocctlMessage.ibss.equals(adhocctlCurrentIBSS)) {
-		    		pspNetMacAddress mac = new pspNetMacAddress();
-		    		mac.setMacAddress(adhocctlMessage.macAddress);
-		    		hleNetAdhocctlAddNetwork(adhocctlMessage.groupName, mac, adhocctlMessage.channel, adhocctlMessage.ibss, adhocctlMessage.mode);
+		    		hleNetAdhocctlAddNetwork(adhocctlMessage.groupName, new pspNetMacAddress(adhocctlMessage.macAddress), adhocctlMessage.channel, adhocctlMessage.ibss, adhocctlMessage.mode);
 
 		    		if (adhocctlMessage.mode == PSP_ADHOCCTL_MODE_GAMEMODE) {
 		    			addGameModeMac(adhocctlMessage.macAddress);
@@ -696,6 +678,27 @@ public class sceNetAdhocctl extends HLEModule {
     	scanStartMillis = 0;
     }
 
+    public void hleNetAdhocctlAddPeer(String nickName, pspNetMacAddress mac) {
+       	boolean peerFound = false;
+       	for (AdhocctlPeer peer : peers) {
+       		if (peer.equals(nickName, mac.macAddress)) {
+       			// Update the timestamp
+       			peer.updateTimestamp();
+       			peerFound = true;
+       			break;
+       		}
+       	}
+
+       	if (!peerFound) {
+    		AdhocctlPeer peer = new AdhocctlPeer(nickName, mac.macAddress);
+    		peers.add(peer);
+
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("New peer discovered %s", peer));
+    		}
+    	}
+	}
+
     /**
      * Initialise the Adhoc control library
      *
@@ -727,9 +730,7 @@ public class sceNetAdhocctl extends HLEModule {
         adhocctlThread = threadMan.hleKernelCreateThread("SceNetAdhocctl", ThreadManForUser.NET_ADHOC_CTL_LOOP_ADDRESS, priority, stackSize, 0, 0);
         threadMan.hleKernelStartThread(adhocctlThread, 0, 0, adhocctlThread.gpReg_addr);
 
-        if (ProOnline.isEnabled()) {
-        	ProOnline.getInstance().proNetAdhocctlInit();
-        }
+        networkAdapter.sceNetAdhocctlInit();
 
         initialized = true;
 
@@ -748,9 +749,7 @@ public class sceNetAdhocctl extends HLEModule {
         doTerminate = true;
         initialized = false;
 
-        if (ProOnline.isEnabled()) {
-        	ProOnline.getInstance().proNetAdhocctlTerm();
-        }
+        networkAdapter.sceNetAdhocctlTerm();
 
         return 0;
     }
@@ -779,9 +778,7 @@ public class sceNetAdhocctl extends HLEModule {
 
         hleNetAdhocctlConnect(groupName);
 
-        if (ProOnline.isEnabled()) {
-        	ProOnline.getInstance().proNetAdhocctlConnect();
-        }
+        networkAdapter.sceNetAdhocctlConnect();
 
         return 0;
     }
@@ -807,9 +804,7 @@ public class sceNetAdhocctl extends HLEModule {
 
         setGroupName(groupName, PSP_ADHOCCTL_MODE_NORMAL);
 
-        if (ProOnline.isEnabled()) {
-        	ProOnline.getInstance().proNetAdhocctlCreate();
-        }
+        networkAdapter.sceNetAdhocctlCreate();
 
         return 0;
     }
@@ -860,9 +855,7 @@ public class sceNetAdhocctl extends HLEModule {
 
         doScan = true;
 
-        if (ProOnline.isEnabled()) {
-        	ProOnline.getInstance().proNetAdhocctlScan();
-        }
+        networkAdapter.sceNetAdhocctlScan();
 
         return 0;
     }
@@ -878,9 +871,7 @@ public class sceNetAdhocctl extends HLEModule {
 
         doDisconnect = true;
 
-        if (ProOnline.isEnabled()) {
-        	ProOnline.getInstance().proNetAdhocctlDisconnect();
-        }
+        networkAdapter.sceNetAdhocctlDisconnect();
 
         return 0;
     }

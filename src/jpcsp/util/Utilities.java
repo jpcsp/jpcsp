@@ -926,4 +926,12 @@ public class Utilities {
 	public static int wrap(float value, int valueMask) {
 		return pixelToTexel(value) & valueMask;
 	}
+
+	public static void writeBytes(int address, int length, byte[] bytes, int offset) {
+		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, length, 1);
+		for (int i = 0; i < length; i++) {
+			memoryWriter.writeNext(bytes[i + offset] & 0xFF);
+		}
+		memoryWriter.flush();
+	}
 }

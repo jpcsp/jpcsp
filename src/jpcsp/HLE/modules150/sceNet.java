@@ -25,13 +25,15 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.hardware.Wlan;
+import jpcsp.network.INetworkAdapter;
+import jpcsp.network.NetworkAdapterFactory;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
 public class sceNet extends HLEModule {
-
     protected static Logger log = Modules.getLogger("sceNet");
+    private INetworkAdapter networkAdapter;
 
     @Override
     public String getName() {
@@ -39,6 +41,10 @@ public class sceNet extends HLEModule {
     }
 
     protected int netMemSize;
+
+    public INetworkAdapter getNetworkAdapter() {
+    	return networkAdapter;
+    }
 
     /**
      * Convert a 6-byte MAC address into a string representation (xx:xx:xx:xx:xx:xx)
@@ -282,4 +288,20 @@ public class sceNet extends HLEModule {
 
         return 0;
     }
+
+	@Override
+	public void start() {
+		networkAdapter = NetworkAdapterFactory.createNetworkAdapter();
+		networkAdapter.start();
+
+		super.start();
+	}
+
+	@Override
+	public void stop() {
+		networkAdapter.stop();
+		networkAdapter = null;
+
+		super.stop();
+	}
 }
