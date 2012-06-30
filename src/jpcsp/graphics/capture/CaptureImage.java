@@ -150,16 +150,13 @@ public class CaptureImage {
     		decompressImage();
     	}
 
-		if (width > bufferWidth) {
-			width = bufferWidth;
-		}
-
 		boolean imageInvert = invert;
 
 		// ImageIO doesn't support the bmp file format
 		boolean useImageIO = !fileFormat.equals(bmpFileFormat);
 		BufferedImage im = null;
 		OutputStream outBmp = null;
+		int readWidth = Math.min(width, bufferWidth);
 		int imageSize = width * height * 4;
 		int imageRawBytes = width;
 		byte[] pixelBytes = new byte[4];
@@ -208,7 +205,7 @@ public class CaptureImage {
 			outBmp.write(fileHeader);
 			outBmp.write(dibHeader);
 
-			rowPadBytes = new byte[rowPad];
+			rowPadBytes = new byte[(width - readWidth) * 4 + rowPad];
 		}
 
 		boolean imageType32Bit = bufferStorage == GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
@@ -216,7 +213,7 @@ public class CaptureImage {
 			byte[] completeImageBytes = new byte[imageSize];
 			for (int y = 0; y < height; y++) {
 				int pixelIndex = (imageInvert ? (height - y - 1) : y) * imageRawBytes;
-				for (int x = 0; x < width; x++, pixelIndex += 4) {
+				for (int x = 0; x < readWidth; x++, pixelIndex += 4) {
 					int pixel = imageReader.readNext();
 					if (outBmp != null) {
 						completeImageBytes[pixelIndex + 0] = (byte) (pixel >> 16); // B
@@ -239,7 +236,7 @@ public class CaptureImage {
     		IntBuffer intBuffer = (IntBuffer) buffer;
 			for (int y = 0; y < height; y++) {
 				intBuffer.position((imageInvert ? (height - y - 1) : y) * bufferWidth);
-				for (int x = 0; x < width; x++) {
+				for (int x = 0; x < readWidth; x++) {
 					try {
 						int pixel = intBuffer.get();
 						if (outBmp != null) {
@@ -269,7 +266,7 @@ public class CaptureImage {
     		IntBuffer intBuffer = (IntBuffer) buffer;
 			for (int y = 0; y < height; y++) {
 				intBuffer.position((imageInvert ? (height - y - 1) : y) * bufferWidth / 2);
-				for (int x = 0; x < width; x += 2) {
+				for (int x = 0; x < readWidth; x += 2) {
 					try {
 						int twoPixels = intBuffer.get();
 						getPixelBytes((short) twoPixels, bufferStorage, pixelBytes);
@@ -304,7 +301,7 @@ public class CaptureImage {
     		ShortBuffer shortBuffer = (ShortBuffer) buffer;
 			for (int y = 0; y < height; y++) {
 				shortBuffer.position((imageInvert ? (height - y - 1) : y) * bufferWidth);
-				for (int x = 0; x < width; x++) {
+				for (int x = 0; x < readWidth; x++) {
 					short pixel = shortBuffer.get();
 					getPixelBytes(pixel, bufferStorage, pixelBytes);
 					if (outBmp != null) {
@@ -324,7 +321,7 @@ public class CaptureImage {
     	} else if (imageType32Bit) {
 			for (int y = 0; y < height; y++) {
 	    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(imageaddr + (imageInvert ? (height - y - 1) : y) * bufferWidth * 4, bufferWidth * 4, 4);
-				for (int x = 0; x < width; x++) {
+				for (int x = 0; x < readWidth; x++) {
 					int pixel = memoryReader.readNext();
 					if (outBmp != null) {
 						pixelBytes[0] = (byte) (pixel >> 16); // B
@@ -347,7 +344,7 @@ public class CaptureImage {
     	} else {
 			for (int y = 0; y < height; y++) {
 	    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(imageaddr + (imageInvert ? (height - y - 1) : y) * bufferWidth * 2, bufferWidth * 2, 2);
-				for (int x = 0; x < width; x++) {
+				for (int x = 0; x < readWidth; x++) {
 					short pixel = (short) memoryReader.readNext();
 					getPixelBytes(pixel, bufferStorage, pixelBytes);
 					if (outBmp != null) {
