@@ -18,6 +18,7 @@ package jpcsp.network.proonline;
 
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.network.INetworkAdapter;
+import jpcsp.network.adhoc.AdhocMessage;
 import jpcsp.network.adhoc.AdhocSocket;
 import jpcsp.network.adhoc.PdpObject;
 
@@ -44,5 +45,10 @@ public class ProOnlinePdpObject extends PdpObject {
 		proOnline.sceNetPortOpen("UDP", port);
 
 		return super.create(macAddress, port, bufSize);
+	}
+
+	@Override
+	protected boolean isForMe(AdhocMessage adhocMessage, int port) {
+		return true;
 	}
 }
