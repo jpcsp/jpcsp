@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.proonline;
 
+import java.net.InetAddress;
+
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.network.INetworkAdapter;
 import jpcsp.network.adhoc.AdhocMessage;
@@ -48,7 +50,17 @@ public class ProOnlinePdpObject extends PdpObject {
 	}
 
 	@Override
-	protected boolean isForMe(AdhocMessage adhocMessage, int port) {
+	protected boolean isForMe(AdhocMessage adhocMessage, int port, InetAddress address) {
+		byte[] fromMacAddress = proOnline.getMacAddress(address);
+		if (fromMacAddress == null) {
+			// Unknown source IP address, ignore the message
+			return false;
+		}
+
+		// Copy the source MAC address from the source InetAddress
+		adhocMessage.setFromMacAddress(fromMacAddress);
+
+		// There is no broadcasting, all messages are for me
 		return true;
 	}
 }

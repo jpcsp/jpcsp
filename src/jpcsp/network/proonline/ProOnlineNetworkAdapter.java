@@ -368,6 +368,25 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		return null;
 	}
 
+	public MacIp getMacIp(InetAddress inetAddress) {
+		for (MacIp macIp : macIps) {
+			if (inetAddress.equals(macIp.inetAddress)) {
+				return macIp;
+			}
+		}
+
+		return null;
+	}
+
+	public byte[] getMacAddress(InetAddress inetAddress) {
+		MacIp macIp = getMacIp(inetAddress);
+		if (macIp == null) {
+			return null;
+		}
+
+		return macIp.mac;
+	}
+
 	@Override
 	public PdpObject createPdpObject() {
 		return new ProOnlinePdpObject(this);

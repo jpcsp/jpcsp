@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.network.adhoc;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
 
@@ -31,6 +32,7 @@ import org.apache.log4j.Logger;
 public abstract class AdhocSocket {
 	protected static Logger log = sceNetAdhoc.log;
 	private int receivedPort;
+	private InetAddress receivedAddress;
 
 	public abstract int bind(int port) throws IOException;
 	public abstract void connect(SocketAddress socketAddress, int port) throws IOException;
@@ -45,5 +47,13 @@ public abstract class AdhocSocket {
 
 	protected void setReceivedPort(int receivedPort) {
 		this.receivedPort = receivedPort;
+	}
+
+	public InetAddress getReceivedAddress() {
+		return receivedAddress;
+	}
+
+	public void setReceivedAddress(InetAddress receivedAddress) {
+		this.receivedAddress = receivedAddress;
 	}
 }

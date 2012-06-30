@@ -173,7 +173,11 @@ public class sceNetAdhocctl extends HLEModule {
     		return nickName.equals(this.nickName) && sceNetAdhoc.isSameMacAddress(macAddress, this.macAddress);
     	}
 
-		@Override
+    	public boolean equals(byte[] macAddress) {
+    		return sceNetAdhoc.isSameMacAddress(macAddress, this.macAddress);
+    	}
+
+    	@Override
 		public String toString() {
 			return String.format("nickName='%s', macAddress=%s, timestamp=%d", nickName, sceNet.convertMacAddressToString(macAddress), timestamp);
 		}
@@ -698,6 +702,15 @@ public class sceNetAdhocctl extends HLEModule {
     		}
     	}
 	}
+
+    public void hleNetAdhocctlPeerUpdateTimestamp(byte[] macAddress) {
+    	for (AdhocctlPeer peer : peers) {
+    		if (peer.equals(macAddress)) {
+    			peer.updateTimestamp();
+    			break;
+    		}
+    	}
+    }
 
     /**
      * Initialise the Adhoc control library
