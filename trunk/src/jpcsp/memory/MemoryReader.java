@@ -124,6 +124,10 @@ public class MemoryReader {
 		return getMemoryReader(address, getMaxLength(address), step);
 	}
 
+	public static IMemoryReader getMemoryReader(byte[] bytes, int offset, int length) {
+		return new MemoryReaderBytes(bytes, offset, length);
+	}
+
 	// The Java JIT compiler is producing slightly faster code for "final" methods.
 	// Added "final" here only for performance reasons. Can be removed if inheritance
 	// of these classes is required.
@@ -493,6 +497,36 @@ public class MemoryReader {
 		@Override
 		public int getCurrentAddress() {
 			return address + buffer.position();
+		}
+	}
+
+	private final static class MemoryReaderBytes implements IMemoryReader {
+		private final byte[] bytes;
+		private int offset;
+		private int maxOffset;
+
+		public MemoryReaderBytes(byte[] bytes, int offset, int length) {
+			this.bytes = bytes;
+			this.offset = offset;
+			maxOffset = offset + length;
+		}
+
+		@Override
+		public int readNext() {
+			if (offset >= maxOffset) {
+				return 0;
+			}
+			return bytes[offset++] & 0xFF;
+		}
+
+		@Override
+		public void skip(int n) {
+			offset += n;
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return 0;
 		}
 	}
 }

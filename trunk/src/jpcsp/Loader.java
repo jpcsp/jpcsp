@@ -459,6 +459,15 @@ public class Loader {
             if (!handled) {
                 log.info("Unrecognized file format");
                 log.info(String.format("File magic %02X %02X %02X %02X", m0, m1, m2, m3));
+                if (log.isDebugEnabled()) {
+                    byte[] buffer = new byte[256];
+                    buffer[0] = m0;
+                    buffer[1] = m1;
+                    buffer[2] = m2;
+                    buffer[3] = m3;
+                    f.get(buffer, 4, buffer.length - 4);
+                    log.debug(String.format("File header: %s", Utilities.getMemoryDump(buffer, 0, buffer.length, 16)));
+                }
             }
         }
 

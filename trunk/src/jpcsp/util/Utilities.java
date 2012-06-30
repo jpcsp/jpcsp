@@ -491,19 +491,13 @@ public class Utilities {
 		dump.append("<");
     }
 
-    public static String getMemoryDump(int address, int length, int step, int bytesPerLine) {
-    	if (!Memory.isAddressGood(address) || length <= 0 || bytesPerLine <= 0 || step <= 0) {
-    		return "";
-    	}
-
+    private static String getMemoryDump(int address, int length, int step, int bytesPerLine, IMemoryReader memoryReader, IMemoryReader charReader) {
     	StringBuilder dump = new StringBuilder();
 
     	if (length < bytesPerLine) {
     		bytesPerLine = length;
     	}
 
-    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, step);
-    	IMemoryReader charReader = MemoryReader.getMemoryReader(address, length, 1);
     	String format = String.format(" %%0%dX", step * 2);
     	boolean startOfLine = true;
     	for (int i = 0; i < length; i += step) {
@@ -554,25 +548,26 @@ public class Utilities {
     	return dump.toString();
     }
 
-    public static String getMemoryDump(int[] values, int offset, int length, int entriesPerLine) {
-    	StringBuilder dump = new StringBuilder();
-
-    	boolean startOfLine = true;
-    	for (int i = 0; i < length; i++) {
-    		if ((i % entriesPerLine) == 0) {
-    			dump.append("\n");
-    			startOfLine = true;
-    		}
-    		if (startOfLine) {
-    			dump.append(String.format("0x%08X", (offset + i) << 2));
-    			startOfLine = false;
-    		}
-
-    		int value = values[offset + i];
-    		dump.append(String.format(" %08X", value));
+    public static String getMemoryDump(int address, int length, int step, int bytesPerLine) {
+    	if (!Memory.isAddressGood(address) || length <= 0 || bytesPerLine <= 0 || step <= 0) {
+    		return "";
     	}
 
-    	return dump.toString();
+    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, step);
+    	IMemoryReader charReader = MemoryReader.getMemoryReader(address, length, 1);
+
+    	return getMemoryDump(address, length, step, bytesPerLine, memoryReader, charReader);
+    }
+
+    public static String getMemoryDump(byte[] bytes, int offset, int length, int bytesPerLine) {
+    	if (bytes == null || length <= 0 || bytesPerLine <= 0) {
+    		return "";
+    	}
+
+    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(bytes, offset, length);
+    	IMemoryReader charReader = MemoryReader.getMemoryReader(bytes, offset, length);
+
+    	return getMemoryDump(0, length, 1, bytesPerLine, memoryReader, charReader);
     }
 
     public static int alignUp(int value, int alignment) {
