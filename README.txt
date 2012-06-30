@@ -450,10 +450,14 @@ addresses. Otherwise, the emulator is just logging at INFO level the memory acce
 - Export 3D scene:
 You can export the current 3D scene of an application by selecting the corresponding
 file menu option. This will export the current 3D scene in Wavefront format (.obj/.mtl),
-including the textures used in the scene. The textures are stored in 32-bit .bmp format.
+including the textures used in the scene. The textures are stored in 32-bit .png format.
 You can then import the .obj file in a 3D modeling application (e.g. http://www.blender.org/).
 Lamps cannot be exported in Wavefront format, so you will probably need to manually add
 lighting to the imported scene.
+You can export the whole 3D scene or only the visible objects (to reduce the size of the
+exported file). The scenes are exported under:
+    <Jpcsp main directory>/export/Export-1/...
+    <Jpcsp main directory>/export/Export-2/...
 
 
 - Texture modding:
@@ -461,9 +465,9 @@ You can try to modify one or multiple of the textures to perform modding of your
 without changing its code.
 Following these steps:
   a. export the 3D scene. The exported files will be located under the "export" directory.
-  b. change one or multiple texture files (.bmp). Keep the name of these files unchanged.
+  b. change one or multiple texture files (.png). Keep the name of these files unchanged.
   c. move the modified texture files to the following directory:
-        tmp/<DiscID>/Textures/Image0XXXXXXX.bmp
+        tmp/<DiscID>/Textures/Image0XXXXXXX.png (or Image0XXXXXXX_0XXXXXXX.png)
      The DiscID has to be replaced by the 9-character Disc-ID of the application.
      The DiscID is displayed, for example, by the UMD Browser.
      Only move the textures you have really modified. The loading of texture files
