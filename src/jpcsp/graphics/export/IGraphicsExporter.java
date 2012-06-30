@@ -24,7 +24,9 @@ import jpcsp.graphics.VertexState;
  *
  */
 public interface IGraphicsExporter {
-	public void startExport(GeContext context);
+	public static final String exportDirectory = "export/";
+
+	public void startExport(GeContext context, String directory);
 	public void endExport();
 	public void startPrimitive(int numberOfVertex, int primitiveType);
 	public void exportVertex(VertexState originalV, VertexState transformedV);

@@ -234,7 +234,10 @@ public class VideoEngine {
     // This could be a compatibility option.
     private boolean skipListWhenSkippingFrame = false;
     private boolean export3D;
+    private boolean export3DOnlyVisible = true;
+    private String export3DDirectory;
     private IGraphicsExporter exporter;
+    private boolean hasModdedTextureDirectory;
 
     public static class MatrixUpload {
         private final float[] matrix;
@@ -715,17 +718,34 @@ public class VideoEngine {
 
         context.update();
 
+        hasModdedTextureDirectory = new File(getModdedTextureDirectory()).isDirectory();
+
         if (State.exportGeNextFrame) {
         	startExport3D();
         }
     }
 
+    private static String getExportDirectory() {
+    	for (int i = 1; true; i++) {
+    		String directory = String.format("%sExport-%d%c", IGraphicsExporter.exportDirectory, i, File.separatorChar);
+    		if (!new File(directory).exists()) {
+    			return directory;
+    		}
+    	}
+    }
+
     private void startExport3D() {
     	export3D = true;
+    	export3DOnlyVisible = State.exportGeOnlyVisibleElements;
     	State.exportGeNextFrame = false;
 
-    	exporter = new WavefrontExporter();
-    	exporter.startExport(context);
+    	export3DDirectory = getExportDirectory();
+    	if (new File(export3DDirectory).mkdirs()) {
+        	exporter = new WavefrontExporter();
+        	exporter.startExport(context, export3DDirectory);
+    	} else {
+    		log.error(String.format("Cannot create export directory '%s'", export3DDirectory));
+    	}
     }
 
     private void endExport3D() {
@@ -2334,8 +2354,15 @@ public class VideoEngine {
 	    	int textureBufferWidth = context.texture_buffer_width[level];
 	    	IMemoryReader imageReader = ImageReader.getImageReader(textureAddr, textureWidth, textureHeight, textureBufferWidth, context.texture_storage, context.texture_swizzle, context.tex_clut_addr, context.tex_clut_mode, context.tex_clut_num_blocks, context.tex_clut_start, context.tex_clut_shift, context.tex_clut_mask, clut_buffer32, clut_buffer16);
 	    	CaptureImage captureImage = new CaptureImage(textureAddr, level, imageReader, textureWidth, textureHeight, textureBufferWidth, false, true, null);
-	    	captureImage.setDirectory("export/");
+	    	captureImage.setDirectory(export3DDirectory);
 	    	captureImage.setFileFormat("png");
+	    	if (IRenderingEngine.isTextureTypeIndexed[context.texture_storage]) {
+	    		// When the image is using a CLUT, add the clut address to the file name.
+	    		// Some games are reusing the same texture with different cluts.
+	    		String fileNameSuffix = String.format("_%08X", context.tex_clut_addr);
+	    		captureImage.setFileNameSuffix(fileNameSuffix);
+	    	}
+
 	    	try {
 	        	if (!captureImage.fileExists()) {
 	        		captureImage.write();
@@ -2603,7 +2630,7 @@ public class VideoEngine {
 
         if (skipThisFrame) {
         	takeConditionalJump = true;
-        } else if (export3D) {
+        } else if (export3D && !export3DOnlyVisible) {
         	takeConditionalJump = false;
         } else if (re.hasBoundingBox()) {
         	takeConditionalJump = !re.isBoundingBoxVisible();
@@ -4736,13 +4763,28 @@ public class VideoEngine {
     	return context.texture_num_mip_maps;
     }
 
-    private boolean hasModdedTexture(int level, StringBuilder moddedTextureFileName) {
+    private String getModdedTextureDirectory() {
     	String tmpPath = Settings.getInstance().readString("emu.tmppath");
     	char sep = File.separatorChar;
+    	return String.format("%s%c%s%cTextures%c", tmpPath, sep, State.discId, sep, sep);
+    }
+
+    private boolean hasModdedTexture(int level, StringBuilder moddedTextureFileName) {
+    	// Quick check: if there is no Texture directory, no need to check for an image file
+    	if (!hasModdedTextureDirectory) {
+    		return false;
+    	}
+
+    	String directory = getModdedTextureDirectory();
     	int origLength = moddedTextureFileName.length();
     	for (String extension : ImageIO.getReaderFileSuffixes()) {
     		moddedTextureFileName.setLength(origLength);
-    		moddedTextureFileName.append(String.format("%s%c%s%cTextures%cImage%08X.%s", tmpPath, sep, State.discId, sep, sep, context.texture_base_pointer[level], extension));
+    		String fileNameSuffix = "";
+    		if (IRenderingEngine.isTextureTypeIndexed[context.texture_storage]) {
+    			// For textures using a CLUT, add the clut address to the file name.
+    			fileNameSuffix = String.format("_%08X", context.tex_clut_addr);
+    		}
+    		moddedTextureFileName.append(String.format("%sImage%08X%s.%s", directory, context.texture_base_pointer[level], fileNameSuffix, extension));
     		File moddedTextureFile = new File(moddedTextureFileName.toString());
     		if (moddedTextureFile.canRead()) {
     			return true;

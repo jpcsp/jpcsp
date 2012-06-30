@@ -266,7 +266,9 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         FPS60 = new javax.swing.JCheckBoxMenuItem();
         ShotItem = new javax.swing.JMenuItem();
         RotateItem = new javax.swing.JMenuItem();
-        ExportItem = new javax.swing.JMenuItem();
+        ExportVisibleElements = new javax.swing.JMenuItem();
+        ExportAllElements = new javax.swing.JMenuItem();
+        ExportMenu = new javax.swing.JMenu();
         AudioOpt = new javax.swing.JMenu();
         MuteOpt = new javax.swing.JCheckBoxMenuItem();
         ControlsConf = new javax.swing.JMenuItem();
@@ -424,14 +426,26 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         FileMenu.add(LoadSnap);
 
-        ExportItem.setText(Resource.get("export3D"));
-        ExportItem.addActionListener(new java.awt.event.ActionListener() {
+        ExportMenu.setText(Resource.get("export3D"));
+        FileMenu.add(ExportMenu);
+
+        ExportVisibleElements.setText(Resource.get("exportVisibleElements"));
+        ExportVisibleElements.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ExportItemActionPerformed(evt);
+            	ExportVisibleElementsActionPerformed(evt);
             }
         });
-        FileMenu.add(ExportItem);
+        ExportMenu.add(ExportVisibleElements);
+
+        ExportAllElements.setText(Resource.get("exportAllElements"));
+        ExportAllElements.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	ExportAllElementsActionPerformed(evt);
+            }
+        });
+        ExportMenu.add(ExportAllElements);
 
         FileMenu.add(jSeparator1);
 
@@ -1935,9 +1949,15 @@ private void RotateItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
     }
 }//GEN-LAST:event_RotateItemActionPerformed
 
-private void ExportItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExportItemActionPerformed
+private void ExportVisibleElementsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExportVisibleElementsActionPerformed
 	State.exportGeNextFrame = true;
-}//GEN-LAST:event_ExportItemActionPerformed
+	State.exportGeOnlyVisibleElements = true;
+}//GEN-LAST:event_ExportVisibleElementsActionPerformed
+
+private void ExportAllElementsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExportAllElementsActionPerformed
+	State.exportGeNextFrame = true;
+	State.exportGeOnlyVisibleElements = false;
+}//GEN-LAST:event_ExportAllElementsActionPerformed
 
     private byte safeRead8(int address) {
         byte value = 0;
@@ -2399,7 +2419,9 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JCheckBoxMenuItem FPS30;
     private javax.swing.JCheckBoxMenuItem FPS60;
     private javax.swing.JMenuItem RotateItem;
-    private javax.swing.JMenuItem ExportItem;
+    private javax.swing.JMenu ExportMenu;
+    private javax.swing.JMenuItem ExportVisibleElements;
+    private javax.swing.JMenuItem ExportAllElements;
     private javax.swing.JToggleButton RunButton;
     private javax.swing.JMenuItem Russian;
     private javax.swing.JMenuItem SaveSnap;
