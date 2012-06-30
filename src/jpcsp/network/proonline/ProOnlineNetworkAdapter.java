@@ -302,6 +302,24 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		}
 	}
 
+	protected void deleteFriend(int ip) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Deleting friend ip=%s", convertIpToString(ip)));
+		}
+
+		for (MacIp macIp : macIps) {
+			if (macIp.ip == ip) {
+				// Delete the MacIp mapping
+				macIps.remove(macIp);
+				// Delete the peer
+				Modules.sceNetAdhocctlModule.hleNetAdhocctlDeletePeer(macIp.mac);
+				// Delete the router ports
+				portManager.removeHost(convertIpToString(ip));
+				break;
+			}
+		}
+	}
+
 	public boolean isBroadcast(SocketAddress socketAddress) {
 		if (socketAddress instanceof InetSocketAddress) {
 			InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;

@@ -703,6 +703,19 @@ public class sceNetAdhocctl extends HLEModule {
     	}
 	}
 
+    public void hleNetAdhocctlDeletePeer(byte[] macAddress) {
+    	for (AdhocctlPeer peer : peers) {
+    		if (peer.equals(macAddress)) {
+    			peers.remove(peer);
+
+    			if (log.isDebugEnabled()) {
+        			log.debug(String.format("Peer deleted %s", peer));
+        		}
+    			break;
+    		}
+    	}
+    }
+
     public void hleNetAdhocctlPeerUpdateTimestamp(byte[] macAddress) {
     	for (AdhocctlPeer peer : peers) {
     		if (peer.equals(macAddress)) {

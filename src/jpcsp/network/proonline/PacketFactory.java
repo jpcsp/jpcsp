@@ -320,6 +320,39 @@ public class PacketFactory {
 		}
 	}
 
+	private static class SceNetAdhocctlDisconnectPacketS2C extends SceNetAdhocctlPacketBaseS2C {
+		final ProOnlineNetworkAdapter proOnline;
+		private int ip;
+
+		public SceNetAdhocctlDisconnectPacketS2C(ProOnlineNetworkAdapter proOnline, byte[] bytes, int length) {
+			this.proOnline = proOnline;
+			init(bytes, length);
+		}
+
+		@Override
+		protected void init(byte[] bytes, int length) {
+			super.init(bytes, length);
+			if (length >= getLength()) {
+				ip = copyInt32FromBytes(bytes);
+			}
+		}
+
+		@Override
+		public void process() {
+			proOnline.deleteFriend(ip);
+		}
+
+		@Override
+		public int getLength() {
+			return super.getLength() + 4;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("DisconnectPacketS2C");
+		}
+	}
+
 	public SceNetAdhocctlPacketBaseS2C createPacket(ProOnlineNetworkAdapter proOnline, byte[] buffer, int length) {
 		switch (buffer[0]) {
 			case OPCODE_PING:
@@ -332,6 +365,8 @@ public class PacketFactory {
 				return new SceNetAdhocctlScanPacketS2C(buffer, length);
 			case OPCODE_SCAN_COMPLETE:
 				return new SceNetAdhocctlScanCompletePacketS2C(buffer, length);
+			case OPCODE_DISCONNECT:
+				return new SceNetAdhocctlDisconnectPacketS2C(proOnline, buffer, length);
 			default:
 				ProOnlineNetworkAdapter.log.error(String.format("Received unknown opcode %d", buffer[0]));
 				break;
