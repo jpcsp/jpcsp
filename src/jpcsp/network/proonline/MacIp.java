@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.proonline;
 
+import static jpcsp.network.proonline.ProOnlineNetworkAdapter.convertIpToString;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -58,5 +60,10 @@ public class MacIp {
 		rawIp[3] = (byte) (ip >> 24);
 
 		return rawIp;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("MAC=%s, ip=%s", macAddress, convertIpToString(ip));
 	}
 }

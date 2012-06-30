@@ -137,6 +137,9 @@ public abstract class MatchingObject extends AdhocObject {
 		return members;
 	}
 
+	public void create() {
+	}
+
 	public int start(int evthPri, int evthStack, int inthPri, int inthStack, int optLen, int optData) {
 		try {
 			setHelloOpt(optLen, optData);
