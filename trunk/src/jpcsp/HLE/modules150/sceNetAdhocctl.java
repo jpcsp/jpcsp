@@ -975,6 +975,9 @@ public class sceNetAdhocctl extends HLEModule {
     	Memory mem = Memory.getInstance();
     	log.warn(String.format("PARTIAL: sceNetAdhocctlGetAdhocId addr=%s", addr));
 
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceNetAdhocctlGetAdhocId returning type=%d, adhocID='%s'", adhocctlCurrentType, adhocctlCurrentAdhocID));
+    	}
     	mem.write32(addr.getAddress(), adhocctlCurrentType);
     	Utilities.writeStringNZ(mem, addr.getAddress() + 4, ADHOC_ID_LENGTH, adhocctlCurrentAdhocID);
 
@@ -1174,6 +1177,9 @@ public class sceNetAdhocctl extends HLEModule {
     	Memory mem = Memory.getInstance();
         log.warn(String.format("PARTIAL: sceNetAdhocctlGetParameter paramsAddr=%s", paramsAddr));
 
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceNetAdhocctlGetParameter returning channel=%d, group='%s', IBSS='%s', nickName='%s'", adhocctlCurrentChannel, adhocctlCurrentGroup, adhocctlCurrentIBSS, sceUtility.getSystemParamNickname()));
+        }
         int addr = paramsAddr.getAddress();
         mem.write32(addr, adhocctlCurrentChannel);
         Utilities.writeStringNZ(mem, addr + 4, GROUP_NAME_LENGTH, adhocctlCurrentGroup);

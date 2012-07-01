@@ -21,6 +21,9 @@ import static jpcsp.HLE.modules150.sceNetAdhocctl.GROUP_NAME_LENGTH;
 import static jpcsp.HLE.modules150.sceNetAdhocctl.NICK_NAME_LENGTH;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
 import static jpcsp.network.proonline.ProOnlineNetworkAdapter.convertIpToString;
+
+import org.apache.log4j.Logger;
+
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.sceNetAdhocctl;
@@ -32,6 +35,7 @@ import jpcsp.hardware.Wlan;
  *
  */
 public class PacketFactory {
+	protected static Logger log = ProOnlineNetworkAdapter.log;
 	protected static final int OPCODE_PING = 0;
 	protected static final int OPCODE_LOGIN = 1;
 	protected static final int OPCODE_CONNECT = 2;
@@ -113,6 +117,11 @@ public class PacketFactory {
 
 		public int getLength() {
 			return 1;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("%s", getClass().getSimpleName());
 		}
 	}
 
@@ -353,6 +362,40 @@ public class PacketFactory {
 		}
 	}
 
+	private static class SceNetAdhocctlChatPacketS2C extends SceNetAdhocctlPacketBaseS2C {
+		private static final int MESSAGE_LENGTH = 64;
+		private String message;
+		private String nickName;
+
+		public SceNetAdhocctlChatPacketS2C(byte[] bytes, int length) {
+			init(bytes, length);
+		}
+
+		@Override
+		protected void init(byte[] bytes, int length) {
+			super.init(bytes, length);
+			if (length >= getLength()) {
+				message = copyStringFromBytes(bytes, MESSAGE_LENGTH);
+				nickName = copyStringFromBytes(bytes, NICK_NAME_LENGTH);
+			}
+		}
+
+		@Override
+		public void process() {
+			log.info(String.format("Chat message '%s' from '%s'", message, nickName));
+		}
+
+		@Override
+		public int getLength() {
+			return super.getLength() + MESSAGE_LENGTH + NICK_NAME_LENGTH;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("ChatPacketS2C message='%s' from '%s'", message, nickName);
+		}
+	}
+
 	public SceNetAdhocctlPacketBaseS2C createPacket(ProOnlineNetworkAdapter proOnline, byte[] buffer, int length) {
 		switch (buffer[0]) {
 			case OPCODE_PING:
@@ -367,6 +410,8 @@ public class PacketFactory {
 				return new SceNetAdhocctlScanCompletePacketS2C(buffer, length);
 			case OPCODE_DISCONNECT:
 				return new SceNetAdhocctlDisconnectPacketS2C(proOnline, buffer, length);
+			case OPCODE_CHAT:
+				return new SceNetAdhocctlChatPacketS2C(buffer, length);
 			default:
 				ProOnlineNetworkAdapter.log.error(String.format("Received unknown opcode %d", buffer[0]));
 				break;

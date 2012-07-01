@@ -29,6 +29,7 @@ import static jpcsp.HLE.modules150.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_
 import static jpcsp.HLE.modules150.sceNetAdhocMatching.PSP_ADHOC_MATCHING_MODE_CLIENT;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
@@ -352,16 +353,16 @@ public abstract class MatchingObject extends AdhocObject {
 			return false;
 		}
 
+		if (Emulator.getClock().microTime() - lastPingMicros >= getPingDelay()) {
+			try {
+				sendPing();
+			} catch (IOException e) {
+				log.error("eventLoop ping", e);
+			}
+		}
+
 		if (!inConnection) {
-			if (connected) {
-				if (Emulator.getClock().microTime() - lastPingMicros >= getPingDelay()) {
-					try {
-						sendPing();
-					} catch (IOException e) {
-						log.error("eventLoop ping", e);
-					}
-				}
-			} else if (getMode() != PSP_ADHOC_MATCHING_MODE_CLIENT) {
+			if (!connected && getMode() != PSP_ADHOC_MATCHING_MODE_CLIENT) {
 				if (Emulator.getClock().microTime() - lastHelloMicros >= getHelloDelay()) {
 					try {
 						sendHello();
@@ -412,8 +413,10 @@ public abstract class MatchingObject extends AdhocObject {
 		try {
 			byte[] bytes = new byte[getBufSize() + AdhocMessage.MAX_HEADER_SIZE];
 			int length = socket.receive(bytes, bytes.length);
+			int receivedPort = socket.getReceivedPort();
+			InetAddress receivedAddress = socket.getReceivedAddress();
 			AdhocMatchingEventMessage adhocMatchingEventMessage = createMessage(bytes, length);
-			if (adhocMatchingEventMessage.isForMe()) {
+			if (isForMe(adhocMatchingEventMessage, receivedPort, receivedAddress)) {
 				int event = adhocMatchingEventMessage.getEvent();
 				int macAddr = buffer.addr;
 				int optData = buffer.addr + 8;
@@ -471,6 +474,10 @@ public abstract class MatchingObject extends AdhocObject {
 						inConnection = false;
 					}
 				}
+			} else {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Received message not for me: %s", adhocMatchingEventMessage));
+				}
 			}
 		} catch (SocketTimeoutException e) {
 			// Nothing available
@@ -498,6 +505,10 @@ public abstract class MatchingObject extends AdhocObject {
 
 	protected AdhocMatchingEventMessage createMessage(byte[] message, int length) {
 		return getNetworkAdapter().createAdhocMatchingEventMessage(this, message, length);
+	}
+
+	protected boolean isForMe(AdhocMessage adhocMessage, int port, InetAddress address) {
+		return adhocMessage.isForMe();
 	}
 
 	@Override

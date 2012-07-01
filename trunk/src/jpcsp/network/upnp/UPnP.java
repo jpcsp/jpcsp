@@ -52,6 +52,15 @@ import org.xml.sax.SAXException;
 public class UPnP {
 	public static Logger log = Logger.getLogger("upnp");
 	protected IGD igd;
+	private static final int discoveryTimeoutMillis = 2000;
+	private static final int discoveryPort = 1900;
+	private static final String multicastIp = "239.255.255.250";
+	private static final String[] deviceList = new String[] {
+			"urn:schemas-upnp-org:device:InternetGatewayDevice:1",
+			"urn:schemas-upnp-org:service:WANIPConnection:1",
+			"urn:schemas-upnp-org:service:WANPPPConnection:1",
+			"upnp:rootdevice"
+	};
 
 	protected static class Device {
 		public String descURL;
@@ -60,25 +69,16 @@ public class UPnP {
 
 	public void discover() {
 		try {
-			String[] deviceList = new String[] {
-					"urn:schemas-upnp-org:device:InternetGatewayDevice:1",
-					"urn:schemas-upnp-org:service:WANIPConnection:1",
-					"urn:schemas-upnp-org:service:WANPPPConnection:1",
-					"upnp:rootdevice"
-			};
-			String upnpMulticastIp = "239.255.255.250";
-			int upnpDiscoveryPort = 1900;
-			int timeoutMillis = 1000;
 			DatagramSocket socket = new DatagramSocket();
-			socket.setSoTimeout(timeoutMillis);
+			socket.setSoTimeout(discoveryTimeoutMillis);
 			socket.setReuseAddress(true);
 			byte[] response = new byte[1536];
 			DatagramPacket responsePacket = new DatagramPacket(response, response.length);
 			List<Device> devices = new LinkedList<Device>();
 			for (String device : deviceList) {
 				if (responsePacket.getPort() == -1) {
-					String discoveryRequest = String.format("M-SEARCH * HTTP/1.1\r\nHOST: %s:%d\r\nST: %s\r\nMAN: \"ssdp:discover\"\r\nMX: %d\r\n\r\n", upnpMulticastIp, upnpDiscoveryPort, device, timeoutMillis / 1000);
-					DatagramPacket packet = new DatagramPacket(discoveryRequest.getBytes(), discoveryRequest.length(), new InetSocketAddress(upnpMulticastIp, upnpDiscoveryPort));
+					String discoveryRequest = String.format("M-SEARCH * HTTP/1.1\r\nHOST: %s:%d\r\nST: %s\r\nMAN: \"ssdp:discover\"\r\nMX: %d\r\n\r\n", multicastIp, discoveryPort, device, discoveryTimeoutMillis / 1000);
+					DatagramPacket packet = new DatagramPacket(discoveryRequest.getBytes(), discoveryRequest.length(), new InetSocketAddress(multicastIp, discoveryPort));
 					socket.send(packet);
 				}
 				try {

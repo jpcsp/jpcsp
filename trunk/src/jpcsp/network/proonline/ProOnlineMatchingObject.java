@@ -17,9 +17,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.network.proonline;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import jpcsp.network.INetworkAdapter;
+import jpcsp.network.adhoc.AdhocMessage;
 import jpcsp.network.adhoc.AdhocSocket;
 import jpcsp.network.adhoc.MatchingObject;
 
@@ -46,5 +48,10 @@ public class ProOnlineMatchingObject extends MatchingObject {
 		proOnline.sceNetPortOpen("UDP", getPort());
 
 		super.create();
+	}
+
+	@Override
+	protected boolean isForMe(AdhocMessage adhocMessage, int port, InetAddress address) {
+		return proOnline.isForMe(adhocMessage, port, address);
 	}
 }
