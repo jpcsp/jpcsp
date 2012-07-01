@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.proonline;
 
+import static jpcsp.HLE.modules150.sceNet.convertMacAddressToString;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.network.ProOnline;
@@ -33,6 +35,16 @@ import jpcsp.network.adhoc.MatchingObject;
 public class ProOnlineAdhocMatchingEventMessage extends AdhocMatchingEventMessage {
 	protected static Logger log = ProOnline.log;
 	protected static final int HEADER_SIZE = 1 + 4;
+	public static final int ADHOC_MATCHING_PACKET_PING = 0;
+	public static final int ADHOC_MATCHING_PACKET_HELLO = 1;
+	public static final int ADHOC_MATCHING_PACKET_JOIN = 2;
+	public static final int ADHOC_MATCHING_PACKET_ACCEPT = 3;
+	public static final int ADHOC_MATCHING_PACKET_CANCEL = 4;
+	public static final int ADHOC_MATCHING_PACKET_BULK = 5;
+	public static final int ADHOC_MATCHING_PACKET_BULK_ABORT = 6;
+	public static final int ADHOC_MATCHING_PACKET_BIRTH = 7;
+	public static final int ADHOC_MATCHING_PACKET_DEATH = 8;
+	public static final int ADHOC_MATCHING_PACKET_BYE = 9;
 
 	public ProOnlineAdhocMatchingEventMessage(MatchingObject matchingObject, int event) {
 		super(matchingObject, event);
@@ -71,5 +83,10 @@ public class ProOnlineAdhocMatchingEventMessage extends AdhocMatchingEventMessag
 	@Override
 	public int getMessageLength() {
 		return super.getMessageLength() + HEADER_SIZE;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[fromMacAddress=%s, toMacAddress=%s, dataLength=%d, event=%d]", getClass().getSimpleName(), convertMacAddressToString(fromMacAddress), convertMacAddressToString(toMacAddress), getDataLength(), getEvent());
 	}
 }

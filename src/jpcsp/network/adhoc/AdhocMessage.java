@@ -176,6 +176,6 @@ public abstract class AdhocMessage {
 
 	@Override
 	public String toString() {
-		return String.format("%s[fromMacAddress=%s, toMacAddress=%s, dataLength=%d]", getClass().getName(), convertMacAddressToString(fromMacAddress), convertMacAddressToString(toMacAddress), getDataLength());
+		return String.format("%s[fromMacAddress=%s, toMacAddress=%s, dataLength=%d]", getClass().getSimpleName(), convertMacAddressToString(fromMacAddress), convertMacAddressToString(toMacAddress), getDataLength());
 	}
 }

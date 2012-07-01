@@ -32,6 +32,7 @@ import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.sceNetAdhoc;
+import jpcsp.HLE.modules.sceNetAdhocMatching;
 import jpcsp.HLE.modules150.sceNetInet;
 import jpcsp.HLE.modules150.sceNetAdhoc.GameModeArea;
 import jpcsp.network.BaseNetworkAdapter;
@@ -43,6 +44,7 @@ import jpcsp.network.adhoc.PtpObject;
 import jpcsp.network.proonline.PacketFactory.SceNetAdhocctlPacketBaseC2S;
 import jpcsp.network.proonline.PacketFactory.SceNetAdhocctlPacketBaseS2C;
 import jpcsp.network.upnp.UPnP;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -119,27 +121,22 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 			log.debug("sceNetAdhocctlInit");
 		}
 
-		try {
-			portManager = new PortManager(upnp);
-
-			metaSocket = new Socket(metaServer, metaPort);
-			metaSocket.setReuseAddress(true);
-			metaSocket.setSoTimeout(500);
-
-			PacketFactory.SceNetAdhocctlLoginPacketC2S loginPacket = new PacketFactory.SceNetAdhocctlLoginPacketC2S();
-
-			sendToMetaServer(loginPacket);
-
-			exit = false;
-			Thread friendFinderThread = new FriendFinder();
-			friendFinderThread.setName("ProOnline Friend Finder");
-			friendFinderThread.setDaemon(true);
-			friendFinderThread.start();
-		} catch (UnknownHostException e) {
-			log.error("sceNetAdhocctlInit", e);
-		} catch (IOException e) {
-			log.error("sceNetAdhocctlInit", e);
+		// Wait for a previous instance of the Friend Finder thread to terminate
+		while (exit) {
+			Utilities.sleep(1, 0);
 		}
+
+		terminatePortManager();
+		closeConnectionToMetaServer();
+		connectToMetaServer();
+		exit = false;
+
+		portManager = new PortManager(upnp);
+
+		Thread friendFinderThread = new FriendFinder();
+		friendFinderThread.setName("ProOnline Friend Finder");
+		friendFinderThread.setDaemon(true);
+		friendFinderThread.start();
 	}
 
 	@Override
@@ -183,11 +180,8 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 			log.debug("sceNetAdhocctlTerm");
 		}
 
-		// Delete all the port/host mappings
-		portManager.clear();
-		portManager = null;
-
 		exit = true;
+		terminatePortManager();
 	}
 
 	@Override
@@ -210,6 +204,43 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		portManager.addPort(port, protocol);
 	}
 
+	private void connectToMetaServer() {
+		try {
+			metaSocket = new Socket(metaServer, metaPort);
+			metaSocket.setReuseAddress(true);
+			metaSocket.setSoTimeout(500);
+
+			PacketFactory.SceNetAdhocctlLoginPacketC2S loginPacket = new PacketFactory.SceNetAdhocctlLoginPacketC2S();
+
+			sendToMetaServer(loginPacket);
+		} catch (UnknownHostException e) {
+			log.error("connectToMetaServer", e);
+		} catch (IOException e) {
+			log.error("connectToMetaServer", e);
+		}
+	}
+
+	/**
+	 * Delete all the port/host mappings
+	 */
+	private void terminatePortManager() {
+		if (portManager != null) {
+			portManager.clear();
+			portManager = null;
+		}
+	}
+
+	private void closeConnectionToMetaServer() {
+		if (metaSocket != null) {
+			try {
+				metaSocket.close();
+			} catch (IOException e) {
+				log.error("friendFinder", e);
+			}
+			metaSocket = null;
+		}
+	}
+
 	protected void friendFinder() {
 		long lastPing = Emulator.getClock().currentTimeMillis();
 		byte[] buffer = new byte[1024];
@@ -230,6 +261,10 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 				int length = metaSocket.getInputStream().read(buffer, offset, buffer.length - offset);
 				if (length > 0) {
 					offset += length;
+				} else if (length < 0) {
+					// The connection has been closed by the server, try to reconnect...
+					closeConnectionToMetaServer();
+					connectToMetaServer();
 				}
 			} catch (SocketTimeoutException e) {
 				// Ignore read timeout
@@ -266,12 +301,8 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 			log.debug("Exiting friendFinder");
 		}
 
-		try {
-			metaSocket.close();
-		} catch (IOException e) {
-			log.error("friendFinder", e);
-		}
-		metaSocket = null;
+		closeConnectionToMetaServer();
+		exit = false;
 	}
 
 	public static String convertIpToString(int ip) {
@@ -452,18 +483,42 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		return new ProOnlineMatchingObject(this);
 	}
 
+	private int mapAdhocEventToPacketEvent(int adhocEvent) {
+		switch (adhocEvent) {
+			case sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING:
+				return ProOnlineAdhocMatchingEventMessage.ADHOC_MATCHING_PACKET_PING;
+			case sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_HELLO:
+				return ProOnlineAdhocMatchingEventMessage.ADHOC_MATCHING_PACKET_HELLO;
+		}
+		return adhocEvent;
+	}
+
 	@Override
 	public AdhocMatchingEventMessage createAdhocMatchingEventMessage(MatchingObject matchingObject, int event) {
-		return new ProOnlineAdhocMatchingEventMessage(matchingObject, event);
+		return new ProOnlineAdhocMatchingEventMessage(matchingObject, mapAdhocEventToPacketEvent(event));
 	}
 
 	@Override
 	public AdhocMatchingEventMessage createAdhocMatchingEventMessage(MatchingObject matchingObject, int event, int data, int dataLength, byte[] macAddress) {
-		return new ProOnlineAdhocMatchingEventMessage(matchingObject, event, data, dataLength, macAddress);
+		return new ProOnlineAdhocMatchingEventMessage(matchingObject, mapAdhocEventToPacketEvent(event), data, dataLength, macAddress);
 	}
 
 	@Override
 	public AdhocMatchingEventMessage createAdhocMatchingEventMessage(MatchingObject matchingObject, byte[] message, int length) {
 		return new ProOnlineAdhocMatchingEventMessage(matchingObject, message, length);
+	}
+
+	public boolean isForMe(AdhocMessage adhocMessage, int port, InetAddress address) {
+		byte[] fromMacAddress = getMacAddress(address);
+		if (fromMacAddress == null) {
+			// Unknown source IP address, ignore the message
+			return false;
+		}
+
+		// Copy the source MAC address from the source InetAddress
+		adhocMessage.setFromMacAddress(fromMacAddress);
+
+		// There is no broadcasting, all messages are for me
+		return true;
 	}
 }
