@@ -3058,24 +3058,41 @@ public class IoFileMgrForUser extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0x779103A0, version = 150, checkInsideInterrupt = true)
-    public int sceIoRename(PspString oldfilename, PspString newfilename) {
+    public int sceIoRename(PspString pspOldFileName, PspString pspNewFileName) {
+    	String oldFileName = pspOldFileName.getString();
+    	String newFileName = pspNewFileName.getString();
     	if (log.isDebugEnabled()) {
-            log.debug("sceIoRename - file = " + oldfilename.getString() + ", new_file = " + newfilename.getString());
+            log.debug(String.format("sceIoRename - from '%s' to '%s'", oldFileName, newFileName));
         }
-        
-        String oldpcfilename = getDeviceFilePath(oldfilename.getString());
-        String newpcfilename = getDeviceFilePath(newfilename.getString());
+
+    	// The new file name can omit the file directory, in which case the directory
+    	// of the old file name is used.
+    	// I.e., when renaming "ms0:/PSP/SAVEDATA/xxxx" into "yyyy",
+    	// actually rename into "ms0:/PSP/SAVEDATA/yyyy".
+    	if (!newFileName.contains("/")) {
+    		int prefixOffset = oldFileName.lastIndexOf("/");
+    		if (prefixOffset >= 0) {
+    			newFileName = oldFileName.substring(0, prefixOffset + 1) + newFileName;
+    		}
+    	}
+
+    	String oldpcfilename = getDeviceFilePath(oldFileName);
+        String newpcfilename = getDeviceFilePath(newFileName);
         int result;
-        
+
         if (oldpcfilename != null) {
             if (isUmdPath(oldpcfilename)) {
                 result = -1;
             } else {
                 File file = new File(oldpcfilename);
                 File newfile = new File(newpcfilename);
+                if (log.isDebugEnabled()) {
+                	log.debug(String.format("sceIoRename: renaming file '%s' to '%s'", oldpcfilename, newpcfilename));
+                }
                 if (file.renameTo(newfile)) {
                 	result = 0;
                 } else {
+                	log.warn(String.format("sceIoRename failed: %s(%s) to %s(%s)", oldFileName, oldpcfilename, newFileName, newpcfilename));
                 	result = -1;
                 }
             }
@@ -3084,7 +3101,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoRename(result, oldfilename.getAddress(), oldfilename.getString(), newfilename.getAddress(), newfilename.getString());
+            ioListener.sceIoRename(result, pspOldFileName.getAddress(), pspOldFileName.getString(), pspNewFileName.getAddress(), pspNewFileName.getString());
         }
         delayIoOperation(IoOperation.rename);
         return result;
