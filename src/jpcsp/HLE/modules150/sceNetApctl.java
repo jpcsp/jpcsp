@@ -484,6 +484,7 @@ public class sceNetApctl extends HLEModule {
 				case PSP_NET_APCTL_INFO_STRENGTH: {
 					int signalStrength = 100;
 					mem.write8(pInfo, (byte) signalStrength);
+					break;
 				}
 				default: {
 					cpu.gpr[2] = -1;
