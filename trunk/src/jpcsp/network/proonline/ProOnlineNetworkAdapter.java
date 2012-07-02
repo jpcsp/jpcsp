@@ -29,13 +29,14 @@ import java.util.LinkedList;
 import java.util.List;
 
 import jpcsp.Emulator;
+import jpcsp.GUI.ChatGUI;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.sceNetAdhoc;
-import jpcsp.HLE.modules.sceNetAdhocMatching;
 import jpcsp.HLE.modules150.sceNetInet;
 import jpcsp.HLE.modules150.sceNetAdhoc.GameModeArea;
 import jpcsp.network.BaseNetworkAdapter;
+import jpcsp.network.INetworkAdapter;
 import jpcsp.network.adhoc.AdhocMatchingEventMessage;
 import jpcsp.network.adhoc.AdhocMessage;
 import jpcsp.network.adhoc.MatchingObject;
@@ -61,10 +62,12 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	private static String metaServer = "coldbird.uk.to";
 	private static final int pingTimeoutMillis = 2000;
 	private volatile boolean exit;
+	private volatile boolean friendFinderActive;
 	private List<MacIp> macIps = new LinkedList<MacIp>();
 	private PacketFactory packetFactory = new PacketFactory();
 	private PortManager portManager;
 	private InetAddress broadcastInetAddress;
+	private ChatGUI chatGUI;
 
 	public static boolean isEnabled() {
 		return enabled;
@@ -100,10 +103,16 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	}
 
 	protected void sendToMetaServer(SceNetAdhocctlPacketBaseC2S packet) throws IOException {
-		metaSocket.getOutputStream().write(packet.getBytes());
-		metaSocket.getOutputStream().flush();
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("Sent packet to meta server: %s", packet));
+		if (metaSocket != null) {
+			metaSocket.getOutputStream().write(packet.getBytes());
+			metaSocket.getOutputStream().flush();
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("Sent packet to meta server: %s", packet));
+			}
+		} else {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Message not sent to meta server because not connected: %s", packet));
+			}
 		}
 	}
 
@@ -115,6 +124,26 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		}
 	}
 
+	private void openChat() {
+		if (chatGUI == null || !chatGUI.isVisible()) {
+			chatGUI = new ChatGUI();
+			Emulator.getMainGUI().startWindowDialog(chatGUI);
+		}
+	}
+
+	private void closeChat() {
+		if (chatGUI != null) {
+			chatGUI.dispose();
+			chatGUI = null;
+		}
+	}
+
+	private void waitForFriendFinderToExit() {
+		while (friendFinderActive && exit) {
+			Utilities.sleep(1, 0);
+		}
+	}
+
 	@Override
 	public void sceNetAdhocctlInit() {
 		if (log.isDebugEnabled()) {
@@ -122,9 +151,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		}
 
 		// Wait for a previous instance of the Friend Finder thread to terminate
-		while (exit) {
-			Utilities.sleep(1, 0);
-		}
+		waitForFriendFinderToExit();
 
 		terminatePortManager();
 		closeConnectionToMetaServer();
@@ -156,6 +183,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 
 		try {
 			sendToMetaServer(new PacketFactory.SceNetAdhocctlConnectPacketC2S());
+			openChat();
 		} catch (IOException e) {
 			log.error("sceNetAdhocctlCreate", e);
 		}
@@ -169,6 +197,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 
 		try {
 			sendToMetaServer(new PacketFactory.SceNetAdhocctlDisconnectPacketC2S());
+			closeChat();
 		} catch (IOException e) {
 			log.error("sceNetAdhocctlDisconnect", e);
 		}
@@ -250,6 +279,8 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 			log.debug("Starting friendFinder");
 		}
 
+		friendFinderActive = true;
+
 		while (!exit) {
 			long now = Emulator.getClock().currentTimeMillis();
 			if (now - lastPing >= pingTimeoutMillis) {
@@ -301,8 +332,17 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 			log.debug("Exiting friendFinder");
 		}
 
+		// Be clean, send a disconnect message to the server
+		try {
+			sendToMetaServer(new PacketFactory.SceNetAdhocctlDisconnectPacketC2S());
+		} catch (IOException e) {
+			// Ignore error
+		}
+
 		closeConnectionToMetaServer();
 		exit = false;
+
+		friendFinderActive = false;
 	}
 
 	public static String convertIpToString(int ip) {
@@ -483,29 +523,19 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		return new ProOnlineMatchingObject(this);
 	}
 
-	private int mapAdhocEventToPacketEvent(int adhocEvent) {
-		switch (adhocEvent) {
-			case sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING:
-				return ProOnlineAdhocMatchingEventMessage.ADHOC_MATCHING_PACKET_PING;
-			case sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_HELLO:
-				return ProOnlineAdhocMatchingEventMessage.ADHOC_MATCHING_PACKET_HELLO;
-		}
-		return adhocEvent;
-	}
-
 	@Override
 	public AdhocMatchingEventMessage createAdhocMatchingEventMessage(MatchingObject matchingObject, int event) {
-		return new ProOnlineAdhocMatchingEventMessage(matchingObject, mapAdhocEventToPacketEvent(event));
+		return MatchingPacketFactory.createPacket(this, matchingObject, event);
 	}
 
 	@Override
 	public AdhocMatchingEventMessage createAdhocMatchingEventMessage(MatchingObject matchingObject, int event, int data, int dataLength, byte[] macAddress) {
-		return new ProOnlineAdhocMatchingEventMessage(matchingObject, mapAdhocEventToPacketEvent(event), data, dataLength, macAddress);
+		return MatchingPacketFactory.createPacket(this, matchingObject, event, data, dataLength, macAddress);
 	}
 
 	@Override
 	public AdhocMatchingEventMessage createAdhocMatchingEventMessage(MatchingObject matchingObject, byte[] message, int length) {
-		return new ProOnlineAdhocMatchingEventMessage(matchingObject, message, length);
+		return MatchingPacketFactory.createPacket(this, matchingObject, message, length);
 	}
 
 	public boolean isForMe(AdhocMessage adhocMessage, int port, InetAddress address) {
@@ -520,5 +550,42 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 
 		// There is no broadcasting, all messages are for me
 		return true;
+	}
+
+	@Override
+	public void sendChatMessage(String message) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Sending chat message '%s'", message));
+		}
+
+		try {
+			sendToMetaServer(new PacketFactory.SceNetAdhocctlChatPacketC2S(message));
+		} catch (IOException e) {
+			log.warn("Error while sending chat message", e);
+		}
+	}
+
+	public void displayChatMessage(String nickName, String message) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Displaying chat message from '%s': '%s'", nickName, message));
+		}
+
+		chatGUI.addChatMessage(nickName, message);
+	}
+
+	public static void exit() {
+		if (!isEnabled()) {
+			return;
+		}
+
+		INetworkAdapter networkAdapter = Modules.sceNetModule.getNetworkAdapter();
+		if (networkAdapter == null || !(networkAdapter instanceof ProOnlineNetworkAdapter)) {
+			return;
+		}
+
+		ProOnlineNetworkAdapter proOnline = (ProOnlineNetworkAdapter) networkAdapter;
+		proOnline.exit = true;
+		proOnline.terminatePortManager();
+		proOnline.waitForFriendFinderToExit();
 	}
 }

@@ -129,4 +129,10 @@ public class JpcspNetworkAdapter extends BaseNetworkAdapter {
 	public AdhocMatchingEventMessage createAdhocMatchingEventMessage(MatchingObject matchingObject, byte[] message, int length) {
 		return new JpcspAdhocMatchingEventMessage(matchingObject, message, length);
 	}
+
+	@Override
+	public void sendChatMessage(String message) {
+		// TODO Implement Chat
+		log.warn(String.format("Chat functionality not supported: %s", message));
+	}
 }

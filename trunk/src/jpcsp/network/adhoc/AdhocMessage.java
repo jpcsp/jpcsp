@@ -133,7 +133,7 @@ public abstract class AdhocMessage {
 	public abstract byte[] getMessage();
 
 	public int getMessageLength() {
-		return data.length;
+		return getDataLength();
 	}
 
 	public abstract void setMessage(byte[] message, int length);

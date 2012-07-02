@@ -35,34 +35,28 @@ import jpcsp.network.adhoc.MatchingObject;
 public class ProOnlineAdhocMatchingEventMessage extends AdhocMatchingEventMessage {
 	protected static Logger log = ProOnline.log;
 	protected static final int HEADER_SIZE = 1 + 4;
-	public static final int ADHOC_MATCHING_PACKET_PING = 0;
-	public static final int ADHOC_MATCHING_PACKET_HELLO = 1;
-	public static final int ADHOC_MATCHING_PACKET_JOIN = 2;
-	public static final int ADHOC_MATCHING_PACKET_ACCEPT = 3;
-	public static final int ADHOC_MATCHING_PACKET_CANCEL = 4;
-	public static final int ADHOC_MATCHING_PACKET_BULK = 5;
-	public static final int ADHOC_MATCHING_PACKET_BULK_ABORT = 6;
-	public static final int ADHOC_MATCHING_PACKET_BIRTH = 7;
-	public static final int ADHOC_MATCHING_PACKET_DEATH = 8;
-	public static final int ADHOC_MATCHING_PACKET_BYE = 9;
+	private int packetOpcode;
 
-	public ProOnlineAdhocMatchingEventMessage(MatchingObject matchingObject, int event) {
+	public ProOnlineAdhocMatchingEventMessage(MatchingObject matchingObject, int event, int packetOpcode) {
 		super(matchingObject, event);
+		this.packetOpcode = packetOpcode;
 	}
 
-	public ProOnlineAdhocMatchingEventMessage(MatchingObject matchingObject, int event, int address, int length, byte[] toMacAddress) {
+	public ProOnlineAdhocMatchingEventMessage(MatchingObject matchingObject, int event, int packetOpcode, int address, int length, byte[] toMacAddress) {
 		super(matchingObject, event, address, length, toMacAddress);
+		this.packetOpcode = packetOpcode;
 	}
 
-	public ProOnlineAdhocMatchingEventMessage(MatchingObject matchingObject, byte[] message, int length) {
+	public ProOnlineAdhocMatchingEventMessage(MatchingObject matchingObject, int event, byte[] message, int length) {
 		super(matchingObject, message, length);
+		setEvent(event);
 	}
 
 	@Override
 	public byte[] getMessage() {
 		byte[] message = new byte[getMessageLength()];
 		offset = 0;
-		addToBytes(message, (byte) getEvent());
+		addToBytes(message, (byte) getPacketOpcode());
 		addInt32ToBytes(message, getDataLength());
 		addToBytes(message, data);
 
@@ -73,11 +67,19 @@ public class ProOnlineAdhocMatchingEventMessage extends AdhocMatchingEventMessag
 	public void setMessage(byte[] message, int length) {
 		if (length >= HEADER_SIZE) {
 			offset = 0;
-			setEvent(copyByteFromBytes(message));
+			setPacketOpcode(copyByteFromBytes(message));
 			int dataLength = copyInt32FromBytes(message);
 			data = new byte[Math.min(dataLength, length - HEADER_SIZE)];
 			copyFromBytes(message, data);
 		}
+	}
+
+	protected int getPacketOpcode() {
+		return packetOpcode;
+	}
+
+	protected void setPacketOpcode(int packetOpcode) {
+		this.packetOpcode = packetOpcode;
 	}
 
 	@Override
@@ -87,6 +89,6 @@ public class ProOnlineAdhocMatchingEventMessage extends AdhocMatchingEventMessag
 
 	@Override
 	public String toString() {
-		return String.format("%s[fromMacAddress=%s, toMacAddress=%s, dataLength=%d, event=%d]", getClass().getSimpleName(), convertMacAddressToString(fromMacAddress), convertMacAddressToString(toMacAddress), getDataLength(), getEvent());
+		return String.format("%s[fromMacAddress=%s, toMacAddress=%s, dataLength=%d, event=%d, packetOpcode=%d]", getClass().getSimpleName(), convertMacAddressToString(fromMacAddress), convertMacAddressToString(toMacAddress), getDataLength(), getEvent(), getPacketOpcode());
 	}
 }

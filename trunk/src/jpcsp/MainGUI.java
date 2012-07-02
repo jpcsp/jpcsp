@@ -2189,6 +2189,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
             Settings.getInstance().writeWindowPos("mainwindow", getLocation());
         }
 
+        ProOnlineNetworkAdapter.exit();
         Modules.ThreadManForUserModule.exit();
         Modules.sceDisplayModule.exit();
         VideoEngine.exit();

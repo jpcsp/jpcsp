@@ -44,6 +44,7 @@ public class PacketFactory {
 	protected static final int OPCODE_SCAN_COMPLETE = 5;
 	protected static final int OPCODE_CONNECT_BSSID = 6;
 	protected static final int OPCODE_CHAT = 7;
+	private static final int CHAT_MESSAGE_LENGTH = 64;
 
 	protected static abstract class SceNetAdhocctlPacketBase {
 		protected int opcode;
@@ -151,9 +152,9 @@ public class PacketFactory {
 	}
 
 	protected static class SceNetAdhocctlLoginPacketC2S extends SceNetAdhocctlPacketBaseC2S {
-		pspNetMacAddress mac = new pspNetMacAddress();
-		String nickName;
-		String game;
+		private pspNetMacAddress mac = new pspNetMacAddress();
+		private String nickName;
+		private String game;
 
 		public SceNetAdhocctlLoginPacketC2S() {
 			opcode = OPCODE_LOGIN;
@@ -177,7 +178,7 @@ public class PacketFactory {
 	}
 
 	protected static class SceNetAdhocctlConnectPacketC2S extends SceNetAdhocctlPacketBaseC2S {
-		String group;
+		private String group;
 
 		public SceNetAdhocctlConnectPacketC2S() {
 			opcode = OPCODE_CONNECT;
@@ -193,6 +194,26 @@ public class PacketFactory {
 		@Override
 		public int getLength() {
 			return super.getLength() + GROUP_NAME_LENGTH;
+		}
+	}
+
+	protected static class SceNetAdhocctlChatPacketC2S extends SceNetAdhocctlPacketBaseC2S {
+		private String message;
+
+		public SceNetAdhocctlChatPacketC2S(String message) {
+			opcode = OPCODE_CHAT;
+			this.message = message;
+		}
+
+		@Override
+		protected void getBytes(byte[] bytes) {
+			super.getBytes(bytes);
+			copyToBytes(bytes, message, CHAT_MESSAGE_LENGTH);
+		}
+
+		@Override
+		public int getLength() {
+			return super.getLength() + CHAT_MESSAGE_LENGTH;
 		}
 	}
 
@@ -213,10 +234,10 @@ public class PacketFactory {
 	}
 
 	private static class SceNetAdhocctlConnectPacketS2C extends SceNetAdhocctlPacketBaseS2C {
-		String nickName;
-		pspNetMacAddress mac;
-		int ip;
-		final ProOnlineNetworkAdapter proOnline;
+		private String nickName;
+		private pspNetMacAddress mac;
+		private int ip;
+		private final ProOnlineNetworkAdapter proOnline;
 
 		public SceNetAdhocctlConnectPacketS2C(ProOnlineNetworkAdapter proOnline, byte[] bytes, int length) {
 			this.proOnline = proOnline;
@@ -250,7 +271,7 @@ public class PacketFactory {
 	}
 
 	private static class SceNetAdhocctlConnectBSSIDPacketS2C extends SceNetAdhocctlPacketBaseS2C {
-		pspNetMacAddress mac;
+		private pspNetMacAddress mac;
 
 		public SceNetAdhocctlConnectBSSIDPacketS2C(byte[] bytes, int length) {
 			init(bytes, length);
@@ -281,8 +302,8 @@ public class PacketFactory {
 	}
 
 	private static class SceNetAdhocctlScanPacketS2C extends SceNetAdhocctlPacketBaseS2C {
-		String group;
-		pspNetMacAddress mac;
+		private String group;
+		private pspNetMacAddress mac;
 
 		public SceNetAdhocctlScanPacketS2C(byte[] bytes, int length) {
 			init(bytes, length);
@@ -330,7 +351,7 @@ public class PacketFactory {
 	}
 
 	private static class SceNetAdhocctlDisconnectPacketS2C extends SceNetAdhocctlPacketBaseS2C {
-		final ProOnlineNetworkAdapter proOnline;
+		private final ProOnlineNetworkAdapter proOnline;
 		private int ip;
 
 		public SceNetAdhocctlDisconnectPacketS2C(ProOnlineNetworkAdapter proOnline, byte[] bytes, int length) {
@@ -363,31 +384,32 @@ public class PacketFactory {
 	}
 
 	private static class SceNetAdhocctlChatPacketS2C extends SceNetAdhocctlPacketBaseS2C {
-		private static final int MESSAGE_LENGTH = 64;
+		private final ProOnlineNetworkAdapter proOnline;
 		private String message;
 		private String nickName;
 
-		public SceNetAdhocctlChatPacketS2C(byte[] bytes, int length) {
+		public SceNetAdhocctlChatPacketS2C(ProOnlineNetworkAdapter proOnline, byte[] bytes, int length) {
 			init(bytes, length);
+			this.proOnline = proOnline;
 		}
 
 		@Override
 		protected void init(byte[] bytes, int length) {
 			super.init(bytes, length);
 			if (length >= getLength()) {
-				message = copyStringFromBytes(bytes, MESSAGE_LENGTH);
+				message = copyStringFromBytes(bytes, CHAT_MESSAGE_LENGTH);
 				nickName = copyStringFromBytes(bytes, NICK_NAME_LENGTH);
 			}
 		}
 
 		@Override
 		public void process() {
-			log.info(String.format("Chat message '%s' from '%s'", message, nickName));
+			proOnline.displayChatMessage(nickName, message);
 		}
 
 		@Override
 		public int getLength() {
-			return super.getLength() + MESSAGE_LENGTH + NICK_NAME_LENGTH;
+			return super.getLength() + CHAT_MESSAGE_LENGTH + NICK_NAME_LENGTH;
 		}
 
 		@Override
@@ -411,7 +433,7 @@ public class PacketFactory {
 			case OPCODE_DISCONNECT:
 				return new SceNetAdhocctlDisconnectPacketS2C(proOnline, buffer, length);
 			case OPCODE_CHAT:
-				return new SceNetAdhocctlChatPacketS2C(buffer, length);
+				return new SceNetAdhocctlChatPacketS2C(proOnline, buffer, length);
 			default:
 				ProOnlineNetworkAdapter.log.error(String.format("Received unknown opcode %d", buffer[0]));
 				break;
