@@ -139,6 +139,13 @@ public interface INetworkAdapter {
 	 * @return         an Adhoc Matching
 	 */
 	public AdhocMatchingEventMessage createAdhocMatchingEventMessage(MatchingObject matchingObject, byte[] message, int length);
+
+	/**
+	 * Send a chat message to the network group
+	 * @param message the chat message to send
+	 */
+	public void sendChatMessage(String message);
+
 	/**
 	 * Called when executing sceNetAdhocctlInit.
 	 */
