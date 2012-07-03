@@ -2453,10 +2453,10 @@ public class sceMpeg extends HLEModule {
     }
     
     @HLEFunction(nid = 0xF5E7EA31, version = 150)
-    public int sceMpegAvcConvertToYuv420() {
-        log.warn("Unimplemented NID function sceMpegAvcConvertToYuv420 [0xF5E7EA31]");
+    public int sceMpegAvcConvertToYuv420(int mpeg, TPointer bufferOutput, TPointer unknown1, int unknown2) {
+        log.warn(String.format("Unimplemented sceMpegAvcConvertToYuv420 mpeg=0x%X, bufferOutput=%s, unknown1=%s, unknown2=0x%08X", mpeg, bufferOutput, unknown1, unknown2));
 
-        return 0xDEADC0DE;
+        return 0;
     }
     
     @HLEFunction(nid = 0xD1CE4950, version = 150)

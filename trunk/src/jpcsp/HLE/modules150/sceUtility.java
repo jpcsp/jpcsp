@@ -740,7 +740,6 @@ public class sceUtility extends HLEModule {
 	                    pattern = savedataParams.gameName + pattern;
 
 	                    String[] entries = Modules.IoFileMgrForUserModule.listFiles(SceUtilitySavedataParam.savedataPath, pattern);
-	                    log.debug("Entries: " + entries);
 	                    int numEntries = entries == null ? 0 : entries.length;
 	                    numEntries = Math.min(numEntries, maxEntries);
 	                    for (int i = 0; i < numEntries; i++) {
@@ -755,8 +754,16 @@ public class sceUtility extends HLEModule {
 	                        }
 	                        String entryName = entries[i].substring(savedataParams.gameName.length());
 	                        Utilities.writeStringNZ(mem, entryAddr + 52, 20, entryName);
+
+	                        if (log.isDebugEnabled()) {
+	                        	log.debug(String.format("MODE_LIST returning filePath=%s, stat=%s, entryName=%s at 0x%08X", filePath, stat, entryName, entryAddr));
+	                        }
 	                    }
 	                    mem.write32(buffer4Addr + 4, numEntries);
+
+	                    if (log.isDebugEnabled()) {
+                        	log.debug(String.format("MODE_LIST returning %d entries", numEntries));
+                        }
 	                }
 	                savedataParams.base.result = 0;
 	                break;
@@ -874,6 +881,9 @@ public class sceUtility extends HLEModule {
 
 	                try {
 	                    savedataParams.singleRead(mem);
+	                    if (log.isTraceEnabled()) {
+	                    	log.trace(String.format("MODE_READ/MODE_READSECURE reading %s", Utilities.getMemoryDump(savedataParams.dataBuf, savedataParams.dataSize, 4, 16)));
+	                    }
 	                    savedataParams.base.result = 0;
 	                    savedataParams.write(mem);
 	                } catch (IOException e) {

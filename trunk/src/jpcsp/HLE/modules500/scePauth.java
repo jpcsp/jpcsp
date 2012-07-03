@@ -43,4 +43,16 @@ public class scePauth extends HLEModule {
 
     	return 0;
     }
+
+    @HLEFunction(nid = 0x98B83B5D, version = 500)
+    public int scePauth_98B83B5D(int inputAddr, int inputLength, int resultLengthAddr, int workArea) {
+    	// workArea is 16 bytes long
+    	log.warn(String.format("Unimplemented scePauth_98B83B5D inputAddr=0x%08X, inputLength=%d, resultLengthAddr=0x%08X, workArea=0x%08X", inputAddr, inputLength, resultLengthAddr, workArea));
+
+    	if (Memory.isAddressGood(resultLengthAddr)) {
+    		Processor.memory.write32(resultLengthAddr, 0);
+    	}
+
+    	return 0;
+    }
 }

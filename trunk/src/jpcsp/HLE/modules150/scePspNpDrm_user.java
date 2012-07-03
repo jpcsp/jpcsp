@@ -17,11 +17,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import jpcsp.GeneralJpcspException;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.PspString;
 import jpcsp.Emulator;
 import jpcsp.Loader;
 import jpcsp.Memory;
@@ -93,23 +95,17 @@ public class scePspNpDrm_user extends HLEModule {
     }
 
     @HLEFunction(nid = 0x275987D1, version = 150, checkInsideInterrupt = true)
-    public void sceNpDrmRenameCheck(Processor processor) {
-        CpuState cpu = processor.cpu;
-        
-        int nameAddr = cpu.gpr[4];
+    public int sceNpDrmRenameCheck(PspString fileName) {
+        log.warn(String.format("PARTIAL: sceNpDrmRenameCheck nameAddr=0x%08X('%s')", fileName.getAddress(), fileName.getString()));
 
-        log.warn("PARTIAL: sceNpDrmRenameCheck (nameAddr=0x" + Integer.toHexString(nameAddr) + ")");
-
-        
-        String fileName = Utilities.readStringZ(nameAddr);        
         CryptoEngine crypto = new CryptoEngine(); 
-        @SuppressWarnings("unused")
 		boolean renamed = false;
+		int result = 0;
 
         try {
-            String pcfilename = Modules.IoFileMgrForUserModule.getDeviceFilePath(fileName);
+            String pcfilename = Modules.IoFileMgrForUserModule.getDeviceFilePath(fileName.getString());
             SeekableRandomFile file = new SeekableRandomFile(pcfilename, "rw");
-            
+
             String[] name = pcfilename.split("/");
             String fName = "";
             for (int i = 0; i < name.length; i++) {
@@ -117,7 +113,7 @@ public class scePspNpDrm_user extends HLEModule {
                     fName = name[i].toLowerCase();
                 }
             }
-  
+
             // Setup the buffers.
             byte[] inBuf = new byte[0x80];
             byte[] dataBuf = new byte[0x30];
@@ -129,17 +125,25 @@ public class scePspNpDrm_user extends HLEModule {
             // Generate a new name hash for this file and compare with the one stored in it's header.
             System.arraycopy(inBuf, 0x10, dataBuf, 0, 0x30);
             System.arraycopy(inBuf, 0x40, nameHashBuf, 0, 0x10);
-            
+
             // If the CryptoEngine fails to find a match, then the file has been renamed.
             if (crypto.CheckEDATANameKey(nameHashBuf, dataBuf, fName.getBytes(), fName.getBytes().length) != 0) {
                 renamed = true;
             }
 
+            if (log.isDebugEnabled()) {
+            	log.debug(String.format("sceNpDrmRenameCheck renamed=%b", renamed));
+            }
+        } catch (FileNotFoundException e) {
+        	result = SceKernelErrors.ERROR_ERRNO_FILE_NOT_FOUND;
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceNpDrmRenameCheck: file '%s' not found: %s", fileName.getString(), e.toString()));
+        	}
         } catch (Exception e) {
-            // Ignore.
+        	log.error("sceNpDrmRenameCheck", e);
         }
-        
-        cpu.gpr[2] = 0;  // Faking.
+
+        return result;  // Faking.
     }
 
     @HLEFunction(nid = 0x08D98894, version = 150, checkInsideInterrupt = true)
