@@ -55,6 +55,10 @@ public class JpcspNetworkAdapter extends BaseNetworkAdapter {
 	}
 
 	@Override
+	public void sceNetAdhocctlJoin() {
+	}
+
+	@Override
 	public void sceNetAdhocctlDisconnect() {
 	}
 

@@ -167,6 +167,11 @@ public interface INetworkAdapter {
 	public void sceNetAdhocctlCreate();
 
 	/**
+	 * Called when executing sceNetAdhocctlJoin.
+	 */
+	public void sceNetAdhocctlJoin();
+
+	/**
 	 * Called when executing sceNetAdhocctlDisconnect.
 	 */
 	public void sceNetAdhocctlDisconnect();

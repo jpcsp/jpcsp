@@ -38,12 +38,16 @@ public class ProOnlineAdhocDatagramSocket extends AdhocDatagramSocket {
 		if (proOnline.isBroadcast(socketAddress)) {
 			int port = proOnline.getBroadcastPort(socketAddress);
 			// Broadcast to all MAC's/IP's
-			for (MacIp macIp : proOnline.getMacIps()) {
-				SocketAddress remoteSocketAddress = proOnline.getSocketAddress(macIp.mac, port);
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("Sending broadcasted message to %s: %s", macIp, adhocMessage));
+			int numberMacIps = proOnline.getNumberMacIps();
+			for (int i = 0; i < numberMacIps; i++) {
+				MacIp macIp = proOnline.getMacIp(i);
+				if (macIp != null) {
+					SocketAddress remoteSocketAddress = proOnline.getSocketAddress(macIp.mac, port);
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("Sending broadcasted message to %s: %s", macIp, adhocMessage));
+					}
+					super.send(remoteSocketAddress, adhocMessage);
 				}
-				super.send(remoteSocketAddress, adhocMessage);
 			}
 		} else {
 			super.send(socketAddress, adhocMessage);

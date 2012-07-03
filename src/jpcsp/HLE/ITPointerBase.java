@@ -20,4 +20,5 @@ public interface ITPointerBase {
 	public boolean isAddressGood();
 	public boolean isAlignedTo(int offset);
 	public int getAddress();
+	public boolean isNull();
 }

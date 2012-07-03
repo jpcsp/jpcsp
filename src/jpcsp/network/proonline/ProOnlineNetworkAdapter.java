@@ -63,6 +63,8 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	private static final int pingTimeoutMillis = 2000;
 	private volatile boolean exit;
 	private volatile boolean friendFinderActive;
+	// All access to macIps have to be synchronized because they can be executed
+	// from different threads (PSP thread + Friend Finder thread).
 	private List<MacIp> macIps = new LinkedList<MacIp>();
 	private PacketFactory packetFactory = new PacketFactory();
 	private PortManager portManager;
@@ -169,7 +171,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	@Override
 	public void sceNetAdhocctlConnect() {
 		if (log.isDebugEnabled()) {
-			log.debug("sceNetAdhocctlConnect");
+			log.debug("sceNetAdhocctlConnect redirecting to sceNetAdhocctlCreate");
 		}
 
 		sceNetAdhocctlCreate();
@@ -187,6 +189,15 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		} catch (IOException e) {
 			log.error("sceNetAdhocctlCreate", e);
 		}
+	}
+
+	@Override
+	public void sceNetAdhocctlJoin() {
+		if (log.isDebugEnabled()) {
+			log.debug("sceNetAdhocctlJoin redirecting to sceNetAdhocctlCreate");
+		}
+
+		sceNetAdhocctlCreate();
 	}
 
 	@Override
@@ -349,7 +360,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		return String.format("%d.%d.%d.%d", ip & 0xFF, (ip >> 8) & 0xFF, (ip >> 16) & 0xFF, (ip >> 24) & 0xFF);
 	}
 
-	protected void addFriend(String nickName, pspNetMacAddress mac, int ip) {
+	protected synchronized void addFriend(String nickName, pspNetMacAddress mac, int ip) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Adding friend nickName='%s', mac=%s, ip=%s", nickName, mac, convertIpToString(ip)));
 		}
@@ -373,7 +384,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		}
 	}
 
-	protected void deleteFriend(int ip) {
+	protected synchronized void deleteFriend(int ip) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Deleting friend ip=%s", convertIpToString(ip)));
 		}
@@ -421,8 +432,15 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		return new InetSocketAddress(inetAddress, realPort);
 	}
 
-	public List<MacIp> getMacIps() {
-		return macIps;
+	public synchronized int getNumberMacIps() {
+		return macIps.size();
+	}
+
+	public synchronized MacIp getMacIp(int index) {
+		if (index < 0 || index >= macIps.size()) {
+			return null;
+		}
+		return macIps.get(index);
 	}
 
 	public InetAddress getInetAddress(byte[] macAddress) {
@@ -447,7 +465,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		return macIp.ip;
 	}
 
-	public MacIp getMacIp(byte[] macAddress) {
+	public synchronized MacIp getMacIp(byte[] macAddress) {
 		for (MacIp macIp : macIps) {
 			if (isSameMacAddress(macAddress, macIp.mac)) {
 				return macIp;
@@ -457,7 +475,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		return null;
 	}
 
-	public MacIp getMacIp(InetAddress inetAddress) {
+	public synchronized MacIp getMacIp(InetAddress inetAddress) {
 		for (MacIp macIp : macIps) {
 			if (inetAddress.equals(macIp.inetAddress)) {
 				return macIp;
@@ -541,6 +559,9 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	public boolean isForMe(AdhocMessage adhocMessage, int port, InetAddress address) {
 		byte[] fromMacAddress = getMacAddress(address);
 		if (fromMacAddress == null) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("not for me: port=%d, address=%s, message=%s", port, address, adhocMessage));
+			}
 			// Unknown source IP address, ignore the message
 			return false;
 		}

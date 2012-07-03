@@ -16,12 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import jpcsp.HLE.modules.sceNetAdhocctl;
+import jpcsp.util.Utilities;
+
 public class SceUtilityGameSharingParams extends pspAbstractMemoryMappedStructure {
     public pspUtilityDialogCommon base;
     public String gameSharingName;
     public int uploadCallbackArg;
     public int uploadCallbackAddr;       // Predefined callback used for data upload (params: uploadCallbackArg, pointer to gameSharingDataAddr, pointer to gameSharingDataSize).
     public int result;
+    public int gameSharingFilepathAddr;
     public String gameSharingFilepath;   // File path to the game's EBOOT.BIN.
     public int gameSharingMode;          // GameSharing mode: 1 - Single send; 2 - Multiple sends (up to 4).
     public int gameSharingDataType;      // GameSharing data type: 1 - game's EBOOT is a file; 2 - game's EBOOT is in memory.
@@ -35,12 +39,17 @@ public class SceUtilityGameSharingParams extends pspAbstractMemoryMappedStructur
         setMaxSize(base.totalSizeof());
 
         readUnknown(8);
-        gameSharingName = readStringNZ(8);
+        gameSharingName = readStringNZ(sceNetAdhocctl.GROUP_NAME_LENGTH);
         readUnknown(4);
         uploadCallbackArg = read32();
         uploadCallbackAddr = read32();
         result = read32();
-        gameSharingFilepath = readStringNZ(32);
+        gameSharingFilepathAddr = read32();
+        if (gameSharingFilepathAddr != 0) {
+        	gameSharingFilepath = Utilities.readStringNZ(gameSharingFilepathAddr, 32);
+        } else {
+        	gameSharingFilepath = null;
+        }
         gameSharingMode = read32();
         gameSharingDataType = read32();
         gameSharingDataAddr = read32();
@@ -58,7 +67,7 @@ public class SceUtilityGameSharingParams extends pspAbstractMemoryMappedStructur
         write32(uploadCallbackArg);
         write32(uploadCallbackAddr);
         write32(result);
-        writeStringNZ(32, gameSharingFilepath);
+        write32(gameSharingFilepathAddr);
         write32(gameSharingMode);
         write32(gameSharingDataType);
         write32(gameSharingDataAddr);
@@ -72,6 +81,6 @@ public class SceUtilityGameSharingParams extends pspAbstractMemoryMappedStructur
 
     @Override
     public String toString() {
-            return String.format("title=%s, EBOOTAddr=0x%08X, EBOOTSize=%d", gameSharingName, gameSharingDataAddr, gameSharingDataSize);
+        return String.format("title=%s, EBOOTAddr=0x%08X, EBOOTSize=%d", gameSharingName, gameSharingDataAddr, gameSharingDataSize);
     }
 }

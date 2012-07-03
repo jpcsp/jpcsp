@@ -108,8 +108,8 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
     public String fileName; // name of the data file of the game for example DATA.BIN
     public String[] saveNameList; // used by multiple modes
     public int saveNameListAddr;
-    int dataBuf;
-    int dataBufSize;
+    public int dataBuf;
+    public int dataBufSize;
     public int dataSize;
     public PspUtilitySavedataSFOParam sfoParam;
     public PspUtilitySavedataFileData icon0FileData;
