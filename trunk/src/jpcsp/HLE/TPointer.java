@@ -77,6 +77,11 @@ final public class TPointer implements ITPointerBase {
 		return memory;
 	}
 
+	@Override
+	public boolean isNull() {
+		return address == 0;
+	}
+
 	public byte  getValue8() { return getValue8(0); }
 	public short getValue16() { return getValue16(0); }
 	public int   getValue32() { return getValue32(0); }
@@ -87,15 +92,15 @@ final public class TPointer implements ITPointerBase {
 	public void setValue32(int value) { setValue32(0, value); }
 	public void setValue64(long value) { setValue64(0, value); }
 
-	public byte  getValue8(int offset) { return (byte) memory.read8(this.address + offset); }
-	public short getValue16(int offset) { return (short) memory.read16(this.address + offset); }
-	public int   getValue32(int offset) { return memory.read32(this.address + offset); }
-	public long  getValue64(int offset) { return memory.read64(this.address + offset); }
+	public byte  getValue8(int offset) { return (byte) memory.read8(address + offset); }
+	public short getValue16(int offset) { return (short) memory.read16(address + offset); }
+	public int   getValue32(int offset) { return memory.read32(address + offset); }
+	public long  getValue64(int offset) { return memory.read64(address + offset); }
 
-	public void setValue8(int offset, byte value) { if (isAddressGood()) memory.write8(this.address + offset, value); }
-	public void setValue16(int offset, short value) { if (isAddressGood()) memory.write16(this.address + offset, value); }
-	public void setValue32(int offset, int value) { if (isAddressGood()) memory.write32(this.address + offset, value); }
-	public void setValue64(int offset, long value) { if (isAddressGood()) memory.write64(this.address + offset, value); }
+	public void setValue8(int offset, byte value) { if (isAddressGood()) memory.write8(address + offset, value); }
+	public void setValue16(int offset, short value) { if (isAddressGood()) memory.write16(address + offset, value); }
+	public void setValue32(int offset, int value) { if (isAddressGood()) memory.write32(address + offset, value); }
+	public void setValue64(int offset, long value) { if (isAddressGood()) memory.write64(address + offset, value); }
 
 	public void setObject(int offset, Object object) {
 		SerializeMemory.serialize(object, new TPointerOutputStream(offset));

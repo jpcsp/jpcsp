@@ -41,6 +41,11 @@ abstract public class TPointerBase implements ITPointerBase {
 	}
 
 	@Override
+	public boolean isNull() {
+		return pointer.getAddress() == 0;
+	}
+
+	@Override
 	public String toString() {
 		return String.format("0x%08X", getAddress());
 	}

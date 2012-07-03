@@ -865,6 +865,8 @@ public class sceNetAdhocctl extends HLEModule {
             }
             doJoin = true;
             setGroupName(groupName, PSP_ADHOCCTL_MODE_NORMAL);
+
+            networkAdapter.sceNetAdhocctlJoin();
         }
 
         return 0;
