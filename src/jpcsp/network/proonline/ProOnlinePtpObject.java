@@ -17,10 +17,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.network.proonline;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.network.INetworkAdapter;
+import jpcsp.network.adhoc.AdhocMessage;
 import jpcsp.network.adhoc.AdhocSocket;
 import jpcsp.network.adhoc.AdhocStreamSocket;
 import jpcsp.network.adhoc.PtpObject;
@@ -30,8 +33,11 @@ import jpcsp.network.adhoc.PtpObject;
  *
  */
 public class ProOnlinePtpObject extends PtpObject {
+	final protected ProOnlineNetworkAdapter proOnline;
+
 	public ProOnlinePtpObject(INetworkAdapter networkAdapter) {
 		super(networkAdapter);
+		proOnline = (ProOnlineNetworkAdapter) networkAdapter;
 	}
 
 	@Override
@@ -61,5 +67,27 @@ public class ProOnlinePtpObject extends PtpObject {
 	@Override
 	protected AdhocSocket createSocket() throws UnknownHostException, IOException {
 		return new AdhocStreamSocket();
+	}
+
+	@Override
+	public int create(pspNetMacAddress macAddress, int port, int bufSize) {
+		// Open the UDP port in the router
+		proOnline.sceNetPortOpen("UDP", port);
+
+		return super.create(macAddress, port, bufSize);
+	}
+
+	@Override
+	public void delete() {
+		// Close the UDP port in the router
+		proOnline.sceNetPortClose("UDP", getPort());
+
+		super.delete();
+	}
+
+	@Override
+	protected boolean isForMe(AdhocMessage adhocMessage, int port, InetAddress address) {
+		// Always for me on stream sockets
+		return true;
 	}
 }

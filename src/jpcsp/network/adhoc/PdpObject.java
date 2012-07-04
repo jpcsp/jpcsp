@@ -24,12 +24,16 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.LinkedList;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.Allegrex.Common;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer16;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.network.INetworkAdapter;
 import jpcsp.util.Utilities;
@@ -44,6 +48,84 @@ public abstract class PdpObject extends AdhocObject {
 	/** Bytes received */
 	protected int rcvdData;
 	private LinkedList<AdhocBufferMessage> rcvdMessages = new LinkedList<AdhocBufferMessage>();
+    // Polling period (micro seconds) for blocking operations
+    protected static final int BLOCKED_OPERATION_POLLING_MICROS = 10000;
+
+	protected static abstract class BlockedPdpAction implements IAction {
+		protected final PdpObject pdpObject;
+    	protected final long timeoutMicros;
+    	protected final int threadUid;
+    	protected final SceKernelThreadInfo thread;
+
+    	public BlockedPdpAction(PdpObject pdpObject, long timeout) {
+    		this.pdpObject = pdpObject;
+    		timeoutMicros = Emulator.getClock().microTime() + timeout;
+    		threadUid = Modules.ThreadManForUserModule.getCurrentThreadID();
+			thread = Modules.ThreadManForUserModule.getThreadById(threadUid);
+
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("BlockedPdpAction for thread %s", thread));
+    		}
+    	}
+
+    	public void blockCurrentThread() {
+			long schedule = Emulator.getClock().microTime() + BLOCKED_OPERATION_POLLING_MICROS;
+			Emulator.getScheduler().addAction(schedule, this);
+			Modules.ThreadManForUserModule.hleBlockCurrentThread();
+    	}
+
+    	@Override
+		public void execute() {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("BlockedPdpAction: poll on %s, thread %s", pdpObject, thread));
+			}
+
+			if (poll()) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("BlockedPdpAction: unblocking thread %s", thread));
+				}
+				Modules.ThreadManForUserModule.hleUnblockThread(threadUid);
+			} else {
+				long now = Emulator.getClock().microTime();
+				if (now >= timeoutMicros) {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("BlockedPdpAction: timeout for thread %s", thread));
+					}
+					// Unblock thread and return timeout error
+					setReturnValue(thread, SceKernelErrors.ERROR_NET_ADHOC_TIMEOUT);
+					Modules.ThreadManForUserModule.hleUnblockThread(threadUid);
+				} else {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("BlockedPdpAction: continue polling"));
+					}
+					long schedule = now + BLOCKED_OPERATION_POLLING_MICROS;
+					Emulator.getScheduler().addAction(schedule, this);
+				}
+			}
+		}
+
+    	protected abstract boolean poll();
+	}
+
+	protected static class BlockedPdpRecv extends BlockedPdpAction {
+		final protected TPointer srcMacAddr;
+		final protected TPointer16 portAddr;
+		final protected TPointer data;
+		final protected TPointer32 dataLengthAddr;
+
+		public BlockedPdpRecv(PdpObject pdpObject, TPointer srcMacAddr, TPointer16 portAddr, TPointer data, TPointer32 dataLengthAddr, long timeout) {
+			super(pdpObject, timeout);
+			this.srcMacAddr = srcMacAddr;
+			this.portAddr = portAddr;
+			this.data = data;
+			this.dataLengthAddr = dataLengthAddr;
+		}
+
+		@Override
+		protected boolean poll() {
+			return pdpObject.pollRecv(srcMacAddr, portAddr, data, dataLengthAddr, thread);
+		}
+	}
 
 	public PdpObject(INetworkAdapter networkAdapter) {
 		super(networkAdapter);
@@ -101,6 +183,7 @@ public abstract class PdpObject extends AdhocObject {
 		} catch (SocketException e) {
 			log.error("send", e);
 		} catch (UnknownHostException e) {
+			result = SceKernelErrors.ERROR_NET_ADHOC_INVALID_ADDR;
 			log.error("send", e);
 		} catch (SocketTimeoutException e) {
 			log.error("send", e);
@@ -150,9 +233,28 @@ public abstract class PdpObject extends AdhocObject {
 
 	// For Pdp sockets, data is read one packet at a time.
 	// The caller has to provide enough space to fully read the available packet.
-	public int recv(pspNetMacAddress srcMacAddress, TPointer16 portAddr, TPointer data, TPointer32 dataLengthAddr, int timeout, int nonblock) {
-		int result = nonblock != 0 ? SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE : SceKernelErrors.ERROR_NET_ADHOC_TIMEOUT;
+	public int recv(TPointer srcMacAddr, TPointer16 portAddr, TPointer data, TPointer32 dataLengthAddr, int timeout, int nonblock) {
+		int result = 0;
+
+		SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
+		if (pollRecv(srcMacAddr, portAddr, data, dataLengthAddr, thread)) {
+			// Recv completed immediately
+			result = thread.cpuContext.gpr[Common._v0];
+		} else if (nonblock != 0) {
+			// Recv cannot be completed in non-blocking mode
+			result = SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE;
+		} else {
+			// Block current thread
+			BlockedPdpAction blockedPdpAction = new BlockedPdpRecv(this, srcMacAddr, portAddr, data, dataLengthAddr, timeout);
+			blockedPdpAction.blockCurrentThread();
+		}
+
+		return result;
+	}
+
+	public boolean pollRecv(TPointer srcMacAddr, TPointer16 portAddr, TPointer data, TPointer32 dataLengthAddr, SceKernelThreadInfo thread) {
 		int length = dataLengthAddr.getValue();
+		boolean completed = false;
 
 		if (rcvdMessages.isEmpty()) {
 			update();
@@ -164,15 +266,15 @@ public abstract class PdpObject extends AdhocObject {
 				// Buffer is too small to contain all the available data.
 				// Return the buffer size that would be required.
 				dataLengthAddr.setValue(bufferMessage.length);
-				result = SceKernelErrors.ERROR_NET_BUFFER_TOO_SMALL;
+				setReturnValue(thread, SceKernelErrors.ERROR_NET_BUFFER_TOO_SMALL);
 			} else {
 				// Copy the data already received
 				dataLengthAddr.setValue(bufferMessage.length);
 				Memory.getInstance().memcpy(data.getAddress(), buffer.addr + bufferMessage.offset, bufferMessage.length);
-				if (srcMacAddress != null) {
-					srcMacAddress.setMacAddress(bufferMessage.macAddress.macAddress);
+				if (srcMacAddr != null && !srcMacAddr.isNull()) {
+					bufferMessage.macAddress.write(Memory.getInstance(), srcMacAddr.getAddress());
 				}
-				if (portAddr != null) {
+				if (portAddr != null && !portAddr.isNull()) {
 					portAddr.setValue(bufferMessage.port);
 				}
 
@@ -181,11 +283,12 @@ public abstract class PdpObject extends AdhocObject {
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Returned received data: %d bytes from %s on port %d: %s", dataLengthAddr.getValue(), bufferMessage.macAddress, portAddr.getValue(), Utilities.getMemoryDump(data.getAddress(), dataLengthAddr.getValue(), 4, 16)));
 				}
-				result = 0;
+				setReturnValue(thread, 0);
 			}
+			completed = true;
 		}
 
-		return result;
+		return completed;
 	}
 
 	public void update() {
@@ -232,6 +335,10 @@ public abstract class PdpObject extends AdhocObject {
 	protected boolean isForMe(AdhocMessage adhocMessage, int port, InetAddress address) {
 		return adhocMessage.isForMe();
 	}
+
+	protected static void setReturnValue(SceKernelThreadInfo thread, int value) {
+    	thread.cpuContext.gpr[Common._v0] = value;
+    }
 
 	@Override
 	public String toString() {

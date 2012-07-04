@@ -33,7 +33,7 @@ import jpcsp.GUI.ChatGUI;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.sceNetAdhoc;
-import jpcsp.HLE.modules150.sceNetInet;
+import jpcsp.HLE.modules150.sceNet;
 import jpcsp.HLE.modules150.sceNetAdhoc.GameModeArea;
 import jpcsp.network.BaseNetworkAdapter;
 import jpcsp.network.INetworkAdapter;
@@ -70,6 +70,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	private PortManager portManager;
 	private InetAddress broadcastInetAddress;
 	private ChatGUI chatGUI;
+	private boolean connectComplete;
 
 	public static boolean isEnabled() {
 		return enabled;
@@ -130,6 +131,9 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		if (chatGUI == null || !chatGUI.isVisible()) {
 			chatGUI = new ChatGUI();
 			Emulator.getMainGUI().startWindowDialog(chatGUI);
+			for (String nickName : Modules.sceNetAdhocctlModule.getPeersNickName()) {
+				chatGUI.addMember(nickName);
+			}
 		}
 	}
 
@@ -184,7 +188,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		}
 
 		try {
-			sendToMetaServer(new PacketFactory.SceNetAdhocctlConnectPacketC2S());
+			sendToMetaServer(new PacketFactory.SceNetAdhocctlConnectPacketC2S(this));
 			openChat();
 		} catch (IOException e) {
 			log.error("sceNetAdhocctlCreate", e);
@@ -207,7 +211,9 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		}
 
 		try {
-			sendToMetaServer(new PacketFactory.SceNetAdhocctlDisconnectPacketC2S());
+			sendToMetaServer(new PacketFactory.SceNetAdhocctlDisconnectPacketC2S(this));
+			setConnectComplete(false);
+			deleteAllFriends();
 			closeChat();
 		} catch (IOException e) {
 			log.error("sceNetAdhocctlDisconnect", e);
@@ -231,7 +237,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		}
 
 		try {
-			sendToMetaServer(new PacketFactory.SceNetAdhocctlScanPacketC2S());
+			sendToMetaServer(new PacketFactory.SceNetAdhocctlScanPacketC2S(this));
 		} catch (IOException e) {
 			log.error("sceNetAdhocctlScan", e);
 		}
@@ -244,13 +250,20 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		portManager.addPort(port, protocol);
 	}
 
+	public void sceNetPortClose(String protocol, int port) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceNetPortClose %s, port=%d", protocol, port));
+		}
+		portManager.removePort(port, protocol);
+	}
+
 	private void connectToMetaServer() {
 		try {
 			metaSocket = new Socket(metaServer, metaPort);
 			metaSocket.setReuseAddress(true);
 			metaSocket.setSoTimeout(500);
 
-			PacketFactory.SceNetAdhocctlLoginPacketC2S loginPacket = new PacketFactory.SceNetAdhocctlLoginPacketC2S();
+			PacketFactory.SceNetAdhocctlLoginPacketC2S loginPacket = new PacketFactory.SceNetAdhocctlLoginPacketC2S(this);
 
 			sendToMetaServer(loginPacket);
 		} catch (UnknownHostException e) {
@@ -296,7 +309,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 			long now = Emulator.getClock().currentTimeMillis();
 			if (now - lastPing >= pingTimeoutMillis) {
 				lastPing = now;
-				safeSendToMetaServer(new PacketFactory.SceNetAdhocctlPingPacketC2S());
+				safeSendToMetaServer(new PacketFactory.SceNetAdhocctlPingPacketC2S(this));
 			}
 
 			try {
@@ -345,7 +358,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 
 		// Be clean, send a disconnect message to the server
 		try {
-			sendToMetaServer(new PacketFactory.SceNetAdhocctlDisconnectPacketC2S());
+			sendToMetaServer(new PacketFactory.SceNetAdhocctlDisconnectPacketC2S(this));
 		} catch (IOException e) {
 			// Ignore error
 		}
@@ -365,6 +378,9 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 			log.debug(String.format("Adding friend nickName='%s', mac=%s, ip=%s", nickName, mac, convertIpToString(ip)));
 		}
 
+		if (chatGUI != null) {
+			chatGUI.addMember(nickName);
+		}
 		Modules.sceNetAdhocctlModule.hleNetAdhocctlAddPeer(nickName, mac);
 
 		boolean found = false;
@@ -391,6 +407,13 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 
 		for (MacIp macIp : macIps) {
 			if (macIp.ip == ip) {
+				// Delete the nickName from the Chat members
+				if (chatGUI != null) {
+					String nickName = Modules.sceNetAdhocctlModule.getPeerNickName(macIp.mac);
+					if (nickName != null) {
+						chatGUI.removeMember(nickName);
+					}
+				}
 				// Delete the MacIp mapping
 				macIps.remove(macIp);
 				// Delete the peer
@@ -399,6 +422,13 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 				portManager.removeHost(convertIpToString(ip));
 				break;
 			}
+		}
+	}
+
+	protected synchronized void deleteAllFriends() {
+		while (!macIps.isEmpty()) {
+			MacIp macIp = macIps.get(0);
+			deleteFriend(macIp.ip);
 		}
 	}
 
@@ -426,7 +456,8 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	public SocketAddress getSocketAddress(byte[] macAddress, int realPort) throws UnknownHostException {
 		InetAddress inetAddress = getInetAddress(macAddress);
 		if (inetAddress == null) {
-			return sceNetInet.getBroadcastInetSocketAddress(realPort);
+			throw new UnknownHostException(String.format("ProOnline: unknown MAC address %s", sceNet.convertMacAddressToString(macAddress)));
+//			return sceNetInet.getBroadcastInetSocketAddress(realPort);
 		}
 
 		return new InetSocketAddress(inetAddress, realPort);
@@ -580,7 +611,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		}
 
 		try {
-			sendToMetaServer(new PacketFactory.SceNetAdhocctlChatPacketC2S(message));
+			sendToMetaServer(new PacketFactory.SceNetAdhocctlChatPacketC2S(this, message));
 		} catch (IOException e) {
 			log.warn("Error while sending chat message", e);
 		}
@@ -608,5 +639,14 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		proOnline.exit = true;
 		proOnline.terminatePortManager();
 		proOnline.waitForFriendFinderToExit();
+	}
+
+	@Override
+	public boolean isConnectComplete() {
+		return connectComplete;
+	}
+
+	public void setConnectComplete(boolean connectComplete) {
+		this.connectComplete = connectComplete;
 	}
 }

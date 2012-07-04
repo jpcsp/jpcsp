@@ -22,13 +22,11 @@ import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 
-import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Allegrex.Common;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
-import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
@@ -55,60 +53,13 @@ public abstract class PtpObject extends PdpObject {
     // Polling period (micro seconds) for blocking operations
     protected static final int BLOCKED_OPERATION_POLLING_MICROS = 10000;
 
-    protected static abstract class BlockedPtpAction implements IAction {
+    protected static abstract class BlockedPtpAction extends BlockedPdpAction {
     	protected final PtpObject ptpObject;
-    	protected final long timeoutMicros;
-    	protected final int threadUid;
-    	protected final SceKernelThreadInfo thread;
 
     	protected BlockedPtpAction(PtpObject ptpObject, int timeout) {
+    		super(ptpObject, timeout);
     		this.ptpObject = ptpObject;
-    		timeoutMicros = Emulator.getClock().microTime() + timeout;
-    		threadUid = Modules.ThreadManForUserModule.getCurrentThreadID();
-			thread = Modules.ThreadManForUserModule.getThreadById(threadUid);
-
-    		if (log.isDebugEnabled()) {
-    			log.debug(String.format("BlockedPtdAccept for thread %s", thread));
-    		}
     	}
-
-    	public void blockCurrentThread() {
-			long schedule = Emulator.getClock().microTime() + BLOCKED_OPERATION_POLLING_MICROS;
-			Emulator.getScheduler().addAction(schedule, this);
-			Modules.ThreadManForUserModule.hleBlockCurrentThread();
-    	}
-
-    	@Override
-		public void execute() {
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("BlockedPtpAction: poll on %s, thread %s", ptpObject, thread));
-			}
-
-			if (poll()) {
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("BlockedPtpAction: unblocking thread %s", thread));
-				}
-				Modules.ThreadManForUserModule.hleUnblockThread(threadUid);
-			} else {
-				long now = Emulator.getClock().microTime();
-				if (now >= timeoutMicros) {
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("BlockedPtpAction: timeout for thread %s", thread));
-					}
-					// Unblock thread and return timeout error
-					setReturnValue(thread, SceKernelErrors.ERROR_NET_ADHOC_TIMEOUT);
-					Modules.ThreadManForUserModule.hleUnblockThread(threadUid);
-				} else {
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("BlockedPtpAction: continue polling"));
-					}
-					long schedule = now + BLOCKED_OPERATION_POLLING_MICROS;
-					Emulator.getScheduler().addAction(schedule, this);
-				}
-			}
-		}
-
-		protected abstract boolean poll();
     }
 
     protected static class BlockedPtpAccept extends BlockedPtpAction {
@@ -347,10 +298,6 @@ public abstract class PtpObject extends PdpObject {
 	protected abstract boolean pollConnect(SceKernelThreadInfo thread);
 	public abstract boolean canAccept();
 	public abstract boolean canConnect();
-
-	protected static void setReturnValue(SceKernelThreadInfo thread, int value) {
-    	thread.cpuContext.gpr[Common._v0] = value;
-    }
 
 	@Override
 	public String toString() {

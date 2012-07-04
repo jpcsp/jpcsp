@@ -634,9 +634,7 @@ public class sceNetAdhoc extends HLEModule {
 
     	log.warn(String.format("PARTIAL: sceNetAdhocPdpRecv id=%d, srcMacAddr=%s, portAddr=%s, data=%s, dataLengthAddr=%s(%d), timeout=%d, nonblock=%d", id, srcMacAddr, portAddr, data, dataLengthAddr, dataLengthAddr.getValue(), timeout, nonblock));
 
-    	pspNetMacAddress srcMacAddress = new pspNetMacAddress();
-        int result = pdpObjects.get(id).recv(srcMacAddress, portAddr, data, dataLengthAddr, timeout, nonblock);
-        srcMacAddress.write(Memory.getInstance(), srcMacAddr.getAddress());
+        int result = pdpObjects.get(id).recv(srcMacAddr, portAddr, data, dataLengthAddr, timeout, nonblock);
 
         return result;
     }

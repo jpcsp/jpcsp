@@ -139,4 +139,9 @@ public class JpcspNetworkAdapter extends BaseNetworkAdapter {
 		// TODO Implement Chat
 		log.warn(String.format("Chat functionality not supported: %s", message));
 	}
+
+	@Override
+	public boolean isConnectComplete() {
+		return Modules.sceNetAdhocctlModule.getNumberPeers() > 0;
+	}
 }
