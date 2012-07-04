@@ -16,7 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -30,9 +34,11 @@ import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.ThreadManForUser;
+import jpcsp.hardware.Wlan;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 
@@ -106,6 +112,8 @@ public class sceNetApctl extends HLEModule {
 	public static final int PSP_NET_APCTL_INFO_SECURITY_TYPE_WEP  = 1;
 	public static final int PSP_NET_APCTL_INFO_SECURITY_TYPE_WPA  = 2;
 
+	public static final int SSID_NAME_LENGTH = 32;
+
 	private static final String dummyPrimaryDNS = "1.2.3.4";
 	private static final String dummySecondaryDNS = "1.2.3.5";
 	private static final String dummyGateway = "1.2.3.0";
@@ -124,6 +132,9 @@ public class sceNetApctl extends HLEModule {
     protected static final int stateTransitionDelay = 100000; // 100ms
     protected SceKernelThreadInfo sceNetApctlThread;
     protected boolean sceNetApctlThreadTerminate;
+    private boolean doScan;
+    private volatile long scanStartMillis;
+    private static final int SCAN_DURATION_MILLIS = 700;
 
     protected class ApctlHandler {
     	private int id;
@@ -139,6 +150,9 @@ public class sceNetApctl extends HLEModule {
         protected void triggerHandler(int oldState, int newState, int event, int error) {
             SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
             if (thread != null) {
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("Triggering hanlder 0x%08X, oldState=%d, newState=%d, event=%d, error=0x%08X", addr, oldState, newState, event, error));
+            	}
                 Modules.ThreadManForUserModule.executeCallback(thread, addr, null, true, oldState, newState, event, error, pArg);
             }
         }
@@ -177,7 +191,14 @@ public class sceNetApctl extends HLEModule {
 	    		event = PSP_NET_APCTL_EVENT_GET_IP;
 	    		break;
 	    	case PSP_NET_APCTL_STATE_DISCONNECTED:
-	    		event = PSP_NET_APCTL_EVENT_DISCONNECT_REQUEST;
+	    		if (oldState == PSP_NET_APCTL_STATE_SCANNING) {
+	    			event = PSP_NET_APCTL_EVENT_SCAN_COMPLETE;
+	    		} else {
+	    			event = PSP_NET_APCTL_EVENT_DISCONNECT_REQUEST;
+	    		}
+	    		break;
+	    	case PSP_NET_APCTL_STATE_SCANNING:
+	    		event = PSP_NET_APCTL_EVENT_SCAN_REQUEST;
 	    		break;
     		default:
     			event = PSP_NET_APCTL_EVENT_CONNECT_REQUEST;
@@ -316,6 +337,23 @@ public class sceNetApctl extends HLEModule {
 		    	case PSP_NET_APCTL_STATE_GETTING_IP:
 		    		changeState(PSP_NET_APCTL_STATE_GOT_IP);
 		    		break;
+		    	case PSP_NET_APCTL_STATE_DISCONNECTED:
+		    		if (doScan) {
+		        		scanStartMillis = Emulator.getClock().milliTime();
+		    			changeState(PSP_NET_APCTL_STATE_SCANNING);
+		                doScan = false;
+		                stateTransitionCompleted = false;
+		    		}
+		    		break;
+		    	case PSP_NET_APCTL_STATE_SCANNING:
+		    		// End of SCAN?
+		    		long now = Emulator.getClock().milliTime();
+		    		if (now - scanStartMillis > SCAN_DURATION_MILLIS) {
+		    			// Return to DISCONNECTED state and trigger SCAN event
+		    			changeState(PSP_NET_APCTL_STATE_DISCONNECTED);
+		    		} else {
+		    			stateTransitionCompleted = false;
+		    		}
 			}
 
 	    	if (stateTransitionCompleted) {
@@ -444,7 +482,7 @@ public class sceNetApctl extends HLEModule {
 					if (ssid == null) {
 						cpu.gpr[2] = -1;
 					} else {
-						Utilities.writeStringNZ(mem, pInfo, 32, ssid);
+						Utilities.writeStringNZ(mem, pInfo, SSID_NAME_LENGTH, ssid);
 						if (log.isDebugEnabled()) {
 							log.debug(String.format("sceNetApctlGetInfo returning SSID '%s'", ssid));
 						}
@@ -456,7 +494,7 @@ public class sceNetApctl extends HLEModule {
 					if (ssid == null) {
 						cpu.gpr[2] = -1;
 					} else {
-						mem.write32(pInfo, Math.min(ssid.length(), 32));
+						mem.write32(pInfo, Math.min(ssid.length(), SSID_NAME_LENGTH));
 					}
 					break;
 				}
@@ -482,8 +520,7 @@ public class sceNetApctl extends HLEModule {
 					break;
 				}
 				case PSP_NET_APCTL_INFO_STRENGTH: {
-					int signalStrength = 100;
-					mem.write8(pInfo, (byte) signalStrength);
+					mem.write8(pInfo, (byte) Wlan.getSignalStrenth());
 					break;
 				}
 				default: {
@@ -618,7 +655,7 @@ public class sceNetApctl extends HLEModule {
 		}
 	}
         
-        @HLEFunction(nid = 0x2935C45B, version = 150)
+	@HLEFunction(nid = 0x2935C45B, version = 150)
 	public void sceNetApctlGetBSSDescEntry2(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -627,7 +664,7 @@ public class sceNetApctl extends HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
         
-        @HLEFunction(nid = 0xA3E77E13, version = 150)
+	@HLEFunction(nid = 0xA3E77E13, version = 150)
 	public void sceNetApctlScanSSID2(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -636,12 +673,101 @@ public class sceNetApctl extends HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
         
-        @HLEFunction(nid = 0xF25A5006, version = 150)
+	@HLEFunction(nid = 0xF25A5006, version = 150)
 	public void sceNetApctlGetBSSDescIDList2(Processor processor) {
 		CpuState cpu = processor.cpu;
 
 		log.warn("Unimplemented NID function sceNetApctlGetBSSDescIDList2 [0xF25A5006]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
+	}
+
+	@HLEFunction(nid = 0xE9B2E5E6, version = 150)
+	public int sceNetApctlScanUser() {
+		log.warn(String.format("PARTIAL sceNetApctlScanUser"));
+
+		doScan = true;
+		triggerNetApctlThread();
+
+    	return 0;
+	}
+
+	@HLEFunction(nid = 0x6BDDCB8C, version = 150)
+	public int sceNetApctlGetBSSDescIDListUser(TPointer32 sizeAddr, @CanBeNull TPointer buf) {
+		final int userInfoSize = 8;
+		log.warn(String.format("PARTIAL sceNetApctlGetBSSDescIDListUser sizeAddr=%s(%d, entries=%d), buf=%s", sizeAddr, sizeAddr.getValue(), sizeAddr.getValue() / userInfoSize, buf));
+
+		int entries = 1;
+		if (buf.isNull()) {
+			// Return size required
+			sizeAddr.setValue(entries * userInfoSize);
+		} else {
+        	Memory mem = Memory.getInstance();
+        	int addr = buf.getAddress();
+        	int endAddr = addr + sizeAddr.getValue();
+        	sizeAddr.setValue(userInfoSize * entries);
+        	for (int i = 0; i < entries; i++) {
+        		// Check if enough space available to write the next structure
+        		if (addr + userInfoSize > endAddr) {
+        			break;
+        		}
+
+        		if (log.isDebugEnabled()) {
+        			log.debug(String.format("sceNetApctlGetBSSDescIDListUser returning %d at 0x%08X", i, addr));
+        		}
+
+        		/** Pointer to next Network structure in list: will be written later */
+        		addr += 4;
+
+        		/** Entry ID */
+        		mem.write32(addr, i);
+        		addr += 4;
+        	}
+
+        	for (int nextAddr = buf.getAddress(); nextAddr < addr; nextAddr += userInfoSize) {
+        		if (nextAddr + userInfoSize >= addr) {
+        			// Last one
+        			mem.write32(nextAddr, 0);
+        		} else {
+        			// Pointer to next one
+        			mem.write32(nextAddr, nextAddr + userInfoSize);
+        		}
+        	}
+		}
+
+		return 0;
+	}
+
+	@HLEFunction(nid = 0x04776994, version = 150)
+	public int sceNetApctlGetBSSDescEntryUser(int entryId, int infoId, TPointer result) {
+		log.warn(String.format("PARTIAL sceNetApctlGetBSSDescEntryUser entryId=%d, infoId=%d, result=%s", entryId, infoId, result));
+
+		Memory mem = Memory.getInstance();
+
+		switch (infoId) {
+			case 0: // IBSS, 6 bytes
+				String ibss = Modules.sceNetAdhocctlModule.hleNetAdhocctlGetIBSS();
+				Utilities.writeStringNZ(mem, result.getAddress(), sceNetAdhocctl.IBSS_NAME_LENGTH, ibss);
+				break;
+			case 1:
+				// Return 32 bytes
+				String ssid = getSSID();
+				Utilities.writeStringNZ(mem, result.getAddress(), SSID_NAME_LENGTH, ssid);
+				break;
+			case 2:
+				// Return one 32-bit value
+				int length = Math.min(getSSID().length(), SSID_NAME_LENGTH);
+				result.setValue32(length);
+				break;
+			case 4:
+				// Return 1 byte
+				result.setValue8((byte) Wlan.getSignalStrenth());
+				break;
+			default:
+				log.warn(String.format("sceNetApctlGetBSSDescEntryUser unknown id %d", infoId));
+				break;
+		}
+
+		return 0;
 	}
 }

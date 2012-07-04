@@ -52,10 +52,15 @@ public class ChatGUI extends JFrame {
 	private JLabel chatMessagesLabel;
 	private JTextField chatMessage;
 	private JButton sendButton;
+	private JLabel membersLabel;
+	private JLabel membersList;
 	private List<String> chatMessages = new LinkedList<String>();
+	private List<String> members = new LinkedList<String>();
 	private static final String settingsName = "chat";
 	private static final String chatMessageHeader = "<html>";
 	private static final String chatMessageFooter = "</html>";
+	private static final String membersHeader = "<html>";
+	private static final String membersFooter = "</html>";
 	private HashMap<String, Color> nickNameColors = new HashMap<String, Color>();
 	private int allColorsIndex = 0;
 	// Always assign the GRAY color to me.
@@ -80,7 +85,9 @@ public class ChatGUI extends JFrame {
 		setLocation(Settings.getInstance().readWindowPos(settingsName));
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
-		nickNameColors.put(sceUtility.getSystemParamNickname(), colorForMe);
+		nickNameColors.put(getMyNickName(), colorForMe);
+
+		updateMembersLabel();
 	}
 
 	private void initComponents() {
@@ -88,6 +95,8 @@ public class ChatGUI extends JFrame {
 		chatMessagesLabel = new JLabel();
 		chatMessage = new JTextField();
 		sendButton = new JButton();
+		membersLabel = new JLabel();
+		membersList = new JLabel();
 
 		setTitle("Chat");
 		setResizable(true);
@@ -108,18 +117,49 @@ public class ChatGUI extends JFrame {
 
 		scrollPane.setViewportView(chatMessagesLabel);
 
+		membersLabel.setText("Members:");
+
+		membersList.setPreferredSize(new Dimension(100, chatMessagesLabel.getPreferredSize().height));
+
 		chatMessage.setEditable(true);
 
+		//
+		// Layout:
+		//
+		// +-------------------------------------------+-----------------+
+		// | chatMessageLabel in scrollPane            | membersLabel    |
+		// |                                           +-----------------+
+		// |                                           | membersList     |
+		// |                                           |                 |
+		// |                                           |                 |
+		// |                                           |                 |
+		// |                                           |                 |
+		// +-------------------------------------------+----+------------+
+		// | chatMessage                                    | sendButton |
+		// +------------------------------------------------+------------+
+		//
 		GroupLayout layout = new GroupLayout(getContentPane());
 		getContentPane().setLayout(layout);
 		layout.setHorizontalGroup(layout.createParallelGroup()
-				.addComponent(scrollPane)
+				.addGroup(layout.createSequentialGroup()
+						.addComponent(scrollPane)
+						.addGroup(layout.createParallelGroup()
+								.addComponent(membersLabel)
+								.addComponent(membersList)
+								)
+						)
 				.addGroup(layout.createSequentialGroup()
 						.addComponent(chatMessage)
 						.addComponent(sendButton)
 						));
 		layout.setVerticalGroup(layout.createSequentialGroup()
-				.addComponent(scrollPane)
+				.addGroup(layout.createParallelGroup()
+						.addComponent(scrollPane)
+						.addGroup(layout.createSequentialGroup()
+								.addComponent(membersLabel)
+								.addComponent(membersList)
+								)
+						)
 				.addGroup(layout.createParallelGroup()
 						.addComponent(chatMessage)
 						.addComponent(sendButton))
@@ -140,7 +180,7 @@ public class ChatGUI extends JFrame {
 			chatMessage.setText("");
 
 			// Add my own chat to the messages
-			addChatMessage(sceUtility.getSystemParamNickname(), message, true);
+			addChatMessage(getMyNickName(), message, true);
 		}
 	}
 
@@ -179,15 +219,19 @@ public class ChatGUI extends JFrame {
     	addChatMessage(nickName, message, false);
     }
 
+    private String getFormattedNickName(String nickName, boolean isMe) {
+		Color nickNameColor = getNickNameColor(nickName);
+		String nickNameSuffix = isMe ? " (me)" : "";
+		return String.format("<font color='#%06X'>%s%s</font>", nickNameColor.getRGB() & 0x00FFFFFF, nickName, nickNameSuffix);
+    }
+
     private void addChatMessage(String nickName, String message, boolean isMe) {
 		String line;
 
 		if (nickName == null) {
 			line = message;
 		} else {
-			Color nickNameColor = getNickNameColor(nickName);
-			String nickNameSuffix = isMe ? " (me)" : "";
-			line = String.format("<font color='#%06X'>%s%s</font> - %s", nickNameColor.getRGB() & 0x00FFFFFF, nickName, nickNameSuffix, message);
+			line = String.format("%s - %s", getFormattedNickName(nickName, isMe), message);
 		}
 
 		addChatLine(line);
@@ -200,5 +244,42 @@ public class ChatGUI extends JFrame {
 
 		Emulator.getMainGUI().endWindowDialog();
 		super.dispose();
+	}
+
+	private void updateMembersLabel() {
+		if (membersList == null) {
+			return;
+		}
+
+		StringBuilder label = new StringBuilder();
+		label.append(membersHeader);
+
+		// Always put myself in front of the list
+		label.append(String.format("<br>%s</br>", getFormattedNickName(getMyNickName(), true)));
+
+		for (String member : members) {
+			label.append(String.format("<br>%s</br>", getFormattedNickName(member, false)));
+		}
+		label.append(membersFooter);
+
+		membersList.setText(label.toString());
+	}
+
+	public void addMember(String nickName) {
+		if (!members.contains(nickName) && !nickName.equals(getMyNickName())) {
+			members.add(nickName);
+			updateMembersLabel();
+		}
+	}
+
+	public void removeMember(String nickName) {
+		if (members.contains(nickName)) {
+			members.remove(nickName);
+			updateMembersLabel();
+		}
+	}
+
+	private static String getMyNickName() {
+		return sceUtility.getSystemParamNickname();
 	}
 }

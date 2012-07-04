@@ -141,6 +141,13 @@ public interface INetworkAdapter {
 	public AdhocMatchingEventMessage createAdhocMatchingEventMessage(MatchingObject matchingObject, byte[] message, int length);
 
 	/**
+	 * When connecting or joining to a group, check when the CONNECTED state can be reached.
+	 * @return true if the CONNECTED state can be reached
+	 *         false if still processing the connection
+	 */
+	public boolean isConnectComplete();
+
+	/**
 	 * Send a chat message to the network group
 	 * @param message the chat message to send
 	 */

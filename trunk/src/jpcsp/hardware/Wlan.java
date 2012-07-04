@@ -32,6 +32,7 @@ public class Wlan {
     private final static String settingsMacAddress = "macAddress";
     public static int PSP_ADHOC_CHANNEL_AUTO = 0;
     public static int PSP_ADHOC_CHANNEL_DEFAULT = 11;
+    private static int signalStrength = 100;
 
     public static void initialize() {
     	String macAddressString = Settings.getInstance().readString(settingsMacAddress);
@@ -82,5 +83,9 @@ public class Wlan {
     	}
 
     	return channel;
+    }
+
+    public static int getSignalStrenth() {
+    	return signalStrength;
     }
 }

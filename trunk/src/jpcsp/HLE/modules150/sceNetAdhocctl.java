@@ -30,6 +30,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -471,7 +472,7 @@ public class sceNetAdhocctl extends HLEModule {
     				// Add own MAC to list of game mode MACs
         			addGameModeMac(Wlan.getMacAddress());
     			}
-    		} else if (peers.size() > 0) {
+    		} else if (networkAdapter.isConnectComplete()) {
     			doJoin = false;
     			doConnect();
     		}
@@ -648,6 +649,10 @@ public class sceNetAdhocctl extends HLEModule {
     	return adhocctlCurrentGroup;
     }
 
+    public String hleNetAdhocctlGetIBSS() {
+    	return adhocctlCurrentIBSS;
+    }
+
     public void hleNetAdhocctlAddNetwork(String groupName, pspNetMacAddress mac, int mode) {
     	hleNetAdhocctlAddNetwork(groupName, mac, adhocctlCurrentChannel, adhocctlCurrentIBSS, mode);
     }
@@ -702,6 +707,29 @@ public class sceNetAdhocctl extends HLEModule {
     		}
     	}
 	}
+
+    public List<String> getPeersNickName() {
+    	List<String> nickNames = new LinkedList<String>();
+    	for (AdhocctlPeer peer : peers) {
+    		nickNames.add(peer.nickName);
+    	}
+
+    	return nickNames;
+    }
+
+    public int getNumberPeers() {
+    	return peers.size();
+    }
+
+    public String getPeerNickName(byte[] macAddress) {
+    	for (AdhocctlPeer peer : peers) {
+    		if (peer.equals(macAddress)) {
+    			return peer.nickName;
+    		}
+    	}
+
+    	return null;
+    }
 
     public void hleNetAdhocctlDeletePeer(byte[] macAddress) {
     	for (AdhocctlPeer peer : peers) {
@@ -1204,7 +1232,7 @@ public class sceNetAdhocctl extends HLEModule {
     	final int scanInfoSize = 28;
         log.warn(String.format("PARTIAL: sceNetAdhocctlGetScanInfo sizeAddr=%s(%d), buf=%s", sizeAddr, sizeAddr.getValue(), buf));
 
-        if (buf.getAddress() == 0) {
+        if (buf.isNull()) {
         	// Return size required
         	sizeAddr.setValue(scanInfoSize * networks.size());
         	if (log.isDebugEnabled()) {

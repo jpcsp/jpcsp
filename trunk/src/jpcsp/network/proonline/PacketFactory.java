@@ -47,8 +47,13 @@ public class PacketFactory {
 	private static final int CHAT_MESSAGE_LENGTH = 64;
 
 	protected static abstract class SceNetAdhocctlPacketBase {
+		protected final ProOnlineNetworkAdapter proOnline;
 		protected int opcode;
 		protected int offset;
+
+		protected SceNetAdhocctlPacketBase(ProOnlineNetworkAdapter proOnline) {
+			this.proOnline = proOnline;
+		}
 
 		public byte[] getBytes() {
 			byte[] bytes = new byte[getLength()];
@@ -127,26 +132,36 @@ public class PacketFactory {
 	}
 
 	protected static abstract class SceNetAdhocctlPacketBaseC2S extends SceNetAdhocctlPacketBase {
+		protected SceNetAdhocctlPacketBaseC2S(ProOnlineNetworkAdapter proOnline) {
+			super(proOnline);
+		}
 	}
 
 	protected static abstract class SceNetAdhocctlPacketBaseS2C extends SceNetAdhocctlPacketBase {
+		protected SceNetAdhocctlPacketBaseS2C(ProOnlineNetworkAdapter proOnline) {
+			super(proOnline);
+		}
+
 		public abstract void process();
 	}
 
 	protected static class SceNetAdhocctlPingPacketC2S extends SceNetAdhocctlPacketBaseC2S {
-		public SceNetAdhocctlPingPacketC2S() {
+		public SceNetAdhocctlPingPacketC2S(ProOnlineNetworkAdapter proOnline) {
+			super(proOnline);
 			opcode = OPCODE_PING;
 		}
 	}
 
 	protected static class SceNetAdhocctlDisconnectPacketC2S extends SceNetAdhocctlPacketBaseC2S {
-		public SceNetAdhocctlDisconnectPacketC2S() {
+		public SceNetAdhocctlDisconnectPacketC2S(ProOnlineNetworkAdapter proOnline) {
+			super(proOnline);
 			opcode = OPCODE_DISCONNECT;
 		}
 	}
 
 	protected static class SceNetAdhocctlScanPacketC2S extends SceNetAdhocctlPacketBaseC2S {
-		public SceNetAdhocctlScanPacketC2S() {
+		public SceNetAdhocctlScanPacketC2S(ProOnlineNetworkAdapter proOnline) {
+			super(proOnline);
 			opcode = OPCODE_SCAN;
 		}
 	}
@@ -156,7 +171,8 @@ public class PacketFactory {
 		private String nickName;
 		private String game;
 
-		public SceNetAdhocctlLoginPacketC2S() {
+		public SceNetAdhocctlLoginPacketC2S(ProOnlineNetworkAdapter proOnline) {
+			super(proOnline);
 			opcode = OPCODE_LOGIN;
 			mac.setMacAddress(Wlan.getMacAddress());
 			nickName = sceUtility.getSystemParamNickname();
@@ -180,7 +196,8 @@ public class PacketFactory {
 	protected static class SceNetAdhocctlConnectPacketC2S extends SceNetAdhocctlPacketBaseC2S {
 		private String group;
 
-		public SceNetAdhocctlConnectPacketC2S() {
+		public SceNetAdhocctlConnectPacketC2S(ProOnlineNetworkAdapter proOnline) {
+			super(proOnline);
 			opcode = OPCODE_CONNECT;
 			group = Modules.sceNetAdhocctlModule.hleNetAdhocctlGetGroupName();
 		}
@@ -200,7 +217,8 @@ public class PacketFactory {
 	protected static class SceNetAdhocctlChatPacketC2S extends SceNetAdhocctlPacketBaseC2S {
 		private String message;
 
-		public SceNetAdhocctlChatPacketC2S(String message) {
+		public SceNetAdhocctlChatPacketC2S(ProOnlineNetworkAdapter proOnline, String message) {
+			super(proOnline);
 			opcode = OPCODE_CHAT;
 			this.message = message;
 		}
@@ -218,7 +236,8 @@ public class PacketFactory {
 	}
 
 	private static class SceNetAdhocctlPingPacketS2C extends SceNetAdhocctlPacketBaseS2C {
-		public SceNetAdhocctlPingPacketS2C(byte[] bytes, int length) {
+		public SceNetAdhocctlPingPacketS2C(ProOnlineNetworkAdapter proOnline, byte[] bytes, int length) {
+			super(proOnline);
 			init(bytes, length);
 		}
 
@@ -237,10 +256,9 @@ public class PacketFactory {
 		private String nickName;
 		private pspNetMacAddress mac;
 		private int ip;
-		private final ProOnlineNetworkAdapter proOnline;
 
 		public SceNetAdhocctlConnectPacketS2C(ProOnlineNetworkAdapter proOnline, byte[] bytes, int length) {
-			this.proOnline = proOnline;
+			super(proOnline);
 			init(bytes, length);
 		}
 
@@ -273,7 +291,8 @@ public class PacketFactory {
 	private static class SceNetAdhocctlConnectBSSIDPacketS2C extends SceNetAdhocctlPacketBaseS2C {
 		private pspNetMacAddress mac;
 
-		public SceNetAdhocctlConnectBSSIDPacketS2C(byte[] bytes, int length) {
+		public SceNetAdhocctlConnectBSSIDPacketS2C(ProOnlineNetworkAdapter proOnline, byte[] bytes, int length) {
+			super(proOnline);
 			init(bytes, length);
 		}
 
@@ -287,7 +306,8 @@ public class PacketFactory {
 
 		@Override
 		public void process() {
-			ProOnlineNetworkAdapter.log.info(String.format("Received MAC address %s", mac));
+			log.info(String.format("Received MAC address %s", mac));
+			proOnline.setConnectComplete(true);
 		}
 
 		@Override
@@ -305,7 +325,8 @@ public class PacketFactory {
 		private String group;
 		private pspNetMacAddress mac;
 
-		public SceNetAdhocctlScanPacketS2C(byte[] bytes, int length) {
+		public SceNetAdhocctlScanPacketS2C(ProOnlineNetworkAdapter proOnline, byte[] bytes, int length) {
+			super(proOnline);
 			init(bytes, length);
 		}
 
@@ -335,7 +356,8 @@ public class PacketFactory {
 	}
 
 	private static class SceNetAdhocctlScanCompletePacketS2C extends SceNetAdhocctlPacketBaseS2C {
-		public SceNetAdhocctlScanCompletePacketS2C(byte[] bytes, int length) {
+		public SceNetAdhocctlScanCompletePacketS2C(ProOnlineNetworkAdapter proOnline, byte[] bytes, int length) {
+			super(proOnline);
 			init(bytes, length);
 		}
 
@@ -351,11 +373,10 @@ public class PacketFactory {
 	}
 
 	private static class SceNetAdhocctlDisconnectPacketS2C extends SceNetAdhocctlPacketBaseS2C {
-		private final ProOnlineNetworkAdapter proOnline;
 		private int ip;
 
 		public SceNetAdhocctlDisconnectPacketS2C(ProOnlineNetworkAdapter proOnline, byte[] bytes, int length) {
-			this.proOnline = proOnline;
+			super(proOnline);
 			init(bytes, length);
 		}
 
@@ -379,18 +400,17 @@ public class PacketFactory {
 
 		@Override
 		public String toString() {
-			return String.format("DisconnectPacketS2C");
+			return String.format("DisconnectPacketS2C ip=%s", convertIpToString(ip));
 		}
 	}
 
 	private static class SceNetAdhocctlChatPacketS2C extends SceNetAdhocctlPacketBaseS2C {
-		private final ProOnlineNetworkAdapter proOnline;
 		private String message;
 		private String nickName;
 
 		public SceNetAdhocctlChatPacketS2C(ProOnlineNetworkAdapter proOnline, byte[] bytes, int length) {
+			super(proOnline);
 			init(bytes, length);
-			this.proOnline = proOnline;
 		}
 
 		@Override
@@ -421,15 +441,15 @@ public class PacketFactory {
 	public SceNetAdhocctlPacketBaseS2C createPacket(ProOnlineNetworkAdapter proOnline, byte[] buffer, int length) {
 		switch (buffer[0]) {
 			case OPCODE_PING:
-				return new SceNetAdhocctlPingPacketS2C(buffer, length);
+				return new SceNetAdhocctlPingPacketS2C(proOnline, buffer, length);
 			case OPCODE_CONNECT_BSSID:
-				return new SceNetAdhocctlConnectBSSIDPacketS2C(buffer, length);
+				return new SceNetAdhocctlConnectBSSIDPacketS2C(proOnline, buffer, length);
 			case OPCODE_CONNECT:
 				return new SceNetAdhocctlConnectPacketS2C(proOnline, buffer, length);
 			case OPCODE_SCAN:
-				return new SceNetAdhocctlScanPacketS2C(buffer, length);
+				return new SceNetAdhocctlScanPacketS2C(proOnline, buffer, length);
 			case OPCODE_SCAN_COMPLETE:
-				return new SceNetAdhocctlScanCompletePacketS2C(buffer, length);
+				return new SceNetAdhocctlScanCompletePacketS2C(proOnline, buffer, length);
 			case OPCODE_DISCONNECT:
 				return new SceNetAdhocctlDisconnectPacketS2C(proOnline, buffer, length);
 			case OPCODE_CHAT:

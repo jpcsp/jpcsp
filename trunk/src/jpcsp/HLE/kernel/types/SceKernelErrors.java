@@ -364,6 +364,7 @@ public class SceKernelErrors {
     public final static int ERROR_NET_RESOLVER_INVALID_HOST                     = 0x80410414;
 
     public final static int ERROR_NET_ADHOC_INVALID_SOCKET_ID                   = 0x80410701;
+    public final static int ERROR_NET_ADHOC_INVALID_ADDR                        = 0x80410702;
     public final static int ERROR_NET_ADHOC_NO_DATA_AVAILABLE                   = 0x80410709;
     public final static int ERROR_NET_ADHOC_PORT_IN_USE                         = 0x8041070a;
     public final static int ERROR_NET_ADHOC_TIMEOUT                             = 0x80410715;
