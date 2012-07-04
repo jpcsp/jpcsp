@@ -425,9 +425,14 @@ public abstract class MatchingObject extends AdhocObject {
 				pspNetMacAddress macAddress = new pspNetMacAddress();
 				macAddress.setMacAddress(adhocMatchingEventMessage.getFromMacAddress());
 				macAddress.write(Memory.getInstance(), macAddr);
+
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Received message length=%d, type=%d, fromMac=%s, port=%d: %s", adhocMatchingEventMessage.getDataLength(), event, macAddress, socket.getReceivedPort(), Utilities.getMemoryDump(optData, optLen, 4, 16)));
 				}
+
+				// Keep track that we received a new message from this MAC address
+				Modules.sceNetAdhocctlModule.hleNetAdhocctlPeerUpdateTimestamp(adhocMatchingEventMessage.getFromMacAddress());
+
 				if (event == PSP_ADHOC_MATCHING_EVENT_JOIN) {
 					pendingJoinRequest = adhocMatchingEventMessage.getFromMacAddress();
 					inConnection = true;
