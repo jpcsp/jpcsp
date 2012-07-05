@@ -523,6 +523,10 @@ public class sceNetApctl extends HLEModule {
 					mem.write8(pInfo, (byte) Wlan.getSignalStrenth());
 					break;
 				}
+				case PSP_NET_APCTL_INFO_USE_PROXY: {
+					mem.write32(pInfo, 0); // Don't use proxy
+					break;
+				}
 				default: {
 					cpu.gpr[2] = -1;
 					log.warn(String.format("sceNetApctlGetInfo unimplemented code=%d(%s)", code, getApctlInfoName(code)));

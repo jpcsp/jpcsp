@@ -73,6 +73,7 @@ import jpcsp.HLE.modules.sceSasCore;
 import jpcsp.HLE.modules.sceSsl;
 import jpcsp.HLE.modules.sceSuspendForUser;
 import jpcsp.HLE.modules.sceUmdUser;
+import jpcsp.HLE.modules.sceParseUri;
 import jpcsp.HLE.modules.sceUsb;
 import jpcsp.HLE.modules.sceUsbCam;
 import jpcsp.HLE.modules.sceUtility;
@@ -147,6 +148,7 @@ public class Modules {
     public static sceCcc sceCccModule = new sceCcc();
     public static scePauth scePauthModule = new scePauth();
     public static sceMd5 sceMd5Module = new sceMd5();
+    public static sceParseUri sceParseUriModule = new sceParseUri();
 
     public static Logger log = Logger.getLogger("hle");
 
