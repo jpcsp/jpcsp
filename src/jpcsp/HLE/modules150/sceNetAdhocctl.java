@@ -16,18 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.SocketAddress;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -101,8 +94,6 @@ public class sceNetAdhocctl extends HLEModule {
     private boolean doDisconnect;
     private boolean doJoin;
     private boolean gameModeJoinComplete;
-    private DatagramSocket adhocctlSocket;
-    private static final int adhocctlBroadcastPort = 30000;
     protected LinkedList<AdhocctlPeer> peers;
     protected LinkedList<AdhocctlNetwork> networks;
     protected LinkedList<pspNetMacAddress> gameModeMacs;
@@ -204,188 +195,6 @@ public class sceNetAdhocctl extends HLEModule {
 		}
     }
 
-    private static class AdhocctlMessage {
-    	private String nickName;
-    	private byte[] macAddress = new byte[MAC_ADDRESS_LENGTH];
-    	private String groupName;
-    	private String ibss;
-    	private int mode;
-    	private int channel;
-    	private boolean gameModeComplete;
-    	private byte[][] gameModeMacs;
-
-    	public AdhocctlMessage(String nickName, byte[] macAddress, String groupName) {
-    		this.nickName = nickName;
-    		System.arraycopy(macAddress, 0, this.macAddress, 0, this.macAddress.length);
-    		this.groupName = groupName;
-    		ibss = Modules.sceNetAdhocctlModule.adhocctlCurrentIBSS;
-    		mode = Modules.sceNetAdhocctlModule.adhocctlCurrentMode;
-    		channel = Modules.sceNetAdhocctlModule.adhocctlCurrentChannel;
-    		gameModeComplete = false;
-    		gameModeMacs = null;
-    	}
-
-    	public AdhocctlMessage(byte[] message, int length) {
-    		int offset = 0;
-    		nickName = copyFromMessage(message, offset, NICK_NAME_LENGTH);
-    		offset += NICK_NAME_LENGTH;
-    		copyFromMessage(message, offset, macAddress);
-    		offset += macAddress.length;
-    		groupName = copyFromMessage(message, offset, GROUP_NAME_LENGTH);
-    		offset += GROUP_NAME_LENGTH;
-    		ibss = copyFromMessage(message, offset, IBSS_NAME_LENGTH);
-    		offset += IBSS_NAME_LENGTH;
-    		mode = copyInt32FromMessage(message, offset);
-    		offset += 4;
-    		channel = copyInt32FromMessage(message, offset);
-    		offset += 4;
-    		gameModeComplete = copyBoolFromMessage(message, offset);
-    		offset++;
-    		int numberGameModeMacs = copyInt32FromMessage(message, offset);
-    		offset += 4;
-    		if (numberGameModeMacs > 0) {
-    			gameModeMacs = copyMacsFromMessage(message, offset, numberGameModeMacs);
-    			offset += MAC_ADDRESS_LENGTH * numberGameModeMacs;
-    		}
-    	}
-
-    	public void setGameModeComplete(boolean gameModeComplete, LinkedList<pspNetMacAddress> requiredGameModeMacs) {
-    		this.gameModeComplete = gameModeComplete;
-    		int numberGameModeMacs = requiredGameModeMacs.size();
-    		gameModeMacs = new byte[numberGameModeMacs][MAC_ADDRESS_LENGTH];
-    		int i = 0;
-    		for (pspNetMacAddress macAddress : requiredGameModeMacs) {
-    			gameModeMacs[i] = macAddress.macAddress;
-    			i++;
-    		}
-    	}
-
-    	private String copyFromMessage(byte[] message, int offset, int length) {
-    		StringBuilder s = new StringBuilder();
-    		for (int i = 0; i < length; i++) {
-    			byte b = message[offset + i];
-    			if (b == 0) {
-    				break;
-    			}
-    			s.append((char) b);
-    		}
-
-    		return s.toString();
-    	}
-
-    	private int copyInt32FromMessage(byte[] message, int offset) {
-    		int n = 0;
-    		for (int i = 0; i < 4; i++) {
-    			n |= (message[offset + i] & 0xFF) << (i * 8);
-    		}
-
-    		return n;
-    	}
-
-    	private boolean copyBoolFromMessage(byte[] message, int offset) {
-    		return message[offset] != 0;
-    	}
-
-    	private void copyFromMessage(byte[] message, int offset, byte[] bytes) {
-    		System.arraycopy(message, offset, bytes, 0, bytes.length);
-    	}
-
-    	private byte[][] copyMacsFromMessage(byte[] message, int offset, int numberMacs) {
-    		byte[][] macs = new byte[numberMacs][MAC_ADDRESS_LENGTH];
-    		for (int i = 0; i < numberMacs; i++) {
-    			copyFromMessage(message, offset, macs[i]);
-    			offset += macs[i].length;
-    		}
-
-    		return macs;
-    	}
-
-    	private void copyToMessage(byte[] message, int offset, String s) {
-    		if (s != null) {
-	    		int length = s.length();
-	    		for (int i = 0; i < length; i++) {
-	    			message[offset + i] = (byte) s.charAt(i);
-	    		}
-    		}
-    	}
-
-    	private void copyToMessage(byte[] message, int offset, byte[] bytes) {
-    		for (int i = 0; i < bytes.length; i++) {
-    			message[offset + i] = bytes[i];
-    		}
-    	}
-
-    	private void copyInt32ToMessage(byte[] message, int offset, int value) {
-    		for (int i = 0; i < 4; i++) {
-    			message[offset + i] = (byte) (value >> (i * 8));
-    		}
-    	}
-
-    	private void copyBoolToMessage(byte[] message, int offset, boolean value) {
-    		message[offset] = (byte) (value ? 1 : 0);
-    	}
-
-    	private void copyMacsToMessage(byte[] message, int offset, byte[][] macs) {
-    		for (int i = 0; i < macs.length; i++) {
-    			copyToMessage(message, offset, macs[i]);
-    			offset += macs[i].length;
-    		}
-    	}
-
-    	public byte[] getMessage() {
-    		byte[] message = new byte[getMessageLength()];
-
-    		int offset = 0;
-    		copyToMessage(message, offset, nickName);
-    		offset += NICK_NAME_LENGTH;
-    		copyToMessage(message, offset, macAddress);
-    		offset += macAddress.length;
-    		copyToMessage(message, offset, groupName);
-    		offset += GROUP_NAME_LENGTH;
-    		copyToMessage(message, offset, ibss);
-    		offset += IBSS_NAME_LENGTH;
-    		copyInt32ToMessage(message, offset, mode);
-    		offset += 4;
-    		copyInt32ToMessage(message, offset, channel);
-    		offset += 4;
-    		copyBoolToMessage(message, offset, gameModeComplete);
-    		offset++;
-    		if (gameModeMacs == null) {
-    			copyInt32ToMessage(message, offset, 0);
-    			offset += 4;
-    		} else {
-    			copyInt32ToMessage(message, offset, gameModeMacs.length);
-    			offset += 4;
-    			copyMacsToMessage(message, offset, gameModeMacs);
-    			offset += gameModeMacs.length * MAC_ADDRESS_LENGTH;
-    		}
-
-    		return message;
-    	}
-
-    	public static int getMessageLength() {
-    		return NICK_NAME_LENGTH + MAC_ADDRESS_LENGTH + GROUP_NAME_LENGTH + IBSS_NAME_LENGTH + 4 + 4 + 1 + 4 + MAX_GAME_MODE_MACS * MAC_ADDRESS_LENGTH;
-    	}
-
-		@Override
-		public String toString() {
-			StringBuilder macs = new StringBuilder();
-			if (gameModeMacs != null) {
-				macs.append(", gameModeMacs=[");
-				for (int i = 0; i < gameModeMacs.length; i++) {
-					if (i > 0) {
-						macs.append(", ");
-					}
-					macs.append(sceNet.convertMacAddressToString(gameModeMacs[i]));
-				}
-				macs.append("]");
-			}
-
-			return String.format("AdhocctlMessage[nickName='%s', macAddress=%s, groupName='%s', IBSS='%s', mode=%d, channel=%d, gameModeComplete=%b%s]", nickName, sceNet.convertMacAddressToString(macAddress), groupName, ibss, mode, channel, gameModeComplete, macs.toString());
-		}
-    }
-
-
 	@Override
 	public void start() {
 		peers = new LinkedList<sceNetAdhocctl.AdhocctlPeer>();
@@ -401,7 +210,7 @@ public class sceNetAdhocctl extends HLEModule {
 		super.start();
 	}
 
-	protected void addGameModeMac(byte[] macAddr) {
+	public void hleNetAdhocctlAddGameModeMac(byte[] macAddr) {
 		for (pspNetMacAddress macAddress : gameModeMacs) {
 			if (sceNetAdhoc.isSameMacAddress(macAddress.macAddress, macAddr)) {
 				// Already in the list
@@ -457,7 +266,7 @@ public class sceNetAdhocctl extends HLEModule {
     				if (log.isDebugEnabled()) {
     					log.debug(String.format("All GameMode MACs have joined, GameMode Join is now complete"));
     				}
-    				gameModeJoinComplete = true;
+    				hleNetAdhocctlSetGameModeJoinComplete(true);
 
     				// Make sure the list of game mode MACs is in the same order as the one
     				// given at sceNetAdhocctlCreateEnterGameMode
@@ -470,7 +279,7 @@ public class sceNetAdhocctl extends HLEModule {
     				doConnect();
     			} else {
     				// Add own MAC to list of game mode MACs
-        			addGameModeMac(Wlan.getMacAddress());
+        			hleNetAdhocctlAddGameModeMac(Wlan.getMacAddress());
     			}
     		} else if (networkAdapter.isConnectComplete()) {
     			doJoin = false;
@@ -481,11 +290,9 @@ public class sceNetAdhocctl extends HLEModule {
     	}
 
     	if (adhocctlCurrentState == PSP_ADHOCCTL_STATE_CONNECTED || adhocctlCurrentState == PSP_ADHOCCTL_STATE_GAME || doJoin) {
-    		broadcastPeers();
-    		pollPeers();
+    		networkAdapter.updatePeers();
     	} else if (adhocctlCurrentState == PSP_ADHOCCTL_STATE_SCAN) {
-    		broadcastPeers();
-    		pollPeers();
+    		networkAdapter.updatePeers();
 
     		// End of SCAN?
     		long now = Emulator.getClock().milliTime();
@@ -511,94 +318,6 @@ public class sceNetAdhocctl extends HLEModule {
     			threadMan.hleKernelDelayThread(500000, false);
     		}
     	}
-    }
-
-    private void openSocket() throws SocketException {
-    	if (adhocctlSocket == null) {
-    		adhocctlSocket = new DatagramSocket(Modules.sceNetAdhocModule.getRealPortFromServerPort(adhocctlBroadcastPort));
-    		// For broadcast
-    		adhocctlSocket.setBroadcast(true);
-    		// Non-blocking (timeout = 0 would mean blocking)
-    		adhocctlSocket.setSoTimeout(1);
-    	}
-    }
-
-    private void broadcastPeers() {
-    	if (adhocctlCurrentGroup == null) {
-    		return;
-    	}
-
-    	try {
-			openSocket();
-
-			AdhocctlMessage adhocctlMessage = new AdhocctlMessage(sceUtility.getSystemParamNickname(), Wlan.getMacAddress(), adhocctlCurrentGroup);
-			if (adhocctlCurrentMode == PSP_ADHOCCTL_MODE_GAMEMODE && requiredGameModeMacs.size() > 0) {
-				// The Join for GameMode is complete when all the required MACs have joined
-				boolean gameModeComplete = gameModeMacs.size() >= requiredGameModeMacs.size();
-				adhocctlMessage.setGameModeComplete(gameModeComplete, requiredGameModeMacs);
-			}
-	    	SocketAddress socketAddress = Modules.sceNetAdhocModule.getSocketAddress(sceNetAdhoc.ANY_MAC_ADDRESS, Modules.sceNetAdhocModule.getRealPortFromClientPort(sceNetAdhoc.ANY_MAC_ADDRESS, adhocctlBroadcastPort));
-	    	DatagramPacket packet = new DatagramPacket(adhocctlMessage.getMessage(), AdhocctlMessage.getMessageLength(), socketAddress);
-	    	adhocctlSocket.send(packet);
-
-	    	if (log.isDebugEnabled()) {
-	    		log.debug(String.format("broadcast sent to peers: %s", adhocctlMessage));
-	    	}
-		} catch (SocketException e) {
-			log.error("broadcastPeers", e);
-		} catch (IOException e) {
-			log.error("broadcastPeers", e);
-		}
-    }
-
-    private void pollPeers() {
-		try {
-			openSocket();
-
-	    	byte[] bytes = new byte[AdhocctlMessage.getMessageLength()];
-	    	DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
-	    	adhocctlSocket.receive(packet);
-	    	AdhocctlMessage adhocctlMessage = new AdhocctlMessage(packet.getData(), packet.getLength());
-
-	    	if (log.isDebugEnabled()) {
-	    		log.debug(String.format("broadcast received from peer: %s", adhocctlMessage));
-	    	}
-
-	    	// Ignore messages coming from myself
-	    	if (!sceNetAdhoc.isSameMacAddress(Wlan.getMacAddress(), adhocctlMessage.macAddress)) {
-		    	if (adhocctlMessage.groupName.equals(adhocctlCurrentGroup)) {
-		    		hleNetAdhocctlAddPeer(adhocctlMessage.nickName, new pspNetMacAddress(adhocctlMessage.macAddress));
-		    	}
-
-		    	if (adhocctlMessage.ibss.equals(adhocctlCurrentIBSS)) {
-		    		hleNetAdhocctlAddNetwork(adhocctlMessage.groupName, new pspNetMacAddress(adhocctlMessage.macAddress), adhocctlMessage.channel, adhocctlMessage.ibss, adhocctlMessage.mode);
-
-		    		if (adhocctlMessage.mode == PSP_ADHOCCTL_MODE_GAMEMODE) {
-		    			addGameModeMac(adhocctlMessage.macAddress);
-		    			if (requiredGameModeMacs.size() <= 0) {
-		    				gameModeJoinComplete = adhocctlMessage.gameModeComplete;
-		    				if (gameModeJoinComplete) {
-		    					byte[][] macs = adhocctlMessage.gameModeMacs;
-		    					if (macs != null) {
-		    						// Make sure the list of game mode MACs is in the same order as the one
-		    						// given at sceNetAdhocctlCreateEnterGameMode
-		    						gameModeMacs.clear();
-		    						for (int i = 0; i < macs.length; i++) {
-		    							addGameModeMac(macs[i]);
-		    						}
-		    					}
-	    					}
-		    			}
-		    		}
-		    	}
-	    	}
-		} catch (SocketException e) {
-			log.error("broadcastPeers", e);
-		} catch (SocketTimeoutException e) {
-			// Nothing available
-		} catch (IOException e) {
-			log.error("broadcastPeers", e);
-		}
     }
 
     protected void setState(int state) {
@@ -651,6 +370,14 @@ public class sceNetAdhocctl extends HLEModule {
 
     public String hleNetAdhocctlGetIBSS() {
     	return adhocctlCurrentIBSS;
+    }
+
+    public int hleNetAdhocctlGetMode() {
+    	return adhocctlCurrentMode;
+    }
+
+    public int hleNetAdhocctlGetChannel() {
+    	return adhocctlCurrentChannel;
     }
 
     public void hleNetAdhocctlAddNetwork(String groupName, pspNetMacAddress mac, int mode) {
@@ -751,6 +478,28 @@ public class sceNetAdhocctl extends HLEModule {
     			break;
     		}
     	}
+    }
+
+    public boolean isGameModeComplete() {
+		// The Join for GameMode is complete when all the required MACs have joined
+    	return gameModeMacs.size() >= requiredGameModeMacs.size();
+    }
+
+    public List<pspNetMacAddress> hleNetAdhocctlGetRequiredGameModeMacs() {
+    	return requiredGameModeMacs;
+    }
+
+    public void hleNetAdhocctlSetGameModeJoinComplete(boolean gameModeJoinComplete) {
+    	this.gameModeJoinComplete = gameModeJoinComplete;
+    }
+
+    public void hleNetAdhocctlSetGameModeMacs(byte[][] gameModeMacs) {
+		// Make sure the list of game mode MACs is in the same order as the one
+		// given at sceNetAdhocctlCreateEnterGameMode
+		this.gameModeMacs.clear();
+		for (int i = 0; i < gameModeMacs.length; i++) {
+			hleNetAdhocctlAddGameModeMac(gameModeMacs[i]);
+		}
     }
 
     /**

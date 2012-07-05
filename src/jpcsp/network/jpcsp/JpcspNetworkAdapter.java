@@ -16,16 +16,27 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.jpcsp;
 
+import static jpcsp.HLE.Modules.sceNetAdhocModule;
+import static jpcsp.HLE.Modules.sceNetAdhocctlModule;
+import static jpcsp.HLE.modules150.sceNetAdhocctl.PSP_ADHOCCTL_MODE_GAMEMODE;
 import static jpcsp.network.jpcsp.JpcspAdhocPtpMessage.PTP_MESSAGE_TYPE_DATA;
 
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 
-import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.pspNetMacAddress;
+import jpcsp.HLE.modules150.sceNetAdhoc;
 import jpcsp.HLE.modules150.sceNetInet;
+import jpcsp.HLE.modules150.sceUtility;
 import jpcsp.HLE.modules150.sceNetAdhoc.GameModeArea;
+import jpcsp.hardware.Wlan;
 import jpcsp.network.BaseNetworkAdapter;
 import jpcsp.network.adhoc.AdhocMatchingEventMessage;
 import jpcsp.network.adhoc.AdhocMessage;
@@ -38,7 +49,10 @@ import jpcsp.network.adhoc.PtpObject;
  *
  */
 public class JpcspNetworkAdapter extends BaseNetworkAdapter {
-	@Override
+    private DatagramSocket adhocctlSocket;
+    private static final int adhocctlBroadcastPort = 30000;
+
+    @Override
 	public void sceNetAdhocctlInit() {
 	}
 
@@ -108,7 +122,7 @@ public class JpcspNetworkAdapter extends BaseNetworkAdapter {
 
 	@Override
 	public SocketAddress getSocketAddress(byte[] macAddress, int realPort) throws UnknownHostException {
-		if (Modules.sceNetAdhocModule.hasNetPortShiftActive()) {
+		if (sceNetAdhocModule.hasNetPortShiftActive()) {
 			return new InetSocketAddress(InetAddress.getLocalHost(), realPort);
 		}
 		return sceNetInet.getBroadcastInetSocketAddress(realPort);
@@ -142,6 +156,94 @@ public class JpcspNetworkAdapter extends BaseNetworkAdapter {
 
 	@Override
 	public boolean isConnectComplete() {
-		return Modules.sceNetAdhocctlModule.getNumberPeers() > 0;
+		return sceNetAdhocctlModule.getNumberPeers() > 0;
+	}
+
+    private void openSocket() throws SocketException {
+    	if (adhocctlSocket == null) {
+    		adhocctlSocket = new DatagramSocket(sceNetAdhocModule.getRealPortFromServerPort(adhocctlBroadcastPort));
+    		// For broadcast
+    		adhocctlSocket.setBroadcast(true);
+    		// Non-blocking (timeout = 0 would mean blocking)
+    		adhocctlSocket.setSoTimeout(1);
+    	}
+    }
+
+    private void broadcastPeers() {
+    	if (sceNetAdhocctlModule.hleNetAdhocctlGetGroupName() == null) {
+    		return;
+    	}
+
+    	try {
+			openSocket();
+
+			JpcspAdhocctlMessage adhocctlMessage = new JpcspAdhocctlMessage(sceUtility.getSystemParamNickname(), Wlan.getMacAddress(), sceNetAdhocctlModule.hleNetAdhocctlGetGroupName());
+			if (sceNetAdhocctlModule.hleNetAdhocctlGetMode() == PSP_ADHOCCTL_MODE_GAMEMODE && sceNetAdhocctlModule.hleNetAdhocctlGetRequiredGameModeMacs().size() > 0) {
+				boolean gameModeComplete = sceNetAdhocctlModule.isGameModeComplete();
+				adhocctlMessage.setGameModeComplete(gameModeComplete, sceNetAdhocctlModule.hleNetAdhocctlGetRequiredGameModeMacs());
+			}
+	    	SocketAddress socketAddress = sceNetAdhocModule.getSocketAddress(sceNetAdhoc.ANY_MAC_ADDRESS, sceNetAdhocModule.getRealPortFromClientPort(sceNetAdhoc.ANY_MAC_ADDRESS, adhocctlBroadcastPort));
+	    	DatagramPacket packet = new DatagramPacket(adhocctlMessage.getMessage(), JpcspAdhocctlMessage.getMessageLength(), socketAddress);
+	    	adhocctlSocket.send(packet);
+
+	    	if (log.isDebugEnabled()) {
+	    		log.debug(String.format("broadcast sent to peers: %s", adhocctlMessage));
+	    	}
+		} catch (SocketException e) {
+			log.error("broadcastPeers", e);
+		} catch (IOException e) {
+			log.error("broadcastPeers", e);
+		}
+    }
+
+    private void pollPeers() {
+		try {
+			openSocket();
+
+	    	byte[] bytes = new byte[JpcspAdhocctlMessage.getMessageLength()];
+	    	DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
+	    	adhocctlSocket.receive(packet);
+	    	JpcspAdhocctlMessage adhocctlMessage = new JpcspAdhocctlMessage(packet.getData(), packet.getLength());
+
+	    	if (log.isDebugEnabled()) {
+	    		log.debug(String.format("broadcast received from peer: %s", adhocctlMessage));
+	    	}
+
+	    	// Ignore messages coming from myself
+	    	if (!sceNetAdhoc.isSameMacAddress(Wlan.getMacAddress(), adhocctlMessage.macAddress)) {
+		    	if (adhocctlMessage.groupName.equals(sceNetAdhocctlModule.hleNetAdhocctlGetGroupName())) {
+		    		sceNetAdhocctlModule.hleNetAdhocctlAddPeer(adhocctlMessage.nickName, new pspNetMacAddress(adhocctlMessage.macAddress));
+		    	}
+
+		    	if (adhocctlMessage.ibss.equals(sceNetAdhocctlModule.hleNetAdhocctlGetIBSS())) {
+		    		sceNetAdhocctlModule.hleNetAdhocctlAddNetwork(adhocctlMessage.groupName, new pspNetMacAddress(adhocctlMessage.macAddress), adhocctlMessage.channel, adhocctlMessage.ibss, adhocctlMessage.mode);
+
+		    		if (adhocctlMessage.mode == PSP_ADHOCCTL_MODE_GAMEMODE) {
+		    			sceNetAdhocctlModule.hleNetAdhocctlAddGameModeMac(adhocctlMessage.macAddress);
+		    			if (sceNetAdhocctlModule.hleNetAdhocctlGetRequiredGameModeMacs().size() <= 0) {
+		    				sceNetAdhocctlModule.hleNetAdhocctlSetGameModeJoinComplete(adhocctlMessage.gameModeComplete);
+		    				if (adhocctlMessage.gameModeComplete) {
+		    					byte[][] macs = adhocctlMessage.gameModeMacs;
+		    					if (macs != null) {
+		    						sceNetAdhocctlModule.hleNetAdhocctlSetGameModeMacs(macs);
+		    					}
+	    					}
+		    			}
+		    		}
+		    	}
+	    	}
+		} catch (SocketException e) {
+			log.error("broadcastPeers", e);
+		} catch (SocketTimeoutException e) {
+			// Nothing available
+		} catch (IOException e) {
+			log.error("broadcastPeers", e);
+		}
+    }
+
+	@Override
+	public void updatePeers() {
+		broadcastPeers();
+		pollPeers();
 	}
 }

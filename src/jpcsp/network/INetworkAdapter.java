@@ -154,6 +154,11 @@ public interface INetworkAdapter {
 	public void sendChatMessage(String message);
 
 	/**
+	 * Called at regular intervals to keep the peers up-to-date.
+	 */
+	public void updatePeers();
+
+	/**
 	 * Called when executing sceNetAdhocctlInit.
 	 */
 	public void sceNetAdhocctlInit();

@@ -649,4 +649,9 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	public void setConnectComplete(boolean connectComplete) {
 		this.connectComplete = connectComplete;
 	}
+
+	@Override
+	public void updatePeers() {
+		// Nothing to do
+	}
 }
