@@ -131,7 +131,8 @@ public class HLEModuleManager {
         KDebugForKernel(Modules.KDebugForKernelModule),
         sceCcc(Modules.sceCccModule, new String[] { "libccc" }),
         scePauth(Modules.scePauthModule),
-        sceMd5(Modules.sceMd5Module, new String[] { "libmd5" });
+        sceMd5(Modules.sceMd5Module, new String[] { "libmd5" }),
+        sceParseUri(Modules.sceParseUriModule, new String[] { "libhttp_rfc", "PSP_NET_MODULE_HTTP", "PSP_MODULE_NET_HTTP" });
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default

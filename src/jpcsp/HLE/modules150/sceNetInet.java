@@ -3402,13 +3402,13 @@ public class sceNetInet extends HLEModule {
 			}
 		}
 	}
-        
-        @HLEFunction(nid = 0x8CA3A97E, version = 150)
-	public void sceNetInetGetPspError(Processor processor) {
-		CpuState cpu = processor.cpu;
 
-		log.warn("Unimplemented NID function sceNetInetGetPspError [0x8CA3A97E]");
+	@HLEFunction(nid = 0x8CA3A97E, version = 150)
+	public int sceNetInetGetPspError() {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("PARTIAL sceNetInetGetPspError returning 0x%08X(%1$d)", getErrno()));
+		}
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		return getErrno();
 	}
 }

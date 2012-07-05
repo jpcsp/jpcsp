@@ -49,6 +49,6 @@ public class PspString {
 
 	@Override
 	public String toString() {
-		return getString();
+		return String.format("0x%08X('%s')", getAddress(), getString());
 	}
 }
