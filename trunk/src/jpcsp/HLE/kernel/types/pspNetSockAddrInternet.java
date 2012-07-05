@@ -52,12 +52,14 @@ public class pspNetSockAddrInternet extends pspAbstractMemoryMappedStructure {
 	}
 
 	public void readFromInetAddress(InetAddress inetAddress) {
+		sin_len = sizeof();
 		sin_family = sceNetInet.AF_INET;
 		sin_port = 0;
 		sin_addr = sceNetInet.bytesToInternetAddress(inetAddress.getAddress());
 	}
 
 	public void readFromInetSocketAddress(InetSocketAddress inetSocketAddress) {
+		sin_len = sizeof();
 		sin_family = sceNetInet.AF_INET;
 		sin_port = inetSocketAddress.getPort();
 		sin_addr = sceNetInet.bytesToInternetAddress(inetSocketAddress.getAddress().getAddress());
