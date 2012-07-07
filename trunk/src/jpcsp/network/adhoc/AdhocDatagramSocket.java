@@ -79,4 +79,10 @@ public class AdhocDatagramSocket extends AdhocSocket {
 	public void connect(SocketAddress socketAddress, int port) throws IOException {
 		// Nothing to do for Datagrams
 	}
+
+	@Override
+	public AdhocSocket accept() throws IOException {
+		// Accept not supported on Datagrams
+		return null;
+	}
 }

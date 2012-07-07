@@ -80,31 +80,37 @@ public abstract class PdpObject extends AdhocObject {
 				log.debug(String.format("BlockedPdpAction: poll on %s, thread %s", pdpObject, thread));
 			}
 
-			if (poll()) {
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("BlockedPdpAction: unblocking thread %s", thread));
-				}
-				Modules.ThreadManForUserModule.hleUnblockThread(threadUid);
-			} else {
-				long now = Emulator.getClock().microTime();
-				if (now >= timeoutMicros) {
+			try {
+				if (poll()) {
 					if (log.isDebugEnabled()) {
-						log.debug(String.format("BlockedPdpAction: timeout for thread %s", thread));
+						log.debug(String.format("BlockedPdpAction: unblocking thread %s", thread));
 					}
-					// Unblock thread and return timeout error
-					setReturnValue(thread, SceKernelErrors.ERROR_NET_ADHOC_TIMEOUT);
 					Modules.ThreadManForUserModule.hleUnblockThread(threadUid);
 				} else {
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("BlockedPdpAction: continue polling"));
+					long now = Emulator.getClock().microTime();
+					if (now >= timeoutMicros) {
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("BlockedPdpAction: timeout for thread %s", thread));
+						}
+						// Unblock thread and return timeout error
+						setReturnValue(thread, SceKernelErrors.ERROR_NET_ADHOC_TIMEOUT);
+						Modules.ThreadManForUserModule.hleUnblockThread(threadUid);
+					} else {
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("BlockedPdpAction: continue polling"));
+						}
+						long schedule = now + BLOCKED_OPERATION_POLLING_MICROS;
+						Emulator.getScheduler().addAction(schedule, this);
 					}
-					long schedule = now + BLOCKED_OPERATION_POLLING_MICROS;
-					Emulator.getScheduler().addAction(schedule, this);
 				}
+			} catch (IOException e) {
+				setReturnValue(thread, getExceptionResult(e));
+				log.error(getClass().getSimpleName(), e);
 			}
 		}
 
-    	protected abstract boolean poll();
+    	protected abstract boolean poll() throws IOException;
+    	protected abstract int getExceptionResult(IOException e);
 	}
 
 	protected static class BlockedPdpRecv extends BlockedPdpAction {
@@ -122,8 +128,13 @@ public abstract class PdpObject extends AdhocObject {
 		}
 
 		@Override
-		protected boolean poll() {
+		protected boolean poll() throws IOException {
 			return pdpObject.pollRecv(srcMacAddr, portAddr, data, dataLengthAddr, thread);
+		}
+
+		@Override
+		protected int getExceptionResult(IOException e) {
+			return SceKernelErrors.ERROR_NET_ADHOC_TIMEOUT;
 		}
 	}
 
@@ -208,7 +219,10 @@ public abstract class PdpObject extends AdhocObject {
 		Modules.sceNetAdhocctlModule.hleNetAdhocctlPeerUpdateTimestamp(adhocMessage.getFromMacAddress());
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("Successfully received %d bytes from %s on port %d(%d): %s", bufferMessage.length, bufferMessage.macAddress, bufferMessage.port, port, Utilities.getMemoryDump(buffer.addr + bufferMessage.offset, bufferMessage.length, 1, 16)));
+			log.debug(String.format("Successfully received %d bytes from %s on port %d(%d)", bufferMessage.length, bufferMessage.macAddress, bufferMessage.port, port));
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("Message data: %s", Utilities.getMemoryDump(buffer.addr + bufferMessage.offset, bufferMessage.length)));
+			}
 		}
 
 		rcvdData += bufferMessage.length;
@@ -236,23 +250,28 @@ public abstract class PdpObject extends AdhocObject {
 	public int recv(TPointer srcMacAddr, TPointer16 portAddr, TPointer data, TPointer32 dataLengthAddr, int timeout, int nonblock) {
 		int result = 0;
 
-		SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
-		if (pollRecv(srcMacAddr, portAddr, data, dataLengthAddr, thread)) {
-			// Recv completed immediately
-			result = thread.cpuContext.gpr[Common._v0];
-		} else if (nonblock != 0) {
-			// Recv cannot be completed in non-blocking mode
-			result = SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE;
-		} else {
-			// Block current thread
-			BlockedPdpAction blockedPdpAction = new BlockedPdpRecv(this, srcMacAddr, portAddr, data, dataLengthAddr, timeout);
-			blockedPdpAction.blockCurrentThread();
+		try {
+			SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
+			if (pollRecv(srcMacAddr, portAddr, data, dataLengthAddr, thread)) {
+				// Recv completed immediately
+				result = thread.cpuContext.gpr[Common._v0];
+			} else if (nonblock != 0) {
+				// Recv cannot be completed in non-blocking mode
+				result = SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE;
+			} else {
+				// Block current thread
+				BlockedPdpAction blockedPdpAction = new BlockedPdpRecv(this, srcMacAddr, portAddr, data, dataLengthAddr, timeout);
+				blockedPdpAction.blockCurrentThread();
+			}
+		} catch (IOException e) {
+			result = SceKernelErrors.ERROR_NET_ADHOC_DISCONNECTED;
+			log.error("recv", e);
 		}
 
 		return result;
 	}
 
-	public boolean pollRecv(TPointer srcMacAddr, TPointer16 portAddr, TPointer data, TPointer32 dataLengthAddr, SceKernelThreadInfo thread) {
+	public boolean pollRecv(TPointer srcMacAddr, TPointer16 portAddr, TPointer data, TPointer32 dataLengthAddr, SceKernelThreadInfo thread) throws IOException {
 		int length = dataLengthAddr.getValue();
 		boolean completed = false;
 
@@ -281,7 +300,10 @@ public abstract class PdpObject extends AdhocObject {
 				removeFirstReceivedMessage();
 
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("Returned received data: %d bytes from %s on port %d: %s", dataLengthAddr.getValue(), bufferMessage.macAddress, portAddr.getValue(), Utilities.getMemoryDump(data.getAddress(), dataLengthAddr.getValue(), 4, 16)));
+					log.debug(String.format("Returned received data: %d bytes from %s on port %d", dataLengthAddr.getValue(), bufferMessage.macAddress, portAddr.getValue()));
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("Returned data: %s", Utilities.getMemoryDump(data.getAddress(), dataLengthAddr.getValue())));
+					}
 				}
 				setReturnValue(thread, 0);
 			}
@@ -291,7 +313,7 @@ public abstract class PdpObject extends AdhocObject {
 		return completed;
 	}
 
-	public void update() {
+	public void update() throws IOException {
 		// Receive all messages available
 		while (rcvdData < getBufSize()) {
 			try {
@@ -320,9 +342,6 @@ public abstract class PdpObject extends AdhocObject {
 				break;
 			} catch (SocketTimeoutException e) {
 				// Timeout
-				break;
-			} catch (IOException e) {
-				log.error("update", e);
 				break;
 			}
 		}

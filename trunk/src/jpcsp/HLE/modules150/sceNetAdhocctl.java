@@ -228,7 +228,7 @@ public class sceNetAdhocctl extends HLEModule {
 	}
 
 	private void doConnect() {
-		if (adhocctlCurrentGroup != null) {
+		if (adhocctlCurrentGroup != null && networkAdapter.isConnectComplete()) {
 			if (adhocctlCurrentMode == PSP_ADHOCCTL_MODE_GAMEMODE) {
     			setState(PSP_ADHOCCTL_STATE_GAME);
     			notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_GAME, 0);
@@ -236,7 +236,29 @@ public class sceNetAdhocctl extends HLEModule {
 				setState(PSP_ADHOCCTL_STATE_CONNECTED);
 				notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_CONNECTED, 0);
 			}
+			doJoin = false;
 		}
+	}
+
+	private int getAdhocctlThreadPollDelay() {
+		// Poll every 100ms
+		final int quickPollDelay = 100000;
+
+		if (adhocctlCurrentState == PSP_ADHOCCTL_STATE_SCAN) {
+			// Scanning...
+			return quickPollDelay;
+		}
+		if (doJoin) {
+			// Joining...
+			return quickPollDelay;
+		}
+		if (adhocctlCurrentState == PSP_ADHOCCTL_STATE_DISCONNECTED && adhocctlCurrentGroup != null) {
+			// Connecting or Creating...
+			return quickPollDelay;
+		}
+
+		// Poll every 500ms
+		return 500000;
 	}
 
 	public void hleNetAdhocctlThread(Processor processor) {
@@ -275,18 +297,16 @@ public class sceNetAdhocctl extends HLEModule {
     			}
 
     			if (gameModeJoinComplete) {
-    				doJoin = false;
     				doConnect();
     			} else {
     				// Add own MAC to list of game mode MACs
         			hleNetAdhocctlAddGameModeMac(Wlan.getMacAddress());
     			}
-    		} else if (networkAdapter.isConnectComplete()) {
-    			doJoin = false;
+    		} else {
     			doConnect();
     		}
     	} else if (adhocctlCurrentState == PSP_ADHOCCTL_STATE_DISCONNECTED) {
-    		doConnect();
+			doConnect();
     	}
 
     	if (adhocctlCurrentState == PSP_ADHOCCTL_STATE_CONNECTED || adhocctlCurrentState == PSP_ADHOCCTL_STATE_GAME || doJoin) {
@@ -310,13 +330,7 @@ public class sceNetAdhocctl extends HLEModule {
 			adhocctlThread = null;
 			doTerminate = false;
     	} else {
-    		if (adhocctlCurrentState == PSP_ADHOCCTL_STATE_SCAN || doJoin) {
-    			// Poll every 100ms
-    			threadMan.hleKernelDelayThread(100000, false);
-    		} else {
-    			// Poll every 500ms
-    			threadMan.hleKernelDelayThread(500000, false);
-    		}
+			threadMan.hleKernelDelayThread(getAdhocctlThreadPollDelay(), false);
     	}
     }
 

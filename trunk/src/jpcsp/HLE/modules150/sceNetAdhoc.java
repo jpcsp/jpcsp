@@ -501,7 +501,11 @@ public class sceNetAdhoc extends HLEModule {
         		pdpObject = ptpObject;
         	}
         	if (pdpObject != null) {
-        		pdpObject.update();
+        		try {
+        			pdpObject.update();
+        		} catch (IOException e) {
+        			// Ignore exception
+        		}
         	}
 
         	pollId.revents = 0;
@@ -611,7 +615,10 @@ public class sceNetAdhoc extends HLEModule {
     	pspNetMacAddress destMacAddress = new pspNetMacAddress();
     	destMacAddress.read(Memory.getInstance(), destMacAddr.getAddress());
 
-    	log.warn(String.format("PARTIAL: sceNetAdhocPdpSend id=%d, destMacAddr=%s(%s), port=%d, data=%s, len=%d, timeout=%d, nonblock=%d, data: %s", id, destMacAddr, destMacAddress, port, data, len, timeout, nonblock, Utilities.getMemoryDump(data.getAddress(), len, 4, 16)));
+    	log.warn(String.format("PARTIAL: sceNetAdhocPdpSend id=%d, destMacAddr=%s(%s), port=%d, data=%s, len=%d, timeout=%d, nonblock=%d", id, destMacAddr, destMacAddress, port, data, len, timeout, nonblock));
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("Send data: %s", Utilities.getMemoryDump(data.getAddress(), len)));
+		}
 
     	return pdpObjects.get(id).send(destMacAddress, port, data, len, timeout, nonblock);
     }
@@ -697,7 +704,11 @@ public class sceNetAdhoc extends HLEModule {
         			break;
         		}
 
-        		pdpObject.update();
+        		try {
+					pdpObject.update();
+				} catch (IOException e) {
+					// Ignore error
+				}
 
         		if (log.isDebugEnabled()) {
         			log.debug(String.format("sceNetAdhocGetPdpStat returning %s at 0x%08X", pdpObject, addr));
@@ -876,7 +887,10 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0x4DA4C788, version = 150)
     public int sceNetAdhocPtpSend(@CheckArgument("checkPtpId") int id, TPointer data, TPointer32 dataSizeAddr, int timeout, int nonblock) {
-        log.warn(String.format("PARTIAL: sceNetAdhocPtpSend id=%d, data=%s, dataSizeAddr=%s(%d), timeout=%d, nonblock=%d: %s", id, data, dataSizeAddr, dataSizeAddr.getValue(), timeout, nonblock, Utilities.getMemoryDump(data.getAddress(), dataSizeAddr.getValue(), 4, 16)));
+        log.warn(String.format("PARTIAL: sceNetAdhocPtpSend id=%d, data=%s, dataSizeAddr=%s(%d), timeout=%d, nonblock=%d", id, data, dataSizeAddr, dataSizeAddr.getValue(), timeout, nonblock));
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("Send data: %s", Utilities.getMemoryDump(data.getAddress(), dataSizeAddr.getValue())));
+		}
 
         return ptpObjects.get(id).send(data.getAddress(), dataSizeAddr, timeout, nonblock);
     }
@@ -979,7 +993,11 @@ public class sceNetAdhoc extends HLEModule {
         			break;
         		}
 
-        		ptpObject.update();
+        		try {
+					ptpObject.update();
+				} catch (IOException e) {
+					// Ignore error
+				}
 
         		if (log.isDebugEnabled()) {
         			log.debug(String.format("sceNetAdhocGetPtpStat returning %s at 0x%08X", ptpObject, addr));
@@ -1111,7 +1129,7 @@ public class sceNetAdhoc extends HLEModule {
 
         if (masterGameModeArea != null) {
         	if (log.isTraceEnabled()) {
-        		log.trace(String.format("Master Game Mode Area: %s", Utilities.getMemoryDump(masterGameModeArea.addr, masterGameModeArea.size, 4, 16)));
+        		log.trace(String.format("Master Game Mode Area: %s", Utilities.getMemoryDump(masterGameModeArea.addr, masterGameModeArea.size)));
         	}
         	masterGameModeArea.setNewData();
         }
@@ -1146,7 +1164,7 @@ public class sceNetAdhoc extends HLEModule {
         			gameModeArea.writeNewData();
         			gameModeArea.resetNewData();
                 	if (log.isTraceEnabled()) {
-                		log.trace(String.format("Replica GameMode Area updated: %s", Utilities.getMemoryDump(gameModeArea.addr, gameModeArea.size, 4, 16)));
+                		log.trace(String.format("Replica GameMode Area updated: %s", Utilities.getMemoryDump(gameModeArea.addr, gameModeArea.size)));
                 	}
         			gameModeUpdateInfo.updated = 1;
         		} else {
