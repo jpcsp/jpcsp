@@ -130,7 +130,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	private void openChat() {
 		if (chatGUI == null || !chatGUI.isVisible()) {
 			chatGUI = new ChatGUI();
-			Emulator.getMainGUI().startWindowDialog(chatGUI);
+			Emulator.getMainGUI().startBackgroundWindowDialog(chatGUI);
 			for (String nickName : Modules.sceNetAdhocctlModule.getPeersNickName()) {
 				chatGUI.addMember(nickName);
 			}

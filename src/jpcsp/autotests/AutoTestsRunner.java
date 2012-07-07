@@ -39,6 +39,7 @@ public class AutoTestsRunner {
 		@Override public void pack() { }
 		@Override public void setFullScreenDisplaySize() { }
 		@Override public void startWindowDialog(Window window) { }
+		@Override public void startBackgroundWindowDialog(Window window) { }
 	}
 	
 	public AutoTestsRunner() {
