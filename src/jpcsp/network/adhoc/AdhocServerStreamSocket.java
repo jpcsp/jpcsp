@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.network.adhoc;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
@@ -26,60 +26,57 @@ import java.net.SocketException;
  * @author gid15
  *
  */
-public class AdhocStreamSocket extends AdhocSocket {
-	private Socket socket;
-
-	public AdhocStreamSocket() {
-	}
-
-	protected AdhocStreamSocket(Socket socket) {
-		this.socket = socket;
-
-		try {
-			socket.setSoTimeout(1);
-		} catch (SocketException e) {
-			// Ignore error
-		}
-	}
+public class AdhocServerStreamSocket extends AdhocSocket {
+	private ServerSocket serverSocket;
 
 	@Override
 	public int bind(int port) throws IOException {
-		socket = new Socket();
-		socket.bind(new InetSocketAddress(port));
-		socket.setSoTimeout(1);
+		serverSocket = new ServerSocket(port);
+		serverSocket.setSoTimeout(1);
 
-		return socket.getLocalPort();
-	}
-
-	@Override
-	public void close() throws IOException {
-		socket.close();
-		socket = null;
-	}
-
-	@Override
-	public void setTimeout(int millis) throws SocketException {
-		socket.setSoTimeout(millis);
-	}
-
-	@Override
-	public void send(SocketAddress socketAddress, AdhocMessage adhocMessage) throws IOException {
-		socket.getOutputStream().write(adhocMessage.getMessage());
-	}
-
-	@Override
-	public int receive(byte[] buffer, int size) throws IOException {
-		return socket.getInputStream().read(buffer, 0, size);
+		return serverSocket.getLocalPort();
 	}
 
 	@Override
 	public void connect(SocketAddress socketAddress, int port) throws IOException {
-		socket.connect(socketAddress);
+		log.error(String.format("Connect not supported on ServerSocket: address=%s, port=%d", socketAddress, port));
+	}
+
+	@Override
+	public void close() throws IOException {
+		serverSocket.close();
+		serverSocket = null;
+	}
+
+	@Override
+	public void setTimeout(int millis) throws SocketException {
+		serverSocket.setSoTimeout(millis);
+	}
+
+	@Override
+	public void send(SocketAddress socketAddress, AdhocMessage adhocMessage) throws IOException {
+		log.error(String.format("Send not supported on ServerSocket: address=%s, message=%s", socketAddress, adhocMessage));
+	}
+
+	@Override
+	public int receive(byte[] buffer, int size) throws IOException {
+		log.error(String.format("Receive not supported on ServerSocket"));
+		return -1;
 	}
 
 	@Override
 	public AdhocSocket accept() throws IOException {
-		// Accept not supported on non-server sockets
-		return null;
+		Socket socket = serverSocket.accept();
+
+		if (socket == null) {
+			return null;
+		}
+
+		AdhocSocket adhocSocket = new AdhocStreamSocket(socket);
+		// Provide information about the accepted socket
+		adhocSocket.setReceivedAddress(socket.getInetAddress());
+		adhocSocket.setReceivedPort(socket.getPort());
+
+		return adhocSocket;
 	}
 }

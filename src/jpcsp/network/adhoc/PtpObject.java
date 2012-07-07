@@ -73,8 +73,13 @@ public abstract class PtpObject extends PdpObject {
     	}
 
 		@Override
-		protected boolean poll() {
+		protected boolean poll() throws IOException {
 			return ptpObject.pollAccept(peerMacAddr, peerPortAddr, thread);
+		}
+
+		@Override
+		protected int getExceptionResult(IOException e) {
+			return SceKernelErrors.ERROR_NET_ADHOC_TIMEOUT;
 		}
     }
 
@@ -84,12 +89,39 @@ public abstract class PtpObject extends PdpObject {
     	}
 
 		@Override
-		protected boolean poll() {
+		protected boolean poll() throws IOException {
 			return ptpObject.pollConnect(thread);
+		}
+
+		@Override
+		protected int getExceptionResult(IOException e) {
+			return SceKernelErrors.ERROR_NET_ADHOC_CONNECTION_REFUSED;
 		}
     }
 
-	public PtpObject(PtpObject ptpObject) {
+    protected static class BlockedPtpRecv extends BlockedPtpAction {
+    	final protected TPointer data;
+    	final protected TPointer32 dataLengthAddr;
+
+		protected BlockedPtpRecv(PtpObject ptpObject, TPointer data, TPointer32 dataLengthAddr, int timeout) {
+			super(ptpObject, timeout);
+			this.data = data;
+			this.dataLengthAddr = dataLengthAddr;
+		}
+
+		@Override
+		protected boolean poll() throws IOException {
+			return ptpObject.pollRecv(data, dataLengthAddr, thread);
+		}
+
+		@Override
+		protected int getExceptionResult(IOException e) {
+			return SceKernelErrors.ERROR_NET_ADHOC_TIMEOUT;
+		}
+    	
+    }
+
+    public PtpObject(PtpObject ptpObject) {
 		super(ptpObject);
 		destMacAddress = ptpObject.destMacAddress;
 		destPort = ptpObject.destPort;
@@ -248,7 +280,8 @@ public abstract class PtpObject extends PdpObject {
 			AdhocMessage adhocMessage = networkAdapter.createAdhocPtpMessage(data, dataSizeAddr.getValue());
 			send(adhocMessage);
 		} catch (IOException e) {
-			log.error("send", e);
+			result = SceKernelErrors.ERROR_NET_ADHOC_DISCONNECTED;
+			log.error("send returning ERROR_NET_ADHOC_DISCONNECTED", e);
 		}
 
 		return result;
@@ -257,8 +290,32 @@ public abstract class PtpObject extends PdpObject {
 	// For Ptp sockets, data in read as a byte stream. Data is not organized in packets.
 	// Read as much data as the provided buffer can contain.
 	public int recv(TPointer data, TPointer32 dataLengthAddr, int timeout, int nonblock) {
-		int result = SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE;
+		int result = 0;
+
+		try {
+			SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
+			if (pollRecv(data, dataLengthAddr, thread)) {
+				// Recv completed immediately
+				result = thread.cpuContext.gpr[Common._v0];
+			} else if (nonblock != 0) {
+				// Recv cannot be completed in non-blocking mode
+				result = SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE;
+			} else {
+				// Block current thread
+				BlockedPdpAction blockedPdpAction = new BlockedPtpRecv(this, data, dataLengthAddr, timeout);
+				blockedPdpAction.blockCurrentThread();
+			}
+		} catch (IOException e) {
+			result = SceKernelErrors.ERROR_NET_ADHOC_DISCONNECTED;
+			log.error("recv", e);
+		}
+
+		return result;
+	}
+
+	protected boolean pollRecv(TPointer data, TPointer32 dataLengthAddr, SceKernelThreadInfo thread) throws IOException {
 		int length = dataLengthAddr.getValue();
+		boolean completed = false;
 
 		if (length > 0) {
 			if (getRcvdData() <= 0) {
@@ -280,13 +337,17 @@ public abstract class PtpObject extends PdpObject {
 				rcvdData -= length;
 
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("Returned received data: %d bytes: %s", length, Utilities.getMemoryDump(data.getAddress(), length, 4, 16)));
+					log.debug(String.format("Returned received data: %d bytes", length));
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("Returned data: %s", Utilities.getMemoryDump(data.getAddress(), length)));
+					}
 				}
-				result = 0;
+				setReturnValue(thread, 0);
+				completed = true;
 			}
 		}
 
-		return result;
+		return completed;
 	}
 
 	@Override

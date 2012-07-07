@@ -40,6 +40,7 @@ public abstract class AdhocSocket {
 	public abstract void setTimeout(int millis) throws SocketException;
 	public abstract void send(SocketAddress socketAddress, AdhocMessage adhocMessage) throws IOException;
 	public abstract int receive(byte[] buffer, int size) throws IOException;
+	public abstract AdhocSocket accept() throws IOException;
 
 	public int getReceivedPort() {
 		return receivedPort;

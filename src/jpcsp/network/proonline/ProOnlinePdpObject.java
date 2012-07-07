@@ -30,6 +30,7 @@ import jpcsp.network.adhoc.PdpObject;
  */
 public class ProOnlinePdpObject extends PdpObject {
 	final protected ProOnlineNetworkAdapter proOnline;
+	final private static String socketProtocol = "UCP";
 
 	public ProOnlinePdpObject(INetworkAdapter networkAdapter) {
 		super(networkAdapter);
@@ -44,7 +45,7 @@ public class ProOnlinePdpObject extends PdpObject {
 	@Override
 	public int create(pspNetMacAddress macAddress, int port, int bufSize) {
 		// Open the UDP port in the router
-		proOnline.sceNetPortOpen("UDP", port);
+		proOnline.sceNetPortOpen(socketProtocol, port);
 
 		return super.create(macAddress, port, bufSize);
 	}
@@ -52,7 +53,7 @@ public class ProOnlinePdpObject extends PdpObject {
 	@Override
 	public void delete() {
 		// Close the UDP port in the router
-		proOnline.sceNetPortClose("UDP", getPort());
+		proOnline.sceNetPortClose(socketProtocol, getPort());
 
 		super.delete();
 	}

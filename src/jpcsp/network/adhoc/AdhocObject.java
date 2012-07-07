@@ -134,6 +134,11 @@ public abstract class AdhocObject {
 	}
 
 	protected void send(AdhocMessage adhocMessage, int destPort) throws IOException {
+		if (adhocMessage == null) {
+			// Nothing to send
+			return;
+		}
+
 		openSocket();
 
 		int realPort = Modules.sceNetAdhocModule.getRealPortFromClientPort(adhocMessage.getToMacAddress(), destPort);
@@ -143,5 +148,9 @@ public abstract class AdhocObject {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("Successfully sent %d bytes to port %d(%d): %s", adhocMessage.getDataLength(), destPort, realPort, adhocMessage));
 		}
+	}
+
+	public void setSocket(AdhocSocket socket) {
+		this.socket = socket;
 	}
 }

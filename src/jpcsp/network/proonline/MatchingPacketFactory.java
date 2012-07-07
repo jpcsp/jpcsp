@@ -19,12 +19,14 @@ package jpcsp.network.proonline;
 import static jpcsp.HLE.modules150.sceNet.convertMacAddressToString;
 import static jpcsp.HLE.modules150.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_ACCEPT;
 import static jpcsp.HLE.modules150.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_CANCEL;
+import static jpcsp.HLE.modules150.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_COMPLETE;
 import static jpcsp.HLE.modules150.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_DATA;
 import static jpcsp.HLE.modules150.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_DISCONNECT;
 import static jpcsp.HLE.modules150.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_HELLO;
 import static jpcsp.HLE.modules150.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING;
 import static jpcsp.HLE.modules150.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_JOIN;
 import static jpcsp.hardware.Wlan.MAC_ADDRESS_LENGTH;
+import jpcsp.HLE.modules.sceNetAdhocMatching;
 import jpcsp.network.adhoc.MatchingObject;
 
 /**
@@ -142,13 +144,17 @@ public class MatchingPacketFactory {
 		public byte[] getMessage() {
 			byte[] message = new byte[getMessageLength()];
 			offset = 0;
-			addToBytes(message, (byte) getEvent());
+			addToBytes(message, (byte) getPacketOpcode());
 			addInt32ToBytes(message, getDataLength());
 			int siblingCount = getSiblingCount();
 			addInt32ToBytes(message, siblingCount);
 			addToBytes(message, data);
 			for (int i = 0; i < siblingCount; i++) {
-				addToBytes(message, getMatchingObject().getMembers().get(i).macAddress);
+				byte[] macAddress = getMatchingObject().getMembers().get(i).macAddress;
+				addToBytes(message, macAddress);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Sending Sibling#%d: MAC %s", i, convertMacAddressToString(macAddress)));
+				}
 			}
 
 			return message;
@@ -168,19 +174,40 @@ public class MatchingPacketFactory {
 				for (int i = 0; i < siblingCount; i++) {
 					copyFromBytes(message, mac);
 					if (log.isDebugEnabled()) {
-						log.debug(String.format("Received Sibling#%i: MAC %s", i, convertMacAddressToString(mac)));
+						log.debug(String.format("Received Sibling#%d: MAC %s", i, convertMacAddressToString(mac)));
 					}
 				}
 			}
 		}
 
 		protected int getSiblingCount() {
+			// Send siblings only for MODE_HOST
+			if (getMatchingObject().getMode() != sceNetAdhocMatching.PSP_ADHOC_MATCHING_MODE_HOST) {
+				return 0;
+			}
 			return getMatchingObject().getMembers().size();
 		}
 
 		@Override
 		public int getMessageLength() {
 			return HEADER_SIZE + getDataLength() + getSiblingCount() * MAC_ADDRESS_LENGTH;
+		}
+
+		@Override
+		public void processOnReceive(int macAddr, int optData, int optLen) {
+			// Send the PSP_ADHOC_MATCHING_EVENT_ACCEPT event immediately followed by
+			// PSP_ADHOC_MATCHING_EVENT_COMPLETE
+			super.processOnReceive(macAddr, optData, optLen);
+
+			getMatchingObject().notifyCallbackEvent(PSP_ADHOC_MATCHING_EVENT_COMPLETE, macAddr, optLen, optData);
+		}
+
+		@Override
+		public void processOnSend(int macAddr, int optData, int optLen) {
+			super.processOnSend(macAddr, optData, optLen);
+
+			// Send the PSP_ADHOC_MATCHING_EVENT_COMPLETE event
+			getMatchingObject().notifyCallbackEvent(PSP_ADHOC_MATCHING_EVENT_COMPLETE, macAddr, optLen, optData);
 		}
 	}
 

@@ -234,7 +234,7 @@ public abstract class MatchingObject extends AdhocObject {
 
 		try {
 			AdhocMatchingEventMessage adhocMatchingEventMessage = createMessage(PSP_ADHOC_MATCHING_EVENT_DATA, data, dataLen, macAddress.macAddress);
-			send(adhocMatchingEventMessage);
+			send(adhocMatchingEventMessage, macAddress, dataLen, data);
 			result = dataLen;
 		} catch (SocketException e) {
 			log.error("send", e);
@@ -264,7 +264,7 @@ public abstract class MatchingObject extends AdhocObject {
 				}
 			}
 			AdhocMatchingEventMessage adhocMatchingEventMessage = createMessage(event, optData, optLen, macAddress.macAddress);
-			send(adhocMatchingEventMessage);
+			send(adhocMatchingEventMessage, macAddress, optLen, optData);
 
 			inConnection = true;
 		} catch (SocketException e) {
@@ -299,7 +299,7 @@ public abstract class MatchingObject extends AdhocObject {
 				}
 			}
 			AdhocMatchingEventMessage adhocMatchingEventMessage = createMessage(event, optData, optLen, macAddress.macAddress);
-			send(adhocMatchingEventMessage);
+			send(adhocMatchingEventMessage, macAddress, optLen, optData);
 		} catch (SocketException e) {
 			log.error("cancelTarget", e);
 		} catch (UnknownHostException e) {
@@ -337,7 +337,7 @@ public abstract class MatchingObject extends AdhocObject {
 		}
 	}
 
-    private void notifyCallbackEvent(int event, int macAddr, int optLen, int optData) {
+    public void notifyCallbackEvent(int event, int macAddr, int optLen, int optData) {
     	if (getCallback() == 0) {
     		return;
     	}
@@ -427,7 +427,10 @@ public abstract class MatchingObject extends AdhocObject {
 				macAddress.write(Memory.getInstance(), macAddr);
 
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("Received message length=%d, type=%d, fromMac=%s, port=%d: %s", adhocMatchingEventMessage.getDataLength(), event, macAddress, socket.getReceivedPort(), Utilities.getMemoryDump(optData, optLen, 4, 16)));
+					log.debug(String.format("Received message length=%d, event=%d, fromMac=%s, port=%d: %s", adhocMatchingEventMessage.getDataLength(), event, macAddress, socket.getReceivedPort(), adhocMatchingEventMessage));
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("Message data: %s", Utilities.getMemoryDump(optData, optLen)));
+					}
 				}
 
 				// Keep track that we received a new message from this MAC address
@@ -437,9 +440,7 @@ public abstract class MatchingObject extends AdhocObject {
 					pendingJoinRequest = adhocMatchingEventMessage.getFromMacAddress();
 					inConnection = true;
 				}
-				if (event != PSP_ADHOC_MATCHING_EVENT_INTERNAL_PING) {
-					notifyCallbackEvent(event, macAddr, optLen, optData);
-				}
+				adhocMatchingEventMessage.processOnReceive(macAddr, optData, optLen);
 
 				if (event == PSP_ADHOC_MATCHING_EVENT_ACCEPT) {
 					addMember(adhocMatchingEventMessage.getFromMacAddress());
@@ -519,5 +520,13 @@ public abstract class MatchingObject extends AdhocObject {
 	@Override
 	public String toString() {
 		return String.format("MatchingObject[id=%d, mode=%d, maxPeers=%d, port=%d, callback=0x%08X]", getId(), mode, maxPeers, getPort(), callback);
+	}
+
+	protected void send(AdhocMatchingEventMessage adhocMatchingEventMessage, pspNetMacAddress macAddress, int dataLen, int data) throws IOException {
+		super.send(adhocMatchingEventMessage);
+
+		if (adhocMatchingEventMessage != null) {
+			adhocMatchingEventMessage.processOnSend(macAddress.getBaseAddress(), data, dataLen);
+		}
 	}
 }
