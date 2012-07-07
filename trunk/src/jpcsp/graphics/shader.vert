@@ -255,7 +255,7 @@ void ApplySkinning(inout vec3 Vv, inout vec3 Nv)
 {
     vec3  V = vec3(0.0, 0.0, 0.0);
     vec3  N = V;
-    float W;
+    float W = 0.0;
     mat3  M;
     vec4  W1 = pspWeights1 / weightScale;
     #if !USE_DYNAMIC_DEFINES || NUMBER_BONES > 4
