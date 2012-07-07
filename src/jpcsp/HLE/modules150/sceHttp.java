@@ -118,7 +118,7 @@ public class sceHttp extends HLEModule {
 
 		public void send(int data, int dataSize) {
 			if (log.isTraceEnabled()) {
-				log.trace(String.format("HttpRequest %s send: %s", this, Utilities.getMemoryDump(data, dataSize, 4, 16)));
+				log.trace(String.format("HttpRequest %s send: %s", this, Utilities.getMemoryDump(data, dataSize)));
 			}
 
 			try {

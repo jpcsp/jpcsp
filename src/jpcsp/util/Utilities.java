@@ -548,6 +548,11 @@ public class Utilities {
     	return dump.toString();
     }
 
+    public static String getMemoryDump(int address, int length) {
+    	// Convenience function using default step and bytesPerLine
+    	return getMemoryDump(address, length, 1, 16);
+    }
+
     public static String getMemoryDump(int address, int length, int step, int bytesPerLine) {
     	if (!Memory.isAddressGood(address) || length <= 0 || bytesPerLine <= 0 || step <= 0) {
     		return "";

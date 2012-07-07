@@ -911,7 +911,10 @@ public class sceNetInet extends HLEModule {
 				storeBytes(buffer, length, bytes);
 
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetRecv socket=%d received %d bytes: %s", getUid(), length, Utilities.getMemoryDump(buffer, length, 4, 16)));
+					log.debug(String.format("sceNetInetRecv socket=%d received %d bytes", getUid(), length));
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("Received data: %s", Utilities.getMemoryDump(buffer, length)));
+					}
 				}
 
 				// end of stream
@@ -1376,7 +1379,10 @@ public class sceNetInet extends HLEModule {
 				storeBytes(buffer, length, bytes);
 
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetRecv socket=%d received %d bytes from %s: %s", getUid(), length, socketAddress, Utilities.getMemoryDump(buffer, length, 4, 16)));
+					log.debug(String.format("sceNetInetRecv socket=%d received %d bytes from %s", getUid(), length, socketAddress));
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("Received data: %s", Utilities.getMemoryDump(buffer, length)));
+					}
 				}
 
 				if (length < 0) {
@@ -1435,7 +1441,10 @@ public class sceNetInet extends HLEModule {
 				storeBytes(buffer, length, bytes);
 
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetRecvfrom socket=%d received %d bytes from %s: %s", getUid(), length, socketAddress, Utilities.getMemoryDump(buffer, length, 4, 16)));
+					log.debug(String.format("sceNetInetRecvfrom socket=%d received %d bytes from %s", getUid(), length, socketAddress));
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("Received data: %s", Utilities.getMemoryDump(buffer, length)));
+					}
 				}
 
 				if (socketAddress == null) {
@@ -1800,7 +1809,10 @@ public class sceNetInet extends HLEModule {
 				fromAddr.write(Processor.memory);
 
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetRecvfrom socket=%d received %d bytes from %s: %s", getUid(), length, fromAddr, Utilities.getMemoryDump(buffer, length, 4, 16)));
+					log.debug(String.format("sceNetInetRecvfrom socket=%d received %d bytes from %s", getUid(), length, fromAddr));
+					if (log.isTraceEnabled()) {
+						log.trace(String.format("Received data: %s", Utilities.getMemoryDump(buffer, length)));
+					}
 				}
 
 				return length;
@@ -3066,7 +3078,10 @@ public class sceNetInet extends HLEModule {
 		int flags = cpu.gpr[7];
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetSend socket=%d, buffer=0x%08X, bufferLength=%d, flags=0x%X, buffer: %s", socket, buffer, bufferLength, flags, Utilities.getMemoryDump(buffer, bufferLength, 4, 16)));
+			log.debug(String.format("sceNetInetSend socket=%d, buffer=0x%08X, bufferLength=%d, flags=0x%X", socket, buffer, bufferLength, flags));
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("Send data: %s", Utilities.getMemoryDump(buffer, bufferLength)));
+			}
 		}
 
 		if (!sockets.containsKey(socket)) {
@@ -3095,7 +3110,10 @@ public class sceNetInet extends HLEModule {
 		int toLength = cpu.gpr[9];
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetSendto socket=%d, buffer=0x%08X, bufferLength=%d, flags=0x%X, to=0x%08X, toLength=%d, buffer: %s", socket, buffer, bufferLength, flags, to, toLength, Utilities.getMemoryDump(buffer, bufferLength, 4, 16)));
+			log.debug(String.format("sceNetInetSendto socket=%d, buffer=0x%08X, bufferLength=%d, flags=0x%X, to=0x%08X, toLength=%d", socket, buffer, bufferLength, flags, to, toLength));
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("Sendto data: %s", Utilities.getMemoryDump(buffer, bufferLength)));
+			}
 		}
 
 		if (!sockets.containsKey(socket)) {
@@ -3150,7 +3168,10 @@ public class sceNetInet extends HLEModule {
 		}
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetSetsockopt socket=%d, level=%d, optionName=%d(%s), optionValueAddr=0x%08X, optionLength=%d, optionValue: %s", socket, level, optionName, getOptionNameString(optionName), optionValueAddr, optionLength, Utilities.getMemoryDump(optionValueAddr, optionLength, 4, 16)));
+			log.debug(String.format("sceNetInetSetsockopt socket=%d, level=%d, optionName=%d(%s), optionValueAddr=0x%08X, optionLength=%d", socket, level, optionName, getOptionNameString(optionName), optionValueAddr, optionLength));
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("Option value: %s", Utilities.getMemoryDump(optionValueAddr, optionLength)));
+			}
 		}
 
 		if (!sockets.containsKey(socket)) {
@@ -3189,11 +3210,11 @@ public class sceNetInet extends HLEModule {
 				} else if (optionName == SO_REUSEADDR && optionLength == 4) {
 					cpu.gpr[2] = inetSocket.setReuseAddress(optionValue != 0);
 				} else {
-					log.warn(String.format("Unimplemented sceNetInetSetsockopt socket=%d, level=%d, optionName=%d(%s), optionValue=0x%08X, optionLength=%d, optionValue: %s", socket, level, optionName, getOptionNameString(optionName), optionValueAddr, optionLength, Utilities.getMemoryDump(optionValueAddr, optionLength, 4, 16)));
+					log.warn(String.format("Unimplemented sceNetInetSetsockopt socket=%d, level=%d, optionName=%d(%s), optionValue=0x%08X, optionLength=%d, optionValue: %s", socket, level, optionName, getOptionNameString(optionName), optionValueAddr, optionLength, Utilities.getMemoryDump(optionValueAddr, optionLength)));
 					cpu.gpr[2] = 0;
 				}
 			} else {
-				log.warn(String.format("Unimplemented sceNetInetSetsockopt socket=%d, level=%d (unknown level), optionName=%d(%s), optionValue=0x%08X, optionLength=%d, optionValue: %s", socket, level, optionName, getOptionNameString(optionName), optionValueAddr, optionLength, Utilities.getMemoryDump(optionValueAddr, optionLength, 4, 16)));
+				log.warn(String.format("Unimplemented sceNetInetSetsockopt socket=%d, level=%d (unknown level), optionName=%d(%s), optionValue=0x%08X, optionLength=%d, optionValue: %s", socket, level, optionName, getOptionNameString(optionName), optionValueAddr, optionLength, Utilities.getMemoryDump(optionValueAddr, optionLength)));
 				cpu.gpr[2] = 0;
 			}
 		}

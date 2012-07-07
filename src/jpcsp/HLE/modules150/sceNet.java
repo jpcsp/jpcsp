@@ -143,13 +143,13 @@ public class sceNet extends HLEModule {
     public int sceNetEtherNtostr(TPointer etherAddr, TPointer strAddr) {
         Memory mem = Processor.memory;
 
+        pspNetMacAddress macAddress = new pspNetMacAddress();
+        macAddress.read(mem, etherAddr.getAddress());
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceNetEtherNtostr etherAddr=%s, strAddr=%s: %s", etherAddr, strAddr, Utilities.getMemoryDump(etherAddr.getAddress(), Wlan.MAC_ADDRESS_LENGTH, 1, Wlan.MAC_ADDRESS_LENGTH)));
+            log.debug(String.format("sceNetEtherNtostr etherAddr=%s(%s), strAddr=%s", etherAddr, macAddress, strAddr));
         }
 
         // Convert 6-byte Mac address into string representation (XX:XX:XX:XX:XX:XX).
-        pspNetMacAddress macAddress = new pspNetMacAddress();
-        macAddress.read(mem, etherAddr.getAddress());
         Utilities.writeStringZ(mem, strAddr.getAddress(), convertMacAddressToString(macAddress.macAddress));
 
         return 0;
