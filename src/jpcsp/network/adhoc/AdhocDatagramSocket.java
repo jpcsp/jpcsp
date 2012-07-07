@@ -50,8 +50,10 @@ public class AdhocDatagramSocket extends AdhocSocket {
 
 	@Override
 	public void close() {
-		socket.close();
-		socket = null;
+		if (socket != null) {
+			socket.close();
+			socket = null;
+		}
 	}
 
 	@Override

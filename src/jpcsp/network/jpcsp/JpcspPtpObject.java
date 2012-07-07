@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.jpcsp;
 
+import static jpcsp.network.adhoc.AdhocMessage.MAX_HEADER_SIZE;
 import static jpcsp.network.jpcsp.JpcspAdhocPtpMessage.PTP_MESSAGE_TYPE_CONNECT;
 import static jpcsp.network.jpcsp.JpcspAdhocPtpMessage.PTP_MESSAGE_TYPE_CONNECT_CONFIRM;
 import static jpcsp.network.jpcsp.JpcspAdhocPtpMessage.PTP_MESSAGE_TYPE_DATA;
@@ -72,7 +73,7 @@ public class JpcspPtpObject extends PtpObject {
 			JpcspAdhocPtpMessage adhocPtpMessage = new JpcspAdhocPtpMessage(PTP_MESSAGE_TYPE_CONNECT);
 			send(adhocPtpMessage);
 
-			super.connect(timeout, nonblock);
+			result = super.connect(timeout, nonblock);
 		} catch (SocketException e) {
 			log.error("connect", e);
 		} catch (IOException e) {
@@ -92,7 +93,7 @@ public class JpcspPtpObject extends PtpObject {
 			JpcspAdhocPtpMessage adhocPtpMessage = connectRequest;
 			int adhocPtpMessagePort = connectRequestPort;
 			if (adhocPtpMessage == null) {
-				byte[] bytes = new byte[getBufSize()];
+				byte[] bytes = new byte[getBufSize() + MAX_HEADER_SIZE];
 				int length = socket.receive(bytes, bytes.length);
 				adhocPtpMessage = new JpcspAdhocPtpMessage(bytes, length);
 				adhocPtpMessagePort = socket.getReceivedPort();
@@ -171,7 +172,7 @@ public class JpcspPtpObject extends PtpObject {
 			// Process a previously received confirm message, if available
 			JpcspAdhocPtpMessage adhocPtpMessage = connectConfirm;
 			if (adhocPtpMessage == null) {
-				byte[] bytes = new byte[getBufSize()];
+				byte[] bytes = new byte[getBufSize() + MAX_HEADER_SIZE];
 				int length = socket.receive(bytes, bytes.length);
 				adhocPtpMessage = new JpcspAdhocPtpMessage(bytes, length);
 				if (log.isDebugEnabled()) {

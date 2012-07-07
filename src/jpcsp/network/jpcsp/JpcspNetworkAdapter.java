@@ -32,6 +32,7 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
+import jpcsp.HLE.modules.sceNetAdhocctl;
 import jpcsp.HLE.modules150.sceNetAdhoc;
 import jpcsp.HLE.modules150.sceNetInet;
 import jpcsp.HLE.modules150.sceUtility;
@@ -156,7 +157,7 @@ public class JpcspNetworkAdapter extends BaseNetworkAdapter {
 
 	@Override
 	public boolean isConnectComplete() {
-		return sceNetAdhocctlModule.getNumberPeers() > 0;
+		return sceNetAdhocctlModule.getNumberPeers() > 0 || sceNetAdhocctlModule.hleNetAdhocctlGetState() == sceNetAdhocctl.PSP_ADHOCCTL_STATE_DISCONNECTED;
 	}
 
     private void openSocket() throws SocketException {

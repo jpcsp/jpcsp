@@ -44,8 +44,10 @@ public class AdhocServerStreamSocket extends AdhocSocket {
 
 	@Override
 	public void close() throws IOException {
-		serverSocket.close();
-		serverSocket = null;
+		if (serverSocket != null) {
+			serverSocket.close();
+			serverSocket = null;
+		}
 	}
 
 	@Override

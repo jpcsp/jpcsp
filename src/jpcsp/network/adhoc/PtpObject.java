@@ -183,7 +183,7 @@ public abstract class PtpObject extends PdpObject {
 		if (socket == null) {
 			super.openSocket();
 			if (getDestMacAddress() != null) {
-				int realDestPort = Modules.sceNetAdhocModule.getClientPortFromRealPort(getDestMacAddress().macAddress, getDestPort());
+				int realDestPort = Modules.sceNetAdhocModule.getRealPortFromClientPort(getDestMacAddress().macAddress, getDestPort());
 				SocketAddress socketAddress = Modules.sceNetAdhocModule.getSocketAddress(getDestMacAddress().macAddress, realDestPort);
 				socket.connect(socketAddress, realDestPort);
 			}
