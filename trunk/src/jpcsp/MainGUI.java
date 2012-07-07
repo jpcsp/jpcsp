@@ -1060,14 +1060,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 //    	return GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds().getSize();
     }
 
-    /**
-     * Display a new window in front of the main window.
-     * If the main window is the full screen window, disable the full screen mode
-     * so that the new window can be displayed (no other window can be displayed
-     * in front of a full screen window).
-     * 
-     * @param window     the window to be displayed
-     */
     @Override
 	public void startWindowDialog(Window window) {
         GraphicsDevice localDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
@@ -1077,9 +1069,13 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     	window.setVisible(true);
     }
 
-    /**
-     * Restore the full screen window if required.
-     */
+    @Override
+	public void startBackgroundWindowDialog(Window window) {
+    	startWindowDialog(window);
+    	requestFocus();
+        Modules.sceDisplayModule.getCanvas().requestFocusInWindow();
+    }
+
     @Override
 	public void endWindowDialog() {
     	if (displayMode != null) {
