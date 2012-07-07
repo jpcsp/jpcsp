@@ -263,7 +263,10 @@ public class JpcspPtpObject extends PtpObject {
 		adhocMessage.writeDataToMemory(addr, length);
 		rcvdData += length;
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("Successfully received message %s: %s", adhocMessage, Utilities.getMemoryDump(addr, length, 1, 16)));
+			log.debug(String.format("Successfully received message %s", adhocMessage));
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("Message data: %s", Utilities.getMemoryDump(addr, length)));
+			}
 		}
 	}
 

@@ -114,7 +114,7 @@ public class sceJpeg extends HLEModule {
 	public int sceJpegDecodeMJpegYCbCr(TPointer jpegBuffer, int jpegBufferSize, TPointer yCbCrBuffer, int yCbCrBufferSize, int unknown) {
 		log.warn(String.format("Unimplemented sceJpegDecodeMJpegYCbCr jpegBuffer=%s, jpegBufferSize=%d, yCbCrBuffer=%s, yCbCrBufferSize=%d, unknown=%d", jpegBuffer, jpegBufferSize, yCbCrBuffer, yCbCrBufferSize, unknown));
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("sceJpegDecodeMJpegYCbCr jpegBuffer: %s", Utilities.getMemoryDump(jpegBuffer.getAddress(), jpegBufferSize, 4, 16)));
+			log.trace(String.format("sceJpegDecodeMJpegYCbCr jpegBuffer: %s", Utilities.getMemoryDump(jpegBuffer.getAddress(), jpegBufferSize)));
 		}
 
 		int width = jpegWidth;
@@ -169,7 +169,7 @@ public class sceJpeg extends HLEModule {
 	public int sceJpegDecodeMJpeg(TPointer jpegBuffer, int jpegBufferSize, TPointer imageBuffer, int unknown) {
 		log.warn(String.format("Unimplemented sceJpegDecodeMJpeg jpegBuffer=%s, jpegBufferSize=%d, imageBuffer=%s, unknown=%d", jpegBuffer, jpegBufferSize, imageBuffer, unknown));
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("sceJpegDecodeMJpeg jpegBuffer: %s", Utilities.getMemoryDump(jpegBuffer.getAddress(), jpegBufferSize, 4, 16)));
+			log.trace(String.format("sceJpegDecodeMJpeg jpegBuffer: %s", Utilities.getMemoryDump(jpegBuffer.getAddress(), jpegBufferSize)));
 		}
 
 		int width = jpegWidth;
@@ -189,7 +189,7 @@ public class sceJpeg extends HLEModule {
 	public int sceJpeg_8F2BB012(TPointer jpegBuffer, int jpegBufferSize, @CanBeNull TPointer32 unknown1, int unknown2) {
 		log.warn(String.format("Unimplemented sceJpeg_8F2BB012 jpegBuffer=%s, jpegBufferSize=%d, unknown1=%s, unknown2=%d", jpegBuffer, jpegBufferSize, unknown1, unknown2));
 		if (log.isTraceEnabled()) {
-			log.trace(String.format("sceJpeg_8F2BB012 jpegBuffer: %s", Utilities.getMemoryDump(jpegBuffer.getAddress(), jpegBufferSize, 4, 16)));
+			log.trace(String.format("sceJpeg_8F2BB012 jpegBuffer: %s", Utilities.getMemoryDump(jpegBuffer.getAddress(), jpegBufferSize)));
 			dumpJpegImage(jpegBuffer, jpegBufferSize);
 		}
 

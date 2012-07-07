@@ -44,7 +44,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
 
         if (log.isTraceEnabled() && Memory.isAddressGood(sourceAddr)) {
         	int length = 0x130; // How to find the input length?
-        	log.trace(String.format("sceAtracLowLevelDecode input:%s", Utilities.getMemoryDump(sourceAddr, length, 1, 16)));
+        	log.trace(String.format("sceAtracLowLevelDecode input:%s", Utilities.getMemoryDump(sourceAddr, length)));
         }
 
         decodePosAddr.setValue(0); // Set the decoding position to 0.

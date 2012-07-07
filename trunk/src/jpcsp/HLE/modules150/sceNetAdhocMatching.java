@@ -221,7 +221,10 @@ public class sceNetAdhocMatching extends HLEModule {
      */
     @HLEFunction(nid = 0x93EF3843, version = 150)
     public int sceNetAdhocMatchingStart(@CheckArgument("checkMatchingId") int matchingId, int evthPri, int evthStack, int inthPri, int inthStack, int optLen, @CanBeNull TPointer optData) {
-    	log.warn(String.format("PARTIAL: sceNetAdhocMatchingStart matchingId=%d, evthPri=%d, evthStack=0x%X, inthPri=%d, inthStack=0x%X, optLen=%d, optData=%s: %s", matchingId, evthPri, evthStack, inthPri, inthStack, optLen, optData, Utilities.getMemoryDump(optData.getAddress(), optLen, 4, 16)));
+    	log.warn(String.format("PARTIAL: sceNetAdhocMatchingStart matchingId=%d, evthPri=%d, evthStack=0x%X, inthPri=%d, inthStack=0x%X, optLen=%d, optData=%s", matchingId, evthPri, evthStack, inthPri, inthStack, optLen, optData));
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("Matching opt data: %s", Utilities.getMemoryDump(optData.getAddress(), optLen)));
+		}
 
         return matchingObjects.get(matchingId).start(evthPri, evthStack, inthPri, inthStack, optLen, optData.getAddress());
     }
@@ -270,7 +273,10 @@ public class sceNetAdhocMatching extends HLEModule {
     public int sceNetAdhocMatchingSendData(@CheckArgument("checkMatchingId") int matchingId, TPointer macAddr, int dataLen, TPointer data) {
     	pspNetMacAddress macAddress = new pspNetMacAddress();
     	macAddress.read(Memory.getInstance(), macAddr.getAddress());
-        log.warn(String.format("PARTIAL: sceNetAdhocMatchingSendData matchingId=%d, macAddr=%s(%s), dataLen=%d, data=%s: %s", matchingId, macAddr, macAddress, dataLen, data, Utilities.getMemoryDump(data.getAddress(), dataLen, 4, 16)));
+        log.warn(String.format("PARTIAL: sceNetAdhocMatchingSendData matchingId=%d, macAddr=%s(%s), dataLen=%d, data=%s", matchingId, macAddr, macAddress, dataLen, data));
+        if (log.isTraceEnabled()) {
+        	log.trace(String.format("Send data: %s", Utilities.getMemoryDump(data.getAddress(), dataLen)));
+        }
 
         return matchingObjects.get(matchingId).send(macAddress, dataLen, data.getAddress());
     }
@@ -342,7 +348,10 @@ public class sceNetAdhocMatching extends HLEModule {
     public int sceNetAdhocMatchingCancelTargetWithOpt(@CheckArgument("checkMatchingId") int matchingId, TPointer macAddr, int optLen, @CanBeNull TPointer optData) {
     	pspNetMacAddress macAddress = new pspNetMacAddress();
     	macAddress.read(Memory.getInstance(), macAddr.getAddress());
-        log.warn(String.format("PARTIAL: sceNetAdhocMatchingCancelTargetWithOpt matchingId=%d, macAddr=%s(%s), optLen=%d, optData=%s: %s", matchingId, macAddr, macAddress, optLen, optData, Utilities.getMemoryDump(optData.getAddress(), optLen, 4, 16)));
+        log.warn(String.format("PARTIAL: sceNetAdhocMatchingCancelTargetWithOpt matchingId=%d, macAddr=%s(%s), optLen=%d, optData=%s", matchingId, macAddr, macAddress, optLen, optData));
+        if (log.isTraceEnabled()) {
+        	log.trace(String.format("Opt data: %s", Utilities.getMemoryDump(optData.getAddress(), optLen)));
+        }
 
         return matchingObjects.get(matchingId).cancelTarget(macAddress, optLen, optData.getAddress());
     }
@@ -385,7 +394,10 @@ public class sceNetAdhocMatching extends HLEModule {
      */
     @HLEFunction(nid = 0xB58E61B7, version = 150)
     public int sceNetAdhocMatchingSetHelloOpt(@CheckArgument("checkMatchingId") int matchingId, int optLen, @CanBeNull TPointer optData) {
-        log.warn(String.format("PARTIAL: sceNetAdhocMatchingSetHelloOpt matchingId=%d, optLen=%d, optData=%s: %s", matchingId, optLen, optData, Utilities.getMemoryDump(optData.getAddress(), optLen, 4, 16)));
+        log.warn(String.format("PARTIAL: sceNetAdhocMatchingSetHelloOpt matchingId=%d, optLen=%d, optData=%s", matchingId, optLen, optData));
+        if (log.isTraceEnabled()) {
+        	log.trace(String.format("Hello opt data: %s", Utilities.getMemoryDump(optData.getAddress(), optLen)));
+        }
 
         matchingObjects.get(matchingId).setHelloOpt(optLen, optData.getAddress());
 
