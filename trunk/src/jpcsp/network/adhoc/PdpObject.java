@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network.adhoc;
 
+import static jpcsp.network.adhoc.AdhocMessage.MAX_HEADER_SIZE;
+
 import java.io.IOException;
 import java.net.BindException;
 import java.net.InetAddress;
@@ -319,7 +321,7 @@ public abstract class PdpObject extends AdhocObject {
 			try {
 				openSocket();
 				socket.setTimeout(1);
-				byte[] bytes = new byte[getBufSize() - rcvdData + AdhocMessage.MAX_HEADER_SIZE];
+				byte[] bytes = new byte[getBufSize() - rcvdData + MAX_HEADER_SIZE];
 				int length = socket.receive(bytes, bytes.length);
 				int receivedPort = socket.getReceivedPort();
 				InetAddress receivedAddress = socket.getReceivedAddress();

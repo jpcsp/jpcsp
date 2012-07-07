@@ -27,6 +27,7 @@ import static jpcsp.HLE.modules150.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_
 import static jpcsp.HLE.modules150.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_JOIN;
 import static jpcsp.HLE.modules150.sceNetAdhocMatching.PSP_ADHOC_MATCHING_EVENT_LEFT;
 import static jpcsp.HLE.modules150.sceNetAdhocMatching.PSP_ADHOC_MATCHING_MODE_CLIENT;
+import static jpcsp.network.adhoc.AdhocMessage.MAX_HEADER_SIZE;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -411,7 +412,7 @@ public abstract class MatchingObject extends AdhocObject {
 		}
 
 		try {
-			byte[] bytes = new byte[getBufSize() + AdhocMessage.MAX_HEADER_SIZE];
+			byte[] bytes = new byte[getBufSize() + MAX_HEADER_SIZE];
 			int length = socket.receive(bytes, bytes.length);
 			int receivedPort = socket.getReceivedPort();
 			InetAddress receivedAddress = socket.getReceivedAddress();
