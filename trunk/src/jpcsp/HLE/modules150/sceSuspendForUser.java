@@ -18,10 +18,9 @@ package jpcsp.HLE.modules150;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_INVALID_ARGUMENT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_POWER_VMEM_IN_USE;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Memory;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.hardware.Screen;
@@ -29,8 +28,11 @@ import jpcsp.hardware.Screen;
 import org.apache.log4j.Logger;
 
 public class sceSuspendForUser extends HLEModule {
-
     private static Logger log = Modules.getLogger("sceSuspendForUser");
+    public static final int KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY = 0;
+    public static final int KERNEL_POWER_TICK_SUSPEND = 1;
+    public static final int KERNEL_POWER_TICK_DISPLAY = 6;
+    private boolean volatileMemLocked;
 
     @Override
     public String getName() {
@@ -44,133 +46,105 @@ public class sceSuspendForUser extends HLEModule {
         super.start();
     }
 
-    public static final int KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY = 0;
-    public static final int KERNEL_POWER_TICK_SUSPEND = 1;
-    public static final int KERNEL_POWER_TICK_DISPLAY = 6;
-    private boolean volatileMemLocked;
-
     @HLEFunction(nid = 0xEADB1BD7, version = 150, checkInsideInterrupt = true)
-    public void sceKernelPowerLock(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int type = cpu.gpr[4];
-
-        
+    public int sceKernelPowerLock(int type) {
         if (log.isTraceEnabled()) {
-            log.trace("IGNORING:sceKernelPowerLock type=" + type);
+            log.trace(String.format("IGNORING:sceKernelPowerLock type=%d", type));
         }
-        cpu.gpr[2] = 0;
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x3AEE7261, version = 150, checkInsideInterrupt = true)
-    public void sceKernelPowerUnlock(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int type = cpu.gpr[4];
-
-        
+    public int sceKernelPowerUnlock(int type) {
         if (log.isTraceEnabled()) {
-            log.trace("IGNORING:sceKernelPowerUnlock type=" + type);
+            log.trace(String.format("IGNORING:sceKernelPowerUnlock type=%d", type));
         }
-        cpu.gpr[2] = 0;
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x090CCB3F, version = 150, checkInsideInterrupt = true)
-    public void sceKernelPowerTick(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int flag = cpu.gpr[4];
-
-        
-        switch (flag) {
-            case KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY:
-            	Screen.hleKernelPowerTick();
-                if (log.isTraceEnabled()) {
-                    log.trace("IGNORING:sceKernelPowerTick(KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY)");
-                }
-                break;
-            case KERNEL_POWER_TICK_SUSPEND:
-                if (log.isTraceEnabled()) {
-                    log.trace("IGNORING:sceKernelPowerTick(KERNEL_POWER_TICK_SUSPEND)");
-                }
-                break;
-            case KERNEL_POWER_TICK_DISPLAY:
-            	Screen.hleKernelPowerTick();
-                if (log.isTraceEnabled()) {
-                    log.trace("IGNORING:sceKernelPowerTick(KERNEL_POWER_TICK_DISPLAY)");
-                }
-                break;
-            default:
-                log.warn("IGNORING:sceKernelPowerTick(" + flag + ")");
-                break;
+    public int sceKernelPowerTick(int flag) {
+    	// The PSP is checking each of the lower 8 bits of the flag value to tick different
+    	// components.
+    	// Here we check only a few known bits...
+        if ((flag & KERNEL_POWER_TICK_SUSPEND) == KERNEL_POWER_TICK_SUSPEND) {
+            if (log.isTraceEnabled()) {
+                log.trace("IGNORING:sceKernelPowerTick(KERNEL_POWER_TICK_SUSPEND)");
+            }
         }
-        cpu.gpr[2] = 0;
+
+        if ((flag & KERNEL_POWER_TICK_DISPLAY) == KERNEL_POWER_TICK_DISPLAY) {
+        	Screen.hleKernelPowerTick();
+            if (log.isTraceEnabled()) {
+                log.trace("IGNORING:sceKernelPowerTick(KERNEL_POWER_TICK_DISPLAY)");
+            }
+        }
+
+        if (flag == KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY) {
+        	Screen.hleKernelPowerTick();
+            if (log.isTraceEnabled()) {
+                log.trace("IGNORING:sceKernelPowerTick(KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY)");
+            }
+        }
+
+        return 0;
     }
 
-    protected void hleKernelVolatileMemLock(Processor processor, boolean trylock) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int type = cpu.gpr[4];
-        int paddr = cpu.gpr[5];
-        int psize = cpu.gpr[6];
-
+    protected int hleKernelVolatileMemLock(int type, TPointer32 paddr, TPointer32 psize, boolean trylock) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("hleKernelVolatileMemLock type=%d, paddr=0x%08X, psize=0x%08X, trylock=%b", type, paddr, psize, trylock));
+            log.debug(String.format("hleKernelVolatileMemLock type=%d, paddr=%s, psize=%s, trylock=%b", type, paddr, psize, trylock));
         }
 
         if (type != 0) {
             log.warn("hleKernelVolatileMemLock bad param: type != 0");
-            cpu.gpr[2] = ERROR_INVALID_ARGUMENT;
-        } else {
-            if (!volatileMemLocked) {
-                volatileMemLocked = true;
-                if (Memory.isAddressGood(paddr)) {
-                    mem.write32(paddr, 0x08400000); // Volatile mem is always at 0x08400000
-                }
-                if (Memory.isAddressGood(psize)) {
-                    mem.write32(psize, 0x400000);   // Volatile mem size is 4Megs
-                }
-                cpu.gpr[2] = 0;
-            } else {
-                log.warn("hleKernelVolatileMemLock already locked");
-                if (trylock) {
-                    cpu.gpr[2] = ERROR_POWER_VMEM_IN_USE;
-                } else {
-                    cpu.gpr[2] = -1;
-                }
-            }
+            return ERROR_INVALID_ARGUMENT;
         }
+
+        if (volatileMemLocked) {
+            log.warn("hleKernelVolatileMemLock already locked");
+            return trylock ? ERROR_POWER_VMEM_IN_USE : -1;
+        }
+
+        volatileMemLocked = true;
+        if (!paddr.isNull()) {
+            paddr.setValue(0x08400000); // Volatile mem is always at 0x08400000
+        }
+        if (!psize.isNull()) {
+            psize.setValue(0x400000);   // Volatile mem size is 4Megs
+        }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x3E0271D3, version = 150, checkInsideInterrupt = true)
-    public void sceKernelVolatileMemLock(Processor processor) {
-        hleKernelVolatileMemLock(processor, false);
+    public int sceKernelVolatileMemLock(int type, @CanBeNull TPointer32 paddr, @CanBeNull TPointer32 psize) {
+        return hleKernelVolatileMemLock(type, paddr, psize, false);
     }
 
     @HLEFunction(nid = 0xA14F40B2, version = 150)
-    public void sceKernelVolatileMemTryLock(Processor processor) {
-        hleKernelVolatileMemLock(processor, true);
+    public int sceKernelVolatileMemTryLock(int type, @CanBeNull TPointer32 paddr, @CanBeNull TPointer32 psize) {
+        return hleKernelVolatileMemLock(type, paddr, psize, true);
     }
 
     @HLEFunction(nid = 0xA569E425, version = 150)
-    public void sceKernelVolatileMemUnlock(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int type = cpu.gpr[4];
-
-        log.debug("sceKernelVolatileMemUnlock(type=" + type + ")");
+    public int sceKernelVolatileMemUnlock(int type) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceKernelVolatileMemUnlock type=%d", type));
+    	}
 
         if (type != 0) {
             log.warn("sceKernelVolatileMemUnlock bad param: type != 0");
-            cpu.gpr[2] = ERROR_INVALID_ARGUMENT;
-        } else if (!volatileMemLocked) {
-            log.warn("sceKernelVolatileMemUnlock - Volatile Memory was not locked!");
-            cpu.gpr[2] = -1;
-        } else {
-            volatileMemLocked = false;
-            cpu.gpr[2] = 0;
+            return ERROR_INVALID_ARGUMENT;
         }
-    }
+        if (!volatileMemLocked) {
+            log.warn("sceKernelVolatileMemUnlock - Volatile Memory was not locked!");
+            return -1;
+        }
 
+        volatileMemLocked = false;
+
+        return 0;
+    }
 }
