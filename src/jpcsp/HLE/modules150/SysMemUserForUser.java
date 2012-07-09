@@ -30,6 +30,7 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.Debugger.DumpDebugState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.MemoryChunk;
@@ -352,11 +353,14 @@ public class SysMemUserForUser extends HLEModule {
         }
         fragmentedDiagram.append("]");
 
-        System.err.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
-        System.err.println(String.format("Allocated memory:  %08X %d bytes", allocatedSize, allocatedSize));
-        System.err.println(allocatedDiagram);
-        System.err.println(String.format("Fragmented memory: %08X %d bytes", fragmentedSize, fragmentedSize));
-        System.err.println(fragmentedDiagram);
+        DumpDebugState.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+        DumpDebugState.log(String.format("Allocated memory:  %08X %d bytes", allocatedSize, allocatedSize));
+        DumpDebugState.log(allocatedDiagram.toString());
+        DumpDebugState.log(String.format("Fragmented memory: %08X %d bytes", fragmentedSize, fragmentedSize));
+        DumpDebugState.log(fragmentedDiagram.toString());
+
+        DumpDebugState.log("Free list: " + getDebugFreeMem());
+        DumpDebugState.log("Allocated blocks:\n" + getDebugAllocatedMem() + "\n");
     }
 
     public int hleKernelPrintf(CpuState cpu, Logger logger, String sceFunctionName) {

@@ -502,7 +502,8 @@ public class Loader {
                 int memLen = (int)phdr.getP_memsz();
 
                 if (log.isDebugEnabled()) {
-                	log.debug(String.format("PH#%d: loading program %08X - %08X - %08X", i, memOffset, memOffset + fileLen, memOffset + memLen));
+                	log.debug(String.format("PH#%d: loading program %08X - file %08X - mem %08X", i, memOffset, memOffset + fileLen, memOffset + memLen));
+                	log.debug(String.format("PH#%d:\n%s", i, phdr));
                 }
 
                 f.position(elfOffset + fileOffset);
@@ -512,6 +513,10 @@ public class Loader {
                     fileLen = newLen;
                 }
                 if (!analyzeOnly) {
+                	if (memLen > fileLen) {
+                		// Clear the memory part not loaded from the file
+                		mem.memset(memOffset + fileLen, (byte) 0, memLen - fileLen);
+                	}
                 	mem.copyToMemory(memOffset, f, fileLen);
                 }
 
