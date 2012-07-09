@@ -63,7 +63,7 @@ public class DumpDebugState {
         return Modules.ThreadManForUserModule.getCurrentThreadID() != -1;
     }
 
-    private static void log(String msg) {
+    public static void log(String msg) {
         System.err.println(msg);
         Modules.log.error(msg);
     }
