@@ -429,7 +429,7 @@ public abstract class MatchingObject extends AdhocObject {
 
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Received message length=%d, event=%d, fromMac=%s, port=%d: %s", adhocMatchingEventMessage.getDataLength(), event, macAddress, socket.getReceivedPort(), adhocMatchingEventMessage));
-					if (log.isTraceEnabled()) {
+					if (log.isTraceEnabled() && optLen > 0) {
 						log.trace(String.format("Message data: %s", Utilities.getMemoryDump(optData, optLen)));
 					}
 				}
@@ -488,9 +488,6 @@ public abstract class MatchingObject extends AdhocObject {
 			}
 		} catch (SocketTimeoutException e) {
 			// Nothing available
-			if (log.isTraceEnabled()) {
-				log.trace(String.format("Sync: nothing available on port %d", getPort()));
-			}
 		} catch (IOException e) {
 			log.error("inputLoop", e);
 		}

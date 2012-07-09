@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.HashSet;
+import java.util.Set;
 
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
@@ -35,7 +37,6 @@ import jpcsp.network.adhoc.AdhocDatagramSocket;
 import jpcsp.network.adhoc.AdhocMessage;
 import jpcsp.network.adhoc.AdhocSocket;
 import jpcsp.network.adhoc.PtpObject;
-import jpcsp.util.Utilities;
 
 /**
  * @author gid15
@@ -46,6 +47,7 @@ public class JpcspPtpObject extends PtpObject {
 	private int connectRequestPort;
 	private JpcspAdhocPtpMessage connectConfirm;
 	private boolean connected;
+	private Set<Integer> acceptedIds = new HashSet<Integer>();
 
 	public JpcspPtpObject(PtpObject ptpObject) {
 		super(ptpObject);
@@ -71,6 +73,7 @@ public class JpcspPtpObject extends PtpObject {
 
 		try {
 			JpcspAdhocPtpMessage adhocPtpMessage = new JpcspAdhocPtpMessage(PTP_MESSAGE_TYPE_CONNECT);
+			adhocPtpMessage.setDataInt32(getId());
 			send(adhocPtpMessage);
 
 			result = super.connect(timeout, nonblock);
@@ -110,42 +113,52 @@ public class JpcspPtpObject extends PtpObject {
 			if (adhocPtpMessage.isForMe()) {
 				switch (adhocPtpMessage.getType()) {
 					case PTP_MESSAGE_TYPE_CONNECT:
-						pspNetMacAddress peerMacAddress = new pspNetMacAddress();
-						peerMacAddress.setMacAddress(adhocPtpMessage.getFromMacAddress());
-						int peerPort = Modules.sceNetAdhocModule.getClientPortFromRealPort(adhocPtpMessage.getFromMacAddress(), adhocPtpMessagePort);
+						int acceptedId = adhocPtpMessage.getDataInt32();
+						if (acceptedIds.contains(acceptedId)) {
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("Connect message received for an id=%d already accepted. Dropping message.", acceptedId));
+							}
+						} else {
+							pspNetMacAddress peerMacAddress = new pspNetMacAddress();
+							peerMacAddress.setMacAddress(adhocPtpMessage.getFromMacAddress());
+							int peerPort = Modules.sceNetAdhocModule.getClientPortFromRealPort(adhocPtpMessage.getFromMacAddress(), adhocPtpMessagePort);
 
-						if (peerMacAddr != 0) {
-							peerMacAddress.write(mem, peerMacAddr);
+							if (peerMacAddr != 0) {
+								peerMacAddress.write(mem, peerMacAddr);
+							}
+							if (peerPortAddr != 0) {
+								mem.write16(peerPortAddr, (short) peerPort);
+							}
+
+							// As a result of the "accept" call, create a new PTP Object
+							PtpObject ptpObject = new JpcspPtpObject(this);
+							ptpObject.setDestMacAddress(peerMacAddress);
+							ptpObject.setDestPort(peerPort);
+							ptpObject.setPort(0);
+							Modules.sceNetAdhocModule.hleAddPtpObject(ptpObject);
+
+							// Return the ID of the new PTP Object
+							setReturnValue(thread, ptpObject.getId());
+
+							// Remember that we have already accepted this Id.
+							acceptedIds.add(acceptedId);
+
+							// Get a new free port
+							ptpObject.setPort(0);
+							ptpObject.openSocket();
+
+							// Send a connect confirmation message including the new port
+							JpcspAdhocPtpMessage confirmMessage = new JpcspAdhocPtpMessage(PTP_MESSAGE_TYPE_CONNECT_CONFIRM);
+							confirmMessage.setDataInt32(ptpObject.getPort());
+							ptpObject.send(confirmMessage);
+
+							if (log.isDebugEnabled()) {
+								log.debug(String.format("accept completed, creating new Ptp object %s", ptpObject));
+							}
+
+							acceptCompleted = true;
+							connectRequest = null;
 						}
-						if (peerPortAddr != 0) {
-							mem.write16(peerPortAddr, (short) peerPort);
-						}
-
-						// As a result of the "accept" call, create a new PTP Object
-						PtpObject ptpObject = new JpcspPtpObject(this);
-						ptpObject.setDestMacAddress(peerMacAddress);
-						ptpObject.setDestPort(peerPort);
-						ptpObject.setPort(0);
-						Modules.sceNetAdhocModule.hleAddPtpObject(ptpObject);
-
-						// Return the ID of the new PTP Object
-						setReturnValue(thread, ptpObject.getId());
-
-						// Get a new free port
-						ptpObject.setPort(0);
-						ptpObject.openSocket();
-
-						// Send a connect confirmation message including the new port
-						JpcspAdhocPtpMessage confirmMessage = new JpcspAdhocPtpMessage(PTP_MESSAGE_TYPE_CONNECT_CONFIRM);
-						confirmMessage.setDataInt32(ptpObject.getPort());
-						ptpObject.send(confirmMessage);
-
-						if (log.isDebugEnabled()) {
-							log.debug(String.format("accept completed, creating new Ptp object %s", ptpObject));
-						}
-
-						acceptCompleted = true;
-						connectRequest = null;
 						break;
 				}
 			} else {
@@ -207,11 +220,6 @@ public class JpcspPtpObject extends PtpObject {
 			log.error("pollConnect", e);
 		} catch (SocketTimeoutException e) {
 			// Ignore exception
-			JpcspAdhocPtpMessage adhocPtpMessage = new JpcspAdhocPtpMessage(PTP_MESSAGE_TYPE_CONNECT);
-			try {
-				send(adhocPtpMessage);
-			} catch (IOException e1) {
-			}
 		} catch (IOException e) {
 			log.error("pollConnect", e);
 		}
@@ -253,22 +261,6 @@ public class JpcspPtpObject extends PtpObject {
 		}
 
 		return super.isForMe(adhocMessage, port, address);
-	}
-
-	// For Ptp sockets, data is stored in the internal buffer as a continuous byte stream.
-	// The organization in packets doesn't matter.
-	@Override
-	protected void addReceivedMessage(AdhocMessage adhocMessage, int port) {
-		int length = Math.min(adhocMessage.getDataLength(), getBufSize() - getRcvdData());
-		int addr = buffer.addr + getRcvdData();
-		adhocMessage.writeDataToMemory(addr, length);
-		rcvdData += length;
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("Successfully received message %s", adhocMessage));
-			if (log.isTraceEnabled()) {
-				log.trace(String.format("Message data: %s", Utilities.getMemoryDump(addr, length)));
-			}
-		}
 	}
 
 	@Override
