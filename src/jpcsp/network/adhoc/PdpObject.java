@@ -209,7 +209,7 @@ public abstract class PdpObject extends AdhocObject {
 
 	// For Pdp sockets, data is stored in the internal buffer as a sequence of packets.
 	// The organization in packets must be kept for reading.
-	protected void addReceivedMessage(AdhocMessage adhocMessage, int port) {
+	private void addReceivedMessage(AdhocMessage adhocMessage, int port) {
 		AdhocBufferMessage bufferMessage = new AdhocBufferMessage();
 		bufferMessage.length = adhocMessage.getDataLength();
 		bufferMessage.macAddress.setMacAddress(adhocMessage.getFromMacAddress());

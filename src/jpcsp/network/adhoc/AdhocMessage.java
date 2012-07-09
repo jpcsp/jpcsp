@@ -146,6 +146,10 @@ public abstract class AdhocMessage {
 		writeBytes(address, Math.min(getDataLength(), maxLength), data, 0);
 	}
 
+	public void writeDataToMemory(int address, int offset, int maxLength) {
+		writeBytes(address, Math.min(getDataLength() - offset, maxLength), data, offset);
+	}
+
 	public byte[] getData() {
 		return data;
 	}

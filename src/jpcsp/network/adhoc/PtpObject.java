@@ -18,8 +18,10 @@ package jpcsp.network.adhoc;
 
 import java.io.IOException;
 import java.net.BindException;
+import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 
 import jpcsp.Memory;
@@ -52,6 +54,8 @@ public abstract class PtpObject extends PdpObject {
 	private int sentData;
     // Polling period (micro seconds) for blocking operations
     protected static final int BLOCKED_OPERATION_POLLING_MICROS = 10000;
+    private AdhocMessage receivedMessage;
+    private int receivedMessageOffset;
 
     protected static abstract class BlockedPtpAction extends BlockedPdpAction {
     	protected final PtpObject ptpObject;
@@ -318,7 +322,7 @@ public abstract class PtpObject extends PdpObject {
 		boolean completed = false;
 
 		if (length > 0) {
-			if (getRcvdData() <= 0) {
+			if (getRcvdData() <= 0 || receivedMessage != null) {
 				update();
 			}
 
@@ -348,6 +352,65 @@ public abstract class PtpObject extends PdpObject {
 		}
 
 		return completed;
+	}
+
+	// For Ptp sockets, data is stored in the internal buffer as a continuous byte stream.
+	// The organization in packets doesn't matter.
+	private int addReceivedMessage(AdhocMessage adhocMessage, int offset) {
+		int length = Math.min(adhocMessage.getDataLength() - offset, getBufSize() - getRcvdData());
+		int addr = buffer.addr + getRcvdData();
+		adhocMessage.writeDataToMemory(addr, offset, length);
+		rcvdData += length;
+		if (log.isDebugEnabled()) {
+			if (offset == 0) {
+				log.debug(String.format("Successfully received message (length=%d, rcvdData=%d) %s", length, getRcvdData(), adhocMessage));
+			} else {
+				log.debug(String.format("Appending received message (offset=%d, length=%d, rcvdData=%d) %s", offset, length, getRcvdData(), adhocMessage));
+			}
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("Message data: %s", Utilities.getMemoryDump(addr, length)));
+			}
+		}
+
+		return length;
+	}
+
+	@Override
+	public void update() throws IOException {
+		// Receive all messages available
+		while (getRcvdData() < getBufSize()) {
+			if (receivedMessage != null) {
+				receivedMessageOffset += addReceivedMessage(receivedMessage, receivedMessageOffset);
+				if (receivedMessageOffset >= receivedMessage.getDataLength()) {
+					receivedMessage = null;
+					receivedMessageOffset = 0;
+				}
+			} else {
+				try {
+					openSocket();
+					socket.setTimeout(1);
+					byte[] bytes = new byte[0x10000]; // 64K buffer
+					int length = socket.receive(bytes, bytes.length);
+					int receivedPort = socket.getReceivedPort();
+					InetAddress receivedAddress = socket.getReceivedAddress();
+					AdhocMessage adhocMessage = createAdhocMessage(bytes, length);
+					if (isForMe(adhocMessage, receivedPort, receivedAddress)) {
+						receivedMessage = adhocMessage;
+						receivedMessageOffset = 0;
+					} else {
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("Received message not for me: %s", adhocMessage));
+						}
+					}
+				} catch (SocketException e) {
+					log.error("update", e);
+					break;
+				} catch (SocketTimeoutException e) {
+					// Timeout
+					break;
+				}
+			}
+		}
 	}
 
 	@Override
