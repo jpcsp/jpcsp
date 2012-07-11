@@ -74,6 +74,38 @@ public abstract class MatchingObject extends AdhocObject {
 	private boolean connected;
 	private boolean pendingComplete;
 	private LinkedList<pspNetMacAddress> members = new LinkedList<pspNetMacAddress>();
+	private LinkedList<CallbackEvent> pendingCallbackEvents = new LinkedList<MatchingObject.CallbackEvent>();
+
+	private static class CallbackEvent {
+		private int event;
+		private pspNetMacAddress macAddress;
+		private int optLen;
+		private int optData;
+
+		public CallbackEvent(int event, int macAddr, int optLen, int optData) {
+			this.event = event;
+			macAddress = new pspNetMacAddress();
+			macAddress.read(Memory.getInstance(), macAddr);
+			this.optLen = optLen;
+			this.optData = optData;
+		}
+
+		public int getEvent() {
+			return event;
+		}
+
+		public pspNetMacAddress getMacAddress() {
+			return macAddress;
+		}
+
+		public int getOptLen() {
+			return optLen;
+		}
+
+		public int getOptData() {
+			return optData;
+		}
+	}
 
 	public MatchingObject(INetworkAdapter networkAdapter) {
 		super(networkAdapter);
@@ -406,9 +438,22 @@ public abstract class MatchingObject extends AdhocObject {
 		}
 	}
 
+	public void addCallbackEvent(int event, int macAddr, int optLen, int optData) {
+		CallbackEvent callbackEvent = new CallbackEvent(event, macAddr, optLen, optData);
+		pendingCallbackEvents.add(callbackEvent);
+	}
+
 	public boolean inputLoop() {
 		if (socket == null || !started) {
 			return false;
+		}
+
+		// Execute all the pending callback events
+		while (!pendingCallbackEvents.isEmpty()) {
+			CallbackEvent callbackEvent = pendingCallbackEvents.poll();
+			pspNetMacAddress macAddress = callbackEvent.getMacAddress();
+			macAddress.write(Memory.getInstance(), buffer.addr);
+			notifyCallbackEvent(callbackEvent.getEvent(), macAddress.getBaseAddress(), callbackEvent.getOptLen(), callbackEvent.getOptData());
 		}
 
 		try {
