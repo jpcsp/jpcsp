@@ -31,8 +31,10 @@ import java.util.ListIterator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.kernel.types.pspUmdInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
@@ -57,8 +59,25 @@ public class sceUmdUser extends HLEModule {
     	umdDeactivateCalled = false;
         waitingThreads = new LinkedList<SceKernelThreadInfo>();
         umdErrorStat = 0;
+        umdWaitStateChecker = new UmdWaitStateChecker();
 
         super.start();
+    }
+
+    protected class UmdWaitStateChecker implements IWaitStateChecker {
+		@Override
+		public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
+			if (checkDriveStat(wait.wantedUmdStat)) {
+				waitingThreads.remove(thread);
+                // Return success
+				thread.cpuContext.gpr[2] = 0;
+
+				// Do not continue the wait state
+				return false;
+			}
+
+			return true;
+		}
     }
 
     protected static final int PSP_UMD_INIT = 0x00;
@@ -73,6 +92,7 @@ public class sceUmdUser extends HLEModule {
     protected boolean umdDeactivateCalled;
     protected List<SceKernelThreadInfo> waitingThreads;
     protected int umdErrorStat;
+    protected UmdWaitStateChecker umdWaitStateChecker;
 
     public void setIsoReader(UmdIsoReader iso) {
         this.iso = iso;
@@ -237,7 +257,7 @@ public class sceUmdUser extends HLEModule {
             // Wait on a specific umdStat.
             currentThread.wait.wantedUmdStat = wantedStat;
             waitingThreads.add(currentThread);
-            threadMan.hleKernelThreadEnterWaitState(currentThread, JPCSP_WAIT_UMD, -1, null, timeout, !doTimeout, doCallbacks);
+            threadMan.hleKernelThreadEnterWaitState(currentThread, JPCSP_WAIT_UMD, -1, umdWaitStateChecker, timeout, !doTimeout, doCallbacks);
         }
         threadMan.hleRescheduleCurrentThread(doCallbacks);
 

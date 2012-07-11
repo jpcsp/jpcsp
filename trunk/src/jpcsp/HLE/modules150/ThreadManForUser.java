@@ -215,6 +215,7 @@ public class ThreadManForUser extends HLEModule {
     protected boolean needThreadReschedule;
     protected WaitThreadEndWaitStateChecker waitThreadEndWaitStateChecker;
     protected TimeoutThreadWaitStateChecker timeoutThreadWaitStateChecker;
+    protected SleepThreadWaitStateChecker sleepThreadWaitStateChecker;
 
 	private class EnableThreadBanningSettingsListerner extends AbstractBoolSettingsListener {
 		@Override
@@ -259,6 +260,7 @@ public class ThreadManForUser extends HLEModule {
 
 		waitThreadEndWaitStateChecker = new WaitThreadEndWaitStateChecker();
 		timeoutThreadWaitStateChecker = new TimeoutThreadWaitStateChecker();
+		sleepThreadWaitStateChecker = new SleepThreadWaitStateChecker();
 
 		setSettingsListener("emu.ignoreaudiothreads", new EnableThreadBanningSettingsListerner());
 
@@ -1601,7 +1603,7 @@ public class ThreadManForUser extends HLEModule {
             currentThread.wakeupCount--;
         } else {
             // Go to wait state and wait forever (another thread will call sceKernelWakeupThread)
-        	hleKernelThreadEnterWaitState(PSP_WAIT_SLEEP, 0, null, doCallbacks);
+        	hleKernelThreadEnterWaitState(PSP_WAIT_SLEEP, 0, sleepThreadWaitStateChecker, doCallbacks);
         }
 
         return 0;
@@ -4191,4 +4193,18 @@ public class ThreadManForUser extends HLEModule {
 		}
     }
 
+    public static class SleepThreadWaitStateChecker implements IWaitStateChecker {
+		@Override
+		public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
+	        if (thread.wakeupCount > 0) {
+	            // sceKernelWakeupThread() has been called while the thread was waiting
+	            thread.wakeupCount--;
+	            // Return 0
+	            thread.cpuContext.gpr[2] = 0;
+	            return false;
+	        }
+
+	        return true;
+		}
+    }
 }

@@ -481,6 +481,9 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
         	case PSP_WAIT_SLEEP:
         		s.append(String.format("Sleep"));
         		break;
+        	case PSP_WAIT_DELAY:
+        		s.append(String.format("Delay"));
+        		break;
         	case PSP_WAIT_THREAD_END:
         		s.append(String.format("ThreadEnd (0x%04X)", wait.ThreadEnd_id));
         		break;
