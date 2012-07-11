@@ -86,6 +86,7 @@ public class RuntimeContext {
 	public  static final String logInfo = "logInfo";
 	public  static final String pauseEmuWithStatus = "pauseEmuWithStatus";
 	public  static final boolean enableLineNumbers = true;
+	public  static final boolean checkCodeModification = false;
 	private static final int idleSleepMicros = 1000;
 	private static final Map<Integer, CodeBlock> codeBlocks = Collections.synchronizedMap(new HashMap<Integer, CodeBlock>());
 	private static final Map<SceKernelThreadInfo, RuntimeThread> threads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
@@ -1192,5 +1193,11 @@ public class RuntimeContext {
 
     public static void setIsHomebrew(boolean isHomebrew) {
     	// Currently, nothing special to do for Homebrew's
+    }
+
+    public static void onCodeModification(int pc, int opcode) {
+    	cpu.pc = pc;
+    	log.error(String.format("Code instruction at 0x%08X has been modified, expected 0x%08X, current 0x%08X", pc, opcode, memory.read32(pc)));
+    	Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);
     }
 }
