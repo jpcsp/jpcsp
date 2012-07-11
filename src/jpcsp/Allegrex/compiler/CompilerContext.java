@@ -1531,6 +1531,27 @@ public class CompilerContext implements ICompilerContext {
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.debuggerName, "(I)V");
 	    }
 
+	    if (RuntimeContext.checkCodeModification && !(codeInstruction instanceof NativeCodeInstruction)) {
+	    	// Generate the following sequence:
+	    	//
+	    	//     if (memory.read32(pc) != opcode) {
+	    	//         RuntimeContext.onCodeModification(pc, opcode);
+	    	//     }
+	    	//
+	    	loadMemory();
+	    	loadImm(codeInstruction.getAddress());
+	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read32", "(I)I");
+	        loadImm(codeInstruction.getOpcode());
+	        Label codeUnchanged = new Label();
+	        mv.visitJumpInsn(Opcodes.IF_ICMPEQ, codeUnchanged);
+
+	        loadImm(codeInstruction.getAddress());
+	        loadImm(codeInstruction.getOpcode());
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "onCodeModification", "(II)V");
+
+	        mv.visitLabel(codeUnchanged);
+	    }
+
 	    if (!isNonBranchingCodeSequence(codeInstruction)) {
 	    	startNonBranchingCodeSequence();
 	    }
