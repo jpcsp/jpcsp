@@ -215,6 +215,7 @@ public class VideoEngine {
     private boolean somethingDisplayed;
     private boolean forceLoadGEToScreen;
     private boolean geBufChanged;
+    private boolean fbBufChanged;
     private IAction hleAction;
     private int[] currentCMDValues;
     private int[] currentListCMDValues;
@@ -676,10 +677,9 @@ public class VideoEngine {
 
     public void hleSetFrameBuf(int topAddr, int bufferWidth, int pixelFormat) {
     	if (context.fbp != topAddr || context.fbw != bufferWidth || context.psm != pixelFormat) {
-    		context.fbp = topAddr;
-    		context.fbw = bufferWidth;
-    		context.psm = pixelFormat;
-    		geBufChanged = true;
+    		// Update the frame buffer parameters at next display start.
+    		// Do not update the context here, possibly in the middle of a rendering...
+    		fbBufChanged = true;
     	}
     }
 
@@ -714,6 +714,14 @@ public class VideoEngine {
         // Reset all the values
         for (int i = 0; i < currentListCMDValues.length; i++) {
         	currentListCMDValues[i] = -1;
+        }
+
+        if (fbBufChanged) {
+        	context.fbp = display.getTopAddrFb();
+        	context.fbw = display.getBufferWidthFb();
+        	context.psm = display.getPixelFormatFb();
+        	geBufChanged = true;
+        	fbBufChanged = false;
         }
 
         context.update();
