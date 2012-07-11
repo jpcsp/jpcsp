@@ -45,6 +45,7 @@ import jpcsp.network.adhoc.PtpObject;
 import jpcsp.network.proonline.PacketFactory.SceNetAdhocctlPacketBaseC2S;
 import jpcsp.network.proonline.PacketFactory.SceNetAdhocctlPacketBaseS2C;
 import jpcsp.network.upnp.UPnP;
+import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -58,7 +59,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	private static boolean enabled = false;
 	private UPnP upnp;
 	private Socket metaSocket;
-	private static final int metaPort = 27312;
+	private static int metaPort = 27312;
 	private static String metaServer = "coldbird.uk.to";
 	private static final int pingTimeoutMillis = 2000;
 	private volatile boolean exit;
@@ -94,7 +95,10 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	public void start() {
 		super.start();
 
-		log.info("ProOnline start");
+		metaServer = Settings.getInstance().readString("network.ProOnline.metaServer", metaServer);
+		metaPort = Settings.getInstance().readInt("network.ProOnline.metaPort", metaPort);
+
+		log.info(String.format("ProOnline start, server %s:%d", metaServer, metaPort));
 
 		try {
 			broadcastInetAddress = InetAddress.getByAddress(new byte[] { 1, 1, 1, 1 });
