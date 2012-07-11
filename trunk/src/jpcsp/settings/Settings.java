@@ -266,7 +266,11 @@ public class Settings {
 	}
 
 	public String readString(String option) {
-		return getProperty(option, "");
+		return readString(option, "");
+	}
+
+	public String readString(String option, String defaultValue) {
+		return getProperty(option, defaultValue);
 	}
 
 	public boolean isOptionFromPatch(String option) {
