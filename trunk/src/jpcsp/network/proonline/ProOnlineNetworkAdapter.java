@@ -109,7 +109,11 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 			log.error("Unable to set the broadcast address", e);
 		}
 
-		loopbackInetAddress = InetAddress.getLoopbackAddress();
+		try {
+			loopbackInetAddress = InetAddress.getByName("localhost");
+		} catch (UnknownHostException e) {
+			log.error("Unable to set the loopback address", e);
+		}
 
 		try {
 			localHostInetAddress = InetAddress.getByName(sceNetApctl.getLocalHostIP());
