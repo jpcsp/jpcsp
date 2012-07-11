@@ -206,8 +206,8 @@ public class MatchingPacketFactory {
 		public void processOnSend(int macAddr, int optData, int optLen) {
 			super.processOnSend(macAddr, optData, optLen);
 
-			// Send the PSP_ADHOC_MATCHING_EVENT_COMPLETE event
-			getMatchingObject().notifyCallbackEvent(PSP_ADHOC_MATCHING_EVENT_COMPLETE, macAddr, optLen, optData);
+			// Send the PSP_ADHOC_MATCHING_EVENT_COMPLETE event from the matching input thread
+			getMatchingObject().addCallbackEvent(PSP_ADHOC_MATCHING_EVENT_COMPLETE, macAddr, 0, 0);
 		}
 	}
 

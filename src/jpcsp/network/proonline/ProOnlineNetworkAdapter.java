@@ -33,6 +33,7 @@ import jpcsp.GUI.ChatGUI;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
 import jpcsp.HLE.modules.sceNetAdhoc;
+import jpcsp.HLE.modules.sceNetApctl;
 import jpcsp.HLE.modules150.sceNet;
 import jpcsp.HLE.modules150.sceNetAdhoc.GameModeArea;
 import jpcsp.network.BaseNetworkAdapter;
@@ -70,6 +71,8 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	private PacketFactory packetFactory = new PacketFactory();
 	private PortManager portManager;
 	private InetAddress broadcastInetAddress;
+	private InetAddress loopbackInetAddress;
+	private InetAddress localHostInetAddress;
 	private ChatGUI chatGUI;
 	private boolean connectComplete;
 
@@ -105,6 +108,15 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		} catch (UnknownHostException e) {
 			log.error("Unable to set the broadcast address", e);
 		}
+
+		loopbackInetAddress = InetAddress.getLoopbackAddress();
+
+		try {
+			localHostInetAddress = InetAddress.getByName(sceNetApctl.getLocalHostIP());
+		} catch (UnknownHostException e) {
+			log.error("Unable to set the local address", e);
+		}
+
 		upnp = new UPnP();
 		upnp.discover();
 	}
@@ -461,7 +473,6 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		InetAddress inetAddress = getInetAddress(macAddress);
 		if (inetAddress == null) {
 			throw new UnknownHostException(String.format("ProOnline: unknown MAC address %s", sceNet.convertMacAddressToString(macAddress)));
-//			return sceNetInet.getBroadcastInetSocketAddress(realPort);
 		}
 
 		return new InetSocketAddress(inetAddress, realPort);
@@ -510,9 +521,18 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 		return null;
 	}
 
+	private boolean isLocalInetAddress(InetAddress inetAddress) {
+		return inetAddress.equals(loopbackInetAddress) || inetAddress.equals(localHostInetAddress);
+	}
+
 	public synchronized MacIp getMacIp(InetAddress inetAddress) {
 		for (MacIp macIp : macIps) {
 			if (inetAddress.equals(macIp.inetAddress)) {
+				return macIp;
+			}
+
+			// When using 2 instances of Jpcsp on the local machine
+			if (isLocalInetAddress(inetAddress) && isLocalInetAddress(macIp.inetAddress)) {
 				return macIp;
 			}
 		}
