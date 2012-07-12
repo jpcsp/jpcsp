@@ -5892,7 +5892,7 @@ public String disasm(int address, int insn) {
 return "Unimplemented MTVC imm7=" + imm7 + ", rt=" + rt;
 }
 };
-public static final Instruction VCMP = new Instruction(163, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT) {
+public static final Instruction VCMP = new Instruction(163, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VCMP"; }
@@ -6115,7 +6115,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVCMP("vcmp", 1+one+(two<<1), imm4, vs, vt);
 }
 };
-public static final Instruction VMIN = new Instruction(164, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VMIN = new Instruction(164, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VMIN"; }
@@ -6150,7 +6150,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVDVSVT("vmin", 1+one+(two<<1), vd, vs, vt);
 }
 };
-public static final Instruction VMAX = new Instruction(165, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VMAX = new Instruction(165, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VMAX"; }
@@ -6220,7 +6220,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVDVSVT("vscmp", 1+one+(two<<1), vd, vs, vt);
 }
 };
-public static final Instruction VSGE = new Instruction(167, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VSGE = new Instruction(167, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VSGE"; }
@@ -6273,7 +6273,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVDVSVT("vsge", 1+one+(two<<1), vd, vs, vt);
 }
 };
-public static final Instruction VSLT = new Instruction(168, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VSLT = new Instruction(168, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VSLT"; }
@@ -6359,7 +6359,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVDVS("vmov", 1+one+(two<<1), vd, vs);
 }
 };
-public static final Instruction VABS = new Instruction(170, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VABS = new Instruction(170, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VABS"; }
@@ -6392,7 +6392,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVDVS("vabs", 1+one+(two<<1), vd, vs);
 }
 };
-public static final Instruction VNEG = new Instruction(171, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VNEG = new Instruction(171, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VNEG"; }
@@ -6465,7 +6465,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVD("vidt", 1+one+(two<<1), vd);
 }
 };
-public static final Instruction VSAT0 = new Instruction(173, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VSAT0 = new Instruction(173, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VSAT0"; }
@@ -6530,7 +6530,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVDVS("vsat0", 1+one+(two<<1), vd, vs);
 }
 };
-public static final Instruction VSAT1 = new Instruction(174, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VSAT1 = new Instruction(174, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VSAT1"; }
@@ -7422,7 +7422,7 @@ public String disasm(int address, int insn) {
 	return Common.disasmVDVS("vs2i", 1+one+(two<<1), vd, vs);
 }
 };
-public static final Instruction VI2UC = new Instruction(200, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VI2UC = new Instruction(200, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VI2UC"; }
@@ -7446,7 +7446,7 @@ public void compile(ICompilerContext context, int insn) {
 	final int vsize = context.getVsize();
 	if (vsize == 4) {
 		MethodVisitor mv = context.getMethodVisitor();
-		context.startPfxCompiled();
+		context.startPfxCompiled(false);
 		context.prepareVdForStore(1, 0);
 		for (int n = 0; n < vsize; n++) {
 			context.loadVsInt(n);
@@ -7470,7 +7470,7 @@ public void compile(ICompilerContext context, int insn) {
 			mv.visitLabel(afterLabel);
 		}
 		context.storeVdInt(1, 0);
-		context.endPfxCompiled(true);
+		context.endPfxCompiled(false);
 	} else {
 		// Only supported VI2UC.Q
 		context.compileInterpreterInstruction();
@@ -8152,7 +8152,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVDCST("VCST", 1+one+(two<<1), vd, imm5);
 }
 };
-public static final Instruction VF2IN = new Instruction(220, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VF2IN = new Instruction(220, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VF2IN"; }
@@ -8177,7 +8177,7 @@ public void compile(ICompilerContext context, int insn) {
 	int vsize = context.getVsize();
 	int imm5 = context.getImm5();
 	MethodVisitor mv = context.getMethodVisitor();
-	context.startPfxCompiled();
+	context.startPfxCompiled(false);
 	for (int n = 0; n < vsize; n++) {
 		context.prepareVdForStore(n);
 		context.loadVs(n);
@@ -8201,7 +8201,7 @@ public String disasm(int address, int insn) {
 	return Common.disasmVDVSIMM("vf2in", 1+one+(two<<1), vd, vs, imm5);
 }
 };
-public static final Instruction VF2IZ = new Instruction(221, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VF2IZ = new Instruction(221, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VF2IZ"; }
@@ -8226,7 +8226,7 @@ public void compile(ICompilerContext context, int insn) {
 	int vsize = context.getVsize();
 	int imm5 = context.getImm5();
 	MethodVisitor mv = context.getMethodVisitor();
-	context.startPfxCompiled();
+	context.startPfxCompiled(false);
 	for (int n = 0; n < vsize; n++) {
 		context.prepareVdForStore(n);
 		context.loadVs(n);
@@ -8268,7 +8268,7 @@ public String disasm(int address, int insn) {
 	return Common.disasmVDVSIMM("vf2iz", 1+one+(two<<1), vd, vs, imm5);
 }
 };
-public static final Instruction VF2IU = new Instruction(222, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VF2IU = new Instruction(222, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VF2IU"; }
@@ -8293,7 +8293,7 @@ public void compile(ICompilerContext context, int insn) {
 	int vsize = context.getVsize();
 	int imm5 = context.getImm5();
 	MethodVisitor mv = context.getMethodVisitor();
-	context.startPfxCompiled();
+	context.startPfxCompiled(false);
 	for (int n = 0; n < vsize; n++) {
 		context.prepareVdForStore(n);
 		context.loadVs(n);
@@ -8319,7 +8319,7 @@ public String disasm(int address, int insn) {
 	return Common.disasmVDVSIMM("vf2iu", 1+one+(two<<1), vd, vs, imm5);
 }
 };
-public static final Instruction VF2ID = new Instruction(223, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VF2ID = new Instruction(223, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VF2ID"; }
@@ -8344,7 +8344,7 @@ public void compile(ICompilerContext context, int insn) {
 	int vsize = context.getVsize();
 	int imm5 = context.getImm5();
 	MethodVisitor mv = context.getMethodVisitor();
-	context.startPfxCompiled();
+	context.startPfxCompiled(false);
 	for (int n = 0; n < vsize; n++) {
 		context.prepareVdForStore(n);
 		context.loadVs(n);
@@ -8370,7 +8370,7 @@ public String disasm(int address, int insn) {
 	return Common.disasmVDVSIMM("vf2id", 1+one+(two<<1), vd, vs, imm5);
 }
 };
-public static final Instruction VI2F = new Instruction(224, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VI2F = new Instruction(224, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VI2F"; }
@@ -8419,7 +8419,7 @@ public String disasm(int address, int insn) {
 	return Common.disasmVDVSIMM("vi2f", 1+one+(two<<1), vd, vs, imm5);
 }
 };
-public static final Instruction VCMOVT = new Instruction(225, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VCMOVT = new Instruction(225, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VCMOVT"; }
@@ -8444,8 +8444,8 @@ public void compile(ICompilerContext context, int insn) {
 	int vsize = context.getVsize();
 	int imm3 = context.getImm3();
 	MethodVisitor mv = context.getMethodVisitor();
-	context.startPfxCompiled();
 	if (imm3 < 6) {
+		context.startPfxCompiled(false);
 		Label notMoveLabel = new Label();
 		Label afterLabel = new Label();
 		context.loadVcrCc(imm3);
@@ -8455,6 +8455,7 @@ public void compile(ICompilerContext context, int insn) {
 			context.loadVsInt(n);
 			context.storeVdInt(n);
 		}
+		context.endPfxCompiled(false);
 		mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
 		mv.visitLabel(notMoveLabel);
 		if (context.getPfxdState().isKnown() && context.getPfxdState().pfxDst.enabled) {
@@ -8463,9 +8464,11 @@ public void compile(ICompilerContext context, int insn) {
 				context.loadVdInt(n);
 				context.storeVdInt(n);
 			}
+			context.endPfxCompiled(false);
 		}
 		mv.visitLabel(afterLabel);
 	} else if (imm3 == 6) {
+		context.startPfxCompiled(false);
 		for (int n = 0; n < vsize; n++) {
 			Label notMoveLabel = new Label();
 			Label afterLabel = new Label();
@@ -8483,10 +8486,10 @@ public void compile(ICompilerContext context, int insn) {
 			}
 			mv.visitLabel(afterLabel);
 		}
+		context.endPfxCompiled(false);
 	} else {
 		// Never copy
 	}
-	context.endPfxCompiled(false);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -8499,7 +8502,7 @@ public String disasm(int address, int insn) {
 	return Common.disasmVDVSIMM("VCMOVT", 1+one+(two<<1), vd, vs, imm3);
 }
 };
-public static final Instruction VCMOVF = new Instruction(226, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VCMOVF = new Instruction(226, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VCMOVF"; }
@@ -8524,7 +8527,7 @@ public void compile(ICompilerContext context, int insn) {
 	int vsize = context.getVsize();
 	int imm3 = context.getImm3();
 	MethodVisitor mv = context.getMethodVisitor();
-	context.startPfxCompiled();
+	context.startPfxCompiled(false);
 	if (imm3 < 6) {
 		Label notMoveLabel = new Label();
 		Label afterLabel = new Label();
@@ -8906,7 +8909,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVPFXD("VPFXD", sat, msk);
 }
 };
-public static final Instruction VIIM = new Instruction(231, FLAG_USE_VFPU_PFXD) {
+public static final Instruction VIIM = new Instruction(231, FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VIIM"; }
@@ -8942,7 +8945,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVDIIM("VIIM", 1, vd, imm16);
 }
 };
-public static final Instruction VFIM = new Instruction(232, FLAG_USE_VFPU_PFXD) {
+public static final Instruction VFIM = new Instruction(232, FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VFIM"; }
@@ -9132,7 +9135,7 @@ public String disasm(int address, int insn) {
 	return Common.disasmVDVSVT("VHTFM3", 3, vd, vs, vt);
 }
 };
-public static final Instruction VTFM3 = new Instruction(237, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VTFM3 = new Instruction(237, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VTFM3"; }
@@ -9186,7 +9189,7 @@ public String disasm(int address, int insn) {
 	return Common.disasmVDVSVT("VTFM3", 3, vd, vs, vt);
 }
 };
-public static final Instruction VHTFM4 = new Instruction(238, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VHTFM4 = new Instruction(238, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VHTFM4"; }
@@ -9242,7 +9245,7 @@ public String disasm(int address, int insn) {
 	return Common.disasmVDVSVT("VHTFM4", 4, vd, vs, vt);
 }
 };
-public static final Instruction VTFM4 = new Instruction(239, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VTFM4 = new Instruction(239, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VTFM4"; }
@@ -9302,7 +9305,7 @@ public String disasm(int address, int insn) {
 	return Common.disasmVDVSVT("VTFM4", 4, vd, vs, vt);
 }
 };
-public static final Instruction VMSCL = new Instruction(240, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VMSCL = new Instruction(240, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VMSCL"; }
@@ -9357,7 +9360,7 @@ public String disasm(int address, int insn) {
 	return Common.disasmVDVSVT("vmscl", 1+one+(two<<1), vd, vs, vt);
 }
 };
-public static final Instruction VCRSP = new Instruction(241, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VCRSP = new Instruction(241, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VCRSP"; }
@@ -9456,7 +9459,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVDVSVT("VQMUL", 4, vd, vs, vt);
 }
 };
-public static final Instruction VMMOV = new Instruction(243, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
+public static final Instruction VMMOV = new Instruction(243, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VMMOV"; }
@@ -9480,7 +9483,7 @@ public void compile(ICompilerContext context, int insn) {
 	final int vsize = context.getVsize();
 	final int vd = context.getVdRegisterIndex();
 	final int vs = context.getVsRegisterIndex();
-	context.startPfxCompiled();
+	context.startPfxCompiled(false);
 	for (int i = 0; i < vsize; i++) {
 		for (int n = 0; n < vsize; n++) {
 			context.prepareVdForStore(vsize, vd + i, n);
@@ -9543,7 +9546,7 @@ public String disasm(int address, int insn) {
 	return Common.disasmVDM("VMIDT", 1+one+(two<<1), vd);
 }
 };
-public static final Instruction VMZERO = new Instruction(245, FLAG_USE_VFPU_PFXD) {
+public static final Instruction VMZERO = new Instruction(245, FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VMZERO"; }
@@ -9584,7 +9587,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVDM("VMZERO", 1+one+(two<<1), vd);
 }
 };
-public static final Instruction VMONE = new Instruction(246, FLAG_USE_VFPU_PFXD) {
+public static final Instruction VMONE = new Instruction(246, FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VMONE"; }

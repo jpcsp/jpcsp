@@ -285,11 +285,24 @@ public class CompilerContext implements ICompilerContext {
 		return new Float(value);
     }
 
-    private void applyPfxSrcPostfix(VfpuPfxSrcState pfxSrcState, int n) {
+    private void convertVFloatToInt() {
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "floatToRawIntBits", "(F)I");
+    }
+
+    private void convertVIntToFloat() {
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "intBitsToFloat", "(I)F");
+    }
+
+    private void applyPfxSrcPostfix(VfpuPfxSrcState pfxSrcState, int n, boolean isFloat) {
     	if (pfxSrcState == null ||
     	    pfxSrcState.isUnknown() ||
     	    !pfxSrcState.pfxSrc.enabled) {
     		return;
+    	}
+
+    	if (!isFloat && (pfxSrcState.pfxSrc.abs[n] || pfxSrcState.pfxSrc.neg[n])) {
+    		// The value is requested as an "int", first convert to float
+    		convertVIntToFloat();
     	}
 
     	if (pfxSrcState.pfxSrc.abs[n]) {
@@ -303,6 +316,11 @@ public class CompilerContext implements ICompilerContext {
 				Compiler.log.trace(String.format("PFX    %08X - applyPfxSrcPostfix neg(%d)", getCodeInstruction().getAddress(), n));
 			}
     		mv.visitInsn(Opcodes.FNEG);
+    	}
+
+    	if (!isFloat && (pfxSrcState.pfxSrc.abs[n] || pfxSrcState.pfxSrc.neg[n])) {
+    		// The value is requested as an "int", convert back from float to int
+			convertVFloatToInt();
     	}
     }
 
@@ -331,6 +349,14 @@ public class CompilerContext implements ICompilerContext {
         }
     }
 
+    private void loadCstValue(Float cstValue, boolean isFloat) {
+    	if (isFloat) {
+    		mv.visitLdcInsn(cstValue.floatValue());
+    	} else {
+    		loadImm(Float.floatToRawIntBits(cstValue.floatValue()));
+    	}
+    }
+
     private void loadVRegister(int vsize, int reg, int n, VfpuPfxSrcState pfxSrcState, boolean isFloat) {
 		if (Compiler.log.isTraceEnabled() && pfxSrcState != null && pfxSrcState.isKnown() && pfxSrcState.pfxSrc.enabled) {
 			Compiler.log.trace(String.format("PFX    %08X - loadVRegister %d, %d, %d", getCodeInstruction().getAddress(), vsize, reg, n));
@@ -344,10 +370,10 @@ public class CompilerContext implements ICompilerContext {
     			s = (reg >> 5) & 3;
     			Float cstValue = getPfxSrcCstValue(pfxSrcState, n);
     			if (cstValue != null) {
-    				mv.visitLdcInsn(cstValue.floatValue());
+    				loadCstValue(cstValue, isFloat);
     			} else {
     			    loadVRegister(m, i, s, isFloat);
-	    			applyPfxSrcPostfix(pfxSrcState, n);
+	    			applyPfxSrcPostfix(pfxSrcState, n, isFloat);
     			}
     			break;
     		}
@@ -355,7 +381,7 @@ public class CompilerContext implements ICompilerContext {
                 s = (reg & 64) >> 5;
                 Float cstValue = getPfxSrcCstValue(pfxSrcState, n);
                 if (cstValue != null) {
-                	mv.visitLdcInsn(cstValue.floatValue());
+    				loadCstValue(cstValue, isFloat);
                 } else {
                 	int index = getPfxSrcIndex(pfxSrcState, n);
 	                if ((reg & 32) != 0) {
@@ -363,7 +389,7 @@ public class CompilerContext implements ICompilerContext {
 	                } else {
 	                    loadVRegister(m, i, s + index, isFloat);
 	                }
-	                applyPfxSrcPostfix(pfxSrcState, n);
+	                applyPfxSrcPostfix(pfxSrcState, n, isFloat);
                 }
                 break;
     		}
@@ -371,7 +397,7 @@ public class CompilerContext implements ICompilerContext {
                 s = (reg & 64) >> 6;
                 Float cstValue = getPfxSrcCstValue(pfxSrcState, n);
                 if (cstValue != null) {
-                	mv.visitLdcInsn(cstValue.floatValue());
+    				loadCstValue(cstValue, isFloat);
                 } else {
                 	int index = getPfxSrcIndex(pfxSrcState, n);
 	                if ((reg & 32) != 0) {
@@ -379,14 +405,14 @@ public class CompilerContext implements ICompilerContext {
 	                } else {
 	                    loadVRegister(m, i, s + index, isFloat);
 	                }
-	                applyPfxSrcPostfix(pfxSrcState, n);
+	                applyPfxSrcPostfix(pfxSrcState, n, isFloat);
                 }
                 break;
     		}
             case 4: {
                 Float cstValue = getPfxSrcCstValue(pfxSrcState, n);
                 if (cstValue != null) {
-                	mv.visitLdcInsn(cstValue.floatValue());
+    				loadCstValue(cstValue, isFloat);
                 } else {
                 	int index = getPfxSrcIndex(pfxSrcState, n);
 	                if ((reg & 32) != 0) {
@@ -394,7 +420,7 @@ public class CompilerContext implements ICompilerContext {
 	                } else {
 	                    loadVRegister(m, i, index, isFloat);
 	                }
-	                applyPfxSrcPostfix(pfxSrcState, n);
+	                applyPfxSrcPostfix(pfxSrcState, n, isFloat);
                 }
             	break;
             }
@@ -2937,7 +2963,7 @@ public class CompilerContext implements ICompilerContext {
 		return vfpuPfxtState;
 	}
 
-    private void startPfxCompiled(VfpuPfxState vfpuPfxState, String name, String descriptor, String internalName) {
+    private void startPfxCompiled(VfpuPfxState vfpuPfxState, String name, String descriptor, String internalName, boolean isFloat) {
         if (vfpuPfxState.isUnknown()) {
             if (interpretPfxLabel == null) {
                 interpretPfxLabel = new Label();
@@ -2952,18 +2978,23 @@ public class CompilerContext implements ICompilerContext {
 
     @Override
     public void startPfxCompiled() {
+    	startPfxCompiled(true);
+    }
+
+    @Override
+    public void startPfxCompiled(boolean isFloat) {
         interpretPfxLabel = null;
 
         if (codeInstruction.hasFlags(Instruction.FLAG_USE_VFPU_PFXS)) {
-            startPfxCompiled(vfpuPfxsState, "pfxs", Type.getDescriptor(PfxSrc.class), Type.getInternalName(PfxSrc.class));
+            startPfxCompiled(vfpuPfxsState, "pfxs", Type.getDescriptor(PfxSrc.class), Type.getInternalName(PfxSrc.class), isFloat);
         }
 
         if (codeInstruction.hasFlags(Instruction.FLAG_USE_VFPU_PFXT)) {
-            startPfxCompiled(vfpuPfxtState, "pfxt", Type.getDescriptor(PfxSrc.class), Type.getInternalName(PfxSrc.class));
+            startPfxCompiled(vfpuPfxtState, "pfxt", Type.getDescriptor(PfxSrc.class), Type.getInternalName(PfxSrc.class), isFloat);
         }
 
         if (codeInstruction.hasFlags(Instruction.FLAG_USE_VFPU_PFXD)) {
-            startPfxCompiled(vfpuPfxdState, "pfxd", Type.getDescriptor(PfxDst.class), Type.getInternalName(PfxDst.class));
+            startPfxCompiled(vfpuPfxdState, "pfxd", Type.getDescriptor(PfxDst.class), Type.getInternalName(PfxDst.class), isFloat);
         }
 
         pfxVdOverlap = false;
@@ -3043,13 +3074,30 @@ public class CompilerContext implements ICompilerContext {
     }
 
     private boolean isVxVdOverlap(VfpuPfxSrcState pfxSrcState, int registerIndex) {
-		if (!pfxSrcState.isKnown() ||
-		    !pfxSrcState.pfxSrc.enabled ||
-		    registerIndex != getVdRegisterIndex()) {
+		if (!pfxSrcState.isKnown()) {
 			return false;
 		}
 
 		int vsize = getVsize();
+		int vd = getVdRegisterIndex();
+		// Check if registers are overlapping
+		if (registerIndex != vd) {
+			if (vsize != 3) {
+				// Different register numbers, no overlap possible
+				return false;
+			}
+			// For vsize==3, a possible overlap exist. E.g.
+			//    C000.t and C001.t
+			// are partially overlapping.
+			if ((registerIndex & 63) != (vd & 63)) {
+				return false;
+			}
+		}
+
+		if (!pfxSrcState.pfxSrc.enabled) {
+			return true;
+		}
+
 		for (int n = 0; n < vsize; n++) {
 			if (!pfxSrcState.pfxSrc.cst[n] && pfxSrcState.pfxSrc.swz[n] != n) {
 				return true;
@@ -3071,7 +3119,6 @@ public class CompilerContext implements ICompilerContext {
 
 	@Override
 	public void compileVFPUInstr(Object cstBefore, int opcode, String mathFunction) {
-		startPfxCompiled();
 		int vsize = getVsize();
 		boolean useVt = getCodeInstruction().hasFlags(Instruction.FLAG_USE_VFPU_PFXT);
 
@@ -3082,6 +3129,8 @@ public class CompilerContext implements ICompilerContext {
 		    !(vfpuPfxsState.isKnown() && vfpuPfxsState.pfxSrc.enabled) &&
 		    !(vfpuPfxdState.isKnown() && vfpuPfxdState.pfxDst.enabled)) {
 			// VMOV should use int instead of float
+			startPfxCompiled(false);
+
 			for (int n = 0; n < vsize; n++) {
 				prepareVdForStore(n);
 				loadVsInt(n);
@@ -3090,6 +3139,8 @@ public class CompilerContext implements ICompilerContext {
 
 			endPfxCompiled(vsize, false);
 		} else {
+			startPfxCompiled(true);
+
 			for (int n = 0; n < vsize; n++) {
 				prepareVdForStore(n);
 				if (cstBefore != null) {

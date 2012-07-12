@@ -130,6 +130,7 @@ public interface ICompilerContext {
     public void memWriteZero8(int registerIndex, int offset);
     public void convertUnsignedIntToLong();
     public void startPfxCompiled();
+    public void startPfxCompiled(boolean isFloat);
     public void endPfxCompiled();
     public void endPfxCompiled(boolean isFloat);
     public void endPfxCompiled(int vsize);
