@@ -56,7 +56,6 @@ import net.java.games.input.EventQueue;
 import net.java.games.input.Component.Identifier;
 import net.java.games.input.Component.POV;
 import net.java.games.input.Component.Identifier.Axis;
-import net.java.games.input.Component.Identifier.Button;
 import net.java.games.input.Controller.Type;
 
 public class Controller {
@@ -195,16 +194,64 @@ public class Controller {
 			Component component = getControllerComponentByName(controllerName);
 			if (component != null) {
 				Identifier identifier = component.getIdentifier();
-				boolean isButton = identifier instanceof Button;
 				boolean isAxis = identifier instanceof Axis;
 
-				if (isButton) {
+				if (isAxis && identifier == Axis.POV) {
+					povArrows = identifier;
+				} else {
 					int keyCode = -1;
 					switch (key) {
-			            case DOWN:     keyCode = PSP_CTRL_DOWN; break;
-			            case UP:       keyCode = PSP_CTRL_UP; break;
-			            case LEFT:     keyCode = PSP_CTRL_LEFT; break;
-			            case RIGHT:    keyCode = PSP_CTRL_RIGHT; break;
+						//
+						// PSP directional buttons can be mapped
+						// to a controller Axis or to a controller Button
+						//
+			            case DOWN:
+			            	if (isAxis) {
+			            		digitalYAxis = identifier;
+			            	} else {
+			            		keyCode = PSP_CTRL_DOWN;
+			            	}
+			            	break;
+			            case UP:
+			            	if (isAxis) {
+			            		digitalYAxis = identifier;
+			            	} else {
+			            		keyCode = PSP_CTRL_UP;
+			            	}
+			            	break;
+			            case LEFT:
+			            	if (isAxis) {
+			            		digitalXAxis = identifier;
+			            	} else {
+			            		keyCode = PSP_CTRL_LEFT;
+			            	}
+			            	break;
+			            case RIGHT:
+			            	if (isAxis) {
+			            		digitalXAxis = identifier;
+			            	} else {
+			            		keyCode = PSP_CTRL_RIGHT;
+			            	}
+			            	break;
+						//
+						// PSP analog controller can only be mapped to a controller Axis
+						//
+						case ANDOWN:
+						case ANUP:
+							if (isAxis) {
+								analogYAxis = identifier;
+							}
+							break;
+						case ANLEFT:
+						case ANRIGHT:
+							if (isAxis) {
+								analogXAxis = identifier;
+							}
+							break;
+						//
+						// PSP buttons can be mapped either to a controller Button
+						// or to a controller Axis (e.g. a foot pedal)
+						//
 			            case TRIANGLE: keyCode = PSP_CTRL_TRIANGLE; break;
 			            case SQUARE:   keyCode = PSP_CTRL_SQUARE; break;
 			            case CIRCLE:   keyCode = PSP_CTRL_CIRCLE; break;
@@ -222,19 +269,6 @@ public class Controller {
 					}
 					if (keyCode != -1) {
 						buttonComponents.put(component.getIdentifier(), keyCode);
-					}
-				} else if (isAxis && identifier == Axis.POV) {
-					povArrows = identifier;
-				} else if (isAxis) {
-					switch (key) {
-						case DOWN:
-						case UP:       digitalYAxis = identifier; break;
-						case LEFT:
-						case RIGHT:    digitalXAxis = identifier; break;
-						case ANDOWN:
-						case ANUP:     analogYAxis = identifier; break;
-						case ANLEFT:
-						case ANRIGHT:  analogXAxis = identifier; break;
 					}
 				}
 			}
@@ -428,12 +462,29 @@ public class Controller {
 
 		Integer button = buttonComponents.get(id);
 		if (button != null) {
-			if (value == 0.f) {
-				Buttons &= ~button;
-			} else if (value == 1.f) {
-				Buttons |= button;
+			if (id instanceof Axis) {
+				// An Axis has been mapped to a PSP button.
+				// E.g. for a foot pedal:
+				//        value == 1.f when the pedal is not pressed
+				//        value == 0.f when the pedal is halfway pressed
+				//        value == -1.f when the pedal is pressed down
+				if (!isInDeadZone(component, value)) {
+					if (value >= 0.f) {
+						// Axis is pressed less than halfway, assume the PSP button is not pressed
+						Buttons &= ~button;
+					} else {
+						// Axis is pressed more than halfway, assume the PSP button is pressed
+						Buttons |= button;
+					}
+				}
 			} else {
-				log.warn(String.format("Unknown Controller Button Event on %s(%s): %f", component.getName(), id.getName(), value));
+				if (value == 0.f) {
+					Buttons &= ~button;
+				} else if (value == 1.f) {
+					Buttons |= button;
+				} else {
+					log.warn(String.format("Unknown Controller Button Event on %s(%s): %f", component.getName(), id.getName(), value));
+				}
 			}
 		} else if (id == analogXAxis) {
 			if (isInDeadZone(component, value)) {
