@@ -902,7 +902,12 @@ public class Common {
         String[] values = new String[4];
         for (int i = 0; i < 4; ++i) {
             if (msk[i] == 0) {
-                values[i] = sat[i] == 1 ? "0:1" : "-1:1";
+            	switch (sat[i]) {
+            		case 0: values[i] = vpfxNames[i]; break;
+            		case 1: values[i] = "0:1"; break;
+            		case 2: values[i] = "???"; break;
+            		case 3: values[i] = "-1:1"; break;
+            	}
             } else {
                 values[i] = "M";
             }

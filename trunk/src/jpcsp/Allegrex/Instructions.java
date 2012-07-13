@@ -5663,7 +5663,7 @@ public void compile(ICompilerContext context, int insn) {
 		context.loadVt(vsize - 1);
 		context.getMethodVisitor().visitInsn(Opcodes.FADD);
 		context.storeVd(1, 0);
-		context.endPfxCompiled();
+		context.endPfxCompiled(1);
 	} else {
 		// Unsupported VHDP.S
 		context.compileInterpreterInstruction();
@@ -7470,7 +7470,7 @@ public void compile(ICompilerContext context, int insn) {
 			mv.visitLabel(afterLabel);
 		}
 		context.storeVdInt(1, 0);
-		context.endPfxCompiled(false);
+		context.endPfxCompiled(1, false);
 	} else {
 		// Only supported VI2UC.Q
 		context.compileInterpreterInstruction();

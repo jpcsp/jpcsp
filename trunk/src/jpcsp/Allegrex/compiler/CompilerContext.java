@@ -2874,22 +2874,13 @@ public class CompilerContext implements ICompilerContext {
 	}
 
 	private void loadFTmpVd(int n, boolean isFloat) {
-		if (isFloat) {
-			if (n == 0) {
-		        mv.visitVarInsn(Opcodes.FLOAD, LOCAL_TMP_VD0);
-			} else if (n == 1) {
-		        mv.visitVarInsn(Opcodes.FLOAD, LOCAL_TMP_VD1);
-			} else {
-		        mv.visitVarInsn(Opcodes.FLOAD, LOCAL_TMP_VD2);
-			}
+		int opcode = isFloat ? Opcodes.FLOAD : Opcodes.ILOAD;
+		if (n == 0) {
+	        mv.visitVarInsn(opcode, LOCAL_TMP_VD0);
+		} else if (n == 1) {
+	        mv.visitVarInsn(opcode, LOCAL_TMP_VD1);
 		} else {
-			if (n == 0) {
-		        mv.visitVarInsn(Opcodes.ILOAD, LOCAL_TMP1);
-			} else if (n == 1) {
-		        mv.visitVarInsn(Opcodes.ILOAD, LOCAL_TMP2);
-			} else {
-		        mv.visitVarInsn(Opcodes.ILOAD, LOCAL_TMP3);
-			}
+	        mv.visitVarInsn(opcode, LOCAL_TMP_VD2);
 		}
 	}
 
@@ -2929,22 +2920,13 @@ public class CompilerContext implements ICompilerContext {
 	}
 
 	private void storeFTmpVd(int n, boolean isFloat) {
-		if (isFloat) {
-			if (n == 0) {
-				mv.visitVarInsn(Opcodes.FSTORE, LOCAL_TMP_VD0);
-			} else if (n == 1) {
-				mv.visitVarInsn(Opcodes.FSTORE, LOCAL_TMP_VD1);
-			} else {
-				mv.visitVarInsn(Opcodes.FSTORE, LOCAL_TMP_VD2);
-			}
+		int opcode = isFloat ? Opcodes.FSTORE : Opcodes.ISTORE;
+		if (n == 0) {
+			mv.visitVarInsn(opcode, LOCAL_TMP_VD0);
+		} else if (n == 1) {
+			mv.visitVarInsn(opcode, LOCAL_TMP_VD1);
 		} else {
-			if (n == 0) {
-				mv.visitVarInsn(Opcodes.ISTORE, LOCAL_TMP1);
-			} else if (n == 1) {
-				mv.visitVarInsn(Opcodes.ISTORE, LOCAL_TMP2);
-			} else {
-				mv.visitVarInsn(Opcodes.ISTORE, LOCAL_TMP3);
-			}
+			mv.visitVarInsn(opcode, LOCAL_TMP_VD2);
 		}
 	}
 
