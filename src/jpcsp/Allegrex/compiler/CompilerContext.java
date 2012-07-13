@@ -3005,18 +3005,14 @@ public class CompilerContext implements ICompilerContext {
 
     @Override
     public void endPfxCompiled(int vsize, boolean isFloat) {
-		if (pfxVdOverlap) {
-			pfxVdOverlap = false;
-			for (int n = 0; n < vsize - 1; n++) {
-				prepareVdForStore(n);
-				loadFTmpVd(n, isFloat);
-				if (isFloat) {
-					storeVd(n);
-				} else {
-					storeVdInt(n);
-				}
-			}
-		}
+    	endPfxCompiled(vsize, isFloat, true);
+    }
+
+    @Override
+    public void endPfxCompiled(int vsize, boolean isFloat, boolean doFlush) {
+    	if (doFlush) {
+    		flushPfxCompiled(vsize, getVdRegisterIndex(), isFloat);
+    	}
 
 		if (interpretPfxLabel != null) {
             Label continueLabel = new Label();
@@ -3029,6 +3025,24 @@ public class CompilerContext implements ICompilerContext {
         }
 
         pfxVdOverlap = false;
+    }
+
+    @Override
+    public void flushPfxCompiled(int vsize, int vd, boolean isFloat) {
+		if (pfxVdOverlap) {
+			// Write back the temporary overlap variables
+			pfxVdOverlap = false;
+			for (int n = 0; n < vsize - 1; n++) {
+				prepareVdForStore(vsize, vd, n);
+				loadFTmpVd(n, isFloat);
+				if (isFloat) {
+					storeVd(vsize, vd, n);
+				} else {
+					storeVdInt(vsize, vd, n);
+				}
+			}
+			pfxVdOverlap = true;
+		}
     }
 
     @Override
