@@ -135,6 +135,8 @@ public interface ICompilerContext {
     public void endPfxCompiled(boolean isFloat);
     public void endPfxCompiled(int vsize);
     public void endPfxCompiled(int vsize, boolean isFloat);
+    public void endPfxCompiled(int vsize, boolean isFloat, boolean doFlush);
+    public void flushPfxCompiled(int vsize, int vd, boolean isFloat);
     public boolean isPfxConsumed(int flag);
     public void loadTmp1();
     public void loadTmp2();

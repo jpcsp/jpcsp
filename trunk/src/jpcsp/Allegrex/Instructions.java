@@ -9024,8 +9024,9 @@ public void compile(ICompilerContext context, int insn) {
 				}
 				context.storeVd(vsize, vd + i, j);
 			}
+			context.flushPfxCompiled(vsize, vd + i, true);
 		}
-		context.endPfxCompiled();
+		context.endPfxCompiled(vsize, true, false);
 	} else {
 		// Unsupported VMMUL.S
 		context.compileInterpreterInstruction();
@@ -9342,8 +9343,9 @@ public void compile(ICompilerContext context, int insn) {
 				context.getMethodVisitor().visitInsn(Opcodes.FMUL);
 				context.storeVd(vsize, vd + i, n);
 			}
+			context.flushPfxCompiled(vsize, vd + i, true);
 		}
-		context.endPfxCompiled();
+		context.endPfxCompiled(vsize, true, false);
 	} else {
 		// Unsupported VMSCL.S
 		context.compileInterpreterInstruction();
@@ -9490,8 +9492,9 @@ public void compile(ICompilerContext context, int insn) {
 			context.loadVsInt(vsize, vs + i, n);
 			context.storeVdInt(vsize, vd + i, n);
 		}
+		context.flushPfxCompiled(vsize, vd + i, false);
 	}
-	context.endPfxCompiled(false);
+	context.endPfxCompiled(vsize, false, false);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -9534,8 +9537,9 @@ public void compile(ICompilerContext context, int insn) {
 			context.getMethodVisitor().visitLdcInsn(value);
 			context.storeVd(vsize, vd + i, n);
 		}
+		context.flushPfxCompiled(vsize, vd + i, true);
 	}
-	context.endPfxCompiled();
+	context.endPfxCompiled(vsize, true, false);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -9575,8 +9579,9 @@ public void compile(ICompilerContext context, int insn) {
 			context.getMethodVisitor().visitLdcInsn(0.0f);
 			context.storeVd(vsize, vd + i, n);
 		}
+		context.flushPfxCompiled(vsize, vd + i, true);
 	}
-	context.endPfxCompiled();
+	context.endPfxCompiled(vsize, true, false);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -9616,8 +9621,9 @@ public void compile(ICompilerContext context, int insn) {
 			context.getMethodVisitor().visitLdcInsn(1.0f);
 			context.storeVd(vsize, vd + i, n);
 		}
+		context.flushPfxCompiled(vsize, vd + i, true);
 	}
-	context.endPfxCompiled();
+	context.endPfxCompiled(vsize, true, false);
 }
 @Override
 public String disasm(int address, int insn) {
