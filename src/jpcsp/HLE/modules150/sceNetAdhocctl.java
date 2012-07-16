@@ -99,6 +99,11 @@ public class sceNetAdhocctl extends HLEModule {
     protected LinkedList<pspNetMacAddress> gameModeMacs;
     protected LinkedList<pspNetMacAddress> requiredGameModeMacs;
     protected INetworkAdapter networkAdapter;
+	private long connectCompleteTimestamp;
+	// Some games have problems when the PSP_ADHOCCTL_EVENT_CONNECTED
+	// is sent too quickly after connecting to a network.
+	// The connection will be set CONNECTED with a delay of 200ms.
+	private static final int CONNECT_COMPLETE_DELAY_MILLIS = 200;
 
     private HashMap<Integer, AdhocctlHandler> adhocctlIdMap = new HashMap<Integer, AdhocctlHandler>();
     private static final String adhocctlHandlerIdPurpose = "sceNetAdhocctl-Handler";
@@ -229,14 +234,17 @@ public class sceNetAdhocctl extends HLEModule {
 
 	private void doConnect() {
 		if (adhocctlCurrentGroup != null && networkAdapter.isConnectComplete()) {
-			if (adhocctlCurrentMode == PSP_ADHOCCTL_MODE_GAMEMODE) {
-    			setState(PSP_ADHOCCTL_STATE_GAME);
-    			notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_GAME, 0);
-			} else {
-				setState(PSP_ADHOCCTL_STATE_CONNECTED);
-				notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_CONNECTED, 0);
+			long now = Emulator.getClock().currentTimeMillis();
+			if (now >= connectCompleteTimestamp) {
+				if (adhocctlCurrentMode == PSP_ADHOCCTL_MODE_GAMEMODE) {
+	    			setState(PSP_ADHOCCTL_STATE_GAME);
+	    			notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_GAME, 0);
+				} else {
+					setState(PSP_ADHOCCTL_STATE_CONNECTED);
+					notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_CONNECTED, 0);
+				}
+				doJoin = false;
 			}
-			doJoin = false;
 		}
 	}
 
@@ -343,6 +351,13 @@ public class sceNetAdhocctl extends HLEModule {
     	adhocctlCurrentMode = mode;
     	gameModeJoinComplete = false;
 		gameModeMacs.clear();
+
+		if (groupName != null) {
+			// Some games have problems when the PSP_ADHOCCTL_EVENT_CONNECTED
+			// is sent too quickly after connecting to a network.
+			// The connection will be set CONNECTED with a small delay.
+			connectCompleteTimestamp = Emulator.getClock().currentTimeMillis() + CONNECT_COMPLETE_DELAY_MILLIS;
+		}
     }
 
     public void hleNetAdhocctlConnect(String groupName) {
