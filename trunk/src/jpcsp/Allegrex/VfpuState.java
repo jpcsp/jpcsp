@@ -19,6 +19,7 @@ package jpcsp.Allegrex;
 import java.math.BigInteger;
 import java.util.Arrays;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 
 /**
@@ -982,6 +983,9 @@ public class VfpuState extends FpuState {
                 break;
 
             case 4:
+            	if ((vd & 64) != 0) {
+            		Emulator.log.error(String.format("Unsupported vd=%d", vd));
+            	}
                 if (vcr.pfxd.enabled) {
                     if ((vd & 32) != 0) {
                         for (int j = 0; j < 4; ++j) {
@@ -1095,6 +1099,9 @@ public class VfpuState extends FpuState {
                 break;
 
             case 4:
+            	if ((vd & 64) != 0) {
+            		Emulator.log.error(String.format("Unsupported vd=%d", vd));
+            	}
                 if (vcr.pfxd.enabled) {
                     if ((vd & 32) != 0) {
                         for (int j = 0; j < 4; ++j) {

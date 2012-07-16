@@ -762,6 +762,10 @@ public class Common {
         return String.format("%1$-10s %2$s, %3$s", opname + vsuffix[vsize - 1], vprNames[vsize - 1][vd], vprNames[vsize - 1][vs]);
     }
 
+    public static String disasmVDVS(String opname, int vsize, int vsizeVd, int vd, int vs) {
+        return String.format("%1$-10s %2$s, %3$s", opname + vsuffix[vsize - 1], vprNames[vsizeVd - 1][vd], vprNames[vsize - 1][vs]);
+    }
+
     public static String disasmVDVSIMM(String opname, int vsize, int vd, int vs, int imm) {
         return String.format("%1$-10s %2$s, %3$s, %4$d", opname + vsuffix[vsize - 1], vprNames[vsize - 1][vd], vprNames[vsize - 1][vs], imm);
     }
