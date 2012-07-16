@@ -7320,7 +7320,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-	return Common.disasmVDVS("vuc2i", 1+one+(two<<1), vd, vs);
+	return Common.disasmVDVS("vuc2i", 1+one+(two<<1), 4, vd, vs);
 }
 };
 public static final Instruction VC2I = new Instruction(197, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
@@ -7353,7 +7353,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-	return Common.disasmVDVS("VC2I", 1+one+(two<<1), vd, vs);
+	return Common.disasmVDVS("VC2I", 1+one+(two<<1), 4, vd, vs);
 }
 };
 public static final Instruction VUS2I = new Instruction(198, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
@@ -7386,7 +7386,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-	return Common.disasmVDVS("vus2i", 1+one+(two<<1), vd, vs);
+	return Common.disasmVDVS("vus2i", 1+one+(two<<1), 1+(one<<1), vd, vs);
 }
 };
 public static final Instruction VS2I = new Instruction(199, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
@@ -7419,7 +7419,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-	return Common.disasmVDVS("vs2i", 1+one+(two<<1), vd, vs);
+	return Common.disasmVDVS("vs2i", 1+one+(two<<1), 1+(one<<1), vd, vs);
 }
 };
 public static final Instruction VI2UC = new Instruction(200, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
@@ -7483,7 +7483,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-	return Common.disasmVDVS("vi2uc", 1+one+(two<<1), vd, vs);
+	return Common.disasmVD1VS("vi2uc", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VI2C = new Instruction(201, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
@@ -7516,7 +7516,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-	return Common.disasmVDVS("vi2c", 1+one+(two<<1), vd, vs);
+	return Common.disasmVD1VS("vi2c", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VI2US = new Instruction(202, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
@@ -7549,7 +7549,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-	return Common.disasmVDVS("vi2us", 1+one+(two<<1), vd, vs);
+	return Common.disasmVDVS("vi2us", 1+one+(two<<1), 1+two, vd, vs);
 }
 };
 public static final Instruction VI2S = new Instruction(203, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
@@ -7582,7 +7582,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-	return Common.disasmVDVS("vi2s", 1+one+(two<<1), vd, vs);
+	return Common.disasmVDVS("vi2s", 1+one+(two<<1), 1+two, vd, vs);
 }
 };
 public static final Instruction VSRT1 = new Instruction(204, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {

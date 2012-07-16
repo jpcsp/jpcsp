@@ -186,10 +186,12 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 
 		portManager = new PortManager(upnp);
 
-		Thread friendFinderThread = new FriendFinder();
-		friendFinderThread.setName("ProOnline Friend Finder");
-		friendFinderThread.setDaemon(true);
-		friendFinderThread.start();
+		if (metaSocket != null) {
+			Thread friendFinderThread = new FriendFinder();
+			friendFinderThread.setName("ProOnline Friend Finder");
+			friendFinderThread.setDaemon(true);
+			friendFinderThread.start();
+		}
 	}
 
 	@Override
