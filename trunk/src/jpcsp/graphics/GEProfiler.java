@@ -36,6 +36,8 @@ public class GEProfiler {
     private static final Long zero = new Long(0);
     private static HashMap<Integer, Long> cmdCounts = new HashMap<Integer, Long>();
     private static long geListCount;
+    private static long textureLoadCount;
+    private static long copyGeToMemoryCount;
 
 	private static class ProfilerEnabledSettingsListerner extends AbstractBoolSettingsListener {
 		@Override
@@ -68,6 +70,8 @@ public class GEProfiler {
 
         cmdCounts.clear();
         geListCount = 0;
+        textureLoadCount = 0;
+        copyGeToMemoryCount = 0;
     }
 
     public static void exit() {
@@ -77,6 +81,8 @@ public class GEProfiler {
 
         log.info("------------------ GEProfiler ----------------------");
         log.info(String.format("GE list count: %d", geListCount));
+        log.info(String.format("Texture load count: %d, average %.1f per GE list", textureLoadCount, textureLoadCount / (double) geListCount));
+        log.info(String.format("Copy GE to memory: %d, average %.1f per GE list", copyGeToMemoryCount, copyGeToMemoryCount / (double) geListCount));
         GeCommands geCommands = GeCommands.getInstance();
         for (Integer cmd : cmdCounts.keySet()) {
         	Long cmdCount = cmdCounts.get(cmd);
@@ -95,5 +101,13 @@ public class GEProfiler {
     	}
 
     	cmdCounts.put(cmd, cmdCount + 1);
+    }
+
+    public static void loadTexture() {
+    	textureLoadCount++;
+    }
+
+    public static void copyGeToMemory() {
+    	copyGeToMemoryCount++;
     }
 }
