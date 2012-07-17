@@ -268,7 +268,7 @@ public class sceUtility extends HLEModule {
             if (!Memory.isAddressGood(paramsAddr)) {
                 log.error(String.format("%sInitStart bad address 0x%08X", name, paramsAddr));
                 cpu.gpr[2] = -1;
-            } else if (status != PSP_UTILITY_DIALOG_STATUS_NONE) {
+            } else if (status != PSP_UTILITY_DIALOG_STATUS_NONE && status != PSP_UTILITY_DIALOG_STATUS_FINISHED) {
             	if (log.isDebugEnabled()) {
             		log.debug(String.format("%sInitStart already started status=%d", name, status));
             	}
