@@ -506,6 +506,9 @@ public class VfpuState extends FpuState {
                 break;
 
             case 4:
+            	if ((vs & 64) != 0) {
+            		Emulator.log.error(String.format("Unsupported vs=%d", vs));
+            	}
                 if ((vs & 32) != 0) {
                     v1[0] = getVprFloat(m, 0, i);
                     v1[1] = getVprFloat(m, 1, i);
@@ -592,6 +595,9 @@ public class VfpuState extends FpuState {
                 break;
 
             case 4:
+            	if ((vs & 64) != 0) {
+            		Emulator.log.error(String.format("Unsupported vs=%d", vs));
+            	}
                 if ((vs & 32) != 0) {
                 	v1i[0] = getVprInt(m, 0, i);
                 	v1i[1] = getVprInt(m, 1, i);
@@ -678,6 +684,9 @@ public class VfpuState extends FpuState {
                 break;
 
             case 4:
+            	if ((vt & 64) != 0) {
+            		Emulator.log.error(String.format("Unsupported vt=%d", vt));
+            	}
                 if ((vt & 32) != 0) {
                     v2[0] = getVprFloat(m, 0, i);
                     v2[1] = getVprFloat(m, 1, i);
@@ -764,6 +773,9 @@ public class VfpuState extends FpuState {
                 break;
 
             case 4:
+            	if ((vt & 64) != 0) {
+            		Emulator.log.error(String.format("Unsupported vt=%d", vt));
+            	}
                 if ((vt & 32) != 0) {
                     v2i[0] = getVprInt(m, 0, i);
                     v2i[1] = getVprInt(m, 1, i);
@@ -830,6 +842,9 @@ public class VfpuState extends FpuState {
                 break;
 
             case 4:
+            	if ((vd & 64) != 0) {
+            		Emulator.log.error(String.format("Unsupported vd=%d", vd));
+            	}
                 if ((vd & 32) != 0) {
                 	v3[0] = getVprFloat(m, 0, i);
                 	v3[1] = getVprFloat(m, 1, i);
@@ -885,6 +900,9 @@ public class VfpuState extends FpuState {
                 break;
 
             case 4:
+            	if ((vd & 64) != 0) {
+            		Emulator.log.error(String.format("Unsupported vd=%d", vd));
+            	}
                 if ((vd & 32) != 0) {
                 	v3i[0] = getVprInt(m, 0, i);
                 	v3i[1] = getVprInt(m, 1, i);
