@@ -62,6 +62,7 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.ThreadManForUser;
+import jpcsp.graphics.GEProfiler;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
@@ -1378,6 +1379,10 @@ public class sceDisplay extends HLEModule {
 
 		if (statisticsCopyGeToMemory != null) {
 			statisticsCopyGeToMemory.end();
+		}
+
+		if (GEProfiler.isProfilerEnabled()) {
+			GEProfiler.copyGeToMemory();
 		}
     }
 
