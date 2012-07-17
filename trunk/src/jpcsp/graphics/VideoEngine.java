@@ -178,6 +178,7 @@ public class VideoEngine {
     private boolean isLogDebugEnabled;
     private boolean isLogInfoEnabled;
     private boolean isLogWarnEnabled;
+    private boolean isGeProfilerEnabled;
     private int primCount;
     private boolean viewportChanged;
     public MatrixUpload projectionMatrixUpload;
@@ -690,6 +691,7 @@ public class VideoEngine {
     	statistics.start();
 
         logLevelUpdated();
+        isGeProfilerEnabled = GEProfiler.isProfilerEnabled();
         memoryForGEUpdated();
         somethingDisplayed = false;
         geBufChanged = true;
@@ -954,6 +956,10 @@ public class VideoEngine {
         }
 
         executeHleAction();
+
+        if (isGeProfilerEnabled) {
+        	GEProfiler.startGeList();
+        }
 
         waitForSyncCount = 0;
         while (!listHasEnded && (!Emulator.pause || State.captureGeNextFrame)) {
@@ -1707,6 +1713,9 @@ public class VideoEngine {
         updateGeBuf();
         somethingDisplayed = true;
         primCount++;
+        if (isGeProfilerEnabled) {
+        	GEProfiler.startGeCmd(GeCommands.PRIM);
+        }
 
         loadTexture();
 
@@ -2414,6 +2423,9 @@ public class VideoEngine {
         	return;
         }
 
+        if (isGeProfilerEnabled) {
+        	GEProfiler.startGeCmd(GeCommands.TRXKICK);
+        }
         updateGeBuf();
 
         int pixelFormatGe = context.psm;
@@ -2605,6 +2617,9 @@ public class VideoEngine {
         }
 
         isBoundingBox = true;
+        if (isGeProfilerEnabled) {
+        	GEProfiler.startGeCmd(GeCommands.BBOX);
+        }
 
         initRendering();
 
@@ -2726,6 +2741,9 @@ public class VideoEngine {
             return;
         }
 
+        if (isGeProfilerEnabled) {
+        	GEProfiler.startGeCmd(GeCommands.BEZIER);
+        }
         updateGeBuf();
         somethingDisplayed = true;
         loadTexture();
@@ -2753,6 +2771,9 @@ public class VideoEngine {
 
         updateGeBuf();
         somethingDisplayed = true;
+        if (isGeProfilerEnabled) {
+        	GEProfiler.startGeCmd(GeCommands.SPLINE);
+        }
         loadTexture();
 
         drawSpline(sp_ucount, sp_vcount, sp_utype, sp_vtype);

@@ -35,6 +35,7 @@ import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.graphics.GEProfiler;
 import jpcsp.graphics.VertexCache;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.software.BasePrimitiveRenderer;
@@ -101,6 +102,7 @@ public class Emulator implements Runnable {
         Compiler.exit();
         RuntimeContext.exit();
         Profiler.exit();
+        GEProfiler.exit();
         BaseRenderer.exit();
         BasePrimitiveRenderer.exit();
         if (DurationStatistics.collectStatistics && Modules.ThreadManForUserModule.statistics != null && Modules.sceDisplayModule.statistics != null) {
@@ -209,6 +211,7 @@ public class Emulator implements Runnable {
         HLEModuleManager.getInstance().stopModules();
         RuntimeContext.reset();
         Profiler.reset();
+        GEProfiler.reset();
         getClock().reset();
         getProcessor().reset();
         getScheduler().reset();
@@ -235,6 +238,7 @@ public class Emulator implements Runnable {
     public void run()
     {
     	RuntimeContext.start();
+    	GEProfiler.initialise();
 
         clock.resume();
 
