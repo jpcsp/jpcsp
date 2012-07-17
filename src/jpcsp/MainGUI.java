@@ -85,6 +85,7 @@ import jpcsp.HLE.modules.sceUtility;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
+import jpcsp.graphics.GEProfiler;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.hardware.Audio;
 import jpcsp.hardware.Screen;
@@ -1924,6 +1925,7 @@ private void DumpIsoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
 private void ResetProfilerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetProfilerActionPerformed
     Profiler.reset();
+    GEProfiler.reset();
 }//GEN-LAST:event_ResetProfilerActionPerformed
 
 private void ShotItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShotItemActionPerformed
