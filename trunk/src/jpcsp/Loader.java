@@ -36,6 +36,7 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Allegrex.Common;
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
@@ -977,12 +978,20 @@ public class Loader {
                     if (code != -1)
                     {
                         // Fixup stub, replacing nop with syscall
-                        int instruction = // syscall <code>
-                            ((jpcsp.AllegrexOpcodes.SPECIAL & 0x3f) << 26)
-                            | (jpcsp.AllegrexOpcodes.SYSCALL & 0x3f)
+                    	int returnInstruction = // jr $ra
+                    	    (AllegrexOpcodes.SPECIAL << 26)
+                    	    | AllegrexOpcodes.JR
+                    	    | ((Common._ra) << 21);
+                        int syscallInstruction = // syscall <code>
+                            (AllegrexOpcodes.SPECIAL << 26)
+                            | AllegrexOpcodes.SYSCALL
                             | ((code & 0x000fffff) << 6);
 
-                        mem.write32(importAddress + 4, instruction);
+                        // Some homebrews do not have a "jr $ra" set before the syscall
+                        if (mem.read32(importAddress) == 0) {
+                        	mem.write32(importAddress, returnInstruction);
+                        }
+                        mem.write32(importAddress + 4, syscallInstruction);
                         it.remove();
                         numberofmappedNIDS++;
 
