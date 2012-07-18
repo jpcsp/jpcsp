@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import static jpcsp.HLE.modules150.sceNetAdhocctl.GROUP_NAME_LENGTH;
+
 public class SceUtilityNetconfParams extends pspAbstractMemoryMappedStructure {
     public pspUtilityDialogCommon base;
     public int netAction;           // The netconf action (PSPSDK): sets how to connect.
@@ -23,8 +25,8 @@ public class SceUtilityNetconfParams extends pspAbstractMemoryMappedStructure {
         public final static int PSP_UTILITY_NETCONF_GET_STATUS_APNET = 1;
         public final static int PSP_UTILITY_NETCONF_CONNECT_ADHOC = 2;
         public final static int PSP_UTILITY_NETCONF_CONNECT_APNET_LASTUSED = 3;
-        public final static int PSP_UTILITY_NETCONF_CONNECT_ADHOC_UNKNOWN4 = 4;
-        public final static int PSP_UTILITY_NETCONF_CONNECT_APHOC_UNKNOWN5 = 5;
+        public final static int PSP_UTILITY_NETCONF_CREATE_ADHOC = 4;
+        public final static int PSP_UTILITY_NETCONF_JOIN_ADHOC = 5;
     public int netconfDataAddr;
     public SceUtilityNetconfData netconfData;
     public int netHotspot;          // Flag to allow hotspot connections (PSPSDK).
@@ -32,29 +34,29 @@ public class SceUtilityNetconfParams extends pspAbstractMemoryMappedStructure {
     public int netWifiSp;           // Flag to allow WIFI connections (PSPSDK).
 
     public static class SceUtilityNetconfData extends pspAbstractMemoryMappedStructure {
-        public String confTitle;
+        public String groupName;
         public int timeout;
 
 		@Override
 		protected void read() {
-            confTitle = readStringNZ(8);   // Seems to represent a net profile name.
+            groupName = readStringNZ(GROUP_NAME_LENGTH);
             timeout = read32();
 		}
 
 		@Override
 		protected void write() {
-			writeStringNZ(8, confTitle);
+			writeStringNZ(GROUP_NAME_LENGTH, groupName);
             write32(timeout);
 		}
 
 		@Override
 		public int sizeof() {
-			return 3 * 4;
+			return GROUP_NAME_LENGTH + 4;
 		}
 
 		@Override
 		public String toString() {
-			return String.format("title=%s, timeout=%d", confTitle, timeout);
+			return String.format("groupName=%s, timeout=%d", groupName, timeout);
 		}
 	}
 

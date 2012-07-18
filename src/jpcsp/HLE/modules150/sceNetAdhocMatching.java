@@ -145,6 +145,16 @@ public class sceNetAdhocMatching extends HLEModule {
 		}
 	}
 
+	private static String getModeName(int mode) {
+		switch (mode) {
+			case PSP_ADHOC_MATCHING_MODE_HOST: return "HOST";
+			case PSP_ADHOC_MATCHING_MODE_CLIENT: return "CLIENT";
+			case PSP_ADHOC_MATCHING_MODE_PTP: return "PTP";
+		}
+
+		return String.format("Unknown mode %d", mode);
+	}
+
 	/**
      * Initialise the Adhoc matching library
      *
@@ -188,7 +198,7 @@ public class sceNetAdhocMatching extends HLEModule {
      */
     @HLEFunction(nid = 0xCA5EDA6F, version = 150)
     public int sceNetAdhocMatchingCreate(int mode, int maxPeers, int port, int bufSize, int helloDelay, int pingDelay, int initCount, int msgDelay, @CanBeNull TPointer callback) {
-        log.warn(String.format("PARTIAL: sceNetAdhocMatchingCreate mode=%d, maxPeers=%d, port=%d, bufSize=%d, helloDelay=%d, pingDelay=%d, initCount=%d, msgDelay=%d, callback=%s", mode, maxPeers, port, bufSize, helloDelay, pingDelay, initCount, msgDelay, callback));
+        log.warn(String.format("PARTIAL: sceNetAdhocMatchingCreate mode=%d(%s), maxPeers=%d, port=%d, bufSize=%d, helloDelay=%d, pingDelay=%d, initCount=%d, msgDelay=%d, callback=%s", mode, getModeName(mode), maxPeers, port, bufSize, helloDelay, pingDelay, initCount, msgDelay, callback));
 
         MatchingObject matchingObject = getNetworkAdapter().createMatchingObject();
         matchingObject.setMode(mode);
