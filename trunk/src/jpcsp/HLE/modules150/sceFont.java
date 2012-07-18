@@ -885,10 +885,16 @@ public class sceFont extends HLEModule {
                     "sceFontOpen fontLib=%s, index=%d, mode=%d, errorCodeAddr=0x%08X",
                     fontLib, index, mode, errorCodePtr.getAddress()));
         }
+
+        if (index < 0) {
+        	errorCodePtr.setValue(SceKernelErrors.ERROR_FONT_INVALID_PARAMETER);
+        	return 0;
+        }
+
         Font font = fontLib.openFont(internalFonts.get(index));
         if (log.isDebugEnabled()) {
             log.debug(String.format("Opening '%s' - '%s', font=%s", font.pgf.getFontName(), font.pgf.getFontType(), font));
-        }     
+        }
         if (errorCodePtr.isAddressGood()) {
             errorCodePtr.setValue(0);
         }
