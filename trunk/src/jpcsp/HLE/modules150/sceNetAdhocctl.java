@@ -364,7 +364,12 @@ public class sceNetAdhocctl extends HLEModule {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("hleNetAdhocctlConnect groupName='%s'", groupName));
     	}
-    	setGroupName(groupName, PSP_ADHOCCTL_MODE_NORMAL);
+
+    	if (hleNetAdhocctlGetGroupName() == null || !hleNetAdhocctlGetGroupName().equals(groupName)) {
+    		setGroupName(groupName, PSP_ADHOCCTL_MODE_NORMAL);
+
+    		networkAdapter.sceNetAdhocctlConnect();
+    	}
     }
 
     public void hleNetAdhocctlConnectGame(String groupName) {
@@ -610,8 +615,6 @@ public class sceNetAdhocctl extends HLEModule {
 
         hleNetAdhocctlConnect(groupName);
 
-        networkAdapter.sceNetAdhocctlConnect();
-
         return 0;
     }
 
@@ -706,6 +709,12 @@ public class sceNetAdhocctl extends HLEModule {
         doDisconnect = true;
 
         networkAdapter.sceNetAdhocctlDisconnect();
+
+        // Delete all the peers
+        while (!peers.isEmpty()) {
+        	AdhocctlPeer peer = peers.get(0);
+        	hleNetAdhocctlDeletePeer(peer.macAddress);
+        }
 
         return 0;
     }
