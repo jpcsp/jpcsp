@@ -141,11 +141,12 @@ public class IoFileMgrForUser extends HLEModule {
     public final static int PSP_DEV_TYPE_ALIAS = 0x20;
     public final static int PSP_DEV_TYPE_MOUNT = 0x40;
 
+    // PSP opens STDIN, STDOUT, STDERR in this order:
+    public final static int STDIN_ID = 0;
     public final static int STDOUT_ID = 1;
     public final static int STDERR_ID = 2;
-    public final static int STDIN_ID = 3;
 
-    private final static int MIN_ID = 4;
+    private final static int MIN_ID = 3;
     private final static int MAX_ID = 63;
     private final static String idPurpose = "IOFileManager-File";
 
