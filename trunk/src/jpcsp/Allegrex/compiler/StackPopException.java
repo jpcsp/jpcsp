@@ -19,23 +19,17 @@ package jpcsp.Allegrex.compiler;
 public class StackPopException extends Exception {
 	private static final long serialVersionUID = -5573324070282200237L;
 	private int ra;
-	private int sp;
 
-	public StackPopException(int ra, int sp) {
+	public StackPopException(int ra) {
 		this.ra = ra;
-		this.sp = sp;
 	}
 
 	public int getRa() {
 		return ra;
 	}
 
-	public int getSp() {
-		return sp;
-	}
-
 	@Override
 	public String toString() {
-		return String.format("StackPopException(0x%08X, 0x%08X)", ra, sp);
+		return String.format("StackPopException(0x%08X)", ra);
 	}
 }

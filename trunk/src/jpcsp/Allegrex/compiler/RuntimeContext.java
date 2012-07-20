@@ -128,7 +128,7 @@ public class RuntimeContext {
 		insn.interpret(processor, opcode);
 	}
 
-	private static int jumpCall(int address, int returnAddress, boolean isJump) throws Exception {
+	private static int jumpCall(int address) throws Exception {
         IExecutable executable = getExecutable(address);
         if (executable == null) {
             // TODO Return to interpreter
@@ -136,111 +136,81 @@ public class RuntimeContext {
             throw new RuntimeException("Cannot find executable");
         }
 
-		int returnValue = executable.exec(returnAddress, returnAddress, isJump);
+		int returnValue;
+		int sp = cpu.gpr[_sp];
 
-        if (debugCodeBlockCalls && log.isDebugEnabled()) {
+		try {
+			currentRuntimeThread.increaseStackSize();
+			returnValue = executable.exec();
+		} finally {
+			currentRuntimeThread.decreaseStackSize();
+		}
+
+		if (currentRuntimeThread.isStackMaxSize() && cpu.gpr[_sp] > sp) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("jumpCall returning 0x%08X with $sp=0x%08X, start $sp=0x%08X", returnValue, cpu.gpr[_sp], sp));
+			}
+			throw new StackPopException(returnValue);
+		}
+
+		if (debugCodeBlockCalls && log.isDebugEnabled()) {
         	log.debug(String.format("RuntimeContext.jumpCall returning 0x%08X", returnValue));
         }
 
         return returnValue;
 	}
 
-	public static int jump(int address, int returnAddress, int alternativeReturnAddress) throws Exception {
-		int returnValue;
-
+	public static void jump(int address, int returnAddress) throws Exception {
 		if (debugCodeBlockCalls && log.isDebugEnabled()) {
-			log.debug(String.format("RuntimeContext.jump address=0x%08X, returnAddress=0x%08X, alternativeReturnAddress=0x%08X", address, returnAddress, alternativeReturnAddress));
+			log.debug(String.format("RuntimeContext.jump starting address=0x%08X, returnAddress=0x%08X, $sp=0x%08X", address, returnAddress, cpu.gpr[_sp]));
 		}
 
-		if (IntrManager.getInstance().isInsideInterrupt() || currentRuntimeThread == null) {
-			// No setjmp/longjmp handling inside interrupts and idle state
-			returnValue = jumpCall(address, returnAddress, true);
-		} else {
-			int sp = cpu.gpr[_sp];
-
-			if (log.isTraceEnabled()) {
-				log.trace(String.format("RuntimeContext.jump sp=0x%08X, stack=%s", sp, currentRuntimeThread.getStackString()));
-			}
-
-			// Handle setjmp/longjmp C-like calls
-			if (currentRuntimeThread.hasStackState(address, sp)) {
-		    	StackPopException e = new StackPopException(address, sp);
-		    	if (log.isDebugEnabled()) {
-					log.debug(String.format("RuntimeContext.jump throwing %s, returnAddress=0x%08X, stack=%s", e.toString(), returnAddress, currentRuntimeThread.getStackString()));
-		    	}
-		    	throw e;
-			}
-
-			int previousSp = currentRuntimeThread.pushStackState(returnAddress, sp);
-			while (true) {
-				try {
-					returnValue = jumpCall(address, returnAddress, true);
-				} catch (StackPopException e) {
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("RuntimeContext.jump catched %s, returnAddress=0x%08X, stack=%s", e.toString(), returnAddress, currentRuntimeThread.getStackString()));
-					}
-
-					if (e.getRa() == returnAddress || e.getRa() == alternativeReturnAddress) {
-						returnValue = e.getRa();
-						break;
-					}
-					currentRuntimeThread.popStackState(returnAddress, previousSp);
+		int sp = cpu.gpr[_sp];
+		while (address != returnAddress) {
+			try {
+				address = jumpCall(address);
+			} catch (StackPopException e) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("jumpCall catching StackPopException 0x%08X with $sp=0x%08X, start $sp=0x%08X", e.getRa(), cpu.gpr[_sp], sp));
+				}
+				if (e.getRa() != returnAddress) {
 					throw e;
 				}
-
-			    if (returnValue == returnAddress || returnValue == alternativeReturnAddress) {
-			    	break;
-			    } else if (currentRuntimeThread.hasStackState(returnValue, cpu.gpr[_sp])) {
-			    	StackPopException e = new StackPopException(returnValue, cpu.gpr[_sp]);
-			    	if (log.isDebugEnabled()) {
-						log.debug(String.format("RuntimeContext.jump throwing %s, returnAddress=0x%08X, stack=%s", e.toString(), returnAddress, currentRuntimeThread.getStackString()));
-			    	}
-			    	currentRuntimeThread.popStackState(returnAddress, previousSp);
-			    	throw e;
-			    } else {
-			    	address = returnValue;
-			    }
+				break;
 			}
-	    	currentRuntimeThread.popStackState(returnAddress, previousSp);
 		}
 
-    	if (debugCodeBlockCalls && log.isDebugEnabled()) {
-			log.debug(String.format("RuntimeContext.jump returning 0x%08X, address=0x%08X, returnAddress=0x%08X, alternativeReturnAddress=0x%08X", returnValue, address, returnAddress, alternativeReturnAddress));
-    	}
-
-    	return returnValue;
+		if (debugCodeBlockCalls && log.isDebugEnabled()) {
+			log.debug(String.format("RuntimeContext.jump returning address=0x%08X, returnAddress=0x%08X, $sp=0x%08X", address, returnAddress, cpu.gpr[_sp]));
+		}
 	}
 
-    public static void call(int address, int returnAddress) throws Exception {
+    public static int call(int address) throws Exception {
 		if (debugCodeBlockCalls && log.isDebugEnabled()) {
-			log.debug(String.format("RuntimeContext.call address=0x%08X, returnAddress=0x%08X", address, returnAddress));
+			log.debug(String.format("RuntimeContext.call address=0x%08X", address));
 		}
-        int returnValue = jumpCall(address, returnAddress, false);
+        int returnValue = jumpCall(address);
 
-        if (returnValue != returnAddress) {
-            log.error(String.format("RuntimeContext.call incorrect returnAddress 0x%08X - 0x%08X", returnValue, returnAddress));
-        }
+        return returnValue;
     }
 
-	public static int executeInterpreter(int address, int returnAddress, int alternativeReturnAddress, boolean isJump) throws Exception {
+	public static int executeInterpreter(int address) throws Exception {
 		if (debugCodeBlockCalls && log.isDebugEnabled()) {
-			log.debug(String.format("RuntimeContext.executeInterpreter address=0x%08X, returnAddress=0x%08X, alternativeReturnAddress=0x%08X, isJump=%b", address, returnAddress, alternativeReturnAddress, isJump));
+			log.debug(String.format("RuntimeContext.executeInterpreter address=0x%08X", address));
 		}
 
 		boolean interpret = true;
 		cpu.pc = address;
-		int returnValue = returnAddress;
+		int returnValue = 0;
 		while (interpret) {
 			int opcode = cpu.fetchOpcode();
 			Instruction insn = Decoder.instruction(opcode);
 			insn.interpret(processor, opcode);
 			if (insn.hasFlags(Instruction.FLAG_STARTS_NEW_BLOCK)) {
-				cpu.pc = jumpCall(cpu.pc, cpu.gpr[_ra], false);
+				cpu.pc = jumpCall(cpu.pc);
 			} else if (insn.hasFlags(Instruction.FLAG_ENDS_BLOCK)) {
-				if (cpu.pc == returnAddress || cpu.pc == alternativeReturnAddress) {
-					interpret = false;
-					returnValue = cpu.pc;
-				}
+				interpret = false;
+				returnValue = cpu.pc;
 			}
 		}
 
@@ -252,7 +222,7 @@ public class RuntimeContext {
 		execute(insn, opcode);
 	}
 
-    public static void debugCodeBlockStart(int address, int returnAddress, int alternativeReturnAddress, boolean isJump) {
+	public static void debugCodeBlockStart(int address) {
     	if (log.isDebugEnabled()) {
     		String comment = "";
     		int syscallAddress = address + 4;
@@ -264,13 +234,13 @@ public class RuntimeContext {
         			comment = syscallDisasm.substring(19);
         		}
     		}
-    		log.debug(String.format("Starting CodeBlock 0x%08X%s, returnAddress=0x%08X, alternativeReturnAddress=0x%08X, isJump=%b", address, comment, returnAddress, alternativeReturnAddress, isJump));
+    		log.debug(String.format("Starting CodeBlock 0x%08X%s, $sp=0x%08X", address, comment, cpu.gpr[_sp]));
     	}
     }
 
     public static void debugCodeBlockEnd(int address, int returnAddress) {
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("Returning from CodeBlock 0x%08X to 0x%08X", address, returnAddress));
+    		log.debug(String.format("Returning from CodeBlock 0x%08X to 0x%08X, $sp=0x%08X", address, returnAddress, cpu.gpr[_sp]));
     	}
     }
 
@@ -359,7 +329,8 @@ public class RuntimeContext {
         int returnAddress = cpu.gpr[_ra];
         boolean callbackExited = false;
 		try {
-			newPc = executable.exec(returnAddress, returnAddress, false);
+			execWithReturnAddress(executable, returnAddress);
+			newPc = returnAddress;
 		} catch (StopThreadException e) {
 			// Ignore exception
 		} catch (Exception e) {
@@ -671,6 +642,24 @@ public class RuntimeContext {
     	postSyscall();
     }
 
+    private static void execWithReturnAddress(IExecutable executable, int returnAddress) throws Exception {
+    	while (true) {
+    		try {
+    			int address = executable.exec();
+    			if (address != returnAddress) {
+    				jump(address, returnAddress);
+    			}
+    			break;
+			} catch (StackPopException e) {
+				log.info("Stack exceeded maximum size, shrinking to top level");
+				executable = getExecutable(e.getRa());
+				if (executable == null) {
+					throw e;
+				}
+			}
+		}
+    }
+
     public static void runThread(RuntimeThread thread) {
     	thread.setInSyscall(true);
 
@@ -692,7 +681,7 @@ public class RuntimeContext {
 		thread.setInSyscall(false);
     	try {
     		updateStaticVariables();
-    		executable.exec(ThreadManForUser.THREAD_EXIT_HANDLER_ADDRESS, 0, false);
+    		execWithReturnAddress(executable, ThreadManForUser.THREAD_EXIT_HANDLER_ADDRESS);
             // NOTE: When a thread exits by itself (without calling sceKernelExitThread),
             // it's exitStatus becomes it's return value.
     		threadMan.hleKernelExitThread(processor.cpu.gpr[_v0]);

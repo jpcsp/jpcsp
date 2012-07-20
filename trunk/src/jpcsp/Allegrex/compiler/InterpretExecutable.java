@@ -28,8 +28,8 @@ public class InterpretExecutable implements IExecutable {
 	}
 
 	@Override
-	public int exec(int returnAddress, int alternativeReturnAddress, boolean isJump) throws Exception {
-		return RuntimeContext.executeInterpreter(codeBlock.getStartAddress(), returnAddress, alternativeReturnAddress, isJump);
+	public int exec() throws Exception {
+		return RuntimeContext.executeInterpreter(codeBlock.getStartAddress());
 	}
 
 	@Override
