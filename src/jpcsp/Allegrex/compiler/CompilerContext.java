@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.Allegrex.compiler;
 
 import static jpcsp.Allegrex.Common._f0;
+import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._v1;
@@ -89,20 +90,17 @@ public class CompilerContext implements ICompilerContext {
 	private CodeInstruction codeInstruction;
 	private static final boolean storeGprLocal = true;
 	private static final boolean storeMemoryIntLocal = false;
-	private static final int LOCAL_RETURN_ADDRESS = 0;
-	private static final int LOCAL_ALTERVATIVE_RETURN_ADDRESS = 1;
-    private static final int LOCAL_IS_JUMP = 2;
-    private static final int LOCAL_GPR = 3;
-    private static final int LOCAL_INSTRUCTION_COUNT = 4;
-    private static final int LOCAL_MEMORY_INT = 5;
-    private static final int LOCAL_TMP1 = 6;
-    private static final int LOCAL_TMP2 = 7;
-    private static final int LOCAL_TMP3 = 8;
-    private static final int LOCAL_TMP4 = 9;
-    private static final int LOCAL_TMP_VD0 = 10;
-    private static final int LOCAL_TMP_VD1 = 11;
-    private static final int LOCAL_TMP_VD2 = 12;
-    private static final int LOCAL_MAX = 13;
+    private static final int LOCAL_GPR = 0;
+    private static final int LOCAL_INSTRUCTION_COUNT = 1;
+    private static final int LOCAL_MEMORY_INT = 2;
+    private static final int LOCAL_TMP1 = 3;
+    private static final int LOCAL_TMP2 = 4;
+    private static final int LOCAL_TMP3 = 5;
+    private static final int LOCAL_TMP4 = 6;
+    private static final int LOCAL_TMP_VD0 = 7;
+    private static final int LOCAL_TMP_VD1 = 8;
+    private static final int LOCAL_TMP_VD2 = 9;
+    private static final int LOCAL_MAX = 10;
     private static final int DEFAULT_MAX_STACK_SIZE = 11;
     private static final int SYSCALL_MAX_STACK_SIZE = 100;
     private static final int LOCAL_ERROR_POINTER = LOCAL_TMP3;
@@ -139,7 +137,6 @@ public class CompilerContext implements ICompilerContext {
 	public  static final String executableInternalName = Type.getInternalName(IExecutable.class);
 	private static Set<Integer> fastSyscalls;
 	private int instanceIndex;
-	private boolean preparedCall = false;
 	private NativeCodeSequence preparedCallNativeCodeBlock = null;
 	private int maxStackSize = DEFAULT_MAX_STACK_SIZE;
 
@@ -684,53 +681,35 @@ public class CompilerContext implements ICompilerContext {
         mv.visitFieldInsn(Opcodes.PUTFIELD, Type.getInternalName(CpuState.class), "pc", Type.getDescriptor(int.class));
     }
 
-    private void visitReturnToAddress() {
-        //      while (x != returnAddress && x != alternativeReturnAddress && !isJump) {
-        //          x = RuntimeContext.jump(x, returnAddress, alternativeReturnAddress)
+    private void visitContinueToAddress(int returnAddress) {
+        //      if (x != returnAddress) {
+        //          RuntimeContext.jump(x, returnAddress);
         //      }
-    	//      return x;
-        Label returnLabel = new Label();
-        Label jumpLoop = new Label();
+        Label continueLabel = new Label();
+        Label isReturnAddress = new Label();
 
-        mv.visitLabel(jumpLoop);
         mv.visitInsn(Opcodes.DUP);
-        loadLocalVar(LOCAL_RETURN_ADDRESS);
-        visitJump(Opcodes.IF_ICMPEQ, returnLabel);
-        mv.visitInsn(Opcodes.DUP);
-        loadLocalVar(LOCAL_ALTERVATIVE_RETURN_ADDRESS);
-        visitJump(Opcodes.IF_ICMPEQ, returnLabel);
-        loadLocalVar(LOCAL_IS_JUMP);
-        visitJump(Opcodes.IFNE, returnLabel);
+        loadImm(returnAddress);
+        visitJump(Opcodes.IF_ICMPEQ, isReturnAddress);
 
-        loadLocalVar(LOCAL_RETURN_ADDRESS);
-        loadLocalVar(LOCAL_ALTERVATIVE_RETURN_ADDRESS);
-        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "jump", "(III)I");
-        visitJump(Opcodes.GOTO, jumpLoop);
+        loadImm(returnAddress);
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "jump", "(II)V");
+        mv.visitJumpInsn(Opcodes.GOTO, continueLabel);
 
-        mv.visitLabel(returnLabel);
-        endMethod();
-        mv.visitInsn(Opcodes.IRETURN);
+        mv.visitLabel(isReturnAddress);
+        mv.visitInsn(Opcodes.POP);
+        mv.visitLabel(continueLabel);
     }
 
     public void visitJump() {
     	flushInstructionCount(true, false);
     	checkSync();
 
-    	//
-        //      jr x
-        //
-        // translates to:
-        //
-        //      while (x != returnAddress && x != alternativeReturnAddress && !isJump) {
-        //          x = RuntimeContext.jump(x, returnAddress, alternativeReturnAddress)
-        //      }
-    	//      return x;
-        //
-    	visitReturnToAddress();
+    	endMethod();
+    	mv.visitInsn(Opcodes.IRETURN);
     }
 
-    public void prepareCall(int address, int returnAddress, int returnRegister, boolean useAltervativeReturnAddress) {
-    	preparedCall = true;
+    public void prepareCall(int address, int returnAddress, int returnRegister) {
     	preparedCallNativeCodeBlock = null;
 
     	// Do not call native block directly if we are profiling,
@@ -758,7 +737,7 @@ public class CompilerContext implements ICompilerContext {
         }
     }
 
-    public void visitCall(int address, int returnAddress, int returnRegister, boolean useAltervativeReturnAddress, boolean returnRegisterModified) {
+    public void visitCall(int address, int returnAddress, int returnRegister, boolean returnRegisterModified) {
     	flushInstructionCount(false, false);
 
         if (preparedCallNativeCodeBlock != null) {
@@ -773,39 +752,10 @@ public class CompilerContext implements ICompilerContext {
     			visitNativeCodeSequence(preparedCallNativeCodeBlock, address, null);
     		}
     	} else {
-    		if (useAltervativeReturnAddress) {
-    			loadLocalVar(LOCAL_RETURN_ADDRESS);
-    		}
-    		if (returnRegisterModified) {
-    			loadRegister(returnRegister);
-    		} else {
-	    		loadImm(returnAddress);
-		        if (!preparedCall && returnRegister != _zr) {
-		        	prepareRegisterForStore(returnRegister);
-		    		loadImm(returnAddress);
-		            storeRegister(returnRegister);
-		        }
-    		}
-    		if (!useAltervativeReturnAddress) {
-		    	mv.visitInsn(Opcodes.DUP);			// alternativeReturnAddress = returnAddress
-	    	}
-	        mv.visitInsn(Opcodes.ICONST_0);		// isJump = false
 	        mv.visitMethodInsn(Opcodes.INVOKESTATIC, getClassName(address, instanceIndex), getStaticExecMethodName(), getStaticExecMethodDesc());
-	        if (useAltervativeReturnAddress || returnRegisterModified) {
-	        	Label continueWithReturnAddress = new Label();
-	        	mv.visitInsn(Opcodes.DUP);
-	        	loadImm(returnAddress);
-	        	mv.visitJumpInsn(Opcodes.IF_ICMPEQ, continueWithReturnAddress);
-	        	visitReturnToAddress();
-	    		mv.visitLabel(continueWithReturnAddress);
-
-	        	mv.visitInsn(Opcodes.POP);
-	        } else {
-	        	mv.visitInsn(Opcodes.POP);
-	        }
+	        visitContinueToAddress(returnAddress);
     	}
 
-        preparedCall = false;
         preparedCallNativeCodeBlock = null;
     }
 
@@ -814,8 +764,8 @@ public class CompilerContext implements ICompilerContext {
         if (returnRegister != _zr) {
             storeRegister(returnRegister, returnAddress);
         }
-        loadImm(returnAddress);
-        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "call", "(II)V");
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "call", "(I)I");
+        visitContinueToAddress(returnAddress);
     }
 
     public void visitCall(int address, String methodName) {
@@ -1438,9 +1388,6 @@ public class CompilerContext implements ICompilerContext {
     	{
     		// return e.exec(returnAddress, alternativeReturnAddress, isJump);
         	mv.visitFieldInsn(Opcodes.GETSTATIC, codeBlock.getClassName(), getReplaceFieldName(), executableDescriptor);
-    		loadLocalVar(LOCAL_RETURN_ADDRESS);
-    		loadLocalVar(LOCAL_ALTERVATIVE_RETURN_ADDRESS);
-    		loadLocalVar(LOCAL_IS_JUMP);
             mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, executableInternalName, getExecMethodName(), getExecMethodDesc());
             mv.visitInsn(Opcodes.IRETURN);
     	}
@@ -1453,10 +1400,7 @@ public class CompilerContext implements ICompilerContext {
 
     	if (RuntimeContext.debugCodeBlockCalls) {
         	loadImm(getCodeBlock().getStartAddress());
-        	loadLocalVar(LOCAL_RETURN_ADDRESS);
-        	loadLocalVar(LOCAL_ALTERVATIVE_RETURN_ADDRESS);
-        	loadLocalVar(LOCAL_IS_JUMP);
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.debugCodeBlockStart, "(IIIZ)V");
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.debugCodeBlockStart, "(I)V");
         }
     }
 
@@ -1680,7 +1624,7 @@ public class CompilerContext implements ICompilerContext {
     }
 
     public String getExecMethodDesc() {
-        return "(IIZ)I";
+        return "()I";
     }
 
     public String getReplaceFieldName() {
@@ -1700,7 +1644,7 @@ public class CompilerContext implements ICompilerContext {
     }
 
     public String getStaticExecMethodDesc() {
-        return "(IIZ)I";
+        return "()I";
     }
 
     public boolean isAutomaticMaxLocals() {
@@ -2446,10 +2390,7 @@ public class CompilerContext implements ICompilerContext {
 
     public void compileExecuteInterpreter(int startAddress) {
     	loadImm(startAddress);
-        loadLocalVar(LOCAL_RETURN_ADDRESS);
-        loadLocalVar(LOCAL_ALTERVATIVE_RETURN_ADDRESS);
-        loadLocalVar(LOCAL_IS_JUMP);
-        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "executeInterpreter", "(IIIZ)I");
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "executeInterpreter", "(I)I");
         endMethod();
         mv.visitInsn(Opcodes.IRETURN);
     }
@@ -2478,7 +2419,7 @@ public class CompilerContext implements ICompilerContext {
 	    visitNativeCodeSequence(nativeCodeSequence, nativeCodeInstruction.getAddress(), nativeCodeInstruction);
 
 	    if (nativeCodeSequence.isReturning()) {
-	    	loadLocalVar(LOCAL_RETURN_ADDRESS);
+	    	loadRegister(_ra);
 	        endInternalMethod();
 	        mv.visitInsn(Opcodes.IRETURN);
 	    }

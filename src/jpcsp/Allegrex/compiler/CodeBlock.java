@@ -186,12 +186,9 @@ public class CodeBlock {
     	// public int exec(int returnAddress, int alternativeReturnAddress, boolean isJump) throws Exception;
     	mv = cv.visitMethod(Opcodes.ACC_PUBLIC, context.getExecMethodName(), context.getExecMethodDesc(), null, exceptions);
         mv.visitCode();
-        mv.visitVarInsn(Opcodes.ILOAD, 1);
-        mv.visitVarInsn(Opcodes.ILOAD, 2);
-        mv.visitVarInsn(Opcodes.ILOAD, 3);
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, getClassName(), context.getStaticExecMethodName(), context.getStaticExecMethodDesc());
         mv.visitInsn(Opcodes.IRETURN);
-        mv.visitMaxs(3, 4);
+        mv.visitMaxs(0, 0);
         mv.visitEnd();
 
         // private static IExecutable e;

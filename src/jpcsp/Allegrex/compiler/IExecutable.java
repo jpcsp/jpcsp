@@ -21,6 +21,6 @@ package jpcsp.Allegrex.compiler;
  *
  */
 public interface IExecutable {
-	public int exec(int returnAddress, int alternativeReturnAddress, boolean isJump) throws Exception;
+	public int exec() throws Exception;
 	public void setExecutable(IExecutable e);
 }

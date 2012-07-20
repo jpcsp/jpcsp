@@ -30,9 +30,8 @@ public class RuntimeThread extends Thread {
 	private Semaphore semaphore = new Semaphore(1);
 	private SceKernelThreadInfo threadInfo;
 	private boolean isInSyscall;
-	// Implement stack as an array for more efficiency (time critical)
-	private JumpState[] stack = new JumpState[0];
-	private int stackIndex = -1;
+	private int stackSize;
+	private static final int maxStackSize = 1000;
 
 	public RuntimeThread(SceKernelThreadInfo threadInfo) {
 		this.threadInfo = threadInfo;
@@ -85,79 +84,19 @@ public class RuntimeThread extends Thread {
 		this.isInSyscall = isInSyscall;
 	}
 
-	public int pushStackState(int ra, int sp) {
-		for (int i = stackIndex; i >= 0; i--) {
-			JumpState state = stack[i];
-			if (state.ra == ra) {
-				int previousSp = state.sp;
-				state.sp = sp;
-				return previousSp;
-			}
-		}
-
-		stackIndex++;
-		if (stackIndex == stack.length) {
-			// Extend the stack array
-			JumpState[] newStack = new JumpState[stack.length + 1];
-			System.arraycopy(stack, 0, newStack, 0, stack.length);
-			newStack[stack.length] = new JumpState();
-			stack = newStack;
-		}
-
-		stack[stackIndex].setState(ra, sp);
-
-		return 0;
+	public void increaseStackSize() {
+		stackSize++;
 	}
 
-	public void popStackState(int ra, int previousSp) {
-		if (previousSp != 0) {
-			for (int i = stackIndex; i >= 0; i--) {
-				JumpState state = stack[i];
-				if (state.ra == ra) {
-					state.sp = previousSp;
-					return;
-				}
-			}
-		}
-		stackIndex--;
+	public void decreaseStackSize() {
+		stackSize--;
 	}
 
-	public boolean hasStackState(int ra, int sp) {
-		for (int i = stackIndex; i >= 0; i--) {
-			JumpState state = stack[i];
-			if (state.ra == ra) {
-				return true;
-			}
-		}
-
-		return false;
+	public boolean isStackMaxSize() {
+		return stackSize > maxStackSize;
 	}
 
-	public String getStackString() {
-		StringBuilder result = new StringBuilder();
-
-		for (int i = stackIndex; i >= 0; i--) {
-			if (result.length() > 0) {
-				result.append(",");
-			}
-			result.append(stack[i].toString());
-		}
-
-		return result.toString();
-	}
-
-	public static class JumpState {
-		public int ra;
-		public int sp;
-
-		public void setState(int ra, int sp) {
-			this.ra = ra;
-			this.sp = sp;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("(ra=0x%08X, sp=0x%08X)", ra, sp);
-		}
+	public int getStackSize() {
+		return stackSize;
 	}
 }

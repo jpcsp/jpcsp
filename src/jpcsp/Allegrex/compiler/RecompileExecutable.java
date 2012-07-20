@@ -34,7 +34,7 @@ public class RecompileExecutable implements IExecutable {
 	 * executable.
 	 */
 	@Override
-	public int exec(int returnAddress, int alternativeReturnAddress, boolean isJump) throws Exception {
+	public int exec() throws Exception {
 		// Recompile the codeBlock
 		int newInstanceIndex = codeBlock.getNewInstanceIndex();
 		IExecutable executable = Compiler.getInstance().compile(codeBlock.getStartAddress(), newInstanceIndex);
@@ -43,7 +43,7 @@ public class RecompileExecutable implements IExecutable {
 		codeBlock.getExecutable().setExecutable(executable);
 
 		// Execute the recompiled executable
-		return executable.exec(returnAddress, alternativeReturnAddress, isJump);
+		return executable.exec();
 	}
 
 	@Override

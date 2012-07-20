@@ -267,9 +267,9 @@ public class CodeInstruction {
     }
 
     private int getBranchingOpcodeCall0(CompilerContext context, MethodVisitor mv) {
-        context.prepareCall(getBranchingTo(), getAddress() + 8, _ra, false);
+        context.prepareCall(getBranchingTo(), getAddress() + 8, _ra);
         compileDelaySlot(context, mv);
-        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, false, isDelaySlotWritingRegister(context, _ra));
+        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, isDelaySlotWritingRegister(context, _ra));
 
         return Opcodes.NOP;
     }
@@ -294,23 +294,23 @@ public class CodeInstruction {
     }
 
     private int getBranchingOpcodeCall1(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
-        context.prepareCall(getBranchingTo(), getAddress() + 8, _ra, true);
+        context.prepareCall(getBranchingTo(), getAddress() + 8, _ra);
     	context.loadRs();
         compileDelaySlot(context, mv);
         CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
         context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction);
-        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, true, isDelaySlotWritingRegister(context, _ra));
+        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, isDelaySlotWritingRegister(context, _ra));
 
         return Opcodes.NOP;
     }
 
     private int getBranchingOpcodeCall1L(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
-        context.prepareCall(getBranchingTo(), getAddress() + 8, _ra, true);
+        context.prepareCall(getBranchingTo(), getAddress() + 8, _ra);
     	context.loadRs();
         CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
         context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction);
         compileDelaySlot(context, mv);
-        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, true, isDelaySlotWritingRegister(context, _ra));
+        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, isDelaySlotWritingRegister(context, _ra));
 
         return Opcodes.NOP;
     }
