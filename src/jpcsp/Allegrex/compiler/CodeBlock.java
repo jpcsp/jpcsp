@@ -188,7 +188,7 @@ public class CodeBlock {
         mv.visitCode();
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, getClassName(), context.getStaticExecMethodName(), context.getStaticExecMethodDesc());
         mv.visitInsn(Opcodes.IRETURN);
-        mv.visitMaxs(0, 0);
+        mv.visitMaxs(1, 1);
         mv.visitEnd();
 
         // private static IExecutable e;
