@@ -580,6 +580,20 @@ int zbw = BUF_WIDTH;
 int fbpOffset = 0;
 int zbpOffset = 0;
 
+int texWrapU1 = GU_CLAMP;
+int texWrapV1 = GU_CLAMP;
+int texWrapU2 = GU_CLAMP;
+int texWrapV2 = GU_CLAMP;
+float texScaleU1 = 1.0;
+float texScaleV1 = 1.0;
+float texOffsetU1 = 0.0;
+float texOffsetV1 = 0.0;
+float texScaleU2 = 1.0;
+float texScaleV2 = 1.0;
+float texOffsetU2 = 0.0;
+float texOffsetV2 = 0.0;
+char *texWrapNames[] = { "GU_REPEAT", "GU_CLAMP" };
+
 u16 zTestPixelDepth;
 u32 geTestPixelValue;
 
@@ -1067,9 +1081,9 @@ void drawRectangles()
 	}
 	sceGuTexFunc(texFunc1, texFuncAlpha1 == 2 ? 0x81 : texFuncAlpha1);
 	sceGuTexFilter(texMinFilter1, texMagFilter1);
-	sceGuTexWrap(GU_CLAMP, GU_CLAMP);
-	sceGuTexScale(1.0 / textureScale, 1.0 / textureScale);
-	sceGuTexOffset(0, 0);
+	sceGuTexWrap(texWrapU1, texWrapV1);
+	sceGuTexScale(texScaleU1 / textureScale, texScaleV1 / textureScale);
+	sceGuTexOffset(texOffsetU1, texOffsetV1);
 
 	sceGumMatrixMode(GU_VIEW);
 	sceGumLoadIdentity();
@@ -1197,9 +1211,9 @@ void drawRectangles()
 	}
 	sceGuTexFunc(texFunc2, texFuncAlpha2 == 2 ? 0x81 : texFuncAlpha2);
 	sceGuTexFilter(texMinFilter2, texMagFilter2);
-	sceGuTexWrap(GU_CLAMP, GU_CLAMP);
-	sceGuTexScale(1.0 / textureScale, 1.0 / textureScale);
-	sceGuTexOffset(0, 0);
+	sceGuTexWrap(texWrapU2, texWrapV2);
+	sceGuTexScale(texScaleU2 / textureScale, texScaleV2 / textureScale);
+	sceGuTexOffset(texOffsetU2, texOffsetV2);
 
 	sceGumMatrixMode(GU_VIEW);
 	sceGumLoadIdentity();
@@ -1585,6 +1599,18 @@ void init()
 	setAttributeValueNames(&tpsmNames[0]);
 	y++;
 
+	addAttribute("Texture Warp U", &texWrapU1, NULL, x + 6, y, GU_REPEAT, GU_CLAMP, 1, NULL);
+	setAttributeValueNames(&texWrapNames[0]);
+	addAttribute(", V", &texWrapV1, NULL, x + 31, y, GU_REPEAT, GU_CLAMP, 1, NULL);
+	setAttributeValueNames(&texWrapNames[0]);
+	y++;
+	addAttribute("Scale U", NULL, &texScaleU1, x + 14, y, -10, 10, 0.1, NULL);
+	addAttribute(", V", NULL, &texScaleV1, x + 31, y, -10, 10, 0.1, NULL);
+	y++;
+	addAttribute("Offset U", NULL, &texOffsetU1, x + 14, y, -10, 10, 0.1, NULL);
+	addAttribute(", V", NULL, &texOffsetV1, x + 31, y, -10, 10, 0.1, NULL);
+	y++;
+
 	rectangle2VertexColor.r = 0xFF;
 	rectangle2VertexColor.g = 0x00;
 	rectangle2VertexColor.b = 0x00;
@@ -1659,6 +1685,18 @@ void init()
 
 	addAttribute("Texture Format", &tpsm2, NULL, x + 6, y, GU_PSM_5650, GU_PSM_T32, 1, NULL);
 	setAttributeValueNames(&tpsmNames[0]);
+	y++;
+
+	addAttribute("Texture Warp U", &texWrapU2, NULL, x + 6, y, GU_REPEAT, GU_CLAMP, 1, NULL);
+	setAttributeValueNames(&texWrapNames[0]);
+	addAttribute(", V", &texWrapV2, NULL, x + 31, y, GU_REPEAT, GU_CLAMP, 1, NULL);
+	setAttributeValueNames(&texWrapNames[0]);
+	y++;
+	addAttribute("Scale U", NULL, &texScaleU2, x + 14, y, -10, 10, 0.1, NULL);
+	addAttribute(", V", NULL, &texScaleV2, x + 31, y, -10, 10, 0.1, NULL);
+	y++;
+	addAttribute("Offset U", NULL, &texOffsetU2, x + 14, y, -10, 10, 0.1, NULL);
+	addAttribute(", V", NULL, &texOffsetV2, x + 31, y, -10, 10, 0.1, NULL);
 	y++;
 
 	addAttribute("Use Vertex Color", &vertexColorFlag, NULL, x, y, 0, 1, 1, NULL);
