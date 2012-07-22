@@ -111,7 +111,7 @@ public class pspFontStyle extends pspAbstractMemoryMappedStructure {
 				return false;
 			}
 		}
-		if (fontStyle.fontWeight != fontWeight) {
+		if (fontStyle.fontWeight != 0f && fontStyle.fontWeight != fontWeight) {
 			return false;
 		}
 		if (fontStyle.fontFamily != 0 && fontStyle.fontFamily != fontFamily) {
