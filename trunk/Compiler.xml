@@ -3826,6 +3826,21 @@
 088421C4:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="strcmp">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Strcmp</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+0880B098:[90830000]: lbu        $v1, 0($a0)
+0880B09C:[90A20000]: lbu        $v0, 0($a1)
+0880B0A0:[0062302D]: min        $a2, $v1, $v0
+0880B0A4:[10C00003]: beq        $a2, $zr, 0x0880B0B4
+0880B0A8:[24840001]: addiu      $a0, $a0, 1
+0880B0AC:[1062FFFA]: beq        $v1, $v0, 0x0880B098
+0880B0B0:[24A50001]: addiu      $a1, $a1, 1
+0880B0B4:[03E00008]: jr         $ra
+0880B0B8:[00621023]: subu       $v0, $v1, $v0
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="strncmp">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Strncmp</Class>
 		<IsReturning>true</IsReturning>
