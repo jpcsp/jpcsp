@@ -797,9 +797,7 @@ public class sceFont extends HLEModule {
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceFontFindOptimumFont: %s", fontStyle.toString()));
         }
-        if (errorCodePtr.isAddressGood()) {
-            errorCodePtr.setValue(0);
-        }
+        errorCodePtr.setValue(0);
         for (int i = 0; i < internalFonts.size(); i++) {
             if (isFontMatchingStyle(internalFonts.get(i), fontStyle)) {
                 if (log.isDebugEnabled()) {
@@ -837,10 +835,10 @@ public class sceFont extends HLEModule {
 	        }
         }
 
-        if (errorCodePtr.isAddressGood()) {
-        	errorCodePtr.setValue(-1);
-        }
-        return -1;
+        // Unknown error code
+    	errorCodePtr.setValue(-1);
+
+    	return 0;
     }
 
     @HLEFunction(nid = 0x3AEA8CB6, version = 150, checkInsideInterrupt = true)
