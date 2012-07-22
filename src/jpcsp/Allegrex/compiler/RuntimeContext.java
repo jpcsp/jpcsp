@@ -139,14 +139,19 @@ public class RuntimeContext {
 		int returnValue;
 		int sp = cpu.gpr[_sp];
 
+		RuntimeThread stackThread = currentRuntimeThread;
 		try {
-			currentRuntimeThread.increaseStackSize();
+			if (stackThread != null) {
+				stackThread.increaseStackSize();
+			}
 			returnValue = executable.exec();
 		} finally {
-			currentRuntimeThread.decreaseStackSize();
+			if (stackThread != null) {
+				stackThread.decreaseStackSize();
+			}
 		}
 
-		if (currentRuntimeThread.isStackMaxSize() && cpu.gpr[_sp] > sp) {
+		if (stackThread != null && stackThread.isStackMaxSize() && cpu.gpr[_sp] > sp) {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("jumpCall returning 0x%08X with $sp=0x%08X, start $sp=0x%08X", returnValue, cpu.gpr[_sp], sp));
 			}
