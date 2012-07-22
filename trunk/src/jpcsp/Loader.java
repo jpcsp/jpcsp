@@ -882,6 +882,7 @@ public class Loader {
                     if (log.isTraceEnabled()) {
                 		log.trace(String.format("R_MIPS_GPREL16 addr=%08X before=%08X after=%08X", data_addr, word32, data));
                     }
+            		log.warn(String.format("Probably incorrect relocation R_MIPS_GPREL16 addr=%08X before=%08X after=%08X", data_addr, word32, data));
                     break;
 
                 default:
