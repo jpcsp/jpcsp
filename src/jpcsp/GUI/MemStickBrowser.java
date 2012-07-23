@@ -203,7 +203,11 @@ public class MemStickBrowser extends JDialog {
                     if(programs[i].getName().toLowerCase().endsWith(".pbp")) {
                         // Load packed icon
                         FileChannel roChannel = new RandomAccessFile(metapbp, "r").getChannel();
-                        ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
+                        // Limit the size of the data read from the file to 100Kb.
+                        // Some PBP files for demos can be very large (over 200GB)
+                        // and raise an OutOfMemory exception.
+                        int size = Math.min((int)roChannel.size(), 100 * 1024);
+                        ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, size);
                         pbps[i] = new PBP(readbuffer);
                         PSF psf = pbps[i].readPSF(readbuffer);
                         if (psf != null)

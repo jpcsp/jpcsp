@@ -22,13 +22,12 @@ import static jpcsp.util.Utilities.readUWord;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import jpcsp.Memory;
+import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 
-public class PSPModuleInfo {
-
+public class PSPModuleInfo extends pspAbstractMemoryMappedStructure {
+	private static final int NAME_LENGTH = 28;
     private int m_attr;
     private int m_version;
-    private byte[] m_name = new byte[28];
     private long m_gp;
     private long m_exports;
     private long m_exp_end;
@@ -39,6 +38,7 @@ public class PSPModuleInfo {
     public void read(ByteBuffer f) throws IOException {
         m_attr = readUHalf(f);
         m_version = readUHalf(f);
+        byte[] m_name = new byte[NAME_LENGTH];
         f.get(m_name);
         m_gp = readUWord(f);
         m_exports = readUWord(f); // .lib.ent
@@ -55,35 +55,36 @@ public class PSPModuleInfo {
         m_namez = new String(m_name, 0, len);
     }
 
-    public void read(Memory mem, int address) {
-        m_attr      = mem.read16(address);
-        m_version   = mem.read16(address + 2);
+	@Override
+	protected void read() {
+		m_attr = read16();
+		m_version = read16();
+		m_namez = readStringNZ(NAME_LENGTH);
+		m_gp = read32();
+		m_exports = read32();
+		m_exp_end = read32();
+		m_imports = read32();
+		m_imp_end = read32();
+	}
 
-        int i, len = 0;
-        for (i = 0; i < 28; i++) {
-            m_name[i] = (byte)mem.read8(address + 4 + i);
-            if (m_name[i] == (byte)0 && len == 0)
-                len = i;
-        }
-        m_namez = new String(m_name, 0, len);
+	@Override
+	protected void write() {
+		write16((short) m_attr);
+		write16((short) m_version);
+		writeStringNZ(NAME_LENGTH, m_namez);
+		write32((int) m_gp);
+		write32((int) m_exports);
+		write32((int) m_exp_end);
+		write32((int) m_imports);
+		write32((int) m_imp_end);
+	}
 
-        m_gp        = mem.read32(address + 32);
-        m_exports   = mem.read32(address + 36); // .lib.ent
-        m_exp_end   = mem.read32(address + 40);
-        m_imports   = mem.read32(address + 44); // .lib.stub
-        m_imp_end   = mem.read32(address + 48);
-    }
-
-    public int getM_attr() {
+	public int getM_attr() {
         return m_attr;
     }
 
     public int getM_version() {
         return m_version;
-    }
-
-    public byte[] getM_name() {
-        return m_name;
     }
 
     public long getM_gp() {
@@ -109,4 +110,9 @@ public class PSPModuleInfo {
     public String getM_namez() {
         return m_namez;
     }
+
+	@Override
+	public int sizeof() {
+		return 52;
+	}
 }

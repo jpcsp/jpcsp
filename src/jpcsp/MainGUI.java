@@ -1310,10 +1310,32 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 
             // Create a read-only memory-mapped file
             RandomAccessFile raf = new RandomAccessFile(file, "r");
-            FileChannel roChannel = raf.getChannel();
-            ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int) roChannel.size());
+            ByteBuffer readbuffer;
+            FileChannel roChannel = null;
+            long size = raf.length();
+            // Do not try to map very large files, this would raise on OutOfMemory exception.
+            if (size > 1 * 1024 * 1024) {
+            	byte[] bytes = new byte[(int) size];
+            	int offset = 0;
+                // Read large files by chunks.
+            	while (offset < bytes.length) {
+            		int len = raf.read(bytes, offset, Math.min(10 * 1024, bytes.length - offset));
+            		if (len < 0) {
+            			break;
+            		}
+            		if (len > 0) {
+            			offset += len;
+            		}
+            	}
+            	readbuffer = ByteBuffer.wrap(bytes, 0, offset);
+            } else {
+                roChannel = raf.getChannel();
+                readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int) roChannel.size());
+            }
             SceModule module = emulator.load(pspifyFilename(file.getPath()), readbuffer);
-            roChannel.close();
+            if (roChannel != null) {
+            	roChannel.close();
+            }
             raf.close();
 
             PSF psf = module.psf;
