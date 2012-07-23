@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.Allegrex.Common._a0;
+import static jpcsp.Allegrex.Common._a1;
 import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.Allegrex.Common._v0;
@@ -324,10 +326,10 @@ public class ThreadManForUser extends HLEModule {
         // Setup args by copying them onto the stack
         //Modules.log.debug("pspfilename - '" + pspfilename + "'");
         int len = pspfilename.length();
-        int address = currentThread.cpuContext.gpr[29];
+        int address = currentThread.cpuContext.gpr[_sp];
         writeStringZ(Memory.getInstance(), address, pspfilename);
-        currentThread.cpuContext.gpr[4] = len + 1; // a0 = len + string terminator
-        currentThread.cpuContext.gpr[5] = address; // a1 = pointer to arg data in stack
+        currentThread.cpuContext.gpr[_a0] = len + 1; // a0 = len + string terminator
+        currentThread.cpuContext.gpr[_a1] = address; // a1 = pointer to arg data in stack
 
         currentThread.status = PSP_THREAD_READY;
 
