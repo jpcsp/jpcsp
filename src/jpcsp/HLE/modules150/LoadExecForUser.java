@@ -18,13 +18,15 @@ package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.PspString;
 import jpcsp.HLE.SceKernelErrorException;
-import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import static jpcsp.Allegrex.Common._a0;
+import static jpcsp.Allegrex.Common._a1;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_LOADEXEC_FILENAME;
 import jpcsp.Emulator;
@@ -36,6 +38,10 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.filesystems.SeekableDataInput;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryReader;
+import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -55,24 +61,36 @@ public class LoadExecForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0xBD2F1094, version = 150, checkInsideInterrupt = true)
-    public int sceKernelLoadExec(TPointer filename_addr, @CanBeNull TPointer32 option_addr) {
-        String name = Utilities.readStringZ(filename_addr.getAddress());
+    public int sceKernelLoadExec(PspString filename, @CanBeNull TPointer32 option_addr) {
+        String name = filename.getString();
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelLoadExec file='%s' optionAddr=%s", name, option_addr));
+        	log.debug(String.format("sceKernelLoadExec file=%s optionAddr=%s", filename, option_addr));
         }
 
         // Flush system memory to mimic a real PSP reset.
         Modules.SysMemUserForUserModule.reset();
 
-        if (option_addr.isAddressGood()) {
+        byte[] arguments = null;
+        int argSize = 0;
+        if (!option_addr.isNull()) {
             int optSize = option_addr.getValue(0);   // Size of the option struct.
-            int argSize = option_addr.getValue(4);   // Number of args (strings).
-            int argAddr = option_addr.getValue(8);   // Pointer to a list of strings.
-            int keyAddr = option_addr.getValue(12);  // Pointer to an encryption key (may not be used).
+            if (optSize >= 16) {
+	            argSize = option_addr.getValue(4);       // Size of memory required for arguments.
+	            int argAddr = option_addr.getValue(8);   // Arguments (memory area of size argSize).
+	            int keyAddr = option_addr.getValue(12);  // Pointer to an encryption key (may not be used).
 
-            if (log.isDebugEnabled()) {
-            	log.debug(String.format("sceKernelLoadExec params: optSize=%d, argSize=%d, argAddr=0x%08X, keyAddr=0x%08X", optSize, argSize, argAddr, keyAddr));
+	            if (log.isDebugEnabled()) {
+	            	log.debug(String.format("sceKernelLoadExec params: optSize=%d, argSize=%d, argAddr=0x%08X, keyAddr=0x%08X: %s", optSize, argSize, argAddr, keyAddr, Utilities.getMemoryDump(argAddr, argSize)));
+	            }
+
+	            // Save the memory content for the arguments because
+	            // the memory would be overwritten by the loading of the new module.
+	            arguments = new byte[argSize];
+	            IMemoryReader memoryReader = MemoryReader.getMemoryReader(argAddr, argSize, 1);
+	            for (int i = 0; i < argSize; i++) {
+	            	arguments[i] = (byte) memoryReader.readNext();
+	            }
             }
         }
 
@@ -105,6 +123,18 @@ public class LoadExecForUser extends HLEModule {
                     log.warn("sceKernelLoadExec - failed, target is not an ELF");
                     throw new SceKernelErrorException(ERROR_KERNEL_ILLEGAL_LOADEXEC_FILENAME);
                 }
+
+            	// Set the given arguments to the root thread.
+            	// Do not pass the file name as first parameter (tested on PSP).
+            	SceKernelThreadInfo rootThread = Modules.ThreadManForUserModule.getCurrentThread();
+            	if (argSize > 0) {
+	            	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(rootThread.cpuContext.gpr[_a1], argSize, 1);
+	            	for (int i = 0; i < argSize; i++) {
+	            		memoryWriter.writeNext(arguments[i] & 0xFF);
+	            	}
+	            	memoryWriter.flush();
+            	}
+            	rootThread.cpuContext.gpr[_a0] = argSize;
             }
         } catch (GeneralJpcspException e) {
             log.error("General Error : " + e.getMessage());
