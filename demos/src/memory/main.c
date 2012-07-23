@@ -89,6 +89,11 @@ int main(int argc, char *argv[])
 	repeatDelay.tv_usec = 0;
 
 	pspDebugScreenInit();
+	int i;
+	for (i = 0; i < argc; i++)
+	{
+		pspDebugScreenPrintf("Parameter #%d: '%s'\n", i, argv[i]);
+	}
 	pspDebugScreenPrintf("Press Cross to start the Memory Test\n");
 	pspDebugScreenPrintf("Press Circle to Start a new thread\n");
 	pspDebugScreenPrintf("Press Square to restart with sceKernelLoadExec (requires FW 1.5)\n");
@@ -205,6 +210,9 @@ int main(int argc, char *argv[])
 			struct SceKernelLoadExecParam loadExecParam;
 			memset(&loadExecParam, sizeof(loadExecParam), 0);
 			loadExecParam.size = sizeof(loadExecParam);
+			char *parameters = "Test1\0Test2\0Test3";
+			loadExecParam.args = 18;
+			loadExecParam.argp = parameters;
 
 			int result = sceKernelLoadExec("ms0:/PSP/GAME/memory/EBOOT.PBP", &loadExecParam);
 			pspDebugScreenPrintf("sceKernelLoadExec() = 0x%08X\n", result);
