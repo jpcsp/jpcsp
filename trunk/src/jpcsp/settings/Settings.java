@@ -231,6 +231,10 @@ public class Settings {
 		return Integer.parseInt(value);
 	}
 
+	public static float parseFloat(String value) {
+		return Float.parseFloat(value);
+	}
+
 	public boolean readBool(String option) {
 		String bool = getProperty(option);
 		if (bool == null) {
@@ -280,6 +284,21 @@ public class Settings {
 	public void writeString(String option, String value) {
 		setProperty(option, value);
 		writeSettings();
+	}
+
+	public void writeFloat(String option, float value) {
+		String state = Float.toString(value);
+		setProperty(option, state);
+		writeSettings();
+	}
+
+	public float readFloat(String option, float defaultValue) {
+		String value = getProperty(option);
+		if (value == null) {
+			return defaultValue;
+		}
+
+		return parseFloat(value);
 	}
 
 	public HashMap<Integer, keyCode> loadKeys() {

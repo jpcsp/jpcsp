@@ -322,6 +322,7 @@ public class sceDisplay extends HLEModule {
     private static final boolean useDebugGL = false;
     private static final int internalTextureFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
     static public boolean ignoreLWJGLError = false;
+    private static final String resizeScaleFactorSettings = "emu.graphics.resizeScaleFactor";
 
     // sceDisplayModes enum
     public static final int PSP_DISPLAY_MODE_LCD  = 0;
@@ -604,6 +605,7 @@ public class sceDisplay extends HLEModule {
 
     	canvas = new AWTGLCanvas_sceDisplay();
         setScreenResolution(Screen.width, Screen.height);
+        setViewportResizeScaleFactor(Settings.getInstance().readFloat(resizeScaleFactorSettings, 1f));
 
         texFb = -1;
         resizedTexFb = -1;
@@ -668,6 +670,8 @@ public class sceDisplay extends HLEModule {
     	}
 
     	if (viewportResizeFilterScaleFactor != sceDisplay.viewportResizeFilterScaleFactor) {
+    		Settings.getInstance().writeFloat(resizeScaleFactorSettings, viewportResizeFilterScaleFactor);
+
     		sceDisplay.viewportResizeFilterScaleFactor = viewportResizeFilterScaleFactor;
     		sceDisplay.viewportResizeFilterScaleFactorInt = Math.round((float) Math.ceil(viewportResizeFilterScaleFactor));
 
