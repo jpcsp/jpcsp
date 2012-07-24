@@ -39,6 +39,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.GroupLayout;
@@ -130,36 +135,64 @@ public class UmdBrowser extends JDialog {
 		private UmdInfoLoader umdInfoLoader;
 		private String pathPrefix;
 
-		public MemStickTableModel(File path) {
-			if(!path.isDirectory()) {
-				Emulator.log.error(path + Resource.get("nodirectory"));
-				return;
-			}
+		public MemStickTableModel(File[] paths) {
+			// Collect all the programs for all the given paths
+			List<File> programList = new ArrayList<File>();
+			for (File path : paths) {
+				if (!path.isDirectory()) {
+					Emulator.log.error(path + Resource.get("nodirectory"));
+					return;
+				}
 
-			try {
-				this.pathPrefix = path.getCanonicalPath();
-			} catch (IOException e) {
-				this.pathPrefix = path.getPath();
-			}
+				try {
+					this.pathPrefix = path.getCanonicalPath();
+				} catch (IOException e) {
+					this.pathPrefix = path.getPath();
+				}
 
-			programs = path.listFiles(new FileFilter() {
-				@Override
-				public boolean accept(File file) {
-					String lower = file.getName().toLowerCase();
-					if (lower.endsWith(".cso") || lower.endsWith(".iso"))
-						return true;
-					if (file.isDirectory()) {
-						File eboot[] = file.listFiles(new FileFilter() {
-							@Override
-							public boolean accept(File arg0) {
-								return arg0.getName().equalsIgnoreCase("eboot.pbp");
-							}
-						});
-						return eboot.length != 0;
+				File[] pathPrograms = path.listFiles(new FileFilter() {
+					@Override
+					public boolean accept(File file) {
+						String lower = file.getName().toLowerCase();
+						if (lower.endsWith(".cso") || lower.endsWith(".iso")) {
+							return true;
+						}
+						if (file.isDirectory()) {
+							File eboot[] = file.listFiles(new FileFilter() {
+								@Override
+								public boolean accept(File file) {
+									return file.getName().equalsIgnoreCase("eboot.pbp");
+								}
+							});
+							return eboot.length != 0;
+						}
+						return false;
 					}
-					return false;
+				});
+
+				programList.addAll(Arrays.asList(pathPrograms));
+			}
+
+			// Sort the programs based on their file name
+			Collections.sort(programList, new Comparator<File>() {
+				@Override
+				public int compare(File file1, File file2) {
+					if (file1 == null) {
+						return (file2 == null ? 0 : 1);
+					} else if (file2 == null) {
+						return -1;
+					}
+
+					String name1 = file1.getName().toLowerCase();
+					String name2 = file2.getName().toLowerCase();
+					if (name1.equals(name2)) {
+						return compare(file1.getParentFile(), file2.getParentFile());
+					}
+					return name1.compareTo(name2);
 				}
 			});
+
+			programs = programList.toArray(new File[programList.size()]);
 
 			// The UMD informations are loaded asynchronously
 			// to provide a faster loading time for the UmdBrowser.
@@ -256,7 +289,7 @@ public class UmdBrowser extends JDialog {
 	private UmdBrowserSound umdBrowserSound;
 	private int lastRowIndex = -1;
 
-	public UmdBrowser(MainGUI gui, File path) {
+	public UmdBrowser(MainGUI gui, File[] paths) {
 		super(gui);
 
 		this.gui = gui;
@@ -264,7 +297,7 @@ public class UmdBrowser extends JDialog {
 
 		setTitle(Resource.get("umdIsoCsobrowser"));
 		setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-		table = new JTable(new MemStickTableModel(path), new MemStickTableColumnModel());
+		table = new JTable(new MemStickTableModel(paths), new MemStickTableColumnModel());
 		table.setFillsViewportHeight(true);
 		table.setRowHeight(80);
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_NEXT_COLUMN);

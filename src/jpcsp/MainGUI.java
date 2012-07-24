@@ -1511,7 +1511,16 @@ private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:even
 private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openUmdActionPerformed
     PauseEmu();
     if (Settings.getInstance().readBool("emu.umdbrowser")) {
-        umdbrowser = new UmdBrowser(this, new File(Settings.getInstance().readString("emu.umdpath") + "/"));
+    	List<File> umdPaths = new LinkedList<File>();
+    	umdPaths.add(new File(Settings.getInstance().readString("emu.umdpath") + "/"));
+    	for (int i = 1; true; i++) {
+    		String umdPath = Settings.getInstance().readString(String.format("emu.umdpath.%d", i), null);
+    		if (umdPath == null) {
+    			break;
+    		}
+    		umdPaths.add(new File(umdPath + "/"));
+    	}
+        umdbrowser = new UmdBrowser(this, umdPaths.toArray(new File[umdPaths.size()]));
         umdbrowser.setVisible(true);
     } else {
         final JFileChooser fc = makeJFileChooser();
@@ -2175,33 +2184,23 @@ private void frameSkipFPS60ActionPerformed(java.awt.event.ActionEvent evt) {//GE
 private void setViewportResizeScaleFactor(int viewportResizeScaleFactor) {
 	Modules.sceDisplayModule.setViewportResizeScaleFactor(viewportResizeScaleFactor);
 	pack();
+    if (umdvideoplayer != null) {
+        umdvideoplayer.pauseVideo();
+        umdvideoplayer.setVideoPlayerResizeScaleFactor(this, viewportResizeScaleFactor);
+        umdvideoplayer.resumeVideo();
+    }
 }
 
 private void oneTimeResizeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_oneTimeResizeActionPerformed
 	setViewportResizeScaleFactor(1);
-    if (umdvideoplayer != null) {
-        umdvideoplayer.pauseVideo();
-        umdvideoplayer.setVideoPlayerResizeScaleFactor(this, 1);
-        umdvideoplayer.resumeVideo();
-    }
 }//GEN-LAST:event_oneTimeResizeActionPerformed
 
 private void twoTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_twoTimesResizeActionPerformed
 	setViewportResizeScaleFactor(2);
-    if (umdvideoplayer != null) {
-        umdvideoplayer.pauseVideo();
-        umdvideoplayer.setVideoPlayerResizeScaleFactor(this, 2);
-        umdvideoplayer.resumeVideo();
-    }
 }//GEN-LAST:event_twoTimesResizeActionPerformed
 
 private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_threeTimesResizeActionPerformed
 	setViewportResizeScaleFactor(3);
-    if (umdvideoplayer != null) {
-        umdvideoplayer.pauseVideo();
-        umdvideoplayer.setVideoPlayerResizeScaleFactor(this, 3);
-        umdvideoplayer.resumeVideo();
-    }
 }//GEN-LAST:event_threeTimesResizeActionPerformed
 
     private void exitEmu() {
