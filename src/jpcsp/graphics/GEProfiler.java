@@ -16,7 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;
@@ -35,6 +39,8 @@ public class GEProfiler {
     private static ProfilerEnabledSettingsListerner profilerEnabledSettingsListerner;
     private static final Long zero = new Long(0);
     private static HashMap<Integer, Long> cmdCounts = new HashMap<Integer, Long>();
+    private static HashMap<Integer, Long> primVtypeCounts = new HashMap<Integer, Long>();
+    private static HashMap<Integer, String> vtypeNames = new HashMap<Integer, String>();
     private static long geListCount;
     private static long textureLoadCount;
     private static long copyGeToMemoryCount;
@@ -69,6 +75,8 @@ public class GEProfiler {
         }
 
         cmdCounts.clear();
+        primVtypeCounts.clear();
+        vtypeNames.clear();
         geListCount = 0;
         textureLoadCount = 0;
         copyGeToMemoryCount = 0;
@@ -88,6 +96,20 @@ public class GEProfiler {
         	Long cmdCount = cmdCounts.get(cmd);
         	log.info(String.format("%s: called %d times, average %.1f per GE list", geCommands.getCommandString(cmd.intValue()), cmdCount.longValue(), cmdCount.longValue() / (double) geListCount));
         }
+
+        // Sort the primVtypeCounts based on their counts (highest count first).
+        List<Integer> primVtypeSorted = new ArrayList<Integer>(primVtypeCounts.keySet());
+        Collections.sort(primVtypeSorted, new Comparator<Integer>() {
+			@Override
+			public int compare(Integer vtype1, Integer vtype2) {
+				return -primVtypeCounts.get(vtype1).compareTo(primVtypeCounts.get(vtype2));
+			}
+		});
+
+        for (Integer vtype : primVtypeSorted) {
+        	Long vtypeCount = primVtypeCounts.get(vtype);
+        	log.info(String.format("%s: used %d times in PRIM, average %.1f per GE list", vtypeNames.get(vtype), vtypeCount.longValue(), vtypeCount.longValue() / (double) geListCount));
+        }
     }
 
     public static void startGeList() {
@@ -101,6 +123,17 @@ public class GEProfiler {
     	}
 
     	cmdCounts.put(cmd, cmdCount + 1);
+
+    	if (cmd == GeCommands.PRIM) {
+    		VertexInfo vinfo = VideoEngine.getInstance().getContext().vinfo;
+    		int vtype = vinfo.vtype;
+    		Long vtypeCount = primVtypeCounts.get(vtype);
+    		if (vtypeCount == null) {
+    			vtypeCount = zero;
+    			vtypeNames.put(vtype, vinfo.toString());
+    		}
+    		primVtypeCounts.put(vtype, vtypeCount + 1);
+    	}
     }
 
     public static void loadTexture() {
