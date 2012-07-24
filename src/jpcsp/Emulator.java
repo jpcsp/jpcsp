@@ -153,7 +153,7 @@ public class Emulator implements Runnable {
 
     public SceModule load(String pspfilename, ByteBuffer f, boolean fromSyscall) throws IOException, GeneralJpcspException {
 
-        initNewPsp();
+        initNewPsp(fromSyscall);
 
         module = jpcsp.Loader.getInstance().LoadModule(pspfilename, f, MemoryMap.START_USERSPACE + 0x4000, false);
 
@@ -198,14 +198,14 @@ public class Emulator implements Runnable {
         cpu.gpr[_k1] = 0;
         cpu.gpr[_gp] = module.gp_value;
 
-        HLEModuleManager.getInstance().startModules();
+    	HLEModuleManager.getInstance().startModules(fromSyscall);
         Modules.ThreadManForUserModule.Initialise(module, cpu.pc, module.attribute, module.pspfilename, module.modid, fromSyscall);
 
         if (State.memoryViewer != null)
             State.memoryViewer.RefreshMemory();
     }
 
-    private void initNewPsp() {
+    private void initNewPsp(boolean fromSyscall) {
         moduleLoaded = false;
 
         HLEModuleManager.getInstance().stopModules();
@@ -215,7 +215,18 @@ public class Emulator implements Runnable {
         getClock().reset();
         getProcessor().reset();
         getScheduler().reset();
-        Memory.getInstance().Initialise();
+
+        Memory mem = Memory.getInstance();
+        if (!fromSyscall) {
+        	// Clear all memory, including VRAM.
+        	mem.Initialise();
+        } else {
+        	// Clear all memory excepted VRAM.
+        	// E.g. screen is not cleared when executing syscall sceKernelLoadExec().
+        	mem.memset(MemoryMap.START_SCRATCHPAD, (byte) 0, MemoryMap.SIZE_SCRATCHPAD);
+        	mem.memset(MemoryMap.START_RAM, (byte) 0, MemoryMap.SIZE_RAM);
+        }
+
         Battery.initialize();
         Interrupts.initialize();
         Wlan.initialize();

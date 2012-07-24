@@ -206,7 +206,7 @@ public class AutoTestsRunner {
             RuntimeContext.setIsHomebrew(false);
             //Modules.SysMemUserForUserModule.setMemory64MB(true);
 
-            HLEModuleManager.getInstance().startModules();
+            HLEModuleManager.getInstance().startModules(false);
             {
 				emulator.RunEmu();
 
