@@ -61,6 +61,7 @@ import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.graphics.GEProfiler;
 import jpcsp.graphics.GeCommands;
@@ -320,6 +321,7 @@ public class sceDisplay extends HLEModule {
     private boolean useSoftwareRenderer = false;
     private static final boolean useDebugGL = false;
     private static final int internalTextureFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+    static public boolean ignoreLWJGLError = false;
 
     // sceDisplayModes enum
     public static final int PSP_DISPLAY_MODE_LCD  = 0;
@@ -350,7 +352,7 @@ public class sceDisplay extends HLEModule {
     private int heightGe;
 
     // Resizing options
-    private static float viewportResizeFilterScaleFactor = 1;
+    private static float viewportResizeFilterScaleFactor = 1f;
     private static int viewportResizeFilterScaleFactorInt = 1;
     private boolean resizePending;
 
@@ -737,8 +739,6 @@ public class sceDisplay extends HLEModule {
     private void setAntiAliasSamplesNum(int samples) {
         antiAliasSamplesNum = samples;
     }
-    
-    static public boolean ignoreLWJGLError = false;
 
     @Override
     public void start() {
@@ -769,30 +769,35 @@ public class sceDisplay extends HLEModule {
         	}
         }
 
-        mode          = 0;
-        width         = Screen.width;
-        height        = Screen.height;
-        topaddrFb     = MemoryMap.START_VRAM;
-        bufferwidthFb = 512;
-        pixelformatFb = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
-        sync          = PSP_DISPLAY_SETBUF_IMMEDIATE;
+        // Reset the FB and GE settings only when not called from a syscall.
+        // E.g. sceKernelLoadExec() is not clearing/resetting the display.
+        if (!HLEModuleManager.getInstance().isStartFromSyscall()) {
+	        mode          = 0;
+	        width         = Screen.width;
+	        height        = Screen.height;
+	        topaddrFb     = MemoryMap.START_VRAM;
+	        bufferwidthFb = 512;
+	        pixelformatFb = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+	        sync          = PSP_DISPLAY_SETBUF_IMMEDIATE;
 
-        bottomaddrFb = topaddrFb + bufferwidthFb * height * getPixelFormatBytes(pixelformatFb);
+	        bottomaddrFb = topaddrFb + bufferwidthFb * height * getPixelFormatBytes(pixelformatFb);
+
+	        pixelsFb = getPixels(topaddrFb, bottomaddrFb);
+
+	        widthGe       = Screen.width;
+	        heightGe      = Screen.height;
+	        topaddrGe     = topaddrFb;
+	        bufferwidthGe = bufferwidthFb;
+	        pixelformatGe = pixelformatFb;
+	        bottomaddrGe  = bottomaddrFb;
+	        pixelsGe = getPixels(topaddrGe, bottomaddrGe);
+
+	        createTex = true;
+        }
 
         detailsDirty = true;
         displayDirty = true;
         geDirty = false;
-        createTex = true;
-
-        pixelsFb = getPixels(topaddrFb, bottomaddrFb);
-
-        widthGe       = Screen.width;
-        heightGe      = Screen.height;
-        topaddrGe     = topaddrFb;
-        bufferwidthGe = bufferwidthFb;
-        pixelformatGe = pixelformatFb;
-        bottomaddrGe  = bottomaddrFb;
-        pixelsGe = getPixels(topaddrGe, bottomaddrGe);
 
         isFbShowing = false;
         setGeBufCalledAtLeastOnce = false;

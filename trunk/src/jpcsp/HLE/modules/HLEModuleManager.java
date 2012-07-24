@@ -50,6 +50,7 @@ public class HLEModuleManager {
     private HLEModuleFunction[] syscallCodeToFunction;
     private int syscallCodeAllocator;
     private boolean modulesStarted = false;
+    private boolean startFromSyscall;
 
     // Remember all the allocated syscalls, even when they are uninstalled
     // so that SyscallHandler can output an appropriate message when trying
@@ -378,15 +379,18 @@ public class HLEModuleManager {
         return func.getFunctionName();
     }
 
-	public void startModules() {
+	public void startModules(boolean startFromSyscall) {
 		if (modulesStarted) {
 			return;
 		}
+
+		this.startFromSyscall = startFromSyscall;
 
 		for (DefaultModule defaultModule : DefaultModule.values()) {
 			defaultModule.module.start();
 		}
 
+		this.startFromSyscall = false;
 		modulesStarted = true;
 	}
 
@@ -400,6 +404,10 @@ public class HLEModuleManager {
 		}
 
 		modulesStarted = false;
+	}
+
+	public boolean isStartFromSyscall() {
+		return startFromSyscall;
 	}
 
 	public int getMaxSyscallCode() {
