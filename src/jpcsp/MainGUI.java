@@ -2204,7 +2204,8 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 }//GEN-LAST:event_threeTimesResizeActionPerformed
 
     private void exitEmu() {
-        if (Settings.getInstance().readBool("gui.saveWindowPos")) {
+    	// Save the current window location only if selected and not in full screen
+        if (Settings.getInstance().readBool("gui.saveWindowPos") && !isFullScreen()) {
             Settings.getInstance().writeWindowPos("mainwindow", getLocation());
         }
 

@@ -605,7 +605,11 @@ public class sceDisplay extends HLEModule {
 
     	canvas = new AWTGLCanvas_sceDisplay();
         setScreenResolution(Screen.width, Screen.height);
-        setViewportResizeScaleFactor(Settings.getInstance().readFloat(resizeScaleFactorSettings, 1f));
+
+        // Remember the last window size only if not running in full screen
+        if (!Emulator.getMainGUI().isFullScreen()) {
+        	setViewportResizeScaleFactor(Settings.getInstance().readFloat(resizeScaleFactorSettings, 1f));
+        }
 
         texFb = -1;
         resizedTexFb = -1;
@@ -670,7 +674,10 @@ public class sceDisplay extends HLEModule {
     	}
 
     	if (viewportResizeFilterScaleFactor != sceDisplay.viewportResizeFilterScaleFactor) {
-    		Settings.getInstance().writeFloat(resizeScaleFactorSettings, viewportResizeFilterScaleFactor);
+    		// Save the current window size only if not in full screen
+    		if (!Emulator.getMainGUI().isFullScreen()) {
+    			Settings.getInstance().writeFloat(resizeScaleFactorSettings, viewportResizeFilterScaleFactor);
+    		}
 
     		sceDisplay.viewportResizeFilterScaleFactor = viewportResizeFilterScaleFactor;
     		sceDisplay.viewportResizeFilterScaleFactorInt = Math.round((float) Math.ceil(viewportResizeFilterScaleFactor));
