@@ -946,8 +946,8 @@ public class RuntimeContext {
     		codeBlocks.clear();
     		currentThread = null;
     		currentRuntimeThread = null;
-    		stopAllThreads();
     		reset = true;
+    		stopAllThreads();
     		synchronized (waitForEnd) {
 				waitForEnd.notify();
 			}

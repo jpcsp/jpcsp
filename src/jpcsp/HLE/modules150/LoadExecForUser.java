@@ -64,8 +64,8 @@ public class LoadExecForUser extends HLEModule {
     public int sceKernelLoadExec(PspString filename, @CanBeNull TPointer32 option_addr) {
         String name = filename.getString();
 
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelLoadExec file=%s optionAddr=%s", filename, option_addr));
+        if (log.isInfoEnabled()) {
+        	log.info(String.format("sceKernelLoadExec file=%s optionAddr=%s", filename, option_addr));
         }
 
         // Flush system memory to mimic a real PSP reset.

@@ -96,14 +96,17 @@ public class IntrManager {
 	}
 
 	public void reset() {
+		stop();
+		installDefaultInterrupts();
+	}
+
+	public void stop() {
 		interrupts = new Vector<LinkedList<AbstractInterruptHandler>>(PSP_NUMBER_INTERRUPTS);
 		interrupts.setSize(PSP_NUMBER_INTERRUPTS);
 		intrHandlers = new IntrHandler[IntrManager.PSP_NUMBER_INTERRUPTS];
 		allegrexInterruptHandlers = new LinkedList<AbstractAllegrexInterruptHandler>();
 
 		deferredInterrupts = new LinkedList<AbstractInterruptHandler>();
-
-		installDefaultInterrupts();
 	}
 
 	public static String getInterruptName(int interruptNumber) {

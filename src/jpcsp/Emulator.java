@@ -139,11 +139,11 @@ public class Emulator implements Runnable {
     }
 
     private boolean isBootModuleBad(String name) {
-        for (String moduleName : bootModuleBlackList) {
-                if (name.equals(moduleName)) {
-                    return true;
-                }
-            }
+    	for (String moduleName : bootModuleBlackList) {
+    		if (name.equals(moduleName)) {
+    			return true;
+    		}
+    	}
         return false;
     }
 
@@ -201,8 +201,9 @@ public class Emulator implements Runnable {
     	HLEModuleManager.getInstance().startModules(fromSyscall);
         Modules.ThreadManForUserModule.Initialise(module, cpu.pc, module.attribute, module.pspfilename, module.modid, fromSyscall);
 
-        if (State.memoryViewer != null)
+        if (State.memoryViewer != null) {
             State.memoryViewer.RefreshMemory();
+        }
     }
 
     private void initNewPsp(boolean fromSyscall) {
@@ -210,9 +211,15 @@ public class Emulator implements Runnable {
 
         HLEModuleManager.getInstance().stopModules();
         RuntimeContext.reset();
-        Profiler.reset();
-        GEProfiler.reset();
-        getClock().reset();
+
+        if (!fromSyscall) {
+        	// Do not reset the profiler if we have been called from sceKernelLoadExec
+            Profiler.reset();
+            GEProfiler.reset();
+        	// Do not reset the clock if we have been called from sceKernelLoadExec
+        	getClock().reset();
+        }
+
         getProcessor().reset();
         getScheduler().reset();
 
@@ -358,8 +365,7 @@ public class Emulator implements Runnable {
     	PauseEmu(true, status);
     }
 
-    public static void setFpsTitle(String fps)
-    {
+    public static void setFpsTitle(String fps) {
          gui.setMainTitle(fps);
     }
 

@@ -31,29 +31,31 @@ public class InterruptManager extends HLEModule {
 
 	@Override
 	public String getName() { return "InterruptManager"; }
-	
+
+	@Override
+	public void stop() {
+		Managers.intr.stop();
+		super.stop();
+	}
+
 	@HLEFunction(nid = 0xCA04A2B9, version = 150)
-	public void sceKernelRegisterSubIntrHandler(Processor processor) {
-		int[] gpr = processor.cpu.gpr;
-		gpr[2] = Managers.intr.sceKernelRegisterSubIntrHandler(gpr[4], gpr[5], gpr[6], gpr[7]);
+	public int sceKernelRegisterSubIntrHandler(int intrNumber, int subIntrNumber, int handlerAddress, int handlerArgument) {
+		return Managers.intr.sceKernelRegisterSubIntrHandler(intrNumber, subIntrNumber, handlerAddress, handlerArgument);
 	}
     
 	@HLEFunction(nid = 0xD61E6961, version = 150)
-	public void sceKernelReleaseSubIntrHandler(Processor processor) {
-		int[] gpr = processor.cpu.gpr;
-		gpr[2] = Managers.intr.sceKernelReleaseSubIntrHandler(gpr[4], gpr[5]);
+	public int sceKernelReleaseSubIntrHandler(int intrNumber, int subIntrNumber) {
+		return Managers.intr.sceKernelReleaseSubIntrHandler(intrNumber, subIntrNumber);
 	}
     
 	@HLEFunction(nid = 0xFB8E22EC, version = 150)
-	public void sceKernelEnableSubIntr(Processor processor) {
-		int[] gpr = processor.cpu.gpr;
-		gpr[2] = Managers.intr.sceKernelEnableSubIntr(gpr[4], gpr[5]);
+	public int sceKernelEnableSubIntr(int intrNumber, int subIntrNumber) {
+		return Managers.intr.sceKernelEnableSubIntr(intrNumber, subIntrNumber);
 	}
     
 	@HLEFunction(nid = 0x8A389411, version = 150)
-	public void sceKernelDisableSubIntr(Processor processor) {
-		int[] gpr = processor.cpu.gpr;
-		gpr[2] = Managers.intr.sceKernelDisableSubIntr(gpr[4], gpr[5]);
+	public int sceKernelDisableSubIntr(int intrNumber, int subIntrNumber) {
+		return Managers.intr.sceKernelDisableSubIntr(intrNumber, subIntrNumber);
 	}
     
 	@HLEFunction(nid = 0x5CB5A78B, version = 150)
@@ -100,5 +102,4 @@ public class InterruptManager extends HLEModule {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-
 }
