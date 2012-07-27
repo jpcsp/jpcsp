@@ -44,6 +44,7 @@ import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.format.DeferredStub;
+import jpcsp.format.DeferredVStub32;
 import jpcsp.format.DeferredVStubHI16LO16;
 import jpcsp.format.Elf32;
 import jpcsp.format.Elf32EntHeader;
@@ -1049,27 +1050,57 @@ public class Loader {
                     }
                 	int vStub = (int) stubHeader.getVStub();
                 	if (vStub != 0) {
-                		if (log.isDebugEnabled()) {
-                			log.debug(String.format("Vstub: %s", Utilities.getMemoryDump(vStub, 16, 4, 16)));
-                		}
-                    	int relocAddr = mem.read32(vStub);
                     	int vStubSize = stubHeader.getVStubSize();
-                    	IMemoryReader nidReader = MemoryReader.getMemoryReader(vStub + 4, vStubSize * 4, 4);
-                    	IMemoryReader relocReader = MemoryReader.getMemoryReader(relocAddr, vStubSize * 8, 4);
+                		if (log.isDebugEnabled()) {
+                			log.debug(String.format("Vstub has size %d: %s", vStubSize, Utilities.getMemoryDump(vStub, vStubSize * 8, 4, 16)));
+                		}
+                		IMemoryReader vstubReader = MemoryReader.getMemoryReader(vStub, vStubSize * 8, 4);
                     	for (int j = 0; j < vStubSize; j++) {
-	                    	int nid = nidReader.readNext();
-	                    	int reloc1 = relocReader.readNext();
-	                    	int reloc2 = relocReader.readNext();
-	                    	if ((reloc1 >>> 26) == AllegrexOpcodes.BNE && (reloc2 >>> 26) == AllegrexOpcodes.BLEZ) {
-	                    		int hi16 = (reloc1 & 0x03FFFFFF) << 2;
-	                    		int lo16 = (reloc2 & 0x03FFFFFF) << 2;
-	                    		if (log.isDebugEnabled()) {
-	                    			log.debug(String.format("Vstub reloc NID 0x%08X at 0x%08X, 0x%08X", nid, hi16, lo16));
+                    		int relocAddr = vstubReader.readNext();
+	                    	int nid = vstubReader.readNext();
+	                    	// relocAddr points to a list of relocation terminated by a 0
+	                    	IMemoryReader relocReader = MemoryReader.getMemoryReader(relocAddr, 4);
+	                    	while (true) {
+	                    		int reloc = relocReader.readNext();
+	                    		if (reloc == 0) {
+	                    			// End of relocation list
+	                    			break;
 	                    		}
-		                    	DeferredVStubHI16LO16 deferredStub = new DeferredVStubHI16LO16(stubHeader.getModuleNamez(), hi16, lo16, nid);
-		                    	module.unresolvedImports.add(deferredStub);
-	                    	} else {
-	                    		log.warn(String.format("Unknown Vstub relocation nid 0x%08X, reloc1=0x%08X, reloc2=0x%08X", nid, reloc1, reloc2));
+	                    		int opcode = reloc >>> 26;
+                    			switch (opcode) {
+                    				case AllegrexOpcodes.BNE: {
+                    					int reloc2 = relocReader.readNext();
+                    					int opcode2 = reloc2 >>> 26;
+                            			switch (opcode2) {
+                            				case AllegrexOpcodes.BLEZ: {
+                	                    		int hi16 = (reloc & 0x03FFFFFF) << 2;
+                	                    		int lo16 = (reloc2 & 0x03FFFFFF) << 2;
+                	                    		if (log.isDebugEnabled()) {
+                	                    			log.debug(String.format("Vstub reloc HI16LO16 NID 0x%08X at 0x%08X, 0x%08X", nid, hi16, lo16));
+                	                    		}
+                		                    	DeferredVStubHI16LO16 deferredStub = new DeferredVStubHI16LO16(stubHeader.getModuleNamez(), hi16, lo16, nid);
+                		                    	module.unresolvedImports.add(deferredStub);
+                            					break;
+                            				}
+                            				default:
+                	                    		log.warn(String.format("Unknown Vstub relocation nid 0x%08X, reloc1=0x%08X, reloc2=0x%08X", nid, reloc, reloc2));
+                	                    		break;
+                            			}
+                            			break;
+                    				}
+                    				case AllegrexOpcodes.J: {
+        	                    		int address = (reloc & 0x03FFFFFF) << 2;
+                    					if (log.isDebugEnabled()) {
+                    						log.debug(String.format("Vstub reloc 32 NID 0x%08X at 0x%08X", nid, address));
+                    					}
+                    					DeferredVStub32 deferredStub = new DeferredVStub32(stubHeader.getModuleNamez(), address, nid);
+                    					module.unresolvedImports.add(deferredStub);
+                    					break;
+                    				}
+                    				default:
+        	                    		log.warn(String.format("Unknown Vstub relocation nid 0x%08X, reloc=0x%08X", nid, reloc));
+        	                    		break;
+                    			}
 	                    	}
                     	}
                     }
