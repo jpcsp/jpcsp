@@ -4339,7 +4339,7 @@ public class VideoEngine {
     private void executeCommandVAP() {
         int alpha = normalArgument & 0xFF;
         int prim_type = (normalArgument >> 8) & 0x7;
-        log.warn("Unimplemented VAP: alpha=" + alpha + ", prim_type=" + prim_type);
+        log.warn(String.format("Unimplemented VAP: alpha=%d, prim_type=%d, unknown=0x%04X", alpha, prim_type, normalArgument >> 11));
     }
 
     private void executeCommandVFC() {
