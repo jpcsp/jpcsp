@@ -18,27 +18,33 @@ package jpcsp.format;
 
 import jpcsp.Memory;
 
-public class DeferredVStub32 extends DeferredStub {
-	public DeferredVStub32(String moduleName, int importAddress, int nid) {
+public class DeferredVStubHI16 extends DeferredStub {
+	public DeferredVStubHI16(String moduleName, int importAddress, int nid) {
 		super(moduleName, importAddress, nid);
 	}
 
 	@Override
 	public void resolve(Memory mem, int address) {
-		// Perform a R_MIPS_32 relocation
+		// Perform a R_MIPS_HI16 relocation
 
-		// Retrieve the current 32bit value
-		int value = mem.read32(getImportAddress());
+		// Retrieve the current address from hi16
+		int hiValue = mem.read16(getImportAddress()) << 16;
+		int value = hiValue << 16;
 
-		// Relocate the value
+		// Relocate the address
 		value += address;
 
-		// Write back the relocated 32bit value
-		mem.write32(getImportAddress(), value);
+		// Write back the relocation address to hi16 and lo16
+		short relocatedLoValue = (short) value;
+		short relocatedHiValue = (short) (value >>> 16);
+		if (relocatedLoValue < 0) {
+			relocatedHiValue++;
+		}
+		mem.write16(getImportAddress(), relocatedHiValue);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("Reloc32 %s", super.toString());
+		return String.format("HI16 %s", super.toString());
 	}
 }
