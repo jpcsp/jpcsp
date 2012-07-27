@@ -1117,6 +1117,21 @@ public class ImageReader {
 	}
 
 	/**
+	 * Convert a 8888 color from ARGB (Java/Swing format) to ABGR (PSP format).
+	 *     ARGB: AAAAAAAARRRRRRRRGGGGGGGGBBBBBBBB
+	 * transformed into
+	 *     ABGR: AAAAAAAABBBBBBBBGGGGGGGGRRRRRRRR
+	 *
+	 * @param colorABGR 8888 color in ABGR format
+	 * @return          8888 color in ARGB format
+	 */
+	public static int colorARGBtoABGR(int colorARGB) {
+		return ((colorARGB & 0xFF00FF00)      ) |
+		       ((colorARGB & 0x000000FF) << 16) |
+		       ((colorARGB & 0x00FF0000) >> 16);
+	}
+
+	/**
 	 * Return the number of bytes required by a pixel in a specific format.
 	 * 
 	 * @param pixelFormat the format of the pixel (TPSM_PIXEL_STORAGE_MODE_xxx)
