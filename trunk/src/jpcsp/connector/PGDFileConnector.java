@@ -71,6 +71,30 @@ public class PGDFileConnector {
         }
     }
 
+    public SeekableDataInput loadDecryptedPGDFile(String fileName, int fileSize) {
+        SeekableDataInput fileInput = loadDecryptedPGDFile(fileName);
+        if (fileInput != null) {
+	        try {
+	        	// Check that the file has minimum the given size
+				if (fileInput.length() < fileSize) {
+					Modules.log.warn(String.format("Existing PGD file not of required size (%d/%d), decrypting again", fileSize, fileInput.length()));
+					fileInput.close();
+					return null;
+				}
+			} catch (IOException e) {
+				Modules.log.error("loadDecryptedPGDFile", e);
+				try {
+					fileInput.close();
+				} catch (IOException e1) {
+					// Ignore error while closing
+				}
+				return null;
+			}
+        }
+
+        return fileInput;
+    }
+
     public SeekableDataInput loadDecryptedPGDFile(String fileName) {
         SeekableDataInput fileInput = null;
         SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(fileName);
