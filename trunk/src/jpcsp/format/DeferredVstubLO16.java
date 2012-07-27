@@ -18,35 +18,29 @@ package jpcsp.format;
 
 import jpcsp.Memory;
 
-public class DeferredVStubHI16LO16 extends DeferredStub {
-	private int hi16;
-	private int lo16;
+public class DeferredVstubLO16 extends DeferredStub {
 
-	public DeferredVStubHI16LO16(String moduleName, int hi16, int lo16, int nid) {
-		super(moduleName, hi16, nid);
-		this.hi16 = hi16;
-		this.lo16 = lo16;
+	public DeferredVstubLO16(String moduleName, int importAddress, int nid) {
+		super(moduleName, importAddress, nid);
 	}
 
 	@Override
 	public void resolve(Memory mem, int address) {
-		// Perform a R_MIPS_HI16 & R_MIPS_LO16 relocation
+		// Perform a R_MIPS_LO16 relocation
 
-		// Retrieve the current address from hi16 and lo16
-		int loValue = (short) mem.read16(lo16); // signed 16bit
-		int hiValue = mem.read16(hi16);
-		int value = (hiValue << 16) + loValue;
+		// Retrieve the current address from lo16
+		int loValue = (short) mem.read16(getImportAddress()); // signed 16bit
 
 		// Relocate the address
-		value += address;
+		loValue += address;
 
 		// Write back the relocation address to hi16 and lo16
-		short relocatedLoValue = (short) value;
-		short relocatedHiValue = (short) (value >>> 16);
-		if (relocatedLoValue < 0) {
-			relocatedHiValue++;
-		}
-		mem.write16(lo16, relocatedLoValue);
-		mem.write16(hi16, relocatedHiValue);
+		short relocatedLoValue = (short) loValue;
+		mem.write16(getImportAddress(), relocatedLoValue);
+	}
+
+	@Override
+	public String toString() {
+		return String.format("LO16 %s", super.toString());
 	}
 }
