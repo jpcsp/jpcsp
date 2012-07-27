@@ -2092,54 +2092,55 @@ public class IoFileMgrForUser extends HLEModule {
                             pgdFileConnector.extractPGDFile(info.filename, info.readOnlyFile, keyHex);
                         }
 
-                        // Check for an already decrypted file.
-                        SeekableDataInput decInput = pgdFileConnector.loadDecryptedPGDFile(info.filename);
-                        if (decInput == null) {
-                            // Try to decrypt this PGD file with the Crypto Engine.
-                            try {
-                                // Maximum 16-byte aligned block size to use during stream read/write.
-                                int maxAlignedChunkSize = 0x4EF0;
+                        SeekableDataInput decInput = null;
+                        // Try to decrypt this PGD file with the Crypto Engine.
+                        try {
+                            // Maximum 16-byte aligned block size to use during stream read/write.
+                            int maxAlignedChunkSize = 0x4EF0;
 
-                                // PGD hash header size.
-                                int pgdHeaderSize = 0xA0;
+                            // PGD hash header size.
+                            int pgdHeaderSize = 0xA0;
 
-                                // Setup the buffers.
-                                byte[] inBuf = new byte[maxAlignedChunkSize + pgdHeaderSize];
-                                byte[] outBuf = new byte[maxAlignedChunkSize + 0x10];
-                                byte[] headerBuf = new byte[0x30 + 0x10];
-                                byte[] hashBuf = new byte[0x10];
+                            // Setup the buffers.
+                            byte[] inBuf = new byte[maxAlignedChunkSize + pgdHeaderSize];
+                            byte[] outBuf = new byte[maxAlignedChunkSize + 0x10];
+                            byte[] headerBuf = new byte[0x30 + 0x10];
+                            byte[] hashBuf = new byte[0x10];
 
-                                // Read the encrypted PGD header.
-                                info.readOnlyFile.readFully(inBuf, 0, pgdHeaderSize);
+                            // Read the encrypted PGD header.
+                            info.readOnlyFile.readFully(inBuf, 0, pgdHeaderSize);
 
-                                // Check if the "PGD" header is present
-                                if (inBuf[0] != 0 || inBuf[1] != 'P' || inBuf[2] != 'G' || inBuf[3] != 'D') {
-                                	// No "PGD" found in the header,
+                            // Check if the "PGD" header is present
+                            if (inBuf[0] != 0 || inBuf[1] != 'P' || inBuf[2] != 'G' || inBuf[3] != 'D') {
+                            	// No "PGD" found in the header,
+                            	// abort the decryption and leave the file unchanged
+                            	log.warn(String.format("No PGD header detected %02X %02X %02X %02X ('%c%c%c%c') detected in file '%s'", inBuf[0] & 0xFF, inBuf[1] & 0xFF, inBuf[2] & 0xFF, inBuf[3] & 0xFF, (char) inBuf[0], (char) inBuf[1], (char) inBuf[2], (char) inBuf[3], info.filename));
+                            } else {
+                                // Decrypt 0x30 bytes at offset 0x30 to expose the first header.
+                                System.arraycopy(inBuf, 0x10, headerBuf, 0, 0x10);
+                                System.arraycopy(inBuf, 0x30, headerBuf, 0x10, 0x30);
+                                byte headerBufDec[] = crypto.DecryptPGD(headerBuf, 0x30 + 0x10, keyBuf);
+
+                                // Extract the decrypting parameters.
+                                System.arraycopy(headerBufDec, 0, hashBuf, 0, 0x10);
+                                int dataSize = (headerBufDec[0x14] & 0xFF) | ((headerBufDec[0x15] & 0xFF) << 8) |
+                                        ((headerBufDec[0x16] & 0xFF) << 16) | ((headerBufDec[0x17] & 0xFF) << 24);
+                                int chunkSize = (headerBufDec[0x18] & 0xFF) | ((headerBufDec[0x19] & 0xFF) << 8) |
+                                        ((headerBufDec[0x1A] & 0xFF) << 16) | ((headerBufDec[0x1B] & 0xFF) << 24);
+                                int hashOffset = (headerBufDec[0x1C] & 0xFF) | ((headerBufDec[0x1D] & 0xFF) << 8) |
+                                        ((headerBufDec[0x1E] & 0xFF) << 16) | ((headerBufDec[0x1F] & 0xFF) << 24);
+                                if (log.isDebugEnabled()) {
+                                	log.debug(String.format("PGD dataSize=%d, chunkSize=%d, hashOffset=%d", dataSize, chunkSize, hashOffset));
+                                }
+
+                                if (hashOffset < 0 || hashOffset > info.readOnlyFile.length() || dataSize < 0) {
+                                	// The decrypted PGD header is incorrect...
                                 	// abort the decryption and leave the file unchanged
-                                	log.warn(String.format("No PGD header detected %02X %02X %02X %02X ('%c%c%c%c') detected in file '%s'", inBuf[0] & 0xFF, inBuf[1] & 0xFF, inBuf[2] & 0xFF, inBuf[3] & 0xFF, (char) inBuf[0], (char) inBuf[1], (char) inBuf[2], (char) inBuf[3], info.filename));
+                                	log.warn(String.format("Incorrect PGD header: dataSize=%d, chunkSize=%d, hashOffset=%d", dataSize, chunkSize, hashOffset));
                                 } else {
-	                                // Decrypt 0x30 bytes at offset 0x30 to expose the first header.
-	                                System.arraycopy(inBuf, 0x10, headerBuf, 0, 0x10);
-	                                System.arraycopy(inBuf, 0x30, headerBuf, 0x10, 0x30);
-	                                byte headerBufDec[] = crypto.DecryptPGD(headerBuf, 0x30 + 0x10, keyBuf);
-
-	                                // Extract the decrypting parameters.
-	                                System.arraycopy(headerBufDec, 0, hashBuf, 0, 0x10);
-	                                int dataSize = (headerBufDec[0x14] & 0xFF) | ((headerBufDec[0x15] & 0xFF) << 8) |
-	                                        ((headerBufDec[0x16] & 0xFF) << 16) | ((headerBufDec[0x17] & 0xFF) << 24);
-	                                int chunkSize = (headerBufDec[0x18] & 0xFF) | ((headerBufDec[0x19] & 0xFF) << 8) |
-	                                        ((headerBufDec[0x1A] & 0xFF) << 16) | ((headerBufDec[0x1B] & 0xFF) << 24);
-	                                int hashOffset = (headerBufDec[0x1C] & 0xFF) | ((headerBufDec[0x1D] & 0xFF) << 8) |
-	                                        ((headerBufDec[0x1E] & 0xFF) << 16) | ((headerBufDec[0x1F] & 0xFF) << 24);
-	                                if (log.isDebugEnabled()) {
-	                                	log.debug(String.format("PGD dataSize=%d, chunkSize=%d, hashOffset=%d", dataSize, chunkSize, hashOffset));
-	                                }
-
-	                                if (hashOffset < 0 || hashOffset > info.readOnlyFile.length() || dataSize < 0) {
-	                                	// The decrypted PGD header is incorrect...
-	                                	// abort the decryption and leave the file unchanged
-	                                	log.warn(String.format("Incorrect PGD header: dataSize=%d, chunkSize=%d, hashOffset=%d", dataSize, chunkSize, hashOffset));
-	                                } else {
+                                    // Check for an already decrypted file with the correct size
+                                	decInput = pgdFileConnector.loadDecryptedPGDFile(info.filename, dataSize);
+                                	if (decInput == null) {
 	                                    // Generate the necessary directories and files.
 	                                    String pgdPath = pgdFileConnector.getBaseDirectory(pgdFileConnector.id);
 	                                    new File(pgdPath).mkdirs();
@@ -2181,20 +2182,20 @@ public class IoFileMgrForUser extends HLEModule {
 		                                crypto.FinishPGDCipher();
 		                                decFile.setLength(dataSize);
 		                                decFile.close();
-	                                }
+
+		                                // Load the manually decrypted file generated just now.
+		                                decInput = pgdFileConnector.loadDecryptedPGDFile(info.filename);
+                                	}
                                 }
-                            } catch (Exception e) {
-                                log.error(e);
                             }
+                        } catch (Exception e) {
+                            log.error(e);
+                        }
 
-                            try {
-                                info.readOnlyFile.seek(info.position);
-                            } catch (IOException e) {
-                                log.error(e);
-                            }
-
-                            // Load the manually decrypted file generated just now.
-                            decInput = pgdFileConnector.loadDecryptedPGDFile(info.filename);
+                        try {
+                            info.readOnlyFile.seek(info.position);
+                        } catch (IOException e) {
+                            log.error(e);
                         }
 
                         if (decInput != null) {
