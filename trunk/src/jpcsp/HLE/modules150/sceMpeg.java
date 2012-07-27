@@ -493,10 +493,10 @@ public class sceMpeg extends HLEModule {
             if (checkMediaEngineState()) {
             	me.init(buffer_addr, mpegStreamSize, mpegOffset);
             	meChannel = new PacketChannel();
-                meChannel.write(buffer_addr, mpegOffset);
+                meChannel.write(buffer_addr, MPEG_HEADER_BUFFER_MINIMUM_SIZE);
             } else if (isEnableConnector()) {
                 mpegCodec.init(mpegVersion, mpegStreamSize, mpegLastTimestamp);
-                mpegCodec.writeVideo(buffer_addr, mpegOffset);
+                mpegCodec.writeVideo(buffer_addr, MPEG_HEADER_BUFFER_MINIMUM_SIZE);
             }
 
             // Mpeg header has already been initialized/processed
