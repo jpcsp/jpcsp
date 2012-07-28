@@ -16,10 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
+import static java.lang.Math.abs;
 import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
 import static jpcsp.graphics.GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
 import static jpcsp.graphics.GeCommands.TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES;
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
+import static jpcsp.graphics.RE.software.PixelColor.ONE;
+import static jpcsp.graphics.RE.software.PixelColor.getBlue;
+import static jpcsp.graphics.RE.software.PixelColor.getColorBGR;
+import static jpcsp.graphics.RE.software.PixelColor.getGreen;
+import static jpcsp.graphics.RE.software.PixelColor.getRed;
 import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
 
 import java.nio.ByteBuffer;
@@ -842,20 +848,109 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
         }
     }
 
-    private float[] getBlendColor(int gl_blend_src, int gl_blend_dst) {
-        float[] blend_color = null;
-        if (gl_blend_src == IRenderingEngine.GU_FIX_BLEND_COLOR) {
-            blend_color = context.sfix_color;
-            if (gl_blend_dst == IRenderingEngine.GU_FIX_BLEND_COLOR) {
-                if (context.sfix != context.dfix) {
-                    log.warn(String.format("UNSUPPORTED: Both different SFIX (0x%06X) and DFIX (0x%06X) are not supported (blend equation=%d)", context.sfix, context.dfix, context.blendEquation));
-                }
-            }
-        } else if (gl_blend_dst == IRenderingEngine.GU_FIX_BLEND_COLOR) {
-            blend_color = context.dfix_color;
-        }
+    /**
+     * Return the distance between 2 colors.
+     * The distance is the sum of the color component differences.
+     * 
+     * @param color1
+     * @param color2
+     * @return
+     */
+    private int colorDistance(int color1, int color2) {
+    	int blueDistance = abs(getBlue(color1) - getBlue(color2));
+    	int greenDistance = abs(getGreen(color1) - getGreen(color2));
+    	int redDistance = abs(getRed(color1) - getRed(color2));
 
-        return blend_color;
+    	return redDistance + greenDistance + blueDistance;
+    }
+
+    private int oneMinusColor(int color) {
+    	int b = ONE - getBlue(color);
+    	int g = ONE - getGreen(color);
+    	int r = ONE - getRed(color);
+    	return getColorBGR(b, g, r);
+    }
+
+    /**
+     * Return the best distance that could be used with a blend factor
+     * for a given color and blend color.
+     * The possible blend factors are
+     * - BLACK
+     * - WHITE
+     * - the blend color
+     * - one minus the blend color
+     * 
+     * @param blendColor
+     * @param color
+     * @return
+     */
+    private int getBestColorDistance(int blendColor, int color) {
+    	int bestDistance = colorDistance(color, blendColor);
+    	bestDistance = Math.min(bestDistance, colorDistance(color, oneMinusColor(blendColor)));
+    	bestDistance = Math.min(bestDistance, colorDistance(color, 0x000000));
+    	bestDistance = Math.min(bestDistance, colorDistance(color, 0xFFFFFF));
+
+    	return bestDistance;
+    }
+
+    /**
+     * Find the best blend factor for a color given a blend color.
+     * 
+     * @param blendColor
+     * @param oneMinusBlendColor
+     * @param color
+     * @return
+     */
+    private int getBestBlend(int blendColor, int oneMinusBlendColor, int color) {
+    	// Simple cases...
+    	if (blendColor == 0x000000) {
+    		return IRenderingEngine.GU_FIX_BLACK;
+    	}
+    	if (blendColor == 0xFFFFFF) {
+    		return IRenderingEngine.GU_FIX_WHITE;
+    	}
+    	if (blendColor == color) {
+    		return IRenderingEngine.GU_FIX_BLEND_COLOR;
+    	}
+    	if (blendColor == oneMinusBlendColor) {
+    		return IRenderingEngine.GU_FIX_BLEND_ONE_MINUS_COLOR;
+    	}
+
+    	// Complex case: test which blend would be the closest to the given color
+    	int bestDistance = colorDistance(color, blendColor);
+    	int bestBlend = IRenderingEngine.GU_FIX_BLEND_COLOR;
+
+    	int distance = colorDistance(color, oneMinusBlendColor);
+    	if (distance < bestDistance) {
+    		bestDistance = distance;
+    		bestBlend = IRenderingEngine.GU_FIX_BLEND_ONE_MINUS_COLOR;
+    	}
+
+    	distance = colorDistance(color, 0x000000);
+    	if (distance < bestDistance) {
+    		bestDistance = distance;
+    		bestBlend = IRenderingEngine.GU_FIX_BLACK;
+    	}
+
+    	distance = colorDistance(color, 0xFFFFFF);
+    	if (distance < bestDistance) {
+    		bestDistance = distance;
+    		bestBlend = IRenderingEngine.GU_FIX_WHITE;
+    	}
+
+    	return bestBlend;
+    }
+
+    private int getColorFromBlend(int blend, int blendColor, int oneMinusBlendColor) {
+    	switch (blend) {
+    		case IRenderingEngine.GU_FIX_BLACK: return 0x000000;
+    		case IRenderingEngine.GU_FIX_WHITE: return 0xFFFFFF;
+    		case IRenderingEngine.GU_FIX_BLEND_COLOR: return blendColor;
+    		case IRenderingEngine.GU_FIX_BLEND_ONE_MINUS_COLOR: return oneMinusBlendColor;
+    	}
+
+    	// Unknown blend...
+    	return -1;
     }
 
     @Override
@@ -872,7 +967,41 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
             }
         }
 
-        float[] blend_color = getBlendColor(src, dst);
+        float[] blend_color = null;
+        if (src == IRenderingEngine.GU_FIX_BLEND_COLOR) {
+            blend_color = context.sfix_color;
+            if (dst == IRenderingEngine.GU_FIX_BLEND_COLOR) {
+                if (context.sfix != context.dfix) {
+                	// We cannot set the correct FIX blend colors.
+                	// Try to find the best approximation...
+                	int blendColor;
+                	// Check which blend color, sfix or dfix, would give the best results
+                	// (i.e. would have the smallest distance)
+                	if (getBestColorDistance(context.sfix, context.dfix) <= getBestColorDistance(context.dfix, context.sfix)) {
+                		// Taking sfix as the blend color leads to the best results
+                		blendColor = context.sfix;
+                		blend_color = context.sfix_color;
+                	} else {
+                		// Taking dfix as the blend color leads to the best results
+                		blendColor = context.dfix;
+                		blend_color = context.dfix_color;
+                	}
+                	int oneMinusBlendColor = oneMinusColor(blendColor);
+
+                	// Now that we have decided which blend color to take,
+                	// find the optimum blend factor for both the source and destination
+                	src = getBestBlend(blendColor, oneMinusBlendColor, context.sfix);
+                	dst = getBestBlend(blendColor, oneMinusBlendColor, context.dfix);
+
+                	if (log.isInfoEnabled()) {
+                		log.warn(String.format("UNSUPPORTED: Both different SFIX (0x%06X) and DFIX (0x%06X) are not supported (blend equation=%d), approximating with 0x%06X/0x%06X", context.sfix, context.dfix, context.blendEquation, getColorFromBlend(src, blendColor, oneMinusBlendColor), getColorFromBlend(dst, blendColor, oneMinusBlendColor)));
+                	}
+                }
+            }
+        } else if (dst == IRenderingEngine.GU_FIX_BLEND_COLOR) {
+            blend_color = context.dfix_color;
+        }
+
         if (blend_color != null) {
             re.setBlendColor(blend_color);
         }
