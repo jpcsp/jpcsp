@@ -16,7 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.CanBeNull;
+import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.TPointer;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -230,6 +234,23 @@ public class sceAudio extends HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    public int checkChannel(int channel) {
+    	if (channel < 0 || channel >= PSP_AUDIO_CHANNEL_MAX) {
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_AUDIO_INVALID_CHANNEL);
+    	}
+
+    	return channel;
+    }
+
+    public int checkReservedChannel(int channel) {
+    	channel = checkChannel(channel);
+    	if (!pspPCMChannels[channel].isReserved()) {
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_AUDIO_CHANNEL_NOT_INIT);
+    	}
+
+    	return channel;
+    }
+
     @HLEFunction(nid = 0x80F1F7E0, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
     public void sceAudioInit(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -283,106 +304,67 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0x8C1009B2, version = 150, checkInsideInterrupt = true)
-    public void sceAudioOutput(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int channel = cpu.gpr[4];
-        int vol = cpu.gpr[5];
-        int pvoid_buf = cpu.gpr[6];
-
-        
-        if (!Memory.isAddressGood(pvoid_buf)) {
-            log.warn("sceAudioOutput bad pointer " + String.format("0x%08X", pvoid_buf));
-            cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
-        } else {
-            if (!pspPCMChannels[channel].isOutputBlocking()) {
-                changeChannelVolume(pspPCMChannels[channel], vol, vol);
-                cpu.gpr[2] = doAudioOutput(pspPCMChannels[channel], pvoid_buf);
-                Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
-            } else {
-                cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_CHANNEL_BUSY;
-            }
+    public int sceAudioOutput(@CheckArgument("checkReservedChannel") int channel, int vol, @CanBeNull TPointer pvoid_buf) {
+        if (pspPCMChannels[channel].isOutputBlocking()) {
+        	return SceKernelErrors.ERROR_AUDIO_CHANNEL_BUSY;
         }
+
+        changeChannelVolume(pspPCMChannels[channel], vol, vol);
+        int result = doAudioOutput(pspPCMChannels[channel], pvoid_buf.getAddress());
+        Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
+
+        return result;
     }
 
     @HLEFunction(nid = 0x136CAF51, version = 150, checkInsideInterrupt = true)
-    public void sceAudioOutputBlocking(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int channel = cpu.gpr[4];
-        int vol = cpu.gpr[5];
-        int pvoid_buf = cpu.gpr[6];
-
-        
-
-        if (pvoid_buf == 0) {
+    public int sceAudioOutputBlocking(@CheckArgument("checkReservedChannel") int channel, int vol, @CanBeNull TPointer pvoid_buf) {
+        if (pvoid_buf.isNull()) {
             if (!pspPCMChannels[channel].isDrained()) {
                 if (log.isDebugEnabled()) {
                     log.debug("sceAudioOutputBlocking[pvoid_buf==0] blocking " + pspPCMChannels[channel].toString());
                 }
-                blockThreadOutput(pspPCMChannels[channel], pvoid_buf, vol, vol);
-            } else {
-                cpu.gpr[2] = 0;
+                blockThreadOutput(pspPCMChannels[channel], pvoid_buf.getAddress(), vol, vol);
             }
-        } else if (!Memory.isAddressGood(pvoid_buf)) {
-            log.warn("sceAudioOutputBlocking bad pointer " + String.format("0x%08X", pvoid_buf));
-            cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
-        } else {
-            if (!pspPCMChannels[channel].isOutputBlocking() || disableBlockingAudio) {
-                if (log.isDebugEnabled()) {
-                    log.debug("sceAudioOutputBlocking[not blocking] " + pspPCMChannels[channel].toString());
-                }
-                changeChannelVolume(pspPCMChannels[channel], vol, vol);
-                cpu.gpr[2] = doAudioOutput(pspPCMChannels[channel], pvoid_buf);
-                if (log.isDebugEnabled()) {
-                    log.debug("sceAudioOutputBlocking[not blocking] returning " + cpu.gpr[2] + " (" + pspPCMChannels[channel].toString() + ")");
-                }
-                Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
-            } else {
-                if (log.isDebugEnabled()) {
-                    log.debug("sceAudioOutputBlocking[blocking] " + pspPCMChannels[channel].toString());
-                }
-                blockThreadOutput(pspPCMChannels[channel], pvoid_buf, vol, vol);
-            }
+            return 0;
         }
+
+        int result = 0;
+        if (!pspPCMChannels[channel].isOutputBlocking() || disableBlockingAudio) {
+            if (log.isDebugEnabled()) {
+                log.debug("sceAudioOutputBlocking[not blocking] " + pspPCMChannels[channel].toString());
+            }
+            changeChannelVolume(pspPCMChannels[channel], vol, vol);
+            result = doAudioOutput(pspPCMChannels[channel], pvoid_buf.getAddress());
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("sceAudioOutputBlocking[not blocking] returning %d (%s)", result, pspPCMChannels[channel]));
+            }
+            Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("sceAudioOutputBlocking[blocking] " + pspPCMChannels[channel].toString());
+            }
+            blockThreadOutput(pspPCMChannels[channel], pvoid_buf.getAddress(), vol, vol);
+        }
+
+        return result;
     }
 
     @HLEFunction(nid = 0xE2D56B2D, version = 150, checkInsideInterrupt = true)
-    public void sceAudioOutputPanned(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int channel = cpu.gpr[4];
-        int leftvol = cpu.gpr[5];
-        int rightvol = cpu.gpr[6];
-        int pvoid_buf = cpu.gpr[7];
-
-        
-        if (!Memory.isAddressGood(pvoid_buf)) {
-            log.warn("sceAudioOutputPanned bad pointer " + String.format("0x%08X", pvoid_buf));
-            cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
-        } else {
-            if (!pspPCMChannels[channel].isOutputBlocking()) {
-                changeChannelVolume(pspPCMChannels[channel], leftvol, rightvol);
-                cpu.gpr[2] = doAudioOutput(pspPCMChannels[channel], pvoid_buf);
-                Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
-            } else {
-                cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_CHANNEL_BUSY;
-            }
+    public int sceAudioOutputPanned(@CheckArgument("checkReservedChannel") int channel, int leftvol, int rightvol, @CanBeNull TPointer pvoid_buf) {
+        if (pspPCMChannels[channel].isOutputBlocking()) {
+        	return SceKernelErrors.ERROR_AUDIO_CHANNEL_BUSY;
         }
+
+        changeChannelVolume(pspPCMChannels[channel], leftvol, rightvol);
+        int result = doAudioOutput(pspPCMChannels[channel], pvoid_buf.getAddress());
+        Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
+
+        return result;
     }
 
     @HLEFunction(nid = 0x13F592BC, version = 150, checkInsideInterrupt = true)
-    public void sceAudioOutputPannedBlocking(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int channel = cpu.gpr[4];
-        int leftvol = cpu.gpr[5];
-        int rightvol = cpu.gpr[6];
-        int pvoid_buf = cpu.gpr[7];
-
-        
-
-        if (pvoid_buf == 0) {
+    public int sceAudioOutputPannedBlocking(@CheckArgument("checkReservedChannel") int channel, int leftvol, int rightvol, @CanBeNull TPointer pvoid_buf) {
+        if (pvoid_buf.isNull()) {
             // Tested on PSP:
             // An output adress of 0 is actually a special code for the PSP.
             // It means that we must stall processing until all the previous
@@ -391,28 +373,27 @@ public class sceAudio extends HLEModule {
                 if (log.isDebugEnabled()) {
                     log.debug("sceAudioOutputPannedBlocking[pvoid_buf==0] blocking " + pspPCMChannels[channel].toString());
                 }
-                blockThreadOutput(pspPCMChannels[channel], pvoid_buf, leftvol, rightvol);
-            } else {
-                cpu.gpr[2] = 0;
+                blockThreadOutput(pspPCMChannels[channel], pvoid_buf.getAddress(), leftvol, rightvol);
             }
-        } else if (!Memory.isAddressGood(pvoid_buf)) {
-            log.warn("sceAudioOutputPannedBlocking bad pointer " + String.format("0x%08X", pvoid_buf));
-            cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
-        } else {
-            if (!pspPCMChannels[channel].isOutputBlocking() || disableBlockingAudio) {
-                if (log.isDebugEnabled()) {
-                    log.debug(String.format("sceAudioOutputPannedBlocking[not blocking] leftVol=%d, rightVol=%d, channel=%s", leftvol, rightvol, pspPCMChannels[channel].toString()));
-                }
-                changeChannelVolume(pspPCMChannels[channel], leftvol, rightvol);
-                cpu.gpr[2] = doAudioOutput(pspPCMChannels[channel], pvoid_buf);
-                Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
-            } else {
-                if (log.isDebugEnabled()) {
-                    log.debug(String.format("sceAudioOutputPannedBlocking[blocking] leftVol=%d, rightVol=%d, channel=%s", leftvol, rightvol, pspPCMChannels[channel].toString()));
-                }
-                blockThreadOutput(pspPCMChannels[channel], pvoid_buf, leftvol, rightvol);
-            }
+            return 0;
         }
+
+        int result = 0;
+        if (!pspPCMChannels[channel].isOutputBlocking() || disableBlockingAudio) {
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("sceAudioOutputPannedBlocking[not blocking] leftVol=%d, rightVol=%d, channel=%s", leftvol, rightvol, pspPCMChannels[channel].toString()));
+            }
+            changeChannelVolume(pspPCMChannels[channel], leftvol, rightvol);
+            result = doAudioOutput(pspPCMChannels[channel], pvoid_buf.getAddress());
+            Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("sceAudioOutputPannedBlocking[blocking] leftVol=%d, rightVol=%d, channel=%s", leftvol, rightvol, pspPCMChannels[channel].toString()));
+            }
+            blockThreadOutput(pspPCMChannels[channel], pvoid_buf.getAddress(), leftvol, rightvol);
+        }
+
+        return result;
     }
 
     @HLEFunction(nid = 0x5EC81C55, version = 150, checkInsideInterrupt = true)
@@ -423,7 +404,6 @@ public class sceAudio extends HLEModule {
         int samplecount = cpu.gpr[5];
         int format = cpu.gpr[6];
 
-        
         if (disableChReserve) {
             log.warn("IGNORED sceAudioChReserve channel= " + channel + " samplecount = " + samplecount + " format = " + format);
             cpu.gpr[2] = -1;
@@ -467,19 +447,19 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0x6FC46853, version = 150, checkInsideInterrupt = true)
-    public void sceAudioChRelease(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int channel = cpu.gpr[4];
-
-        
-        if (pspPCMChannels[channel].isReserved()) {
-            pspPCMChannels[channel].release();
-            pspPCMChannels[channel].setReserved(false);
-            cpu.gpr[2] = 0;
-        } else {
-            cpu.gpr[2] = -1;
+    public int sceAudioChRelease(@CheckArgument("checkChannel") int channel) {
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceAudioChRelease channel=%d", channel));
         }
+
+        if (!pspPCMChannels[channel].isReserved()) {
+        	return SceKernelErrors.ERROR_AUDIO_CHANNEL_NOT_RESERVED;
+        }
+
+        pspPCMChannels[channel].release();
+        pspPCMChannels[channel].setReserved(false);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xB011922F, version = 150, checkInsideInterrupt = true)
