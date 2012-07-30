@@ -569,8 +569,8 @@ public class Utilities {
     		return "";
     	}
 
-    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(bytes, offset, length);
-    	IMemoryReader charReader = MemoryReader.getMemoryReader(bytes, offset, length);
+    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(bytes, offset, length, 1);
+    	IMemoryReader charReader = MemoryReader.getMemoryReader(bytes, offset, length, 1);
 
     	return getMemoryDump(0, length, 1, bytesPerLine, memoryReader, charReader);
     }
