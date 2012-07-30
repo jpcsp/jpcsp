@@ -124,8 +124,13 @@ public class MemoryReader {
 		return getMemoryReader(address, getMaxLength(address), step);
 	}
 
-	public static IMemoryReader getMemoryReader(byte[] bytes, int offset, int length) {
-		return new MemoryReaderBytes(bytes, offset, length);
+	public static IMemoryReader getMemoryReader(byte[] bytes, int offset, int length, int step) {
+		switch (step) {
+		case 1: return new MemoryReaderBytes8(bytes, offset, length);
+		case 2: return new MemoryReaderBytes16(bytes, offset, length);
+		case 4: return new MemoryReaderBytes32(bytes, offset, length);
+		}
+		return null;
 	}
 
 	// The Java JIT compiler is producing slightly faster code for "final" methods.
@@ -500,12 +505,12 @@ public class MemoryReader {
 		}
 	}
 
-	private final static class MemoryReaderBytes implements IMemoryReader {
+	private final static class MemoryReaderBytes8 implements IMemoryReader {
 		private final byte[] bytes;
 		private int offset;
 		private int maxOffset;
 
-		public MemoryReaderBytes(byte[] bytes, int offset, int length) {
+		public MemoryReaderBytes8(byte[] bytes, int offset, int length) {
 			this.bytes = bytes;
 			this.offset = offset;
 			maxOffset = offset + length;
@@ -522,6 +527,69 @@ public class MemoryReader {
 		@Override
 		public void skip(int n) {
 			offset += n;
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return 0;
+		}
+	}
+
+	private final static class MemoryReaderBytes16 implements IMemoryReader {
+		private final byte[] bytes;
+		private int offset;
+		private int maxOffset;
+
+		public MemoryReaderBytes16(byte[] bytes, int offset, int length) {
+			this.bytes = bytes;
+			this.offset = offset;
+			maxOffset = offset + length;
+		}
+
+		@Override
+		public int readNext() {
+			if (offset >= maxOffset) {
+				return 0;
+			}
+			return (bytes[offset++] & 0xFF) | ((bytes[offset++] & 0xFF) << 8);
+		}
+
+		@Override
+		public void skip(int n) {
+			offset += n * 2;
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return 0;
+		}
+	}
+
+	private final static class MemoryReaderBytes32 implements IMemoryReader {
+		private final byte[] bytes;
+		private int offset;
+		private int maxOffset;
+
+		public MemoryReaderBytes32(byte[] bytes, int offset, int length) {
+			this.bytes = bytes;
+			this.offset = offset;
+			maxOffset = offset + length;
+		}
+
+		@Override
+		public int readNext() {
+			if (offset >= maxOffset) {
+				return 0;
+			}
+			return (bytes[offset++] & 0xFF) |
+			       ((bytes[offset++] & 0xFF) << 8) |
+			       ((bytes[offset++] & 0xFF) << 16) |
+			       ((bytes[offset++] & 0xFF) << 24);
+		}
+
+		@Override
+		public void skip(int n) {
+			offset += n * 4;
 		}
 
 		@Override

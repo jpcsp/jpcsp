@@ -401,6 +401,11 @@ public class ExternalDecoder {
     		return Hash.getHashCodeFloatingMemory(0, address, MAGIC_HASH_LENGTH);
     	}
 
+    	private static int getMagicHash(byte[] data) {
+    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(data, 0, MAGIC_HASH_LENGTH, 4);
+    		return Hash.getHashCodeFloatingMemory(0, memoryReader, MAGIC_HASH_LENGTH);
+    	}
+
     	public byte[] readFileData(int address, int length, int fileSize, byte[] checkData) {
     		int positionOffset = 0;
     		ReadInfo readInfo = readInfos.get(address);
@@ -434,6 +439,13 @@ public class ExternalDecoder {
     			if (readInfo == null) {
     				// Search for a file having the same magic hash value
     				ReadInfo ri = readMagics.get(getMagicHash(address));
+    				// If not found at the given address
+    				// (e.g. the memory has already been overwritten),
+    				// try with the checkData.
+    				if (ri == null && checkData != null && checkData.length >= MAGIC_HASH_LENGTH) {
+    					ri = readMagics.get(getMagicHash(checkData));
+    				}
+
     				if (ri != null) {
     					try {
     						// Check if the file length is large enough

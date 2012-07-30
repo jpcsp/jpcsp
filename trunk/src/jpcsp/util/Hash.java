@@ -202,6 +202,20 @@ public class Hash {
 	 */
 	public static int getHashCodeFloatingMemory(int hashCode, int addr, int lengthInBytes) {
 		IMemoryReader memoryReader = MemoryReader.getMemoryReader(addr, lengthInBytes, 4);
+		return getHashCodeFloatingMemory(hashCode, memoryReader, lengthInBytes);
+	}
+
+	/**
+	 * Generate a hashCode on a memory range using a rather simple but fast method.
+	 * The hashCode will be independent of the address, i.e. the same hashCode will
+	 * be generated for the same data at different memory addresses.
+	 * 
+	 * @param hashCode		current hashCode value
+	 * @param memoryReader	the memory reader for the values to be hashed
+	 * @param lengthInBytes	length of the memory range
+	 * @return updated hashCode value
+	 */
+	public static int getHashCodeFloatingMemory(int hashCode, IMemoryReader memoryReader, int lengthInBytes) {
 		for (int i = 0; i < lengthInBytes; i += 4) {
 			int value = memoryReader.readNext();
 			hashCode ^= value + i;
@@ -210,5 +224,4 @@ public class Hash {
 
 		return hashCode;
 	}
-
 }
