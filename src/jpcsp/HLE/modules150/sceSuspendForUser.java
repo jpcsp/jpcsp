@@ -16,12 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_INVALID_ARGUMENT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_INVALID_MODE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_POWER_VMEM_IN_USE;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.types.SceKernelSemaInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.hardware.Screen;
 
@@ -32,7 +34,8 @@ public class sceSuspendForUser extends HLEModule {
     public static final int KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY = 0;
     public static final int KERNEL_POWER_TICK_SUSPEND = 1;
     public static final int KERNEL_POWER_TICK_DISPLAY = 6;
-    private boolean volatileMemLocked;
+    protected SceKernelSemaInfo volatileMemSema;
+    protected static final int volatileMemSignal = 1;
 
     @Override
     public String getName() {
@@ -41,9 +44,9 @@ public class sceSuspendForUser extends HLEModule {
 
     @Override
     public void start() {
-        volatileMemLocked = false;
+    	super.start();
 
-        super.start();
+    	volatileMemSema = Managers.semas.hleKernelCreateSema("ScePowerVmem", 0, volatileMemSignal, volatileMemSignal, 0);
     }
 
     @HLEFunction(nid = 0xEADB1BD7, version = 150, checkInsideInterrupt = true)
@@ -99,15 +102,9 @@ public class sceSuspendForUser extends HLEModule {
 
         if (type != 0) {
             log.warn("hleKernelVolatileMemLock bad param: type != 0");
-            return ERROR_INVALID_ARGUMENT;
+            return ERROR_INVALID_MODE;
         }
 
-        if (volatileMemLocked) {
-            log.warn("hleKernelVolatileMemLock already locked");
-            return trylock ? ERROR_POWER_VMEM_IN_USE : -1;
-        }
-
-        volatileMemLocked = true;
         if (!paddr.isNull()) {
             paddr.setValue(0x08400000); // Volatile mem is always at 0x08400000
         }
@@ -115,7 +112,17 @@ public class sceSuspendForUser extends HLEModule {
             psize.setValue(0x400000);   // Volatile mem size is 4Megs
         }
 
-        return 0;
+        if (trylock) {
+        	if (Managers.semas.hleKernelPollSema(volatileMemSema, volatileMemSignal) != 0) {
+        		// Volatile mem is already locked
+        		return ERROR_POWER_VMEM_IN_USE;
+        	}
+        	return 0;
+        }
+
+        // If the volatile mem is already locked, the current thread has to wait
+        // until it is unlocked.
+        return Managers.semas.hleKernelWaitSema(volatileMemSema, volatileMemSignal, 0, false);
     }
 
     @HLEFunction(nid = 0x3E0271D3, version = 150, checkInsideInterrupt = true)
@@ -136,15 +143,9 @@ public class sceSuspendForUser extends HLEModule {
 
         if (type != 0) {
             log.warn("sceKernelVolatileMemUnlock bad param: type != 0");
-            return ERROR_INVALID_ARGUMENT;
-        }
-        if (!volatileMemLocked) {
-            log.warn("sceKernelVolatileMemUnlock - Volatile Memory was not locked!");
-            return -1;
+            return ERROR_INVALID_MODE;
         }
 
-        volatileMemLocked = false;
-
-        return 0;
+        return Managers.semas.hleKernelSignalSema(volatileMemSema, volatileMemSignal);
     }
 }
