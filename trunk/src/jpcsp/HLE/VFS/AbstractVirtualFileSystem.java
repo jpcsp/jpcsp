@@ -16,12 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.SceIoDirent;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.modules.IoFileMgrForUser;
+import jpcsp.util.Utilities;
 
 public abstract class AbstractVirtualFileSystem implements IVirtualFileSystem {
 	protected static Logger log = Logger.getLogger("vfs");
@@ -138,6 +140,16 @@ public abstract class AbstractVirtualFileSystem implements IVirtualFileSystem {
 
 	@Override
 	public int ioDevctl(String deviceName, int command, TPointer inputPointer, int inputLength, TPointer outputPointer, int outputLength) {
+		if (log.isEnabledFor(Level.WARN)) {
+	        log.warn(String.format("ioDevctl on '%s', 0x%08X unsupported command, inlen=%d, outlen=%d", deviceName, command, inputLength, outputLength));
+	        if (inputPointer.isAddressGood()) {
+	        	log.warn(String.format("ioDevctl indata: %s", Utilities.getMemoryDump(inputPointer.getAddress(), inputLength)));
+	        }
+	        if (outputPointer.isAddressGood()) {
+	        	log.warn(String.format("ioDevctl outdata: %s", Utilities.getMemoryDump(outputPointer.getAddress(), outputLength)));
+	        }
+		}
+
 		return IO_ERROR;
 	}
 }

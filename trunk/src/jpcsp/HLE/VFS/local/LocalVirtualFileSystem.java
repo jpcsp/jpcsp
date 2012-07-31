@@ -110,4 +110,11 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
 
         return 0;
 	}
+
+	@Override
+	public int ioRemove(String name) {
+		File file = getFile(name);
+
+		return file.delete() ? 0 : IO_ERROR;
+	}
 }
