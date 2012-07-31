@@ -14,9 +14,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.HLE.VFS.iso;
+package jpcsp.HLE.VFS;
 
-import jpcsp.HLE.VFS.AbstractVirtualFileSystem;
+import jpcsp.HLE.TPointer;
 
-public class UmdIsoVirtualFileSystem extends AbstractVirtualFileSystem {
+public interface IVirtualFile {
+	public int ioClose();
+	public int ioRead(TPointer outputPointer, int outputLength);
+	public int ioWrite(TPointer inputPointer, int inputLength);
+	public long ioLseek(long offset);
+	public int ioIoctl(int command, TPointer inputPointer, int inputLength, TPointer outputPointer, int outputLength);
+	public long length();
 }

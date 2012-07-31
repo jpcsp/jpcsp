@@ -37,6 +37,7 @@ import static jpcsp.util.Utilities.readStringZ;
 
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.PspString;
+import jpcsp.HLE.TPointer;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -57,6 +58,10 @@ import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.VFS.IVirtualFile;
+import jpcsp.HLE.VFS.IVirtualFileSystem;
+import jpcsp.HLE.VFS.VirtualFileSystemManager;
+import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
@@ -152,6 +157,9 @@ public class IoFileMgrForUser extends HLEModule {
     private final static int MAX_ID = 63;
     private final static String idPurpose = "IOFileManager-File";
 
+    private final static boolean useVirtualFileSystem = false;
+    protected VirtualFileSystemManager vfsManager;
+
     protected static enum IoOperation {
         open(5), close(1), seek(1), ioctl(2), remove, rename, mkdir, dread,
         // Duration of read operation: approx. 4 ms per 0x10000 bytes (tested on real PSP)
@@ -235,6 +243,7 @@ public class IoFileMgrForUser extends HLEModule {
         public final String filename;
         public final SeekableRandomFile msFile; // on memory stick, should either be identical to readOnlyFile or null
         public SeekableDataInput readOnlyFile; // on memory stick or umd
+        public final IVirtualFile vFile;
         public final String mode;
         public long position; // virtual position, beyond the end is allowed, before the start is an error
         public boolean sectorBlockMode;
@@ -255,6 +264,7 @@ public class IoFileMgrForUser extends HLEModule {
 
         /** Memory stick version */
         public IoInfo(String filename, SeekableRandomFile f, String mode, int flags, int permissions) {
+        	vFile = null;
             this.filename = filename;
             msFile = f;
             readOnlyFile = f;
@@ -274,9 +284,30 @@ public class IoFileMgrForUser extends HLEModule {
 
         /** UMD version (read only) */
         public IoInfo(String filename, SeekableDataInput f, String mode, int flags, int permissions) {
+        	vFile = null;
             this.filename = filename;
             msFile = null;
             readOnlyFile = f;
+            this.mode = mode;
+            this.flags = flags;
+            this.permissions = permissions;
+            sectorBlockMode = false;
+            id = getNewId();
+            if (isValidId()) {
+            	uid = getNewUid();
+            	fileIds.put(id, this);
+            	fileUids.put(uid, this);
+            } else {
+            	uid = -1;
+            }
+        }
+
+        /** VirtualFile version */
+        public IoInfo(String filename, IVirtualFile f, String mode, int flags, int permissions) {
+        	vFile = f;
+            this.filename = filename;
+            msFile = null;
+            readOnlyFile = null;
             this.mode = mode;
             this.flags = flags;
             this.permissions = permissions;
@@ -329,6 +360,11 @@ public class IoFileMgrForUser extends HLEModule {
 
         	return info;
         }
+
+		@Override
+		public String toString() {
+			return String.format("id=0x%X, fileName='%s'", id, filename);
+		}
     }
 
     public class IoDirInfo {
@@ -543,6 +579,12 @@ public class IoFileMgrForUser extends HLEModule {
         ioWaitStateChecker = new IoWaitStateChecker();
         host0Path = null;
 
+        vfsManager = new VirtualFileSystemManager();
+        if (useVirtualFileSystem) {
+	        vfsManager.register("ms0", new LocalVirtualFileSystem("ms0/"));
+	        vfsManager.register("flash0", new LocalVirtualFileSystem("flash0/"));
+        }
+
         setSettingsListener("emu.extractPGD", new ExtractPGDSettingsListerner());
 
         super.start();
@@ -604,6 +646,22 @@ public class IoFileMgrForUser extends HLEModule {
     	}
 
     	return fileName;
+    }
+
+    private String getAbsoluteFileName(String fileName) {
+    	if (filepath == null || fileName.contains(":")) {
+    		return fileName;
+    	}
+
+    	String absoluteFileName = filepath;
+    	if (!absoluteFileName.endsWith("/")) {
+    		absoluteFileName += "/";
+    	}
+    	absoluteFileName += fileName;
+    	absoluteFileName = absoluteFileName.replaceFirst("^disc0/", "disc0:");
+    	absoluteFileName = absoluteFileName.replaceFirst("^ms0/", "ms0:");
+
+    	return absoluteFileName;
     }
 
     /*
@@ -1348,8 +1406,24 @@ public class IoFileMgrForUser extends HLEModule {
         IoInfo info = null;
         int result;
         try {
-            String pcfilename = getDeviceFilePath(filename);
-            if (pcfilename != null) {
+        	String pcfilename = getDeviceFilePath(filename);
+
+        	String absoluteFileName = getAbsoluteFileName(filename);
+        	StringBuilder localFileName = new StringBuilder();
+        	IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
+        	if (vfs != null) {
+        		IVirtualFile vFile = vfs.ioOpen(localFileName.toString(), flags, permissions);
+        		if (vFile == null) {
+        			result = ERROR_ERRNO_FILE_NOT_FOUND;
+        		} else {
+	        		info = new IoInfo(filename, vFile, mode, flags, permissions);
+	        		info.result = ERROR_KERNEL_NO_ASYNC_OP;
+	        		result = info.id;
+	                if (log.isDebugEnabled()) {
+	                    log.debug("hleIoOpen assigned id = 0x" + Integer.toHexString(info.id));
+	                }
+        		}
+        	} else if (pcfilename != null) {
                 if (log.isDebugEnabled()) {
                     log.debug("hleIoOpen - opening file " + pcfilename);
                 }
@@ -1453,7 +1527,7 @@ public class IoFileMgrForUser extends HLEModule {
                 log.debug("sceIoOpenAsync - file not found (ok to ignore this message, debug purpose only)");
                 // For async we still need to make and return a file handle even if we couldn't open the file,
                 // this is so the game can query on the handle (wait/async stat/io callback).
-                info = new IoInfo(readStringZ(filename_addr), null, null, flags, permissions);
+                info = new IoInfo(readStringZ(filename_addr), (SeekableDataInput) null, null, flags, permissions);
                 result = info.id;
             }
 
@@ -1491,7 +1565,9 @@ public class IoFileMgrForUser extends HLEModule {
                     }
                     result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
                 } else {
-                    if (info.readOnlyFile != null) {
+                	if (info.vFile != null) {
+                		info.vFile.ioClose();
+                	} else if (info.readOnlyFile != null) {
                         // Can be just closing an empty handle, because hleIoOpen(async==true)
                         // generates a dummy IoInfo when the file could not be opened.
                         info.readOnlyFile.close();
@@ -1607,6 +1683,46 @@ public class IoFileMgrForUser extends HLEModule {
                 } else if ((data_addr < MemoryMap.START_RAM) && (data_addr + size > MemoryMap.END_RAM)) {
                     log.warn("hleIoRead - id " + Integer.toHexString(id) + " data is outside of ram 0x" + Integer.toHexString(data_addr) + " - 0x" + Integer.toHexString(data_addr + size));
                     result = ERROR_KERNEL_FILE_READ_ERROR;
+                } else if (info.vFile != null) {
+                    if (info.sectorBlockMode) {
+                        // In sectorBlockMode, the size is a number of sectors
+                        size *= UmdIsoFile.sectorLength;
+                    }
+                    // Using readFully for ms/umd compatibility, but now we must
+                    // manually make sure it doesn't read off the end of the file.
+                    if (info.position + size > info.vFile.length()) {
+                        int oldSize = size;
+                        size = (int) (info.vFile.length() - info.position);
+                        if (log.isDebugEnabled()) {
+                        	log.debug(String.format("hleIoRead - clamping size old=%d, new=%d, position=%d, len=%d", oldSize, size, info.position, info.vFile.length()));
+                        }
+                    }
+
+                    if (async) {
+                    	// Execute the read operation in the IO async thread
+                    	asyncAction = new IOAsyncReadAction(info, data_addr, requestedSize, size);
+                    	result = 0;
+                    } else {
+                    	position = info.position;
+                    	result = info.vFile.ioRead(new TPointer(Memory.getInstance(), data_addr), size);
+                    	if (result >= 0) {
+                    		size = result;
+                    		info.position += result;
+                    	} else {
+                    		size = 0;
+                    	}
+
+                    	if (log.isTraceEnabled()) {
+                    		log.trace(String.format("hleIoRead: %s", Utilities.getMemoryDump(data_addr, Math.min(16, size))));
+                    	}
+
+                    	// Invalidate any compiled code in the read range
+                    	RuntimeContext.invalidateRange(data_addr, size);
+
+                    	if (info.sectorBlockMode && result > 0) {
+                    		result /= UmdIsoFile.sectorLength;
+                    	}
+                    }
                 } else if ((info.readOnlyFile == null) || (info.position >= info.readOnlyFile.length())) {
                     // Ignore empty handles and allow seeking off the end of the file, just return 0 bytes read/written.
                     result = 0;
@@ -1685,6 +1801,44 @@ public class IoFileMgrForUser extends HLEModule {
                 } else if (info.asyncPending || info.asyncResultPending) {
                     log.warn("seek - id " + Integer.toHexString(id) + " PSP_ERROR_ASYNC_BUSY");
                     result = ERROR_KERNEL_ASYNC_BUSY;
+                } else if (info.vFile != null) {
+                    if (info.sectorBlockMode) {
+                        // In sectorBlockMode, the offset is a sector number
+                        offset *= UmdIsoFile.sectorLength;
+                    }
+
+                    long newPosition;
+                    switch (whence) {
+                        case PSP_SEEK_SET:
+                        	newPosition = offset;
+                            break;
+                        case PSP_SEEK_CUR:
+                        	newPosition = info.position + offset;
+                            break;
+                        case PSP_SEEK_END:
+                        	newPosition = info.vFile.length() + offset;
+                            break;
+                        default:
+                            log.error(String.format("seek - unhandled whence %d", whence));
+                            // Force an invalid argument error
+                            newPosition = -1;
+                            break;
+                    }
+
+                    if (newPosition >= 0) {
+                    	info.position = newPosition;
+
+                    	if (info.position <= info.vFile.length()) {
+                            info.vFile.ioLseek(info.position);
+                        }
+
+                        result = info.position;
+                        if (info.sectorBlockMode) {
+                            result /= UmdIsoFile.sectorLength;
+                        }
+                    } else {
+                    	result = ERROR_INVALID_ARGUMENT;
+                    }
                 } else if (info.readOnlyFile == null) {
                     // Ignore empty handles.
                     result = 0;
@@ -1764,6 +1918,10 @@ public class IoFileMgrForUser extends HLEModule {
             for (IIoListener ioListener : ioListeners) {
                 ioListener.sceIoSeek32((int) result, id, (int) offset, whence);
             }
+        }
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("hleIoLseek returning %d", result));
         }
 
         return result;
@@ -2949,13 +3107,22 @@ public class IoFileMgrForUser extends HLEModule {
         }
 
         int result;
-        String pcfilename = getDeviceFilePath(filename.getString());
-        SceIoStat stat = stat(pcfilename);
-        if (stat != null) {
+        SceIoStat stat;
+
+        String absoluteFileName = getAbsoluteFileName(filename.getString());
+    	StringBuilder localFileName = new StringBuilder();
+    	IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
+    	if (vfs != null) {
+    		stat = new SceIoStat();
+    		result = vfs.ioGetstat(localFileName.toString(), stat);
+    	} else {
+    		String pcfilename = getDeviceFilePath(filename.getString());
+    		stat = stat(pcfilename);
+    		result = (stat != null) ? 0 : ERROR_ERRNO_FILE_NOT_FOUND;
+    	}
+
+    	if (stat != null) {
             stat.write(Memory.getInstance(), stat_addr);
-            result = 0;
-        } else {
-        	result = ERROR_ERRNO_FILE_NOT_FOUND;
         }
 
         for (IIoListener ioListener : ioListeners) {
