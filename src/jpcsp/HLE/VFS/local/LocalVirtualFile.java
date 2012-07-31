@@ -14,9 +14,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.HLE.VFS.iso;
+package jpcsp.HLE.VFS.local;
 
-import jpcsp.HLE.VFS.AbstractVirtualFileSystem;
+import jpcsp.HLE.VFS.AbstractVirtualFile;
+import jpcsp.filesystems.SeekableDataInput;
 
-public class UmdIsoVirtualFileSystem extends AbstractVirtualFileSystem {
+public class LocalVirtualFile extends AbstractVirtualFile {
+	public LocalVirtualFile(SeekableDataInput file) {
+		super(file);
+	}
 }

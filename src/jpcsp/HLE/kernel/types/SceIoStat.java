@@ -38,8 +38,11 @@ public class SceIoStat {
     public SceIoStat() {
     }
 
-    public SceIoStat(int mode, int attr, long size,
-        ScePspDateTime ctime, ScePspDateTime atime, ScePspDateTime mtime) {
+    public SceIoStat(int mode, int attr, long size, ScePspDateTime ctime, ScePspDateTime atime, ScePspDateTime mtime) {
+    	init(mode, attr, size, ctime, atime, mtime);
+    }
+
+    public void init(int mode, int attr, long size, ScePspDateTime ctime, ScePspDateTime atime, ScePspDateTime mtime) {
         this.mode = mode;
         this.attr = attr;
         this.size = size;
