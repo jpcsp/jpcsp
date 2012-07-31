@@ -1636,6 +1636,10 @@ public class IoFileMgrForUser extends HLEModule {
                     	info.position += size;
                     	result = size;
 
+                    	if (log.isTraceEnabled()) {
+                    		log.trace(String.format("hleIoRead: %s", Utilities.getMemoryDump(data_addr, Math.min(16, size))));
+                    	}
+
                     	// Invalidate any compiled code in the read range
                     	RuntimeContext.invalidateRange(data_addr, size);
 
