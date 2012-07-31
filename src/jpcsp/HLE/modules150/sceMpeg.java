@@ -1446,7 +1446,12 @@ public class sceMpeg extends HLEModule {
             log.debug("sceMpegFlushAllStream mpeg=0x" + Integer.toHexString(mpeg));
         }
 
-        finishMpeg();
+        // Finish the Mpeg only if we are not at the start of a new video,
+        // otherwise the analyzed video could be lost.
+        if (videoFrameCount > 0 || audioFrameCount > 0) {
+        	finishMpeg();
+        }
+
         return 0;
     }
 
@@ -2283,6 +2288,9 @@ public class sceMpeg extends HLEModule {
         mpegRingbuffer.read(mem, mpegRingbufferAddr);
 
         if (packetsAdded > 0) {
+        	if (log.isTraceEnabled()) {
+        		log.trace(String.format("hleMpegRingbufferPostPut:%s", Utilities.getMemoryDump(mpegRingbuffer.data, packetsAdded * mpegRingbuffer.packetSize, 4, 16)));
+        	}
         	if (checkMediaEngineState() && (meChannel != null)) {
                 meChannel.write(mpegRingbuffer.data, packetsAdded * mpegRingbuffer.packetSize);
             } else if (isEnableConnector()) {
