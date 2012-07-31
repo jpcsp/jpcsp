@@ -61,6 +61,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.VFS.VirtualFileSystemManager;
+import jpcsp.HLE.VFS.emulator.EmulatorVirtualFileSystem;
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.IAction;
@@ -73,7 +74,6 @@ import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.ThreadManForUser;
-import jpcsp.autotests.AutoTestsOutput;
 import jpcsp.connector.PGDFileConnector;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
@@ -580,6 +580,8 @@ public class IoFileMgrForUser extends HLEModule {
         host0Path = null;
 
         vfsManager = new VirtualFileSystemManager();
+        vfsManager.register("emulator", new EmulatorVirtualFileSystem());
+        vfsManager.register("kemulator", new EmulatorVirtualFileSystem());
         if (useVirtualFileSystem) {
 	        vfsManager.register("ms0", new LocalVirtualFileSystem("ms0/"));
 	        vfsManager.register("flash0", new LocalVirtualFileSystem("flash0/"));
@@ -1954,6 +1956,8 @@ public class IoFileMgrForUser extends HLEModule {
             // Can't execute another operation until the previous one completed
             log.warn("hleIoIoctl - id " + Integer.toHexString(id) + " PSP_ERROR_ASYNC_BUSY");
             result = ERROR_KERNEL_ASYNC_BUSY;
+        } else if (info.vFile != null) {
+        	result = info.vFile.ioIoctl(cmd, new TPointer(mem, indata_addr), inlen, new TPointer(mem, outdata_addr), outlen);
         } else {
             switch (cmd) {
                 // UMD file seek set.
@@ -2940,11 +2944,16 @@ public class IoFileMgrForUser extends HLEModule {
         if (log.isDebugEnabled()) {
             log.debug("sceIoRemove - file = " + filename.getString());
         }
-        
+
         String pcfilename = getDeviceFilePath(filename.getString());
         int result;
 
-        if (pcfilename != null) {
+        String absoluteFileName = getAbsoluteFileName(filename.getString());
+        StringBuilder localFileName = new StringBuilder();
+        IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
+        if (vfs != null) {
+        	result = vfs.ioRemove(localFileName.toString());
+        } else if (pcfilename != null) {
             if (isUmdPath(pcfilename)) {
             	result = -1;
             } else {
@@ -2963,6 +2972,7 @@ public class IoFileMgrForUser extends HLEModule {
             ioListener.sceIoRemove(result, filename.getAddress(), filename.getString());
         }
         delayIoOperation(IoOperation.remove);
+
         return result;
     }
 
@@ -3298,38 +3308,19 @@ public class IoFileMgrForUser extends HLEModule {
                 }
             }
         }
-        
-        if (devicename.getString().equals("emulator:") || devicename.getString().equals("kemulator:")) {
-        	switch (cmd) {
-        		// EMULATOR_DEVCTL__GET_HAS_DISPLAY
-        		case 0x00000001: {
-        			if (Memory.isAddressGood(outdata_addr) && outlen >= 4) {
-                        mem.write32(outdata_addr, 1);
-                        result = 0;
-        			}
-        		} break;
-       			// EMULATOR_DEVCTL__SEND_OUTPUT
-        		case 0x00000002: {
-        			AutoTestsOutput.appendString(new String(mem.readChunk(indata_addr, inlen).array()));
-        			result = 0;
-        		} break;
-       			// EMULATOR_DEVCTL__IS_EMULATOR
-        		case 0x00000003: {
-        			result = 0;
-        		} break;
-        		default:
-        			throw(new RuntimeException(String.format("Unknown emulator: cmd 0x%08X", cmd)));
-        	}
-        	
-            for (IIoListener ioListener : ioListeners) {
+
+        IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(devicename.getString(), null);
+        if (vfs != null) {
+        	result = vfs.ioDevctl(devicename.getString(), cmd, new TPointer(mem, indata_addr), inlen, new TPointer(mem, outdata_addr), outlen);
+
+        	for (IIoListener ioListener : ioListeners) {
                 ioListener.sceIoDevctl(result, devicename.getAddress(), devicename.getString(), cmd, indata_addr, inlen, outdata_addr, outlen);
             }
             delayIoOperation(IoOperation.ioctl);
 
-        	return result;
+            return result;
         }
 
-        
         switch (cmd) {
             // Get UMD disc type.
             case 0x01F20001: {
