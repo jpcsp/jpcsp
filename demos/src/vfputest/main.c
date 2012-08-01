@@ -856,6 +856,26 @@ void __attribute__((noinline)) lvrq(ScePspFVector4 *v0, int address, ScePspFVect
    : "+m" (*v0) : "m" (address), "m" (*v1) );
 }
 
+void __attribute__((noinline)) vsocps(ScePspFVector4 *v0, ScePspFVector4 *v1)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+   "lv.q   C100, %1\n"
+   "vsocp.s C000, S100\n"
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1));
+}
+
+void __attribute__((noinline)) vsocpp(ScePspFVector4 *v0, ScePspFVector4 *v1)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+   "lv.q   C100, %1\n"
+   "vsocp.p C000, C100\n"
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1));
+}
+
 
 ScePspFVector4 v0;
 ScePspFVector4 v1;
@@ -1240,6 +1260,17 @@ int main(int argc, char *argv[])
 			vi2uc(&v0, &v1);
 			pint = (int *) &v0;
 			printf("vi2uc.q : %08x\n", *pint);
+
+			initValues();
+			v1.x = 0.4;
+			vsocps(&v0, &v1);
+			printf("vsocp.s : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			v1.x = 1.4;
+			v1.y = -0.4;
+			vsocpp(&v0, &v1);
+			printf("vsocp.p : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 		}
 
 		if (buttonDown & PSP_CTRL_CIRCLE)
