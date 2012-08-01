@@ -1629,17 +1629,21 @@ public class VfpuState extends FpuState {
         } else {
             loadVs(vsize, vs);
 
+            boolean not = ((cond & 4) == 4);
+            boolean cc = false;
             for (int i = 0; i < vsize; ++i) {
-                boolean cc;
-                if ((cond & 3) == 0) {
-                    cc = ((cond & 4) == 0) ? (v1[i] == 0.0f) : (v1[i] != 0.0f);
-                } else {
-                    cc = (((cond & 1) == 1) && Float.isNaN(v1[i])) ||
-                            (((cond & 2) == 2) && Float.isInfinite(v1[i]));
-                    if ((cond & 4) == 4) {
-                        cc = !cc;
-                    }
-
+                switch (cond & 3) {
+                	// Positive or negative 0
+                	case 0: cc = (Math.abs(v1[i]) == 0f); break;
+                	// NaN
+                	case 1: cc = Float.isNaN(v1[i]); break;
+                	// Positive or negative infinity
+                	case 2: cc = Float.isInfinite(v1[i]); break;
+                	// NaN or positive or negative infinity
+                	case 3: cc = Float.isNaN(Math.abs(v1[i])) || Float.isInfinite(v1[i]); break;
+                }
+                if (not) {
+                	cc = !cc;
                 }
                 vcr.cc[i] = cc;
                 cc_or = cc_or || cc;
@@ -2173,7 +2177,7 @@ public class VfpuState extends FpuState {
         loadVs(vsize, vs);
 
         for (int i = 0; i < vsize; ++i) {
-            v1[i] = 1.0f - v1[i];
+            v1[i] = 1f - v1[i];
         }
 
         saveVd(vsize, vd, v1);
@@ -2187,12 +2191,12 @@ public class VfpuState extends FpuState {
 
         loadVs(vsize, vs);
         float x = v1[0];
-        v3[0] = Math.min(Math.max(0.0f, 1.0f - x), 1.0f);
-        v3[1] = Math.min(Math.max(0.0f, 1.0f + x), 1.0f);
+        v3[0] = Math.min(Math.max(0f, 1f - x), 1f);
+        v3[1] = Math.min(Math.max(0f, x), 1f);
         if (vsize > 1) {
             float y = v1[1];
-            v3[2] = Math.min(Math.max(0.0f, 1.0f - y), 1.0f);
-            v3[3] = Math.min(Math.max(0.0f, 1.0f + y), 1.0f);
+            v3[2] = Math.min(Math.max(0f, 1f - y), 1f);
+            v3[3] = Math.min(Math.max(0f, y), 1f);
             saveVd(4, vd, v3);
         } else {
             saveVd(2, vd, v3);
@@ -2926,7 +2930,7 @@ public class VfpuState extends FpuState {
             }
         } else {
             for (i = 0; i < vsize; ++i) {
-                v3[i] = (float) 0.0;
+                v3[i] = 0f;
             }
             v3[si] = (float) sa;
         }

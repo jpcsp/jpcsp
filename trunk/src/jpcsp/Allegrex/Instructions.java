@@ -6011,6 +6011,7 @@ public void compile(ICompilerContext context, int insn) {
 			boolean updateOrAnd = false;
 			switch (cond & 3) {
 				case 0: {
+					mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "abs", "(F)F");
 					mv.visitInsn(Opcodes.FCONST_0);
 					mv.visitInsn(Opcodes.FCMPG);
 					Label trueLabel = new Label();
@@ -7780,7 +7781,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-	return Common.disasmVDVS("vsocp", 1+one+(two<<1), vd, vs);
+	return Common.disasmVDVS("vsocp", 1+one+(two<<1), 1+(one<<1), vd, vs);
 }
 };
 public static final Instruction VFAD = new Instruction(210, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
@@ -9427,7 +9428,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int vt = (insn>>16)&127;
 
-return Common.disasmVDVSVT("VCRSP", 3, vd, vs, vt);
+return Common.disasmVDVSVT("vcrsp", 3, vd, vs, vt);
 }
 };
 public static final Instruction VQMUL = new Instruction(242, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD) {
@@ -9661,25 +9662,26 @@ public void compile(ICompilerContext context, int insn) {
 	int imm5 = context.getImm5();
     int si = (imm5 >>> 2) & 3;
     int ci = (imm5 >>> 0) & 3;
+    MethodVisitor mv = context.getMethodVisitor();
 
     // Compute angle
     context.loadVs(1, 0);
-    context.getMethodVisitor().visitInsn(Opcodes.F2D);
-    context.getMethodVisitor().visitLdcInsn(Math.PI * 0.5);
-    context.getMethodVisitor().visitInsn(Opcodes.DMUL);
+    mv.visitInsn(Opcodes.F2D);
+    mv.visitLdcInsn(Math.PI * 0.5);
+    mv.visitInsn(Opcodes.DMUL);
 
     // Compute cos(angle)
-    context.getMethodVisitor().visitInsn(Opcodes.DUP2);
-	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "cos", "(D)D");
-    context.getMethodVisitor().visitInsn(Opcodes.D2F);
+    mv.visitInsn(Opcodes.DUP2);
+    mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "cos", "(D)D");
+    mv.visitInsn(Opcodes.D2F);
     context.storeFTmp1();
 
     // Compute sin(angle)
+    mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "sin", "(D)D");
+    mv.visitInsn(Opcodes.D2F);
     if ((imm5 & 16) != 0) {
-    	context.getMethodVisitor().visitInsn(Opcodes.DNEG);
+    	mv.visitInsn(Opcodes.FNEG);
     }
-	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "sin", "(D)D");
-    context.getMethodVisitor().visitInsn(Opcodes.D2F);
     context.storeFTmp2();
 
 	for (int n = 0; n < vsize; n++) {
@@ -9689,7 +9691,7 @@ public void compile(ICompilerContext context, int insn) {
 		} else if (si == ci || n == si) {
 			context.loadFTmp2();
 		} else {
-			context.getMethodVisitor().visitLdcInsn(0.f);
+			mv.visitInsn(Opcodes.FCONST_0);
 		}
 		context.storeVd(n);
 	}
