@@ -47,7 +47,7 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
 	@Override
 	public IVirtualFile ioOpen(String fileName, int flags, int mode) {
 		File file = getFile(fileName);
-        if (file.exists() && hasFlag(mode, PSP_O_CREAT) && hasFlag(mode, PSP_O_EXCL)) {
+        if (file.exists() && hasFlag(flags, PSP_O_CREAT) && hasFlag(flags, PSP_O_EXCL)) {
             if (log.isDebugEnabled()) {
                 log.debug("hleIoOpen - file already exists (PSP_O_CREAT + PSP_O_EXCL)");
             }
@@ -56,7 +56,7 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
 
         // When PSP_O_CREAT is specified, create the parent directories
     	// if they do not yet exist.
-        if (!file.exists() && hasFlag(mode, PSP_O_CREAT)) {
+        if (!file.exists() && hasFlag(flags, PSP_O_CREAT)) {
         	String parentDir = file.getParent();
         	new File(parentDir).mkdirs();
         }
@@ -68,7 +68,7 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
 			return null;
 		}
 
-		if (hasFlag(mode, PSP_O_WRONLY) && hasFlag(mode, PSP_O_TRUNC)) {
+		if (hasFlag(flags, PSP_O_WRONLY) && hasFlag(flags, PSP_O_TRUNC)) {
             // When writing, PSP_O_TRUNC resets the file to be written (truncate to 0 length).
         	try {
 				raf.setLength(0);
@@ -115,6 +115,96 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
 	public int ioRemove(String name) {
 		File file = getFile(name);
 
-		return file.delete() ? 0 : IO_ERROR;
+		if (!file.delete()) {
+			return IO_ERROR;
+		}
+
+		return 0;
+	}
+
+	@Override
+	public String[] ioDopen(String dirName) {
+		File file = getFile(dirName);
+
+		if (!file.isDirectory()) {
+			if (file.exists()) {
+				log.warn(String.format("ioDopen file '%s' is not a directory", dirName));
+			} else {
+				log.warn(String.format("ioDopen directory '%s' not found", dirName));
+			}
+			return null;
+		}
+
+		return file.list();
+	}
+
+	@Override
+	public int ioMkdir(String name, int mode) {
+		File file = getFile(name);
+
+		if (file.exists()) {
+			return SceKernelErrors.ERROR_ERRNO_FILE_ALREADY_EXISTS;
+		}
+		if (!file.mkdir()) {
+			return IO_ERROR;
+		}
+
+		return 0;
+	}
+
+	@Override
+	public int ioRmdir(String name) {
+		File file = getFile(name);
+
+		if (!file.exists()) {
+			return SceKernelErrors.ERROR_ERRNO_FILE_NOT_FOUND;
+		}
+		if (!file.delete()) {
+			return IO_ERROR;
+		}
+
+		return 0;
+	}
+
+	@Override
+	public int ioChstat(String fileName, SceIoStat stat, int bits) {
+        File file = getFile(fileName);
+
+        int mode = stat.mode;
+        boolean successful = true;
+
+        if ((bits & 0x0001) != 0) {	// Others execute permission
+            if (!file.setExecutable((mode & 0x0001) != 0)) {
+                successful = false;
+            }
+        }
+        if ((bits & 0x0002) != 0) {	// Others write permission
+            if (!file.setWritable((mode & 0x0002) != 0)) {
+                successful = false;
+            }
+        }
+        if ((bits & 0x0004) != 0) {	// Others read permission
+            if (!file.setReadable((mode & 0x0004) != 0)) {
+                successful = false;
+            }
+        }
+
+        if ((bits & 0x0040) != 0) {	// User execute permission
+            if (!file.setExecutable((mode & 0x0040) != 0, true)) {
+                successful = false;
+            }
+        }
+        if ((bits & 0x0080) != 0) {	// User write permission
+            if (!file.setWritable((mode & 0x0080) != 0, true)) {
+                successful = false;
+            }
+        }
+        if ((bits & 0x0100) != 0) {	// User read permission
+            if (!file.setReadable((mode & 0x0100) != 0, true)) {
+                successful = false;
+            }
+        }
+
+        return successful ? 0 : IO_ERROR;
 	}
 }
