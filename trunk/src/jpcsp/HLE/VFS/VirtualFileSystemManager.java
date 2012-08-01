@@ -43,6 +43,16 @@ public class VirtualFileSystemManager {
 		if (localFileName != null) {
 			localFileName.setLength(0);
 			localFileName.append(absoluteFileName.substring(colon + 1));
+
+			// Delete any leading "/"
+			if (localFileName.length() > 0 && localFileName.charAt(0) == '/') {
+				localFileName.deleteCharAt(0);
+			}
+
+			// Delete any trailing "/"
+			if (localFileName.length() > 0 && localFileName.charAt(localFileName.length() - 1) == '/') {
+				localFileName.setLength(localFileName.length() - 1);
+			}
 		}
 
 		return virtualFileSystems.get(name);

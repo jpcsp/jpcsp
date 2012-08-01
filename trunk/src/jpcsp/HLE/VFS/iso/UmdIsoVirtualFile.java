@@ -14,16 +14,21 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.HLE.VFS;
+package jpcsp.HLE.VFS.iso;
 
-import jpcsp.HLE.TPointer;
+import jpcsp.HLE.VFS.AbstractVirtualFile;
+import jpcsp.filesystems.SeekableDataInput;
 
-public interface IVirtualFile {
-	public int ioClose();
-	public int ioRead(TPointer outputPointer, int outputLength);
-	public int ioWrite(TPointer inputPointer, int inputLength);
-	public long ioLseek(long offset);
-	public int ioIoctl(int command, TPointer inputPointer, int inputLength, TPointer outputPointer, int outputLength);
-	public long length();
-	public boolean isSectorBlockMode();
+public class UmdIsoVirtualFile extends AbstractVirtualFile {
+	protected final boolean sectorBlockMode;
+
+	public UmdIsoVirtualFile(SeekableDataInput file, boolean sectorBlockMode) {
+		super(file);
+		this.sectorBlockMode = sectorBlockMode;
+	}
+
+	@Override
+	public boolean isSectorBlockMode() {
+		return sectorBlockMode;
+	}
 }

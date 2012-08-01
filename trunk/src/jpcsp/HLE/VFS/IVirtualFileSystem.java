@@ -32,9 +32,9 @@ public interface IVirtualFileSystem {
 	public int ioRemove(String name);
 	public int ioMkdir(String name, int mode);
 	public int ioRmdir(String name);
-	public IVirtualFile ioDopen(String name);
-	public int ioDclose(IVirtualFile file);
-	public int ioDread(IVirtualFile file, SceIoDirent dir);
+	public String[] ioDopen(String dirName);
+	public int ioDclose(String dirName);
+	public int ioDread(String dirName, SceIoDirent dir);
 	public int ioGetstat(String fileName, SceIoStat stat);
 	public int ioChstat(String fileName, SceIoStat stat, int bits);
 	public int ioRename(String oldFileName, String newFileName);

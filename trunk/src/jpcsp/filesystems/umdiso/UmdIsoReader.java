@@ -24,9 +24,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 
+import jpcsp.Emulator;
 import jpcsp.filesystems.umdiso.iso9660.Iso9660Directory;
 import jpcsp.filesystems.umdiso.iso9660.Iso9660File;
 import jpcsp.filesystems.umdiso.iso9660.Iso9660Handler;
@@ -174,8 +176,10 @@ public class UmdIsoReader {
      * @throws IOException
      */
     public void readSector(int sectorNumber, byte[] buffer, int offset) throws IOException {
-        if ((sectorNumber < 0)||(sectorNumber >= numSectors)) {
-            throw new ArrayIndexOutOfBoundsException("Sector number " + sectorNumber + " out of bounds.");
+        if (sectorNumber < 0 || sectorNumber >= numSectors) {
+        	Arrays.fill(buffer, offset, offset + sectorLength, (byte) 0);
+        	Emulator.log.warn(String.format("Sector number %d out of ISO (numSectors=%d)", sectorNumber, numSectors));
+        	return;
         }
 
         if (format == FileFormat.Uncompressed) {

@@ -41,6 +41,19 @@ public abstract class AbstractVirtualFileSystem implements IVirtualFileSystem {
 	}
 
 	@Override
+	public void ioInit() {
+	}
+
+	@Override
+	public void ioExit() {
+	}
+
+	@Override
+	public IVirtualFile ioOpen(String fileName, int flags, int mode) {
+		return null;
+	}
+
+	@Override
 	public int ioRead(IVirtualFile file, TPointer outputPointer, int outputLength) {
 		return file.ioRead(outputPointer, outputLength);
 	}
@@ -61,21 +74,8 @@ public abstract class AbstractVirtualFileSystem implements IVirtualFileSystem {
 	}
 
 	@Override
-	public void ioInit() {
-	}
-
-	@Override
-	public void ioExit() {
-	}
-
-	@Override
-	public IVirtualFile ioOpen(String fileName, int flags, int mode) {
-		return null;
-	}
-
-	@Override
 	public int ioClose(IVirtualFile file) {
-		return IO_ERROR;
+		return file.ioClose();
 	}
 
 	@Override
@@ -94,18 +94,25 @@ public abstract class AbstractVirtualFileSystem implements IVirtualFileSystem {
 	}
 
 	@Override
-	public IVirtualFile ioDopen(String name) {
+	public String[] ioDopen(String dirName) {
 		return null;
 	}
 
 	@Override
-	public int ioDclose(IVirtualFile file) {
-		return file.ioClose();
+	public int ioDread(String dirName, SceIoDirent dir) {
+		// Return the Getstat on the given directory file
+		String fileName = dirName + "/" + dir.filename;
+		int result = ioGetstat(fileName, dir.stat);
+		if (result == 0) {
+			// Success is 1 for sceIoDread
+			return 1;
+		}
+		return result;
 	}
 
 	@Override
-	public int ioDread(IVirtualFile file, SceIoDirent dir) {
-		return IO_ERROR;
+	public int ioDclose(String dirName) {
+		return 0;
 	}
 
 	@Override

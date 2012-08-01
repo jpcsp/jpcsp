@@ -62,6 +62,7 @@ import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.VFS.VirtualFileSystemManager;
 import jpcsp.HLE.VFS.emulator.EmulatorVirtualFileSystem;
+import jpcsp.HLE.VFS.iso.UmdIsoVirtualFileSystem;
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.IAction;
@@ -374,8 +375,11 @@ public class IoFileMgrForUser extends HLEModule {
         int position;
         int printableposition;
         final int id;
+        final IVirtualFileSystem vfs;
 
         public IoDirInfo(String path, String[] filenames) {
+        	vfs = null;
+            id = getNewId();
             // iso reader doesn't like path//filename, so trim trailing /
             // (it's like doing cd somedir/ instead of cd somedir, makes little difference)
             if (path.endsWith("/")) {
@@ -383,6 +387,20 @@ public class IoFileMgrForUser extends HLEModule {
             }
             this.path = path;
             this.filenames = filenames;
+
+            init();
+        }
+
+        public IoDirInfo(String path, String[] filenames, IVirtualFileSystem vfs) {
+        	this.vfs = vfs;
+            id = getNewId();
+            this.path = path;
+            this.filenames = filenames;
+
+            init();
+        }
+
+        private void init() {
             position = 0;
             printableposition = 0;
             // Hide iso special files
@@ -394,7 +412,6 @@ public class IoFileMgrForUser extends HLEModule {
                     position++;
                 }
             }
-            id = getNewId();
             dirIds.put(id, this);
         }
 
@@ -555,6 +572,21 @@ public class IoFileMgrForUser extends HLEModule {
         return "IoFileMgrForUser";
     }
 
+    public void registerUmdIso() {
+    	if (vfsManager != null && useVirtualFileSystem) {
+    		if (iso != null && Modules.sceUmdUserModule.isUmdActivated()) {
+    			IVirtualFileSystem vfsIso = new UmdIsoVirtualFileSystem(iso);
+	        	vfsManager.register("disc0", vfsIso);
+	        	vfsManager.register("umd0", vfsIso);
+	        	vfsManager.register("umd1", vfsIso);
+    		} else {
+    			vfsManager.unregister("disc0");
+    			vfsManager.unregister("umd0");
+    			vfsManager.unregister("umd1");
+    		}
+    	}
+    }
+
     @Override
     public void start() {
         if (fileIds != null) {
@@ -585,6 +617,7 @@ public class IoFileMgrForUser extends HLEModule {
         if (useVirtualFileSystem) {
 	        vfsManager.register("ms0", new LocalVirtualFileSystem("ms0/"));
 	        vfsManager.register("flash0", new LocalVirtualFileSystem("flash0/"));
+	        registerUmdIso();
         }
 
         setSettingsListener("emu.extractPGD", new ExtractPGDSettingsListerner());
@@ -1050,6 +1083,8 @@ public class IoFileMgrForUser extends HLEModule {
 
     public void setIsoReader(UmdIsoReader iso) {
         this.iso = iso;
+
+        registerUmdIso();
     }
 
     public UmdIsoReader getIsoReader() {
@@ -1419,6 +1454,7 @@ public class IoFileMgrForUser extends HLEModule {
         			result = ERROR_ERRNO_FILE_NOT_FOUND;
         		} else {
 	        		info = new IoInfo(filename, vFile, mode, flags, permissions);
+                    info.sectorBlockMode = vFile.isSectorBlockMode();
 	        		info.result = ERROR_KERNEL_NO_ASYNC_OP;
 	        		result = info.id;
 	                if (log.isDebugEnabled()) {
@@ -2798,7 +2834,18 @@ public class IoFileMgrForUser extends HLEModule {
 
         String pcfilename = getDeviceFilePath(dirname.getString());
         int result;
-        if (pcfilename != null) {
+        String absoluteFileName = getAbsoluteFileName(dirname.getString());
+        StringBuilder localFileName = new StringBuilder();
+        IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
+        if (vfs != null) {
+        	String[] fileNames = vfs.ioDopen(localFileName.toString());
+        	if (fileNames == null) {
+        		result = ERROR_ERRNO_FILE_NOT_FOUND;
+        	} else {
+        		IoDirInfo info = new IoDirInfo(localFileName.toString(), fileNames, vfs);
+        		result = info.id;
+        	}
+        } else if (pcfilename != null) {
             if (isUmdPath(pcfilename)) {
                 // Files in our iso virtual file system
                 String isofilename = trimUmdPrefix(pcfilename);
@@ -2875,21 +2922,29 @@ public class IoFileMgrForUser extends HLEModule {
         } else if (info.hasNext()) {
             String filename = info.next();
 
-            SceIoStat stat = stat(info.path + "/" + filename);
-            if (stat != null) {
-                SceIoDirent dirent = new SceIoDirent(stat, filename);
-                dirent.write(Memory.getInstance(), dirent_addr);
-
-                if ((stat.attr & 0x10) == 0x10) {
-                    log.debug("sceIoDread id=" + Integer.toHexString(id) + " #" + info.printableposition + " dir='" + info.path + "', dir='" + filename + "'");
-                } else {
-                    log.debug("sceIoDread id=" + Integer.toHexString(id) + " #" + info.printableposition + " dir='" + info.path + "', file='" + filename + "'");
-                }
-
-                result = 1;
+            SceIoDirent dirent = null;
+            if (info.vfs != null) {
+            	SceIoStat stat = new SceIoStat();
+            	dirent = new SceIoDirent(stat, filename);
+            	result = info.vfs.ioDread(info.path, dirent);
             } else {
-                log.warn("sceIoDread id=" + Integer.toHexString(id) + " stat failed (" + info.path + "/" + filename + ")");
-                result = -1;
+	            SceIoStat stat = stat(info.path + "/" + filename);
+	            if (stat != null) {
+	                dirent = new SceIoDirent(stat, filename);
+	                result = 1;
+	            } else {
+	                log.warn("sceIoDread id=" + Integer.toHexString(id) + " stat failed (" + info.path + "/" + filename + ")");
+	                result = -1;
+	            }
+            }
+
+            if (dirent != null && result > 0) {
+            	if (log.isDebugEnabled()) {
+            		String type = (dirent.stat.attr & 0x10) != 0 ? "dir" : "file";
+                    log.debug(String.format("sceIoDread id=0x%X #%d %s='%s', dir='%s'", id, info.printableposition, type, info.path, filename));
+            	}
+
+                dirent.write(Memory.getInstance(), dirent_addr);
             }
         } else {
             log.debug("sceIoDread id=" + Integer.toHexString(id) + " no more files");
@@ -2914,12 +2969,15 @@ public class IoFileMgrForUser extends HLEModule {
         if (log.isDebugEnabled()) {
             log.debug("sceIoDclose - id = " + Integer.toHexString(id));
         }
-        
+
         IoDirInfo info = dirIds.get(id);
         int result;
         if (info == null) {
             log.warn("sceIoDclose - unknown id " + Integer.toHexString(id));
             result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
+        } else if (info.vfs != null) {
+        	result = info.vfs.ioDclose(info.path);
+        	info.close();
         } else {
         	info.close();
         	result = 0;
@@ -2992,8 +3050,13 @@ public class IoFileMgrForUser extends HLEModule {
 
         String pcfilename = getDeviceFilePath(dirname.getString());
         int result;
-        
-        if (pcfilename != null) {
+
+        String absoluteFileName = getAbsoluteFileName(dirname.getString());
+        StringBuilder localFileName = new StringBuilder();
+        IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
+        if (vfs != null) {
+        	result = vfs.ioMkdir(localFileName.toString(), permissions);
+        } else if (pcfilename != null) {
             File f = new File(pcfilename);
             f.mkdir();
             result = 0;
@@ -3024,8 +3087,13 @@ public class IoFileMgrForUser extends HLEModule {
 
         String pcfilename = getDeviceFilePath(dirname.getString());
         int result;
-        
-        if (pcfilename != null) {
+
+        String absoluteFileName = getAbsoluteFileName(dirname.getString());
+        StringBuilder localFileName = new StringBuilder();
+        IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
+        if (vfs != null) {
+        	result = vfs.ioRmdir(localFileName.toString());
+        } else if (pcfilename != null) {
             File f = new File(pcfilename);
             f.delete();
             result = 0;
@@ -3131,7 +3199,7 @@ public class IoFileMgrForUser extends HLEModule {
     		result = (stat != null) ? 0 : ERROR_ERRNO_FILE_NOT_FOUND;
     	}
 
-    	if (stat != null) {
+    	if (stat != null && result == 0) {
             stat.write(Memory.getInstance(), stat_addr);
         }
 
@@ -3159,15 +3227,20 @@ public class IoFileMgrForUser extends HLEModule {
 
         String pcfilename = getDeviceFilePath(filename.getString());
         int result;
-        
-        if (pcfilename != null) {
+
+        SceIoStat stat = new SceIoStat();
+        stat.read(Memory.getInstance(), stat_addr);
+
+        String absoluteFileName = getAbsoluteFileName(filename.getString());
+        StringBuilder localFileName = new StringBuilder();
+        IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
+        if (vfs != null) {
+        	result = vfs.ioChstat(localFileName.toString(), stat, bits);
+        } else if (pcfilename != null) {
             if (isUmdPath(pcfilename)) {
             	result = -1;
             } else {
                 File file = new File(pcfilename);
-
-                SceIoStat stat = new SceIoStat();
-                stat.read(Memory.getInstance(), stat_addr);
 
                 int mode = stat.mode;
                 boolean successful = true;

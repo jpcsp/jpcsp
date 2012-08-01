@@ -207,6 +207,7 @@ public class sceUmdUser extends HLEModule {
         }
 
         umdActivated = true;
+        Modules.IoFileMgrForUserModule.registerUmdIso();
 
         // Notify the callback.
         // The callback will be executed at the next sceXXXXCB() syscall.
@@ -234,6 +235,7 @@ public class sceUmdUser extends HLEModule {
         // The callback will be executed at the next sceXXXXCB() syscall.
         boolean triggerCallback = umdActivated;
         umdActivated = false;
+        Modules.IoFileMgrForUserModule.registerUmdIso();
         umdDeactivateCalled = true;
         if (triggerCallback) {
             int notifyArg;
