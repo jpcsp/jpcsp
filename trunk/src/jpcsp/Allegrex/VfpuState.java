@@ -2612,13 +2612,13 @@ public class VfpuState extends FpuState {
             }
         } else if (imm3 == 6) {
             loadVs(vsize, vs);
-            loadVt(vsize, vd);
+            loadVd(vsize, vd);
             for (int i = 0; i < vsize; ++i) {
                 if (vcr.cc[i]) {
-                    v2[i] = v1[i];
+                    v3[i] = v1[i];
                 }
             }
-            saveVd(vsize, vd, v2);
+            saveVd(vsize, vd, v3);
         } else {
         	// Never copy (checked on a PSP)
         }
@@ -2639,13 +2639,13 @@ public class VfpuState extends FpuState {
             }
         } else if (imm3 == 6) {
             loadVs(vsize, vs);
-            loadVt(vsize, vd);
+            loadVd(vsize, vd);
             for (int i = 0; i < vsize; ++i) {
                 if (!vcr.cc[i]) {
-                    v2[i] = v1[i];
+                    v3[i] = v1[i];
                 }
             }
-            saveVd(vsize, vd, v2);
+            saveVd(vsize, vd, v3);
         } else {
         	// Always copy (checked on a PSP)
         	loadVs(vsize, vs);
