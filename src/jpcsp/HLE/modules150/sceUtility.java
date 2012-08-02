@@ -27,6 +27,7 @@ import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -891,6 +892,8 @@ public class sceUtility extends HLEModule {
 	                    }
 	                    savedataParams.base.result = 0;
 	                    savedataParams.write(mem);
+	                } catch (FileNotFoundException e) {
+	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_FILE_NOT_FOUND;
 	                } catch (IOException e) {
 	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
 	                } catch (Exception e) {
