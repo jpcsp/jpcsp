@@ -8483,7 +8483,7 @@ public void compile(ICompilerContext context, int insn) {
 			if (context.getPfxdState().isKnown() && context.getPfxdState().pfxDst.enabled) {
 				context.prepareVdForStore(n);
 				context.loadVdInt(n);
-				context.storeVd(n);
+				context.storeVdInt(n);
 			}
 			mv.visitLabel(afterLabel);
 		}
@@ -8563,7 +8563,7 @@ public void compile(ICompilerContext context, int insn) {
 			if (context.getPfxdState().isKnown() && context.getPfxdState().pfxDst.enabled) {
 				context.prepareVdForStore(n);
 				context.loadVdInt(n);
-				context.storeVd(n);
+				context.storeVdInt(n);
 			}
 			mv.visitLabel(afterLabel);
 		}
