@@ -289,9 +289,9 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 
 			sendToMetaServer(loginPacket);
 		} catch (UnknownHostException e) {
-			log.error("connectToMetaServer", e);
+			log.error(String.format("Could not connect to meta server %s:%d", metaServer, metaPort), e);
 		} catch (IOException e) {
-			log.error("connectToMetaServer", e);
+			log.error(String.format("Could not connect to meta server %s:%d", metaServer, metaPort), e);
 		}
 	}
 
