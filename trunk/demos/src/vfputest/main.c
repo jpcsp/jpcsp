@@ -876,6 +876,46 @@ void __attribute__((noinline)) vsocpp(ScePspFVector4 *v0, ScePspFVector4 *v1)
    : "+m" (*v0) : "m" (*v1));
 }
 
+void __attribute__((noinline)) vi2fq0(ScePspFVector4 *v0, ScePspFVector4 *v1)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+   "lv.q   C100, %1\n"
+   "vi2f.q C000, C100, 0\n"
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1));
+}
+
+void __attribute__((noinline)) vi2fq1(ScePspFVector4 *v0, ScePspFVector4 *v1)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+   "lv.q   C100, %1\n"
+   "vi2f.q C000, C100, 1\n"
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1));
+}
+
+void __attribute__((noinline)) vlog2q(ScePspFVector4 *v0, ScePspFVector4 *v1)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+   "lv.q   C100, %1\n"
+   "vlog2.q C000, C100\n"
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1));
+}
+
+void __attribute__((noinline)) vexp2q(ScePspFVector4 *v0, ScePspFVector4 *v1)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+   "lv.q   C100, %1\n"
+   "vexp2.q C000, C100\n"
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1));
+}
+
 
 ScePspFVector4 v0;
 ScePspFVector4 v1;
@@ -1271,6 +1311,32 @@ int main(int argc, char *argv[])
 			v1.y = -0.4;
 			vsocpp(&v0, &v1);
 			printf("vsocp.p : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			pint = (int *) &v1;
+			pint[0] = 12345;
+			pint[1] = -12345;
+			pint[2] = 6789;
+			pint[3] = -6789;
+			vi2fq0(&v0, &v1);
+			printf("vi2f.q 0 : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			pint = (int *) &v1;
+			pint[0] = 12345;
+			pint[1] = -12345;
+			pint[2] = 6789;
+			pint[3] = -6789;
+			vi2fq1(&v0, &v1);
+			printf("vi2f.q 1 : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			vlog2q(&v0, &v1);
+			printf("vlog2.q : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			vexp2q(&v0, &v1);
+			printf("vexp2.q : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 		}
 
 		if (buttonDown & PSP_CTRL_CIRCLE)
