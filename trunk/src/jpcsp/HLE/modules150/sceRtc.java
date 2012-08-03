@@ -17,7 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.GregorianCalendar;
 
 import jpcsp.Clock.TimeNanos;
@@ -27,9 +29,11 @@ import jpcsp.Processor;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer64;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -56,6 +60,7 @@ public class sceRtc extends HLEModule {
     final static int PSP_TIME_SECONDS_IN_YEAR = 31556926;
 
     private long rtcMagicOffset = 62135596800000000L;
+    protected static SimpleDateFormat rfc3339 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
 
     protected long hleGetCurrentTick() {
     	TimeNanos timeNanos = Emulator.getClock().currentTimeNanos();
@@ -64,8 +69,10 @@ public class sceRtc extends HLEModule {
 
     /** 64 bit addend */
     protected int hleRtcTickAdd64(TPointer64 dstPtr, TPointer64 srcPtr, long value, long multiplier) {
-        log.debug("hleRtcTickAdd64 " + multiplier + " * " + value);
-        
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("hleRtcTickAdd64 dstPtr=%s, srcPtr=%s(%d), %d * %d", dstPtr, srcPtr, srcPtr.getValue(), value, multiplier));
+    	}
+
         long src = srcPtr.getValue();
         dstPtr.setValue(src + multiplier * value);
 
@@ -80,6 +87,19 @@ public class sceRtc extends HLEModule {
         dstPtr.setValue(src + multiplier * value);
         
         return 0;
+    }
+
+    protected Date getDateFromTick(long tick) {
+    	return new Date((tick - rtcMagicOffset) / 1000L);
+    }
+
+    protected String formatRFC3339(Date date) {
+    	String result = rfc3339.format(date);
+    	// SimpleDateFormat outputs the timezone offset in the format "hhmm"
+    	// instead of "hh:mm" as required by RFC3339.
+    	result = result.replaceFirst("(\\d\\d)(\\d\\d)$", "$1:$2");
+
+    	return result;
     }
 
     /**
@@ -98,8 +118,8 @@ public class sceRtc extends HLEModule {
     public int sceRtcGetCurrentTick(TPointer64 currentTick) {
         currentTick.setValue(hleGetCurrentTick());
 
-        if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug(String.format("sceRtcGetCurrentTick 0x%08X, returning %d", currentTick.getAddress(), currentTick.getValue()));
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceRtcGetCurrentTick 0x%08X, returning %d", currentTick.getAddress(), currentTick.getValue()));
         }
 
         return 0;
@@ -107,8 +127,8 @@ public class sceRtc extends HLEModule {
 
     @HLEFunction(nid = 0x011F03C1, version = 150)
     public long sceRtcGetAccumulativeTime() {
-        if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug("sceRtcGetAccumulativeTime");
+        if (log.isDebugEnabled()) {
+        	log.debug("sceRtcGetAccumulativeTime");
         }
         // Returns the difference between the last reincarnated time and the current tick.
         // Just return our current tick, since there's no need to mimick such behaviour.
@@ -119,8 +139,8 @@ public class sceRtc extends HLEModule {
     @HLEFunction(nid = 0x029CA3B3, version = 150)
     public long sceRtcGetAccumlativeTime() {
         // Typo. Refers to the same function.
-        if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug("sceRtcGetAccumlativeTime");
+        if (log.isDebugEnabled()) {
+        	log.debug("sceRtcGetAccumlativeTime");
         }
         
         return hleGetCurrentTick();
@@ -365,44 +385,35 @@ public class sceRtc extends HLEModule {
 
     /** Set a pspTime struct based on ticks. */
     @HLEFunction(nid = 0x7ED29E40, version = 150)
-    public int sceRtcSetTick(Processor processor, int time_addr, int ticks_addr) {
-        Memory mem = Processor.memory;
+    public int sceRtcSetTick(TPointer time_addr, TPointer64 ticks_addr) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceRtcSetTick time_addr=%s, ticks_addr=%s(%d)", time_addr, ticks_addr, ticks_addr.getValue()));
+    	}
 
-        log.debug("sceRtcSetTick");
-
-        if (!Memory.isAddressGood(time_addr) || !Memory.isAddressGood(ticks_addr)) {
-            log.warn("sceRtcSetTick bad address "
-                    + String.format("0x%08X 0x%08X", time_addr, ticks_addr));
-            return -1;
-        }
-
-        long ticks = mem.read64(ticks_addr) - rtcMagicOffset;
+        long ticks = ticks_addr.getValue() - rtcMagicOffset;
         ScePspDateTime time = ScePspDateTime.fromMicros(ticks);
-        time.write(mem, time_addr);
+        time.write(Memory.getInstance(), time_addr.getAddress());
 
         return 0;
     }
 
     /** Set ticks based on a pspTime struct. */
     @HLEFunction(nid = 0x6FF40ACC, version = 150)
-    public int sceRtcGetTick(int time_addr, int ticks_addr) {
+    public int sceRtcGetTick(TPointer time_addr, TPointer64 ticks_addr) {
         Memory mem = Processor.memory;
-
-        if (!Memory.isAddressGood(time_addr) || !Memory.isAddressGood(ticks_addr)) {
-            log.warn("sceRtcGetTick bad address "
-                    + String.format("0x%08X 0x%08X", time_addr, ticks_addr));
-            return -1;
-        }
 
         // use java library to convert a date to seconds, then multiply it by the tick resolution
         ScePspDateTime time = new ScePspDateTime();
-        time.read(mem, time_addr);
+        time.read(mem, time_addr.getAddress());
         Calendar cal = new GregorianCalendar(time.year, time.month - 1, time.day,
             time.hour, time.minute, time.second);
         long ticks = rtcMagicOffset + (cal.getTimeInMillis() * 1000) + (time.microsecond % 1000);
-        mem.write64(ticks_addr, ticks);
+        ticks_addr.setValue(ticks);
 
-        log.debug("sceRtcGetTick " + time.toString() + " -> tick:" + ticks + " saved to 0x" + Integer.toHexString(ticks_addr));
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceRtcGetTick time=%s('%s') returning ticks=%s(%d)", time_addr, time.toString(), ticks_addr, ticks));
+        }
+
         return 0;
     }
 
@@ -442,8 +453,6 @@ public class sceRtc extends HLEModule {
         return hleRtcTickAdd64(dstPtr, srcPtr, value, PSP_TIME_SECONDS_IN_MINUTE * 1000000L);
     }
 
-    
-    
     @HLEFunction(nid = 0x26D7A24A, version = 150)
     public int sceRtcTickAddHours(TPointer64 dstPtr, TPointer64 srcPtr, int value) {
         log.debug("sceRtcTickAddHours redirecting to hleRtcTickAdd32(60*60*1000000)");
@@ -500,12 +509,18 @@ public class sceRtc extends HLEModule {
         return 0xDEADC0DE;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x27F98543, version = 150)
-    public int sceRtcFormatRFC3339LocalTime() {
-        log.warn("Unimplemented NID function sceRtcFormatRFC3339LocalTime [0x27F98543]");
+    public int sceRtcFormatRFC3339LocalTime(TPointer resultString, TPointer64 srcPtr) {
+    	Date date = getDateFromTick(srcPtr.getValue());
+    	String result = formatRFC3339(date);
 
-        return 0xDEADC0DE;
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceRtcFormatRFC3339LocalTime resultString=%s('%s'), srcPtr=%s(%d)", resultString, result, srcPtr, srcPtr.getValue()));
+    	}
+
+    	Utilities.writeStringZ(Memory.getInstance(), resultString.getAddress(), result);
+
+    	return 0;
     }
 
     @HLEUnimplemented
@@ -524,4 +539,10 @@ public class sceRtc extends HLEModule {
         return 0xDEADC0DE;
     }
 
+    @HLEFunction(nid = 0x7D1FBED3, version = 150)
+    public int sceRtcSetAlarmTick(TPointer64 srcPtr) {
+    	log.warn(String.format("Unimplemented sceRtcSetAlarmTick srcPtr=%s(%d)", srcPtr, srcPtr.getValue()));
+
+    	return 0;
+    }
 }
