@@ -26,6 +26,7 @@ import static jpcsp.util.Utilities.writeStringZ;
 import static jpcsp.util.Utilities.writeWord;
 
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 
@@ -137,6 +138,16 @@ public class PSF {
         sizeDirty = true;
         tablesDirty = false;
         calculateSize();
+    }
+
+    public void write(RandomAccessFile output) throws IOException {
+    	byte[] buffer = new byte[size()];
+    	ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+    	write(byteBuffer);
+
+    	// Write the file and truncate it to the correct length
+    	output.write(buffer);
+    	output.setLength(buffer.length);
     }
 
     // assumes we want to write at the start of the buffer, and that the current buffer position is 0
