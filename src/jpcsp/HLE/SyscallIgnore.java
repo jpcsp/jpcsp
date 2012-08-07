@@ -73,10 +73,6 @@ public enum SyscallIgnore {
 	sceKernelReleaseDebuggerIntrHandler(0xB386A459),
 	sceKernelReleaseIntrHandler(0xF987B1F0),
 	sceKernelResumeIntr(0x494D6D2B),
-	sceKernelSetCompiledSdkVersion370(0x342061E5),
-	sceKernelSetCompiledSdkVersion380_390(0x315AD3A0),
-	sceKernelSetCompiledSdkVersion395(0xEBD5C3E6),
-	sceKernelSetCompiledSdkVersion660(0x358CA1BB),
 	sceKernelSetIntrLevel(0xB5A15B30),
 	sceKernelSetPrimarySyscallHandler(0x0FC68A56),
 	sceKernelSuspendIntr(0x750E2507),
@@ -143,9 +139,6 @@ public enum SyscallIgnore {
 	sceVideocodecStop(0xA2F0564E), // 1.00+
 	SircsSend(0x71eef62d), // 1.00+
 	SupportIntr(0x0E224D66), // 1.00+
-	SysMemUserForUser_35669D4C(0x35669D4C), // 1.00 to 3.52, gone in 3.95+
-	SysMemUserForUser_91DE343C(0x91DE343C), // 1.00+
-    SysMemUserForUser_1B4217BC(0x1B4217BC), // 6.30+
 	unknown_CC9ADCF8(0xCC9ADCF8), // 1.00+
 	UnSupportIntr(0x27BC9A45), // 1.00+
 	WlanDevAttach(0x482cae9a), // 2.00+

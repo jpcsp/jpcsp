@@ -22,7 +22,7 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 
 public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
-    protected int compiledSdkVersion;
+    private int compiledSdkVersion;
     protected int compilerVersion;
 
 	@Override
@@ -31,8 +31,12 @@ public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
 		super.start();
 	}
 
-	public int hleGetCompiledSdkVersion() {
+	public int hleKernelGetCompiledSdkVersion() {
 		return compiledSdkVersion;
+	}
+
+	protected void hleSetCompiledSdkVersion(int sdkVersion) {
+		compiledSdkVersion = sdkVersion;
 	}
 
 	@HLEFunction(nid = 0xFC114573, version = 200)
@@ -47,17 +51,14 @@ public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
 	}
 
 	@HLEFunction(nid = 0x7591C7DB, version = 200)
-	public void sceKernelSetCompiledSdkVersion(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-        int sdkVersion = cpu.gpr[4];
-
-        if(log.isDebugEnabled()) {
-            log.debug("sceKernelSetCompiledSdkVersion: sdkVersion=" + Integer.toHexString(sdkVersion));
+	public int sceKernelSetCompiledSdkVersion(int sdkVersion) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceKernelSetCompiledSdkVersion: sdkVersion=%08X", sdkVersion));
         }
 
-        compiledSdkVersion = sdkVersion;
-		cpu.gpr[2] = 0;
+        hleSetCompiledSdkVersion(sdkVersion);
+
+        return 0;
 	}
 
 	@HLEFunction(nid = 0xF77D77CB, version = 200)
