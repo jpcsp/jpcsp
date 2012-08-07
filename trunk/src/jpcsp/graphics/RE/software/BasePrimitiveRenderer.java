@@ -380,7 +380,7 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		// Try to avoid to compute expensive values
 		needDepthWrite = getNeedDepthWrite(context);
 		needSourceDepthRead = needDepthWrite || getNeedSourceDepthRead(context);
-		needDestinationDepthRead = getNeedDestinationDepthRead(context);
+		needDestinationDepthRead = getNeedDestinationDepthRead(context, needDepthWrite);
 		if (zbw <= 0) {
 			needDepthWrite = false;
 			needSourceDepthRead = false;
@@ -457,7 +457,7 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 		return false;
 	}
 
-	private boolean getNeedDestinationDepthRead(GeContext context) {
+	private boolean getNeedDestinationDepthRead(GeContext context, boolean needDepthWrite) {
 		if (!clearMode && context.depthTestFlag.isEnabled()) {
 			if (context.depthFunc != GeCommands.ZTST_FUNCTION_NEVER_PASS_PIXEL && context.depthFunc != GeCommands.ZTST_FUNCTION_ALWAYS_PASS_PIXEL) {
 				return true;
@@ -469,10 +469,10 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 			if (!context.clearModeDepth) {
 				return true;
 			}
-		} else if (!context.depthTestFlag.isEnabled()) {
+		} else if (!context.depthTestFlag.isEnabled() && needDepthWrite) {
 			// Depth writes are disabled when the depth test is not enabled.
 			return true;
-		} else if (!context.depthMask) {
+		} else if (!context.depthMask && needDepthWrite) {
 			// Depth writes disabled
 			return true;
 		}
