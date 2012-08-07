@@ -157,14 +157,23 @@ public class PacketChannel extends FIFOByteBuffer implements IURLProtocolHandler
 	}
 
 	public boolean setPosition(long position) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setPosition %d", position));
+		}
 		if (position > this.position) {
 			int forwardLength = (int) (position - this.position);
 			if (!forward(forwardLength)) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("setPosition %d forward failed", position));
+				}
 				return false;
 			}
 		} else if (position < this.position) {
 			int rewindLength = (int) (this.position - position);
 			if (!rewind(rewindLength) && !farRewindAllowed) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("setPosition %d rewind failed", position));
+				}
 				return false;
 			}
 		}

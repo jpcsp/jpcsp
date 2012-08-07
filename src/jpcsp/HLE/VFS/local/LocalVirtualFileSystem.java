@@ -16,8 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS.local;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
 import static jpcsp.HLE.modules150.IoFileMgrForUser.PSP_O_CREAT;
 import static jpcsp.HLE.modules150.IoFileMgrForUser.PSP_O_EXCL;
+import static jpcsp.HLE.modules150.IoFileMgrForUser.PSP_O_RDWR;
 import static jpcsp.HLE.modules150.IoFileMgrForUser.PSP_O_TRUNC;
 import static jpcsp.HLE.modules150.IoFileMgrForUser.PSP_O_WRONLY;
 
@@ -25,16 +27,25 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import jpcsp.Memory;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.AbstractVirtualFileSystem;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
+import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.filesystems.SeekableRandomFile;
+import jpcsp.hardware.MemoryStick;
 
 public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
 	protected final String localPath;
+    // modeStrings indexed by [0, PSP_O_RDONLY, PSP_O_WRONLY, PSP_O_RDWR]
+    // SeekableRandomFile doesn't support write only: take "rw",
+    private final static String[] modeStrings = {"r", "r", "rw", "rw"};
 
 	public LocalVirtualFileSystem(String localPath) {
 		this.localPath = localPath;
@@ -42,6 +53,10 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
 
 	protected File getFile(String fileName) {
 		return new File(localPath + fileName);
+	}
+
+	protected static String getMode(int mode) {
+		return modeStrings[mode & PSP_O_RDWR];
 	}
 
 	@Override
@@ -63,7 +78,7 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
 
         SeekableRandomFile raf;
 		try {
-			raf = new SeekableRandomFile(file, getMode(mode));
+			raf = new SeekableRandomFile(file, getMode(flags));
 		} catch (FileNotFoundException e) {
 			return null;
 		}
@@ -206,5 +221,146 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
         }
 
         return successful ? 0 : IO_ERROR;
+	}
+
+	@Override
+	public int ioRename(String oldFileName, String newFileName) {
+		File oldFile = getFile(oldFileName);
+		File newFile = getFile(newFileName);
+
+		if (log.isDebugEnabled()) {
+        	log.debug(String.format("ioRename: renaming file '%s' to '%s'", oldFileName, newFileName));
+        }
+
+		if (!oldFile.renameTo(newFile)) {
+        	log.warn(String.format("ioRename failed: '%s' to '%s'", oldFileName, newFileName));
+        	return IO_ERROR;
+        }
+
+        return 0;
+	}
+
+	@Override
+	public int ioDevctl(String deviceName, int command, TPointer inputPointer, int inputLength, TPointer outputPointer, int outputLength) {
+		int result;
+
+		switch (command) {
+	        // Register memorystick insert/eject callback (fatms0).
+	        case 0x02415821: {
+	            log.debug("sceIoDevctl register memorystick insert/eject callback (fatms0)");
+	            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+	            if (!deviceName.equals("fatms0:")) {
+	            	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
+	            } else if (inputPointer.isAddressGood() && inputLength == 4) {
+	                int cbid = inputPointer.getValue32();
+	                final int callbackType = SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK_FAT;
+	                if (threadMan.hleKernelRegisterCallback(callbackType, cbid)) {
+	                    // Trigger the registered callback immediately.
+	                	// Only trigger this one callback, not all the MS callbacks.
+	                    threadMan.hleKernelNotifyCallback(callbackType, cbid, MemoryStick.getStateFatMs());
+	                    result = 0;  // Success.
+	                } else {
+	                	result = SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
+	                }
+	            } else {
+	            	result = SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
+	            }
+	            break;
+	        }
+	        // Unregister memorystick insert/eject callback (fatms0).
+	        case 0x02415822: {
+	            log.debug("sceIoDevctl unregister memorystick insert/eject callback (fatms0)");
+	            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+	            if (!deviceName.equals("fatms0:")) {
+	            	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
+	            } else if (inputPointer.isAddressGood() && inputLength == 4) {
+	                int cbid = inputPointer.getValue32();
+	                threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK_FAT, cbid);
+	                result = 0;  // Success.
+	            } else {
+	            	result = SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
+	            }
+	            break;
+	        }
+	        // Set if the device is assigned/inserted or not (fatms0).
+	        case 0x02415823: {
+	            log.debug("sceIoDevctl set assigned device (fatms0)");
+	            if (!deviceName.equals("fatms0:")) {
+	            	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
+	            } else if (inputPointer.isAddressGood() && inputLength >= 4) {
+	                // 0 - Device is not assigned (callback not registered).
+	                // 1 - Device is assigned (callback registered).
+	                MemoryStick.setStateFatMs(inputPointer.getValue32());
+	                result = 0;
+	            } else {
+	            	result = IO_ERROR;
+	            }
+	            break;
+	        }
+	        // Check if the device is write protected (fatms0).
+	        case 0x02425824: {
+	            log.debug("sceIoDevctl check write protection (fatms0)");
+	            if (!deviceName.equals("fatms0:") && !deviceName.equals("ms0:")) { // For this command the alias "ms0:" is also supported.
+	            	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
+	            } else if (outputPointer.isAddressGood()) {
+	                // 0 - Device is not protected.
+	                // 1 - Device is protected.
+	                outputPointer.setValue32(0);
+	                result = 0;
+	            } else {
+	            	result = IO_ERROR;
+	            }
+	            break;
+	        }
+	        // Get MS capacity (fatms0).
+	        case 0x02425818: {
+	            log.debug("sceIoDevctl get MS capacity (fatms0)");
+	            int sectorSize = 0x200;
+	            int sectorCount = MemoryStick.getSectorSize() / sectorSize;
+	            int maxClusters = (int) ((MemoryStick.getFreeSize() * 95L / 100) / (sectorSize * sectorCount));
+	            int freeClusters = maxClusters;
+	            int maxSectors = maxClusters;
+	            if (inputPointer.isAddressGood() && inputLength >= 4) {
+	                int addr = inputPointer.getValue32();
+	                if (Memory.isAddressGood(addr)) {
+	                    log.debug("sceIoDevctl refer ms free space");
+	                    Memory mem = Memory.getInstance();
+	                    mem.write32(addr, maxClusters);
+	                    mem.write32(addr + 4, freeClusters);
+	                    mem.write32(addr + 8, maxSectors);
+	                    mem.write32(addr + 12, sectorSize);
+	                    mem.write32(addr + 16, sectorCount);
+	                    result = 0;
+	                } else {
+	                    log.warn("sceIoDevctl 0x02425818 bad save address " + String.format("0x%08X", addr));
+	                    result = IO_ERROR;
+	                }
+	            } else {
+	                log.warn("sceIoDevctl 0x02425818 bad param address " + String.format("0x%08X", inputPointer) + " or size " + inputLength);
+	                result = IO_ERROR;
+	            }
+	            break;
+	        }
+	        // Check if the device is assigned/inserted (fatms0).
+	        case 0x02425823: {
+	            log.debug("sceIoDevctl check assigned device (fatms0)");
+	            if (!deviceName.equals("fatms0:")) {
+	            	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
+	            } else if (outputPointer.isAddressGood() && outputLength >= 4) {
+	                // 0 - Device is not assigned (callback not registered).
+	                // 1 - Device is assigned (callback registered).
+	                outputPointer.setValue32(MemoryStick.getStateFatMs());
+	                result = 0;
+	            } else {
+	            	result = IO_ERROR;
+	            }
+	            break;
+	        }
+	        default: {
+	        	result = super.ioDevctl(deviceName, command, inputPointer, inputLength, outputPointer, outputLength);
+	        }
+		}
+
+		return result;
 	}
 }

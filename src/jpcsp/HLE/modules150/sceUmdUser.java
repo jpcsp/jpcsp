@@ -113,6 +113,7 @@ public class sceUmdUser extends HLEModule {
         } else {
             umdActivated = true;
         }
+        Modules.IoFileMgrForUserModule.registerUmdIso();
     }
 
     public boolean isUmdActivated() {

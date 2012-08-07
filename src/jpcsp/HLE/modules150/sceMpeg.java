@@ -37,8 +37,8 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.Debugger.MemoryViewer;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
@@ -273,8 +273,8 @@ public class sceMpeg extends HLEModule {
 		}
 
 		@Override
-		public void sceIoRead(int result, int uid, int data_addr, int size, int bytesRead, long position, SeekableDataInput dataInput) {
-			Modules.sceMpegModule.onIoRead(dataInput, bytesRead);
+		public void sceIoRead(int result, int uid, int data_addr, int size, int bytesRead, long position, SeekableDataInput dataInput, IVirtualFile vFile) {
+			Modules.sceMpegModule.onIoRead(dataInput, vFile, bytesRead);
 		}
 
 		@Override
@@ -401,7 +401,7 @@ public class sceMpeg extends HLEModule {
     	}
     }
 
-    protected void onIoRead(SeekableDataInput dataInput, int bytesRead) {
+    protected void onIoRead(SeekableDataInput dataInput, IVirtualFile vFile, int bytesRead) {
     	// if we are in the first sceMpegRingbufferPut and the MPEG header has not yet
     	// been analyzed, try to read the MPEG header.
 		if (!isCurrentMpegAnalyzed() && insideRingbufferPut) {
@@ -507,9 +507,7 @@ public class sceMpeg extends HLEModule {
 	    	log.debug(String.format("Stream offset: %d, Stream size: 0x%X", mpegOffset, mpegStreamSize));
 	    	log.debug(String.format("First timestamp: %d, Last timestamp: %d", mpegFirstTimestamp, mpegLastTimestamp));
 	        if (log.isTraceEnabled()) {
-	        	for (int i = 0; i < MPEG_HEADER_BUFFER_MINIMUM_SIZE; i+= 16) {
-	        		log.trace(MemoryViewer.getMemoryView(buffer_addr + i));
-	        	}
+	        	log.trace(String.format("%s", Utilities.getMemoryDump(buffer_addr, MPEG_HEADER_BUFFER_MINIMUM_SIZE, 4, 16)));
 	        }
         }
     }
@@ -1226,7 +1224,7 @@ public class sceMpeg extends HLEModule {
         if (result != 0) {
         	delayThread(mpegDecodeErrorDelay);
         }
-        
+
         return result;
     }
 
@@ -2359,7 +2357,7 @@ public class sceMpeg extends HLEModule {
         mpegRingbuffer.read(mem, mpegRingbufferAddr);
         insideRingbufferPut = true;
         Modules.ThreadManForUserModule.executeCallback(null, mpegRingbuffer.callback_addr, afterRingbufferPutCallback, false, mpegRingbuffer.data, numberPackets, mpegRingbuffer.callback_args);
-        
+
         return Emulator.getProcessor().cpu.gpr[2];
     }
 

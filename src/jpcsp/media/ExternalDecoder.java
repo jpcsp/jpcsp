@@ -28,6 +28,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules150.IoFileMgrForUser.IIoListener;
@@ -347,12 +348,14 @@ public class ExternalDecoder {
     		public int address;
     		public int size;
     		public SeekableDataInput dataInput;
+    		public IVirtualFile vFile;
     		public long position;
 
-    		public ReadInfo(int address, int size, SeekableDataInput dataInput, long position) {
+    		public ReadInfo(int address, int size, SeekableDataInput dataInput, IVirtualFile vFile, long position) {
     			this.address = address;
     			this.size = size;
     			this.dataInput = dataInput;
+    			this.vFile = vFile;
     			this.position = position;
     		}
 
@@ -414,7 +417,19 @@ public class ExternalDecoder {
     			// Search for files having the same size and content
     			for (ReadInfo ri : readInfos.values()) {
     				try {
-						if (ri.dataInput.length() == fileSize) {
+    					if (ri.vFile != null && ri.vFile.length() == fileSize) {
+							// Both file have the same length, check the content
+							byte[] fileData = new byte[length];
+							long currentPosition = ri.vFile.getPosition();
+							ri.vFile.ioLseek(ri.position);
+							ri.vFile.ioRead(fileData, 0, length);
+							ri.vFile.ioLseek(currentPosition);
+							if (memcmp(fileData, address, length)) {
+								// Both files have the same content, we have found it!
+								readInfo = ri;
+								break;
+							}
+    					} else if (ri.dataInput != null && ri.dataInput.length() == fileSize) {
 							// Both file have the same length, check the content
 							byte[] fileData = new byte[length];
 							long currentPosition = ri.dataInput.getFilePointer();
@@ -449,7 +464,29 @@ public class ExternalDecoder {
     				if (ri != null) {
     					try {
     						// Check if the file length is large enough
-    						if (ri.dataInput.length() >= fileSize) {
+    						if (ri.vFile != null && ri.vFile.length() >= fileSize) {
+    							// Check if the file contents are matching our buffer
+    							int checkLength = Math.min(length, fileSize);
+    							byte[] fileData = new byte[checkLength];
+    							long currentPosition = ri.vFile.getPosition();
+    							ri.vFile.ioLseek(ri.position);
+    							ri.vFile.ioRead(fileData, 0, checkLength);
+    							ri.vFile.ioLseek(currentPosition);
+
+    							boolean match;
+    							if (checkData != null) {
+    								// Check against checkData
+    								match = cmp(fileData, checkData, checkLength);
+    							} else {
+    								// Check against memory data located at "address"
+    								match = memcmp(fileData, address, checkLength);
+    							}
+
+    							if (match) {
+									// Both files have the same content, we have found it!
+									readInfo = ri;
+    							}
+    						} else if (ri.dataInput != null && ri.dataInput.length() >= fileSize) {
     							// Check if the file contents are matching our buffer
     							int checkLength = Math.min(length, fileSize);
     							byte[] fileData = new byte[checkLength];
@@ -486,10 +523,17 @@ public class ExternalDecoder {
     		byte[] fileData;
     		try {
         		fileData = new byte[fileSize];
-				long currentPosition = readInfo.dataInput.getFilePointer();
-				readInfo.dataInput.seek(readInfo.position + positionOffset);
-	    		readInfo.dataInput.readFully(fileData);
-				readInfo.dataInput.seek(currentPosition);
+        		if (readInfo.vFile != null) {
+					long currentPosition = readInfo.vFile.getPosition();
+					readInfo.vFile.ioLseek(readInfo.position + positionOffset);
+		    		readInfo.vFile.ioRead(fileData, 0, fileSize);
+					readInfo.vFile.ioLseek(currentPosition);
+        		} else if (readInfo.dataInput != null) {
+					long currentPosition = readInfo.dataInput.getFilePointer();
+					readInfo.dataInput.seek(readInfo.position + positionOffset);
+		    		readInfo.dataInput.readFully(fileData);
+					readInfo.dataInput.seek(currentPosition);
+        		}
 			} catch (IOException e) {
 				return null;
 			} catch (OutOfMemoryError e) {
@@ -594,8 +638,8 @@ public class ExternalDecoder {
     	}
 
     	@Override
-		public void sceIoRead(int result, int uid, int data_addr, int size,	int bytesRead, long position, SeekableDataInput dataInput) {
-			if (result >= 0 && dataInput != null) {
+		public void sceIoRead(int result, int uid, int data_addr, int size,	int bytesRead, long position, SeekableDataInput dataInput, IVirtualFile vFile) {
+			if (result >= 0 && (dataInput != null || vFile != null)) {
 				ReadInfo readInfo = readInfos.get(data_addr);
 				boolean processed = false;
 
@@ -607,7 +651,7 @@ public class ExternalDecoder {
 							int magicOffset = magicOffsets[i];
 							int nextMagicOffset = i + 1 < magicOffsets.length ? magicOffsets[i + 1] : bytesRead;
 							int magicAddress = data_addr + magicOffset;
-							readInfo = new ReadInfo(magicAddress, nextMagicOffset - magicOffset, dataInput, position + magicOffset);
+							readInfo = new ReadInfo(magicAddress, nextMagicOffset - magicOffset, dataInput, vFile, position + magicOffset);
 							readInfos.put(magicAddress, readInfo);
 							readMagics.put(getMagicHash(magicAddress), readInfo);
 						}
@@ -618,7 +662,7 @@ public class ExternalDecoder {
 					int magicOffset = getFirstFileMagicOffset(data_addr, bytesRead);
 					if (magicOffset >= 0) {
 						int magicAddress = data_addr + magicOffset;
-						readInfo = new ReadInfo(magicAddress, bytesRead - magicOffset, dataInput, position + magicOffset);
+						readInfo = new ReadInfo(magicAddress, bytesRead - magicOffset, dataInput, vFile, position + magicOffset);
 						readInfos.put(magicAddress, readInfo);
 						readMagics.put(getMagicHash(magicAddress), readInfo);
 						processed = true;
@@ -627,7 +671,7 @@ public class ExternalDecoder {
 
 				if (!processed) {
 					if (readInfo == null) {
-						readInfo = new ReadInfo(data_addr, bytesRead, dataInput, position);
+						readInfo = new ReadInfo(data_addr, bytesRead, dataInput, vFile, position);
 						readInfos.put(data_addr, readInfo);
 					}
 				}

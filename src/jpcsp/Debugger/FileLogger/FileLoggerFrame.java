@@ -33,6 +33,7 @@ import javax.swing.table.TableColumnModel;
 import jpcsp.Emulator;
 import jpcsp.Resource;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.modules150.IoFileMgrForUser.IIoListener;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.settings.Settings;
@@ -353,7 +354,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
         sceIoOpen(1, 0x08800000, "test1.txt", 0xFF, 0xFF, "rw");
 
         // file command table
-        sceIoRead(0x0, 1, 0x08800000, 0x400, 0x0, 0, null);
+        sceIoRead(0x0, 1, 0x08800000, 0x400, 0x0, 0, null, null);
 
         System.err.println("test done");
     }
@@ -560,7 +561,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
     }
 
 	@Override
-    public void sceIoRead(int result, int uid, int data_addr, int size, int bytesRead, long position, SeekableDataInput dataInput) {
+    public void sceIoRead(int result, int uid, int data_addr, int size, int bytesRead, long position, SeekableDataInput dataInput, IVirtualFile vFile) {
         FileHandleInfo info = fileHandleIdMap.get(uid);
         if (result >= 0 && info != null) {
             info.bytesRead += bytesRead;

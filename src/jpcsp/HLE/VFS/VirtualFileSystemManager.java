@@ -20,6 +20,7 @@ import java.util.HashMap;
 
 public class VirtualFileSystemManager {
 	protected HashMap<String, IVirtualFileSystem> virtualFileSystems = new HashMap<String, IVirtualFileSystem>();
+	protected ITmpVirtualFileSystem tmpVfs;
 
 	public void register(String name, IVirtualFileSystem vfs) {
 		name = name.toLowerCase();
@@ -29,6 +30,10 @@ public class VirtualFileSystemManager {
 	public void unregister(String name) {
 		name = name.toLowerCase();
 		virtualFileSystems.remove(name);
+	}
+
+	public void register(ITmpVirtualFileSystem tmpVfs) {
+		this.tmpVfs = tmpVfs;
 	}
 
 	public IVirtualFileSystem getVirtualFileSystem(String absoluteFileName, StringBuilder localFileName) {
@@ -44,17 +49,89 @@ public class VirtualFileSystemManager {
 			localFileName.setLength(0);
 			localFileName.append(absoluteFileName.substring(colon + 1));
 
-			// Delete any leading "/"
-			if (localFileName.length() > 0 && localFileName.charAt(0) == '/') {
-				localFileName.deleteCharAt(0);
-			}
-
-			// Delete any trailing "/"
-			if (localFileName.length() > 0 && localFileName.charAt(localFileName.length() - 1) == '/') {
-				localFileName.setLength(localFileName.length() - 1);
-			}
+			normalizeLocalFileName(localFileName);
 		}
 
 		return virtualFileSystems.get(name);
+	}
+
+	public ITmpVirtualFileSystem getTmpVirtualFileSystem() {
+		return tmpVfs;
+	}
+
+	/**
+	 * Normalize the given local file name:
+	 * - resolve ".." and "." special notation
+	 * - remove leading and trailing "/"
+	 * 
+	 * @param localFileName   the local file name to be normalized
+	 */
+	private void normalizeLocalFileName(StringBuilder localFileName) {
+		// Remove "/../" in the local file name
+		// E.g.:
+		//      /PSP_GAME/USRDIR/A/../B
+		// is transformed into
+		//      /PSP_GAME/USRDIR/B
+		while (true) {
+			int dotDotIndex = localFileName.indexOf("/../");
+			if (dotDotIndex < 0) {
+				break;
+			}
+    		int parentIndex = localFileName.lastIndexOf("/", dotDotIndex - 1);
+    		if (parentIndex < 0) {
+    			break;
+    		}
+    		localFileName.delete(parentIndex, dotDotIndex + 3);
+		}
+
+		// Remove "/.." at the end of the local file name
+		// E.g.:
+		//      PSP_GAME/USRDIR/A/..
+		// is transformed into
+		//      PSP_GAME/USRDIR
+		if (localFileName.length() >= 3 && localFileName.lastIndexOf("/..") == localFileName.length() - 3) {
+			if (localFileName.length() <= 3) {
+				localFileName.setLength(0);
+			} else {
+				int parentIndex = localFileName.lastIndexOf("/", localFileName.length() - 4);
+				if (parentIndex < 0) {
+					localFileName.setLength(0);
+				} else {
+					localFileName.setLength(parentIndex);
+				}
+			}
+		}
+
+		// Remove "/./" in the local file name
+		// E.g.:
+		//     PSP_GAME/USRDIR/A/./B
+		// is transformed into
+		//     PSP_GAME/USRDIR/A/B
+		while (true) {
+			int dotIndex = localFileName.indexOf("/./");
+			if (dotIndex < 0) {
+				break;
+			}
+			localFileName.delete(dotIndex, dotIndex + 2);
+		}
+
+		// Remove "/." at the end of the local file name
+		// E.g.:
+		//     PSP_GAME/USRDIR/A/.
+		// is transformed into
+		//     PSP_GAME/USRDIR/A
+		if (localFileName.length() >= 2 && localFileName.lastIndexOf("/.") == localFileName.length() - 2) {
+			localFileName.setLength(localFileName.length() - 2);
+		}
+
+		// Delete any leading "/"
+		if (localFileName.length() > 0 && localFileName.charAt(0) == '/') {
+			localFileName.deleteCharAt(0);
+		}
+
+		// Delete any trailing "/"
+		if (localFileName.length() > 0 && localFileName.charAt(localFileName.length() - 1) == '/') {
+			localFileName.setLength(localFileName.length() - 1);
+		}
 	}
 }

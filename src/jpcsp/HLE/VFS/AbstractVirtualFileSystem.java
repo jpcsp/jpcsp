@@ -16,28 +16,22 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_UNSUPPORTED_OPERATION;
+
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.SceIoDirent;
 import jpcsp.HLE.kernel.types.SceIoStat;
-import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.util.Utilities;
 
 public abstract class AbstractVirtualFileSystem implements IVirtualFileSystem {
 	protected static Logger log = Logger.getLogger("vfs");
 	protected static final int IO_ERROR = -1;
-    // modeStrings indexed by [0, PSP_O_RDONLY, PSP_O_WRONLY, PSP_O_RDWR]
-    // SeekableRandomFile doesn't support write only: take "rw",
-    private final static String[] modeStrings = {"r", "r", "rw", "rw"};
 
 	protected static boolean hasFlag(int mode, int flag) {
 		return (mode & flag) == flag;
-	}
-
-	protected static String getMode(int mode) {
-		return modeStrings[mode & IoFileMgrForUser.PSP_O_RDWR];
 	}
 
 	@Override
@@ -101,7 +95,13 @@ public abstract class AbstractVirtualFileSystem implements IVirtualFileSystem {
 	@Override
 	public int ioDread(String dirName, SceIoDirent dir) {
 		// Return the Getstat on the given directory file
-		String fileName = dirName + "/" + dir.filename;
+		String fileName;
+		if (dirName == null || dirName.length() == 0) {
+			fileName = dir.filename;
+		} else {
+			fileName = dirName + "/" + dir.filename;
+		}
+
 		int result = ioGetstat(fileName, dir.stat);
 		if (result == 0) {
 			// Success is 1 for sceIoDread
@@ -157,6 +157,6 @@ public abstract class AbstractVirtualFileSystem implements IVirtualFileSystem {
 	        }
 		}
 
-		return IO_ERROR;
+		return ERROR_KERNEL_UNSUPPORTED_OPERATION;
 	}
 }

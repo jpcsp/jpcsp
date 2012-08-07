@@ -58,12 +58,15 @@ import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.VFS.ITmpVirtualFileSystem;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.VFS.VirtualFileSystemManager;
 import jpcsp.HLE.VFS.emulator.EmulatorVirtualFileSystem;
 import jpcsp.HLE.VFS.iso.UmdIsoVirtualFileSystem;
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
+import jpcsp.HLE.VFS.local.TmpLocalVirtualFileSystem;
+import jpcsp.HLE.VFS.memoryStick.MemoryStickVirtualFileSystem;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
@@ -140,7 +143,7 @@ public class IoFileMgrForUser extends HLEModule {
     public final static int PSP_SEEK_END = 2;
 
     // Type of device used (abstract).
-    // Can simbolize physical character or block devices, logical filesystem devices
+    // Can symbolize physical character or block devices, logical filesystem devices
     // or devices represented by an alias or even mount point devices also represented by an alias.
     public final static int PSP_DEV_TYPE_NONE = 0x0;
     public final static int PSP_DEV_TYPE_CHARACTER = 0x1;
@@ -244,7 +247,7 @@ public class IoFileMgrForUser extends HLEModule {
         public final String filename;
         public final SeekableRandomFile msFile; // on memory stick, should either be identical to readOnlyFile or null
         public SeekableDataInput readOnlyFile; // on memory stick or umd
-        public final IVirtualFile vFile;
+        public IVirtualFile vFile;
         public final String mode;
         public long position; // virtual position, beyond the end is allowed, before the start is an error
         public boolean sectorBlockMode;
@@ -467,7 +470,7 @@ public class IoFileMgrForUser extends HLEModule {
 
         void sceIoWrite(int result, int uid, int data_addr, int size, int bytesWritten);
 
-        void sceIoRead(int result, int uid, int data_addr, int size, int bytesRead, long position, SeekableDataInput dataInput);
+        void sceIoRead(int result, int uid, int data_addr, int size, int bytesRead, long position, SeekableDataInput dataInput, IVirtualFile vFile);
 
         void sceIoCancel(int result, int uid);
 
@@ -537,16 +540,29 @@ public class IoFileMgrForUser extends HLEModule {
             long position = info.position;
             int result = 0;
 
-            try {
-            	Utilities.readFully(info.readOnlyFile, address, size);
-            	info.position += size;
-            	result = size;
-            	if (info.sectorBlockMode) {
-            		result /= UmdIsoFile.sectorLength;
+            if (info.vFile != null) {
+            	result = info.vFile.ioRead(new TPointer(Memory.getInstance(), address), size);
+            	if (result >= 0) {
+            		info.position += result;
+            		size = result;
+	            	if (info.sectorBlockMode) {
+	            		result /= UmdIsoFile.sectorLength;
+	            	}
+            	} else {
+            		size = 0;
             	}
-            } catch (IOException e) {
-            	log.error(e);
-            	result = ERROR_KERNEL_FILE_READ_ERROR;
+            } else {
+	            try {
+	            	Utilities.readFully(info.readOnlyFile, address, size);
+	            	info.position += size;
+	            	result = size;
+	            	if (info.sectorBlockMode) {
+	            		result /= UmdIsoFile.sectorLength;
+	            	}
+	            } catch (IOException e) {
+	            	log.error(e);
+	            	result = ERROR_KERNEL_FILE_READ_ERROR;
+	            }
             }
 
             info.result = result;
@@ -555,7 +571,7 @@ public class IoFileMgrForUser extends HLEModule {
             RuntimeContext.invalidateRange(address, size);
 
             for (IIoListener ioListener : ioListeners) {
-                ioListener.sceIoRead(result, info.id, address, requestedSize, size, position, info.readOnlyFile);
+                ioListener.sceIoRead(result, info.id, address, requestedSize, size, position, info.readOnlyFile, info.vFile);
             }
         }
     }
@@ -612,11 +628,14 @@ public class IoFileMgrForUser extends HLEModule {
         host0Path = null;
 
         vfsManager = new VirtualFileSystemManager();
+    	vfsManager.register(new TmpLocalVirtualFileSystem());
         vfsManager.register("emulator", new EmulatorVirtualFileSystem());
         vfsManager.register("kemulator", new EmulatorVirtualFileSystem());
         if (useVirtualFileSystem) {
 	        vfsManager.register("ms0", new LocalVirtualFileSystem("ms0/"));
+	        vfsManager.register("fatms0", new LocalVirtualFileSystem("ms0/"));
 	        vfsManager.register("flash0", new LocalVirtualFileSystem("flash0/"));
+	        vfsManager.register("mscmhc0", new MemoryStickVirtualFileSystem());
 	        registerUmdIso();
         }
 
@@ -863,7 +882,21 @@ public class IoFileMgrForUser extends HLEModule {
         if (pcfilename == null) {
             return null;
         }
-        return stat(pcfilename);
+    	SceIoStat stat = null;
+        String absoluteFileName = getAbsoluteFileName(pspfilename);
+        StringBuilder localFileName = new StringBuilder();
+        IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
+        if (vfs != null) {
+        	stat = new SceIoStat();
+        	int result = vfs.ioGetstat(localFileName.toString(), stat);
+        	if (result < 0) {
+        		stat = null;
+        	}
+        } else {
+        	stat = stat(pcfilename);
+        }
+
+        return stat;
     }
 
     /**
@@ -1285,6 +1318,32 @@ public class IoFileMgrForUser extends HLEModule {
         }
     }
 
+    private IoInfo getInfo(IVirtualFile vFile) {
+    	for (IoInfo info : fileIds.values()) {
+    		if (info.vFile == vFile) {
+    			return info;
+    		}
+    	}
+
+    	return null;
+    }
+
+    public long getPosition(IVirtualFile vFile) {
+    	IoInfo info = getInfo(vFile);
+    	if (info == null) {
+    		return -1;
+    	}
+
+    	return info.position;
+    }
+
+    public void setPosition(IVirtualFile vFile, long position) {
+    	IoInfo info = getInfo(vFile);
+    	if (info != null) {
+    		info.position = position;
+    	}
+    }
+
     /*
      * HLE functions.
      */
@@ -1461,6 +1520,9 @@ public class IoFileMgrForUser extends HLEModule {
 	                    log.debug("hleIoOpen assigned id = 0x" + Integer.toHexString(info.id));
 	                }
         		}
+        	} else if (useVirtualFileSystem) {
+                log.error(String.format("hleIoOpen - device not found '%s'", filename));
+                result = ERROR_ERRNO_DEVICE_NOT_FOUND;
         	} else if (pcfilename != null) {
                 if (log.isDebugEnabled()) {
                     log.debug("hleIoOpen - opening file " + pcfilename);
@@ -1657,6 +1719,30 @@ public class IoFileMgrForUser extends HLEModule {
                 } else if ((data_addr < MemoryMap.START_RAM) && (data_addr + size > MemoryMap.END_RAM)) {
                     log.warn("hleIoWrite - id " + Integer.toHexString(id) + " data is outside of ram 0x" + Integer.toHexString(data_addr) + " - 0x" + Integer.toHexString(data_addr + size));
                     result = -1;
+                } else if (info.vFile != null) {
+                    if ((info.flags & PSP_O_APPEND) == PSP_O_APPEND) {
+                        info.vFile.ioLseek(info.vFile.length());
+                        info.position = info.vFile.length();
+                    }
+
+                	TPointer dataAddr = new TPointer(Memory.getInstance(), data_addr);
+                    if (info.position > info.vFile.length()) {
+                        int towrite = (int) (info.position - info.vFile.length());
+
+                        info.vFile.ioLseek(info.vFile.length());
+                        while (towrite > 0) {
+                            result = info.vFile.ioWrite(dataAddr, 1);
+                            if (result < 0) {
+                            	break;
+                            }
+                            towrite -= result;
+                        }
+                    }
+
+                    result = info.vFile.ioWrite(dataAddr, size);
+                    if (result > 0) {
+                    	info.position += result;
+                    }
                 } else {
                     if ((info.flags & PSP_O_APPEND) == PSP_O_APPEND) {
                         info.msFile.seek(info.msFile.length());
@@ -1703,6 +1789,7 @@ public class IoFileMgrForUser extends HLEModule {
         int result;
         long position = 0;
         SeekableDataInput dataInput = null;
+        IVirtualFile vFile = null;
         int requestedSize = size;
         IAction asyncAction = null;
 
@@ -1742,6 +1829,7 @@ public class IoFileMgrForUser extends HLEModule {
                     	result = 0;
                     } else {
                     	position = info.position;
+                    	vFile = info.vFile;
                     	result = info.vFile.ioRead(new TPointer(Memory.getInstance(), data_addr), size);
                     	if (result >= 0) {
                     		size = result;
@@ -1816,7 +1904,7 @@ public class IoFileMgrForUser extends HLEModule {
         // Call the IO listeners (performed in the async action if one is provided, otherwise call them here)
         if (asyncAction == null) {
             for (IIoListener ioListener : ioListeners) {
-                ioListener.sceIoRead(result, id, data_addr, requestedSize, size, position, dataInput);
+                ioListener.sceIoRead(result, id, data_addr, requestedSize, size, position, dataInput, vFile);
             }
         }
         
@@ -1992,7 +2080,7 @@ public class IoFileMgrForUser extends HLEModule {
             // Can't execute another operation until the previous one completed
             log.warn("hleIoIoctl - id " + Integer.toHexString(id) + " PSP_ERROR_ASYNC_BUSY");
             result = ERROR_KERNEL_ASYNC_BUSY;
-        } else if (info.vFile != null) {
+        } else if (info.vFile != null && cmd != 0x04100001) {
         	result = info.vFile.ioIoctl(cmd, new TPointer(mem, indata_addr), inlen, new TPointer(mem, outdata_addr), outlen);
         } else {
             switch (cmd) {
@@ -2291,12 +2379,12 @@ public class IoFileMgrForUser extends HLEModule {
                             log.debug("hleIoIoctl get AES key " + keyHex);
                         }
 
-                        if (getAllowExtractPGDStatus()) {
+                        if (getAllowExtractPGDStatus() && info.readOnlyFile != null) {
                             // Extract the encrypted PGD file for external decryption.
-                            pgdFileConnector.extractPGDFile(info.filename, info.readOnlyFile, keyHex);
+                    		pgdFileConnector.extractPGDFile(info.filename, info.readOnlyFile, keyHex);
                         }
 
-                        SeekableDataInput decInput = null;
+                        IVirtualFile decInput = null;
                         // Try to decrypt this PGD file with the Crypto Engine.
                         try {
                             // Maximum 16-byte aligned block size to use during stream read/write.
@@ -2311,7 +2399,11 @@ public class IoFileMgrForUser extends HLEModule {
                             byte[] headerBuf = new byte[0x30 + 0x10];
 
                             // Read the encrypted PGD header.
-                            info.readOnlyFile.readFully(inBuf, 0, pgdHeaderSize);
+                            if (info.vFile != null) {
+                            	info.vFile.ioRead(inBuf, 0, pgdHeaderSize);
+                            } else {
+                            	info.readOnlyFile.readFully(inBuf, 0, pgdHeaderSize);
+                            }
 
                             // Check if the "PGD" header is present
                             if (inBuf[0] != 0 || inBuf[1] != 'P' || inBuf[2] != 'G' || inBuf[3] != 'D') {
@@ -2333,29 +2425,35 @@ public class IoFileMgrForUser extends HLEModule {
                                 	log.debug(String.format("PGD dataSize=%d, chunkSize=%d, hashOffset=%d", dataSize, chunkSize, hashOffset));
                                 }
 
-                                if (hashOffset < 0 || hashOffset > info.readOnlyFile.length() || dataSize < 0) {
+                                long fileLength = (info.vFile != null) ? info.vFile.length() : info.readOnlyFile.length();
+                                if (hashOffset < 0 || hashOffset > fileLength || dataSize < 0) {
                                 	// The decrypted PGD header is incorrect...
                                 	// abort the decryption and leave the file unchanged
                                 	log.warn(String.format("Incorrect PGD header: dataSize=%d, chunkSize=%d, hashOffset=%d", dataSize, chunkSize, hashOffset));
                                 } else {
                                     // Check for an already decrypted file with the correct size
-                                	decInput = pgdFileConnector.loadDecryptedPGDFile(info.filename, dataSize);
-                                	if (decInput == null) {
-	                                    // Generate the necessary directories and files.
-	                                    String pgdPath = pgdFileConnector.getBaseDirectory(pgdFileConnector.id);
-	                                    new File(pgdPath).mkdirs();
-	                                    String decFileName = pgdFileConnector.getCompleteFileName(PGDFileConnector.decryptedFileName);
-	                                    SeekableRandomFile decFile = new SeekableRandomFile(decFileName, "rw");
+                                	decInput = vfsManager.getTmpVirtualFileSystem().ioOpen(info.filename, info.flags, 0, ITmpVirtualFileSystem.tmpPurposePGD);
+                                	if (decInput == null || decInput.length() < dataSize) {
+	                                    // Create a new decrypted file
+                                		decInput = vfsManager.getTmpVirtualFileSystem().ioOpen(info.filename, PSP_O_CREAT | PSP_O_WRONLY, 0777, ITmpVirtualFileSystem.tmpPurposePGD);
 
 		                                // Write the newly extracted hash at the top of the output buffer,
 		                                // locate the data hash at hashOffset and start decrypting until
 		                                // dataSize is reached.
-	                                    info.readOnlyFile.seek(hashOffset);
+                                		if (info.vFile != null) {
+                                			info.vFile.ioLseek(hashOffset);
+                                		} else {
+                                			info.readOnlyFile.seek(hashOffset);
+                                		}
 	                                    int readLength;
                                         byte[] decryptedBytes;
 	                                    for (int i = 0; i < dataSize; i += readLength) {
 	                                    	readLength = Math.min(dataSize - i, maxAlignedChunkSize);
-	                                        info.readOnlyFile.readFully(inBuf, 0xA0, readLength);
+	                                    	if (info.vFile != null) {
+	                                    		info.vFile.ioRead(inBuf, 0xA0, readLength);
+	                                    	} else {
+	                                    		info.readOnlyFile.readFully(inBuf, 0xA0, readLength);
+	                                    	}
 
 	                                        System.arraycopy(headerBufDec, 0, outBuf, 0, 0x10);
 	                                        System.arraycopy(inBuf, 0xA0, outBuf, 0x10, readLength);
@@ -2364,16 +2462,15 @@ public class IoFileMgrForUser extends HLEModule {
 	                                        } else {
 	                                        	decryptedBytes = crypto.UpdatePGDCipher(outBuf, readLength + 0x10);
 	                                        }
-	                                        decFile.write(decryptedBytes);
+	                                        decInput.ioWrite(decryptedBytes, 0, decryptedBytes.length);
 	                                    }
 
-		                                // Finish the PGD cipher operations, set the real file length and close it.
+		                                // Finish the PGD cipher operations
 		                                crypto.FinishPGDCipher();
-		                                decFile.setLength(dataSize);
-		                                decFile.close();
 
-		                                // Load the manually decrypted file generated just now.
-		                                decInput = pgdFileConnector.loadDecryptedPGDFile(info.filename);
+		                                // Reuse the created file (re-open it in read-only mode)
+		                                decInput.ioClose();
+	                                	decInput = vfsManager.getTmpVirtualFileSystem().ioOpen(info.filename, info.flags, 0, ITmpVirtualFileSystem.tmpPurposePGD);
                                 	}
                                 }
                             }
@@ -2382,13 +2479,17 @@ public class IoFileMgrForUser extends HLEModule {
                         }
 
                         try {
-                            info.readOnlyFile.seek(info.position);
+                        	if (info.vFile != null) {
+                        		info.vFile.ioLseek(info.position);
+                        	} else {
+                        		info.readOnlyFile.seek(info.position);
+                        	}
                         } catch (IOException e) {
                             log.error(e);
                         }
 
                         if (decInput != null) {
-                            info.readOnlyFile = decInput;
+                            info.vFile = decInput;
                         }
 
                         result = 0;
@@ -3011,6 +3112,9 @@ public class IoFileMgrForUser extends HLEModule {
         IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
         if (vfs != null) {
         	result = vfs.ioRemove(localFileName.toString());
+    	} else if (useVirtualFileSystem) {
+            log.error(String.format("sceIoRemove - device not found '%s'", filename));
+            result = ERROR_ERRNO_DEVICE_NOT_FOUND;
         } else if (pcfilename != null) {
             if (isUmdPath(pcfilename)) {
             	result = -1;
@@ -3056,6 +3160,9 @@ public class IoFileMgrForUser extends HLEModule {
         IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
         if (vfs != null) {
         	result = vfs.ioMkdir(localFileName.toString(), permissions);
+    	} else if (useVirtualFileSystem) {
+            log.error(String.format("sceIoMkdir - device not found '%s'", dirname));
+            result = ERROR_ERRNO_DEVICE_NOT_FOUND;
         } else if (pcfilename != null) {
             File f = new File(pcfilename);
             f.mkdir();
@@ -3093,6 +3200,9 @@ public class IoFileMgrForUser extends HLEModule {
         IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
         if (vfs != null) {
         	result = vfs.ioRmdir(localFileName.toString());
+    	} else if (useVirtualFileSystem) {
+            log.error(String.format("sceIoRmdir - device not found '%s'", dirname));
+            result = ERROR_ERRNO_DEVICE_NOT_FOUND;
         } else if (pcfilename != null) {
             File f = new File(pcfilename);
             f.delete();
@@ -3193,6 +3303,10 @@ public class IoFileMgrForUser extends HLEModule {
     	if (vfs != null) {
     		stat = new SceIoStat();
     		result = vfs.ioGetstat(localFileName.toString(), stat);
+    	} else if (useVirtualFileSystem) {
+    		stat = null;
+            log.error(String.format("sceIoGetstat - device not found '%s'", filename));
+            result = ERROR_ERRNO_DEVICE_NOT_FOUND;
     	} else {
     		String pcfilename = getDeviceFilePath(filename.getString());
     		stat = stat(pcfilename);
@@ -3236,6 +3350,9 @@ public class IoFileMgrForUser extends HLEModule {
         IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
         if (vfs != null) {
         	result = vfs.ioChstat(localFileName.toString(), stat, bits);
+    	} else if (useVirtualFileSystem) {
+            log.error(String.format("sceIoChstat - device not found '%s'", filename));
+            result = ERROR_ERRNO_DEVICE_NOT_FOUND;
         } else if (pcfilename != null) {
             if (isUmdPath(pcfilename)) {
             	result = -1;
@@ -3323,7 +3440,23 @@ public class IoFileMgrForUser extends HLEModule {
         String newpcfilename = getDeviceFilePath(newFileName);
         int result;
 
-        if (oldpcfilename != null) {
+        String absoluteOldFileName = getAbsoluteFileName(oldFileName);
+        StringBuilder localOldFileName = new StringBuilder();
+        IVirtualFileSystem oldVfs = vfsManager.getVirtualFileSystem(absoluteOldFileName, localOldFileName);
+        if (oldVfs != null) {
+            String absoluteNewFileName = getAbsoluteFileName(newFileName);
+            StringBuilder localNewFileName = new StringBuilder();
+            IVirtualFileSystem newVfs = vfsManager.getVirtualFileSystem(absoluteNewFileName, localNewFileName);
+            if (oldVfs != newVfs) {
+                log.error(String.format("sceIoRename - renaming across devices not allowed '%s' - '%s'", oldFileName, newFileName));
+                result = ERROR_ERRNO_DEVICE_NOT_FOUND;
+            } else {
+            	result = oldVfs.ioRename(localOldFileName.toString(), localNewFileName.toString());
+            }
+    	} else if (useVirtualFileSystem) {
+            log.error(String.format("sceIoRename - device not found '%s'", oldFileName));
+            result = ERROR_ERRNO_DEVICE_NOT_FOUND;
+        } else if (oldpcfilename != null) {
             if (isUmdPath(oldpcfilename)) {
                 result = -1;
             } else {
@@ -3387,6 +3520,16 @@ public class IoFileMgrForUser extends HLEModule {
         	result = vfs.ioDevctl(devicename.getString(), cmd, new TPointer(mem, indata_addr), inlen, new TPointer(mem, outdata_addr), outlen);
 
         	for (IIoListener ioListener : ioListeners) {
+                ioListener.sceIoDevctl(result, devicename.getAddress(), devicename.getString(), cmd, indata_addr, inlen, outdata_addr, outlen);
+            }
+            delayIoOperation(IoOperation.ioctl);
+
+            return result;
+    	} else if (useVirtualFileSystem) {
+            log.error(String.format("sceIoDevctl - device not found '%s'", devicename));
+            result = ERROR_ERRNO_DEVICE_NOT_FOUND;
+
+            for (IIoListener ioListener : ioListeners) {
                 ioListener.sceIoDevctl(result, devicename.getAddress(), devicename.getString(), cmd, indata_addr, inlen, outdata_addr, outlen);
             }
             delayIoOperation(IoOperation.ioctl);
