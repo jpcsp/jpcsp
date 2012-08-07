@@ -21,6 +21,7 @@ import java.io.IOException;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.filesystems.SeekableDataInput;
@@ -33,6 +34,21 @@ public abstract class AbstractVirtualFile implements IVirtualFile {
 
 	public AbstractVirtualFile(SeekableDataInput file) {
 		this.file = file;
+	}
+
+	@Override
+	public long getPosition() {
+		try {
+			return file.getFilePointer();
+		} catch (IOException e) {
+			log.error("getPosition", e);
+		}
+		return Modules.IoFileMgrForUserModule.getPosition(this);
+	}
+
+	protected void setPosition(long position) {
+		Modules.IoFileMgrForUserModule.setPosition(this, position);
+		ioLseek(position);
 	}
 
 	@Override
@@ -60,7 +76,24 @@ public abstract class AbstractVirtualFile implements IVirtualFile {
 	}
 
 	@Override
+	public int ioRead(byte[] outputBuffer, int outputOffset, int outputLength) {
+		try {
+			file.readFully(outputBuffer, outputOffset, outputLength);
+		} catch (IOException e) {
+			log.error("ioRead", e);
+			return SceKernelErrors.ERROR_KERNEL_FILE_READ_ERROR;
+		}
+
+		return outputLength;
+	}
+
+	@Override
 	public int ioWrite(TPointer inputPointer, int inputLength) {
+		return IO_ERROR;
+	}
+
+	@Override
+	public int ioWrite(byte[] inputBuffer, int inputOffset, int inputLength) {
 		return IO_ERROR;
 	}
 

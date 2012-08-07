@@ -16,11 +16,42 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS.local;
 
+import java.io.IOException;
+
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.AbstractVirtualFile;
-import jpcsp.filesystems.SeekableDataInput;
+import jpcsp.filesystems.SeekableRandomFile;
+import jpcsp.util.Utilities;
 
 public class LocalVirtualFile extends AbstractVirtualFile {
-	public LocalVirtualFile(SeekableDataInput file) {
+	protected SeekableRandomFile file;
+
+	public LocalVirtualFile(SeekableRandomFile file) {
 		super(file);
+		this.file = file;
+	}
+
+	@Override
+	public int ioWrite(TPointer inputPointer, int inputLength) {
+		try {
+			Utilities.write(file, inputPointer.getAddress(), inputLength);
+		} catch (IOException e) {
+			log.error("ioWrite", e);
+			return IO_ERROR;
+		}
+
+		return inputLength;
+	}
+
+	@Override
+	public int ioWrite(byte[] inputBuffer, int inputOffset, int inputLength) {
+		try {
+			file.write(inputBuffer, inputOffset, inputLength);
+		} catch (IOException e) {
+			log.error("ioWrite", e);
+			return IO_ERROR;
+		}
+
+		return inputLength;
 	}
 }

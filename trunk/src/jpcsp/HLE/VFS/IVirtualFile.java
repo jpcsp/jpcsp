@@ -21,9 +21,12 @@ import jpcsp.HLE.TPointer;
 public interface IVirtualFile {
 	public int ioClose();
 	public int ioRead(TPointer outputPointer, int outputLength);
+	public int ioRead(byte[] outputBuffer, int outputOffset, int outputLength);
 	public int ioWrite(TPointer inputPointer, int inputLength);
+	public int ioWrite(byte[] inputBuffer, int inputOffset, int inputLength);
 	public long ioLseek(long offset);
 	public int ioIoctl(int command, TPointer inputPointer, int inputLength, TPointer outputPointer, int outputLength);
 	public long length();
 	public boolean isSectorBlockMode();
+	public long getPosition();
 }
