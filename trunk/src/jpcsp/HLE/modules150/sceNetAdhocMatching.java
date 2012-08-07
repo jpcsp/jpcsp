@@ -44,7 +44,7 @@ import org.apache.log4j.Logger;
 public class sceNetAdhocMatching extends HLEModule {
     protected static Logger log = Modules.getLogger("sceNetAdhocMatching");
     protected HashMap<Integer, MatchingObject> matchingObjects;
-    public static final int loopThreadRegisterArgument = Common._s0; // $s0 is presserved across calls
+    public static final int loopThreadRegisterArgument = Common._s0; // $s0 is preserved across calls
 
     /**
      * Matching events used in pspAdhocMatchingCallback

@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel.MapMode;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -575,7 +574,8 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         psf.put("SAVEDATA_DETAIL", sfoParam.detail, 1024);
         psf.put("SAVEDATA_TITLE", sfoParam.savedataTitle, 128);
 
-        psf.write(fileOutput.getChannel().map(MapMode.READ_WRITE, 0, psf.size()));
+        psf.write(fileOutput);
+        fileOutput.close();
     }
 
     private void writeEncryptedPsf(Memory mem, String path, String psfName, PspUtilitySavedataSFOParam sfoParam, String dataName, int dataLength, byte[] key, int mode) throws IOException {
@@ -598,7 +598,8 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         psf.put("SAVEDATA_TITLE", sfoParam.savedataTitle, 128);
         psf.put("TITLE", sfoParam.title, 128);
 
-        psf.write(psfOutput.getChannel().map(MapMode.READ_WRITE, 0, psf.size()));
+        psf.write(psfOutput);
+        psfOutput.close();
     }
 
     public boolean test(Memory mem) throws IOException {
