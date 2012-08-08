@@ -123,6 +123,7 @@ public abstract class BaseRenderer implements IRenderer {
 	public int texMinFilter;
 	public int texMagFilter;
 	public int primaryColor;
+	public int[] ditherMatrix;
 
 	protected void copy(BaseRenderer from) {
 		imageWriterSkipEOL = from.imageWriterSkipEOL;
@@ -167,6 +168,7 @@ public abstract class BaseRenderer implements IRenderer {
 		texMinFilter = from.texMinFilter;
 		texMagFilter = from.texMagFilter;
 		primaryColor = from.primaryColor;
+		ditherMatrix = from.ditherMatrix;
 	}
 
 	protected BaseRenderer() {
@@ -208,6 +210,9 @@ public abstract class BaseRenderer implements IRenderer {
 		clipPlanesEnabled = context.clipPlanesFlag.isEnabled();
 		fbw = context.fbw;
 		zbw = context.zbw;
+		if (context.ditherFlag.isEnabled()) {
+			ditherMatrix = context.dither_matrix.clone();
+		}
 
 		transform2D = context.vinfo.transform2D;
 		if (!transform2D) {
@@ -431,6 +436,7 @@ public abstract class BaseRenderer implements IRenderer {
 		key.addKeyComponent(context.tex_mag_filter, 1);
 		key.addKeyComponent(isLogTraceEnabled);
 		key.addKeyComponent(DurationStatistics.collectStatistics);
+		key.addKeyComponent(context.ditherFlag.isEnabled());
 
 		return key;
 	}

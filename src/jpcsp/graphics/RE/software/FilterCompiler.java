@@ -145,6 +145,7 @@ public class FilterCompiler {
 		variables.put("needSourceDepthClamp", Boolean.valueOf(renderer.needSourceDepthClamp));
 		variables.put("isLogTraceEnabled", Boolean.valueOf(renderer.isLogTraceEnabled));
 		variables.put("collectStatistics", Boolean.valueOf(DurationStatistics.collectStatistics));
+		variables.put("ditherFlagEnabled", Boolean.valueOf(context.ditherFlag.isEnabled()));
 
 		String specializedClassName = getNewCompiledRendererClassName();
 		ClassSpecializer cs = new ClassSpecializer();
