@@ -731,4 +731,20 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 		}
 		super.setColorMaterial(ambient, diffuse, specular);
 	}
+
+	@Override
+	public void bindFramebuffer(int target, int framebuffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("bindFramebuffer target=%d, framebuffer=%d", target, framebuffer));
+		}
+		super.bindFramebuffer(target, framebuffer);
+	}
+
+	@Override
+	public void bindActiveTexture(int index, int texture) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("bindActiveTexture index=%d, texture=%d", index, texture));
+		}
+		super.bindActiveTexture(index, texture);
+	}
 }
