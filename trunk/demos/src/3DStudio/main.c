@@ -593,6 +593,7 @@ float texScaleV2 = 1.0;
 float texOffsetU2 = 0.0;
 float texOffsetV2 = 0.0;
 char *texWrapNames[] = { "GU_REPEAT", "GU_CLAMP" };
+ScePspIMatrix4 ditherMatrix;
 
 u16 zTestPixelDepth;
 u32 geTestPixelValue;
@@ -986,6 +987,8 @@ void drawRectangles()
 	{
 		sendCommandi(211, (clearFlags << 8) | 0x01);
 	}
+
+	sceGuSetDither(&ditherMatrix);
 
 	sceGumMatrixMode(GU_PROJECTION);
 	sceGumLoadIdentity();
@@ -1521,6 +1524,44 @@ void init()
 	setAttributeValueNames(&testFuncNames[0]);
 	addAttribute(", Ref", &stencilReference, NULL, x + 27, y, 0, 0xFF, 0x10, "%02X");
 	addAttribute(", Mask", &stencilMask, NULL, x + 38, y, 0, 0xFF, 0x10, "%02X");
+	y++;
+
+	int ditherValue = 8;
+	ditherMatrix.x.x = ditherValue;
+	ditherMatrix.x.y = ditherValue;
+	ditherMatrix.x.z = ditherValue;
+	ditherMatrix.x.w = ditherValue;
+	ditherMatrix.y.x = ditherValue;
+	ditherMatrix.y.y = ditherValue;
+	ditherMatrix.y.z = ditherValue;
+	ditherMatrix.y.w = ditherValue;
+	ditherMatrix.z.x = ditherValue;
+	ditherMatrix.z.y = ditherValue;
+	ditherMatrix.z.z = ditherValue;
+	ditherMatrix.z.w = ditherValue;
+	ditherMatrix.w.x = ditherValue;
+	ditherMatrix.w.y = ditherValue;
+	ditherMatrix.w.z = ditherValue;
+	ditherMatrix.w.w = ditherValue;
+	addAttribute("sceGuSetDither", &ditherMatrix.x.x, NULL, x, y, 0x0, 0xF, 1, "%1X");
+	addAttribute(NULL, &ditherMatrix.x.y, NULL, x + 18, y, 0x0, 0xF, 1, "%1X");
+	addAttribute(NULL, &ditherMatrix.x.z, NULL, x + 20, y, 0x0, 0xF, 1, "%1X");
+	addAttribute(NULL, &ditherMatrix.x.w, NULL, x + 22, y, 0x0, 0xF, 1, "%1X");
+	y++;
+	addAttribute(NULL, &ditherMatrix.y.x, NULL, x + 16, y, 0x0, 0xF, 1, "%1X");
+	addAttribute(NULL, &ditherMatrix.y.y, NULL, x + 18, y, 0x0, 0xF, 1, "%1X");
+	addAttribute(NULL, &ditherMatrix.y.z, NULL, x + 20, y, 0x0, 0xF, 1, "%1X");
+	addAttribute(NULL, &ditherMatrix.y.w, NULL, x + 22, y, 0x0, 0xF, 1, "%1X");
+	y++;
+	addAttribute(NULL, &ditherMatrix.z.x, NULL, x + 16, y, 0x0, 0xF, 1, "%1X");
+	addAttribute(NULL, &ditherMatrix.z.y, NULL, x + 18, y, 0x0, 0xF, 1, "%1X");
+	addAttribute(NULL, &ditherMatrix.z.z, NULL, x + 20, y, 0x0, 0xF, 1, "%1X");
+	addAttribute(NULL, &ditherMatrix.z.w, NULL, x + 22, y, 0x0, 0xF, 1, "%1X");
+	y++;
+	addAttribute(NULL, &ditherMatrix.w.x, NULL, x + 16, y, 0x0, 0xF, 1, "%1X");
+	addAttribute(NULL, &ditherMatrix.w.y, NULL, x + 18, y, 0x0, 0xF, 1, "%1X");
+	addAttribute(NULL, &ditherMatrix.w.z, NULL, x + 20, y, 0x0, 0xF, 1, "%1X");
+	addAttribute(NULL, &ditherMatrix.w.w, NULL, x + 22, y, 0x0, 0xF, 1, "%1X");
 	y++;
 
 	rectangle1VertexColor.r = 0x00;
