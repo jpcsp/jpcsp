@@ -1714,7 +1714,7 @@ public class VideoEngine {
         somethingDisplayed = true;
         primCount++;
         if (isGeProfilerEnabled) {
-        	GEProfiler.startGeCmd(GeCommands.PRIM);
+        	GEProfiler.startGeCmd(PRIM);
         }
 
         loadTexture();
@@ -2424,7 +2424,7 @@ public class VideoEngine {
         }
 
         if (isGeProfilerEnabled) {
-        	GEProfiler.startGeCmd(GeCommands.TRXKICK);
+        	GEProfiler.startGeCmd(TRXKICK);
         }
         updateGeBuf();
 
@@ -2618,7 +2618,7 @@ public class VideoEngine {
 
         isBoundingBox = true;
         if (isGeProfilerEnabled) {
-        	GEProfiler.startGeCmd(GeCommands.BBOX);
+        	GEProfiler.startGeCmd(BBOX);
         }
 
         initRendering();
@@ -2742,7 +2742,7 @@ public class VideoEngine {
         }
 
         if (isGeProfilerEnabled) {
-        	GEProfiler.startGeCmd(GeCommands.BEZIER);
+        	GEProfiler.startGeCmd(BEZIER);
         }
         updateGeBuf();
         somethingDisplayed = true;
@@ -2772,7 +2772,7 @@ public class VideoEngine {
         updateGeBuf();
         somethingDisplayed = true;
         if (isGeProfilerEnabled) {
-        	GEProfiler.startGeCmd(GeCommands.SPLINE);
+        	GEProfiler.startGeCmd(SPLINE);
         }
         loadTexture();
 
@@ -3280,6 +3280,10 @@ public class VideoEngine {
         if (old_tex_scale_x != context.tex_scale_x) {
             textureMatrixUpload.setChanged(true);
         }
+
+        if (isLogDebugEnabled) {
+            log(String.format("sceGuTexScale(u=%f, X)", context.tex_scale_x));
+        }
     }
 
     private void executeCommandVSCALE() {
@@ -3291,7 +3295,7 @@ public class VideoEngine {
         }
 
         if (isLogDebugEnabled) {
-            log("sceGuTexScale(u=" + context.tex_scale_x + ", v=" + context.tex_scale_y + ")");
+            log(String.format("sceGuTexScale(X, v=%f)", context.tex_scale_y));
         }
     }
 
@@ -3301,6 +3305,10 @@ public class VideoEngine {
 
         if (old_tex_translate_x != context.tex_translate_x) {
             textureMatrixUpload.setChanged(true);
+        }
+
+        if (isLogDebugEnabled) {
+            log(String.format("sceGuTexOffset(u=%f, X)", context.tex_translate_x));
         }
     }
 
@@ -3313,7 +3321,7 @@ public class VideoEngine {
         }
 
         if (isLogDebugEnabled) {
-            log("sceGuTexOffset(u=" + context.tex_translate_x + ", v=" + context.tex_translate_y + ")");
+            log(String.format("sceGuTexOffset(X, v=%f)", context.tex_translate_y));
         }
     }
 
@@ -4190,48 +4198,52 @@ public class VideoEngine {
         }
     }
 
+    private void setDitherMatrixValue(int index, int value) {
+        // The dither matrix's values can vary between -8 and 7.
+    	context.dither_matrix[index] = (value & 0xF) - 8;
+    }
+
     private void executeCommandDTH0() {
-    	context.dither_matrix[0] = (normalArgument) & 0xF;
-        context.dither_matrix[1] = (normalArgument >> 4) & 0xF;
-        context.dither_matrix[2] = (normalArgument >> 8) & 0xF;
-        context.dither_matrix[3] = (normalArgument >> 12) & 0xF;
+    	setDitherMatrixValue(0, normalArgument);
+    	setDitherMatrixValue(1, normalArgument >> 4);
+    	setDitherMatrixValue(2, normalArgument >> 8);
+    	setDitherMatrixValue(3, normalArgument >> 12);
+
+    	if (isLogDebugEnabled) {
+            log.debug(String.format("DTH0(%04X): %d  %d  %d  %d", normalArgument, context.dither_matrix[0], context.dither_matrix[1], context.dither_matrix[2], context.dither_matrix[3]));
+        }
     }
 
     private void executeCommandDTH1() {
-    	context.dither_matrix[4] = (normalArgument) & 0xF;
-        context.dither_matrix[5] = (normalArgument >> 4) & 0xF;
-        context.dither_matrix[6] = (normalArgument >> 8) & 0xF;
-        context.dither_matrix[7] = (normalArgument >> 12) & 0xF;
+    	setDitherMatrixValue(4, normalArgument);
+    	setDitherMatrixValue(5, normalArgument >> 4);
+    	setDitherMatrixValue(6, normalArgument >> 8);
+    	setDitherMatrixValue(7, normalArgument >> 12);
+
+    	if (isLogDebugEnabled) {
+            log.debug(String.format("DTH1(%04X): %d  %d  %d  %d", normalArgument, context.dither_matrix[4], context.dither_matrix[5], context.dither_matrix[6], context.dither_matrix[7]));
+        }
     }
 
     private void executeCommandDTH2() {
-    	context.dither_matrix[8] = (normalArgument) & 0xF;
-        context.dither_matrix[9] = (normalArgument >> 4) & 0xF;
-        context.dither_matrix[10] = (normalArgument >> 8) & 0xF;
-        context.dither_matrix[11] = (normalArgument >> 12) & 0xF;
+    	setDitherMatrixValue(8, normalArgument);
+    	setDitherMatrixValue(9, normalArgument >> 4);
+    	setDitherMatrixValue(10, normalArgument >> 8);
+    	setDitherMatrixValue(11, normalArgument >> 12);
+
+    	if (isLogDebugEnabled) {
+            log.debug(String.format("DTH2(%04X): %d  %d  %d  %d", normalArgument, context.dither_matrix[8], context.dither_matrix[9], context.dither_matrix[10], context.dither_matrix[11]));
+        }
     }
 
     private void executeCommandDTH3() {
-    	context.dither_matrix[12] = (normalArgument) & 0xF;
-        context.dither_matrix[13] = (normalArgument >> 4) & 0xF;
-        context.dither_matrix[14] = (normalArgument >> 8) & 0xF;
-        context.dither_matrix[15] = (normalArgument >> 12) & 0xF;
-
-        // The dither matrix's values can vary between -8 and 7.
-        // The most significant bit acts as sign bit.
-        // Translate and log only at the last command.
-
-        for (int i = 0; i < 16; i++) {
-            if (context.dither_matrix[i] > 7) {
-            	context.dither_matrix[i] |= 0xFFFFFFF0;
-            }
-        }
+    	setDitherMatrixValue(12, normalArgument);
+    	setDitherMatrixValue(13, normalArgument >> 4);
+    	setDitherMatrixValue(14, normalArgument >> 8);
+    	setDitherMatrixValue(15, normalArgument >> 12);
 
         if (isLogDebugEnabled) {
-            log.debug("DTH0:" + "  " + context.dither_matrix[0] + "  " + context.dither_matrix[1] + "  " + context.dither_matrix[2] + "  " + context.dither_matrix[3]);
-            log.debug("DTH1:" + "  " + context.dither_matrix[4] + "  " + context.dither_matrix[5] + "  " + context.dither_matrix[6] + "  " + context.dither_matrix[7]);
-            log.debug("DTH2:" + "  " + context.dither_matrix[8] + "  " + context.dither_matrix[9] + "  " + context.dither_matrix[10] + "  " + context.dither_matrix[11]);
-            log.debug("DTH3:" + "  " + context.dither_matrix[12] + "  " + context.dither_matrix[13] + "  " + context.dither_matrix[14] + "  " + context.dither_matrix[15]);
+            log.debug(String.format("DTH3(%04X): %d  %d  %d  %d", normalArgument, context.dither_matrix[12], context.dither_matrix[13], context.dither_matrix[14], context.dither_matrix[15]));
         }
     }
 
@@ -4720,6 +4732,7 @@ public class VideoEngine {
 
 				geTexture = GETextureManager.getInstance().getGEIndexedTexture(re, geTexture, tex_addr, bufferWidth, context.texture_width[0], context.texture_height[0], pixelFormat);
 				geTexture.bind(re, true);
+				context.currentTextureId = geTexture.getTextureId();
 				setFlippedTexture(geTexture);
 
 				return true;
@@ -4751,6 +4764,7 @@ public class VideoEngine {
 			geTexture = GETextureManager.getInstance().getGEResizedTexture(re, geTexture, tex_addr, bufferWidth, width, height, pixelFormat);
 		}
 		geTexture.bind(re, true);
+		context.currentTextureId = geTexture.getTextureId();
 		setFlippedTexture(geTexture);
 
 		return true;
@@ -4901,6 +4915,7 @@ public class VideoEngine {
             }
 
             re.bindTexture(textureId);
+            context.currentTextureId = textureId;
         } else {
             TextureCache textureCache = TextureCache.getInstance();
             boolean textureRequiresClut = IRenderingEngine.isTextureTypeIndexed[context.texture_storage];
@@ -4931,6 +4946,7 @@ public class VideoEngine {
             }
 
             texture.bindTexture(re);
+            context.currentTextureId = texture.getTextureId(re);
         }
 
         if (textureFlipped) {
@@ -6005,71 +6021,82 @@ public class VideoEngine {
         boolean useTexture = context.vinfo.texture != 0 || context.textureFlag.isEnabled();
         boolean useNormal = context.lightingFlag.isEnabled();
 
-        // Generate control points.
-        VertexState[][] ctrlpoints = getControlPoints(ucount, vcount);
-
-        // GE capture.
-        if (State.captureGeNextFrame && !isVertexBufferEmbedded()) {
-            log.info("Capture drawSpline");
-            CaptureManager.captureRAM(context.vinfo.ptr_vertex, context.vinfo.vertexSize * ucount * vcount);
+        VertexInfo cachedVertexInfo = null;
+        if (useVertexCache) {
+        	int numberOfVertex = context.patch_div_t * (context.patch_div_s + 1) * 2;
+        	vertexCacheLookupStatistics.start();
+        	cachedVertexInfo = VertexCache.getInstance().getVertex(context.vinfo, numberOfVertex, null, 0);
+        	vertexCacheLookupStatistics.end();
         }
 
-        // Generate patch VertexState.
-        VertexState[][] patch = new VertexState[context.patch_div_s + 1][context.patch_div_t + 1];
+        VertexState[][] patch = null;
+        if (cachedVertexInfo == null) {
+        	// Generate control points.
+        	VertexState[][] ctrlpoints = getControlPoints(ucount, vcount);
 
-        // Calculate knot arrays.
-        int n = ucount - 1;
-        int m = vcount - 1;
-        int[] knot_u = spline_knot(n, utype);
-        int[] knot_v = spline_knot(m, vtype);
-
-        // The spline grows to a limit defined by n - 2 for u and m - 2 for v.
-        // This limit is open, so we need to get a very close approximation of it.
-        float limit = 2.000001f;
-
-        // Process spline vertexes with Cox-deBoor's algorithm.
-        for(int j = 0; j <= context.patch_div_t; j++) {
-        	float v = (float)j * (float)(m - limit) / (float)context.patch_div_t;
-
-        	for(int i = 0; i <= context.patch_div_s; i++) {
-        		float u = (float)i * (float)(n - limit) / (float)context.patch_div_s;
-
-        		patch[i][j] = new VertexState();
-        		VertexState p = patch[i][j];
-
-        		for(int ii = 0; ii <= n; ii++) {
-        			for(int jj = 0; jj <= m; jj++) {
-        				float f = spline_n(ii, 3, u, knot_u) * spline_n(jj, 3, v, knot_v);
-        				if(f != 0) {
-        					pointMultAdd(p, ctrlpoints[ii][jj], f, context.useVertexColor, useTexture, useNormal);
-        				}
-        			}
-        		}
-        		if(useTexture && context.vinfo.texture == 0) {
-        			p.t[0] = u;
-        			p.t[1] = v;
-        		}
+        	// GE capture.
+        	if (State.captureGeNextFrame && !isVertexBufferEmbedded()) {
+        		log.info("Capture drawSpline");
+        		CaptureManager.captureRAM(context.vinfo.ptr_vertex, context.vinfo.vertexSize * ucount * vcount);
         	}
+
+	        // Generate patch VertexState.
+	        patch = new VertexState[context.patch_div_s + 1][context.patch_div_t + 1];
+
+	        // Calculate knot arrays.
+	        int n = ucount - 1;
+	        int m = vcount - 1;
+	        int[] knot_u = spline_knot(n, utype);
+	        int[] knot_v = spline_knot(m, vtype);
+
+	        // The spline grows to a limit defined by n - 2 for u and m - 2 for v.
+	        // This limit is open, so we need to get a very close approximation of it.
+	        float limit = 2.000001f;
+
+	        // Process spline vertexes with Cox-deBoor's algorithm.
+	        for (int j = 0; j <= context.patch_div_t; j++) {
+	        	float v = (float)j * (float)(m - limit) / (float)context.patch_div_t;
+
+	        	for (int i = 0; i <= context.patch_div_s; i++) {
+	        		float u = (float)i * (float)(n - limit) / (float)context.patch_div_s;
+
+	        		patch[i][j] = new VertexState();
+	        		VertexState p = patch[i][j];
+
+	        		for (int ii = 0; ii <= n; ii++) {
+	        			for (int jj = 0; jj <= m; jj++) {
+	        				float f = spline_n(ii, 3, u, knot_u) * spline_n(jj, 3, v, knot_v);
+	        				if (f != 0) {
+	        					pointMultAdd(p, ctrlpoints[ii][jj], f, context.useVertexColor, useTexture, useNormal);
+	        				}
+	        			}
+	        		}
+	        		if (useTexture && context.vinfo.texture == 0) {
+	        			p.t[0] = u;
+	        			p.t[1] = v;
+	        		}
+	        	}
+	        }
         }
 
-        drawCurvedSurface(patch, ucount, vcount, context.useVertexColor, useTexture, useNormal);
+        drawCurvedSurface(patch, ucount, vcount, cachedVertexInfo, context.useVertexColor, useTexture, useNormal);
     }
 
 	private void pointMultAdd(VertexState dest, VertexState src, float f, boolean useVertexColor, boolean useTexture, boolean useNormal) {
 		dest.p[0] += f * src.p[0];
 		dest.p[1] += f * src.p[1];
 		dest.p[2] += f * src.p[2];
-		if(useTexture) {
+		if (useTexture) {
 			dest.t[0] += f * src.t[0];
 			dest.t[1] += f * src.t[1];
 		}
-		if(useVertexColor) {
+		if (useVertexColor) {
 			dest.c[0] += f * src.c[0];
 			dest.c[1] += f * src.c[1];
 			dest.c[2] += f * src.c[2];
 			dest.c[3] += f * src.c[3];
 		}
-		if(useNormal) {
+		if (useNormal) {
 			dest.n[0] += f * src.n[0];
 			dest.n[1] += f * src.n[1];
 			dest.n[2] += f * src.n[2];
@@ -6090,69 +6117,79 @@ public class VideoEngine {
         boolean useTexture = context.vinfo.texture != 0 || context.textureFlag.isEnabled();
         boolean useNormal = context.lightingFlag.isEnabled();
 
-        VertexState[][] anchors = getControlPoints(ucount, vcount);
-
-        // Don't capture the ram if the vertex list is embedded in the display list. TODO handle stall_addr == 0 better
-        // TODO may need to move inside the loop if indices are used, or find the largest index so we can calculate the size of the vertex list
-        if (State.captureGeNextFrame && !isVertexBufferEmbedded()) {
-            log.info("Capture drawBezier");
-            CaptureManager.captureRAM(context.vinfo.ptr_vertex, context.vinfo.vertexSize * ucount * vcount);
+        VertexInfo cachedVertexInfo = null;
+        if (useVertexCache) {
+        	int numberOfVertex = context.patch_div_t * (context.patch_div_s + 1) * 2;
+        	vertexCacheLookupStatistics.start();
+        	cachedVertexInfo = VertexCache.getInstance().getVertex(context.vinfo, numberOfVertex, null, 0);
+        	vertexCacheLookupStatistics.end();
         }
 
-        // Generate patch VertexState.
-        VertexState[][] patch = new VertexState[context.patch_div_s + 1][context.patch_div_t + 1];
+        VertexState[][] patch = null;
+        if (cachedVertexInfo == null) {
+        	VertexState[][] anchors = getControlPoints(ucount, vcount);
 
-        // Number of patches in the U and V directions
-        int upcount = ucount / 3;
-        int vpcount = vcount / 3;
+	        // Don't capture the ram if the vertex list is embedded in the display list. TODO handle stall_addr == 0 better
+	        // TODO may need to move inside the loop if indices are used, or find the largest index so we can calculate the size of the vertex list
+	        if (State.captureGeNextFrame && !isVertexBufferEmbedded()) {
+	            log.info("Capture drawBezier");
+	            CaptureManager.captureRAM(context.vinfo.ptr_vertex, context.vinfo.vertexSize * ucount * vcount);
+	        }
 
-        float[][] ucoeff = new float[context.patch_div_s + 1][];
+	        // Generate patch VertexState.
+	        patch = new VertexState[context.patch_div_s + 1][context.patch_div_t + 1];
 
-        for(int j = 0; j <= context.patch_div_t; j++) {
-        	float vglobal = (float)j * vpcount / (float)context.patch_div_t;
+	        // Number of patches in the U and V directions
+	        int upcount = ucount / 3;
+	        int vpcount = vcount / 3;
 
-        	int vpatch = (int)vglobal; // Patch number
-        	float v = vglobal - vpatch;
-        	if(j == context.patch_div_t) {
-    			vpatch--;
-    			v = 1.f;
-    		}
-        	float[] vcoeff = BernsteinCoeff(v);
+	        float[][] ucoeff = new float[context.patch_div_s + 1][];
 
-        	for(int i = 0; i <= context.patch_div_s; i++) {
-        		float uglobal = (float)i * upcount / (float)context.patch_div_s;
-        		int upatch = (int)uglobal;
-        		float u = uglobal - upatch;
-        		if(i == context.patch_div_s) {
-        			upatch--;
-        			u = 1.f;
-        		}
-        		ucoeff[i] = BernsteinCoeff(u);
+	        for (int j = 0; j <= context.patch_div_t; j++) {
+	        	float vglobal = (float)j * vpcount / (float)context.patch_div_t;
 
-        		VertexState p = new VertexState();
-        		patch[i][j] = p;
+	        	int vpatch = (int)vglobal; // Patch number
+	        	float v = vglobal - vpatch;
+	        	if (j == context.patch_div_t) {
+	    			vpatch--;
+	    			v = 1.f;
+	    		}
+	        	float[] vcoeff = BernsteinCoeff(v);
 
-        		for(int ii = 0; ii < 4; ++ii) {
-        			for(int jj = 0; jj < 4; ++jj) {
-        				pointMultAdd(p,
-        						anchors[3 * upatch + ii][3 * vpatch + jj],
-        						ucoeff[i][ii] * vcoeff[jj],
-        						context.useVertexColor, useTexture, useNormal);
-        			}
-        		}
+	        	for (int i = 0; i <= context.patch_div_s; i++) {
+	        		float uglobal = (float)i * upcount / (float)context.patch_div_s;
+	        		int upatch = (int)uglobal;
+	        		float u = uglobal - upatch;
+	        		if (i == context.patch_div_s) {
+	        			upatch--;
+	        			u = 1.f;
+	        		}
+	        		ucoeff[i] = BernsteinCoeff(u);
 
-        		if(useTexture && context.vinfo.texture == 0) {
-        			p.t[0] = uglobal;
-        			p.t[1] = vglobal;
-        		}
-        	}
+	        		VertexState p = new VertexState();
+	        		patch[i][j] = p;
+
+	        		for (int ii = 0; ii < 4; ++ii) {
+	        			for (int jj = 0; jj < 4; ++jj) {
+	        				pointMultAdd(p,
+	        						anchors[3 * upatch + ii][3 * vpatch + jj],
+	        						ucoeff[i][ii] * vcoeff[jj],
+	        						context.useVertexColor, useTexture, useNormal);
+	        			}
+	        		}
+
+	        		if (useTexture && context.vinfo.texture == 0) {
+	        			p.t[0] = uglobal;
+	        			p.t[1] = vglobal;
+	        		}
+	        	}
+	        }
         }
 
-        drawCurvedSurface(patch, ucount, vcount, context.useVertexColor, useTexture, useNormal);
+        drawCurvedSurface(patch, ucount, vcount, cachedVertexInfo, context.useVertexColor, useTexture, useNormal);
     }
 
-	private void drawCurvedSurface(VertexState[][] patch, int ucount, int vcount,
-			boolean useVertexColor, boolean useTexture, boolean useNormal) {
+	private void drawCurvedSurface(VertexState[][] patch, int ucount, int vcount, VertexInfo cachedVertexInfo, boolean useVertexColor, boolean useTexture, boolean useNormal) {
 		if (re.isVertexArrayAvailable()) {
 			re.bindVertexArray(0);
 		}
@@ -6160,35 +6197,86 @@ public class VideoEngine {
 		int type = patch_prim_types[context.patch_prim];
 		re.setVertexInfo(context.vinfo, false, useVertexColor, useTexture, type);
 
-		// TODO: Compute the normals
-		setDataPointers(3, useVertexColor, 4, useTexture, 2, useNormal, 0, true);
+		// Triangle strips can be combined across rows into one single drawArrays call.
+		// Two dummy vertices have to be added when switching from one row to the next one.
+		// These dummy vertices each render an empty triangle
+		// (e.g. a triangle where two corners are equal).
+		boolean combineRowPrimitives = (type == PRIM_TRIANGLE_STRIPS);
 
-		ByteBuffer drawByteBuffer = bufferManager.getBuffer(bufferId);
-		drawByteBuffer.clear();
-		FloatBuffer drawFloatBuffer = drawByteBuffer.asFloatBuffer();
-        for (int j = 0; j <= context.patch_div_t - 1; j++) {
+		boolean needSetDataPointers = true;
+		int numberOfVertexPerRow = (context.patch_div_s + 1) * 2;
+		if (cachedVertexInfo == null) {
+			ByteBuffer drawByteBuffer = bufferManager.getBuffer(bufferId);
+			drawByteBuffer.clear();
+			FloatBuffer drawFloatBuffer = drawByteBuffer.asFloatBuffer();
         	drawFloatBuffer.clear();
+	        for (int j = 0; j < context.patch_div_t; j++) {
+	        	for (int i = 0; i <= context.patch_div_s; i++) {
+	        		VertexState v1 = patch[i][j];
+	                VertexState v2 = patch[i][j + 1];
 
-        	for (int i = 0; i <= context.patch_div_s; i++) {
-        		VertexState v1 = patch[i][j];
-                VertexState v2 = patch[i][j + 1];
+	        		if (useTexture)     drawFloatBuffer.put(v1.t);
+	        		if (useVertexColor) drawFloatBuffer.put(v1.c);
+	        		if (useNormal)      drawFloatBuffer.put(v1.n);
+	        		drawFloatBuffer.put(v1.p);
 
-        		if (useTexture)     drawFloatBuffer.put(v1.t);
-        		if (useVertexColor) drawFloatBuffer.put(v1.c);
-        		if (useNormal)      drawFloatBuffer.put(v1.n);
-        		drawFloatBuffer.put(v1.p);
+	        		if (combineRowPrimitives && i == 0 && j > 0) {
+	        			// First dummy vertex: add v1 again
+		        		if (useTexture)     drawFloatBuffer.put(v1.t);
+		        		if (useVertexColor) drawFloatBuffer.put(v1.c);
+		        		if (useNormal)      drawFloatBuffer.put(v1.n);
+	        			drawFloatBuffer.put(v1.p);
+	        		}
 
-        		if (useTexture)     drawFloatBuffer.put(v2.t);
-        		if (useVertexColor) drawFloatBuffer.put(v2.c);
-        		if (useNormal)      drawFloatBuffer.put(v2.n);
-        		drawFloatBuffer.put(v2.p);
-        	}
+        			if (useTexture)     drawFloatBuffer.put(v2.t);
+	        		if (useVertexColor) drawFloatBuffer.put(v2.c);
+	        		if (useNormal)      drawFloatBuffer.put(v2.n);
+	        		drawFloatBuffer.put(v2.p);
 
-        	bufferManager.setBufferData(bufferId, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
-    		drawArraysStatistics.start();
-            re.drawArrays(type, 0, (context.patch_div_s + 1) * 2);
-        	drawArraysStatistics.end();
-        }
+	        		if (combineRowPrimitives && i == context.patch_div_s && j < context.patch_div_t - 1) {
+	        			// Second dummy vertex: add v2 again
+	        			if (useTexture)     drawFloatBuffer.put(v2.t);
+		        		if (useVertexColor) drawFloatBuffer.put(v2.c);
+		        		if (useNormal)      drawFloatBuffer.put(v2.n);
+	        			drawFloatBuffer.put(v2.p);
+	        		}
+	        	}
+	        }
+
+	        if (useVertexCache) {
+	        	cachedVertexInfo = new VertexInfo(context.vinfo);
+	        	int numberOfVertex = numberOfVertexPerRow * context.patch_div_t;
+	        	VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, null, 0);
+	        	int size = drawFloatBuffer.position();
+	        	drawFloatBuffer.rewind();
+	        	needSetDataPointers = cachedVertexInfo.loadVertex(re, drawFloatBuffer, size);
+	        } else {
+	        	bufferManager.setBufferData(bufferId, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
+	        }
+		} else {
+			needSetDataPointers = cachedVertexInfo.bindVertex(re);
+		}
+
+		if (needSetDataPointers) {
+			// TODO: Compute the normals
+			setDataPointers(3, useVertexColor, 4, useTexture, 2, useNormal, 0, cachedVertexInfo == null);
+		}
+
+		if (combineRowPrimitives) {
+			// Draw all the vertices in one call
+			int numberOfVertexToDraw = numberOfVertexPerRow * context.patch_div_t + 2 * (context.patch_div_t - 1);
+			drawArraysStatistics.start();
+			re.drawArrays(type, 0, numberOfVertexToDraw);
+			drawArraysStatistics.end();
+		} else {
+			// Draw the vertices one row at a time
+			drawArraysStatistics.start();
+			re.drawArrays(type, 0, numberOfVertexPerRow);
+			for (int j = 1, first = numberOfVertexPerRow; j < context.patch_div_t; j++, first += numberOfVertexPerRow) {
+				re.drawArraysBurstMode(type, first, numberOfVertexPerRow);
+			}
+			drawArraysStatistics.end();
+		}
 
         if (State.captureGeNextFrame) {
             display.captureGeImage();

@@ -189,6 +189,7 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
     public boolean clearModeStencil;
     public boolean clearModeDepth;
     public VertexInfo vinfo = new VertexInfo();
+    public int currentTextureId;
 
     public GeContext() {
         tex_envmap_matrix[0] = tex_envmap_matrix[5] = tex_envmap_matrix[10] = tex_envmap_matrix[15] = 1.f;

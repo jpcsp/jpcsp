@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.Buffer;
@@ -55,6 +57,7 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected final static int ACTIVE_TEXTURE_NORMAL = 0;
 	protected final static int ACTIVE_TEXTURE_CLUT = 1;
 	protected final static int ACTIVE_TEXTURE_FRAMEBUFFER = 2;
+	protected final static int ACTIVE_TEXTURE_INTEGER = 3;
 	protected final static float[] positionScale = new float[] { 1, 0x7F, 0x7FFF, 1 };
 	protected final static float[] normalScale   = new float[] { 1, 0x7F, 0x7FFF, 1 };
 	protected final static float[] textureScale  = new float[] { 1, 0x80, 0x8000, 1 };
@@ -95,6 +98,7 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected int viewportWidth;
 	protected int viewportHeight;
 	protected FBTexture renderTexture;
+	protected int pixelFormat;
 
 	public REShader(IRenderingEngine proxy) {
 		super(proxy);
@@ -185,7 +189,7 @@ public class REShader extends BaseRenderingEngineFunction {
 		shaderContext.setFbTex(ACTIVE_TEXTURE_FRAMEBUFFER);
 		if (useNativeClut) {
 			shaderContext.setClut(ACTIVE_TEXTURE_CLUT);
-			shaderContext.setUtex(ACTIVE_TEXTURE_NORMAL);
+			shaderContext.setUtex(ACTIVE_TEXTURE_INTEGER);
 			clutBuffer = ByteBuffer.allocateDirect(4096 * 4).order(ByteOrder.LITTLE_ENDIAN);
 		}
 	}
@@ -1028,6 +1032,7 @@ public class REShader extends BaseRenderingEngineFunction {
 		// update the uniform values after switching the active shader program.
 		shaderContext.setUniforms(re, currentShaderProgram.getProgramId());
 		loadFbTexture();
+		loadIntegerTexture();
 		super.drawArrays(type, first, count);
 	}
 
@@ -1040,6 +1045,7 @@ public class REShader extends BaseRenderingEngineFunction {
 			type = spriteGeometryShaderInputType;
 		}
 		loadFbTexture();
+		loadIntegerTexture();
 		super.drawArraysBurstMode(type, first, count);
 	}
 
@@ -1110,6 +1116,27 @@ public class REShader extends BaseRenderingEngineFunction {
 		}
 
 		return IRenderingEngine.RE_CLUT_INDEX_NO_HINT;
+	}
+
+	private void loadIntegerTexture() {
+		if (!context.textureFlag.isEnabled() || context.clearMode) {
+			// Not using a texture
+			return;
+		}
+		if (!useNativeClut || !isTextureTypeIndexed[pixelFormat]) {
+			// Not using a native clut
+			return;
+		}
+		if (pixelFormat == TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED) {
+			// 4bit index has been decoded in the VideoEngine
+			return;
+		}
+
+		// Associate the current texture to the integer texture sampler.
+		// AMD/ATI driver requires different texture units for samplers of different types.
+		// Otherwise, the shader compilation fails with the following error:
+		// "Different sampler types for same sample texture unit in fragment shader"
+		re.bindActiveTexture(ACTIVE_TEXTURE_INTEGER, context.currentTextureId);
 	}
 
 	private void loadClut(int pixelFormat) {
@@ -1195,6 +1222,7 @@ public class REShader extends BaseRenderingEngineFunction {
 
 	@Override
 	public void setTextureFormat(int pixelFormat, boolean swizzle) {
+		this.pixelFormat = pixelFormat;
 		if (isTextureTypeIndexed[pixelFormat]) {
 			if (pixelFormat == GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED) {
 				// 4bit index has been decoded in the VideoEngine

@@ -209,7 +209,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		materialSpecularColor = new float[4];
 		materialDiffuseColor = new float[4];
 		materialEmissiveColor = new float[4];
-		bindTexture = new int[3]; // assume max 3 active texture units
+		bindTexture = new int[4]; // assume max 4 active texture units
 
 		colorMaterialAmbient = new StateBoolean();
 		colorMaterialDiffuse = new StateBoolean();
