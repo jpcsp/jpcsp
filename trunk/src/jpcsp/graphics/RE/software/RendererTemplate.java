@@ -19,6 +19,7 @@ package jpcsp.graphics.RE.software;
 import static jpcsp.graphics.GeCommands.LMODE_SEPARATE_SPECULAR_COLOR;
 import static jpcsp.graphics.GeCommands.SOP_REPLACE_STENCIL_VALUE;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+import static jpcsp.graphics.RE.software.PixelColor.addComponent;
 import static jpcsp.graphics.RE.software.PixelColor.doubleColor;
 import static jpcsp.graphics.RE.software.PixelColor.ONE;
 import static jpcsp.graphics.RE.software.PixelColor.ZERO;
@@ -41,6 +42,7 @@ import static jpcsp.graphics.RE.software.PixelColor.multiplyComponent;
 import static jpcsp.graphics.RE.software.PixelColor.setAlpha;
 import static jpcsp.graphics.RE.software.PixelColor.setBGR;
 import static jpcsp.graphics.RE.software.PixelColor.substractBGR;
+import static jpcsp.graphics.RE.software.PixelColor.substractComponent;
 import static jpcsp.util.Utilities.pixelToTexel;
 import static jpcsp.util.Utilities.wrap;
 import static jpcsp.util.Utilities.clamp;
@@ -129,6 +131,7 @@ public class RendererTemplate {
 	public static boolean needSourceDepthClamp;
 	public static boolean isLogTraceEnabled;
 	public static boolean collectStatistics;
+	public static boolean ditherFlagEnabled;
 
 	private static final boolean resampleTextureForMag = true;
 	private static DurationStatistics statistics;
@@ -1398,6 +1401,22 @@ public class RendererTemplate {
 		            				// Source and destination factors are not applied
 		            				sourceColor = setBGR(sourceColor, absBGR(sourceColor, destinationColor));
 		            				break;
+	            			}
+	            		}
+
+	            		if (ditherFlagEnabled) {
+	            			int ditherValue = renderer.ditherMatrix[(y & 0x3) << 2 | (x & 0x3)];
+	            			if (ditherValue > 0) {
+	            				b = addComponent(getBlue(sourceColor), ditherValue);
+	            				g = addComponent(getGreen(sourceColor), ditherValue);
+	            				r = addComponent(getRed(sourceColor), ditherValue);
+	            				sourceColor = setBGR(sourceColor, getColorBGR(b, g, r));
+	            			} else if (ditherValue < 0) {
+	            				ditherValue = -ditherValue;
+	            				b = substractComponent(getBlue(sourceColor), ditherValue);
+	            				g = substractComponent(getGreen(sourceColor), ditherValue);
+	            				r = substractComponent(getRed(sourceColor), ditherValue);
+	            				sourceColor = setBGR(sourceColor, getColorBGR(b, g, r));
 	            			}
 	            		}
 
