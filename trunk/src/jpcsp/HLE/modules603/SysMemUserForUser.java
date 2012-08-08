@@ -19,7 +19,7 @@ package jpcsp.HLE.modules603;
 import jpcsp.HLE.HLEFunction;
 
 public class SysMemUserForUser extends jpcsp.HLE.modules600.SysMemUserForUser {
-	@HLEFunction(nid = 0x358CA1BB, version = 603)
+	@HLEFunction(nid = 0x1B4217BC, version = 603)
 	public int sceKernelSetCompiledSdkVersion603_605(int sdkVersion) {
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceKernelSetCompiledSdkVersion603_605: sdkVersion=%08X", sdkVersion));
