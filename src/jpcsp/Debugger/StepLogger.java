@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 import jpcsp.Emulator;
-import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 
 public class StepLogger {
@@ -87,8 +86,7 @@ public class StepLogger {
             out.println();
 
             // Don't bother printing on wdt hog, the log gets thrashed
-            if (status != Emulator.EMU_STATUS_WDT_HOG &&
-                Processor.ENABLE_STEP_TRACE) {
+            if (status != Emulator.EMU_STATUS_WDT_HOG) {
                 int localDepth = 5;
 
                 out.println("Local depth: " + localDepth);
