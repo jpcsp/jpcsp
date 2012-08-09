@@ -718,6 +718,17 @@ public class sceUtility extends HLEModule {
 	                break;
 	            }
 
+	            case SceUtilitySavedataParam.MODE_AUTODELETE: {
+	            	String saveDir = savedataParams.getBasePath();
+	                if (Modules.IoFileMgrForUserModule.rmdir(saveDir, true)) {
+	                    savedataParams.base.result = 0;
+	                } else {
+	                    log.warn("Savedata MODE_AUTODELETE directory not found!");
+	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_NO_DATA;
+	                }
+	                break;
+	            }
+
 	            case SceUtilitySavedataParam.MODE_SINGLEDELETE: {
 	            	String saveDir = savedataParams.getBasePath();
 	                if (Modules.IoFileMgrForUserModule.rmdir(saveDir, true)) {
@@ -857,12 +868,6 @@ public class sceUtility extends HLEModule {
 	            case SceUtilitySavedataParam.MODE_MAKEDATASECURE: {
 	                // Split saving version.
 	                // Write system data files (encrypted or not).
-	                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
-	                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
-	                        savedataParams.saveName = savedataParams.saveNameList[0];
-	                    }
-	                }
-
 	                try {
 	                    savedataParams.save(mem);
 	                    savedataParams.base.result = 0;
@@ -907,12 +912,6 @@ public class sceUtility extends HLEModule {
 	            case SceUtilitySavedataParam.MODE_WRITESECURE: {
 	                // Sub-types of mode SAVE.
 	                // Writes the contents of only one specified file (encrypted or not).
-	                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
-	                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
-	                        savedataParams.saveName = savedataParams.saveNameList[0];
-	                    }
-	                }
-
 	                try {
 	                    savedataParams.singleWrite(mem);
 	                    savedataParams.base.result = 0;
