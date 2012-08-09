@@ -144,6 +144,12 @@ public class VideoEngine {
     	3, // PRIM_TRIANGLE_FANS
     	2  // PRIM_SPRITES
     };
+    private static final int[] ditherMatrixValueMapping = {
+    	// value [0..7]
+    	0, 1, 2, 3, 4, 5, 6, 7,
+    	// value [8..F]
+    	-8, -7, -6, -5, -4, -3, -2, -1
+    };
     private static VideoEngine instance;
     private sceDisplay display;
     private IRenderingEngine re;
@@ -4200,7 +4206,7 @@ public class VideoEngine {
 
     private void setDitherMatrixValue(int index, int value) {
         // The dither matrix's values can vary between -8 and 7.
-    	context.dither_matrix[index] = (value & 0xF) - 8;
+    	context.dither_matrix[index] = ditherMatrixValueMapping[value & 0xF];
     }
 
     private void executeCommandDTH0() {
@@ -6202,6 +6208,9 @@ public class VideoEngine {
 		// These dummy vertices each render an empty triangle
 		// (e.g. a triangle where two corners are equal).
 		boolean combineRowPrimitives = (type == PRIM_TRIANGLE_STRIPS);
+		// Row combination currently disabled for testing on ATI/AMD hardware.
+		// Might be crashing the video driver.
+		combineRowPrimitives = false;
 
 		boolean needSetDataPointers = true;
 		int numberOfVertexPerRow = (context.patch_div_s + 1) * 2;

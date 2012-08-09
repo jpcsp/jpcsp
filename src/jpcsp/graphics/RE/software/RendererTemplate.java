@@ -1405,7 +1405,7 @@ public class RendererTemplate {
 	            		}
 
 	            		if (ditherFlagEnabled) {
-	            			int ditherValue = renderer.ditherMatrix[(y & 0x3) << 2 | (x & 0x3)];
+	            			int ditherValue = renderer.ditherMatrix[((y & 0x3) << 2) + (x & 0x3)];
 	            			if (ditherValue > 0) {
 	            				b = addComponent(getBlue(sourceColor), ditherValue);
 	            				g = addComponent(getGreen(sourceColor), ditherValue);

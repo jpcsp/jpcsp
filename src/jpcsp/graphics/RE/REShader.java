@@ -353,7 +353,14 @@ public class REShader extends BaseRenderingEngineFunction {
 
         // Trying to avoid warning message from AMD drivers:
         // "Validation warning! - Sampler value tex has not been set."
+        // and error message:
+        // "Validation failed! - Different sampler types for same sample texture unit in fragment shader"
         re.setUniform(re.getUniformLocation(program, Uniforms.tex.getUniformString()), ACTIVE_TEXTURE_NORMAL);
+        re.setUniform(re.getUniformLocation(program, Uniforms.fbTex.getUniformString()), ACTIVE_TEXTURE_FRAMEBUFFER);
+        if (useNativeClut) {
+        	re.setUniform(re.getUniformLocation(program, Uniforms.clut.getUniformString()), ACTIVE_TEXTURE_CLUT);
+        	re.setUniform(re.getUniformLocation(program, Uniforms.utex.getUniformString()), ACTIVE_TEXTURE_INTEGER);
+        }
 
         boolean validated = re.validateProgram(program);
         addProgramInfoLog(program);
