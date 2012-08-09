@@ -16,6 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
+import static jpcsp.Allegrex.Common.Instruction.FLAG_ENDS_BLOCK;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_BRANCHING;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_JUMPING;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_STARTS_NEW_BLOCK;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Stack;
@@ -24,6 +29,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import jpcsp.AllegrexOpcodes;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
@@ -195,15 +201,77 @@ public class Compiler implements ICompiler {
         classLoader = new CompilerClassLoader(this);
     }
 
+    public boolean checkSimpleInterpretedCodeBlock(CodeBlock codeBlock) {
+    	boolean isSimple = true;
+    	int insnCount = 0;
+    	Instruction[] insns = new Instruction[100];
+    	int[] opcodes = new int[100];
+    	int opcodeJrRa = AllegrexOpcodes.JR | (Common._ra << 21); // jr $ra
+
+    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(codeBlock.getStartAddress(), 4);
+    	int notSimpleFlags = FLAG_IS_BRANCHING | FLAG_IS_JUMPING | FLAG_STARTS_NEW_BLOCK | FLAG_ENDS_BLOCK;
+    	while (true) {
+    		if (insnCount >= insns.length) {
+    			// Extend insns array
+    			Instruction[] newInsns = new Instruction[insnCount + 100];
+    			System.arraycopy(insns, 0, newInsns, 0, insnCount);
+    			insns = newInsns;
+    			// Extend opcodes array
+    			int[] newOpcodes = new int[newInsns.length];
+    			System.arraycopy(opcodes, 0, newOpcodes, 0, insnCount);
+    			opcodes = newOpcodes;
+    		}
+
+    		int opcode = memoryReader.readNext();
+
+    		if (opcode == opcodeJrRa) {
+				int delaySlotOpcode = memoryReader.readNext();
+				Instruction delaySlotInsn = Decoder.instruction(delaySlotOpcode);
+				insns[insnCount] = delaySlotInsn;
+				opcodes[insnCount] = delaySlotOpcode;
+				insnCount++;
+				break;
+    		}
+
+    		Instruction insn = Decoder.instruction(opcode);
+    		if ((insn.getFlags() & notSimpleFlags) != 0) {
+    			isSimple = false;
+    			break;
+    		}
+
+    		insns[insnCount] = insn;
+			opcodes[insnCount] = opcode;
+			insnCount++;
+    	}
+
+    	if (isSimple) {
+        	if (insnCount < insns.length) {
+    			// Compact insns array
+    			Instruction[] newInsns = new Instruction[insnCount];
+    			System.arraycopy(insns, 0, newInsns, 0, insnCount);
+    			insns = newInsns;
+    			// Compact opcodes array
+    			int[] newOpcodes = new int[insnCount];
+    			System.arraycopy(opcodes, 0, newOpcodes, 0, insnCount);
+    			opcodes = newOpcodes;
+        	}
+        	codeBlock.setInterpretedInstructions(insns);
+        	codeBlock.setInterpretedOpcodes(opcodes);
+    	} else {
+    		codeBlock.setInterpretedInstructions(null);
+    	}
+
+    	return isSimple;
+    }
+
     public void invalidateCodeBlock(CodeBlock codeBlock) {
     	IExecutable executable = codeBlock.getExecutable();
-    	if (executable != null && !codeBlock.isInterpreted()) {
+    	if (executable != null) {
     		// If the application is invalidating the same code block too many times,
     		// do no longer try to recompile it each time, interpret it.
     		if (codeBlock.getInstanceIndex() > maxRecompileExecutable) {
     			codeBlock.setInterpreted(true);
-    			InterpretExecutable interpretExecutable = new InterpretExecutable(codeBlock);
-    			executable.setExecutable(interpretExecutable);
+    			executable.setExecutable(new InterpretExecutable(codeBlock));
     		} else {
 	    		// Force a recompilation of the codeBlock at the next execution
 	        	RecompileExecutable recompileExecutable = new RecompileExecutable(codeBlock);
