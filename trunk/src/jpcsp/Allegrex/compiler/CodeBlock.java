@@ -57,6 +57,8 @@ public class CodeBlock {
 	private final static String[] exceptions = new String[] { Type.getInternalName(Exception.class) };
 	private int instanceIndex;
 	private boolean interpreted = false;
+	private Instruction[] interpretedInstructions;
+	private int[] interpretedOpcodes;
 
 	public CodeBlock(int startAddress, int instanceCount) {
 		this.startAddress = startAddress;
@@ -570,5 +572,21 @@ public class CodeBlock {
 
 	public void setInterpreted(boolean interpreted) {
 		this.interpreted = interpreted;
+	}
+
+	public Instruction[] getInterpretedInstructions() {
+		return interpretedInstructions;
+	}
+
+	public void setInterpretedInstructions(Instruction[] interpretedInstructions) {
+		this.interpretedInstructions = interpretedInstructions;
+	}
+
+	public int[] getInterpretedOpcodes() {
+		return interpretedOpcodes;
+	}
+
+	public void setInterpretedOpcodes(int[] interpretedOpcodes) {
+		this.interpretedOpcodes = interpretedOpcodes;
 	}
 }
