@@ -239,13 +239,6 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
     }// </editor-fold>//GEN-END:initComponents
 
 private void startbuttonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startbuttonActionPerformed
-    // debug (fiveofhearts), we've been counting instructions as they excute,
-    // so just update the gui and don't do a recount of how many instructions exist.
-    if (jpcsp.Processor.ENABLE_INSN_EXECUTE_COUNT) {
-        refreshCounter();
-        return;
-    }
-
     startbutton.setEnabled(false);
     setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
     //Instances of javax.swing.SwingWorker are not reusuable, so
