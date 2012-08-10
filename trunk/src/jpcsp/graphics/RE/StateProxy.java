@@ -176,6 +176,12 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		uniformFloat = new float[maxProgramId][maxUniformId];
 		uniformIntArray = new int[maxProgramId][maxUniformId][];
 		uniformFloatArray = new float[maxProgramId][maxUniformId][];
+		for (int i = 0; i < maxProgramId; i++) {
+			for (int j = 0; j < maxUniformId; j++) {
+				uniformInt[i][j] = -1;
+				uniformFloat[i][j] = -1f;
+			}
+		}
 
 		matrix = new float[RE_BONES_MATRIX + 1][];
 		matrix[GU_PROJECTION] = new float[matrix4Size];
