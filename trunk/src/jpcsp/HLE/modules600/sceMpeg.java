@@ -17,18 +17,18 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules600;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 
 public class sceMpeg extends jpcsp.HLE.modules352.sceMpeg {
 
     @HLEFunction(nid = 0x63B9536A, version = 600)
-    public void sceMpegAvcResourceGetAvcDecTopAddr(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceMpegAvcResourceGetAvcDecTopAddr(int unknown) {
+        log.warn(String.format("UNIMPLEMENTED: sceMpegAvcResourceGetAvcDecTopAddr unknown=%d", unknown));
 
-        log.warn("UNIMPLEMENTED: sceMpegAvcResourceGetAvcDecTopAddr");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        // Unknown value, passed to sceMpegCreate(ddttop)
+        return 0x12345678;
     }
 
     @HLEFunction(nid = 0x8160A2FE, version = 600)
@@ -41,21 +41,21 @@ public class sceMpeg extends jpcsp.HLE.modules352.sceMpeg {
     }
 
     @HLEFunction(nid = 0xAF26BB01, version = 600)
-    public void sceMpegAvcResourceGetAvcEsBuf(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceMpegAvcResourceGetAvcEsBuf() {
         log.warn("UNIMPLEMENTED: sceMpegAvcResourceGetAvcEsBuf");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        // Unknown value
+        return 0;
     }
 
     @HLEFunction(nid = 0xFCBDB5AD, version = 600)
-    public void sceMpegAvcResourceInit(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceMpegAvcResourceInit(int unknown) {
+        log.warn(String.format("IGNORING: sceMpegAvcResourceInit unknown=%d", unknown));
 
-        log.warn("IGNORING: sceMpegAvcResourceInit");
+        if (unknown != 1) {
+        	return SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
+        }
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
-
 }
