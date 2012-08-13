@@ -1537,7 +1537,7 @@ public class RendererTemplate {
 	            			}
 	            		} else {
 	            			if (colorMask != 0x00000000) {
-	            				sourceColor = (sourceColor & notColorMask) | (destinationColor & colorMask);
+	            				sourceColor = (sourceColor & notColorMask) | (destinationColor & renderer.colorMask);
 	            			}
 	            		}
 
