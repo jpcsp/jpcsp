@@ -550,7 +550,7 @@ public class RendererTemplate {
 	            					// Nothing to do
 	            					break;
 	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_MATCHES:
-	            					if ((getAlpha(destinationColor) & renderer.stencilMask) != stencilRefMasked) {
+	            					if (stencilRefMasked != (getAlpha(destinationColor) & renderer.stencilMask)) {
 		    		            		if (isLogTraceEnabled) {
 		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), stencil test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
 		    	            			}
@@ -571,7 +571,7 @@ public class RendererTemplate {
 	            					}
 	            					break;
 	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_DIFFERS:
-	            					if ((getAlpha(destinationColor) & renderer.stencilMask) == stencilRefMasked) {
+	            					if (stencilRefMasked == (getAlpha(destinationColor) & renderer.stencilMask)) {
 		    		            		if (isLogTraceEnabled) {
 		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), stencil test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
 		    	            			}
@@ -592,7 +592,8 @@ public class RendererTemplate {
 	            					}
 	            					break;
 	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_LESS:
-	            					if ((getAlpha(destinationColor) & renderer.stencilMask) >= stencilRefMasked) {
+	            					// Pass if the reference value is less than the destination value
+	            					if (stencilRefMasked >= (getAlpha(destinationColor) & renderer.stencilMask)) {
 		    		            		if (isLogTraceEnabled) {
 		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), stencil test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
 		    	            			}
@@ -613,7 +614,8 @@ public class RendererTemplate {
 	            					}
 	            					break;
 	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_LESS_OR_EQUAL:
-	            					if ((getAlpha(destinationColor) & renderer.stencilMask) > stencilRefMasked) {
+	            					// Pass if the reference value is less or equal to the destination value
+	            					if (stencilRefMasked > (getAlpha(destinationColor) & renderer.stencilMask)) {
 		    		            		if (isLogTraceEnabled) {
 		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), stencil test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
 		    	            			}
@@ -634,7 +636,8 @@ public class RendererTemplate {
 	            					}
 	            					break;
 	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_GREATER:
-	            					if ((getAlpha(destinationColor) & renderer.stencilMask) <= stencilRefMasked) {
+	            					// Pass if the reference value is greater than the destination value
+	            					if (stencilRefMasked <= (getAlpha(destinationColor) & renderer.stencilMask)) {
 		    		            		if (isLogTraceEnabled) {
 		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), stencil test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
 		    	            			}
@@ -655,7 +658,8 @@ public class RendererTemplate {
 	            					}
 	            					break;
 	            				case GeCommands.STST_FUNCTION_PASS_TEST_IF_GREATER_OR_EQUAL:
-	            					if ((getAlpha(destinationColor) & renderer.stencilMask) < stencilRefMasked) {
+	            					// Pass if the reference value is greater or equal to the destination value
+	            					if (stencilRefMasked < (getAlpha(destinationColor) & renderer.stencilMask)) {
 		    		            		if (isLogTraceEnabled) {
 		    		            			VideoEngine.log.trace(String.format("Pixel (%d,%d), stencil test failed, tex (%f, %f), source=0x%08X, dest=0x%08X, prim=0x%08X, sec=0x%08X, sourceDepth=%d, destDepth=%d", x, y, pixelU, pixelV, sourceColor, destinationColor, primaryColor, secondaryColor, sourceDepth, destinationDepth));
 		    	            			}

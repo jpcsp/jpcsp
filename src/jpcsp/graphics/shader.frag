@@ -564,17 +564,17 @@ bool passStencilTest(float fbAlpha)
         case 1: // STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST
             return true;
         case 2: // STST_FUNCTION_PASS_TEST_IF_MATCHES
-            return getStencilFbAlphaInt(fbAlpha) == stencilRef;
+            return stencilRef == getStencilFbAlphaInt(fbAlpha);
         case 3: // STST_FUNCTION_PASS_TEST_IF_DIFFERS
-            return getStencilFbAlphaInt(fbAlpha) != stencilRef;
+            return stencilRef != getStencilFbAlphaInt(fbAlpha);
         case 4: // STST_FUNCTION_PASS_TEST_IF_LESS
-            return getStencilFbAlphaInt(fbAlpha) < stencilRef;
+            return stencilRef < getStencilFbAlphaInt(fbAlpha);
         case 5: // STST_FUNCTION_PASS_TEST_IF_LESS_OR_EQUAL
-            return getStencilFbAlphaInt(fbAlpha) <= stencilRef;
+            return stencilRef <= getStencilFbAlphaInt(fbAlpha);
         case 6: // STST_FUNCTION_PASS_TEST_IF_GREATER
-            return getStencilFbAlphaInt(fbAlpha) > stencilRef;
+            return stencilRef > getStencilFbAlphaInt(fbAlpha);
         case 7: // STST_FUNCTION_PASS_TEST_IF_GREATER_OR_EQUAL
-            return getStencilFbAlphaInt(fbAlpha) >= stencilRef;
+            return stencilRef >= getStencilFbAlphaInt(fbAlpha);
         }
 
         return true;
@@ -586,22 +586,22 @@ bool passStencilTest(float fbAlpha)
         return true;
     #elif STENCIL_FUNC == 2
         // STST_FUNCTION_PASS_TEST_IF_MATCHES
-        return getStencilFbAlphaInt(fbAlpha) == stencilRef;
+        return stencilRef == getStencilFbAlphaInt(fbAlpha);
     #elif STENCIL_FUNC == 3
         // STST_FUNCTION_PASS_TEST_IF_DIFFERS
-        return getStencilFbAlphaInt(fbAlpha) != stencilRef;
+        return stencilRef != getStencilFbAlphaInt(fbAlpha);
     #elif STENCIL_FUNC == 4
         // STST_FUNCTION_PASS_TEST_IF_LESS
-        return getStencilFbAlphaInt(fbAlpha) < stencilRef;
+        return stencilRef < getStencilFbAlphaInt(fbAlpha);
     #elif STENCIL_FUNC == 5
         // STST_FUNCTION_PASS_TEST_IF_LESS_OR_EQUAL
-        return getStencilFbAlphaInt(fbAlpha) <= stencilRef;
+        return stencilRef <= getStencilFbAlphaInt(fbAlpha);
     #elif STENCIL_FUNC == 6
         // STST_FUNCTION_PASS_TEST_IF_GREATER
-        return getStencilFbAlphaInt(fbAlpha) > stencilRef;
+        return stencilRef > getStencilFbAlphaInt(fbAlpha);
     #elif STENCIL_FUNC == 7
         // STST_FUNCTION_PASS_TEST_IF_GREATER_OR_EQUAL
-        return getStencilFbAlphaInt(fbAlpha) >= stencilRef;
+        return stencilRef >= getStencilFbAlphaInt(fbAlpha);
     #else
         return true;
     #endif
