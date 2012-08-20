@@ -1546,6 +1546,13 @@ public class IoFileMgrForUser extends HLEModule {
                         // Open file.
                         try {
                             String trimmedFileName = trimUmdPrefix(pcfilename);
+
+                            // Opening an empty file name with no current working directory set
+                            // should return ERROR_ERRNO_FILE_NOT_FOUND
+                            if (trimmedFileName != null && trimmedFileName.length() == 0 && filename.length() == 0) {
+                            	throw new FileNotFoundException(filename);
+                            }
+
                             UmdIsoFile file = iso.getFile(trimmedFileName);
                             info = new IoInfo(filename, file, mode, flags, permissions);
                             if (!info.isValidId()) {
