@@ -261,6 +261,9 @@ public class SemaManager {
         	}
             return ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
         }
+        if (signal > sema.maxCount) {
+        	return ERROR_KERNEL_ILLEGAL_COUNT;
+        }
 
         return hleKernelWaitSema(sema, signal, timeout_addr, doCallbacks);
     }
