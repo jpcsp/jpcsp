@@ -16,14 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.PspString;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+
 import org.apache.log4j.Logger;
 
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.util.Utilities;
 
 public class sceUsb extends HLEModule {
     protected static Logger log = Modules.getLogger("sceUsb");
@@ -69,20 +71,12 @@ public class sceUsb extends HLEModule {
 	  * @return 0 on success
 	  */
 	@HLEFunction(nid = 0xAE5DE6AF, version = 150)
-	public void sceUsbStart(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int driverNameAddr = cpu.gpr[4];
-		int size = cpu.gpr[5];
-		int args = cpu.gpr[6];
-
-		String driverName = Utilities.readStringZ(driverNameAddr);
-
-		log.warn(String.format("Unimplemented sceUsbStart driverName=0x%08X('%s'), size=%d, args=0x%08X", driverNameAddr, driverName, size, args));
+	public int sceUsbStart(PspString driverName, int size, @CanBeNull TPointer args) {
+		log.warn(String.format("Unimplemented sceUsbStart driverName=%s, size=%d, args=%s", driverName, size, args));
 
 		usbStarted = true;
 
-		cpu.gpr[2] = 0;
+		return 0;
 	}
 
 	/**
@@ -95,20 +89,12 @@ public class sceUsb extends HLEModule {
 	  * @return 0 on success
 	  */
 	@HLEFunction(nid = 0xC2464FA0, version = 150)
-	public void sceUsbStop(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int driverNameAddr = cpu.gpr[4];
-		int size = cpu.gpr[5];
-		int args = cpu.gpr[6];
-
-		String driverName = Utilities.readStringZ(driverNameAddr);
-
-		log.warn(String.format("Unimplemented sceUsbStop driverName=0x%08X('%s'), size=%d, args=0x%08X", driverNameAddr, driverName, size, args));
+	public int sceUsbStop(PspString driverName, int size, @CanBeNull TPointer args) {
+		log.warn(String.format("Unimplemented sceUsbStop driverName=%s, size=%d, args=%s", driverName, size, args));
 
 		usbStarted = false;
 
-		cpu.gpr[2] = 0;
+		return 0;
 	}
 
 	/**
@@ -117,23 +103,19 @@ public class sceUsb extends HLEModule {
 	  * @return OR'd PSP_USB_* constants
 	  */
 	@HLEFunction(nid = 0xC21645A4, version = 150)
-	public void sceUsbGetState(Processor processor) {
-		CpuState cpu = processor.cpu;
-
+	public int sceUsbGetState() {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("sceUsbGetState returning %d", getUsbState()));
 		}
 
-		cpu.gpr[2] = getUsbState();
+		return getUsbState();
 	}
 
 	@HLEFunction(nid = 0x4E537366, version = 150)
-	public void sceUsbGetDrvList(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceUsbGetDrvList(int unknown1, int unknown2, int unknown3) {
+		log.warn(String.format("Unimplemented sceUsbGetDrvList unknown1=0x%08X, unknown2=0x%08X, unknown3=0x%08X", unknown1, unknown2, unknown3));
 
-		log.warn(String.format("Unimplemented sceUsbGetDrvList"));
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
 
 	/**
@@ -144,16 +126,10 @@ public class sceUsb extends HLEModule {
 	  * @return 1 if the driver has been started, 2 if it is stopped
 	  */
 	@HLEFunction(nid = 0x112CC951, version = 150)
-	public void sceUsbGetDrvState(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceUsbGetDrvState(PspString driverName) {
+		log.warn(String.format("Unimplemented sceUsbGetDrvState driverName=%s", driverName));
 
-		int driverNameAddr = cpu.gpr[4];
-
-		String driverName = Utilities.readStringZ(driverNameAddr);
-
-		log.warn(String.format("Unimplemented sceUsbGetDrvState driverName=0x%08X('%s')", driverNameAddr, driverName));
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
 
 	/**
@@ -164,16 +140,12 @@ public class sceUsb extends HLEModule {
 	  * @return 0 on success
 	  */
 	@HLEFunction(nid = 0x586DB82C, version = 150)
-	public void sceUsbActivate(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int pid = cpu.gpr[4];
-
+	public int sceUsbActivate(int pid) {
 		log.warn(String.format("Unimplemented sceUsbActivate pid=0x%X", pid));
 
 		usbActivated = true;
 
-		cpu.gpr[2] = 0;
+		return 0;
 	}
 
 	/**
@@ -184,34 +156,25 @@ public class sceUsb extends HLEModule {
 	  * @return 0 on success
 	  */
 	@HLEFunction(nid = 0xC572A9C8, version = 150)
-	public void sceUsbDeactivate(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int pid = cpu.gpr[4];
-
+	public int sceUsbDeactivate(int pid) {
 		log.warn(String.format("Unimplemented sceUsbDeactivate pid=0x%08X", pid));
 
 		usbActivated = false;
 
-		cpu.gpr[2] = 0;
+		return 0;
 	}
 
 	@HLEFunction(nid = 0x5BE0E002, version = 150)
-	public void sceUsbWaitState(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceUsbWaitState(int state, int waitMode, TPointer32 timeoutAddr) {
+		log.warn(String.format("Unimplemented sceUsbWaitState state=%d, waitMode=%d, timeoutAddr=%s(%d)", state, waitMode, timeoutAddr, timeoutAddr.getValue()));
 
-		log.warn(String.format("Unimplemented sceUsbWaitState"));
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
 
 	@HLEFunction(nid = 0x1C360735, version = 150)
-	public void sceUsbWaitCancel(Processor processor) {
-		CpuState cpu = processor.cpu;
-
+	public int sceUsbWaitCancel() {
 		log.warn(String.format("Unimplemented sceUsbWaitCancel"));
 
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-
 }
