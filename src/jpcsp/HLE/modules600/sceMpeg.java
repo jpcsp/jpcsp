@@ -21,7 +21,7 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 
-public class sceMpeg extends jpcsp.HLE.modules352.sceMpeg {
+public class sceMpeg extends jpcsp.HLE.modules250.sceMpeg {
 
     @HLEFunction(nid = 0x63B9536A, version = 600)
     public int sceMpegAvcResourceGetAvcDecTopAddr(int unknown) {

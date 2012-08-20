@@ -14,30 +14,17 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.HLE.modules352;
+package jpcsp.HLE.modules250;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 
 public class sceMpeg extends jpcsp.HLE.modules150.sceMpeg {
-
-	@Override
-	public String getName() {
-        return "sceMpeg";
-	}
-
-    @HLEFunction(nid = 0x769BEBB6, version = 352)
-    public void sceMpegRingbufferQueryPackNum(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int memorySize = cpu.gpr[4];
-
+    @HLEFunction(nid = 0x769BEBB6, version = 250)
+    public int sceMpegRingbufferQueryPackNum(int memorySize) {
         if (log.isDebugEnabled()) {
         	log.debug(String.format("sceMpegRingbufferQueryPackNum memorySize=0x%08X", memorySize));
         }
 
-        cpu.gpr[2] = getPacketsFromSize(memorySize);
+        return getPacketsFromSize(memorySize);
     }
-
 }
