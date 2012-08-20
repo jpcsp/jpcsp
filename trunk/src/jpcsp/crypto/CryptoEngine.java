@@ -942,6 +942,18 @@ public class CryptoEngine {
         }
     }
 
+    private static boolean isNullKey(byte[] key) {
+    	if (key != null) {
+	    	for (int i = 0; i < key.length; i++) {
+	    		if (key[i] != (byte) 0) {
+	    			return false;
+	    		}
+	    	}
+    	}
+
+    	return true;
+    }
+
     /*
      * KIRK commands: main emulated crypto functions.
      */
@@ -1698,14 +1710,14 @@ public class CryptoEngine {
         // Apply custom padding management.
         byte b = ((keyBuf[0] & (byte) 0x80) != 0) ? (byte) 0x87 : 0;       
         for(int i = 0; i < 0xF; i++) {
-            keyBuf[i] = (byte) ((keyBuf[i] << 1) | (keyBuf[i + 1] >> 7));
+            keyBuf[i] = (byte) ((keyBuf[i] << 1) | ((keyBuf[i + 1] >> 7) & 0x01));
         }        
         keyBuf[0xF] = (byte) ((keyBuf[0xF] << 1) ^ b);    
         
         if (ctx.padSize < 0x10) {
             byte bb = ((keyBuf[0] & (byte) 0x80) != 0) ? (byte) 0x87 : 0;       
             for(int i = 0; i < 0xF; i++) {
-                keyBuf[i] = (byte) ((keyBuf[i] << 1) | (keyBuf[i + 1] >> 7));
+                keyBuf[i] = (byte) ((keyBuf[i] << 1) | ((keyBuf[i + 1] >> 7) & 0x01));
             }        
             keyBuf[0xF] = (byte) ((keyBuf[0xF] << 1) ^ bb);
             
@@ -2861,10 +2873,9 @@ public class CryptoEngine {
         System.arraycopy(inbuf, 0, dataBuf, 0, size);
 
         // Check the crypto modes.
-        byte[] nullKey = new byte[0x10];
-        if (key == nullKey) {
+        if (isNullKey(key)) {
             sdEncMode = 1;
-        } else if ((mode == 1) || (mode == 2)) { // Old crypto mode (up to firmware 2.5.2).
+        } else if (mode == 1 || mode == 2) { // Old crypto mode (up to firmware 2.5.2).
             sdEncMode = 3;
         }
 
@@ -2895,10 +2906,9 @@ public class CryptoEngine {
         System.arraycopy(inbuf, 0, dataBuf, 0, size);
 
         // Check the crypto modes.
-        byte[] nullKey = new byte[0x10];
-        if (key == nullKey) {
+        if (isNullKey(key)) {
             sdEncMode = 1;
-        } else if ((mode == 1) || (mode == 2)) { // Old crypto mode (up to firmware 2.5.2).
+        } else if (mode == 1 || mode == 2) { // Old crypto mode (up to firmware 2.5.2).
             sdEncMode = 3;
         }
 
