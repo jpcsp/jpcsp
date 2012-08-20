@@ -502,7 +502,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 
         byte[] outBuf = crypto.EncryptSavedata(inBuf, length, key, mode);
 
-        fileOutput.write(outBuf);
+        fileOutput.write(outBuf, 0, Math.min(length, outBuf.length));
         fileOutput.close();
     }
 
@@ -524,9 +524,11 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         byte[] outBuf = crypto.DecryptSavedata(inBuf, fileSize, key, mode);
 
         IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 1);
-        for (int i = 0; i < outBuf.length; i++) {
+        int length = Math.min(outBuf.length, Math.min(fileSize, maxLength));
+        for (int i = 0; i < length; i++) {
             memoryWriter.writeNext(outBuf[i]);
         }
+        memoryWriter.flush();
 
         return outBuf.length;
     }
@@ -696,7 +698,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append(String.format("Address 0x%08X, mode=%d(%s), gameName=%s, saveName=%s, fileName=%s", getBaseAddress(), mode, getModeName(), gameName, saveName, fileName));
+        s.append(String.format("Address 0x%08X, mode=%d(%s), gameName=%s, saveName=%s, fileName=%s, secureVersion=%d", getBaseAddress(), mode, getModeName(), gameName, saveName, fileName, secureVersion));
         for (int i = 0; saveNameList != null && i < saveNameList.length; i++) {
             if (i == 0) {
                 s.append(", saveNameList=[");

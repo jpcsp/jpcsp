@@ -223,6 +223,8 @@ public class sceUtility extends HLEModule {
         protected int result;
         protected UtilityDialog dialog;
         protected int drawSpeed;
+        protected int minimumVisibleDurationMillis;
+        protected long startVisibleTimeMillis;
 
         public UtilityDialogState(String name) {
             this.name = name;
@@ -314,6 +316,7 @@ public class sceUtility extends HLEModule {
             } else if (status == PSP_UTILITY_DIALOG_STATUS_INIT && isReadyForVisible()) {
                 // Move from INIT to VISIBLE
                 status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
+                startVisibleTimeMillis = Emulator.getClock().currentTimeMillis();
             }
         }
 
@@ -342,6 +345,7 @@ public class sceUtility extends HLEModule {
             if (status == PSP_UTILITY_DIALOG_STATUS_INIT && isReadyForVisible()) {
                 // Move from INIT to VISIBLE
                 status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
+                startVisibleTimeMillis = Emulator.getClock().currentTimeMillis();
             } else if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE) {
                 // Some games reach sceUtilitySavedataInitStart with empty params which only
                 // get filled with a subsequent call to sceUtilitySavedataUpdate (eg.: To Love-Ru).
@@ -355,8 +359,12 @@ public class sceUtility extends HLEModule {
                 }
 
                 if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE && !isDialogOpen() && !keepVisible) {
-                    // There was no dialog or it has completed
-                    status = PSP_UTILITY_DIALOG_STATUS_QUIT;
+                	// Check if we stayed long enough in the VISIBLE state
+                	long now = Emulator.getClock().currentTimeMillis();
+                	if (now - startVisibleTimeMillis >= getMinimumVisibleDurationMillis()) {
+                		// There was no dialog or it has completed
+                		status = PSP_UTILITY_DIALOG_STATUS_QUIT;
+                	}
                 }
             }
         }
@@ -374,6 +382,14 @@ public class sceUtility extends HLEModule {
         protected abstract boolean executeUpdateVisible(Processor processor);
 
         protected abstract pspAbstractMemoryMappedStructure createParams();
+
+		public int getMinimumVisibleDurationMillis() {
+			return minimumVisibleDurationMillis;
+		}
+
+		public void setMinimumVisibleDurationMillis(int minimumVisibleDurationMillis) {
+			this.minimumVisibleDurationMillis = minimumVisibleDurationMillis;
+		}
     }
 
     protected static class NotImplementedUtilityDialogState extends UtilityDialogState {
@@ -431,6 +447,10 @@ public class sceUtility extends HLEModule {
 
     	public SavedataUtilityDialogState(String name) {
 			super(name);
+
+			// Stay at least 500ms in the VISIBLE state.
+			// E.g. do not complete too quickly the AUTOLOAD/AUTOSAVE modes.
+			setMinimumVisibleDurationMillis(500);
 		}
 
 		@Override
