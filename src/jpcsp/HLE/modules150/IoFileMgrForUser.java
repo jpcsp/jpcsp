@@ -161,7 +161,7 @@ public class IoFileMgrForUser extends HLEModule {
     private final static int MAX_ID = 63;
     private final static String idPurpose = "IOFileManager-File";
 
-    private final static boolean useVirtualFileSystem = false;
+    private final static boolean useVirtualFileSystem = true;
     protected VirtualFileSystemManager vfsManager;
 
     protected static enum IoOperation {
