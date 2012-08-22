@@ -57,6 +57,7 @@ public class sceGe_user extends HLEModule {
     public volatile boolean syncDone;
     private HashMap<Integer, SceKernelCallbackInfo> signalCallbacks;
     private HashMap<Integer, SceKernelCallbackInfo> finishCallbacks;
+    private static final String geCallbackPurpose = "sceGeCallback";
 
     // PSP has an array of 64 GE lists
     private static final int NUMBER_GE_LISTS = 64;
@@ -658,7 +659,12 @@ public class sceGe_user extends HLEModule {
         pspGeCallbackData cbdata = new pspGeCallbackData();
         cbdata.read(Emulator.getMemory(), cbdata_addr.getAddress());
 
-        int cbid = SceUidManager.getNewUid("pspge-callback");
+        // The cbid returned has a value in the range [0..15].
+        int cbid = SceUidManager.getNewId(geCallbackPurpose, 0, 15);
+        if (cbid == SceUidManager.INVALID_ID) {
+        	log.warn(String.format("sceGeSetCallback no more callback ID available"));
+        	return SceKernelErrors.ERROR_OUT_OF_MEMORY;
+        }
 
         if (log.isDebugEnabled()) {
         	log.debug(String.format("sceGeSetCallback signalFunc=0x%08X, signalArg=0x%08X, finishFunc=0x%08X, finishArg=0x%08X, result cbid=0x%X", cbdata.signalFunction, cbdata.signalArgument, cbdata.finishFunction, cbdata.finishArgument, cbid));
@@ -688,6 +694,7 @@ public class sceGe_user extends HLEModule {
         if (callbackFinish != null) {
             threadMan.hleKernelDeleteCallback(callbackFinish.uid);
         }
+        SceUidManager.releaseId(cbid, geCallbackPurpose);
 
         return 0;
     }
