@@ -19,6 +19,7 @@ package jpcsp.HLE.kernel.types;
 import java.nio.charset.Charset;
 
 import jpcsp.Memory;
+import jpcsp.HLE.ITPointerBase;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.util.Utilities;
@@ -60,9 +61,17 @@ public abstract class pspAbstractMemoryMappedStructure {
         read();
     }
 
+    public void read(ITPointerBase pointer) {
+    	read(Memory.getInstance(), pointer.getAddress());
+    }
+
     public void write(Memory mem, int address) {
         start(mem, address);
         write();
+    }
+
+    public void write(ITPointerBase pointer) {
+    	write(Memory.getInstance(), pointer.getAddress());
     }
 
     public void write(Memory mem) {
@@ -202,6 +211,13 @@ public abstract class pspAbstractMemoryMappedStructure {
         offset += n;
 
         return s;
+    }
+
+    protected String readStringZ(int addr) {
+    	if (addr == 0) {
+    		return null;
+    	}
+        return Utilities.readStringZ(mem, addr);
     }
 
     /**
@@ -365,6 +381,12 @@ public abstract class pspAbstractMemoryMappedStructure {
             Utilities.writeStringNZ(mem, baseAddress + offset, n, s);
         }
         offset += n;
+    }
+
+    protected void writeStringZ(String s, int addr) {
+    	if (s != null && addr != 0) {
+    		Utilities.writeStringZ(mem, addr, s);
+    	}
     }
 
     protected void write(pspAbstractMemoryMappedStructure object) {

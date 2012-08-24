@@ -587,6 +587,10 @@ public class Utilities {
     	return Integer.reverseBytes(x);
     }
 
+    public static int endianSwap16(int x) {
+        return ((x >> 8) & 0x00FF) | ((x << 8) & 0xFF00);
+    }
+
     public static int readUnaligned32(Memory mem, int address) {
         switch (address & 3) {
             case 0: return mem.read32(address);

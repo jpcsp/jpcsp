@@ -136,7 +136,16 @@ public class sceNetApctl extends HLEModule {
     private volatile long scanStartMillis;
     private static final int SCAN_DURATION_MILLIS = 700;
 
-    protected class ApctlHandler {
+	@Override
+	public void stop() {
+		sceNetApctlThread = null;
+		sceNetApctlThreadTerminate = false;
+		doScan = false;
+		apctlHandlers.clear();
+		super.stop();
+	}
+
+	protected class ApctlHandler {
     	private int id;
         private int addr;
         private int pArg;
@@ -321,6 +330,10 @@ public class sceNetApctl extends HLEModule {
 	}
 
 	public void hleNetApctlThread(Processor processor) {
+		if (log.isDebugEnabled()) {
+			log.debug("hleNetApctlThread");
+		}
+
 		if (sceNetApctlThreadTerminate) {
 			processor.cpu.gpr[2] = 0; // Exit status
 			Modules.ThreadManForUserModule.hleKernelExitDeleteThread();

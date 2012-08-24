@@ -81,12 +81,8 @@ public class SystemTimeManager {
         	log.debug(String.format("sceKernelSysClock2USec sysClockAddr=%s(%d), secAddr=%s, microSecAddr=%s", sysClockAddr, sysClock, secAddr, microSecAddr));
         }
 
-        if (!secAddr.isNull()) {
-        	secAddr.setValue((int) (sysClock / 1000000));
-        }
-        if (!microSecAddr.isNull()) {
-        	microSecAddr.setValue((int) (sysClock % 1000000));
-        }
+    	secAddr.setValue((int) (sysClock / 1000000));
+    	microSecAddr.setValue((int) (sysClock % 1000000));
 
         return 0;
     }

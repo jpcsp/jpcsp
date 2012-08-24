@@ -145,6 +145,7 @@ public class Compiler implements ICompiler {
     private boolean ignoreInvalidMemory = false;
     public int defaultMethodMaxInstructions = 3000;
     private static final int maxRecompileExecutable = 50;
+    private CompilerTypeManager compilerTypeManager;
 
 	private class IgnoreInvalidMemoryAccessSettingsListerner extends AbstractBoolSettingsListener {
 		@Override
@@ -305,6 +306,8 @@ public class Compiler implements ICompiler {
 		} else {
 			nativeCodeManager = new NativeCodeManager(null);
 		}
+
+		compilerTypeManager = new CompilerTypeManager();
 
 		reset();
 	}
@@ -589,5 +592,9 @@ public class Compiler implements ICompiler {
 
 			log.info(String.format("Compiler MethodMaxInstructions: %d", defaultMethodMaxInstructions));
 		}
+	}
+
+	public CompilerTypeManager getCompilerTypeManager() {
+		return compilerTypeManager;
 	}
 }

@@ -19,15 +19,18 @@ package jpcsp.HLE.modules150;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_FILE_NOT_FOUND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_UNKNOWN_MODULE;
 
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.PspString;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import jpcsp.Loader;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
@@ -114,31 +117,27 @@ public class ModuleMgrForUser extends HLEModule {
         return result;
     }
 
-    private boolean loadHLEModule(Processor processor, String name, String prxname) {
-        CpuState cpu = processor.cpu;
+    private int loadHLEModule(String name, String prxname) {
         HLEModuleManager moduleManager = HLEModuleManager.getInstance();
 
         // Check if this an HLE module
         if (moduleManager.hasFlash0Module(prxname)) {
             log.info("hleKernelLoadModule(path='" + name + "') HLE module loaded");
-            cpu.gpr[2] = moduleManager.LoadFlash0Module(prxname);
-            return true;
+            return moduleManager.LoadFlash0Module(prxname);
         }
 
         // Ban some modules
         for (bannedModulesList bannedModuleName : bannedModulesList.values()) {
             if (bannedModuleName.name().equalsIgnoreCase(prxname.toString())) {
                 log.warn("IGNORED:hleKernelLoadModule(path='" + name + "'): module from banlist not loaded");
-                cpu.gpr[2] = moduleManager.LoadFlash0Module(prxname.toString());
-                return true;
+                return moduleManager.LoadFlash0Module(prxname.toString());
             }
         }
 
-        return false;
+        return -1;
     }
 
-    private boolean hleKernelLoadHLEModule(Processor processor, String name, StringBuilder prxname) {
-        CpuState cpu = processor.cpu;
+    private int hleKernelLoadHLEModule(String name, StringBuilder prxname) {
         HLEModuleManager moduleManager = HLEModuleManager.getInstance();
 
         if (prxname == null) {
@@ -159,13 +158,13 @@ public class ModuleMgrForUser extends HLEModule {
         // Ban flash0 modules
         if (name.startsWith("flash0:")) {
             log.warn("IGNORED:hleKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
-            cpu.gpr[2] = moduleManager.LoadFlash0Module(prxname.toString());
-            return true;
+            return moduleManager.LoadFlash0Module(prxname.toString());
         }
 
         // Check if the PRX name matches an HLE module
-        if (loadHLEModule(processor, name, prxname.toString())) {
-        	return true;
+        int result = loadHLEModule(name, prxname.toString());
+        if (result >= 0) {
+        	return result;
         }
 
         // Extract the library name from the file itself
@@ -187,10 +186,11 @@ public class ModuleMgrForUser extends HLEModule {
         				if (libName != null && libName.length() > 0) {
         					// We could extract the library name from the file,
         					// check if it matches an HLE module
-        					if (loadHLEModule(processor, name, libName)) {
+        					result = loadHLEModule(name, libName);
+        					if (result >= 0) {
             					prxname.setLength(0);
             					prxname.append(libName);
-        						return true;
+        						return result;
         					}
         				}
         			}
@@ -206,17 +206,15 @@ public class ModuleMgrForUser extends HLEModule {
 			}
         }
 
-        return false;
+        return -1;
     }
 
-    public void hleKernelLoadModule(Processor processor, String name, int flags, int uid, boolean byUid) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
+    public int hleKernelLoadModule(String name, int flags, int uid, boolean byUid) {
         StringBuilder prxname = new StringBuilder();
-        if (hleKernelLoadHLEModule(processor, name, prxname)) {
+        int result = hleKernelLoadHLEModule(name, prxname);
+        if (result >= 0) {
         	Modules.ThreadManForUserModule.hleKernelDelayThread(loadHLEModuleDelay, false);
-            return;
+            return result;
         }
 
         // Load module as ELF
@@ -227,15 +225,17 @@ public class ModuleMgrForUser extends HLEModule {
                     UmdIsoFile umdIsoFile = (UmdIsoFile) moduleInput;
                     String realFileName = umdIsoFile.getName();
                     if (realFileName != null && !name.endsWith(realFileName)) {
-                        if (hleKernelLoadHLEModule(processor, realFileName, null)) {
+                        result = hleKernelLoadHLEModule(realFileName, null);
+                        if (result >= 0) {
                             moduleInput.close();
-                            return;
+                            return result;
                         }
                     }
                 }
 
                 byte[] moduleBytes = new byte[(int) moduleInput.length()];
                 moduleInput.readFully(moduleBytes);
+                moduleInput.close();
                 ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
 
                 // TODO
@@ -261,8 +261,7 @@ public class ModuleMgrForUser extends HLEModule {
                 SysMemInfo testInfo = Modules.SysMemUserForUserModule.malloc(partitionId, "ModuleMgr-TestInfo", allocType, totalAllocSize, 0);
                 if (testInfo == null) {
                     log.error(String.format("Failed module allocation of size 0x%08X for '%s' (maxFreeMemSize=0x%08X)", totalAllocSize, name, Modules.SysMemUserForUserModule.maxFreeMemSize()));
-                    cpu.gpr[2] = -1;
-                    return;
+                    return -1;
                 }
                 int testBase = testInfo.addr;
                 Modules.SysMemUserForUserModule.free(testInfo);
@@ -272,13 +271,11 @@ public class ModuleMgrForUser extends HLEModule {
                 SysMemInfo moduleInfo = Modules.SysMemUserForUserModule.malloc(partitionId, "ModuleMgr", SysMemUserForUser.PSP_SMEM_Addr, moduleHeaderSize, testBase);
                 if (moduleInfo == null) {
                     log.error(String.format("Failed module allocation 0x%08X != null for '%s'", testBase, name));
-                    cpu.gpr[2] = -1;
-                    return;
+                    return -1;
                 }
                 if (moduleInfo.addr != testBase) {
                     log.error(String.format("Failed module allocation 0x%08X != 0x%08X for '%s'", testBase, moduleInfo.addr, name));
-                    cpu.gpr[2] = -1;
-                    return;
+                    return -1;
                 }
                 int moduleBase = moduleInfo.addr;
 
@@ -293,213 +290,191 @@ public class ModuleMgrForUser extends HLEModule {
                     SceModule fakeModule = new SceModule(true);
                     fakeModule.addAllocatedMemory(moduleInfo);
                     fakeModule.modname = prxname.toString();
-                    fakeModule.write(mem, moduleInfo.addr);
+                    fakeModule.write(Memory.getInstance(), moduleInfo.addr);
                     Managers.modules.addModule(fakeModule);
-                    cpu.gpr[2] = fakeModule.modid;
+                    result = fakeModule.modid;
                 } else if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
                     module.addAllocatedMemory(moduleInfo);
-                    cpu.gpr[2] = module.modid;
+                    result = module.modid;
                 } else {
                     // The Loader class now manages the module's memory footprint, it won't allocate if it failed to load
-                    cpu.gpr[2] = -1;
+                    return -1;
                 }
-
-                moduleInput.close();
             } else {
                 log.warn("hleKernelLoadModule(path='" + name + "') can't find file");
-                cpu.gpr[2] = ERROR_ERRNO_FILE_NOT_FOUND;
+                return ERROR_ERRNO_FILE_NOT_FOUND;
             }
         } catch (IOException e) {
             log.error("hleKernelLoadModule - Error while loading module " + name + ": " + e.getMessage());
-            cpu.gpr[2] = -1;
+            return -1;
         }
-    }
+
+        return result;
+	}
 
     protected int getSelfModuleId() {
         return Modules.ThreadManForUserModule.getCurrentThread().moduleid;
     }
 
     @HLEFunction(nid = 0xB7F46618, version = 150, checkInsideInterrupt = true)
-    public void sceKernelLoadModuleByID(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int uid = cpu.gpr[4];
-        int option_addr = cpu.gpr[5];
+    public int sceKernelLoadModuleByID(int uid, @CanBeNull TPointer optionAddr) {
         String name = Modules.IoFileMgrForUserModule.getFileFilename(uid);
 
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelLoadModuleByID(uid=0x" + Integer.toHexString(uid) + "('" + name + "')" + ",option=0x" + Integer.toHexString(option_addr) + ")");
+            log.debug(String.format("sceKernelLoadModuleByID uid=0x%X('%s'), optionAddr=%s", uid, name, optionAddr));
         }
 
-        
         SceKernelLMOption lmOption = null;
-        if (option_addr != 0) {
+        if (optionAddr.isNotNull()) {
             lmOption = new SceKernelLMOption();
-            lmOption.read(mem, option_addr);
-            log.info("sceKernelLoadModule: partition=" + lmOption.mpidText + ", position=" + lmOption.position);
+            lmOption.read(Memory.getInstance(), optionAddr.getAddress());
+            if (log.isInfoEnabled()) {
+            	log.info(String.format("sceKernelLoadModule: partition=%d, position=%d", lmOption.mpidText, lmOption.position));
+            }
         }
 
-        hleKernelLoadModule(processor, name, 0, uid, true);
+        return hleKernelLoadModule(name, 0, uid, true);
     }
 
     @HLEFunction(nid = 0x977DE386, version = 150, checkInsideInterrupt = true)
-    public void sceKernelLoadModule(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int path_addr = cpu.gpr[4];
-        int flags = cpu.gpr[5];
-        int option_addr = cpu.gpr[6];
-        String name = Utilities.readStringZ(path_addr);
-
+    public int sceKernelLoadModule(PspString path, int flags, @CanBeNull TPointer optionAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelLoadModule(path='" + name + "',flags=0x" + Integer.toHexString(flags) + ",option=0x" + Integer.toHexString(option_addr) + ")");
+            log.debug(String.format("sceKernelLoadModule path=%s, flags=0x%X, optionAddr=%s", path, flags, optionAddr));
         }
 
-        
         SceKernelLMOption lmOption = null;
-        if (option_addr != 0) {
+        if (optionAddr.isNotNull()) {
             lmOption = new SceKernelLMOption();
-            lmOption.read(mem, option_addr);
-            log.info("sceKernelLoadModule: partition=" + lmOption.mpidText + ", position=" + lmOption.position);
+            lmOption.read(optionAddr);
+            if (log.isInfoEnabled()) {
+            	log.info(String.format("sceKernelLoadModule: partition=%d, position=%d", lmOption.mpidText, lmOption.position));
+            }
         }
 
-        hleKernelLoadModule(processor, name, flags, 0, false);
+        return hleKernelLoadModule(path.getString(), flags, 0, false);
     }
 
     @HLEFunction(nid = 0x710F61B5, version = 150, checkInsideInterrupt = true)
-    public void sceKernelLoadModuleMs(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceKernelLoadModuleMs() {
+        log.warn("Unimplemented sceKernelLoadModuleMs");
 
-        log.warn("Unimplemented NID function sceKernelLoadModuleMs [0x710F61B5]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0xF9275D98, version = 150, checkInsideInterrupt = true)
-    public void sceKernelLoadModuleBufferUsbWlan(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceKernelLoadModuleBufferUsbWlan() {
+        log.warn("Unimplemented sceKernelLoadModuleBufferUsbWlan");
 
-        log.warn("Unimplemented NID function sceKernelLoadModuleBufferUsbWlan [0xF9275D98]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0x50F0C1EC, version = 150, checkInsideInterrupt = true)
-    public void sceKernelStartModule(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int uid = cpu.gpr[4];
-        int argsize = cpu.gpr[5];
-        int argp_addr = cpu.gpr[6];
-        int status_addr = cpu.gpr[7]; // TODO
-        int option_addr = cpu.gpr[8];
-
+    public int sceKernelStartModule(int uid, int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelStartModule(uid=0x" + Integer.toHexString(uid) + ", argsize=" + argsize + ", argp=0x" + Integer.toHexString(argp_addr) + ", status=0x" + Integer.toHexString(status_addr) + ", option=0x" + Integer.toHexString(option_addr) + ")");
+            log.debug(String.format("sceKernelStartModule uid=0x%X, argSize=%d, argp=%s, statusAddr=%s, optionAddr=%s", uid, argSize, argp, statusAddr, optionAddr));
         }
 
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
         SceKernelSMOption smOption = null;
-        if (option_addr != 0) {
+        if (optionAddr.isNotNull()) {
             smOption = new SceKernelSMOption();
-            smOption.read(mem, option_addr);
+            smOption.read(optionAddr);
         }
 
         if (sceModule == null) {
-            log.warn("sceKernelStartModule - unknown module UID 0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_KERNEL_UNKNOWN_MODULE;
-        } else if (sceModule.isFlashModule) {
+            log.warn(String.format("sceKernelStartModule - unknown module UID 0x%X", uid));
+            return ERROR_KERNEL_UNKNOWN_MODULE;
+        }
+
+        statusAddr.setValue(0);
+
+        if (sceModule.isFlashModule) {
             // Trying to start a module loaded from flash0:
             // Do nothing...
             if (HLEModuleManager.getInstance().hasFlash0Module(sceModule.modname)) {
-                log.info("IGNORING:sceKernelStartModule HLE module '" + sceModule.modname + "'");
+                log.info(String.format("IGNORING:sceKernelStartModule HLE module '%s'", sceModule.modname));
             } else {
-                log.warn("IGNORING:sceKernelStartModule flash module '" + sceModule.modname + "'");
+                log.warn(String.format("IGNORING:sceKernelStartModule flash module '%s'", sceModule.modname));
             }
             sceModule.start();
-            cpu.gpr[2] = sceModule.modid; // return the module id
-        } else if (HLEModuleManager.getInstance().hasFlash0Module(sceModule.modname)) {
-            log.info("sceKernelStartModule - loading missing HLE module '" + sceModule.modname + "' (was loaded as ELF)");
+            return sceModule.modid; // return the module id
+        }
+        if (HLEModuleManager.getInstance().hasFlash0Module(sceModule.modname)) {
+        	if (log.isInfoEnabled()) {
+        		log.info(String.format("sceKernelStartModule - loading missing HLE module '%s' (was loaded as ELF)", sceModule.modname));
+        	}
             HLEModuleManager.getInstance().LoadFlash0Module(sceModule.modname);
             sceModule.start();
-            cpu.gpr[2] = sceModule.modid; // return the module id
-        } else {
-            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-            int attribute = sceModule.attribute;
-            int entryAddr = sceModule.entry_addr;
-            if (entryAddr == -1) {
-                log.info("sceKernelStartModule - module has no entry point, trying to use module_start_func");
-                entryAddr = sceModule.module_start_func;
-                attribute = sceModule.module_start_thread_attr;
-            }
-
-            if (Memory.isAddressGood(entryAddr)) {
-                if (Memory.isAddressGood(status_addr)) {
-                    mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
-                }
-
-                int priority = 0x20;
-                if (smOption != null && smOption.priority > 0) {
-                    priority = smOption.priority;
-                } else if (sceModule.module_start_thread_priority > 0) {
-                    priority = sceModule.module_start_thread_priority;
-                }
-
-                int stackSize = 0x40000;
-                if (smOption != null && smOption.stackSize > 0) {
-                    stackSize = smOption.stackSize;
-                } else if (sceModule.module_start_thread_stacksize > 0) {
-                    stackSize = sceModule.module_start_thread_stacksize;
-                }
-
-                if (smOption != null) {
-                    attribute = smOption.attribute;
-                }
-
-                SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStart", entryAddr, priority, stackSize, attribute, 0);
-                // override inherited module id with the new module we are starting
-                thread.moduleid = sceModule.modid;
-                cpu.gpr[2] = sceModule.modid; // return the module id
-                sceModule.start();
-                threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
-            } else if (entryAddr == 0) {
-                Modules.log.info("sceKernelStartModule - no entry address");
-                sceModule.start();
-                cpu.gpr[2] = sceModule.modid; // return the module id
-            } else {
-                Modules.log.warn("sceKernelStartModule - invalid entry address 0x" + Integer.toHexString(entryAddr));
-                cpu.gpr[2] = -1;
-            }
+            return sceModule.modid; // return the module id
         }
+
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        int attribute = sceModule.attribute;
+        int entryAddr = sceModule.entry_addr;
+        if (entryAddr == -1) {
+            log.info("sceKernelStartModule - module has no entry point, trying to use module_start_func");
+            entryAddr = sceModule.module_start_func;
+            attribute = sceModule.module_start_thread_attr;
+        }
+
+        if (Memory.isAddressGood(entryAddr)) {
+            int priority = 0x20;
+            if (smOption != null && smOption.priority > 0) {
+                priority = smOption.priority;
+            } else if (sceModule.module_start_thread_priority > 0) {
+                priority = sceModule.module_start_thread_priority;
+            }
+
+            int stackSize = 0x40000;
+            if (smOption != null && smOption.stackSize > 0) {
+                stackSize = smOption.stackSize;
+            } else if (sceModule.module_start_thread_stacksize > 0) {
+                stackSize = sceModule.module_start_thread_stacksize;
+            }
+
+            if (smOption != null) {
+                attribute = smOption.attribute;
+            }
+
+            SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStart", entryAddr, priority, stackSize, attribute, 0);
+            // override inherited module id with the new module we are starting
+            thread.moduleid = sceModule.modid;
+            // Store the thread exit status into statusAddr when the thread terminates
+            thread.exitStatusAddr = statusAddr;
+            sceModule.start();
+            threadMan.hleKernelStartThread(thread, argSize, argp.getAddress(), sceModule.gp_value);
+        } else if (entryAddr == 0) {
+            Modules.log.info("sceKernelStartModule - no entry address");
+            sceModule.start();
+        } else {
+            log.warn(String.format("sceKernelStartModule - invalid entry address 0x%08X", entryAddr));
+            return -1;
+        }
+
+        return sceModule.modid;
     }
 
     @HLEFunction(nid = 0xD1FF982A, version = 150, checkInsideInterrupt = true)
-    public void sceKernelStopModule(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int uid = cpu.gpr[4];
-        int argsize = cpu.gpr[5];
-        int argp_addr = cpu.gpr[6];
-        int status_addr = cpu.gpr[7]; // TODO
-        int option_addr = cpu.gpr[8];
-
-        log.info("sceKernelStopModule(uid=0x" + Integer.toHexString(uid) + ", argsize=" + argsize + ", argp=0x" + Integer.toHexString(argp_addr) + ", status=0x" + Integer.toHexString(status_addr) + ", option=0x" + Integer.toHexString(option_addr) + ")");
+    public int sceKernelStopModule(int uid, int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
+    	if (log.isInfoEnabled()) {
+            log.info(String.format("sceKernelStopModule uid=0x%X, argSize=%d, argp=%s, statusAddr=%s, optionAddr=%s", uid, argSize, argp, statusAddr, optionAddr));
+    	}
 
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
         SceKernelSMOption smOption = null;
-        if (option_addr != 0) {
+        if (optionAddr.isNotNull()) {
             smOption = new SceKernelSMOption();
-            smOption.read(mem, option_addr);
+            smOption.read(optionAddr);
         }
 
         if (sceModule == null) {
             log.warn("sceKernelStopModule - unknown module UID 0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_KERNEL_UNKNOWN_MODULE;
-        } else if (sceModule.isFlashModule) {
+            return ERROR_KERNEL_UNKNOWN_MODULE;
+        }
+
+        statusAddr.setValue(0);
+
+        if (sceModule.isFlashModule) {
             // Trying to stop a module loaded from flash0:
             // Shouldn't get here...
             if (HLEModuleManager.getInstance().hasFlash0Module(sceModule.modname)) {
@@ -508,271 +483,237 @@ public class ModuleMgrForUser extends HLEModule {
                 log.warn("IGNORING:sceKernelStopModule flash module '" + sceModule.modname + "'");
             }
             sceModule.stop();
-            cpu.gpr[2] = 0; // Fake success.
-        } else {
-            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-            if (Memory.isAddressGood(sceModule.module_stop_func)) {
-                if (Memory.isAddressGood(status_addr)) {
-                    mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
-                }
-
-                int priority = 0x20;
-                if (smOption != null && smOption.priority > 0) {
-                    priority = smOption.priority;
-                } else if (sceModule.module_stop_thread_priority > 0) {
-                    priority = sceModule.module_stop_thread_priority;
-                }
-
-                int stackSize = 0x40000;
-                if (smOption != null && smOption.stackSize > 0) {
-                    stackSize = smOption.stackSize;
-                } else if (sceModule.module_stop_thread_stacksize > 0) {
-                    stackSize = sceModule.module_stop_thread_stacksize;
-                }
-
-                int attribute = sceModule.module_stop_thread_attr;
-                if (smOption != null) {
-                    attribute = smOption.attribute;
-                }
-
-                SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStop",
-                        sceModule.module_stop_func, priority,
-                        stackSize, attribute, 0);
-                thread.moduleid = sceModule.modid;
-                cpu.gpr[2] = 0;
-                sceModule.stop();
-                threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
-            } else if (sceModule.module_stop_func == 0) {
-                log.info("sceKernelStopModule - module has no stop function");
-                sceModule.stop();
-                cpu.gpr[2] = sceModule.modid;
-            } else if (sceModule.isModuleStopped()) {
-                log.warn("sceKernelStopModule - module already stopped");
-                cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_MODULE_ALREADY_STOPPED;
-            } else {
-                log.warn(String.format("sceKernelStopModule - invalid stop function 0x%08X", sceModule.module_stop_func));
-                cpu.gpr[2] = -1;
-            }
+            return 0; // Fake success.
         }
+
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        if (Memory.isAddressGood(sceModule.module_stop_func)) {
+            int priority = 0x20;
+            if (smOption != null && smOption.priority > 0) {
+                priority = smOption.priority;
+            } else if (sceModule.module_stop_thread_priority > 0) {
+                priority = sceModule.module_stop_thread_priority;
+            }
+
+            int stackSize = 0x40000;
+            if (smOption != null && smOption.stackSize > 0) {
+                stackSize = smOption.stackSize;
+            } else if (sceModule.module_stop_thread_stacksize > 0) {
+                stackSize = sceModule.module_stop_thread_stacksize;
+            }
+
+            int attribute = sceModule.module_stop_thread_attr;
+            if (smOption != null) {
+                attribute = smOption.attribute;
+            }
+
+            SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStop",
+                    sceModule.module_stop_func, priority,
+                    stackSize, attribute, 0);
+            thread.moduleid = sceModule.modid;
+            // Store the thread exit status into statusAddr when the thread terminates
+            thread.exitStatusAddr = statusAddr;
+            sceModule.stop();
+            threadMan.hleKernelStartThread(thread, argSize, argp.getAddress(), sceModule.gp_value);
+        } else if (sceModule.module_stop_func == 0) {
+            log.info("sceKernelStopModule - module has no stop function");
+            sceModule.stop();
+        } else if (sceModule.isModuleStopped()) {
+            log.warn("sceKernelStopModule - module already stopped");
+            return SceKernelErrors.ERROR_KERNEL_MODULE_ALREADY_STOPPED;
+        } else {
+            log.warn(String.format("sceKernelStopModule - invalid stop function 0x%08X", sceModule.module_stop_func));
+            return -1;
+        }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x2E0911AA, version = 150, checkInsideInterrupt = true)
-    public void sceKernelUnloadModule(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceKernelUnloadModule(int uid) {
+    	if (log.isInfoEnabled()) {
+    		log.info(String.format("sceKernelUnloadModule uid=0x%X", uid));
+    	}
 
-        int uid = cpu.gpr[4];
-
-        log.info("sceKernelUnloadModule(uid=" + Integer.toHexString(uid) + ")");
-
-        
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
         if (sceModule == null) {
-            log.warn("sceKernelUnloadModule unknown module UID 0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = -1;
-        } else if (sceModule.isModuleStarted() && !sceModule.isModuleStopped()) {
-            log.warn("sceKernelUnloadModule module 0x" + Integer.toHexString(uid) + " is still running!");
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_MODULE_CANNOT_REMOVE;
-        } else {
-            HLEModuleManager.getInstance().UnloadFlash0Module(sceModule);
-            cpu.gpr[2] = sceModule.modid; // Returns the module ID.
+            log.warn(String.format("sceKernelUnloadModule unknown module UID 0x%X", uid));
+            return -1;
         }
+        if (sceModule.isModuleStarted() && !sceModule.isModuleStopped()) {
+            log.warn(String.format("sceKernelUnloadModule module 0x%X is still running!", uid));
+            return SceKernelErrors.ERROR_KERNEL_MODULE_CANNOT_REMOVE;
+        }
+
+        HLEModuleManager.getInstance().UnloadFlash0Module(sceModule);
+
+        return sceModule.modid;
     }
 
     @HLEFunction(nid = 0xD675EBB8, version = 150, checkInsideInterrupt = true)
-    public void sceKernelSelfStopUnloadModule(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int argsize = cpu.gpr[4];
-        int argp_addr = cpu.gpr[5];
-        int status_addr = cpu.gpr[6];
-        int options_addr = cpu.gpr[7];
-
+    public int sceKernelSelfStopUnloadModule(int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelSelfStopUnloadModule(argsize=" + argsize
-                    + ",argp_addr=0x" + Integer.toHexString(argp_addr)
-                    + ",status_addr=0x" + Integer.toHexString(status_addr)
-                    + ",options_addr=0x" + Integer.toHexString(options_addr) + ")");
+            log.debug(String.format("sceKernelSelfStopUnloadModule argSize=%d, argp=%s, statusAddr=%s, optionAddr=%s", argSize, argp, statusAddr, optionAddr));
         }
 
-        
         SceModule sceModule = Managers.modules.getModuleByUID(getSelfModuleId());
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelThreadInfo thread = null;
+        statusAddr.setValue(0);
         if (Memory.isAddressGood(sceModule.module_stop_func)) {
             // Start the module stop thread function.
-            if (Memory.isAddressGood(status_addr)) {
-                mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
-            }
             thread = threadMan.hleKernelCreateThread("SceModmgrStop",
                     sceModule.module_stop_func, sceModule.module_stop_thread_priority,
-                    sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, options_addr);
+                    sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, optionAddr.getAddress());
             thread.moduleid = sceModule.modid;
+            // Store the thread exit status into statusAddr when the thread terminates
+            thread.exitStatusAddr = statusAddr;
         }
-        cpu.gpr[2] = 0;
         sceModule.stop();
         sceModule.unload();
 
         threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
         if (thread != null) {
-        	threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
+        	threadMan.hleKernelStartThread(thread, argSize, argp.getAddress(), sceModule.gp_value);
         }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x8f2df740, version = 150, checkInsideInterrupt = true)
-    public void sceKernelStopUnloadSelfModuleWithStatus(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int exitcode = cpu.gpr[4];
-        int argsize = cpu.gpr[5];
-        int argp_addr = cpu.gpr[6];
-        int status_addr = cpu.gpr[7];
-        int options_addr = cpu.gpr[8];
-
+    public int sceKernelStopUnloadSelfModuleWithStatus(int exitCode, int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelSelfStopUnloadModule(exitcode=" + exitcode
-                    + ",argsize=" + argsize
-                    + ",argp_addr=0x" + Integer.toHexString(argp_addr)
-                    + ",status_addr=0x" + Integer.toHexString(status_addr)
-                    + ",options_addr=0x" + Integer.toHexString(options_addr) + ")");
+            log.debug(String.format("sceKernelStopUnloadSelfModuleWithStatus exitCode=0x%X, argSize=%d, argp=%s, statusAddr=%s, optionAddr=%s", exitCode, argSize, argp, statusAddr, optionAddr));
         }
 
-        
         SceModule sceModule = Managers.modules.getModuleByUID(getSelfModuleId());
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelThreadInfo thread = null;
+        statusAddr.setValue(0);
         if (Memory.isAddressGood(sceModule.module_stop_func)) {
             // Start the module stop thread function.
-            if (Memory.isAddressGood(status_addr)) {
-                mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
-            }
+            statusAddr.setValue(0); // TODO set to return value of the thread (when it exits, of course)
+
             thread = threadMan.hleKernelCreateThread("SceModmgrStop",
                     sceModule.module_stop_func, sceModule.module_stop_thread_priority,
-                    sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, options_addr);
+                    sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, optionAddr.getAddress());
             thread.moduleid = sceModule.modid;
-            threadMan.getCurrentThread().exitStatus = exitcode; // Set the current thread's exit status.
+            // Store the thread exit status into statusAddr when the thread terminates
+            thread.exitStatusAddr = statusAddr;
+            threadMan.getCurrentThread().exitStatus = exitCode; // Set the current thread's exit status.
         }
-        cpu.gpr[2] = 0;
         sceModule.stop();
         sceModule.unload();
 
         threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
         if (thread != null) {
-        	threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
+        	threadMan.hleKernelStartThread(thread, argSize, argp.getAddress(), sceModule.gp_value);
         }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xCC1D3699, version = 150, checkInsideInterrupt = true)
-    public void sceKernelStopUnloadSelfModule(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int argsize = cpu.gpr[4];
-        int argp_addr = cpu.gpr[5];
-        int status_addr = cpu.gpr[6];
-        int options_addr = cpu.gpr[7];
-
+    public int sceKernelStopUnloadSelfModule(int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelStopUnloadSelfModule(argsize=" + argsize
-                    + ",argp_addr=0x" + Integer.toHexString(argp_addr)
-                    + ",status_addr=0x" + Integer.toHexString(status_addr)
-                    + ",option_addr=0x" + Integer.toHexString(options_addr) + ")");
+            log.debug(String.format("sceKernelStopUnloadSelfModule argSize=%d, argp=%s, statusAddr=%s, optionAddr=%s", argSize, argp, statusAddr, optionAddr));
         }
 
-        
         SceModule sceModule = Managers.modules.getModuleByUID(getSelfModuleId());
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelThreadInfo thread = null;
+        statusAddr.setValue(0);
         if (Memory.isAddressGood(sceModule.module_stop_func)) {
             // Start the module stop thread function.
-            if (Memory.isAddressGood(status_addr)) {
-                mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
-            }
             thread = threadMan.hleKernelCreateThread("SceModmgrStop",
                     sceModule.module_stop_func, sceModule.module_stop_thread_priority,
-                    sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, options_addr);
+                    sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, optionAddr.getAddress());
             thread.moduleid = sceModule.modid;
+            // Store the thread exit status into statusAddr when the thread terminates
+            thread.exitStatusAddr = statusAddr;
         }
-        cpu.gpr[2] = 0;
         sceModule.stop();
         sceModule.unload();
 
         threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
         if (thread != null) {
-        	threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
+        	threadMan.hleKernelStartThread(thread, argSize, argp.getAddress(), sceModule.gp_value);
         }
+
+        return 0;
     }
 
+    /**
+     * Get a list of module IDs.
+     * @param resultBuffer      Buffer to store the module list
+     * @param resultBufferSize  Number of bytes in the resultBuffer
+     * @param idCountAddr       Returns the number of module ids
+     * @return >= 0 on success 
+     */
     @HLEFunction(nid = 0x644395E2, version = 150, checkInsideInterrupt = true)
-    public void sceKernelGetModuleIdList(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceKernelGetModuleIdList(TPointer32 resultBuffer, int resultBufferSize, TPointer32 idCountAddr) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceKernelGetModuleIdList readBuf=%s, readBufSize=%d, idCountAddr=%s", resultBuffer,resultBufferSize, idCountAddr));
+		}
 
-        log.warn("Unimplemented NID function sceKernelGetModuleIdList [0x644395E2]");
+    	int idCount = 0;
+    	int resultBufferOffset = 0;
+    	for (SceModule module : Managers.modules.values()) {
+    		if (!module.isFlashModule && module.isLoaded) {
+    			if (resultBufferOffset < resultBufferSize) {
+    				resultBuffer.setValue(resultBufferOffset, module.modid);
+    				resultBufferOffset += 4;
+    			}
+    			idCount++;
+    		}
+    	}
+    	idCountAddr.setValue(idCount);
 
-        cpu.gpr[2] = 0xDEADC0DE;
+    	return 0;
     }
 
     @HLEFunction(nid = 0x748CBED9, version = 150, checkInsideInterrupt = true)
-    public void sceKernelQueryModuleInfo(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int uid = cpu.gpr[4];
-        int info_addr = cpu.gpr[5];
-
+    public int sceKernelQueryModuleInfo(int uid, TPointer infoAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelQueryModuleInfo UID 0x" + Integer.toHexString(uid) + " info " + String.format("0x%08X", info_addr));
+            log.debug(String.format("sceKernelQueryModuleInfo uid=0x%X, infoAddr=%s", uid, infoAddr));
         }
 
-        
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
         if (sceModule == null) {
             log.warn("sceKernelQueryModuleInfo unknown module UID 0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = -1;
-        } else if (!Memory.isAddressGood(info_addr)) {
-            log.warn("sceKernelQueryModuleInfo bad info pointer " + String.format("0x%08X", info_addr));
-            cpu.gpr[2] = -1;
-        } else {
-            SceKernelModuleInfo moduleInfo = new SceKernelModuleInfo();
-            moduleInfo.copy(sceModule);
-            moduleInfo.write(mem, info_addr);
-            cpu.gpr[2] = 0;
+            return -1;
         }
+
+        SceKernelModuleInfo moduleInfo = new SceKernelModuleInfo();
+        moduleInfo.copy(sceModule);
+        moduleInfo.write(infoAddr);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xF0A26395, version = 150, checkInsideInterrupt = true)
-    public void sceKernelGetModuleId(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int moduleid = getSelfModuleId();
+    public int sceKernelGetModuleId() {
+        int moduleId = getSelfModuleId();
 
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelGetModuleId returning 0x" + Integer.toHexString(moduleid));
+            log.debug(String.format("sceKernelGetModuleId returning 0x%X", moduleId));
         }
 
-        
-        cpu.gpr[2] = moduleid;
+        return moduleId;
     }
 
     @HLEFunction(nid = 0xD8B73127, version = 150, checkInsideInterrupt = true)
-    public void sceKernelGetModuleIdByAddress(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int addr = cpu.gpr[4];
-
+    public int sceKernelGetModuleIdByAddress(TPointer addr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelGetModuleIdByAddress(addr=0x" + Integer.toHexString(addr) + ")");
+            log.debug(String.format("sceKernelGetModuleIdByAddress addr=%s", addr));
         }
 
-        
-        SceModule module = Managers.modules.getModuleByAddress(addr);
-        if (module != null) {
-            cpu.gpr[2] = module.modid;
-        } else {
-            log.warn("sceKernelGetModuleIdByAddress(addr=0x" + Integer.toHexString(addr) + ") module not found");
-            cpu.gpr[2] = -1;
+        SceModule module = Managers.modules.getModuleByAddress(addr.getAddress());
+        if (module == null) {
+            log.warn(String.format("sceKernelGetModuleIdByAddress addr=%s module not found", addr));
+            return -1;
         }
+
+        return module.modid;
     }
-    
 }

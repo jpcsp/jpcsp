@@ -123,6 +123,13 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
 		installState = new InstallUtilityDialogState("sceUtilityInstall");
 	}
 
+	@Override
+	public void stop() {
+		loadedNetModules.clear();
+		waitingNetModules.clear();
+		super.stop();
+	}
+
 	private String getNetModuleName(int module) {
     	if (module < 0 || module >= utilityNetModuleNames.length) {
     		return "PSP_NET_MODULE_UNKNOWN_" + module;

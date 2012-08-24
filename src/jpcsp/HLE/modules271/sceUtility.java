@@ -69,7 +69,16 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
     protected HashMap<Integer, SceModule> loadedUsbModules = new HashMap<Integer, SceModule>();
     protected HashMap<Integer, String> waitingUsbModules = new HashMap<Integer, String>();
 
-    private String getAvModuleName(int module) {
+	@Override
+	public void stop() {
+		loadedAvModules.clear();
+		waitingAvModules.clear();
+		loadedUsbModules.clear();
+		waitingUsbModules.clear();
+		super.stop();
+	}
+
+	private String getAvModuleName(int module) {
     	if (module < 0 || module >= utilityAvModuleNames.length) {
     		return "PSP_AV_MODULE_UNKNOWN_" + module;
     	}

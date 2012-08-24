@@ -71,6 +71,13 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
     protected HashMap<Integer, SceModule> loadedModules = new HashMap<Integer, SceModule>();
     protected HashMap<Integer, String> waitingModules = new HashMap<Integer, String>();
 
+	@Override
+	public void stop() {
+		loadedModules.clear();
+		waitingModules.clear();
+		super.stop();
+	}
+
     protected String getModuleName(int module) {
         for (UtilityModule m : UtilityModule.values()) {
             if (m.getID() == module) {
@@ -145,5 +152,4 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
 
         cpu.gpr[2] = hleUtilityUnloadModule(module);
     }
-
 }

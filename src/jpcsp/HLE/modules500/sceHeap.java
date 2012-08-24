@@ -16,25 +16,25 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules500;
 
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.PspString;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+
 import java.util.HashMap;
 
 import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_Low;
 import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High;
-import jpcsp.Memory;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
-import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
 public class sceHeap extends HLEModule {
-
     protected static Logger log = Modules.getLogger("sceHeap");
 
     @Override
@@ -48,237 +48,159 @@ public class sceHeap extends HLEModule {
     private HashMap<Integer, SysMemInfo> heapMemMap = new HashMap<Integer, SysMemInfo>();
 
     @HLEFunction(nid = 0x0E875980, version = 500, checkInsideInterrupt = true)
-    public void sceHeapReallocHeapMemory(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceHeapReallocHeapMemory(TPointer heapAddr, TPointer memAddr, int memSize) {
+        log.warn(String.format("Unimplemented sceHeapReallocHeapMemory heapAddr=%s, memAddr=%s, memSize=0x%X", heapAddr, memAddr, memSize));
 
-        int heap_addr = cpu.gpr[4];
-        int mem_addr = cpu.gpr[5];
-        int memSize = cpu.gpr[6];
-
-        log.warn("UNIMPLEMENTED: sceHeapReallocHeapMemory heap_addr=0x" + Integer.toHexString(heap_addr)
-                + ", mem_addr=0x" + Integer.toHexString(mem_addr)
-                + ", memSize=0x" + Integer.toHexString(memSize));
-
-        
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0x1C84B58D, version = 500, checkInsideInterrupt = true)
-    public void sceHeapReallocHeapMemoryWithOption(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceHeapReallocHeapMemoryWithOption(TPointer heapAddr, TPointer memAddr, int memSize, TPointer paramAddr) {
+        log.warn(String.format("Unimplemented sceHeapReallocHeapMemoryWithOption heapAddr=%s, memAddr=%s, memSize=0x%X, paramAddr=%s", heapAddr, memAddr, memSize, paramAddr));
 
-        int heap_addr = cpu.gpr[4];
-        int mem_addr = cpu.gpr[5];
-        int memSize = cpu.gpr[6];
-        int param_addr = cpu.gpr[7];
-
-        log.warn("UNIMPLEMENTED: sceHeapReallocHeapMemory heap_addr=0x" + Integer.toHexString(heap_addr)
-                + ", mem_addr=0x" + Integer.toHexString(mem_addr)
-                + ", memSize=0x" + Integer.toHexString(memSize)
-                + ", param_addr=0x" + Integer.toHexString(param_addr));
-
-        
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0x2ABADC63, version = 500, checkInsideInterrupt = true)
-    public void sceHeapFreeHeapMemory(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int heap_addr = cpu.gpr[4];
-        int mem_addr = cpu.gpr[5];
-
+    public int sceHeapFreeHeapMemory(TPointer heapAddr, TPointer memAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceHeapFreeHeapMemory heap_addr=0x" + Integer.toHexString(heap_addr)
-                    + ", mem_addr=0x" + Integer.toHexString(mem_addr));
+            log.debug(String.format("sceHeapFreeHeapMemory heapAddr=%s, memAddr=%s", heapAddr, memAddr));
         }
 
-        
         // Try to free memory back to the heap.
-        if (heapMemMap.containsKey(mem_addr)) {
-            Modules.SysMemUserForUserModule.free(heapMemMap.get(mem_addr));
-            cpu.gpr[2] = 0;
-        } else if (heapMap.containsKey(heap_addr)){
-            cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_ID;
+        if (heapMemMap.containsKey(memAddr.getAddress())) {
+            Modules.SysMemUserForUserModule.free(heapMemMap.get(memAddr.getAddress()));
+            return 0;
+        } else if (heapMap.containsKey(heapAddr.getAddress())) {
+            return SceKernelErrors.ERROR_INVALID_ID;
         } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_POINTER;
+            return SceKernelErrors.ERROR_INVALID_POINTER;
         }
     }
 
     @HLEFunction(nid = 0x2A0C2009, version = 500, checkInsideInterrupt = true)
-    public void sceHeapGetMallinfo(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceHeapGetMallinfo(TPointer heapAddr, TPointer infoAddr) {
+        log.warn(String.format("Unimplemented sceHeapGetMallinfo heapAddr=%s, infoAddr=%s", heapAddr, infoAddr));
 
-        int heap_addr = cpu.gpr[4];
-        int info_addr = cpu.gpr[5];
-
-        log.warn("UNIMPLEMENTED: sceHeapGetMallinfo heap_addr=0x" + Integer.toHexString(heap_addr)
-                + ", info_addr=0x" + Integer.toHexString(info_addr));
-
-        
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0x2B7299D8, version = 500, checkInsideInterrupt = true)
-    public void sceHeapAllocHeapMemoryWithOption(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int heap_addr = cpu.gpr[4];
-        int memSize = cpu.gpr[5];
-        int param_addr = cpu.gpr[6];
-
+    public int sceHeapAllocHeapMemoryWithOption(TPointer heapAddr, int memSize, @CanBeNull TPointer32 paramAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceHeapAllocHeapMemoryWithOption heap_addr=0x" + Integer.toHexString(heap_addr)
-                    + ", memSize=0x" + Integer.toHexString(memSize)
-                    + ", param_addr=0x" + Integer.toHexString(param_addr));
+            log.debug(String.format("sceHeapAllocHeapMemoryWithOption heapAddr=%s, memSize=0x%X, paramAddr=%s", heapAddr, memSize, paramAddr));
         }
 
-        
-        if (Memory.isAddressGood(param_addr)) {
-            int paramSize = mem.read32(param_addr);
-            if ((paramSize >= 4) && (paramSize <= 8)) {
-                int memAlign = mem.read32(param_addr + 4);
+        if (paramAddr.isNotNull()) {
+            int paramSize = paramAddr.getValue(0);
+            if (paramSize == 8) {
+                int memAlign = paramAddr.getValue(4);
                 if (log.isDebugEnabled()) {
-                	log.debug("sceHeapAllocHeapMemoryWithOption options: struct size=" + paramSize + ", alignment=0x" + Integer.toHexString(memAlign));
+                	log.debug(String.format("sceHeapAllocHeapMemoryWithOption options: struct size=%d, alignment=0x%X", paramSize, memAlign));
                 }
             } else {
-                log.warn("sceHeapAllocHeapMemoryWithOption option at 0x" + Integer.toHexString(param_addr) + " (size=" + paramSize + ")");
+                log.warn(String.format("sceHeapAllocHeapMemoryWithOption option at %s(size=%d)", paramAddr, paramSize));
             }
         }
+
         // Try to allocate memory from the heap and return it's address.
         SysMemInfo heapInfo = null;
         SysMemInfo heapMemInfo = null;
-        if (heapMap.containsKey(heap_addr)) {
-            heapInfo = heapMap.get(heap_addr);
+        if (heapMap.containsKey(heapAddr.getAddress())) {
+            heapInfo = heapMap.get(heapAddr.getAddress());
             heapMemInfo = Modules.SysMemUserForUserModule.malloc(heapInfo.partitionid, "ThreadMan-HeapMem", heapInfo.type, memSize, 0);
         }
-        if (heapMemInfo != null) {
-            heapMemMap.put(heapMemInfo.addr, heapMemInfo);
-            cpu.gpr[2] = heapMemInfo.addr;
-        } else {
-            cpu.gpr[2] = 0;
+        if (heapMemInfo == null) {
+        	return 0;
         }
+
+        heapMemMap.put(heapMemInfo.addr, heapMemInfo);
+
+        return heapMemInfo.addr;
     }
 
     @HLEFunction(nid = 0x4929B40D, version = 500, checkInsideInterrupt = true)
-    public void sceHeapGetTotalFreeSize(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceHeapGetTotalFreeSize(TPointer heapAddr) {
+        log.warn(String.format("Unimplemented sceHeapGetTotalFreeSize heapAddr=%s", heapAddr));
 
-        int heap_addr = cpu.gpr[4];
-
-        log.warn("UNIMPLEMENTED: sceHeapGetTotalFreeSize heap_addr=0x" + Integer.toHexString(heap_addr));
-
-        
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0x7012BBDD, version = 500, checkInsideInterrupt = true)
-    public void sceHeapIsAllocatedHeapMemory(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceHeapIsAllocatedHeapMemory(TPointer heapAddr, TPointer memAddr) {
+        log.warn(String.format("Unimplemented sceHeapIsAllocatedHeapMemory heapAddr=%s, memAddr=%s", heapAddr, memAddr));
 
-        int heap_addr = cpu.gpr[4];
-        int mem_addr = cpu.gpr[5];
-
-        log.warn("UNIMPLEMENTED: sceHeapIsAllocatedHeapMemory heap_addr=0x" + Integer.toHexString(heap_addr)
-                + ", mem_addr=0x" + Integer.toHexString(mem_addr));
-
-        
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0x70210B73, version = 500, checkInsideInterrupt = true)
-    public void sceHeapDeleteHeap(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int heap_addr = cpu.gpr[4];
-
+    public int sceHeapDeleteHeap(TPointer heapAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceHeapDeleteHeap heap_addr=0x" + Integer.toHexString(heap_addr));
+            log.debug(String.format("sceHeapDeleteHeap heapAddr=%s", heapAddr));
         }
 
-        
-        if (heapMap.containsKey(heap_addr)) {
-            Modules.SysMemUserForUserModule.free(heapMap.get(heap_addr));
-            cpu.gpr[2] = 0;
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_ID;
+        if (!heapMap.containsKey(heapAddr.getAddress())) {
+        	return SceKernelErrors.ERROR_INVALID_ID;
         }
+
+        Modules.SysMemUserForUserModule.free(heapMap.get(heapAddr.getAddress()));
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x7DE281C2, version = 500, checkInsideInterrupt = true)
-    public void sceHeapCreateHeap(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int name_addr = cpu.gpr[4];
-        int heapSize = cpu.gpr[5];
-        int attr = cpu.gpr[6];
-        int param_addr = cpu.gpr[7];
-
-        String name = Utilities.readStringZ(name_addr);
+    public int sceHeapCreateHeap(PspString name, int heapSize, int attr, @CanBeNull TPointer paramAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceHeapCreateHeap name='" + name
-                    + "', heapSize=0x" + Integer.toHexString(heapSize)
-                    + ", attr=0x" + Integer.toHexString(attr)
-                    + ", param_addr=0x" + Integer.toHexString(param_addr));
+            log.debug(String.format("sceHeapCreateHeap name=%s, heapSize=0x%X, attr=0x%X, paramAddr=%s", name, heapSize, attr, paramAddr));
         }
 
-        
+        if (paramAddr .isNotNull()) {
+            log.warn(String.format("sceHeapCreateHeap unknown option at %s", paramAddr));
+        }
+
         int memType = PSP_SMEM_Low;
         if ((attr & PSP_HEAP_ATTR_ADDR_HIGH) == PSP_HEAP_ATTR_ADDR_HIGH) {
             memType = PSP_SMEM_High;
         }
-        if (param_addr != 0) {
-            log.warn("sceHeapCreateHeap option at 0x" + Integer.toHexString(param_addr));
-        }
+
         // Allocate a virtual heap memory space and return it's address.
         SysMemInfo info = null;
-        int totalHeapSize = (heapSize + (4 - 1)) & (~(4 - 1));
+        int alignment = 4;
+        int totalHeapSize = (heapSize + (alignment - 1)) & (~(alignment - 1));
         int maxFreeSize = Modules.SysMemUserForUserModule.maxFreeMemSize();
         if (totalHeapSize <= maxFreeSize) {
-            info = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, "ThreadMan-Heap", memType, totalHeapSize, 0);
+            info = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, name.getString(), memType, totalHeapSize, 0);
         } else {
-            Modules.log.warn("sceHeapCreateHeap not enough free mem (want=" + totalHeapSize + ", free=" + maxFreeSize + ", diff=" + (totalHeapSize - maxFreeSize) + ")");
+            log.warn(String.format("sceHeapCreateHeap not enough free mem (want=%d, free=%d, diff=%d", totalHeapSize, maxFreeSize, totalHeapSize - maxFreeSize));
         }
-        if (info != null) {
-            heapMap.put(info.addr, info);
-            cpu.gpr[2] = info.addr;
-        } else {
-            cpu.gpr[2] = 0; // Returns NULL on error.
+        if (info == null) {
+        	return 0; // Returns NULL on error.
         }
+
+        heapMap.put(info.addr, info);
+
+        return info.addr;
     }
 
     @HLEFunction(nid = 0xA8E102A0, version = 500, checkInsideInterrupt = true)
-    public void sceHeapAllocHeapMemory(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int heap_addr = cpu.gpr[4];
-        int memSize = cpu.gpr[5];
-
+    public int sceHeapAllocHeapMemory(TPointer heapAddr, int memSize) {
         if (log.isDebugEnabled()) {
-            log.debug("sceHeapAllocHeapMemoryWithOption heap_addr=0x" + Integer.toHexString(heap_addr)
-                    + ", memSize=0x" + Integer.toHexString(memSize));
+            log.debug(String.format("sceHeapAllocHeapMemoryWithOption heapAddr=%s, memSize=0x%X", heapAddr, memSize));
         }
 
-        
         // Try to allocate memory from the heap and return it's address.
         SysMemInfo heapInfo = null;
         SysMemInfo heapMemInfo = null;
-        if (heapMap.containsKey(heap_addr)) {
-            heapInfo = heapMap.get(heap_addr);
+        if (heapMap.containsKey(heapAddr.getAddress())) {
+            heapInfo = heapMap.get(heapAddr.getAddress());
             heapMemInfo = Modules.SysMemUserForUserModule.malloc(heapInfo.partitionid, "ThreadMan-HeapMem", heapInfo.type, memSize, 0);
         }
-        if (heapMemInfo != null) {
-            heapMemMap.put(heapMemInfo.addr, heapMemInfo);
-            cpu.gpr[2] = heapMemInfo.addr;
-        } else {
-            cpu.gpr[2] = 0;
+        if (heapMemInfo == null) {
+        	return 0;
         }
-    }
 
+        heapMemMap.put(heapMemInfo.addr, heapMemInfo);
+
+        return heapMemInfo.addr;
+    }
 }

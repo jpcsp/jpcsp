@@ -17,15 +17,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 
 import org.apache.log4j.Logger;
 
 public class sceGameUpdate extends HLEModule {
-
     protected static Logger log = Modules.getLogger("sceGameUpdate");
 
     @Override
@@ -33,40 +31,27 @@ public class sceGameUpdate extends HLEModule {
         return "sceGameUpdate";
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xCBE69FB3, version = 150)
-    public void sceGameUpdateInit(Processor processor) {
-        CpuState cpu = processor.cpu;
-        
-        log.warn("UNIMPLEMENTED: sceGameUpdateInit");
-
-        cpu.gpr[2] = 0;
+    public int sceGameUpdateInit() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xBB4B68DE, version = 150)
-    public void sceGameUpdateTerm(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceGameUpdateTerm");
-
-        cpu.gpr[2] = 0;
+    public int sceGameUpdateTerm() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x596AD78C, version = 150)
-    public void sceGameUpdateRun(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceGameUpdateRun");
-
-        cpu.gpr[2] = 0;
+    public int sceGameUpdateRun() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x5F5D98A6, version = 150)
-    public void sceGameUpdateAbort(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceGameUpdateAbort");
-
-        cpu.gpr[2] = 0;
+    public int sceGameUpdateAbort() {
+    	return 0;
     }
-
 }

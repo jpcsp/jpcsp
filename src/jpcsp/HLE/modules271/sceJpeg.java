@@ -309,9 +309,7 @@ public class sceJpeg extends HLEModule {
 			dumpJpegImage(jpegBuffer, jpegBufferSize);
 		}
 
-		if (!unknown1.isNull()) {
-			unknown1.setValue(0x00020202);
-		}
+		unknown1.setValue(0x00020202);
 
 		int yCbCrBufferSize = 0xC000;
 

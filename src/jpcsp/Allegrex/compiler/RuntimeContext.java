@@ -239,7 +239,7 @@ public class RuntimeContext {
         			comment = syscallDisasm.substring(19);
         		}
     		}
-    		log.debug(String.format("Starting CodeBlock 0x%08X%s, $sp=0x%08X", address, comment, cpu.gpr[_sp]));
+    		log.debug(String.format("Starting CodeBlock 0x%08X%s, $ra=0x%08X, $sp=0x%08X", address, comment, cpu.gpr[_ra], cpu.gpr[_sp]));
     	}
     }
 

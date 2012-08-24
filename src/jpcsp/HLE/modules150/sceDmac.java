@@ -17,9 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.TPointer;
 import jpcsp.Memory;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.graphics.VideoEngine;
@@ -32,41 +32,29 @@ public class sceDmac extends HLEModule {
 	@Override
 	public String getName() { return "sceDmac"; }
 
-
     @HLEFunction(nid = 0x617F3FE6, version = 150)
-    public void sceDmacMemcpy(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int dest   = cpu.gpr[4];
-        int source = cpu.gpr[5];
-        int size   = cpu.gpr[6];
-
+    public int sceDmacMemcpy(TPointer dest, TPointer source, int size) {
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceDmacMemcpy dest=0x%08X, source=0x%08X, size=0x%08X", dest, source, size));
+        	log.debug(String.format("sceDmacMemcpy dest=%s, source=%s, size=0x%08X", dest, source, size));
         }
 
         // If copying to the VRAM or the frame buffer, do not cache the texture
-        if (VideoEngine.isVRAM(dest) || Modules.sceDisplayModule.isFbAddress(dest)) {
-        	VideoEngine.getInstance().addVideoTexture(dest, dest + size);
+        if (VideoEngine.isVRAM(dest.getAddress()) || Modules.sceDisplayModule.isFbAddress(dest.getAddress())) {
+        	VideoEngine.getInstance().addVideoTexture(dest.getAddress(), dest.getAddress() + size);
         }
         // If copying from the VRAM, force the saving of the GE to memory
-        if (VideoEngine.isVRAM(source) && Modules.sceDisplayModule.getSaveGEToTexture()) {
-        	VideoEngine.getInstance().addVideoTexture(source, source + size);
+        if (VideoEngine.isVRAM(source.getAddress()) && Modules.sceDisplayModule.getSaveGEToTexture()) {
+        	VideoEngine.getInstance().addVideoTexture(source.getAddress(), source.getAddress() + size);
         }
 
-        mem.memcpy(dest, source, size);
+        Memory.getInstance().memcpy(dest.getAddress(), source.getAddress(), size);
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
+    @HLEUnimplemented
 	@HLEFunction(nid = 0xD97F94D8, version = 150)
-	public void sceDmacTryMemcpy(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-		log.warn("Unimplemented NID function sceDmacTryMemcpy [0xD97F94D8]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
+	public int sceDmacTryMemcpy() {
+    	return 0;
 	}
-
 }

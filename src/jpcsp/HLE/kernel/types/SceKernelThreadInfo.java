@@ -32,6 +32,7 @@ import jpcsp.Memory;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
@@ -100,6 +101,7 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
     public int waitId;  // the uid of the wait object
     public int wakeupCount; // number of sceKernelWakeupThread() calls pending
     public int exitStatus;
+    public TPointer32 exitStatusAddr; // Store the exitStatus at this address if specified
     public long runClocks;
     public int intrPreemptCount;
     public int threadPreemptCount;
@@ -292,6 +294,7 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
         waitId = 0;
         wakeupCount = 0;
         exitStatus = ERROR_KERNEL_THREAD_ALREADY_DORMANT;  // Threads start with DORMANT and not NOT_DORMANT (tested and checked).
+        exitStatusAddr = null;
         runClocks = 0;
         intrPreemptCount = 0;
         threadPreemptCount = 0;
@@ -596,6 +599,13 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
 
     public RegisteredCallbacks getRegisteredCallbacks(int type) {
     	return registeredCallbacks[type];
+    }
+
+    public void setExitStatus(int exitStatus) {
+    	this.exitStatus = exitStatus;
+    	if (exitStatusAddr != null) {
+    		exitStatusAddr.setValue(exitStatus);
+    	}
     }
 
     @Override

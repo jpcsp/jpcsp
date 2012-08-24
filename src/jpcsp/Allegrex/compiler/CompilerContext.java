@@ -68,7 +68,9 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.memory.SafeFastMemory;
+import jpcsp.util.ClassAnalyzer;
 import jpcsp.util.DurationStatistics;
+import jpcsp.util.ClassAnalyzer.ParameterInfo;
 
 import org.apache.log4j.Logger;
 import org.objectweb.asm.ClassVisitor;
@@ -139,6 +141,7 @@ public class CompilerContext implements ICompilerContext {
 	private int instanceIndex;
 	private NativeCodeSequence preparedCallNativeCodeBlock = null;
 	private int maxStackSize = DEFAULT_MAX_STACK_SIZE;
+	private CompilerTypeManager compilerTypeManager;
 
 	public CompilerContext(CompilerClassLoader classLoader, int instanceIndex) {
     	Compiler compiler = Compiler.getInstance();
@@ -146,6 +149,7 @@ public class CompilerContext implements ICompilerContext {
         this.instanceIndex = instanceIndex;
         nativeCodeManager = compiler.getNativeCodeManager();
         methodMaxInstructions = compiler.getDefaultMethodMaxInstructions();
+        compilerTypeManager = compiler.getCompilerTypeManager();
 
         // Count instructions only when the profile is enabled or
         // when the statistics are enabled
@@ -939,7 +943,12 @@ public class CompilerContext implements ICompilerContext {
     			mv.visitJumpInsn(Opcodes.GOTO, afterSyscallLabel);
     			mv.visitLabel(addressGood);
     		}
-    		mv.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(parameterType), "<init>", "(" + memoryDescriptor + "I)V");
+    		if (parameterType == TPointer16.class || parameterType == TPointer32.class || parameterType == TPointer64.class) {
+    			loadImm(canBeNull);
+    			mv.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(parameterType), "<init>", "(" + memoryDescriptor + "IZ)V");
+    		} else {
+    			mv.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(parameterType), "<init>", "(" + memoryDescriptor + "I)V");
+    		}
     		if (parameterType == TErrorPointer32.class) {
     			parameterReader.setHasErrorPointer(true);
     			mv.visitInsn(Opcodes.DUP);
@@ -1087,6 +1096,80 @@ public class CompilerContext implements ICompilerContext {
     	}
     }
 
+    private void logSyscall(HLEModuleFunction func, String logPrefix, String logCheckFunction, String logFunction) {
+		// Modules.getLogger(func.getModuleName()).warn("Unimplemented...");
+		mv.visitLdcInsn(func.getModuleName());
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Modules.class), "getLogger", "(" + Type.getDescriptor(String.class) + ")" + Type.getDescriptor(Logger.class));
+		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), logCheckFunction, "()Z");
+		Label loggingDisabled = new Label();
+		mv.visitJumpInsn(Opcodes.IFEQ, loggingDisabled);
+
+		mv.visitLdcInsn(func.getModuleName());
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Modules.class), "getLogger", "(" + Type.getDescriptor(String.class) + ")" + Type.getDescriptor(Logger.class));
+
+		StringBuilder formatString = new StringBuilder();
+		if (logPrefix != null) {
+			formatString.append(logPrefix);
+		}
+		formatString.append(func.getFunctionName());
+		ParameterInfo[] parameters = new ClassAnalyzer().getParameters(func.getFunctionName(), func.getHLEModuleMethod().getDeclaringClass());
+		if (parameters != null) {
+			// Log message:
+			//    String.format(
+			//       "Unimplemented <function name>
+			//                 <parameterIntegerName>=0x%X,
+			//                 <parameterBooleanName>=%b,
+			//                 <parameterLongName>=0x%X,
+			//                 <parameterFloatName>=%f,
+			//                 <parameterOtherTypeName>=%s",
+			//       new Object[] {
+			//                 new Integer(parameterValueInteger),
+			//                 new Boolean(parameterValueBoolean),
+			//                 new Long(parameterValueLong),
+			//                 new Float(parameterValueFloat),
+			//                 parameterValueOtherTypes
+			//       })
+			loadImm(parameters.length);
+			mv.visitTypeInsn(Opcodes.ANEWARRAY, Type.getInternalName(Object.class));
+            CompilerParameterReader parameterReader = new CompilerParameterReader(this);
+            Annotation[][] paramsAnotations = func.getHLEModuleMethod().getParameterAnnotations();
+            int paramIndex = 0;
+            for (ParameterInfo parameter : parameters) {
+            	mv.visitInsn(Opcodes.DUP);
+            	loadImm(paramIndex);
+
+            	Class<?> parameterType = parameter.type;
+        		formatString.append(paramIndex > 0 ? ", " : " ");
+            	formatString.append(parameter.name);
+            	formatString.append("=");
+            	CompilerTypeInformation typeInformation = compilerTypeManager.getCompilerTypeInformation(parameterType);
+            	formatString.append(typeInformation.formatString);
+
+            	if (typeInformation.boxingTypeInternalName != null) {
+            		mv.visitTypeInsn(Opcodes.NEW, typeInformation.boxingTypeInternalName);
+            		mv.visitInsn(Opcodes.DUP);
+            	}
+
+        		loadParameter(parameterReader, func, parameterType, paramsAnotations[paramIndex], null, null);
+
+            	if (typeInformation.boxingTypeInternalName != null) {
+            		mv.visitMethodInsn(Opcodes.INVOKESPECIAL, typeInformation.boxingTypeInternalName, "<init>", typeInformation.boxingMethodDescriptor);
+            	}
+            	mv.visitInsn(Opcodes.AASTORE);
+
+            	paramIndex++;
+            }
+			mv.visitLdcInsn(formatString.toString());
+			mv.visitInsn(Opcodes.SWAP);
+        	mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(String.class), "format", "(" + Type.getDescriptor(String.class) + "[" + Type.getDescriptor(Object.class) + ")" + Type.getDescriptor(String.class));
+		} else {
+			mv.visitLdcInsn(formatString.toString());
+		}
+		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), logFunction, "(" + Type.getDescriptor(Object.class) + ")V");
+
+		mv.visitLabel(loggingDisabled);
+    }
+
     /**
      * Generate the required Java code to call a syscall function.
      * The code generated much match the Java behavior implemented in
@@ -1109,7 +1192,7 @@ public class CompilerContext implements ICompilerContext {
      *         }
      *     }
      *     if (func.isUnimplemented()) {
-     *         Modules.getLogger(func.getModuleName()).warn("Unimplemented NID function <module name>.<function name> [0x<nid>]");
+     *         Modules.getLogger(func.getModuleName()).warn("Unimplemented <function name> parameterName1=parameterValue1, parameterName2=parameterValue2, ...");
      *     }
      *     foreach parameter {
      *         loadParameter(parameter);
@@ -1183,11 +1266,7 @@ public class CompilerContext implements ICompilerContext {
     	}
 
     	if (func.isUnimplemented()) {
-    		// Modules.getLogger(func.getModuleName()).warn("Unimplemented...");
-    		mv.visitLdcInsn(func.getModuleName());
-    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Modules.class), "getLogger", "(" + Type.getDescriptor(String.class) + ")" + Type.getDescriptor(Logger.class));
-    		mv.visitLdcInsn(String.format("Unimplemented NID function %s.%s [0x%08X]", func.getModuleName(), func.getFunctionName(), func.getNid()));
-    		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), "warn", "(" + Type.getDescriptor(Object.class) + ")V");
+    		logSyscall(func, "Unimplemented ", "isInfoEnabled", "warn");
     	}
 
     	// Collecting the parameters and calling the module function...
@@ -1782,6 +1861,10 @@ public class CompilerContext implements ICompilerContext {
 				break;
 		}
     }
+
+	public void loadImm(boolean imm) {
+		mv.visitInsn(imm ? Opcodes.ICONST_1 : Opcodes.ICONST_0);
+	}
 
 	@Override
 	public void compileInterpreterInstruction() {

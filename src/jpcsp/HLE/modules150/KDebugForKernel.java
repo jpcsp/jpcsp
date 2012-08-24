@@ -23,200 +23,157 @@ import org.apache.log4j.Logger;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 
-import jpcsp.Processor;
-
 import jpcsp.Allegrex.CpuState;
 
 public class KDebugForKernel extends HLEModule {
+    protected static Logger log = Modules.getLogger("KDebugForKernel");
     protected static Logger kprintf = Logger.getLogger("kprintf");
 
     @Override
 	public String getName() { return "KDebugForKernel"; }
 	
-	
 	@HLEFunction(nid = 0xE7A3874D, version = 150)
-	public void sceKernelRegisterAssertHandler(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceKernelRegisterAssertHandler() {
+		log.warn("Unimplemented sceKernelRegisterAssertHandler");
 
-		Modules.log.warn("Unimplemented NID function sceKernelRegisterAssertHandler [0xE7A3874D]");
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-    
+
 	@HLEFunction(nid = 0x2FF4E9F9, version = 150)
-	public void sceKernelAssert(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceKernelAssert() {
+		log.warn("Unimplemented sceKernelAssert");
 
-		Modules.log.warn("Unimplemented NID function sceKernelAssert [0x2FF4E9F9]");
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-    
+
 	@HLEFunction(nid = 0x9B868276, version = 150)
-	public void sceKernelGetDebugPutchar(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceKernelGetDebugPutchar() {
+		log.warn("Unimplemented sceKernelGetDebugPutchar");
 
-		Modules.log.warn("Unimplemented NID function sceKernelGetDebugPutchar [0x9B868276]");
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-    
+
 	@HLEFunction(nid = 0xE146606D, version = 150)
-	public void sceKernelRegisterDebugPutchar(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceKernelRegisterDebugPutchar() {
+		log.warn("Unimplemented sceKernelRegisterDebugPutchar");
 
-		Modules.log.warn("Unimplemented NID function sceKernelRegisterDebugPutchar [0xE146606D]");
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-    
+
 	@HLEFunction(nid = 0x7CEB2C09, version = 150)
-	public void sceKernelRegisterKprintfHandler(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceKernelRegisterKprintfHandler() {
+		log.warn("Unimplemented sceKernelRegisterKprintfHandler");
 
-		Modules.log.warn("Unimplemented NID function sceKernelRegisterKprintfHandler [0x7CEB2C09]");
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-    
+
 	@HLEFunction(nid = 0x84F370BC, version = 150)
 	public int Kprintf(CpuState cpu) {
 		return Modules.SysMemUserForUserModule.hleKernelPrintf(cpu, kprintf, "Kprintf");
 	}
-    
+
 	@HLEFunction(nid = 0x5CE9838B, version = 150)
-	public void sceKernelDebugWrite(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceKernelDebugWrite() {
+		log.warn("Unimplemented sceKernelDebugWrite");
 
-		Modules.log.warn("Unimplemented NID function sceKernelDebugWrite [0x5CE9838B]");
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-    
+
 	@HLEFunction(nid = 0x66253C4E, version = 150)
-	public void sceKernelRegisterDebugWrite(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceKernelRegisterDebugWrite() {
+		log.warn("Unimplemented sceKernelRegisterDebugWrite");
 
-		Modules.log.warn("Unimplemented NID function sceKernelRegisterDebugWrite [0x66253C4E]");
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-    
+
 	@HLEFunction(nid = 0xDBB5597F, version = 150)
-	public void sceKernelDebugRead(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceKernelDebugRead() {
+		log.warn("Unimplemented sceKernelDebugRead");
 
-		Modules.log.warn("Unimplemented NID function sceKernelDebugRead [0xDBB5597F]");
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-    
+
 	@HLEFunction(nid = 0xE6554FDA, version = 150)
-	public void sceKernelRegisterDebugRead(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceKernelRegisterDebugRead() {
+		log.warn("Unimplemented sceKernelRegisterDebugRead");
 
-		Modules.log.warn("Unimplemented NID function sceKernelRegisterDebugRead [0xE6554FDA]");
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-    
+
 	@HLEFunction(nid = 0xB9C643C9, version = 150)
-	public void sceKernelDebugEcho(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceKernelDebugEcho() {
+		log.warn("Unimplemented sceKernelDebugEcho");
 
-		Modules.log.warn("Unimplemented NID function sceKernelDebugEcho [0xB9C643C9]");
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-    
+
 	@HLEFunction(nid = 0x7D1C74F0, version = 150)
-	public void sceKernelDebugEchoSet(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceKernelDebugEchoSet() {
+		log.warn("Unimplemented sceKernelDebugEchoSet");
 
-		Modules.log.warn("Unimplemented NID function sceKernelDebugEchoSet [0x7D1C74F0]");
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-    
+
 	@HLEFunction(nid = 0x24C32559, version = 150)
-	public void sceKernelDipsw(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceKernelDipsw() {
+		log.warn("Unimplemented sceKernelDipsw");
 
-		Modules.log.warn("Unimplemented NID function sceKernelDipsw [0x24C32559]");
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-    
+
 	@HLEFunction(nid = 0xD636B827, version = 150)
-	public void sceKernelDipswAll(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceKernelDipswAll() {
+		log.warn("Unimplemented sceKernelDipswAll");
 
-		Modules.log.warn("Unimplemented NID function sceKernelDipswAll [0xD636B827]");
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-    
+
 	@HLEFunction(nid = 0x5282DD5E, version = 150)
-	public void sceKernelDipswSet(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceKernelDipswSet() {
+		log.warn("Unimplemented sceKernelDipswSet");
 
-		Modules.log.warn("Unimplemented NID function sceKernelDipswSet [0x5282DD5E]");
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-    
+
 	@HLEFunction(nid = 0xEE75658D, version = 150)
-	public void sceKernelDipswClear(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceKernelDipswClear() {
+		log.warn("Unimplemented sceKernelDipswClear");
 
-		Modules.log.warn("Unimplemented NID function sceKernelDipswClear [0xEE75658D]");
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-    
+
 	@HLEFunction(nid = 0x9F8703E4, version = 150)
-	public void KDebugForKernel_9F8703E4(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int KDebugForKernel_9F8703E4() {
+		log.warn("Unimplemented KDebugForKernel_9F8703E4");
 
-		Modules.log.warn("Unimplemented NID function KDebugForKernel_9F8703E4 [0x9F8703E4]");
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-    
+
 	@HLEFunction(nid = 0x333DCEC7, version = 150)
-	public void KDebugForKernel_333DCEC7(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int KDebugForKernel_333DCEC7() {
+		log.warn("Unimplemented KDebugForKernel_333DCEC7");
 
-		Modules.log.warn("Unimplemented NID function KDebugForKernel_333DCEC7 [0x333DCEC7]");
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-    
+
 	@HLEFunction(nid = 0xE892D9A1, version = 150)
-	public void KDebugForKernel_E892D9A1(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int KDebugForKernel_E892D9A1() {
+		log.warn("Unimplemented KDebugForKernel_E892D9A1");
 
-		Modules.log.warn("Unimplemented NID function KDebugForKernel_E892D9A1 [0xE892D9A1]");
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-    
+
 	@HLEFunction(nid = 0xA126F497, version = 150)
-	public void KDebugForKernel_A126F497(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int KDebugForKernel_A126F497() {
+		log.warn("Unimplemented KDebugForKernel_A126F497");
 
-		Modules.log.warn("Unimplemented NID function KDebugForKernel_A126F497 [0xA126F497]");
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
 
 	@HLEFunction(nid = 0xB7251823, version = 150)
-	public void KDebugForKernel_B7251823(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int KDebugForKernel_B7251823() {
+		log.warn("Unimplemented KDebugForKernel_B7251823");
 
-		Modules.log.warn("Unimplemented NID function KDebugForKernel_B7251823 [0xB7251823]");
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
-
-};
+}

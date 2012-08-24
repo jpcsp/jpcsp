@@ -16,18 +16,19 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.Allegrex.Common._v0;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 
 import java.util.LinkedList;
 import java.util.List;
 
 import jpcsp.Controller;
-import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.Processor;
 import jpcsp.State;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.SystemTimeManager;
@@ -38,8 +39,8 @@ import jpcsp.HLE.modules.HLEModule;
 import org.apache.log4j.Logger;
 
 public class sceCtrl extends HLEModule {
-
     private static Logger log = Modules.getLogger("sceCtrl");
+
     private int cycle;
     private int mode;
     private int uiMake;
@@ -163,7 +164,6 @@ public class sceCtrl extends HLEModule {
     }
 
     protected class SamplingAction implements IAction {
-
         @Override
         public void execute() {
             hleCtrlExecuteSampling();
@@ -171,7 +171,6 @@ public class sceCtrl extends HLEModule {
     }
 
     protected static class ThreadWaitingForSampling {
-
         SceKernelThreadInfo thread;
         int readAddr;
         int readCount;
@@ -186,7 +185,6 @@ public class sceCtrl extends HLEModule {
     }
 
     protected static class Sample {
-
         public int TimeStamp; // microseconds
         public byte Lx;
         public byte Ly;
@@ -280,7 +278,7 @@ public class sceCtrl extends HLEModule {
 	            if (log.isDebugEnabled()) {
 	                log.debug("hleExecuteSampling waiting up thread " + wait.thread);
 	            }
-	            hleCtrlReadBufferImmediately(wait.thread.cpuContext, wait.readAddr, wait.readCount, wait.readPositive, false);
+	            wait.thread.cpuContext.gpr[_v0] = hleCtrlReadBufferImmediately(wait.readAddr, wait.readCount, wait.readPositive, false);
 	            Modules.ThreadManForUserModule.hleUnblockThread(wait.thread.uid);
 	            break;
             }
@@ -291,7 +289,7 @@ public class sceCtrl extends HLEModule {
         }
     }
 
-    protected void hleCtrlReadBufferImmediately(CpuState cpu, int addr, int count, boolean positive, boolean peek) {
+    protected int hleCtrlReadBufferImmediately(int addr, int count, boolean positive, boolean peek) {
         Memory mem = Memory.getInstance();
 
         // If more samples are available than requested, read the more recent ones
@@ -318,26 +316,28 @@ public class sceCtrl extends HLEModule {
             log.debug(String.format("hleCtrlReadBufferImmediately(positive=%b, peek=%b) returning %d", positive, peek, count));
         }
 
-        cpu.gpr[2] = count;
+        return count;
     }
 
-    protected void hleCtrlReadBuffer(int addr, int count, boolean positive) {
+    protected int hleCtrlReadBuffer(int addr, int count, boolean positive) {
         // Some data available in sample buffer?
         if (getNumberOfAvailableSamples() > 0) {
             // Yes, read immediately
-            hleCtrlReadBufferImmediately(Emulator.getProcessor().cpu, addr, count, positive, false);
-        } else {
-            // No, wait for next sampling
-            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-            SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-            ThreadWaitingForSampling threadWaitingForSampling = new ThreadWaitingForSampling(currentThread, addr, count, positive);
-            threadsWaitingForSampling.add(threadWaitingForSampling);
-            threadMan.hleBlockCurrentThread();
-
-            if (log.isDebugEnabled()) {
-                log.debug("hleCtrlReadBuffer waiting for sample");
-            }
+            return hleCtrlReadBufferImmediately(addr, count, positive, false);
         }
+
+        // No, wait for next sampling
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+        ThreadWaitingForSampling threadWaitingForSampling = new ThreadWaitingForSampling(currentThread, addr, count, positive);
+        threadsWaitingForSampling.add(threadWaitingForSampling);
+        threadMan.hleBlockCurrentThread();
+
+        if (log.isDebugEnabled()) {
+            log.debug("hleCtrlReadBuffer waiting for sample");
+        }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x6A2774F3, version = 150, checkInsideInterrupt = true)
@@ -346,15 +346,19 @@ public class sceCtrl extends HLEModule {
         this.cycle = newCycle;
     	
         if (log.isDebugEnabled()) {
-            log.debug("sceCtrlSetSamplingCycle(cycle=" + newCycle + ") returning " + oldCycle);
+            log.debug(String.format("sceCtrlSetSamplingCycle cycle=%d returning %d", newCycle, oldCycle));
         }
 
         return oldCycle;
     }
 
     @HLEFunction(nid = 0x02BAAD91, version = 150, checkInsideInterrupt = true)
-    public int sceCtrlGetSamplingCycle(int cycleAddr) {
-        Processor.memory.write32(cycleAddr, cycle);
+    public int sceCtrlGetSamplingCycle(TPointer32 cycleAddr) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceCtrlGetSamplingCycle cycleAddr=%s", cycleAddr));
+    	}
+    	cycleAddr.setValue(cycle);
+
         return 0;
     }
 
@@ -364,75 +368,83 @@ public class sceCtrl extends HLEModule {
         this.mode = newMode;
 
         if (log.isDebugEnabled()) {
-            log.debug("sceCtrlSetSamplingMode(mode=" + newMode + ") returning " + oldMode);
+            log.debug(String.format("sceCtrlSetSamplingMode mode=%d returning %d", newMode, oldMode));
         }
 
         return oldMode;
     }
 
     @HLEFunction(nid = 0xDA6B76A1, version = 150)
-    public int sceCtrlGetSamplingMode(int modeAddr) {
-        Processor.memory.write32(modeAddr, mode);
-        return 0;
+    public int sceCtrlGetSamplingMode(TPointer32 modeAddr) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceCtrlGetSamplingMode modeAddr=%s", modeAddr));
+    	}
+    	modeAddr.setValue(mode);
+
+    	return 0;
     }
 
     @HLEFunction(nid = 0x3A622550, version = 150)
-    public void sceCtrlPeekBufferPositive(Processor processor, int data_addr, int numBuf) {
+    public int sceCtrlPeekBufferPositive(TPointer dataAddr, int numBuf) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceCtrlPeekBufferPositive(0x%08X, %d)", data_addr, numBuf));
+            log.debug(String.format("sceCtrlPeekBufferPositive dataAddr=%s, numBuf=%d", dataAddr, numBuf));
         }
 
-        hleCtrlReadBufferImmediately(processor.cpu, data_addr, numBuf, true, true);
+        return hleCtrlReadBufferImmediately(dataAddr.getAddress(), numBuf, true, true);
     }
 
     @HLEFunction(nid = 0xC152080A, version = 150)
-    public void sceCtrlPeekBufferNegative(Processor processor, int data_addr, int numBuf) {
+    public int sceCtrlPeekBufferNegative(TPointer dataAddr, int numBuf) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceCtrlPeekBufferNegative(0x%08X, %d)", data_addr, numBuf));
+            log.debug(String.format("sceCtrlPeekBufferNegative dataAddr=%s, numBuf=%d", dataAddr, numBuf));
         }
 
-        hleCtrlReadBufferImmediately(processor.cpu, data_addr, numBuf, false, true);
+        return hleCtrlReadBufferImmediately(dataAddr.getAddress(), numBuf, false, true);
     }
 
     @HLEFunction(nid = 0x1F803938, version = 150, checkInsideInterrupt = true)
-    public void sceCtrlReadBufferPositive(int data_addr, int numBuf) {
+    public int sceCtrlReadBufferPositive(TPointer dataAddr, int numBuf) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceCtrlReadBufferPositive(0x%08X, %d)", data_addr, numBuf));
+            log.debug(String.format("sceCtrlReadBufferPositive dataAddr=%s, numBuf=%d", dataAddr, numBuf));
         }
 
-        hleCtrlReadBuffer(data_addr, numBuf, true);
+        return hleCtrlReadBuffer(dataAddr.getAddress(), numBuf, true);
     }
 
     @HLEFunction(nid = 0x60B81F86, version = 150, checkInsideInterrupt = true)
-    public void sceCtrlReadBufferNegative(int data_addr, int numBuf) {
+    public int sceCtrlReadBufferNegative(TPointer dataAddr, int numBuf) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceCtrlReadBufferNegative(0x%08X, %d)", data_addr, numBuf));
+            log.debug(String.format("sceCtrlReadBufferNegative dataAddr=%s, numBuf=%d", dataAddr, numBuf));
         }
 
-        hleCtrlReadBuffer(data_addr, numBuf, false);
+        return hleCtrlReadBuffer(dataAddr.getAddress(), numBuf, false);
     }
 
     @HLEFunction(nid = 0xB1D0E5CD, version = 150)
-    public int sceCtrlPeekLatch(int latch_addr) {
-        Memory mem = Processor.memory;
+    public int sceCtrlPeekLatch(TPointer32 latchAddr) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceCtrlPeekLatch latchAddr=%s", latchAddr));
+    	}
 
-        mem.write32(latch_addr, uiMake);
-        mem.write32(latch_addr + 4, uiBreak);
-        mem.write32(latch_addr + 8, uiPress);
-        mem.write32(latch_addr + 12, uiRelease);
+    	latchAddr.setValue(0, uiMake);
+        latchAddr.setValue(4, uiBreak);
+        latchAddr.setValue(8, uiPress);
+        latchAddr.setValue(12, uiRelease);
 
         return latchSamplingCount;
     }
 
     @HLEFunction(nid = 0x0B588501, version = 150)
-    public int sceCtrlReadLatch(int latch_addr) {
-        Memory mem = Processor.memory;
+    public int sceCtrlReadLatch(TPointer32 latchAddr) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceCtrlReadLatch latchAddr=%s", latchAddr));
+    	}
 
-        mem.write32(latch_addr, uiMake);
-        mem.write32(latch_addr + 4, uiBreak);
-        mem.write32(latch_addr + 8, uiPress);
-        mem.write32(latch_addr + 12, uiRelease);
-        
+    	latchAddr.setValue(0, uiMake);
+        latchAddr.setValue(4, uiBreak);
+        latchAddr.setValue(8, uiPress);
+        latchAddr.setValue(12, uiRelease);
+
         int prevLatchSamplingCount = latchSamplingCount;
         latchSamplingCount = 0;
         
@@ -441,25 +453,24 @@ public class sceCtrl extends HLEModule {
 
     @HLEFunction(nid = 0xA7144800, version = 150)
     public int sceCtrlSetIdleCancelThreshold(int idlereset, int idleback) {
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceCtrlSetIdleCancelThreshold idlereset=%d, idleback=%d", idlereset, idleback));
+        }
+
         this.idlereset = idlereset;
         this.idleback  = idleback;
-
-        log.debug("sceCtrlSetIdleCancelThreshold(idlereset=" + idlereset + ",idleback=" + idleback + ")");
 
         return 0;
     }
 
     @HLEFunction(nid = 0x687660FA, version = 150)
-    public int sceCtrlGetIdleCancelThreshold(int idlereset_addr, int idleback_addr) {
-        log.debug("sceCtrlGetIdleCancelThreshold(idlereset=0x" + Integer.toHexString(idlereset_addr) + ",idleback=0x" + Integer.toHexString(idleback_addr) + ")" + " returning idlereset=" + idlereset + " idleback=" + idleback);
+    public int sceCtrlGetIdleCancelThreshold(@CanBeNull TPointer32 idleresetAddr, @CanBeNull TPointer32 idlebackAddr) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceCtrlGetIdleCancelThreshold idleresetAddr=%s, idlebackAddr=%s", idleresetAddr, idlebackAddr));
+    	}
 
-        if (Memory.isAddressGood(idlereset_addr)) {
-        	Processor.memory.write32(idlereset_addr, idlereset);
-        }
-
-        if (Memory.isAddressGood(idleback_addr)) {
-        	Processor.memory.write32(idleback_addr, idleback);
-        }
+    	idleresetAddr.setValue(idlereset);
+    	idlebackAddr.setValue(idleback);
 
         return 0;
     }
@@ -467,25 +478,24 @@ public class sceCtrl extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x348D99D4, version = 150)
     public int sceCtrl_348D99D4() {
-        return 0xDEADC0DE;
+    	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xAF5960F3, version = 150)
     public int sceCtrl_AF5960F3() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xA68FD260, version = 150)
     public int sceCtrlClearRapidFire() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x6841BE1A, version = 150)
     public int sceCtrlSetRapidFire() {
-        return 0xDEADC0DE;
+        return 0;
     }
-
 }

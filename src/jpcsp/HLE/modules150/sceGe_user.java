@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
-import jpcsp.Processor;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
@@ -631,7 +630,7 @@ public class sceGe_user extends HLEModule {
 
     @HLEFunction(nid = 0x4C06E472, version = 150)
     public int sceGeContinue() {
-    	Memory mem = Processor.memory;
+    	Memory mem = Memory.getInstance();
 
         if (log.isDebugEnabled()) {
     		log.debug("sceGeContinue()");
