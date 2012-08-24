@@ -21,6 +21,7 @@ import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.util.Utilities.endianSwap32;
 import static jpcsp.util.Utilities.readUnaligned32;
 
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
@@ -125,6 +126,7 @@ public class sceMpeg extends HLEModule {
     public static final int PSMF_VERSION_0013 = 0x33313030;
     public static final int PSMF_VERSION_0014 = 0x34313030;
     public static final int PSMF_VERSION_0015 = 0x35313030;
+    public static final int PSMF_MAGIC_OFFSET = 0x0;
     public static final int PSMF_STREAM_VERSION_OFFSET = 0x4;
     public static final int PSMF_STREAM_OFFSET_OFFSET = 0x8;
     public static final int PSMF_STREAM_SIZE_OFFSET = 0xC;
@@ -426,7 +428,7 @@ public class sceMpeg extends HLEModule {
 						}
 						memoryWriter.flush();
 						Memory mem = Memory.getInstance();
-						if (mem.read32(tmpAddress) == PSMF_MAGIC) {
+						if (mem.read32(tmpAddress + PSMF_MAGIC_OFFSET) == PSMF_MAGIC) {
 							analyseMpeg(tmpAddress);
 						}
 
@@ -444,37 +446,32 @@ public class sceMpeg extends HLEModule {
 		}
 	}
 
-	protected void analyseMpeg(int buffer_addr) {
+    public static int getMpegVersion(int mpegRawVersion) {
+        switch (mpegRawVersion) {
+	        case PSMF_VERSION_0012: return MPEG_VERSION_0012;
+	        case PSMF_VERSION_0013: return MPEG_VERSION_0013;
+	        case PSMF_VERSION_0014: return MPEG_VERSION_0014;
+	        case PSMF_VERSION_0015: return MPEG_VERSION_0015;
+        }
+
+        return -1;
+    }
+
+    protected void analyseMpeg(int bufferAddr) {
         Memory mem = Memory.getInstance();
 
-        mpegStreamAddr = buffer_addr;
-        mpegMagic = mem.read32(buffer_addr);
-        mpegRawVersion = mem.read32(buffer_addr + PSMF_STREAM_VERSION_OFFSET);
-        switch (mpegRawVersion) {
-            case PSMF_VERSION_0012:
-                mpegVersion = MPEG_VERSION_0012;
-                break;
-            case PSMF_VERSION_0013:
-                mpegVersion = MPEG_VERSION_0013;
-                break;
-            case PSMF_VERSION_0014:
-                mpegVersion = MPEG_VERSION_0014;
-                break;
-            case PSMF_VERSION_0015:
-                mpegVersion = MPEG_VERSION_0015;
-                break;
-            default:
-                mpegVersion = -1;
-                break;
-        }
-        mpegOffset = endianSwap32(mem.read32(buffer_addr + PSMF_STREAM_OFFSET_OFFSET));
-        mpegStreamSize = endianSwap32(mem.read32(buffer_addr + PSMF_STREAM_SIZE_OFFSET));
-        mpegFirstTimestamp = endianSwap32(readUnaligned32(mem, buffer_addr + PSMF_FIRST_TIMESTAMP_OFFSET));
-        mpegLastTimestamp = endianSwap32(readUnaligned32(mem, buffer_addr + PSMF_LAST_TIMESTAMP_OFFSET));
+        mpegStreamAddr = bufferAddr;
+        mpegMagic = mem.read32(bufferAddr + PSMF_MAGIC_OFFSET);
+        mpegRawVersion = mem.read32(bufferAddr + PSMF_STREAM_VERSION_OFFSET);
+        mpegVersion = getMpegVersion(mpegRawVersion);
+        mpegOffset = endianSwap32(mem.read32(bufferAddr + PSMF_STREAM_OFFSET_OFFSET));
+        mpegStreamSize = endianSwap32(mem.read32(bufferAddr + PSMF_STREAM_SIZE_OFFSET));
+        mpegFirstTimestamp = endianSwap32(readUnaligned32(mem, bufferAddr + PSMF_FIRST_TIMESTAMP_OFFSET));
+        mpegLastTimestamp = endianSwap32(readUnaligned32(mem, bufferAddr + PSMF_LAST_TIMESTAMP_OFFSET));
         mpegFirstDate = convertTimestampToDate(mpegFirstTimestamp);
         mpegLastDate = convertTimestampToDate(mpegLastTimestamp);
-        avcDetailFrameWidth = (mem.read8(buffer_addr + 142) * 0x10);
-        avcDetailFrameHeight = (mem.read8(buffer_addr + 143) * 0x10);
+        avcDetailFrameWidth = (mem.read8(bufferAddr + 142) * 0x10);
+        avcDetailFrameHeight = (mem.read8(bufferAddr + 143) * 0x10);
         avcDecodeResult = MPEG_AVC_DECODE_SUCCESS;
         avcFrameStatus = 0;
         if ((mpegRingbuffer != null) && !isCurrentMpegAnalyzed()) {
@@ -491,12 +488,12 @@ public class sceMpeg extends HLEModule {
         endOfVideoReached = false;
         if (!isCurrentMpegAnalyzed() && mpegStreamSize > 0 && mpegOffset > 0 && mpegOffset <= mpegStreamSize) {
             if (checkMediaEngineState()) {
-            	me.init(buffer_addr, mpegStreamSize, mpegOffset);
+            	me.init(bufferAddr, mpegStreamSize, mpegOffset);
             	meChannel = new PacketChannel();
-                meChannel.write(buffer_addr, MPEG_HEADER_BUFFER_MINIMUM_SIZE);
+                meChannel.write(bufferAddr, MPEG_HEADER_BUFFER_MINIMUM_SIZE);
             } else if (isEnableConnector()) {
                 mpegCodec.init(mpegVersion, mpegStreamSize, mpegLastTimestamp);
-                mpegCodec.writeVideo(buffer_addr, MPEG_HEADER_BUFFER_MINIMUM_SIZE);
+                mpegCodec.writeVideo(bufferAddr, MPEG_HEADER_BUFFER_MINIMUM_SIZE);
             }
 
             // Mpeg header has already been initialized/processed
@@ -507,7 +504,7 @@ public class sceMpeg extends HLEModule {
 	    	log.debug(String.format("Stream offset: %d, Stream size: 0x%X", mpegOffset, mpegStreamSize));
 	    	log.debug(String.format("First timestamp: %d, Last timestamp: %d", mpegFirstTimestamp, mpegLastTimestamp));
 	        if (log.isTraceEnabled()) {
-	        	log.trace(String.format("%s", Utilities.getMemoryDump(buffer_addr, MPEG_HEADER_BUFFER_MINIMUM_SIZE, 4, 16)));
+	        	log.trace(String.format("%s", Utilities.getMemoryDump(bufferAddr, MPEG_HEADER_BUFFER_MINIMUM_SIZE, 4, 16)));
 	        }
         }
     }
@@ -740,11 +737,11 @@ public class sceMpeg extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0xD8C5F121, version = 150, checkInsideInterrupt = true)
-    public int sceMpegCreate(Processor processor, int mpeg, int data, int size, int ringbuffer_addr, int frameWidth, int mode, int ddrtop) {
+    public int sceMpegCreate(TPointer mpeg, TPointer data, int size, @CanBeNull TPointer ringbuffer_addr, int frameWidth, int mode, int ddrtop) {
         Memory mem = Processor.memory;
 
         if (log.isDebugEnabled()) {
-            log.debug("sceMpegCreate(mpeg=0x" + Integer.toHexString(mpeg) + ", data=0x" + Integer.toHexString(data) + ", size=" + size + ", ringbuffer=0x" + Integer.toHexString(ringbuffer_addr) + ", frameWidth=" + frameWidth + ", mode=" + mode + ", ddrtop=0x" + Integer.toHexString(ddrtop) + ")");
+            log.debug(String.format("sceMpegCreate mpeg=%s, data=%s, size=%d, ringbuffer=%s, frameWidth=%d, mode=%d, ddrtop=0x%08X", mpeg, data, size, ringbuffer_addr, frameWidth, mode, ddrtop));
         }
 
         // Check size.
@@ -753,32 +750,32 @@ public class sceMpeg extends HLEModule {
             return SceKernelErrors.ERROR_MPEG_NO_MEMORY;
         }
         
-        // Check pointers.
-        if (!Memory.isAddressGood(mpeg) || !Memory.isAddressGood(data) || !Memory.isAddressGood(ringbuffer_addr)) {
-            log.warn("sceMpegCreate bad address " + String.format("0x%08X 0x%08X 0x%08X", mpeg, data, ringbuffer_addr));
-            return -1;
+        // Update the ring buffer struct.
+        if (!ringbuffer_addr.isNull()) {
+        	mpegRingbuffer = SceMpegRingbuffer.fromMem(mem, ringbuffer_addr.getAddress());
+	        if (mpegRingbuffer.packetSize == 0) {
+	        	mpegRingbuffer.packetsFree = 0;
+	        } else {
+	        	mpegRingbuffer.packetsFree = (mpegRingbuffer.dataUpperBound - mpegRingbuffer.data) / mpegRingbuffer.packetSize;
+	        }
+	        mpegRingbuffer.mpeg = mpeg.getAddress();
+	        mpegRingbuffer.write(mem, ringbuffer_addr.getAddress());
         }
 
-        // Update the ring buffer struct.
-        SceMpegRingbuffer ringbuffer = SceMpegRingbuffer.fromMem(mem, ringbuffer_addr);
-        if (ringbuffer.packetSize == 0) {
-            ringbuffer.packetsFree = 0;
-        } else {
-            ringbuffer.packetsFree = (ringbuffer.dataUpperBound - ringbuffer.data) / ringbuffer.packetSize;
-        }
-        ringbuffer.mpeg = mpeg;
-        ringbuffer.write(mem, ringbuffer_addr);
         // Write mpeg system handle.
-        mpegHandle = data + 0x30;
-        mem.write32(mpeg, mpegHandle);
-        // Initialise fake mpeg struct.
+        mpegHandle = data.getAddress() + 0x30;
+        mpeg.setValue32(mpegHandle);
+
+        // Initialize fake mpeg struct.
         Utilities.writeStringZ(mem, mpegHandle, "LIBMPEG.001");
         mem.write32(mpegHandle + 12, -1);
-        mem.write32(mpegHandle + 16, ringbuffer_addr);
-        mem.write32(mpegHandle + 20, ringbuffer.dataUpperBound);
-        // Initialise mpeg values.
-        mpegRingbufferAddr = ringbuffer_addr;
-        mpegRingbuffer = ringbuffer;
+        mem.write32(mpegHandle + 16, ringbuffer_addr.getAddress());
+        if (mpegRingbuffer != null) {
+        	mem.write32(mpegHandle + 20, mpegRingbuffer.dataUpperBound);
+        }
+
+        // Initialize mpeg values.
+        mpegRingbufferAddr = ringbuffer_addr.getAddress();
         videoFrameCount = 0;
         audioFrameCount = 0;
         videoPixelMode = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
@@ -1754,7 +1751,7 @@ public class sceMpeg extends HLEModule {
             log.debug("sceMpegAvcDecodeFlush mpeg=0x" + Integer.toHexString(mpeg));
         }
 
-        finishMpeg();
+        	finishMpeg();
         return 0;
     }
 
@@ -2397,53 +2394,53 @@ public class sceMpeg extends HLEModule {
      */
     @HLEFunction(nid = 0x3C37A7A6, version = 150, checkInsideInterrupt = true)
     public int sceMpegNextAvcRpAu(int p1, int p2, int p3, int p4) {
-        log.warn("UNIMPLEMENTED: sceMpegNextAvcRpAu " + String.format("%08X %08X %08X %08X", p1, p2, p3, p4));
+        log.warn(String.format("Unimplemented: sceMpegNextAvcRpAu %08X %08X %08X %08X", p1, p2, p3, p4));
 
         return 0;
     }
-    
+
     @HLEFunction(nid = 0x01977054, version = 150)
     public int sceMpegGetUserdataAu() {
         log.warn("Unimplemented NID function sceMpegGetUserdataAu [0x01977054]");
 
         return 0xDEADC0DE;
     }
-    
+
     @HLEFunction(nid = 0xC45C99CC, version = 150)
     public int sceMpegQueryUserdataEsSize() {
         log.warn("Unimplemented NID function sceMpegQueryUserdataEsSize [0xC45C99CC]");
 
         return 0xDEADC0DE;
     }
-       
-    @HLEFunction(nid = 0x0558B075, version = 150)
-    public int sceMpegAvcCopyYCbCr() {
-        log.warn("Unimplemented NID function sceMpegAvcCopyYCbCr [0x0558B075]");
 
-        return 0xDEADC0DE;
+    @HLEFunction(nid = 0x0558B075, version = 150)
+    public int sceMpegAvcCopyYCbCr(int mpeg, int source_addr, int YCbCr_addr) {
+        log.warn(String.format("Unimplemented sceMpegAvcCopyYCbCr mpeg=0x%08X, source=0x%08X, YCbCr_addr=0x%08X", mpeg, source_addr, YCbCr_addr));
+
+        return 0;
     }
-       
+
     @HLEFunction(nid = 0x11F95CF1, version = 150)
     public int sceMpegGetAvcNalAu() {
         log.warn("Unimplemented NID function sceMpegGetAvcNalAu [0x11F95CF1]");
 
         return 0xDEADC0DE;
     }
-    
+
     @HLEFunction(nid = 0x921FCCCF, version = 150)
     public int sceMpegGetAvcEsAu() {
         log.warn("Unimplemented NID function sceMpegGetAvcEsAu [0x921FCCCF]");
 
         return 0xDEADC0DE;
     }
-    
+
     @HLEFunction(nid = 0x6F314410, version = 150)
     public int sceMpegAvcDecodeGetDecodeSEI() {
         log.warn("Unimplemented NID function sceMpegAvcDecodeGetDecodeSEI [0x6F314410]");
 
         return 0xDEADC0DE;
     }
-    
+
     @HLEFunction(nid = 0xAB0E9556, version = 150)
     public int sceMpegAvcDecodeDetailIndex() {
         log.warn("Unimplemented NID function sceMpegAvcDecodeDetailIndex [0xAB0E9556]");
@@ -2457,35 +2454,35 @@ public class sceMpeg extends HLEModule {
 
         return 0xDEADC0DE;
     }
-    
+
     @HLEFunction(nid = 0xF5E7EA31, version = 150)
     public int sceMpegAvcConvertToYuv420(int mpeg, TPointer bufferOutput, TPointer unknown1, int unknown2) {
         log.warn(String.format("Unimplemented sceMpegAvcConvertToYuv420 mpeg=0x%X, bufferOutput=%s, unknown1=%s, unknown2=0x%08X", mpeg, bufferOutput, unknown1, unknown2));
 
         return 0;
     }
-    
+
     @HLEFunction(nid = 0xD1CE4950, version = 150)
     public int sceMpegAvcCscMode() {
         log.warn("Unimplemented NID function sceMpegAvcCscMode [0xD1CE4950]");
 
         return 0xDEADC0DE;
     }
-    
+
     @HLEFunction(nid = 0xDBB60658, version = 150)
     public int sceMpegFlushAu() {
         log.warn("Unimplemented NID function sceMpegFlushAu [0xDBB60658]");
 
         return 0xDEADC0DE;
     }
-    
+
     @HLEFunction(nid = 0xE95838F6, version = 150)
     public int sceMpegAvcCscInfo() {
         log.warn("Unimplemented NID function sceMpegAvcCscInfo [0xE95838F6]");
 
         return 0xDEADC0DE;
     }
-    
+
     @HLEFunction(nid = 0x11CAB459, version = 150)
     public int sceMpeg_11CAB459() {
         log.warn("Unimplemented NID function sceMpeg_11CAB459 [0x11CAB459]");
