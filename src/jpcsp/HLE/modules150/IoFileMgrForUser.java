@@ -35,9 +35,11 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
 import static jpcsp.util.Utilities.readStringNZ;
 import static jpcsp.util.Utilities.readStringZ;
 
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -708,7 +710,7 @@ public class IoFileMgrForUser extends HLEModule {
     	}
 
     	String absoluteFileName = filepath;
-    	if (!absoluteFileName.endsWith("/")) {
+    	if (!absoluteFileName.endsWith("/") && !fileName.startsWith("/")) {
     		absoluteFileName += "/";
     	}
     	absoluteFileName += fileName;
@@ -3984,31 +3986,27 @@ public class IoFileMgrForUser extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0x5C2BE2CC, version = 150, checkInsideInterrupt = true)
-    public int sceIoGetFdList(int out_addr, int outSize, int fdNum_addr) {
-        Memory mem = Processor.memory;
-
+    public int sceIoGetFdList(@CanBeNull TPointer32 out_addr, int outSize, @CanBeNull TPointer32 fdNum_addr) {
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceIoGetFdList out_addr=0x%08X, outSize=%d, fdNum_addr=0x%08X", out_addr, outSize, fdNum_addr));
+        	log.debug(String.format("sceIoGetFdList out_addr=%s, outSize=%d, fdNum_addr=%s", out_addr, outSize, fdNum_addr));
         }
 
         int count = 0;
-        if (Memory.isAddressGood(out_addr) && outSize > 0) {
-	        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(out_addr, 4 * outSize, 4);
+        if (out_addr.isNotNull() && outSize > 0) {
+        	int offset = 0;
 	        for (Integer fd : fileIds.keySet()) {
-	        	if (count >= outSize) {
+	        	if (offset >= outSize) {
 	        		break;
 	        	}
-	        	memoryWriter.writeNext(fd.intValue());
+	        	out_addr.setValue(offset, fd.intValue());
+	        	offset += 4;
 	        }
-	        memoryWriter.flush();
+	        count = offset / 4;
         }
 
-        if (fdNum_addr != 0) {
-            // Return the total number of files open
-        	mem.write32(fdNum_addr, fileIds.size());
-        }
+        // Return the total number of files open
+    	fdNum_addr.setValue(fileIds.size());
 
         return count;
     }
-
 }
