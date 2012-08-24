@@ -19,6 +19,7 @@ package jpcsp.HLE.modules150;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
@@ -714,17 +715,15 @@ public class sceAtrac3plus extends HLEModule {
     	return atID;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xD1F59FDB, version = 150, checkInsideInterrupt = true)
     public int sceAtracStartEntry() {
-        log.warn("Unimplemented sceAtracStartEntry [0xD1F59FDB]");
-
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xD5C28CC0, version = 150, checkInsideInterrupt = true)
     public int sceAtracEndEntry() {
-        log.warn("Unimplemented sceAtracEndEntry");
-
         return 0;
     }
 

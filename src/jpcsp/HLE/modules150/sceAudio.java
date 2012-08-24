@@ -19,6 +19,7 @@ package jpcsp.HLE.modules150;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.Emulator;
@@ -241,17 +242,15 @@ public class sceAudio extends HLEModule {
     	return channel;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x80F1F7E0, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
     public int sceAudioInit() {
-        log.warn(String.format("Unimplemented sceAudioInit"));
-
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x210567F7, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
     public int sceAudioEnd() {
-        log.warn(String.format("Unimplemented sceAudioEnd"));
-
         return 0;
     }
 
@@ -272,17 +271,15 @@ public class sceAudio extends HLEModule {
     	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xB61595C0, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
     public int sceAudioLoopbackTest() {
-        log.warn(String.format("Unimplemented sceAudioLoopbackTest"));
-
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x927AC32B, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
     public int sceAudioSetVolumeOffset() {
-        log.warn(String.format("Unimplemented sceAudioSetVolumeOffset"));
-
         return 0;
     }
 
@@ -417,10 +414,9 @@ public class sceAudio extends HLEModule {
         return channel;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x41EFADE7, version = 150, checkInsideInterrupt = true)
     public int sceAudioOneshotOutput() {
-        log.warn(String.format("Unimplemented sceAudioOneshotOutput"));
-
         return 0;
     }
 
@@ -582,52 +578,45 @@ public class sceAudio extends HLEModule {
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x086E5895, version = 150, checkInsideInterrupt = true)
     public int sceAudioInputBlocking() {
-        log.warn(String.format("Unimplemented sceAudioInputBlocking"));
-
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x6D4BEC68, version = 150, checkInsideInterrupt = true)
     public int sceAudioInput() {
-        log.warn(String.format("Unimplemented sceAudioInput"));
-
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xA708C6A6, version = 150, checkInsideInterrupt = true)
     public int sceAudioGetInputLength() {
-        log.warn(String.format("Unimplemented sceAudioGetInputLength"));
-
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x87B2E651, version = 150, checkInsideInterrupt = true)
     public int sceAudioWaitInputEnd() {
-        log.warn(String.format("Unimplemented sceAudioWaitInputEnd"));
-
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x7DE61688, version = 150, checkInsideInterrupt = true)
     public int sceAudioInputInit() {
-        log.warn(String.format("Unimplemented sceAudioInputInit"));
-
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xE926D3FB, version = 150, checkInsideInterrupt = true)
     public int sceAudioInputInitEx() {
-        log.warn(String.format("Unimplemented sceAudioInputInitEx"));
-
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xA633048E, version = 150, checkInsideInterrupt = true)
     public int sceAudioPollInputEnd() {
-        log.warn(String.format("Unimplemented sceAudioPollInputEnd"));
-
         return 0;
     }
 

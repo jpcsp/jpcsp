@@ -21,6 +21,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_UNKNOWN_MODULE
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
@@ -354,17 +355,15 @@ public class ModuleMgrForUser extends HLEModule {
         return hleKernelLoadModule(path.getString(), flags, 0, false);
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x710F61B5, version = 150, checkInsideInterrupt = true)
     public int sceKernelLoadModuleMs() {
-        log.warn("Unimplemented sceKernelLoadModuleMs");
-
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xF9275D98, version = 150, checkInsideInterrupt = true)
     public int sceKernelLoadModuleBufferUsbWlan() {
-        log.warn("Unimplemented sceKernelLoadModuleBufferUsbWlan");
-
         return 0;
     }
 
