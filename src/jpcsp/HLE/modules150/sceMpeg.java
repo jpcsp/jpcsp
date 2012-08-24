@@ -1192,11 +1192,12 @@ public class sceMpeg extends HLEModule {
                     me.init(meChannel, true, true);
                 }
             	if (!me.readVideoAu(mpegAvcAu)) {
-            		// Returning "ERROR_MPEG_NO_DATA" only last timestamp has been reached
+            		// end of video reached only when last timestamp has been reached
             		if (mpegLastTimestamp <= 0 || mpegAvcAu.pts >= mpegLastTimestamp) {
             			endOfVideoReached = true;
-            			result = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
             		}
+            		// No more data in ringbuffer.
+        			result = SceKernelErrors.ERROR_MPEG_NO_DATA;
             	} else {
             		endOfVideoReached = false;
             	}
@@ -1751,7 +1752,12 @@ public class sceMpeg extends HLEModule {
             log.debug("sceMpegAvcDecodeFlush mpeg=0x" + Integer.toHexString(mpeg));
         }
 
+        // Finish the Mpeg only if we are not at the start of a new video,
+        // otherwise the analyzed video could be lost.
+        if (videoFrameCount > 0 || audioFrameCount > 0) {
         	finishMpeg();
+        }
+
         return 0;
     }
 
@@ -2335,21 +2341,16 @@ public class sceMpeg extends HLEModule {
 
         int numberPackets = Math.min(available, numPackets);
 
-        if (isCurrentMpegAnalyzed()) {
-        	// Do not read more packets than available in the MPEG stream
-        	int mpegStreamPackets = (mpegStreamSize + mpegRingbuffer.packetSize - 1) / mpegRingbuffer.packetSize;
-        	int remainingPackets = mpegStreamPackets - mpegRingbuffer.packetsRead;
-        	if (remainingPackets < 0) {
-        		remainingPackets = 0;
-        	}
-        	numberPackets = Math.min(numberPackets, remainingPackets);
-        } else {
+        if (!isCurrentMpegAnalyzed()) {
         	// The MPEG header has not yet been analyzed, try to read it using an IoListener...
         	if (ioListener == null) {
         		ioListener = new MpegIoListener();
         		Modules.IoFileMgrForUserModule.registerIoListener(ioListener);
         	}
         }
+
+        // Note: we can read more packets than available in the Mpeg stream: the application
+        // can loop the video by putting previous packets back into the ringbuffer.
 
         mpegRingbuffer.read(mem, mpegRingbufferAddr);
         insideRingbufferPut = true;
