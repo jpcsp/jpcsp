@@ -19,10 +19,12 @@ package jpcsp.HLE;
 import jpcsp.Memory;
 
 abstract public class TPointerBase implements ITPointerBase {
-	TPointer pointer;
+	protected TPointer pointer;
+	private boolean canBeNull;
 
-	public TPointerBase(Memory memory, int address) {
+	protected TPointerBase(Memory memory, int address, boolean canBeNull) {
 		pointer = new TPointer(memory, address);
+		this.canBeNull = canBeNull;
 	}
 
 	@Override
@@ -42,7 +44,24 @@ abstract public class TPointerBase implements ITPointerBase {
 
 	@Override
 	public boolean isNull() {
-		return pointer.getAddress() == 0;
+		return pointer.isNull();
+	}
+
+	@Override
+	public boolean isNotNull() {
+		return pointer.isNotNull();
+	}
+
+	/**
+	 * Tests if the value can be set.
+	 * A value can be set if the pointer cannot be NULL or is not NULL.
+	 * A value can be ignored if the pointer can be NULL and is NULL.
+	 * 
+	 * @return true  if the value can be set
+	 *         false if the value can be ignored
+	 */
+	protected boolean canSetValue() {
+		return !canBeNull || isNotNull();
 	}
 
 	@Override
