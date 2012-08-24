@@ -16,13 +16,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.CanBeNull;
+import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+
 import java.util.HashMap;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
@@ -496,22 +500,18 @@ public class sceAtrac3plus extends HLEModule {
             return remainFrames;
         }
 
-        public void getBufferInfoForReseting(int sample, int bufferInfoAddr) {
-            Memory mem = Memory.getInstance();
-
-            if (Memory.isAddressGood(bufferInfoAddr)) {
-                // Holds buffer related parameters.
-                // Main buffer.
-                mem.write32(bufferInfoAddr, inputBufferAddr);                     // Pointer to current writing position in the buffer.
-                mem.write32(bufferInfoAddr + 4, inputBufferWritableBytes);        // Number of bytes which can be written to the buffer.
-                mem.write32(bufferInfoAddr + 8, inputBufferNeededBytes);          // Number of bytes that must to be written to the buffer.
-                mem.write32(bufferInfoAddr + 12, inputFileOffset);                // Read offset for input file.
-                // Secondary buffer.
-                mem.write32(bufferInfoAddr + 16, secondInputBufferAddr);          // Pointer to current writing position in the buffer.
-                mem.write32(bufferInfoAddr + 20, secondInputBufferWritableBytes); // Number of bytes which can be written to the buffer.
-                mem.write32(bufferInfoAddr + 24, secondInputBufferNeededBytes);   // Number of bytes that must to be written to the buffer.
-                mem.write32(bufferInfoAddr + 28, secondInputFileOffset);          // Read offset for input file.
-            }
+        public void getBufferInfoForResetting(int sample, TPointer32 bufferInfoAddr) {
+            // Holds buffer related parameters.
+            // Main buffer.
+            bufferInfoAddr.setValue(0, inputBufferAddr);                 // Pointer to current writing position in the buffer.
+            bufferInfoAddr.setValue(4, inputBufferWritableBytes);        // Number of bytes which can be written to the buffer.
+            bufferInfoAddr.setValue(8, inputBufferNeededBytes);          // Number of bytes that must to be written to the buffer.
+            bufferInfoAddr.setValue(12, inputFileOffset);                // Read offset for input file.
+            // Secondary buffer.
+            bufferInfoAddr.setValue(16, secondInputBufferAddr);          // Pointer to current writing position in the buffer.
+            bufferInfoAddr.setValue(20, secondInputBufferWritableBytes); // Number of bytes which can be written to the buffer.
+            bufferInfoAddr.setValue(24, secondInputBufferNeededBytes);   // Number of bytes that must to be written to the buffer.
+            bufferInfoAddr.setValue(28, secondInputFileOffset);          // Read offset for input file.
         }
 
         public void setDecodedSamples(int samples) {
@@ -703,685 +703,436 @@ public class sceAtrac3plus extends HLEModule {
         return 0; // Unknown Codec
     }
 
+    public int checkAtracID(int atID) {
+    	atID &= atracIDMask;
+
+    	if (!atracIDs.containsKey(atID)) {
+    		log.warn(String.format("Unknown atracID=0x%X", atID));
+            throw new SceKernelErrorException(SceKernelErrors.ERROR_ATRAC_BAD_ID);
+    	}
+
+    	return atID;
+    }
+
     @HLEFunction(nid = 0xD1F59FDB, version = 150, checkInsideInterrupt = true)
-    public void sceAtracStartEntry(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAtracStartEntry() {
+        log.warn("Unimplemented sceAtracStartEntry [0xD1F59FDB]");
 
-        log.warn("Unimplemented NID function sceAtracStartEntry [0xD1F59FDB]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0xD5C28CC0, version = 150, checkInsideInterrupt = true)
-    public void sceAtracEndEntry(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAtracEndEntry() {
+        log.warn("Unimplemented sceAtracEndEntry");
 
-        log.warn("Unimplemented NID function sceAtracEndEntry [0xD5C28CC0]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0x780F88D1, version = 150, checkInsideInterrupt = true)
-    public void sceAtracGetAtracID(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int codecType = cpu.gpr[4];
-
+    public int sceAtracGetAtracID(int codecType) {
         if (log.isDebugEnabled()) {
-            log.debug("sceAtracGetAtracID: codecType = 0x" + Integer.toHexString(codecType));
+            log.debug(String.format("sceAtracGetAtracID codecType=0x%X", codecType));
         }
 
-        
-        cpu.gpr[2] = hleCreateAtracID(codecType);
+        int atId = hleCreateAtracID(codecType);
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetAtracID: returning atracID=0x%08X", cpu.gpr[2]));
+            log.debug(String.format("sceAtracGetAtracID: returning atracID=0x%08X", atId));
         }
+
+        return atId;
     }
 
     @HLEFunction(nid = 0x61EB33F5, version = 150, checkInsideInterrupt = true)
-    public void sceAtracReleaseAtracID(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int atID = cpu.gpr[4] & atracIDMask;
-
+    public int sceAtracReleaseAtracID(@CheckArgument("checkAtracID") int atID) {
         if (log.isDebugEnabled()) {
-            log.debug("sceAtracReleaseAtracID: atracID = " + atID);
+            log.debug(String.format("sceAtracReleaseAtracID atracID=0x%X", atID));
         }
 
-        
-        if (!atracIDs.containsKey(atID)) {
-            log.warn("sceAtracReleaseAtracID: bad atracID= " + atID);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        } else {
-            AtracCodec atracCodec = atracIDs.get(atID).getAtracCodec();
-            if (atracCodec != null) {
-                atracCodec.finish();
-            }
-            hleReleaseAtracID(atID);
-            cpu.gpr[2] = 0;
+        AtracCodec atracCodec = atracIDs.get(atID).getAtracCodec();
+        if (atracCodec != null) {
+            atracCodec.finish();
         }
+        hleReleaseAtracID(atID);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x0E2A73AB, version = 150, checkInsideInterrupt = true)
-    public void sceAtracSetData(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int atID = cpu.gpr[4] & atracIDMask;
-        int buffer = cpu.gpr[5];
-        int bufferSize = cpu.gpr[6];
-
+    public int sceAtracSetData(@CheckArgument("checkAtracID") int atID, TPointer buffer, int bufferSize) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracSetData: atID = %d, buffer = 0x%08X, bufferSize = 0x%08X", atID, buffer, bufferSize));
+            log.debug(String.format("sceAtracSetData atID=0x%X, buffer=%s, bufferSize=0x%08X", atID, buffer, bufferSize));
         }
 
-        
-        if (!atracIDs.containsKey(atID)) {
-            log.warn("sceAtracSetData: bad atracID= " + atID);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        } else {
-            atracIDs.get(atID).setData(buffer, bufferSize, bufferSize, false);
-            cpu.gpr[2] = 0;
-        }
+        atracIDs.get(atID).setData(buffer.getAddress(), bufferSize, bufferSize, false);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x3F6E26B5, version = 150, checkInsideInterrupt = true)
-    public void sceAtracSetHalfwayBuffer(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int atID = cpu.gpr[4] & atracIDMask;
-        int halfBuffer = cpu.gpr[5];
-        int readSize = cpu.gpr[6];
-        int halfBufferSize = cpu.gpr[7];
-
+    public int sceAtracSetHalfwayBuffer(@CheckArgument("checkAtracID") int atID, TPointer halfBuffer, int readSize, int halfBufferSize) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracSetHalfwayBuffer: atID = %d, buffer = 0x%08X, readSize = 0x%08X, bufferSize = 0x%08X", atID, halfBuffer, readSize, halfBufferSize));
+            log.debug(String.format("sceAtracSetHalfwayBuffer atID=0x%X, buffer=%s, readSize=0x%08X, bufferSize=0x%08X", atID, halfBuffer, readSize, halfBufferSize));
         }
 
-        
-        if (!atracIDs.containsKey(atID)) {
-            log.warn("sceAtracSetHalfwayBuffer: bad atracID= " + atID);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        } else {
-            atracIDs.get(atID).setData(halfBuffer, readSize, halfBufferSize, false);
-            cpu.gpr[2] = 0;
-        }
+        atracIDs.get(atID).setData(halfBuffer.getAddress(), readSize, halfBufferSize, false);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x7A20E7AF, version = 150, checkInsideInterrupt = true)
-    public void sceAtracSetDataAndGetID(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int buffer = cpu.gpr[4];
-        int bufferSize = cpu.gpr[5];
-
+    public int sceAtracSetDataAndGetID(TPointer buffer, int bufferSize) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracSetDataAndGetID buffer = 0x%08X, bufferSize = 0x%08X", buffer, bufferSize));
+            log.debug(String.format("sceAtracSetDataAndGetID buffer=%s, bufferSize=0x%08X", buffer, bufferSize));
         }
 
-        
-        int atID = 0;
-        if (Memory.isAddressGood(buffer)) {
-        	int codecType = getCodecType(buffer);
-            atID = hleCreateAtracID(codecType);
-            if (atracIDs.containsKey(atID)) {
-                atracIDs.get(atID).setData(buffer, bufferSize, bufferSize, false);
-            }
+    	int codecType = getCodecType(buffer.getAddress());
+        int atID = hleCreateAtracID(codecType);
+        if (atracIDs.containsKey(atID)) {
+            atracIDs.get(atID).setData(buffer.getAddress(), bufferSize, bufferSize, false);
         }
+
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceAtracSetDataAndGetID returning atracID=0x%08X", atID));
         }
-        cpu.gpr[2] = atID;
+
+        return atID;
     }
 
     @HLEFunction(nid = 0x0FAE370E, version = 150, checkInsideInterrupt = true)
-    public void sceAtracSetHalfwayBufferAndGetID(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int halfBuffer = cpu.gpr[4];
-        int readSize = cpu.gpr[5];
-        int halfBufferSize = cpu.gpr[6];
-
+    public int sceAtracSetHalfwayBufferAndGetID(TPointer halfBuffer, int readSize, int halfBufferSize) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracSetHalfwayBufferAndGetID buffer = 0x%08X, readSize = 0x%08X, bufferSize = 0x%08X", halfBuffer, readSize, halfBufferSize));
+            log.debug(String.format("sceAtracSetHalfwayBufferAndGetID halfBuffer=%s, readSize=0x%08X, halfBufferSize=0x%08X", halfBuffer, readSize, halfBufferSize));
         }
 
-        
-        int atID = 0;
-        if (Memory.isAddressGood(halfBuffer)) {
-        	int codecType = getCodecType(halfBuffer);
-            atID = hleCreateAtracID(codecType);
-            if (atracIDs.containsKey(atID)) {
-                atracIDs.get(atID).setData(halfBuffer, readSize, halfBufferSize, false);
-            }
+    	int codecType = getCodecType(halfBuffer.getAddress());
+        int atID = hleCreateAtracID(codecType);
+        if (atracIDs.containsKey(atID)) {
+            atracIDs.get(atID).setData(halfBuffer.getAddress(), readSize, halfBufferSize, false);
         }
-        cpu.gpr[2] = atID;
+
+        return atID;
     }
 
     @HLEFunction(nid = 0x6A8C3CD5, version = 150, checkInsideInterrupt = true)
-    public void sceAtracDecodeData(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int atID = cpu.gpr[4] & atracIDMask;
-        int samplesAddr = cpu.gpr[5];
-        int samplesNbrAddr = cpu.gpr[6];
-        int outEndAddr = cpu.gpr[7];
-        int remainFramesAddr = cpu.gpr[8];
-
+    public int sceAtracDecodeData(@CheckArgument("checkAtracID") int atID, TPointer samplesAddr, @CanBeNull TPointer32 samplesNbrAddr, @CanBeNull TPointer32 outEndAddr, @CanBeNull TPointer32 remainFramesAddr) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracDecodeData: atracID=%d, samplesAddr=0x%08X, samplesNbrAddr=0x%08X, outEndAddr=0x%08X, remainFramesAddr=0x%08X",
-                    atID, samplesAddr, samplesNbrAddr, outEndAddr, remainFramesAddr));
+            log.debug(String.format("sceAtracDecodeData atracID=0x%X, samplesAddr=%s, samplesNbrAddr=%s, outEndAddr=%s, remainFramesAddr=%s", atID, samplesAddr, samplesNbrAddr, outEndAddr, remainFramesAddr));
         }
 
-        
-        if (!atracIDs.containsKey(atID)) {
-            log.warn("sceAtracDecodeData: bad atracID= " + atID);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        } else if (atracIDs.get(atID).isSecondBufferNeeded() && !atracIDs.get(atID).isSecondBufferSet()) {
-            log.warn("sceAtracDecodeData: atracID= " + atID + ", needs second buffer!");
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_SECOND_BUFFER_NEEDED;
-        } else {
-            AtracID id = atracIDs.get(atID);
-            int result = 0;
-            AtracCodec atracCodec = id.getAtracCodec();
-            int samples = 0;
-            int end = 1;
-            if (id.isForceReloadOfData()) {
-            	result = SceKernelErrors.ERROR_ATRAC_BUFFER_IS_EMPTY;
-            	end = 0;
-            } else if (atracCodec != null) {
-                samples = atracCodec.atracDecodeData(atID, samplesAddr);
-                if (samples < 0) {
-                    // Not using decoded data.
-                    if (log.isDebugEnabled()) {
-                        log.debug("sceAtracDecodeData faked samples");
-                    }
-                    samples = id.getMaxSamples();
-                    if (id.getAtracCurrentSample() >= id.getAtracEndSample()) {
-                        samples = 0;
-                        // No more data in input buffer
-                        result = SceKernelErrors.ERROR_ATRAC_ALL_DATA_DECODED;
-                        end = 1;
-                    } else {
-                        end = 0;
-                    }
+        if (atracIDs.get(atID).isSecondBufferNeeded() && !atracIDs.get(atID).isSecondBufferSet()) {
+            log.warn(String.format("sceAtracDecodeData atracID=0x%X needs second buffer!", atID));
+            return SceKernelErrors.ERROR_ATRAC_SECOND_BUFFER_NEEDED;
+        }
 
-                    if (Memory.isAddressGood(samplesAddr)) {
-                        mem.memset(samplesAddr, (byte) 0, samples * 4);  // 4 empty bytes per sample.
-                    }
-                } else if (samples == 0) {
-                    // Using decoded data and all samples have been decoded.
+        AtracID id = atracIDs.get(atID);
+        int result = 0;
+        AtracCodec atracCodec = id.getAtracCodec();
+        int samples = 0;
+        int end = 1;
+        if (id.isForceReloadOfData()) {
+        	result = SceKernelErrors.ERROR_ATRAC_BUFFER_IS_EMPTY;
+        	end = 0;
+        } else if (atracCodec != null) {
+            samples = atracCodec.atracDecodeData(atID, samplesAddr.getAddress());
+            if (samples < 0) {
+                // Not using decoded data.
+                if (log.isDebugEnabled()) {
+                    log.debug("sceAtracDecodeData faked samples");
+                }
+                samples = id.getMaxSamples();
+                if (id.getAtracCurrentSample() >= id.getAtracEndSample()) {
+                    samples = 0;
+                    // No more data in input buffer
                     result = SceKernelErrors.ERROR_ATRAC_ALL_DATA_DECODED;
                     end = 1;
                 } else {
-                    // Using decoded data.
-                    end = atracCodec.getAtracEnd();
+                    end = 0;
                 }
-            }
-            if (samples > 0) {
-                int consumedInputBytes = id.getAtracBytesPerFrame();
-                if (consumedInputBytes < 0) {
-                    consumedInputBytes = 0;
-                } else if (id.getInputBufferOffset() + consumedInputBytes > id.getInputBufferSize()) {
-                    consumedInputBytes = id.getInputBufferSize() - id.getInputBufferOffset();
-                }
-                id.setInputBufferOffset(id.getInputBufferOffset() + consumedInputBytes);
-            }
-            if (samples > 0) {
-                id.setDecodedSamples(samples);
-                if (id.getAtracCurrentSample() >= id.getAtracEndSample()) {
-                	// The PSP is already setting the end flag when returning the last samples.
-                	end = 1;
-                }
-            }
-            int remainFrames;
-            if (end == 1) {
-                remainFrames = -1;
+
+                Memory.getInstance().memset(samplesAddr.getAddress(), (byte) 0, samples * 4);  // 4 empty bytes per sample.
+            } else if (samples == 0) {
+                // Using decoded data and all samples have been decoded.
+                result = SceKernelErrors.ERROR_ATRAC_ALL_DATA_DECODED;
+                end = 1;
             } else {
-            	remainFrames = getRemainFrames(id, samples);
-            }
-            if (Memory.isAddressGood(samplesNbrAddr)) {
-                mem.write32(samplesNbrAddr, samples);
-            }
-            if (Memory.isAddressGood(outEndAddr)) {
-                mem.write32(outEndAddr, end);
-            }
-            if (Memory.isAddressGood(remainFramesAddr)) {
-                mem.write32(remainFramesAddr, remainFrames);
-            }
-
-            if (log.isDebugEnabled()) {
-                log.debug(String.format("sceAtracDecodeData returning 0x%08X, samples=%d, end=%d, remainFrames=%d, currentSample=%d/%d, %s", result, samples, end, remainFrames, id.getAtracCurrentSample(), id.getAtracEndSample(), id.toString()));
-            }
-
-            cpu.gpr[2] = result;
-            // Delay the thread decoding the Atrac data,
-            // the thread is also blocking using semaphores/event flags on a real PSP.
-            if (result == 0) {
-            	Modules.ThreadManForUserModule.hleKernelDelayThread(atracDecodeDelay, false);
+                // Using decoded data.
+                end = atracCodec.getAtracEnd();
             }
         }
+        if (samples > 0) {
+            int consumedInputBytes = id.getAtracBytesPerFrame();
+            if (consumedInputBytes < 0) {
+                consumedInputBytes = 0;
+            } else if (id.getInputBufferOffset() + consumedInputBytes > id.getInputBufferSize()) {
+                consumedInputBytes = id.getInputBufferSize() - id.getInputBufferOffset();
+            }
+            id.setInputBufferOffset(id.getInputBufferOffset() + consumedInputBytes);
+        }
+        if (samples > 0) {
+            id.setDecodedSamples(samples);
+            if (id.getAtracCurrentSample() >= id.getAtracEndSample()) {
+            	// The PSP is already setting the end flag when returning the last samples.
+            	end = 1;
+            }
+        }
+        int remainFrames;
+        if (end == 1) {
+            remainFrames = -1;
+        } else {
+        	remainFrames = getRemainFrames(id, samples);
+        }
+        samplesNbrAddr.setValue(samples);
+        outEndAddr.setValue(end);
+        remainFramesAddr.setValue(remainFrames);
+
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceAtracDecodeData returning 0x%08X, samples=%d, end=%d, remainFrames=%d, currentSample=%d/%d, %s", result, samples, end, remainFrames, id.getAtracCurrentSample(), id.getAtracEndSample(), id.toString()));
+        }
+
+        // Delay the thread decoding the Atrac data,
+        // the thread is also blocking using semaphores/event flags on a real PSP.
+        if (result == 0) {
+        	Modules.ThreadManForUserModule.hleKernelDelayThread(atracDecodeDelay, false);
+        }
+
+        return result;
     }
 
     @HLEFunction(nid = 0x9AE849A7, version = 150, checkInsideInterrupt = true)
-    public void sceAtracGetRemainFrame(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int atID = cpu.gpr[4] & atracIDMask;
-        int remainFramesAddr = cpu.gpr[5];
-
+    public int sceAtracGetRemainFrame(@CheckArgument("checkAtracID") int atID, TPointer32 remainFramesAddr) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetRemainFrame: atracID = %d, remainFramesAddr = 0x%08X", atID, remainFramesAddr));
+            log.debug(String.format("sceAtracGetRemainFrame atracID=0x%X, remainFramesAddr=%s", atID, remainFramesAddr));
         }
 
-        
         if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracGetRemainFrame: bad atracID= " + atID);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        } else {
-        	AtracID id = atracIDs.get(atID);
-        	int remainFrames = getRemainFrames(id);
-        	if (Memory.isAddressGood(remainFramesAddr)) {
-        		mem.write32(remainFramesAddr, remainFrames);
-        	}
-            if (log.isDebugEnabled()) {
-                log.debug(String.format("sceAtracGetRemainFrame: returning %d, %s", remainFrames, id.toString()));
-            }
-            cpu.gpr[2] = 0;
+            return SceKernelErrors.ERROR_ATRAC_BAD_ID;
         }
+
+        AtracID id = atracIDs.get(atID);
+    	int remainFrames = getRemainFrames(id);
+		remainFramesAddr.setValue(remainFrames);
+
+		if (log.isDebugEnabled()) {
+            log.debug(String.format("sceAtracGetRemainFrame returning %d, %s", remainFrames, id.toString()));
+        }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x5D268707, version = 150, checkInsideInterrupt = true)
-    public void sceAtracGetStreamDataInfo(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
+    public int sceAtracGetStreamDataInfo(@CheckArgument("checkAtracID") int atID, @CanBeNull TPointer32 writeAddr, @CanBeNull TPointer32 writableBytesAddr, @CanBeNull TPointer32 readOffsetAddr) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceAtracGetStreamDataInfo atracID=0x%X, writeAddr=%s, writableBytesAddr=%s, readOffsetAddr=%s", atID, writeAddr, writableBytesAddr, readOffsetAddr));
+        }
 
-        int atID = cpu.gpr[4] & atracIDMask;
-        int writeAddr = cpu.gpr[5];
-        int writableBytesAddr = cpu.gpr[6];
-        int readOffsetAddr = cpu.gpr[7];
+        AtracID id = atracIDs.get(atID);
+        id.update();
+        writeAddr.setValue(id.getInputBufferAddr());
+        writableBytesAddr.setValue(id.getInputBufferWritableBytes());
+        readOffsetAddr.setValue(id.getInputFileOffset());
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetStreamDataInfo: atID=%d, writeAddr=0x%08X, writableBytesAddr=0x%08X, readOffsetAddr=0x%08X", atID, writeAddr, writableBytesAddr, readOffsetAddr));
+            log.debug(String.format("sceAtracGetStreamDataInfo write=0x%08X, writableBytes=%d, readOffset=%d, %s", writeAddr.getValue(), writableBytesAddr.getValue(), readOffsetAddr.getValue(), id.toString()));
         }
 
-        
-        if (!atracIDs.containsKey(atID)) {
-            log.warn("sceAtracGetStreamDataInfo: bad atracID= " + atID);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        } else {
-            AtracID id = atracIDs.get(atID);
-            id.update();
-            if (Memory.isAddressGood(writeAddr)) {
-                mem.write32(writeAddr, id.getInputBufferAddr());
-            }
-            if (Memory.isAddressGood(writableBytesAddr)) {
-                mem.write32(writableBytesAddr, id.getInputBufferWritableBytes());
-            }
-            if (Memory.isAddressGood(readOffsetAddr)) {
-                mem.write32(readOffsetAddr, id.getInputFileOffset());
-            }
-            if (log.isDebugEnabled()) {
-                log.debug(String.format("sceAtracGetStreamDataInfo: write=0x%08X, writableBytes=%d, readOffset=%d, %s", mem.read32(writeAddr), mem.read32(writableBytesAddr), mem.read32(readOffsetAddr), id.toString()));
-            }
-            cpu.gpr[2] = 0;
-        }
+        return 0;
     }
 
     @HLEFunction(nid = 0x7DB31251, version = 150, checkInsideInterrupt = true)
-    public void sceAtracAddStreamData(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int atID = cpu.gpr[4] & atracIDMask;
-        int bytesToAdd = cpu.gpr[5];
-
+    public int sceAtracAddStreamData(@CheckArgument("checkAtracID") int atID, int bytesToAdd) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracAddStreamData: atracID=%d, bytesToAdd=0x%x", atID, bytesToAdd));
+            log.debug(String.format("sceAtracAddStreamData atracID=0x%X, bytesToAdd=0x%X", atID, bytesToAdd));
         }
 
-        
-        if (!atracIDs.containsKey(atID)) {
-            log.warn("sceAtracAddStreamData: bad atracID= " + atID);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        } else {
-            atracIDs.get(atID).addStreamData(bytesToAdd);
-            if (log.isDebugEnabled()) {
-                log.debug(String.format("sceAtracAddStreamData: %s", atracIDs.get(atID).toString()));
-            }
-            cpu.gpr[2] = 0;
+        AtracID id = atracIDs.get(atID);
+        id.addStreamData(bytesToAdd);
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceAtracAddStreamData: %s", id.toString()));
         }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x83E85EA0, version = 150, checkInsideInterrupt = true)
-    public void sceAtracGetSecondBufferInfo(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int atID = cpu.gpr[4] & atracIDMask;
-        int outPosition = cpu.gpr[5];
-        int outBytes = cpu.gpr[6];
-
+    public int sceAtracGetSecondBufferInfo(@CheckArgument("checkAtracID") int atID, @CanBeNull TPointer32 outPosition, @CanBeNull TPointer32 outBytes) {
         if (log.isDebugEnabled()) {
-            log.debug("sceAtracGetSecondBufferInfo: atracID = " + atID + ", outPos=0x" + Integer.toHexString(outPosition) + ", outBytes=0x" + Integer.toHexString(outBytes));
+            log.debug(String.format("sceAtracGetSecondBufferInfo atracID=0x%X, outPosition=%s, outBytes=%s", atID, outPosition, outBytes));
         }
 
-        
-        if (!atracIDs.containsKey(atID)) {
-            log.warn("sceAtracGetSecondBufferInfo: bad atracID= " + atID);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        } else {
-            if(atracIDs.get(atID).isSecondBufferNeeded()) {
-                if(Memory.isAddressGood(outPosition) && Memory.isAddressGood(outBytes)) {
-                    mem.write32(outPosition, atracIDs.get(atID).getSecondInputFileOffset());
-                    mem.write32(outBytes, atracIDs.get(atID).getSecondInputFileSize());
-                }
-                cpu.gpr[2] = 0;
-            } else {
-                cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_SECOND_BUFFER_NOT_NEEDED;
-            }
+        AtracID id = atracIDs.get(atID);
+        if (!id.isSecondBufferNeeded()) {
+            return SceKernelErrors.ERROR_ATRAC_SECOND_BUFFER_NOT_NEEDED;
         }
+
+        outPosition.setValue(id.getSecondInputFileOffset());
+        outBytes.setValue(id.getSecondInputFileSize());
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x83BF7AFD, version = 150, checkInsideInterrupt = true)
-    public void sceAtracSetSecondBuffer(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int atID = cpu.gpr[4] & atracIDMask;
-        int secondBuffer = cpu.gpr[5];
-        int secondBufferSize = cpu.gpr[6];
-
+    public int sceAtracSetSecondBuffer(@CheckArgument("checkAtracID") int atID, TPointer secondBuffer, int secondBufferSize) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracSetSecondBuffer: atID = %d, buffer = 0x%08X, bufferSize = 0x%08X", atID, secondBuffer, secondBufferSize));
+            log.debug(String.format("sceAtracSetSecondBuffer atracID=0x%X, secondBuffer=%s, secondBufferSize=0x%08X", atID, secondBuffer, secondBufferSize));
         }
 
-        
-        if (!atracIDs.containsKey(atID)) {
-            log.warn("sceAtracSetSecondBuffer: bad atracID= " + atID);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        } else {
-            atracIDs.get(atID).setData(secondBuffer, secondBufferSize, secondBufferSize, true);
-            cpu.gpr[2] = 0;
-        }
+        AtracID id = atracIDs.get(atID);
+        id.setData(secondBuffer.getAddress(), secondBufferSize, secondBufferSize, true);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xE23E3A35, version = 150, checkInsideInterrupt = true)
-    public void sceAtracGetNextDecodePosition(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int atID = cpu.gpr[4] & atracIDMask;
-        int posAddr = cpu.gpr[5];
-
+    public int sceAtracGetNextDecodePosition(@CheckArgument("checkAtracID") int atID, TPointer32 posAddr) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetNextDecodePosition atracID = %d, posAddr = 0x%08X",
-                    atID, posAddr));
+            log.debug(String.format("sceAtracGetNextDecodePosition atracID=0x%X, posAddr=%s", atID, posAddr));
         }
 
-        
-        if (!atracIDs.containsKey(atID)) {
-            log.warn("sceAtracGetNextDecodePosition: bad atracID= " + atID);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        } else {
-            AtracID id = atracIDs.get(atID);
-            if (id.getAtracCurrentSample() >= id.getAtracEndSample()) {
-                cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_ALL_DATA_DECODED;
-            } else {
-                mem.write32(posAddr, id.getAtracCurrentSample());
-                cpu.gpr[2] = 0;
-            }
+        AtracID id = atracIDs.get(atID);
+        if (id.getAtracCurrentSample() >= id.getAtracEndSample()) {
+            return SceKernelErrors.ERROR_ATRAC_ALL_DATA_DECODED;
         }
+
+        posAddr.setValue(id.getAtracCurrentSample());
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xA2BBA8BE, version = 150, checkInsideInterrupt = true)
-    public void sceAtracGetSoundSample(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int atID = cpu.gpr[4] & atracIDMask;
-        int endSampleAddr = cpu.gpr[5];
-        int loopStartSampleAddr = cpu.gpr[6];
-        int loopEndSampleAddr = cpu.gpr[7];
-
+    public int sceAtracGetSoundSample(@CheckArgument("checkAtracID") int atID, @CanBeNull TPointer32 endSampleAddr, @CanBeNull TPointer32 loopStartSampleAddr, @CanBeNull TPointer32 loopEndSampleAddr) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetSoundSample atracID = %d, endSampleAddr = 0x%08X, loopStartSampleAddr = 0x%08X, loopEndSampleAddr = 0x%08X", atID, endSampleAddr, loopStartSampleAddr, loopEndSampleAddr));
+            log.debug(String.format("sceAtracGetSoundSample atracID=0x%X, endSampleAddr=%s, loopStartSampleAddr=%s, loopEndSampleAddr=%s", atID, endSampleAddr, loopStartSampleAddr, loopEndSampleAddr));
         }
 
-        
-        if (!atracIDs.containsKey(atID)) {
-            log.warn("sceAtracGetSoundSample: bad atracID= " + atID);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        } else {
-        	AtracID id = atracIDs.get(atID);
-        	int endSample = id.getAtracEndSample();
-            int loopStartSample = id.getLoopStartSample();
-            int loopEndSample = id.getLoopEndSample();
-        	if (endSample < 0) {
-        		endSample = id.getAtracCodec().getAtracEndSample();
-        	}
-            if (endSample < 0) {
-                endSample = id.getInputFileSize();
-            }
-            mem.write32(endSampleAddr, endSample);
-            mem.write32(loopStartSampleAddr, loopStartSample);
-            mem.write32(loopEndSampleAddr, loopEndSample);
-            cpu.gpr[2] = 0;
+    	AtracID id = atracIDs.get(atID);
+    	int endSample = id.getAtracEndSample();
+        int loopStartSample = id.getLoopStartSample();
+        int loopEndSample = id.getLoopEndSample();
+    	if (endSample < 0) {
+    		endSample = id.getAtracCodec().getAtracEndSample();
+    	}
+        if (endSample < 0) {
+            endSample = id.getInputFileSize();
         }
+        endSampleAddr.setValue(endSample);
+        loopStartSampleAddr.setValue(loopStartSample);
+        loopEndSampleAddr.setValue(loopEndSample);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x31668BAA, version = 150, checkInsideInterrupt = true)
-    public void sceAtracGetChannel(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int atID = cpu.gpr[4] & atracIDMask;
-        int channelAddr = cpu.gpr[5];
-
+    public int sceAtracGetChannel(@CheckArgument("checkAtracID") int atID, TPointer32 channelAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceAtracGetChannel: atracID = " + atID + ", channelAddr =0x" + Integer.toHexString(channelAddr));
+            log.debug(String.format("sceAtracGetChannel atracID=0x%X, channelAddr%s", atID, channelAddr));
         }
 
-        
-        if (!atracIDs.containsKey(atID)) {
-            log.warn("sceAtracGetChannel: bad atracID= " + atID);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        } else {
-            mem.write32(channelAddr, atracIDs.get(atID).getAtracChannels());
-            cpu.gpr[2] = 0;
-        }
+    	AtracID id = atracIDs.get(atID);
+        channelAddr.setValue(id.getAtracChannels());
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xD6A5F2F7, version = 150, checkInsideInterrupt = true)
-    public void sceAtracGetMaxSample(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int atID = cpu.gpr[4] & atracIDMask;
-        int maxSamplesAddr = cpu.gpr[5];
-
+    public int sceAtracGetMaxSample(@CheckArgument("checkAtracID") int atID, TPointer32 maxSamplesAddr) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetMaxSample: atracID = %d, maxSamplesAddr = 0x%08X", atID, maxSamplesAddr));
+            log.debug(String.format("sceAtracGetMaxSample atracID=0x%X, maxSamplesAddr=%s", atID, maxSamplesAddr));
         }
 
-        
-        if (!atracIDs.containsKey(atID)) {
-            log.warn("sceAtracGetMaxSample: bad atracID= " + atID);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        } else {
-            if (Memory.isAddressGood(maxSamplesAddr)) {
-                mem.write32(maxSamplesAddr, atracIDs.get(atID).getMaxSamples());
-            }
-            cpu.gpr[2] = 0;
-        }
+    	AtracID id = atracIDs.get(atID);
+        maxSamplesAddr.setValue(id.getMaxSamples());
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x36FAABFB, version = 150, checkInsideInterrupt = true)
-    public void sceAtracGetNextSample(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int atID = cpu.gpr[4] & atracIDMask;
-        int nbrSamplesAddr = cpu.gpr[5];
-
+    public int sceAtracGetNextSample(@CheckArgument("checkAtracID") int atID, TPointer32 nbrSamplesAddr) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetNextSample: atracID=%d, nbrSamplesAddr=0x%08x", atID, nbrSamplesAddr));
+            log.debug(String.format("sceAtracGetNextSample atracID=0x%X, nbrSamplesAddr=%s", atID, nbrSamplesAddr));
         }
 
-        
-        if (!atracIDs.containsKey(atID)) {
-            log.warn("sceAtracGetNextSample: bad atracID= " + atID);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        } else {
-        	AtracID id = atracIDs.get(atID);
-            int samples = id.getMaxSamples();
-            if (id.getInputBufferOffset() >= id.getInputBufferSize()) {
-                samples = 0; // No more data available in input buffer
-            }
-            if (Memory.isAddressGood(nbrSamplesAddr)) {
-                mem.write32(nbrSamplesAddr, samples);
-            }
-            cpu.gpr[2] = 0;
+    	AtracID id = atracIDs.get(atID);
+        int samples = id.getMaxSamples();
+        if (id.getInputBufferOffset() >= id.getInputBufferSize()) {
+            samples = 0; // No more data available in input buffer
         }
+        nbrSamplesAddr.setValue(samples);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xA554A158, version = 150, checkInsideInterrupt = true)
-    public void sceAtracGetBitrate(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int atID = cpu.gpr[4] & atracIDMask;
-        int bitrateAddr = cpu.gpr[5];
-
-        if(log.isDebugEnabled()) {
-            log.debug("sceAtracGetBitrate: atracID = " + atID + ", bitrateAddr =0x" + Integer.toHexString(bitrateAddr));
+    public int sceAtracGetBitrate(@CheckArgument("checkAtracID") int atID, TPointer32 bitrateAddr) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceAtracGetBitrate atracID=0x%X, bitrateAddr=%s", atID, bitrateAddr));
         }
 
-        
-        if (!atracIDs.containsKey(atID)) {
-            log.warn("sceAtracGetBitrate: bad atracID= " + atID);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        } else {
-            mem.write32(bitrateAddr, atracIDs.get(atID).getAtracBitrate());
-            cpu.gpr[2] = 0;
-        }
+    	AtracID id = atracIDs.get(atID);
+        bitrateAddr.setValue(id.getAtracBitrate());
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xFAA4F89B, version = 150, checkInsideInterrupt = true)
-    public void sceAtracGetLoopStatus(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int atID = cpu.gpr[4] & atracIDMask;
-        int loopNbr = cpu.gpr[5];
-        int statusAddr = cpu.gpr[6];
-
+    public int sceAtracGetLoopStatus(@CheckArgument("checkAtracID") int atID, @CanBeNull TPointer32 loopNbr, @CanBeNull TPointer32 statusAddr) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetLoopStatus atracID=%d, loopNbr=0x%08x, statusAddr=0x%08X", atID, loopNbr, statusAddr));
+            log.debug(String.format("sceAtracGetLoopStatus atracID=0x%X, loopNbr=%s, statusAddr=%s", atID, loopNbr, statusAddr));
         }
 
-        
-        if (!atracIDs.containsKey(atID)) {
-            log.warn("sceAtracGetLoopStatus: bad atracID= " + atID);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        } else {
-            if (Memory.isAddressGood(loopNbr)) {
-                mem.write32(loopNbr, atracIDs.get(atID).getLoopNum());
-            }
-            if (Memory.isAddressGood(statusAddr)) {
-                mem.write32(statusAddr, atracIDs.get(atID).getLoopStatus());
-            }
-            cpu.gpr[2] = 0;
-        }
+    	AtracID id = atracIDs.get(atID);
+        loopNbr.setValue(id.getLoopNum());
+        statusAddr.setValue(id.getLoopStatus());
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x868120B5, version = 150, checkInsideInterrupt = true)
-    public void sceAtracSetLoopNum(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int atID = cpu.gpr[4] & atracIDMask;
-        int loopNbr = cpu.gpr[5];
-
+    public int sceAtracSetLoopNum(@CheckArgument("checkAtracID") int atID, int loopNbr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceAtracSetLoopNum: atracID = " + atID + ", loopNbr = " + loopNbr);
+            log.debug(String.format("sceAtracSetLoopNum atracID=0x%X, loopNbr=%d", atID, loopNbr));
         }
 
-        
-        if (!atracIDs.containsKey(atID)) {
-            log.warn("sceAtracSetLoopNum: bad atracID= " + atID);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        } else {
-            atracIDs.get(atID).setLoopNum(loopNbr);
-            atracIDs.get(atID).getAtracCodec().setAtracLoopCount(loopNbr);
-            cpu.gpr[2] = 0;
-        }
+    	AtracID id = atracIDs.get(atID);
+        id.setLoopNum(loopNbr);
+        id.getAtracCodec().setAtracLoopCount(loopNbr);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xCA3CA3D2, version = 150, checkInsideInterrupt = true)
-    public void sceAtracGetBufferInfoForReseting(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int atID = cpu.gpr[4] & atracIDMask;
-        int sample = cpu.gpr[5];
-        int bufferInfoAddr = cpu.gpr[6];
-
+    public int sceAtracGetBufferInfoForReseting(@CheckArgument("checkAtracID") int atID, int sample, TPointer32 bufferInfoAddr) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetBufferInfoForReseting atracID=%d, sample=%d, bufferInfoAddr=0x%08x", atID, sample, bufferInfoAddr));
+            log.debug(String.format("sceAtracGetBufferInfoForReseting atracID=0x%X, sample=%d, bufferInfoAddr=%s", atID, sample, bufferInfoAddr));
         }
 
-        
-        if (!atracIDs.containsKey(atID)) {
-            log.warn("sceAtracGetBufferInfoForReseting: bad atracID= " + atID);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        } else {
-            atracIDs.get(atID).getBufferInfoForReseting(sample, bufferInfoAddr);
-            cpu.gpr[2] = 0;
-        }
+    	AtracID id = atracIDs.get(atID);
+        id.getBufferInfoForResetting(sample, bufferInfoAddr);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x644E5607, version = 150, checkInsideInterrupt = true)
-    public void sceAtracResetPlayPosition(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int atID = cpu.gpr[4] & atracIDMask;
-        int sample = cpu.gpr[5];
-        int bytesWrittenFirstBuf = cpu.gpr[6];
-        int bytesWrittenSecondBuf = cpu.gpr[7];
-
+    public int sceAtracResetPlayPosition(@CheckArgument("checkAtracID") int atID, int sample, int bytesWrittenFirstBuf, int bytesWrittenSecondBuf) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracResetPlayPosition atracId=%d, sample=%d, bytesWrittenFirstBuf=%d, bytesWrittenSecondBuf=%d", atID, sample, bytesWrittenFirstBuf, bytesWrittenSecondBuf));
+            log.debug(String.format("sceAtracResetPlayPosition atracId=0x%X, sample=%d, bytesWrittenFirstBuf=%d, bytesWrittenSecondBuf=%d", atID, sample, bytesWrittenFirstBuf, bytesWrittenSecondBuf));
         }
 
-        
-        if (!atracIDs.containsKey(atID)) {
-            log.warn("sceAtracResetPlayPosition: bad atracID= " + atID);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        } else {
-            AtracID id = atracIDs.get(atID);
-            id.setPlayPosition(sample, bytesWrittenFirstBuf, bytesWrittenSecondBuf);
-            cpu.gpr[2] = 0;
-        }
+        AtracID id = atracIDs.get(atID);
+        id.setPlayPosition(sample, bytesWrittenFirstBuf, bytesWrittenSecondBuf);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xE88F759B, version = 150, checkInsideInterrupt = true)
-    public void sceAtracGetInternalErrorInfo(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int atID = cpu.gpr[4] & atracIDMask;
-        int errorAddr = cpu.gpr[5];
-
+    public int sceAtracGetInternalErrorInfo(@CheckArgument("checkAtracID") int atID, TPointer32 errorAddr) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetInternalErrorInfo atracId=%d, errorAddr=0x%08X", atID, errorAddr));
+            log.debug(String.format("sceAtracGetInternalErrorInfo atracId=0x%X, errorAddr=%s", atID, errorAddr));
         }
 
-        
-        if (!atracIDs.containsKey(atID)) {
-            log.warn("sceAtracGetInternalErrorInfo: bad atracID= " + atID);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        } else {
-            mem.write32(errorAddr, atracIDs.get(atID).getInternalErrorInfo());
-            cpu.gpr[2] = 0;
-        }
+        AtracID id = atracIDs.get(atID);
+        errorAddr.setValue(id.getInternalErrorInfo());
+
+        return 0;
     }
-
 }

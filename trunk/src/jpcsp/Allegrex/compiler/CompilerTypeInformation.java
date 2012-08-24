@@ -14,7 +14,20 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.HLE.modules;
+package jpcsp.Allegrex.compiler;
 
-public class sceCcc extends jpcsp.HLE.modules150.sceCcc {
+/**
+ * @author gid15
+ *
+ */
+public class CompilerTypeInformation {
+	public final String boxingTypeInternalName;
+	public final String boxingMethodDescriptor;
+	public final String formatString;
+
+	public CompilerTypeInformation(String boxingTypeInternalName, String boxingMethodDescriptor, String formatString) {
+		this.boxingTypeInternalName = boxingTypeInternalName;
+		this.boxingMethodDescriptor = boxingMethodDescriptor;
+		this.formatString = formatString;
+	}
 }

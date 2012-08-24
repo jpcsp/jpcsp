@@ -16,25 +16,28 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.util.Utilities.endianSwap16;
 import static jpcsp.util.Utilities.endianSwap32;
 import static jpcsp.util.Utilities.readUnaligned32;
 
+import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+
 import java.util.HashMap;
 
 import jpcsp.Memory;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules150.scePsmf.PSMFHeader.PSMFEntry;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
 public class scePsmf extends HLEModule {
-
-    private static Logger log = Modules.getLogger("scePsmf");
+    protected static Logger log = Modules.getLogger("scePsmf");
 
     @Override
     public String getName() {
@@ -50,22 +53,68 @@ public class scePsmf extends HLEModule {
 
     private HashMap<Integer, PSMFHeader> psmfHeaderMap;
 
-    private PSMFHeader getPsmfHeader(int psmf) {
-    	if (Memory.isAddressGood(psmf)) {
-    		Memory mem = Memory.getInstance();
-    		int headerAddress = mem.read32(psmf + 24);
-    		return psmfHeaderMap.get(headerAddress);
+    public TPointer32 checkPsmf(TPointer32 psmf) {
+		int headerAddress = psmf.getValue(24);
+		if (!psmfHeaderMap.containsKey(headerAddress)) {
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_PSMF_NOT_FOUND);
+		}
+
+		return psmf;
+    }
+
+    public TPointer32 checkPsmfWithEPMap(TPointer32 psmf) {
+    	psmf = checkPsmf(psmf);
+    	PSMFHeader header = getPsmfHeader(psmf);
+    	if (!header.hasEPMap()) {
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_PSMF_NOT_FOUND);
     	}
 
-    	return null;
+    	return psmf;
     }
 
-    protected int endianSwap16(int x) {
-        return (x >> 8) | ((x << 8) & 0xFF00);
+    private PSMFHeader getPsmfHeader(TPointer32 psmf) {
+		int headerAddress = psmf.getValue(24);
+		return psmfHeaderMap.get(headerAddress);
     }
 
-    protected class PSMFHeader {
+    // Entry class for the EPMap.
+    protected static class PSMFEntry {
+        private int EPIndex;
+        private int EPPicOffset;
+        private int EPPts;
+        private int EPOffset;
+        private int id;
 
+        public PSMFEntry(int id, int index, int picOffset, int pts, int offset) {
+        	this.id = id;
+            EPIndex = index;
+            EPPicOffset = picOffset;
+            EPPts = pts;
+            EPOffset = offset;
+        }
+
+        public int getEntryIndex() {
+            return EPIndex;
+        }
+
+        public int getEntryPicOffset() {
+            return EPPicOffset;
+        }
+
+        public int getEntryPTS() {
+            return EPPts;
+        }
+
+        public int getEntryOffset() {
+            return EPOffset;
+        }
+
+        public int getId() {
+        	return id;
+        }
+    }
+
+    protected static class PSMFHeader {
         private static final int size = 2048;
         private static final int PSMF_VIDEO_STREAM_ID = 0xE0;
         private static final int PSMF_AUDIO_STREAM_ID = 0xBD;
@@ -99,67 +148,46 @@ public class scePsmf extends HLEModule {
         // Stream map.
         private HashMap<Integer, PSMFStream> streamMap;
         private int currentStreamNumber;
-        private int currentVideoStreamNumber;
-        private int currentAudioStreamNumber;
-
-        // Entry class for the EPMap.
-        protected class PSMFEntry {
-
-            private int EPIndex;
-            private int EPPicOffset;
-            private int EPPts;
-            private int EPOffset;
-            private int id;
-
-            public PSMFEntry(int id, int index, int picOffset, int pts, int offset) {
-            	this.id = id;
-                EPIndex = index;
-                EPPicOffset = picOffset;
-                EPPts = pts;
-                EPOffset = offset;
-            }
-
-            public int getEntryIndex() {
-                return EPIndex;
-            }
-
-            public int getEntryPicOffset() {
-                return EPPicOffset;
-            }
-
-            public int getEntryPTS() {
-                return EPPts;
-            }
-
-            public int getEntryOffset() {
-                return EPOffset;
-            }
-
-            public int getId() {
-            	return id;
-            }
-        }
 
         // Entry class for the PSMF streams.
         protected class PSMFStream {
+            private int streamType = -1;
+            private int streamChannel = -1;
+            private int streamNumber;
 
-            private int StreamType;
-            private int StreamChannel;
-
-            public PSMFStream(int type, int channel) {
-                StreamType = type;
-                StreamChannel = channel;
+            public PSMFStream(int streamNumber) {
+            	this.streamNumber = streamNumber;
             }
 
             public int getStreamType() {
-                return StreamType;
+                return streamType;
             }
 
             public int getStreamChannel() {
-                return StreamChannel;
+                return streamChannel;
             }
 
-            public void readMPEGVideoStreamParams(int addr) {
+			public int getStreamNumber() {
+				return streamNumber;
+			}
+
+			public boolean isStreamOfType(int type) {
+				if (streamType == type) {
+					return true;
+				}
+				if (type == PSMF_AUDIO_STREAM) {
+					// Atrac or PCM
+					return streamType == PSMF_ATRAC_STREAM || streamType == PSMF_PCM_STREAM;
+				}
+				if (type == PSMF_DATA_STREAM) {
+					// Any type
+					return true;
+				}
+
+				return false;
+			}
+
+			public void readMPEGVideoStreamParams(int addr) {
                 Memory mem = Memory.getInstance();
                 int streamID = mem.read8(addr);                // 0xE0
                 int privateStreamID = mem.read8(addr + 1);     // 0x00
@@ -178,8 +206,11 @@ public class scePsmf extends HLEModule {
                         + ", EPMapEntriesNum=" + EPMapEntriesNum
                         + ", videoWidth=" + videoWidth 
                         + ", videoHeigth=" + videoHeigth);
+
+                streamType = PSMF_AVC_STREAM;
+                streamChannel = streamID & 0x0F;
             }
-            
+
             public void readPrivateAudioStreamParams(int addr) {
                 Memory mem = Memory.getInstance();
                 int streamID = mem.read8(addr);                // 0xBD
@@ -195,6 +226,9 @@ public class scePsmf extends HLEModule {
                         + ", unk2=0x" + Integer.toHexString(unk2) 
                         + ", audioChannelConfig=" + audioChannelConfig
                         + ", audioSampleFrequency=" + audioSampleFrequency);
+
+                streamType = ((privateStreamID & 0xF0) == 0 ? PSMF_ATRAC_STREAM : PSMF_PCM_STREAM);
+                streamChannel = privateStreamID & 0x0F;
             }
         }
 
@@ -221,33 +255,34 @@ public class scePsmf extends HLEModule {
             streamNum = endianSwap16(mem.read16(addr + 0x80));                                                       // Number of total registered streams.
 
             if (log.isDebugEnabled()) {
-            	log.debug(String.format("PSMFHeader: streamDataTotalSize=%d, unk=0x%08X, streamDataNextBlockSize=%d, streamDataNextInnerBlockSize=%d", streamDataTotalSize, unk, streamDataNextBlockSize, streamDataNextInnerBlockSize));
+            	log.debug(String.format("PSMFHeader: streamDataTotalSize=%d, unk=0x%08X, streamDataNextBlockSize=%d, streamDataNextInnerBlockSize=%d, streamNum=%d", streamDataTotalSize, unk, streamDataNextBlockSize, streamDataNextInnerBlockSize, streamNum));
             }
 
             // Stream area:
             // At offset 0x82, each 16 bytes represent one stream.
             streamMap = new HashMap<Integer, PSMFStream>();
             currentStreamNumber = -1;         // Current stream number.
-            currentVideoStreamNumber = -1;    // Current video stream number.
-            currentAudioStreamNumber = -1;    // Current audio stream number.
 
             // Parse the stream field and assign each one to it's type.
+            int numberOfStreams = 0;
             for (int i = 0; i < streamNum; i++) {
                 PSMFStream stream = null;
                 int currentStreamAddr = (addr + 0x82 + i * 16);
                 int streamID = mem.read8(currentStreamAddr);
-                if ((streamID & PSMF_VIDEO_STREAM_ID) == PSMF_VIDEO_STREAM_ID) {
-                    stream = new PSMFStream(PSMF_AVC_STREAM, 0);
+                if ((streamID & 0xF0) == PSMF_VIDEO_STREAM_ID) {
+                    stream = new PSMFStream(numberOfStreams);
                     stream.readMPEGVideoStreamParams(currentStreamAddr);
-                    currentVideoStreamNumber++;
-                } else if ((streamID & PSMF_AUDIO_STREAM_ID) == PSMF_AUDIO_STREAM_ID) {
-                    stream = new PSMFStream(PSMF_ATRAC_STREAM, 1);
+                } else if (streamID == PSMF_AUDIO_STREAM_ID) {
+                    stream = new PSMFStream(numberOfStreams);
                     stream.readPrivateAudioStreamParams(currentStreamAddr);
-                    currentAudioStreamNumber++;
+                } else {
+                	if (log.isDebugEnabled()) {
+                		log.debug(String.format("Unknown stream found in header: 0x%02X", streamID));
+                	}
                 }
                 if (stream != null) {
-                    currentStreamNumber++;
-                    streamMap.put(currentStreamNumber, stream);
+                    streamMap.put(numberOfStreams, stream);
+                    numberOfStreams++;
                 }
             }
 
@@ -365,83 +400,64 @@ public class scePsmf extends HLEModule {
         }
 
         public int getSpecificStreamNum(int type) {
-        	switch (type) {
-        		case PSMF_AVC_STREAM:
-        			if (currentVideoStreamNumber != -1) {
-        				return 1;
-        			}
-        			break;
-        		case PSMF_ATRAC_STREAM:
-        		case PSMF_PCM_STREAM:
-        		case PSMF_AUDIO_STREAM:
-        			if (currentAudioStreamNumber != -1) {
-        				return 1;
-        			}
-        			break;
-                case PSMF_DATA_STREAM:
-                    if (currentVideoStreamNumber != -1) {
-        				return 1;
-        			} else if (currentAudioStreamNumber != -1) {
-        				return 1;
-        			}
-                    break;
-    			default:
-    				log.warn(String.format("scePsmfGetNumberOfSpecificStreams unknown stream type %d", type));
+        	int num = 0;
+        	for (PSMFStream stream : streamMap.values()) {
+        		if (stream.isStreamOfType(type)) {
+        			num++;
+        		}
         	}
 
-        	return 0;
+        	return num;
         }
 
         public void setStreamNum(int id) {
             currentStreamNumber = id;
         }
 
-        public void setStreamType(int type, int channel) {
-        	switch (type) {
-	    		case PSMF_AVC_STREAM:
-	    			if (currentVideoStreamNumber != -1) {
-	                    currentStreamNumber = currentVideoStreamNumber;
-	    			}
-	    			break;
-	    		case PSMF_ATRAC_STREAM:
-	    		case PSMF_PCM_STREAM:
-	    		case PSMF_AUDIO_STREAM:
-	    			if (currentAudioStreamNumber != -1) {
-	                    currentStreamNumber = currentAudioStreamNumber;
-	    			}
-	    			break;
-                case PSMF_DATA_STREAM:
-                    if (currentVideoStreamNumber != -1) {
-	                    currentStreamNumber = currentVideoStreamNumber;
-	    			} else if (currentAudioStreamNumber != -1) {
-	                    currentStreamNumber = currentAudioStreamNumber;
-	    			}
-                    break;
-				default:
-					log.warn(String.format("scePsmfSpecifyStreamWithStreamType unknown stream type %d", type));
+        private int getStreamNumber(int type, int typeNum, int channel) {
+        	for (PSMFStream stream : streamMap.values()) {
+        		if (stream.isStreamOfType(type)) {
+        			if (typeNum <= 0) {
+        				if (channel < 0 || stream.getStreamChannel() == channel) {
+        					return stream.getStreamNumber();
+        				}
+        			}
+    				typeNum--;
+        		}
         	}
+
+        	return -1;
         }
 
-        public void setStreamTypeNum(int type, int tid) {
-            currentStreamNumber = tid;
+        public boolean setStreamWithType(int type, int channel) {
+        	int streamNumber = getStreamNumber(type, 0, channel);
+        	if (streamNumber < 0) {
+        		return false;
+        	}
+    		currentStreamNumber = streamNumber;
+
+    		return true;
+        }
+
+        public boolean setStreamWithTypeNum(int type, int typeNum) {
+        	int streamNumber = getStreamNumber(type, typeNum, -1);
+        	if (streamNumber < 0) {
+        		return false;
+        	}
+    		currentStreamNumber = streamNumber;
+
+    		return true;
         }
     }
 
     @HLEFunction(nid = 0xC22C8327, version = 150, checkInsideInterrupt = true)
-    public void scePsmfSetPsmf(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int psmf = cpu.gpr[4];         // PSMF struct.
-        int buffer_addr = cpu.gpr[5];  // Actual PMF data.
-
+    public int scePsmfSetPsmf(TPointer32 psmf, TPointer bufferAddr) {
         if (log.isInfoEnabled()) {
-            log.info("scePsmfSetPsmf (psmf=0x" + Integer.toHexString(psmf) + " buffer_addr=0x" + Integer.toHexString(buffer_addr) + ")");
+            log.info(String.format("scePsmfSetPsmf psmf=%s, bufferAddr=%s", psmf, bufferAddr));
         }
 
-        
         Modules.sceMpegModule.setCurrentMpegAnalyzed(false);
-        PSMFHeader header = new PSMFHeader(buffer_addr);
+        PSMFHeader header = new PSMFHeader(bufferAddr.getAddress());
         psmfHeaderMap.put(header.getHeaderOffset(), header);
 
         // PSMF struct:
@@ -450,13 +466,13 @@ public class scePsmf extends HLEModule {
         // It's size ranges from 28 bytes to 52 bytes, since when a pointer to
         // a certain PSMF area does not exist (NULL), it's omitted from the struct
         // (e.g.: no mark data or non existant EPMap).
-        mem.write32(psmf, header.getVersion());                  // PSMF version.
-        mem.write32(psmf + 4, header.getHeaderSize());           // The PSMF header size (0x800).
-        mem.write32(psmf + 8, header.getStreamSize());           // The PSMF stream size.
-        mem.write32(psmf + 12, 0);                               // Grouping Period ID.
-        mem.write32(psmf + 16, 0);                               // Group ID.
-        mem.write32(psmf + 20, header.getCurrentStreamNumber()); // Current stream's number.
-        mem.write32(psmf + 24, header.getHeaderOffset());        // Pointer to PSMF header.
+        psmf.setValue(0, header.getVersion());              // PSMF version.
+        psmf.setValue(4, header.getHeaderSize());           // The PSMF header size (0x800).
+        psmf.setValue(8, header.getStreamSize());           // The PSMF stream size.
+        psmf.setValue(12, 0);                               // Grouping Period ID.
+        psmf.setValue(16, 0);                               // Group ID.
+        psmf.setValue(20, header.getCurrentStreamNumber()); // Current stream's number.
+        psmf.setValue(24, header.getHeaderOffset());        // Pointer to PSMF header.
         // psmf + 28 - Pointer to current PSMF stream info (video/audio).
         // psmf + 32 - Pointer to mark data (used for chapters in UMD_VIDEO).
         // psmf + 36 - Pointer to current PSMF stream grouping period.
@@ -464,544 +480,338 @@ public class scePsmf extends HLEModule {
         // psmf + 44 - Pointer to current PSMF stream.
         // psmf + 48 - Pointer to PSMF EPMap.
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
     @HLEFunction(nid = 0xC7DB3A5B, version = 150, checkInsideInterrupt = true)
-    public void scePsmfGetCurrentStreamType(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
+    public int scePsmfGetCurrentStreamType(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 typeAddr, TPointer32 channelAddr) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("scePsmfGetCurrentStreamType psmf=%s, typeAddr=%s, channelAddr=%s", psmf, typeAddr, channelAddr));
+        }
 
-        int psmf = cpu.gpr[4];
-        int type_addr = cpu.gpr[5];
-        int ch_addr = cpu.gpr[6];
+        PSMFHeader header = getPsmfHeader(psmf);
+        typeAddr.setValue(header.getCurrentStreamType());
+        channelAddr.setValue(header.getCurrentStreamChannel());
 
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfGetCurrentStreamType (psmf=0x" + Integer.toHexString(psmf) + ", type_addr=0x" + Integer.toHexString(type_addr) + ", ch_addr=0x" + Integer.toHexString(ch_addr) + ")");
+            log.debug(String.format("scePsmfGetCurrentStreamType returning type=%d, channel=%d", typeAddr.getValue(), channelAddr.getValue()));
         }
 
-        
-        PSMFHeader header = getPsmfHeader(psmf);
-        if (header != null) {
-            int streamType = header.getCurrentStreamType();
-            int streamCh = header.getCurrentStreamChannel();
-            mem.write32(type_addr, streamType);
-            mem.write32(ch_addr, streamCh);
-            cpu.gpr[2] = 0;
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
-        }
+        return 0;
     }
 
     @HLEFunction(nid = 0x28240568, version = 150, checkInsideInterrupt = true)
-    public void scePsmfGetCurrentStreamNumber(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int psmf = cpu.gpr[4];
-
+    public int scePsmfGetCurrentStreamNumber(@CheckArgument("checkPsmf") TPointer32 psmf) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfGetCurrentStreamNumber psmf=0x" + Integer.toHexString(psmf));
+            log.debug(String.format("scePsmfGetCurrentStreamNumber psmf=%s", psmf));
         }
 
-        
         PSMFHeader header = getPsmfHeader(psmf);
-        if (header != null) {
-            cpu.gpr[2] = header.getCurrentStreamNumber();
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
-        }
+
+        return header.getCurrentStreamNumber();
     }
 
     @HLEFunction(nid = 0x1E6D9013, version = 150, checkInsideInterrupt = true)
-    public void scePsmfSpecifyStreamWithStreamType(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int psmf = cpu.gpr[4];
-        int type = cpu.gpr[5];
-        int ch = cpu.gpr[6];
-
+    public int scePsmfSpecifyStreamWithStreamType(@CheckArgument("checkPsmf") TPointer32 psmf, int type, int ch) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfSpecifyStreamWithStreamType (psmf=0x" + Integer.toHexString(psmf) + ", type=" + type + ", ch=" + ch + ")");
+            log.debug(String.format("scePsmfSpecifyStreamWithStreamType psmf=%s, type=%d, ch=%d", psmf, type, ch));
         }
 
-        
         PSMFHeader header = getPsmfHeader(psmf);
-        if (header != null) {
-            header.setStreamType(type, ch);
-            cpu.gpr[2] = 0;
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
+        if (!header.setStreamWithType(type, ch)) {
+        	return SceKernelErrors.ERROR_PSMF_INVALID_ID;
         }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x4BC9BDE0, version = 150, checkInsideInterrupt = true)
-    public void scePsmfSpecifyStream(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int psmf = cpu.gpr[4];
-        int streamNum = cpu.gpr[5];
-
+    public int scePsmfSpecifyStream(@CheckArgument("checkPsmf") TPointer32 psmf, int streamNum) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfSpecifyStream (psmf=0x" + Integer.toHexString(psmf) + ", streamNum=" + streamNum + ")");
+            log.debug(String.format("scePsmfSpecifyStream psmf=%s, streamNum=%d", psmf, streamNum));
         }
 
-        
         PSMFHeader header = getPsmfHeader(psmf);
-        if (header != null) {
-            header.setStreamNum(streamNum);
-            cpu.gpr[2] = 0;
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
-        }
+        header.setStreamNum(streamNum);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x76D3AEBA, version = 150, checkInsideInterrupt = true)
-    public void scePsmfGetPresentationStartTime(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int psmf = cpu.gpr[4];
-        int startTimeAddr = cpu.gpr[5];
-
+    public int scePsmfGetPresentationStartTime(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 startTimeAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfGetPresentationStartTime (psmf=0x" + Integer.toHexString(psmf) + ", startTimeAddr=0x" + Integer.toHexString(startTimeAddr) + ")");
+            log.debug(String.format("scePsmfGetPresentationStartTime psmf=%s, startTimeAddr=%s", psmf, startTimeAddr));
         }
 
-        
         PSMFHeader header = getPsmfHeader(psmf);
-        if (header != null) {
-            int startTime = header.getPresentationStartTime();
-            mem.write32(startTimeAddr, startTime);
-            if (log.isDebugEnabled()) {
-                log.debug(String.format("scePsmfGetPresentationStartTime startTime=%d", startTime));
-            }
-            cpu.gpr[2] = 0;
-        } else {
-            mem.write32(startTimeAddr, 0);
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
+        int startTime = header.getPresentationStartTime();
+        startTimeAddr.setValue(startTime);
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("scePsmfGetPresentationStartTime startTime=%d", startTime));
         }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xBD8AE0D8, version = 150, checkInsideInterrupt = true)
-    public void scePsmfGetPresentationEndTime(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int psmf = cpu.gpr[4];
-        int endTimeAddr = cpu.gpr[5];
-
+    public int scePsmfGetPresentationEndTime(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 endTimeAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfGetPresentationEndTime (psmf=0x" + Integer.toHexString(psmf) + ", endTimeAddr=0x" + Integer.toHexString(endTimeAddr) + ")");
+            log.debug(String.format("scePsmfGetPresentationEndTime psmf=%s, endTimeAddr=%s", psmf, endTimeAddr));
         }
 
-        
         PSMFHeader header = getPsmfHeader(psmf);
-        if (header != null) {
-            int endTime = header.getPresentationEndTime();
-            mem.write32(endTimeAddr, endTime);
-            if (log.isDebugEnabled()) {
-                log.debug(String.format("scePsmfGetPresentationEndTime endTime=%d", endTime));
-            }
-            cpu.gpr[2] = 0;
-        } else {
-            mem.write32(endTimeAddr, 0);
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
+        int endTime = header.getPresentationEndTime();
+        endTimeAddr.setValue(endTime);
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("scePsmfGetPresentationEndTime endTime=%d", endTime));
         }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xEAED89CD, version = 150, checkInsideInterrupt = true)
-    public void scePsmfGetNumberOfStreams(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int psmf = cpu.gpr[4];
-
+    public int scePsmfGetNumberOfStreams(@CheckArgument("checkPsmf") TPointer32 psmf) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfGetNumberOfStreams psmf=0x" + Integer.toHexString(psmf));
+            log.debug(String.format("scePsmfGetNumberOfStreams psmf=%s", psmf));
         }
 
-        
         PSMFHeader header = getPsmfHeader(psmf);
-        if (header != null) {
-            cpu.gpr[2] = header.getNumberOfStreams();
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
-        }
+
+        return header.getNumberOfStreams();
     }
 
     @HLEFunction(nid = 0x7491C438, version = 150, checkInsideInterrupt = true)
-    public void scePsmfGetNumberOfEPentries(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int psmf = cpu.gpr[4];
-
+    public int scePsmfGetNumberOfEPentries(@CheckArgument("checkPsmf") TPointer32 psmf) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfGetNumberOfEPentries (psmf=0x" + Integer.toHexString(psmf) + ")");
+            log.debug(String.format("scePsmfGetNumberOfEPentries psmf=%s", psmf));
         }
 
-        
         PSMFHeader header = getPsmfHeader(psmf);
-        if (header != null) {
-            cpu.gpr[2] = header.getEPMapEntriesNum();
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
-        }
+
+        return header.getEPMapEntriesNum();
     }
 
     @HLEFunction(nid = 0x0BA514E5, version = 150, checkInsideInterrupt = true)
-    public void scePsmfGetVideoInfo(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int psmf = cpu.gpr[4];
-        int videoInfoAddr = cpu.gpr[5];
-
+    public int scePsmfGetVideoInfo(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 videoInfoAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfGetVideoInfo (psmf=0x" + Integer.toHexString(psmf) + ", videoInfoAddr=0x" + Integer.toHexString(videoInfoAddr) + ")");
+            log.debug(String.format("scePsmfGetVideoInfo psmf=%s, videoInfoAddr=%s", psmf, videoInfoAddr));
         }
 
-        
         PSMFHeader header = getPsmfHeader(psmf);
-        if (header != null) {
-            int width = header.getVideoWidth();
-            int height = header.getvideoHeigth();
-            mem.write32(videoInfoAddr, width);
-            mem.write32(videoInfoAddr + 4, height);
-            cpu.gpr[2] = 0;
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
-        }
+        videoInfoAddr.setValue(0, header.getVideoWidth());
+        videoInfoAddr.setValue(4, header.getvideoHeigth());
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xA83F7113, version = 150, checkInsideInterrupt = true)
-    public void scePsmfGetAudioInfo(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int psmf = cpu.gpr[4];
-        int audioInfoAddr = cpu.gpr[5];
-
+    public int scePsmfGetAudioInfo(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 audioInfoAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfGetAudioInfo (psmf=0x" + Integer.toHexString(psmf) + ", audioInfoAddr=0x" + Integer.toHexString(audioInfoAddr) + ")");
+            log.debug(String.format("scePsmfGetAudioInfo psmf=%s, audioInfoAddr=%s", psmf, audioInfoAddr));
         }
 
-        
         PSMFHeader header = getPsmfHeader(psmf);
-        if (header != null) {
-            int chConfig = header.getAudioChannelConfig();
-            int sampleFreq = header.getAudioSampleFrequency();
-            mem.write32(audioInfoAddr, chConfig);
-            mem.write32(audioInfoAddr + 4, sampleFreq);
-            cpu.gpr[2] = 0;
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
-        }
+        audioInfoAddr.setValue(0, header.getAudioChannelConfig());
+        audioInfoAddr.setValue(4, header.getAudioSampleFrequency());
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x971A3A90, version = 150, checkInsideInterrupt = true)
-    public void scePsmfCheckEPmap(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int psmf = cpu.gpr[4];
-
+    public int scePsmfCheckEPmap(@CheckArgument("checkPsmf") TPointer32 psmf) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfCheckEPmap (psmf=0x" + Integer.toHexString(psmf) + ")");
+            log.debug(String.format("scePsmfCheckEPmap psmf=%s", psmf));
         }
 
-        
         PSMFHeader header = getPsmfHeader(psmf);
-        if (header != null && header.hasEPMap()) {
-            cpu.gpr[2] = 0;
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
-        }
+
+        return header.hasEPMap() ? 0 : SceKernelErrors.ERROR_PSMF_NOT_FOUND;
     }
 
     @HLEFunction(nid = 0x4E624A34, version = 150, checkInsideInterrupt = true)
-    public void scePsmfGetEPWithId(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int psmf = cpu.gpr[4];
-        int id = cpu.gpr[5];
-        int out_addr = cpu.gpr[6];
-
+    public int scePsmfGetEPWithId(@CheckArgument("checkPsmfWithEPMap") TPointer32 psmf, int id, TPointer32 outAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfGetEPWithId (psmf=0x" + Integer.toHexString(psmf) + ", id=0x" + Integer.toHexString(id) + ", out_addr=0x" + Integer.toHexString(out_addr) + ")");
+            log.debug(String.format("scePsmfGetEPWithId psmf=%s, id=0x%X, outAddr=%s", psmf, id, outAddr));
         }
 
-        
         PSMFHeader header = getPsmfHeader(psmf);
-        if (header != null && header.hasEPMap()) {
-        	PSMFEntry entry = header.getEPMapEntry(id);
-        	if (entry != null) {
-	            int pts = entry.getEntryPTS();
-	            int offset = entry.getEntryOffset();
-                int index = entry.getEntryIndex();
-                int picOffset = entry.getEntryPicOffset();
-	            mem.write32(out_addr, pts);
-	            mem.write32(out_addr + 4, offset);
-                mem.write32(out_addr + 8, index);
-                mem.write32(out_addr + 12, picOffset);
-	            cpu.gpr[2] = 0;
-        	} else {
-        		cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_INVALID_ID;
-        	}
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
-        }
+        PSMFEntry entry = header.getEPMapEntry(id);
+    	if (entry == null) {
+    		return SceKernelErrors.ERROR_PSMF_INVALID_ID;
+    	}
+
+        outAddr.setValue(0, entry.getEntryPTS());
+        outAddr.setValue(4, entry.getEntryOffset());
+        outAddr.setValue(8, entry.getEntryIndex());
+        outAddr.setValue(12, entry.getEntryPicOffset());
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x7C0E7AC3, version = 150, checkInsideInterrupt = true)
-    public void scePsmfGetEPWithTimestamp(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int psmf = cpu.gpr[4];
-        int ts = cpu.gpr[5];
-        int entry_addr = cpu.gpr[6];
-
+    public int scePsmfGetEPWithTimestamp(@CheckArgument("checkPsmfWithEPMap") TPointer32 psmf, int ts, TPointer32 entryAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfGetEPWithTimestamp (psmf=0x" + Integer.toHexString(psmf) + ", ts=" + ts + ", entry_addr=0x" + Integer.toHexString(entry_addr) + ")");
+            log.debug(String.format("scePsmfGetEPWithTimestamp psmf=%s, ts=%d, entryAddr=%s", psmf, ts, entryAddr));
         }
 
-        
         PSMFHeader header = getPsmfHeader(psmf);
-        if (header != null && header.hasEPMap()) {
-        	if (ts < header.getPresentationStartTime()) {
-                cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_INVALID_TIMESTAMP;
-        	} else {
-	            PSMFEntry entry = header.getEPMapEntryWithTimestamp(ts);
-	            if (entry == null) {
-	            	cpu.gpr[2] = -1;
-	            } else {
-	                int pts = entry.getEntryPTS();
-	                int offset = entry.getEntryOffset();
-                    int index = entry.getEntryIndex();
-                    int picOffset = entry.getEntryPicOffset();
-	                mem.write32(entry_addr, pts);
-	                mem.write32(entry_addr + 4, offset);
-                    mem.write32(entry_addr + 8, index);
-                    mem.write32(entry_addr + 12, picOffset);
-	                cpu.gpr[2] = 0;
-	            }
-        	}
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
+    	if (ts < header.getPresentationStartTime()) {
+            return SceKernelErrors.ERROR_PSMF_INVALID_TIMESTAMP;
+    	}
+
+    	PSMFEntry entry = header.getEPMapEntryWithTimestamp(ts);
+        if (entry == null) {
+        	// Unknown error code
+        	return -1;
         }
+
+        entryAddr.setValue(0, entry.getEntryPTS());
+        entryAddr.setValue(4, entry.getEntryOffset());
+        entryAddr.setValue(8, entry.getEntryIndex());
+        entryAddr.setValue(12, entry.getEntryPicOffset());
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x5F457515, version = 150, checkInsideInterrupt = true)
-    public void scePsmfGetEPidWithTimestamp(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int psmf = cpu.gpr[4];
-        int ts = cpu.gpr[5];
-
+    public int scePsmfGetEPidWithTimestamp(@CheckArgument("checkPsmfWithEPMap") TPointer32 psmf, int ts) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfGetEPidWithTimestamp (psmf=0x" + Integer.toHexString(psmf) + ", ts=" + ts + ")");
+            log.debug(String.format("scePsmfGetEPidWithTimestamp psmf=%s, ts=%d", psmf, ts));
         }
 
-        
         PSMFHeader header = getPsmfHeader(psmf);
-        if (header != null && header.hasEPMap()) {
-        	if (ts < header.getPresentationStartTime()) {
-                cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_INVALID_TIMESTAMP;
-        	} else {
-	            PSMFEntry entry = header.getEPMapEntryWithTimestamp(ts);
-	            if (entry == null) {
-	                cpu.gpr[2] = -1;
-	            } else {
-	            	cpu.gpr[2] = entry.getId();
-	            }
-        	}
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
+    	if (ts < header.getPresentationStartTime()) {
+            return SceKernelErrors.ERROR_PSMF_INVALID_TIMESTAMP;
+    	}
+
+    	PSMFEntry entry = header.getEPMapEntryWithTimestamp(ts);
+        if (entry == null) {
+        	// Unknown error code
+            return -1;
         }
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfGetEPidWithTimestamp returning 0x%08X", cpu.gpr[2]));
+            log.debug(String.format("scePsmfGetEPidWithTimestamp returning id 0x%X", entry.getId()));
         }
-    }
+
+        return entry.getId();
+	}
 
     @HLEFunction(nid = 0x5B70FCC1, version = 150, checkInsideInterrupt = true)
-    public void scePsmfQueryStreamOffset(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int buffer_addr = cpu.gpr[4];
-        int offset_addr = cpu.gpr[5];
-
+    public int scePsmfQueryStreamOffset(TPointer bufferAddr, TPointer32 offsetAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfQueryStreamOffset (buffer_addr=0x" + Integer.toHexString(buffer_addr) + ", offset_addr=0x" + Integer.toHexString(offset_addr) + ")");
+            log.debug(String.format("scePsmfQueryStreamOffset bufferAddr=%s, offsetAddr=%s", bufferAddr, offsetAddr));
         }
 
-        
-        int offset = endianSwap32(mem.read32(buffer_addr + sceMpeg.PSMF_STREAM_OFFSET_OFFSET));
-        mem.write32(offset_addr, offset);
+        int offset = endianSwap32(bufferAddr.getValue32(sceMpeg.PSMF_STREAM_OFFSET_OFFSET));
+        offsetAddr.setValue(offset);
 
         // Always let sceMpeg handle the PSMF analysis.
-        Modules.sceMpegModule.analyseMpeg(buffer_addr);
+        Modules.sceMpegModule.analyseMpeg(bufferAddr.getAddress());
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
     @HLEFunction(nid = 0x9553CC91, version = 150, checkInsideInterrupt = true)
-    public void scePsmfQueryStreamSize(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int buffer_addr = cpu.gpr[4];
-        int size_addr = cpu.gpr[5];
-
+    public int scePsmfQueryStreamSize(TPointer bufferAddr, TPointer32 sizeAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfQueryStreamSize (buffer_addr=0x" + Integer.toHexString(buffer_addr) + ", size_addr=0x" + Integer.toHexString(size_addr) + ")");
+            log.debug(String.format("scePsmfQueryStreamSize bufferAddr=%s, sizeAddr=%s", bufferAddr, sizeAddr));
         }
 
-        
-        int size = endianSwap32(mem.read32(buffer_addr + sceMpeg.PSMF_STREAM_SIZE_OFFSET));
-        if ((size & 0x7FF) != 0) {
-            mem.write32(size_addr, 0);
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_INVALID_VALUE;
-        } else {
-            mem.write32(size_addr, size);
-            cpu.gpr[2] = 0;
-        }
+        int size = endianSwap32(bufferAddr.getValue32(sceMpeg.PSMF_STREAM_SIZE_OFFSET));
+        sizeAddr.setValue(size);
+
         // Always let sceMpeg handle the PSMF analysis.
-        Modules.sceMpegModule.analyseMpeg(buffer_addr);
+        Modules.sceMpegModule.analyseMpeg(bufferAddr.getAddress());
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x68D42328, version = 150, checkInsideInterrupt = true)
-    public void scePsmfGetNumberOfSpecificStreams(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int psmf = cpu.gpr[4];
-        int stream_type = cpu.gpr[5];
-
+    public int scePsmfGetNumberOfSpecificStreams(@CheckArgument("checkPsmf") TPointer32 psmf, int streamType) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfGetNumberOfSpecificStreams (psmf=0x" + Integer.toHexString(psmf) + ", stream_type=" + stream_type + ")");
+            log.debug(String.format("scePsmfGetNumberOfSpecificStreams psmf=%s, streamType=%d", psmf, streamType));
         }
 
-        
         PSMFHeader header = getPsmfHeader(psmf);
-        if (header != null) {
-            cpu.gpr[2] = header.getSpecificStreamNum(stream_type);
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
-        }
+        int streamNum = header.getSpecificStreamNum(streamType);
+
         if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfGetNumberOfSpecificStreams (psmf=0x%08X, stream_type=%d) returning 0x%08X", psmf, stream_type, cpu.gpr[2]));
+            log.debug(String.format("scePsmfGetNumberOfSpecificStreams returning %d", streamNum));
         }
+
+        return streamNum;
     }
 
     @HLEFunction(nid = 0x0C120E1D, version = 150, checkInsideInterrupt = true)
-    public void scePsmfSpecifyStreamWithStreamTypeNumber(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int psmf = cpu.gpr[4];
-        int type = cpu.gpr[5];
-        int type_num = cpu.gpr[6];
-
+    public int scePsmfSpecifyStreamWithStreamTypeNumber(@CheckArgument("checkPsmf") TPointer32 psmf, int type, int typeNum) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfSpecifyStreamWithStreamTypeNumber (psmf=0x" + Integer.toHexString(psmf) + ", type=" + type + ", type_num=" + type_num + ")");
+            log.debug(String.format("scePsmfSpecifyStreamWithStreamTypeNumber psmf=%s, type=%d, typeNum=%d", psmf, type, typeNum));
         }
 
-        
         PSMFHeader header = getPsmfHeader(psmf);
-        if (header != null) {
-            header.setStreamTypeNum(type, type_num);
-            cpu.gpr[2] = 0;
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
+        if (!header.setStreamWithTypeNum(type, typeNum)) {
+        	return SceKernelErrors.ERROR_PSMF_INVALID_ID;
         }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x2673646B, version = 150, checkInsideInterrupt = true)
-    public void scePsmfVerifyPsmf(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int buffer_addr = cpu.gpr[4];
-
+    public int scePsmfVerifyPsmf(TPointer bufferAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfVerifyPsmf (buffer_addr=0x" + Integer.toHexString(buffer_addr) + ")");
+            log.debug(String.format("scePsmfVerifyPsmf bufferAddr=%s", bufferAddr));
+            if (log.isTraceEnabled()) {
+                log.debug(String.format("scePsmfVerifyPsmf %s", Utilities.getMemoryDump(bufferAddr.getAddress(), sceMpeg.MPEG_HEADER_BUFFER_MINIMUM_SIZE)));
+            }
         }
 
-        
-        if (Memory.isAddressGood(buffer_addr)) {
-            int version = mem.read32(buffer_addr + sceMpeg.PSMF_STREAM_VERSION_OFFSET);
-            if (version > sceMpeg.PSMF_VERSION_0015) {
-                cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_INVALID_PSMF;
-            } else {
-                cpu.gpr[2] = 0;
-            }
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_INVALID_PSMF;
+        int magic = bufferAddr.getValue32(sceMpeg.PSMF_MAGIC_OFFSET);
+        if (magic != sceMpeg.PSMF_MAGIC) {
+        	return SceKernelErrors.ERROR_PSMF_INVALID_PSMF;
         }
+
+        int rawVersion = bufferAddr.getValue32(sceMpeg.PSMF_STREAM_VERSION_OFFSET);
+        int version = sceMpeg.getMpegVersion(rawVersion);
+        if (version < 0) {
+        	return SceKernelErrors.ERROR_PSMF_INVALID_PSMF;
+        }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xB78EB9E9, version = 150, checkInsideInterrupt = true)
-    public void scePsmfGetHeaderSize(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int psmf = cpu.gpr[4];
-        int size_addr = cpu.gpr[5];
-
+    public int scePsmfGetHeaderSize(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 sizeAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfGetHeaderSize (psmf=0x" + Integer.toHexString(psmf) + ", size_addr=0x" + size_addr + ")");
+            log.debug(String.format("scePsmfGetHeaderSize psmf=%s, sizeAddr=%s", psmf, sizeAddr));
         }
 
-        
         PSMFHeader header = getPsmfHeader(psmf);
-        if (header != null) {
-            int size = header.getHeaderSize();
-            mem.write32(size_addr, size);
-            cpu.gpr[2] = 0;
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
-        }
+        sizeAddr.setValue(header.getHeaderSize());
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xA5EBFE81, version = 150, checkInsideInterrupt = true)
-    public void scePsmfGetStreamSize(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int psmf = cpu.gpr[4];
-        int size_addr = cpu.gpr[5];
-
+    public int scePsmfGetStreamSize(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 sizeAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfGetStreamSize (psmf=0x" + Integer.toHexString(psmf) + ", size_addr=0x" + size_addr + ")");
+            log.debug(String.format("scePsmfGetStreamSize psmf=%s, sizeAddr=%s", psmf, sizeAddr));
         }
 
-        
         PSMFHeader header = getPsmfHeader(psmf);
-        if (header != null) {
-            int size = header.getStreamSize();
-            mem.write32(size_addr, size);
-            cpu.gpr[2] = 0;
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
-        }
+        sizeAddr.setValue(header.getStreamSize());
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xE1283895, version = 150, checkInsideInterrupt = true)
-    public void scePsmfGetPsmfVersion(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int psmf = cpu.gpr[4];
-
+    public int scePsmfGetPsmfVersion(@CheckArgument("checkPsmf") TPointer32 psmf) {
         if (log.isDebugEnabled()) {
-            log.debug("scePsmfGetPsmfVersion (psmf=0x" + Integer.toHexString(psmf) + ")");
+            log.debug(String.format("scePsmfGetPsmfVersion psmf=%s", psmf));
         }
 
-        
         PSMFHeader header = getPsmfHeader(psmf);
-        if (header != null) {
-            cpu.gpr[2] = header.getVersion();
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
-        }
-    }
 
+        return header.getVersion();
+    }
 }

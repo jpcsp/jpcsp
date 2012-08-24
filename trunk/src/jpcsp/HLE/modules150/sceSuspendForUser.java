@@ -105,10 +105,10 @@ public class sceSuspendForUser extends HLEModule {
             return ERROR_INVALID_MODE;
         }
 
-        if (!paddr.isNull()) {
+        if (paddr.isNotNull()) {
             paddr.setValue(0x08400000); // Volatile mem is always at 0x08400000
         }
-        if (!psize.isNull()) {
+        if (psize.isNotNull()) {
             psize.setValue(0x400000);   // Volatile mem size is 4Megs
         }
 

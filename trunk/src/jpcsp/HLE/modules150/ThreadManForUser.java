@@ -22,7 +22,6 @@ import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._v1;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_ADDR;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_ARGUMENT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_PRIORITY;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_THREAD;
@@ -86,8 +85,10 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.DumpDebugState;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.PspString;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.StringInfo;
 import jpcsp.HLE.TPointer;
@@ -117,7 +118,6 @@ import jpcsp.memory.MemoryReader;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.util.DurationStatistics;
-import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 import jpcsp.HLE.CheckArgument;;
@@ -1219,10 +1219,6 @@ public class ThreadManForUser extends HLEModule {
         }
     }
 
-    public void hleKernelExitCallback() {
-        hleKernelExitCallback(Emulator.getProcessor());
-    }
-
     @HLEFunction(nid = HLESyscallNid, version = 150)
     public void hleKernelExitCallback(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -1487,6 +1483,20 @@ public class ThreadManForUser extends HLEModule {
         }
 
         return uid;
+    }
+
+    /**
+     * Check the validity of the VTimer UID.
+     * 
+     * @param uid   VTimer UID to be checked
+     * @return      valid VTimer UID
+     */
+    public int checkVTimerID(int uid) {
+    	if (!vtimers.containsKey(uid)) {
+    		throw new SceKernelErrorException(ERROR_KERNEL_NOT_FOUND_VTIMER);
+    	}
+
+    	return uid;
     }
 
     public SceKernelThreadInfo hleKernelCreateThread(String name, int entry_addr,
@@ -1910,17 +1920,15 @@ public class ThreadManForUser extends HLEModule {
         Scheduler.getInstance().addAction(sceKernelAlarmInfo.schedule, sceKernelAlarmInfo.alarmInterruptAction);
     }
 
-    protected void hleKernelSetAlarm(Processor processor, long delayUsec, int handlerAddress, int handlerArgument) {
-        CpuState cpu = processor.cpu;
-
+    protected int hleKernelSetAlarm(long delayUsec, TPointer handlerAddress, int handlerArgument) {
         long now = Scheduler.getNow();
         long schedule = now + delayUsec;
-        SceKernelAlarmInfo sceKernelAlarmInfo = new SceKernelAlarmInfo(schedule, handlerAddress, handlerArgument);
+        SceKernelAlarmInfo sceKernelAlarmInfo = new SceKernelAlarmInfo(schedule, handlerAddress.getAddress(), handlerArgument);
         alarms.put(sceKernelAlarmInfo.uid, sceKernelAlarmInfo);
 
         scheduleAlarm(sceKernelAlarmInfo);
 
-        cpu.gpr[2] = sceKernelAlarmInfo.uid;
+        return sceKernelAlarmInfo.uid;
     }
 
     protected long getSystemTime() {
@@ -2550,164 +2558,139 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x7C0DC2A0, version = 150, checkInsideInterrupt = true)
-    public void sceKernelCreateMsgPipe(int name_addr, int partitionid, int attr, int size, int opt_addr) {
-        Managers.msgPipes.sceKernelCreateMsgPipe(name_addr, partitionid, attr, size, opt_addr);
+    public int sceKernelCreateMsgPipe(int name_addr, int partitionid, int attr, int size, int opt_addr) {
+        return Managers.msgPipes.sceKernelCreateMsgPipe(name_addr, partitionid, attr, size, opt_addr);
     }
 
     @HLEFunction(nid = 0xF0B7DA1C, version = 150, checkInsideInterrupt = true)
-    public void sceKernelDeleteMsgPipe(int uid) {
-        Managers.msgPipes.sceKernelDeleteMsgPipe(uid);
+    public int sceKernelDeleteMsgPipe(int uid) {
+        return Managers.msgPipes.sceKernelDeleteMsgPipe(uid);
     }
 
     @HLEFunction(nid = 0x876DBFAD, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public void sceKernelSendMsgPipe(int uid, int msg_addr, int size, int waitMode, int resultSize_addr, int timeout_addr) {
-        Managers.msgPipes.sceKernelSendMsgPipe(uid, msg_addr, size, waitMode, resultSize_addr, timeout_addr);
+    public int sceKernelSendMsgPipe(int uid, int msg_addr, int size, int waitMode, int resultSize_addr, int timeout_addr) {
+        return Managers.msgPipes.sceKernelSendMsgPipe(uid, msg_addr, size, waitMode, resultSize_addr, timeout_addr);
     }
 
     @HLEFunction(nid = 0x7C41F2C2, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public void sceKernelSendMsgPipeCB(int uid, int msg_addr, int size, int waitMode, int resultSize_addr, int timeout_addr) {
-        Managers.msgPipes.sceKernelSendMsgPipeCB(uid, msg_addr, size, waitMode, resultSize_addr, timeout_addr);
+    public int sceKernelSendMsgPipeCB(int uid, int msg_addr, int size, int waitMode, int resultSize_addr, int timeout_addr) {
+        return Managers.msgPipes.sceKernelSendMsgPipeCB(uid, msg_addr, size, waitMode, resultSize_addr, timeout_addr);
     }
 
     @HLEFunction(nid = 0x884C9F90, version = 150)
-    public void sceKernelTrySendMsgPipe(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.msgPipes.sceKernelTrySendMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+    public int sceKernelTrySendMsgPipe(int uid, int msg_addr, int size, int waitMode, int resultSize_addr) {
+        return Managers.msgPipes.sceKernelTrySendMsgPipe(uid, msg_addr, size, waitMode, resultSize_addr);
     }
 
     @HLEFunction(nid = 0x74829B76, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public void sceKernelReceiveMsgPipe(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.msgPipes.sceKernelReceiveMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
+    public int sceKernelReceiveMsgPipe(int uid, int msg_addr, int size, int waitMode, int resultSize_addr, int timeout_addr) {
+        return Managers.msgPipes.sceKernelReceiveMsgPipe(uid, msg_addr, size, waitMode, resultSize_addr, timeout_addr);
     }
 
     @HLEFunction(nid = 0xFBFA697D, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public void sceKernelReceiveMsgPipeCB(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.msgPipes.sceKernelReceiveMsgPipeCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
+    public int sceKernelReceiveMsgPipeCB(int uid, int msg_addr, int size, int waitMode, int resultSize_addr, int timeout_addr) {
+        return Managers.msgPipes.sceKernelReceiveMsgPipeCB(uid, msg_addr, size, waitMode, resultSize_addr, timeout_addr);
     }
 
     @HLEFunction(nid = 0xDF52098F, version = 150)
-    public void sceKernelTryReceiveMsgPipe(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.msgPipes.sceKernelTryReceiveMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+    public int sceKernelTryReceiveMsgPipe(int uid, int msg_addr, int size, int waitMode, int resultSize_addr) {
+        return Managers.msgPipes.sceKernelTryReceiveMsgPipe(uid, msg_addr, size, waitMode, resultSize_addr);
     }
 
     @HLEFunction(nid = 0x349B864D, version = 150)
-    public void sceKernelCancelMsgPipe(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.msgPipes.sceKernelCancelMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+    public int sceKernelCancelMsgPipe(int uid, int send_addr, int recv_addr) {
+        return Managers.msgPipes.sceKernelCancelMsgPipe(uid, send_addr, recv_addr);
     }
 
     @HLEFunction(nid = 0x33BE4024, version = 150)
-    public void sceKernelReferMsgPipeStatus(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.msgPipes.sceKernelReferMsgPipeStatus(cpu.gpr[4], cpu.gpr[5]);
+    public int sceKernelReferMsgPipeStatus(int uid, int info_addr) {
+        return Managers.msgPipes.sceKernelReferMsgPipeStatus(uid, info_addr);
     }
 
     @HLEFunction(nid = 0x56C039B5, version = 150, checkInsideInterrupt = true)
-    public void sceKernelCreateVpl(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.vpl.sceKernelCreateVpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+    public int sceKernelCreateVpl(int name_addr, int partitionid, int attr, int size, int opt_addr) {
+        return Managers.vpl.sceKernelCreateVpl(name_addr, partitionid, attr, size, opt_addr);
     }
 
     @HLEFunction(nid = 0x89B3D48C, version = 150, checkInsideInterrupt = true)
-    public void sceKernelDeleteVpl(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.vpl.sceKernelDeleteVpl(cpu.gpr[4]);
+    public int sceKernelDeleteVpl(int uid) {
+        return Managers.vpl.sceKernelDeleteVpl(uid);
     }
 
     @HLEFunction(nid = 0xBED27435, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public void sceKernelAllocateVpl(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.vpl.sceKernelAllocateVpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
+    public int sceKernelAllocateVpl(int uid, int size, int data_addr, int timeout_addr) {
+        return Managers.vpl.sceKernelAllocateVpl(uid, size, data_addr, timeout_addr);
     }
 
     @HLEFunction(nid = 0xEC0A693F, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public void sceKernelAllocateVplCB(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.vpl.sceKernelAllocateVplCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
+    public int sceKernelAllocateVplCB(int uid, int size, int data_addr, int timeout_addr) {
+        return Managers.vpl.sceKernelAllocateVplCB(uid, size, data_addr, timeout_addr);
     }
 
     @HLEFunction(nid = 0xAF36D708, version = 150)
-    public void sceKernelTryAllocateVpl(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.vpl.sceKernelTryAllocateVpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+    public int sceKernelTryAllocateVpl(int uid, int size, int data_addr) {
+        return Managers.vpl.sceKernelTryAllocateVpl(uid, size, data_addr);
     }
 
     @HLEFunction(nid = 0xB736E9FF, version = 150, checkInsideInterrupt = true)
-    public void sceKernelFreeVpl(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.vpl.sceKernelFreeVpl(cpu.gpr[4], cpu.gpr[5]);
+    public int sceKernelFreeVpl(int uid, int data_addr) {
+        return Managers.vpl.sceKernelFreeVpl(uid, data_addr);
     }
 
     @HLEFunction(nid = 0x1D371B8A, version = 150)
-    public void sceKernelCancelVpl(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.vpl.sceKernelCancelVpl(cpu.gpr[4], cpu.gpr[5]);
+    public int sceKernelCancelVpl(int uid, int numWaitThreadAddr) {
+        return Managers.vpl.sceKernelCancelVpl(uid, numWaitThreadAddr);
     }
 
     @HLEFunction(nid = 0x39810265, version = 150)
-    public void sceKernelReferVplStatus(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.vpl.sceKernelReferVplStatus(cpu.gpr[4], cpu.gpr[5]);
+    public int sceKernelReferVplStatus(int uid, int info_addr) {
+        return Managers.vpl.sceKernelReferVplStatus(uid, info_addr);
     }
 
     @HLEFunction(nid = 0xC07BB470, version = 150, checkInsideInterrupt = true)
-    public void sceKernelCreateFpl(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.fpl.sceKernelCreateFpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
+    public int sceKernelCreateFpl(int name_addr, int partitionid, int attr, int blocksize, int blocks, int opt_addr) {
+        return Managers.fpl.sceKernelCreateFpl(name_addr, partitionid, attr, blocksize, blocks, opt_addr);
     }
 
     @HLEFunction(nid = 0xED1410E0, version = 150, checkInsideInterrupt = true)
-    public void sceKernelDeleteFpl(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.fpl.sceKernelDeleteFpl(cpu.gpr[4]);
+    public int sceKernelDeleteFpl(int uid) {
+        return Managers.fpl.sceKernelDeleteFpl(uid);
     }
 
     @HLEFunction(nid = 0xD979E9BF, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public void sceKernelAllocateFpl(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.fpl.sceKernelAllocateFpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+    public int sceKernelAllocateFpl(int uid, int data_addr, int timeout_addr) {
+        return Managers.fpl.sceKernelAllocateFpl(uid, data_addr, timeout_addr);
     }
 
     @HLEFunction(nid = 0xE7282CB6, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public void sceKernelAllocateFplCB(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.fpl.sceKernelAllocateFplCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+    public int sceKernelAllocateFplCB(int uid, int data_addr, int timeout_addr) {
+        return Managers.fpl.sceKernelAllocateFplCB(uid, data_addr, timeout_addr);
     }
 
     @HLEFunction(nid = 0x623AE665, version = 150)
-    public void sceKernelTryAllocateFpl(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.fpl.sceKernelTryAllocateFpl(cpu.gpr[4], cpu.gpr[5]);
+    public int sceKernelTryAllocateFpl(int uid, int data_addr) {
+        return Managers.fpl.sceKernelTryAllocateFpl(uid, data_addr);
     }
 
     @HLEFunction(nid = 0xF6414A71, version = 150, checkInsideInterrupt = true)
-    public void sceKernelFreeFpl(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.fpl.sceKernelFreeFpl(cpu.gpr[4], cpu.gpr[5]);
+    public int sceKernelFreeFpl(int uid, int data_addr) {
+        return Managers.fpl.sceKernelFreeFpl(uid, data_addr);
     }
 
     @HLEFunction(nid = 0xA8AA591F, version = 150)
-    public void sceKernelCancelFpl(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.fpl.sceKernelCancelFpl(cpu.gpr[4], cpu.gpr[5]);
+    public int sceKernelCancelFpl(int uid, int numWaitThreadAddr) {
+        return Managers.fpl.sceKernelCancelFpl(uid, numWaitThreadAddr);
     }
 
     @HLEFunction(nid = 0xD8199E4C, version = 150)
-    public void sceKernelReferFplStatus(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Managers.fpl.sceKernelReferFplStatus(cpu.gpr[4], cpu.gpr[5]);
+    public int sceKernelReferFplStatus(int uid, int info_addr) {
+        return Managers.fpl.sceKernelReferFplStatus(uid, info_addr);
     }
 
     @HLEFunction(nid = 0x0E927AED, version = 150)
-    public void _sceKernelReturnFromTimerHandler(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int _sceKernelReturnFromTimerHandler() {
         log.warn("Unimplemented _sceKernelReturnFromTimerHandler");
-
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
     @HLEFunction(nid = 0x110DEC9A, version = 150)
@@ -2754,17 +2737,12 @@ public class ThreadManForUser extends HLEModule {
      * @return A UID representing the created alarm, < 0 on error.
      */
     @HLEFunction(nid = 0x6652B8CA, version = 150)
-    public void sceKernelSetAlarm(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int delayUsec = cpu.gpr[4];
-        int handlerAddress = cpu.gpr[5];
-        int handlerArgument = cpu.gpr[6];
+    public int sceKernelSetAlarm(int delayUsec, TPointer handlerAddress, int handlerArgument) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelSetAlarm(%d,0x%08X,0x%08X)", delayUsec, handlerAddress, handlerArgument));
+            log.debug(String.format("sceKernelSetAlarm delayUsec=%d, handlerAddress=%s, handlerArgument=0x%08X)", delayUsec, handlerAddress, handlerArgument));
         }
 
-        hleKernelSetAlarm(processor, delayUsec, handlerAddress, handlerArgument);
+        return hleKernelSetAlarm(delayUsec, handlerAddress, handlerArgument);
     }
 
     /**
@@ -2777,25 +2755,15 @@ public class ThreadManForUser extends HLEModule {
      * @return A UID representing the created alarm, < 0 on error.
      */
     @HLEFunction(nid = 0xB2C25152, version = 150)
-    public void sceKernelSetSysClockAlarm(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int delaySysclockAddr = cpu.gpr[4];
-        int handlerAddress = cpu.gpr[5];
-        int handlerArgument = cpu.gpr[6];
+    public int sceKernelSetSysClockAlarm(TPointer64 delaySysclockAddr, TPointer handlerAddress, int handlerArgument) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelSetSysClockAlarm(0x%08X,0x%08X,0x%08X)", delaySysclockAddr, handlerAddress, handlerArgument));
+            log.debug(String.format("sceKernelSetSysClockAlarm delaySysclockAddr=%s, handlerAddress=%s, handlerArgument=0x%08X)", delaySysclockAddr, handlerAddress, handlerArgument));
         }
 
-        if (Memory.isAddressGood(delaySysclockAddr)) {
-            long delaySysclock = mem.read64(delaySysclockAddr);
-            long delayUsec = SystemTimeManager.hleSysClock2USec(delaySysclock);
+        long delaySysclock = delaySysclockAddr.getValue();
+        long delayUsec = SystemTimeManager.hleSysClock2USec(delaySysclock);
 
-            hleKernelSetAlarm(processor, delayUsec, handlerAddress, handlerArgument);
-        } else {
-            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_ADDR;
-        }
+        return hleKernelSetAlarm(delayUsec, handlerAddress, handlerArgument);
     }
 
     /**
@@ -2806,22 +2774,20 @@ public class ThreadManForUser extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x7E65B999, version = 150)
-    public void sceKernelCancelAlarm(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int alarmUid = cpu.gpr[4];
+    public int sceKernelCancelAlarm(int alarmUid) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelCancelAlarm(uid=0x%x)", alarmUid));
+            log.debug(String.format("sceKernelCancelAlarm uid=0x%X", alarmUid));
         }
 
         SceKernelAlarmInfo sceKernelAlarmInfo = alarms.get(alarmUid);
         if (sceKernelAlarmInfo == null) {
             log.warn(String.format("sceKernelCancelAlarm unknown uid=0x%x", alarmUid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_ALARM;
-        } else {
-            cancelAlarm(sceKernelAlarmInfo);
-            cpu.gpr[2] = 0;
+            return ERROR_KERNEL_NOT_FOUND_ALARM;
         }
+
+        cancelAlarm(sceKernelAlarmInfo);
+
+        return 0;
     }
 
     /**
@@ -2833,26 +2799,20 @@ public class ThreadManForUser extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0xDAA3F564, version = 150)
-    public void sceKernelReferAlarmStatus(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int alarmUid = cpu.gpr[4];
-        int infoAddr = cpu.gpr[5];
+    public int sceKernelReferAlarmStatus(int alarmUid, TPointer infoAddr) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelReferAlarmStatus(uid=0x%x, infoAddr=0x%08X)", alarmUid, infoAddr));
+            log.debug(String.format("sceKernelReferAlarmStatus uid=0x%X, infoAddr=%s", alarmUid, infoAddr));
         }
 
         SceKernelAlarmInfo sceKernelAlarmInfo = alarms.get(alarmUid);
         if (sceKernelAlarmInfo == null) {
             log.warn(String.format("sceKernelReferAlarmStatus unknown uid=0x%x", alarmUid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_ALARM;
-        } else if (!Memory.isAddressGood(infoAddr)) {
-            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_ADDR;
-        } else {
-            sceKernelAlarmInfo.write(mem, infoAddr);
-            cpu.gpr[2] = 0;
+            return ERROR_KERNEL_NOT_FOUND_ALARM;
         }
+
+        sceKernelAlarmInfo.write(Memory.getInstance(), infoAddr.getAddress());
+
+        return 0;
     }
 
     /**
@@ -2864,19 +2824,15 @@ public class ThreadManForUser extends HLEModule {
      * @return The VTimer's UID or < 0 on error.
      */
     @HLEFunction(nid = 0x20FFF560, version = 150, checkInsideInterrupt = true)
-    public void sceKernelCreateVTimer(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int nameAddr = cpu.gpr[4];
-        int optAddr = cpu.gpr[5];
-        String name = Utilities.readStringZ(nameAddr);
+    public int sceKernelCreateVTimer(PspString name, @CanBeNull TPointer optAddr) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelCreateVTimer(name=%s(0x%08X), optAddr=0x%08X)", name, nameAddr, optAddr));
+            log.debug(String.format("sceKernelCreateVTimer name=%s, optAddr=%s", name, optAddr));
         }
 
-        SceKernelVTimerInfo sceKernelVTimerInfo = new SceKernelVTimerInfo(name);
+        SceKernelVTimerInfo sceKernelVTimerInfo = new SceKernelVTimerInfo(name.getString());
         vtimers.put(sceKernelVTimerInfo.uid, sceKernelVTimerInfo);
-        cpu.gpr[2] = sceKernelVTimerInfo.uid;
+
+        return sceKernelVTimerInfo.uid;
     }
 
     /**
@@ -2887,22 +2843,15 @@ public class ThreadManForUser extends HLEModule {
      * @return < 0 on error.
      */
     @HLEFunction(nid = 0x328F9E52, version = 150, checkInsideInterrupt = true)
-    public void sceKernelDeleteVTimer(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int vtimerUid = cpu.gpr[4];
+    public int sceKernelDeleteVTimer(@CheckArgument("checkVTimerID") int vtimerUid) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelDeleteVTimer(uid=0x%x)", vtimerUid));
+            log.debug(String.format("sceKernelDeleteVTimer uid=0x%X", vtimerUid));
         }
 
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.remove(vtimerUid);
-        if (sceKernelVTimerInfo == null) {
-            log.warn(String.format("sceKernelDeleteVTimer unknown uid=0x%x", vtimerUid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_VTIMER;
-        } else {
-            sceKernelVTimerInfo.delete();
-            cpu.gpr[2] = 0;
-        }
+        sceKernelVTimerInfo.delete();
+
+        return 0;
     }
 
     /**
@@ -2914,26 +2863,15 @@ public class ThreadManForUser extends HLEModule {
      * @return 0 on success, < 0 on error
      */
     @HLEFunction(nid = 0xB3A59970, version = 150)
-    public void sceKernelGetVTimerBase(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int vtimerUid = cpu.gpr[4];
-        int baseAddr = cpu.gpr[5];
+    public int sceKernelGetVTimerBase(@CheckArgument("checkVTimerID") int vtimerUid, TPointer64 baseAddr) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelGetVTimerBase(uid=0x%x,baseAddr=0x%08X)", vtimerUid, baseAddr));
+            log.debug(String.format("sceKernelGetVTimerBase uid=0x%X, baseAddr=%s", vtimerUid, baseAddr));
         }
 
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
-        if (sceKernelVTimerInfo == null) {
-            log.warn(String.format("sceKernelGetVTimerBase unknown uid=0x%x", vtimerUid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_VTIMER;
-        } else if (!Memory.isAddressGood(baseAddr)) {
-            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_ADDR;
-        } else {
-            mem.write64(baseAddr, sceKernelVTimerInfo.base);
-            cpu.gpr[2] = 0;
-        }
+        baseAddr.setValue(sceKernelVTimerInfo.base);
+
+        return 0;
     }
 
     /**
@@ -2944,21 +2882,14 @@ public class ThreadManForUser extends HLEModule {
      * @return The 64bit timer base
      */
     @HLEFunction(nid = 0xB7C18B77, version = 150)
-    public void sceKernelGetVTimerBaseWide(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int vtimerUid = cpu.gpr[4];
+    public long sceKernelGetVTimerBaseWide(@CheckArgument("checkVTimerID") int vtimerUid) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelGetVTimerBaseWide(uid=0x%x)", vtimerUid));
+            log.debug(String.format("sceKernelGetVTimerBaseWide uid=0x%X", vtimerUid));
         }
 
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
-        if (sceKernelVTimerInfo == null) {
-            log.warn(String.format("sceKernelGetVTimerBaseWide unknown uid=0x%x", vtimerUid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_VTIMER;
-        } else {
-            Utilities.returnRegister64(cpu, sceKernelVTimerInfo.base);
-        }
+
+        return sceKernelVTimerInfo.base;
     }
 
     /**
@@ -2970,30 +2901,19 @@ public class ThreadManForUser extends HLEModule {
      * @return 0 on success, < 0 on error
      */
     @HLEFunction(nid = 0x034A921F, version = 150)
-    public void sceKernelGetVTimerTime(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int vtimerUid = cpu.gpr[4];
-        int timeAddr = cpu.gpr[5];
+    public int sceKernelGetVTimerTime(@CheckArgument("checkVTimerID") int vtimerUid, TPointer64 timeAddr) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelGetVTimerTime(uid=0x%x,timeAddr=0x%08X)", vtimerUid, timeAddr));
+            log.debug(String.format("sceKernelGetVTimerTime uid=0x%X, timeAddr=%s", vtimerUid, timeAddr));
         }
 
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
-        if (sceKernelVTimerInfo == null) {
-            log.warn(String.format("sceKernelGetVTimerTime unknown uid=0x%x", vtimerUid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_VTIMER;
-        } else if (!Memory.isAddressGood(timeAddr)) {
-            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_ADDR;
-        } else {
-            long time = getVTimerTime(sceKernelVTimerInfo);
-            if (log.isDebugEnabled()) {
-                log.debug(String.format("sceKernelGetVTimerTime returning %d", time));
-            }
-            mem.write64(timeAddr, time);
-            cpu.gpr[2] = 0;
+        long time = getVTimerTime(sceKernelVTimerInfo);
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceKernelGetVTimerTime returning %d", time));
         }
+        timeAddr.setValue(time);
+
+        return 0;
     }
 
     /**
@@ -3004,25 +2924,18 @@ public class ThreadManForUser extends HLEModule {
      * @return The 64bit timer time
      */
     @HLEFunction(nid = 0xC0B3FFD2, version = 150)
-    public void sceKernelGetVTimerTimeWide(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int vtimerUid = cpu.gpr[4];
+    public long sceKernelGetVTimerTimeWide(@CheckArgument("checkVTimerID") int vtimerUid) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelGetVTimerTimeWide(uid=0x%x)", vtimerUid));
+            log.debug(String.format("sceKernelGetVTimerTimeWide uid=0x%X", vtimerUid));
         }
 
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
-        if (sceKernelVTimerInfo == null) {
-            log.warn(String.format("sceKernelGetVTimerTimeWide unknown uid=0x%x", vtimerUid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_VTIMER;
-        } else {
-            long time = getVTimerTime(sceKernelVTimerInfo);
-            if (log.isDebugEnabled()) {
-                log.debug(String.format("sceKernelGetVTimerTimeWide returning %d", time));
-            }
-            Utilities.returnRegister64(cpu, time);
+        long time = getVTimerTime(sceKernelVTimerInfo);
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceKernelGetVTimerTimeWide returning %d", time));
         }
+
+        return time;
     }
 
     /**
@@ -3034,27 +2947,16 @@ public class ThreadManForUser extends HLEModule {
      * @return 0 on success, < 0 on error
      */
     @HLEFunction(nid = 0x542AD630, version = 150, checkInsideInterrupt = true)
-    public void sceKernelSetVTimerTime(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int vtimerUid = cpu.gpr[4];
-        int timeAddr = cpu.gpr[5];
+    public int sceKernelSetVTimerTime(@CheckArgument("checkVTimerID") int vtimerUid, TPointer64 timeAddr) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelSetVTimerTime(uid=0x%x,timeAddr=0x%08X)", vtimerUid, timeAddr));
+            log.debug(String.format("sceKernelSetVTimerTime uid=0x%X, timeAddr=%s", vtimerUid, timeAddr));
         }
 
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
-        if (sceKernelVTimerInfo == null) {
-            log.warn(String.format("sceKernelSetVTimerTime unknown uid=0x%x", vtimerUid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_VTIMER;
-        } else if (!Memory.isAddressGood(timeAddr)) {
-            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_ADDR;
-        } else {
-            long time = mem.read64(timeAddr);
-            setVTimer(sceKernelVTimerInfo, time);
-            cpu.gpr[2] = 0;
-        }
+        long time = timeAddr.getValue();
+        setVTimer(sceKernelVTimerInfo, time);
+
+        return 0;
     }
 
     /**
@@ -3066,24 +2968,15 @@ public class ThreadManForUser extends HLEModule {
      * @return Possibly the last time
      */
     @HLEFunction(nid = 0xFB6425C3, version = 150, checkInsideInterrupt = true)
-    public void sceKernelSetVTimerTimeWide(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int vtimerUid = cpu.gpr[4];
-        // cpu.gpr[5] not used!
-        long time = Utilities.getRegister64(cpu, 6);
+    public int sceKernelSetVTimerTimeWide(@CheckArgument("checkVTimerID") int vtimerUid, long time) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelSetVTimerTime(uid=0x%x,time=0x%016X)", vtimerUid, time));
+            log.debug(String.format("sceKernelSetVTimerTime uid=0x%X, time=%d", vtimerUid, time));
         }
 
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
-        if (sceKernelVTimerInfo == null) {
-            log.warn(String.format("sceKernelSetVTimerTime unknown uid=0x%x", vtimerUid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_VTIMER;
-        } else {
-            setVTimer(sceKernelVTimerInfo, time);
-            cpu.gpr[2] = 0;
-        }
+        setVTimer(sceKernelVTimerInfo, time);
+
+        return 0;
     }
 
     /**
@@ -3094,26 +2987,19 @@ public class ThreadManForUser extends HLEModule {
      * @return < 0 on error
      */
     @HLEFunction(nid = 0xC68D9437, version = 150)
-    public void sceKernelStartVTimer(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int vtimerUid = cpu.gpr[4];
+    public int sceKernelStartVTimer(@CheckArgument("checkVTimerID") int vtimerUid) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelStartVTimer(uid=0x%x)", vtimerUid));
+            log.debug(String.format("sceKernelStartVTimer uid=0x%X", vtimerUid));
         }
 
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
-        if (sceKernelVTimerInfo == null) {
-            log.warn(String.format("sceKernelStartVTimer unknown uid=0x%x", vtimerUid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_VTIMER;
-        } else {
-            if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_RUNNING) {
-                cpu.gpr[2] = 1; // already started
-            } else {
-                startVTimer(sceKernelVTimerInfo);
-                cpu.gpr[2] = 0;
-            }
+        if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_RUNNING) {
+            return 1; // already started
         }
+
+        startVTimer(sceKernelVTimerInfo);
+
+        return 0;
     }
 
     /**
@@ -3124,26 +3010,19 @@ public class ThreadManForUser extends HLEModule {
      * @return < 0 on error
      */
     @HLEFunction(nid = 0xD0AEEE87, version = 150)
-    public void sceKernelStopVTimer(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int vtimerUid = cpu.gpr[4];
+    public int sceKernelStopVTimer(@CheckArgument("checkVTimerID") int vtimerUid) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelStopVTimer(uid=0x%x)", vtimerUid));
+            log.debug(String.format("sceKernelStopVTimer uid=0x%X", vtimerUid));
         }
 
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
-        if (sceKernelVTimerInfo == null) {
-            log.warn(String.format("sceKernelStopVTimer unknown uid=0x%x", vtimerUid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_VTIMER;
-        } else {
-            if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_STOPPED) {
-                cpu.gpr[2] = 0; // already stopped
-            } else {
-                stopVTimer(sceKernelVTimerInfo);
-                cpu.gpr[2] = 1;
-            }
+        if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_STOPPED) {
+            return 0; // already stopped
         }
+
+        stopVTimer(sceKernelVTimerInfo);
+
+        return 1;
     }
 
     /**
@@ -3157,34 +3036,20 @@ public class ThreadManForUser extends HLEModule {
      * @return 0 on success, < 0 on error
      */
     @HLEFunction(nid = 0xD8B299AE, version = 150)
-    public void sceKernelSetVTimerHandler(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int vtimerUid = cpu.gpr[4];
-        int scheduleAddr = cpu.gpr[5];
-        int handlerAddress = cpu.gpr[6];
-        int handlerArgument = cpu.gpr[7];
-
+    public int sceKernelSetVTimerHandler(@CheckArgument("checkVTimerID") int vtimerUid, TPointer64 scheduleAddr, @CanBeNull TPointer handlerAddress, int handlerArgument) {
         if (log.isDebugEnabled()) {
-            log.warn(String.format("sceKernelSetVTimerHandler(uid=0x%x,scheduleAddr=0x%08X,handlerAddress=0x%08X,handlerArgument=0x%08X)", vtimerUid, scheduleAddr, handlerAddress, handlerArgument));
+            log.warn(String.format("sceKernelSetVTimerHandler uid=0x%X, scheduleAddr=%s, handlerAddress=%s, handlerArgument=0x%08X", vtimerUid, scheduleAddr, handlerAddress, handlerArgument));
         }
 
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
-        if (sceKernelVTimerInfo == null) {
-            log.warn(String.format("sceKernelSetVTimerHandler unknown uid=0x%x", vtimerUid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_VTIMER;
-        } else if (!Memory.isAddressGood(scheduleAddr)) {
-            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_ADDR;
-        } else {
-            long schedule = mem.read64(scheduleAddr);
-            sceKernelVTimerInfo.handlerAddress = handlerAddress;
-            sceKernelVTimerInfo.handlerArgument = handlerArgument;
-            if (handlerAddress != 0) {
-                scheduleVTimer(sceKernelVTimerInfo, schedule);
-            }
-            cpu.gpr[2] = 0;
+        long schedule = scheduleAddr.getValue();
+        sceKernelVTimerInfo.handlerAddress = handlerAddress.getAddress();
+        sceKernelVTimerInfo.handlerArgument = handlerArgument;
+        if (!handlerAddress.isNull()) {
+            scheduleVTimer(sceKernelVTimerInfo, schedule);
         }
+
+        return 0;
     }
 
     /**
@@ -3198,31 +3063,19 @@ public class ThreadManForUser extends HLEModule {
      * @return 0 on success, < 0 on error
      */
     @HLEFunction(nid = 0x53B00E9A, version = 150)
-    public void sceKernelSetVTimerHandlerWide(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int vtimerUid = cpu.gpr[4];
-        // cpu.gpr[5] not used!
-        long schedule = Utilities.getRegister64(cpu, 6);
-        int handlerAddress = cpu.gpr[8];
-        int handlerArgument = cpu.gpr[9];
-
+    public int sceKernelSetVTimerHandlerWide(@CheckArgument("checkVTimerID") int vtimerUid, long schedule, TPointer handlerAddress, int handlerArgument) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelSetVTimerHandlerWide(uid=0x%x,schedule=0x%016X,handlerAddress=0x%08X,handlerArgument=0x%08X)", vtimerUid, schedule, handlerAddress, handlerArgument));
+            log.debug(String.format("sceKernelSetVTimerHandlerWide uid=0x%X, schedule=%d, handlerAddress=%s, handlerArgument=0x%08X", vtimerUid, schedule, handlerAddress, handlerArgument));
         }
 
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
-        if (sceKernelVTimerInfo == null) {
-            log.warn(String.format("sceKernelSetVTimerHandler unknown uid=0x%x", vtimerUid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_VTIMER;
-        } else {
-            sceKernelVTimerInfo.handlerAddress = handlerAddress;
-            sceKernelVTimerInfo.handlerArgument = handlerArgument;
-            if (handlerAddress != 0) {
-                scheduleVTimer(sceKernelVTimerInfo, schedule);
-            }
-            cpu.gpr[2] = 0;
+        sceKernelVTimerInfo.handlerAddress = handlerAddress.getAddress();
+        sceKernelVTimerInfo.handlerArgument = handlerArgument;
+        if (!handlerAddress.isNull()) {
+            scheduleVTimer(sceKernelVTimerInfo, schedule);
         }
+
+        return 0;
     }
 
     /**
@@ -3233,22 +3086,15 @@ public class ThreadManForUser extends HLEModule {
      * @return 0 on success, < 0 on error
      */
     @HLEFunction(nid = 0xD2D615EF, version = 150)
-    public void sceKernelCancelVTimerHandler(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int vtimerUid = cpu.gpr[4];
+    public int sceKernelCancelVTimerHandler(@CheckArgument("checkVTimerID") int vtimerUid) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelCancelVTimerHandler(uid=0x%x)", vtimerUid));
+            log.debug(String.format("sceKernelCancelVTimerHandler uid=0x%X", vtimerUid));
         }
 
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
-        if (sceKernelVTimerInfo == null) {
-            log.warn(String.format("sceKernelCancelVTimerHandler unknown uid=0x%x", vtimerUid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_VTIMER;
-        } else {
-            cancelVTimer(sceKernelVTimerInfo);
-            cpu.gpr[2] = 0;
-        }
+        cancelVTimer(sceKernelVTimerInfo);
+
+        return 0;
     }
 
     /**
@@ -3260,26 +3106,15 @@ public class ThreadManForUser extends HLEModule {
      * @return 0 on success, < 0 on error
      */
     @HLEFunction(nid = 0x5F32BEAA, version = 150)
-    public void sceKernelReferVTimerStatus(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int vtimerUid = cpu.gpr[4];
-        int infoAddr = cpu.gpr[5];
+    public int sceKernelReferVTimerStatus(@CheckArgument("checkVTimerID") int vtimerUid, TPointer infoAddr) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelReferVTimerStatus(uid=0x%x,infoAddr=0x%08X)", vtimerUid, infoAddr));
+            log.debug(String.format("sceKernelReferVTimerStatus uid=0x%X, infoAddr=%s", vtimerUid, infoAddr));
         }
 
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
-        if (sceKernelVTimerInfo == null) {
-            log.warn(String.format("sceKernelReferVTimerStatus unknown uid=0x%x", vtimerUid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_VTIMER;
-        } else if (!Memory.isAddressGood(infoAddr)) {
-            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_ADDR;
-        } else {
-            sceKernelVTimerInfo.write(mem, infoAddr);
-            cpu.gpr[2] = 0;
-        }
+        sceKernelVTimerInfo.write(Memory.getInstance(), infoAddr.getAddress());
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x446D8DE6, version = 150)
@@ -3377,9 +3212,9 @@ public class ThreadManForUser extends HLEModule {
         }
 
         if (exitStatus < 0) {
-            thread.exitStatus = ERROR_KERNEL_ILLEGAL_ARGUMENT;
+        	thread.setExitStatus(ERROR_KERNEL_ILLEGAL_ARGUMENT);
         } else {
-            thread.exitStatus = exitStatus;
+        	thread.setExitStatus(exitStatus);
         }
 
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
@@ -3399,7 +3234,7 @@ public class ThreadManForUser extends HLEModule {
             log.debug("sceKernelExitDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' exitStatus:0x" + Integer.toHexString(exitStatus));
         }
 
-        thread.exitStatus = exitStatus;
+        thread.setExitStatus(exitStatus);
 
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_DELETE);
@@ -3422,7 +3257,7 @@ public class ThreadManForUser extends HLEModule {
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
 
         terminateThread(thread);
-        thread.exitStatus = ERROR_KERNEL_THREAD_IS_TERMINATED; // Update the exit status.
+        thread.setExitStatus(ERROR_KERNEL_THREAD_IS_TERMINATED); // Update the exit status.
 
         return 0;
     }
@@ -3653,7 +3488,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x94AA61EE, version = 150, checkInsideInterrupt = true)
-    public int sceKernelGetThreadCurrentPriority(Processor processor) {
+    public int sceKernelGetThreadCurrentPriority() {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelGetThreadCurrentPriority returning currentPriority=" + currentThread.currentPriority);
         }

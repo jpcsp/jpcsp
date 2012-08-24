@@ -18,9 +18,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Memory;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 
@@ -45,121 +45,92 @@ public class sceHprm extends HLEModule {
 
     private boolean hprmWarningLogged;
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xC7154136, version = 150)
-    public void sceHprmRegisterCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function sceHprmRegisterCallback [0xC7154136]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHprmRegisterCallback() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x444ED0B7, version = 150)
-    public void sceHprmUnregisterCallback(Processor processor) {
-        CpuState cpu = processor.cpu; 
-
-        log.warn("Unimplemented NID function sceHprmUnregisterCallback [0x444ED0B7]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHprmUnregisterCallback() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x71B5FB67, version = 150)
-    public void sceHprmGetHpDetect(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function sceHprmGetHpDetect [0x71B5FB67]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceHprmGetHpDetect() {
+    	return 0;
     }
 
     @HLEFunction(nid = 0x208DB1BD, version = 150)
-    public void sceHprmIsRemoteExist(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public boolean sceHprmIsRemoteExist() {
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceHprmIsRemoteExist returning %b", enableRemote));
+        }
 
-        int result = enableRemote ? 1 : 0;
-        log.debug("sceHprmIsRemoteExist ret:" + result);
-
-        cpu.gpr[2] = result;
+        return enableRemote;
     }
 
     @HLEFunction(nid = 0x7E69EDA4, version = 150)
-    public void sceHprmIsHeadphoneExist(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public boolean sceHprmIsHeadphoneExist() {
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceHprmIsHeadphoneExist returning %b", enableHeadphone));
+        }
 
-        int result = enableHeadphone ? 1 : 0;
-        log.debug("sceHprmIsHeadphoneExist ret:" + result);
-
-        cpu.gpr[2] = result;
+        return enableHeadphone;
     }
 
     @HLEFunction(nid = 0x219C58F1, version = 150)
-    public void sceHprmIsMicrophoneExist(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public boolean sceHprmIsMicrophoneExist() {
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceHprmIsMicrophoneExist returning %b", enableMicrophone));
+        }
 
-        int result = enableMicrophone ? 1 : 0;
-        log.debug("sceHprmIsMicrophoneExist ret:" + result);
-
-        cpu.gpr[2] = result;
+        return enableMicrophone;
     }
 
     @HLEFunction(nid = 0x1910B327, version = 150)
-    public void sceHprmPeekCurrentKey(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int key_addr = cpu.gpr[4];
-
-        if (Memory.isAddressGood(key_addr)) {
-            if (hprmWarningLogged) {
-                if (log.isDebugEnabled()) {
-                    log.debug("IGNORING: sceHprmPeekCurrentKey(key_addr=0x" + Integer.toHexString(key_addr) + ")");
-                }
-            } else {
-                log.warn("IGNORING: sceHprmPeekCurrentKey(key_addr=0x" + Integer.toHexString(key_addr) + ") future calls will only appear in TRACE log");
-                hprmWarningLogged = true;
+    public int sceHprmPeekCurrentKey(TPointer32 keyAddr) {
+        if (hprmWarningLogged) {
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("IGNORING: sceHprmPeekCurrentKey keyAddr=%s", keyAddr));
             }
-            mem.write32(key_addr, 0); // fake
-            cpu.gpr[2] = 0; // check
         } else {
-            log.warn("sceHprmPeekCurrentKey(key_addr=0x" + Integer.toHexString(key_addr) + ") invalid address");
-            cpu.gpr[2] = -1; // check
+            log.warn(String.format("IGNORING: sceHprmPeekCurrentKey keyAddr=%s", keyAddr));
+            hprmWarningLogged = true;
         }
+
+        keyAddr.setValue(0); // fake
+
+        return 0; // check
     }
 
     @HLEFunction(nid = 0x2BCEC83E, version = 150)
-    public void sceHprmPeekLatch(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int latchAddr = cpu.gpr[4];
-
+    public int sceHprmPeekLatch(TPointer latchAddr) {
         if (hprmWarningLogged) {
             if (log.isDebugEnabled()) {
-            	log.debug(String.format("IGNORING: sceHprmPeekLatch 0x%08X", latchAddr));
+            	log.debug(String.format("IGNORING: sceHprmPeekLatch %s", latchAddr));
             }
         } else {
-        	log.warn(String.format("IGNORING: sceHprmPeekLatch 0x%08X", latchAddr));
+        	log.warn(String.format("IGNORING: sceHprmPeekLatch %s", latchAddr));
         	hprmWarningLogged = true;
         }
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
     @HLEFunction(nid = 0x40D2F9F0, version = 150)
-    public void sceHprmReadLatch(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int latchAddr = cpu.gpr[4];
-
+    public int sceHprmReadLatch(TPointer latchAddr) {
         if (hprmWarningLogged) {
             if (log.isDebugEnabled()) {
-            	log.debug(String.format("IGNORING: sceHprmReadLatch 0x%08X", latchAddr));
+            	log.debug(String.format("IGNORING: sceHprmReadLatch %s", latchAddr));
             }
         } else {
-        	log.warn(String.format("IGNORING: sceHprmReadLatch 0x%08X", latchAddr));
+        	log.warn(String.format("IGNORING: sceHprmReadLatch %s", latchAddr));
         	hprmWarningLogged = true;
         }
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
-
 }

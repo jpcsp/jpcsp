@@ -22,11 +22,7 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.Emulator;
-import jpcsp.Memory;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
@@ -212,26 +208,20 @@ public class sceAudio extends HLEModule {
         return len;
     }
 
-    protected void hleAudioSRCChReserve(Processor processor, int samplecount, int freq, int format) {
-        CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-
+    protected int hleAudioSRCChReserve(int sampleCount, int freq, int format) {
         if (disableChReserve) {
-            log.warn("IGNORED hleAudioSRCChReserve samplecount= " + samplecount + " freq= " + freq + " format=" + format);
-            cpu.gpr[2] = -1;
-        } else {
-            if (!pspSRCChannel.isReserved()) {
-            	pspSRCChannel.setSampleRate(freq);
-                pspSRCChannel.setReserved(true);
-                pspSRCChannel.setSampleLength(samplecount);
-                pspSRCChannel.setFormat(format);
-            }
+            log.warn(String.format("IGNORED hleAudioSRCChReserve sampleCount=%d, freq=%d, format=%d", sampleCount, freq, format));
+            return -1;
         }
-        cpu.gpr[2] = 0;
+
+        if (!pspSRCChannel.isReserved()) {
+        	pspSRCChannel.setSampleRate(freq);
+            pspSRCChannel.setReserved(true);
+            pspSRCChannel.setSampleLength(sampleCount);
+            pspSRCChannel.setFormat(format);
+        }
+
+        return 0;
     }
 
     public int checkChannel(int channel) {
@@ -252,55 +242,48 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0x80F1F7E0, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
-    public void sceAudioInit(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAudioInit() {
+        log.warn(String.format("Unimplemented sceAudioInit"));
 
-        System.out.println("Unimplemented NID function sceAudioInit [0x80F1F7E0]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0x210567F7, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
-    public void sceAudioEnd(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAudioEnd() {
+        log.warn(String.format("Unimplemented sceAudioEnd"));
 
-        System.out.println("Unimplemented NID function sceAudioEnd [0x210567F7]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0xA2BEAA6C, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
-    public void sceAudioSetFrequency(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAudioSetFrequency(int frequency) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceAudioSetFrequency frequency=%d", frequency));
+    	}
 
-        int frequency = cpu.gpr[4];
-
-        if (frequency == 44100 || frequency == 48000) {
-        	for (int i = 0; i < pspPCMChannels.length; i++) {
-        		pspPCMChannels[i].setSampleRate(frequency);
-        	}
-            cpu.gpr[2] = 0;
-        } else {
-            cpu.gpr[2] = -1;
+    	if (frequency != 44100 && frequency != 48000) {
+        	return -1;
         }
+
+        for (int i = 0; i < pspPCMChannels.length; i++) {
+    		pspPCMChannels[i].setSampleRate(frequency);
+    	}
+
+    	return 0;
     }
 
     @HLEFunction(nid = 0xB61595C0, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
-    public void sceAudioLoopbackTest(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAudioLoopbackTest() {
+        log.warn(String.format("Unimplemented sceAudioLoopbackTest"));
 
-        System.out.println("Unimplemented NID function sceAudioLoopbackTest [0xB61595C0]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0x927AC32B, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
-    public void sceAudioSetVolumeOffset(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAudioSetVolumeOffset() {
+        log.warn(String.format("Unimplemented sceAudioSetVolumeOffset"));
 
-        System.out.println("Unimplemented NID function sceAudioSetVolumeOffset [0x927AC32B]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0x8C1009B2, version = 150, checkInsideInterrupt = true)
@@ -397,53 +380,48 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0x5EC81C55, version = 150, checkInsideInterrupt = true)
-    public void sceAudioChReserve(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int channel = cpu.gpr[4];
-        int samplecount = cpu.gpr[5];
-        int format = cpu.gpr[6];
-
+    public int sceAudioChReserve(int channel, int sampleCount, int format) {
         if (disableChReserve) {
-            log.warn("IGNORED sceAudioChReserve channel= " + channel + " samplecount = " + samplecount + " format = " + format);
-            cpu.gpr[2] = -1;
-        } else {
-            log.debug("sceAudioChReserve channel= " + channel + " samplecount = " + samplecount + " format = " + format);
-
-            if (channel != -1) {
-                if (pspPCMChannels[channel].isReserved()) {
-                    log.warn("sceAudioChReserve failed - channel " + channel + " already in use");
-                    channel = -1;
-                }
-            } else {
-                for (int i = 0; i < pspPCMChannels.length; i++) {
-                    if (!pspPCMChannels[i].isReserved()) {
-                        channel = i;
-                        break;
-                    }
-                }
-                if (channel == -1) {
-                    log.warn("sceAudioChReserve failed - no free channels available");
-                }
-            }
-
-            if (channel != -1) {
-                pspPCMChannels[channel].setReserved(true);
-                pspPCMChannels[channel].setSampleLength(samplecount);
-                pspPCMChannels[channel].setFormat(format);
-            }
-
-            cpu.gpr[2] = channel;
+            log.warn(String.format("IGNORED sceAudioChReserve channel=%d, sampleCount=%d, format=%d", channel, sampleCount, format));
+            return -1;
         }
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceAudioChReserve channel=%d, sampleCount=%d, format=%d", channel, sampleCount, format));
+        }
+
+        if (channel != -1) {
+        	channel = checkChannel(channel);
+            if (pspPCMChannels[channel].isReserved()) {
+                log.warn(String.format("sceAudioChReserve failed - channel %d already in use", channel));
+                channel = -1;
+            }
+        } else {
+            for (int i = 0; i < pspPCMChannels.length; i++) {
+                if (!pspPCMChannels[i].isReserved()) {
+                    channel = i;
+                    break;
+                }
+            }
+            if (channel == -1) {
+                log.warn("sceAudioChReserve failed - no free channels available");
+            }
+        }
+
+        if (channel != -1) {
+            pspPCMChannels[channel].setReserved(true);
+            pspPCMChannels[channel].setSampleLength(sampleCount);
+            pspPCMChannels[channel].setFormat(format);
+        }
+
+        return channel;
     }
 
     @HLEFunction(nid = 0x41EFADE7, version = 150, checkInsideInterrupt = true)
-    public void sceAudioOneshotOutput(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAudioOneshotOutput() {
+        log.warn(String.format("Unimplemented sceAudioOneshotOutput"));
 
-        System.out.println("Unimplemented NID function sceAudioOneshotOutput [0x41EFADE7]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0x6FC46853, version = 150, checkInsideInterrupt = true)
@@ -463,240 +441,203 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0xB011922F, version = 150, checkInsideInterrupt = true)
-    public void sceAudioGetChannelRestLength(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAudioGetChannelRestLength(@CheckArgument("checkReservedChannel") int channel) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceAudioGetChannelRestLength channel=%d", channel));
+    	}
 
-        int channel = cpu.gpr[4];
-
-        
-        cpu.gpr[2] = hleAudioGetChannelRestLen(pspPCMChannels[channel]);
+    	return hleAudioGetChannelRestLen(pspPCMChannels[channel]);
     }
 
     @HLEFunction(nid = 0xCB2E439E, version = 150, checkInsideInterrupt = true)
-    public void sceAudioSetChannelDataLen(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int channel = cpu.gpr[4];
-        int samplecount = cpu.gpr[5];
-
+    public int sceAudioSetChannelDataLen(@CheckArgument("checkReservedChannel") int channel, int sampleCount) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAudioSetChannelDataLen channel=%d, sampleCount=%d", channel, samplecount));
+            log.debug(String.format("sceAudioSetChannelDataLen channel=%d, sampleCount=%d", channel, sampleCount));
         }
 
-        
-        pspPCMChannels[channel].setSampleLength(samplecount);
-        cpu.gpr[2] = 0;
+        pspPCMChannels[channel].setSampleLength(sampleCount);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x95FD0C2D, version = 150, checkInsideInterrupt = true)
-    public void sceAudioChangeChannelConfig(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAudioChangeChannelConfig(@CheckArgument("checkReservedChannel") int channel, int format) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceAudioChangeChannelConfig channel=%d, format=%d", channel, format));
+    	}
 
-        int channel = cpu.gpr[4];
-        int format = cpu.gpr[5];
+    	pspPCMChannels[channel].setFormat(format);
 
-        
-        pspPCMChannels[channel].setFormat(format);
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
     @HLEFunction(nid = 0xB7E1D8E7, version = 150, checkInsideInterrupt = true)
-    public void sceAudioChangeChannelVolume(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAudioChangeChannelVolume(@CheckArgument("checkReservedChannel") int channel, int leftvol, int rightvol) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceAudioChangeChannelVolume channel=%d, leftvol=0x%X, rightvol=0x%X", channel, leftvol, rightvol));
+    	}
 
-        int channel = cpu.gpr[4];
-        int leftvol = cpu.gpr[5];
-        int rightvol = cpu.gpr[6];
-
-        
-        cpu.gpr[2] = changeChannelVolume(pspPCMChannels[channel], leftvol, rightvol);
+    	return changeChannelVolume(pspPCMChannels[channel], leftvol, rightvol);
     }
 
     @HLEFunction(nid = 0x01562BA3, version = 150, checkInsideInterrupt = true)
-    public void sceAudioOutput2Reserve(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int samplecount = cpu.gpr[4];
-
+    public int sceAudioOutput2Reserve(int sampleCount) {
         if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceAudioOutput2Reserve sampleCount=%d", samplecount));
+    		log.debug(String.format("sceAudioOutput2Reserve sampleCount=%d", sampleCount));
         }
 
-        hleAudioSRCChReserve(processor, samplecount, 44100, SoundChannel.FORMAT_STEREO);
+        return hleAudioSRCChReserve(sampleCount, 44100, SoundChannel.FORMAT_STEREO);
     }
 
     @HLEFunction(nid = 0x43196845, version = 150, checkInsideInterrupt = true)
-    public void sceAudioOutput2Release(Processor processor) {
-        sceAudioSRCChRelease(processor);
+    public int sceAudioOutput2Release() {
+    	if (log.isDebugEnabled()) {
+    		log.debug("sceAudioOutput2Release redirecting to sceAudioSRCChRelease");
+    	}
+        return sceAudioSRCChRelease();
     }
 
     @HLEFunction(nid = 0x2D53F36E, version = 150, checkInsideInterrupt = true)
-    public void sceAudioOutput2OutputBlocking(Processor processor) {
-        sceAudioSRCOutputBlocking(processor);
+    public int sceAudioOutput2OutputBlocking(int vol, @CanBeNull TPointer buf) {
+    	if (log.isDebugEnabled()) {
+    		log.debug("sceAudioOutput2OutputBlocking redirecting to sceAudioSRCOutputBlocking");
+    	}
+        return sceAudioSRCOutputBlocking(vol, buf);
     }
 
     @HLEFunction(nid = 0x647CEF33, version = 150, checkInsideInterrupt = true)
-    public void sceAudioOutput2GetRestSample(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        
-        cpu.gpr[2] = hleAudioGetChannelRestLen(pspSRCChannel);
+    public int sceAudioOutput2GetRestSample() {
+    	if (log.isDebugEnabled()) {
+    		log.debug("sceAudioOutput2GetRestSample");
+    	}
+        return hleAudioGetChannelRestLen(pspSRCChannel);
     }
 
     @HLEFunction(nid = 0x63F2889C, version = 150, checkInsideInterrupt = true)
-    public void sceAudioOutput2ChangeLength(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAudioOutput2ChangeLength(int sampleCount) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceAudioOutput2ChangeLength sampleCount=%d", sampleCount));
+    	}
 
-        int samplecount = cpu.gpr[4];
-
-        
-        if (pspSRCChannel.isReserved()) {
-            pspSRCChannel.setSampleLength(samplecount);
-            cpu.gpr[2] = 0;
-        } else {
-            cpu.gpr[2] = -1;
+    	if (!pspSRCChannel.isReserved()) {
+        	return -1;
         }
+
+        pspSRCChannel.setSampleLength(sampleCount);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x38553111, version = 150, checkInsideInterrupt = true)
-    public void sceAudioSRCChReserve(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int samplecount = cpu.gpr[4];
-        int freq = cpu.gpr[5];
-        int format = cpu.gpr[6];
-
+    public int sceAudioSRCChReserve(int sampleCount, int freq, int format) {
         if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceAudioSRCChReserve sampleCount=%d, freq=%d, format=%d", samplecount, freq, format));
+    		log.debug(String.format("sceAudioSRCChReserve sampleCount=%d, freq=%d, format=%d", sampleCount, freq, format));
         }
 
-        hleAudioSRCChReserve(processor, samplecount, freq, format);
+        return hleAudioSRCChReserve(sampleCount, freq, format);
     }
 
     @HLEFunction(nid = 0x5C37C0AE, version = 150, checkInsideInterrupt = true)
-    public void sceAudioSRCChRelease(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAudioSRCChRelease() {
+    	if (log.isDebugEnabled()) {
+    		log.debug("sceAudioSRCChRelease");
+    	}
 
-        
-        if (pspSRCChannel.isReserved()) {
+    	if (pspSRCChannel.isReserved()) {
             pspSRCChannel.release();
             pspSRCChannel.setReserved(false);
         }
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
     @HLEFunction(nid = 0xE0727056, version = 150, checkInsideInterrupt = true)
-    public void sceAudioSRCOutputBlocking(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int vol = cpu.gpr[4];
-        int buf = cpu.gpr[5];
-
-        
-        if (buf == 0) {
+    public int sceAudioSRCOutputBlocking(int vol, @CanBeNull TPointer buf) {
+        if (buf.isNull()) {
             // Tested on PSP:
             // SRC audio also delays when buf == 0, in order to drain all
             // audio samples from the audio driver.
             if (!pspSRCChannel.isDrained()) {
                 if (log.isDebugEnabled()) {
-                    log.debug("sceAudioSRCOutputBlocking[pvoid_buf==0] blocking " + pspSRCChannel);
+                    log.debug("sceAudioSRCOutputBlocking[buf==0] blocking " + pspSRCChannel);
                 }
-                blockThreadOutput(pspSRCChannel, buf, vol, vol);
-            } else {
-                cpu.gpr[2] = 0;
+                blockThreadOutput(pspSRCChannel, buf.getAddress(), vol, vol);
             }
-        } else if (!Memory.isAddressGood(buf)) {
-            log.warn("sceAudioSRCOutputBlocking bad pointer " + String.format("0x%08X", buf));
-            cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
         } else {
             if (!pspSRCChannel.isOutputBlocking() || disableBlockingAudio) {
                 if (log.isDebugEnabled()) {
-                    log.debug(String.format("sceAudioSRCOutputBlocking[not blocking] 0x%08X to %s", buf, pspSRCChannel.toString()));
+                    log.debug(String.format("sceAudioSRCOutputBlocking[not blocking] %s to %s", buf, pspSRCChannel.toString()));
                 }
                 changeChannelVolume(pspSRCChannel, vol, vol);
-                cpu.gpr[2] = doAudioOutput(pspSRCChannel, buf);
                 Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
-            } else {
-                if (log.isDebugEnabled()) {
-                    log.debug(String.format("sceAudioSRCOutputBlocking[blocking] 0x%08X to %s", buf, pspSRCChannel.toString()));
-                }
-                blockThreadOutput(pspSRCChannel, buf, vol, vol);
+                return doAudioOutput(pspSRCChannel, buf.getAddress());
             }
+
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("sceAudioSRCOutputBlocking[blocking] %s to %s", buf, pspSRCChannel.toString()));
+            }
+            blockThreadOutput(pspSRCChannel, buf.getAddress(), vol, vol);
         }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x086E5895, version = 150, checkInsideInterrupt = true)
-    public void sceAudioInputBlocking(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAudioInputBlocking() {
+        log.warn(String.format("Unimplemented sceAudioInputBlocking"));
 
-        System.out.println("Unimplemented NID function sceAudioInputBlocking [0x086E5895]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0x6D4BEC68, version = 150, checkInsideInterrupt = true)
-    public void sceAudioInput(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAudioInput() {
+        log.warn(String.format("Unimplemented sceAudioInput"));
 
-        System.out.println("Unimplemented NID function sceAudioInput [0x6D4BEC68]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0xA708C6A6, version = 150, checkInsideInterrupt = true)
-    public void sceAudioGetInputLength(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAudioGetInputLength() {
+        log.warn(String.format("Unimplemented sceAudioGetInputLength"));
 
-        System.out.println("Unimplemented NID function sceAudioGetInputLength [0xA708C6A6]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0x87B2E651, version = 150, checkInsideInterrupt = true)
-    public void sceAudioWaitInputEnd(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAudioWaitInputEnd() {
+        log.warn(String.format("Unimplemented sceAudioWaitInputEnd"));
 
-        System.out.println("Unimplemented NID function sceAudioWaitInputEnd [0x87B2E651]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0x7DE61688, version = 150, checkInsideInterrupt = true)
-    public void sceAudioInputInit(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAudioInputInit() {
+        log.warn(String.format("Unimplemented sceAudioInputInit"));
 
-        System.out.println("Unimplemented NID function sceAudioInputInit [0x7DE61688]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0xE926D3FB, version = 150, checkInsideInterrupt = true)
-    public void sceAudioInputInitEx(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAudioInputInitEx() {
+        log.warn(String.format("Unimplemented sceAudioInputInitEx"));
 
-        System.out.println("Unimplemented NID function sceAudioInputInitEx [0xE926D3FB]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0xA633048E, version = 150, checkInsideInterrupt = true)
-    public void sceAudioPollInputEnd(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAudioPollInputEnd() {
+        log.warn(String.format("Unimplemented sceAudioPollInputEnd"));
 
-        System.out.println("Unimplemented NID function sceAudioPollInputEnd [0xA633048E]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        return 0;
     }
 
     @HLEFunction(nid = 0xE9D97901, version = 150, checkInsideInterrupt = true)
-    public void sceAudioGetChannelRestLen(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceAudioGetChannelRestLen(@CheckArgument("checkReservedChannel") int channel) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceAudioGetChannelRestLen channel=%d", channel));
+    	}
 
-        int channel = cpu.gpr[4];
-
-        
-        cpu.gpr[2] = hleAudioGetChannelRestLen(pspPCMChannels[channel]);
+    	return hleAudioGetChannelRestLen(pspPCMChannels[channel]);
     }
 
 }

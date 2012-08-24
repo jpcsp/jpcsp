@@ -50,9 +50,7 @@ import jpcsp.Emulator;
 import jpcsp.MainGUI;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
-import jpcsp.Processor;
 import jpcsp.State;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
@@ -1949,14 +1947,14 @@ public class sceDisplay extends HLEModule {
     }
 
     @HLEFunction(nid = 0x4D4E10EC, version = 150)
-    public void sceDisplayIsVblank(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public boolean sceDisplayIsVblank() {
+    	boolean isVblank = isVblank();
 
-        cpu.gpr[2] = isVblank() ? 1 : 0;
-
-        if (log.isDebugEnabled()) {
-        	log.debug("sceDisplayIsVblank returns " + cpu.gpr[2]);
+    	if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceDisplayIsVblank returns %b", isVblank));
         }
+
+        return isVblank;
     }
 
     @HLEFunction(nid = 0x36CDFADE, version = 150, checkInsideInterrupt = true)
@@ -1968,7 +1966,7 @@ public class sceDisplay extends HLEModule {
         if (!isVblank()) {
     		sceDisplayWaitVblankStart();
     	}
-    	return 0;
+        return 0;
     }
 
     @HLEFunction(nid = 0x8EB9EC49, version = 150, checkInsideInterrupt = true)
@@ -1980,7 +1978,6 @@ public class sceDisplay extends HLEModule {
         if (!isVblank()) {
         	sceDisplayWaitVblankStartCB();
         }
-
         return 0;
     }
 

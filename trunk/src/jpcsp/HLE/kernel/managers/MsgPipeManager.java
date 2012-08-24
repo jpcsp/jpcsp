@@ -36,7 +36,6 @@ import java.util.Iterator;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelMppInfo;
@@ -286,8 +285,7 @@ public class MsgPipeManager {
         return true;
     }
 
-    public void sceKernelCreateMsgPipe(int name_addr, int partitionid, int attr, int size, int opt_addr) {
-        CpuState cpu = Emulator.getProcessor().cpu;
+    public int sceKernelCreateMsgPipe(int name_addr, int partitionid, int attr, int size, int opt_addr) {
         Memory mem = Processor.memory;
 
         String name = Utilities.readStringZ(name_addr);
@@ -306,20 +304,18 @@ public class MsgPipeManager {
         }
 
         SceKernelMppInfo info = SceKernelMppInfo.tryCreateMpp(name, partitionid, attr, size, memType);
-        if (info != null) {
-            if (log.isDebugEnabled()) {
-                log.debug("sceKernelCreateMsgPipe '" + name + "' assigned uid " + Integer.toHexString(info.uid));
-            }
-            msgMap.put(info.uid, info);
-            cpu.gpr[2] = info.uid;
-        } else {
-            cpu.gpr[2] = ERROR_KERNEL_NO_MEMORY;
+        if (info == null) {
+        	return ERROR_KERNEL_NO_MEMORY;
         }
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelCreateMsgPipe '" + name + "' assigned uid " + Integer.toHexString(info.uid));
+        }
+        msgMap.put(info.uid, info);
+
+        return info.uid;
     }
 
-    public void sceKernelDeleteMsgPipe(int uid) {
-        CpuState cpu = Emulator.getProcessor().cpu;
-
+    public int sceKernelDeleteMsgPipe(int uid) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelDeleteMsgPipe(uid=0x" + Integer.toHexString(uid) + ")");
         }
@@ -327,17 +323,15 @@ public class MsgPipeManager {
         SceKernelMppInfo info = msgMap.remove(uid);
         if (info == null) {
             log.warn("sceKernelDeleteMsgPipe unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
-        } else {
-            info.deleteSysMemInfo();
-            cpu.gpr[2] = 0;
-            onMsgPipeDeleted(uid);
+            return ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
         }
+        info.deleteSysMemInfo();
+        onMsgPipeDeleted(uid);
+
+        return 0;
     }
 
-    private void hleKernelSendMsgPipe(int uid, int msg_addr, int size, int waitMode, int resultSize_addr, int timeout_addr,
-            boolean doCallbacks, boolean poll) {
-        CpuState cpu = Emulator.getProcessor().cpu;
+    private int hleKernelSendMsgPipe(int uid, int msg_addr, int size, int waitMode, int resultSize_addr, int timeout_addr, boolean doCallbacks, boolean poll) {
         Memory mem = Processor.memory;
 
         if (log.isDebugEnabled()) {
@@ -358,56 +352,55 @@ public class MsgPipeManager {
         SceKernelMppInfo info = msgMap.get(uid);
         if (info == null) {
             log.warn("hleKernelSendMsgPipe unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
-        } else if (size > info.bufSize) {
-            log.warn("hleKernelSendMsgPipe illegal size 0x" + Integer.toHexString(size) + " max 0x" + Integer.toHexString(info.bufSize));
-            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_SIZE;
-        } else {
-            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-            if (!trySendMsgPipe(mem, info, msg_addr, size, waitMode, resultSize_addr)) {
-                if (!poll) {
-                    // Failed, but it's ok, just wait a little
-                    if (log.isDebugEnabled()) {
-                        log.debug("hleKernelSendMsgPipe - '" + info.name + "' waiting for " + size + " bytes to become available");
-                    }
-                    info.numSendWaitThreads++;
-                    SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-                    // Wait on a specific MsgPipe.
-                    currentThread.wait.MsgPipe_isSend = true;
-                    currentThread.wait.MsgPipe_id = uid;
-                    currentThread.wait.MsgPipe_address = msg_addr;
-                    currentThread.wait.MsgPipe_size = size;
-                    threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_MSGPIPE, uid, msgPipeSendWaitStateChecker, timeout_addr, doCallbacks);
-                } else {
-                    log.warn("hleKernelSendMsgPipe illegal size 0x" + Integer.toHexString(size) + " max 0x" + Integer.toHexString(info.freeSize) + " (pipe needs consuming)");
-                    cpu.gpr[2] = ERROR_KERNEL_MESSAGE_PIPE_FULL;
-                }
-            } else {
-                // Success, do not reschedule the current thread.
-                if (log.isDebugEnabled()) {
-                    log.debug("hleKernelSendMsgPipe - '" + info.name + "' fast check succeeded");
-                }
-                cpu.gpr[2] = 0;
-                onMsgPipeReceiveModified(info);
-            }
+            return ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
         }
+        if (size > info.bufSize) {
+            log.warn("hleKernelSendMsgPipe illegal size 0x" + Integer.toHexString(size) + " max 0x" + Integer.toHexString(info.bufSize));
+            return ERROR_KERNEL_ILLEGAL_SIZE;
+        }
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        if (!trySendMsgPipe(mem, info, msg_addr, size, waitMode, resultSize_addr)) {
+            if (!poll) {
+                // Failed, but it's ok, just wait a little
+                if (log.isDebugEnabled()) {
+                    log.debug("hleKernelSendMsgPipe - '" + info.name + "' waiting for " + size + " bytes to become available");
+                }
+                info.numSendWaitThreads++;
+                SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+                // Wait on a specific MsgPipe.
+                currentThread.wait.MsgPipe_isSend = true;
+                currentThread.wait.MsgPipe_id = uid;
+                currentThread.wait.MsgPipe_address = msg_addr;
+                currentThread.wait.MsgPipe_size = size;
+                threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_MSGPIPE, uid, msgPipeSendWaitStateChecker, timeout_addr, doCallbacks);
+            } else {
+                log.warn("hleKernelSendMsgPipe illegal size 0x" + Integer.toHexString(size) + " max 0x" + Integer.toHexString(info.freeSize) + " (pipe needs consuming)");
+                return ERROR_KERNEL_MESSAGE_PIPE_FULL;
+            }
+        } else {
+            // Success, do not reschedule the current thread.
+            if (log.isDebugEnabled()) {
+                log.debug("hleKernelSendMsgPipe - '" + info.name + "' fast check succeeded");
+            }
+            onMsgPipeReceiveModified(info);
+        }
+
+        return 0;
     }
 
-    public void sceKernelSendMsgPipe(int uid, int msg_addr, int size, int waitMode, int resultSize_addr, int timeout_addr) {
-        hleKernelSendMsgPipe(uid, msg_addr, size, waitMode, resultSize_addr, timeout_addr, false, false);
+    public int sceKernelSendMsgPipe(int uid, int msg_addr, int size, int waitMode, int resultSize_addr, int timeout_addr) {
+        return hleKernelSendMsgPipe(uid, msg_addr, size, waitMode, resultSize_addr, timeout_addr, false, false);
     }
 
-    public void sceKernelSendMsgPipeCB(int uid, int msg_addr, int size, int waitMode, int resultSize_addr, int timeout_addr) {
-        hleKernelSendMsgPipe(uid, msg_addr, size, waitMode, resultSize_addr, timeout_addr, true, false);
+    public int sceKernelSendMsgPipeCB(int uid, int msg_addr, int size, int waitMode, int resultSize_addr, int timeout_addr) {
+        return hleKernelSendMsgPipe(uid, msg_addr, size, waitMode, resultSize_addr, timeout_addr, true, false);
     }
 
-    public void sceKernelTrySendMsgPipe(int uid, int msg_addr, int size, int waitMode, int resultSize_addr) {
-        hleKernelSendMsgPipe(uid, msg_addr, size, waitMode, resultSize_addr, 0, false, true);
+    public int sceKernelTrySendMsgPipe(int uid, int msg_addr, int size, int waitMode, int resultSize_addr) {
+        return hleKernelSendMsgPipe(uid, msg_addr, size, waitMode, resultSize_addr, 0, false, true);
     }
 
-    private void hleKernelReceiveMsgPipe(int uid, int msg_addr, int size, int waitMode, int resultSize_addr, int timeout_addr,
-            boolean doCallbacks, boolean poll) {
-        CpuState cpu = Emulator.getProcessor().cpu;
+    private int hleKernelReceiveMsgPipe(int uid, int msg_addr, int size, int waitMode, int resultSize_addr, int timeout_addr, boolean doCallbacks, boolean poll) {
         Memory mem = Processor.memory;
 
         if (log.isDebugEnabled()) {
@@ -428,58 +421,59 @@ public class MsgPipeManager {
         SceKernelMppInfo info = msgMap.get(uid);
         if (info == null) {
             log.warn("hleKernelReceiveMsgPipe unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
-        } else if (size > info.bufSize) {
-            log.warn("hleKernelReceiveMsgPipe illegal size 0x" + Integer.toHexString(size) + " max 0x" + Integer.toHexString(info.bufSize));
-            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_SIZE;
-        } else {
-            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-            if (!tryReceiveMsgPipe(mem, info, msg_addr, size, waitMode, resultSize_addr)) {
-                if (!poll) {
-                    // Failed, but it's ok, just wait a little
-                    if (log.isDebugEnabled()) {
-                        log.debug("hleKernelReceiveMsgPipe - '" + info.name + "' waiting for " + size + " bytes to become available");
-                    }
-                    info.numReceiveWaitThreads++;
-                    SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-                    // Wait on a specific MsgPipe.
-                    currentThread.wait.MsgPipe_isSend = false;
-                    currentThread.wait.MsgPipe_id = uid;
-                    currentThread.wait.MsgPipe_address = msg_addr;
-                    currentThread.wait.MsgPipe_size = size;
-                    currentThread.wait.MsgPipe_resultSize_addr = resultSize_addr;
-                    threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_MSGPIPE, uid, msgPipeReceiveWaitStateChecker, timeout_addr, doCallbacks);
-                } else {
-                    if (log.isDebugEnabled()) {
-                        log.debug("hleKernelReceiveMsgPipe trying to read more than is available size 0x" + Integer.toHexString(size) + " available 0x" + Integer.toHexString(info.bufSize - info.freeSize));
-                    }
-                    cpu.gpr[2] = ERROR_KERNEL_MESSAGE_PIPE_EMPTY;
-                }
-            } else {
-                // Success, do not reschedule the current thread.
-                if (log.isDebugEnabled()) {
-                    log.debug("hleKernelReceiveMsgPipe - '" + info.name + "' fast check succeeded");
-                }
-                cpu.gpr[2] = 0;
-                onMsgPipeSendModified(info);
-            }
+            return ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
         }
+        if (size > info.bufSize) {
+            log.warn("hleKernelReceiveMsgPipe illegal size 0x" + Integer.toHexString(size) + " max 0x" + Integer.toHexString(info.bufSize));
+            return ERROR_KERNEL_ILLEGAL_SIZE;
+        }
+
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        if (!tryReceiveMsgPipe(mem, info, msg_addr, size, waitMode, resultSize_addr)) {
+            if (!poll) {
+                // Failed, but it's ok, just wait a little
+                if (log.isDebugEnabled()) {
+                    log.debug("hleKernelReceiveMsgPipe - '" + info.name + "' waiting for " + size + " bytes to become available");
+                }
+                info.numReceiveWaitThreads++;
+                SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+                // Wait on a specific MsgPipe.
+                currentThread.wait.MsgPipe_isSend = false;
+                currentThread.wait.MsgPipe_id = uid;
+                currentThread.wait.MsgPipe_address = msg_addr;
+                currentThread.wait.MsgPipe_size = size;
+                currentThread.wait.MsgPipe_resultSize_addr = resultSize_addr;
+                threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_MSGPIPE, uid, msgPipeReceiveWaitStateChecker, timeout_addr, doCallbacks);
+            } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("hleKernelReceiveMsgPipe trying to read more than is available size 0x" + Integer.toHexString(size) + " available 0x" + Integer.toHexString(info.bufSize - info.freeSize));
+                }
+                return ERROR_KERNEL_MESSAGE_PIPE_EMPTY;
+            }
+        } else {
+            // Success, do not reschedule the current thread.
+            if (log.isDebugEnabled()) {
+                log.debug("hleKernelReceiveMsgPipe - '" + info.name + "' fast check succeeded");
+            }
+            onMsgPipeSendModified(info);
+        }
+
+        return 0;
     }
 
-    public void sceKernelReceiveMsgPipe(int uid, int msg_addr, int size, int waitMode, int resultSize_addr, int timeout_addr) {
-        hleKernelReceiveMsgPipe(uid, msg_addr, size, waitMode, resultSize_addr, timeout_addr, false, false);
+    public int sceKernelReceiveMsgPipe(int uid, int msg_addr, int size, int waitMode, int resultSize_addr, int timeout_addr) {
+        return hleKernelReceiveMsgPipe(uid, msg_addr, size, waitMode, resultSize_addr, timeout_addr, false, false);
     }
 
-    public void sceKernelReceiveMsgPipeCB(int uid, int msg_addr, int size, int waitMode, int resultSize_addr, int timeout_addr) {
-        hleKernelReceiveMsgPipe(uid, msg_addr, size, waitMode, resultSize_addr, timeout_addr, true, false);
+    public int sceKernelReceiveMsgPipeCB(int uid, int msg_addr, int size, int waitMode, int resultSize_addr, int timeout_addr) {
+        return hleKernelReceiveMsgPipe(uid, msg_addr, size, waitMode, resultSize_addr, timeout_addr, true, false);
     }
 
-    public void sceKernelTryReceiveMsgPipe(int uid, int msg_addr, int size, int waitMode, int resultSize_addr) {
-        hleKernelReceiveMsgPipe(uid, msg_addr, size, waitMode, resultSize_addr, 0, false, true);
+    public int sceKernelTryReceiveMsgPipe(int uid, int msg_addr, int size, int waitMode, int resultSize_addr) {
+        return hleKernelReceiveMsgPipe(uid, msg_addr, size, waitMode, resultSize_addr, 0, false, true);
     }
 
-    public void sceKernelCancelMsgPipe(int uid, int send_addr, int recv_addr) {
-        CpuState cpu = Emulator.getProcessor().cpu;
+    public int sceKernelCancelMsgPipe(int uid, int send_addr, int recv_addr) {
         Memory mem = Emulator.getMemory();
 
         if (log.isDebugEnabled()) {
@@ -489,23 +483,23 @@ public class MsgPipeManager {
         SceKernelMppInfo info = msgMap.get(uid);
         if (info == null) {
             log.warn("sceKernelCancelMsgPipe unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
-        } else {
-            if (Memory.isAddressGood(send_addr)) {
-                mem.write32(send_addr, info.numSendWaitThreads);
-            }
-            if (Memory.isAddressGood(recv_addr)) {
-                mem.write32(recv_addr, info.numReceiveWaitThreads);
-            }
-            info.numSendWaitThreads = 0;
-            info.numReceiveWaitThreads = 0;
-            cpu.gpr[2] = 0;
-            onMsgPipeCancelled(uid);
+            return ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
         }
+
+        if (Memory.isAddressGood(send_addr)) {
+            mem.write32(send_addr, info.numSendWaitThreads);
+        }
+        if (Memory.isAddressGood(recv_addr)) {
+            mem.write32(recv_addr, info.numReceiveWaitThreads);
+        }
+        info.numSendWaitThreads = 0;
+        info.numReceiveWaitThreads = 0;
+        onMsgPipeCancelled(uid);
+
+        return 0;
     }
 
-    public void sceKernelReferMsgPipeStatus(int uid, int info_addr) {
-        CpuState cpu = Emulator.getProcessor().cpu;
+    public int sceKernelReferMsgPipeStatus(int uid, int info_addr) {
         Memory mem = Processor.memory;
 
         if (log.isDebugEnabled()) {
@@ -515,11 +509,11 @@ public class MsgPipeManager {
         SceKernelMppInfo info = msgMap.get(uid);
         if (info == null) {
             log.warn("sceKernelReferMsgPipeStatus unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
-        } else {
-            info.write(mem, info_addr);
-            cpu.gpr[2] = 0;
+            return ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
         }
+        info.write(mem, info_addr);
+
+        return 0;
     }
 
     private class MsgPipeSendWaitStateChecker implements IWaitStateChecker {

@@ -73,7 +73,7 @@ public class LoadExecForUser extends HLEModule {
 
         byte[] arguments = null;
         int argSize = 0;
-        if (!option_addr.isNull()) {
+        if (option_addr.isNotNull()) {
             int optSize = option_addr.getValue(0);   // Size of the option struct.
             if (optSize >= 16) {
 	            argSize = option_addr.getValue(4);       // Size of memory required for arguments.

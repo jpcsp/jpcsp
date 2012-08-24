@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import jpcsp.GeneralJpcspException;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.PspString;
+import jpcsp.HLE.TPointer;
 import jpcsp.Emulator;
 import jpcsp.Loader;
 import jpcsp.Memory;
@@ -302,31 +303,21 @@ public class scePspNpDrm_user extends HLEModule {
     }
 
     @HLEFunction(nid = 0xC618D0B1, version = 150, checkInsideInterrupt = true)
-    public void sceKernelLoadModuleNpDrm(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-        
-        int path_addr = cpu.gpr[4];
-        int flags = cpu.gpr[5];
-        int option_addr = cpu.gpr[6];
-
-        String name = Utilities.readStringZ(path_addr);
-
+    public int sceKernelLoadModuleNpDrm(PspString path, int flags, TPointer optionAddr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelLoadModuleNpDrm (path='" + name 
-                    + "', flags=0x" + Integer.toHexString(flags) 
-                    + ", option_addr=0x" + Integer.toHexString(option_addr) + ")");
+            log.debug(String.format("sceKernelLoadModuleNpDrm path=%s, flags=0x%X, optionAddr=%s", path, flags, optionAddr));
         }
 
-        
         SceKernelLMOption lmOption = null;
-        if (option_addr != 0) {
+        if (optionAddr.isNotNull()) {
             lmOption = new SceKernelLMOption();
-            lmOption.read(mem, option_addr);
-            log.info("sceKernelLoadModuleNpDrm (partition=" + lmOption.mpidText + ", position=" + lmOption.position + ")");
+            lmOption.read(optionAddr);
+            if (log.isInfoEnabled()) {
+            	log.info(String.format("sceKernelLoadModuleNpDrm partition=%d, position=%d", lmOption.mpidText, lmOption.position));
+            }
         }
 
-        Modules.ModuleMgrForUserModule.hleKernelLoadModule(processor, name, flags, 0, false);
+        return Modules.ModuleMgrForUserModule.hleKernelLoadModule(path.getString(), flags, 0, false);
     }
 
     @HLEFunction(nid = 0xAA5FC85B, version = 150, checkInsideInterrupt = true)

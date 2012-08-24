@@ -102,7 +102,7 @@ public class Settings {
 				patchSettings.load(patchSettingsStream);
 				Emulator.log.info(String.format("Overwriting default settings with patch file '%s'", patchFileName));
 			} catch (FileNotFoundException e) {
-				Emulator.log.debug("Patch file not found", e);
+				Emulator.log.debug(String.format("Patch file not found: %s", e.toString()));
 			} catch (IOException e) {
 				Emulator.log.error("Problem loading patch:", e);
 			} finally {

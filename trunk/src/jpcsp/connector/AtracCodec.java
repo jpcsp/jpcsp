@@ -117,7 +117,7 @@ public class AtracCodec {
     }
 
     protected String generateID(int address, int length, int fileSize) {
-        int hashCode = Hash.getHashCodeFloatingMemory(0, address, length);
+        int hashCode = Hash.getHashCodeFloatingMemory(0, address, Math.min(length, fileSize));
         return String.format("Atrac-%08X-%08X", fileSize, hashCode);
     }
 

@@ -35,9 +35,7 @@ public class SceUtilityHtmlViewerParams extends pspAbstractMemoryMappedStructure
     public int initFlag;
         public final static int PSP_UTILITY_HTMLVIEWER_USE_START_SCREEN = 0x1;
         public final static int PSP_UTILITY_HTMLVIEWER_DISABLE_RESTRICTIONS = 0x2;
-    public int fileDownloadAddr;
     public SceUtilityHtmlViewerFile fileDownload;
-    public int fileUploadAddr;
     public SceUtilityHtmlViewerFile fileUpload;
     public int fileConfigAddr;
     public SceUtilityHtmlViewerConfig fileConfig;
@@ -57,9 +55,9 @@ public class SceUtilityHtmlViewerParams extends pspAbstractMemoryMappedStructure
 		@Override
 		protected void read() {
             urlAddr = read32();
-            url = readStringUTF16Z(urlAddr);
+            url = readStringZ(urlAddr);
             titleAddr = read32();
-            title = readStringUTF16Z(titleAddr);
+            title = readStringZ(titleAddr);
             unk1 = read32();
             unk2 = read32();
 		}
@@ -67,9 +65,9 @@ public class SceUtilityHtmlViewerParams extends pspAbstractMemoryMappedStructure
 		@Override
 		protected void write() {
             write32(urlAddr);
-            writeStringUTF16Z(urlAddr, url);
+            writeStringZ(url, urlAddr);
             write32(titleAddr);
-            writeStringUTF16Z(titleAddr, title);
+            writeStringZ(title, titleAddr);
             write32(unk1);
             write32(unk2);
 		}
@@ -77,6 +75,11 @@ public class SceUtilityHtmlViewerParams extends pspAbstractMemoryMappedStructure
 		@Override
 		public int sizeof() {
 			return 4 * 4;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("SceUtilityHtmlViewerBookmark[url='%s', title='%s']", url, title);
 		}
 	}
 
@@ -89,22 +92,27 @@ public class SceUtilityHtmlViewerParams extends pspAbstractMemoryMappedStructure
 		@Override
 		protected void read() {
             pathAddr = read32();
-            path = readStringUTF16Z(pathAddr);
+            path = readStringZ(pathAddr);
             fileNameAddr = read32();
-            fileName = readStringUTF16Z(fileNameAddr);
+            fileName = readStringZ(fileNameAddr);
 		}
 
 		@Override
 		protected void write() {
             write32(pathAddr);
-            writeStringUTF16Z(pathAddr, path);
+            writeStringZ(path, pathAddr);
             write32(fileNameAddr);
-            writeStringUTF16Z(fileNameAddr, fileName);
+            writeStringZ(fileName, fileNameAddr);
 		}
 
 		@Override
 		public int sizeof() {
 			return 2 * 4;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("SceUtilityHtmlViewerFile[path='%s', fileName='%s']", path, fileName);
 		}
 	}
 
@@ -123,7 +131,7 @@ public class SceUtilityHtmlViewerParams extends pspAbstractMemoryMappedStructure
             cookiePolicyFlag = read32();
             cacheSize = read32();
             homeUrlAddr = read32();
-            homeUrl = readStringUTF16Z(homeUrlAddr);
+            homeUrl = readStringZ(homeUrlAddr);
 		}
 
 		@Override
@@ -131,12 +139,17 @@ public class SceUtilityHtmlViewerParams extends pspAbstractMemoryMappedStructure
             write32(cookiePolicyFlag);
             write32(cacheSize);
             write32(homeUrlAddr);
-            writeStringUTF16Z(homeUrlAddr, homeUrl);
+            writeStringZ(homeUrl, homeUrlAddr);
 		}
 
 		@Override
 		public int sizeof() {
 			return 3 * 4;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("SceUtilityHtmlViewerConfig[cookiePolicy=0x%X, cacheSize=0x%X, homeUrl='%s']", cookiePolicyFlag, cacheSize, homeUrl);
 		}
 	}
 
@@ -157,31 +170,16 @@ public class SceUtilityHtmlViewerParams extends pspAbstractMemoryMappedStructure
 			bookmark = null;
 		}
         urlAddr = read32();
-        url = readStringUTF16Z(urlAddr);
+        url = readStringZ(urlAddr);
         tabNum = read32();
         userInterfaceLevel = read32();
         initFlag = read32();
-        fileDownloadAddr = read32();
-        if (fileDownloadAddr != 0) {
-			fileDownload = new SceUtilityHtmlViewerFile();
-			fileDownload.read(mem, fileDownloadAddr);
-		} else {
-			fileDownload = null;
-		}
-        fileUploadAddr = read32();
-        if (fileUploadAddr != 0) {
-			fileUpload = new SceUtilityHtmlViewerFile();
-			fileUpload.read(mem, fileUploadAddr);
-		} else {
-			fileUpload = null;
-		}
-        fileConfigAddr = read32();
-        if (fileConfigAddr != 0) {
-			fileConfig = new SceUtilityHtmlViewerConfig();
-			fileDownload.read(mem, fileConfigAddr);
-		} else {
-			fileConfig = null;
-		}
+		fileDownload = new SceUtilityHtmlViewerFile();
+		read(fileDownload);
+		fileUpload = new SceUtilityHtmlViewerFile();
+		read(fileUpload);
+		fileConfig = new SceUtilityHtmlViewerConfig();
+		read(fileConfig);
         disconnectAutoFlag = read32();
     }
 
@@ -202,18 +200,9 @@ public class SceUtilityHtmlViewerParams extends pspAbstractMemoryMappedStructure
         write32(tabNum);
         write32(userInterfaceLevel);
         write32(initFlag);
-        write32(fileDownloadAddr);
-        if (fileDownload != null && fileDownloadAddr != 0) {
-			fileDownload.write(mem, fileDownloadAddr);
-		}
-        write32(fileUploadAddr);
-        if (fileUpload != null && fileUploadAddr != 0) {
-			fileUpload.write(mem, fileUploadAddr);
-		}
-        write32(fileConfigAddr);
-        if (fileConfig != null && fileConfigAddr != 0) {
-			fileConfig.write(mem, fileConfigAddr);
-		}
+        write(fileDownload);
+        write(fileUpload);
+        write(fileConfig);
         write32(disconnectAutoFlag);
     }
 
@@ -224,8 +213,6 @@ public class SceUtilityHtmlViewerParams extends pspAbstractMemoryMappedStructure
 
     @Override
     public String toString() {
-        // TODO
-        StringBuilder sb = new StringBuilder();
-        return sb.toString();
+        return String.format("SceUtilityHtmlViewerParams[dataAddr=0x%08X, dataSize=0x%X, bookmarkNum=%d, url='%s', fileDownload=%s, fileUpload=%s, fileConfig=%s]", dataAddr, dataSize, bookmarkNum, url, fileDownload, fileUpload, fileConfig);
     }
 }

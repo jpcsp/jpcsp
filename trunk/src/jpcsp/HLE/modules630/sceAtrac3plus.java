@@ -16,12 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules630;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ATRAC_BAD_ID;
 import jpcsp.Memory;
 import jpcsp.Processor;
+import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.util.Utilities;
@@ -31,16 +30,10 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
     public String getName() { return "sceAtrac3plus"; }
 
     @HLEFunction(nid = 0x0C116E1B, version = 630)
-    public int sceAtracLowLevelDecode(int atID, int sourceAddr, TPointer32 decodeAddr, TPointer samplesAddr, TPointer32 decodePosAddr) {
+    public int sceAtracLowLevelDecode(@CheckArgument("checkAtracID") int atID, int sourceAddr, TPointer32 decodeAddr, TPointer samplesAddr, TPointer32 decodePosAddr) {
         Memory mem = Processor.memory;
-    	atID &= atracIDMask;
 
-        log.warn(String.format("PARTIAL: sceAtracLowLevelDecode atID=%d, sourceAddr=0x%08X, decodeAddr=%s, samplesAddr=%s, decodePosAddr=%s", atID, sourceAddr, decodeAddr, samplesAddr, decodePosAddr));
-
-        if (!atracIDs.containsKey(atID)) {
-            log.warn(String.format("sceAtracLowLevelDecode: bad atID=%d", atID));
-            throw new SceKernelErrorException(ERROR_ATRAC_BAD_ID);
-        }
+        log.warn(String.format("PARTIAL: sceAtracLowLevelDecode atID=0x%X, sourceAddr=0x%08X, decodeAddr=%s, samplesAddr=%s, decodePosAddr=%s", atID, sourceAddr, decodeAddr, samplesAddr, decodePosAddr));
 
         if (log.isTraceEnabled() && Memory.isAddressGood(sourceAddr)) {
         	int length = 0x130; // How to find the input length?
@@ -48,8 +41,10 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
         }
 
         decodePosAddr.setValue(0); // Set the decoding position to 0.
-        if (Memory.isAddressGood(samplesAddr.getAddress())) {
-            decodeAddr.setValue(samplesAddr.getAddress() - 2160); // Rewind to the sample's header block.
+        if (samplesAddr.isAddressGood()) {
+        	// This line is causing a problem in "Heroes Phantasia JPN(NPJH50558)".
+        	// See http://www.emunewz.net/forum/showthread.php?tid=23228
+            // decodeAddr.setValue(samplesAddr.getAddress() - 2160); // Rewind to the sample's header block.
         }
 
         // Erase all content in the samples address.
@@ -94,15 +89,8 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
     }
 
     @HLEFunction(nid = 0x1575D64B, version = 630)
-    public int sceAtracLowLevelInitDecoder(int atID) {
-    	atID &= atracIDMask;
-
-    	log.warn(String.format("UNIMPLEMENTED: sceAtracLowLevelInitDecoder atID=%d", atID));
-
-        if (!atracIDs.containsKey(atID)) {
-            log.warn(String.format("sceAtracLowLevelInitDecoder: bad atID=%d", atID));
-            throw new SceKernelErrorException(ERROR_ATRAC_BAD_ID);
-        }
+    public int sceAtracLowLevelInitDecoder(@CheckArgument("checkAtracID") int atID) {
+    	log.warn(String.format("UNIMPLEMENTED: sceAtracLowLevelInitDecoder atID=0x%X", atID));
 
         return 0;
     }

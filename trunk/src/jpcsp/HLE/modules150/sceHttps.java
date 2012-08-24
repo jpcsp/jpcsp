@@ -18,6 +18,7 @@ package jpcsp.HLE.modules150;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_HTTP_ALREADY_INIT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_HTTP_NOT_INIT;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
@@ -182,7 +183,7 @@ public class sceHttps extends HLEModule {
      * @return 0 on success, < 0 on error.
     */
     @HLEFunction(nid = 0xE4D21302, version = 150)
-    public int sceHttpsInit(int rootCertNum, TPointer rootCertListAddr, TPointer clientCertAddr, TPointer keyAddr) {
+    public int sceHttpsInit(int rootCertNum, @CanBeNull TPointer rootCertListAddr, @CanBeNull TPointer clientCertAddr, @CanBeNull TPointer keyAddr) {
         log.warn(String.format("Unimplemented sceHttpsInit rootCertNum=%d, rootCertListAddr=%s, clientCertAddr=%s, keyAddr=%s", rootCertNum, rootCertListAddr, clientCertAddr, keyAddr));
 
         if (isHttpsInit) {
@@ -193,7 +194,7 @@ public class sceHttps extends HLEModule {
     }
 
     @HLEFunction(nid = 0x68AB0F86, version = 150)
-    public int sceHttpsInitWithPath(PspString rootCertFileList, PspString clientCertFile, PspString keyFile) {
+    public int sceHttpsInitWithPath(@CanBeNull PspString rootCertFileList, @CanBeNull PspString clientCertFile, @CanBeNull PspString keyFile) {
         log.warn(String.format("Unimplemented sceHttpsInitWithPath rootCertFileList=%s, clientCertFile=%s, keyFile=%s", rootCertFileList, clientCertFile, keyFile));
 
         if (isHttpsInit) {
