@@ -396,11 +396,19 @@ public abstract class BaseRenderer implements IRenderer {
 			key.addKeyComponent(context.blendEquation, 3);
 			key.addKeyComponent(context.blend_src, 4);
 			key.addKeyComponent(context.blend_dst, 4);
+			key.addKeyComponent(context.sfix == 0x000000);
+			key.addKeyComponent(context.sfix == 0xFFFFFF);
+			key.addKeyComponent(context.dfix == 0x000000);
+			key.addKeyComponent(context.dfix == 0xFFFFFF);
 		} else {
 			// Use an invalid blend equation value
 			key.addKeyComponent(7, 3);
 			key.addKeyComponent(15, 4);
 			key.addKeyComponent(15, 4);
+			key.addKeyComponent(false);
+			key.addKeyComponent(false);
+			key.addKeyComponent(false);
+			key.addKeyComponent(false);
 		}
 
 		key.addKeyComponent(context.colorLogicOpFlag.isEnabled() ? context.logicOp : GeCommands.LOP_COPY, 4);
