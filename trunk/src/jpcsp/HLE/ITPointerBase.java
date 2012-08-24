@@ -17,8 +17,46 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE;
 
 public interface ITPointerBase {
+	/**
+	 * Equivalent to
+	 *    Memory.isAddressGood(getAddress()).
+	 * 
+	 * @return true  if the pointer address is good/valid.
+	 *         false if the pointer address is not good/valid.
+	 */
 	public boolean isAddressGood();
+
+	/**
+	 * Tests if the pointer address is aligned on a given size.
+	 * 
+	 * @param offset  size of the alignment in bytes (e.g. 2 or 4)
+	 * @return true  if the pointer address is aligned on offset.
+	 *         false if the pointer address is not aligned on offset.
+	 */
 	public boolean isAlignedTo(int offset);
+
+	/**
+	 * @return the pointer address
+	 */
 	public int getAddress();
+
+	/**
+	 * Tests if the pointer address is NULL.
+	 * Equivalent to
+	 *    getAddress() == 0
+	 * 
+	 * @return true  if the pointer address is NULL.
+	 *         false if the pointer address is not NULL.
+	 */
 	public boolean isNull();
+
+	/**
+	 * Tests if the pointer address is not NULL.
+	 * Equivalent to
+	 *    getAddress() != 0
+	 * 
+	 * @return true  if the pointer address is not NULL.
+	 *         false if the pointer address is NULL.
+	 */
+	public boolean isNotNull();
 }

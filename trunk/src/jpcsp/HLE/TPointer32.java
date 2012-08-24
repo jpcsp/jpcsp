@@ -20,12 +20,30 @@ import jpcsp.Memory;
 
 public class TPointer32 extends TPointerBase {
 	public TPointer32(Memory memory, int address) {
-		super(memory, address);
+		super(memory, address, false);
 	}
 
-	public int  getValue() { return pointer.getValue32(0); }
-	public void setValue(int value) { pointer.setValue32(0, value); }
+	public TPointer32(Memory memory, int address, boolean canBeNull) {
+		super(memory, address, canBeNull);
+	}
 
-	public int  getValue(int offset) { return pointer.getValue32(offset); }
-	public void setValue(int offset, int value) { pointer.setValue32(offset, value); }
+	public int getValue() {
+		return pointer.getValue32();
+	}
+
+	public void setValue(int value) {
+		if (canSetValue()) {
+			pointer.setValue32(value);
+		}
+	}
+
+	public int getValue(int offset) {
+		return pointer.getValue32(offset);
+	}
+
+	public void setValue(int offset, int value) {
+		if (canSetValue()) {
+			pointer.setValue32(offset, value);
+		}
+	}
 }

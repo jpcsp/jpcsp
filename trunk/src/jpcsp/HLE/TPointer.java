@@ -82,6 +82,11 @@ final public class TPointer implements ITPointerBase {
 		return address == 0;
 	}
 
+	@Override
+	public boolean isNotNull() {
+		return address != 0;
+	}
+
 	public byte  getValue8() { return getValue8(0); }
 	public short getValue16() { return getValue16(0); }
 	public int   getValue32() { return getValue32(0); }
