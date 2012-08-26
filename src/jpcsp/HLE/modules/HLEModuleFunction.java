@@ -29,6 +29,7 @@ public class HLEModuleFunction {
     private final String functionName;
     private int nid;
     private boolean unimplemented;
+    private String loggingLevel;
 	private Method hleModuleMethod;
 	private boolean checkInsideInterrupt;
 	private boolean checkDispatchThreadEnabled;
@@ -75,6 +76,14 @@ public class HLEModuleFunction {
         return unimplemented;
     }
 
+	public String getLoggingLevel() {
+		return loggingLevel;
+	}
+
+	public void setLoggingLevel(String loggingLevel) {
+		this.loggingLevel = loggingLevel;
+	}
+
 	public boolean checkDispatchThreadEnabled() {
 		return checkDispatchThreadEnabled;
 	}
@@ -93,6 +102,6 @@ public class HLEModuleFunction {
 
     @Override
     public String toString() {
-    	return "HLEModuleFunction(moduleName='" + moduleName + "', functionName='" + functionName + "', nid=" + nid + ", syscallCode=" + syscallCode + ")";
+    	return String.format("HLEModuleFunction(moduleName='%s', functionName='%s', nid=0x%08X, syscallCode=%d)", moduleName, functionName, nid, syscallCode);
     }
 }

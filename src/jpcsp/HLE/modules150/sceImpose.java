@@ -68,24 +68,26 @@ public class sceImpose extends HLEModule {
     @HLEUnimplemented
 	@HLEFunction(nid = 0x381BD9E7, version = 150)
 	public int sceImposeHomeButton() {
-		return 0xDEADC0DE;
+		return 0;
 	}
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x5595A71A, version = 150)
 	public int sceImposeSetHomePopup() {
-		return 0xDEADC0DE;
+		return 0;
 	}
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x0F341BE4, version = 150)
 	public int sceImposeGetHomePopup() {
-		return 0xDEADC0DE;
+		return 0;
 	}
 
 	@HLEFunction(nid = 0x72189C48, version = 150)
 	public int sceImposeSetUMDPopup(int mode) {
-		log.debug("sceImposeSetUMDPopup(mode=" + mode + ")");
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceImposeSetUMDPopup mode=%d", mode));
+		}
 
         umdPopupStatus = mode;
         
@@ -94,23 +96,25 @@ public class sceImpose extends HLEModule {
 
 	@HLEFunction(nid = 0xE0887BC8, version = 150)
 	public int sceImposeGetUMDPopup() {
-		log.debug("sceImposeGetUMDPopup)");
+		log.debug("sceImposeGetUMDPopup");
 
 		return umdPopupStatus;
 	}
 
 	@HLEFunction(nid = 0x36AA6E91, version = 150)
 	public int sceImposeSetLanguageMode(int lang, int button) {
-        String langStr;
-        switch(lang) {
-            case PSP_LANGUAGE_JAPANESE: langStr = "JAP"; break;
-            case PSP_LANGUAGE_ENGLISH: langStr = "ENG"; break;
-            case PSP_LANGUAGE_FRENCH: langStr = "FR"; break;
-            case PSP_LANGUAGE_KOREAN: langStr = "KOR"; break;
-            default: langStr = "PSP_LANGUAGE_UNKNOWN" + lang; break;
-        }
+        if (log.isDebugEnabled()) {
+            String langStr;
+            switch (lang) {
+                case PSP_LANGUAGE_JAPANESE: langStr = "JAP"; break;
+                case PSP_LANGUAGE_ENGLISH: langStr = "ENG"; break;
+                case PSP_LANGUAGE_FRENCH: langStr = "FR"; break;
+                case PSP_LANGUAGE_KOREAN: langStr = "KOR"; break;
+                default: langStr = "PSP_LANGUAGE_UNKNOWN" + lang; break;
+            }
 
-		log.debug("sceImposeSetLanguageMode(lang=" + lang + "(" + langStr + "),button=" + button + ")");
+        	log.debug(String.format("sceImposeSetLanguageMode lang=%d(%s), button=%d", lang, langStr, button));
+        }
 
         languageMode_language = lang;
         languageMode_button = button;
@@ -120,10 +124,9 @@ public class sceImpose extends HLEModule {
 
     @HLEFunction(nid = 0x24FD7BCF, version = 150)
     public int sceImposeGetLanguageMode(TPointer32 langPtr, TPointer32 buttonPtr) {
-
-    	log.debug("sceImposeGetLanguageMode(lang=0x" + Integer.toHexString(langPtr.getAddress())
-            + ",button=0x" + Integer.toHexString(buttonPtr.getAddress()) + ")"
-            + " returning lang=" + languageMode_language + " button=" + languageMode_button);
+    	if (log.isDebugEnabled()) {
+	    	log.debug(String.format("sceImposeGetLanguageMode langPtr=%s, buttonPtr=%s returning lang=%d, button=%d", langPtr, buttonPtr, languageMode_language, languageMode_button));
+    	}
 
         langPtr.setValue(languageMode_language);
         buttonPtr.setValue(languageMode_button);
@@ -133,7 +136,11 @@ public class sceImpose extends HLEModule {
 
 	@HLEFunction(nid = 0x8C943191, version = 150)
 	public int sceImposeGetBatteryIconStatus(TPointer32 chargingPtr, TPointer32 iconStatusPtr) {
-        int batteryPowerPercent = Battery.getCurrentPowerPercent();
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceImposeGetBatteryIconStatus chargingPtr=%s, iconStatusPtr=%s", chargingPtr, iconStatusPtr));
+		}
+
+		int batteryPowerPercent = Battery.getCurrentPowerPercent();
         
         // Possible values for iconStatus: 0..3
         int iconStatus = Math.min(batteryPowerPercent / 25, 3);
@@ -154,7 +161,9 @@ public class sceImpose extends HLEModule {
 
     @HLEFunction(nid = 0x967F6D4A, version = 150)
     public int sceImposeSetBacklightOffTime(int time) {
-		log.debug("sceImposeSetBacklightOffTime (time=" + time + ")");
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceImposeSetBacklightOffTime time=%d", time));
+    	}
 
         backlightOffTime = time;
 

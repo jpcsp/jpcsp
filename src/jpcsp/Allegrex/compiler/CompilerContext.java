@@ -929,7 +929,7 @@ public class CompilerContext implements ICompilerContext {
     			}
     		}
 
-    		if (checkMemoryAccess()) {
+    		if (checkMemoryAccess() && afterSyscallLabel != null) {
     			Label addressGood = new Label();
     			if (canBeNull) {
         			mv.visitInsn(Opcodes.DUP);
@@ -988,17 +988,19 @@ public class CompilerContext implements ICompilerContext {
     	}
 
     	Method methodToCheck = null;
-		for (Annotation parameterAnnotation : parameterAnnotations) {
-			if (parameterAnnotation instanceof CheckArgument) {
-				CheckArgument checkArgument = (CheckArgument) parameterAnnotation;
-				try {
-					methodToCheck = func.getHLEModule().getClass().getMethod(checkArgument.value(), parameterType);
-				} catch (Exception e) {
-					Compiler.log.error(String.format("CheckArgument method '%s' not found in %s", checkArgument.value(), func.getModuleName()), e);
+    	if (afterSyscallLabel != null) {
+			for (Annotation parameterAnnotation : parameterAnnotations) {
+				if (parameterAnnotation instanceof CheckArgument) {
+					CheckArgument checkArgument = (CheckArgument) parameterAnnotation;
+					try {
+						methodToCheck = func.getHLEModule().getClass().getMethod(checkArgument.value(), parameterType);
+					} catch (Exception e) {
+						Compiler.log.error(String.format("CheckArgument method '%s' not found in %s", checkArgument.value(), func.getModuleName()), e);
+					}
+					break;
 				}
-				break;
 			}
-		}
+    	}
 
     	if (methodToCheck != null) {
     		// try {
@@ -1096,16 +1098,23 @@ public class CompilerContext implements ICompilerContext {
     	}
     }
 
-    private void logSyscall(HLEModuleFunction func, String logPrefix, String logCheckFunction, String logFunction) {
+    private void loadModuleLoggger(HLEModuleFunction func, boolean useDirectModuleLogger) {
+    	if (useDirectModuleLogger) {
+        	mv.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(func.getHLEModuleMethod().getDeclaringClass()), "log", Type.getDescriptor(Logger.class));
+    	} else {
+			mv.visitLdcInsn(func.getModuleName());
+			mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Modules.class), "getLogger", "(" + Type.getDescriptor(String.class) + ")" + Type.getDescriptor(Logger.class));
+    	}
+    }
+
+    private void logSyscall(HLEModuleFunction func, String logPrefix, String logCheckFunction, String logFunction, boolean useDirectModuleLogger) {
 		// Modules.getLogger(func.getModuleName()).warn("Unimplemented...");
-		mv.visitLdcInsn(func.getModuleName());
-		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Modules.class), "getLogger", "(" + Type.getDescriptor(String.class) + ")" + Type.getDescriptor(Logger.class));
+    	loadModuleLoggger(func, useDirectModuleLogger);
 		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), logCheckFunction, "()Z");
 		Label loggingDisabled = new Label();
 		mv.visitJumpInsn(Opcodes.IFEQ, loggingDisabled);
 
-		mv.visitLdcInsn(func.getModuleName());
-		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Modules.class), "getLogger", "(" + Type.getDescriptor(String.class) + ")" + Type.getDescriptor(Logger.class));
+		loadModuleLoggger(func, useDirectModuleLogger);
 
 		StringBuilder formatString = new StringBuilder();
 		if (logPrefix != null) {
@@ -1266,7 +1275,17 @@ public class CompilerContext implements ICompilerContext {
     	}
 
     	if (func.isUnimplemented()) {
-    		logSyscall(func, "Unimplemented ", "isInfoEnabled", "warn");
+    		logSyscall(func, "Unimplemented ", "isInfoEnabled", "warn", false);
+    	}
+
+    	if (func.getLoggingLevel() != null) {
+    		String logCheckFunction = "isInfoEnabled";
+    		if ("trace".equals(func.getLoggingLevel())) {
+    			logCheckFunction = "isTraceEnabled";
+    		} else if ("debug".equals(func.getLoggingLevel())) {
+    			logCheckFunction = "isDebugEnabled";
+    		}
+    		logSyscall(func, null, logCheckFunction, func.getLoggingLevel(), true);
     	}
 
     	// Collecting the parameters and calling the module function...
