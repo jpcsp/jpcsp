@@ -385,7 +385,9 @@ public class sceHttp extends HLEModule {
      */
     @HLEFunction(nid = 0xAB1ABE07, version = 150, checkInsideInterrupt = true)
     public int sceHttpInit(int heapSize) {
-        log.info("sceHttpInit: heapSize=" + Integer.toHexString(heapSize));
+    	if (log.isInfoEnabled()) {
+    		log.info(String.format("sceHttpInit heapSize=0x%X", heapSize));
+    	}
 
         if (isHttpInit) {
             return SceKernelErrors.ERROR_HTTP_ALREADY_INIT;
@@ -393,6 +395,7 @@ public class sceHttp extends HLEModule {
         
         maxMemSize = heapSize;
         isHttpInit = true;
+
         return 0;
     }
 
@@ -409,6 +412,7 @@ public class sceHttp extends HLEModule {
 
         isSystemCookieLoaded = false;
         isHttpInit = false;
+
         return 0;
     }
 
@@ -419,10 +423,9 @@ public class sceHttp extends HLEModule {
      * @param contentlength - The size of the content
      * @return 0 on success, < 0 on error.
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0x0282A3BD, version = 150)
     public int sceHttpGetContentLength(int requestId, TPointer32 contentLength){
-    	log.warn(String.format("Unimplemented sceHttpGetContentLength requestId=%d, contentLength=%s", requestId, contentLength));
+    	log.warn(String.format("Partial sceHttpGetContentLength requestId=%d, contentLength=%s", requestId, contentLength));
 
     	HttpRequest httpRequest = getHttpRequest(requestId);
     	contentLength.setValue(httpRequest.getContentLength());
@@ -443,14 +446,14 @@ public class sceHttp extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x03D9526F, version = 150)
-    public int sceHttpSetResolveRetry() {
-        return 0xDEADC0DE;
+    public int sceHttpSetResolveRetry(int templateId, int count) {
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x06488A1C, version = 150)
     public int sceHttpSetCookieSendCallback() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -461,8 +464,8 @@ public class sceHttp extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x0809C831, version = 150)
-    public int sceHttpEnableRedirect() {
-        return 0xDEADC0DE;
+    public int sceHttpEnableRedirect(int templateId) {
+        return 0;
     }
 
     /**
@@ -474,8 +477,6 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x0B12ABFB, version = 150)
     public int sceHttpDisableCookie(int templateId) {
-    	log.warn(String.format("Unimplemented sceHttpDisableCookie templateId=%d", templateId));
-
     	return 0;
     }
 
@@ -487,8 +488,8 @@ public class sceHttp extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x0DAFA58F, version = 150)
-    public int sceHttpEnableCookie() {
-        return 0xDEADC0DE;
+    public int sceHttpEnableCookie(int templateId) {
+        return 0;
     }
 
     /**
@@ -500,8 +501,8 @@ public class sceHttp extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x15540184, version = 150)
-    public int sceHttpDeleteHeader() {
-        return 0xDEADC0DE;
+    public int sceHttpDeleteHeader(int templateId, int name) {
+        return 0;
     }
 
     /**
@@ -512,14 +513,14 @@ public class sceHttp extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x1A0EBB69, version = 150)
-    public int sceHttpDisableRedirect() {
-        return 0xDEADC0DE;
+    public int sceHttpDisableRedirect(int templateId) {
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x1CEDB9D4, version = 150)
     public int sceHttpFlushCache() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -532,39 +533,37 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x1F0FC3E3, version = 150)
     public int sceHttpSetRecvTimeOut(int templateId, int timeout) {
-    	log.warn(String.format("Unimplemented sceHttpSetRecvTimeOut templateId=%d, timeout=%d", templateId, timeout));
-
     	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x2255551E, version = 150)
     public int sceHttpGetNetworkPspError() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x267618F4, version = 150)
     public int sceHttpSetAuthInfoCallback() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x2A6C3296, version = 150)
     public int sceHttpSetAuthInfoCB() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x2C3C82CF, version = 150)
     public int sceHttpFlushAuthList() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x3A67F306, version = 150)
     public int sceHttpSetCookieRecvCallback() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -579,8 +578,6 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x3EABA285, version = 150)
     public int sceHttpAddExtraHeader(int templateId, PspString name, PspString value, int unknown1) {
-    	log.warn(String.format("Unimplemented sceHttpAddExtraHeader templateId=%d, name='%s', value='%s', unknown1=0x%08X", templateId, name, value, unknown1));
-
     	return 0;
     }
 
@@ -593,10 +590,9 @@ public class sceHttp extends HLEModule {
      * @param contentlength - Length of the content (POST method only)
      * @return A request ID on success, < 0 on error.
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0x47347B50, version = 150)
     public int sceHttpCreateRequest(int connectionId, int method, PspString path, int contentLength) {
-    	log.warn(String.format("Unimplemented sceHttpCreateRequest connectionId=%d, method=%d, path='%s', contentLength=%d", connectionId, method, path, contentLength));
+    	log.warn(String.format("Partial sceHttpCreateRequest connectionId=%d, method=%d, path='%s', contentLength=%d", connectionId, method, path, contentLength));
 
     	HttpConnection httpConnection = getHttpConnection(connectionId);
     	HttpRequest httpRequest = new HttpRequest();
@@ -618,8 +614,6 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x47940436, version = 150)
     public int sceHttpSetResolveTimeOut(int templateId, int timeout) {
-    	log.warn(String.format("Unimplemented sceHttpSetResolveTimeOut templateId=%d, timeout=%d", templateId, timeout));
-
     	return 0;
     }
 
@@ -630,10 +624,9 @@ public class sceHttp extends HLEModule {
      * @param statuscode - The status code from the host (200 is ok, 404 is not found etc)
      * @return 0 on success, < 0 on error.
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0x4CC7D78F, version = 150)
     public int sceHttpGetStatusCode(int requestId, TPointer32 statusCode) {
-    	log.warn(String.format("Unimplemented sceHttpGetStatusCode requestId=%d, statusCode=%s", requestId, statusCode));
+    	log.warn(String.format("Partial sceHttpGetStatusCode requestId=%d, statusCode=%s", requestId, statusCode));
 
     	HttpRequest httpRequest = getHttpRequest(requestId);
     	statusCode.setValue(httpRequest.getStatusCode());
@@ -654,21 +647,19 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x5152773B, version = 150)
     public int sceHttpDeleteConnection(int connectionId) {
-    	log.warn(String.format("Unimplemented sceHttpDeleteConnection connectionId=%d", connectionId));
-
     	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x54E7DF75, version = 150)
     public int sceHttpIsRequestInCache() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x59E6D16F, version = 150)
     public int sceHttpEnableCache() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -679,8 +670,6 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x76D1363B, version = 150, checkInsideInterrupt = true)
     public int sceHttpSaveSystemCookie() {
-        log.info("sceHttpSaveSystemCookie");
-
         checkHttpInit();
 
         if (!isSystemCookieLoaded){
@@ -692,13 +681,13 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x7774BF4C, version = 150)
     public int sceHttpAddCookie() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x77EE5319, version = 150)
     public int sceHttpLoadAuthList() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -709,14 +698,14 @@ public class sceHttp extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x78A0D3EC, version = 150)
-    public int sceHttpEnableKeepAlive() {
-        return 0xDEADC0DE;
+    public int sceHttpEnableKeepAlive(int templateId) {
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x78B54C09, version = 150)
     public int sceHttpEndCache() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -729,8 +718,6 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x8ACD1F73, version = 150)
     public int sceHttpSetConnectTimeOut(int templateId, int timeout) {
-    	log.warn(String.format("Unimplemented sceHttpSetConnectTimeOut templateId=%d, timeout=%d", templateId, timeout));
-
     	return 0;
     }
 
@@ -744,10 +731,9 @@ public class sceHttp extends HLEModule {
      * @param unknown1 - Pass 0
      * @return A connection ID on success, < 0 on error.
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0x8EEFD953, version = 150)
     public int sceHttpCreateConnection(int templateId, PspString host, PspString protocol, int port, int unknown1) {
-    	log.warn(String.format("Unimplemented sceHttpCreateConnection templateId=%d, host=%s, protocol=%s, port=%s, unknown1=0x%08X", templateId, host, protocol, port, unknown1));
+    	log.warn(String.format("Partial sceHttpCreateConnection templateId=%d, host=%s, protocol=%s, port=%s, unknown1=0x%08X", templateId, host, protocol, port, unknown1));
 
     	HttpTemplate httpTemplate = getHttpTemplate(templateId);
     	HttpConnection httpConnection = new HttpConnection();
@@ -760,19 +746,19 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x951D310E, version = 150)
     public int sceHttpDisableProxyAuth() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x9668864C, version = 150)
     public int sceHttpSetRecvBlockSize() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x96F16D3E, version = 150)
     public int sceHttpGetCookie() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -785,15 +771,13 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x9988172D, version = 150)
     public int sceHttpSetSendTimeOut(int templateId, int timeout) {
-    	log.warn(String.format("Unimplemented sceHttpSetSendTimeOut templateId=%d, timeout=%d", templateId, timeout));
-
     	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x9AFC98B2, version = 150)
     public int sceHttpSendRequestInCacheFirstMode() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -804,10 +788,9 @@ public class sceHttp extends HLEModule {
      * @param unknown2 - Pass 0
      * @return A template ID on success, < 0 on error.
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0x9B1F1F36, version = 150)
     public int sceHttpCreateTemplate(PspString agent, int unknown1, int unknown2) {
-    	log.warn(String.format("Unimplemented sceHttpCreateTemplate agent=%s, unknown1=0x%08X, unknown2=0x%08X", agent, unknown1, unknown2));
+    	log.warn(String.format("Partial sceHttpCreateTemplate agent=%s, unknown1=0x%08X, unknown2=0x%08X", agent, unknown1, unknown2));
 
     	HttpTemplate httpTemplate = new HttpTemplate();
     	httpTemplate.setAgent(agent.getString());
@@ -818,13 +801,13 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x9FC5F10D, version = 150)
     public int sceHttpEnableAuth() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xA4496DE5, version = 150)
     public int sceHttpSetRedirectCallback() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -836,27 +819,25 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xA5512E01, version = 150)
     public int sceHttpDeleteRequest(int requestId) {
-    	log.warn(String.format("Unimplemented sceHttpDeleteRequest requestId=%d", requestId));
-
     	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xA6800C34, version = 150)
     public int sceHttpInitCache() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xAE948FEE, version = 150)
     public int sceHttpDisableAuth() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xB0C34B1D, version = 150)
     public int sceHttpSetCacheContentLengthMaxSize() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -868,10 +849,9 @@ public class sceHttp extends HLEModule {
      * @param contentlength - Length of the content (POST method only)
      * @return A request ID on success, < 0 on error.
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0xB509B09E, version = 150)
     public int sceHttpCreateRequestWithURL(int connectionId, int method, PspString url, int contentLength) {
-    	log.warn(String.format("Unimplemented sceHttpCreateRequestWithURL connectionId=%d, method=%d, url=%s, contentLength=%d", connectionId, method, url, contentLength));
+    	log.warn(String.format("Partial sceHttpCreateRequestWithURL connectionId=%d, method=%d, url=%s, contentLength=%d", connectionId, method, url, contentLength));
 
     	HttpConnection httpConnection = getHttpConnection(connectionId);
     	HttpRequest httpRequest = new HttpRequest();
@@ -890,10 +870,9 @@ public class sceHttp extends HLEModule {
      * @param datasize - For POST methods specify the size of the post data, otherwise pass 0
      * @return 0 on success, < 0 on error.
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0xBB70706F, version = 150)
     public int sceHttpSendRequest(int requestId, @CanBeNull TPointer data, int dataSize) {
-    	log.warn(String.format("Unimplemented sceHttpSendRequest requestId=%d, data=%s, dataSize=%d", requestId, data, dataSize));
+    	log.warn(String.format("Partial sceHttpSendRequest requestId=%d, data=%s, dataSize=%d", requestId, data, dataSize));
 
     	HttpRequest httpRequest = getHttpRequest(requestId);
     	httpRequest.send(data.getAddress(), dataSize);
@@ -910,15 +889,13 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xC10B6BD9, version = 150)
     public int sceHttpAbortRequest(int requestId) {
-    	log.warn(String.format("Unimplemented sceHttpAbortRequest requestId=%d", requestId));
-
     	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC6330B0D, version = 150)
     public int sceHttpChangeHttpVersion() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -929,26 +906,26 @@ public class sceHttp extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0xC7EF2559, version = 150)
-    public int sceHttpDisableKeepAlive() {
-        return 0xDEADC0DE;
+    public int sceHttpDisableKeepAlive(int templateId) {
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC98CBBA7, version = 150)
     public int sceHttpSetResHeaderMaxSize() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xCCBD167A, version = 150)
     public int sceHttpDisableCache() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xCDB0DC58, version = 150)
     public int sceHttpEnableProxyAuth() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -959,10 +936,9 @@ public class sceHttp extends HLEModule {
      * @param unknown1 - Pass 0
      * @return A connection ID on success, < 0 on error.
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0xCDF8ECB9, version = 150)
     public int sceHttpCreateConnectionWithURL(int templateId, PspString url, int unknown1) {
-    	log.warn(String.format("Unimplemented sceHttpCreateConnectionWithURL templateId=%d, url='%s', unknown1=0x%08X", templateId, url, unknown1));
+    	log.warn(String.format("Partial sceHttpCreateConnectionWithURL templateId=%d, url=%s, unknown1=0x%08X", templateId, url, unknown1));
 
     	HttpTemplate httpTemplate = getHttpTemplate(templateId);
     	HttpConnection httpConnection = new HttpConnection();
@@ -972,10 +948,9 @@ public class sceHttp extends HLEModule {
     	return httpConnection.getId();
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xD081EC8F, version = 150)
     public int sceHttpGetNetworkErrno(int requestId, TPointer32 errno) {
-    	log.warn(String.format("Unimplemented sceHttpGetNetworkErrno requestId=%d, errno=%s", requestId, errno));
+    	log.warn(String.format("Partial sceHttpGetNetworkErrno requestId=%d, errno=%s", requestId, errno));
 
     	errno.setValue(0);
 
@@ -985,19 +960,19 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xD70D4847, version = 150)
     public int sceHttpGetProxy() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xDB266CCF, version = 150)
     public int sceHttpGetAllHeader() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xDD6E7857, version = 150)
     public int sceHttpSaveAuthList() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -1008,10 +983,9 @@ public class sceHttp extends HLEModule {
      * @param datasize - Size of the buffer 
      * @return The size read into the data buffer, 0 if there is no more data, < 0 on error.
      */
-    @HLEUnimplemented
     @HLEFunction(nid = 0xEDEEB999, version = 150)
     public int sceHttpReadData(int requestId, TPointer data, int dataSize) {
-    	log.warn(String.format("Unimplemented sceHttpReadData requestId=%d, data=%s, dataSize=%d", requestId, data, dataSize));
+    	log.warn(String.format("Partial sceHttpReadData requestId=%d, data=%s, dataSize=%d", requestId, data, dataSize));
 
     	HttpRequest httpRequest = getHttpRequest(requestId);
     	int readSize = httpRequest.readData(data.getAddress(), dataSize);
@@ -1022,7 +996,7 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xF0F46C62, version = 150)
     public int sceHttpSetProxy() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -1033,8 +1007,6 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xF1657B22, version = 150, checkInsideInterrupt = true)
     public int sceHttpLoadSystemCookie() {
-        log.info("sceHttpLoadSystemCookie");
-
         checkHttpInit();
 
         if (isSystemCookieLoaded) { // The system's cookie list can only be loaded once per session.
@@ -1050,7 +1022,7 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xF49934F6, version = 150)
     public int sceHttpSetMallocFunction() {
-        return 0xDEADC0DE;
+        return 0;
     }
 
     /**
@@ -1062,8 +1034,6 @@ public class sceHttp extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xFCF8C055, version = 150)
     public int sceHttpDeleteTemplate(int templateId) {
-    	log.warn(String.format("Unimplemented sceHttpDeleteTemplate templateId=%d", templateId));
-
     	return 0;
     }
 }

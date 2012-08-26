@@ -20,8 +20,7 @@ import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 
 // some field info from noxa/pspplayer
-public class SceMpegRingbuffer {
-
+public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
     // PSP info
     public int packets;
     public int packetsRead;
@@ -73,33 +72,40 @@ public class SceMpegRingbuffer {
     	return packetsFree == packets;
     }
 
-    public void read(Memory mem, int address) {
-        packets         = mem.read32(address);
-        packetsRead     = mem.read32(address + 4);
-        packetsWritten  = mem.read32(address + 8);
-        packetsFree     = mem.read32(address + 12);
-        packetSize      = mem.read32(address + 16);
-        data            = mem.read32(address + 20);
-        callback_addr   = mem.read32(address + 24);
-        callback_args   = mem.read32(address + 28);
-        dataUpperBound  = mem.read32(address + 32);
-        semaID          = mem.read32(address + 36);
-        mpeg            = mem.read32(address + 40);
-    }
+	@Override
+	protected void read() {
+        packets         = read32();
+        packetsRead     = read32();
+        packetsWritten  = read32();
+        packetsFree     = read32();
+        packetSize      = read32();
+        data            = read32();
+        callback_addr   = read32();
+        callback_args   = read32();
+        dataUpperBound  = read32();
+        semaID          = read32();
+        mpeg            = read32();
+	}
 
-    public void write(Memory mem, int address) {
-        mem.write32(address, packets);
-        mem.write32(address + 4, packetsRead);
-        mem.write32(address + 8, packetsWritten);
-        mem.write32(address + 12, packetsFree);
-        mem.write32(address + 16, packetSize);
-        mem.write32(address + 20, data);
-        mem.write32(address + 24, callback_addr);
-        mem.write32(address + 28, callback_args);
-        mem.write32(address + 32, dataUpperBound);
-        mem.write32(address + 36, semaID);
-        mem.write32(address + 40, mpeg);
-    }
+	@Override
+	protected void write() {
+        write32(packets);
+        write32(packetsRead);
+        write32(packetsWritten);
+        write32(packetsFree);
+        write32(packetSize);
+        write32(data);
+        write32(callback_addr);
+        write32(callback_args);
+        write32(dataUpperBound);
+        write32(semaID);
+        write32(mpeg);
+	}
+
+	@Override
+	public int sizeof() {
+		return 44;
+	}
 
 	@Override
 	public String toString() {

@@ -20,6 +20,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_HTTP_ALREADY_INIT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_HTTP_NOT_INIT;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
@@ -182,10 +183,9 @@ public class sceHttps extends HLEModule {
      *
      * @return 0 on success, < 0 on error.
     */
+    @HLEUnimplemented
     @HLEFunction(nid = 0xE4D21302, version = 150)
     public int sceHttpsInit(int rootCertNum, @CanBeNull TPointer rootCertListAddr, @CanBeNull TPointer clientCertAddr, @CanBeNull TPointer keyAddr) {
-        log.warn(String.format("Unimplemented sceHttpsInit rootCertNum=%d, rootCertListAddr=%s, clientCertAddr=%s, keyAddr=%s", rootCertNum, rootCertListAddr, clientCertAddr, keyAddr));
-
         if (isHttpsInit) {
             return ERROR_HTTP_ALREADY_INIT;
         }
@@ -193,10 +193,9 @@ public class sceHttps extends HLEModule {
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x68AB0F86, version = 150)
     public int sceHttpsInitWithPath(@CanBeNull PspString rootCertFileList, @CanBeNull PspString clientCertFile, @CanBeNull PspString keyFile) {
-        log.warn(String.format("Unimplemented sceHttpsInitWithPath rootCertFileList=%s, clientCertFile=%s, keyFile=%s", rootCertFileList, clientCertFile, keyFile));
-
         if (isHttpsInit) {
         	return ERROR_HTTP_ALREADY_INIT;
         }
@@ -209,10 +208,9 @@ public class sceHttps extends HLEModule {
      *
      * @return 0 on success, < 0 on error.
     */
+    @HLEUnimplemented
     @HLEFunction(nid = 0xF9D8EB63, version = 150)
     public int sceHttpsEnd() {
-        log.warn("PARTIAL sceHttpsEnd");
-
         if (!isHttpsInit) {
         	return ERROR_HTTP_NOT_INIT;
         }
@@ -229,17 +227,15 @@ public class sceHttps extends HLEModule {
      * @param certType - Pass 0
      * @return 0 on success, < 0 on error.
     */
+    @HLEUnimplemented
     @HLEFunction(nid = 0x87797BDD, version = 150)
     public int sceHttpsLoadDefaultCert(int certIssuer, int certType) {
-        log.warn(String.format("Unimplemented sceHttpsLoadDefaultCert: certIssuer=0x%08X, certType=0x%08X", certIssuer, certType));
-
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xAB1540D5, version = 150)
     public int sceHttpsGetSslError(TPointer sslIdAddr, TPointer32 errorAddr, TPointer32 errorDetailAddr) {
-        log.warn(String.format("PARTIAL: sceHttpsLoadDefaultCert: sslIdAddr=%s, errorAddr=%s, errorDetailAddr=%s", sslIdAddr, errorAddr, errorDetailAddr));
-
         if (!isHttpsInit) {
         	return ERROR_HTTP_NOT_INIT;
         }
@@ -250,10 +246,9 @@ public class sceHttps extends HLEModule {
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xBAC31BF1, version = 150)
     public int sceHttpsEnableOption(int flag) {
-        log.warn(String.format("Unimplemented sceHttpsEnableOption flag=%d", flag));
-
         if (!isHttpsInit) {
         	return ERROR_HTTP_NOT_INIT;
         }
@@ -261,10 +256,9 @@ public class sceHttps extends HLEModule {
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xB3FAF831, version = 150)
     public int sceHttpsDisableOption(int flag) {
-        log.warn(String.format("Unimplemented sceHttpsEnableOption flag=%d", flag));
-
         if (!isHttpsInit) {
         	return ERROR_HTTP_NOT_INIT;
         }
@@ -272,10 +266,9 @@ public class sceHttps extends HLEModule {
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xD11DAB01, version = 150)
     public int sceHttpsGetCaList(TPointer rootCAAddr, TPointer32 rootCANumAddr) {
-        log.warn(String.format("Unimplemented sceHttpsGetCaList rootCAAddr=%s, rootCANumAddr=%s", rootCAAddr, rootCANumAddr));
-
         if (!isHttpsInit) {
             return ERROR_HTTP_NOT_INIT;
         }
@@ -283,10 +276,9 @@ public class sceHttps extends HLEModule {
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x569A1481, version = 150)
     public int sceHttpsSetSslCallback(int sslID, TPointer sslCallback, int sslArg) {
-        log.warn(String.format("PARTIAL: sceHttpsSetSslCallback sslID=%d, sslCallback=%s, sslArg=0x%08X", sslID, sslCallback, sslArg));
-
         if (!isHttpsInit) {
             return ERROR_HTTP_NOT_INIT;
         }

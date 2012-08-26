@@ -22,12 +22,14 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This annotation tells the compiler to log a warning
- *     "Unimplemented sceXXXX xxxx"
- * when the kernel function is called.
+ * This annotation tells the compiler to log the kernel function call using a generic format.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface HLEUnimplemented {
-	public boolean partial() default false;
+public @interface HLELogging {
+	/**
+	 * Sets the logging level.
+	 * Possible values are "trace", "debug", "info", "warn", "error".
+	 */
+	public String level() default "debug";
 }

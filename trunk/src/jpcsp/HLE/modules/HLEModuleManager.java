@@ -25,6 +25,7 @@ import jpcsp.Memory;
 import jpcsp.NIDMapper;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
@@ -436,6 +437,7 @@ public class HLEModuleManager {
 				HLEFunction hleFunction = method.getAnnotation(HLEFunction.class);
 				if (hleFunction != null) {
 					HLEUnimplemented hleUnimplemented = method.getAnnotation(HLEUnimplemented.class);
+					HLELogging hleLogging = method.getAnnotation(HLELogging.class);
 
 					if (version >= hleFunction.version()) {
 						String moduleName = hleFunction.moduleName();
@@ -453,6 +455,10 @@ public class HLEModuleManager {
 
 						if (hleUnimplemented != null) {
 							hleModuleFunction.setUnimplemented(true);
+						}
+
+						if (hleLogging != null) {
+							hleModuleFunction.setLoggingLevel(hleLogging.level());
 						}
 
 						hleModule.installedHLEModuleFunctions.put(functionName, hleModuleFunction);
