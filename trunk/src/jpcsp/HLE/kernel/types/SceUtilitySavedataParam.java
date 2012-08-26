@@ -502,7 +502,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 
         byte[] outBuf = crypto.EncryptSavedata(inBuf, length, key, mode);
 
-        fileOutput.write(outBuf, 0, Math.min(length, outBuf.length));
+        fileOutput.write(outBuf, 0, outBuf.length);
         fileOutput.close();
     }
 
@@ -524,13 +524,13 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         byte[] outBuf = crypto.DecryptSavedata(inBuf, fileSize, key, mode);
 
         IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 1);
-        int length = Math.min(outBuf.length, Math.min(fileSize, maxLength));
+        int length = Math.min(outBuf.length, maxLength);
         for (int i = 0; i < length; i++) {
             memoryWriter.writeNext(outBuf[i]);
         }
         memoryWriter.flush();
 
-        return outBuf.length;
+        return length;
     }
 
     private void writeFile(Memory mem, String path, String name, int address, int length) throws IOException {
