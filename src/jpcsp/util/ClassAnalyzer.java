@@ -102,9 +102,12 @@ public class ClassAnalyzer {
 			Class<?>[] parameterTypes = method.getParameterTypes();
 			int numberParameters = Math.min(parameterTypes.length, methodNode.localVariables.size() - firstIndex);
 			parameters = new ParameterInfo[numberParameters];
-			for (int i = 0; i < numberParameters; i++) {
-				LocalVariableNode localVariableNode = (LocalVariableNode) methodNode.localVariables.get(i + firstIndex);
-				parameters[i] = new ParameterInfo(localVariableNode.name, parameterTypes[i]);
+			for (int i = 0; i < methodNode.localVariables.size(); i++) {
+				LocalVariableNode localVariableNode = (LocalVariableNode) methodNode.localVariables.get(i);
+				int parameterIndex = localVariableNode.index - firstIndex;
+				if (parameterIndex >= 0 && parameterIndex < numberParameters) {
+					parameters[parameterIndex] = new ParameterInfo(localVariableNode.name, parameterTypes[parameterIndex]);
+				}
 			}
 		}
 	}
