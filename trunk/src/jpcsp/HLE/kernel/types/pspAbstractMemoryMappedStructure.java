@@ -62,7 +62,11 @@ public abstract class pspAbstractMemoryMappedStructure {
     }
 
     public void read(ITPointerBase pointer) {
-    	read(Memory.getInstance(), pointer.getAddress());
+    	read(pointer, 0);
+    }
+
+    public void read(ITPointerBase pointer, int offset) {
+    	read(Memory.getInstance(), pointer.getAddress() + offset);
     }
 
     public void write(Memory mem, int address) {
@@ -71,7 +75,11 @@ public abstract class pspAbstractMemoryMappedStructure {
     }
 
     public void write(ITPointerBase pointer) {
-    	write(Memory.getInstance(), pointer.getAddress());
+    	write(pointer, 0);
+    }
+
+    public void write(ITPointerBase pointer, int offset) {
+    	write(Memory.getInstance(), pointer.getAddress() + offset);
     }
 
     public void write(Memory mem) {
@@ -415,5 +423,10 @@ public abstract class pspAbstractMemoryMappedStructure {
 
     protected int endianSwap32(int data) {
     	return Integer.reverseBytes(data);
+    }
+
+    @Override
+	public String toString() {
+    	return String.format("0x%08X", getBaseAddress());
     }
 }

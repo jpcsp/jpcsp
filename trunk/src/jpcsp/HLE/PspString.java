@@ -23,6 +23,7 @@ public class PspString {
 	protected String string;
 	protected int address;
 	protected int maxLength;
+	protected boolean canBeNull;
 
 	public PspString(int address) {
 		this.string = null;
@@ -36,9 +37,20 @@ public class PspString {
 		this.maxLength = maxLength;
 	}
 
+	public PspString(int address, int maxLength, boolean canBeNull) {
+		this.string = null;
+		this.address = address;
+		this.maxLength = maxLength;
+		this.canBeNull = canBeNull;
+	}
+
 	public String getString() {
 		if (string == null) {
-			string = Utilities.readStringNZ(address, maxLength);
+			if (canBeNull && address == 0) {
+				string = "";
+			} else {
+				string = Utilities.readStringNZ(address, maxLength);
+			}
 		}
 		return string;
 	}

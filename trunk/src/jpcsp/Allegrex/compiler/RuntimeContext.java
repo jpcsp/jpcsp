@@ -1011,8 +1011,8 @@ public class RuntimeContext {
     	return Utilities.readStringNZ(address, maxLength);
     }
 
-    public static PspString readPspStringNZ(int address, int maxLength) {
-    	return new PspString(address, maxLength);
+    public static PspString readPspStringNZ(int address, int maxLength, boolean canBeNull) {
+    	return new PspString(address, maxLength, canBeNull);
     }
 
     public static int checkMemoryRead32(int address, int pc) throws StopThreadException {

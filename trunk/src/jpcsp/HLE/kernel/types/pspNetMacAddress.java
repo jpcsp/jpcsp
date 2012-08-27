@@ -73,6 +73,22 @@ public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
 		return true;
 	}
 
+	/**
+	 * Is the MAC address the empty MAC address (00:00:00:00:00:00)?
+	 * 
+	 * @return    true if this is the empty MAC address
+	 *            false otherwise
+	 */
+	public boolean isEmptyMacAddress() {
+		for (int i = 0; i < macAddress.length; i++) {
+			if (macAddress[i] != (byte) 0x00) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	@Override
 	public boolean equals(Object object) {
 		if (object instanceof pspNetMacAddress) {
@@ -88,6 +104,19 @@ public class pspNetMacAddress extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public String toString() {
-		return sceNet.convertMacAddressToString(macAddress);
+		// When the base address is not set, return the MAC address only:
+		// "nn:nn:nn:nn:nn:nn"
+		if (getBaseAddress() == 0) {
+			return sceNet.convertMacAddressToString(macAddress);
+		}
+		// When the MAC address is not set, return the base address only:
+		// "0xNNNNNNNN"
+		if (isEmptyMacAddress()) {
+			return super.toString();
+		}
+
+		// When both the base address and the MAC address are set,
+		// return "0xNNNNNNNN(nn:nn:nn:nn:nn:nn)"
+		return String.format("%s(%s)", super.toString(), sceNet.convertMacAddressToString(macAddress));
 	}
 }

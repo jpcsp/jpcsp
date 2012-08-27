@@ -64,6 +64,7 @@ import jpcsp.HLE.TPointer64;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.ThreadManForUser;
@@ -885,17 +886,22 @@ public class CompilerContext implements ICompilerContext {
     		parameterReader.loadNextInt();
 
     		int maxLength = 16 * 1024;
+    		boolean canBeNull = false;
     		for (Annotation parameterAnnotation : parameterAnnotations) {
     			if (parameterAnnotation instanceof StringInfo) {
     				StringInfo stringInfo = ((StringInfo)parameterAnnotation);
     				maxLength = stringInfo.maxLength();
     			}
+    			if (parameterAnnotation instanceof CanBeNull) {
+    				canBeNull = true;
+    			}
     		}
     		loadImm(maxLength);
+    		loadImm(canBeNull);
    			mv.visitMethodInsn(
 				Opcodes.INVOKESTATIC,
 				runtimeContextInternalName,
-				"readPspStringNZ", "(II)" + Type.getDescriptor(PspString.class)
+				"readPspStringNZ", "(IIZ)" + Type.getDescriptor(PspString.class)
    			);
     		parameterReader.incrementCurrentStackSize();
     	} else if (parameterType == TPointer.class || parameterType == TPointer16.class || parameterType == TPointer32.class || parameterType == TPointer64.class || parameterType == TErrorPointer32.class) {
@@ -954,6 +960,41 @@ public class CompilerContext implements ICompilerContext {
     			mv.visitInsn(Opcodes.DUP);
     			mv.visitVarInsn(Opcodes.ASTORE, LOCAL_ERROR_POINTER);
     		}
+    		parameterReader.incrementCurrentStackSize();
+    	} else if (pspAbstractMemoryMappedStructure.class.isAssignableFrom(parameterType)) {
+    		parameterReader.loadNextInt();
+
+    		boolean canBeNull = false;
+    		for (Annotation parameterAnnotation : parameterAnnotations) {
+    			if (parameterAnnotation instanceof CanBeNull) {
+    				canBeNull = true;
+    				break;
+    			}
+    		}
+
+    		if (checkMemoryAccess() && afterSyscallLabel != null) {
+    			Label addressGood = new Label();
+    			if (canBeNull) {
+        			mv.visitInsn(Opcodes.DUP);
+    				mv.visitJumpInsn(Opcodes.IFEQ, addressGood);
+    			}
+    			mv.visitInsn(Opcodes.DUP);
+                mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryPointer", "(I)Z");
+    			mv.visitJumpInsn(Opcodes.IFNE, addressGood);
+    			storeRegister(_v0, SceKernelErrors.ERROR_INVALID_POINTER);
+    			parameterReader.popAllStack(1);
+    			mv.visitJumpInsn(Opcodes.GOTO, afterSyscallLabel);
+    			mv.visitLabel(addressGood);
+    		}
+
+    		mv.visitTypeInsn(Opcodes.NEW, Type.getInternalName(parameterType));
+    		mv.visitInsn(Opcodes.DUP);
+			mv.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(parameterType), "<init>", "()V");
+    		mv.visitInsn(Opcodes.DUP_X1);
+    		mv.visitInsn(Opcodes.SWAP);
+    		loadMemory();
+    		mv.visitInsn(Opcodes.SWAP);
+			mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(parameterType), "read", "(" + memoryDescriptor + "I)V");
     		parameterReader.incrementCurrentStackSize();
     	} else {
 			HLEUidClass hleUidClass = parameterType.getAnnotation(HLEUidClass.class);
@@ -1143,15 +1184,17 @@ public class CompilerContext implements ICompilerContext {
             CompilerParameterReader parameterReader = new CompilerParameterReader(this);
             Annotation[][] paramsAnotations = func.getHLEModuleMethod().getParameterAnnotations();
             int paramIndex = 0;
+            int objectArrayIndex = 0;
             for (ParameterInfo parameter : parameters) {
-            	mv.visitInsn(Opcodes.DUP);
-            	loadImm(paramIndex);
-
             	Class<?> parameterType = parameter.type;
+            	CompilerTypeInformation typeInformation = compilerTypeManager.getCompilerTypeInformation(parameterType);
+
+            	mv.visitInsn(Opcodes.DUP);
+            	loadImm(objectArrayIndex);
+
         		formatString.append(paramIndex > 0 ? ", " : " ");
             	formatString.append(parameter.name);
             	formatString.append("=");
-            	CompilerTypeInformation typeInformation = compilerTypeManager.getCompilerTypeInformation(parameterType);
             	formatString.append(typeInformation.formatString);
 
             	if (typeInformation.boxingTypeInternalName != null) {
@@ -1159,7 +1202,7 @@ public class CompilerContext implements ICompilerContext {
             		mv.visitInsn(Opcodes.DUP);
             	}
 
-        		loadParameter(parameterReader, func, parameterType, paramsAnotations[paramIndex], null, null);
+            	loadParameter(parameterReader, func, parameterType, paramsAnotations[paramIndex], null, null);
 
             	if (typeInformation.boxingTypeInternalName != null) {
             		mv.visitMethodInsn(Opcodes.INVOKESPECIAL, typeInformation.boxingTypeInternalName, "<init>", typeInformation.boxingMethodDescriptor);
@@ -1167,6 +1210,7 @@ public class CompilerContext implements ICompilerContext {
             	mv.visitInsn(Opcodes.AASTORE);
 
             	paramIndex++;
+            	objectArrayIndex++;
             }
 			mv.visitLdcInsn(formatString.toString());
 			mv.visitInsn(Opcodes.SWAP);
