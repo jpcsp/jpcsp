@@ -30,14 +30,14 @@ import java.util.LinkedList;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer16;
 import jpcsp.HLE.TPointer32;
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
@@ -58,6 +58,7 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceNetAdhoc extends HLEModule {
     public static Logger log = Modules.getLogger("sceNetAdhoc");
 
@@ -465,9 +466,7 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0xE1D621D7, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocInit() {
-        log.warn("IGNORING: sceNetAdhocInit");
-
-        log.info(String.format("Using MAC address=%s, nick name='%s'", sceNet.convertMacAddressToString(Wlan.getMacAddress()), sceUtility.getSystemParamNickname()));
+        log.info(String.format("sceNetAdhocInit: using MAC address=%s, nick name='%s'", sceNet.convertMacAddressToString(Wlan.getMacAddress()), sceUtility.getSystemParamNickname()));
 
         return 0;
     }
@@ -479,15 +478,12 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0xA62C6F57, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocTerm() {
-        log.warn("IGNORING: sceNetAdhocTerm");
-
         return 0;
     }
 
     @HLEFunction(nid = 0x7A662D6B, version = 150)
     public int sceNetAdhocPollSocket(TPointer socketsAddr, int count, int timeout, int nonblock) {
     	Memory mem = Memory.getInstance();
-        log.warn(String.format("PARTIAL: sceNetAdhocPollSocket socketsAddr=%s, count=%d, timeout=%d, nonblock=%d", socketsAddr, count, timeout, nonblock));
 
         int countEvents = 0;
         for (int i = 0; i < count; i++) {
@@ -539,20 +535,16 @@ public class sceNetAdhoc extends HLEModule {
         return countEvents;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x73BFD52D, version = 150)
     public int sceNetAdhocSetSocketAlert(int id, int unknown) {
-        log.warn(String.format("UNIMPLEMENTED: sceNetAdhocSetSocketAlert id=%d, unknown=0x%X", id, unknown));
-
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x4D2CE199, version = 150)
-    public void sceNetAdhocGetSocketAlert(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNetAdhocGetSocketAlert");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceNetAdhocGetSocketAlert() {
+    	return 0;
     }
 
     /**
@@ -566,12 +558,7 @@ public class sceNetAdhoc extends HLEModule {
      * @return The ID of the PDP object (< 0 on error)
      */
     @HLEFunction(nid = 0x6F92741B, version = 150)
-    public int sceNetAdhocPdpCreate(int macAddr, int port, int bufSize, int unk1) {
-    	pspNetMacAddress macAddress = new pspNetMacAddress();
-    	macAddress.read(Memory.getInstance(), macAddr);
-
-    	log.warn(String.format("PARTIAL: sceNetAdhocPdpCreate macAddr=0x%08X(%s), port=%d, bufsize=%d, unk1=%d", macAddr, macAddress.toString(), port, bufSize, unk1));
-
+    public int sceNetAdhocPdpCreate(pspNetMacAddress macAddress, int port, int bufSize, int unk1) {
 		if (port == 0) {
 			// Allocate a free port
 			port = getFreePort();
@@ -586,7 +573,7 @@ public class sceNetAdhoc extends HLEModule {
     		pdpObjects.put(pdpObject.getId(), pdpObject);
 
     		if (log.isDebugEnabled()) {
-    			log.debug(String.format("sceNetAdhocPdpCreate: returning id=%d", result));
+    			log.debug(String.format("sceNetAdhocPdpCreate: returning id=0x%X", result));
     		}
     	} else {
     		if (log.isDebugEnabled()) {
@@ -611,11 +598,7 @@ public class sceNetAdhoc extends HLEModule {
      * @return Bytes sent, < 0 on error
      */
     @HLEFunction(nid = 0xABED3790, version = 150)
-    public int sceNetAdhocPdpSend(@CheckArgument("checkPdpId") int id, TPointer destMacAddr, int port, TPointer data, int len, int timeout, int nonblock) {
-    	pspNetMacAddress destMacAddress = new pspNetMacAddress();
-    	destMacAddress.read(Memory.getInstance(), destMacAddr.getAddress());
-
-    	log.warn(String.format("PARTIAL: sceNetAdhocPdpSend id=%d, destMacAddr=%s(%s), port=%d, data=%s, len=%d, timeout=%d, nonblock=%d", id, destMacAddr, destMacAddress, port, data, len, timeout, nonblock));
+    public int sceNetAdhocPdpSend(@CheckArgument("checkPdpId") int id, pspNetMacAddress destMacAddress, int port, TPointer data, int len, int timeout, int nonblock) {
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("Send data: %s", Utilities.getMemoryDump(data.getAddress(), len)));
 		}
@@ -638,9 +621,6 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0xDFE53E03, version = 150)
     public int sceNetAdhocPdpRecv(@CheckArgument("checkPdpId") int id, TPointer srcMacAddr, TPointer16 portAddr, TPointer data, TPointer32 dataLengthAddr, int timeout, int nonblock) {
-
-    	log.warn(String.format("PARTIAL: sceNetAdhocPdpRecv id=%d, srcMacAddr=%s, portAddr=%s, data=%s, dataLengthAddr=%s(%d), timeout=%d, nonblock=%d", id, srcMacAddr, portAddr, data, dataLengthAddr, dataLengthAddr.getValue(), timeout, nonblock));
-
         int result = pdpObjects.get(id).recv(srcMacAddr, portAddr, data, dataLengthAddr, timeout, nonblock);
 
         return result;
@@ -656,8 +636,6 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0x7F27BB5E, version = 150)
     public int sceNetAdhocPdpDelete(@CheckArgument("checkPdpId") int id, int unk1) {
-        log.warn(String.format("PARTIAL: sceNetAdhocPdpDelete id=%d, unk=%d", id, unk1));
-
         pdpObjects.remove(id).delete();
 
         return 0;
@@ -683,19 +661,16 @@ public class sceNetAdhoc extends HLEModule {
     @HLEFunction(nid = 0xC7C1FC57, version = 150)
     public int sceNetAdhocGetPdpStat(TPointer32 sizeAddr, @CanBeNull TPointer buf) {
     	final int objectInfoSize = 20;
-        log.warn(String.format("PARTIAL: sceNetAdhocGetPdpStat sizeAddr=%s(%d), buf=%s", sizeAddr.toString(), sizeAddr.getValue(), buf.toString()));
 
-        if (buf.getAddress() == 0) {
-        	// Return size required
-        	sizeAddr.setValue(objectInfoSize * pdpObjects.size());
-        	if (log.isDebugEnabled()) {
-        		log.debug(String.format("sceNetAdhocGetPdpStat returning size=%d", sizeAddr.getValue()));
-        	}
-        } else {
+    	sizeAddr.setValue(objectInfoSize * pdpObjects.size());
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceNetAdhocGetPdpStat returning size=%d", sizeAddr.getValue()));
+    	}
+
+    	if (buf.isNotNull()) {
         	Memory mem = Memory.getInstance();
         	int addr = buf.getAddress();
         	int endAddr = addr + sizeAddr.getValue();
-        	sizeAddr.setValue(objectInfoSize * pdpObjects.size());
         	for (int pdpId : pdpObjects.keySet()) {
         		PdpObject pdpObject = pdpObjects.get(pdpId);
 
@@ -763,15 +738,7 @@ public class sceNetAdhoc extends HLEModule {
      * @return A socket ID on success, < 0 on error.
      */
     @HLEFunction(nid = 0x877F6D66, version = 150)
-    public int sceNetAdhocPtpOpen(TPointer srcMacAddr, int srcPort, TPointer destMacAddr, int destPort, int bufSize, int retryDelay, int retryCount, int unk1) {
-    	Memory mem = Memory.getInstance();
-    	pspNetMacAddress srcMacAddress = new pspNetMacAddress();
-    	srcMacAddress.read(mem, srcMacAddr.getAddress());
-    	pspNetMacAddress destMacAddress = new pspNetMacAddress();
-    	destMacAddress.read(mem, destMacAddr.getAddress());
-
-    	log.warn(String.format("PARTIAL: sceNetAdhocPtpOpen scrMacAddr=%s(%s), srcPort=%d, destMacAddr=%s(%s), destPort=%d, bufSize=0x%X, retryDelay=%d, retryCount=%d, unk1=%d", srcMacAddr, srcMacAddress, srcPort, destMacAddr, destMacAddress, destPort, bufSize, retryDelay, retryCount, unk1));
-
+    public int sceNetAdhocPtpOpen(pspNetMacAddress srcMacAddress, int srcPort, pspNetMacAddress destMacAddress, int destPort, int bufSize, int retryDelay, int retryCount, int unk1) {
     	PtpObject ptpObject = getNetworkAdapter().createPtpObject();
     	ptpObject.setMacAddress(srcMacAddress);
     	ptpObject.setPort(srcPort);
@@ -807,8 +774,6 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0xFC6FC07B, version = 150)
     public int sceNetAdhocPtpConnect(@CheckArgument("checkPtpId") int id, int timeout, int nonblock) {
-        log.warn(String.format("PARTIAL: sceNetAdhocPtpConnect id=%d, timeout=%d, nonblock=%d", id, timeout, nonblock));
-
         return ptpObjects.get(id).connect(timeout, nonblock);
     }
 
@@ -826,13 +791,7 @@ public class sceNetAdhoc extends HLEModule {
      * @return A socket ID on success, < 0 on error.
      */
     @HLEFunction(nid = 0xE08BDAC1, version = 150)
-    public int sceNetAdhocPtpListen(TPointer srcMacAddr, int srcPort, int bufSize, int retryDelay, int retryCount, int queue, int unk1) {
-    	Memory mem = Memory.getInstance();
-    	pspNetMacAddress srcMacAddress = new pspNetMacAddress();
-    	srcMacAddress.read(mem, srcMacAddr.getAddress());
-
-    	log.warn(String.format("PARTIAL: sceNetAdhocPtpListen scrMacAddr=%s(%s), srcPort=%d, bufSize=0x%X, retryDelay=%d, retryCount=%d, queue=%d, unk1=%d", srcMacAddr, srcMacAddress, srcPort, bufSize, retryDelay, retryCount, queue, unk1));
-
+    public int sceNetAdhocPtpListen(pspNetMacAddress srcMacAddress, int srcPort, int bufSize, int retryDelay, int retryCount, int queue, int unk1) {
     	PtpObject ptpObject = getNetworkAdapter().createPtpObject();
     	ptpObject.setMacAddress(srcMacAddress);
     	ptpObject.setPort(srcPort);
@@ -869,8 +828,6 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0x9DF81198, version = 150)
     public int sceNetAdhocPtpAccept(@CheckArgument("checkPtpId") int id, @CanBeNull TPointer peerMacAddr, @CanBeNull TPointer16 peerPortAddr, int timeout, int nonblock) {
-        log.warn(String.format("PARTIAL: sceNetAdhocPtpAccept id=%d, peerMacAddr=%s, peerPort=%s, timeout=%d, nonblock=%d", id, peerMacAddr, peerPortAddr, timeout, nonblock));
-
         return ptpObjects.get(id).accept(peerMacAddr.getAddress(), peerPortAddr.getAddress(), timeout, nonblock);
     }
 
@@ -887,7 +844,6 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0x4DA4C788, version = 150)
     public int sceNetAdhocPtpSend(@CheckArgument("checkPtpId") int id, TPointer data, TPointer32 dataSizeAddr, int timeout, int nonblock) {
-        log.warn(String.format("PARTIAL: sceNetAdhocPtpSend id=%d, data=%s, dataSizeAddr=%s(%d), timeout=%d, nonblock=%d", id, data, dataSizeAddr, dataSizeAddr.getValue(), timeout, nonblock));
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("Send data: %s", Utilities.getMemoryDump(data.getAddress(), dataSizeAddr.getValue())));
 		}
@@ -908,8 +864,6 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0x8BEA2B3E, version = 150)
     public int sceNetAdhocPtpRecv(@CheckArgument("checkPtpId") int id, TPointer data, TPointer32 dataSizeAddr, int timeout, int nonblock) {
-        log.warn(String.format("PARTIAL: sceNetAdhocPtpRecv id=%d, data=%s, dataSizeAddr=%s(%d), timeout=%d, nonblock=%d", id, data, dataSizeAddr, dataSizeAddr.getValue(), timeout, nonblock));
-
         return ptpObjects.get(id).recv(data, dataSizeAddr, timeout, nonblock);
     }
 
@@ -924,8 +878,6 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0x9AC2EEAC, version = 150)
     public int sceNetAdhocPtpFlush(@CheckArgument("checkPtpId") int id, int timeout, int nonblock) {
-        log.warn(String.format("PARTIAL: sceNetAdhocPtpFlush id=%d, timeout=%d, nonblock=%d", id, timeout, nonblock));
-
         // Faked: return successful completion
         return 0;
     }
@@ -940,8 +892,6 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0x157E6225, version = 150)
     public int sceNetAdhocPtpClose(@CheckArgument("checkPtpId") int id, int unknown) {
-        log.warn(String.format("PARTIAL: sceNetAdhocPtpClose id=%d, unknown=%d", id, unknown));
-
         ptpObjects.remove(id).delete();
 
         return 0;
@@ -971,19 +921,17 @@ public class sceNetAdhoc extends HLEModule {
     @HLEFunction(nid = 0xB9685118, version = 150)
     public int sceNetAdhocGetPtpStat(TPointer32 sizeAddr, @CanBeNull TPointer buf) {
     	final int objectInfoSize = 36;
-        log.warn(String.format("PARTIAL: sceNetAdhocGetPtpStat sizeAddr=%s(%d), buf=%s", sizeAddr.toString(), sizeAddr.getValue(), buf.toString()));
 
-        if (buf.getAddress() == 0) {
-        	// Return size required
-        	sizeAddr.setValue(objectInfoSize * ptpObjects.size());
-        	if (log.isDebugEnabled()) {
-        		log.debug(String.format("sceNetAdhocGetPtpStat returning size=%d", sizeAddr.getValue()));
-        	}
-        } else {
+    	// Return size required
+    	sizeAddr.setValue(objectInfoSize * ptpObjects.size());
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceNetAdhocGetPtpStat returning size=%d", sizeAddr.getValue()));
+    	}
+
+    	if (buf.isNotNull()) {
         	Memory mem = Memory.getInstance();
         	int addr = buf.getAddress();
         	int endAddr = addr + sizeAddr.getValue();
-        	sizeAddr.setValue(objectInfoSize * ptpObjects.size());
         	pspNetMacAddress nonExistingDestMacAddress = new pspNetMacAddress();
         	for (int pdpId : ptpObjects.keySet()) {
         		PtpObject ptpObject = ptpObjects.get(pdpId);
@@ -1068,8 +1016,6 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0x7F75C338, version = 150)
     public int sceNetAdhocGameModeCreateMaster(TPointer data, int size) {
-        log.warn(String.format("PARTIAL: sceNetAdhocGameModeCreateMaster data=%s, size=%d", data, size));
-
         masterGameModeArea = new GameModeArea(data.getAddress(), size);
         startGameMode();
 
@@ -1086,11 +1032,7 @@ public class sceNetAdhoc extends HLEModule {
      * @return The id of the replica on success, < 0 on error.
      */
     @HLEFunction(nid = 0x3278AB0C, version = 150)
-    public int sceNetAdhocGameModeCreateReplica(TPointer macAddr, TPointer data, int size) {
-    	pspNetMacAddress macAddress = new pspNetMacAddress();
-    	macAddress.read(Memory.getInstance(), macAddr.getAddress());
-        log.warn(String.format("PARTIAL: sceNetAdhocGameModeCreateReplica macAddr=%s(%s), data=%s, size=%d", macAddr, macAddress, data, size));
-
+    public int sceNetAdhocGameModeCreateReplica(pspNetMacAddress macAddress, TPointer data, int size) {
         boolean found = false;
         int result = 0;
         for (GameModeArea gameModeArea : replicaGameModeAreas) {
@@ -1125,8 +1067,6 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0x98C204C8, version = 150)
     public int sceNetAdhocGameModeUpdateMaster() {
-        log.warn("PARTIAL: sceNetAdhocGameModeUpdateMaster");
-
         if (masterGameModeArea != null) {
         	if (log.isTraceEnabled()) {
         		log.trace(String.format("Master Game Mode Area: %s", Utilities.getMemoryDump(masterGameModeArea.addr, masterGameModeArea.size)));
@@ -1147,14 +1087,11 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0xFA324B4E, version = 150)
     public int sceNetAdhocGameModeUpdateReplica(int id, @CanBeNull TPointer infoAddr) {
-    	Memory mem = Memory.getInstance();
-        log.warn(String.format("PARTIAL: sceNetAdhocGameModeUpdateReplica id=%d, infoAddr=%s", id, infoAddr));
-
         for (GameModeArea gameModeArea : replicaGameModeAreas) {
         	if (gameModeArea.id == id) {
         		GameModeUpdateInfo gameModeUpdateInfo = new GameModeUpdateInfo();
-        		if (infoAddr.getAddress() != 0) {
-        			gameModeUpdateInfo.read(mem, infoAddr.getAddress());
+        		if (infoAddr.isNotNull()) {
+        			gameModeUpdateInfo.read(infoAddr);
         		}
 
         		if (gameModeArea.hasNewData()) {
@@ -1173,7 +1110,7 @@ public class sceNetAdhoc extends HLEModule {
 
         		if (infoAddr.getAddress() != 0) {
         			gameModeUpdateInfo.timeStamp = gameModeArea.getUpdateTimestamp();
-        			gameModeUpdateInfo.write(mem);
+        			gameModeUpdateInfo.write(Memory.getInstance());
         		}
         		break;
         	}
@@ -1189,8 +1126,6 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0xA0229362, version = 150)
     public int sceNetAdhocGameModeDeleteMaster() {
-        log.warn("PARTIAL: sceNetAdhocGameModeDeleteMaster");
-
         masterGameModeArea = null;
         if (replicaGameModeAreas.size() <= 0) {
         	stopGameMode();
@@ -1208,8 +1143,6 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0x0B2228E9, version = 150)
     public int sceNetAdhocGameModeDeleteReplica(int id) {
-        log.warn(String.format("PARTIAL: sceNetAdhocGameModeDeleteReplica id=%d", id));
-
         for (GameModeArea gameModeArea : replicaGameModeAreas) {
         	if (gameModeArea.id == id) {
         		replicaGameModeAreas.remove(gameModeArea);

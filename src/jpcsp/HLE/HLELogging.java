@@ -25,7 +25,7 @@ import java.lang.annotation.Target;
  * This annotation tells the compiler to log the kernel function call using a generic format.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
+@Target({ ElementType.METHOD, ElementType.TYPE })
 public @interface HLELogging {
 	/**
 	 * Sets the logging level.

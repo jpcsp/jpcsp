@@ -18,6 +18,10 @@ package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.PspString;
+import jpcsp.HLE.StringInfo;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
@@ -26,10 +30,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import jpcsp.Emulator;
-import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.Common;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
@@ -40,12 +42,12 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.hardware.Wlan;
 import jpcsp.network.INetworkAdapter;
-import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceNetAdhocctl extends HLEModule {
-    protected static Logger log = Modules.getLogger("sceNetAdhocctl");
+    public static Logger log = Modules.getLogger("sceNetAdhocctl");
 
     @Override
     public String getName() {
@@ -536,6 +538,18 @@ public class sceNetAdhocctl extends HLEModule {
 		}
     }
 
+    public static void fillNextPointersInLinkedList(TPointer buffer, int size, int elementSize) {
+    	for (int offset = 0; offset < size; offset += elementSize) {
+    		if (offset + elementSize >= size) {
+    			// Last one
+    			buffer.setValue32(offset, 0);
+    		} else {
+    			// Pointer to next one
+    			buffer.setValue32(offset, buffer.getAddress() + offset + elementSize);
+    		}
+    	}
+    }
+
     /**
      * Initialise the Adhoc control library
      *
@@ -547,13 +561,9 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0xE26F226E, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocctlInit(int stackSize, int priority, @CanBeNull TPointer product) {
-        Memory mem = Memory.getInstance();
-
-        log.warn(String.format("PARTIAL: sceNetAdhocctlInit stackSize=0x%X, priority=%d, product=%s", stackSize, priority, product));
-
-        if (Memory.isAddressGood(product.getAddress())) {
-            adhocctlCurrentType = mem.read32(product.getAddress()); // 0 - Commercial type / 1 - Debug type.
-            adhocctlCurrentAdhocID = Utilities.readStringNZ(mem, product.getAddress() + 4, ADHOC_ID_LENGTH);
+        if (product.isNotNull()) {
+            adhocctlCurrentType = product.getValue32(0); // 0 - Commercial type / 1 - Debug type.
+            adhocctlCurrentAdhocID = product.getStringNZ(4, ADHOC_ID_LENGTH);
             if (log.isDebugEnabled()) {
             	log.debug(String.format("Found product data: type=%d, AdhocID='%s'", adhocctlCurrentType, adhocctlCurrentAdhocID));
             }
@@ -581,8 +591,6 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x9D689E13, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocctlTerm() {
-        log.warn("PARTIAL: sceNetAdhocctlTerm");
-
         doTerminate = true;
         initialized = false;
 
@@ -599,21 +607,12 @@ public class sceNetAdhocctl extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x0AD043ED, version = 150, checkInsideInterrupt = true)
-    public int sceNetAdhocctlConnect(@CanBeNull TPointer groupNameAddr) {
-        Memory mem = Memory.getInstance();
-
-        String groupName = "";
-        if (groupNameAddr.getAddress() != 0) {
-        	groupName = Utilities.readStringNZ(mem, groupNameAddr.getAddress(), GROUP_NAME_LENGTH);
-        }
-
-        log.warn(String.format("PARTIAL: sceNetAdhocctlConnect groupNameAddr=%s('%s')", groupNameAddr, groupName));
-
+    public int sceNetAdhocctlConnect(@CanBeNull @StringInfo(maxLength=GROUP_NAME_LENGTH) PspString groupName) {
         if (!initialized) {
         	return SceKernelErrors.ERROR_NET_ADHOCCTL_NOT_INITIALIZED;
         }
 
-        hleNetAdhocctlConnect(groupName);
+        hleNetAdhocctlConnect(groupName.getString());
 
         return 0;
     }
@@ -626,18 +625,12 @@ public class sceNetAdhocctl extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0xEC0635C1, version = 150, checkInsideInterrupt = true)
-    public int sceNetAdhocctlCreate(@CanBeNull TPointer groupNameAddr) {
-    	String groupName = "";
-    	if (groupNameAddr.isAddressGood()) {
-    		groupName = Utilities.readStringNZ(groupNameAddr.getAddress(), GROUP_NAME_LENGTH);
-    	}
-        log.warn(String.format("PARTIAL: sceNetAdhocctlCreate groupNameAddr=%s('%s')", groupNameAddr, groupName));
-
+    public int sceNetAdhocctlCreate(@CanBeNull @StringInfo(maxLength=GROUP_NAME_LENGTH) PspString groupName) {
         if (!initialized) {
         	return SceKernelErrors.ERROR_NET_ADHOCCTL_NOT_INITIALIZED;
         }
 
-        setGroupName(groupName, PSP_ADHOCCTL_MODE_NORMAL);
+        setGroupName(groupName.getString(), PSP_ADHOCCTL_MODE_NORMAL);
 
         networkAdapter.sceNetAdhocctlCreate();
 
@@ -653,21 +646,17 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x5E7F79C9, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocctlJoin(TPointer scanInfoAddr) {
-        log.warn(String.format("PARTIAL: sceNetAdhocctlJoin scanInfoAddr=%s", scanInfoAddr));
-
         if (!initialized) {
         	return SceKernelErrors.ERROR_NET_ADHOCCTL_NOT_INITIALIZED;
         }
 
         if (scanInfoAddr.isAddressGood()) {
-        	Memory mem = Memory.getInstance();
-        	int addr = scanInfoAddr.getAddress();
             // IBSS Data field.
-            int nextAddr = mem.read32(addr);  // Next group data.
-            int ch = mem.read32(addr + 4);
-            String groupName = Utilities.readStringNZ(mem, addr + 8, GROUP_NAME_LENGTH);
-            String bssID = Utilities.readStringNZ(mem, addr + 16, IBSS_NAME_LENGTH);
-            int mode = mem.read32(addr + 24);
+            int nextAddr = scanInfoAddr.getValue32(0);  // Next group data.
+            int ch = scanInfoAddr.getValue32(4);
+            String groupName = scanInfoAddr.getStringNZ(8, GROUP_NAME_LENGTH);
+            String bssID = scanInfoAddr.getStringNZ(16, IBSS_NAME_LENGTH);
+            int mode = scanInfoAddr.getValue32(24);
 
             if (log.isDebugEnabled()) {
             	log.debug(String.format("sceNetAdhocctlJoin nextAddr 0x%08X, ch %d, groupName '%s', bssID '%s', mode %d", nextAddr, ch, groupName, bssID, mode));
@@ -688,8 +677,6 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x08FFF7A0, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocctlScan() {
-        log.warn("PARTIAL: sceNetAdhocctlScan");
-
         doScan = true;
 
         networkAdapter.sceNetAdhocctlScan();
@@ -704,8 +691,6 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x34401D65, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocctlDisconnect() {
-        log.warn("PARTIAL: sceNetAdhocctlDisconnect");
-
         doDisconnect = true;
 
         networkAdapter.sceNetAdhocctlDisconnect();
@@ -729,8 +714,6 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x20B317A0, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocctlAddHandler(TPointer adhocctlHandlerAddr, int adhocctlHandlerArg) {
-        log.warn(String.format("PARTIAL: sceNetAdhocctlAddHandler adhocctlHandlerAddr=%s, adhocctlHandlerArg=0x%08X", adhocctlHandlerAddr, adhocctlHandlerArg));
-
         AdhocctlHandler adhocctlHandler = new AdhocctlHandler(adhocctlHandlerAddr.getAddress(), adhocctlHandlerArg);
         int id = adhocctlHandler.getId();
         if (id == SceUidManager.INVALID_ID) {
@@ -738,7 +721,7 @@ public class sceNetAdhocctl extends HLEModule {
         }
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceNetAdhocctlAddHandler returning id=%d", id));
+        	log.debug(String.format("sceNetAdhocctlAddHandler returning id=0x%X", id));
         }
         adhocctlIdMap.put(id, adhocctlHandler);
 
@@ -754,8 +737,6 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x6402490B, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocctlDelHandler(int id) {
-        log.warn(String.format("PARTIAL: sceNetAdhocctlDelHandler id=%d", id));
-
         AdhocctlHandler handler = adhocctlIdMap.remove(id);
         if (handler != null) {
         	handler.delete();
@@ -773,8 +754,6 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x75ECD386, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocctlGetState(TPointer32 stateAddr) {
-        log.warn(String.format("PARTIAL: sceNetAdhocctlGetState stateAddr=%s returning %d", stateAddr, adhocctlCurrentState));
-
         stateAddr.setValue(adhocctlCurrentState);
 
         return 0;
@@ -789,14 +768,11 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x362CBE8F, version = 150)
     public int sceNetAdhocctlGetAdhocId(TPointer addr) {
-    	Memory mem = Memory.getInstance();
-    	log.warn(String.format("PARTIAL: sceNetAdhocctlGetAdhocId addr=%s", addr));
-
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sceNetAdhocctlGetAdhocId returning type=%d, adhocID='%s'", adhocctlCurrentType, adhocctlCurrentAdhocID));
     	}
-    	mem.write32(addr.getAddress(), adhocctlCurrentType);
-    	Utilities.writeStringNZ(mem, addr.getAddress() + 4, ADHOC_ID_LENGTH, adhocctlCurrentAdhocID);
+    	addr.setValue32(0, adhocctlCurrentType);
+    	addr.setStringNZ(4, ADHOC_ID_LENGTH, adhocctlCurrentAdhocID);
 
         return 0;
     }
@@ -811,8 +787,6 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0xE162CB14, version = 150)
     public int sceNetAdhocctlGetPeerList(TPointer32 sizeAddr, @CanBeNull TPointer buf) {
-        log.warn(String.format("PARTIAL: sceNetAdhocctlGetPeerList sizeAddr=%s(%d), buf=%s", sizeAddr, sizeAddr.getValue(), buf.toString()));
-
         int size = sizeAddr.getValue();
 		SceNetAdhocctlPeerInfo peerInfo = new SceNetAdhocctlPeerInfo();
     	sizeAddr.setValue(peerInfo.sizeof() * peers.size());
@@ -820,38 +794,28 @@ public class sceNetAdhocctl extends HLEModule {
     		log.debug(String.format("sceNetAdhocctlGetPeerList returning size=%d", sizeAddr.getValue()));
     	}
 
-    	if (buf.getAddress() != 0) {
-        	Memory mem = Memory.getInstance();
-        	int addr = buf.getAddress();
-        	int endAddr = addr + size;
+    	if (buf.isNotNull()) {
+        	int offset = 0;
         	for (AdhocctlPeer peer : peers) {
         		// Check if enough space available to write the next structure
-        		if (addr + peerInfo.sizeof() > endAddr || peer == null) {
+        		if (offset + peerInfo.sizeof() > size || peer == null) {
         			break;
         		}
 
         		if (log.isDebugEnabled()) {
-        			log.debug(String.format("sceNetAdhocctlGetPeerList returning %s at 0x%08X", peer, addr));
+        			log.debug(String.format("sceNetAdhocctlGetPeerList returning %s at 0x%08X", peer, buf.getAddress() + offset));
         		}
 
         		peerInfo.nickName = peer.nickName;
         		peerInfo.macAddress = new pspNetMacAddress();
         		peerInfo.macAddress.setMacAddress(peer.macAddress);
         		peerInfo.timestamp = peer.timestamp;
-        		peerInfo.write(mem, addr);
+        		peerInfo.write(buf, offset);
 
-        		addr += peerInfo.sizeof();
+        		offset += peerInfo.sizeof();
         	}
 
-        	for (int nextAddr = buf.getAddress(); nextAddr < addr; nextAddr += peerInfo.sizeof()) {
-        		if (nextAddr + peerInfo.sizeof() >= addr) {
-        			// Last one
-        			mem.write32(nextAddr, 0);
-        		} else {
-        			// Pointer to next one
-        			mem.write32(nextAddr, nextAddr + peerInfo.sizeof());
-        		}
-        	}
+        	fillNextPointersInLinkedList(buf, offset, peerInfo.sizeof());
         }
 
         return 0;
@@ -867,21 +831,18 @@ public class sceNetAdhocctl extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x8DB83FDC, version = 150)
-    public int sceNetAdhocctlGetPeerInfo(TPointer macAddr, int size, TPointer peerInfoAddr) {
-    	Memory mem = Memory.getInstance();
-    	pspNetMacAddress macAddress = new pspNetMacAddress();
-    	macAddress.read(mem, macAddr.getAddress());
-        log.warn(String.format("PARTIAL: sceNetAdhocctlGetPeerInfo macAddr=%s(%s), size=%d, peerInfoAddr=%s", macAddr, macAddress, size, peerInfoAddr));
-
+    public int sceNetAdhocctlGetPeerInfo(pspNetMacAddress macAddress, int size, TPointer peerInfoAddr) {
         for (AdhocctlPeer peer : peers) {
         	if (macAddress.equals(peer.macAddress)) {
-                log.warn(String.format("sceNetAdhocctlGetPeerInfo returning PeerInfo %s", peer));
+        		if (log.isDebugEnabled()) {
+        			log.debug(String.format("sceNetAdhocctlGetPeerInfo returning PeerInfo %s", peer));
+        		}
         		SceNetAdhocctlPeerInfo peerInfo = new SceNetAdhocctlPeerInfo();
         		peerInfo.nickName = peer.nickName;
         		peerInfo.macAddress = new pspNetMacAddress();
         		peerInfo.macAddress.setMacAddress(peer.macAddress);
         		peerInfo.timestamp = peer.timestamp;
-        		peerInfo.write(mem, peerInfoAddr.getAddress());
+        		peerInfo.write(peerInfoAddr);
         		break;
         	}
         }
@@ -899,11 +860,7 @@ public class sceNetAdhocctl extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x99560ABE, version = 150)
-    public int sceNetAdhocctlGetAddrByName(TPointer nickNameAddr, TPointer32 sizeAddr, @CanBeNull TPointer buf) {
-    	Memory mem = Memory.getInstance();
-    	String nickName = Utilities.readStringNZ(mem, nickNameAddr.getAddress(), NICK_NAME_LENGTH);
-        log.warn(String.format("PARTIAL: sceNetAdhocctlGetAddrByName nickNameAddr=%s('%s'), sizeAddr=%s(%d), buf=%s", nickNameAddr, nickName, sizeAddr, sizeAddr.getValue(), buf));
-
+    public int sceNetAdhocctlGetAddrByName(@StringInfo(maxLength=NICK_NAME_LENGTH) PspString nickName, TPointer32 sizeAddr, @CanBeNull TPointer buf) {
         // Search for peers matching the given nick name
         LinkedList<AdhocctlPeer> matchingPeers = new LinkedList<sceNetAdhocctl.AdhocctlPeer>();
         for (AdhocctlPeer peer : peers) {
@@ -919,37 +876,28 @@ public class sceNetAdhocctl extends HLEModule {
     		log.debug(String.format("sceNetAdhocctlGetAddrByName returning size=%d", sizeAddr.getValue()));
     	}
 
-    	if (buf.getAddress() != 0) {
-        	int addr = buf.getAddress();
-        	int endAddr = addr + size;
+    	if (buf.isNotNull()) {
+        	int offset = 0;
         	for (AdhocctlPeer peer : matchingPeers) {
         		// Check if enough space available to write the next structure
-        		if (addr + peerInfo.sizeof() > endAddr) {
+        		if (offset + peerInfo.sizeof() > size) {
         			break;
         		}
 
         		if (log.isDebugEnabled()) {
-        			log.debug(String.format("sceNetAdhocctlGetAddrByName returning %s at 0x%08X", peer, addr));
+        			log.debug(String.format("sceNetAdhocctlGetAddrByName returning %s at 0x%08X", peer, buf.getAddress() + offset));
         		}
 
         		peerInfo.nickName = peer.nickName;
         		peerInfo.macAddress = new pspNetMacAddress();
         		peerInfo.macAddress.setMacAddress(peer.macAddress);
         		peerInfo.timestamp = peer.timestamp;
-        		peerInfo.write(mem, addr);
+        		peerInfo.write(buf, offset);
 
-        		addr += peerInfo.sizeof();
+        		offset += peerInfo.sizeof();
         	}
 
-        	for (int nextAddr = buf.getAddress(); nextAddr < addr; nextAddr += peerInfo.sizeof()) {
-        		if (nextAddr + peerInfo.sizeof() >= addr) {
-        			// Last one
-        			mem.write32(nextAddr, 0);
-        		} else {
-        			// Pointer to next one
-        			mem.write32(nextAddr, nextAddr + peerInfo.sizeof());
-        		}
-        	}
+        	fillNextPointersInLinkedList(buf, offset, peerInfo.sizeof());
         }
 
         return 0;
@@ -964,12 +912,7 @@ public class sceNetAdhocctl extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x8916C003, version = 150)
-    public int sceNetAdhocctlGetNameByAddr(TPointer macAddr, TPointer nickNameAddr) {
-    	Memory mem = Memory.getInstance();
-    	pspNetMacAddress macAddress = new pspNetMacAddress();
-    	macAddress.read(mem, macAddr.getAddress());
-        log.warn(String.format("PARTIAL: sceNetAdhocctlGetNameByAddr macAddr=%s(%s), nickNameAddr=%s", macAddr, macAddress, nickNameAddr));
-
+    public int sceNetAdhocctlGetNameByAddr(pspNetMacAddress macAddress, TPointer nickNameAddr) {
         String nickName = "";
         for (AdhocctlPeer peer : peers) {
         	if (sceNetAdhoc.isSameMacAddress(macAddress.macAddress, peer.macAddress)) {
@@ -977,7 +920,7 @@ public class sceNetAdhocctl extends HLEModule {
         	}
         }
 
-        Utilities.writeStringNZ(mem, nickNameAddr.getAddress(), NICK_NAME_LENGTH, nickName);
+        nickNameAddr.setStringNZ(NICK_NAME_LENGTH, nickName);
 
         return 0;
     }
@@ -991,17 +934,13 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0xDED9D28E, version = 150)
     public int sceNetAdhocctlGetParameter(TPointer paramsAddr) {
-    	Memory mem = Memory.getInstance();
-        log.warn(String.format("PARTIAL: sceNetAdhocctlGetParameter paramsAddr=%s", paramsAddr));
-
         if (log.isDebugEnabled()) {
         	log.debug(String.format("sceNetAdhocctlGetParameter returning channel=%d, group='%s', IBSS='%s', nickName='%s'", adhocctlCurrentChannel, adhocctlCurrentGroup, adhocctlCurrentIBSS, sceUtility.getSystemParamNickname()));
         }
-        int addr = paramsAddr.getAddress();
-        mem.write32(addr, adhocctlCurrentChannel);
-        Utilities.writeStringNZ(mem, addr + 4, GROUP_NAME_LENGTH, adhocctlCurrentGroup);
-        Utilities.writeStringNZ(mem, addr + 12, IBSS_NAME_LENGTH, adhocctlCurrentIBSS);
-        Utilities.writeStringNZ(mem, addr + 18, NICK_NAME_LENGTH, sceUtility.getSystemParamNickname());
+        paramsAddr.setValue32(0, adhocctlCurrentChannel);
+        paramsAddr.setStringNZ(4, GROUP_NAME_LENGTH, adhocctlCurrentGroup);
+        paramsAddr.setStringNZ(12, IBSS_NAME_LENGTH, adhocctlCurrentIBSS);
+        paramsAddr.setStringNZ(18, NICK_NAME_LENGTH, sceUtility.getSystemParamNickname());
 
         return 0;
     }
@@ -1017,62 +956,50 @@ public class sceNetAdhocctl extends HLEModule {
     @HLEFunction(nid = 0x81AEE1BE, version = 150)
     public int sceNetAdhocctlGetScanInfo(TPointer32 sizeAddr, @CanBeNull TPointer buf) {
     	final int scanInfoSize = 28;
-        log.warn(String.format("PARTIAL: sceNetAdhocctlGetScanInfo sizeAddr=%s(%d), buf=%s", sizeAddr, sizeAddr.getValue(), buf));
 
-        if (buf.isNull()) {
-        	// Return size required
-        	sizeAddr.setValue(scanInfoSize * networks.size());
-        	if (log.isDebugEnabled()) {
-        		log.debug(String.format("sceNetAdhocctlGetScanInfo returning size=%d", sizeAddr.getValue()));
-        	}
-        } else {
-        	Memory mem = Memory.getInstance();
-        	int addr = buf.getAddress();
-        	int endAddr = addr + sizeAddr.getValue();
-        	sizeAddr.setValue(scanInfoSize * networks.size());
+    	int size = sizeAddr.getValue();
+    	sizeAddr.setValue(scanInfoSize * networks.size());
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceNetAdhocctlGetScanInfo returning size=%d", sizeAddr.getValue()));
+    	}
+
+    	if (buf.isNotNull()) {
+        	int offset = 0;
         	for (AdhocctlNetwork network : networks) {
         		// Check if enough space available to write the next structure
-        		if (addr + scanInfoSize > endAddr || network == null) {
+        		if (offset + scanInfoSize > size || network == null) {
         			break;
         		}
 
         		if (log.isDebugEnabled()) {
-        			log.debug(String.format("sceNetAdhocctlGetScanInfo returning %s at 0x%08X", network, addr));
+        			log.debug(String.format("sceNetAdhocctlGetScanInfo returning %s at 0x%08X", network, buf.getAddress() + offset));
         		}
 
         		/** Pointer to next Network structure in list: will be written later */
-        		addr += 4;
+        		offset += 4;
 
         		/** Channel number */
-        		mem.write32(addr, network.channel);
-        		addr += 4;
+        		buf.setValue32(offset, network.channel);
+        		offset += 4;
 
         		/** Name of the connection (alphanumeric characters only) */
-        		Utilities.writeStringNZ(mem, addr, GROUP_NAME_LENGTH, network.name);
-        		addr += GROUP_NAME_LENGTH;
+        		buf.setStringNZ(offset, GROUP_NAME_LENGTH, network.name);
+        		offset += GROUP_NAME_LENGTH;
 
         		/** The BSSID */
-        		Utilities.writeStringNZ(mem, addr, IBSS_NAME_LENGTH, network.bssid);
-        		addr += IBSS_NAME_LENGTH;
+        		buf.setStringNZ(offset, IBSS_NAME_LENGTH, network.bssid);
+        		offset += IBSS_NAME_LENGTH;
 
         		/** Padding */
-        		mem.memset(addr, (byte) 0, 2);
-        		addr += 2;
+        		buf.setValue16(offset, (short) 0);
+        		offset += 2;
 
         		/** Mode */
-        		mem.write32(addr, network.mode);
-        		addr += 4;
+        		buf.setValue32(offset, network.mode);
+        		offset += 4;
         	}
 
-        	for (int nextAddr = buf.getAddress(); nextAddr < addr; nextAddr += scanInfoSize) {
-        		if (nextAddr + scanInfoSize >= addr) {
-        			// Last one
-        			mem.write32(nextAddr, 0);
-        		} else {
-        			// Pointer to next one
-        			mem.write32(nextAddr, nextAddr + scanInfoSize);
-        		}
-        	}
+        	fillNextPointersInLinkedList(buf, offset, scanInfoSize);
         }
 
         return 0;
@@ -1091,37 +1018,29 @@ public class sceNetAdhocctl extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0xA5C055CE, version = 150)
-    public int sceNetAdhocctlCreateEnterGameMode(@CanBeNull TPointer groupNameAddr, int unknown, int num, TPointer macsAddr, int timeout, int unknown2) {
-    	Memory mem = Memory.getInstance();
-    	String groupName = "";
-    	if (groupNameAddr.isAddressGood()) {
-    		groupName = Utilities.readStringNZ(groupNameAddr.getAddress(), GROUP_NAME_LENGTH);
-    	}
-        log.warn(String.format("PARTIAL: sceNetAdhocctlCreateEnterGameMode groupNameAddr=%s('%s'), unknown=%d, num=%d, macsAddr=%s, timeout=%d, unknown2=%d", groupNameAddr, groupName, unknown, num, macsAddr, timeout, unknown2));
-
+    public int sceNetAdhocctlCreateEnterGameMode(@CanBeNull @StringInfo(maxLength=GROUP_NAME_LENGTH) PspString groupName, int unknown, int num, TPointer macsAddr, int timeout, int unknown2) {
         gameModeMacs.clear();
         requiredGameModeMacs.clear();
         for (int i = 0; i < num; i++) {
             pspNetMacAddress macAddress = new pspNetMacAddress();
-        	macAddress.read(mem, macsAddr.getAddress() + i * macAddress.sizeof());
+        	macAddress.read(macsAddr, i * macAddress.sizeof());
         	requiredGameModeMacs.add(macAddress);
-        	log.warn(String.format("sceNetAdhocctlCreateEnterGameMode macAddress#%d=%s", i, macAddress));
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceNetAdhocctlCreateEnterGameMode macAddress#%d=%s", i, macAddress));
+        	}
         }
 
         // We have to wait for all the MACs to have joined to go into CONNECTED state
         doJoin = true;
-        setGroupName(groupName, PSP_ADHOCCTL_MODE_GAMEMODE);
+        setGroupName(groupName.getString(), PSP_ADHOCCTL_MODE_GAMEMODE);
 
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xB0B80E80, version = 150)
-    public void sceNetAdhocctlCreateEnterGameModeMin(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNetAdhocctlCreateEnterGameModeMin");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceNetAdhocctlCreateEnterGameModeMin() {
+    	return 0;
     }
 
     /**
@@ -1135,15 +1054,9 @@ public class sceNetAdhocctl extends HLEModule {
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0x1FF89745, version = 150)
-    public int sceNetAdhocctlJoinEnterGameMode(TPointer groupNameAddr, TPointer macAddr, int timeout, int unknown) {
-    	Memory mem = Memory.getInstance();
-    	String groupName = Utilities.readStringNZ(mem, groupNameAddr.getAddress(), GROUP_NAME_LENGTH);
-    	pspNetMacAddress macAddress = new pspNetMacAddress();
-    	macAddress.read(mem, macAddr.getAddress());
-        log.warn(String.format("PARTIAL: sceNetAdhocctlJoinEnterGameMode groupNameAddr=%s('%s'), macAddr=%s(%s), timeout=%d, unknown=%d", groupNameAddr, groupName, macAddr, macAddress, timeout, unknown));
-
+    public int sceNetAdhocctlJoinEnterGameMode(@StringInfo(maxLength=GROUP_NAME_LENGTH) PspString groupName, pspNetMacAddress macAddress, int timeout, int unknown) {
         doJoin = true;
-        setGroupName(groupName, PSP_ADHOCCTL_MODE_GAMEMODE);
+        setGroupName(groupName.getString(), PSP_ADHOCCTL_MODE_GAMEMODE);
 
         return 0;
     }
@@ -1155,8 +1068,6 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0xCF8E084D, version = 150)
     public int sceNetAdhocctlExitGameMode() {
-        log.warn("PARTIAL: sceNetAdhocctlExitGameMode");
-
         doDisconnect = true;
         Modules.sceNetAdhocModule.hleExitGameMode();
 
@@ -1172,18 +1083,15 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x5A014CE0, version = 150)
     public int sceNetAdhocctlGetGameModeInfo(TPointer gameModeInfoAddr) {
-    	Memory mem = Memory.getInstance();
-        log.warn(String.format("PARTIAL: sceNetAdhocctlGetGameModeInfo gameModeInfoAddr=%s", gameModeInfoAddr));
-
-        int addr = gameModeInfoAddr.getAddress();
-        mem.write32(addr, gameModeMacs.size());
-        addr += 4;
+        int offset = 0;
+        gameModeInfoAddr.setValue32(offset, gameModeMacs.size());
+        offset += 4;
         for (pspNetMacAddress macAddress : gameModeMacs) {
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("sceNetAdhocctlGetGameModeInfo returning %s", macAddress));
         	}
-        	macAddress.write(mem, addr);
-        	addr += macAddress.sizeof();
+        	macAddress.write(gameModeInfoAddr, offset);
+        	offset += macAddress.sizeof();
         }
 
         return 0;

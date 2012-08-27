@@ -1,3 +1,19 @@
+/*
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package jpcsp;
 
 import static jpcsp.Allegrex.Common._a0;
@@ -19,7 +35,7 @@ public class ParameterReader {
 	private Memory memory;
 	private int parameterIndex = 0;
 	private int parameterIndexFloat = 0;
-	Charset utf8;
+	private static final Charset utf8 = Charset.forName("UTF8");
 	protected static final int maxParameterInGprRegisters = 8;
 	protected static final int maxParameterInFprRegisters = 8;
 	protected static final int firstParameterInGpr = _a0;
@@ -28,9 +44,8 @@ public class ParameterReader {
 	public ParameterReader(CpuState cpu, Memory memory) {
 		this.cpu = cpu;
 		this.memory = memory;
-		this.utf8 = Charset.forName("UTF8");
 	}
-	
+
     public void setCpu(CpuState cpu) {
     	this.cpu = cpu;
     }
@@ -44,10 +59,9 @@ public class ParameterReader {
 		if (index >= maxParameterInGprRegisters) {
 			return memory.read32(cpu.gpr[_sp] + (index - maxParameterInGprRegisters) * 4);
 		}
-		//System.err.println("getParameterIntAt(" + index + ") :: " + cpu.gpr[4 + index]);
 		return cpu.gpr[firstParameterInGpr + index];
 	}
-	
+
 	private float getParameterFloatAt(int index) {
 		if (index >= maxParameterInFprRegisters) {
 			throw(new NotImplementedException());
@@ -56,34 +70,40 @@ public class ParameterReader {
 	}
 
 	private long getParameterLongAt(int index) {
-		if ((index % 2) != 0) throw(new RuntimeException("Parameter misalignment"));
+		if ((index % 2) != 0) {
+			throw(new RuntimeException("Parameter misalignment"));
+		}
 		return (long)getParameterIntAt(index) + (long)getParameterIntAt(index + 1) << 32;
 	}
-	
+
 	private String getParameterStringAt(int index, Charset charset) {
 		return new String(getBytez(getParameterIntAt(index)), charset);
 	}
 
 	protected int moveParameterIndex(int size) {
-		while ((parameterIndex % size) != 0) parameterIndex++;
+		while ((parameterIndex % size) != 0) {
+			parameterIndex++;
+		}
 		int retParameterIndex = parameterIndex;
 		parameterIndex += size;
 		return retParameterIndex;
 	}
-	
+
 	protected int moveParameterIndexFloat(int size) {
-		while ((parameterIndexFloat % size) != 0) parameterIndexFloat++;
+		while ((parameterIndexFloat % size) != 0) {
+			parameterIndexFloat++;
+		}
 		int retParameterIndexFloat = parameterIndexFloat;
 		parameterIndexFloat += size;
 		return retParameterIndexFloat;
 	}
-	
+
 	protected byte[] getBytez(int addr) {
 		ByteBuffer byteBuffer = ByteBuffer.allocate(memory.strlen(addr));
 		memory.copyToMemory(addr, byteBuffer, byteBuffer.limit());
 		return byteBuffer.array();
 	}
-	
+
 	public int getNextInt() {
 		return getParameterIntAt(moveParameterIndex(1));
 	}
@@ -91,13 +111,13 @@ public class ParameterReader {
 	public long getNextLong() {
 		return getParameterLongAt(moveParameterIndex(2));
 	}
-	
+
 	public float getNextFloat() {
 		return getParameterFloatAt(moveParameterIndexFloat(1));
 	}
-	
+
 	public String getNextStringUtf8() {
-		return getNextString(this.utf8);
+		return getNextString(utf8);
 	}
 
 	public String getNextString(Charset charset) {

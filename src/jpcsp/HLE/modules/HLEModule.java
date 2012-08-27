@@ -14,11 +14,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules;
 
 import java.util.HashMap;
 
+import jpcsp.HLE.Modules;
 import jpcsp.settings.ISettingsListener;
 import jpcsp.settings.Settings;
 
@@ -29,27 +29,22 @@ import jpcsp.settings.Settings;
 abstract public class HLEModule {
     /** @return Example: StdioForUser */
 	abstract public String getName();
-	
+
 	public HashMap<String, HLEModuleFunction> installedHLEModuleFunctions = new HashMap<String, HLEModuleFunction>();
 
 	/**
 	 * Returns an installed hle function by name.
 	 * 
-	 * @NOTE: If it is too slow to call on several places, it could be called once. Only when installed.
-	 *        And stored in a local field to be used where required.
-	 * 
-	 * @param functionName
-	 * @return
-	 * @throws RuntimeException
+	 * @param functionName the function name
+	 * @return the hle function corresponding to the functionName or null
+	 *         if the function was not found in this module.
 	 */
 	public HLEModuleFunction getHleFunctionByName(String functionName) throws RuntimeException {
 		if (!installedHLEModuleFunctions.containsKey(functionName)) {
-			for (HLEModuleFunction function : installedHLEModuleFunctions.values()) {
-				System.err.println(function);
-			}
-			throw(new RuntimeException("Can't find hle function '" + functionName + "' on module '" + this.getName() + "'"));
+			Modules.log.error(String.format("Can't find hle function '%s' on module '%s'", functionName, getName()));
+			return null;
 		}
-		
+
 		return installedHLEModuleFunctions.get(functionName);
 	}
 

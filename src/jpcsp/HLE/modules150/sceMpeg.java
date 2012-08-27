@@ -67,6 +67,7 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceMpeg extends HLEModule {
     public static Logger log = Modules.getLogger("sceMpeg");
 
@@ -247,7 +248,7 @@ public class sceMpeg extends HLEModule {
     	}
 
     	public void release() {
-    		SceUidManager.releaseId(uid, streamPurpose);
+    		SceUidManager.releaseUid(uid, streamPurpose);
     		streamMap.remove(uid);
     		uid = -1;
     		type = -1;
@@ -643,7 +644,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0x21FF80E4, version = 150, checkInsideInterrupt = true)
     public int sceMpegQueryStreamOffset(@CheckArgument("checkMpegHandle") int mpeg, TPointer bufferAddr, TPointer32 offsetAddr) {
         analyseMpeg(bufferAddr.getAddress());
@@ -681,7 +681,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0x611E9E11, version = 150, checkInsideInterrupt = true)
     public int sceMpegQueryStreamSize(TPointer bufferAddr, TPointer32 sizeAddr) {
         analyseMpeg(bufferAddr.getAddress());
@@ -736,7 +735,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0xC132E22F, version = 150, checkInsideInterrupt = true)
     public int sceMpegQueryMemSize(int mode) {
         // Mode = 0 -> 64k (constant).
@@ -756,7 +754,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0xD8C5F121, version = 150, checkInsideInterrupt = true)
     public int sceMpegCreate(TPointer mpeg, TPointer data, int size, @CanBeNull TPointer ringbufferAddr, int frameWidth, int mode, int ddrtop) {
         Memory mem = Processor.memory;
@@ -809,7 +806,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0x606A4649, version = 150, checkInsideInterrupt = true)
     public int sceMpegDelete(@CheckArgument("checkMpegHandle") int mpeg) {
         finishMpeg();
@@ -826,7 +822,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0x42560F23, version = 150, checkInsideInterrupt = true)
     public int sceMpegRegistStream(@CheckArgument("checkMpegHandle") int mpeg, int stream_type, int stream_num) {
     	StreamInfo info = new StreamInfo(stream_type);
@@ -862,7 +857,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0x591A4AA2, version = 150, checkInsideInterrupt = true)
     public int sceMpegUnRegistStream(@CheckArgument("checkMpegHandle") int mpeg, int streamUid) {
     	StreamInfo info = getStreamInfo(streamUid);
@@ -902,7 +896,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0xA780CF7E, version = 150, checkInsideInterrupt = true)
     public int sceMpegMallocAvcEsBuf(@CheckArgument("checkMpegHandle") int mpeg) {
         // sceMpegMallocAvcEsBuf does not allocate any memory.
@@ -929,7 +922,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0xCEB870B1, version = 150, checkInsideInterrupt = true)
     public int sceMpegFreeAvcEsBuf(@CheckArgument("checkMpegHandle") int mpeg, int esBuf) {
         if (esBuf == 0) {
@@ -952,7 +944,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0xF8DCB679, version = 150, checkInsideInterrupt = true)
     public int sceMpegQueryAtracEsSize(@CheckArgument("checkMpegHandle") int mpeg, @CanBeNull TPointer32 esSizeAddr, @CanBeNull TPointer32 outSizeAddr) {
         esSizeAddr.setValue(MPEG_ATRAC_ES_SIZE);
@@ -970,7 +961,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0xC02CF6B5, version = 150, checkInsideInterrupt = true)
     public int sceMpegQueryPcmEsSize(@CheckArgument("checkMpegHandle") int mpeg, TPointer32 esSizeAddr, TPointer32 outSizeAddr) {
         esSizeAddr.setValue(MPEG_PCM_ES_SIZE);
@@ -988,7 +978,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0x167AFD9E, version = 150, checkInsideInterrupt = true)
     public int sceMpegInitAu(@CheckArgument("checkMpegHandle") int mpeg, int buffer_addr, TPointer auAddr) {
         // Check if sceMpegInitAu is being called for AVC or ATRAC
@@ -1029,7 +1018,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0x9DCFB7EA, version = 150, checkInsideInterrupt = true)
     public int sceMpegChangeGetAuMode(int mpeg, int streamUid, int mode) {
         StreamInfo info = getStreamInfo(streamUid);
@@ -1077,7 +1065,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0xFE246728, version = 150, checkInsideInterrupt = true)
     public int sceMpegGetAvcAu(@CheckArgument("checkMpegHandle") int mpeg, int streamUid, TPointer auAddr, @CanBeNull TPointer32 attrAddr) {
         if (mpegRingbuffer != null) {
@@ -1161,7 +1148,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0x8C1E027D, version = 150, checkInsideInterrupt = true)
     public int sceMpegGetPcmAu(@CheckArgument("checkMpegHandle") int mpeg, int streamUid, TPointer auAddr, @CanBeNull TPointer32 attrAddr) {
         if (mpegRingbuffer != null) {
@@ -1226,7 +1212,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0xE1CE83A7, version = 150, checkInsideInterrupt = true)
     public int sceMpegGetAtracAu(@CheckArgument("checkMpegHandle") int mpeg, int streamUid, TPointer auAddr, @CanBeNull TPointer32 attrAddr) {
         if (mpegRingbuffer != null) {
@@ -1318,7 +1303,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0x500F0429, version = 150, checkInsideInterrupt = true)
     public int sceMpegFlushStream(int mpeg, int stream_addr) {
         finishMpeg();
@@ -1332,7 +1316,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0x707B7629, version = 150, checkInsideInterrupt = true)
     public int sceMpegFlushAllStream(int mpeg) {
         // Finish the Mpeg only if we are not at the start of a new video,
@@ -1355,7 +1338,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0x0E3C2E9D, version = 150, checkInsideInterrupt = true)
     public int sceMpegAvcDecode(@CheckArgument("checkMpegHandle") int mpeg, TPointer32 auAddr, int frameWidth, TPointer32 bufferAddr, TPointer32 initAddr) {
         // When frameWidth is 0, take the frameWidth specified at sceMpegCreate.
@@ -1513,7 +1495,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0x0F6C18D7, version = 150, checkInsideInterrupt = true)
     public int sceMpegAvcDecodeDetail(@CheckArgument("checkMpegHandle") int mpeg, TPointer detailPointer) {
         detailPointer.setValue32( 0, avcDecodeResult     ); // Stores the result.
@@ -1537,7 +1518,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0xA11C7026, version = 150, checkInsideInterrupt = true)
     public int sceMpegAvcDecodeMode(@CheckArgument("checkMpegHandle") int mpeg, TPointer32 modeAddr) {
         // -1 is a default value.
@@ -1561,7 +1541,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0x740FCCD1, version = 150, checkInsideInterrupt = true)
     public int sceMpegAvcDecodeStop(@CheckArgument("checkMpegHandle") int mpeg, int frameWidth, TPointer bufferAddr, TPointer32 statusAddr) {
         // No last frame generated
@@ -1577,7 +1556,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0x4571CC64, version = 150, checkInsideInterrupt = true)
     public int sceMpegAvcDecodeFlush(int mpeg) {
         // Finish the Mpeg only if we are not at the start of a new video,
@@ -1600,7 +1578,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0x211A057C, version = 150, checkInsideInterrupt = true)
     public int sceMpegAvcQueryYCbCrSize(@CheckArgument("checkMpegHandle") int mpeg, int mode, int width, int height, TPointer32 resultAddr) {
         if ((width & 15) != 0 || (height & 15) != 0 || width > 480 || height > 272) {
@@ -1626,7 +1603,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0x67179B1B, version = 150, checkInsideInterrupt = true)
     public int sceMpegAvcInitYCbCr(@CheckArgument("checkMpegHandle") int mpeg, int mode, int width, int height, int ycbcr_addr) {
         encodedVideoFramesYCbCr.remove(ycbcr_addr);
@@ -1643,7 +1619,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0xF0EB1125, version = 150, checkInsideInterrupt = true)
     public int sceMpegAvcDecodeYCbCr(@CheckArgument("checkMpegHandle") int mpeg, TPointer auAddr, TPointer32 bufferAddr, TPointer32 initAddr) {
         if (mpegRingbuffer != null) {
@@ -1744,7 +1719,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0xF2930C9C, version = 150, checkInsideInterrupt = true)
     public int sceMpegAvcDecodeStopYCbCr(@CheckArgument("checkMpegHandle") int mpeg, TPointer bufferAddr, TPointer32 statusAddr) {
         // No last frame generated
@@ -1764,7 +1738,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0x31BD0272, version = 150, checkInsideInterrupt = true)
     public int sceMpegAvcCsc(@CheckArgument("checkMpegHandle") int mpeg, TPointer sourceAddr, TPointer32 rangeAddr, int frameWidth, TPointer destAddr) {
         // When frameWidth is 0, take the frameWidth specified at sceMpegCreate.
@@ -1890,7 +1863,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0x800C44DF, version = 150, checkInsideInterrupt = true)
     public int sceMpegAtracDecode(@CheckArgument("checkMpegHandle") int mpeg, TPointer auAddr, TPointer bufferAddr, int init) {
         Memory mem = Processor.memory;
@@ -1943,7 +1915,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0xD7A29F46, version = 150, checkInsideInterrupt = true)
     public int sceMpegRingbufferQueryMemSize(int packets) {
         return getSizeFromPackets(packets);
@@ -1961,7 +1932,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0x37295ED8, version = 150, checkInsideInterrupt = true)
     public int sceMpegRingbufferConstruct(TPointer ringbufferAddr, int packets, TPointer data, int size, @CanBeNull TPointer callbackAddr, int callbackArgs) {
         if (size < getSizeFromPackets(packets)) {
@@ -1983,7 +1953,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0x13407F13, version = 150, checkInsideInterrupt = true)
     public int sceMpegRingbufferDestruct(TPointer ringbufferAddr) {
         return 0;
@@ -1998,7 +1967,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0xB240A59E, version = 150, checkInsideInterrupt = true)
     public int sceMpegRingbufferPut(TPointer ringbufferAddr, int numPackets, int available) {
         mpegRingbufferAddr = ringbufferAddr;
@@ -2034,7 +2002,6 @@ public class sceMpeg extends HLEModule {
      * 
      * @return
      */
-    @HLELogging
     @HLEFunction(nid = 0xB5F6DC87, version = 150, checkInsideInterrupt = true)
     public int sceMpegRingbufferAvailableSize(TPointer ringbufferAddr) {
         mpegRingbufferAddr = ringbufferAddr;

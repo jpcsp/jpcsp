@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import jpcsp.Memory;
+import jpcsp.util.Utilities;
 
 final public class TPointer implements ITPointerBase {
 	private Memory memory;
@@ -106,6 +107,22 @@ final public class TPointer implements ITPointerBase {
 	public void setValue16(int offset, short value) { if (isAddressGood()) memory.write16(address + offset, value); }
 	public void setValue32(int offset, int value) { if (isAddressGood()) memory.write32(address + offset, value); }
 	public void setValue64(int offset, long value) { if (isAddressGood()) memory.write64(address + offset, value); }
+
+	public String getStringNZ(int n) {
+		return getStringNZ(0, n);
+	}
+
+	public String getStringNZ(int offset, int n) {
+		return Utilities.readStringNZ(memory, address + offset, n);
+	}
+
+	public void setStringNZ(int n, String s) {
+		setStringNZ(0, n, s);
+	}
+
+	public void setStringNZ(int offset, int n, String s) {
+		Utilities.writeStringNZ(memory, address + offset, n, s);
+	}
 
 	public void setObject(int offset, Object object) {
 		SerializeMemory.serialize(object, new TPointerOutputStream(offset));
