@@ -133,7 +133,8 @@ public class HLEModuleManager {
         scePauth(Modules.scePauthModule),
         sceMd5(Modules.sceMd5Module, new String[] { "libmd5" }),
         sceParseUri(Modules.sceParseUriModule, new String[] { "libhttp_rfc", "PSP_NET_MODULE_HTTP", "PSP_MODULE_NET_HTTP" }),
-        sceUsbAcc(Modules.sceUsbAccModule, new String[] { "PSP_MODULE_USB_MIC" });
+        sceUsbAcc(Modules.sceUsbAccModule, new String[] { "PSP_MODULE_USB_MIC" }),
+        sceMt19937(Modules.sceMt19937Module, new String[] { "libmt19937" });
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
