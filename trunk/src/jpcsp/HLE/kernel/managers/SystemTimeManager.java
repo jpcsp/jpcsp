@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.managers;
 
 import jpcsp.Emulator;
-import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.TPointer64;
@@ -75,7 +74,7 @@ public class SystemTimeManager {
         return usec & 0xFFFFFFFFL;
     }
 
-    public int sceKernelSysClock2USec(TPointer64 sysClockAddr, @CanBeNull TPointer32 secAddr, @CanBeNull TPointer32 microSecAddr) {
+    public int sceKernelSysClock2USec(TPointer64 sysClockAddr, TPointer32 secAddr, TPointer32 microSecAddr) {
         long sysClock = sysClockAddr.getValue();
         if (log.isDebugEnabled()) {
         	log.debug(String.format("sceKernelSysClock2USec sysClockAddr=%s(%d), secAddr=%s, microSecAddr=%s", sysClockAddr, sysClock, secAddr, microSecAddr));

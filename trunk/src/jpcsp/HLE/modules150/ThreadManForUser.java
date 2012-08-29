@@ -1967,9 +1967,9 @@ public class ThreadManForUser extends HLEModule {
     }
 
     protected void stopVTimer(SceKernelVTimerInfo sceKernelVTimerInfo) {
-        sceKernelVTimerInfo.active = SceKernelVTimerInfo.ACTIVE_STOPPED;
         // Sum the elapsed time (multiple Start/Stop sequences are added)
         sceKernelVTimerInfo.current += getVTimerRunningTime(sceKernelVTimerInfo);
+        sceKernelVTimerInfo.active = SceKernelVTimerInfo.ACTIVE_STOPPED;
     }
 
     protected void scheduleVTimer(SceKernelVTimerInfo sceKernelVTimerInfo, long schedule) {
@@ -2706,12 +2706,12 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0xBA6B92E2, version = 150)
-    public int sceKernelSysClock2USec(TPointer64 sysClockAddr, TPointer32 secAddr, TPointer32 microSecAddr) {
+    public int sceKernelSysClock2USec(TPointer64 sysClockAddr, @CanBeNull TPointer32 secAddr, @CanBeNull TPointer32 microSecAddr) {
         return Managers.systime.sceKernelSysClock2USec(sysClockAddr, secAddr, microSecAddr);
     }
 
     @HLEFunction(nid = 0xE1619D7C, version = 150)
-    public int sceKernelSysClock2USecWide(long sysClock, TPointer32 secAddr, TPointer32 microSecAddr) {
+    public int sceKernelSysClock2USecWide(long sysClock, @CanBeNull TPointer32 secAddr, @CanBeNull TPointer32 microSecAddr) {
         return Managers.systime.sceKernelSysClock2USecWide(sysClock, secAddr, microSecAddr);
     }
 
