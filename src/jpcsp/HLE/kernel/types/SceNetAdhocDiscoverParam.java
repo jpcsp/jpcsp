@@ -51,6 +51,18 @@ public class SceNetAdhocDiscoverParam extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public String toString() {
-		return String.format("SceNetAdhocDiscoverParam unknown1=0x%08X, groupName='%s', unknown2=0x%08X, result=0x%08X", unknown1, groupName, unknown2, result);
+		StringBuilder s = new StringBuilder();
+
+		// When the base address is not set, return the MAC address only:
+		// "nn:nn:nn:nn:nn:nn"
+		if (getBaseAddress() != 0) {
+			s.append(String.format("0x%08X(", getBaseAddress()));
+		}
+		s.append(String.format("SceNetAdhocDiscoverParam unknown1=0x%08X, groupName='%s', unknown2=0x%08X, result=0x%08X", unknown1, groupName, unknown2, result));
+		if (getBaseAddress() != 0) {
+			s.append(")");
+		}
+
+		return s.toString();
 	}
 }

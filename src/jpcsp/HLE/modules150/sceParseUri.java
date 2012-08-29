@@ -21,33 +21,58 @@ import org.apache.log4j.Logger;
 import jpcsp.Memory;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.util.Utilities;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryReader;
+import jpcsp.memory.MemoryWriter;
 
+@HLELogging
 public class sceParseUri extends HLEModule {
-	protected static Logger log = Modules.getLogger("sceParseUri");
+	public static Logger log = Modules.getLogger("sceParseUri");
+	private static final boolean[] escapeCharTable = new boolean[] {
+		 true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,
+		 true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,
+		 true,  true,  true,  true,  true,  true,  true,  true,  true,  true, false,  true,  true, false, false,  true,
+		false, false, false, false, false, false, false, false, false, false,  true,  true,  true,  true,  true,  true,
+		 true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+		false, false, false, false, false, false, false, false, false, false, false,  true,  true,  true,  true, false,
+		 true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+		false, false, false, false, false, false, false, false, false, false, false,  true,  true,  true,  true,  true,
+		 true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,
+		 true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,
+		 true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,
+		 true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,
+		 true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,
+		 true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,
+		 true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,
+		 true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true
+	};
+	private static final int[] hexTable = new int[] {
+		'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
+	};
 
 	@Override
 	public String getName() {
 		return "sceParseUri";
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x568518C9, version = 150)
 	public int sceUriParse(@CanBeNull TPointer parsedUriArea, PspString url, @CanBeNull TPointer workArea, @CanBeNull TPointer32 workAreaSizeAddr, int workAreaSize) {
-		log.warn(String.format("Unimplement sceUriParse parsedUriArea=%s, url='%s', workArea=%s, workAreaSizeAddr=%s, workAreaSize=%d", parsedUriArea, url, workArea, workAreaSizeAddr, workAreaSize));
-		Memory mem = Memory.getInstance();
-
 		if (workArea.isNull()) {
 			workAreaSizeAddr.setValue(32); // ???
 		} else {
-			Utilities.writeStringNZ(mem, workArea.getAddress(), workAreaSize, "Test sceUriParse");
+			workArea.setStringNZ(workAreaSize, "Test sceUriParse");
 
 			// Unknown structure for the parsedUriArea
-			mem.memset(parsedUriArea.getAddress(), (byte) 0, 44);
+			parsedUriArea.clear(44);
 			parsedUriArea.setValue32(0, url.getAddress());
 			parsedUriArea.setValue32(4, url.getString().length());
 		}
@@ -55,9 +80,9 @@ public class sceParseUri extends HLEModule {
 		return 0;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x7EE318AF, version = 150)
 	public int sceUriBuild(@CanBeNull TPointer workArea, @CanBeNull TPointer32 workAreaSizeAddr, int workAreaSize, @CanBeNull TPointer parsedUriArea, int unknown2) {
-		log.warn(String.format("Unimplement sceUriBuild workArea=%s, workAreaSizeAddr=%s, workAreaSize=%d, parsedUriArea=%s, unknown2=0x%08X", workArea, workAreaSizeAddr, workAreaSize, parsedUriArea, unknown2));
 		Memory mem = Memory.getInstance();
 
 		// Retrieve values as set by sceUriParse
@@ -73,17 +98,45 @@ public class sceParseUri extends HLEModule {
 		return 0;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x49E950EC, version = 150)
-	public int sceUriEscape() {
-		log.warn(String.format("Unimplemented sceUriEscape <unknown parameters>"));
+	public int sceUriEscape(@CanBeNull TPointer escapedAddr, @CanBeNull TPointer32 escapedLengthAddr, int escapedBufferLength, TPointer source) {
+		IMemoryReader memoryReader = MemoryReader.getMemoryReader(source.getAddress(), 1);
+		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(escapedAddr.getAddress(), escapedBufferLength, 1);
+		int escapedLength = 0;
+		while (true) {
+			int c = memoryReader.readNext();
+			if (c == 0) {
+				if (escapedLength < escapedBufferLength) {
+					memoryWriter.writeNext(c);
+				}
+				break;
+			}
+			if (escapeCharTable[c]) {
+				if (escapedLength + 3 > escapedBufferLength) {
+					break;
+				}
+				memoryWriter.writeNext('%');
+				memoryWriter.writeNext(hexTable[c >> 4]);
+				memoryWriter.writeNext(hexTable[c & 0x0F]);
+				escapedLength += 3;
+			} else {
+				if (escapedLength + 1 > escapedBufferLength) {
+					break;
+				}
+				memoryWriter.writeNext(c);
+				escapedLength++;
+			}
+		}
+		memoryWriter.flush();
+		escapedLengthAddr.setValue(escapedLength);
 
 		return 0;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x062BB07E, version = 150)
 	public int sceUriUnescape() {
-		log.warn(String.format("Unimplemented sceUriUnescape <unknown parameters>"));
-
 		return 0;
 	}
 }

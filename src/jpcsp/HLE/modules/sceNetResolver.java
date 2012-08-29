@@ -17,6 +17,4 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 public class sceNetResolver extends jpcsp.HLE.modules150.sceNetResolver {
-    @Override
-	public final String getName() { return "sceNetResolver"; }
 }

@@ -17,62 +17,41 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.Memory;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceNpService extends HLEModule {
-
-    protected static Logger log = Modules.getLogger("sceNpService");
+    public static Logger log = Modules.getLogger("sceNpService");
 
     @Override
     public String getName() {
         return "sceNpService";
     }
 
-    private int npManagerMemSize;            // Memory allocated by the NP Manager utility.
+    private int npManagerMemSize;     // Memory allocated by the NP Manager utility.
     private int npManagerMaxMemSize;  // Maximum memory used by the NP Manager utility.
-    private int npManagerFreeMemSize;        // Free memory available to use by the NP Manager utility.
+    private int npManagerFreeMemSize; // Free memory available to use by the NP Manager utility.
 
     @HLEFunction(nid = 0x0F8F5821, version = 150, checkInsideInterrupt = true)
-    public void sceNpService_0F8F5821(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int poolSize = cpu.gpr[4];
-        int stackSize = cpu.gpr[5];
-        int threadPriority = cpu.gpr[6];
-
-        log.warn("IGNORING: sceNpService_0F8F5821 (poolsize=0x" + Integer.toHexString(poolSize)
-                + ", stackSize=0x" + Integer.toHexString(stackSize)
-                + ", threadPriority=0x" + Integer.toHexString(threadPriority) + ")");
-
-        
+    public int sceNpService_0F8F5821(int poolSize, int stackSize, int threadPriority) {
         npManagerMemSize = poolSize;
         npManagerMaxMemSize = poolSize / 2;    // Dummy
-        npManagerFreeMemSize = poolSize - 16;         // Dummy.
-        cpu.gpr[2] = 0;
+        npManagerFreeMemSize = poolSize - 16;  // Dummy.
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x00ACFAC3, version = 150, checkInsideInterrupt = true)
-    public void sceNpService_00ACFAC3(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
+    public int sceNpService_00ACFAC3(TPointer32 memStatAddr) {
+        memStatAddr.setValue(0, npManagerMemSize);
+        memStatAddr.setValue(4, npManagerMaxMemSize);
+        memStatAddr.setValue(8, npManagerFreeMemSize);
 
-        int memStatAddr = cpu.gpr[4];
-
-        log.warn("PARTIAL: sceNpService_00ACFAC3 (memStatAddr=0x" + Integer.toHexString(memStatAddr) + ")");
-
-        
-        if (Memory.isAddressGood(memStatAddr)) {
-            mem.write32(memStatAddr, npManagerMemSize);
-            mem.write32(memStatAddr + 4, npManagerMaxMemSize);
-            mem.write32(memStatAddr + 8, npManagerFreeMemSize);
-        }
-        cpu.gpr[2] = 0;
+        return 0;
     }
-
 }

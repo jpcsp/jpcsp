@@ -593,7 +593,7 @@ public class scePsmfPlayer extends HLEModule {
     		psmfPlayerAtracAu.dts = -1;
     	}
     	// Fill the rest of the buffer with 0's
-    	mem.memset(audioDataAddr.getAddress() + bytes, (byte) 0, audioSamplesBytes - bytes);
+    	audioDataAddr.clear(bytes, audioSamplesBytes - bytes);
 
         sceMpeg.delayThread(startTime, sceMpeg.atracDecodeDelay);
 

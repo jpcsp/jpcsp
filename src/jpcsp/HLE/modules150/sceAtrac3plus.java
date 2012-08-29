@@ -848,7 +848,7 @@ public class sceAtrac3plus extends HLEModule {
                     end = 0;
                 }
 
-                Memory.getInstance().memset(samplesAddr.getAddress(), (byte) 0, samples * 4);  // 4 empty bytes per sample.
+                samplesAddr.clear(samples * 4);  // 4 empty bytes per sample.
             } else if (samples == 0) {
                 // Using decoded data and all samples have been decoded.
                 result = SceKernelErrors.ERROR_ATRAC_ALL_DATA_DECODED;

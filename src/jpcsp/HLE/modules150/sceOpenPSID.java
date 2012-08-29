@@ -17,17 +17,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.Memory;
-import jpcsp.Processor;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceOpenPSID extends HLEModule {
-
-    protected static Logger log = Modules.getLogger("sceOpenPSID");
+    public static Logger log = Modules.getLogger("sceOpenPSID");
 
     @Override
     public String getName() {
@@ -37,23 +36,11 @@ public class sceOpenPSID extends HLEModule {
     protected int[] dummyOpenPSID = {0x10, 0x02, 0xA3, 0x44, 0x13, 0xF5, 0x93, 0xB0, 0xCC, 0x6E, 0xD1, 0x32, 0x27, 0x85, 0x0F, 0x9D};
 
     @HLEFunction(nid = 0xC69BEBCE, version = 150, checkInsideInterrupt = true)
-    public void sceOpenPSIDGetOpenPSID(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int openPSIDAddr = cpu.gpr[4];
-
-        if(log.isDebugEnabled()) {
-            log.debug("sceOpenPSIDGetOpenPSID (openPSIDAddr=0x" + Integer.toHexString(openPSIDAddr) + ")");
+    public int sceOpenPSIDGetOpenPSID(TPointer openPSIDAddr) {
+        for (int i = 0; i < dummyOpenPSID.length; i++) {
+        	openPSIDAddr.setValue8(i, (byte) dummyOpenPSID[i]);
         }
 
-        
-        if(Memory.isAddressGood(openPSIDAddr)) {
-            for(int i = 0; i < 16 ; i++) {
-                mem.write8(openPSIDAddr + i, (byte)dummyOpenPSID[i]);
-            }
-        }
-        cpu.gpr[2] = 0;
+        return 0;
     }
-
 }
