@@ -18,7 +18,9 @@ package jpcsp.HLE.modules150;
 
 import static jpcsp.Allegrex.Common._a0;
 import static jpcsp.Allegrex.Common._a1;
+import static jpcsp.Allegrex.Common._gp;
 import static jpcsp.Allegrex.Common._ra;
+import static jpcsp.Allegrex.Common._s0;
 import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.Allegrex.Common._v1;
@@ -155,7 +157,6 @@ import jpcsp.HLE.CheckArgument;;
  *                      The clock precision of 200us on the PSP can be observed here.
  */
 public class ThreadManForUser extends HLEModule {
-
     protected static Logger log = Modules.getLogger("ThreadManForUser");
 
     @Override
@@ -168,7 +169,7 @@ public class ThreadManForUser extends HLEModule {
     private HashMap<Integer, Integer> threadEventMap;
     private LinkedList<SceKernelThreadInfo> readyThreads;
     private SceKernelThreadInfo currentThread;
-    private SceKernelThreadInfo idle0,  idle1;
+    private SceKernelThreadInfo idle0, idle1;
     public Statistics statistics;
     private boolean dispatchThreadEnabled;
     private static final int SCE_KERNEL_DISPATCHTHREAD_STATE_DISABLED = 0;
@@ -177,7 +178,7 @@ public class ThreadManForUser extends HLEModule {
     // The PSP seems to have a resolution of 200us
     protected static final int THREAD_DELAY_MINIMUM_MICROS = 200;
 
-    protected static final int CALLBACKID_REGISTER = 16; // $s0
+    protected static final int CALLBACKID_REGISTER = _s0;
     protected CallbackManager callbackManager = new CallbackManager();
     protected static final int IDLE_THREAD_ADDRESS = MemoryMap.START_RAM;
     public static final int THREAD_EXIT_HANDLER_ADDRESS = MemoryMap.START_RAM + 0x20;
@@ -416,7 +417,7 @@ public class ThreadManForUser extends HLEModule {
         int instruction_nop = (AllegrexOpcodes.SLL << 26); // nop
 
         // Add a "jr $ra" instruction to indicate the end of the CodeBlock to the compiler
-        int instruction_jr = AllegrexOpcodes.JR | (31 << 21);
+        int instruction_jr = AllegrexOpcodes.JR | (_ra << 21);
 
         mem.write32(address + 0, instruction_syscall);
         mem.write32(address + 4, instruction_b);
@@ -879,7 +880,7 @@ public class ThreadManForUser extends HLEModule {
     	switch (thread.waitType) {
     		case PSP_WAIT_THREAD_END:
                 // Return WAIT_TIMEOUT
-    			thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_TIMEOUT;
+    			thread.cpuContext.gpr[_v0] = ERROR_KERNEL_WAIT_TIMEOUT;
     			break;
     		case PSP_WAIT_EVENTFLAG:
     			Managers.eventFlags.onThreadWaitTimeout(thread);
@@ -927,7 +928,7 @@ public class ThreadManForUser extends HLEModule {
     	switch (thread.waitType) {
 			case PSP_WAIT_THREAD_END:
 	            // Return ERROR_WAIT_STATUS_RELEASED
-	            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
+	            thread.cpuContext.gpr[_v0] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
 				break;
 			case PSP_WAIT_EVENTFLAG:
 	            Managers.eventFlags.onThreadWaitReleased(thread);
@@ -957,7 +958,7 @@ public class ThreadManForUser extends HLEModule {
 	            Managers.vpl.onThreadWaitReleased(thread);
 				break;
 			case JPCSP_WAIT_BLOCKED:
-	        	thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
+	        	thread.cpuContext.gpr[_v0] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
 				break;
     	}
     }
@@ -1214,7 +1215,7 @@ public class ThreadManForUser extends HLEModule {
                     thread.wait.ThreadEnd_id == stoppedThread.uid) {
             	hleThreadWaitRelease(thread);
                 // Return exit status of stopped thread
-                thread.cpuContext.gpr[2] = stoppedThread.exitStatus;
+                thread.cpuContext.gpr[_v0] = stoppedThread.exitStatus;
             }
         }
     }
@@ -1230,7 +1231,7 @@ public class ThreadManForUser extends HLEModule {
                 log.trace("End of callback " + callback);
             }
             cpu.gpr[CALLBACKID_REGISTER] = callback.getSavedIdRegister();
-            cpu.gpr[31] = callback.getSavedRa();
+            cpu.gpr[_ra] = callback.getSavedRa();
             cpu.pc = callback.getSavedPc();
             IAction afterAction = callback.getAfterAction();
             if (afterAction != null) {
@@ -1239,8 +1240,8 @@ public class ThreadManForUser extends HLEModule {
 
             // Do we need to restore $v0/$v1?
             if (callback.isReturnVoid()) {
-            	cpu.gpr[2] = callback.getSavedV0();
-            	cpu.gpr[3] = callback.getSavedV1();
+            	cpu.gpr[_v0] = callback.getSavedV0();
+            	cpu.gpr[_v1] = callback.getSavedV1();
             }
         }
     }
@@ -1584,21 +1585,21 @@ public class ThreadManForUser extends HLEModule {
         int address = (thread.getStackAddr() + thread.stackSize - 0x100) - ((userDataLength + 0xF) & ~0xF);
         if (userDataAddr == 0) {
             // Set the pointer to NULL when none is provided
-            thread.cpuContext.gpr[4] = 0; // a0 = user data len
-            thread.cpuContext.gpr[5] = 0; // a1 = pointer to arg data in stack
+            thread.cpuContext.gpr[_a0] = 0; // a0 = user data len
+            thread.cpuContext.gpr[_a1] = 0; // a1 = pointer to arg data in stack
         } else {
             Memory.getInstance().memcpy(address, userDataAddr, userDataLength);
-            thread.cpuContext.gpr[4] = userDataLength; // a0 = user data len
-            thread.cpuContext.gpr[5] = address; // a1 = pointer to arg data in stack
+            thread.cpuContext.gpr[_a0] = userDataLength; // a0 = user data len
+            thread.cpuContext.gpr[_a1] = address; // a1 = pointer to arg data in stack
         }
         // 64 bytes padding between program stack top and user data
-        thread.cpuContext.gpr[29] = address - 0x40;
+        thread.cpuContext.gpr[_sp] = address - 0x40;
         // testing
         if (log.isDebugEnabled() && thread.cpuContext.gpr[28] != gp) {
             // from sceKernelStartModule is ok, anywhere else might be an error
             log.debug("hleKernelStartThread oldGP=0x" + Integer.toHexString(thread.cpuContext.gpr[28]) + " newGP=0x" + Integer.toHexString(gp));
         }
-        thread.cpuContext.gpr[28] = gp;
+        thread.cpuContext.gpr[_gp] = gp;
         // switch in the target thread if it's higher priority
         hleChangeThreadState(thread, PSP_THREAD_READY);
         if (thread.currentPriority < currentThread.currentPriority) {
@@ -1649,16 +1650,16 @@ public class ThreadManForUser extends HLEModule {
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             log.warn(String.format("hleKernelWaitThreadEnd unknown thread 0x%X", uid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
+            Emulator.getProcessor().cpu.gpr[_v0] = ERROR_KERNEL_NOT_FOUND_THREAD;
         } else if (isBannedThread(thread)) {
             log.warn(String.format("hleKernelWaitThreadEnd %s banned, not waiting", thread.toString()));
-            Emulator.getProcessor().cpu.gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[_v0] = 0;
             hleRescheduleCurrentThread();
         } else if (thread.isStopped()) {
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("hleKernelWaitThreadEnd %s thread already stopped, not waiting", thread.toString()));
         	}
-            Emulator.getProcessor().cpu.gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[_v0] = 0;
             hleRescheduleCurrentThread();
         } else {
             // Wait on a specific thread end
@@ -1889,7 +1890,8 @@ public class ThreadManForUser extends HLEModule {
                     log.debug(String.format("Entering callback type %d %s for thread %s (current thread is %s)", callbackType, callback.toString(), thread.toString(), currentThread.toString()));
                 }
 
-                callback.startContext(thread, null);
+                CheckCallbackReturnValue checkCallbackReturnValue = new CheckCallbackReturnValue(thread, callback.uid);
+                callback.startContext(thread, checkCallbackReturnValue);
                 handled = true;
                 break;
             }
@@ -2218,15 +2220,15 @@ public class ThreadManForUser extends HLEModule {
         // Remember the currentThread, as it might have changed after
         // the execution of a callback.
         SceKernelThreadInfo thread = currentThread;
-        int result;
+        boolean doCallbacks = thread.doCallbacks;
+        thread.doCallbacks = true; // Force callbacks execution.
 
         // 0 - The calling thread has no reported callbacks.
-        // 1 - The calling thread has reported callbacks which were executed sucessfully.
-        thread.doCallbacks = true;  // Callbacks are always allowed here.
-        {
-        	result = checkThreadCallbacks(thread) ? 1 : 0;
-        }
-        thread.doCallbacks = false; // Callbacks may not be allowed after this.
+        // 1 - The calling thread has reported callbacks which were executed successfully.
+    	int result = checkThreadCallbacks(thread) ? 1 : 0;
+
+    	thread.doCallbacks = doCallbacks; // Reset to the previous value.
+
         return result;
     }
 
@@ -4016,13 +4018,13 @@ public class ThreadManForUser extends HLEModule {
 			SceKernelThreadInfo threadEnd = getThreadById(wait.ThreadEnd_id);
 			if (threadEnd == null) {
 				// The thread has completely disappeared during the callback execution...
-				thread.cpuContext.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
+				thread.cpuContext.gpr[_v0] = ERROR_KERNEL_NOT_FOUND_THREAD;
 				return false;
 			}
 
 			if (threadEnd.isStopped()) {
                 // Return exit status of stopped thread
-                thread.cpuContext.gpr[2] = threadEnd.exitStatus;
+                thread.cpuContext.gpr[_v0] = threadEnd.exitStatus;
                 return false;
 			}
 
@@ -4037,11 +4039,35 @@ public class ThreadManForUser extends HLEModule {
 	            // sceKernelWakeupThread() has been called while the thread was waiting
 	            thread.wakeupCount--;
 	            // Return 0
-	            thread.cpuContext.gpr[2] = 0;
+	            thread.cpuContext.gpr[_v0] = 0;
 	            return false;
 	        }
 
 	        return true;
+		}
+    }
+
+    /**
+     * A callback is deleted when its return value is non-zero.
+     */
+    private class CheckCallbackReturnValue implements IAction {
+    	private SceKernelThreadInfo thread;
+    	private int callbackUid;
+
+    	public CheckCallbackReturnValue(SceKernelThreadInfo thread, int callbackUid) {
+    		this.thread = thread;
+			this.callbackUid = callbackUid;
+		}
+
+		@Override
+		public void execute() {
+			int callbackReturnValue = thread.cpuContext.gpr[_v0];
+			if (callbackReturnValue != 0) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Callback uid=0x%X has returned value 0x%08X: deleting the callback", callbackUid, callbackReturnValue));
+				}
+				hleKernelDeleteCallback(callbackUid);
+			}
 		}
     }
 }
