@@ -49,6 +49,7 @@ import jpcsp.HLE.modules.sceMd5;
 import jpcsp.HLE.modules.sceMp3;
 import jpcsp.HLE.modules.sceMp4;
 import jpcsp.HLE.modules.sceMpeg;
+import jpcsp.HLE.modules.sceMt19937;
 import jpcsp.HLE.modules.sceNet;
 import jpcsp.HLE.modules.sceNetAdhoc;
 import jpcsp.HLE.modules.sceNetAdhocctl;
@@ -151,6 +152,7 @@ public class Modules {
     public static sceMd5 sceMd5Module = new sceMd5();
     public static sceParseUri sceParseUriModule = new sceParseUri();
     public static sceUsbAcc sceUsbAccModule = new sceUsbAcc();
+    public static sceMt19937 sceMt19937Module = new sceMt19937();
 
     public static Logger log = Logger.getLogger("hle");
 
