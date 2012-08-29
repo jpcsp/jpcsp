@@ -72,6 +72,16 @@ public class pspNetSockAddrInternet extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public String toString() {
-		return String.format("pspNetSockAddrInternet[family=%d, port=%d, addr=0x%08X(%s)]", sin_family, sin_port, sin_addr, sceNetInet.internetAddressToString(sin_addr));
+		StringBuilder s = new StringBuilder();
+
+		if (getBaseAddress() != 0) {
+			s.append(String.format("0x%08X(", getBaseAddress()));
+		}
+		s.append(String.format("pspNetSockAddrInternet[family=%d, port=%d, addr=0x%08X(%s)]", sin_family, sin_port, sin_addr, sceNetInet.internetAddressToString(sin_addr)));
+		if (getBaseAddress() != 0) {
+			s.append(")");
+		}
+
+		return s.toString();
 	}
 }

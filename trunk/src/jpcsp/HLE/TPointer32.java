@@ -28,13 +28,15 @@ public class TPointer32 extends TPointerBase {
 	}
 
 	public int getValue() {
-		return pointer.getValue32();
+		return getValue(0);
 	}
 
 	public void setValue(int value) {
-		if (canSetValue()) {
-			pointer.setValue32(value);
-		}
+		setValue(0, value);
+	}
+
+	public void setValue(boolean value) {
+		setValue(0, value);
 	}
 
 	public int getValue(int offset) {
@@ -42,6 +44,12 @@ public class TPointer32 extends TPointerBase {
 	}
 
 	public void setValue(int offset, int value) {
+		if (canSetValue()) {
+			pointer.setValue32(offset, value);
+		}
+	}
+
+	public void setValue(int offset, boolean value) {
 		if (canSetValue()) {
 			pointer.setValue32(offset, value);
 		}

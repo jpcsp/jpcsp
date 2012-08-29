@@ -282,7 +282,7 @@ public class sceUtility extends HLEModule {
                 params.read(mem, paramsAddr);
 
                 if (log.isInfoEnabled()) {
-                    log.info(String.format("%sInitStart %s", name, params.toString()));
+                    log.info(String.format("%sInitStart 0x%08X-0x%08X: %s", name, paramsAddr, paramsAddr + params.sizeof(), params.toString()));
                 }
 
                 // Start with INIT

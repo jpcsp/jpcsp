@@ -1879,12 +1879,12 @@ public class sceMpeg extends HLEModule {
                 mem.copyToMemory(bufferAddr.getAddress(), ByteBuffer.wrap(audioDecodeBuffer, 0, bytes), bytes);
         	}
         	// Fill the rest of the buffer with 0's
-        	mem.memset(bufferAddr.getAddress() + bytes, (byte) 0, MPEG_ATRAC_ES_OUTPUT_SIZE - bytes);
+        	bufferAddr.clear(bytes, MPEG_ATRAC_ES_OUTPUT_SIZE - bytes);
         	Emulator.getClock().resume();
         } else if (isEnableConnector() && mpegCodec.readAudioFrame(bufferAddr.getAddress(), audioFrameCount)) {
             mpegAtracAu.pts = mpegCodec.getMpegAtracCurrentTimestamp();
         } else {
-            mem.memset(bufferAddr.getAddress(), (byte) 0, MPEG_ATRAC_ES_OUTPUT_SIZE);
+            bufferAddr.clear(MPEG_ATRAC_ES_OUTPUT_SIZE);
         }
         audioFrameCount++;
         if (log.isDebugEnabled()) {

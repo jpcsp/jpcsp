@@ -17,30 +17,25 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceNp extends HLEModule {
-
-    protected static Logger log = Modules.getLogger("sceNp");
+    public static Logger log = Modules.getLogger("sceNp");
 
     @Override
     public String getName() {
         return "sceNp";
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x857B47D3, version = 150, checkInsideInterrupt = true)
-    public void sceNp_857B47D3(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.info("sceNp_857B47D3");
-
-        
-        cpu.gpr[2] = 0;
+    public int sceNp_857B47D3() {
+    	return 0;
     }
-
 }

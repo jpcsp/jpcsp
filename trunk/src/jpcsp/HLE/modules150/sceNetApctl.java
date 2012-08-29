@@ -16,8 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.modules150.sceNetAdhocctl.IBSS_NAME_LENGTH;
+import static jpcsp.HLE.modules150.sceNetAdhocctl.fillNextPointersInLinkedList;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
@@ -36,16 +40,13 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.hardware.Wlan;
 import jpcsp.settings.Settings;
-import jpcsp.util.Utilities;
 
 import jpcsp.Emulator;
-import jpcsp.Memory;
 import jpcsp.Processor;
 
-import jpcsp.Allegrex.CpuState;
-
+@HLELogging
 public class sceNetApctl extends HLEModule {
-    protected static Logger log = Modules.getLogger("sceNetApctl");
+    public static Logger log = Modules.getLogger("sceNetApctl");
 
     public static final int PSP_NET_APCTL_STATE_DISCONNECTED = 0;
 	public static final int PSP_NET_APCTL_STATE_SCANNING     = 1;
@@ -389,16 +390,7 @@ public class sceNetApctl extends HLEModule {
 	 * @return < 0 on error.
 	 */
 	@HLEFunction(nid = 0xE2F91F9B, version = 150)
-	public void sceNetApctlInit(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int stackSize = cpu.gpr[4];
-		int initPriority = cpu.gpr[5];
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetApctlInit stackSize=%d, initPriority=%d", stackSize, initPriority));
-		}
-
+	public int sceNetApctlInit(int stackSize, int initPriority) {
 		if (sceNetApctlThread == null) {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 			sceNetApctlThread = threadMan.hleKernelCreateThread("SceNetApctl",
@@ -408,7 +400,7 @@ public class sceNetApctl extends HLEModule {
 			threadMan.hleKernelStartThread(sceNetApctlThread, 0, 0, sceNetApctlThread.gpReg_addr);
 		}
 
-		cpu.gpr[2] = 0;
+		return 0;
 	}
 
 	/**
@@ -417,19 +409,13 @@ public class sceNetApctl extends HLEModule {
 	 * @return < 0 on error.
 	 */
 	@HLEFunction(nid = 0xB3EDD0EC, version = 150)
-	public void sceNetApctlTerm(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetApctlTerm"));
-		}
-
+	public int sceNetApctlTerm() {
 		changeState(PSP_NET_APCTL_STATE_DISCONNECTED);
 
 		sceNetApctlThreadTerminate = true;
 		triggerNetApctlThread();
 
-		cpu.gpr[2] = 0;
+		return 0;
 	}
 
 	/**
@@ -465,88 +451,75 @@ public class sceNetApctl extends HLEModule {
 	//		
 	//		};
 	@HLEFunction(nid = 0x2BEFDF23, version = 150)
-	public void sceNetApctlGetInfo(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
-
-		int code = cpu.gpr[4];
-		int pInfo = cpu.gpr[5];
-
+	public int sceNetApctlGetInfo(int code, TPointer pInfo) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetApctlGetInfo code=%d(%s), pInfo=0x%08X", code, getApctlInfoName(code), pInfo));
+			log.debug(String.format("sceNetApctlGetInfo code%s", getApctlInfoName(code)));
 		}
 
-		if (!Memory.isAddressGood(pInfo)) {
-			log.warn(String.format("sceNetApctlGetInfo invalid address pInfo=0x%08X", pInfo));
-			cpu.gpr[2] = -1;
-		} else {
-			cpu.gpr[2] = 0;
-			switch (code) {
-				case PSP_NET_APCTL_INFO_IP: {
-					String ip = getLocalHostIP();
-					Utilities.writeStringNZ(mem, pInfo, 16, ip);
-					if (log.isDebugEnabled()) {
-						log.debug(String.format("sceNetApctlGetInfo returning IP address '%s'", ip));
-					}
-					break;
+		switch (code) {
+			case PSP_NET_APCTL_INFO_IP: {
+				String ip = getLocalHostIP();
+				pInfo.setStringNZ(16, ip);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceNetApctlGetInfo returning IP address '%s'", ip));
 				}
-				case PSP_NET_APCTL_INFO_SSID: {
-					String ssid = getSSID();
-					if (ssid == null) {
-						cpu.gpr[2] = -1;
-					} else {
-						Utilities.writeStringNZ(mem, pInfo, SSID_NAME_LENGTH, ssid);
-						if (log.isDebugEnabled()) {
-							log.debug(String.format("sceNetApctlGetInfo returning SSID '%s'", ssid));
-						}
-					}
-					break;
+				break;
+			}
+			case PSP_NET_APCTL_INFO_SSID: {
+				String ssid = getSSID();
+				if (ssid == null) {
+					return -1;
 				}
-				case PSP_NET_APCTL_INFO_SSID_LENGTH: {
-					String ssid = getSSID();
-					if (ssid == null) {
-						cpu.gpr[2] = -1;
-					} else {
-						mem.write32(pInfo, Math.min(ssid.length(), SSID_NAME_LENGTH));
-					}
-					break;
+				pInfo.setStringNZ(SSID_NAME_LENGTH, ssid);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceNetApctlGetInfo returning SSID '%s'", ssid));
 				}
-				case PSP_NET_APCTL_INFO_PRIMDNS: {
-					Utilities.writeStringNZ(mem, pInfo, 16, getPrimaryDNS());
-					break;
+				break;
+			}
+			case PSP_NET_APCTL_INFO_SSID_LENGTH: {
+				String ssid = getSSID();
+				if (ssid == null) {
+					return -1;
 				}
-				case PSP_NET_APCTL_INFO_SECDNS: {
-					Utilities.writeStringNZ(mem, pInfo, 16, getSecondaryDNS());
-					break;
-				}
-				case PSP_NET_APCTL_INFO_GATEWAY: {
-					Utilities.writeStringNZ(mem, pInfo, 16, getGateway());
-					break;
-				}
-				case PSP_NET_APCTL_INFO_SUBNETMASK: {
-					Utilities.writeStringNZ(mem, pInfo, 16, getSubnetMask());
-					break;
-				}
-				case PSP_NET_APCTL_INFO_CHANNEL: {
-					int channel = Settings.getInstance().readInt("emu.sysparam.adhocchannel", 0);
-					mem.write8(pInfo, (byte) channel);
-					break;
-				}
-				case PSP_NET_APCTL_INFO_STRENGTH: {
-					mem.write8(pInfo, (byte) Wlan.getSignalStrenth());
-					break;
-				}
-				case PSP_NET_APCTL_INFO_USE_PROXY: {
-					mem.write32(pInfo, 0); // Don't use proxy
-					break;
-				}
-				default: {
-					cpu.gpr[2] = -1;
-					log.warn(String.format("sceNetApctlGetInfo unimplemented code=%d(%s)", code, getApctlInfoName(code)));
-					break;
-				}
+				pInfo.setValue32(Math.min(ssid.length(), SSID_NAME_LENGTH));
+				break;
+			}
+			case PSP_NET_APCTL_INFO_PRIMDNS: {
+				pInfo.setStringNZ(16, getPrimaryDNS());
+				break;
+			}
+			case PSP_NET_APCTL_INFO_SECDNS: {
+				pInfo.setStringNZ(16, getSecondaryDNS());
+				break;
+			}
+			case PSP_NET_APCTL_INFO_GATEWAY: {
+				pInfo.setStringNZ(16, getGateway());
+				break;
+			}
+			case PSP_NET_APCTL_INFO_SUBNETMASK: {
+				pInfo.setStringNZ(16, getSubnetMask());
+				break;
+			}
+			case PSP_NET_APCTL_INFO_CHANNEL: {
+				int channel = Settings.getInstance().readInt("emu.sysparam.adhocchannel", 0);
+				pInfo.setValue8((byte) channel);
+				break;
+			}
+			case PSP_NET_APCTL_INFO_STRENGTH: {
+				pInfo.setValue8((byte) Wlan.getSignalStrenth());
+				break;
+			}
+			case PSP_NET_APCTL_INFO_USE_PROXY: {
+				pInfo.setValue32(0); // Don't use proxy
+				break;
+			}
+			default: {
+				log.warn(String.format("sceNetApctlGetInfo unimplemented code=%d(%s)", code, getApctlInfoName(code)));
+				return -1;
 			}
 		}
+
+		return 0;
 	}
 
 	/**
@@ -560,21 +533,12 @@ public class sceNetApctl extends HLEModule {
 	 * @return A handler id or < 0 on error.
 	 */
 	@HLEFunction(nid = 0x8ABADD51, version = 150)
-	public void sceNetApctlAddHandler(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int handler = cpu.gpr[4];
-		int pArg = cpu.gpr[5];
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetApctlAddHandler handler=0x%08X, pArg=0x%08X", handler, pArg));
-		}
-
+	public int sceNetApctlAddHandler(TPointer handler, int handlerArg) {
     	int uid = SceUidManager.getNewUid(uidPurpose);
-    	ApctlHandler apctlHandler = new ApctlHandler(uid, handler, pArg);
+    	ApctlHandler apctlHandler = new ApctlHandler(uid, handler.getAddress(), handlerArg);
     	apctlHandlers.put(uid, apctlHandler);
 
-    	cpu.gpr[2] = uid;
+    	return uid;
 	}
 
 	/**
@@ -585,24 +549,15 @@ public class sceNetApctl extends HLEModule {
 	 * @return < 0 on error.
 	 */
 	@HLEFunction(nid = 0x5963991B, version = 150)
-	public void sceNetApctlDelHandler(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int handlerId = cpu.gpr[4];
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetApctlDelHandler handlerId=%d", handlerId));
-		}
-
+	public int sceNetApctlDelHandler(int handlerId) {
 		if (!apctlHandlers.containsKey(handlerId)) {
-			log.warn(String.format("sceNetApctlDelHandler unknown handlerId=%d", handlerId));
-			cpu.gpr[2] = -1;
-		} else {
-	        SceUidManager.releaseUid(handlerId, uidPurpose);
-			apctlHandlers.remove(handlerId);
-
-			cpu.gpr[2] = 0;
+			log.warn(String.format("sceNetApctlDelHandler unknown handlerId=0x%X", handlerId));
+			return -1;
 		}
+        SceUidManager.releaseUid(handlerId, uidPurpose);
+		apctlHandlers.remove(handlerId);
+
+		return 0;
 	}
 
 	/**
@@ -613,18 +568,10 @@ public class sceNetApctl extends HLEModule {
 	 * @return < 0 on error.
 	 */
 	@HLEFunction(nid = 0xCFB957C6, version = 150)
-	public void sceNetApctlConnect(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int connIndex = cpu.gpr[4];
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetApctlConnect connIndex=%d", connIndex));
-		}
-
+	public int sceNetApctlConnect(int connIndex) {
 		hleNetApctlConnect(connIndex);
 
-		cpu.gpr[2] = 0;
+		return 0;
 	}
 
 	/**
@@ -633,16 +580,10 @@ public class sceNetApctl extends HLEModule {
 	 * @return < 0 on error.
 	 */
 	@HLEFunction(nid = 0x24FE91A1, version = 150)
-	public void sceNetApctlDisconnect(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		if (log.isDebugEnabled()) {
-			log.debug("sceNetApctlDisconnect");
-		}
-
+	public int sceNetApctlDisconnect() {
 		changeState(PSP_NET_APCTL_STATE_DISCONNECTED);
 
-		cpu.gpr[2] = 0;
+		return 0;
 	}
 
 	/**
@@ -653,56 +594,32 @@ public class sceNetApctl extends HLEModule {
 	 * @return < 0 on error.
 	 */
 	@HLEFunction(nid = 0x5DEAC81B, version = 150)
-	public void sceNetApctlGetState(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
+	public int sceNetApctlGetState(TPointer32 stateAddr) {
+		stateAddr.setValue(state);
 
-		int pState = cpu.gpr[4];
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetApctlGetState pState=0x%08X, state=%d", pState, state));
-		}
-
-		if (!Memory.isAddressGood(pState)) {
-			log.warn(String.format("sceNetApctlGetState invalid address pState=0x%08X", pState));
-			cpu.gpr[2] = -1;
-		} else {
-			mem.write32(pState, state);
-			cpu.gpr[2] = 0;
-		}
+		return 0;
 	}
-        
+
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x2935C45B, version = 150)
-	public void sceNetApctlGetBSSDescEntry2(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn("Unimplemented NID function sceNetApctlGetBSSDescEntry2 [0x2935C45B]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
+	public int sceNetApctlGetBSSDescEntry2() {
+		return 0;
 	}
-        
+
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xA3E77E13, version = 150)
-	public void sceNetApctlScanSSID2(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn("Unimplemented NID function sceNetApctlScanSSID2 [0xA3E77E13]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
+	public int sceNetApctlScanSSID2() {
+		return 0;
 	}
-        
+
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xF25A5006, version = 150)
-	public void sceNetApctlGetBSSDescIDList2(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn("Unimplemented NID function sceNetApctlGetBSSDescIDList2 [0xF25A5006]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
+	public int sceNetApctlGetBSSDescIDList2() {
+		return 0;
 	}
 
 	@HLEFunction(nid = 0xE9B2E5E6, version = 150)
 	public int sceNetApctlScanUser() {
-		log.warn(String.format("PARTIAL sceNetApctlScanUser"));
-
 		doScan = true;
 		triggerNetApctlThread();
 
@@ -712,44 +629,32 @@ public class sceNetApctl extends HLEModule {
 	@HLEFunction(nid = 0x6BDDCB8C, version = 150)
 	public int sceNetApctlGetBSSDescIDListUser(TPointer32 sizeAddr, @CanBeNull TPointer buf) {
 		final int userInfoSize = 8;
-		log.warn(String.format("PARTIAL sceNetApctlGetBSSDescIDListUser sizeAddr=%s(%d, entries=%d), buf=%s", sizeAddr, sizeAddr.getValue(), sizeAddr.getValue() / userInfoSize, buf));
-
 		int entries = 1;
-		if (buf.isNull()) {
-			// Return size required
-			sizeAddr.setValue(entries * userInfoSize);
-		} else {
-        	Memory mem = Memory.getInstance();
-        	int addr = buf.getAddress();
-        	int endAddr = addr + sizeAddr.getValue();
-        	sizeAddr.setValue(userInfoSize * entries);
+		int size = sizeAddr.getValue();
+		// Return size required
+		sizeAddr.setValue(entries * userInfoSize);
+
+		if (buf.isNotNull()) {
+        	int offset = 0;
         	for (int i = 0; i < entries; i++) {
         		// Check if enough space available to write the next structure
-        		if (addr + userInfoSize > endAddr) {
+        		if (offset + userInfoSize > size) {
         			break;
         		}
 
         		if (log.isDebugEnabled()) {
-        			log.debug(String.format("sceNetApctlGetBSSDescIDListUser returning %d at 0x%08X", i, addr));
+        			log.debug(String.format("sceNetApctlGetBSSDescIDListUser returning %d at 0x%08X", i, buf.getAddress() + offset));
         		}
 
         		/** Pointer to next Network structure in list: will be written later */
-        		addr += 4;
+        		offset += 4;
 
         		/** Entry ID */
-        		mem.write32(addr, i);
-        		addr += 4;
+        		buf.setValue32(offset, i);
+        		offset += 4;
         	}
 
-        	for (int nextAddr = buf.getAddress(); nextAddr < addr; nextAddr += userInfoSize) {
-        		if (nextAddr + userInfoSize >= addr) {
-        			// Last one
-        			mem.write32(nextAddr, 0);
-        		} else {
-        			// Pointer to next one
-        			mem.write32(nextAddr, nextAddr + userInfoSize);
-        		}
-        	}
+        	fillNextPointersInLinkedList(buf, offset, userInfoSize);
 		}
 
 		return 0;
@@ -757,19 +662,15 @@ public class sceNetApctl extends HLEModule {
 
 	@HLEFunction(nid = 0x04776994, version = 150)
 	public int sceNetApctlGetBSSDescEntryUser(int entryId, int infoId, TPointer result) {
-		log.warn(String.format("PARTIAL sceNetApctlGetBSSDescEntryUser entryId=%d, infoId=%d, result=%s", entryId, infoId, result));
-
-		Memory mem = Memory.getInstance();
-
 		switch (infoId) {
 			case 0: // IBSS, 6 bytes
 				String ibss = Modules.sceNetAdhocctlModule.hleNetAdhocctlGetIBSS();
-				Utilities.writeStringNZ(mem, result.getAddress(), sceNetAdhocctl.IBSS_NAME_LENGTH, ibss);
+				result.setStringNZ(IBSS_NAME_LENGTH, ibss);
 				break;
 			case 1:
 				// Return 32 bytes
 				String ssid = getSSID();
-				Utilities.writeStringNZ(mem, result.getAddress(), SSID_NAME_LENGTH, ssid);
+				result.setStringNZ(SSID_NAME_LENGTH, ssid);
 				break;
 			case 2:
 				// Return one 32-bit value
@@ -782,7 +683,7 @@ public class sceNetApctl extends HLEModule {
 				break;
 			default:
 				log.warn(String.format("sceNetApctlGetBSSDescEntryUser unknown id %d", infoId));
-				break;
+				return -1;
 		}
 
 		return 0;

@@ -96,6 +96,7 @@ final public class TPointer implements ITPointerBase {
 	public void setValue8(byte value) { setValue8(0, value); }
 	public void setValue16(short value) { setValue16(0, value); }
 	public void setValue32(int value) { setValue32(0, value); }
+	public void setValue32(boolean value) { setValue32(0, value); }
 	public void setValue64(long value) { setValue64(0, value); }
 
 	public byte  getValue8(int offset) { return (byte) memory.read8(address + offset); }
@@ -106,6 +107,7 @@ final public class TPointer implements ITPointerBase {
 	public void setValue8(int offset, byte value) { if (isAddressGood()) memory.write8(address + offset, value); }
 	public void setValue16(int offset, short value) { if (isAddressGood()) memory.write16(address + offset, value); }
 	public void setValue32(int offset, int value) { if (isAddressGood()) memory.write32(address + offset, value); }
+	public void setValue32(int offset, boolean value) { if (isAddressGood()) memory.write32(address + offset, value ? 1 : 0); }
 	public void setValue64(int offset, long value) { if (isAddressGood()) memory.write64(address + offset, value); }
 
 	public String getStringNZ(int n) {
@@ -130,6 +132,56 @@ final public class TPointer implements ITPointerBase {
 	
 	public <T> T getObject(Class<T> objectClass, int offset) {
 		return SerializeMemory.unserialize(objectClass, new TPointerInputStream(offset));
+	}
+
+	/**
+	 * Set "length" bytes to the value "data" starting at the pointer address.
+	 * Equivalent to
+	 *     Memory.memset(getAddress(), data, length);
+	 *
+	 * @param data    the byte to be set in memory
+	 * @param length  the number of bytes to be set
+	 */
+	public void memset(byte data, int length) {
+		memset(0, data, length);
+	}
+
+	/**
+	 * Set "length" bytes to the value "data" starting at the pointer address
+	 * with the given "offset".
+	 * Equivalent to
+	 *     Memory.memset(getAddress() + offset, data, length);
+	 *
+	 * @param offset  the address offset from the pointer address
+	 * @param data    the byte to be set in memory
+	 * @param length  the number of bytes to be set
+	 */
+	public void memset(int offset, byte data, int length) {
+		memory.memset(getAddress() + offset, data, length);
+	}
+
+	/**
+	 * Set "length" bytes to the value 0 starting at the pointer address.
+	 * Equivalent to
+	 *     Memory.memset(getAddress(), 0, length);
+	 *
+	 * @param length  the number of bytes to be set
+	 */
+	public void clear(int length) {
+		clear(0, length);
+	}
+
+	/**
+	 * Set "length" bytes to the value 0 starting at the pointer address
+	 * with the given "offset".
+	 * Equivalent to
+	 *     Memory.memset(getAddress() + offset, 0, length);
+	 *
+	 * @param offset  the address offset from the pointer address
+	 * @param length  the number of bytes to be set
+	 */
+	public void clear(int offset, int length) {
+		memset(offset, (byte) 0, length);
 	}
 
 	@Override

@@ -16,60 +16,39 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Memory;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceNetIfhandle extends HLEModule {
-
-    protected static Logger log = Modules.getLogger("sceNetIfhandle");
+    public static Logger log = Modules.getLogger("sceNetIfhandle");
+    private int netDropRate;
+    private int netDropDuration;
 
     @Override
     public String getName() {
         return "sceNetIfhandle";
     }
 
-    private int netDropRate;
-    private int netDropDuration;
-
     @HLEFunction(nid = 0xC80181A2, version = 150, checkInsideInterrupt = true)
-    public void sceNetGetDropRate(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
+    public int sceNetGetDropRate(@CanBeNull TPointer32 dropRateAddr, @CanBeNull TPointer32 dropDurationAddr) {
+        dropRateAddr.setValue(netDropRate);
+        dropRateAddr.setValue(netDropDuration);
 
-        int dropRateAddr = cpu.gpr[4];
-        int dropDurationAddr = cpu.gpr[5];
-
-        log.warn("PARTIAL: sceNetGetDropRate (dropRateAddr=0x" + Integer.toHexString(dropRateAddr)
-                + ", dropDurationAddr=0x" + Integer.toHexString(dropDurationAddr) + ")");
-
-        
-        if(Memory.isAddressGood(dropRateAddr) && Memory.isAddressGood(dropDurationAddr)) {
-            mem.write32(dropRateAddr, netDropRate);
-            mem.write32(dropDurationAddr, netDropDuration);
-        }
-        cpu.gpr[2] = 0;
+        return 0;
     }
-    
-    @HLEFunction(nid = 0xFD8585E1, version = 150, checkInsideInterrupt = true)
-    public void sceNetSetDropRate(Processor processor) {
-        CpuState cpu = processor.cpu;
-        
-        int dropRate = cpu.gpr[4];
-        int dropDuration = cpu.gpr[5];
 
-        log.warn("PARTIAL: sceNetSetDropRate (dropRate=" + dropRate
-                + "%, dropDuration=" + dropDuration + "s)");
-        
-        
+    @HLEFunction(nid = 0xFD8585E1, version = 150, checkInsideInterrupt = true)
+    public int sceNetSetDropRate(int dropRate, int dropDuration) {
         netDropRate = dropRate;
         netDropDuration = dropDuration;
-        cpu.gpr[2] = 0;
-    }
 
+        return 0;
+    }
 }

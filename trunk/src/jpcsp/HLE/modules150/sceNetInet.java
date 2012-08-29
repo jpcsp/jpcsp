@@ -16,7 +16,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.Allegrex.Common._v0;
+import jpcsp.HLE.CanBeNull;
+import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.PspString;
+import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.BindException;
@@ -64,10 +74,8 @@ import jpcsp.util.Utilities;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.Processor;
 
-import jpcsp.Allegrex.CpuState;
-
+@HLELogging
 public class sceNetInet extends HLEModule {
     public static Logger log = Modules.getLogger("sceNetInet");
 
@@ -244,12 +252,12 @@ public class sceNetInet extends HLEModule {
 		public Selector selector;
 		public RawSelector rawSelector;
 		public int numberSockets;
-		public int readSocketsAddr;
-		public int writeSocketsAddr;
-		public int outOfBandSocketsAddr;
+		public TPointer readSocketsAddr;
+		public TPointer writeSocketsAddr;
+		public TPointer outOfBandSocketsAddr;
 		public int count;
 
-		public BlockingSelectState(Selector selector, RawSelector rawSelector, int numberSockets, int readSocketsAddr, int writeSocketsAddr, int outOfBandSocketsAddr, long timeout, int count) {
+		public BlockingSelectState(Selector selector, RawSelector rawSelector, int numberSockets, TPointer readSocketsAddr, TPointer writeSocketsAddr, TPointer outOfBandSocketsAddr, long timeout, int count) {
 			super(null, timeout);
 			this.selector = selector;
 			this.rawSelector = rawSelector;
@@ -1286,7 +1294,7 @@ public class sceNetInet extends HLEModule {
 				log.error(e);
 			}
 			sockAddrInternet.readFromInetSocketAddress((InetSocketAddress) socketChannel.socket().getRemoteSocketAddress());
-			sockAddrInternet.write(Processor.memory);
+			sockAddrInternet.write(Memory.getInstance());
 
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("sceNetInetAccept accepted connection from %s on socket %s", sockAddrInternet.toString(), inetSocket.toString()));
@@ -1465,7 +1473,7 @@ public class sceNetInet extends HLEModule {
 				if (socketAddress instanceof InetSocketAddress) {
 					InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;
 					fromAddr.readFromInetSocketAddress(inetSocketAddress);
-					fromAddr.write(Processor.memory);
+					fromAddr.write(Memory.getInstance());
 				}
 
 				clearError();
@@ -1806,7 +1814,7 @@ public class sceNetInet extends HLEModule {
 
 				fromAddr.sin_family = AF_INET;
 				fromAddr.sin_addr = bytesToInternetAddress(address);
-				fromAddr.write(Processor.memory);
+				fromAddr.write(Memory.getInstance());
 
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("sceNetInetRecvfrom socket=%d received %d bytes from %s", getUid(), length, fromAddr));
@@ -1995,14 +2003,14 @@ public class sceNetInet extends HLEModule {
 		SceUidManager.releaseId(id, idPurpose);
 	}
 
-	protected int readSocketList(Selector selector, RawSelector rawSelector, int address, int n, int selectorOperation, String comment) {
+	protected int readSocketList(Selector selector, RawSelector rawSelector, TPointer address, int n, int selectorOperation, String comment) {
 		int closedSocketsCount = 0;
 
-		if (address != 0) {
+		if (address.isNotNull()) {
 			LinkedList<Integer> closedChannels = new LinkedList<Integer>();
 			int length = (n + 7) / 8;
 			if (selectorOperation != 0) {
-				IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 4);
+				IMemoryReader memoryReader = MemoryReader.getMemoryReader(address.getAddress(), length, 4);
 				int value = 0;
 				for (int socket = 0; socket < n; socket++) {
 					if ((socket % 32) == 0) {
@@ -2044,7 +2052,7 @@ public class sceNetInet extends HLEModule {
 
 			// Clear the socket list so that we just have to set the bits for
 			// the sockets that are ready.
-			Processor.memory.memset(address, (byte) 0, length);
+			address.clear(length);
 
 			// and set the bit for all the closed channels
 			for (Integer socket : closedChannels) {
@@ -2056,16 +2064,15 @@ public class sceNetInet extends HLEModule {
 		return closedSocketsCount;
 	}
 
-	protected String dumpSelectBits(int addr, int n) {
-		if (addr == 0 || n <= 0) {
+	protected String dumpSelectBits(TPointer addr, int n) {
+		if (addr.isNull() || n <= 0) {
 			return "";
 		}
 
 		StringBuilder dump = new StringBuilder();
-		Memory mem = Processor.memory;
 		for (int socket = 0; socket < n; socket++) {
 			int bit = 1 << (socket % 8);
-			int value = mem.read8(addr + (socket / 8));
+			int value = addr.getValue8(socket / 8);
 			if ((value & bit) != 0) {
 				if (dump.length() > 0) {
 					dump.append(", ");
@@ -2077,13 +2084,11 @@ public class sceNetInet extends HLEModule {
 		return dump.toString();
 	}
 
-	protected void setSelectBit(int addr, int socket) {
-		if (addr != 0) {
-			Memory mem = Processor.memory;
-
-			addr += socket / 8;
+	protected void setSelectBit(TPointer addr, int socket) {
+		if (addr.isNotNull()) {
+			int offset = socket / 8;
 			int value = 1 << (socket % 8);
-			mem.write8(addr, (byte) (mem.read8(addr) | value));
+			addr.setValue8(offset, (byte) (addr.getValue8(offset) | value));
 		}
 	}
 
@@ -2102,7 +2107,7 @@ public class sceNetInet extends HLEModule {
 	protected void unblockThread(BlockingState blockingState, int returnValue) {
 		SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getThreadById(blockingState.threadId);
 		if (thread != null) {
-			thread.cpuContext.gpr[2] = returnValue;
+			thread.cpuContext.gpr[_v0] = returnValue;
 		}
 		if (blockingState.threadBlocked) {
 			if (log.isDebugEnabled()) {
@@ -2219,7 +2224,7 @@ public class sceNetInet extends HLEModule {
 				blockingState.selector.close();
 
 				// Write back the updated revents fields
-				Memory mem = Processor.memory;
+				Memory mem = Memory.getInstance();
 				for (int i = 0; i < blockingState.pollFds.length; i++) {
 					blockingState.pollFds[i].write(mem);
 					if (log.isDebugEnabled()) {
@@ -2306,13 +2311,13 @@ public class sceNetInet extends HLEModule {
 				blockingState.rawSelector.close();
 
 				if (log.isDebugEnabled() && count > 0) {
-					if (blockingState.readSocketsAddr != 0) {
+					if (blockingState.readSocketsAddr.isNotNull()) {
 						log.debug(String.format("sceNetInetSelect returning Read Sockets       : %s", dumpSelectBits(blockingState.readSocketsAddr, blockingState.numberSockets)));
 					}
-					if (blockingState.writeSocketsAddr != 0) {
+					if (blockingState.writeSocketsAddr.isNotNull()) {
 						log.debug(String.format("sceNetInetSelect returning Write Sockets      : %s", dumpSelectBits(blockingState.writeSocketsAddr, blockingState.numberSockets)));
 					}
-					if (blockingState.outOfBandSocketsAddr != 0) {
+					if (blockingState.outOfBandSocketsAddr.isNotNull()) {
 						log.debug(String.format("sceNetInetSelect returning Out-of-band Sockets: %s", dumpSelectBits(blockingState.outOfBandSocketsAddr, blockingState.numberSockets)));
 					}
 				}
@@ -2435,348 +2440,216 @@ public class sceNetInet extends HLEModule {
 		}
 	}
 
+	public int checkSocket(int socket) {
+		if (!sockets.containsKey(socket)) {
+			log.warn(String.format("checkSocket invalid socket=0x%X", socket));
+			throw new SceKernelErrorException(-1); // Unknown error code
+		}
+
+		return socket;
+	}
+
+	public int checkAddressLength(int addressLength) {
+		if (addressLength < 16) {
+			log.warn(String.format("checkAddressLength invalid addressLength=%d", addressLength));
+			throw new SceKernelErrorException(-1); // Unknown error code
+		}
+
+		return addressLength;
+	}
+
 	// int sceNetInetInit(void);
 	@HLEFunction(nid = 0x17943399, version = 150)
-	public void sceNetInetInit(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		// This function has no parameter
-		log.debug("sceNetInetInit");
-
-		cpu.gpr[2] = 0;
+	public int sceNetInetInit() {
+		return 0;
 	}
 
 	// int sceNetInetTerm(void);
 	@HLEFunction(nid = 0xA9ED66B9, version = 150)
-	public void sceNetInetTerm(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		// This function has no parameter
-		log.debug("sceNetInetTerm");
-
-		cpu.gpr[2] = 0;
+	public int sceNetInetTerm() {
+		return 0;
 	}
 
-	// int     sceNetInetAccept(int s, struct sockaddr *addr, socklen_t *addrlen);
+	// int sceNetInetAccept(int s, struct sockaddr *addr, socklen_t *addrlen);
 	@HLEFunction(nid = 0xDB094E1B, version = 150)
-	public void sceNetInetAccept(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
+	public int sceNetInetAccept(@CheckArgument("checkSocket") int socket, TPointer address, TPointer32 addressLengthAddr) {
+		pspInetSocket inetSocket = sockets.get(socket);
+		pspNetSockAddrInternet sockAddrInternet = new pspNetSockAddrInternet();
 
-		int socket = cpu.gpr[4];
-		int address = cpu.gpr[5];
-		int addressLengthAddr = cpu.gpr[6];
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetAccept socket=%d, address=0x%08X, addressLengthAddr=0x%08X", socket, address, addressLengthAddr));
+		int addressLength = addressLengthAddr.getValue();
+		// addressLength is unsigned int
+		if (addressLength < 0) {
+			addressLength = Integer.MAX_VALUE;
+		}
+		sockAddrInternet.setMaxSize(addressLength);
+		sockAddrInternet.write(address);
+		if (sockAddrInternet.sizeof() < addressLength) {
+			addressLengthAddr.setValue(sockAddrInternet.sizeof());
 		}
 
-		if (!Memory.isAddressGood(address)) {
-			log.warn(String.format("sceNetInetAccept invalid address=0x%08X", address));
-			cpu.gpr[2] = -1;
-		} else if (!Memory.isAddressGood(addressLengthAddr)) {
-			log.warn(String.format("sceNetInetAccept invalid addressLengthAddr=0x%08X", addressLengthAddr));
-			cpu.gpr[2] = -1;
-		} else if (!sockets.containsKey(socket)) {
-			log.warn(String.format("sceNetInetAccept invalid socket=%d", socket));
-			cpu.gpr[2] = -1;
-		} else {
-			pspInetSocket inetSocket = sockets.get(socket);
-			pspNetSockAddrInternet sockAddrInternet = new pspNetSockAddrInternet();
-
-			int addressLength = mem.read32(addressLengthAddr);
-			// addressLength is unsigned int
-			if (addressLength < 0) {
-				addressLength = Integer.MAX_VALUE;
-			}
-			sockAddrInternet.setMaxSize(addressLength);
-			sockAddrInternet.write(mem, address);
-			if (sockAddrInternet.sizeof() < addressLength) {
-				mem.write32(addressLengthAddr, sockAddrInternet.sizeof());
-			}
-
-			cpu.gpr[2] = inetSocket.accept(sockAddrInternet);
-		}
+		return inetSocket.accept(sockAddrInternet);
 	}
 
-	// int     sceNetInetBind(int socket, const struct sockaddr *address, socklen_t address_len);
+	// int sceNetInetBind(int socket, const struct sockaddr *address, socklen_t address_len);
 	@HLEFunction(nid = 0x1A33F9AE, version = 150)
-	public void sceNetInetBind(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
-
-		int socket = cpu.gpr[4];
-		int address = cpu.gpr[5];
-		int addressLength = cpu.gpr[6];
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetBind socket=%d, address=0x%08X, addressLength=%d", socket, address, addressLength));
+	public int sceNetInetBind(@CheckArgument("checkSocket") int socket, pspNetSockAddrInternet sockAddrInternet, @CheckArgument("checkAddressLength") int addressLength) {
+		if (sockAddrInternet.sin_family != AF_INET) {
+			log.warn(String.format("sceNetInetBind invalid socket address family=%d", sockAddrInternet.sin_family));
+			return -1;
 		}
 
-		if (!Memory.isAddressGood(address)) {
-			log.warn(String.format("sceNetInetBind invalid address=0x%08X", address));
-			cpu.gpr[2] = -1;
-		} else if (addressLength < 16) {
-			log.warn(String.format("sceNetInetBind invalid addressLength=%d", addressLength));
-			cpu.gpr[2] = -1;
-		} else if (!sockets.containsKey(socket)) {
-			log.warn(String.format("sceNetInetBind invalid socket=%d", socket));
-			cpu.gpr[2] = -1;
-		} else {
-			pspInetSocket inetSocket = sockets.get(socket);
-			pspNetSockAddrInternet sockAddrInternet = new pspNetSockAddrInternet();
-			sockAddrInternet.read(mem, address);
-			if (sockAddrInternet.sin_family != AF_INET) {
-				log.warn(String.format("sceNetInetBind invalid socket address family=%d", sockAddrInternet.sin_family));
-				cpu.gpr[2] = -1;
-			} else {
-				cpu.gpr[2] = inetSocket.bind(sockAddrInternet);
-				if (cpu.gpr[2] == 0) {
-					log.info(String.format("sceNetInetBind binding to %s", sockAddrInternet.toString()));
-				} else {
-					log.info(String.format("sceNetInetBind failed binding to %s", sockAddrInternet.toString()));
-				}
+		pspInetSocket inetSocket = sockets.get(socket);
+		int result = inetSocket.bind(sockAddrInternet);
+
+		if (result == 0) {
+			if (log.isInfoEnabled()) {
+				log.info(String.format("sceNetInetBind binding to %s", sockAddrInternet.toString()));
 			}
+		} else {
+			log.warn(String.format("sceNetInetBind failed binding to %s", sockAddrInternet.toString()));
 		}
+
+		return result;
 	}
 
 	// int sceNetInetClose(int s);
 	@HLEFunction(nid = 0x8D7284EA, version = 150)
-	public void sceNetInetClose(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceNetInetClose(@CheckArgument("checkSocket") int socket) {
+		pspInetSocket inetSocket = sockets.get(socket);
+		int result = inetSocket.close();
+		releaseSocketId(socket);
+        sockets.remove(socket);
 
-		int socket = cpu.gpr[4];
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetClose socket=%d", socket));
-		}
-
-		if (!sockets.containsKey(socket)) {
-			log.warn(String.format("sceNetInetClose invalid socket=%d", socket));
-			cpu.gpr[2] = -1;
-		} else {
-			pspInetSocket inetSocket = sockets.get(socket);
-			cpu.gpr[2] = inetSocket.close();
-			releaseSocketId(socket);
-	        sockets.remove(socket);
-		}
+        return result;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x805502DD, version = 150)
-	public void sceNetInetCloseWithRST(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn("Unimplemented NID function sceNetInetCloseWithRST [0x805502DD]");
-
-		cpu.gpr[2] = 0;
+	public int sceNetInetCloseWithRST() {
+		return 0;
 	}
 
-	// int     sceNetInetConnect(int socket, const struct sockaddr *serv_addr, socklen_t addrlen);
+	// int sceNetInetConnect(int socket, const struct sockaddr *serv_addr, socklen_t addrlen);
 	@HLEFunction(nid = 0x410B34AA, version = 150)
-	public void sceNetInetConnect(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
-
-		int socket = cpu.gpr[4];
-		int address = cpu.gpr[5];
-		int addressLength = cpu.gpr[6];
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetConnect socket=%d, address=0x%08X, addressLength=%d", socket, address, addressLength));
+	public int sceNetInetConnect(@CheckArgument("checkSocket") int socket, pspNetSockAddrInternet sockAddrInternet, @CheckArgument("checkAddressLength") int addressLength) {
+		if (sockAddrInternet.sin_family != AF_INET) {
+			log.warn(String.format("sceNetInetConnect invalid socket address family=%d", sockAddrInternet.sin_family));
+			return -1;
 		}
 
-		if (!sockets.containsKey(socket)) {
-			log.warn(String.format("sceNetInetConnect invalid socket=%d", socket));
-			cpu.gpr[2] = -1;
-		} else if (!Memory.isAddressGood(address)) {
-			log.warn(String.format("sceNetInetConnect invalid address=0x%08X", address));
-			cpu.gpr[2] = -1;
-		} else if (addressLength < 16) {
-			log.warn(String.format("sceNetInetConnect invalid addressLength=%d", addressLength));
-			cpu.gpr[2] = -1;
-		} else {
-			pspInetSocket inetSocket = sockets.get(socket);
-			pspNetSockAddrInternet sockAddrInternet = new pspNetSockAddrInternet();
-			sockAddrInternet.read(mem, address);
-			if (sockAddrInternet.sin_family != AF_INET) {
-				log.warn(String.format("sceNetInetConnect invalid socket address family=%d", sockAddrInternet.sin_family));
-				cpu.gpr[2] = -1;
-			} else {
-				cpu.gpr[2] = inetSocket.connect(sockAddrInternet);
+		pspInetSocket inetSocket = sockets.get(socket);
+		int result = inetSocket.connect(sockAddrInternet);
 
+		if (result == 0) {
+			if (log.isInfoEnabled()) {
+				log.info(String.format("sceNetInetConnect connected to %s", sockAddrInternet.toString()));
+			}
+		} else {
+			if (getErrno() == EINPROGRESS) {
 				if (log.isInfoEnabled()) {
-					if (cpu.gpr[2] == 0) {
-						log.info(String.format("sceNetInetConnect connected to %s", sockAddrInternet.toString()));
-					} else {
-						if (getErrno() == EINPROGRESS) {
-							log.info(String.format("sceNetInetConnect connecting to %s", sockAddrInternet.toString()));
-						} else {
-							log.info(String.format("sceNetInetConnect failed connecting to %s (errno=%d)", sockAddrInternet.toString(), getErrno()));
-						}
-					}
+					log.info(String.format("sceNetInetConnect connecting to %s", sockAddrInternet.toString()));
 				}
+			} else {
+				log.warn(String.format("sceNetInetConnect failed connecting to %s (errno=%d)", sockAddrInternet.toString(), getErrno()));
 			}
 		}
+
+		return result;
 	}
 
 	@HLEFunction(nid = 0xE247B6D6, version = 150)
-	public void sceNetInetGetpeername(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
+	public int sceNetInetGetpeername(@CheckArgument("checkSocket") int socket, TPointer address, TPointer32 addressLengthAddr) {
+		pspNetSockAddrInternet sockAddrInternet = new pspNetSockAddrInternet();
+		pspInetSocket inetSocket = sockets.get(socket);
+		int result = inetSocket.getSockname(sockAddrInternet);
 
-		int socket = cpu.gpr[4];
-		int address = cpu.gpr[5];
-		int addressLengthAddr = cpu.gpr[6];
+		sockAddrInternet.setMaxSize(addressLengthAddr.getValue());
+		sockAddrInternet.write(address);
+		addressLengthAddr.setValue(sockAddrInternet.sizeof());
 
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetGetpeername socket=%d, address=0x%08X, addressLengthAddr=0x%08X", socket, address, addressLengthAddr));
-		}
-
-		if (!sockets.containsKey(socket)) {
-			log.warn(String.format("sceNetInetGetpeername invalid socket=%d", socket));
-			cpu.gpr[2] = -1;
-		} else if (!Memory.isAddressGood(address)) {
-			log.warn(String.format("sceNetInetGetpeername invalid address address=0x%08X", address));
-			cpu.gpr[2] = -1;
-		} else if (!Memory.isAddressGood(addressLengthAddr)) {
-			log.warn(String.format("sceNetInetGetpeername invalid address addressLengthAddr=0x%08X", addressLengthAddr));
-			cpu.gpr[2] = -1;
-		} else {
-			pspNetSockAddrInternet sockAddrInternet = new pspNetSockAddrInternet();
-			pspInetSocket inetSocket = sockets.get(socket);
-			cpu.gpr[2] = inetSocket.getSockname(sockAddrInternet);
-
-			sockAddrInternet.setMaxSize(mem.read32(addressLengthAddr));
-			sockAddrInternet.write(mem, address);
-			mem.write32(addressLengthAddr, sockAddrInternet.sizeof());
-		}
+		return result;
 	}
 
 	@HLEFunction(nid = 0x162E6FD5, version = 150)
-	public void sceNetInetGetsockname(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
+	public int sceNetInetGetsockname(@CheckArgument("checkSocket") int socket, TPointer address, TPointer32 addressLengthAddr) {
+		pspNetSockAddrInternet sockAddrInternet = new pspNetSockAddrInternet();
+		pspInetSocket inetSocket = sockets.get(socket);
+		int result = inetSocket.getSockname(sockAddrInternet);
 
-		int socket = cpu.gpr[4];
-		int address = cpu.gpr[5];
-		int addressLengthAddr = cpu.gpr[6];
+		sockAddrInternet.setMaxSize(addressLengthAddr.getValue());
+		sockAddrInternet.write(address);
+		addressLengthAddr.setValue(sockAddrInternet.sizeof());
 
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetGetsockname socket=%d, address=0x%08X, addressLengthAddr=0x%08X", socket, address, addressLengthAddr));
-		}
-
-		if (!sockets.containsKey(socket)) {
-			log.warn(String.format("sceNetInetGetsockname invalid socket=%d", socket));
-			cpu.gpr[2] = -1;
-		} else if (!Memory.isAddressGood(address)) {
-			log.warn(String.format("sceNetInetGetsockname invalid address address=0x%08X", address));
-			cpu.gpr[2] = -1;
-		} else if (!Memory.isAddressGood(addressLengthAddr)) {
-			log.warn(String.format("sceNetInetGetsockname invalid address addressLengthAddr=0x%08X", addressLengthAddr));
-			cpu.gpr[2] = -1;
-		} else {
-			pspNetSockAddrInternet sockAddrInternet = new pspNetSockAddrInternet();
-			pspInetSocket inetSocket = sockets.get(socket);
-			cpu.gpr[2] = inetSocket.getSockname(sockAddrInternet);
-
-			sockAddrInternet.setMaxSize(mem.read32(addressLengthAddr));
-			sockAddrInternet.write(mem, address);
-			mem.write32(addressLengthAddr, sockAddrInternet.sizeof());
-		}
+		return result;
 	}
 
 	@HLEFunction(nid = 0x4A114C7C, version = 150)
-	public void sceNetInetGetsockopt(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
-
-		int socket = cpu.gpr[4];
-		int level = cpu.gpr[5];
-		int optionName = cpu.gpr[6];
-		int optionValue = cpu.gpr[7];
-		int optionLengthAddr = cpu.gpr[8];
-		int optionLength = Memory.isAddressGood(optionLengthAddr) ? mem.read32(optionLengthAddr) : 0;
+	public int sceNetInetGetsockopt(@CheckArgument("checkSocket") int socket, int level, int optionName, TPointer optionValue, @CanBeNull TPointer32 optionLengthAddr) {
+		int optionLength = optionLengthAddr.isNull() ? 0 : optionLengthAddr.getValue();
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetGetsockopt socket=%d, level=%d, optionName=0x%X(%s), optionValue=0x%08X, optionLength=0x%08X(%d)", socket, level, optionName, getOptionNameString(optionName), optionValue, optionLengthAddr, optionLength));
+			log.debug(String.format("sceNetInetGetsockopt optionName=%s, optionLength=%d", getOptionNameString(optionName), optionLength));
 		}
 
-		if (!sockets.containsKey(socket)) {
-			log.warn(String.format("sceNetInetGetsockopt unknown socket=%d", socket));
-			cpu.gpr[2] = -1;
-		} else {
-			pspInetSocket inetSocket = sockets.get(socket);
+		pspInetSocket inetSocket = sockets.get(socket);
 
-			cpu.gpr[2] = 0;
-			if (optionName == SO_ERROR && optionLength >= 4) {
-				mem.write32(optionValue, inetSocket.getErrorAndClear());
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetGetsockopt SO_ERROR returning %d", mem.read32(optionValue)));
-				}
-				mem.write32(optionLengthAddr, 4);
-			} else if (optionName == SO_NONBLOCK && optionLength >= 4) {
-				mem.write32(optionValue, inetSocket.isBlocking() ? 0 : 1);
-				mem.write32(optionLengthAddr, 4);
-			} else if (optionName == SO_BROADCAST && optionLength >= 4) {
-				mem.write32(optionValue, inetSocket.isBroadcast() ? 1 : 0);
-				mem.write32(optionLengthAddr, 4);
-			} else if (optionName == SO_RCVLOWAT && optionLength >= 4) {
-				mem.write32(optionValue, inetSocket.getReceiveLowWaterMark());
-				mem.write32(optionLengthAddr, 4);
-			} else if (optionName == SO_SNDLOWAT && optionLength >= 4) {
-				mem.write32(optionValue, inetSocket.getSendLowWaterMark());
-				mem.write32(optionLengthAddr, 4);
-			} else if (optionName == SO_RCVTIMEO && optionLength >= 4) {
-				int timeout = inetSocket.getReceiveTimeout();
-				// Returning 0 for "no timeout" value
-				mem.write32(optionValue, timeout == pspInetSocket.NO_TIMEOUT_INT ? 0 : timeout);
-				mem.write32(optionLengthAddr, 4);
-			} else if (optionName == SO_SNDTIMEO && optionLength >= 4) {
-				int timeout = inetSocket.getSendTimeout();
-				// Returning 0 for "no timeout" value
-				mem.write32(optionValue, timeout == pspInetSocket.NO_TIMEOUT_INT ? 0 : timeout);
-				mem.write32(optionLengthAddr, 4);
-			} else if (optionName == SO_RCVBUF && optionLength >= 4) {
-				mem.write32(optionValue, inetSocket.getReceiveBufferSize());
-				mem.write32(optionLengthAddr, 4);
-			} else if (optionName == SO_SNDBUF && optionLength >= 4) {
-				mem.write32(optionValue, inetSocket.getSendBufferSize());
-				mem.write32(optionLengthAddr, 4);
-			} else if (optionName == SO_KEEPALIVE && optionLength >= 4) {
-				mem.write32(optionValue, inetSocket.isKeepAlive() ? 1 : 0);
-				mem.write32(optionLengthAddr, 4);
-			} else if (optionName == SO_LINGER && optionLength >= 8) {
-				mem.write32(optionValue, inetSocket.isLingerEnabled() ? 1 : 0);
-				mem.write32(optionValue + 4, inetSocket.getLinger());
-				mem.write32(optionLengthAddr, 8);
-			} else if (optionName == SO_REUSEADDR && optionLength >= 4) {
-				mem.write32(optionValue, inetSocket.isReuseAddress() ? 1 : 0);
-				mem.write32(optionLengthAddr, 4);
-			} else {
-				log.warn(String.format("Unimplemented sceNetInetGetsockopt socket=%d, level=%d, optionName=0x%X, optionValue=0x%08X, optionLength=0x%08X(%d)", socket, level, optionName, optionValue, optionLengthAddr, optionLength));
+		if (optionName == SO_ERROR && optionLength >= 4) {
+			optionValue.setValue32(inetSocket.getErrorAndClear());
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("sceNetInetGetsockopt SO_ERROR returning %d", optionValue.getValue32()));
 			}
+			optionLengthAddr.setValue(4);
+		} else if (optionName == SO_NONBLOCK && optionLength >= 4) {
+			optionValue.setValue32(inetSocket.isBlocking());
+			optionLengthAddr.setValue(4);
+		} else if (optionName == SO_BROADCAST && optionLength >= 4) {
+			optionValue.setValue32(inetSocket.isBroadcast());
+			optionLengthAddr.setValue(4);
+		} else if (optionName == SO_RCVLOWAT && optionLength >= 4) {
+			optionValue.setValue32(inetSocket.getReceiveLowWaterMark());
+			optionLengthAddr.setValue(4);
+		} else if (optionName == SO_SNDLOWAT && optionLength >= 4) {
+			optionValue.setValue32(inetSocket.getSendLowWaterMark());
+			optionLengthAddr.setValue(4);
+		} else if (optionName == SO_RCVTIMEO && optionLength >= 4) {
+			int timeout = inetSocket.getReceiveTimeout();
+			// Returning 0 for "no timeout" value
+			optionValue.setValue32(timeout == pspInetSocket.NO_TIMEOUT_INT ? 0 : timeout);
+			optionLengthAddr.setValue(4);
+		} else if (optionName == SO_SNDTIMEO && optionLength >= 4) {
+			int timeout = inetSocket.getSendTimeout();
+			// Returning 0 for "no timeout" value
+			optionValue.setValue32(timeout == pspInetSocket.NO_TIMEOUT_INT ? 0 : timeout);
+			optionLengthAddr.setValue(4);
+		} else if (optionName == SO_RCVBUF && optionLength >= 4) {
+			optionValue.setValue32(inetSocket.getReceiveBufferSize());
+			optionLengthAddr.setValue(4);
+		} else if (optionName == SO_SNDBUF && optionLength >= 4) {
+			optionValue.setValue32(inetSocket.getSendBufferSize());
+			optionLengthAddr.setValue(4);
+		} else if (optionName == SO_KEEPALIVE && optionLength >= 4) {
+			optionValue.setValue32(inetSocket.isKeepAlive());
+			optionLengthAddr.setValue(4);
+		} else if (optionName == SO_LINGER && optionLength >= 8) {
+			optionValue.setValue32(0, inetSocket.isLingerEnabled());
+			optionValue.setValue32(4, inetSocket.getLinger());
+			optionLengthAddr.setValue(8);
+		} else if (optionName == SO_REUSEADDR && optionLength >= 4) {
+			optionValue.setValue32(inetSocket.isReuseAddress());
+			optionLengthAddr.setValue(4);
+		} else {
+			log.warn(String.format("Unimplemented sceNetInetGetsockopt socket=0x%X, level=0x%X, optionName=0x%X, optionValue=%s, optionLength=%s(0x%X)", socket, level, optionName, optionValue, optionLengthAddr, optionLength));
+			return -1;
 		}
+
+		return 0;
 	}
 
-	// int     sceNetInetListen(int s, int backlog);
+	// int sceNetInetListen(int s, int backlog);
 	@HLEFunction(nid = 0xD10A1A7A, version = 150)
-	public void sceNetInetListen(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int socket = cpu.gpr[4];
-		int backlog = cpu.gpr[5];
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetListen socket=%d, backlog=%d", socket, backlog));
-		}
-
-		if (!sockets.containsKey(socket)) {
-			log.warn(String.format("sceNetInetListen unknown socket=%d", socket));
-			cpu.gpr[2] = -1;
-		} else {
-			pspInetSocket inetSocket = sockets.get(socket);
-			cpu.gpr[2] = inetSocket.listen(backlog);
-		}
+	public int sceNetInetListen(@CheckArgument("checkSocket") int socket, int backlog) {
+		pspInetSocket inetSocket = sockets.get(socket);
+		return inetSocket.listen(backlog);
 	}
 
 	/*
@@ -2845,18 +2718,8 @@ public class sceNetInet extends HLEModule {
 	 *             the number of file descriptors for which revents is non-zero.
 	 */
 	@HLEFunction(nid = 0xFAABB1DD, version = 150)
-	public void sceNetInetPoll(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
-
-		int fds = cpu.gpr[4];
-		int nfds = cpu.gpr[5];
-		int timeout = cpu.gpr[6];
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetPoll fds=0x%08X, nfds=%d, timeout=%d", fds, nfds, timeout));
-		}
-
+	public int sceNetInetPoll(TPointer fds, int nfds, int timeout) {
+		int result = 0;
 		long timeoutUsec;
 		if (timeout == POLL_INFTIM) {
 			timeoutUsec = pspInetSocket.NO_TIMEOUT;
@@ -2870,7 +2733,7 @@ public class sceNetInet extends HLEModule {
 			pspInetPollFd[] pollFds = new pspInetPollFd[nfds];
 			for (int i = 0; i < nfds; i++) {
 				pspInetPollFd pollFd = new pspInetPollFd();
-				pollFd.read(mem, fds + i * pollFd.sizeof());
+				pollFd.read(fds, i * pollFd.sizeof());
 				pollFds[i] = pollFd;
 
 				if (pollFd.fd == -1) {
@@ -2913,125 +2776,77 @@ public class sceNetInet extends HLEModule {
 
 			BlockingPollState blockingState = new BlockingPollState(selector, pollFds, timeoutUsec);
 
+			SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
+			thread.cpuContext.gpr[_v0] = 0; // This will be overwritten by the execution of the blockingState
 			setErrno(0);
-			cpu.gpr[2] = 0; // This will be overwritten by the execution of the blockingState
 
 			// Check if there are ready operations, otherwise, block the thread
 			blockingState.execute();
+			result = thread.cpuContext.gpr[_v0];
 		} catch (IOException e) {
-			log.error(e);
+			log.error("sceNetInetPoll", e);
 			setErrno(-1);
-			cpu.gpr[2] = -1;
+			return -1;
 		}
+
+		return result;
 	}
 
 	// size_t  sceNetInetRecv(int s, void *buf, size_t len, int flags);
 	@HLEFunction(nid = 0xCDA85C99, version = 150)
-	public void sceNetInetRecv(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int socket = cpu.gpr[4];
-		int buffer = cpu.gpr[5];
-		int bufferLength = cpu.gpr[6];
-		int flags = cpu.gpr[7];
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetRecv socket=%d, buffer=0x%08X, bufferLength=%d, flags=0x%X", socket, buffer, bufferLength, flags));
-		}
-
-		if (!sockets.containsKey(socket)) {
-			log.warn(String.format("sceNetInetRecv invalid socket=%d", socket));
-			cpu.gpr[2] = -1;
-		} else if (!Memory.isAddressGood(buffer)) {
-			log.warn(String.format("sceNetInetRecv invalid buffer address 0x%08X", buffer));
-			cpu.gpr[2] = -1;
-		} else {
-			pspInetSocket inetSocket = sockets.get(socket);
-			cpu.gpr[2] = inetSocket.recv(buffer, bufferLength, flags);
-		}
+	public int sceNetInetRecv(@CheckArgument("checkSocket") int socket, TPointer buffer, int bufferLength, int flags) {
+		pspInetSocket inetSocket = sockets.get(socket);
+		return inetSocket.recv(buffer.getAddress(), bufferLength, flags);
 	}
 
 	// size_t  sceNetInetRecvfrom(int socket, void *buffer, size_t bufferLength, int flags, struct sockaddr *from, socklen_t *fromlen);
 	@HLEFunction(nid = 0xC91142E4, version = 150)
-	public void sceNetInetRecvfrom(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
+	public int sceNetInetRecvfrom(@CheckArgument("checkSocket") int socket, TPointer buffer, int bufferLength, int flags, TPointer from, TPointer32 fromLengthAddr) {
+		pspInetSocket inetSocket = sockets.get(socket);
+		pspNetSockAddrInternet fromAddrInternet = new pspNetSockAddrInternet();
 
-		int socket = cpu.gpr[4];
-		int buffer = cpu.gpr[5];
-		int bufferLength = cpu.gpr[6];
-		int flags = cpu.gpr[7];
-		int from = cpu.gpr[8];
-		int fromLengthAddr = cpu.gpr[9];
-		int fromLength = mem.read32(fromLengthAddr);
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetRecvfrom socket=%d, buffer=0x%08X, bufferLength=%d, flags=0x%X, from=0x%08X, fromLengthAddr=0x%08X(fromLength=%d)", socket, buffer, bufferLength, flags, from, fromLengthAddr, fromLength));
+		int fromLength = fromLengthAddr.getValue();
+		fromAddrInternet.setMaxSize(fromLength);
+		fromAddrInternet.write(from);
+		if (fromAddrInternet.sizeof() < fromLength) {
+			fromLengthAddr.setValue(fromAddrInternet.sizeof());
 		}
 
-		if (!sockets.containsKey(socket)) {
-			log.warn(String.format("sceNetInetRecvfrom invalid socket=%d", socket));
-			cpu.gpr[2] = -1;
-		} else if (!Memory.isAddressGood(buffer)) {
-			log.warn(String.format("sceNetInetRecvfrom invalid buffer address 0x%08X", buffer));
-			cpu.gpr[2] = -1;
-		} else {
-			pspInetSocket inetSocket = sockets.get(socket);
-			pspNetSockAddrInternet fromAddrInternet = new pspNetSockAddrInternet();
-
-			fromAddrInternet.setMaxSize(fromLength);
-			fromAddrInternet.write(mem, from);
-			if (fromAddrInternet.sizeof() < fromLength) {
-				mem.write32(fromLengthAddr, fromAddrInternet.sizeof());
-			}
-
-			cpu.gpr[2] = inetSocket.recvfrom(buffer, bufferLength, flags, fromAddrInternet);
-		}
+		return inetSocket.recvfrom(buffer.getAddress(), bufferLength, flags, fromAddrInternet);
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xEECE61D2, version = 150)
-	public void sceNetInetRecvmsg(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn("Unimplemented NID function sceNetInetRecvmsg [0xEECE61D2]");
-
-		cpu.gpr[2] = 0;
+	public int sceNetInetRecvmsg() {
+		return 0;
 	}
 
 	@HLEFunction(nid = 0x5BE8D595, version = 150)
-	public void sceNetInetSelect(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
-
-		int numberSockets = cpu.gpr[4];
-		int readSocketsAddr = cpu.gpr[5];
-		int writeSocketsAddr = cpu.gpr[6];
-		int outOfBandSocketsAddr = cpu.gpr[7];
-		int timeoutAddr = cpu.gpr[8];
-
+	public int sceNetInetSelect(int numberSockets, TPointer readSocketsAddr, TPointer writeSocketsAddr, TPointer outOfBandSocketsAddr, TPointer32 timeoutAddr) {
+		int result = 0;
 		numberSockets = Math.min(numberSockets, 256);
 
 		long timeoutUsec;
-		if (Memory.isAddressGood(timeoutAddr)) {
+		if (timeoutAddr.isNotNull()) {
 			// timeoutAddr points to the following structure:
 			// - offset 0: int seconds
 			// - offset 4: int microseconds
-			timeoutUsec = mem.read32(timeoutAddr) * 1000000L;
-			timeoutUsec += mem.read32(timeoutAddr + 4);
+			timeoutUsec = timeoutAddr.getValue(0) * 1000000L;
+			timeoutUsec += timeoutAddr.getValue(4);
 		} else {
 			// Take a very large value
 			timeoutUsec = pspInetSocket.NO_TIMEOUT;
 		}
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetSelect numberSockets=%d, readSocketsAddr=0x%08X, writeSocketsAddr=0x%08X, outOfBandSocketsAddr=0x%08X, timeoutAddr=0x%08X(%d us)", numberSockets, readSocketsAddr, writeSocketsAddr, outOfBandSocketsAddr, timeoutAddr, timeoutUsec));
-			if (readSocketsAddr != 0) {
+			log.debug(String.format("sceNetInetSelect timeout=%d us", timeoutUsec));
+			if (readSocketsAddr.isNotNull()) {
 				log.debug(String.format("sceNetInetSelect Read Sockets       : %s", dumpSelectBits(readSocketsAddr, numberSockets)));
 			}
-			if (writeSocketsAddr != 0) {
+			if (writeSocketsAddr.isNotNull()) {
 				log.debug(String.format("sceNetInetSelect Write Sockets      : %s", dumpSelectBits(writeSocketsAddr, numberSockets)));
 			}
-			if (outOfBandSocketsAddr != 0) {
+			if (outOfBandSocketsAddr.isNotNull()) {
 				log.debug(String.format("sceNetInetSelect Out-of-band Sockets: %s", dumpSelectBits(outOfBandSocketsAddr, numberSockets)));
 			}
 		}
@@ -3056,378 +2871,260 @@ public class sceNetInet extends HLEModule {
 			BlockingSelectState blockingState = new BlockingSelectState(selector, rawSelector, numberSockets, readSocketsAddr, writeSocketsAddr, outOfBandSocketsAddr, timeoutUsec, count);
 
 			setErrno(0);
-			cpu.gpr[2] = 0; // This will be overwritten by the execution of the blockingState
+			SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
+			thread.cpuContext.gpr[_v0] = 0; // This will be overwritten by the execution of the blockingState
 
 			// Check if there are ready operations, otherwise, block the thread
 			blockingState.execute();
+			result = thread.cpuContext.gpr[_v0];
 		} catch (IOException e) {
 			log.error(e);
 			setErrno(-1);
-			cpu.gpr[2] = -1;
+			return -1;
 		}
+
+		return result;
 	}
 
-	// size_t  sceNetInetSend(int socket, const void *buffer, size_t bufferLength, int flags);
+	// size_t sceNetInetSend(int socket, const void *buffer, size_t bufferLength, int flags);
 	@HLEFunction(nid = 0x7AA671BC, version = 150)
-	public void sceNetInetSend(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int socket = cpu.gpr[4];
-		int buffer = cpu.gpr[5];
-		int bufferLength = cpu.gpr[6];
-		int flags = cpu.gpr[7];
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetSend socket=%d, buffer=0x%08X, bufferLength=%d, flags=0x%X", socket, buffer, bufferLength, flags));
-			if (log.isTraceEnabled()) {
-				log.trace(String.format("Send data: %s", Utilities.getMemoryDump(buffer, bufferLength)));
-			}
+	public int sceNetInetSend(@CheckArgument("checkSocket") int socket, TPointer buffer, int bufferLength, int flags) {
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("Send data: %s", Utilities.getMemoryDump(buffer.getAddress(), bufferLength)));
 		}
 
-		if (!sockets.containsKey(socket)) {
-			log.warn(String.format("sceNetInetSend invalid socket=%d", socket));
-			cpu.gpr[2] = -1;
-		} else if (!Memory.isAddressGood(buffer)) {
-			log.warn(String.format("sceNetInetSend invalid buffer address 0x%08X", buffer));
-			cpu.gpr[2] = -1;
-		} else {
-			pspInetSocket inetSocket = sockets.get(socket);
-			cpu.gpr[2] = inetSocket.send(buffer, bufferLength, flags);
-		}
+		pspInetSocket inetSocket = sockets.get(socket);
+		return inetSocket.send(buffer.getAddress(), bufferLength, flags);
 	}
 
-	// size_t  sceNetInetSendto(int socket, const void *buffer, size_t bufferLength, int flags, const struct sockaddr *to, socklen_t tolen);
+	// size_t sceNetInetSendto(int socket, const void *buffer, size_t bufferLength, int flags, const struct sockaddr *to, socklen_t tolen);
 	@HLEFunction(nid = 0x05038FC7, version = 150)
-	public void sceNetInetSendto(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
-
-		int socket = cpu.gpr[4];
-		int buffer = cpu.gpr[5];
-		int bufferLength = cpu.gpr[6];
-		int flags = cpu.gpr[7];
-		int to = cpu.gpr[8];
-		int toLength = cpu.gpr[9];
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetSendto socket=%d, buffer=0x%08X, bufferLength=%d, flags=0x%X, to=0x%08X, toLength=%d", socket, buffer, bufferLength, flags, to, toLength));
-			if (log.isTraceEnabled()) {
-				log.trace(String.format("Sendto data: %s", Utilities.getMemoryDump(buffer, bufferLength)));
-			}
+	public int sceNetInetSendto(@CheckArgument("checkSocket") int socket, TPointer buffer, int bufferLength, int flags, pspNetSockAddrInternet toSockAddress, @CheckArgument("checkAddressLength") int toLength) {
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("Sendto data: %s", Utilities.getMemoryDump(buffer.getAddress(), bufferLength)));
 		}
 
-		if (!sockets.containsKey(socket)) {
-			log.warn(String.format("sceNetInetSendto invalid socket=%d", socket));
-			cpu.gpr[2] = -1;
-		} else if (!Memory.isAddressGood(to)) {
-			log.warn(String.format("sceNetInetSendto invalid address to=0x%08X", to));
-			cpu.gpr[2] = -1;
-		} else if (toLength < 16) {
-			log.warn(String.format("sceNetInetSendto invalid length toLength=%d", toLength));
-			cpu.gpr[2] = -1;
-		} else {
-			pspNetSockAddrInternet toSockAddress = new pspNetSockAddrInternet();
-			toSockAddress.read(mem, to);
-			if (toSockAddress.sin_family != AF_INET) {
-				log.warn(String.format("sceNetInetSendto invalid socket address familiy sin_family=%d", toSockAddress.sin_family));
-				cpu.gpr[2] = -1;
-			} else {
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetSendto sending to %s", toSockAddress.toString()));
-				}
-				pspInetSocket inetSocket = sockets.get(socket);
-				cpu.gpr[2] = inetSocket.sendto(buffer, bufferLength, flags, toSockAddress);
-			}
+		if (toSockAddress.sin_family != AF_INET) {
+			log.warn(String.format("sceNetInetSendto invalid socket address familiy sin_family=%d", toSockAddress.sin_family));
+			return -1;
 		}
+		pspInetSocket inetSocket = sockets.get(socket);
+		return inetSocket.sendto(buffer.getAddress(), bufferLength, flags, toSockAddress);
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x774E36F4, version = 150)
-	public void sceNetInetSendmsg(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn("Unimplemented NID function sceNetInetSendmsg [0x774E36F4]");
-
-		cpu.gpr[2] = 0;
+	public int sceNetInetSendmsg() {
+		return 0;
 	}
 
-	// int     sceNetInetSetsockopt(int socket, int level, int optname, const void *optval, socklen_t optlen);
+	// int sceNetInetSetsockopt(int socket, int level, int optname, const void *optval, socklen_t optlen);
 	@HLEFunction(nid = 0x2FE71FE7, version = 150)
-	public void sceNetInetSetsockopt(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
-
-		int socket = cpu.gpr[4];
-		int level = cpu.gpr[5];
-		int optionName = cpu.gpr[6];
-		int optionValueAddr = cpu.gpr[7];
-		int optionLength = cpu.gpr[8];
-
+	public int sceNetInetSetsockopt(@CheckArgument("checkSocket") int socket, int level, int optionName, @CanBeNull TPointer optionValueAddr, int optionLength) {
+		int result = 0;
 		int optionValue = 0;
-		if (Memory.isAddressGood(optionValueAddr) && optionLength >= 4) {
-			optionValue = mem.read32(optionValueAddr);
+		if (optionValueAddr.isNotNull() && optionLength >= 4) {
+			optionValue = optionValueAddr.getValue32();
 		}
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetSetsockopt socket=%d, level=%d, optionName=%d(%s), optionValueAddr=0x%08X, optionLength=%d", socket, level, optionName, getOptionNameString(optionName), optionValueAddr, optionLength));
+			log.debug(String.format("sceNetInetSetsockopt optionName=%s", getOptionNameString(optionName)));
 			if (log.isTraceEnabled()) {
-				log.trace(String.format("Option value: %s", Utilities.getMemoryDump(optionValueAddr, optionLength)));
+				log.trace(String.format("Option value: %s", Utilities.getMemoryDump(optionValueAddr.getAddress(), optionLength)));
 			}
 		}
 
-		if (!sockets.containsKey(socket)) {
-			log.warn(String.format("sceNetInetSetsockopt invalid socket=%d", socket));
-			cpu.gpr[2] = -1;
-		} else {
-			pspInetSocket inetSocket = sockets.get(socket);
+		pspInetSocket inetSocket = sockets.get(socket);
 
-			if (level == SOL_SOCKET) {
-				if (optionName == SO_NONBLOCK && optionLength == 4) {
-					cpu.gpr[2] = inetSocket.setBlocking(optionValue == 0);
-				} else if (optionName == SO_BROADCAST && optionLength == 4) {
-					cpu.gpr[2] = inetSocket.setBroadcast(optionValue != 0);
-				} else if (optionName == SO_RCVLOWAT && optionLength == 4) {
-					inetSocket.setReceiveLowWaterMark(optionValue);
-					cpu.gpr[2] = 0;
-				} else if (optionName == SO_SNDLOWAT && optionLength == 4) {
-					inetSocket.setSendLowWaterMark(optionValue);
-					cpu.gpr[2] = 0;
-				} else if (optionName == SO_RCVTIMEO && optionLength == 4) {
-					// 0 means "no timeout"
-					inetSocket.setReceiveTimeout(optionValue == 0 ? pspInetSocket.NO_TIMEOUT_INT : optionValue);
-					cpu.gpr[2] = 0;
-				} else if (optionName == SO_SNDTIMEO && optionLength == 4) {
-					// 0 means "no timeout"
-					inetSocket.setSendTimeout(optionValue == 0 ? pspInetSocket.NO_TIMEOUT_INT : optionValue);
-					cpu.gpr[2] = 0;
-				} else if (optionName == SO_RCVBUF && optionLength == 4) {
-					cpu.gpr[2] = inetSocket.setReceiveBufferSize(optionValue);
-				} else if (optionName == SO_SNDBUF && optionLength == 4) {
-					cpu.gpr[2] = inetSocket.setSendBufferSize(optionValue);
-				} else if (optionName == SO_KEEPALIVE && optionLength == 4) {
-					cpu.gpr[2] = inetSocket.setKeepAlive(optionValue != 0);
-				} else if (optionName == SO_LINGER && optionLength == 8) {
-					cpu.gpr[2] = inetSocket.setLinger(optionValue != 0, mem.read32(optionValueAddr + 4));
-				} else if (optionName == SO_REUSEADDR && optionLength == 4) {
-					cpu.gpr[2] = inetSocket.setReuseAddress(optionValue != 0);
-				} else {
-					log.warn(String.format("Unimplemented sceNetInetSetsockopt socket=%d, level=%d, optionName=%d(%s), optionValue=0x%08X, optionLength=%d, optionValue: %s", socket, level, optionName, getOptionNameString(optionName), optionValueAddr, optionLength, Utilities.getMemoryDump(optionValueAddr, optionLength)));
-					cpu.gpr[2] = 0;
-				}
+		if (level == SOL_SOCKET) {
+			if (optionName == SO_NONBLOCK && optionLength == 4) {
+				result = inetSocket.setBlocking(optionValue == 0);
+			} else if (optionName == SO_BROADCAST && optionLength == 4) {
+				result = inetSocket.setBroadcast(optionValue != 0);
+			} else if (optionName == SO_RCVLOWAT && optionLength == 4) {
+				inetSocket.setReceiveLowWaterMark(optionValue);
+				result = 0;
+			} else if (optionName == SO_SNDLOWAT && optionLength == 4) {
+				inetSocket.setSendLowWaterMark(optionValue);
+				result = 0;
+			} else if (optionName == SO_RCVTIMEO && optionLength == 4) {
+				// 0 means "no timeout"
+				inetSocket.setReceiveTimeout(optionValue == 0 ? pspInetSocket.NO_TIMEOUT_INT : optionValue);
+				result = 0;
+			} else if (optionName == SO_SNDTIMEO && optionLength == 4) {
+				// 0 means "no timeout"
+				inetSocket.setSendTimeout(optionValue == 0 ? pspInetSocket.NO_TIMEOUT_INT : optionValue);
+				result = 0;
+			} else if (optionName == SO_RCVBUF && optionLength == 4) {
+				result = inetSocket.setReceiveBufferSize(optionValue);
+			} else if (optionName == SO_SNDBUF && optionLength == 4) {
+				result = inetSocket.setSendBufferSize(optionValue);
+			} else if (optionName == SO_KEEPALIVE && optionLength == 4) {
+				result = inetSocket.setKeepAlive(optionValue != 0);
+			} else if (optionName == SO_LINGER && optionLength == 8) {
+				result = inetSocket.setLinger(optionValue != 0, optionValueAddr.getValue32(4));
+			} else if (optionName == SO_REUSEADDR && optionLength == 4) {
+				result = inetSocket.setReuseAddress(optionValue != 0);
 			} else {
-				log.warn(String.format("Unimplemented sceNetInetSetsockopt socket=%d, level=%d (unknown level), optionName=%d(%s), optionValue=0x%08X, optionLength=%d, optionValue: %s", socket, level, optionName, getOptionNameString(optionName), optionValueAddr, optionLength, Utilities.getMemoryDump(optionValueAddr, optionLength)));
-				cpu.gpr[2] = 0;
+				log.warn(String.format("Unimplemented sceNetInetSetsockopt optionName=%s", getOptionNameString(optionName)));
+				return -1;
 			}
-		}
-	}
-
-	// int     sceNetInetShutdown(int s, int how);
-	@HLEFunction(nid = 0x4CFE4E56, version = 150)
-	public void sceNetInetShutdown(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int socket = cpu.gpr[4];
-		int how = cpu.gpr[5];
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetShutdown socket=%d, how=%d", socket, how));
-		}
-
-		if (!sockets.containsKey(socket)) {
-			log.warn(String.format("sceNetInetShutdown invalid socket=%d", socket));
-			cpu.gpr[2] = -1;
-		} else if (how < SHUT_RD || how > SHUT_RDWR) {
-			log.warn(String.format("sceNetInetShutdown invalid how=%d", how));
-			cpu.gpr[2] = -1;
 		} else {
-			pspInetSocket inetSocket = sockets.get(socket);
-			cpu.gpr[2] = inetSocket.shutdown(how);
+			log.warn(String.format("Unimplemented sceNetInetSetsockopt unknown level=0x%X, optionName=%s", level, getOptionNameString(optionName)));
+			return -1;
 		}
+
+		return result;
 	}
 
-	// int     sceNetInetSocket(int domain, int type, int protocol);
+	// int sceNetInetShutdown(int s, int how);
+	@HLEFunction(nid = 0x4CFE4E56, version = 150)
+	public int sceNetInetShutdown(@CheckArgument("checkSocket") int socket, int how) {
+		if (how < SHUT_RD || how > SHUT_RDWR) {
+			log.warn(String.format("sceNetInetShutdown invalid how=%d", how));
+			return -1;
+		}
+
+		pspInetSocket inetSocket = sockets.get(socket);
+		return inetSocket.shutdown(how);
+	}
+
+	// int sceNetInetSocket(int domain, int type, int protocol);
 	@HLEFunction(nid = 0x8B7B220F, version = 150)
-	public void sceNetInetSocket(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int domain = cpu.gpr[4];
-		int type = cpu.gpr[5];
-		int protocol = cpu.gpr[6];
-
+	public int sceNetInetSocket(int domain, int type, int protocol) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetSocket domain=%d, type=%d(%s), protocol=%d", domain, type, getSocketTypeNameString(type), protocol));
+			log.debug(String.format("sceNetInetSocket domain=0x%X, type=0x%X(%s), protocol=0x%X", domain, type, getSocketTypeNameString(type), protocol));
 		}
 
 		if (domain != AF_INET) {
-			log.warn(String.format("sceNetInetSocket unsupported domain=%d, type=%d(%s), protocol=%d", domain, type, getSocketTypeNameString(type), protocol));
-			cpu.gpr[2] = -1;
-		} else if (type != SOCK_DGRAM && type != SOCK_STREAM && type != SOCK_RAW) {
-			log.warn(String.format("sceNetInetSocket unsupported type=%d(%s), domain=%d, protocol=%d", type, getSocketTypeNameString(type), domain, protocol));
-			cpu.gpr[2] = -1;
-		} else {
-	    	pspInetSocket inetSocket = createSocket(type, protocol);
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("sceNetInetSocket created socket=%d", inetSocket.getUid()));
-			}
-	    	cpu.gpr[2] = inetSocket.getUid();
+			log.warn(String.format("sceNetInetSocket unsupported domain=0x%X, type=0x%X(%s), protocol=0x%X", domain, type, getSocketTypeNameString(type), protocol));
+			return -1;
 		}
+		if (type != SOCK_DGRAM && type != SOCK_STREAM && type != SOCK_RAW) {
+			log.warn(String.format("sceNetInetSocket unsupported type=0x%X(%s), domain=0x%X, protocol=0x%X", type, getSocketTypeNameString(type), domain, protocol));
+			return -1;
+		}
+
+		pspInetSocket inetSocket = createSocket(type, protocol);
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceNetInetSocket created socket=0x%X", inetSocket.getUid()));
+		}
+
+		return inetSocket.getUid();
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x80A21ABD, version = 150)
-	public void sceNetInetSocketAbort(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn("Unimplemented NID function sceNetInetSocketAbort [0x80A21ABD]");
-
-		cpu.gpr[2] = 0;
+	public int sceNetInetSocketAbort() {
+		return 0;
 	}
 
 	@HLEFunction(nid = 0xFBABE411, version = 150)
-	public void sceNetInetGetErrno(Processor processor) {
-		CpuState cpu = processor.cpu;
-
+	public int sceNetInetGetErrno() {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("sceNetInetGetErrno returning 0x%08X(%1$d)", getErrno()));
 		}
 
-		cpu.gpr[2] = getErrno();
+		return getErrno();
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xB3888AD4, version = 150)
-	public void sceNetInetGetTcpcbstat(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn("Unimplemented NID function sceNetInetGetTcpcbstat [0xB3888AD4]");
-
-		cpu.gpr[2] = 0;
+	public int sceNetInetGetTcpcbstat() {
+		return 0;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x39B0C7D3, version = 150)
-	public void sceNetInetGetUdpcbstat(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn("Unimplemented NID function sceNetInetGetUdpcbstat [0x39B0C7D3]");
-
-		cpu.gpr[2] = 0;
+	public int sceNetInetGetUdpcbstat() {
+		return 0;
 	}
 
 	@HLEFunction(nid = 0xB75D5B0A, version = 150)
-	public void sceNetInetInetAddr(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int nameAddr = cpu.gpr[4];
-		String name = Utilities.readStringZ(nameAddr);
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetInetAddr 0x%08X('%s')", nameAddr, name));
-		}
-
+	public int sceNetInetInetAddr(PspString name) {
+		byte[] inetAddressBytes;
 		try {
-			byte[] inetAddressBytes = InetAddress.getByName(name).getAddress();
-			int inetAddress = bytesToInternetAddress(inetAddressBytes);
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("sceNetInetInetAddr 0x%08X('%s') returning 0x%08X", nameAddr, name, inetAddress));
-			}
-			cpu.gpr[2] = inetAddress;
+			inetAddressBytes = InetAddress.getByName(name.getString()).getAddress();
 		} catch (UnknownHostException e) {
-			log.error(e);
-			cpu.gpr[2] = -1;
+			log.error("sceNetInetInetAddr", e);
+			return -1;
 		}
+
+		int inetAddress = bytesToInternetAddress(inetAddressBytes);
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceNetInetInetAddr %s returning 0x%08X", name, inetAddress));
+		}
+
+		return inetAddress;
 	}
 
 	@HLEFunction(nid = 0x1BDF5D13, version = 150)
-	public void sceNetInetInetAton(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
-
-		int hostnameAddr = cpu.gpr[4];
-		int addr = cpu.gpr[5];
-		String hostname = Utilities.readStringZ(hostnameAddr);
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetInetAton hostnameAddr=0x%08X('%s'), addr=0x%08X", hostnameAddr, hostname, addr));
-		}
-
+	public int sceNetInetInetAton(PspString hostname, TPointer32 addr) {
+		int result;
 		try {
-			InetAddress inetAddress = InetAddress.getByName(hostname);
+			InetAddress inetAddress = InetAddress.getByName(hostname.getString());
 			int resolvedAddress = bytesToInternetAddress(inetAddress.getAddress());
-			mem.write32(addr, resolvedAddress);
+			addr.setValue(resolvedAddress);
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("sceNetInetInetAton returning address 0x%08X('%s')", resolvedAddress, sceNetInet.internetAddressToString(resolvedAddress)));
 			} else if (log.isInfoEnabled()) {
-				log.info(String.format("sceNetInetInetAton resolved '%s' into '%s'", hostname, sceNetInet.internetAddressToString(resolvedAddress)));
+				log.info(String.format("sceNetInetInetAton resolved '%s' into '%s'", hostname.getString(), sceNetInet.internetAddressToString(resolvedAddress)));
 			}
-			cpu.gpr[2] = 1;
+			result = 1;
 		} catch (UnknownHostException e) {
-			log.error(e);
-			cpu.gpr[2] = 0;
+			log.error("sceNetInetInetAton", e);
+			result = 0;
 		}
+
+		return result;
 	}
 
 	@HLEFunction(nid = 0xD0792666, version = 150)
-	public void sceNetInetInetNtop(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
+	public int sceNetInetInetNtop(int family, TPointer32 srcAddr, TPointer buffer, int bufferLength) {
+		if (family != AF_INET) {
+			log.warn(String.format("sceNetInetInetNtop unsupported family 0x%X", family));
+			return 0;
+		}
 
-		int familiy = cpu.gpr[4];
-		int srcAddr = cpu.gpr[5];
-		int buffer = cpu.gpr[6];
-		int bufferLength = cpu.gpr[7];
-
+		int addr = srcAddr.getValue();
+		String ip = internetAddressToString(addr);
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetInetNtop family=%d, srcAddr=0x%08X, buffer=0x%08X, bufferLength=%d", familiy, srcAddr, buffer, bufferLength));
+			log.debug(String.format("sceNetInetInetNtop returning %s for 0x%08X", ip, addr));
 		}
+		buffer.setStringNZ(bufferLength, ip);
 
-		if (familiy != AF_INET) {
-			log.warn(String.format("sceNetInetInetNtop unsupported family %d", familiy));
-			cpu.gpr[2] = 0;
-		} else {
-			int addr = mem.read32(srcAddr);
-			String ip = internetAddressToString(addr);
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("sceNetInetInetNtop returning %s for 0x%08X", ip, addr));
-			}
-			Utilities.writeStringNZ(mem, buffer, bufferLength, ip);
-			cpu.gpr[2] = buffer;
-		}
+		return buffer.getAddress();
 	}
 
 	@HLEFunction(nid = 0xE30B8C19, version = 150)
-	public void sceNetInetInetPton(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
+	public int sceNetInetInetPton(int family, PspString src, TPointer32 buffer) {
+		int result;
 
-		int familiy = cpu.gpr[4];
-		int srcAddr = cpu.gpr[5];
-		int buffer = cpu.gpr[6];
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetInetPton family=%d, srcAddr=0x%08X, buffer=0x%08X", familiy, srcAddr, buffer));
+		if (family != AF_INET) {
+			log.warn(String.format("sceNetInetInetPton unsupported family 0x%X", family));
+			return -1;
 		}
 
-		if (familiy != AF_INET) {
-			log.warn(String.format("sceNetInetInetPton unsupported family %d", familiy));
-			cpu.gpr[2] = -1;
-		} else {
-			String src = Utilities.readStringZ(srcAddr);
-			try {
-				byte[] inetAddressBytes = InetAddress.getByName(src).getAddress();
-				int inetAddress = bytesToInternetAddress(inetAddressBytes);
-				mem.write32(buffer, inetAddress);
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetInetPton returning 0x%08X for '%s'", inetAddress, src));
-				}
-				cpu.gpr[2] = 1;
-			} catch (UnknownHostException e) {
-				log.warn(String.format("sceNetInetInetPton returned error '%s' for '%s'", e.toString(), src));
-				cpu.gpr[2] = 0;
+		try {
+			byte[] inetAddressBytes = InetAddress.getByName(src.getString()).getAddress();
+			int inetAddress = bytesToInternetAddress(inetAddressBytes);
+			buffer.setValue(inetAddress);
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("sceNetInetInetPton returning 0x%08X for '%s'", inetAddress, src.getString()));
 			}
+			result = 1;
+		} catch (UnknownHostException e) {
+			log.warn(String.format("sceNetInetInetPton returned error '%s' for '%s'", e.toString(), src.getString()));
+			result = 0;
 		}
+
+		return result;
 	}
 
 	@HLEFunction(nid = 0x8CA3A97E, version = 150)
 	public int sceNetInetGetPspError() {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("PARTIAL sceNetInetGetPspError returning 0x%08X(%1$d)", getErrno()));
+			log.debug(String.format("sceNetInetGetPspError returning 0x%08X(%1$d)", getErrno()));
 		}
 
 		return getErrno();

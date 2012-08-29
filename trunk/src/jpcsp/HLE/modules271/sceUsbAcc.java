@@ -18,7 +18,6 @@ package jpcsp.HLE.modules271;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.Memory;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
@@ -38,7 +37,7 @@ public class sceUsbAcc extends HLEModule {
 
 		// resultAddr is pointing to an 8-byte area.
 		// Not sure about the content...
-		Memory.getInstance().memset(resultAddr.getAddress(), (byte) 0, 8);
+		resultAddr.clear(8);
 
 		return 0;
 	}

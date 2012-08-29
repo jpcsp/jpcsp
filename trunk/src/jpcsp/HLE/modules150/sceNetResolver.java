@@ -16,7 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NET_RESOLVER_BAD_ID;
+import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.PspString;
+import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
@@ -28,15 +37,13 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.sceNetInet;
-import jpcsp.util.Utilities;
 
-import jpcsp.Memory;
 import jpcsp.Processor;
 
-import jpcsp.Allegrex.CpuState;
-
+@HLELogging
 public class sceNetResolver extends HLEModule {
-    protected static Logger log = Modules.getLogger("sceNetResolver");
+    public static Logger log = Modules.getLogger("sceNetResolver");
+    private static final String uidPurpose = "sceNetResolver-NetResolver";
 
     @Override
 	public String getName() {
@@ -67,20 +74,22 @@ public class sceNetResolver extends HLEModule {
 
     protected HashMap<Integer, ResolverID> RIDs = new HashMap<Integer, ResolverID>();
 
-	/**
-	 * Inititalise the resolver library
+    public int checkRid(int rid) {
+        if (!RIDs.containsKey(rid)) {
+        	throw new SceKernelErrorException(ERROR_NET_RESOLVER_BAD_ID);
+        }
+
+        return rid;
+    }
+
+    /**
+	 * Initialize the resolver library
 	 *
-	 * @return 0 on sucess, < 0 on error.
+	 * @return 0 on success, < 0 on error.
 	 */
 	@HLEFunction(nid = 0xF3370E61, version = 150)
-	public void sceNetResolverInit(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		if (log.isDebugEnabled()) {
-			log.warn("sceNetResolverInit");
-		}
-
-		cpu.gpr[2] = 0;
+	public int sceNetResolverInit() {
+		return 0;
 	}
 
 	/**
@@ -89,14 +98,8 @@ public class sceNetResolver extends HLEModule {
 	 * @return 0 on success, < 0 on error
 	 */
 	@HLEFunction(nid = 0x6138194A, version = 150)
-	public void sceNetResolverTerm(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		if (log.isDebugEnabled()) {
-			log.debug("sceNetResolverTerm");
-		}
-
-		cpu.gpr[2] = 0;
+	public int sceNetResolverTerm() {
+		return 0;
 	}
 
 	/**
@@ -109,24 +112,13 @@ public class sceNetResolver extends HLEModule {
 	 * @return 0 on success, < 0 on error
 	 */
 	@HLEFunction(nid = 0x244172AF, version = 150)
-	public void sceNetResolverCreate(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
-
-		int pRid = cpu.gpr[4];
-		int buffer = cpu.gpr[5];
-		int bufferLength = cpu.gpr[6];
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetResolverCreate pRid=0x%08X, buffer=0x%08X, bufferLength=5d", pRid, buffer, bufferLength));
-		}
-
-        int newID = SceUidManager.getNewUid("sceNetResolver-NetResolver");
+	public int sceNetResolverCreate(TPointer32 pRid, TPointer buffer, int bufferLength) {
+        int newID = SceUidManager.getNewUid(uidPurpose);
         ResolverID newRID = new ResolverID(newID, true);
         RIDs.put(newID, newRID);
-		mem.write32(pRid, newRID.getID());
+		pRid.setValue(newRID.getID());
 
-		cpu.gpr[2] = 0;
+		return 0;
 	}
 
 	/**
@@ -137,16 +129,11 @@ public class sceNetResolver extends HLEModule {
 	 * @return 0 on success, < 0 on error
 	 */
 	@HLEFunction(nid = 0x94523E09, version = 150)
-	public void sceNetResolverDelete(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceNetResolverDelete(@CheckArgument("checkRid") int rid) {
+		RIDs.remove(rid);
+		SceUidManager.releaseUid(rid, uidPurpose);
 
-		int rid = cpu.gpr[4];
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetResolverDelete rid=%d", rid));
-		}
-
-		cpu.gpr[2] = 0;
+		return 0;
 	}
 
 	/**
@@ -161,35 +148,22 @@ public class sceNetResolver extends HLEModule {
 	 * @return 0 on success, < 0 on error
 	 */
 	@HLEFunction(nid = 0x224C5F44, version = 150)
-	public void sceNetResolverStartNtoA(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
-
-		int rid = cpu.gpr[4];
-		int hostnameAddr = cpu.gpr[5];
-		int addr = cpu.gpr[6];
-		int timeout = cpu.gpr[7];
-		int retry = cpu.gpr[8];
-		String hostname = Utilities.readStringZ(hostnameAddr);
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetResolverStartNtoA rid=%d, hostnameAddr=0x%08X('%s'), addr=0x%08X, timeout=%d, retry=%d", rid, hostnameAddr, hostname, addr, timeout, retry));
-		}
-
-		cpu.gpr[2] = 0;
+	public int sceNetResolverStartNtoA(@CheckArgument("checkRid") int rid, PspString hostname, TPointer32 addr, int timeout, int retry) {
 		try {
-			InetAddress inetAddress = InetAddress.getByName(hostname);
+			InetAddress inetAddress = InetAddress.getByName(hostname.getString());
 			int resolvedAddress = sceNetInet.bytesToInternetAddress(inetAddress.getAddress());
-			mem.write32(addr, resolvedAddress);
+			addr.setValue(resolvedAddress);
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("sceNetResolverStartNtoA returning address 0x%08X('%s')", resolvedAddress, sceNetInet.internetAddressToString(resolvedAddress)));
 			} else if (log.isInfoEnabled()) {
-				log.info(String.format("sceNetResolverStartNtoA resolved '%s' into '%s'", hostname, sceNetInet.internetAddressToString(resolvedAddress)));
+				log.info(String.format("sceNetResolverStartNtoA resolved '%s' into '%s'", hostname.getString(), sceNetInet.internetAddressToString(resolvedAddress)));
 			}
 		} catch (UnknownHostException e) {
 			log.error(e);
-			cpu.gpr[2] = SceKernelErrors.ERROR_NET_RESOLVER_INVALID_HOST;
+			return SceKernelErrors.ERROR_NET_RESOLVER_INVALID_HOST;
 		}
+
+		return 0;
 	}
 
 	/**
@@ -205,34 +179,21 @@ public class sceNetResolver extends HLEModule {
 	 * @return 0 on success, < 0 on error
 	 */
 	@HLEFunction(nid = 0x629E2FB7, version = 150)
-	public void sceNetResolverStartAtoN(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
-
-		int rid = cpu.gpr[4];
-		int addr = cpu.gpr[5];
-		int hostnameAddr = cpu.gpr[6];
-		int hostnameLength = cpu.gpr[7];
-		int timeout = cpu.gpr[8];
-		int retry = cpu.gpr[9];
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetResolverStartAtoN rid=%d, addr=0x%08X, hostnameAddr=0x%08X, hostnameLength=%d, timeout=%d, retry=%d", rid, addr, hostnameAddr, hostnameLength, timeout, retry));
-		}
-
-		cpu.gpr[2] = 0;
+	public int sceNetResolverStartAtoN(@CheckArgument("checkRid") int rid, int addr, TPointer hostnameAddr, int hostnameLength, int timeout, int retry) {
 		try {
 			byte[] bytes = sceNetInet.internetAddressToBytes(addr);
 			InetAddress inetAddress = InetAddress.getByAddress(bytes);
 			String hostName = inetAddress.getHostName();
-			Utilities.writeStringNZ(mem, hostnameAddr, hostnameLength, hostName);
+			hostnameAddr.setStringNZ(hostnameLength, hostName);
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("sceNetResolverStartAtoN returning host name '%s'", hostName));
 			}
 		} catch (UnknownHostException e) {
 			log.error(e);
-			cpu.gpr[2] = SceKernelErrors.ERROR_NET_RESOLVER_INVALID_HOST;
+			return SceKernelErrors.ERROR_NET_RESOLVER_INVALID_HOST;
 		}
+
+		return 0;
 	}
 
 	/**
@@ -243,62 +204,38 @@ public class sceNetResolver extends HLEModule {
 	 * @return 0 on success, < 0 on error
 	 */
 	@HLEFunction(nid = 0x808F6063, version = 150)
-	public void sceNetResolverStop(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int rid = cpu.gpr[4];
-
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetResolverStop rid=%d", rid));
-		}
-
-        if(RIDs.containsKey(rid)) {
-            ResolverID currentRID = RIDs.get(rid);
-            if(currentRID.getIDStatus()) {
-                currentRID.stop();
-                cpu.gpr[2] = 0;
-            } else {
-                cpu.gpr[2] = SceKernelErrors.ERROR_NET_RESOLVER_ALREADY_STOPPED;
-            }
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_NET_RESOLVER_BAD_ID;
+	public int sceNetResolverStop(@CheckArgument("checkRid") int rid) {
+        ResolverID currentRID = RIDs.get(rid);
+        if (!currentRID.getIDStatus()) {
+        	return SceKernelErrors.ERROR_NET_RESOLVER_ALREADY_STOPPED;
         }
+
+        currentRID.stop();
+
+        return 0;
 	}
 
+	@HLEUnimplemented
     @HLEFunction(nid = 0x14C17EF9, version = 150)
-    public void sceNetResolverStartNtoAAsync(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNetResolverStartNtoAAsync");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceNetResolverStartNtoAAsync() {
+		return 0;
     }
 
+	@HLEUnimplemented
     @HLEFunction(nid = 0xAAC09184, version = 150)
-    public void sceNetResolverStartAtoNAsync(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNetResolverStartAtoNAsync");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceNetResolverStartAtoNAsync() {
+		return 0;
     }
 
+	@HLEUnimplemented
     @HLEFunction(nid = 0x4EE99358, version = 150)
-    public void sceNetResolverPollAsync(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNetResolverPollAsync");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceNetResolverPollAsync() {
+		return 0;
     }
 
+	@HLEUnimplemented
     @HLEFunction(nid = 0x12748EB9, version = 150)
-    public void sceNetResolverWaitAsync(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNetResolverWaitAsync");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceNetResolverWaitAsync(Processor processor) {
+		return 0;
     }
-
-};
+}

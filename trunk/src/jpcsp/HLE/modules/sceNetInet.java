@@ -17,6 +17,4 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 public class sceNetInet extends jpcsp.HLE.modules150.sceNetInet {
-    @Override
-	public final String getName() { return "sceNetInet"; }
 }
