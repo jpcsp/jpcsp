@@ -16,22 +16,25 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 import org.apache.log4j.Logger;
 
-import jpcsp.Memory;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
-import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.kernel.types.pspParsedUri;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
+import jpcsp.util.Utilities;
 
 @HLELogging
 public class sceParseUri extends HLEModule {
@@ -63,80 +66,238 @@ public class sceParseUri extends HLEModule {
 		return "sceParseUri";
 	}
 
-	@HLEUnimplemented
+	protected int getHexValue(int hexChar) {
+		if (hexChar >= '0' && hexChar <= '9') {
+			return hexChar - '0';
+		}
+		if (hexChar >= 'A' && hexChar <= 'F') {
+			return hexChar - 'A' + 10;
+		}
+		if (hexChar >= 'a' && hexChar <= 'f') {
+			return hexChar - 'a' + 10;
+		}
+
+		return 0;
+	}
+
+	private int addString(TPointer workArea, int workAreaSize, int offset, String s) {
+		if (s == null) {
+			s = "";
+		}
+
+		int length = s.length() + 1;
+		if (offset + length > workAreaSize) {
+			length = workAreaSize - offset;
+			if (length <= 0) {
+				return offset;
+			}
+		}
+
+		workArea.setStringNZ(offset, length, s);
+
+		return offset + length;
+	}
+
+	private String getUriComponent(int componentAddr, int flags, int flag) {
+		if ((flags & flag) == 0 || componentAddr == 0) {
+			return null;
+		}
+
+		return Utilities.readStringZ(componentAddr);
+	}
+
 	@HLEFunction(nid = 0x568518C9, version = 150)
 	public int sceUriParse(@CanBeNull TPointer parsedUriArea, PspString url, @CanBeNull TPointer workArea, @CanBeNull TPointer32 workAreaSizeAddr, int workAreaSize) {
-		if (workArea.isNull()) {
-			workAreaSizeAddr.setValue(32); // ???
-		} else {
-			workArea.setStringNZ(workAreaSize, "Test sceUriParse");
-
-			// Unknown structure for the parsedUriArea
-			parsedUriArea.clear(44);
-			parsedUriArea.setValue32(0, url.getAddress());
-			parsedUriArea.setValue32(4, url.getString().length());
+		if (parsedUriArea.isNull() || workArea.isNull()) {
+			// The required workArea size if maximum the size if the URL + 7 times the null-byte
+			// for string termination.
+			workAreaSizeAddr.setValue(url.getString().length() + 7);
+			return 0;
 		}
+
+		// Parse the URL into URI components
+		URI uri;
+		try {
+			uri = new URI(url.getString());
+		} catch (URISyntaxException e) {
+			log.error("parsedUriArea", e);
+			return -1;
+		}
+
+		// Parsing of the userInfo in the format "<userName>:<password>"
+		String userInfo = uri.getUserInfo();
+		String userInfoUserName = userInfo;
+		String userInfoPassword = "";
+		int userInfoColon = userInfo.indexOf(":");
+		if (userInfoColon >= 0) {
+			userInfoUserName = userInfo.substring(0, userInfoColon);
+			userInfoPassword = userInfo.substring(userInfoColon + 1);
+		}
+
+		pspParsedUri parsedUri = new pspParsedUri();
+		int offset = 0;
+
+		// Store the URI components in sequence into workArea
+		// and store the respective addresses into the parsedUri structure.
+		parsedUri.schemeAddr = workArea.getAddress() + offset;
+		offset = addString(workArea, workAreaSize, offset, uri.getScheme());
+
+		parsedUri.userInfoUserNameAddr = workArea.getAddress() + offset;
+		offset = addString(workArea, workAreaSize, offset, userInfoUserName);
+
+		parsedUri.userInfoPasswordAddr = workArea.getAddress() + offset;
+		offset = addString(workArea, workAreaSize, offset, userInfoPassword);
+
+		parsedUri.hostAddr = workArea.getAddress() + offset;
+		offset = addString(workArea, workAreaSize, offset, uri.getHost());
+
+		parsedUri.pathAddr = workArea.getAddress() + offset;
+		offset = addString(workArea, workAreaSize, offset, uri.getPath());
+
+		parsedUri.queryAddr = workArea.getAddress() + offset;
+		offset = addString(workArea, workAreaSize, offset, uri.getQuery());
+
+		parsedUri.fragmentAddr = workArea.getAddress() + offset;
+		offset = addString(workArea, workAreaSize, offset, uri.getFragment());
+
+		workAreaSizeAddr.setValue(offset);
+		parsedUri.write(parsedUriArea);
 
 		return 0;
 	}
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x7EE318AF, version = 150)
-	public int sceUriBuild(@CanBeNull TPointer workArea, @CanBeNull TPointer32 workAreaSizeAddr, int workAreaSize, @CanBeNull TPointer parsedUriArea, int unknown2) {
-		Memory mem = Memory.getInstance();
+	public int sceUriBuild(@CanBeNull TPointer workArea, @CanBeNull TPointer32 workAreaSizeAddr, int workAreaSize, pspParsedUri parsedUri, int flags) {
+		// Extract the URI components from the parseUri structure
+		String scheme = getUriComponent(parsedUri.schemeAddr, flags, 0x1);
+		String userInfoUserName = getUriComponent(parsedUri.userInfoUserNameAddr, flags, 0x10);
+		String userInfoPassword = getUriComponent(parsedUri.userInfoPasswordAddr, flags, 0x20);
+		String host = getUriComponent(parsedUri.hostAddr, flags, 0x2);
+		String path = getUriComponent(parsedUri.pathAddr, flags, 0x8);
+		String query = getUriComponent(parsedUri.queryAddr, flags, 0x40);
+		String fragment = getUriComponent(parsedUri.fragmentAddr, flags, 0x80);
+		int port = (flags & 0x4) != 0 ? parsedUri.port : -1;
 
-		// Retrieve values as set by sceUriParse
-		int urlAddr = parsedUriArea.getValue32(0);
-		int urlLength = parsedUriArea.getValue32(4);
-
-		if (workArea.isNull()) {
-			workAreaSizeAddr.setValue(urlLength); // ???
-		} else {
-			mem.memcpy(workArea.getAddress(), urlAddr, urlLength);
+		// Build the userInfo in format "<userName>:<password>"
+		String userInfo = null;
+		if (userInfoUserName != null || userInfoPassword != null) {
+			if (userInfoUserName == null) {
+				userInfo = ":" + userInfoPassword;
+			} else if (userInfoPassword == null) {
+				userInfo = userInfoUserName;
+			} else {
+				userInfo = userInfoUserName + ":" + userInfoPassword;
+			}
 		}
+
+		// Build the complete URI
+		URI uri;
+		try {
+			uri = new URI(scheme, userInfo, host, port, path, query, fragment);
+		} catch (URISyntaxException e) {
+			log.error("sceUriBuild", e);
+			return -1;
+		}
+
+		// Return the URI and its size
+		String resultUri = uri.toASCIIString();
+		if (workArea.isNotNull()) {
+			workArea.setStringNZ(workAreaSize, resultUri);
+
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("sceUriBuild returning '%s'", resultUri));
+			}
+		}
+		workAreaSizeAddr.setValue(resultUri.length());
 
 		return 0;
 	}
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x49E950EC, version = 150)
 	public int sceUriEscape(@CanBeNull TPointer escapedAddr, @CanBeNull TPointer32 escapedLengthAddr, int escapedBufferLength, TPointer source) {
 		IMemoryReader memoryReader = MemoryReader.getMemoryReader(source.getAddress(), 1);
-		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(escapedAddr.getAddress(), escapedBufferLength, 1);
+		IMemoryWriter memoryWriter = null;
+		if (escapedAddr.isNotNull()) {
+			memoryWriter = MemoryWriter.getMemoryWriter(escapedAddr.getAddress(), escapedBufferLength, 1);
+		}
 		int escapedLength = 0;
 		while (true) {
 			int c = memoryReader.readNext();
 			if (c == 0) {
-				if (escapedLength < escapedBufferLength) {
-					memoryWriter.writeNext(c);
+				if (escapedAddr.isNotNull()) {
+					if (escapedLength < escapedBufferLength) {
+						memoryWriter.writeNext(c);
+					}
 				}
+				escapedLength++;
 				break;
 			}
 			if (escapeCharTable[c]) {
-				if (escapedLength + 3 > escapedBufferLength) {
-					break;
+				if (escapedAddr.isNotNull()) {
+					if (escapedLength + 3 > escapedBufferLength) {
+						break;
+					}
+					memoryWriter.writeNext('%');
+					memoryWriter.writeNext(hexTable[c >> 4]);
+					memoryWriter.writeNext(hexTable[c & 0x0F]);
 				}
-				memoryWriter.writeNext('%');
-				memoryWriter.writeNext(hexTable[c >> 4]);
-				memoryWriter.writeNext(hexTable[c & 0x0F]);
 				escapedLength += 3;
 			} else {
-				if (escapedLength + 1 > escapedBufferLength) {
-					break;
+				if (escapedAddr.isNotNull()) {
+					if (escapedLength + 1 > escapedBufferLength) {
+						break;
+					}
+					memoryWriter.writeNext(c);
 				}
-				memoryWriter.writeNext(c);
 				escapedLength++;
 			}
 		}
-		memoryWriter.flush();
+		if (memoryWriter != null) {
+			memoryWriter.flush();
+		}
 		escapedLengthAddr.setValue(escapedLength);
 
 		return 0;
 	}
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x062BB07E, version = 150)
-	public int sceUriUnescape() {
+	public int sceUriUnescape(@CanBeNull TPointer unescapedAddr, @CanBeNull TPointer32 unescapedLengthAddr, int unescapedBufferLength, TPointer source) {
+		IMemoryReader memoryReader = MemoryReader.getMemoryReader(source.getAddress(), 1);
+		IMemoryWriter memoryWriter = null;
+		if (unescapedAddr.isNotNull()) {
+			memoryWriter = MemoryWriter.getMemoryWriter(unescapedAddr.getAddress(), unescapedBufferLength, 1);
+		}
+		int unescapedLength = 0;
+		while (true) {
+			int c = memoryReader.readNext();
+			if (c == 0) {
+				if (unescapedAddr.isNotNull()) {
+					if (unescapedLength < unescapedBufferLength) {
+						memoryWriter.writeNext(c);
+					}
+				}
+				unescapedLength++;
+				break;
+			}
+			if (unescapedAddr.isNotNull()) {
+				if (unescapedLength + 1 > unescapedBufferLength) {
+					break;
+				}
+				if (c == '%') {
+					int hex1 = memoryReader.readNext();
+					int hex2 = memoryReader.readNext();
+					c = (getHexValue(hex1) << 4) + getHexValue(hex2);
+				}
+				// Remark: '+' sign is not unescaped to ' ' by this function
+				memoryWriter.writeNext(c);
+			}
+			unescapedLength++;
+		}
+		if (memoryWriter != null) {
+			memoryWriter.flush();
+		}
+		unescapedLengthAddr.setValue(unescapedLength);
+
 		return 0;
 	}
 }
