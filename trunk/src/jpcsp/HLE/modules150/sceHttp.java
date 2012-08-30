@@ -380,7 +380,7 @@ public class sceHttp extends HLEModule {
     /**
      * Init the http library.
      *
-     * @param unknown1 - Memory pool size? Pass 20000
+     * @param heapSize - Memory pool size? Pass 20000
      * @return 0 on success, < 0 on error.
      */
     @HLEFunction(nid = 0xAB1ABE07, version = 150, checkInsideInterrupt = true)
