@@ -1075,13 +1075,13 @@ public class sceMpeg extends HLEModule {
             delayThread(mpegDecodeErrorDelay);
             return SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
         }
-        
+
         // @NOTE: Shouldn't this be negated?
         if (Memory.isAddressGood(streamUid)) {
             log.warn("sceMpegGetAvcAu didn't get a fake stream");
             return SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
         }
-        
+
         if (!streamMap.containsKey(streamUid)) {
             log.warn(String.format("sceMpegGetAvcAu bad stream 0x%X", streamUid));
             return -1;
@@ -1095,7 +1095,7 @@ public class sceMpeg extends HLEModule {
             delayThread(mpegDecodeErrorDelay);
             return SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
         }
-        
+
         int result = 0;
         // Update the video timestamp (AVC).
         if (!ignoreAvc) {
@@ -1110,8 +1110,12 @@ public class sceMpeg extends HLEModule {
             		if (mpegLastTimestamp <= 0 || mpegAvcAu.pts >= mpegLastTimestamp) {
             			endOfVideoReached = true;
             		}
-            		// No more data in ringbuffer.
-        			result = SceKernelErrors.ERROR_MPEG_NO_DATA;
+
+            		// Do not return an error for the very last video frame
+            		if (mpegAvcAu.pts != mpegLastTimestamp) {
+                		// No more data in ringbuffer.
+            			result = SceKernelErrors.ERROR_MPEG_NO_DATA;
+            		}
             	} else {
             		endOfVideoReached = false;
             	}
@@ -1415,8 +1419,8 @@ public class sceMpeg extends HLEModule {
             	if (mpegRingbuffer.packetsFree + packetsConsumed >= mpegRingbuffer.packets) {
             		// Having not yet reached the last timestamp?
             		if (mpegLastTimestamp > 0 && mpegAvcAu.pts < mpegLastTimestamp) {
-            			// Do not yet consume all the remaining packets.
-            			packetsConsumed = 0;
+            			// Do not yet consume all the remaining packets, leave 2 packets
+            			packetsConsumed = mpegRingbuffer.packets - mpegRingbuffer.packetsFree - 2;
             		}
             	}
 
