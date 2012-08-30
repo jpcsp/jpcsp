@@ -441,7 +441,14 @@ public class ModuleMgrForUser extends HLEModule {
             // Store the thread exit status into statusAddr when the thread terminates
             thread.exitStatusAddr = statusAddr;
             sceModule.start();
+
+            // Start the module start thread
             threadMan.hleKernelStartThread(thread, argSize, argp.getAddress(), sceModule.gp_value);
+
+            // Wait for the end of the module start thread.
+            // Do no return the thread exit status as the result of this call,
+            // return the module ID.
+            threadMan.hleKernelWaitThreadEnd(thread.uid, 0, false, false);
         } else if (entryAddr == 0) {
             Modules.log.info("sceKernelStartModule - no entry address");
             sceModule.start();

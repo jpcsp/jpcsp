@@ -880,7 +880,9 @@ public class ThreadManForUser extends HLEModule {
     	switch (thread.waitType) {
     		case PSP_WAIT_THREAD_END:
                 // Return WAIT_TIMEOUT
-    			thread.cpuContext.gpr[_v0] = ERROR_KERNEL_WAIT_TIMEOUT;
+    			if (thread.wait.ThreadEnd_returnExitStatus) {
+    				thread.cpuContext.gpr[_v0] = ERROR_KERNEL_WAIT_TIMEOUT;
+    			}
     			break;
     		case PSP_WAIT_EVENTFLAG:
     			Managers.eventFlags.onThreadWaitTimeout(thread);
@@ -928,7 +930,9 @@ public class ThreadManForUser extends HLEModule {
     	switch (thread.waitType) {
 			case PSP_WAIT_THREAD_END:
 	            // Return ERROR_WAIT_STATUS_RELEASED
-	            thread.cpuContext.gpr[_v0] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
+				if (thread.wait.ThreadEnd_returnExitStatus) {
+					thread.cpuContext.gpr[_v0] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
+				}
 				break;
 			case PSP_WAIT_EVENTFLAG:
 	            Managers.eventFlags.onThreadWaitReleased(thread);
@@ -1214,8 +1218,10 @@ public class ThreadManForUser extends HLEModule {
             if (thread.isWaitingForType(PSP_WAIT_THREAD_END) &&
                     thread.wait.ThreadEnd_id == stoppedThread.uid) {
             	hleThreadWaitRelease(thread);
-                // Return exit status of stopped thread
-                thread.cpuContext.gpr[_v0] = stoppedThread.exitStatus;
+            	if (thread.wait.ThreadEnd_returnExitStatus) {
+	                // Return exit status of stopped thread
+	                thread.cpuContext.gpr[_v0] = stoppedThread.exitStatus;
+            	}
             }
         }
     }
@@ -1517,7 +1523,7 @@ public class ThreadManForUser extends HLEModule {
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("hleKernelCreateThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' PC=" + Integer.toHexString(thread.cpuContext.pc) + " attr:0x" + Integer.toHexString(attr) + " pri:0x" + Integer.toHexString(initPriority) + " stackSize:0x" + Integer.toHexString(stackSize));
+            log.debug(String.format("hleKernelCreateThread SceUID=0x%X, name='%s', PC=0x%08X, attr=0x%X, priority=0x%X, stackSize=0x%X", thread.uid, thread.name, thread.cpuContext.pc, attr, initPriority, stackSize));
         }
 
         return thread;
@@ -1642,7 +1648,7 @@ public class ThreadManForUser extends HLEModule {
         }
     }
 
-    private void hleKernelWaitThreadEnd(@CheckArgument("checkThreadID") int uid, int timeoutAddr, boolean callbacks) {
+    public void hleKernelWaitThreadEnd(int uid, int timeoutAddr, boolean callbacks, boolean returnExitStatus) {
         if (log.isDebugEnabled()) {
             log.debug(String.format("hleKernelWaitThreadEnd SceUID=0x%X, callbacks=%b", uid, callbacks));
         }
@@ -1664,6 +1670,7 @@ public class ThreadManForUser extends HLEModule {
         } else {
             // Wait on a specific thread end
             currentThread.wait.ThreadEnd_id = uid;
+            currentThread.wait.ThreadEnd_returnExitStatus = returnExitStatus;
         	hleKernelThreadEnterWaitState(PSP_WAIT_THREAD_END, uid, waitThreadEndWaitStateChecker, timeoutAddr, callbacks);
         }
     }
@@ -2362,21 +2369,21 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x278C0DF5, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public void sceKernelWaitThreadEnd(int uid, int timeout_addr) {
+    public void sceKernelWaitThreadEnd(@CheckArgument("checkThreadID") int uid, int timeout_addr) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelWaitThreadEnd redirecting to hleKernelWaitThreadEnd(callbacks=false)");
         }
 
-        hleKernelWaitThreadEnd(uid, timeout_addr, false);
+        hleKernelWaitThreadEnd(uid, timeout_addr, false, true);
     }
 
     @HLEFunction(nid = 0x840E8133, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public void sceKernelWaitThreadEndCB(int uid, int timeout_addr) {
+    public void sceKernelWaitThreadEndCB(@CheckArgument("checkThreadID") int uid, int timeout_addr) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelWaitThreadEndCB redirecting to hleKernelWaitThreadEnd(callbacks=true)");
         }
 
-        hleKernelWaitThreadEnd(uid, timeout_addr, true);
+        hleKernelWaitThreadEnd(uid, timeout_addr, true, true);
         checkCallbacks();
     }
 
