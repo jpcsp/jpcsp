@@ -130,6 +130,6 @@ public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructureVariableLe
     }
 
     public boolean hasMessage() {
-    	return numMessages > 0;
+    	return firstMessageAddr != 0;
     }
 }
