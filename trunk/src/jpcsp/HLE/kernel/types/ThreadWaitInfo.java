@@ -25,6 +25,7 @@ public class ThreadWaitInfo {
 
     // Thread End
     public int ThreadEnd_id;
+    public boolean ThreadEnd_returnExitStatus; // Return the thread exit status in $v0
 
     // Event Flag
     public int EventFlag_id;
@@ -83,6 +84,7 @@ public class ThreadWaitInfo {
     	waitStateChecker = that.waitStateChecker;
 
     	ThreadEnd_id = that.ThreadEnd_id;
+    	ThreadEnd_returnExitStatus = that.ThreadEnd_returnExitStatus;
 
     	EventFlag_id = that.EventFlag_id;
     	EventFlag_bits = that.EventFlag_bits;
