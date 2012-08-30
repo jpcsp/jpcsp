@@ -2976,14 +2976,14 @@ public class IoFileMgrForUser extends HLEModule {
                             result = info.id;
                         } else {
                             log.warn("sceIoDopen '" + isofilename + "' not a umd directory!");
-                            result = -1;
+                            result = ERROR_ERRNO_FILE_NOT_FOUND;
                         }
                     } catch (FileNotFoundException e) {
                         log.warn("sceIoDopen - '" + isofilename + "' umd file not found");
-                        result = -1;
+                        result = ERROR_ERRNO_FILE_NOT_FOUND;
                     } catch (IOException e) {
                         log.warn("sceIoDopen - umd io error: " + e.getMessage());
-                        result = -1;
+                        result = ERROR_ERRNO_FILE_NOT_FOUND;
                     }
                 }
             } else if (dirname.getString().startsWith("/") && dirname.getString().indexOf(":") != -1) {
@@ -3004,7 +3004,7 @@ public class IoFileMgrForUser extends HLEModule {
                 }
             }
         } else {
-        	result = -1;
+        	result = ERROR_ERRNO_FILE_NOT_FOUND;
         }
         for (IIoListener ioListener : ioListeners) {
             ioListener.sceIoDopen(result, dirname.getAddress(), dirname.getString());
