@@ -18,12 +18,15 @@ package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
+import java.io.IOException;
 import java.util.zip.CRC32;
 import java.util.zip.DataFormatException;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 
 import jpcsp.HLE.Modules;
@@ -33,14 +36,20 @@ import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
+import jpcsp.util.MemoryInputStream;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceDeflt extends HLEModule {
-    private static Logger log = Modules.getLogger("sceDeflt");
+    public static Logger log = Modules.getLogger("sceDeflt");
+    protected static final int GZIP_MAGIC = 0x8B1F;
 
 	@Override
-	public String getName() { return "sceDeflt"; }
+	public String getName() {
+		return "sceDeflt";
+	}
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x2EE39A64, version = 150)
@@ -53,11 +62,49 @@ public class sceDeflt extends HLEModule {
 	public int sceDeflateDecompress() {
 		return 0;
 	}
-    
-    @HLEUnimplemented
+
 	@HLEFunction(nid = 0x6DBCF897, version = 150)
-	public int sceGzipDecompress() {
-		return 0;
+	public int sceGzipDecompress(TPointer outBufferAddr, int outBufferLength, TPointer inBufferAddr, @CanBeNull TPointer32 crc32Addr) {
+    	if (log.isTraceEnabled()) {
+    		log.trace(String.format("sceGzipDecompress: %s", Utilities.getMemoryDump(inBufferAddr.getAddress(), 16)));
+    	}
+
+    	int result;
+    	CRC32 crc32 = new CRC32();
+		byte[] buffer = new byte[4096];
+    	try {
+    		// Using a GZIPInputStream instead of an Inflater because the GZIPInputStream
+    		// is skipping the GZIP header and this should be done manually with an Inflater.
+			GZIPInputStream is = new GZIPInputStream(new MemoryInputStream(inBufferAddr.getAddress()));
+			IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(outBufferAddr.getAddress(), outBufferLength, 1);
+			int decompressedLength = 0;
+			while (decompressedLength < outBufferLength) {
+				int length = is.read(buffer);
+				if (length < 0) {
+					// End of GZIP stream
+					break;
+				}
+				if (decompressedLength + length > outBufferLength) {
+					log.warn(String.format("sceGzipDecompress : decompress buffer too small inBuffer=%s, outLength=%d", inBufferAddr, outBufferLength));
+					return SceKernelErrors.ERROR_INVALID_SIZE;
+				}
+
+				crc32.update(buffer, 0, length);
+
+				for (int i = 0; i < length; i++) {
+					memoryWriter.writeNext(buffer[i] & 0xFF);
+				}
+				decompressedLength += length;
+			}
+			memoryWriter.flush();
+			result = decompressedLength;
+		} catch (IOException e) {
+			log.error("sceGzipDecompress", e);
+			return SceKernelErrors.ERROR_INVALID_FORMAT;
+		}
+    	crc32Addr.setValue((int) crc32.getValue());
+
+    	return result;
 	}
     
     @HLEUnimplemented
@@ -83,19 +130,19 @@ public class sceDeflt extends HLEModule {
 	public int sceGzipGetName() {
 		return 0;
 	}
-    
-    @HLEUnimplemented
+
 	@HLEFunction(nid = 0x1B5B82BC, version = 150)
-	public int sceGzipIsValid() {
-		return 0;
+	public boolean sceGzipIsValid(TPointer gzipData) {
+    	int magic = gzipData.getValue16();
+    	if (log.isTraceEnabled()) {
+    		log.trace(String.format("sceGzipIsValid gzipData:%s", Utilities.getMemoryDump(gzipData.getAddress(), 16)));
+    	}
+
+    	return magic == GZIP_MAGIC;
 	}
-    
+
 	@HLEFunction(nid = 0xA9E4FB28, version = 150)
 	public int sceZlibDecompress(TPointer outBufferAddr, int outBufferLength, TPointer inBufferAddr, @CanBeNull TPointer32 crc32Addr) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceZlibDecompress outBufferAddr=%d, outBufferLength=0x%X, inBufferAddr=%s, crc32Addr=%s", outBufferAddr, outBufferLength, inBufferAddr, crc32Addr));
-		}
-
 		byte inBuffer[] = new byte[4096];
 		byte outBuffer[] = new byte[4096];
 		int inBufferPtr = 0;
@@ -121,7 +168,7 @@ public class sceDeflt extends HLEModule {
 				}
 				crc32.update(outBuffer, 0, count);
 				for (int i = 0; i < count; ++i) {
-					writer.writeNext(outBuffer[i]);
+					writer.writeNext(outBuffer[i] & 0xFF);
 				}
 			} catch (DataFormatException e) {
 				log.warn(String.format("sceZlibDecompress : malformed zlib stream inBuffer=%s", inBufferAddr));
