@@ -126,6 +126,10 @@ final public class TPointer implements ITPointerBase {
 		Utilities.writeStringNZ(memory, address + offset, n, s);
 	}
 
+	public void setStringZ(String s) {
+		Utilities.writeStringZ(memory, address, s);
+	}
+
 	public void setObject(int offset, Object object) {
 		SerializeMemory.serialize(object, new TPointerOutputStream(offset));
 	}

@@ -731,13 +731,33 @@ public class ThreadManForUser extends HLEModule {
      *                         false if callback cannot be execute while waiting.
      */
     public void hleKernelThreadEnterWaitState(int waitType, int waitId, IWaitStateChecker waitStateChecker, int timeoutAddr, boolean callbacks) {
+    	hleKernelThreadEnterWaitState(currentThread, waitType, waitId, waitStateChecker, timeoutAddr, callbacks);
+    }
+
+    /**
+     * Enter a thread in a wait state.
+     *
+     * @param thread           the thread entering the wait state
+     * @param waitType         the wait type (one of SceKernelThreadInfo.PSP_WAIT_xxx)
+     * @param waitId           the uid of the wait object
+     * @param waitStateChecker this wait state checked will be called after the
+     *                         execution of a callback in the waiting thread to check
+     *                         if the thread has to return to its wait state (i.e. if
+     *                         the wait condition is still valid).
+     * @param timeoutAddr      0 when the thread is waiting forever
+     *                         otherwise, a valid address containing a timeout value
+     *                         in microseconds.
+     * @param callbacks        true if callback can be executed while waiting.
+     *                         false if callback cannot be execute while waiting.
+     */
+    public void hleKernelThreadEnterWaitState(SceKernelThreadInfo thread, int waitType, int waitId, IWaitStateChecker waitStateChecker, int timeoutAddr, boolean callbacks) {
         int micros = 0;
         boolean forever = true;
         if (Memory.isAddressGood(timeoutAddr)) {
             micros = Memory.getInstance().read32(timeoutAddr);
             forever = false;
         }
-    	hleKernelThreadEnterWaitState(currentThread, waitType, waitId, waitStateChecker, micros, forever, callbacks);
+    	hleKernelThreadEnterWaitState(thread, waitType, waitId, waitStateChecker, micros, forever, callbacks);
     }
 
     /**
@@ -1648,7 +1668,7 @@ public class ThreadManForUser extends HLEModule {
         }
     }
 
-    public void hleKernelWaitThreadEnd(int uid, int timeoutAddr, boolean callbacks, boolean returnExitStatus) {
+    public int hleKernelWaitThreadEnd(SceKernelThreadInfo waitingThread, int uid, int timeoutAddr, boolean callbacks, boolean returnExitStatus) {
         if (log.isDebugEnabled()) {
             log.debug(String.format("hleKernelWaitThreadEnd SceUID=0x%X, callbacks=%b", uid, callbacks));
         }
@@ -1656,23 +1676,25 @@ public class ThreadManForUser extends HLEModule {
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             log.warn(String.format("hleKernelWaitThreadEnd unknown thread 0x%X", uid));
-            Emulator.getProcessor().cpu.gpr[_v0] = ERROR_KERNEL_NOT_FOUND_THREAD;
-        } else if (isBannedThread(thread)) {
+            return ERROR_KERNEL_NOT_FOUND_THREAD;
+        }
+
+        if (isBannedThread(thread)) {
             log.warn(String.format("hleKernelWaitThreadEnd %s banned, not waiting", thread.toString()));
-            Emulator.getProcessor().cpu.gpr[_v0] = 0;
             hleRescheduleCurrentThread();
         } else if (thread.isStopped()) {
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("hleKernelWaitThreadEnd %s thread already stopped, not waiting", thread.toString()));
         	}
-            Emulator.getProcessor().cpu.gpr[_v0] = 0;
             hleRescheduleCurrentThread();
         } else {
             // Wait on a specific thread end
-            currentThread.wait.ThreadEnd_id = uid;
-            currentThread.wait.ThreadEnd_returnExitStatus = returnExitStatus;
-        	hleKernelThreadEnterWaitState(PSP_WAIT_THREAD_END, uid, waitThreadEndWaitStateChecker, timeoutAddr, callbacks);
+        	waitingThread.wait.ThreadEnd_id = uid;
+        	waitingThread.wait.ThreadEnd_returnExitStatus = returnExitStatus;
+        	hleKernelThreadEnterWaitState(waitingThread, PSP_WAIT_THREAD_END, uid, waitThreadEndWaitStateChecker, timeoutAddr, callbacks);
         }
+
+        return 0;
     }
 
     /**
@@ -2369,22 +2391,24 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x278C0DF5, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public void sceKernelWaitThreadEnd(@CheckArgument("checkThreadID") int uid, int timeout_addr) {
+    public int sceKernelWaitThreadEnd(@CheckArgument("checkThreadID") int uid, int timeout_addr) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelWaitThreadEnd redirecting to hleKernelWaitThreadEnd(callbacks=false)");
         }
 
-        hleKernelWaitThreadEnd(uid, timeout_addr, false, true);
+        return hleKernelWaitThreadEnd(currentThread, uid, timeout_addr, false, true);
     }
 
     @HLEFunction(nid = 0x840E8133, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public void sceKernelWaitThreadEndCB(@CheckArgument("checkThreadID") int uid, int timeout_addr) {
+    public int sceKernelWaitThreadEndCB(@CheckArgument("checkThreadID") int uid, int timeout_addr) {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelWaitThreadEndCB redirecting to hleKernelWaitThreadEnd(callbacks=true)");
         }
 
-        hleKernelWaitThreadEnd(uid, timeout_addr, true, true);
+        int result = hleKernelWaitThreadEnd(currentThread, uid, timeout_addr, true, true);
         checkCallbacks();
+
+        return result;
     }
 
     /** wait the current thread for a certain number of microseconds */

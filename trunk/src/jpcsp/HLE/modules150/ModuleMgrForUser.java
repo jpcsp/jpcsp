@@ -435,6 +435,9 @@ public class ModuleMgrForUser extends HLEModule {
                 attribute = smOption.attribute;
             }
 
+            // Remember the current thread as it can be changed by hleKernelStartThread.
+            SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+
             SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStart", entryAddr, priority, stackSize, attribute, 0);
             // override inherited module id with the new module we are starting
             thread.moduleid = sceModule.modid;
@@ -448,7 +451,7 @@ public class ModuleMgrForUser extends HLEModule {
             // Wait for the end of the module start thread.
             // Do no return the thread exit status as the result of this call,
             // return the module ID.
-            threadMan.hleKernelWaitThreadEnd(thread.uid, 0, false, false);
+            threadMan.hleKernelWaitThreadEnd(currentThread, thread.uid, 0, false, false);
         } else if (entryAddr == 0) {
             Modules.log.info("sceKernelStartModule - no entry address");
             sceModule.start();
