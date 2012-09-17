@@ -559,6 +559,12 @@ public class sceAudio extends HLEModule {
                 }
                 blockThreadOutput(pspSRCChannel, buf.getAddress(), vol, vol);
             }
+        } else if (!pspSRCChannel.isReserved() && !disableChReserve) {
+        	// Channel is automatically reserved. The audio data (buf) is not used in this case.
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("sceAudioSRCOutputBlocking automatically reserving channel %s", pspSRCChannel));
+            }
+            pspSRCChannel.setReserved(true);
         } else {
             if (!pspSRCChannel.isOutputBlocking() || disableBlockingAudio) {
                 if (log.isDebugEnabled()) {
