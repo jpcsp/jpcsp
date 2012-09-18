@@ -533,7 +533,7 @@ public class CaptureImage {
 			int b1 = (color1 << 3) & 0xF8;
 
 			int r2, g2, b2;
-			if (color0 > color1) {
+			if (color0 > color1 || dxtLevel > 1) {
 				r2 = (r0 * 2 + r1) / 3;
 				g2 = (g0 * 2 + g1) / 3;
 				b2 = (b0 * 2 + b1) / 3;
