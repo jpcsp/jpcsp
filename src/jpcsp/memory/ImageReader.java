@@ -776,12 +776,12 @@ public class ImageReader {
 	 * Base class for the DXT-compressed decoders
 	 */
 	private static abstract class DXTDecoder extends ImageDecoder {
-		protected int width;
-		protected int dxtLevel;
-		protected int[] buffer;
+		protected final int width;
+		protected final int dxtLevel;
+		protected final int[] buffer;
 		protected int index;
-		protected int maxIndex;
-		protected int[] colors;
+		protected final int maxIndex;
+		protected final int[] colors = new int[4];
 
 		public DXTDecoder(IMemoryReader memoryReader, int width, int height, int dxtLevel, int compressionRatio) {
 			super(memoryReader);
@@ -793,7 +793,6 @@ public class ImageReader {
 			buffer = new int[width * 4]; // DXT images are compressed in blocks of 4 rows
 			maxIndex = buffer.length;
 			index = maxIndex;
-			colors = new int[4];
 		}
 
 		protected void reload() {
@@ -825,7 +824,7 @@ public class ImageReader {
 				int b1 = (color1 << 3) & 0xF8;
 
 				int r2, g2, b2;
-				if (color0 > color1) {
+				if (color0 > color1 || dxtLevel > 1) {
 					r2 = (r0 * 2 + r1) / 3;
 					g2 = (g0 * 2 + g1) / 3;
 					b2 = (b0 * 2 + b1) / 3;
@@ -964,7 +963,7 @@ public class ImageReader {
 
 		@Override
 		protected void readAlpha() {
-			alpha = memoryReader.readNext();
+			alpha = memoryReader.readNext() & 0x00000000FFFFFFFFL;
 			alpha |= (((long) memoryReader.readNext()) << 32);
 		}
 
