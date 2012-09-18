@@ -18,40 +18,31 @@ package jpcsp.HLE.modules200;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_UMD_NOT_READY;
 
-import jpcsp.HLE.HLEFunction;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
+import org.apache.log4j.Logger;
 
+import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+
+@HLELogging
 public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
+	public static Logger log = jpcsp.HLE.modules150.sceUmdUser.log;
     protected boolean umdAllowReplace;
 
     @HLEFunction(nid = 0x87533940, version = 200)
-    public void sceUmdReplaceProhibit(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        if(log.isDebugEnabled()) {
-            log.debug("sceUmdReplaceProhibit");
+    public int sceUmdReplaceProhibit() {
+        if ((getUmdStat() & PSP_UMD_READY) != PSP_UMD_READY || (getUmdStat() & PSP_UMD_READABLE) != PSP_UMD_READABLE) {
+            return ERROR_UMD_NOT_READY;
         }
 
         umdAllowReplace = false;
-        if(((getUmdStat() & PSP_UMD_READY) != PSP_UMD_READY)
-                || ((getUmdStat() & PSP_UMD_READABLE) != PSP_UMD_READABLE)) {
-            cpu.gpr[2] = ERROR_UMD_NOT_READY;
-        } else {
-            cpu.gpr[2] = 0;
-        }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xCBE9F02A, version = 200)
-    public void sceUmdReplacePermit(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        if(log.isDebugEnabled()) {
-            log.debug("sceUmdReplacePermit");
-        }
-
+    public int sceUmdReplacePermit() {
         umdAllowReplace = true;
-        cpu.gpr[2] = 0;
-    }
 
+        return 0;
+    }
 }

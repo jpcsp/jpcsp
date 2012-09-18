@@ -14,20 +14,19 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Memory;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class SysMemForKernel extends HLEModule {
-    protected static Logger log = Modules.getLogger("SysMemForKernel");
+    public static Logger log = Modules.getLogger("SysMemForKernel");
 
     @Override
     public String getName() {
@@ -35,21 +34,9 @@ public class SysMemForKernel extends HLEModule {
     }
 
     @HLEFunction(nid = 0xA089ECA4, version = 150)
-    public void sceKernelMemset(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
+    public int sceKernelMemset(TPointer destAddr, int data, int size) {
+        destAddr.memset((byte) data, size);
 
-        int dest_addr = cpu.gpr[4];
-        int data = cpu.gpr[5];
-        int size = cpu.gpr[6];
-
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelMemset addr=0x%08X, data=0x%02X, size=%d", dest_addr, data, size));
-        }
-
-        mem.memset(dest_addr, (byte) data, size);
-
-        cpu.gpr[2] = 0;
+        return 0;
     }
-
 }

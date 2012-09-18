@@ -14,10 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules;
 
 public class sceSsl extends jpcsp.HLE.modules150.sceSsl {
-	@Override
-	public final String getName() { return "sceSsl"; }
 }

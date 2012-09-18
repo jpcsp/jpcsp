@@ -20,16 +20,17 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import jpcsp.GeneralJpcspException;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.Emulator;
 import jpcsp.Loader;
-import jpcsp.Memory;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.connector.PGDFileConnector;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
@@ -40,13 +41,12 @@ import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules150.IoFileMgrForUser.IoInfo;
-import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class scePspNpDrm_user extends HLEModule {
-
-    protected static Logger log = Modules.getLogger("scePspNpDrm_user");
+    public static Logger log = Modules.getLogger("scePspNpDrm_user");
 
     @Override
     public String getName() {
@@ -58,47 +58,27 @@ public class scePspNpDrm_user extends HLEModule {
     private PGDFileConnector edatFileConnector;
 
     @HLEFunction(nid = 0xA1336091, version = 150, checkInsideInterrupt = true)
-    public void sceNpDrmSetLicenseeKey(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int npDrmKeyAddr = cpu.gpr[4];
-
-        if (Modules.log.isDebugEnabled()) {
-            log.debug("sceNpDrmSetLicenseeKey (npDrmKeyAddr=0x" + Integer.toHexString(npDrmKeyAddr) + ")");
+    public int sceNpDrmSetLicenseeKey(TPointer npDrmKeyAddr) {
+        StringBuilder key = new StringBuilder();
+        for (int i = 0; i < PSP_NPDRM_KEY_LENGHT; i++) {
+            npDrmKey[i] = (byte) npDrmKeyAddr.getValue8(i);
+            key.append(String.format("%02X", npDrmKey[i] & 0xFF));
         }
+        log.info(String.format("NPDRM Encryption key detected: 0x%s", key.toString()));
 
-        
-        if (Memory.isAddressGood(npDrmKeyAddr)) {
-            String key = "";
-            for(int i = 0; i < PSP_NPDRM_KEY_LENGHT; i++) {
-                npDrmKey[i] = (byte)mem.read8(npDrmKeyAddr + i);
-                key += Integer.toHexString(npDrmKey[i] & 0xFF);
-            }
-            log.info("NPDRM Encryption key detected: 0x" + key);
-        }
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
     @HLEFunction(nid = 0x9B745542, version = 150, checkInsideInterrupt = true)
-    public void sceNpDrmClearLicenseeKey(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceNpDrmClearLicenseeKey() {
+    	Arrays.fill(npDrmKey, (byte) 0);
 
-        if (Modules.log.isDebugEnabled()) {
-            log.debug("sceNpDrmClearLicenseeKey");
-        }
-
-        
-        for(int i = 0; i < PSP_NPDRM_KEY_LENGHT; i++) {
-            npDrmKey[i] = 0;
-        }
-        cpu.gpr[2] = 0;
+    	return 0;
     }
 
+    @HLELogging(level="warn")
     @HLEFunction(nid = 0x275987D1, version = 150, checkInsideInterrupt = true)
     public int sceNpDrmRenameCheck(PspString fileName) {
-        log.warn(String.format("PARTIAL: sceNpDrmRenameCheck nameAddr=0x%08X('%s')", fileName.getAddress(), fileName.getString()));
-
         CryptoEngine crypto = new CryptoEngine(); 
 		boolean renamed = false;
 		int result = 0;
@@ -147,15 +127,9 @@ public class scePspNpDrm_user extends HLEModule {
         return result;  // Faking.
     }
 
+    @HLELogging(level="warn")
     @HLEFunction(nid = 0x08D98894, version = 150, checkInsideInterrupt = true)
-    public void sceNpDrmEdataSetupKey(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int edataFd = cpu.gpr[4];
-
-        log.warn("PARTIAL: sceNpDrmEdataSetupKey (edataFd=0x" + Integer.toHexString(edataFd) + ")");
-    
-        
+    public int sceNpDrmEdataSetupKey(int edataFd) {
         IoInfo info = Modules.IoFileMgrForUserModule.getFileIoInfo(edataFd);    
         CryptoEngine crypto = new CryptoEngine();
         
@@ -254,60 +228,43 @@ public class scePspNpDrm_user extends HLEModule {
             } catch (Exception e) {
                 // Ignore.
             }
-            
+
             try {
                 info.readOnlyFile.seek(info.position);
             } catch (Exception e) {
                 // Ignore.
             }
-            
+
             // Load the manually decrypted file generated just now.
             info.readOnlyFile = edatFileConnector.loadDecryptedPGDFile(info.filename);
         }
-        
-        cpu.gpr[2] = 0;  // Faking.
+
+        return 0;  // Faking.
     }
 
     @HLEFunction(nid = 0x219EF5CC, version = 150, checkInsideInterrupt = true)
-    public void sceNpDrmEdataGetDataSize(Processor processor) {
-        CpuState cpu = processor.cpu;
-        
-        int edataFd = cpu.gpr[4];
-
-        log.warn("PARTIAL: sceNpDrmEdataGetDataSize (edataFd=0x" + Integer.toHexString(edataFd) + ")");
-        
-        
+    public int sceNpDrmEdataGetDataSize(int edataFd) {
         IoInfo info = Modules.IoFileMgrForUserModule.getFileIoInfo(edataFd); 
         int size = 0;
-        try {
-            size = (int) info.readOnlyFile.length();
-        } catch (Exception e) {
-            log.error(e);
+        if (info != null) {
+	        try {
+	            size = (int) info.readOnlyFile.length();
+	        } catch (IOException e) {
+	        	log.error("sceNpDrmEdataGetDataSize", e);
+	        }
         }
-        cpu.gpr[2] = size;
+
+        return size;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x2BAA4294, version = 150, checkInsideInterrupt = true)
-    public void sceNpDrmOpen(Processor processor) {
-        CpuState cpu = processor.cpu;
-        
-        int nameAddr = cpu.gpr[4];
-        int flags = cpu.gpr[5];
-        int permissions = cpu.gpr[6];
-
-        log.warn("IGNORING: sceNpDrmOpen (nameAddr=0x" + Integer.toHexString(nameAddr) 
-                + ", flags=0x" + Integer.toHexString(flags) + ", permissions=0" + Integer.toOctalString(permissions) + ")");
-
-        
-        cpu.gpr[2] = 0;
+    public int sceNpDrmOpen(PspString name, int flags, int permissions) {
+        return 0;
     }
 
     @HLEFunction(nid = 0xC618D0B1, version = 150, checkInsideInterrupt = true)
-    public int sceKernelLoadModuleNpDrm(PspString path, int flags, TPointer optionAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelLoadModuleNpDrm path=%s, flags=0x%X, optionAddr=%s", path, flags, optionAddr));
-        }
-
+    public int sceKernelLoadModuleNpDrm(PspString path, int flags, @CanBeNull TPointer optionAddr) {
         SceKernelLMOption lmOption = null;
         if (optionAddr.isNotNull()) {
             lmOption = new SceKernelLMOption();
@@ -321,58 +278,50 @@ public class scePspNpDrm_user extends HLEModule {
     }
 
     @HLEFunction(nid = 0xAA5FC85B, version = 150, checkInsideInterrupt = true)
-    public void sceKernelLoadExecNpDrm(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-        
-        int filename_addr = cpu.gpr[4];
-        int option_addr = cpu.gpr[5];
-
-        String name = Utilities.readStringZ(filename_addr);
-
-        
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelLoadExecNpDrm (file='%s', option_addr=0x%08X", name, option_addr) + ")");
-        }
-
+    public int sceKernelLoadExecNpDrm(PspString fileName, @CanBeNull TPointer optionAddr) {
         // Flush system memory to mimic a real PSP reset.
         Modules.SysMemUserForUserModule.reset();
 
-        if (option_addr != 0) {
-            int optSize = mem.read32(option_addr);       // Size of the option struct.
-            int argSize = mem.read32(option_addr + 4);   // Number of args (strings).
-            int argAddr = mem.read32(option_addr + 8);   // Pointer to a list of strings.
-            int keyAddr = mem.read32(option_addr + 12);  // Pointer to an encryption key (may not be used).
+        if (optionAddr.isNotNull()) {
+            int optSize = optionAddr.getValue32(0);  // Size of the option struct.
+            int argSize = optionAddr.getValue32(4);  // Number of args (strings).
+            int argAddr = optionAddr.getValue32(8);  // Pointer to a list of strings.
+            int keyAddr = optionAddr.getValue32(12); // Pointer to an encryption key (may not be used).
 
             if (log.isDebugEnabled()) {
             	log.debug(String.format("sceKernelLoadExecNpDrm (params: optSize=%d, argSize=%d, argAddr=0x%08X, keyAddr=0x%08X)", optSize, argSize, argAddr, keyAddr));
             }
         }
 
+        int result;
         try {
-            SeekableDataInput moduleInput = Modules.IoFileMgrForUserModule.getFile(name, IoFileMgrForUser.PSP_O_RDONLY);
+            SeekableDataInput moduleInput = Modules.IoFileMgrForUserModule.getFile(fileName.getString(), IoFileMgrForUser.PSP_O_RDONLY);
             if (moduleInput != null) {
                 byte[] moduleBytes = new byte[(int) moduleInput.length()];
                 moduleInput.readFully(moduleBytes);
+                moduleInput.close();
                 ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
 
-                SceModule module = Emulator.getInstance().load(name, moduleBuffer, true);
+                SceModule module = Emulator.getInstance().load(fileName.getString(), moduleBuffer, true);
                 Emulator.getClock().resume();
 
                 if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
-                    cpu.gpr[2] = 0;
+                    result = 0;
                 } else {
                     log.warn("sceKernelLoadExecNpDrm - failed, target is not an ELF");
-                    cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_ILLEGAL_LOADEXEC_FILENAME;
+                    result = SceKernelErrors.ERROR_KERNEL_ILLEGAL_LOADEXEC_FILENAME;
                 }
-                moduleInput.close();
+            } else {
+                result = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
             }
         } catch (GeneralJpcspException e) {
-            log.error("General Error : " + e.getMessage());
-            Emulator.PauseEmu();
+            log.error("sceKernelLoadExecNpDrm", e);
+            result = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
         } catch (IOException e) {
-            log.error("sceKernelLoadExecNpDrm - Error while loading module " + name + ": " + e.getMessage());
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
+            log.error(String.format("sceKernelLoadExecNpDrm - Error while loading module '%s'", fileName), e);
+            result = SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
         }
+
+        return result;
     }
 }

@@ -16,19 +16,21 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Memory;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceSsl extends HLEModule {
-
-    protected static Logger log = Modules.getLogger("sceSsl");
+    public static Logger log = Modules.getLogger("sceSsl");
 
     @Override
     public String getName() {
@@ -39,156 +41,102 @@ public class sceSsl extends HLEModule {
     private int maxMemSize;
     private int currentMemSize;
 
+    @HLELogging(level="info")
     @HLEFunction(nid = 0x957ECBE2, version = 150)
-    public void sceSslInit(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int heapSize = cpu.gpr[4];
-
-        log.info("sceSslInit: heapSize=" + Integer.toHexString(heapSize));
-
+    public int sceSslInit(int heapSize) {
         if (isSslInit) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_SSL_ALREADY_INIT;
-        } else if (heapSize <= 0) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_SSL_INVALID_PARAMETER;
-        } else {
-            maxMemSize = heapSize;
-            currentMemSize = heapSize / 2; // Dummy value.
-            isSslInit = true;
-            cpu.gpr[2] = 0;
+            return SceKernelErrors.ERROR_SSL_ALREADY_INIT;
         }
+        if (heapSize <= 0) {
+            return SceKernelErrors.ERROR_SSL_INVALID_PARAMETER;
+        }
+
+        maxMemSize = heapSize;
+        currentMemSize = heapSize / 2; // Dummy value.
+        isSslInit = true;
+
+        return 0;
     }
 
+    @HLELogging(level="info")
     @HLEFunction(nid = 0x191CDEFF, version = 150)
-    public void sceSslEnd(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.info("sceSslEnd");
-
+    public int sceSslEnd() {
         if (!isSslInit) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_SSL_NOT_INIT;
-        } else {
-            isSslInit = false;
-            cpu.gpr[2] = 0;
+            return SceKernelErrors.ERROR_SSL_NOT_INIT;
         }
+
+        isSslInit = false;
+
+        return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x5BFB6B61, version = 150)
-    public void sceSslGetNotAfter(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int sslCertAddr = cpu.gpr[4];
-        int endTimeAddr = cpu.gpr[5];
-
-        log.warn("UNIMPLEMENTED: sceSslGetNotAfter: sslCertAddr=" + Integer.toHexString(sslCertAddr)
-                + ", endTimeAddr=" + Integer.toHexString(endTimeAddr));
-
-        cpu.gpr[2] = 0;
+    public int sceSslGetNotAfter(@CanBeNull TPointer sslCertAddr, @CanBeNull TPointer endTimeAddr) {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x17A10DCC, version = 150)
-    public void sceSslGetNotBefore(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int sslCertAddr = cpu.gpr[4];
-        int startTimeAddr = cpu.gpr[5];
-
-        log.warn("UNIMPLEMENTED: sceSslGetNotAfter: sslCertAddr=" + Integer.toHexString(sslCertAddr)
-                + ", startTimeAddr=" + Integer.toHexString(startTimeAddr));
-
-        cpu.gpr[2] = 0;
+    public int sceSslGetNotBefore(@CanBeNull TPointer sslCertAddr, @CanBeNull TPointer startTimeAddr) {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x3DD5E023, version = 150)
-    public void sceSslGetSubjectName(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceSslGetSubjectName");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceSslGetSubjectName() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x1B7C8191, version = 150)
-    public void sceSslGetIssuerName(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceSslGetIssuerName");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceSslGetIssuerName() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xCC0919B0, version = 150)
-    public void sceSslGetSerialNumber(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceSslGetSerialNumber");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceSslGetSerialNumber() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x058D21C0, version = 150)
-    public void sceSslGetNameEntryCount(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceSslGetNameEntryCount");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceSslGetNameEntryCount() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xD6D097B4, version = 150)
-    public void sceSslGetNameEntryInfo(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceSslGetNameEntryInfo");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceSslGetNameEntryInfo() {
+    	return 0;
     }
 
     @HLEFunction(nid = 0xB99EDE6A, version = 150)
-    public void sceSslGetUsedMemoryMax(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
+    public int sceSslGetUsedMemoryMax(TPointer32 maxMemAddr) {
+    	if (!isSslInit) {
+    		return SceKernelErrors.ERROR_SSL_NOT_INIT;
+    	}
 
-        int maxMemAddr = cpu.gpr[4];
+    	maxMemAddr.setValue(maxMemSize);
 
-        log.info("sceSslGetUsedMemoryMax: maxMemAddr=" + Integer.toHexString(maxMemAddr));
-
-        if (Memory.isAddressGood(maxMemAddr)) {
-            mem.write32(maxMemAddr, maxMemSize);
-            cpu.gpr[2] = 0;
-        } else if (!isSslInit) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_SSL_NOT_INIT;
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_SSL_INVALID_PARAMETER;
-        }
+        return 0;
     }
 
     @HLEFunction(nid = 0x0EB43B06, version = 150)
-    public void sceSslGetUsedMemoryCurrent(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
+    public int sceSslGetUsedMemoryCurrent(TPointer32 currentMemAddr) {
+    	if (!isSslInit) {
+    		return SceKernelErrors.ERROR_SSL_NOT_INIT;
+    	}
 
-        int currentMemAddr = cpu.gpr[4];
+    	currentMemAddr.setValue(currentMemSize);
 
-        log.info("sceSslGetUsedMemoryCurrent: currentMemAddr=" + Integer.toHexString(currentMemAddr));
-
-        if (Memory.isAddressGood(currentMemAddr)) {
-            mem.write32(currentMemAddr, currentMemSize);
-            cpu.gpr[2] = 0;
-        } else if (!isSslInit) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_SSL_NOT_INIT;
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_SSL_INVALID_PARAMETER;
-        }
+        return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xF57765D3, version = 150)
-    public void sceSslGetKeyUsage(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceSslGetKeyUsage");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int sceSslGetKeyUsage() {
+    	return 0;
     }
-
 }

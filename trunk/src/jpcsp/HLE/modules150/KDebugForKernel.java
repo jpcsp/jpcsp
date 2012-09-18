@@ -19,6 +19,7 @@ package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.PspString;
 
 import org.apache.log4j.Logger;
 
@@ -65,8 +66,8 @@ public class KDebugForKernel extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0x84F370BC, version = 150)
-	public int Kprintf(CpuState cpu) {
-		return Modules.SysMemUserForUserModule.hleKernelPrintf(cpu, kprintf, "Kprintf");
+	public int Kprintf(CpuState cpu, PspString formatString) {
+		return Modules.SysMemUserForUserModule.hleKernelPrintf(cpu, formatString, kprintf, "Kprintf");
 	}
 
     @HLEUnimplemented

@@ -17,33 +17,22 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules280;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.HLE.HLEFunction;
 import jpcsp.hardware.Model;
 
 public class SysMemForKernel extends jpcsp.HLE.modules150.SysMemForKernel {
-
-    @Override
-    public String getName() {
-        return "SysMemForKernel";
-    }
-
-    @Override
-    public void start() {
-    }
-
-    @Override
-    public void stop() {
-    }
+	public static Logger log = jpcsp.HLE.modules150.SysMemForKernel.log;
 
     @HLEFunction(nid = 0x6373995D, version = 280)
     public int sceKernelGetModel() {
 		int result = Model.getModel(); // <= 0 original, 1 slim
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceKernelGetModel ret: %d", result));
+			log.debug(String.format("sceKernelGetModel returning %d", result));
 		}
 
 		return result;
 	}
-
 }

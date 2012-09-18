@@ -90,7 +90,7 @@ public class SceIoStat {
     }
 
     public static int sizeof() {
-        return 16 + ScePspDateTime.sizeof() * 3 + 24;
+        return 16 + ScePspDateTime.SIZEOF * 3 + 24;
     }
 
     public void setReserved(int index, int value) {

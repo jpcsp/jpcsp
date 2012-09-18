@@ -17,5 +17,4 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 public class sceUsb extends jpcsp.HLE.modules150.sceUsb {
-
 }
