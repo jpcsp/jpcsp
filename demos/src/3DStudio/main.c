@@ -347,8 +347,8 @@ struct VertexNoColor
  #endif
 };
 
-struct Vertex __attribute__((aligned(16))) vertices1[6];
-struct Vertex __attribute__((aligned(16))) vertices2[6];
+struct Vertex __attribute__((aligned(16))) vertices1[8];
+struct Vertex __attribute__((aligned(16))) vertices2[8];
 
 struct Color
 {
@@ -504,7 +504,7 @@ int materialSpecularFlag = 0;
 int vertexColorFlag = 1;
 int tpsm1 = GU_PSM_8888;
 int tpsm2 = GU_PSM_8888;
-char *tpsmNames[] = { "GU_PSM_5650", "GU_PSM_5551", "GU_PSM_4444", "GU_PSM_8888", "GU_PSM_T4", "GU_PSM_T8", "GU_PSM_T16", "GU_PSM_T32" };
+char *tpsmNames[] = { "GU_PSM_5650", "GU_PSM_5551", "GU_PSM_4444", "GU_PSM_8888", "GU_PSM_T4", "GU_PSM_T8", "GU_PSM_T16", "GU_PSM_T32", "GU_PSM_DXT1", "GU_PSM_DXT3", "GU_PSM_DXT5" };
 
 struct Color ambientColor;
 struct Color texEnvColor;
@@ -748,6 +748,12 @@ void setNoColorRectanglePoint(struct Point *ppoint, struct Point *pnormal, struc
 }
 
 
+unsigned int mixColors(unsigned int color1, unsigned int color2, int factor)
+{
+	return ((color1 * factor) + (color2 * (256 - factor))) / 256;
+}
+
+
 unsigned int getTextureColor(struct Color *pcolor, int textureType, int x, int y)
 {
 	unsigned int color1 = getColor(pcolor);
@@ -771,7 +777,7 @@ unsigned int getTextureColor(struct Color *pcolor, int textureType, int x, int y
 
 	if (factor != -1)
 	{
-		color = ((color1 * factor) + (color2 * (256 - factor))) / 256;
+		color = mixColors(color1, color2, factor);
 	}
 
 	return color;
@@ -793,6 +799,57 @@ void createTexture32(struct Color *pcolor, int textureType, unsigned int *textur
 }
 
 
+unsigned short getColor16(int color, int tpsm)
+{
+	switch (tpsm)
+	{
+		case GU_PSM_5650:
+			color = ((color >> 3) & 0x0000001F) |
+					((color >> 5) & 0x000007E0) |
+					((color >> 8) & 0x0000F800);
+			break;
+		case GU_PSM_5551:
+			color = ((color >>  3) & 0x0000001F) |
+					((color >>  6) & 0x000003E0) |
+					((color >>  9) & 0x00007C00) |
+					((color >> 16) & 0x00008000);
+			break;
+		case GU_PSM_4444:
+			color = ((color >>  4) & 0x0000000F) |
+					((color >>  8) & 0x000000F0) |
+					((color >> 12) & 0x00000F00) |
+					((color >> 16) & 0x0000F000);
+			break;
+	}
+
+	return (unsigned short) color;
+}
+
+unsigned short getCompressedColor16(unsigned int color)
+{
+	return (unsigned short) (((color >> 19) & 0x0000001F) |
+	                         ((color >> 5) & 0x000007E0) |
+							 ((color << 8) & 0x0000F800));
+}
+
+
+int colorComponentDistance(int component1, int component2)
+{
+	component1 &= 0xFF;
+	component2 &= 0xFF;
+	return component1 > component2 ? component1 - component2 : component2 - component1;
+}
+
+
+int colorDistance(int color1, int color2)
+{
+	return colorComponentDistance(color1 >> 24, color2 >> 24) +
+	       colorComponentDistance(color1 >> 16, color2 >> 16) +
+	       colorComponentDistance(color1 >>  8, color2 >>  8) +
+	       colorComponentDistance(color1      , color2      );
+}
+
+
 void createTexture16(struct Color *pcolor, int textureType, unsigned short *texture, int width, int height, int tpsm)
 {
 	int x, y;
@@ -802,27 +859,7 @@ void createTexture16(struct Color *pcolor, int textureType, unsigned short *text
 		for (x = 0; x < width; x++)
 		{
 			int color = getTextureColor(pcolor, textureType, x, y);
-			switch (tpsm)
-			{
-				case GU_PSM_5650:
-					color = ((color >> 3) & 0x0000001F) |
-					        ((color >> 5) & 0x000007E0) |
-					        ((color >> 8) & 0x0000F800);
-					break;
-				case GU_PSM_5551:
-					color = ((color >>  3) & 0x0000001F) |
-					        ((color >>  6) & 0x000003E0) |
-					        ((color >>  9) & 0x00007C00) |
-					        ((color >> 16) & 0x00008000);
-					break;
-				case GU_PSM_4444:
-					color = ((color >>  4) & 0x0000000F) |
-					        ((color >>  8) & 0x000000F0) |
-					        ((color >> 12) & 0x00000F00) |
-					        ((color >> 16) & 0x0000F000);
-					break;
-			}
-			texture[y * width + x] = (unsigned short) color;
+			texture[y * width + x] = getColor16(color, tpsm);
 		}
 	}
 }
@@ -832,15 +869,19 @@ int getClutIndex(unsigned int *clut, int color)
 {
 	int i;
 
+	int bestDistance = 0x00FFFFFF;
+	int bestIndex = 0;
 	for (i = 0; i < NUMBER_CLUT_ENTRIES; i++)
 	{
-		if ((clut[i] & 0x00FFFFFF) == (color & 0x00FFFFFF))
+		int distance = colorDistance(clut[i] & 0x00FFFFFF, color & 0x00FFFFFF);
+		if (distance < bestDistance)
 		{
-			return i;
+			bestIndex = i;
+			bestDistance = distance;
 		}
 	}
 
-	return 0;
+	return bestIndex;
 }
 
 
@@ -879,6 +920,85 @@ void createIndexedTexture(struct Color *pcolor, int textureType, void *texture, 
 			{
 				((unsigned int *) texture)[y * width + x] = index;
 			}
+		}
+	}
+}
+
+void setCompressedTextureColor(int x, int y, unsigned int color, unsigned int *colorLookup, unsigned int *texture, int width, int height, int tpsm)
+{
+	int colorLookupIndex = 0;
+	int i;
+	int alpha = (color >> 24) & 0xFF;
+
+	color &= 0x00FFFFFF;
+	int bestDistance = 0x00FFFFFF;
+	for (i = 0; i < 4; i++)
+	{
+		int distance = colorDistance(colorLookup[i], color);
+		if (distance < bestDistance)
+		{
+			colorLookupIndex = i;
+			bestDistance = distance;
+		}
+	}
+
+	int hasAlpha = tpsm > GU_PSM_DXT1;
+	int textureOffset = ((y >> 2) * (width >> 2) + (x >> 2)) << (hasAlpha ? 2 : 1);
+	int bitOffset = (((y & 3) << 2) + (x & 3)) << 1;
+	int bitMask = ~(3 << bitOffset);
+	texture[textureOffset] = (texture[textureOffset] & bitMask) | (colorLookupIndex << bitOffset);
+	texture[textureOffset + 1] = getCompressedColor16(colorLookup[0]) | (getCompressedColor16(colorLookup[1]) << 16);
+	if (hasAlpha)
+	{
+		if (tpsm <= GU_PSM_DXT3)
+		{
+			int alphaIndex = textureOffset + 2 + ((y & 3) >> 1);
+			int alphaBitOffset = (bitOffset << 1) & 31;
+			int alphaMask = ~(0xF << alphaBitOffset);
+			texture[alphaIndex] = (texture[alphaIndex] & alphaMask) | ((alpha >> 4) << alphaBitOffset);
+		}
+		else
+		{
+			// TODO Alpha not yet implemented for DXT5
+			texture[textureOffset + 2] = 0;
+			texture[textureOffset + 3] = 0;
+		}
+	}
+}
+
+void createCompressedTexture(struct Color *pcolor, int textureType, unsigned int *texture, int width, int height, int tpsm)
+{
+	int x, y;
+	unsigned int colorLookup[4];
+
+	colorLookup[0] = getColor(pcolor);
+	colorLookup[1] = 0x000000;
+	if (colorLookup[0] > colorLookup[1] || tpsm > GU_PSM_DXT1)
+	{
+		// 2/3 color0 + 1/3 color1
+		colorLookup[2] = mixColors(colorLookup[0], colorLookup[1], 171);
+		// 1/3 color0 + 2/3 color1
+		colorLookup[3] = mixColors(colorLookup[0], colorLookup[1], 85);
+	}
+	else
+	{
+		// 1/2 color0 + 1/2 color1
+		colorLookup[2] = mixColors(colorLookup[0], colorLookup[1], 128);
+		// transparent black
+		colorLookup[3] = 0x000000;
+	}
+
+	colorLookup[0] &= 0x00FFFFFF;
+	colorLookup[1] &= 0x00FFFFFF;
+	colorLookup[2] &= 0x00FFFFFF;
+	colorLookup[3] &= 0x00FFFFFF;
+
+	for (y = 0; y < height; y++)
+	{
+		for (x = 0; x < width; x++)
+		{
+			unsigned int color = getTextureColor(pcolor, textureType, x, y);
+			setCompressedTextureColor(x, y, color, colorLookup, texture, width, height, tpsm);
 		}
 	}
 }
@@ -936,6 +1056,13 @@ void drawRectangles()
 		{
 			createTexture16(pcolor, textureType1, (unsigned short *) texture1[level], width, height, tpsm1);
 		}
+		else if (tpsm1 >= GU_PSM_DXT1 && tpsm1 <= GU_PSM_DXT5)
+		{
+			if (level == 0)
+			{
+				createCompressedTexture(pcolor, textureType1, (unsigned int *) texture1[level], width, height, tpsm1);
+			}
+		}
 		else
 		{
 			createTexture32(pcolor, textureType1, texture1[level], width, height);
@@ -949,6 +1076,13 @@ void drawRectangles()
 		else if (tpsm2 == GU_PSM_5650 || tpsm2 == GU_PSM_5551 || tpsm2 == GU_PSM_4444)
 		{
 			createTexture16(pcolor, textureType2, (unsigned short *) texture2[level], width, height, tpsm2);
+		}
+		else if (tpsm2 >= GU_PSM_DXT1 && tpsm2 <= GU_PSM_DXT5)
+		{
+			if (level == 0)
+			{
+				createCompressedTexture(pcolor, textureType2, (unsigned int *) texture2[level], width, height, tpsm2);
+			}
 		}
 		else
 		{
@@ -1096,7 +1230,7 @@ void drawRectangles()
 	sceGumLoadIdentity();
 	sceGumRotateXYZ(&rectangle1rotation);
 
-	int numberVertex1 = sizeof(vertices1) / sizeof(struct Vertex);
+	int numberVertex1 = 6;
 	if (rectangle1rendering == RENDERING_3D)
 	{
 		rectangle1point.x = 0;
@@ -1226,7 +1360,7 @@ void drawRectangles()
 	sceGumLoadIdentity();
 	sceGumRotateXYZ(&rectangle2rotation);
 
-	int numberVertex2 = sizeof(vertices2) / sizeof(struct Vertex);
+	int numberVertex2 = 6;
 	if (rectangle2rendering == RENDERING_3D)
 	{
 		rectangle2point.x = 0;
@@ -1526,7 +1660,7 @@ void init()
 	addAttribute(", Mask", &stencilMask, NULL, x + 38, y, 0, 0xFF, 0x10, "%02X");
 	y++;
 
-	int ditherValue = 8;
+	int ditherValue = 0;
 	ditherMatrix.x.x = ditherValue;
 	ditherMatrix.x.y = ditherValue;
 	ditherMatrix.x.z = ditherValue;
@@ -1636,7 +1770,7 @@ void init()
 	setAttributeValueNames(&texFilterNames[0]);
 	y++;
 
-	addAttribute("Texture Format", &tpsm1, NULL, x + 6, y, GU_PSM_5650, GU_PSM_T32, 1, NULL);
+	addAttribute("Texture Format", &tpsm1, NULL, x + 6, y, GU_PSM_5650, GU_PSM_DXT5, 1, NULL);
 	setAttributeValueNames(&tpsmNames[0]);
 	y++;
 
@@ -1724,7 +1858,7 @@ void init()
 	setAttributeValueNames(&texFilterNames[0]);
 	y++;
 
-	addAttribute("Texture Format", &tpsm2, NULL, x + 6, y, GU_PSM_5650, GU_PSM_T32, 1, NULL);
+	addAttribute("Texture Format", &tpsm2, NULL, x + 6, y, GU_PSM_5650, GU_PSM_DXT5, 1, NULL);
 	setAttributeValueNames(&tpsmNames[0]);
 	y++;
 
