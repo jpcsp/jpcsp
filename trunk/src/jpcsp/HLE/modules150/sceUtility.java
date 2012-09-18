@@ -285,10 +285,14 @@ public class sceUtility extends HLEModule {
                     log.info(String.format("%sInitStart 0x%08X-0x%08X: %s", name, paramsAddr, paramsAddr + params.sizeof(), params.toString()));
                 }
 
-                // Start with INIT
-                status = PSP_UTILITY_DIALOG_STATUS_INIT;
+                int validityResult = checkValidity();
 
-                cpu.gpr[2] = 0;
+                if (validityResult == 0) {
+                	// Start with INIT
+                	status = PSP_UTILITY_DIALOG_STATUS_INIT;
+                }
+
+                cpu.gpr[2] = validityResult;
             }
         }
 
@@ -383,7 +387,11 @@ public class sceUtility extends HLEModule {
 
         protected abstract pspAbstractMemoryMappedStructure createParams();
 
-		public int getMinimumVisibleDurationMillis() {
+        protected int checkValidity() {
+        	return 0;
+        }
+
+        public int getMinimumVisibleDurationMillis() {
 			return minimumVisibleDurationMillis;
 		}
 
@@ -459,7 +467,19 @@ public class sceUtility extends HLEModule {
 			return savedataParams;
 		}
 
-        @Override
+		@Override
+		protected int checkValidity() {
+			int paramSize = savedataParams.base.totalSizeof();
+			// Only these parameter sizes are allowed:
+			if (paramSize != 1480 && paramSize != 1500 && paramSize != 1536) {
+				log.warn(String.format("sceUtilitySavedataInitStart invalid parameter size %d", paramSize));
+				return SceKernelErrors.ERROR_UTILITY_INVALID_PARAM_SIZE;
+			}
+
+			return super.checkValidity();
+		}
+
+		@Override
 		protected boolean executeUpdateVisible(Processor processor) {
 	        Memory mem = Processor.memory;
 
