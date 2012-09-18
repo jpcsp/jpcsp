@@ -22,6 +22,7 @@ import static jpcsp.util.Utilities.readUnaligned32;
 
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
@@ -36,8 +37,9 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class scePsmf extends HLEModule {
-    protected static Logger log = Modules.getLogger("scePsmf");
+    public static Logger log = Modules.getLogger("scePsmf");
 
     @Override
     public String getName() {
@@ -450,12 +452,9 @@ public class scePsmf extends HLEModule {
         }
     }
 
+    @HLELogging(level="info")
     @HLEFunction(nid = 0xC22C8327, version = 150, checkInsideInterrupt = true)
     public int scePsmfSetPsmf(TPointer32 psmf, TPointer bufferAddr) {
-        if (log.isInfoEnabled()) {
-            log.info(String.format("scePsmfSetPsmf psmf=%s, bufferAddr=%s", psmf, bufferAddr));
-        }
-
         Modules.sceMpegModule.setCurrentMpegAnalyzed(false);
         PSMFHeader header = new PSMFHeader(bufferAddr.getAddress());
         psmfHeaderMap.put(header.getHeaderOffset(), header);
@@ -485,10 +484,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0xC7DB3A5B, version = 150, checkInsideInterrupt = true)
     public int scePsmfGetCurrentStreamType(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 typeAddr, TPointer32 channelAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfGetCurrentStreamType psmf=%s, typeAddr=%s, channelAddr=%s", psmf, typeAddr, channelAddr));
-        }
-
         PSMFHeader header = getPsmfHeader(psmf);
         typeAddr.setValue(header.getCurrentStreamType());
         channelAddr.setValue(header.getCurrentStreamChannel());
@@ -502,10 +497,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0x28240568, version = 150, checkInsideInterrupt = true)
     public int scePsmfGetCurrentStreamNumber(@CheckArgument("checkPsmf") TPointer32 psmf) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfGetCurrentStreamNumber psmf=%s", psmf));
-        }
-
         PSMFHeader header = getPsmfHeader(psmf);
 
         return header.getCurrentStreamNumber();
@@ -513,10 +504,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0x1E6D9013, version = 150, checkInsideInterrupt = true)
     public int scePsmfSpecifyStreamWithStreamType(@CheckArgument("checkPsmf") TPointer32 psmf, int type, int ch) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfSpecifyStreamWithStreamType psmf=%s, type=%d, ch=%d", psmf, type, ch));
-        }
-
         PSMFHeader header = getPsmfHeader(psmf);
         if (!header.setStreamWithType(type, ch)) {
         	return SceKernelErrors.ERROR_PSMF_INVALID_ID;
@@ -527,10 +514,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0x4BC9BDE0, version = 150, checkInsideInterrupt = true)
     public int scePsmfSpecifyStream(@CheckArgument("checkPsmf") TPointer32 psmf, int streamNum) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfSpecifyStream psmf=%s, streamNum=%d", psmf, streamNum));
-        }
-
         PSMFHeader header = getPsmfHeader(psmf);
         header.setStreamNum(streamNum);
 
@@ -539,10 +522,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0x76D3AEBA, version = 150, checkInsideInterrupt = true)
     public int scePsmfGetPresentationStartTime(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 startTimeAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfGetPresentationStartTime psmf=%s, startTimeAddr=%s", psmf, startTimeAddr));
-        }
-
         PSMFHeader header = getPsmfHeader(psmf);
         int startTime = header.getPresentationStartTime();
         startTimeAddr.setValue(startTime);
@@ -555,10 +534,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0xBD8AE0D8, version = 150, checkInsideInterrupt = true)
     public int scePsmfGetPresentationEndTime(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 endTimeAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfGetPresentationEndTime psmf=%s, endTimeAddr=%s", psmf, endTimeAddr));
-        }
-
         PSMFHeader header = getPsmfHeader(psmf);
         int endTime = header.getPresentationEndTime();
         endTimeAddr.setValue(endTime);
@@ -571,10 +546,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0xEAED89CD, version = 150, checkInsideInterrupt = true)
     public int scePsmfGetNumberOfStreams(@CheckArgument("checkPsmf") TPointer32 psmf) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfGetNumberOfStreams psmf=%s", psmf));
-        }
-
         PSMFHeader header = getPsmfHeader(psmf);
 
         return header.getNumberOfStreams();
@@ -582,10 +553,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0x7491C438, version = 150, checkInsideInterrupt = true)
     public int scePsmfGetNumberOfEPentries(@CheckArgument("checkPsmf") TPointer32 psmf) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfGetNumberOfEPentries psmf=%s", psmf));
-        }
-
         PSMFHeader header = getPsmfHeader(psmf);
 
         return header.getEPMapEntriesNum();
@@ -593,10 +560,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0x0BA514E5, version = 150, checkInsideInterrupt = true)
     public int scePsmfGetVideoInfo(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 videoInfoAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfGetVideoInfo psmf=%s, videoInfoAddr=%s", psmf, videoInfoAddr));
-        }
-
         PSMFHeader header = getPsmfHeader(psmf);
         videoInfoAddr.setValue(0, header.getVideoWidth());
         videoInfoAddr.setValue(4, header.getvideoHeigth());
@@ -606,10 +569,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0xA83F7113, version = 150, checkInsideInterrupt = true)
     public int scePsmfGetAudioInfo(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 audioInfoAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfGetAudioInfo psmf=%s, audioInfoAddr=%s", psmf, audioInfoAddr));
-        }
-
         PSMFHeader header = getPsmfHeader(psmf);
         audioInfoAddr.setValue(0, header.getAudioChannelConfig());
         audioInfoAddr.setValue(4, header.getAudioSampleFrequency());
@@ -619,10 +578,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0x971A3A90, version = 150, checkInsideInterrupt = true)
     public int scePsmfCheckEPmap(@CheckArgument("checkPsmf") TPointer32 psmf) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfCheckEPmap psmf=%s", psmf));
-        }
-
         PSMFHeader header = getPsmfHeader(psmf);
 
         return header.hasEPMap() ? 0 : SceKernelErrors.ERROR_PSMF_NOT_FOUND;
@@ -630,10 +585,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0x4E624A34, version = 150, checkInsideInterrupt = true)
     public int scePsmfGetEPWithId(@CheckArgument("checkPsmfWithEPMap") TPointer32 psmf, int id, TPointer32 outAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfGetEPWithId psmf=%s, id=0x%X, outAddr=%s", psmf, id, outAddr));
-        }
-
         PSMFHeader header = getPsmfHeader(psmf);
         PSMFEntry entry = header.getEPMapEntry(id);
     	if (entry == null) {
@@ -650,10 +601,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0x7C0E7AC3, version = 150, checkInsideInterrupt = true)
     public int scePsmfGetEPWithTimestamp(@CheckArgument("checkPsmfWithEPMap") TPointer32 psmf, int ts, TPointer32 entryAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfGetEPWithTimestamp psmf=%s, ts=%d, entryAddr=%s", psmf, ts, entryAddr));
-        }
-
         PSMFHeader header = getPsmfHeader(psmf);
     	if (ts < header.getPresentationStartTime()) {
             return SceKernelErrors.ERROR_PSMF_INVALID_TIMESTAMP;
@@ -675,10 +622,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0x5F457515, version = 150, checkInsideInterrupt = true)
     public int scePsmfGetEPidWithTimestamp(@CheckArgument("checkPsmfWithEPMap") TPointer32 psmf, int ts) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfGetEPidWithTimestamp psmf=%s, ts=%d", psmf, ts));
-        }
-
         PSMFHeader header = getPsmfHeader(psmf);
     	if (ts < header.getPresentationStartTime()) {
             return SceKernelErrors.ERROR_PSMF_INVALID_TIMESTAMP;
@@ -699,10 +642,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0x5B70FCC1, version = 150, checkInsideInterrupt = true)
     public int scePsmfQueryStreamOffset(TPointer bufferAddr, TPointer32 offsetAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfQueryStreamOffset bufferAddr=%s, offsetAddr=%s", bufferAddr, offsetAddr));
-        }
-
         int offset = endianSwap32(bufferAddr.getValue32(sceMpeg.PSMF_STREAM_OFFSET_OFFSET));
         offsetAddr.setValue(offset);
 
@@ -714,10 +653,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0x9553CC91, version = 150, checkInsideInterrupt = true)
     public int scePsmfQueryStreamSize(TPointer bufferAddr, TPointer32 sizeAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfQueryStreamSize bufferAddr=%s, sizeAddr=%s", bufferAddr, sizeAddr));
-        }
-
         int size = endianSwap32(bufferAddr.getValue32(sceMpeg.PSMF_STREAM_SIZE_OFFSET));
         sizeAddr.setValue(size);
 
@@ -729,10 +664,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0x68D42328, version = 150, checkInsideInterrupt = true)
     public int scePsmfGetNumberOfSpecificStreams(@CheckArgument("checkPsmf") TPointer32 psmf, int streamType) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfGetNumberOfSpecificStreams psmf=%s, streamType=%d", psmf, streamType));
-        }
-
         PSMFHeader header = getPsmfHeader(psmf);
         int streamNum = header.getSpecificStreamNum(streamType);
 
@@ -745,10 +676,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0x0C120E1D, version = 150, checkInsideInterrupt = true)
     public int scePsmfSpecifyStreamWithStreamTypeNumber(@CheckArgument("checkPsmf") TPointer32 psmf, int type, int typeNum) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfSpecifyStreamWithStreamTypeNumber psmf=%s, type=%d, typeNum=%d", psmf, type, typeNum));
-        }
-
         PSMFHeader header = getPsmfHeader(psmf);
         if (!header.setStreamWithTypeNum(type, typeNum)) {
         	return SceKernelErrors.ERROR_PSMF_INVALID_ID;
@@ -759,11 +686,8 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0x2673646B, version = 150, checkInsideInterrupt = true)
     public int scePsmfVerifyPsmf(TPointer bufferAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfVerifyPsmf bufferAddr=%s", bufferAddr));
-            if (log.isTraceEnabled()) {
-                log.debug(String.format("scePsmfVerifyPsmf %s", Utilities.getMemoryDump(bufferAddr.getAddress(), sceMpeg.MPEG_HEADER_BUFFER_MINIMUM_SIZE)));
-            }
+        if (log.isTraceEnabled()) {
+            log.trace(String.format("scePsmfVerifyPsmf %s", Utilities.getMemoryDump(bufferAddr.getAddress(), sceMpeg.MPEG_HEADER_BUFFER_MINIMUM_SIZE)));
         }
 
         int magic = bufferAddr.getValue32(sceMpeg.PSMF_MAGIC_OFFSET);
@@ -782,10 +706,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0xB78EB9E9, version = 150, checkInsideInterrupt = true)
     public int scePsmfGetHeaderSize(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 sizeAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfGetHeaderSize psmf=%s, sizeAddr=%s", psmf, sizeAddr));
-        }
-
         PSMFHeader header = getPsmfHeader(psmf);
         sizeAddr.setValue(header.getHeaderSize());
 
@@ -794,10 +714,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0xA5EBFE81, version = 150, checkInsideInterrupt = true)
     public int scePsmfGetStreamSize(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 sizeAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfGetStreamSize psmf=%s, sizeAddr=%s", psmf, sizeAddr));
-        }
-
         PSMFHeader header = getPsmfHeader(psmf);
         sizeAddr.setValue(header.getStreamSize());
 
@@ -806,10 +722,6 @@ public class scePsmf extends HLEModule {
 
     @HLEFunction(nid = 0xE1283895, version = 150, checkInsideInterrupt = true)
     public int scePsmfGetPsmfVersion(@CheckArgument("checkPsmf") TPointer32 psmf) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfGetPsmfVersion psmf=%s", psmf));
-        }
-
         PSMFHeader header = getPsmfHeader(psmf);
 
         return header.getVersion();

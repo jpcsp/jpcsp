@@ -16,20 +16,21 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CANCELLED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_UMD;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 
-import jpcsp.Memory;
-import jpcsp.Processor;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
@@ -38,13 +39,12 @@ import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.kernel.types.pspUmdInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
-import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceUmdUser extends HLEModule {
-
-    protected static Logger log = Modules.getLogger("sceUmdUser");
+    public static Logger log = Modules.getLogger("sceUmdUser");
 
     @Override
     public String getName() {
@@ -191,22 +191,28 @@ public class sceUmdUser extends HLEModule {
         }
     }
 
+    protected int hleUmdWaitDriveStat(int wantedStat, boolean doCallbacks, boolean doTimeout, int timeout) {
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+
+        if (!checkDriveStat(wantedStat)) {
+            SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+            // Wait on a specific umdStat.
+            currentThread.wait.wantedUmdStat = wantedStat;
+            waitingThreads.add(currentThread);
+            threadMan.hleKernelThreadEnterWaitState(currentThread, JPCSP_WAIT_UMD, -1, umdWaitStateChecker, timeout, !doTimeout, doCallbacks);
+        }
+        threadMan.hleRescheduleCurrentThread(doCallbacks);
+
+        return 0;
+    }
+
     @HLEFunction(nid = 0x46EBB729, version = 150)
     public boolean sceUmdCheckMedium() {
-        if (log.isDebugEnabled()) {
-            log.debug("sceUmdCheckMedium (umd mounted = " + (iso != null) + ")");
-        }
-
         return iso != null;
     }
 
     @HLEFunction(nid = 0xC6183D47, version = 150, checkInsideInterrupt = true)
-    public int sceUmdActivate(int mode, TPointer driveAddr) {
-    	String drive = Utilities.readStringZ(driveAddr.getAddress());
-        if (log.isDebugEnabled()) {
-            log.debug("sceUmdActivate mode = " + mode + " drive = " + drive);
-        }
-
+    public int sceUmdActivate(int mode, PspString drive) {
         umdActivated = true;
         Modules.IoFileMgrForUserModule.registerUmdIso();
 
@@ -232,12 +238,7 @@ public class sceUmdUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0xE83742BA, version = 150, checkInsideInterrupt = true)
-    public int sceUmdDeactivate(int mode, TPointer driveAddr) {
-    	String drive = Utilities.readStringZ(driveAddr.getAddress());
-        if (log.isDebugEnabled()) {
-            log.debug("sceUmdDeactivate mode = " + mode + " drive = " + drive);
-        }
-
+    public int sceUmdDeactivate(int mode, PspString drive) {
         // Trigger the callback only if the UMD was already activated.
         // The callback will be executed at the next sceXXXXCB() syscall.
         boolean triggerCallback = umdActivated;
@@ -258,47 +259,18 @@ public class sceUmdUser extends HLEModule {
         return 0;
     }
 
-    protected int hleUmdWaitDriveStat(int wantedStat, boolean doCallbacks, boolean doTimeout, int timeout) {
-        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-
-        if (!checkDriveStat(wantedStat)) {
-            SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-            // Wait on a specific umdStat.
-            currentThread.wait.wantedUmdStat = wantedStat;
-            waitingThreads.add(currentThread);
-            threadMan.hleKernelThreadEnterWaitState(currentThread, JPCSP_WAIT_UMD, -1, umdWaitStateChecker, timeout, !doTimeout, doCallbacks);
-        }
-        threadMan.hleRescheduleCurrentThread(doCallbacks);
-
-        return 0;
-    }
-
     @HLEFunction(nid = 0x8EF08FCE, version = 150, checkInsideInterrupt = true)
     public int sceUmdWaitDriveStat(int wantedStat) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceUmdWaitDriveStat(stat=0x" + Integer.toHexString(wantedStat) + ")");
-        }
-
         return hleUmdWaitDriveStat(wantedStat, false, false, 0);
     }
 
     @HLEFunction(nid = 0x56202973, version = 150, checkInsideInterrupt = true)
     public int sceUmdWaitDriveStatWithTimer(int wantedStat, int timeout) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceUmdWaitDriveStatWithTimer(stat=0x" + Integer.toHexString(wantedStat)
-                    + ", timeout=" + timeout + ")");
-        }
-
         return hleUmdWaitDriveStat(wantedStat, false, true, timeout);
     }
 
     @HLEFunction(nid = 0x4A9E5E29, version = 150, checkInsideInterrupt = true)
     public int sceUmdWaitDriveStatCB(int wantedStat, int timeout) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceUmdWaitDriveStatCB(stat=0x" + Integer.toHexString(wantedStat)
-                    + ",timeout=" + timeout + ")");
-        }
-
         return hleUmdWaitDriveStat(wantedStat, true, true, timeout);
     }
 
@@ -309,14 +281,14 @@ public class sceUmdUser extends HLEModule {
         for (ListIterator<SceKernelThreadInfo> lit = waitingThreads.listIterator(); lit.hasNext();) {
             SceKernelThreadInfo waitingThread = lit.next();
             if (!waitingThread.isWaiting() || waitingThread.waitType != JPCSP_WAIT_UMD) {
-                log.error("sceUmdCancelWaitDriveStat thread " + Integer.toHexString(waitingThread.uid)
-                        + " '" + waitingThread.name + "' not waiting on umd");
+                log.warn(String.format("sceUmdCancelWaitDriveStat thread %s not waiting on umd", waitingThread));
             } else {
-                log.debug("sceUmdCancelWaitDriveStat waking thread " + Integer.toHexString(waitingThread.uid)
-                        + " '" + waitingThread.name + "'");
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("sceUmdCancelWaitDriveStat waking thread %s", waitingThread));
+            	}
                 lit.remove();
                 // Return WAIT_CANCELLED.
-                waitingThread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_CANCELLED;
+                waitingThread.cpuContext.gpr[_v0] = ERROR_KERNEL_WAIT_CANCELLED;
                 // Wakeup thread
                 threadMan.hleChangeThreadState(waitingThread, SceKernelThreadInfo.PSP_THREAD_READY);
             }
@@ -328,7 +300,7 @@ public class sceUmdUser extends HLEModule {
     @HLEFunction(nid = 0x6B4A146C, version = 150)
     public int sceUmdGetDriveStat() {
         if (log.isDebugEnabled()) {
-            log.debug("sceUmdGetDriveStat - " + Integer.toHexString(getUmdStat()));
+            log.debug(String.format("sceUmdGetDriveStat returning 0x%X", getUmdStat()));
         }
 
         return getUmdStat();
@@ -336,35 +308,21 @@ public class sceUmdUser extends HLEModule {
 
     @HLEFunction(nid = 0x20628E6F, version = 150)
     public int sceUmdGetErrorStat() {
-        if (log.isDebugEnabled()) {
-            log.debug("sceUmdGetErrorStat - " + Integer.toHexString(getUmdErrorStat()));
-        }
-
         return getUmdErrorStat();
     }
 
     @HLEFunction(nid = 0x340B7686, version = 150, checkInsideInterrupt = true)
     public int sceUmdGetDiscInfo(TPointer pspUmdInfoAddr) {
-        Memory mem = Processor.memory;
-
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceUmdGetDiscInfo pspUmdInfoAddr=0x%08X", pspUmdInfoAddr.getAddress()));
-        }
-
         pspUmdInfo umdInfo = new pspUmdInfo();
-        umdInfo.read(mem, pspUmdInfoAddr.getAddress());
+        umdInfo.read(pspUmdInfoAddr);
         umdInfo.type = pspUmdInfo.PSP_UMD_TYPE_GAME;
-        umdInfo.write(mem);
+        umdInfo.write(pspUmdInfoAddr);
 
         return 0;
     }
 
     @HLEFunction(nid = 0xAEE7404D, version = 150, checkInsideInterrupt = true)
     public int sceUmdRegisterUMDCallBack(int uid) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceUmdRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));
-        }
-
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         if (!threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, uid)) {
             return -1;
@@ -375,10 +333,6 @@ public class sceUmdUser extends HLEModule {
 
     @HLEFunction(nid = 0xBD2BDE07, version = 150)
     public int sceUmdUnRegisterUMDCallBack(int uid) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceUmdUnRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));
-        }
-
         SceKernelCallbackInfo info = Modules.ThreadManForUserModule.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, uid);
         if (info == null) {
         	return -1;

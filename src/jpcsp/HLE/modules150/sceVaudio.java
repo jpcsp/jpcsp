@@ -17,10 +17,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.TPointer;
 import jpcsp.Emulator;
-import jpcsp.Memory;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
@@ -33,9 +33,9 @@ import jpcsp.sound.SoundChannel;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceVaudio extends HLEModule {
-
-    protected static Logger log = Modules.getLogger("sceVaudio");
+    public static Logger log = Modules.getLogger("sceVaudio");
 
     @Override
     public String getName() {
@@ -135,103 +135,66 @@ public class sceVaudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0x67585DFD, version = 150, checkInsideInterrupt = true)
-    public void sceVaudioChRelease(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("PARTIAL: sceVaudioChRelease");
-
-        
+    public int sceVaudioChRelease() {
         if (pspVaudioChannel.isReserved()) {
-            pspVaudioChannel.release();
-            pspVaudioChannel.setReserved(false);
-            cpu.gpr[2] = 0;
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_CHANNEL_NOT_RESERVED;
+        	return SceKernelErrors.ERROR_AUDIO_CHANNEL_NOT_RESERVED;
         }
+
+        pspVaudioChannel.release();
+        pspVaudioChannel.setReserved(false);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x03B6807D, version = 150, checkInsideInterrupt = true)
-    public void sceVaudioChReserve(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int samplecount = cpu.gpr[4];
-        int freq = cpu.gpr[5];
-        int format = cpu.gpr[6];
-
-        log.warn("PARTIAL: sceVaudioChReserve: samplecount=" + samplecount + ", freq=" + freq + ", format=" + format);
-
-        
-        if (!pspVaudioChannel.isReserved()) {
-            pspVaudioChannel.setReserved(true);
-            pspVaudioChannel.setSampleLength(samplecount);
-            pspVaudioChannel.setSampleRate(freq);
-            pspVaudioChannel.setFormat(format);
-            cpu.gpr[2] = 0;
-        } else {
-            cpu.gpr[2] = -1;
+    public int sceVaudioChReserve(int sampleCount, int freq, int format) {
+        if (pspVaudioChannel.isReserved()) {
+        	return -1;
         }
+
+        pspVaudioChannel.setReserved(true);
+        pspVaudioChannel.setSampleLength(sampleCount);
+        pspVaudioChannel.setSampleRate(freq);
+        pspVaudioChannel.setFormat(format);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x8986295E, version = 150, checkInsideInterrupt = true)
-    public void sceVaudioOutputBlocking(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int sceVaudioOutputBlocking(int vol, TPointer buf) {
+    	int result = 0;
 
-        int vol = cpu.gpr[4];
-        int buf = cpu.gpr[5];
-
-        log.warn("PARTIAL: sceVaudioOutputBlocking: vol=0x" + Integer.toHexString(vol)
-                    + ", buf=0x" + Integer.toHexString(buf));
-
-        
-        if (!Memory.isAddressGood(buf)) {
-            log.warn("sceVaudioOutputBlocking bad pointer " + String.format("0x%08X", buf));
-            cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
-        } else {
-            if (!pspVaudioChannel.isOutputBlocking()) {
-                if (log.isDebugEnabled()) {
-                    log.debug("sceVaudioOutputBlocking[not blocking] " + pspVaudioChannel.toString());
-                }
-                if((vol & PSP_VAUDIO_VOLUME_BASE) != PSP_VAUDIO_VOLUME_BASE) {
-                    changeChannelVolume(pspVaudioChannel, vol, vol);
-                }
-                cpu.gpr[2] = doAudioOutput(pspVaudioChannel, buf);
-                if (log.isDebugEnabled()) {
-                    log.debug("sceVaudioOutputBlocking[not blocking] returning " + cpu.gpr[2] + " (" + pspVaudioChannel.toString() + ")");
-                }
-                Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
-            } else {
-                if (log.isDebugEnabled()) {
-                    log.debug("sceVaudioOutputBlocking[blocking] " + pspVaudioChannel.toString());
-                }
-                blockThreadOutput(pspVaudioChannel, buf, vol, vol);
+    	if (!pspVaudioChannel.isOutputBlocking()) {
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("sceVaudioOutputBlocking[not blocking] %s", pspVaudioChannel));
             }
+            if ((vol & PSP_VAUDIO_VOLUME_BASE) != PSP_VAUDIO_VOLUME_BASE) {
+                changeChannelVolume(pspVaudioChannel, vol, vol);
+            }
+            result = doAudioOutput(pspVaudioChannel, buf.getAddress());
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("sceVaudioOutputBlocking[not blocking] returning %d (%s)", result, pspVaudioChannel));
+            }
+            Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("sceVaudioOutputBlocking[blocking] %s", pspVaudioChannel));
+            }
+            blockThreadOutput(pspVaudioChannel, buf.getAddress(), vol, vol);
         }
+
+    	return result;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x346FBE94, version = 150, checkInsideInterrupt = true)
-    public void sceVaudioSetEffectType(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int type = cpu.gpr[4];
-        int vol = cpu.gpr[5];
-
-        log.warn("UNIMPLEMENTED: sceVaudioSetEffectType: type=" + type
-                    + ", vol=0x" + Integer.toHexString(vol));
-
-        
-        cpu.gpr[2] = 0;
+    public int sceVaudioSetEffectType(int type, int vol) {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xCBD4AC51, version = 150, checkInsideInterrupt = true)
-    public void sceVaudioSetAlcMode(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int alcMode = cpu.gpr[4];
-
-        log.warn("UNIMPLEMENTED: sceVaudioSetAlcMode: alcMode=" + alcMode);
-
-        
-        cpu.gpr[2] = 0;
+    public int sceVaudioSetAlcMode(int alcMode) {
+    	return 0;
     }
-
 }

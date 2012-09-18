@@ -18,6 +18,8 @@ package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
@@ -27,8 +29,9 @@ import org.apache.log4j.Logger;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 
+@HLELogging
 public class sceUsb extends HLEModule {
-    protected static Logger log = Modules.getLogger("sceUsb");
+    public static Logger log = Modules.getLogger("sceUsb");
 
 	@Override
 	public String getName() {
@@ -62,46 +65,44 @@ public class sceUsb extends HLEModule {
 	}
 
 	/**
-	  * Start a USB driver.
-	  *
-	  * @param driverName - name of the USB driver to start
-	  * @param size - Size of arguments to pass to USB driver start
-	  * @param args - Arguments to pass to USB driver start
-	  *
-	  * @return 0 on success
-	  */
+	 * Start a USB driver.
+	 *
+	 * @param driverName - name of the USB driver to start
+	 * @param size - Size of arguments to pass to USB driver start
+	 * @param args - Arguments to pass to USB driver start
+	 *
+	 * @return 0 on success
+	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xAE5DE6AF, version = 150)
 	public int sceUsbStart(PspString driverName, int size, @CanBeNull TPointer args) {
-		log.warn(String.format("Unimplemented sceUsbStart driverName=%s, size=%d, args=%s", driverName, size, args));
-
 		usbStarted = true;
 
 		return 0;
 	}
 
 	/**
-	  * Stop a USB driver.
-	  *
-	  * @param driverName - name of the USB driver to stop
-	  * @param size - Size of arguments to pass to USB driver start
-	  * @param args - Arguments to pass to USB driver start
-	  *
-	  * @return 0 on success
-	  */
+	 * Stop a USB driver.
+	 *
+	 * @param driverName - name of the USB driver to stop
+	 * @param size - Size of arguments to pass to USB driver start
+	 * @param args - Arguments to pass to USB driver start
+	 *
+	 * @return 0 on success
+	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xC2464FA0, version = 150)
 	public int sceUsbStop(PspString driverName, int size, @CanBeNull TPointer args) {
-		log.warn(String.format("Unimplemented sceUsbStop driverName=%s, size=%d, args=%s", driverName, size, args));
-
 		usbStarted = false;
 
 		return 0;
 	}
 
 	/**
-	  * Get USB state
-	  *
-	  * @return OR'd PSP_USB_* constants
-	  */
+	 * Get USB state
+	 *
+	 * @return OR'd PSP_USB_* constants
+	 */
 	@HLEFunction(nid = 0xC21645A4, version = 150)
 	public int sceUsbGetState() {
 		if (log.isDebugEnabled()) {
@@ -119,62 +120,57 @@ public class sceUsb extends HLEModule {
 	}
 
 	/**
-	  * Get state of a specific USB driver
-	  *
-	  * @param driverName - name of USB driver to get status from
-	  *
-	  * @return 1 if the driver has been started, 2 if it is stopped
-	  */
+	 * Get state of a specific USB driver
+	 *
+	 * @param driverName - name of USB driver to get status from
+	 *
+	 * @return 1 if the driver has been started, 2 if it is stopped
+	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x112CC951, version = 150)
 	public int sceUsbGetDrvState(PspString driverName) {
-		log.warn(String.format("Unimplemented sceUsbGetDrvState driverName=%s", driverName));
-
 		return 0;
 	}
 
 	/**
-	  * Activate a USB driver.
-	  *
-	  * @param pid - Product ID for the default USB Driver
-	  *
-	  * @return 0 on success
-	  */
+	 * Activate a USB driver.
+	 *
+	 * @param pid - Product ID for the default USB Driver
+	 *
+	 * @return 0 on success
+	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x586DB82C, version = 150)
 	public int sceUsbActivate(int pid) {
-		log.warn(String.format("Unimplemented sceUsbActivate pid=0x%X", pid));
-
 		usbActivated = true;
 
 		return 0;
 	}
 
 	/**
-	  * Deactivate USB driver.
-	  *
-	  * @param pid - Product ID for the default USB driver
-	  *
-	  * @return 0 on success
-	  */
+	 * Deactivate USB driver.
+	 *
+	 * @param pid - Product ID for the default USB driver
+	 *
+	 * @return 0 on success
+	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xC572A9C8, version = 150)
 	public int sceUsbDeactivate(int pid) {
-		log.warn(String.format("Unimplemented sceUsbDeactivate pid=0x%08X", pid));
-
 		usbActivated = false;
 
 		return 0;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x5BE0E002, version = 150)
-	public int sceUsbWaitState(int state, int waitMode, TPointer32 timeoutAddr) {
-		log.warn(String.format("Unimplemented sceUsbWaitState state=%d, waitMode=%d, timeoutAddr=%s(%d)", state, waitMode, timeoutAddr, timeoutAddr.getValue()));
-
+	public int sceUsbWaitState(int state, int waitMode, @CanBeNull TPointer32 timeoutAddr) {
 		return 0;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x1C360735, version = 150)
 	public int sceUsbWaitCancel() {
-		log.warn(String.format("Unimplemented sceUsbWaitCancel"));
-
 		return 0;
 	}
 }

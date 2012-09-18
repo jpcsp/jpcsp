@@ -20,6 +20,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_INVALID_MODE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_POWER_VMEM_IN_USE;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
@@ -29,8 +30,9 @@ import jpcsp.hardware.Screen;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceSuspendForUser extends HLEModule {
-    private static Logger log = Modules.getLogger("sceSuspendForUser");
+    public static Logger log = Modules.getLogger("sceSuspendForUser");
     public static final int KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY = 0;
     public static final int KERNEL_POWER_TICK_SUSPEND = 1;
     public static final int KERNEL_POWER_TICK_DISPLAY = 6;
@@ -49,24 +51,41 @@ public class sceSuspendForUser extends HLEModule {
     	volatileMemSema = Managers.semas.hleKernelCreateSema("ScePowerVmem", 0, volatileMemSignal, volatileMemSignal, 0);
     }
 
+    protected int hleKernelVolatileMemLock(int type, TPointer32 paddr, TPointer32 psize, boolean trylock) {
+        if (type != 0) {
+            log.warn(String.format("hleKernelVolatileMemLock bad param type=%d", type));
+            return ERROR_INVALID_MODE;
+        }
+
+        paddr.setValue(0x08400000); // Volatile mem is always at 0x08400000
+        psize.setValue(0x400000);   // Volatile mem size is 4Megs
+
+        if (trylock) {
+        	if (Managers.semas.hleKernelPollSema(volatileMemSema, volatileMemSignal) != 0) {
+        		// Volatile mem is already locked
+        		return ERROR_POWER_VMEM_IN_USE;
+        	}
+        	return 0;
+        }
+
+        // If the volatile mem is already locked, the current thread has to wait
+        // until it is unlocked.
+        return Managers.semas.hleKernelWaitSema(volatileMemSema, volatileMemSignal, 0, false);
+    }
+
+    @HLELogging(level="trace")
     @HLEFunction(nid = 0xEADB1BD7, version = 150, checkInsideInterrupt = true)
     public int sceKernelPowerLock(int type) {
-        if (log.isTraceEnabled()) {
-            log.trace(String.format("IGNORING:sceKernelPowerLock type=%d", type));
-        }
-
         return 0;
     }
 
+    @HLELogging(level="trace")
     @HLEFunction(nid = 0x3AEE7261, version = 150, checkInsideInterrupt = true)
     public int sceKernelPowerUnlock(int type) {
-        if (log.isTraceEnabled()) {
-            log.trace(String.format("IGNORING:sceKernelPowerUnlock type=%d", type));
-        }
-
         return 0;
     }
 
+    @HLELogging(level="trace")
     @HLEFunction(nid = 0x090CCB3F, version = 150, checkInsideInterrupt = true)
     public int sceKernelPowerTick(int flag) {
     	// The PSP is checking each of the lower 8 bits of the flag value to tick different
@@ -95,36 +114,6 @@ public class sceSuspendForUser extends HLEModule {
         return 0;
     }
 
-    protected int hleKernelVolatileMemLock(int type, TPointer32 paddr, TPointer32 psize, boolean trylock) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("hleKernelVolatileMemLock type=%d, paddr=%s, psize=%s, trylock=%b", type, paddr, psize, trylock));
-        }
-
-        if (type != 0) {
-            log.warn("hleKernelVolatileMemLock bad param: type != 0");
-            return ERROR_INVALID_MODE;
-        }
-
-        if (paddr.isNotNull()) {
-            paddr.setValue(0x08400000); // Volatile mem is always at 0x08400000
-        }
-        if (psize.isNotNull()) {
-            psize.setValue(0x400000);   // Volatile mem size is 4Megs
-        }
-
-        if (trylock) {
-        	if (Managers.semas.hleKernelPollSema(volatileMemSema, volatileMemSignal) != 0) {
-        		// Volatile mem is already locked
-        		return ERROR_POWER_VMEM_IN_USE;
-        	}
-        	return 0;
-        }
-
-        // If the volatile mem is already locked, the current thread has to wait
-        // until it is unlocked.
-        return Managers.semas.hleKernelWaitSema(volatileMemSema, volatileMemSignal, 0, false);
-    }
-
     @HLEFunction(nid = 0x3E0271D3, version = 150, checkInsideInterrupt = true)
     public int sceKernelVolatileMemLock(int type, @CanBeNull TPointer32 paddr, @CanBeNull TPointer32 psize) {
         return hleKernelVolatileMemLock(type, paddr, psize, false);
@@ -137,12 +126,8 @@ public class sceSuspendForUser extends HLEModule {
 
     @HLEFunction(nid = 0xA569E425, version = 150)
     public int sceKernelVolatileMemUnlock(int type) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceKernelVolatileMemUnlock type=%d", type));
-    	}
-
         if (type != 0) {
-            log.warn("sceKernelVolatileMemUnlock bad param: type != 0");
+            log.warn(String.format("sceKernelVolatileMemUnlock bad param type=%d", type));
             return ERROR_INVALID_MODE;
         }
 

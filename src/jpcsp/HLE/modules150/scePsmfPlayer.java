@@ -20,6 +20,8 @@ import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
@@ -48,8 +50,9 @@ import jpcsp.util.Debug;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class scePsmfPlayer extends HLEModule {
-    protected static Logger log = Modules.getLogger("scePsmfPlayer");
+    public static Logger log = Modules.getLogger("scePsmfPlayer");
 
     private class EnableMediaEngineSettingsListener extends AbstractBoolSettingsListener {
 		@Override
@@ -267,63 +270,7 @@ public class scePsmfPlayer extends HLEModule {
     	}
     }
 
-    @HLEFunction(nid = 0x235D8787, version = 150, checkInsideInterrupt = true)
-    public int scePsmfPlayerCreate(int psmfPlayer, TPointer32 psmfPlayerDataAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerCreate psmfPlayer=0x%X, psmfPlayerDataAddr=%s", psmfPlayer, psmfPlayerDataAddr));
-        }
-
-        
-        // The psmfDataAddr contains three fields that are manually set before
-        // scePsmfPlayerCreate is called.
-        displayBuffer = psmfPlayerDataAddr.getValue(0);          // The buffer allocated for scePsmf, which is ported into scePsmfPlayer.
-        displayBufferSize = psmfPlayerDataAddr.getValue(4);      // The buffer's size.
-        playbackThreadPriority = psmfPlayerDataAddr.getValue(8); // Priority of the "START" thread.
-        if (log.isInfoEnabled()) {
-        	log.info(String.format("PSMF Player Data: displayBuffer=0x%08X, displayBufferSize=0x%X, playbackThreadPriority=%d", displayBuffer, displayBufferSize, playbackThreadPriority));
-        }
-
-        psmfPlayerAtracAu = new SceMpegAu();
-        psmfPlayerAvcAu = new SceMpegAu();
-
-        // scePsmfPlayer creates a ringbuffer with 581 packets
-        psmfMaxAheadTimestamp = sceMpeg.getMaxAheadTimestamp(581);
-
-        // Start with INIT.
-        psmfPlayerStatus = PSMF_PLAYER_STATUS_INIT;
-
-        return 0;
-    }
-
-    @HLEFunction(nid = 0x9B71A274, version = 150, checkInsideInterrupt = true)
-    public int scePsmfPlayerDelete(int psmfPlayer) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerDelete psmfPlayer=0x%X", psmfPlayer));
-        }
-
-        
-        if (checkMediaEngineState()) {
-            if (me != null) {
-                me.finish();
-                me = null;
-            }
-            if (pmfFileChannel != null) {
-            	pmfFileChannel = null;
-            }
-        }
-        VideoEngine.getInstance().resetVideoTextures();
-
-        // Set to NONE.
-        psmfPlayerStatus = PSMF_PLAYER_STATUS_NONE;
-
-        return 0;
-    }
-
     protected int hlePsmfPlayerSetPsmf(int psmfPlayer, PspString fileAddr, boolean doCallbacks) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("hlePsmfPlayerSetPsmf psmfPlayer=0x%X, fileAddr=%s, doCallbacks=%b", psmfPlayer, fileAddr, doCallbacks));
-        }
-
         pmfFilePath = fileAddr.getString();
 
         // Get the file and read it to a buffer.
@@ -352,6 +299,48 @@ public class scePsmfPlayer extends HLEModule {
         return 0;
     }
 
+    @HLEFunction(nid = 0x235D8787, version = 150, checkInsideInterrupt = true)
+    public int scePsmfPlayerCreate(int psmfPlayer, TPointer32 psmfPlayerDataAddr) {
+        // The psmfDataAddr contains three fields that are manually set before
+        // scePsmfPlayerCreate is called.
+        displayBuffer = psmfPlayerDataAddr.getValue(0);          // The buffer allocated for scePsmf, which is ported into scePsmfPlayer.
+        displayBufferSize = psmfPlayerDataAddr.getValue(4);      // The buffer's size.
+        playbackThreadPriority = psmfPlayerDataAddr.getValue(8); // Priority of the "START" thread.
+        if (log.isInfoEnabled()) {
+        	log.info(String.format("PSMF Player Data: displayBuffer=0x%08X, displayBufferSize=0x%X, playbackThreadPriority=%d", displayBuffer, displayBufferSize, playbackThreadPriority));
+        }
+
+        psmfPlayerAtracAu = new SceMpegAu();
+        psmfPlayerAvcAu = new SceMpegAu();
+
+        // scePsmfPlayer creates a ringbuffer with 581 packets
+        psmfMaxAheadTimestamp = sceMpeg.getMaxAheadTimestamp(581);
+
+        // Start with INIT.
+        psmfPlayerStatus = PSMF_PLAYER_STATUS_INIT;
+
+        return 0;
+    }
+
+    @HLEFunction(nid = 0x9B71A274, version = 150, checkInsideInterrupt = true)
+    public int scePsmfPlayerDelete(int psmfPlayer) {
+        if (checkMediaEngineState()) {
+            if (me != null) {
+                me.finish();
+                me = null;
+            }
+            if (pmfFileChannel != null) {
+            	pmfFileChannel = null;
+            }
+        }
+        VideoEngine.getInstance().resetVideoTextures();
+
+        // Set to NONE.
+        psmfPlayerStatus = PSMF_PLAYER_STATUS_NONE;
+
+        return 0;
+    }
+
     @HLEFunction(nid = 0x3D6D25A9, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerSetPsmf(int psmfPlayer, PspString fileAddr) {
     	return hlePsmfPlayerSetPsmf(psmfPlayer, fileAddr, false);
@@ -364,10 +353,6 @@ public class scePsmfPlayer extends HLEModule {
 
     @HLEFunction(nid = 0xE792CD94, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerReleasePsmf(int psmfPlayer) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerReleasePsmf psmfPlayer=0x%X", psmfPlayer));
-        }
-
         if (checkMediaEngineState()) {
             if (me != null) {
                 me.finish();
@@ -388,11 +373,6 @@ public class scePsmfPlayer extends HLEModule {
 
     @HLEFunction(nid = 0x95A84EE5, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerStart(int psmfPlayer, @CanBeNull TPointer32 initPlayInfoAddr, int initPts) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerStart psmfPlayer=0x%X, initPlayInfoAddr=%s, initPts=%d", psmfPlayer, initPlayInfoAddr, initPts));
-        }
-
-        
         // Read the playback parameters.
         if (initPlayInfoAddr.isNotNull()) {
 	        videoCodec = initPlayInfoAddr.getValue(0);
@@ -425,19 +405,11 @@ public class scePsmfPlayer extends HLEModule {
 
     @HLEFunction(nid = 0x3EA82A4B, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerGetAudioOutSize(int psmfPlayer) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerGetAudioOutSize psmfPlayer=0x%X", psmfPlayer));
-        }
-
         return audioSamplesBytes;
     }
 
     @HLEFunction(nid = 0x1078C008, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerStop(int psmfPlayer) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerStop psmfPlayer=0x%X", psmfPlayer));
-        }
-
         if (checkMediaEngineState()) {
             if (me != null) {
                 me.finish();
@@ -460,10 +432,6 @@ public class scePsmfPlayer extends HLEModule {
     @HLEFunction(nid = 0xA0B8CA55, version = 150)
     public int scePsmfPlayerUpdate(int psmfPlayer) {
         // Can be called from interrupt.
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerUpdate psmfPlayer=0x%X", psmfPlayer));
-        }
-
         // Check playback status.
         if (psmfPlayerAvcAu.pts > 0) {
             if (psmfPlayerAvcAu.pts > psmfPlayerLastTimestamp) {
@@ -478,10 +446,6 @@ public class scePsmfPlayer extends HLEModule {
     @HLEFunction(nid = 0x46F61F8B, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerGetVideoData(@CheckArgument("checkPlayerInitialized") int psmfPlayer, @CanBeNull TPointer32 videoDataAddr) {
     	int result = 0;
-
-    	if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerGetVideoData psmfPlayer=0x%X, videoDataAddr=%s", psmfPlayer, videoDataAddr));
-        }
 
         if (psmfPlayerAtracAu.pts != 0 && psmfPlayerAvcAu.pts > psmfPlayerAtracAu.pts + psmfMaxAheadTimestamp) {
             // If we're ahead of audio, return an error.
@@ -501,6 +465,7 @@ public class scePsmfPlayer extends HLEModule {
                 log.debug(String.format("scePsmfPlayerGetVideoData videoDataFrameWidth=%d, videoDataDisplayBuffer=0x%08X, videoDataDisplayPts=%d", videoDataFrameWidth, videoDataDisplayBuffer, videoDataDisplayPts));
             }
         }
+
         // Check if there's already a valid pointer at videoDataAddr.
         // If not, use the displayBuffer from scePsmfPlayerCreate.
         if (Memory.isAddressGood(videoDataDisplayBuffer)) {
@@ -555,10 +520,6 @@ public class scePsmfPlayer extends HLEModule {
     public int scePsmfPlayerGetAudioData(@CheckArgument("checkPlayerInitialized") int psmfPlayer, TPointer audioDataAddr) {
     	int result = 0;
 
-    	if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerGetAudioData psmfPlayer=0x%X, audioDataAddr=%s", psmfPlayer, audioDataAddr));
-        }
-
         if (psmfPlayerAvcAu.pts != 0 && psmfPlayerAtracAu.pts > psmfPlayerAvcAu.pts + psmfMaxAheadTimestamp) {
             // If we're ahead of video, return an error.
         	result = SceKernelErrors.ERROR_PSMFPLAYER_NO_MORE_DATA;
@@ -606,20 +567,12 @@ public class scePsmfPlayer extends HLEModule {
 
     @HLEFunction(nid = 0xF8EF08A6, version = 150)
     public int scePsmfPlayerGetCurrentStatus(@CheckArgument("checkPlayerInitialized") int psmfPlayer) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerGetCurrentStatus psmfPlayer=0x%X, returning status=%d", psmfPlayer, psmfPlayerStatus));
-        }
-
         // scePsmfPlayerGetCurrentStatus can be called from an interrupt
     	return psmfPlayerStatus;
     }
 
     @HLEFunction(nid = 0xDF089680, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerGetPsmfInfo(int psmfPlayer, TPointer32 psmfInfoAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerGetPsmfInfo psmfPlayer=0x%X, psmfInfoAddr=%s", psmfPlayer, psmfInfoAddr));
-        }
-
         psmfInfoAddr.setValue(0, psmfCurrentPts);
         psmfInfoAddr.setValue(4, psmfAvcStreamNum);
         psmfInfoAddr.setValue(8, psmfAtracStreamNum);
@@ -631,13 +584,9 @@ public class scePsmfPlayer extends HLEModule {
 
     @HLEFunction(nid = 0x1E57A8E7, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerConfigPlayer(int psmfPlayer, int configMode, int configAttr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerConfigPlayer psmfPlayer=0x%X, configMode=%d, configAttr=%d", psmfPlayer, configMode, configAttr));
-        }
-
-        if (configMode == PSMF_PLAYER_CONFIG_MODE_LOOP) {                 // Sets if the video is looped or not.
+        if (configMode == PSMF_PLAYER_CONFIG_MODE_LOOP) {              // Sets if the video is looped or not.
             videoLoopStatus = configAttr;
-        } else if (configMode == PSMF_PLAYER_CONFIG_MODE_PIXEL_TYPE) {    // Sets the display's pixel type.
+        } else if (configMode == PSMF_PLAYER_CONFIG_MODE_PIXEL_TYPE) { // Sets the display's pixel type.
             videoPixelMode = configAttr;
         } else {
             log.warn(String.format("scePsmfPlayerConfigPlayer unknown configMode=%d, configAddr=%d", configMode, configAttr));
@@ -648,10 +597,6 @@ public class scePsmfPlayer extends HLEModule {
 
     @HLEFunction(nid = 0xA3D81169, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerChangePlayMode(int psmfPlayer, int playMode, int playSpeed) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerChangePlayMode psmfPlayer=0x%X, playMode=%d, playSpeed=%d", psmfPlayer, playMode, playSpeed));
-        }
-
         this.playMode = playMode;
         this.playSpeed = playSpeed;
 
@@ -660,10 +605,6 @@ public class scePsmfPlayer extends HLEModule {
 
     @HLEFunction(nid = 0x68F07175, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerGetCurrentAudioStream(int psmfPlayer, @CanBeNull TPointer32 audioCodecAddr, @CanBeNull TPointer32 audioStreamNumAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerGetCurrentAudioStream psmfPlayer=0x%X, audioCodecAddr=%s, audioStreamNumAddr=%s", psmfPlayer, audioCodecAddr, audioStreamNumAddr));
-        }
-
         audioCodecAddr.setValue(audioCodec);
         audioStreamNumAddr.setValue(audioStreamNum);
 
@@ -672,10 +613,6 @@ public class scePsmfPlayer extends HLEModule {
 
     @HLEFunction(nid = 0xF3EFAA91, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerGetCurrentPlayMode(int psmfPlayer, @CanBeNull TPointer32 playModeAddr, @CanBeNull TPointer32 playSpeedAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerGetCurrentPlayMode psmfplayer=0x%X, playModeAddr=%s, playSpeedAddr=%s", psmfPlayer, playModeAddr, playSpeedAddr));
-        }
-
         playModeAddr.setValue(playMode);
         playSpeedAddr.setValue(playSpeed);
 
@@ -684,10 +621,6 @@ public class scePsmfPlayer extends HLEModule {
 
     @HLEFunction(nid = 0x3ED62233, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerGetCurrentPts(int psmfPlayer, TPointer32 currentPtsAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerGetCurrentPts psmfPlayer=0x%X, currentPtsAddr=%s", psmfPlayer, currentPtsAddr));
-        }
-
         // Write our current video presentation timestamp.
         currentPtsAddr.setValue((int) psmfPlayerAvcAu.pts);
 
@@ -696,51 +629,39 @@ public class scePsmfPlayer extends HLEModule {
 
     @HLEFunction(nid = 0x9FF2B2E7, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerGetCurrentVideoStream(int psmfPlayer, @CanBeNull TPointer32 videoCodecAddr, @CanBeNull TPointer32 videoStreamNumAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerGetCurrentVideoStream psmfPlayer=0x%X, videoCodecAddr=%s, videoStreamNumAddr=%s", psmfPlayer, videoCodecAddr, videoStreamNumAddr));
-        }
-
         videoCodecAddr.setValue(videoCodec);
         videoStreamNumAddr.setValue(videoStreamNum);
 
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x2BEB1569, version = 150)
     public int scePsmfPlayerBreak(int psmfPlayer) {
         // Can be called from interrupt.
-        log.warn(String.format("IGNORING: scePsmfPlayerBreak psmfPlayer=0x%X", psmfPlayer));
-
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x76C0F4AE, version = 150)
     public int scePsmfPlayerSetPsmfOffset() {
-        log.warn("Unimplemented scePsmfPlayerSetPsmfOffset");
-
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xA72DB4F9, version = 150)
     public int scePsmfPlayerSetPsmfOffsetCB() {
-        log.warn("Unimplemented scePsmfPlayerSetPsmfOffsetCB");
-
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x2D0E4E0A, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerSetTempBuf(int psmfPlayer) {
-        log.warn(String.format("IGNORING: scePsmfPlayerSetTempBuf psmfPlayer=0x%X", psmfPlayer));
-
         return 0;
     }
 
     @HLEFunction(nid = 0x75F03FA2, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerSelectSpecificVideo(int psmfPlayer, int videoCodec, int videoStreamNum) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerSelectSpecificVideo psmfPlayer=0x%X, videoCodec=0x%X, videoStreamNum=%d", psmfPlayer, videoCodec, videoStreamNum));
-        }
-
         this.videoCodec = videoCodec;
         this.videoStreamNum = videoStreamNum;
 
@@ -749,10 +670,6 @@ public class scePsmfPlayer extends HLEModule {
 
     @HLEFunction(nid = 0x85461EFF, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerSelectSpecificAudio(int psmfPlayer, int audioCodec, int audioStreamNum) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerSelectSpecificAudio psmfPlayer=0x%X, audioCodec=0x%X, audioStreamNum=%d", psmfPlayer, audioCodec, audioStreamNum));
-        }
-
         this.audioCodec = audioCodec;
         this.audioStreamNum = audioStreamNum;
 
@@ -761,10 +678,6 @@ public class scePsmfPlayer extends HLEModule {
 
     @HLEFunction(nid = 0x8A9EBDCD, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerSelectVideo(int psmfPlayer) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerSelectVideo psmfPlayer=0x%X", psmfPlayer));
-        }
-
         // Advances to the next video stream number.
         videoStreamNum++;
 
@@ -773,10 +686,6 @@ public class scePsmfPlayer extends HLEModule {
 
     @HLEFunction(nid = 0xB8D10C56, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerSelectAudio(int psmfPlayer) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("scePsmfPlayerSelectAudio psmfPlayer=0x%X", psmfPlayer));
-        }
-
         // Advances to the next audio stream number.
         audioStreamNum++;
 

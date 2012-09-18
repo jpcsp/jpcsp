@@ -33,4 +33,9 @@ public class pspUmdInfo extends pspAbstractMemoryMappedStructureVariableLength {
 		super.write();
 		write32(type);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s, type=%d", super.toString(), type);
+	}
 }

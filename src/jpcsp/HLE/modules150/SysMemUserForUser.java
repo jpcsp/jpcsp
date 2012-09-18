@@ -17,9 +17,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
-import static jpcsp.util.Utilities.readStringNZ;
+import static jpcsp.Allegrex.Common._a1;
+import static jpcsp.Allegrex.Common._a2;
+import static jpcsp.Allegrex.Common._a3;
+import static jpcsp.Allegrex.Common._t0;
+import static jpcsp.Allegrex.Common._t1;
+import static jpcsp.Allegrex.Common._t2;
+import static jpcsp.Allegrex.Common._t3;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.PspString;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -53,8 +61,9 @@ import org.apache.log4j.Logger;
  * 2. Implement format string parsing and reading variable number of parameters
  * in sceKernelPrintf.
  */
+@HLELogging
 public class SysMemUserForUser extends HLEModule {
-    protected static Logger log = Modules.getLogger("SysMemUserForUser");
+    public static Logger log = Modules.getLogger("SysMemUserForUser");
     protected static Logger stdout = Logger.getLogger("stdout");
     protected static HashMap<Integer, SysMemInfo> blockList;
     protected static MemoryChunkList freeMemoryChunks;
@@ -73,7 +82,9 @@ public class SysMemUserForUser extends HLEModule {
     public static final int USER_PARTITION_ID = 2;
 
     @Override
-	public String getName() { return "SysMemUserForUser"; }
+	public String getName() {
+    	return "SysMemUserForUser";
+	}
 
 	protected boolean started = false;
 
@@ -363,42 +374,35 @@ public class SysMemUserForUser extends HLEModule {
         DumpDebugState.log("Allocated blocks:\n" + getDebugAllocatedMem() + "\n");
     }
 
-    public int hleKernelPrintf(CpuState cpu, Logger logger, String sceFunctionName) {
-		int string_addr = cpu.gpr[4];
-
-		String msg = readStringNZ(string_addr, 256);
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("%s(string_addr=0x%08X) '%s'", sceFunctionName, string_addr, msg));
-        }
-
+    public int hleKernelPrintf(CpuState cpu, PspString formatString, Logger logger, String sceFunctionName) {
         // Format and print the message to stdout
         if (logger.isInfoEnabled()) {
-        	String formattedMsg = msg;
+        	String formattedMsg = formatString.getString();
         	try {
         		int[] gpr = cpu.gpr;
             	// For now, use only the 7 register parameters: $a1-$a3, $t0-$t3
             	// Further parameters should be retrieved from the stack.
         		Object[] formatParameters = new Object[] {
-        				gpr[5],
-        				gpr[6],
-        				gpr[7],
-        				gpr[8],
-        				gpr[9],
-        				gpr[10],
-        				gpr[11]
+        				gpr[_a1],
+        				gpr[_a2],
+        				gpr[_a3],
+        				gpr[_t0],
+        				gpr[_t1],
+        				gpr[_t2],
+        				gpr[_t3]
         		};
 
         		// Translate the C-like format string to a Java format string:
         		// - %u or %i -> %d
         		// - %p -> %08X
-        		String javaMsg = msg;
+        		String javaMsg = formatString.getString();
         		javaMsg = javaMsg.replaceAll("\\%[ui]", "%d");
         		javaMsg = javaMsg.replaceAll("\\%p", "%08X");
 
         		// Support basic string output "%s"
         		// Assume %s is always the first parameter...
         		if (javaMsg.contains("%s")) {
-        			formatParameters[0] = Utilities.readStringZ(gpr[5]);
+        			formatParameters[0] = Utilities.readStringZ(gpr[_a1]);
         		}
 
         		// String.format: If there are more arguments than format specifiers, the extra arguments are ignored.
@@ -420,7 +424,7 @@ public class SysMemUserForUser extends HLEModule {
         maxFreeMemSize &= ~15;
 
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceKernelMaxFreeMemSize %d(hex=0x%1$X)", maxFreeMemSize));
+    		log.debug(String.format("sceKernelMaxFreeMemSize returning %d(hex=0x%1$X)", maxFreeMemSize));
     	}
 
     	return maxFreeMemSize;
@@ -430,7 +434,7 @@ public class SysMemUserForUser extends HLEModule {
 	public int sceKernelTotalFreeMemSize() {
 		int totalFreeMemSize = totalFreeMemSize();
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceKernelTotalFreeMemSize %d(hex=0x%1$X)", totalFreeMemSize));
+    		log.debug(String.format("sceKernelTotalFreeMemSize returning %d(hex=0x%1$X)", totalFreeMemSize));
     	}
 
     	return totalFreeMemSize;
@@ -439,9 +443,6 @@ public class SysMemUserForUser extends HLEModule {
 	@HLEFunction(nid = 0x237DBD4F, version = 150)
 	public int sceKernelAllocPartitionMemory(int partitionid, String name, int type, int size, int addr) {
         addr &= Memory.addressMask;
-        if (log.isDebugEnabled()) {
-	        log.debug(String.format("sceKernelAllocPartitionMemory(partition=%d, name='%s', type=%s, size=0x%X, addr=0x%08X", partitionid, name, getTypeName(type), size, addr));
-        }
 
         if (type < PSP_SMEM_Low || type > PSP_SMEM_HighAligned) {
             return SceKernelErrors.ERROR_KERNEL_ILLEGAL_MEMBLOCK_ALLOC_TYPE;
@@ -461,13 +462,9 @@ public class SysMemUserForUser extends HLEModule {
 
 		SysMemInfo info = blockList.remove(uid);
         if (info == null) {
-            log.warn("sceKernelFreePartitionMemory unknown SceUID=" + Integer.toHexString(uid));
+            log.warn(String.format("sceKernelFreePartitionMemory unknown uid=0x%X", uid));
             return SceKernelErrors.ERROR_KERNEL_ILLEGAL_CHUNK_ID;
         }
-
-        if (log.isDebugEnabled()) {
-    		log.debug("sceKernelFreePartitionMemory SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "'");
-    	}
 
         free(info);
 
@@ -480,20 +477,16 @@ public class SysMemUserForUser extends HLEModule {
 
 		SysMemInfo info = blockList.get(uid);
         if (info == null) {
-            log.warn("sceKernelGetBlockHeadAddr unknown SceUID=" + Integer.toHexString(uid));
+            log.warn(String.format("sceKernelGetBlockHeadAddr unknown uid=0x%X", uid));
             return SceKernelErrors.ERROR_KERNEL_ILLEGAL_CHUNK_ID;
         }
-
-        if (log.isDebugEnabled()) {
-    		log.debug("sceKernelGetBlockHeadAddr SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "' headAddr:" + Integer.toHexString(info.addr));
-    	}
 
         return info.addr;
 	}
 
 	@HLEFunction(nid = 0x13A5ABEF, version = 150)
-	public int sceKernelPrintf(CpuState cpu) {
-		return hleKernelPrintf(cpu, stdout, "sceKernelPrintf");
+	public int sceKernelPrintf(CpuState cpu, PspString formatString) {
+		return hleKernelPrintf(cpu, formatString, stdout, "sceKernelPrintf");
 	}
 
 	@HLEFunction(nid = 0x3FC9AE6A, version = 150)
@@ -503,7 +496,7 @@ public class SysMemUserForUser extends HLEModule {
         int revision = firmwareVersion % 10;
         int devkitVersion = (major << 24) | (minor << 16) | (revision << 8) | 0x10;
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelDevkitVersion return:0x%08X", devkitVersion));
+        	log.debug(String.format("sceKernelDevkitVersion returning 0x%08X", devkitVersion));
         }
 
         return devkitVersion;
@@ -511,10 +504,6 @@ public class SysMemUserForUser extends HLEModule {
 
 	@HLEFunction(nid = 0xD8DE5C1E, version = 150)
 	public int SysMemUserForUser_D8DE5C1E() {
-		if (log.isDebugEnabled()) {
-			log.debug("SysMemUserForUser_D8DE5C1E");
-		}
-
 		// Seems to always return 0...
 		return 0;
 	}

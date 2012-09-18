@@ -14,7 +14,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules150;
 
 import java.text.SimpleDateFormat;
@@ -24,24 +23,26 @@ import java.util.GregorianCalendar;
 
 import jpcsp.Clock.TimeNanos;
 import jpcsp.Emulator;
-import jpcsp.Memory;
-import jpcsp.Processor;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.TPointer64;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceRtc extends HLEModule {
-    protected static Logger log = Modules.getLogger("sceRtc");
+    public static Logger log = Modules.getLogger("sceRtc");
 
     @Override
-    public String getName() { return "sceRtc"; }
+    public String getName() {
+    	return "sceRtc";
+	}
 
     final static int PSP_TIME_INVALID_YEAR = -1;
     final static int PSP_TIME_INVALID_MONTH = -2;
@@ -119,7 +120,7 @@ public class sceRtc extends HLEModule {
         currentTick.setValue(hleGetCurrentTick());
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceRtcGetCurrentTick 0x%08X, returning %d", currentTick.getAddress(), currentTick.getValue()));
+        	log.debug(String.format("sceRtcGetCurrentTick returning %d", currentTick.getValue()));
         }
 
         return 0;
@@ -127,43 +128,29 @@ public class sceRtc extends HLEModule {
 
     @HLEFunction(nid = 0x011F03C1, version = 150)
     public long sceRtcGetAccumulativeTime() {
-        if (log.isDebugEnabled()) {
-        	log.debug("sceRtcGetAccumulativeTime");
-        }
         // Returns the difference between the last reincarnated time and the current tick.
         // Just return our current tick, since there's no need to mimick such behaviour.
-
         return hleGetCurrentTick();
     }
 
     @HLEFunction(nid = 0x029CA3B3, version = 150)
     public long sceRtcGetAccumlativeTime() {
-        // Typo. Refers to the same function.
-        if (log.isDebugEnabled()) {
-        	log.debug("sceRtcGetAccumlativeTime");
-        }
-        
+        // Typo. Same as sceRtcGetAccumulativeTime.
         return hleGetCurrentTick();
     }
 
     @HLEFunction(nid = 0x4CFA57B0, version = 150)
-    public int sceRtcGetCurrentClock(int addr, int tz) {
-        Memory mem = Processor.memory;
-
+    public int sceRtcGetCurrentClock(TPointer addr, int tz) {
         ScePspDateTime pspTime = new ScePspDateTime(tz);
-        pspTime.write(mem, addr);
+        pspTime.write(addr);
 
-        log.debug("sceRtcGetCurrentClock addr=" + Integer.toHexString(addr) + " time zone=" + tz);
-        
         return 0;
     }
 
     @HLEFunction(nid = 0xE7C27D1B, version = 150)
-    public int sceRtcGetCurrentClockLocalTime(int addr) {
-        Memory mem = Processor.memory;
-
+    public int sceRtcGetCurrentClockLocalTime(TPointer addr) {
         ScePspDateTime pspTime = new ScePspDateTime();
-        pspTime.write(mem, addr);
+        pspTime.write(addr);
 
         return 0;
     }
@@ -171,9 +158,6 @@ public class sceRtc extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x34885E0D, version = 150)
     public int sceRtcConvertUtcToLocalTime(TPointer64 utcPtr, TPointer64 localPtr) {
-        log.debug("PARTIAL: sceRtcConvertUtcToLocalTime");
-
-        
         long utc = utcPtr.getValue();
         long local = utc;
         // TODO
@@ -185,8 +169,6 @@ public class sceRtc extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x779242A2, version = 150)
     public int sceRtcConvertLocalTimeToUTC(TPointer64 localPtr, TPointer64 utcPtr) {
-        log.debug("PARTIAL: sceRtcConvertLocalTimeToUTC");
-
         long local = localPtr.getValue();
         long utc = local; // TODO
         utcPtr.setValue(utc);
@@ -195,19 +177,19 @@ public class sceRtc extends HLEModule {
     }
 
     @HLEFunction(nid = 0x42307A17, version = 150)
-    public int sceRtcIsLeapYear(int year) {
-        log.debug("sceRtcIsLeapYear");
-
-        return ((year % 4 == 0) && (year % 100 != 0) || (year % 400 == 0)) ? 1 : 0;
+    public boolean sceRtcIsLeapYear(int year) {
+        return (year % 4 == 0) && (year % 100 != 0) || (year % 400 == 0);
     }
 
     @HLEFunction(nid = 0x05EF322C, version = 150)
     public int sceRtcGetDaysInMonth(int year, int month) {
         Calendar cal = new GregorianCalendar(year, month - 1, 1);
-
         int days = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
 
-        log.debug(String.format("sceRtcGetDaysInMonth %04d-%02d ret:%d", year, month, days));
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceRtcGetDaysInMonth returning %d", days));
+        }
+
         return days;
     }
 
@@ -229,7 +211,10 @@ public class sceRtc extends HLEModule {
         int dayOfWeekNumber = cal.get(Calendar.DAY_OF_WEEK);
         dayOfWeekNumber = (dayOfWeekNumber - 1 + 7) % 7;
 
-        log.debug(String.format("sceRtcGetDayOfWeek %04d-%02d-%02d ret:%d", year, month, day, dayOfWeekNumber));
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceRtcGetDayOfWeek returning %d", dayOfWeekNumber));
+        }
+
         return dayOfWeekNumber;
     }
 
@@ -240,16 +225,7 @@ public class sceRtc extends HLEModule {
      * @return 0 on success, one of PSP_TIME_INVALID_* on error
      */
     @HLEFunction(nid = 0x4B1B5E82, version = 150)
-    public int sceRtcCheckValid(int time_addr) {
-        Memory mem = Processor.memory;
-
-        if (!Memory.isAddressGood(time_addr)) {
-            log.warn("sceRtcGetTick bad address " + String.format("0x%08X", time_addr));
-            return -1;
-        }
-
-        ScePspDateTime time = new ScePspDateTime();
-        time.read(mem, time_addr);
+    public int sceRtcCheckValid(ScePspDateTime time) {
         Calendar cal = new GregorianCalendar(
         	time.year, time.month - 1, time.day, time.hour, time.minute, time.second
         );
@@ -275,143 +251,101 @@ public class sceRtc extends HLEModule {
         }
 
         if (log.isDebugEnabled()) {
-        	log.debug("sceRtcCheckValid " + time.toString() + ", cal: " + cal + ", result: " + result);
+        	log.debug(String.format("sceRtcCheckValid time=%s, cal=%s, returning 0x%08X", time, cal, result));
         }
 
         return result;
     }
 
     @HLEFunction(nid = 0x3A807CC8, version = 150)
-    public int sceRtcSetTime_t(int date_addr, int time) {
-        Memory mem = Processor.memory;
-
-        if (!Memory.isAddressGood(date_addr)) {
-            log.warn("sceRtcSetTime_t bad address " + String.format("0x%08X", date_addr));
-            return -1;
-        }
-
+    public int sceRtcSetTime_t(TPointer dateAddr, int time) {
         ScePspDateTime dateTime = ScePspDateTime.fromUnixTime(time);
-        dateTime.write(mem, date_addr);
+        dateTime.write(dateAddr);
+
         return 0;
     }
 
     @HLEFunction(nid = 0x27C4594C, version = 150)
-    public int sceRtcGetTime_t(int date_addr, int time_addr) {
-        Memory mem = Processor.memory;
-
-        if (!Memory.isAddressGood(date_addr) || !Memory.isAddressGood(time_addr)) {
-            log.warn("sceRtcGetTime_t bad address " + String.format("0x%08X 0x%08X", date_addr, time_addr));
-            return -1;
-        }
-        
-        ScePspDateTime dateTime = new ScePspDateTime();
-        dateTime.read(mem, date_addr);
+    public int sceRtcGetTime_t(ScePspDateTime dateTime, TPointer32 timeAddr) {
         Calendar cal = Calendar.getInstance();
         cal.set(dateTime.year, dateTime.month - 1, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second);
         int unixtime = (int)(cal.getTime().getTime() / 1000L);
-        log.debug("sceRtcGetTime_t psptime:" + dateTime + " unixtime:" + unixtime);
-        mem.write32(time_addr, unixtime);
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceRtcGetTime_t returning %d", unixtime));
+        }
+
+        timeAddr.setValue(unixtime);
 
         return 0;
     }
 
     @HLEFunction(nid = 0xF006F264, version = 150)
-    public int sceRtcSetDosTime(int date_addr, int time) {
-        Memory mem = Processor.memory;
-
-        if (!Memory.isAddressGood(date_addr)) {
-            log.warn("sceRtcSetDosTime bad address " + String.format("0x%08X", date_addr));
-        	return -1;
-        }
+    public int sceRtcSetDosTime(TPointer dateAddr, int time) {
         ScePspDateTime dateTime = ScePspDateTime.fromMSDOSTime(time);
-        dateTime.write(mem, date_addr);
+        dateTime.write(dateAddr);
 
         return 0;
     }
 
     @HLEFunction(nid = 0x36075567, version = 150)
-    public int sceRtcGetDosTime(int date_addr, int time_addr) {
-        Memory mem = Processor.memory;
-
-        if (!Memory.isAddressGood(date_addr) || !Memory.isAddressGood(time_addr)) {
-            log.warn("sceRtcGetDosTime bad address " + String.format("0x%08X 0x%08X", date_addr, time_addr));
-            return -1;
-        }
-
-        ScePspDateTime dateTime = new ScePspDateTime();
-        dateTime.read(mem, date_addr);
+    public int sceRtcGetDosTime(ScePspDateTime dateTime, TPointer32 timeAddr) {
         Calendar cal = Calendar.getInstance();
         cal.set(dateTime.year, dateTime.month - 1, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second);
         int dostime = (int)(cal.getTime().getTime() / 1000L);
-        log.debug("sceRtcGetDosTime psptime:" + dateTime + " dostime:" + dostime);
-        mem.write32(time_addr, dostime);
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceRtcGetDosTime returning %d", dostime));
+        }
+
+        timeAddr.setValue(dostime);
         
         return 0;
     }
 
     @HLEFunction(nid = 0x7ACE4C04, version = 150)
-    public int sceRtcSetWin32FileTime(int date_addr, long time) {
-    	Memory mem = Processor.memory;
-    	
-        if (!Memory.isAddressGood(date_addr)) {
-            log.warn("sceRtcSetWin32FileTime bad address " + String.format("0x%08X", date_addr));
-            return -1;
-        }
-        	
+    public int sceRtcSetWin32FileTime(TPointer dateAddr, long time) {
         ScePspDateTime dateTime = ScePspDateTime.fromFILETIMETime(time);
-        dateTime.write(mem, date_addr);
+        dateTime.write(dateAddr);
         
         return 0;
     }
 
     @HLEFunction(nid = 0xCF561893, version = 150)
-    public int sceRtcGetWin32FileTime(int date_addr, int time_addr) {
-        Memory mem = Processor.memory;
-
-        if (!Memory.isAddressGood(date_addr) || !Memory.isAddressGood(time_addr)) {
-            log.warn("sceRtcGetWin32FileTime bad address " + String.format("0x%08X 0x%08X", date_addr, time_addr));
-            return -1;
-        }
-
-        ScePspDateTime dateTime = new ScePspDateTime();
-        dateTime.read(mem, date_addr);
+    public int sceRtcGetWin32FileTime(ScePspDateTime dateTime, TPointer64 timeAddr) {
         Calendar cal = Calendar.getInstance();
         cal.set(dateTime.year, dateTime.month - 1, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second);
         int filetimetime = (int)(cal.getTime().getTime() / 1000L);
-        log.debug("sceRtcGetWin32FileTime psptime:" + dateTime + " filetimetime:" + filetimetime);
-        mem.write64(time_addr, filetimetime);
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceRtcGetWin32FileTime returning %d", filetimetime));
+        }
+
+        timeAddr.setValue(filetimetime);
+
         return 0;
     }
 
     /** Set a pspTime struct based on ticks. */
     @HLEFunction(nid = 0x7ED29E40, version = 150)
-    public int sceRtcSetTick(TPointer time_addr, TPointer64 ticks_addr) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceRtcSetTick time_addr=%s, ticks_addr=%s(%d)", time_addr, ticks_addr, ticks_addr.getValue()));
-    	}
-
-        long ticks = ticks_addr.getValue() - rtcMagicOffset;
+    public int sceRtcSetTick(TPointer timeAddr, TPointer64 ticksAddr) {
+        long ticks = ticksAddr.getValue() - rtcMagicOffset;
         ScePspDateTime time = ScePspDateTime.fromMicros(ticks);
-        time.write(Memory.getInstance(), time_addr.getAddress());
+        time.write(timeAddr);
 
         return 0;
     }
 
     /** Set ticks based on a pspTime struct. */
     @HLEFunction(nid = 0x6FF40ACC, version = 150)
-    public int sceRtcGetTick(TPointer time_addr, TPointer64 ticks_addr) {
-        Memory mem = Processor.memory;
-
+    public int sceRtcGetTick(ScePspDateTime time, TPointer64 ticksAddr) {
         // use java library to convert a date to seconds, then multiply it by the tick resolution
-        ScePspDateTime time = new ScePspDateTime();
-        time.read(mem, time_addr.getAddress());
-        Calendar cal = new GregorianCalendar(time.year, time.month - 1, time.day,
-            time.hour, time.minute, time.second);
+        Calendar cal = new GregorianCalendar(time.year, time.month - 1, time.day, time.hour, time.minute, time.second);
         long ticks = rtcMagicOffset + (cal.getTimeInMillis() * 1000) + (time.microsecond % 1000);
-        ticks_addr.setValue(ticks);
+        ticksAddr.setValue(ticks);
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceRtcGetTick time=%s('%s') returning ticks=%s(%d)", time_addr, time.toString(), ticks_addr, ticks));
+        	log.debug(String.format("sceRtcGetTick returning %d", ticks));
         }
 
         return 0;
@@ -422,12 +356,14 @@ public class sceRtc extends HLEModule {
         long tick1 = firstPtr.getValue();
         long tick2 = secondPtr.getValue();
 
-        if (tick1 < tick2) return -1;
-        if (tick1 > tick2) return 1;
+        if (tick1 < tick2) {
+        	return -1;
+        }
+        if (tick1 > tick2) {
+        	return 1;
+        }
         return 0;
     }
-    
-    
 
     @HLEFunction(nid = 0x44F45E05, version = 150)
     public int sceRtcTickAddTicks(TPointer64 dstPtr, TPointer64 srcPtr, long value) {
@@ -482,31 +418,23 @@ public class sceRtc extends HLEModule {
         log.debug("sceRtcTickAddYears redirecting to hleRtcTickAdd32(365*24*60*60*1000000)");
         return hleRtcTickAdd32(dstPtr, srcPtr, value, PSP_TIME_SECONDS_IN_YEAR * 1000000L);
     }
-    
-    
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC663B3B9, version = 150)
     public int sceRtcFormatRFC2822() {
-        log.warn("Unimplemented NID function sceRtcFormatRFC2822 [0xC663B3B9]");
-
-        return 0xDEADC0DE;
+    	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x7DE6711B, version = 150)
     public int sceRtcFormatRFC2822LocalTime() {
-        log.warn("Unimplemented NID function sceRtcFormatRFC2822LocalTime [0x7DE6711B]");
-
-        return 0xDEADC0DE;
+    	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x0498FB3C, version = 150)
     public int sceRtcFormatRFC3339() {
-        log.warn("Unimplemented NID function sceRtcFormatRFC3339 [0x0498FB3C]");
-
-        return 0xDEADC0DE;
+    	return 0;
     }
 
     @HLEFunction(nid = 0x27F98543, version = 150)
@@ -515,10 +443,10 @@ public class sceRtc extends HLEModule {
     	String result = formatRFC3339(date);
 
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceRtcFormatRFC3339LocalTime resultString=%s('%s'), srcPtr=%s(%d)", resultString, result, srcPtr, srcPtr.getValue()));
+    		log.debug(String.format("sceRtcFormatRFC3339LocalTime src=%d, returning '%s'", srcPtr.getValue(), result));
     	}
 
-    	Utilities.writeStringZ(Memory.getInstance(), resultString.getAddress(), result);
+    	resultString.setStringZ(result);
 
     	return 0;
     }
@@ -526,23 +454,18 @@ public class sceRtc extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xDFBC5F16, version = 150)
     public int sceRtcParseDateTime() {
-        log.warn("Unimplemented NID function sceRtcParseDateTime [0xDFBC5F16]");
-
-        return 0xDEADC0DE;
+    	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x28E1E988, version = 150)
     public int sceRtcParseRFC3339() {
-        log.warn("Unimplemented NID function sceRtcParseRFC3339 [0x28E1E988]");
-
-        return 0xDEADC0DE;
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x7D1FBED3, version = 150)
     public int sceRtcSetAlarmTick(TPointer64 srcPtr) {
-    	log.warn(String.format("Unimplemented sceRtcSetAlarmTick srcPtr=%s(%d)", srcPtr, srcPtr.getValue()));
-
     	return 0;
     }
 }

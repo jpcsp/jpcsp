@@ -20,9 +20,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
 
-import jpcsp.Memory;
-
-public class ScePspDateTime {
+public class ScePspDateTime extends pspAbstractMemoryMappedStructure {
+	public static final int SIZEOF = 16;
     public int year;
     public int month;
     public int day;
@@ -175,29 +174,33 @@ public class ScePspDateTime {
         return new ScePspDateTime(year, month, day, hour, minute, second, microsecond);
     }
 
-    public void read(Memory mem, int address) {
-        year = mem.read16(address);
-        month = mem.read16(address + 2);
-        day = mem.read16(address + 4);
-        hour = mem.read16(address + 6);
-        minute = mem.read16(address + 8);
-        second = mem.read16(address + 10);
-        microsecond = mem.read32(address + 12);
-    }
 
-    public void write(Memory mem, int address) {
-        mem.write16(address, (short)(year & 0xffff));
-        mem.write16(address + 2, (short)(month & 0xffff));
-        mem.write16(address + 4, (short)(day & 0xffff));
-        mem.write16(address + 6, (short)(hour & 0xffff));
-        mem.write16(address + 8, (short)(minute & 0xffff));
-        mem.write16(address + 10, (short)(second & 0xffff));
-        mem.write32(address + 12, microsecond);
-    }
+	@Override
+	protected void read() {
+		year = read16();
+		month = read16();
+		day = read16();
+		hour = read16();
+		minute = read16();
+		second = read16();
+		microsecond = read32();
+	}
 
-    public static int sizeof() {
-        return 16;
-    }
+	@Override
+	protected void write() {
+		write16((short) year);
+		write16((short) month);
+		write16((short) day);
+		write16((short) hour);
+		write16((short) minute);
+		write16((short) second);
+		write32(microsecond);
+	}
+
+	@Override
+	public int sizeof() {
+		return SIZEOF;
+	}
 
     @Override
     public String toString() {

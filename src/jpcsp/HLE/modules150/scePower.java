@@ -16,11 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.Modules;
@@ -29,14 +27,15 @@ import jpcsp.hardware.Battery;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class scePower extends HLEModule {
-
-    protected static Logger log = Modules.getLogger("scePower");
+    public static Logger log = Modules.getLogger("scePower");
 
     @Override
     public String getName() {
         return "scePower";
     }
+
     /**
      * Power callback flags
      */
@@ -84,120 +83,96 @@ public class scePower extends HLEModule {
     protected int busClock = 111;
     protected static final int backlightMaximum = 4;
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x2B51FE2F, version = 150)
-    public void scePower_2B51FE2F(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePower_2B51FE2F [0x2B51FE2F]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePower_2B51FE2F() {
+    	return 0;
     }
 
     @HLEFunction(nid = 0x442BFBAC, version = 150)
-    public void scePowerGetBacklightMaximum(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.debug("scePowerGetBacklightMaximum backlightMaxium=" + backlightMaximum);
-
-        cpu.gpr[2] = backlightMaximum;
+    public int scePowerGetBacklightMaximum() {
+        return backlightMaximum;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xEFD3C963, version = 150)
-    public void scePowerTick(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.debug("Unimplemented NID function scePowerTick [0xEFD3C963]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePowerTick() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xEDC13FE5, version = 150)
-    public void scePowerGetIdleTimer(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePowerGetIdleTimer [0xEDC13FE5]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePowerGetIdleTimer() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x7F30B3B1, version = 150)
-    public void scePowerIdleTimerEnable(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePowerIdleTimerEnable [0x7F30B3B1]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePowerIdleTimerEnable() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x972CE941, version = 150)
-    public void scePowerIdleTimerDisable(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePowerIdleTimerDisable [0x972CE941]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePowerIdleTimerDisable() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x27F3292C, version = 150)
-    public void scePowerBatteryUpdateInfo(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePowerBatteryUpdateInfo [0x27F3292C]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePowerBatteryUpdateInfo() {
+    	return 0;
     }
 
     @HLEFunction(nid = 0xE8E4E204, version = 150)
-    public void scePowerGetForceSuspendCapacity(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int scePowerGetForceSuspendCapacity() {
         int forceSuspendCapacity = (Battery.getForceSuspendPercent() * Battery.getFullCapacity()) / 100;
-        log.debug("scePowerGetForceSuspendCapacity " + forceSuspendCapacity + "mAh");
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("scePowerGetForceSuspendCapacity returning %d mAh", forceSuspendCapacity));
+        }
 
-        cpu.gpr[2] = forceSuspendCapacity;
+        return forceSuspendCapacity;
     }
 
     @HLEFunction(nid = 0xB999184C, version = 150)
-    public void scePowerGetLowBatteryCapacity(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int scePowerGetLowBatteryCapacity() {
         int lowBatteryCapacity = (Battery.getLowPercent() * Battery.getFullCapacity()) / 100;
-        log.debug("scePowerGetLowBatteryCapacity " + lowBatteryCapacity + "mAh");
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("scePowerGetLowBatteryCapacity returning %d mAh", lowBatteryCapacity));
+        }
 
-        cpu.gpr[2] = lowBatteryCapacity;
+        return lowBatteryCapacity;
     }
 
     @HLEFunction(nid = 0x87440F5E, version = 150)
-    public void scePowerIsPowerOnline(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public boolean scePowerIsPowerOnline() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("scePowerIsPowerOnline returning %b", Battery.isPluggedIn()));
+    	}
 
-        log.debug("scePowerIsPowerOnline pluggedIn=" + Battery.isPluggedIn());
-
-        cpu.gpr[2] = Battery.isPluggedIn() ? 1 : 0;
+        return Battery.isPluggedIn();
     }
 
     @HLEFunction(nid = 0x0AFD0D8B, version = 150)
-    public void scePowerIsBatteryExist(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public boolean scePowerIsBatteryExist() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("scePowerIsBatteryExist returning %b", Battery.isPresent()));
+    	}
 
-        log.debug("scePowerIsBatteryExist batteryPresent=" + Battery.isPresent());
-
-        cpu.gpr[2] = Battery.isPresent() ? 1 : 0;
+        return Battery.isPresent();
     }
 
     @HLEFunction(nid = 0x1E490401, version = 150)
-    public void scePowerIsBatteryCharging(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public boolean scePowerIsBatteryCharging() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("scePowerIsBatteryCharging returning %b", Battery.isCharging()));
+    	}
 
-        log.debug("scePowerIsBatteryCharging batteryCharging=" + Battery.isCharging());
-
-        cpu.gpr[2] = Battery.isCharging() ? 1 : 0;
+        return Battery.isCharging();
     }
 
     @HLEFunction(nid = 0xB4432BC8, version = 150)
-    public void scePowerGetBatteryChargingStatus(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int scePowerGetBatteryChargingStatus() {
         int status = 0;
         if (Battery.isPresent()) {
             status |= PSP_POWER_CB_BATTERY_EXIST;
@@ -210,19 +185,21 @@ public class scePower extends HLEModule {
             status |= PSP_POWER_CB_BATTPOWER;
         }
 
-        log.debug("scePowerGetBatteryChargingStatus status=0x" + Integer.toHexString(status));
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("scePowerGetBatteryChargingStatus returning 0x%X", status));
+        }
 
-        cpu.gpr[2] = status;
+        return status;
     }
 
     @HLEFunction(nid = 0xD3075926, version = 150)
-    public void scePowerIsLowBattery(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public boolean scePowerIsLowBattery() {
+        boolean isLow = Battery.getCurrentPowerPercent() <= Battery.getLowPercent();
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("scePowerIsLowBattery returning %b", isLow));
+        }
 
-        int isLow = (Battery.getCurrentPowerPercent() <= Battery.getLowPercent()) ? 1 : 0;
-        log.debug("scePowerIsLowBattery " + isLow);
-
-        cpu.gpr[2] = isLow;
+        return isLow;
     }
 
     /**
@@ -235,234 +212,181 @@ public class scePower extends HLEModule {
      * @return 1 if suspend is requided, otherwise 0
      */
     @HLEFunction(nid = 0x78A1A796, version = 150)
-    public void scePowerIsSuspendRequired(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public boolean scePowerIsSuspendRequired() {
+        boolean isSuspendRequired = Battery.getCurrentPowerPercent() <= Battery.getForceSuspendPercent();
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("scePowerIsSuspendRequired returning %b", isSuspendRequired));
+        }
 
-        int isSuspendRequired = (Battery.getCurrentPowerPercent() <= Battery.getForceSuspendPercent() ? 1 : 0);
-        log.debug("scePowerIsSuspendRequired isSuspendRequired=" + isSuspendRequired);
-
-        cpu.gpr[2] = isSuspendRequired;
+        return isSuspendRequired;
     }
 
     @HLEFunction(nid = 0x94F5A53F, version = 150)
-    public void scePowerGetBatteryRemainCapacity(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int scePowerGetBatteryRemainCapacity() {
         int batteryRemainCapacity = (Battery.getCurrentPowerPercent() * Battery.getFullCapacity()) / 100;
-        log.debug("scePowerGetBatteryRemainCapacity " + batteryRemainCapacity + "mAh");
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("scePowerGetBatteryRemainCapacity returning %d mAh", batteryRemainCapacity));
+        }
 
-        cpu.gpr[2] = batteryRemainCapacity;
+        return batteryRemainCapacity;
     }
 
     @HLEFunction(nid = 0xFD18A0FF, version = 150)
-    public void scePowerGetBatteryFullCapacity(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int scePowerGetBatteryFullCapacity() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("scePowerGetBatteryFullCapacity returning %d mAh", Battery.getFullCapacity()));
+    	}
 
-        log.debug("scePowerGetBatteryFullCapacity " + Battery.getFullCapacity() + "mAh");
-
-        cpu.gpr[2] = Battery.getFullCapacity();
+        return Battery.getFullCapacity();
     }
 
     @HLEFunction(nid = 0x2085D15D, version = 150)
-    public void scePowerGetBatteryLifePercent(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int scePowerGetBatteryLifePercent() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("scePowerGetBatteryLifePercent returning %d %%", Battery.getCurrentPowerPercent()));
+    	}
 
-        log.debug("scePowerGetBatteryLifePercent percent=" + Battery.getCurrentPowerPercent());
-
-        cpu.gpr[2] = Battery.getCurrentPowerPercent();
+        return Battery.getCurrentPowerPercent();
     }
 
     @HLEFunction(nid = 0x8EFB3FA2, version = 150)
-    public void scePowerGetBatteryLifeTime(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int scePowerGetBatteryLifeTime() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("scePowerGetBatteryLifeTime returning %d", Battery.getLifeTime()));
+    	}
 
-        log.debug("scePowerGetBatteryLifeTime batteryLifeTime=" + Battery.getLifeTime());
-
-        cpu.gpr[2] = Battery.getLifeTime();
+        return Battery.getLifeTime();
     }
 
     @HLEFunction(nid = 0x28E12023, version = 150)
-    public void scePowerGetBatteryTemp(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int scePowerGetBatteryTemp() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("scePowerGetBatteryTemp returning %d C", Battery.getTemperature()));
+    	}
 
-        log.debug("scePowerGetBatteryTemp batteryTemp=" + Battery.getTemperature());
-
-        cpu.gpr[2] = Battery.getTemperature();
+        return Battery.getTemperature();
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x862AE1A6, version = 150)
-    public void scePowerGetBatteryElec(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePowerGetBatteryElec [0x862AE1A6]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePowerGetBatteryElec() {
+    	return 0;
     }
 
     @HLEFunction(nid = 0x483CE86B, version = 150)
-    public void scePowerGetBatteryVolt(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int scePowerGetBatteryVolt() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("scePowerGetBatteryVolt %d", Battery.getVoltage()));
+    	}
 
-        log.debug("scePowerGetBatteryVolt batteryVoltage=" + Battery.getVoltage());
-
-        cpu.gpr[2] = Battery.getVoltage();
+        return Battery.getVoltage();
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x23436A4A, version = 150)
-    public void scePower_23436A4A(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePower_23436A4A [0x23436A4A]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePower_23436A4A() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x0CD21B1F, version = 150)
-    public void scePowerSetPowerSwMode(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePowerSetPowerSwMode [0x0CD21B1F]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePowerSetPowerSwMode() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x165CE085, version = 150)
-    public void scePowerGetPowerSwMode(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePowerGetPowerSwMode [0x165CE085]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePowerGetPowerSwMode() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x23C31FFE, version = 150)
-    public void scePowerVolatileMemLock(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePowerVolatileMemLock [0x23C31FFE]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePowerVolatileMemLock() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xFA97A599, version = 150)
-    public void scePowerVolatileMemTryLock(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePowerVolatileMemTryLock [0xFA97A599]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePowerVolatileMemTryLock() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xB3EDD801, version = 150)
-    public void scePowerVolatileMemUnlock(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePowerVolatileMemUnlock [0xB3EDD801]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePowerVolatileMemUnlock() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xD6D016EF, version = 150)
-    public void scePowerLock(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePowerLock [0xD6D016EF]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePowerLock() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xCA3D34C1, version = 150)
-    public void scePowerUnlock(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePowerUnlock [0xCA3D34C1]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePowerUnlock() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xDB62C9CF, version = 150)
-    public void scePowerCancelRequest(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePowerCancelRequest [0xDB62C9CF]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePowerCancelRequest() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x7FA406DD, version = 150)
-    public void scePowerIsRequest(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePowerIsRequest [0x7FA406DD]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePowerIsRequest() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x2B7C7CF4, version = 150)
-    public void scePowerRequestStandby(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePowerRequestStandby [0x2B7C7CF4]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePowerRequestStandby() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xAC32C9CC, version = 150)
-    public void scePowerRequestSuspend(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePowerRequestSuspend [0xAC32C9CC]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePowerRequestSuspend() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x2875994B, version = 150)
-    public void scePower_2875994B(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePower_2875994B [0x2875994B]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePower_2875994B() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x3951AF53, version = 150)
-    public void scePowerWaitRequestCompletion(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePowerWaitRequestCompletion [0x3951AF53]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePowerWaitRequestCompletion() {
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x0074EF9B, version = 150)
-    public void scePowerGetResumeCount(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePowerGetResumeCount [0x0074EF9B]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePowerGetResumeCount() {
+    	return 0;
     }
 
+    @HLELogging(level="info")
     @HLEFunction(nid = 0x04B7766E, version = 150)
-    public void scePowerRegisterCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int slot = cpu.gpr[4];
-        int uid = cpu.gpr[5];
-
-        log.info(String.format("scePowerRegisterCallback slot=%d, SceUID=0x%X", slot, uid));
-
+    public int scePowerRegisterCallback(int slot, int uid) {
         boolean notifyCallback = false;
+        int result;
 
         // Multiple power callbacks (up to 16) can be assigned for multiple threads.
         if (slot == PSP_POWER_CB_SLOT_AUTO) {
         	// Return ERROR_OUT_OF_MEMORY when no free slot found
-        	cpu.gpr[2] = SceKernelErrors.ERROR_OUT_OF_MEMORY;
+        	result = SceKernelErrors.ERROR_OUT_OF_MEMORY;
 
         	for (int i = 0; i < powerCBSlots.length; i++) {
                 if (powerCBSlots[i] == 0) {
                     powerCBSlots[i] = uid;
-                    cpu.gpr[2] = i;
+                    result = i;
                     notifyCallback = true;
                     break;
                 }
@@ -470,13 +394,13 @@ public class scePower extends HLEModule {
         } else if (slot >= 0 && slot < powerCBSlots.length) {
         	if (powerCBSlots[slot] == 0) {
         		powerCBSlots[slot] = uid;
-        		cpu.gpr[2] = 0;
+        		result = 0;
         		notifyCallback = true;
         	} else {
-        		cpu.gpr[2] = SceKernelErrors.ERROR_ALREADY;
+        		result = SceKernelErrors.ERROR_ALREADY;
         	}
         } else {
-            cpu.gpr[2] = -1;
+            result = -1;
         }
 
         if (notifyCallback) {
@@ -486,140 +410,116 @@ public class scePower extends HLEModule {
 	            threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_POWER, uid, PSP_POWER_CB_AC_POWER);
 	        }
         }
+
+        return result;
     }
 
+    @HLELogging(level="info")
     @HLEFunction(nid = 0xDFA8BAF8, version = 150)
-    public void scePowerUnregisterCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int scePowerUnregisterCallback(int slot) {
+    	if (slot < 0 || slot >= powerCBSlots.length) {
+    		return -1;
+    	}
 
-        int slot = cpu.gpr[4];
+    	if (powerCBSlots[slot] != 0) {
+            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+            threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_POWER, powerCBSlots[slot]);
+            powerCBSlots[slot] = 0;
+    	}
 
-        log.info(String.format("scePowerUnregisterCallback slot=%d", slot));
-
-        if (slot >= 0 && slot < powerCBSlots.length) {
-        	if (powerCBSlots[slot] != 0) {
-	            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-	            threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_POWER, powerCBSlots[slot]);
-	            powerCBSlots[slot] = 0;
-        	}
-            cpu.gpr[2] = 0;
-        } else {
-        	cpu.gpr[2] = -1;
-        }
+    	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xDB9D28DD, version = 150)
-    public void scePowerUnregitserCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function scePowerUnregitserCallback [0xDB9D28DD]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public int scePowerUnregisterCallback() {
+    	return 0;
     }
 
-    @HLEFunction(nid = 0x843FBF43, version = 150)
-    public void scePowerSetCpuClockFrequency(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int freq = cpu.gpr[4];
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        log.debug("scePowerSetCpuClockFrequency : " + freq);
+    @HLEFunction(nid = 0x843FBF43, version = 150, checkInsideInterrupt = true)
+    public int scePowerSetCpuClockFrequency(int freq) {
         cpuClock = freq;
-        cpu.gpr[2] = 0;
+
+        return 0;
     }
 
-    @HLEFunction(nid = 0xB8D7B3FB, version = 150)
-    public void scePowerSetBusClockFrequency(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int freq = cpu.gpr[4];
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        log.debug("scePowerSetBusClockFrequency : " + freq);
+    @HLEFunction(nid = 0xB8D7B3FB, version = 150, checkInsideInterrupt = true)
+    public int scePowerSetBusClockFrequency(int freq) {
         busClock = freq;
-        cpu.gpr[2] = 0;
+
+        return 0;
     }
 
     @HLEFunction(nid = 0xFEE03A2F, version = 150)
-    public void scePowerGetCpuClockFrequency(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int scePowerGetCpuClockFrequency() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("scePowerGetCpuClockFrequency returning 0x%X", cpuClock));
+    	}
 
-        log.debug("scePowerGetCpuClockFrequency ret:" + cpuClock);
-
-        cpu.gpr[2] = cpuClock;
+        return cpuClock;
     }
 
     @HLEFunction(nid = 0x478FE6F5, version = 150)
-    public void scePowerGetBusClockFrequency(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int scePowerGetBusClockFrequency() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("scePowerGetBusClockFrequency returning 0x%X", busClock));
+    	}
 
-        log.debug("scePowerGetBusClockFrequency ret:" + busClock);
-
-        cpu.gpr[2] = busClock;
+        return busClock;
     }
 
     @HLEFunction(nid = 0xFDB5BFE9, version = 150)
-    public void scePowerGetCpuClockFrequencyInt(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int scePowerGetCpuClockFrequencyInt() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("scePowerGetCpuClockFrequencyInt returning 0x%X", cpuClock));
+    	}
 
-        log.debug("scePowerGetCpuClockFrequencyInt ret:" + cpuClock);
-
-        cpu.gpr[2] = cpuClock;
+        return cpuClock;
     }
 
     @HLEFunction(nid = 0xBD681969, version = 150)
-    public void scePowerGetBusClockFrequencyInt(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int scePowerGetBusClockFrequencyInt() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("scePowerGetBusClockFrequencyInt returning 0x%X", busClock));
+    	}
 
-        log.debug("scePowerGetBusClockFrequencyInt ret:" + busClock);
-
-        cpu.gpr[2] = busClock;
+        return busClock;
     }
 
     @HLEFunction(nid = 0x34F9C463, version = 150)
-    public void scePowerGetPllClockFrequencyInt(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public int scePowerGetPllClockFrequencyInt() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("scePowerGetPllClockFrequencyInt returning 0x%X", pllClock));
+    	}
 
-        log.debug("scePowerGetPllClockFrequencyInt ret:" + pllClock);
-
-        cpu.gpr[2] = pllClock;
+        return pllClock;
     }
 
     @HLEFunction(nid = 0xB1A52C83, version = 150)
-    public void scePowerGetCpuClockFrequencyFloat(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public float scePowerGetCpuClockFrequencyFloat() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("scePowerGetCpuClockFrequencyFloat returning %f", (float) cpuClock));
+    	}
 
-        log.debug("scePowerGetCpuClockFrequencyFloat ret:" + Float.intBitsToFloat(cpuClock));
-
-        // Return float value in $f0
-        cpu.fpr[0] = cpuClock;
+        return (float) cpuClock;
     }
 
     @HLEFunction(nid = 0x9BADB3EB, version = 150)
-    public void scePowerGetBusClockFrequencyFloat(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public float scePowerGetBusClockFrequencyFloat() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("scePowerGetBusClockFrequencyFloat returning %f", (float) busClock));
+    	}
 
-        log.debug("scePowerGetBusClockFrequencyInt ret:" + Float.intBitsToFloat(busClock));
-
-        // Return float value in $f0
-        cpu.fpr[0] = busClock;
+        return (float) busClock;
     }
 
     @HLEFunction(nid = 0xEA382A27, version = 150)
-    public void scePowerGetPllClockFrequencyFloat(Processor processor) {
-        CpuState cpu = processor.cpu;
+    public float scePowerGetPllClockFrequencyFloat() {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("scePowerGetPllClockFrequencyFloat returning %f", (float) pllClock));
+    	}
 
-        log.debug("scePowerGetPllClockFrequencyInt ret:" + Float.intBitsToFloat(pllClock));
-
-        // Return float value in $f0
-        cpu.fpr[0] = pllClock;
+        return (float) pllClock;
     }
 
     @HLEFunction(nid = 0x737486F2, version = 150)
@@ -627,10 +527,6 @@ public class scePower extends HLEModule {
         this.pllClock = pllClock;
         this.cpuClock = cpuClock;
         this.busClock = busClock;
-
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("scePowerSetClockFrequency pll: %d, cpu: %d, bus: %d", pllClock, cpuClock, busClock));
-        }
 
         return 0;
     }
@@ -641,10 +537,6 @@ public class scePower extends HLEModule {
         this.pllClock = pllClock;
         this.cpuClock = cpuClock;
         this.busClock = busClock;
-
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("scePower_EBD177D6 pll: %d, cpu: %d, bus: %d", pllClock, cpuClock, busClock));
-        }
 
         return 0;
     }
