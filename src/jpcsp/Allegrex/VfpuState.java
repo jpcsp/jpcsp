@@ -1186,9 +1186,8 @@ public class VfpuState extends FpuState {
        
         return Float.intBitsToFloat((s << 31) | (e << 23) | f);
     }
-    
-    int floatToHalffloat(float v) {
-        int i = Float.floatToRawIntBits(v);
+
+    int floatToHalffloat(int i) {
         int s = ((i >> 16) & 0x00008000);              // sign
         int e = ((i >> 23) & 0x000000ff) - (127 - 15); // exponent
         int f = ((i >>  0) & 0x007fffff);              // fraction
@@ -1219,7 +1218,7 @@ public class VfpuState extends FpuState {
         }
         return s | (e << 10) | (f >> 13);
     }
-    
+
     // group VFPU0
     // VFPU0:VADD
     public void doVADD(int vsize, int vd, int vs, int vt) {
@@ -1914,12 +1913,11 @@ public class VfpuState extends FpuState {
             doUNK("Only supported VF2H.P or VF2H.Q");
             return;
         }
-        loadVs(vsize, vs);
-        for (int i = 0; i < vsize/2; ++i) {
-            v3[i] = (floatToHalffloat(v1[1+i*2])<<16)|
-                    (floatToHalffloat(v1[0+i*2])<< 0);
+        loadVsInt(vsize, vs);
+        for (int i = 0; i < vsize; i += 2) {
+            v3i[i >> 1] = (floatToHalffloat(v1i[i + 1]) << 16) | floatToHalffloat(v1i[i]);
         }
-        saveVd(vsize/2, vd, v3);
+        saveVdInt(vsize >> 1, vd, v3i);
     }
     // VFPU4:VH2F
     public void doVH2F(int vsize, int vd, int vs) {
@@ -1928,12 +1926,12 @@ public class VfpuState extends FpuState {
             return;
         }
         loadVsInt(vsize, vs);
-        for (int i = 0; i < vsize; ++i) {
+        for (int i = 0, j = 0; i < vsize; ++i, j += 2) {
             int imm32 = v1i[i];
-            v3[0+2*i] = halffloatToFloat(imm32 & 65535);
-            v3[1+2*i] = halffloatToFloat(imm32 >>> 16);
+            v3[j] = halffloatToFloat(imm32 & 0xFFFF);
+            v3[j + 1] = halffloatToFloat(imm32 >>> 16);
         }
-        saveVd(vsize*2, vd, v3);
+        saveVd(vsize << 1, vd, v3);
     }
     // VFPU4:VSBZ
     public void doVSBZ(int vsize, int vd, int vs) {
