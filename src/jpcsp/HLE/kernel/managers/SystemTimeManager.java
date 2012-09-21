@@ -121,8 +121,11 @@ public class SystemTimeManager {
     }
 
     public int sceKernelGetSystemTimeLow() {
-        long systemTime = getSystemTime();
-        return (int) (systemTime & 0xffffffffL);
+        int systemTimeLow = (int) (getSystemTime() & 0xFFFFFFFFL);
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceKernelGetSystemTimeLow ret: %d", systemTimeLow));
+        }
+        return systemTimeLow;
     }
 
     public static final SystemTimeManager singleton = new SystemTimeManager();

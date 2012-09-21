@@ -21,6 +21,7 @@ import java.util.Date;
 import java.util.TimeZone;
 
 public class ScePspDateTime extends pspAbstractMemoryMappedStructure {
+	public static final TimeZone GMT = TimeZone.getTimeZone("GMT");
 	public static final int SIZEOF = 16;
     public int year;
     public int month;
@@ -159,7 +160,7 @@ public class ScePspDateTime extends pspAbstractMemoryMappedStructure {
 
     /** @param microseconds */
     public static ScePspDateTime fromMicros(long micros) {
-        Calendar cal = Calendar.getInstance();
+        Calendar cal = Calendar.getInstance(GMT);
         Date date = new Date(micros / 1000L);
         cal.setTime(date);
 
