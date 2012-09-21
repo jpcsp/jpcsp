@@ -32,6 +32,8 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.HLE.modules.SysMemUserForUser;
+import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.connector.AtracCodec;
 import jpcsp.settings.AbstractBoolSettingsListener;
 
@@ -107,6 +109,8 @@ public class sceAtrac3plus extends HLEModule {
     	protected int id;
         protected int codecType;
         protected AtracCodec atracCodec;
+        // Context (used only from firmware 6.00)
+        protected SysMemInfo atracContext;
         // Sound data.
         protected int atracBitrate = 64;
         protected int atracChannels = 2;
@@ -173,6 +177,35 @@ public class sceAtrac3plus extends HLEModule {
         			atrac3plusNum--;
 	        	}
         	}
+        	releaseContext();
+        }
+
+        public void createContext() {
+        	if (atracContext == null) {
+        		atracContext = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, String.format("ThreadMan-AtracCtx-%d", id), SysMemUserForUser.PSP_SMEM_High, 200, 0);
+        		if (atracContext != null) {
+	        		Memory mem = Memory.getInstance();
+	        		int contextAddr = atracContext.addr;
+	            	mem.memset(contextAddr, (byte) 0, atracContext.size);
+
+	            	mem.write32(contextAddr + 140, 0); // Unknown
+	    	        mem.write8(contextAddr + 149, (byte) 2); // Unknown.
+	    	        mem.write8(contextAddr + 151, (byte) 1); // Unknown.
+	    	        mem.write16(contextAddr + 154, (short) getAtracCodecType());
+	    	        //mem.write32(contextAddr + 168, 0); // Voice associated to this Atrac context using __sceSasSetVoiceATRAC3?
+        		}
+        	}
+        }
+
+        private void releaseContext() {
+        	if (atracContext != null) {
+        		Modules.SysMemUserForUserModule.free(atracContext);
+        		atracContext = null;
+        	}
+        }
+
+        public SysMemInfo getContext() {
+        	return atracContext;
         }
 
         private void analyzeAtracHeader() {
@@ -784,7 +817,12 @@ public class sceAtrac3plus extends HLEModule {
             log.debug(String.format("sceAtracSetDataAndGetID buffer=%s, bufferSize=0x%08X", buffer, bufferSize));
         }
 
-    	int codecType = getCodecType(buffer.getAddress());
+        if (bufferSize < 0) {
+        	// Unknown error
+        	return -1;
+        }
+
+        int codecType = getCodecType(buffer.getAddress());
         int atID = hleCreateAtracID(codecType);
         if (atracIDs.containsKey(atID)) {
             atracIDs.get(atID).setData(buffer.getAddress(), bufferSize, bufferSize, false);
@@ -803,7 +841,16 @@ public class sceAtrac3plus extends HLEModule {
             log.debug(String.format("sceAtracSetHalfwayBufferAndGetID halfBuffer=%s, readSize=0x%08X, halfBufferSize=0x%08X", halfBuffer, readSize, halfBufferSize));
         }
 
-    	int codecType = getCodecType(halfBuffer.getAddress());
+        if (readSize > halfBufferSize) {
+        	return SceKernelErrors.ERROR_ATRAC_INCORRECT_READ_SIZE;
+        }
+
+        if (readSize < 0 || halfBufferSize < 0) {
+        	// Unknown error
+        	return -1;
+        }
+
+        int codecType = getCodecType(halfBuffer.getAddress());
         int atID = hleCreateAtracID(codecType);
         if (atracIDs.containsKey(atID)) {
             atracIDs.get(atID).setData(halfBuffer.getAddress(), readSize, halfBufferSize, false);

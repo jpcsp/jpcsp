@@ -17,22 +17,31 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules600;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Memory;
-import jpcsp.HLE.Modules;
-import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 
 public class sceAtrac3plus extends jpcsp.HLE.modules250.sceAtrac3plus {
-    @Override
+	@Override
     public String getName() { return "sceAtrac3plus"; }
 
-    @HLEFunction(nid = 0x231FC6B7, version = 600, checkInsideInterrupt = true)
+	@HLEFunction(nid = 0x231FC6B7, version = 600, checkInsideInterrupt = true)
     public int _sceAtracGetContextAddress(int at3IDNum) {
         log.warn(String.format("PARTIAL: _sceAtracGetContextAddress at3IDNum=%d", at3IDNum));
 
-        SysMemInfo at3ctx = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, String.format("ThreadMan-AtracCtx"), SysMemUserForUser.PSP_SMEM_High, 200, 0);
-        Memory.getInstance().write32(at3ctx.addr + 151, 1); // Unknown.
+        AtracID id = atracIDs.get(at3IDNum);
+        if (id == null) {
+        	return 0;
+        }
 
-        return at3ctx.addr;
+        id.createContext();
+        SysMemInfo atracContext = id.getContext();
+        if (atracContext == null) {
+        	return 0;
+        }
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("_sceAtracGetContextAddress returning 0x%08X", atracContext.addr));
+        }
+
+        return atracContext.addr;
     }
 }
