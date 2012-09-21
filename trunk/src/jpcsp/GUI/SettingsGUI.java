@@ -66,6 +66,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolFromSettings(shadersCheck, "emu.useshaders");
         setBoolFromSettings(geometryShaderCheck, "emu.useGeometryShader");
         setBoolFromSettings(filelogCheck, "emu.debug.enablefilelogger");
+        setBoolFromSettings(loadAndRunCheck, "emu.loadAndRun");
         setIntFromSettings(languageBox, sceUtility.SYSTEMPARAM_SETTINGS_OPTION_LANGUAGE);
         setIntFromSettings(buttonBox, sceUtility.SYSTEMPARAM_SETTINGS_OPTION_BUTTON_PREFERENCE);
         setIntFromSettings(daylightBox, sceUtility.SYSTEMPARAM_SETTINGS_OPTION_DAYLIGHT_SAVING_TIME);
@@ -158,6 +159,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolToSettings(shadersCheck, "emu.useshaders");
         setBoolToSettings(geometryShaderCheck, "emu.useGeometryShader");
         setBoolToSettings(filelogCheck, "emu.debug.enablefilelogger");
+        setBoolToSettings(loadAndRunCheck, "emu.loadAndRun");
         setIntToSettings(languageBox, sceUtility.SYSTEMPARAM_SETTINGS_OPTION_LANGUAGE);
         setIntToSettings(buttonBox, sceUtility.SYSTEMPARAM_SETTINGS_OPTION_BUTTON_PREFERENCE);
         setIntToSettings(daylightBox, sceUtility.SYSTEMPARAM_SETTINGS_OPTION_DAYLIGHT_SAVING_TIME);
@@ -343,6 +345,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         jButton1 = new javax.swing.JButton();
         filelogCheck = new javax.swing.JCheckBox();
+        loadAndRunCheck = new javax.swing.JCheckBox();
         jLabel2 = new javax.swing.JLabel();
         tmppath = new javax.swing.JTextField();
         jButton2 = new javax.swing.JButton();
@@ -464,6 +467,8 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         filelogCheck.setText(Resource.get("enablefileIO"));
 
+        loadAndRunCheck.setText(Resource.get("loadAndRun"));
+
         jLabel2.setText(Resource.get("TMPpath"));
 
         tmppath.setEditable(false);
@@ -498,6 +503,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                         .addComponent(umdBrowser, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(ClassicOpenDialogumd, javax.swing.GroupLayout.Alignment.LEADING))
                     .addComponent(filelogCheck)
+                    .addComponent(loadAndRunCheck)
                     .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                         .addComponent(pbpunpackcheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
@@ -512,6 +518,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(saveWindowPosCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(filelogCheck)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(loadAndRunCheck)
                 .addGap(41, 41, 41)
                 .addComponent(umdBrowser)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
@@ -1158,6 +1166,7 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JCheckBox extractEboot;
     private javax.swing.JCheckBox extractPGD;
     private javax.swing.JCheckBox filelogCheck;
+    private javax.swing.JCheckBox loadAndRunCheck;
     private javax.swing.JCheckBox fullscreenCheck;
     private javax.swing.JPanel generalPanel;
     private javax.swing.JCheckBox geometryShaderCheck;
