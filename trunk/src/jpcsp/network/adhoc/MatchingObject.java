@@ -184,15 +184,15 @@ public abstract class MatchingObject extends AdhocObject {
 	            eventThread = threadMan.hleKernelCreateThread("SceNetAdhocMatchingEvent",
 	                          ThreadManForUser.NET_ADHOC_MATCHING_EVENT_LOOP_ADDRESS,
 				              evthPri, evthStack, threadMan.getCurrentThread().attr, 0);
-	            eventThread.cpuContext.gpr[sceNetAdhocMatching.loopThreadRegisterArgument] = getId();
 				threadMan.hleKernelStartThread(eventThread, 0, 0, eventThread.gpReg_addr);
+	            eventThread.cpuContext.gpr[sceNetAdhocMatching.loopThreadRegisterArgument] = getId();
 			}
 			if (inputThread == null) {
 				inputThread = threadMan.hleKernelCreateThread("SceNetAdhocMatchingInput",
 				              ThreadManForUser.NET_ADHOC_MATCHING_INPUT_LOOP_ADDRESS,
 				              inthPri, inthStack, threadMan.getCurrentThread().attr, 0);
-				inputThread.cpuContext.gpr[sceNetAdhocMatching.loopThreadRegisterArgument] = getId();
 				threadMan.hleKernelStartThread(inputThread, 0, 0, inputThread.gpReg_addr);
+				inputThread.cpuContext.gpr[sceNetAdhocMatching.loopThreadRegisterArgument] = getId();
 			}
 
 			// Add myself as the first member

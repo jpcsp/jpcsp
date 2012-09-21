@@ -20,6 +20,7 @@ import static jpcsp.Allegrex.Common._gp;
 import static jpcsp.Allegrex.Common._k0;
 import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common._sp;
+import static jpcsp.Allegrex.Common._zr;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_ALREADY_DORMANT;
 
 import java.util.Comparator;
@@ -29,6 +30,7 @@ import java.util.Queue;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
@@ -304,6 +306,18 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
         // Thread specific registers
         cpuContext.pc = entry_addr;
         cpuContext.npc = entry_addr; // + 4;
+
+        // Reset all the registers to DEADBEEF value
+        for (int i = _ra; i > _zr; i--) {
+        	cpuContext.gpr[i] = 0xDEADBEEF;
+        }
+        cpuContext.gpr[Common._k0] = 0;
+        cpuContext.gpr[Common._k1] = 0;
+        float nanValue = Float.intBitsToFloat(0x7F800001);
+        for (int i = Common._f31; i >= Common._f0; i--) {
+        	cpuContext.fpr[i] = nanValue;
+        }
+        cpuContext.hilo = 0xDEADBEEFDEADBEEFL;
 
         // sp, 512 byte padding at the top for user data, this will get re-jigged when we call start thread
         cpuContext.gpr[_sp] = stackAddr + stackSize - 512;

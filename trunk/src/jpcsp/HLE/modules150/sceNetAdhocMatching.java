@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.Allegrex.Common._s0;
 import static jpcsp.HLE.modules150.sceNetAdhocctl.fillNextPointersInLinkedList;
 import static jpcsp.util.Utilities.writeBytes;
 
@@ -46,7 +47,7 @@ import org.apache.log4j.Logger;
 public class sceNetAdhocMatching extends HLEModule {
     public static Logger log = Modules.getLogger("sceNetAdhocMatching");
     protected HashMap<Integer, MatchingObject> matchingObjects;
-    public static final int loopThreadRegisterArgument = Common._s0; // $s0 is preserved across calls
+    public static final int loopThreadRegisterArgument = _s0; // $s0 is preserved across calls
 
     /**
      * Matching events used in pspAdhocMatchingCallback
