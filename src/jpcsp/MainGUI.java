@@ -1535,6 +1535,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         	Settings.getInstance().writeString("gui.lastOpenedUmdFolder", fc.getSelectedFile().getParent());
             File file = fc.getSelectedFile();
             loadUMD(file);
+            loadAndRun();
         } else {
             return;
         }
@@ -1904,14 +1905,20 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         logConfigurationSettingBool("fullscreenMode", "gui.fullscreen", false);
     }
 
-private void ResetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetButtonActionPerformed
+    public void loadAndRun() {
+    	if (Settings.getInstance().readBool("emu.loadAndRun")) {
+    		RunEmu();
+    	}
+    }
+
+    private void ResetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetButtonActionPerformed
     resetEmu();
 }//GEN-LAST:event_ResetButtonActionPerformed
     private void resetEmu() {
         if (loadedFile != null) {
             PauseEmu();
             RuntimeContext.reset();
-            HLEModuleManager.getInstance().stopModules();         
+            HLEModuleManager.getInstance().stopModules();
             if (umdLoaded) {
                 loadUMD(loadedFile);
             } else {
@@ -2562,6 +2569,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 } else {
                     loadFile(file);
                 }
+                loadAndRun();
             }
         }
     }

@@ -661,6 +661,8 @@ public class UmdBrowser extends JDialog {
 
 		setVisible(false);
 		dispose();
+
+		gui.loadAndRun();
 	}
 
 	@Override
