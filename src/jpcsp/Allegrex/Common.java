@@ -243,6 +243,7 @@ public class Common {
     public static final int _ra = 31;
     public static final int _f0 = 0;
     public static final int _f12 = 12;
+    public static final int _f31 = 31;
 
     public static String[] gprNames = {
         "$zr", "$at", "$v0", "$v1", "$a0", "$a1", "$a2", "$a3",

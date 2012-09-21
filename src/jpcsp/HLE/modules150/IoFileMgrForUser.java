@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.Allegrex.Common._s0;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_DEVICE_NOT_FOUND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_FILE_ALREADY_EXISTS;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_FILE_NOT_FOUND;
@@ -230,7 +231,7 @@ public class IoFileMgrForUser extends HLEModule {
     private String host0Path;
 
     private int defaultAsyncPriority;
-    private final static int asyncThreadRegisterArgument = Common._s0; // $s0 is preserved across calls
+    private final static int asyncThreadRegisterArgument = _s0; // $s0 is preserved across calls
 
     private PGDFileConnector pgdFileConnector;
     private boolean allowExtractPGD;
@@ -1219,15 +1220,16 @@ public class IoFileMgrForUser extends HLEModule {
             info.asyncThread = threadMan.hleKernelCreateThread("SceIofileAsync",
                     ThreadManForUser.ASYNC_LOOP_ADDRESS, asyncPriority, stackSize,
                     threadMan.getCurrentThread().attr, 0);
-            // Copy uid to Async Thread argument register
-            info.asyncThread.cpuContext.gpr[asyncThreadRegisterArgument] = info.uid;
-
             if (log.isDebugEnabled()) {
             	log.debug(String.format("Starting Async IO thread %s", info.asyncThread));
             }
             // This must be the last action of the hleIoXXX call because it can context-switch
             // Inherit $gp from this process ($gp can be used by interrupts)
             threadMan.hleKernelStartThread(info.asyncThread, 0, 0, info.asyncThread.gpReg_addr);
+
+            // Copy uid to Async Thread argument register after starting the thread
+            // (all registers are reset when starting the thread).
+            info.asyncThread.cpuContext.gpr[asyncThreadRegisterArgument] = info.uid;
         } else {
             triggerAsyncThread(info);
         }
