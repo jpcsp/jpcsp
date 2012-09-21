@@ -1449,7 +1449,7 @@ public class sceMpeg extends HLEModule {
             }
             SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
             dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-            Debug.printFramebuffer(buffer, frameWidth, 10, avcDetailFrameHeight - 22, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked MPEG video. ");
+            Debug.printFramebuffer(buffer, frameWidth, 10, avcDetailFrameHeight - 22, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " Enable the Media Engine to see the MPEG Video. ");
             String displayedString;
             if (mpegLastDate != null) {
                 displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
@@ -1980,6 +1980,9 @@ public class sceMpeg extends HLEModule {
         }
 
         int numberPackets = Math.min(available, numPackets);
+        if (numberPackets <= 0) {
+        	return 0;
+        }
 
         if (!isCurrentMpegAnalyzed()) {
         	// The MPEG header has not yet been analyzed, try to read it using an IoListener...
