@@ -437,6 +437,7 @@ public class SceKernelErrors {
     public final static int ERROR_ATRAC_ALL_DATA_LOADED                         = 0x80630009;
     public final static int ERROR_ATRAC_NO_DATA                                 = 0x80630010;
     public final static int ERROR_ATRAC_SECOND_BUFFER_NEEDED                    = 0x80630012;
+    public final static int ERROR_ATRAC_INCORRECT_READ_SIZE                     = 0x80630013;
     public final static int ERROR_ATRAC_SECOND_BUFFER_NOT_NEEDED                = 0x80630022;
     public final static int ERROR_ATRAC_BUFFER_IS_EMPTY                         = 0x80630023;
     public final static int ERROR_ATRAC_ALL_DATA_DECODED                        = 0x80630024;
