@@ -174,13 +174,9 @@ int main(int argc, char **argv)
     int useVblank = 1;
 
     pspDebugScreenInit();
-    if (argc > 0) {
-        printf("Bootpath: %s\n", argv[0]);
-    }
 
     printf("Triangle - Exit\n");
     printf("Square - Toggle vblank (60 fps limit)\n");
-    printf("\n");
 
     SetupCallbacks();
 
@@ -188,13 +184,12 @@ int main(int argc, char **argv)
     sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
 
     sceRtcGetCurrentTick( &fpsTickLast );
+    u64 systemTime = sceKernelGetSystemTimeWide();
     tickResolution = sceRtcGetTickResolution();
 
     printGetDayOfWeek();
-    printf("\n");
 
     printGetDaysInMonth();
-    printf("\n");
 
     printSetTick();
     printf("\n");
@@ -202,7 +197,11 @@ int main(int argc, char **argv)
     printGetTick();
     printf("\n");
 
-    printf("sceRtcGetTickResolution: %d", (int)tickResolution);
+    printf("sceRtcGetTickResolution: %d\n", (int)tickResolution);
+    printf("sceRtcGetCurrentTick: %lld\n", fpsTickLast);
+
+    printf("sceKernelGetSystemTimeWide: %lld\n", systemTime);
+    printf("diff CurrentTick-SystemTime: %lld\n", fpsTickLast - systemTime);
 
     while(!done)
     {
