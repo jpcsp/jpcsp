@@ -16,9 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
-import static jpcsp.Allegrex.Common._gp;
-import static jpcsp.Allegrex.Common._k1;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -55,7 +52,7 @@ import org.apache.log4j.Logger;
 
 /*
  * TODO list:
- * 1. Cleanup initialisation in initNewPsp():
+ * 1. Cleanup initialization in initNewPsp():
  *  - UMD: calls setFirmwareVersion before initNewPsp (PSF is read separate from BOOT.BIN).
  *  - PBP: calls initNewPsp before setFirmwareVersion (PSF is embedded in PBP).
  *  - ELF/PRX: only calls initNewPsp (doesn't have a PSF).
@@ -195,11 +192,9 @@ public class Emulator implements Runnable {
 
         cpu.pc = entryAddr; //PC.
         cpu.npc = cpu.pc + 4;
-        cpu.gpr[_k1] = 0;
-        cpu.gpr[_gp] = module.gp_value;
 
     	HLEModuleManager.getInstance().startModules(fromSyscall);
-        Modules.ThreadManForUserModule.Initialise(module, cpu.pc, module.attribute, module.pspfilename, module.modid, fromSyscall);
+        Modules.ThreadManForUserModule.Initialise(module, cpu.pc, module.attribute, module.pspfilename, module.modid, module.gp_value, fromSyscall);
 
         if (State.memoryViewer != null) {
             State.memoryViewer.RefreshMemory();
