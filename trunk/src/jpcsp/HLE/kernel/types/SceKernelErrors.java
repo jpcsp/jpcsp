@@ -442,6 +442,14 @@ public class SceKernelErrors {
     public final static int ERROR_ATRAC_BUFFER_IS_EMPTY                         = 0x80630023;
     public final static int ERROR_ATRAC_ALL_DATA_DECODED                        = 0x80630024;
 
+    public final static int ERROR_AAC_INVALID_ID                                = 0x80691001;
+    public final static int ERROR_AAC_INVALID_ADDRESS                           = 0x80691002;
+    public final static int ERROR_AAC_INVALID_PARAMETER                         = 0x80691003;
+    public final static int ERROR_AAC_ID_NOT_INITIALIZED                        = 0x80691103;
+    public final static int ERROR_AAC_NO_MORE_FREE_ID                           = 0x80691201;
+    public final static int ERROR_AAC_NOT_ENOUGH_MEMORY                         = 0x80691501;
+    public final static int ERROR_AAC_RESOURCE_NOT_INITIALIZED                  = 0x80691503;
+
     public final static int ERROR_CODEC_AUDIO_FATAL                             = 0x807f00fc;
     
     public final static int FATAL_UMD_UNKNOWN_MEDIUM                            = 0xC0210004;

@@ -29,6 +29,7 @@ import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules.SysMemForKernel;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules.UtilsForUser;
+import jpcsp.HLE.modules.sceAac;
 import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.HLE.modules.sceAudio;
 import jpcsp.HLE.modules.sceCcc;
@@ -153,6 +154,7 @@ public class Modules {
     public static sceParseUri sceParseUriModule = new sceParseUri();
     public static sceUsbAcc sceUsbAccModule = new sceUsbAcc();
     public static sceMt19937 sceMt19937Module = new sceMt19937();
+    public static sceAac sceAacModule = new sceAac();
 
     public static Logger log = Logger.getLogger("hle");
 
