@@ -295,7 +295,7 @@ public class ThreadManForUser extends HLEModule {
     /** call this when resetting the emulator
      * @param entry_addr entry from ELF header
      * @param attr from sceModuleInfo ELF section header */
-    public void Initialise(SceModule module, int entry_addr, int attr, String pspfilename, int moduleid, boolean fromSyscall) {
+    public void Initialise(SceModule module, int entry_addr, int attr, String pspfilename, int moduleid, int gp, boolean fromSyscall) {
         // Create a thread the program will run inside
 
         // The stack size seems to be 0x40000 when starting the application from the VSH
@@ -331,6 +331,10 @@ public class ThreadManForUser extends HLEModule {
         writeStringZ(Memory.getInstance(), address, pspfilename);
         currentThread.cpuContext.gpr[_a0] = len + 1; // a0 = len + string terminator
         currentThread.cpuContext.gpr[_a1] = address; // a1 = pointer to arg data in stack
+
+        currentThread.cpuContext.gpr[_gp] = gp;
+        idle0.cpuContext.gpr[_gp] = gp;
+        idle1.cpuContext.gpr[_gp] = gp;
 
         currentThread.status = PSP_THREAD_READY;
 
@@ -1601,7 +1605,7 @@ public class ThreadManForUser extends HLEModule {
 
     public void hleKernelStartThread(SceKernelThreadInfo thread, int userDataLength, int userDataAddr, int gp) {
         if (log.isDebugEnabled()) {
-            log.debug("hleKernelStartThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' dataLen=0x" + Integer.toHexString(userDataLength) + " data=0x" + Integer.toHexString(userDataAddr) + " gp=0x" + Integer.toHexString(gp));
+            log.debug(String.format("hleKernelStartThread SceUID=0x%X, name='%s', dataLen=0x%X, data=0x%08X, gp=0x%08X", thread.uid, thread.name, userDataLength, userDataAddr, gp));
         }
         // Reset all thread parameters: a thread can be restarted when it has exited.
         thread.reset();
@@ -1620,11 +1624,6 @@ public class ThreadManForUser extends HLEModule {
         }
         // 64 bytes padding between program stack top and user data
         thread.cpuContext.gpr[_sp] = address - 0x40;
-        // testing
-        if (log.isDebugEnabled() && thread.cpuContext.gpr[28] != gp) {
-            // from sceKernelStartModule is ok, anywhere else might be an error
-            log.debug("hleKernelStartThread oldGP=0x" + Integer.toHexString(thread.cpuContext.gpr[28]) + " newGP=0x" + Integer.toHexString(gp));
-        }
         thread.cpuContext.gpr[_gp] = gp;
         // switch in the target thread if it's higher priority
         hleChangeThreadState(thread, PSP_THREAD_READY);
