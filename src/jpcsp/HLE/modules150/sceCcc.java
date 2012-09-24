@@ -24,6 +24,7 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
@@ -266,12 +267,15 @@ public class sceCcc extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0xC6A8BEE2, version = 150)
-	public int sceCccDecodeUTF8(TPointer srcAddrUTF8) {
-		String srcString = getStringUTF8(srcAddrUTF8.getAddress());
+	public int sceCccDecodeUTF8(TPointer32 srcAddrUTF8) {
+		String srcString = getStringUTF8(srcAddrUTF8.getValue());
 		int codePoint = srcString.codePointAt(0);
+		int codePointSize = Character.charCount(codePoint);
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceCccDecodeUTF8 string='%s', codePoint=0x%X", srcString, codePoint));
+			log.debug(String.format("sceCccDecodeUTF8 string='%s'(0x%08X), codePoint=0x%X(size=%d)", srcString, srcAddrUTF8.getValue(), codePoint, codePointSize));
 		}
+
+		srcAddrUTF8.setValue(srcAddrUTF8.getValue() + codePointSize);
 
 		return codePoint;
 	}
