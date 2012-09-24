@@ -1,0 +1,33 @@
+.set noreorder
+
+#include "pspimport.s"
+
+IMPORT_START "sceLibFont",0x40010000
+IMPORT_FUNC	 "sceLibFont",0x67F17ED7,sceFontNewLib
+IMPORT_FUNC	 "sceLibFont",0x574B6FBC,sceFontDoneLib
+IMPORT_FUNC	 "sceLibFont",0xA834319D,sceFontOpen
+IMPORT_FUNC	 "sceLibFont",0xBB8E7FE6,sceFontOpenUserMemory
+IMPORT_FUNC	 "sceLibFont",0x57FCB733,sceFontOpenUserFile
+IMPORT_FUNC	 "sceLibFont",0x3AEA8CB6,sceFontClose
+IMPORT_FUNC	 "sceLibFont",0x27F6E642,sceFontGetNumFontList
+IMPORT_FUNC	 "sceLibFont",0x099EF33C,sceFontFindOptimumFont
+IMPORT_FUNC	 "sceLibFont",0x681E61A7,sceFontFindFont
+IMPORT_FUNC	 "sceLibFont",0x0DA7535E,sceFontGetFontInfo
+IMPORT_FUNC	 "sceLibFont",0x5333322D,sceFontGetFontInfoByIndexNumber
+IMPORT_FUNC	 "sceLibFont",0xDCC80C2F,sceFontGetCharInfo
+IMPORT_FUNC	 "sceLibFont",0x980F4895,sceFontGetCharGlyphImage
+IMPORT_FUNC	 "sceLibFont",0xCA1E6945,sceFontGetCharGlyphImage_Clip
+IMPORT_FUNC	 "sceLibFont",0xBC75D85B,sceFontGetFontList
+IMPORT_FUNC	 "sceLibFont",0xEE232411,sceFontSetAltCharacterCode
+IMPORT_FUNC	 "sceLibFont",0x5C3E4A9E,sceFontGetCharImageRect
+IMPORT_FUNC	 "sceLibFont",0x472694CD,sceFontPointToPixelH
+IMPORT_FUNC	 "sceLibFont",0x48293280,sceFontSetResolution
+IMPORT_FUNC	 "sceLibFont",0x3C4B7E82,sceFontPointToPixelV
+IMPORT_FUNC	 "sceLibFont",0x74B21701,sceFontPixelToPointH
+IMPORT_FUNC	 "sceLibFont",0xF8F0752E,sceFontPixelToPointV
+IMPORT_FUNC	 "sceLibFont",0x2F67356A,sceFontCalcMemorySize
+IMPORT_FUNC	 "sceLibFont",0x48B06520,sceFontGetShadowImageRect
+IMPORT_FUNC	 "sceLibFont",0x568BE516,sceFontGetShadowGlyphImage
+IMPORT_FUNC	 "sceLibFont",0x5DCF6858,sceFontGetShadowGlyphImage_Clip
+IMPORT_FUNC	 "sceLibFont",0xAA3DE7B5,sceFontGetShadowInfo
+IMPORT_FUNC	 "sceLibFont",0x02D7F94B,sceFontFlush
