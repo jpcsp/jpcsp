@@ -905,7 +905,7 @@ public class sceFont extends HLEModule {
         if (log.isDebugEnabled()) {
             log.debug(String.format(
                     "sceFontGetCharGlyphImage_Clip fontHandle=0x%08X, charCode=%04X (%c), glyphImageAddr=%08X"
-                    + ", clipXPos=%d, clipYPos=%d, clipWidth=%d, clipHeight=%d,",
+                    + ", clipXPos=%d, clipYPos=%d, clipWidth=%d, clipHeight=%d",
                     fontHandle, charCode, (charCode <= 0xFF ? (char) charCode : '?'), glyphImagePtr.getAddress(), clipXPos, clipYPos, clipWidth, clipHeight));
         }
         // Identical to sceFontGetCharGlyphImage, but uses a clipping
