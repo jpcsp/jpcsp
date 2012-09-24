@@ -4115,14 +4115,23 @@ public class VideoEngine {
         if (context.stencilOpFail > SOP_DECREMENT_STENCIL_VALUE) {
         	log.warn("Unknown stencil operation " + context.stencilOpFail);
         	context.stencilOpFail &= 0x7;
+        	if (context.stencilOpFail > SOP_DECREMENT_STENCIL_VALUE) {
+        		context.stencilOpFail = SOP_KEEP_STENCIL_VALUE;
+        	}
         }
         if (context.stencilOpZFail > SOP_DECREMENT_STENCIL_VALUE) {
         	log.warn("Unknown stencil operation " + context.stencilOpZFail);
         	context.stencilOpZFail &= 0x7;
+        	if (context.stencilOpZFail > SOP_DECREMENT_STENCIL_VALUE) {
+        		context.stencilOpZFail = SOP_KEEP_STENCIL_VALUE;
+        	}
         }
         if (context.stencilOpZPass > SOP_DECREMENT_STENCIL_VALUE) {
         	log.warn("Unknown stencil operation " + context.stencilOpZPass);
         	context.stencilOpZPass &= 0x7;
+        	if (context.stencilOpZPass > SOP_DECREMENT_STENCIL_VALUE) {
+        		context.stencilOpZPass = SOP_KEEP_STENCIL_VALUE;
+        	}
         }
 
         re.setStencilOp(context.stencilOpFail, context.stencilOpZFail, context.stencilOpZPass);
