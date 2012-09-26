@@ -469,7 +469,7 @@ public class Loader {
                     buffer[2] = m2;
                     buffer[3] = m3;
                     f.get(buffer, 4, buffer.length - 4);
-                    log.debug(String.format("File header: %s", Utilities.getMemoryDump(buffer, 0, buffer.length, 16)));
+                    log.debug(String.format("File header: %s", Utilities.getMemoryDump(buffer, 0, buffer.length)));
                 }
             }
         }

@@ -564,15 +564,20 @@ public class Utilities {
     	return getMemoryDump(address, length, step, bytesPerLine, memoryReader, charReader);
     }
 
-    public static String getMemoryDump(byte[] bytes, int offset, int length, int bytesPerLine) {
-    	if (bytes == null || length <= 0 || bytesPerLine <= 0) {
+    public static String getMemoryDump(byte[] bytes, int offset, int length) {
+    	// Convenience function using default step and bytesPerLine
+    	return getMemoryDump(bytes, offset, length, 1, 16);
+    }
+
+    public static String getMemoryDump(byte[] bytes, int offset, int length, int step, int bytesPerLine) {
+    	if (bytes == null || length <= 0 || bytesPerLine <= 0 || step <= 0) {
     		return "";
     	}
 
-    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(bytes, offset, length, 1);
-    	IMemoryReader charReader = MemoryReader.getMemoryReader(bytes, offset, length, 1);
+    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(bytes, offset, length, step);
+    	IMemoryReader charReader = MemoryReader.getMemoryReader(bytes, offset, length, step);
 
-    	return getMemoryDump(0, length, 1, bytesPerLine, memoryReader, charReader);
+    	return getMemoryDump(0, length, step, bytesPerLine, memoryReader, charReader);
     }
 
     public static int alignUp(int value, int alignment) {
@@ -601,6 +606,17 @@ public class Utilities {
                        (mem.read8(address + 1) <<  8) |
                        (mem.read8(address));
         }
+    }
+
+    public static int read8(byte[] buffer, int offset) {
+    	return buffer[offset] & 0xFF;
+    }
+
+    public static int readUnaligned32(byte[] buffer, int offset) {
+    	return (read8(buffer, offset + 3) << 24) |
+    	       (read8(buffer, offset + 2) << 16) |
+    	       (read8(buffer, offset + 1) <<  8) |
+    	       (read8(buffer, offset));
     }
 
     public static void writeUnaligned32(Memory mem, int address, int data) {
