@@ -106,6 +106,7 @@ public class PGF {
 	protected int charMapBpe;
 	protected int charPointerBpe;
 
+	protected int bpp;
 	protected int hSize;
 	protected int vSize;
 	protected int hResolution;
@@ -117,6 +118,8 @@ public class PGF {
     protected int firstGlyph;
     protected int lastGlyph;
 
+    protected int maxAscender;
+    protected int maxDescender;
     protected int maxLeftXAdjust;
     protected int maxBaseYAdjust;
     protected int minCenterXAdjust;
@@ -170,35 +173,48 @@ public class PGF {
         headerOffset =  readUHalf(f);
         headerSize = readUHalf(f);
 
+        // Offset 4
         PGFMagic = readStringNZ(f, 4);  // PGF0.
         revision = readWord(f);
         version = readWord(f);
 
+        // Offset 16
         charMapLength = readWord(f);
         charPointerLength = readWord(f);
         charMapBpe = readWord(f);
         charPointerBpe = readWord(f);
-        skipUnknown(f, 4);
+        skipUnknown(f, 2);
 
+        // Offset 34
+        bpp = readUByte(f);
+        skipUnknown(f, 1);
+
+        // Offset 36
         hSize = readWord(f);
         vSize = readWord(f);
         hResolution = readWord(f);
         vResolution = readWord(f);
         skipUnknown(f, 1);
 
+        // Offset 53
         fontName = readStringNZ(f, 64);
         fontType = readStringNZ(f, 64);
         skipUnknown(f, 1);
 
+        // Offset 182
         firstGlyph = readUHalf(f);
         lastGlyph = readUHalf(f);
-        skipUnknown(f, 34);
+        skipUnknown(f, 26);
 
+        // Offset 212
+        maxAscender = readWord(f);
+        maxDescender = readWord(f);
         maxLeftXAdjust = readWord(f);
         maxBaseYAdjust = readWord(f);
         minCenterXAdjust = readWord(f);
         maxTopYAdjust = readWord(f);
 
+        // Offset 236
         maxAdvance[0] = readWord(f);
         maxAdvance[1] = readWord(f);
         maxSize[0] = readWord(f);
@@ -207,12 +223,14 @@ public class PGF {
         maxGlyphHeight = readUHalf(f);
         skipUnknown(f, 2);
 
+        // Offset 258
         dimTableLength= readUByte(f);
         xAdjustTableLength = readUByte(f);
         yAdjustTableLength = readUByte(f);
         advanceTableLength = readUByte(f);
         skipUnknown(f, 102);  // NULL.
 
+        // Offset 364
         shadowMapLength = readWord(f);
         shadowMapBpe = readWord(f);
         skipUnknown(f, 4);   // 24.0625.
@@ -220,6 +238,7 @@ public class PGF {
         shadowScale[1] = readWord(f);
         skipUnknown(f, 8);   // 15.0.
 
+        // Offset 392
         if (revision == 3) {
             compCharMapBpe1 = readWord(f);
             compCharMapLength1 = readUHalf(f);
@@ -409,5 +428,45 @@ public class PGF {
 
 	public int getVResolution() {
 		return vResolution;
+	}
+
+	public int getMaxAscender() {
+		return maxAscender;
+	}
+
+	public int getMaxDescender() {
+		return maxDescender;
+	}
+
+	public int getBpp() {
+		return bpp;
+	}
+
+	public int getAdvanceTableLength() {
+		return advanceTableLength;
+	}
+
+	public int[][] getDimensionTable() {
+		return dimensionTable;
+	}
+
+	public int getDimensionTableLength() {
+		return dimTableLength;
+	}
+
+	public int[][] getXAdjustTable() {
+		return xAdjustTable;
+	}
+
+	public int getXAdjustTableLength() {
+		return xAdjustTableLength;
+	}
+
+	public int[][] getYAdjustTable() {
+		return yAdjustTable;
+	}
+
+	public int getYAdjustTableLength() {
+		return yAdjustTableLength;
 	}
 }

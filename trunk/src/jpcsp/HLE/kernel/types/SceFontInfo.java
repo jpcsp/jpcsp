@@ -45,7 +45,6 @@ public class SceFontInfo {
     protected long fontdataBits;
 
     // Characters properties and glyphs.
-    protected int n_chars;
     protected int advancex;
     protected int advancey;
     protected int charmap_compr_len;
@@ -55,14 +54,8 @@ public class SceFontInfo {
     protected int firstGlyph;
 
     // Shadow characters properties and glyphs.
-    protected int n_shadows;
     protected int shadowscale;
     protected Glyph[] shadowGlyphs;
-
-    // Tables from PGF.
-    protected int[] shadowCharMap;
-    protected int[] charPointerTable;
-    protected int[][] advanceTable;
 
     // Font style from registry
     protected pspFontStyle fontStyle;
@@ -79,6 +72,9 @@ public class SceFontInfo {
     	protected int shadowID;
     	protected int advanceH;
     	protected int advanceV;
+    	protected int dimensionWidth, dimensionHeight;
+    	protected int xAdjustH, xAdjustV;
+    	protected int yAdjustH, yAdjustV;
     	protected long ptr;
 
         public boolean hasFlag(int flag) {
@@ -91,63 +87,61 @@ public class SceFontInfo {
     	}
     }
 
+    private int[] getTable(int[] rawTable, int bpe, int length) {
+    	int[] table = new int[length];
+    	for (int i = 0, bitPtr = 0; i < length; i++, bitPtr += bpe) {
+    		table[i] = getBits(bpe, rawTable, bitPtr);
+    	}
+
+    	return table;
+    }
+
     public SceFontInfo(PGF fontFile) {
         // PGF.
         fileName = fontFile.getFileNamez();
         fileType = fontFile.getPGFMagic();
 
         // Characters/Shadow characters' variables.
-        n_chars = fontFile.getCharPointerLength();
-        n_shadows = fontFile.getShadowMapLength();
         charmap = new int[fontFile.getCharMapLength() * 2];
         charmap_compr_len = (fontFile.getRevision() == 3) ? 7 : 1;
         charmap_compr = new int[charmap_compr_len * 4];
         advancex = fontFile.getMaxAdvance()[0]/16;
         advancey = fontFile.getMaxAdvance()[1]/16;
         shadowscale = fontFile.getShadowScale()[0];
-        glyphs = new Glyph[n_chars];
-        shadowGlyphs = new Glyph[n_chars];
+        glyphs = new Glyph[fontFile.getCharPointerLength()];
+        shadowGlyphs = new Glyph[fontFile.getShadowMapLength()];
         firstGlyph = fontFile.getFirstGlyphInCharMap();
-
-        // Get advance table.
-        advanceTable = fontFile.getAdvanceTable();
-
-        // Get shadow char map.
-        int[] rawShadowCharMap = fontFile.getShadowCharMap();
-        shadowCharMap = new int[fontFile.getShadowMapLength()];
-        for (int i = 0; i < shadowCharMap.length; i++) {
-        	shadowCharMap[i] = getBits(fontFile.getShadowMapBpe(), rawShadowCharMap, i * fontFile.getShadowMapBpe());
-        }
-        shadowCharMap = fontFile.getShadowCharMap();
 
         // Get char map.
         int[] rawCharMap = fontFile.getCharMap();
         for (int i = 0; i < fontFile.getCharMapLength(); i++) {
         	charmap[i] = getBits(fontFile.getCharMapBpe(), rawCharMap, i * fontFile.getCharMapBpe());
-        	if (charmap[i] >= n_chars) {
+        	if (charmap[i] >= glyphs.length) {
         		charmap[i] = 65535;
         	}
-        }
-
-        // Get char pointer table.
-        int[] rawCharPointerTable = fontFile.getCharPointerTable();
-        charPointerTable = new int[n_chars];
-        for (int i = 0; i < charPointerTable.length; i++) {
-        	charPointerTable[i] = getBits(fontFile.getCharPointerBpe(), rawCharPointerTable, i * fontFile.getCharPointerBpe());
         }
 
         // Get raw fontdata.
         fontdata = fontFile.getFontdata();
         fontdataBits = fontdata.length * 8L;
 
+        int[] charPointers = getTable(fontFile.getCharPointerTable(), fontFile.getCharPointerBpe(), glyphs.length);
+        int[] shadowMap = getTable(fontFile.getShadowCharMap(), fontFile.getShadowMapBpe(), shadowGlyphs.length);
+
         // Generate glyphs for all chars.
-        for (int i = 0; i < n_chars; i++) {
-            glyphs[i] = getGlyph(fontdata, (charPointerTable[i] * 4 * 8), FONT_PGF_CHARGLYPH, advanceTable[0], advanceTable[1]);
+        for (int i = 0; i < glyphs.length; i++) {
+            glyphs[i] = getGlyph(fontdata, (charPointers[i] * 4 * 8), FONT_PGF_CHARGLYPH, fontFile);
         }
 
         // Generate shadow glyphs for all chars.
-        for (int i = 0; i < n_chars; i++) {
-            shadowGlyphs[i] = getGlyph(fontdata, (charPointerTable[i] * 4 * 8), FONT_PGF_SHADOWGLYPH, null, null);
+        for (int i = 0; i < glyphs.length; i++) {
+        	int shadowId = glyphs[i].shadowID;
+        	int charId = shadowMap[shadowId];
+        	if (charId >= 0 && charId < glyphs.length) {
+        		if (shadowGlyphs[shadowId] == null) {
+        			shadowGlyphs[shadowId] = getGlyph(fontdata, (charPointers[charId] * 4 * 8), FONT_PGF_SHADOWGLYPH, fontFile);
+        		}
+        	}
         }
     }
 
@@ -161,13 +155,21 @@ public class SceFontInfo {
         return v;
     }
 
+    private boolean isIncorrectFont(PGF fontFile) {
+    	// Fonts created by ttf2pgf (e.g. default Jpcsp fonts)
+    	// do not contain complete Glyph information.
+    	String fontName = fontFile.getFontName();
+    	return fontName.startsWith("Liberation") || fontName.startsWith("Sazanami") || fontName.startsWith("UnDotum");
+    }
+
     // Create and retrieve a glyph from the font data.
-    private Glyph getGlyph(int[] fontdata, long charPtr, int glyphType, int[] advanceHmap, int[] advanceVmap) {
+    private Glyph getGlyph(int[] fontdata, long charPtr, int glyphType, PGF fontFile) {
     	Glyph glyph = new Glyph();
         if (glyphType == FONT_PGF_SHADOWGLYPH) {
             if (charPtr + 96 > fontdataBits) {
         		return null;
         	}
+            // First 14 bits are offset to shadow glyph
             charPtr += getBits(14, fontdata, charPtr) * 8;
         }
         if (charPtr + 96 > fontdataBits) {
@@ -198,26 +200,61 @@ public class SceFontInfo {
         charPtr += 6;
 
         if (glyph.hasFlag(FONT_PGF_CHARGLYPH)) {
+        	// Skip magic number
             charPtr += 7;
 
             glyph.shadowID = getBits(9, fontdata, charPtr);
             charPtr += 9;
 
-            charPtr += 24 + (glyph.hasFlag(FONT_PGF_METRIC_FLAG1) ? 0 : 56)
-                          + (glyph.hasFlag(FONT_PGF_METRIC_FLAG2) ? 0 : 56)
-                          + (glyph.hasFlag(FONT_PGF_METRIC_FLAG3) ? 0 : 56);
+            int dimensionIndex = getBits(8, fontdata, charPtr);
+            charPtr += 8;
+
+            int xAdjustIndex = getBits(8, fontdata, charPtr);
+            charPtr += 8;
+
+            int yAdjustIndex = getBits(8, fontdata, charPtr);
+            charPtr += 8;
+
+            charPtr += (glyph.hasFlag(FONT_PGF_METRIC_FLAG1) ? 0 : 56) +
+                       (glyph.hasFlag(FONT_PGF_METRIC_FLAG2) ? 0 : 56) +
+                       (glyph.hasFlag(FONT_PGF_METRIC_FLAG3) ? 0 : 56);
 
         	int advanceIndex = getBits(8, fontdata, charPtr);
             charPtr += 8;
-            if (advanceHmap != null && advanceIndex < advanceHmap.length) {
-                glyph.advanceH = advanceHmap[advanceIndex];
-            } else {
-                glyph.advanceH = 0;
+
+            if (dimensionIndex < fontFile.getDimensionTableLength()) {
+                int[][] dimensionTable = fontFile.getDimensionTable();
+                glyph.dimensionWidth = dimensionTable[0][dimensionIndex];
+                glyph.dimensionHeight = dimensionTable[1][dimensionIndex];
             }
-            if (advanceVmap != null && advanceIndex < advanceVmap.length) {
-                glyph.advanceV = advanceVmap[advanceIndex];
-            } else {
-                glyph.advanceV = 0;
+
+            if (xAdjustIndex < fontFile.getXAdjustTableLength()) {
+                int[][] xAdjustTable = fontFile.getXAdjustTable();
+                glyph.xAdjustH = xAdjustTable[0][xAdjustIndex];
+                glyph.xAdjustV = xAdjustTable[1][xAdjustIndex];
+            }
+
+            if (yAdjustIndex < fontFile.getYAdjustTableLength()) {
+                int[][] yAdjustTable = fontFile.getYAdjustTable();
+                glyph.yAdjustH = yAdjustTable[0][yAdjustIndex];
+                glyph.yAdjustV = yAdjustTable[1][yAdjustIndex];
+            }
+
+            if (dimensionIndex == 0 && xAdjustIndex == 0 && yAdjustIndex == 0 && isIncorrectFont(fontFile)) {
+            	// Fonts created by ttf2pgf do not contain complete Glyph information.
+            	// Provide default values.
+            	glyph.dimensionWidth = glyph.w << 6;
+            	glyph.dimensionHeight = glyph.h << 6;
+            	glyph.xAdjustH = glyph.left << 6;
+            	glyph.xAdjustV = glyph.left << 6;
+            	glyph.yAdjustH = glyph.top << 6;
+            	glyph.yAdjustV = glyph.top << 6;
+            }
+
+            if (advanceIndex < fontFile.getAdvanceTableLength()) {
+            	int[][] advanceTable = fontFile.getAdvanceTable();
+                glyph.advanceH = advanceTable[0][advanceIndex];
+                glyph.advanceV = advanceTable[1][advanceIndex];
             }
         } else {
             glyph.shadowID = 65535;
@@ -350,14 +387,14 @@ public class SceFontInfo {
     	charInfo.bitmapHeight = glyph.h;
     	charInfo.bitmapLeft = glyph.left;
     	charInfo.bitmapTop = glyph.top;
-    	charInfo.sfp26Width = glyph.w << 6;
-    	charInfo.sfp26Height = glyph.h << 6;
+    	charInfo.sfp26Width = glyph.dimensionWidth;
+    	charInfo.sfp26Height = glyph.dimensionHeight;
     	charInfo.sfp26Ascender = glyph.top << 6;
     	charInfo.sfp26Descender = (glyph.h - glyph.top) << 6;
-    	charInfo.sfp26BearingHX = glyph.left << 6;
-    	charInfo.sfp26BearingHY = glyph.top << 6;
-    	charInfo.sfp26BearingVX = glyph.left << 6;
-    	charInfo.sfp26BearingVY = glyph.top << 6;
+    	charInfo.sfp26BearingHX = glyph.xAdjustH;
+    	charInfo.sfp26BearingHY = glyph.yAdjustH;
+    	charInfo.sfp26BearingVX = glyph.xAdjustV;
+    	charInfo.sfp26BearingVY = glyph.yAdjustV;
     	charInfo.sfp26AdvanceH = glyph.advanceH;
     	charInfo.sfp26AdvanceV = glyph.advanceV;
 
