@@ -95,7 +95,26 @@
 		u8 BPP; // Font's BPP.
 		u8 pad[3];
 	} FontInfo;
-	
+
+	typedef struct {
+		u32 bitmapWidth;
+		u32 bitmapHeight;
+		u32 bitmapLeft;
+		u32 bitmapTop;
+		// Glyph metrics (in 26.6 signed fixed-point).
+		u32 spf26Width;
+		u32 spf26Height;
+		s32 spf26Ascender;
+		s32 spf26Descender;
+		s32 spf26BearingHX;
+		s32 spf26BearingHY;
+		s32 spf26BearingVX;
+		s32 spf26BearingVY;
+		s32 spf26AdvanceH;
+		s32 spf26AdvanceV;
+		u8 pad[4];
+	} CharInfo;
+
 	/**
 	 * Creates a new font library.
 	 *
@@ -214,4 +233,5 @@
 	 */
 	int sceFontGetFontInfoByIndexNumber(FontLibraryHandle libHandle, FontInfo *fontInfo, int unknown, int fontIndex);
 
+	int sceFontGetCharInfo(FontLibraryHandle libHandler, int charCode, CharInfo *charInfo);
 #endif

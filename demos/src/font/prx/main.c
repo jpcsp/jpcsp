@@ -20,11 +20,13 @@ PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU);
 int done = 0;
 FontLibraryHandle libHandle;
 FontHandle fontHandle;
+int totalAlloc = 0;
 
 
 void *fontAlloc(void *data, u32 size)
 {
-	pspDebugScreenPrintf("fontAlloc(0x%08X, %u)\n", (uint) data, (uint) size);
+	totalAlloc += size;
+	pspDebugScreenPrintf("fontAlloc(0x%08X, %u) - total %d\n", (uint) data, (uint) size, totalAlloc);
 	return malloc(size);
 }
 
@@ -36,35 +38,65 @@ void fontFree(void *data, void *p)
 }
 
 
-void runTest()
+void printFontStyle(FontStyle fontStyle)
+{
+	pspDebugScreenPrintf("   H/V                       : %.3f / %.3f\n", fontStyle.fontH, fontStyle.fontV);
+	pspDebugScreenPrintf("   H/VRes                    : %.1f / %.1f\n", fontStyle.fontHRes, fontStyle.fontVRes);
+	pspDebugScreenPrintf("   Weight                    : %f\n", fontStyle.fontWeight);
+	pspDebugScreenPrintf("   Family / Style / StyleSub : %d / %d / %d\n", fontStyle.fontFamily, fontStyle.fontStyle, fontStyle.fontStyleSub);
+	pspDebugScreenPrintf("   Language/ Region / Country: %d / %d / %d\n", fontStyle.fontLanguage, fontStyle.fontRegion, fontStyle.fontCountry);
+	pspDebugScreenPrintf("   Name / FileName           : '%s'(%s)\n", fontStyle.fontName, fontStyle.fontFileName);
+}
+
+void sceFontNewLibTest()
 {
 	FontNewLibParams params = {
 		NULL, 4, NULL, fontAlloc, fontFree, NULL, NULL, NULL, NULL, NULL, NULL
 	};
-	uint errorCode;
-	int result;
-
-	pspDebugScreenPrintf("Starting Font Test\n");
-
+	uint errorCode = -1;
 	libHandle = sceFontNewLib(&params, &errorCode);
-	pspDebugScreenPrintf("libHandle = 0x%08X\n", libHandle);
+	pspDebugScreenPrintf("libHandle = 0x%08X, errorCode=0x%08X\n", libHandle, errorCode);
+}
 
+void sceFontOpenTest()
+{
+	uint errorCode = -1;
 	fontHandle = sceFontOpen(libHandle, 0, 0777, &errorCode);
-	pspDebugScreenPrintf("fontHandle = 0x%08X\n", fontHandle);
+	pspDebugScreenPrintf("fontHandle = 0x%08X, errorCode=0x%08X\n", fontHandle, errorCode);
+}
 
+void sceFontGetFontInfoTest()
+{
 	FontInfo fontInfo;
-	result = sceFontGetFontInfo(fontHandle, &fontInfo);
+	int result = sceFontGetFontInfo(fontHandle, &fontInfo);
 	pspDebugScreenPrintf("sceFontGetFontInfo returns 0x%08X\n", result);
-	pspDebugScreenPrintf("   maxGlyphWidthI    =%d\n", fontInfo.maxGlyphWidthI);
-	pspDebugScreenPrintf("   maxGlyphHeightI   =%d\n", fontInfo.maxGlyphHeightI);
-	pspDebugScreenPrintf("   maxGlyphAscenderI =%d\n", fontInfo.maxGlyphAscenderI);
-	pspDebugScreenPrintf("   maxGlyphDescenderI=%d\n", fontInfo.maxGlyphDescenderI);
-	pspDebugScreenPrintf("   maxGlyphLeftXI    =%d\n", fontInfo.maxGlyphLeftXI);
-	pspDebugScreenPrintf("   maxGlyphBaseYI    =%d\n", fontInfo.maxGlyphBaseYI);
-	pspDebugScreenPrintf("   minGlyphCenterXI  =%d\n", fontInfo.minGlyphCenterXI);
-	pspDebugScreenPrintf("   maxGlyphTopYI     =%d\n", fontInfo.maxGlyphTopYI);
-	pspDebugScreenPrintf("   maxGlyphAdvanceXI =%d\n", fontInfo.maxGlyphAdvanceXI);
-	pspDebugScreenPrintf("   maxGlyphDescenderI=%d\n", fontInfo.maxGlyphAdvanceYI);
+	pspDebugScreenPrintf("   maxGlyphWidth       : %d(%f)\n", fontInfo.maxGlyphWidthI, fontInfo.maxGlyphWidthF);
+	pspDebugScreenPrintf("   maxGlyphHeight      : %d(%f)\n", fontInfo.maxGlyphHeightI, fontInfo.maxGlyphHeightF);
+	pspDebugScreenPrintf("   maxGlyphAscender    : %d(%f)\n", fontInfo.maxGlyphAscenderI, fontInfo.maxGlyphAscenderF);
+	pspDebugScreenPrintf("   maxGlyphDescender   : %d(%f)\n", fontInfo.maxGlyphDescenderI, fontInfo.maxGlyphDescenderF);
+	pspDebugScreenPrintf("   maxGlyphLeftX       : %d(%f)\n", fontInfo.maxGlyphLeftXI, fontInfo.maxGlyphLeftXF);
+	pspDebugScreenPrintf("   maxGlyphBaseY       : %d(%f)\n", fontInfo.maxGlyphBaseYI, fontInfo.maxGlyphBaseYF);
+	pspDebugScreenPrintf("   minGlyphCenterX     : %d(%f)\n", fontInfo.minGlyphCenterXI, fontInfo.minGlyphCenterXF);
+	pspDebugScreenPrintf("   maxGlyphTopY        : %d(%f)\n", fontInfo.maxGlyphTopYI, fontInfo.maxGlyphTopYF);
+	pspDebugScreenPrintf("   maxGlyphAdvanceX    : %d(%f)\n", fontInfo.maxGlyphAdvanceXI, fontInfo.maxGlyphAdvanceXF);
+	pspDebugScreenPrintf("   maxGlyphAdvanceY    : %d(%f)\n", fontInfo.maxGlyphAdvanceYI, fontInfo.maxGlyphAdvanceYF);
+	pspDebugScreenPrintf("   maxGlyphWidth/Height: %d / %d\n", fontInfo.maxGlyphWidth, fontInfo.maxGlyphHeight);
+	pspDebugScreenPrintf("   char/shadowMapLength: %d / %d\n", fontInfo.charMapLength, fontInfo.shadowMapLength);
+	printFontStyle(fontInfo.fontStyle);
+	pspDebugScreenPrintf("   BPP               : %d\n", fontInfo.BPP);
+}
+
+void sceFontGetCharInfoTest(int charCode)
+{
+	CharInfo charInfo;
+	int result = sceFontGetCharInfo(fontHandle, charCode, &charInfo);
+	pspDebugScreenPrintf("sceFontGetCharInfo returns 0x%08X\n", result);
+	pspDebugScreenPrintf("   bitmap %dx%d at (%d,%d)\n", charInfo.bitmapWidth, charInfo.bitmapHeight, charInfo.bitmapLeft, charInfo.bitmapTop);
+	pspDebugScreenPrintf("   spf26Width/Height      : %d / %d\n", charInfo.spf26Width, charInfo.spf26Height);
+	pspDebugScreenPrintf("   spf26Ascender/Descender: %d / %d\n", charInfo.spf26Ascender, charInfo.spf26Ascender);
+	pspDebugScreenPrintf("   spf26BearingHX/Y       : %d / %d\n", charInfo.spf26BearingHX, charInfo.spf26BearingHY);
+	pspDebugScreenPrintf("   spf26BearingVX/Y       : %d / %d\n", charInfo.spf26BearingVX, charInfo.spf26BearingVY);
+	pspDebugScreenPrintf("   spf26AdvanceH/V        : %d / %d\n", charInfo.spf26AdvanceH, charInfo.spf26AdvanceV);
 }
 
 
@@ -84,9 +116,12 @@ int main_thread(SceSize _argc, ScePVoid _argp)
 	repeatDelay.tv_usec = 0;
 
 	pspDebugScreenInit();
-	pspDebugScreenPrintf("Press Cross to start the Font Test\n");
+	pspDebugScreenPrintf("Press Cross to test sceFontNewLib\n");
+	pspDebugScreenPrintf("Press Square to test sceFontOpen\n");
+	pspDebugScreenPrintf("Press Circle to test sceFontGetFontInfo\n");
+	pspDebugScreenPrintf("Press Left to test sceFontGetCharInfo('R')\n");
 
-	while(!done)
+	while (!done)
 	{
 		sceCtrlReadBufferPositive(&pad, 1);
 		int buttonDown = (oldButtons ^ pad.Buttons) & pad.Buttons;
@@ -134,11 +169,22 @@ int main_thread(SceSize _argc, ScePVoid _argp)
 
 		if (buttonDown & PSP_CTRL_CROSS)
 		{
-			runTest();
+			sceFontNewLibTest();
+		}
+
+		if (buttonDown & PSP_CTRL_SQUARE)
+		{
+			sceFontOpenTest();
 		}
 
 		if (buttonDown & PSP_CTRL_CIRCLE)
 		{
+			sceFontGetFontInfoTest();
+		}
+
+		if (buttonDown & PSP_CTRL_LEFT)
+		{
+			sceFontGetCharInfoTest('R');
 		}
 
 		if (buttonDown & PSP_CTRL_TRIANGLE)
