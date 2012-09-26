@@ -20,6 +20,7 @@ import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.util.Utilities.endianSwap32;
+import static jpcsp.util.Utilities.read8;
 import static jpcsp.util.Utilities.readUnaligned32;
 
 import jpcsp.HLE.CanBeNull;
@@ -59,7 +60,9 @@ import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
+import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.util.Debug;
@@ -120,7 +123,20 @@ public class sceMpeg extends HLEModule {
         allocatedEsBuffers = new boolean[2];
         streamMap = new HashMap<Integer, StreamInfo>();
 
+        if (headerIoListener == null) {
+        	headerIoListener = new MpegHeaderIoListener();
+        	Modules.IoFileMgrForUserModule.registerIoListener(headerIoListener);
+        }
+
         super.start();
+    }
+
+    @Override
+    public void stop() {
+    	Modules.IoFileMgrForUserModule.unregisterIoListener(headerIoListener);
+    	headerIoListener = null;
+
+    	super.stop();
     }
 
     public static boolean useMpegCodec = false;
@@ -138,14 +154,16 @@ public class sceMpeg extends HLEModule {
     public static final int PSMF_STREAM_SIZE_OFFSET = 0xC;
     public static final int PSMF_FIRST_TIMESTAMP_OFFSET = 0x56;
     public static final int PSMF_LAST_TIMESTAMP_OFFSET = 0x5C;
-    protected static final int MPEG_MEMSIZE = 0x10000;          // 64k.
-    public static final int atracDecodeDelay = 3000;         // Microseconds
-    public static final int avcDecodeDelay = 5400;           // Microseconds
-    public static final int mpegDecodeErrorDelay = 100;      // Delay in Microseconds in case of decode error
+    public static final int PSMF_FRAME_WIDTH_OFFSET = 0x8E;
+    public static final int PSMF_FRAME_HEIGHT_OFFSET = 0x8F;
+    protected static final int MPEG_MEMSIZE = 0x10000;      // 64k.
+    public static final int atracDecodeDelay = 3000;        // Microseconds
+    public static final int avcDecodeDelay = 5400;          // Microseconds
+    public static final int mpegDecodeErrorDelay = 100;     // Delay in Microseconds in case of decode error
     public static final int mpegTimestampPerSecond = 90000; // How many MPEG Timestamp units in a second.
     public static final int videoTimestampStep = 3003;      // Value based on pmfplayer (mpegTimestampPerSecond / 29.970 (fps)).
     public static final int audioTimestampStep = 4180;      // For audio play at 44100 Hz (2048 samples / 44100 * mpegTimestampPerSecond == 4180)
-    //public static final int audioFirstTimestamp = 89249;    // The first MPEG audio AU has always this timestamp
+    //public static final int audioFirstTimestamp = 89249;  // The first MPEG audio AU has always this timestamp
     public static final int audioFirstTimestamp = 90000;    // The first MPEG audio AU has always this timestamp
     public static final long UNKNOWN_TIMESTAMP = -1;
 
@@ -177,6 +195,9 @@ public class sceMpeg extends HLEModule {
     protected int avcDetailFrameHeight;
     protected int defaultFrameWidth;
     protected boolean isCurrentMpegAnalyzed;;
+    protected byte[] completeMpegHeader;
+    protected int partialMpegHeaderLength;
+    protected MpegHeaderIoListener headerIoListener;
     public int maxAheadTimestamp = 40000;
     // MPEG AVC elementary stream.
     protected static final int MPEG_AVC_ES_SIZE = 2048;          // MPEG packet size.
@@ -226,7 +247,7 @@ public class sceMpeg extends HLEModule {
     protected boolean[] allocatedEsBuffers;
     protected HashMap<Integer, StreamInfo> streamMap;
     protected static final String streamPurpose = "sceMpeg-Stream";
-    private MpegIoListener ioListener;
+    private MpegRingbufferPutIoListener ringbufferPutIoListener;
     private boolean insideRingbufferPut;
 
     private class StreamInfo {
@@ -255,7 +276,7 @@ public class sceMpeg extends HLEModule {
     	}
     }
 
-    private static class MpegIoListener implements IIoListener {
+    private static class MpegRingbufferPutIoListener implements IIoListener {
 		@Override
 		public void sceIoSync(int result, int device_addr, String device, int unknown) {
 		}
@@ -282,7 +303,7 @@ public class sceMpeg extends HLEModule {
 
 		@Override
 		public void sceIoRead(int result, int uid, int data_addr, int size, int bytesRead, long position, SeekableDataInput dataInput, IVirtualFile vFile) {
-			Modules.sceMpegModule.onIoRead(dataInput, vFile, bytesRead);
+			Modules.sceMpegModule.onRingbufferPutIoRead(dataInput, vFile, bytesRead);
 		}
 
 		@Override
@@ -350,6 +371,100 @@ public class sceMpeg extends HLEModule {
 		}
     }
 
+    private static class MpegHeaderIoListener implements IIoListener {
+		@Override
+		public void sceIoSync(int result, int device_addr, String device, int unknown) {
+		}
+
+		@Override
+		public void sceIoPollAsync(int result, int uid, int res_addr) {
+		}
+
+		@Override
+		public void sceIoWaitAsync(int result, int uid, int res_addr) {
+		}
+
+		@Override
+		public void sceIoOpen(int result, int filename_addr, String filename, int flags, int permissions, String mode) {
+		}
+
+		@Override
+		public void sceIoClose(int result, int uid) {
+		}
+
+		@Override
+		public void sceIoWrite(int result, int uid, int data_addr, int size, int bytesWritten) {
+		}
+
+		@Override
+		public void sceIoRead(int result, int uid, int data_addr, int size, int bytesRead, long position, SeekableDataInput dataInput, IVirtualFile vFile) {
+			Modules.sceMpegModule.onHeaderIoRead(data_addr, bytesRead, position, dataInput, vFile);
+		}
+
+		@Override
+		public void sceIoCancel(int result, int uid) {
+		}
+
+		@Override
+		public void sceIoSeek32(int result, int uid, int offset, int whence) {
+		}
+
+		@Override
+		public void sceIoSeek64(long result, int uid, long offset, int whence) {
+		}
+
+		@Override
+		public void sceIoMkdir(int result, int path_addr, String path, int permissions) {
+		}
+
+		@Override
+		public void sceIoRmdir(int result, int path_addr, String path) {
+		}
+
+		@Override
+		public void sceIoChdir(int result, int path_addr, String path) {
+		}
+
+		@Override
+		public void sceIoDopen(int result, int path_addr, String path) {
+		}
+
+		@Override
+		public void sceIoDread(int result, int uid, int dirent_addr) {
+		}
+
+		@Override
+		public void sceIoDclose(int result, int uid) {
+		}
+
+		@Override
+		public void sceIoDevctl(int result, int device_addr, String device, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen) {
+		}
+
+		@Override
+		public void sceIoIoctl(int result, int uid, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen) {
+		}
+
+		@Override
+		public void sceIoAssign(int result, int dev1_addr, String dev1, int dev2_addr, String dev2, int dev3_addr, String dev3, int mode, int unk1, int unk2) {
+		}
+
+		@Override
+		public void sceIoGetStat(int result, int path_addr, String path, int stat_addr) {
+		}
+
+		@Override
+		public void sceIoRemove(int result, int path_addr, String path) {
+		}
+
+		@Override
+		public void sceIoChstat(int result, int path_addr, String path, int stat_addr, int bits) {
+		}
+
+		@Override
+		public void sceIoRename(int result, int path_addr, String path, int new_path_addr, String newpath) {
+		}
+    }
 
     public class AfterRingbufferPutCallback implements IAction {
         @Override
@@ -451,17 +566,18 @@ public class sceMpeg extends HLEModule {
         isCurrentMpegAnalyzed = status;
     }
 
-    private void unregisterIoListener() {
-    	if (ioListener != null) {
-    		Modules.IoFileMgrForUserModule.unregisterIoListener(ioListener);
-    		ioListener = null;
+    private void unregisterRingbufferPutIoListener() {
+    	if (ringbufferPutIoListener != null) {
+    		Modules.IoFileMgrForUserModule.unregisterIoListener(ringbufferPutIoListener);
+    		ringbufferPutIoListener = null;
     	}
     }
 
-    protected void onIoRead(SeekableDataInput dataInput, IVirtualFile vFile, int bytesRead) {
+    protected void onRingbufferPutIoRead(SeekableDataInput dataInput, IVirtualFile vFile, int bytesRead) {
     	// if we are in the first sceMpegRingbufferPut and the MPEG header has not yet
     	// been analyzed, try to read the MPEG header.
 		if (!isCurrentMpegAnalyzed() && insideRingbufferPut) {
+			// TODO Implement reading through vFile
 			if (dataInput instanceof UmdIsoFile) {
 		    	// Assume the MPEG header is located in the sector just before the
 				// data currently read
@@ -489,7 +605,7 @@ public class sceMpeg extends HLEModule {
 
 						// We do no longer need the IoListener...
 						if (isCurrentMpegAnalyzed()) {
-							unregisterIoListener();
+							unregisterRingbufferPutIoListener();
 						}
 					} catch (IOException e) {
 						if (log.isDebugEnabled()) {
@@ -500,6 +616,40 @@ public class sceMpeg extends HLEModule {
 			}
 		}
 	}
+
+    protected void onHeaderIoRead(int data_addr, int bytesRead, long position, SeekableDataInput dataInput, IVirtualFile vFile) {
+    	if (bytesRead >= PSMF_MAGIC_OFFSET + 4 && bytesRead < MPEG_HEADER_BUFFER_MINIMUM_SIZE) {
+    		Memory mem = Memory.getInstance();
+    		if (mem.read32(data_addr + PSMF_MAGIC_OFFSET) == PSMF_MAGIC) {
+    			try {
+					long currentPosition = dataInput.getFilePointer();
+	    			dataInput.seek(position);
+	    			completeMpegHeader = new byte[MPEG_HEADER_BUFFER_MINIMUM_SIZE];
+	    			partialMpegHeaderLength = bytesRead;
+	    			dataInput.readFully(completeMpegHeader);
+	    			dataInput.seek(currentPosition);
+				} catch (IOException e) {
+					log.error("onHeaderIoRead", e);
+				}
+    		}
+    	}
+    }
+
+    private static boolean memcmp(int address, byte[] buffer, int size) {
+    	if (buffer == null || size < 0) {
+    		return false;
+    	}
+
+    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, size, 1);
+    	for (int i = 0; i < size; i++) {
+    		int b = memoryReader.readNext();
+    		if (read8(buffer, i) != b) {
+    			return false;
+    		}
+    	}
+
+    	return true;
+    }
 
     public static int getMpegVersion(int mpegRawVersion) {
         switch (mpegRawVersion) {
@@ -523,10 +673,31 @@ public class sceMpeg extends HLEModule {
         mpegStreamSize = endianSwap32(mem.read32(bufferAddr + PSMF_STREAM_SIZE_OFFSET));
         mpegFirstTimestamp = endianSwap32(readUnaligned32(mem, bufferAddr + PSMF_FIRST_TIMESTAMP_OFFSET));
         mpegLastTimestamp = endianSwap32(readUnaligned32(mem, bufferAddr + PSMF_LAST_TIMESTAMP_OFFSET));
+        avcDetailFrameWidth = (mem.read8(bufferAddr + PSMF_FRAME_WIDTH_OFFSET) * 0x10);
+        avcDetailFrameHeight = (mem.read8(bufferAddr + PSMF_FRAME_HEIGHT_OFFSET) * 0x10);
+
+        // Sanity check
+        if (mpegFirstTimestamp < 0 || mpegFirstTimestamp > mpegLastTimestamp || mpegLastTimestamp <= 0) {
+        	// Some applications read less than MPEG_HEADER_BUFFER_MINIMUM_SIZE bytes from the header.
+        	// An IoListener is trying to recognize such read operations and reading instead
+        	// the complete MPEG header.
+        	// Check if the IoListener was able to read the complete MPEG header...
+        	if (memcmp(bufferAddr, completeMpegHeader, partialMpegHeaderLength)) {
+        		if (log.isDebugEnabled()) {
+        			log.debug("Using complete MPEG header from IoListener");
+        			if (log.isTraceEnabled()) {
+        				log.trace(Utilities.getMemoryDump(completeMpegHeader, 0, MPEG_HEADER_BUFFER_MINIMUM_SIZE));
+        			}
+        		}
+        		mpegFirstTimestamp = endianSwap32(readUnaligned32(completeMpegHeader, PSMF_FIRST_TIMESTAMP_OFFSET));
+        		mpegLastTimestamp = endianSwap32(readUnaligned32(completeMpegHeader, PSMF_LAST_TIMESTAMP_OFFSET));
+        		avcDetailFrameWidth = read8(completeMpegHeader, PSMF_FRAME_WIDTH_OFFSET) * 0x10;
+        		avcDetailFrameHeight = read8(completeMpegHeader, PSMF_FRAME_HEIGHT_OFFSET) * 0x10;
+        	}
+        }
+
         mpegFirstDate = convertTimestampToDate(mpegFirstTimestamp);
         mpegLastDate = convertTimestampToDate(mpegLastTimestamp);
-        avcDetailFrameWidth = (mem.read8(bufferAddr + 142) * 0x10);
-        avcDetailFrameHeight = (mem.read8(bufferAddr + 143) * 0x10);
         avcDecodeResult = MPEG_AVC_DECODE_SUCCESS;
         avcFrameStatus = 0;
         if ((mpegRingbuffer != null) && !isCurrentMpegAnalyzed()) {
@@ -559,7 +730,7 @@ public class sceMpeg extends HLEModule {
 	    	log.debug(String.format("Stream offset: %d, Stream size: 0x%X", mpegOffset, mpegStreamSize));
 	    	log.debug(String.format("First timestamp: %d, Last timestamp: %d", mpegFirstTimestamp, mpegLastTimestamp));
 	        if (log.isTraceEnabled()) {
-	        	log.trace(String.format("%s", Utilities.getMemoryDump(bufferAddr, MPEG_HEADER_BUFFER_MINIMUM_SIZE, 4, 16)));
+	        	log.trace(Utilities.getMemoryDump(bufferAddr, MPEG_HEADER_BUFFER_MINIMUM_SIZE));
 	        }
         }
     }
@@ -631,7 +802,7 @@ public class sceMpeg extends HLEModule {
             mpegCodec.finish();
         }
         setCurrentMpegAnalyzed(false);
-        unregisterIoListener();
+        unregisterRingbufferPutIoListener();
         VideoEngine.getInstance().resetVideoTextures();
     }
 
@@ -1467,7 +1638,7 @@ public class sceMpeg extends HLEModule {
             avcFrameStatus = 1;
         }
 
-        videoFrameCount++;
+    	videoFrameCount++;
 
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceMpegAvcDecode currentTimestamp=%d", mpegAvcAu.pts));
@@ -1986,9 +2157,9 @@ public class sceMpeg extends HLEModule {
 
         if (!isCurrentMpegAnalyzed()) {
         	// The MPEG header has not yet been analyzed, try to read it using an IoListener...
-        	if (ioListener == null) {
-        		ioListener = new MpegIoListener();
-        		Modules.IoFileMgrForUserModule.registerIoListener(ioListener);
+        	if (ringbufferPutIoListener == null) {
+        		ringbufferPutIoListener = new MpegRingbufferPutIoListener();
+        		Modules.IoFileMgrForUserModule.registerIoListener(ringbufferPutIoListener);
         	}
         }
 
