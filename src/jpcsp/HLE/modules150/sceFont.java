@@ -644,24 +644,14 @@ public class sceFont extends HLEModule {
         PGF currentPGF = font.pgf;
         int maxGlyphWidthI = currentPGF.getMaxSize()[0];
         int maxGlyphHeightI = currentPGF.getMaxSize()[1];
-        int maxGlyphAscenderI = currentPGF.getMaxBaseYAdjust();
-        int maxGlyphDescenderI = (currentPGF.getMaxBaseYAdjust() - currentPGF.getMaxSize()[1]);
+        int maxGlyphAscenderI = currentPGF.getMaxAscender();
+        int maxGlyphDescenderI = currentPGF.getMaxDescender();
         int maxGlyphLeftXI = currentPGF.getMaxLeftXAdjust();
         int maxGlyphBaseYI = currentPGF.getMaxBaseYAdjust();
         int minGlyphCenterXI = currentPGF.getMinCenterXAdjust();
         int maxGlyphTopYI = currentPGF.getMaxTopYAdjust();
         int maxGlyphAdvanceXI = currentPGF.getMaxAdvance()[0];
         int maxGlyphAdvanceYI = currentPGF.getMaxAdvance()[1];
-        float maxGlyphWidthF = Float.intBitsToFloat(maxGlyphWidthI);
-        float maxGlyphHeightF = Float.intBitsToFloat(maxGlyphHeightI);
-        float maxGlyphAscenderF = Float.intBitsToFloat(maxGlyphAscenderI);
-        float maxGlyphDescenderF = Float.intBitsToFloat(maxGlyphDescenderI);
-        float maxGlyphLeftXF = Float.intBitsToFloat(maxGlyphLeftXI);
-        float maxGlyphBaseYF = Float.intBitsToFloat(maxGlyphBaseYI);
-        float minGlyphCenterXF = Float.intBitsToFloat(minGlyphCenterXI);
-        float maxGlyphTopYF = Float.intBitsToFloat(maxGlyphTopYI);
-        float maxGlyphAdvanceXF = Float.intBitsToFloat(maxGlyphAdvanceXI);
-        float maxGlyphAdvanceYF = Float.intBitsToFloat(maxGlyphAdvanceYI);
         pspFontStyle fontStyle = font.getFontStyle();
 
         // Glyph metrics (in 26.6 signed fixed-point).
@@ -675,28 +665,23 @@ public class sceFont extends HLEModule {
         mem.write32(fontInfoAddr + 28, maxGlyphTopYI);
         mem.write32(fontInfoAddr + 32, maxGlyphAdvanceXI);
         mem.write32(fontInfoAddr + 36, maxGlyphAdvanceYI);
-        
+
         // Glyph metrics (replicated as float).
-        mem.write32(fontInfoAddr + 40, Float.floatToRawIntBits(maxGlyphWidthF));
-        mem.write32(fontInfoAddr + 44, Float.floatToRawIntBits(maxGlyphHeightF));
-        mem.write32(fontInfoAddr + 48, Float.floatToRawIntBits(maxGlyphAscenderF));
-        mem.write32(fontInfoAddr + 52, Float.floatToRawIntBits(maxGlyphDescenderF));
-        mem.write32(fontInfoAddr + 56, Float.floatToRawIntBits(maxGlyphLeftXF));
-        mem.write32(fontInfoAddr + 60, Float.floatToRawIntBits(maxGlyphBaseYF));
-        mem.write32(fontInfoAddr + 64, Float.floatToRawIntBits(minGlyphCenterXF));
-        mem.write32(fontInfoAddr + 68, Float.floatToRawIntBits(maxGlyphTopYF));
-        mem.write32(fontInfoAddr + 72, Float.floatToRawIntBits(maxGlyphAdvanceXF));
-        mem.write32(fontInfoAddr + 76, Float.floatToRawIntBits(maxGlyphAdvanceYF));
-        
+        for (int i = 0; i < 40; i += 4) {
+        	int intValue = mem.read32(fontInfoAddr + i);
+        	float floatValue = intValue / 64.f;
+        	mem.write32(fontInfoAddr + i + 40, Float.floatToRawIntBits(floatValue));
+        }
+
         // Bitmap dimensions.
         mem.write16(fontInfoAddr + 80, (short) currentPGF.getMaxGlyphWidth());
         mem.write16(fontInfoAddr + 82, (short) currentPGF.getMaxGlyphHeight());
-        mem.write32(fontInfoAddr + 84, currentPGF.getCharMapLength());     // Number of elements in the font's charmap.
-        mem.write32(fontInfoAddr + 88, currentPGF.getShadowMapLength());   // Number of elements in the font's shadow charmap.
-        
+        mem.write32(fontInfoAddr + 84, currentPGF.getCharPointerLength());     // Number of elements in the font's charmap.
+        mem.write32(fontInfoAddr + 88, 0);   // Number of elements in the font's shadow charmap.
+
         // Font style (used by font comparison functions).
         fontStyle.write(mem, fontInfoAddr + 92);
-        mem.write8(fontInfoAddr + 260, (byte) 4); // Font's BPP.
+        mem.write8(fontInfoAddr + 260, (byte) currentPGF.getBpp()); // Font's BPP.
         mem.write8(fontInfoAddr + 261, (byte) 0); // Padding.
         mem.write8(fontInfoAddr + 262, (byte) 0); // Padding.
         mem.write8(fontInfoAddr + 263, (byte) 0); // Padding.
@@ -732,7 +717,7 @@ public class sceFont extends HLEModule {
             pspCharInfo.sfp26AdvanceH = pspCharInfo.bitmapWidth << 6;
             pspCharInfo.sfp26AdvanceV = pspCharInfo.bitmapHeight << 6;
         }
-        pspCharInfo.write(charInfoPtr.getMemory(), charInfoPtr.getAddress());    
+        pspCharInfo.write(charInfoPtr);    
 
         if (log.isDebugEnabled()) {
         	log.debug(String.format("sceFontGetCharInfo returning %s", pspCharInfo));
