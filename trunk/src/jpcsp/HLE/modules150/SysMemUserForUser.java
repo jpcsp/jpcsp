@@ -394,19 +394,30 @@ public class SysMemUserForUser extends HLEModule {
 
         		// Translate the C-like format string to a Java format string:
         		// - %u or %i -> %d
+        		// - %4u -> %4d
+        		// - %lld or %ld -> %d
         		// - %p -> %08X
         		String javaMsg = formatString.getString();
-        		javaMsg = javaMsg.replaceAll("\\%[ui]", "%d");
+        		javaMsg = javaMsg.replaceAll("\\%(\\d*)l?l?[uid]", "%$1d");
         		javaMsg = javaMsg.replaceAll("\\%p", "%08X");
 
-        		// Support basic string output "%s"
-        		// Assume %s is always the first parameter...
-        		if (javaMsg.contains("%s")) {
-        			formatParameters[0] = Utilities.readStringZ(gpr[_a1]);
+        		// Support for "%s" (at any place and can occur multiple times)
+        		int index = -1;
+        		for (int parameterIndex = 0; parameterIndex < formatParameters.length; parameterIndex++) {
+    				index = javaMsg.indexOf('%', index + 1);
+    				if (index < 0) {
+    					break;
+    				}
+    				String parameterFormat = javaMsg.substring(index);
+    				if (parameterFormat.startsWith("%s")) {
+    					// Convert an integer address to a String by reading
+    					// the String at the given address
+    					formatParameters[parameterIndex] = Utilities.readStringZ(((Integer) formatParameters[parameterIndex]).intValue());
+    				}
         		}
 
         		// String.format: If there are more arguments than format specifiers, the extra arguments are ignored.
-        		formattedMsg = String.format(javaMsg, formatParameters[0], formatParameters[1], formatParameters[2], formatParameters[3], formatParameters[4], formatParameters[5], formatParameters[6]);
+        		formattedMsg = String.format(javaMsg, formatParameters);
         	} catch (Exception e) {
         		// Ignore formatting exception
         	}
