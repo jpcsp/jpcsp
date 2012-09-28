@@ -110,6 +110,22 @@ final public class TPointer implements ITPointerBase {
 	public void setValue32(int offset, boolean value) { if (isAddressGood()) memory.write32(address + offset, value ? 1 : 0); }
 	public void setValue64(int offset, long value) { if (isAddressGood()) memory.write64(address + offset, value); }
 
+	public float getFloat() {
+		return getFloat(0);
+	}
+
+	public float getFloat(int offset) {
+		return Float.intBitsToFloat(getValue32(offset));
+	}
+
+	public void setFloat(float value) {
+		setFloat(0, value);
+	}
+
+	public void setFloat(int offset, float value) {
+		setValue32(offset, Float.floatToRawIntBits(value));
+	}
+
 	public String getStringNZ(int n) {
 		return getStringNZ(0, n);
 	}
