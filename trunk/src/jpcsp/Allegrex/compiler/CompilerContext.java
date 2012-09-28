@@ -1013,13 +1013,15 @@ public class CompilerContext implements ICompilerContext {
 
 				// Load the UID Object
 				mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(HLEUidObjectMapping.class), "getObject", "(" + Type.getDescriptor(String.class) + "I)" + Type.getDescriptor(Object.class));
-				Label foundUid = new Label();
-				mv.visitInsn(Opcodes.DUP);
-				mv.visitJumpInsn(Opcodes.IFNONNULL, foundUid);
-				storeRegister(_v0, errorValueOnNotFound);
-				parameterReader.popAllStack(1);
-				mv.visitJumpInsn(Opcodes.GOTO, afterSyscallLabel);
-				mv.visitLabel(foundUid);
+				if (afterSyscallLabel != null) {
+					Label foundUid = new Label();
+					mv.visitInsn(Opcodes.DUP);
+					mv.visitJumpInsn(Opcodes.IFNONNULL, foundUid);
+					storeRegister(_v0, errorValueOnNotFound);
+					parameterReader.popAllStack(1);
+					mv.visitJumpInsn(Opcodes.GOTO, afterSyscallLabel);
+					mv.visitLabel(foundUid);
+				}
 				mv.visitTypeInsn(Opcodes.CHECKCAST, Type.getInternalName(parameterType));
 	    		parameterReader.incrementCurrentStackSize();
 			} else {
