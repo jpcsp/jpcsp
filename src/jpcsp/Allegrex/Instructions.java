@@ -1402,12 +1402,12 @@ public void compile(ICompilerContext context, int insn) {
 			context.loadRt();
 			int sa = context.getSaValue();
 			if (sa != 0) {
-				// rotateRight(rt, sa) = (rt >>> sa | rt << -sa)
+				// rotateRight(rt, sa) = (rt >>> sa | rt << (32-sa))
 				context.getMethodVisitor().visitInsn(Opcodes.DUP);
 				context.loadImm(sa);
 				context.getMethodVisitor().visitInsn(Opcodes.IUSHR);
 				context.getMethodVisitor().visitInsn(Opcodes.SWAP);
-				context.loadImm(-sa);
+				context.loadImm(32 - sa);
 				context.getMethodVisitor().visitInsn(Opcodes.ISHL);
 				context.getMethodVisitor().visitInsn(Opcodes.IOR);
 			}
