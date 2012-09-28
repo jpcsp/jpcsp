@@ -27,7 +27,7 @@ public class SampleSourceWithPitch implements ISampleSource {
 	private int pitch;
 	private int sampleSourceIndex = -1;
 	private int sampleIndex;
-	private short currentSample;
+	private int currentSample;
 
 	public SampleSourceWithPitch(ISampleSource sampleSource, int pitch) {
 		this.sampleSource = sampleSource;
@@ -39,7 +39,7 @@ public class SampleSourceWithPitch implements ISampleSource {
 	}
 
 	@Override
-	public short getNextSample() {
+	public int getNextSample() {
 		int nextSampleSourceIndex = getSampleSourceIndexFromSampleIndex(sampleIndex);
 		while (nextSampleSourceIndex > sampleSourceIndex) {
 			currentSample = sampleSource.getNextSample();

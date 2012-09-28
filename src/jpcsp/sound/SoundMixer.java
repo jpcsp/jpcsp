@@ -50,9 +50,9 @@ public class SoundMixer {
     	int endIndex = startIndex + length;
     	sampleSource.setSampleIndex(startIndex);
     	for (int i = startIndex, j = 0; i < endIndex; i++, j += 2) {
-    		short monoSample = sampleSource.getNextSample();
-    		stereoSamples[j] += SoundChannel.adjustSample(monoSample, leftVol);
-    		stereoSamples[j + 1] += SoundChannel.adjustSample(monoSample, rightVol);
+    		int sample = sampleSource.getNextSample();
+    		stereoSamples[j] += SoundChannel.adjustSample(getSampleLeft(sample), leftVol);
+    		stereoSamples[j + 1] += SoundChannel.adjustSample(getSampleRight(sample), rightVol);
     	}
     }
 
@@ -69,13 +69,15 @@ public class SoundMixer {
     		}
     	}
 
-    	int lengthInBytes = mixedSamples.length * 2;
-    	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, lengthInBytes, 2);
+    	int lengthInBytes = mixedSamples.length << 1;
+    	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, lengthInBytes, 4);
     	for (int i = 0, j = 0; i < samples; i++, j += 2) {
     		short sampleLeft  = clampSample(mixedSamples[j]);
     		short sampleRight = clampSample(mixedSamples[j + 1]);
-    		memoryWriter.writeNext(SoundChannel.adjustSample(sampleLeft , leftVol ) & 0xFFFF);
-    		memoryWriter.writeNext(SoundChannel.adjustSample(sampleRight, rightVol) & 0xFFFF);
+    		sampleLeft = SoundChannel.adjustSample(sampleLeft, leftVol);
+    		sampleRight = SoundChannel.adjustSample(sampleRight, rightVol);
+    		int sampleStereo = getSampleStereo(sampleLeft, sampleRight);
+    		memoryWriter.writeNext(sampleStereo);
     	}
     	memoryWriter.flush();
     }
@@ -132,5 +134,17 @@ public class SoundMixer {
     	}
 
     	mix(mixedSamples, addr, samples, leftVol, rightVol, false);
+    }
+
+    public static short getSampleLeft(int sample) {
+    	return (short) (sample & 0x0000FFFF);
+    }
+
+    public static short getSampleRight(int sample) {
+    	return (short) (sample >> 16);
+    }
+
+    public static int getSampleStereo(short left, short right) {
+    	return (left & 0x0000FFFF) | ((right & 0x0000FFFF) << 16);
     }
 }

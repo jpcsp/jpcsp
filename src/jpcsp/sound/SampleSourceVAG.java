@@ -149,7 +149,7 @@ public class SampleSourceVAG implements ISampleSource {
 	}
 
 	@Override
-	public short getNextSample() {
+	public int getNextSample() {
 		if (sampleIndex >= samples.length) {
 			if (!unpackNextVAGBlock()) {
 				return 0;
@@ -165,7 +165,7 @@ public class SampleSourceVAG implements ISampleSource {
 			setSampleIndex(loopStartVAGBlock * 28);
 		}
 
-		return sample;
+		return sample & 0x0000FFFF;
 	}
 
 	@Override

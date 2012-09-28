@@ -18,6 +18,8 @@ package jpcsp.HLE.modules600;
 
 import jpcsp.Memory;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules150.sceAtrac3plus.AtracID;
 
 public class sceSasCore extends jpcsp.HLE.modules500.sceSasCore {
 	protected void setSasCoreAtrac3Context(int sasCore, int voice, int atrac3Context) {
@@ -32,8 +34,13 @@ public class sceSasCore extends jpcsp.HLE.modules500.sceSasCore {
 
         checkSasAndVoiceHandlesGood(sasCore, voice);
 
-        // Store the atrac3Context address into the sasCore structure.
-        setSasCoreAtrac3Context(sasCore, voice, atrac3Context);
+        AtracID atracId = Modules.sceAtrac3plusModule.getAtracIdFromContext(atrac3Context);
+        if (atracId != null) {
+        	voices[voice].setAtracId(atracId);
+
+        	// Store the atrac3Context address into the sasCore structure.
+        	setSasCoreAtrac3Context(sasCore, voice, atrac3Context);
+        }
 
         return 0;
     }
@@ -52,6 +59,8 @@ public class sceSasCore extends jpcsp.HLE.modules500.sceSasCore {
         log.warn(String.format("Unimplemented __sceSasUnsetATRAC3 sasCore=0x%08X, voice=%d", sasCore, voice));
 
         checkSasAndVoiceHandlesGood(sasCore, voice);
+
+        voices[voice].setAtracId(null);
 
         // Reset the atrac3Context address
         setSasCoreAtrac3Context(sasCore, voice, 0);

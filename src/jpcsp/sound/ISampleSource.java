@@ -21,7 +21,10 @@ package jpcsp.sound;
  *
  */
 public interface ISampleSource {
-	public short getNextSample();
+	/**
+	 * @return sample in stereo (lower 16 bits = left, higher 16 bits = right)
+	 */
+	public int getNextSample();
 	public void setSampleIndex(int index);
 	public int getSampleIndex();
 	public int getNumberSamples();

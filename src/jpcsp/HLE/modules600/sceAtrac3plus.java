@@ -23,6 +23,17 @@ public class sceAtrac3plus extends jpcsp.HLE.modules250.sceAtrac3plus {
 	@Override
     public String getName() { return "sceAtrac3plus"; }
 
+	public AtracID getAtracIdFromContext(int atrac3Context) {
+		for (AtracID id : atracIDs.values()) {
+			SysMemInfo context = id.getContext();
+			if (context != null && context.addr == atrac3Context) {
+				return id;
+			}
+		}
+
+		return null;
+	}
+
 	@HLEFunction(nid = 0x231FC6B7, version = 600, checkInsideInterrupt = true)
     public int _sceAtracGetContextAddress(int at3IDNum) {
         log.warn(String.format("PARTIAL: _sceAtracGetContextAddress at3IDNum=%d", at3IDNum));

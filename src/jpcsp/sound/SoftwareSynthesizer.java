@@ -31,9 +31,15 @@ public class SoftwareSynthesizer {
 		if (sampleSource == null || voice.isChanged()) {
 			voice.setChanged(false);
 
-			// Currently we build the samples only based on the pitch.
-			// ADSR has still to be added.
-			sampleSource = new SampleSourceVAG(voice, voice.getVAGAddress(), voice.getVAGSize(), voice.getLoopMode() != sceSasCore.PSP_SAS_LOOP_MODE_OFF);
+			if (voice.getAtracId() == null) {
+				// Currently we build the samples only based on the pitch.
+				// ADSR has still to be added.
+				sampleSource = new SampleSourceVAG(voice, voice.getVAGAddress(), voice.getVAGSize(), voice.getLoopMode() != sceSasCore.PSP_SAS_LOOP_MODE_OFF);
+				// Convert mono VAG to stereo
+				sampleSource = new SampleSourceMono(sampleSource);
+			} else {
+				sampleSource = new SampleSourceAtrac3(voice.getAtracId());
+			}
 
 			if (voice.getPitch() != sceSasCore.PSP_SAS_PITCH_BASE) {
 				// Modify the sample according to the pitch (only if not the default pitch)
