@@ -2958,6 +2958,223 @@
     0881E4C8:[00801025]: or         $v0, $a0, $zr <=> move $v0, $a0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpy">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memcpy</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+089A419C:[10C00042]: beq        $a2, $zr, 0x089A42A8
+089A41A0:[00803821]: addu       $a3, $a0, $zr <=> move $a3, $a0
+089A41A4:[3083003F]: andi       $v1, $a0, 63
+089A41A8:[1060000A]: beq        $v1, $zr, 0x089A41D4
+089A41AC:[00000000]: nop
+089A41B0:[90A30000]: lbu        $v1, 0($a1)
+089A41B4:[24C6FFFF]: addiu      $a2, $a2, -1
+089A41B8:[24A50001]: addiu      $a1, $a1, 1
+089A41BC:[A0E30000]: sb         $v1, 0($a3)
+089A41C0:[24E70001]: addiu      $a3, $a3, 1
+089A41C4:[10C00038]: beq        $a2, $zr, 0x089A42A8
+089A41C8:[30E2003F]: andi       $v0, $a3, 63
+089A41CC:[5440FFF9]: bnel       $v0, $zr, 0x089A41B4
+089A41D0:[90A30000]: lbu        $v1, 0($a1)
+089A41D4:[10C00034]: beq        $a2, $zr, 0x089A42A8
+089A41D8:[00000000]: nop
+089A41DC:[2CC80040]: sltiu      $t0, $a2, 64
+089A41E0:[1500002B]: bne        $t0, $zr, 0x089A4290
+089A41E4:[3C094000]: lui        $t1, 0x4000 <=> li $t1, 0x40000000
+089A41E8:[30A8000F]: andi       $t0, $a1, 15
+089A41EC:[24020004]: addiu      $v0, $zr, 4 <=> li $v0, 4
+089A41F0:[01205021]: addu       $t2, $t1, $zr <=> move $t2, $t1
+089A41F4:[7CEAE004]: ins        $t2, $a3, 0, 29
+089A41F8:[110200A2]: beq        $t0, $v0, 0x089A4484
+089A41FC:[2D0B0005]: sltiu      $t3, $t0, 5
+089A4200:[11600066]: beq        $t3, $zr, 0x089A439C
+089A4204:[240C0008]: addiu      $t4, $zr, 8 <=> li $t4, 8
+089A4208:[11000033]: beq        $t0, $zr, 0x089A42D8
+089A420C:[00E57026]: xor        $t6, $a3, $a1
+089A4210:[7C0E2804]: ins        $t6, $zr, 0, 6
+089A4214:[11C00026]: beq        $t6, $zr, 0x089A42B0
+089A4218:[00000000]: nop
+089A421C:[BCF90000]: cache      0x19, 0($a3)
+089A4220:[24E70040]: addiu      $a3, $a3, 64
+089A4224:[24C6FFC0]: addiu      $a2, $a2, -64
+089A4228:[98A80000]: lwr        $t0, 0($a1)
+089A422C:[88A80003]: lwl        $t0, 3($a1)
+089A4230:[48E80000]: MTV.s      $t0, S000.s
+089A4234:[98A80004]: lwr        $t0, 4($a1)
+089A4238:[88A80007]: lwl        $t0, 7($a1)
+089A423C:[48E80020]: MTV.s      $t0, S001.s
+089A4240:[98A80008]: lwr        $t0, 8($a1)
+089A4244:[88A8000B]: lwl        $t0, 11($a1)
+089A4248:[48E80040]: MTV.s      $t0, S002.s
+089A424C:[98A8000C]: lwr        $t0, 12($a1)
+089A4250:[88A8000F]: lwl        $t0, 15($a1)
+089A4254:[48E80060]: MTV.s      $t0, S003.s
+089A4258:[24A50010]: addiu      $a1, $a1, 16
+089A425C:[0000000F]: sync
+089A4260:[F9400002]: vwb.q      C000.q, 0($t2)
+089A4264:[254A0010]: addiu      $t2, $t2, 16
+089A4268:[3148003F]: andi       $t0, $t2, 63
+089A426C:[1500FFEE]: bne        $t0, $zr, 0x089A4228
+089A4270:[486000FF]: Unimplemented MFVC imm7=127, rt=0
+089A4274:[00064182]: srl        $t0, $a2, 0x0006
+089A4278:[1500FFE8]: bne        $t0, $zr, 0x089A421C
+089A427C:[00000000]: nop
+089A4280:[FFFF040D]: vflush
+089A4284:[486000FF]: Unimplemented MFVC imm7=127, rt=0
+089A4288:[10C00007]: beq        $a2, $zr, 0x089A42A8
+089A428C:[00000000]: nop
+089A4290:[90AA0000]: lbu        $t2, 0($a1)
+089A4294:[24C6FFFF]: addiu      $a2, $a2, -1
+089A4298:[24A50001]: addiu      $a1, $a1, 1
+089A429C:[A0EA0000]: sb         $t2, 0($a3)
+089A42A0:[14C0FFFB]: bne        $a2, $zr, 0x089A4290
+089A42A4:[24E70001]: addiu      $a3, $a3, 1
+089A42A8:[03E00008]: jr         $ra
+089A42AC:[00801021]: addu       $v0, $a0, $zr <=> move $v0, $a0
+089A42B0:[98A80000]: lwr        $t0, 0($a1)
+089A42B4:[88A80003]: lwl        $t0, 3($a1)
+089A42B8:[24A50004]: addiu      $a1, $a1, 4
+089A42BC:[ACE80000]: sw         $t0, 0($a3)
+089A42C0:[24C6FFFC]: addiu      $a2, $a2, -4
+089A42C4:[00064082]: srl        $t0, $a2, 0x0002
+089A42C8:[1500FFF9]: bne        $t0, $zr, 0x089A42B0
+089A42CC:[24E70004]: addiu      $a3, $a3, 4
+089A42D0:[0A2690A2]: j          0x089A4288
+089A42D4:[00000000]: nop
+089A42D8:[000641C2]: srl        $t0, $a2, 0x0007
+089A42DC:[1100001E]: beq        $t0, $zr, 0x089A4358
+089A42E0:[00000000]: nop
+089A42E4:[D8A00000]: lv.q       C000.q, 0($a1)
+089A42E8:[D8A10010]: lv.q       C010.q, 16($a1)
+089A42EC:[D8A20020]: lv.q       C020.q, 32($a1)
+089A42F0:[D8A30030]: lv.q       C030.q, 48($a1)
+089A42F4:[D8A40040]: lv.q       C100.q, 64($a1)
+089A42F8:[D8A50050]: lv.q       C110.q, 80($a1)
+089A42FC:[D8A60060]: lv.q       C120.q, 96($a1)
+089A4300:[D8A70070]: lv.q       C130.q, 112($a1)
+089A4304:[BCF90000]: cache      0x19, 0($a3)
+089A4308:[0000000F]: sync
+089A430C:[F9400002]: vwb.q      C000.q, 0($t2)
+089A4310:[F9410012]: vwb.q      C010.q, 16($t2)
+089A4314:[F9420022]: vwb.q      C020.q, 32($t2)
+089A4318:[F9430032]: vwb.q      C030.q, 48($t2)
+089A431C:[BCF90040]: cache      0x19, 64($a3)
+089A4320:[F9440042]: vwb.q      C100.q, 64($t2)
+089A4324:[F9450052]: vwb.q      C110.q, 80($t2)
+089A4328:[F9460062]: vwb.q      C120.q, 96($t2)
+089A432C:[F9470072]: vwb.q      C130.q, 112($t2)
+089A4330:[24E70080]: addiu      $a3, $a3, 128
+089A4334:[24A50080]: addiu      $a1, $a1, 128
+089A4338:[254A0080]: addiu      $t2, $t2, 128
+089A433C:[24C6FF80]: addiu      $a2, $a2, -128
+089A4340:[000641C2]: srl        $t0, $a2, 0x0007
+089A4344:[1500FFE7]: bne        $t0, $zr, 0x089A42E4
+089A4348:[486000FF]: Unimplemented MFVC imm7=127, rt=0
+089A434C:[00064182]: srl        $t0, $a2, 0x0006
+089A4350:[1100000E]: beq        $t0, $zr, 0x089A438C
+089A4354:[00000000]: nop
+089A4358:[D8A00000]: lv.q       C000.q, 0($a1)
+089A435C:[D8A10010]: lv.q       C010.q, 16($a1)
+089A4360:[D8A20020]: lv.q       C020.q, 32($a1)
+089A4364:[D8A30030]: lv.q       C030.q, 48($a1)
+089A4368:[BCF90000]: cache      0x19, 0($a3)
+089A436C:[24E70040]: addiu      $a3, $a3, 64
+089A4370:[24A50040]: addiu      $a1, $a1, 64
+089A4374:[24C6FFC0]: addiu      $a2, $a2, -64
+089A4378:[0000000F]: sync
+089A437C:[F9400002]: vwb.q      C000.q, 0($t2)
+089A4380:[F9410012]: vwb.q      C010.q, 16($t2)
+089A4384:[F9420022]: vwb.q      C020.q, 32($t2)
+089A4388:[F9430032]: vwb.q      C030.q, 48($t2)
+089A438C:[FFFF040D]: vflush
+089A4390:[486000FF]: Unimplemented MFVC imm7=127, rt=0
+089A4394:[0A2690A2/FC000000]: j          0x089A4288
+089A4398:[00000000]: nop
+089A439C:[110C001C]: beq        $t0, $t4, 0x089A4410
+089A43A0:[240D000C]: addiu      $t5, $zr, 12 <=> li $t5, 12
+089A43A4:[150DFF9A]: bne        $t0, $t5, 0x089A4210
+089A43A8:[00E57026]: xor        $t6, $a3, $a1
+089A43AC:[C8A00000]: lv.s       S000.s, 0($a1)
+089A43B0:[D8A40004]: lv.q       C100.q, 4($a1)
+089A43B4:[D8A50014]: lv.q       C110.q, 20($a1)
+089A43B8:[D8A60024]: lv.q       C120.q, 36($a1)
+089A43BC:[D8A70034]: lv.q       C130.q, 52($a1)
+089A43C0:[BCF90000]: cache      0x19, 0($a3)
+089A43C4:[F380A421]: VMMOV.t    E001.t, E100.t
+089A43C8:[D000A760]: vmov.t     R010.t, R103.t
+089A43CC:[D0008743]: vmov.t     C031.t, C130.t
+089A43D0:[24E70040]: addiu      $a3, $a3, 64
+089A43D4:[24A50040]: addiu      $a1, $a1, 64
+089A43D8:[24C6FFC0]: addiu      $a2, $a2, -64
+089A43DC:[00064182]: srl        $t0, $a2, 0x0006
+089A43E0:[0000000F]: sync
+089A43E4:[F9400002]: vwb.q      C000.q, 0($t2)
+089A43E8:[F9410012]: vwb.q      C010.q, 16($t2)
+089A43EC:[F9420022]: vwb.q      C020.q, 32($t2)
+089A43F0:[F9430032]: vwb.q      C030.q, 48($t2)
+089A43F4:[254A0040]: addiu      $t2, $t2, 64
+089A43F8:[1500FFEC]: bne        $t0, $zr, 0x089A43AC
+089A43FC:[486000FF]: Unimplemented MFVC imm7=127, rt=0
+089A4400:[FFFF040D]: vflush
+089A4404:[486000FF]: Unimplemented MFVC imm7=127, rt=0
+089A4408:[0A2690A2/FC000000]: j          0x089A4288
+089A440C:[00000000]: nop
+089A4410:[C8A00000]: lv.s       S000.s, 0($a1)
+089A4414:[C8A00005]: lv.s       S001.s, 4($a1)
+089A4418:[D8A40008]: lv.q       C100.q, 8($a1)
+089A441C:[D8A50018]: lv.q       C110.q, 24($a1)
+089A4420:[D8A60028]: lv.q       C120.q, 40($a1)
+089A4424:[D8A70038]: lv.q       C130.q, 56($a1)
+089A4428:[BCF90000]: cache      0x19, 0($a3)
+089A442C:[F38024A2]: VMMOV.p    E002.p, E100.p
+089A4430:[D0004481]: vmov.p     C010.p, C102.p
+089A4434:[D0004582]: vmov.p     C020.p, C112.p
+089A4438:[D00006C2]: vmov.p     C022.p, C120.p
+089A443C:[D0004683]: vmov.p     C030.p, C122.p
+089A4440:[D00007C3]: vmov.p     C032.p, C130.p
+089A4444:[24E70040]: addiu      $a3, $a3, 64
+089A4448:[24A50040]: addiu      $a1, $a1, 64
+089A444C:[24C6FFC0]: addiu      $a2, $a2, -64
+089A4450:[00064182]: srl        $t0, $a2, 0x0006
+089A4454:[0000000F]: sync
+089A4458:[F9400002]: vwb.q      C000.q, 0($t2)
+089A445C:[F9410012]: vwb.q      C010.q, 16($t2)
+089A4460:[F9420022]: vwb.q      C020.q, 32($t2)
+089A4464:[F9430032]: vwb.q      C030.q, 48($t2)
+089A4468:[254A0040]: addiu      $t2, $t2, 64
+089A446C:[1500FFE8]: bne        $t0, $zr, 0x089A4410
+089A4470:[486000FF]: Unimplemented MFVC imm7=127, rt=0
+089A4474:[FFFF040D]: vflush
+089A4478:[486000FF]: Unimplemented MFVC imm7=127, rt=0
+089A447C:[0A2690A2/FC000000]: j          0x089A4288
+089A4480:[00000000]: nop
+089A4484:[24C6FFC0]: addiu      $a2, $a2, -64
+089A4488:[D8A4FFFC]: lv.q       C100.q, -4($a1)
+089A448C:[D8A5000C]: lv.q       C110.q, 12($a1)
+089A4490:[D8A6001C]: lv.q       C120.q, 28($a1)
+089A4494:[D8A7002C]: lv.q       C130.q, 44($a1)
+089A4498:[C8A3003F]: lv.s       S033.s, 60($a1)
+089A449C:[BCF90000]: cache      0x19, 0($a3)
+089A44A0:[F380A520]: VMMOV.t    E000.t, E101.t
+089A44A4:[D000E423]: vmov.t     R003.t, R110.t
+089A44A8:[D000C703]: vmov.t     C030.t, C131.t
+089A44AC:[24E70040]: addiu      $a3, $a3, 64
+089A44B0:[24A50040]: addiu      $a1, $a1, 64
+089A44B4:[00064182]: srl        $t0, $a2, 0x0006
+089A44B8:[0000000F]: sync
+089A44BC:[F9400002]: vwb.q      C000.q, 0($t2)
+089A44C0:[F9410012]: vwb.q      C010.q, 16($t2)
+089A44C4:[F9420022]: vwb.q      C020.q, 32($t2)
+089A44C8:[F9430032]: vwb.q      C030.q, 48($t2)
+089A44CC:[254A0040]: addiu      $t2, $t2, 64
+089A44D0:[1500FFEC]: bne        $t0, $zr, 0x089A4484
+089A44D4:[486000FF]: Unimplemented MFVC imm7=127, rt=0
+089A44D8:[FFFF040D]: vflush
+089A44DC:[486000FF]: Unimplemented MFVC imm7=127, rt=0
+089A44E0:[0A2690A2/FC000000]: j          0x089A4288
+089A44E4:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="memset">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
 		<IsReturning>true</IsReturning>
@@ -8427,6 +8644,19 @@
 08804BA0:[ACE5000C]: sw         $a1, 12($a3)
 08804BA4:[14C9FFF2]: bne        $a2, $t1, 0x08804B70
 08804BA8:[24E70010]: addiu      $a3, $a3, 16
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpySequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
+		<Method>callWithStep</Method>
+		<Parameters>$t0,$a0,$t1,4,0</Parameters>
+		<CodeInstructions><![CDATA[
+08A062FC:[8C8A0000]: lw         $t2, 0($a0)
+08A06300:[24840004]: addiu      $a0, $a0, 4
+08A06304:[2529FFFF]: addiu      $t1, $t1, -1
+08A06308:[AD0A0000]: sw         $t2, 0($t0)
+08A0630C:[1520FFFB]: bne        $t1, $zr, 0x08A062FC
+08A06310:[25080004]: addiu      $t0, $t0, 4
 ]]></CodeInstructions>
 	</NativeCodeSequence>
 	<NativeCodeSequence name="MultDiv">
