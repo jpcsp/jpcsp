@@ -16,56 +16,40 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.sound;
 
+import static jpcsp.sound.SoundMixer.getSampleLeft;
+import static jpcsp.sound.SoundMixer.getSampleStereo;
+
 /**
  * @author gid15
  *
+ * Converts a mono sample source to the requested stereo.
  */
-public class SampleSourceWithDelay implements ISampleSource {
+public class SampleSourceMono implements ISampleSource {
 	private ISampleSource sampleSource;
-	private int delay;
-	private int sampleIndex;
 
-	public SampleSourceWithDelay(ISampleSource sampleSource, int delay) {
+	public SampleSourceMono(ISampleSource sampleSource) {
 		this.sampleSource = sampleSource;
-		this.delay = delay;
 	}
 
 	@Override
 	public int getNextSample() {
-		int sample;
+		short mono = getSampleLeft(sampleSource.getNextSample());
 
-		if (sampleIndex < delay) {
-			sample = 0;
-			sampleIndex++;
-		} else {
-			sample = sampleSource.getNextSample();
-		}
-
-		return sample;
-	}
-
-	@Override
-	public int getNumberSamples() {
-		return delay + sampleSource.getNumberSamples();
-	}
-
-	@Override
-	public int getSampleIndex() {
-		if (sampleIndex < delay) {
-			return sampleIndex;
-		}
-
-		return delay + sampleSource.getSampleIndex();
+		return getSampleStereo(mono, mono);
 	}
 
 	@Override
 	public void setSampleIndex(int index) {
-		if (index < delay) {
-			sampleIndex = index;
-			sampleSource.setSampleIndex(0);
-		} else {
-			sampleIndex = delay;
-			sampleSource.setSampleIndex(index - delay);
-		}
+		sampleSource.setSampleIndex(index);
+	}
+
+	@Override
+	public int getSampleIndex() {
+		return sampleSource.getSampleIndex();
+	}
+
+	@Override
+	public int getNumberSamples() {
+		return sampleSource.getNumberSamples();
 	}
 }

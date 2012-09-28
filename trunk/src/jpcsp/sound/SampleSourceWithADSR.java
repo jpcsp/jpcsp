@@ -24,6 +24,8 @@ import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_LINEAR_DEC
 import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_LINEAR_INCREASE;
 import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_ENVELOPE_FREQ_MAX;
 import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_ENVELOPE_HEIGHT_MAX;
+import static jpcsp.sound.SoundMixer.getSampleLeft;
+import static jpcsp.sound.SoundMixer.getSampleRight;
 import jpcsp.HLE.modules.sceSasCore;
 import jpcsp.sound.SoundVoice.VoiceADSREnvelope;
 
@@ -410,7 +412,7 @@ public class SampleSourceWithADSR implements ISampleSource {
 	 * The current ADSR envelope height is stored in the voice envelope structure.
 	 */
 	@Override
-	public short getNextSample() {
+	public int getNextSample() {
 		if (!voice.isOn()) {
 			// The voice has been keyed Off, process the Release part of the wave
 			envelopeState.setKeyOff();
@@ -423,7 +425,7 @@ public class SampleSourceWithADSR implements ISampleSource {
 		}
 
 		int envelopeValue = envelopeState.getNextEnvelopeValue();
-		short sample = sampleSource.getNextSample();
+		int sample = sampleSource.getNextSample();
 		// envelopeValue: [0..0x40000000]
 		// sample: [-0x8000..0x7FFF]
 		// Modulate the sample by the envelope value, assuming the envelope value
@@ -433,10 +435,12 @@ public class SampleSourceWithADSR implements ISampleSource {
 		// with rounding: [0..0x8000].
 		int envelopeValue16 = ((envelopeValue >> 14) + 1) >> 1;
 		// Multiply the sample by the envelope value with rounding
-		short modulatedSample = (short) ((sample * envelopeValue16 + 0x4000) >> 15);
+		short modulatedSampleLeft = modulate(getSampleLeft(sample), envelopeValue16);
+		short modulatedSampleRight = modulate(getSampleRight(sample), envelopeValue16);
+		int modulatedSample = SoundMixer.getSampleStereo(modulatedSampleLeft, modulatedSampleRight);
 
 		if (tracing) {
-			sceSasCore.log.trace(String.format("getNextSample voice=%d, sample=0x%04X, envelopeValue=0x%08X, modulatedSample=0x%04X", voice.getIndex(), sample, envelopeValue, modulatedSample));
+			sceSasCore.log.trace(String.format("getNextSample voice=%d, sample=0x%08X, envelopeValue=0x%08X, modulatedSample=0x%08X", voice.getIndex(), sample, envelopeValue, modulatedSample));
 		}
 
 		// Store the current envelope height
@@ -444,6 +448,10 @@ public class SampleSourceWithADSR implements ISampleSource {
 		voice.getEnvelope().height = envelopeValue;
 
 		return modulatedSample;
+	}
+
+	private short modulate(short sample, int envelopeValue16) {
+		return (short) ((sample * envelopeValue16 + 0x4000) >> 15);
 	}
 
 	@Override

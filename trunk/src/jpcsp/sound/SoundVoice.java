@@ -18,6 +18,7 @@ package jpcsp.sound;
 
 import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_PITCH_BASE;
 import static jpcsp.HLE.modules.sceSasCore.getSasADSRCurveTypeName;
+import jpcsp.HLE.modules150.sceAtrac3plus.AtracID;
 
 public class SoundVoice {
 	private boolean changed;
@@ -26,6 +27,7 @@ public class SoundVoice {
 	private int sampleRate;
 	private int vagAddress;
 	private int vagSize;
+	private AtracID atracId;
     private int loopMode;
     private int pitch;
     private int noise;
@@ -76,6 +78,7 @@ public class SoundVoice {
         on = false;
         envelope = new VoiceADSREnvelope();
         playSample = 0;
+        atracId = null;
 	}
 
     private void onVoiceChanged() {
@@ -222,5 +225,14 @@ public class SoundVoice {
 	@Override
 	public String toString() {
 		return String.format("SoundVoice #%d", index);
+	}
+
+	public AtracID getAtracId() {
+		return atracId;
+	}
+
+	public void setAtracId(AtracID atracId) {
+		this.atracId = atracId;
+		onVoiceChanged();
 	}
 }

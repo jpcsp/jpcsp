@@ -104,13 +104,14 @@ public class sceAtrac3plus extends HLEModule {
 		}
     }
 
-    protected class AtracID {
+    public static class AtracID {
         // Internal info.
     	protected int id;
         protected int codecType;
         protected AtracCodec atracCodec;
         // Context (used only from firmware 6.00)
         protected SysMemInfo atracContext;
+        protected SysMemInfo internalBuffer;
         // Sound data.
         protected int atracBitrate = 64;
         protected int atracChannels = 2;
@@ -154,12 +155,12 @@ public class sceAtrac3plus extends HLEModule {
             this.codecType = codecType;
             this.id = id;
             this.atracCodec = atracCodec;
-            if ((codecType == PSP_MODE_AT_3) && (atrac3Num < atrac3MaxIDsCount)) {
-                atrac3Num++;
+            if ((codecType == PSP_MODE_AT_3) && (Modules.sceAtrac3plusModule.atrac3Num < Modules.sceAtrac3plusModule.atrac3MaxIDsCount)) {
+            	Modules.sceAtrac3plusModule.atrac3Num++;
                 maxSamples = 1024;
                 atracCodec.setAtracMaxSamples(maxSamples);
-            } else if ((codecType == PSP_MODE_AT_3_PLUS) && (atrac3plusNum < atrac3plusMaxIDsCount)) {
-                atrac3plusNum++;
+            } else if ((codecType == PSP_MODE_AT_3_PLUS) && (Modules.sceAtrac3plusModule.atrac3plusNum < Modules.sceAtrac3plusModule.atrac3plusMaxIDsCount)) {
+            	Modules.sceAtrac3plusModule.atrac3plusNum++;
                 maxSamples = 2048;
                 atracCodec.setAtracMaxSamples(maxSamples);
             } else {
@@ -172,12 +173,13 @@ public class sceAtrac3plus extends HLEModule {
         public void release() {
         	if (id >= 0) {
         		if (codecType == PSP_MODE_AT_3) {
-        			atrac3Num--;
+        			Modules.sceAtrac3plusModule.atrac3Num--;
         		} else if (codecType == PSP_MODE_AT_3_PLUS) {
-        			atrac3plusNum--;
+        			Modules.sceAtrac3plusModule.atrac3plusNum--;
 	        	}
         	}
         	releaseContext();
+        	releaseInternalBuffer();
         }
 
         public void createContext() {
@@ -206,6 +208,23 @@ public class sceAtrac3plus extends HLEModule {
 
         public SysMemInfo getContext() {
         	return atracContext;
+        }
+
+        public void createInternalBuffer(int size) {
+        	if (internalBuffer == null) {
+        		internalBuffer = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, String.format("ThreadMan-AtracBuf-%d", id), SysMemUserForUser.PSP_SMEM_Low, size, 0);
+        	}
+        }
+
+        private void releaseInternalBuffer() {
+        	if (internalBuffer != null) {
+        		Modules.SysMemUserForUserModule.free(internalBuffer);
+        		internalBuffer = null;
+        	}
+        }
+
+        public SysMemInfo getInternalBuffer() {
+        	return internalBuffer;
         }
 
         private void analyzeAtracHeader() {
@@ -667,7 +686,7 @@ public class sceAtrac3plus extends HLEModule {
         useAtracCodec = useConnector;
     }
 
-    protected String getStringFromInt32(int n) {
+    protected static String getStringFromInt32(int n) {
     	char c1 = (char) ((n      ) & 0xFF);
     	char c2 = (char) ((n >>  8) & 0xFF);
     	char c3 = (char) ((n >> 16) & 0xFF);
