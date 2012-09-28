@@ -24,6 +24,7 @@ import org.apache.log4j.Logger;
 import com.xuggle.xuggler.io.IURLProtocolHandler;
 
 import jpcsp.util.FIFOByteBuffer;
+import jpcsp.util.Utilities;
 
 /*
  * Common interface for PSMF/MPEG -> Media Engine communication.
@@ -89,6 +90,9 @@ public class PacketChannel extends FIFOByteBuffer implements IURLProtocolHandler
 				position += readSize;
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("PacketChannel: read %d/%d bytes", readSize, size));
+					if (log.isTraceEnabled()) {
+						log.trace(Utilities.getMemoryDump(buf, 0, readSize));
+					}
 				}
 			} else {
 				log.debug("PacketChannel: End of data");

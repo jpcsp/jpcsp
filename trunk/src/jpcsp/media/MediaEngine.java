@@ -382,6 +382,11 @@ public class MediaEngine {
             	audioCoder = null;
                 log.error("MediaEngine: Can't open audio decoder!");
             } else {
+        		// The creation of the audioSamples might fail
+            	// if the audioCoder returns 0 channels. The audioSamples will then be
+            	// created later, when trying to decode audio samples.
+            	// This is the case when decoding an MP3 stream: it seems that the number
+            	// of channels is only set after reading one packet from the stream.
         		audioSamples = IAudioSamples.make(getAudioSamplesSize(), audioCoder.getChannels());
         		decodedAudioSamples = new FIFOByteBuffer();
                 audioStreamState = new StreamState(this, audioStreamID, container, 0);
@@ -501,6 +506,11 @@ public class MediaEngine {
     private boolean decodeAudioPacket(StreamState state) {
     	boolean complete = false;
         while (!state.isPacketEmpty()) {
+        	if (audioSamples == null) {
+        		// Create the audioSamples if required.
+        		// Their creation sometimes fails at init if the audioCoder still returns 0 channels.
+        		audioSamples = IAudioSamples.make(getAudioSamplesSize(), audioCoder.getChannels());
+        	}
         	int decodedBytes = audioCoder.decodeAudio(audioSamples, state.getPacket(), state.getOffset());
 
             if (decodedBytes < 0) {
