@@ -115,6 +115,25 @@
 		u8 pad[4];
 	} CharInfo;
 
+	typedef enum {
+		PSP_FONT_PIXELFORMAT_4 = 0,
+		PSP_FONT_PIXELFORMAT_4_REV = 1,
+		PSP_FONT_PIXELFORMAT_8 = 2,
+		PSP_FONT_PIXELFORMAT_24 = 3,
+		PSP_FONT_PIXELFORMAT_32 = 4
+	} FontPixelFormat;
+
+	typedef struct {
+		FontPixelFormat pixelFormat;
+		s32 xPos64;
+		s32 yPos64;
+		u16 bufWidth;
+		u16 bufHeight;
+		u16 bytesPerLine;
+		u16 pad;
+		void *buffer;
+	} GlyphImage;
+
 	/**
 	 * Creates a new font library.
 	 *
@@ -234,4 +253,6 @@
 	int sceFontGetFontInfoByIndexNumber(FontLibraryHandle libHandle, FontInfo *fontInfo, int unknown, int fontIndex);
 
 	int sceFontGetCharInfo(FontLibraryHandle libHandler, int charCode, CharInfo *charInfo);
+	int sceFontGetCharGlyphImage(FontLibraryHandle libHandler, int charCode, GlyphImage *glyphImage);
+	int sceFontGetCharGlyphImage_Clip(FontLibraryHandle libHandler, int charCode, GlyphImage *glyphImage, int clipXPos, int clipYPos, int clipWidth, int clipHeight);
 #endif
