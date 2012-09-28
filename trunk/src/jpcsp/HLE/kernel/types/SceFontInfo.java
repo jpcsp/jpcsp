@@ -134,14 +134,18 @@ public class SceFontInfo {
         }
 
         // Generate shadow glyphs for all chars.
-        for (int i = 0; i < glyphs.length; i++) {
-        	int shadowId = glyphs[i].shadowID;
-        	int charId = shadowMap[shadowId];
-        	if (charId >= 0 && charId < glyphs.length) {
-        		if (shadowGlyphs[shadowId] == null) {
-        			shadowGlyphs[shadowId] = getGlyph(fontdata, (charPointers[charId] * 4 * 8), FONT_PGF_SHADOWGLYPH, fontFile);
-        		}
-        	}
+        if (shadowGlyphs.length > 0) {
+	        for (int i = 0; i < glyphs.length; i++) {
+	        	int shadowId = glyphs[i].shadowID;
+	        	if (shadowId >= 0 && shadowId < shadowMap.length && shadowId < shadowGlyphs.length) {
+		        	int charId = shadowMap[shadowId];
+		        	if (charId >= 0 && charId < glyphs.length) {
+		        		if (shadowGlyphs[shadowId] == null) {
+		        			shadowGlyphs[shadowId] = getGlyph(fontdata, (charPointers[charId] * 4 * 8), FONT_PGF_SHADOWGLYPH, fontFile);
+		        		}
+		        	}
+	        	}
+	        }
         }
     }
 
@@ -293,7 +297,7 @@ public class SceFontInfo {
     }
 
     // Generate a 4bpp texture for the given char id.
-    private void generateFontTexture(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int pixelformat, int charCode, int altCharCode, int glyphType) {
+    private void generateFontTexture(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode, int glyphType) {
     	Glyph glyph = getCharGlyph(charCode, glyphType);
     	if (glyph == null) {
     		// No Glyph available for this charCode, try to use the alternate char.
@@ -366,14 +370,20 @@ public class SceFontInfo {
     					pixelColor |= pixelColor << 16;
     					break;
                 }
-                Debug.setFontPixel(base, bpl, bufWidth, bufHeight, x + xx, y + yy, pixelColor, pixelformat);
-        		pixelIndex++;
+
+                int pixelX = x + xx;
+                int pixelY = y + yy;
+                if (pixelX >= clipX && pixelX < clipX + clipWidth && pixelY >= clipY && pixelY < clipY + clipHeight) {
+                	Debug.setFontPixel(base, bpl, bufWidth, bufHeight, pixelX, pixelY, pixelColor, pixelformat);
+                }
+
+                pixelIndex++;
             }
         }
     }
 
-    public void printFont(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int pixelformat, int charCode, int altCharCode) {
-        generateFontTexture(base, bpl, bufWidth, bufHeight, x, y, pixelformat, charCode, altCharCode, FONT_PGF_CHARGLYPH);
+    public void printFont(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode) {
+        generateFontTexture(base, bpl, bufWidth, bufHeight, x, y, clipX, clipY, clipWidth, clipHeight, pixelformat, charCode, altCharCode, FONT_PGF_CHARGLYPH);
     }
 
     public pspCharInfo getCharInfo(int charCode) {
