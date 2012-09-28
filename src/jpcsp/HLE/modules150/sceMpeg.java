@@ -618,7 +618,7 @@ public class sceMpeg extends HLEModule {
 	}
 
     protected void onHeaderIoRead(int data_addr, int bytesRead, long position, SeekableDataInput dataInput, IVirtualFile vFile) {
-    	if (bytesRead >= PSMF_MAGIC_OFFSET + 4 && bytesRead < MPEG_HEADER_BUFFER_MINIMUM_SIZE) {
+    	if (bytesRead >= PSMF_STREAM_SIZE_OFFSET + 4 && bytesRead < MPEG_HEADER_BUFFER_MINIMUM_SIZE) {
     		Memory mem = Memory.getInstance();
     		if (mem.read32(data_addr + PSMF_MAGIC_OFFSET) == PSMF_MAGIC) {
     			try {
@@ -677,7 +677,7 @@ public class sceMpeg extends HLEModule {
         avcDetailFrameHeight = (mem.read8(bufferAddr + PSMF_FRAME_HEIGHT_OFFSET) * 0x10);
 
         // Sanity check
-        if (mpegFirstTimestamp < 0 || mpegFirstTimestamp > mpegLastTimestamp || mpegLastTimestamp <= 0) {
+        if (mpegFirstTimestamp != 90000 || mpegFirstTimestamp > mpegLastTimestamp || mpegLastTimestamp <= 0) {
         	// Some applications read less than MPEG_HEADER_BUFFER_MINIMUM_SIZE bytes from the header.
         	// An IoListener is trying to recognize such read operations and reading instead
         	// the complete MPEG header.
