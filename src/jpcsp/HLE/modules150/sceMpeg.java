@@ -1206,7 +1206,7 @@ public class sceMpeg extends HLEModule {
 	                if(mode == MPEG_AU_MODE_DECODE) {
 	                    ignoreAtrac = false;
 	                } else if (mode == MPEG_AU_MODE_SKIP) {
-	                    ignoreAvc = true;
+	                    ignoreAtrac = true;
 	                }
 	                break;
 	            case MPEG_PCM_STREAM:
