@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.HLE.modules630;
+package jpcsp.HLE.modules620;
 
 import org.apache.log4j.Logger;
 
@@ -33,7 +33,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
 	public static final Logger log = jpcsp.HLE.modules150.sceAtrac3plus.log;
 
 	@HLEUnimplemented
-	@HLEFunction(nid = 0x0C116E1B, version = 630)
+	@HLEFunction(nid = 0x0C116E1B, version = 620)
     public int sceAtracLowLevelDecode(@CheckArgument("checkAtracID") int atID, int sourceAddr, TPointer32 decodeAddr, TPointer samplesAddr, TPointer32 decodePosAddr) {
         if (log.isTraceEnabled() && Memory.isAddressGood(sourceAddr)) {
         	int length = 0x130; // How to find the input length?
@@ -90,7 +90,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
     }
 
 	@HLEUnimplemented
-    @HLEFunction(nid = 0x1575D64B, version = 630)
+    @HLEFunction(nid = 0x1575D64B, version = 620)
     public int sceAtracLowLevelInitDecoder(@CheckArgument("checkAtracID") int atID, TPointer32 unknownAddr) {
 		// Three int32 values are pointed by unknownAddr:
 		int unknown1 = unknownAddr.getValue(0);
