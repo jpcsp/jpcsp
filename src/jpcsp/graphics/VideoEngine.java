@@ -4813,6 +4813,9 @@ public class VideoEngine {
                 			log.warn(String.format("... and this invalid Texture mipmap will be used with mipmap_mode=%d, mipmap_bias=%d", context.tex_mipmap_mode, context.tex_mipmap_bias_int));
             			}
             		}
+            		if (context.tex_mipmap_mode == TBIAS_MODE_CONST && context.tex_mipmap_bias_int >= level) {
+            			return context.tex_mipmap_bias_int;
+            		}
             		return level - 1;
             	}
             }
