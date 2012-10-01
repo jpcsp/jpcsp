@@ -38,6 +38,7 @@ import jpcsp.HLE.modules.sceDeflt;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.HLE.modules.sceDmac;
 import jpcsp.HLE.modules.sceFont;
+import jpcsp.HLE.modules.sceFpu;
 import jpcsp.HLE.modules.sceGameUpdate;
 import jpcsp.HLE.modules.sceGe_user;
 import jpcsp.HLE.modules.sceHeap;
@@ -155,6 +156,7 @@ public class Modules {
     public static sceUsbAcc sceUsbAccModule = new sceUsbAcc();
     public static sceMt19937 sceMt19937Module = new sceMt19937();
     public static sceAac sceAacModule = new sceAac();
+    public static sceFpu sceFpuModule = new sceFpu();
 
     public static Logger log = Logger.getLogger("hle");
 

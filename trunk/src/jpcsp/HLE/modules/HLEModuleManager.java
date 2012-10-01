@@ -18,8 +18,10 @@ package jpcsp.HLE.modules;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -57,6 +59,7 @@ public class HLEModuleManager {
     private boolean startFromSyscall;
 
     private HashMap<String, List<HLEModule>> flash0prxMap;
+    private Set<HLEModule> installedModules = new HashSet<HLEModule>();
 
     /**
      * The current firmware version as an integer value in this format:
@@ -135,7 +138,8 @@ public class HLEModuleManager {
         sceParseUri(Modules.sceParseUriModule, new String[] { "libhttp_rfc", "PSP_NET_MODULE_HTTP", "PSP_MODULE_NET_HTTP" }),
         sceUsbAcc(Modules.sceUsbAccModule, new String[] { "PSP_MODULE_USB_MIC" }),
         sceMt19937(Modules.sceMt19937Module, new String[] { "libmt19937" }),
-        sceAac(Modules.sceAacModule, new String[] { "libaac", "PSP_MODULE_AV_AAC" });
+        sceAac(Modules.sceAacModule, new String[] { "libaac", "PSP_MODULE_AV_AAC" }),
+        sceFpu(Modules.sceFpuModule, new String[] { "libfpu" });
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
@@ -212,6 +216,7 @@ public class HLEModuleManager {
     		}
     	}
 
+    	installedModules.clear();
         this.firmwareVersion = firmwareVersion;
         installDefaultModules();
         initialiseFlash0PRXMap();
@@ -467,6 +472,10 @@ public class HLEModuleManager {
 	 * @param version
 	 */
 	public void installModuleWithAnnotations(HLEModule hleModule, int version) {
+		if (installedModules.contains(hleModule)) {
+			return;
+		}
+
 		try {
 			for (Method method : hleModule.getClass().getMethods()) {
 				HLEFunction hleFunction = method.getAnnotation(HLEFunction.class);
@@ -474,6 +483,7 @@ public class HLEModuleManager {
 					installFunctionWithAnnotations(hleFunction, method, hleModule);
 				}
 			}
+			installedModules.add(hleModule);
 		} catch (Exception e) {
 			log.error("installModuleWithAnnotations", e);
 		}
@@ -493,5 +503,7 @@ public class HLEModuleManager {
 		} catch (Exception e) {
 			log.error("uninstallModuleWithAnnotations", e);
 		}
+
+		installedModules.remove(hleModule);
 	}
 }
