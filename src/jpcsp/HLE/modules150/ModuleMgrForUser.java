@@ -123,15 +123,17 @@ public class ModuleMgrForUser extends HLEModule {
 
         // Check if this an HLE module
         if (moduleManager.hasFlash0Module(prxname)) {
-            log.info("hleKernelLoadModule(path='" + name + "') HLE module loaded");
+        	if (log.isInfoEnabled()) {
+        		log.info(String.format("hleKernelLoadModule(path='%s') HLE module %s loaded", name, prxname));
+        	}
             return moduleManager.LoadFlash0Module(prxname);
         }
 
         // Ban some modules
         for (bannedModulesList bannedModuleName : bannedModulesList.values()) {
             if (bannedModuleName.name().equalsIgnoreCase(prxname.toString())) {
-                log.warn("IGNORED:hleKernelLoadModule(path='" + name + "'): module from banlist not loaded");
-                return moduleManager.LoadFlash0Module(prxname.toString());
+                log.warn(String.format("IGNORED:hleKernelLoadModule(path='%s'): module %s from banlist not loaded", name , prxname));
+                return moduleManager.LoadFlash0Module(prxname);
             }
         }
 
