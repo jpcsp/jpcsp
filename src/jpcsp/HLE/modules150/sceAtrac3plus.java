@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.util.Utilities.readUnaligned32;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
@@ -246,21 +247,21 @@ public class sceAtrac3plus extends HLEModule {
             // Offset 0: 'RIFF'
             // Offset 4: file length - 8
             // Offset 8: 'WAVE'
-            int RIFFMagic = mem.read32(currentAddr);
-            int WAVEMagic = mem.read32(currentAddr + 8);
+            int RIFFMagic = readUnaligned32(mem, currentAddr);
+            int WAVEMagic = readUnaligned32(mem, currentAddr + 8);
             if (RIFFMagic != RIFF_MAGIC || WAVEMagic != WAVE_MAGIC) {
             	log.error(String.format("Not a RIFF/WAVE format! %08X %08X", RIFFMagic, WAVEMagic));
             	return;
             }
 
-            inputFileSize = mem.read32(currentAddr + 4) + 8;
+            inputFileSize = readUnaligned32(mem, currentAddr + 4) + 8;
             currentAddr += 12;
             bufferSize -= 12;
 
             boolean foundData = false;
             while (bufferSize >= 8 && !foundData) {
-            	int chunkMagic = mem.read32(currentAddr);
-            	int chunkSize = mem.read32(currentAddr + 4);
+            	int chunkMagic = readUnaligned32(mem, currentAddr);
+            	int chunkSize = readUnaligned32(mem, currentAddr + 4);
             	currentAddr += 8;
             	bufferSize -= 8;
             	if (chunkSize > bufferSize) {
@@ -272,8 +273,8 @@ public class sceAtrac3plus extends HLEModule {
             			if (chunkSize >= 16) {
                             int compressionCode = mem.read16(currentAddr);
                             atracChannels = mem.read16(currentAddr + 2);
-                            atracSampleRate = mem.read32(currentAddr + 4);
-                            atracBitrate = mem.read32(currentAddr + 8);
+                            atracSampleRate = readUnaligned32(mem, currentAddr + 4);
+                            atracBitrate = readUnaligned32(mem, currentAddr + 8);
                             atracBytesPerFrame = mem.read16(currentAddr + 12);
                             int hiBytesPerSample = mem.read16(currentAddr + 14);
                             if (log.isDebugEnabled()) {
@@ -294,8 +295,8 @@ public class sceAtrac3plus extends HLEModule {
             		}
             		case FACT_CHUNK_MAGIC: {
             			if (chunkSize >= 8) {
-                            atracEndSample = mem.read32(currentAddr);
-                            atracSampleOffset = mem.read32(currentAddr + 4); // The loop samples are offset by this value
+                            atracEndSample = readUnaligned32(mem, currentAddr);
+                            atracSampleOffset = readUnaligned32(mem, currentAddr + 4); // The loop samples are offset by this value
                             if (log.isDebugEnabled()) {
                             	log.debug(String.format("FACT Chunk: endSample=%d, sampleOffset=%d", atracEndSample, atracSampleOffset));
                             }
@@ -304,7 +305,7 @@ public class sceAtrac3plus extends HLEModule {
             		}
             		case SMPL_CHUNK_MAGIC: {
             			if (chunkSize >= 36) {
-            				int checkNumLoops = mem.read32(currentAddr + 28);
+            				int checkNumLoops = readUnaligned32(mem, currentAddr + 28);
     	                	if (chunkSize >= 36 + checkNumLoops * 24) {
         	                	numLoops = checkNumLoops;
 	    	                	loops = new LoopInfo[numLoops];
@@ -312,12 +313,12 @@ public class sceAtrac3plus extends HLEModule {
 	    	                	for (int i = 0; i < numLoops; i++) {
 	    	                		LoopInfo loop = new LoopInfo();
 	    	                		loops[i] = loop;
-	    	                		loop.cuePointID = mem.read32(loopInfoAddr);
-	    	                		loop.type = mem.read32(loopInfoAddr + 4);
-	    	                		loop.startSample = mem.read32(loopInfoAddr + 8) - atracSampleOffset;
-	    	                		loop.endSample = mem.read32(loopInfoAddr + 12) - atracSampleOffset;
-	    	                		loop.fraction = mem.read32(loopInfoAddr + 16);
-	    	                		loop.playCount = mem.read32(loopInfoAddr + 20);
+	    	                		loop.cuePointID = readUnaligned32(mem, loopInfoAddr);
+	    	                		loop.type = readUnaligned32(mem, loopInfoAddr + 4);
+	    	                		loop.startSample = readUnaligned32(mem, loopInfoAddr + 8) - atracSampleOffset;
+	    	                		loop.endSample = readUnaligned32(mem, loopInfoAddr + 12) - atracSampleOffset;
+	    	                		loop.fraction = readUnaligned32(mem, loopInfoAddr + 16);
+	    	                		loop.playCount = readUnaligned32(mem, loopInfoAddr + 20);
 
 	    	                		if (log.isDebugEnabled()) {
 	    	                			log.debug(String.format("Loop #%d: %s", i, loop.toString()));
