@@ -471,7 +471,7 @@ public class scePsmfPlayer extends HLEModule {
     public int scePsmfPlayerGetVideoData(@CheckArgument("checkPlayerPlaying") int psmfPlayer, @CanBeNull TPointer32 videoDataAddr) {
     	int result = 0;
 
-    	if (psmfPlayerStatus != PSMF_PLAYER_STATUS_PLAYING) {
+    	if (psmfPlayerStatus != PSMF_PLAYER_STATUS_PLAYING && psmfPlayerStatus != PSMF_PLAYER_STATUS_PLAYING_FINISHED) {
     		return ERROR_PSMFPLAYER_NOT_INITIALIZED;
     	}
 
