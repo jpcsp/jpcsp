@@ -361,10 +361,19 @@ public class sceMp3 extends HLEModule {
 	                	log.trace(String.format("decoded %d samples: %s", mp3DecodedBytes, Utilities.getMemoryDump(mp3PcmBuf, mp3DecodedBytes)));
 	                }
             	} else {
-            		mp3DecodedBytes = 0;
+            		// sceMp3Decode is not expected to return 0 samples at the start.
+            		// Fake the return of 1 empty sample.
+            		int fakeSamples = 1;
+            		mp3DecodedBytes = fakeSamples * getBytesPerSample();
+                    // Clear the whole PCM buffer, just in case the application is expecting
+            		// mp3MaxSamples and not just 1 sample.
+                    Memory.getInstance().memset(mp3PcmBuf, (byte) 0, mp3PcmBufSize);
             	}
             } else {
+            	// Return mp3MaxSamples samples (all set to 0).
                 mp3DecodedBytes = getMp3MaxSamples() * getBytesPerSample();
+                Memory.getInstance().memset(mp3PcmBuf, (byte) 0, mp3DecodedBytes);
+
                 int mp3BufReadConsumed = Math.min(mp3DecodedBytes / compressionFactor, getMp3AvailableReadSize());
                 consumeRead(mp3BufReadConsumed);
             }
