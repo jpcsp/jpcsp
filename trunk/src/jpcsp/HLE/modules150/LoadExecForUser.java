@@ -25,8 +25,6 @@ import jpcsp.HLE.TPointer32;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import static jpcsp.Allegrex.Common._a0;
-import static jpcsp.Allegrex.Common._a1;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_LOADEXEC_FILENAME;
 import jpcsp.Emulator;
@@ -39,9 +37,7 @@ import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.memory.IMemoryReader;
-import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
-import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -127,14 +123,7 @@ public class LoadExecForUser extends HLEModule {
             	// Set the given arguments to the root thread.
             	// Do not pass the file name as first parameter (tested on PSP).
             	SceKernelThreadInfo rootThread = Modules.ThreadManForUserModule.getCurrentThread();
-            	if (argSize > 0) {
-	            	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(rootThread.cpuContext.gpr[_a1], argSize, 1);
-	            	for (int i = 0; i < argSize; i++) {
-	            		memoryWriter.writeNext(arguments[i] & 0xFF);
-	            	}
-	            	memoryWriter.flush();
-            	}
-            	rootThread.cpuContext.gpr[_a0] = argSize;
+            	Modules.ThreadManForUserModule.hleKernelSetThreadArguments(rootThread, arguments, argSize);
             }
         } catch (GeneralJpcspException e) {
             log.error("General Error : " + e.getMessage());

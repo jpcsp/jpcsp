@@ -116,7 +116,9 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.hardware.Interrupts;
 import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
+import jpcsp.memory.MemoryWriter;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.util.DurationStatistics;
@@ -325,13 +327,9 @@ public class ThreadManForUser extends HLEModule {
         }
 
         // Setup args by copying them onto the stack
-        //Modules.log.debug("pspfilename - '" + pspfilename + "'");
-        int len = pspfilename.length();
-        int address = currentThread.cpuContext.gpr[_sp];
-        writeStringZ(Memory.getInstance(), address, pspfilename);
-        currentThread.cpuContext.gpr[_a0] = len + 1; // a0 = len + string terminator
-        currentThread.cpuContext.gpr[_a1] = address; // a1 = pointer to arg data in stack
+        hleKernelSetThreadArguments(currentThread, pspfilename);
 
+        // Setup threads $gp
         currentThread.cpuContext.gpr[_gp] = gp;
         idle0.cpuContext.gpr[_gp] = gp;
         idle1.cpuContext.gpr[_gp] = gp;
@@ -341,6 +339,44 @@ public class ThreadManForUser extends HLEModule {
         // Switch in the thread
         currentThread.status = PSP_THREAD_RUNNING;
         currentThread.restoreContext();
+    }
+
+    public void hleKernelSetThreadArguments(SceKernelThreadInfo thread, String argument) {
+    	int address = prepareThreadArguments(thread, argument.length() + 1);
+    	writeStringZ(Memory.getInstance(), address, argument);
+    }
+
+    public void hleKernelSetThreadArguments(SceKernelThreadInfo thread, byte[] argument, int argumentSize) {
+    	int address = prepareThreadArguments(thread, argumentSize);
+    	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, argumentSize, 1);
+    	for (int i = 0; i < argumentSize; i++) {
+    		memoryWriter.writeNext(argument[i] & 0xFF);
+    	}
+    	memoryWriter.flush();
+    }
+
+    public void hleKernelSetThreadArguments(SceKernelThreadInfo thread, int argumentAddr, int argumentSize) {
+    	int address = prepareThreadArguments(thread, argumentAddr == 0 ? -1 : argumentSize);
+    	if (argumentAddr != 0) {
+    		Memory.getInstance().memcpy(address, argumentAddr, argumentSize);
+    	}
+    }
+
+    private int prepareThreadArguments(SceKernelThreadInfo thread, int argumentSize) {
+        // 256 bytes padding between user data top and real stack top
+        int address = (thread.getStackAddr() + thread.stackSize - 0x100) - ((argumentSize + 0xF) & ~0xF);
+        if (argumentSize < 0) {
+            // Set the pointer to NULL when none is provided
+            thread.cpuContext.gpr[_a0] = 0; // a0 = user data len
+            thread.cpuContext.gpr[_a1] = 0; // a1 = pointer to arg data in stack
+        } else {
+            thread.cpuContext.gpr[_a0] = argumentSize; // a0 = user data len
+            thread.cpuContext.gpr[_a1] = address; // a1 = pointer to arg data in stack
+        }
+        // 64 bytes padding between program stack top and user data
+        thread.cpuContext.gpr[_sp] = address - 0x40;
+
+        return address;
     }
 
     private void installIdleThreads() {
@@ -1609,22 +1645,13 @@ public class ThreadManForUser extends HLEModule {
         }
         // Reset all thread parameters: a thread can be restarted when it has exited.
         thread.reset();
+
         // Setup args by copying them onto the stack
-        //int address = thread.cpuContext.gpr[29];
-        // 256 bytes padding between user data top and real stack top
-        int address = (thread.getStackAddr() + thread.stackSize - 0x100) - ((userDataLength + 0xF) & ~0xF);
-        if (userDataAddr == 0) {
-            // Set the pointer to NULL when none is provided
-            thread.cpuContext.gpr[_a0] = 0; // a0 = user data len
-            thread.cpuContext.gpr[_a1] = 0; // a1 = pointer to arg data in stack
-        } else {
-            Memory.getInstance().memcpy(address, userDataAddr, userDataLength);
-            thread.cpuContext.gpr[_a0] = userDataLength; // a0 = user data len
-            thread.cpuContext.gpr[_a1] = address; // a1 = pointer to arg data in stack
-        }
-        // 64 bytes padding between program stack top and user data
-        thread.cpuContext.gpr[_sp] = address - 0x40;
+        hleKernelSetThreadArguments(thread, userDataAddr, userDataLength);
+
+        // Set thread $gp
         thread.cpuContext.gpr[_gp] = gp;
+
         // switch in the target thread if it's higher priority
         hleChangeThreadState(thread, PSP_THREAD_READY);
         if (thread.currentPriority < currentThread.currentPriority) {
