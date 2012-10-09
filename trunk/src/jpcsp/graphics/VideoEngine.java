@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics;
 
+import static java.lang.Math.max;
 import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_CANCEL_DONE;
 import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_DONE;
 import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_DRAWING;
@@ -3126,11 +3127,12 @@ public class VideoEngine {
     }
 
     private void executeCommandPSUB() {
-    	context.patch_div_s = normalArgument & 0xFF;
-    	context.patch_div_t = (normalArgument >> 8) & 0xFF;
+    	// A patch division of 0 has the same effect as 1 (checked on PSP using splinesurface demo)
+    	context.patch_div_s = max(normalArgument & 0xFF, 1);
+    	context.patch_div_t = max((normalArgument >> 8) & 0xFF, 1);
         re.setPatchDiv(context.patch_div_s, context.patch_div_t);
         if (isLogDebugEnabled) {
-            log(helper.getCommandString(PSUB) + " patch_div_s=" + context.patch_div_s + ", patch_div_t=" + context.patch_div_t);
+            log(String.format("%s patch_div_s=%d, patch_div_t=%d", helper.getCommandString(PSUB), context.patch_div_s, context.patch_div_t));
         }
     }
 
