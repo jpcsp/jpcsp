@@ -89,26 +89,28 @@ public class pspFontStyle extends pspAbstractMemoryMappedStructure {
 		return 168;
 	}
 
-	public boolean isMatching(pspFontStyle fontStyle) {
+	public boolean isMatching(pspFontStyle fontStyle, boolean optimum) {
 		// A value 0 in each field of the fontStyle means "any value"
-		if (fontStyle.fontH != 0f) {
-			if (Math.round(fontStyle.fontH) != Math.round(fontH)) {
-				return false;
+		if (!optimum) {
+			if (fontStyle.fontH != 0f) {
+				if (Math.round(fontStyle.fontH) != Math.round(fontH)) {
+					return false;
+				}
 			}
-		}
-		if (fontStyle.fontV != 0f) {
-			if (Math.round(fontStyle.fontV) != Math.round(fontV)) {
-				return false;
+			if (fontStyle.fontV != 0f) {
+				if (Math.round(fontStyle.fontV) != Math.round(fontV)) {
+					return false;
+				}
 			}
-		}
-		if (fontStyle.fontHRes != 0f) {
-			if (Math.round(fontStyle.fontHRes) != Math.round(fontHRes)) {
-				return false;
+			if (fontStyle.fontHRes != 0f) {
+				if (Math.round(fontStyle.fontHRes) != Math.round(fontHRes)) {
+					return false;
+				}
 			}
-		}
-		if (fontStyle.fontVRes != 0f) {
-			if (Math.round(fontStyle.fontVRes) != Math.round(fontVRes)) {
-				return false;
+			if (fontStyle.fontVRes != 0f) {
+				if (Math.round(fontStyle.fontVRes) != Math.round(fontVRes)) {
+					return false;
+				}
 			}
 		}
 		if (fontStyle.fontWeight != 0f && fontStyle.fontWeight != fontWeight) {
@@ -139,6 +141,23 @@ public class pspFontStyle extends pspAbstractMemoryMappedStructure {
 			return false;
 		}
 		if (fontStyle.fontAttributes != 0 && fontStyle.fontAttributes != fontAttributes) {
+			return false;
+		}
+
+		return true;
+	}
+
+	public boolean isEmpty() {
+		if (fontH != 0f || fontV != 0f || fontHRes != 0f || fontVRes != 0f) {
+			return false;
+		}
+		if (fontWeight != 0f || fontFamily != 0 || fontStyle != 0 || fontStyleSub != 0) {
+			return false;
+		}
+		if (fontLanguage != 0 || fontRegion != 0 || fontCountry != 0) {
+			return false;
+		}
+		if (fontName.length() > 0 || fontFileName.length() > 0 || fontAttributes != 0) {
 			return false;
 		}
 
