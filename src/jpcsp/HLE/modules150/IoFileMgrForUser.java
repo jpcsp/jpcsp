@@ -3548,6 +3548,8 @@ public class IoFileMgrForUser extends HLEModule {
             return result;
         }
 
+        boolean needDelayIoOperation = true;
+
         switch (cmd) {
             // Get UMD disc type.
             case 0x01F20001: {
@@ -3715,6 +3717,7 @@ public class IoFileMgrForUser extends HLEModule {
             // Register memorystick insert/eject callback (fatms0).
             case 0x02415821: {
                 log.debug("sceIoDevctl register memorystick insert/eject callback (fatms0)");
+                needDelayIoOperation = false;
                 ThreadManForUser threadMan = Modules.ThreadManForUserModule;
                 if (!devicename.getString().equals("fatms0:")) {
                 	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
@@ -3737,6 +3740,7 @@ public class IoFileMgrForUser extends HLEModule {
             // Unregister memorystick insert/eject callback (fatms0).
             case 0x02415822: {
                 log.debug("sceIoDevctl unregister memorystick insert/eject callback (fatms0)");
+                needDelayIoOperation = false;
                 ThreadManForUser threadMan = Modules.ThreadManForUserModule;
                 if (!devicename.getString().equals("fatms0:")) {
                 	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
@@ -3857,7 +3861,11 @@ public class IoFileMgrForUser extends HLEModule {
         for (IIoListener ioListener : ioListeners) {
             ioListener.sceIoDevctl(result, devicename.getAddress(), devicename.getString(), cmd, indata_addr, inlen, outdata_addr, outlen);
         }
-        delayIoOperation(IoOperation.ioctl);
+
+        if (needDelayIoOperation) {
+        	delayIoOperation(IoOperation.ioctl);
+        }
+
         return result;
     }
 
