@@ -48,6 +48,34 @@ void fontFree(void *data, void *p)
 }
 
 
+u32 fontOpen(void *data, char* fileName, u32 *pErrorCode)
+{
+	return sceIoOpen(fileName, PSP_O_RDONLY, 0);
+}
+
+
+u32 fontClose(void *data, u32 fileHandle)
+{
+	sceIoClose(fileHandle);
+	return 0;
+}
+
+
+u32 fontRead(void *data, u32 fileHandle, void* buffer, int count1, int count2, u32 *pErrorCode)
+{
+	int result = sceIoRead(fileHandle, buffer, count1 * count2);
+	*pErrorCode = 0;
+	return result / count1;
+}
+
+
+u32 fontSeek(void *data, u32 fileHandle, u32 offset)
+{
+	return 0;
+}
+
+
+
 void printFontStyle(FontStyle fontStyle)
 {
 	pspDebugScreenPrintf("   H/V                       : %.3f / %.3f\n", fontStyle.fontH, fontStyle.fontV);
@@ -61,7 +89,7 @@ void printFontStyle(FontStyle fontStyle)
 void sceFontNewLibTest()
 {
 	FontNewLibParams params = {
-		NULL, 4, NULL, fontAlloc, fontFree, NULL, NULL, NULL, NULL, NULL, NULL
+		NULL, 4, NULL, fontAlloc, fontFree, (u32*) fontOpen, (u32*) fontClose, (u32*) fontRead, (u32*) fontSeek, NULL, NULL
 	};
 	uint errorCode = -1;
 	libHandle = sceFontNewLib(&params, &errorCode);
@@ -173,6 +201,87 @@ void sceFontGetCharGlyphImage_ClipTest(int charCode)
 	free(buffer);
 }
 
+void sceFontFindOptimumFontTest()
+{
+	FontStyle fontStyle;
+	int result;
+	uint errorCode;
+
+	int numFonts = sceFontGetNumFontList(libHandle, &errorCode);
+	pspDebugScreenPrintf("sceFontGetNumFontList  returns %2d, errorCode=0x%X\n", numFonts, errorCode);
+
+	memset(&fontStyle, 0, sizeof(fontStyle));
+	result = sceFontFindOptimumFont(libHandle, &fontStyle, &errorCode);
+	pspDebugScreenPrintf("sceFontFindOptimumFont returns %2d, errorCode=0x%X (empty style)\n", result, errorCode);
+
+	memset(&fontStyle, 0, sizeof(fontStyle));
+	fontStyle.fontFamily = FONT_FAMILY_SANS_SERIF;
+	fontStyle.fontStyle = FONT_STYLE_BOLD;
+	fontStyle.fontLanguage = FONT_LANGUAGE_LATIN;
+	result = sceFontFindOptimumFont(libHandle, &fontStyle, &errorCode);
+	pspDebugScreenPrintf("sceFontFindOptimumFont returns %2d, errorCode=0x%X (no size)\n", result, errorCode);
+
+	memset(&fontStyle, 0, sizeof(fontStyle));
+	fontStyle.fontH = 8.5625;
+	fontStyle.fontFamily = FONT_FAMILY_SANS_SERIF;
+	fontStyle.fontStyle = FONT_STYLE_BOLD;
+	fontStyle.fontLanguage = FONT_LANGUAGE_LATIN;
+	result = sceFontFindOptimumFont(libHandle, &fontStyle, &errorCode);
+	pspDebugScreenPrintf("sceFontFindOptimumFont returns %2d, errorCode=0x%X (H=8.5625)\n", result, errorCode);
+
+	memset(&fontStyle, 0, sizeof(fontStyle));
+	fontStyle.fontH = 8.5624;
+	fontStyle.fontFamily = FONT_FAMILY_SANS_SERIF;
+	fontStyle.fontStyle = FONT_STYLE_BOLD;
+	fontStyle.fontLanguage = FONT_LANGUAGE_LATIN;
+	result = sceFontFindOptimumFont(libHandle, &fontStyle, &errorCode);
+	pspDebugScreenPrintf("sceFontFindOptimumFont returns %2d, errorCode=0x%X (H=8.5624)\n", result, errorCode);
+
+	memset(&fontStyle, 0, sizeof(fontStyle));
+	fontStyle.fontLanguage = 4;
+	result = sceFontFindOptimumFont(libHandle, &fontStyle, &errorCode);
+	pspDebugScreenPrintf("sceFontFindOptimumFont returns %2d, errorCode=0x%X (language=4)\n", result, errorCode);
+
+	memset(&fontStyle, 0, sizeof(fontStyle));
+	fontStyle.fontH = 8;
+	fontStyle.fontLanguage = FONT_LANGUAGE_JAPANESE;
+	result = sceFontFindOptimumFont(libHandle, &fontStyle, &errorCode);
+	pspDebugScreenPrintf("sceFontFindOptimumFont returns %2d, errorCode=0x%X (H=8, Jap)\n", result, errorCode);
+
+	memset(&fontStyle, 0, sizeof(fontStyle));
+	fontStyle.fontH = 10;
+	fontStyle.fontV = 10;
+	fontStyle.fontFamily = FONT_FAMILY_SANS_SERIF;
+	fontStyle.fontStyle = FONT_STYLE_REGULAR;
+	fontStyle.fontLanguage = FONT_LANGUAGE_LATIN;
+	result = sceFontFindOptimumFont(libHandle, &fontStyle, &errorCode);
+	pspDebugScreenPrintf("sceFontFindOptimumFont returns %2d, errorCode=0x%X (H=10/V=10, Latin)\n", result, errorCode);
+
+	memset(&fontStyle, 0, sizeof(fontStyle));
+	fontStyle.fontH = 10;
+	fontStyle.fontV = 10;
+	fontStyle.fontFamily = FONT_FAMILY_SANS_SERIF;
+	fontStyle.fontStyle = FONT_STYLE_REGULAR;
+	fontStyle.fontLanguage = FONT_LANGUAGE_JAPANESE;
+	result = sceFontFindOptimumFont(libHandle, &fontStyle, &errorCode);
+	pspDebugScreenPrintf("sceFontFindOptimumFont returns %2d, errorCode=0x%X (H=10/V=10, Jap)\n", result, errorCode);
+
+	memset(&fontStyle, 0, sizeof(fontStyle));
+	fontStyle.fontFamily = FONT_FAMILY_SERIF;
+	fontStyle.fontStyle = FONT_STYLE_BOLD_ITALIC;
+	fontStyle.fontLanguage = FONT_LANGUAGE_KOREAN;
+	fontStyle.fontCountry = 1;
+	result = sceFontFindOptimumFont(libHandle, &fontStyle, &errorCode);
+	pspDebugScreenPrintf("sceFontFindOptimumFont returns %2d, errorCode=0x%X (non-existing)\n", result, errorCode);
+}
+
+void sceFontCloseTest()
+{
+	int result;
+
+	result = sceFontClose(fontHandle);
+	pspDebugScreenPrintf("sceFontClose returns 0x%08X\n", result);
+}
 
 void printInstructions()
 {
@@ -182,6 +291,8 @@ void printInstructions()
 	pspDebugScreenPrintf("Press Left to test sceFontGetCharInfo('R')\n");
 	pspDebugScreenPrintf("Press Right to test sceFontGetCharGlyphImage('R')\n");
 	pspDebugScreenPrintf("Press Down to test sceFontGetCharGlyphImage_Clip('R')\n");
+	pspDebugScreenPrintf("Press Up to test sceFontFindOptimumFont()\n");
+	pspDebugScreenPrintf("Press RTrigger to test sceFontClose()\n");
 }
 
 int main_thread(SceSize _argc, ScePVoid _argp)
@@ -284,6 +395,20 @@ int main_thread(SceSize _argc, ScePVoid _argp)
 			pspDebugScreenClear();
 			printInstructions();
 			sceFontGetCharGlyphImage_ClipTest('R');
+		}
+
+		if (buttonDown & PSP_CTRL_UP)
+		{
+			pspDebugScreenClear();
+			printInstructions();
+			sceFontFindOptimumFontTest();
+		}
+
+		if (buttonDown & PSP_CTRL_RTRIGGER)
+		{
+			pspDebugScreenClear();
+			printInstructions();
+			sceFontCloseTest();
 		}
 
 		if (buttonDown & PSP_CTRL_TRIANGLE)
