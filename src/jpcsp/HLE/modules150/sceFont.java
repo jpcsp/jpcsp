@@ -147,7 +147,13 @@ public class sceFont extends HLEModule {
         }
 
         public boolean isClosed() {
-        	return pgf == null;
+        	return fontLib == null;
+        }
+
+        public void close() {
+            fontLib = null;
+            // Keep PGF and SceFontInfo information.
+            // A call to sceFontGetFontInfo is allowed on a closed font.
         }
 
         @Override
@@ -531,9 +537,7 @@ public class sceFont extends HLEModule {
             	}
             }
 
-            font.fontLib = null;
-            font.pgf = null;
-            font.fontInfo = null;
+            font.close();
         }
 
         public void done() {
@@ -625,12 +629,68 @@ public class sceFont extends HLEModule {
         }
     }
 
-    private boolean isFontMatchingStyle(Font font, pspFontStyle fontStyle) {
+    private boolean isFontMatchingStyle(Font font, pspFontStyle fontStyle, boolean optimum) {
     	if (font != null && font.fontInfo != null && font.fontInfo.getFontStyle() != null) {
-    		return font.fontInfo.getFontStyle().isMatching(fontStyle);
+    		return font.fontInfo.getFontStyle().isMatching(fontStyle, optimum);
     	}
         // Faking: always matching
         return true;
+    }
+
+    /**
+     * Check if a given font is better matching the fontStyle than the currently best font.
+     * The check is based on the fontH and fontV.
+     * 
+     * @param fontStyle    the criteria for the optimum font
+     * @param optimumFont  the currently optimum font
+     * @param matchingFont a candidate matching the fontStyle
+     * @return             the matchingFont if it is better matching the fontStyle than the optimumFont,
+     *                     the optimumFont otherwise
+     */
+    private Font getOptimiumFont(pspFontStyle fontStyle, Font optimumFont, Font matchingFont) {
+    	if (optimumFont == null) {
+    		return matchingFont;
+    	}
+    	pspFontStyle optimiumStyle = optimumFont.fontInfo.getFontStyle();
+    	pspFontStyle matchingStyle = matchingFont.fontInfo.getFontStyle();
+
+    	// Check the fontH if it is specified or both fontH and fontV are unspecified
+    	boolean testH = fontStyle.fontH != 0f || fontStyle.fontV == 0f;
+    	if (testH && Math.abs(fontStyle.fontH - optimiumStyle.fontH) > Math.abs(fontStyle.fontH - matchingStyle.fontH)) {
+    		return matchingFont;
+    	}
+
+    	// Check the fontV if it is specified or both fontH and fontV are unspecified
+    	boolean testV = fontStyle.fontV != 0f || fontStyle.fontH == 0f;
+    	if (testV && Math.abs(fontStyle.fontV - optimiumStyle.fontV) > Math.abs(fontStyle.fontV - matchingStyle.fontV)) {
+    		return matchingFont;
+    	}
+
+    	return optimumFont;
+    }
+
+    private Font getOptimumFont(pspFontStyle fontStyle) {
+    	Font optimumFont = null;
+        for (int i = 0; i < internalFonts.size(); i++) {
+        	Font font = internalFonts.get(i);
+            if (isFontMatchingStyle(font, fontStyle, true)) {
+            	optimumFont = getOptimiumFont(fontStyle, optimumFont, font);
+            }
+        }
+
+        return optimumFont;
+    }
+
+    private int getFontIndex(Font font) {
+    	if (font != null) {
+	    	for (int i = 0; i < internalFonts.size(); i++) {
+	    		if (internalFonts.get(i) == font) {
+	    			return i;
+	    		}
+	    	}
+    	}
+
+    	return -1;
     }
 
     protected FontLib getFontLib(int fontLibHandle) {
@@ -642,9 +702,12 @@ public class sceFont extends HLEModule {
     	return fontLib;
     }
 
-    protected Font getFont(int fontHandle) {
+    protected Font getFont(int fontHandle, boolean allowClosedFont) {
     	Font font = fontsMap.get(fontHandle);
-    	if (font == null || font.isClosed() || font.fontInfo == null) {
+    	if (font == null || font.fontInfo == null) {
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_FONT_INVALID_PARAMETER);
+    	}
+    	if (!allowClosedFont && font.isClosed()) {
     		throw new SceKernelErrorException(SceKernelErrors.ERROR_FONT_INVALID_PARAMETER);
     	}
 
@@ -678,7 +741,8 @@ public class sceFont extends HLEModule {
 
     @HLEFunction(nid = 0x0DA7535E, version = 150, checkInsideInterrupt = true)
     public int sceFontGetFontInfo(int fontHandle, TPointer fontInfoPtr) {
-        Font font = getFont(fontHandle);
+        // A call to sceFontGetFontInfo is allowed on a closed font.
+        Font font = getFont(fontHandle, true);
 
         PGF currentPGF = font.pgf;
         int maxGlyphWidthI = currentPGF.getMaxSize()[0];
@@ -735,7 +799,7 @@ public class sceFont extends HLEModule {
 
     @HLEFunction(nid = 0xDCC80C2F, version = 150, checkInsideInterrupt = true)
     public int sceFontGetCharInfo(int fontHandle, int charCode, TPointer charInfoPtr) {
-        Font font = getFont(fontHandle);       
+        Font font = getFont(fontHandle, false);       
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceFontGetCharInfo charCode=%04X (%c)", charCode, (charCode <= 0xFF ? (char) charCode : '?')));
         }
@@ -764,7 +828,7 @@ public class sceFont extends HLEModule {
 
     @HLEFunction(nid = 0x980F4895, version = 150, checkInsideInterrupt = true)
     public int sceFontGetCharGlyphImage(int fontHandle, int charCode, TPointer glyphImagePtr) {
-        Font font = getFont(fontHandle);     
+        Font font = getFont(fontHandle, false);     
 
         // Read GlyphImage data.
         int pixelFormat = glyphImagePtr.getValue32(0);
@@ -806,49 +870,44 @@ public class sceFont extends HLEModule {
 
     @HLEFunction(nid = 0x099EF33C, version = 150, checkInsideInterrupt = false)
     public int sceFontFindOptimumFont(int fontLibHandle, pspFontStyle fontStyle, @CanBeNull TErrorPointer32 errorCodePtr) {
-        errorCodePtr.setValue(0);
-
-        for (int i = 0; i < internalFonts.size(); i++) {
-            if (isFontMatchingStyle(internalFonts.get(i), fontStyle)) {
-                if (log.isDebugEnabled()) {
-                    log.debug(String.format("sceFontFindOptimumFont found font at index %d: %s", i, internalFonts.get(i).toString()));
-                }
-                return i;
-            }
+        if (fontStyle.isEmpty()) {
+        	// Always return the first font entry if no criteria is specified for the fontStyle
+        	return 0;
         }
 
+        Font optimumFont = getOptimumFont(fontStyle);
+
         // No font found for the given style, try to find a font without the given font style (bold, italic...)
-        if (fontStyle.fontStyle != 0) {
+        if (optimumFont == null && fontStyle.fontStyle != 0) {
 	        fontStyle.fontStyle = 0;
 	        fontStyle.fontStyleSub = 0;
-	        for (int i = 0; i < internalFonts.size(); i++) {
-	            if (isFontMatchingStyle(internalFonts.get(i), fontStyle)) {
-	                if (log.isDebugEnabled()) {
-	                    log.debug(String.format("sceFontFindOptimumFont found font at index %d: %s", i, internalFonts.get(i).toString()));
-	                }
-	                return i;
-	            }
-	        }
+	        optimumFont = getOptimumFont(fontStyle);
         }
 
         // No font found for the given style, try to find a font without the given font size.
-        if (fontStyle.fontH != 0f || fontStyle.fontV != 0f) {
+        if (optimumFont == null && (fontStyle.fontH != 0f || fontStyle.fontV != 0f)) {
 	        fontStyle.fontH = 0f;
 	        fontStyle.fontV = 0f;
-	        for (int i = 0; i < internalFonts.size(); i++) {
-	            if (isFontMatchingStyle(internalFonts.get(i), fontStyle)) {
-	                if (log.isDebugEnabled()) {
-	                    log.debug(String.format("sceFontFindOptimumFont found font at index %d: %s", i, internalFonts.get(i).toString()));
-	                }
-	                return i;
-	            }
-	        }
+	        optimumFont = getOptimumFont(fontStyle);
         }
 
-        // Unknown error code
-    	errorCodePtr.setValue(-1);
+        // No font found for the given style, try to find a font without the given country.
+        if (optimumFont == null && (fontStyle.fontCountry != 0)) {
+	        fontStyle.fontCountry = 0;
+	        optimumFont = getOptimumFont(fontStyle);
+        }
 
-    	return 0;
+        int index = getFontIndex(optimumFont);
+        if (index < 0) {
+        	// optimum font not found, assume font at index 0?
+        	index = 0;
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceFontFindOptimumFont found font at index %d: %s", index, optimumFont));
+        }
+
+        return index;
     }
 
     @HLEFunction(nid = 0x3AEA8CB6, version = 150, checkInsideInterrupt = true)
@@ -906,7 +965,7 @@ public class sceFont extends HLEModule {
 
     @HLEFunction(nid = 0xCA1E6945, version = 150, checkInsideInterrupt = true)
     public int sceFontGetCharGlyphImage_Clip(int fontHandle, int charCode, TPointer glyphImagePtr, int clipXPos, int clipYPos, int clipWidth, int clipHeight) {
-        Font font = getFont(fontHandle);
+        Font font = getFont(fontHandle, false);
         // Identical to sceFontGetCharGlyphImage, but uses a clipping
         // rectangle over the char.
 
@@ -1029,7 +1088,7 @@ public class sceFont extends HLEModule {
         errorCodePtr.setValue(0);
         int fontsNum = internalFonts.size();
         for (int i = 0; i < fontsNum; i++) {
-            if (isFontMatchingStyle(internalFonts.get(i), fontStyle)) {
+            if (isFontMatchingStyle(internalFonts.get(i), fontStyle, false)) {
                 return i;
             }
         }
