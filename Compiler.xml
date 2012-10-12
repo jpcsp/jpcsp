@@ -8752,6 +8752,82 @@
 089BAF80:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="SoundAdjustVolume">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Sound</Class>
+		<Method>adjustVolume</Method>
+		<IsReturning>true</IsReturning>
+		<Parameters>$a0,$a1,$a2,$f12</Parameters>
+		<CodeInstructions><![CDATA[
+08938F2C:[27BDFFF0]: addiu      $sp, $sp, -16
+08938F30:[AFBF000C]: sw         $ra, 12($sp)
+08938F34:[00C05025]: or         $t2, $a2, $zr <=> move $t2, $a2
+08938F38:[AFA40000]: sw         $a0, 0($sp)
+08938F3C:[AFA50004]: sw         $a1, 4($sp)
+08938F40:[AFAA0008]: sw         $t2, 8($sp)
+08938F44:[44046000]: mfc1       $a0, $f12
+08938F48:[44845800]: mtc1       $a0, $f11
+08938F4C:[8FA60000]: lw         $a2, 0($sp)
+08938F50:[27A70004]: addiu      $a3, $sp, 4
+08938F54:[8CE70000]: lw         $a3, 0($a3)
+08938F58:[31080000]: andi       $t0, $t0, 0
+08938F5C:[27A90008]: addiu      $t1, $sp, 8
+08938F60:[8D290000]: lw         $t1, 0($t1)
+08938F64:[84E50000]: lh         $a1, 0($a3)
+08938F68:[44856000]: mtc1       $a1, $f12
+08938F6C:[46806320]: cvt.s.w    $f12, $f12
+08938F70:[460C5B42]: mul.s      $f13, $f11, $f12
+08938F74:[46006B4D]: trunc.w.s  $f13, $f13
+08938F78:[44056800]: mfc1       $a1, $f13
+08938F7C:[A4C50000]: sh         $a1, 0($a2)
+08938F80:[24C60002]: addiu      $a2, $a2, 2
+08938F84:[24E70002]: addiu      $a3, $a3, 2
+08938F88:[25080001]: addiu      $t0, $t0, 1
+08938F8C:[0109202A]: slt        $a0, $t0, $t1
+08938F90:[1480FFF4]: bne        $a0, $zr, 0x08938F64
+08938F94:[00000000]: nop
+08938F98:[014A2821]: addu       $a1, $t2, $t2
+08938F9C:[0E264F36/FC000000]: jal        0x08993CD8 [sceKernelDcacheWritebackRange]
+08938FA0:[03A02025]: or         $a0, $sp, $zr <=> move $a0, $sp
+08938FA4:[8FBF000C]: lw         $ra, 12($sp)
+08938FA8:[03E00008]: jr         $ra
+08938FAC:[27BD0010]: addiu      $sp, $sp, 16
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="SoundStereoToMono">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Sound</Class>
+		<Method>stereoToMono</Method>
+		<IsReturning>true</IsReturning>
+		<Parameters>$a0,$a1,$a2</Parameters>
+		<CodeInstructions><![CDATA[
+089392E0:[27BDFFF0]: addiu      $sp, $sp, -16
+089392E4:[AFBF000C]: sw         $ra, 12($sp)
+089392E8:[00C05025]: or         $t2, $a2, $zr <=> move $t2, $a2
+089392EC:[AFA40000]: sw         $a0, 0($sp)
+089392F0:[AFA50004]: sw         $a1, 4($sp)
+089392F4:[AFAA0008]: sw         $t2, 8($sp)
+089392F8:[8FA60000]: lw         $a2, 0($sp)
+089392FC:[27A70004]: addiu      $a3, $sp, 4
+08939300:[8CE70000]: lw         $a3, 0($a3)
+08939304:[31080000]: andi       $t0, $t0, 0
+08939308:[27A90008]: addiu      $t1, $sp, 8
+0893930C:[8D290000]: lw         $t1, 0($t1)
+08939310:[84E40000]: lh         $a0, 0($a3)
+08939314:[A4C40000]: sh         $a0, 0($a2)
+08939318:[24C60002]: addiu      $a2, $a2, 2
+0893931C:[24E70004]: addiu      $a3, $a3, 4
+08939320:[25080001]: addiu      $t0, $t0, 1
+08939324:[0109202A]: slt        $a0, $t0, $t1
+08939328:[1480FFF9]: bne        $a0, $zr, 0x08939310
+0893932C:[00000000]: nop
+08939330:[014A2821]: addu       $a1, $t2, $t2
+08939334:[00052842]: srl        $a1, $a1, 0x0001
+08939338:[0E264F36/FC000000]: jal        0x08993CD8 [sceKernelDcacheWritebackRange]
+0893933C:[03A02025]: or         $a0, $sp, $zr <=> move $a0, $sp
+08939340:[8FBF000C]: lw         $ra, 12($sp)
+08939344:[03E00008]: jr         $ra
+08939348:[27BD0010]: addiu      $sp, $sp, 16
+]]></CodeInstructions>
+	</NativeCodeSequence>
 <!--
 	<NativeCodeSequence name="XXX">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.XXX</Class>
