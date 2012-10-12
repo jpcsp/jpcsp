@@ -483,13 +483,21 @@ public class sceMpeg extends HLEModule {
         	if (log.isTraceEnabled()) {
         		log.trace(String.format("hleMpegRingbufferPostPut:%s", Utilities.getMemoryDump(mpegRingbuffer.data, packetsAdded * mpegRingbuffer.packetSize, 4, 16)));
         	}
-        	if (checkMediaEngineState() && (meChannel != null)) {
-                meChannel.write(mpegRingbuffer.data, packetsAdded * mpegRingbuffer.packetSize);
+    		int addr = mpegRingbuffer.data;
+    		int length = packetsAdded * mpegRingbuffer.packetSize;
+        	if (checkMediaEngineState()) {
+                if (meChannel == null) {
+                	// If no MPEG header has been provided by the application (and none could be found),
+                	// just use the MPEG stream as it is, without header analysis.
+                	me.init(addr, length, 0);
+                	meChannel = new PacketChannel();
+                }
+                meChannel.write(addr, length);
             } else if (isEnableConnector()) {
-                mpegCodec.writeVideo(mpegRingbuffer.data, packetsAdded * mpegRingbuffer.packetSize);
+                mpegCodec.writeVideo(addr, length);
             }
             if (packetsAdded > mpegRingbuffer.packetsFree) {
-                log.warn("sceMpegRingbufferPut clamping packetsAdded old=" + packetsAdded + " new=" + mpegRingbuffer.packetsFree);
+                log.warn(String.format("sceMpegRingbufferPut clamping packetsAdded old=%d, new=%d", packetsAdded, mpegRingbuffer.packetsFree));
                 packetsAdded = mpegRingbuffer.packetsFree;
             }
             mpegRingbuffer.packetsRead += packetsAdded;
