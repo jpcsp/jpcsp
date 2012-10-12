@@ -2,7 +2,7 @@ TARGET = compilerPerf
 OBJS = main.o
 
 INCDIR =
-CFLAGS = -O2 -G0 -Wall
+CFLAGS = -O2 -G0 -Wall -fno-tree-loop-optimize -fno-inline-small-functions
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti
 ASFLAGS = $(CFLAGS)
 
