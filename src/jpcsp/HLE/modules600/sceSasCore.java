@@ -19,19 +19,27 @@ package jpcsp.HLE.modules600;
 import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
-import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.modules150.sceAtrac3plus.AtracID;
 
 @HLELogging
 public class sceSasCore extends jpcsp.HLE.modules500.sceSasCore {
 	public static Logger log = jpcsp.HLE.modules150.sceSasCore.log;
+	private static final int SASCORE_ATRAC3_CONTEXT_OFFSET = 20;
+	private static final int SASCORE_VOICE_SIZE = 56;
 
 	protected void setSasCoreAtrac3Context(int sasCore, int voice, int atrac3Context) {
 		Memory mem = Memory.getInstance();
-        mem.write32(sasCore + 56 * voice + 20, atrac3Context);
+        mem.write32(sasCore + SASCORE_VOICE_SIZE * voice + SASCORE_ATRAC3_CONTEXT_OFFSET, atrac3Context);
+	}
+
+	protected int getSasCoreAtrac3Context(int sasCore, int voice) {
+		Memory mem = Memory.getInstance();
+		return mem.read32(sasCore + SASCORE_VOICE_SIZE * voice + SASCORE_ATRAC3_CONTEXT_OFFSET);
 	}
 
 	@HLELogging(level="info")
@@ -52,10 +60,13 @@ public class sceSasCore extends jpcsp.HLE.modules500.sceSasCore {
         return 0;
     }
 
-	@HLEUnimplemented
     @HLEFunction(nid = 0x7497EA85, version = 600, checkInsideInterrupt = true)
-    public int __sceSasConcatenateATRAC3(int sasCore, int voice, int atrac3Addr, int unkown) {
+    public int __sceSasConcatenateATRAC3(int sasCore, int voice, @CanBeNull TPointer atrac3DataAddr, int atrac3DataLength) {
         checkSasAndVoiceHandlesGood(sasCore, voice);
+
+        int atrac3Context = getSasCoreAtrac3Context(sasCore, voice);
+        AtracID atracID = Modules.sceAtrac3plusModule.getAtracIdFromContext(atrac3Context);
+        atracID.addStreamData(atrac3DataAddr.getAddress(), atrac3DataLength);
 
         return 0;
     }

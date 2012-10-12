@@ -68,6 +68,10 @@ public class sceAtrac3plus extends HLEModule {
     protected static final int SMPL_CHUNK_MAGIC = 0x6C706D73; // "SMPL"
     public    static final int DATA_CHUNK_MAGIC = 0x61746164; // "DATA"
 
+    private static final int ATRAC3_CONTEXT_READ_SIZE_OFFSET = 160;
+    private static final int ATRAC3_CONTEXT_REQUIRED_SIZE_OFFSET = 164;
+    private static final int ATRAC3_CONTEXT_DECODE_RESULT_OFFSET = 188;
+
     public static final int PSP_ATRAC_ALLDATA_IS_ON_MEMORY = -1;
     public static final int PSP_ATRAC_NONLOOP_STREAM_DATA_IS_ON_MEMORY = -2;
     public static final int PSP_ATRAC_LOOP_STREAM_DATA_IS_ON_MEMORY = -3;
@@ -196,6 +200,11 @@ public class sceAtrac3plus extends HLEModule {
 	    	        mem.write8(contextAddr + 151, (byte) 1); // Unknown.
 	    	        mem.write16(contextAddr + 154, (short) getAtracCodecType());
 	    	        //mem.write32(contextAddr + 168, 0); // Voice associated to this Atrac context using __sceSasSetVoiceATRAC3?
+
+	    	        // Used by SampleSourceAtrac3 (input for __sceSasConcatenateATRAC3):
+	    	        mem.write32(contextAddr + ATRAC3_CONTEXT_READ_SIZE_OFFSET, getInputFileOffset());
+	    	        mem.write32(contextAddr + ATRAC3_CONTEXT_REQUIRED_SIZE_OFFSET, getInputFileOffset()); 
+	    	        mem.write32(contextAddr + ATRAC3_CONTEXT_DECODE_RESULT_OFFSET, 0);
         		}
         	}
         }
@@ -516,13 +525,17 @@ public class sceAtrac3plus extends HLEModule {
         }
 
         protected void addStreamData(int length) {
+            addStreamData(inputBufferAddr, length);
+        }
+
+        public void addStreamData(int address, int length) {
         	if (length > 0) {
-	            inputFileOffset += length;
 	            inputBufferOffset -= length;
+	            inputFileOffset += length;
 
 	            forceReloadOfData = false;
 
-	            getAtracCodec().atracAddStreamData(inputBufferAddr, length);
+	            getAtracCodec().atracAddStreamData(address, length);
         	}
         }
 
@@ -664,6 +677,16 @@ public class sceAtrac3plus extends HLEModule {
 
         public boolean isForceReloadOfData() {
         	return forceReloadOfData;
+        }
+
+        public void setContextDecodeResult(int result, int requestedSize) {
+        	if (getContext() != null) {
+        		Memory mem = Memory.getInstance();
+        		int contextAddr = getContext().addr;
+        		mem.write32(contextAddr + ATRAC3_CONTEXT_DECODE_RESULT_OFFSET, result);
+        		int readSize = mem.read32(contextAddr + ATRAC3_CONTEXT_READ_SIZE_OFFSET);
+        		mem.write32(contextAddr + ATRAC3_CONTEXT_REQUIRED_SIZE_OFFSET, readSize + requestedSize);
+        	}
         }
 
         @Override
