@@ -16,8 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.sound;
 
+import static java.lang.Math.min;
+
+import org.apache.log4j.Logger;
+
 import jpcsp.Memory;
 import jpcsp.HLE.modules150.sceAtrac3plus.AtracID;
+import jpcsp.HLE.modules150.sceSasCore;
 import jpcsp.connector.AtracCodec;
 
 /**
@@ -25,6 +30,7 @@ import jpcsp.connector.AtracCodec;
  *
  */
 public class SampleSourceAtrac3 implements ISampleSource {
+	private Logger log = sceSasCore.log;
 	private final AtracID id;
 	private final AtracCodec codec;
 	private final int maxSamples;
@@ -48,6 +54,18 @@ public class SampleSourceAtrac3 implements ISampleSource {
 
 	private void decode() {
 		bufferedSamples = codec.atracDecodeData(id.getAtracId(), buffer);
+
+		if (id.getInputFileOffset() < id.getInputFileSize()) {
+			int requestedSize = min(id.getInputFileSize() - id.getInputFileOffset(), id.getInputBufferSize());
+			id.setContextDecodeResult(-1, requestedSize);
+		} else {
+			id.setContextDecodeResult(0, 0);
+		}
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("SampleSourceAtrac3 decode: bufferedSamples=%d, currentSample=%d, endSample=%d, isEnd=%d", bufferedSamples, getSampleIndex(), id.getAtracEndSample(), codec.getAtracEnd()));
+		}
+
 		sampleIndex = 0;
 	}
 
