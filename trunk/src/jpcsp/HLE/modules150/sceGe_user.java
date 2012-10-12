@@ -21,7 +21,6 @@ import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
-import jpcsp.HLE.TPointer32;
 
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -386,7 +385,7 @@ public class sceGe_user extends HLEModule {
     }
 
     @HLEFunction(nid = 0x57C8945B, version = 150)
-    public int sceGeGetMtx(int mtxType, TPointer32 mtxAddr) {
+    public int sceGeGetMtx(int mtxType, TPointer mtxAddr) {
         VideoEngine ve = VideoEngine.getInstance();
         float[] mtx = ve.getMatrix(mtxType);
 
@@ -396,7 +395,7 @@ public class sceGe_user extends HLEModule {
         }
 
         for (int i = 0; i < mtx.length; i++) {
-        	mtxAddr.setValue(i << 2, Float.floatToRawIntBits(mtx[i]));
+        	mtxAddr.setFloat(i << 2, mtx[i]);
         }
 
         if (log.isInfoEnabled()) {
