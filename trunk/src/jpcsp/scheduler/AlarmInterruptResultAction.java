@@ -33,7 +33,7 @@ public class AlarmInterruptResultAction implements IAction {
 	public void execute() {
 		ThreadManForUser timerManager = Modules.ThreadManForUserModule;
 
-		int alarmInterruptResult = Emulator.getProcessor().cpu.gpr[2];
+		int alarmInterruptResult = Emulator.getProcessor().cpu._v0;
 		if (Modules.log.isDebugEnabled()) {
 			Modules.log.debug("Alarm returned value " + alarmInterruptResult);
 		}

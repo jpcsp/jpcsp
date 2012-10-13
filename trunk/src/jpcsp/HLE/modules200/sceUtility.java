@@ -173,7 +173,7 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
     public void sceUtilityLoadNetModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int module = cpu.gpr[4];
+        int module = cpu._a0;
 
         
 
@@ -185,21 +185,21 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
         } else {
             log.info(String.format("sceUtilityLoadNetModule(module=0x%04X) %s loaded", module, moduleName));
         }
-        cpu.gpr[2] = result;
+        cpu._v0 = result;
     }
 
     @HLEFunction(nid = 0x64D50C56, version = 200, checkInsideInterrupt = true)
     public void sceUtilityUnloadNetModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int module = cpu.gpr[4];
+        int module = cpu._a0;
 
         
 
         String moduleName = getNetModuleName(module);
         log.info(String.format("sceUtilityUnloadNetModule(module=0x%04X) %s unloaded", module, moduleName));
 
-        cpu.gpr[2] = hleUtilityUnloadNetModule(module);
+        cpu._v0 = hleUtilityUnloadNetModule(module);
     }
 
     @HLEFunction(nid = 0x1281DA8E, version = 200)

@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import static jpcsp.Allegrex.Common._v0;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLEUnimplemented;
@@ -278,7 +277,7 @@ public class sceCtrl extends HLEModule {
 	            if (log.isDebugEnabled()) {
 	                log.debug("hleExecuteSampling waiting up thread " + wait.thread);
 	            }
-	            wait.thread.cpuContext.gpr[_v0] = hleCtrlReadBufferImmediately(wait.readAddr, wait.readCount, wait.readPositive, false);
+	            wait.thread.cpuContext._v0 = hleCtrlReadBufferImmediately(wait.readAddr, wait.readCount, wait.readPositive, false);
 	            Modules.ThreadManForUserModule.hleUnblockThread(wait.thread.uid);
 	            break;
             }

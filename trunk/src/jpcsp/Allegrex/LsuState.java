@@ -50,46 +50,46 @@ public class LsuState extends MduState {
     }
 
     public void doLB(int rt, int rs, int simm16) {
-        int word = (byte)memory.read8(gpr[rs] + simm16);
+        int word = (byte)memory.read8(getRegister(rs) + simm16);
         if (rt != 0) {
-            gpr[rt] = word;
+            setRegister(rt, word);
         }
     }
 
     public void doLBU(int rt, int rs, int simm16) {
-        int word = memory.read8(gpr[rs] + simm16) & 0xff;
+        int word = memory.read8(getRegister(rs) + simm16) & 0xff;
         if (rt != 0) {
-            gpr[rt] = word;
+            setRegister(rt, word);
         }
     }
 
     public void doLH(int rt, int rs, int simm16) {
         if (CHECK_ALIGNMENT) {
             CpuState cpu = Emulator.getProcessor().cpu;
-            int address = gpr[rs] + simm16;
+            int address = getRegister(rs) + simm16;
             if ((address & 1) != 0) {
                 Memory.log.error(String.format("LH unaligned addr:0x%08x pc:0x%08x", address, cpu.pc));
             }
         }
 
-        int word = (short)memory.read16(gpr[rs] + simm16);
+        int word = (short)memory.read16(getRegister(rs) + simm16);
         if (rt != 0) {
-            gpr[rt] = word;
+            setRegister(rt, word);
         }
     }
 
     public void doLHU(int rt, int rs, int simm16) {
         if (CHECK_ALIGNMENT) {
             CpuState cpu = Emulator.getProcessor().cpu;
-            int address = gpr[rs] + simm16;
+            int address = getRegister(rs) + simm16;
             if ((address & 1) != 0) {
                 Memory.log.error(String.format("LHU unaligned addr:0x%08x pc:0x%08x", address, cpu.pc));
             }
         }
 
-        int word = memory.read16(gpr[rs] + simm16) & 0xffff;
+        int word = memory.read16(getRegister(rs) + simm16) & 0xffff;
         if (rt != 0) {
-            gpr[rt] = word;
+            setRegister(rt, word);
         }
     }
 
@@ -97,28 +97,28 @@ public class LsuState extends MduState {
     private static final int[] lwlShift = { 24, 16, 8, 0 };
 
     public void doLWL(int rt, int rs, int simm16) {
-        int address = gpr[rs] + simm16;
+        int address = getRegister(rs) + simm16;
         int offset = address & 0x3;
-        int value = gpr[rt];
+        int value = getRegister(rt);
 
         int data = memory.read32(address & 0xfffffffc);
         if (rt != 0) {
-            gpr[rt] = (data << lwlShift[offset]) | (value & lwlMask[offset]);
+            setRegister(rt, (data << lwlShift[offset]) | (value & lwlMask[offset]));
         }
     }
 
     public void doLW(int rt, int rs, int simm16) {
         if (CHECK_ALIGNMENT) {
             CpuState cpu = Emulator.getProcessor().cpu;
-            int address = gpr[rs] + simm16;
+            int address = getRegister(rs) + simm16;
             if ((address & 3) != 0) {
                 Memory.log.error(String.format("LW unaligned addr:0x%08x pc:0x%08x", address, cpu.pc));
             }
         }
 
-        int word = memory.read32(gpr[rs] + simm16);
+        int word = memory.read32(getRegister(rs) + simm16);
         if (rt != 0) {
-            gpr[rt] = word;
+            setRegister(rt, word);
         }
     }
 
@@ -126,39 +126,39 @@ public class LsuState extends MduState {
     private static final int[] lwrShift = { 0, 8, 16, 24 };
 
     public void doLWR(int rt, int rs, int simm16) {
-        int address = gpr[rs] + simm16;
+        int address = getRegister(rs) + simm16;
         int offset = address & 0x3;
-        int value = gpr[rt];
+        int value = getRegister(rt);
 
         int data = memory.read32(address & 0xfffffffc);
         if (rt != 0) {
-            gpr[rt] = (data >>> lwrShift[offset]) | (value & lwrMask[offset]);
+            setRegister(rt, (data >>> lwrShift[offset]) | (value & lwrMask[offset]));
         }
     }
 
     public void doSB(int rt, int rs, int simm16) {
-        memory.write8(gpr[rs] + simm16, (byte) (gpr[rt] & 0xFF));
+        memory.write8(getRegister(rs) + simm16, (byte) (getRegister(rt) & 0xFF));
     }
 
     public void doSH(int rt, int rs, int simm16) {
         if (CHECK_ALIGNMENT) {
             CpuState cpu = Emulator.getProcessor().cpu;
-            int address = gpr[rs] + simm16;
+            int address = getRegister(rs) + simm16;
             if ((address & 1) != 0) {
                 Memory.log.error(String.format("SH unaligned addr:0x%08x pc:0x%08x", address, cpu.pc));
             }
         }
 
-        memory.write16(gpr[rs] + simm16, (short) (gpr[rt] & 0xFFFF));
+        memory.write16(getRegister(rs) + simm16, (short) (getRegister(rt) & 0xFFFF));
     }
 
     private static final int[] swlMask = { 0xffffff00, 0xffff0000, 0xff000000, 0 };
     private static final int[] swlShift = { 24, 16, 8, 0 };
 
     public void doSWL(int rt, int rs, int simm16) {
-        int address = gpr[rs] + simm16;
+        int address = getRegister(rs) + simm16;
         int offset = address & 0x3;
-        int value = gpr[rt];
+        int value = getRegister(rt);
         int data = memory.read32(address & 0xfffffffc);
 
         data = (value >>> swlShift[offset]) | (data & swlMask[offset]);
@@ -169,22 +169,22 @@ public class LsuState extends MduState {
     public void doSW(int rt, int rs, int simm16) {
         if (CHECK_ALIGNMENT) {
             CpuState cpu = Emulator.getProcessor().cpu;
-            int address = gpr[rs] + simm16;
+            int address = getRegister(rs) + simm16;
             if ((address & 3) != 0) {
                 Memory.log.error(String.format("SW unaligned addr:0x%08x pc:0x%08x", address, cpu.pc));
             }
         }
 
-        memory.write32(gpr[rs] + simm16, gpr[rt]);
+        memory.write32(getRegister(rs) + simm16, getRegister(rt));
     }
 
     private static final int[] swrMask = { 0, 0xff, 0xffff, 0xffffff };
     private static final int[] swrShift = { 0, 8, 16, 24 };
 
     public void doSWR(int rt, int rs, int simm16) {
-        int address = gpr[rs] + simm16;
+        int address = getRegister(rs) + simm16;
         int offset = address & 0x3;
-        int value = gpr[rt];
+        int value = getRegister(rt);
         int data = memory.read32(address & 0xfffffffc);
 
         data = (value << swrShift[offset]) | (data & swrMask[offset]);
@@ -193,17 +193,17 @@ public class LsuState extends MduState {
     }
 
     public void doLL(int rt, int rs, int simm16) {
-        int word = memory.read32(gpr[rs] + simm16);
+        int word = memory.read32(getRegister(rs) + simm16);
         if (rt != 0) {
-            gpr[rt] = word;
+            setRegister(rt, word);
         }
         //ll_bit = 1;
     }
 
     public void doSC(int rt, int rs, int simm16) {
-        memory.write32(gpr[rs] + simm16, gpr[rt]);
+        memory.write32(getRegister(rs) + simm16, getRegister(rt));
         if (rt != 0) {
-            gpr[rt] = 1; // = ll_bit;
+            setRegister(rt, 1); // = ll_bit;
         }
     }
 }

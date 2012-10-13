@@ -142,7 +142,7 @@ public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-	int addr = processor.cpu.gpr[rs] + (short) imm16;
+	int addr = processor.cpu.getRegister(rs) + (short) imm16;
 	int size = 64;
 	if (Emulator.log.isInfoEnabled()) {
 		Emulator.log.info(String.format("%s addr=0x%08X, size=%d", name(), addr, size));

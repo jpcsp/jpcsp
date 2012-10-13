@@ -96,7 +96,7 @@ public class FpuState extends BcuState {
 
     public void doMFC1(int rt, int c1dr) {
     	if (rt != 0) {
-    		gpr[rt] = Float.floatToRawIntBits(fpr[c1dr]);
+    		setRegister(rt, Float.floatToRawIntBits(fpr[c1dr]));
     	}
     }
 
@@ -104,11 +104,11 @@ public class FpuState extends BcuState {
         if (rt != 0) {
             switch (c1cr) {
                 case 0:
-                    gpr[rt] = (Fcr0.imp << 8) | (Fcr0.rev);
+                    setRegister(rt, (Fcr0.imp << 8) | (Fcr0.rev));
                     break;
 
                 case 31:
-                    gpr[rt] = (fcr31.fs ? (1 << 24) : 0) | (fcr31.c ? (1 << 23) : 0) | (fcr31.rm & 3);
+                	setRegister(rt, (fcr31.fs ? (1 << 24) : 0) | (fcr31.c ? (1 << 23) : 0) | (fcr31.rm & 3));
                     break;
 
                 default:
@@ -118,13 +118,13 @@ public class FpuState extends BcuState {
     }
 
     public void doMTC1(int rt, int c1dr) {
-        fpr[c1dr] = Float.intBitsToFloat(gpr[rt]);
+        fpr[c1dr] = Float.intBitsToFloat(getRegister(rt));
     }
 
     public void doCTC1(int rt, int c1cr) {
         switch (c1cr) {
             case 31:
-                int bits = gpr[rt] & 0x01800003;
+                int bits = getRegister(rt) & 0x01800003;
                 fcr31.rm = bits & 3;
                 fcr31.fs = ((bits >> 24) & 1) != 0;
                 fcr31.c  = ((bits >> 23) & 1) != 0;
@@ -247,10 +247,10 @@ public class FpuState extends BcuState {
     }
 
     public void doLWC1(int ft, int rs, int simm16) {
-        fpr[ft] = Float.intBitsToFloat(memory.read32(gpr[rs] + simm16));
+        fpr[ft] = Float.intBitsToFloat(memory.read32(getRegister(rs) + simm16));
     }
 
     public void doSWC1(int ft, int rs, int simm16) {
-        memory.write32(gpr[rs] + simm16, Float.floatToRawIntBits(fpr[ft]));
+        memory.write32(getRegister(rs) + simm16, Float.floatToRawIntBits(fpr[ft]));
     }
 }

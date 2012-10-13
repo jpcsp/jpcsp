@@ -48,10 +48,6 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 		return toLowerCase;
 	}
 
-	static protected int[] getGpr() {
-		return RuntimeContext.gpr;
-	}
-
 	static protected CpuState getCpu() {
 		return RuntimeContext.cpu;
 	}
@@ -61,7 +57,7 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 	}
 
 	static protected int getRegisterValue(int register) {
-		return getGpr()[register];
+		return getCpu().getRegister(register);
 	}
 
 	static protected long getLong(int low, int high) {
@@ -69,35 +65,35 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 	}
 
 	static protected int getGprA0() {
-		return getGpr()[4];
+		return getCpu()._a0;
 	}
 
 	static protected int getGprA1() {
-		return getGpr()[5];
+		return getCpu()._a1;
 	}
 
 	static protected int getGprA2() {
-		return getGpr()[6];
+		return getCpu()._a2;
 	}
 
 	static protected int getGprA3() {
-		return getGpr()[7];
+		return getCpu()._a3;
 	}
 
 	static protected int getGprT0() {
-		return getGpr()[8];
+		return getCpu()._t0;
 	}
 
 	static protected int getGprT1() {
-		return getGpr()[9];
+		return getCpu()._t1;
 	}
 
 	static protected int getGprT2() {
-		return getGpr()[10];
+		return getCpu()._t2;
 	}
 
 	static protected int getGprT3() {
-		return getGpr()[11];
+		return getCpu()._t3;
 	}
 
 	static protected int getStackParam0() {
@@ -113,20 +109,20 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 	}
 
 	static protected int getGprSp() {
-		return getGpr()[29];
+		return getCpu()._sp;
 	}
 
 	static protected void setGprV0(int v0) {
-		getGpr()[2] = v0;
+		getCpu()._v0 = v0;
 	}
 
 	static protected void setGprV0V1(long v0v1) {
-		getGpr()[2] = (int) v0v1;
-		getGpr()[3] = (int) (v0v1 >> 32);
+		getCpu()._v0 = (int) v0v1;
+		getCpu()._v1 = (int) (v0v1 >> 32);
 	}
 
 	static protected void setRegisterValue(int register, int value) {
-		getGpr()[register] = value;
+		getCpu().setRegister(register, value);
 	}
 
 	static float[] getFpr() {

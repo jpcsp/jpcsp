@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
+import static jpcsp.Allegrex.GprState.NUMBER_REGISTERS;
+
 import java.nio.ByteBuffer;
 
 import jpcsp.Allegrex.Common.Instruction;
@@ -45,8 +47,8 @@ public class Processor {
         cpu.pc = buffer.getInt();
         cpu.npc = buffer.getInt();
 
-        for (int i = 0; i < cpu.gpr.length; i++) {
-            cpu.gpr[i] = buffer.getInt();
+        for (int i = 0; i < NUMBER_REGISTERS; i++) {
+            cpu.setRegister(i, buffer.getInt());
         }
     }
 
@@ -54,8 +56,8 @@ public class Processor {
         buffer.putInt(cpu.pc);
         buffer.putInt(cpu.npc);
 
-        for (int i = 0; i < cpu.gpr.length; i++) {
-            buffer.putInt(cpu.gpr[i]);
+        for (int i = 0; i < NUMBER_REGISTERS; i++) {
+            buffer.putInt(cpu.getRegister(i));
         }
     }
 

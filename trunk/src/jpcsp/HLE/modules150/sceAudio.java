@@ -170,7 +170,7 @@ public class sceAudio extends HLEModule {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             SceKernelThreadInfo thread = threadMan.getThreadById(threadId);
             if (thread != null) {
-            	thread.cpuContext.gpr[2] = 0;
+            	thread.cpuContext._v0 = 0;
                 threadMan.hleUnblockThread(threadId);
             }
     	} else if (!channel.isOutputBlocking()) {
@@ -179,7 +179,7 @@ public class sceAudio extends HLEModule {
             if (thread != null) {
                 changeChannelVolume(channel, leftVolume, rightVolume);
                 int ret = doAudioOutput(channel, addr);
-                thread.cpuContext.gpr[2] = ret;
+                thread.cpuContext._v0 = ret;
                 threadMan.hleUnblockThread(threadId);
             }
         } else {

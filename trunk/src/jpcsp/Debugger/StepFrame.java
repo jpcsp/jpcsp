@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Debugger;
 
+import static jpcsp.Allegrex.GprState.NUMBER_REGISTERS;
 import jpcsp.Memory;
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
@@ -27,7 +28,7 @@ public class StepFrame {
     // Optimize for speed and memory, just store the raw details and calculate
     // the formatted message the first time getMessage it called.
     private int pc;
-    private int[] gpr = new int[32];
+    private int[] gpr = new int[NUMBER_REGISTERS];
 
     private int opcode;
     private String asm;
@@ -45,7 +46,9 @@ public class StepFrame {
 
     public void make(CpuState cpu) {
         pc = cpu.pc;
-        for (int i = 0; i < 32; i++) gpr[i] = cpu.gpr[i]; // this will copy
+        for (int i = 0; i < NUMBER_REGISTERS; i++) {
+        	gpr[i] = cpu.getRegister(i);
+        }
         threadID = Modules.ThreadManForUserModule.getCurrentThreadID();
         threadName = Modules.ThreadManForUserModule.getThreadName(threadID);
 
@@ -71,7 +74,7 @@ public class StepFrame {
 
     private String getRegistersInfo() {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 32; i += 4) {
+        for (int i = 0; i < NUMBER_REGISTERS; i += 4) {
             sb.append(String.format("%s:0x%08X %s:0x%08X %s:0x%08X %s:0x%08X\n",
                 Common.gprNames[i + 0].substring(1), gpr[i + 0],
                 Common.gprNames[i + 1].substring(1), gpr[i + 1],

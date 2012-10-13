@@ -16,10 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import static jpcsp.Allegrex.Common._gp;
-import static jpcsp.Allegrex.Common._k0;
 import static jpcsp.Allegrex.Common._ra;
-import static jpcsp.Allegrex.Common._sp;
 import static jpcsp.Allegrex.Common._zr;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_ALREADY_DORMANT;
 
@@ -263,7 +260,7 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
     	}
 
         // Inherit gpReg.
-        gpReg_addr = Emulator.getProcessor().cpu.gpr[_gp];
+        gpReg_addr = Emulator.getProcessor().cpu._gp;
         // Inherit context.
         cpuContext = new CpuState(Emulator.getProcessor().cpu);
         wait = new ThreadWaitInfo();
@@ -309,10 +306,10 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
 
         // Reset all the registers to DEADBEEF value
         for (int i = _ra; i > _zr; i--) {
-        	cpuContext.gpr[i] = 0xDEADBEEF;
+        	cpuContext.setRegister(i, 0xDEADBEEF);
         }
-        cpuContext.gpr[Common._k0] = 0;
-        cpuContext.gpr[Common._k1] = 0;
+        cpuContext._k0 = 0;
+        cpuContext._k1 = 0;
         float nanValue = Float.intBitsToFloat(0x7F800001);
         for (int i = Common._f31; i >= Common._f0; i--) {
         	cpuContext.fpr[i] = nanValue;
@@ -320,12 +317,12 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
         cpuContext.hilo = 0xDEADBEEFDEADBEEFL;
 
         // sp, 512 byte padding at the top for user data, this will get re-jigged when we call start thread
-        cpuContext.gpr[_sp] = stackAddr + stackSize - 512;
-        cpuContext.gpr[_k0] = k0;
+        cpuContext._sp = stackAddr + stackSize - 512;
+        cpuContext._k0 = k0;
 
         // We'll hook "jr $ra" where $ra == address of HLE syscall hleKernelExitThread
         // when the thread is exiting
-        cpuContext.gpr[_ra] = jpcsp.HLE.modules150.ThreadManForUser.THREAD_EXIT_HANDLER_ADDRESS; // $ra
+        cpuContext._ra = jpcsp.HLE.modules150.ThreadManForUser.THREAD_EXIT_HANDLER_ADDRESS;
 
         doDelete = false;
         doCallbacks = false;

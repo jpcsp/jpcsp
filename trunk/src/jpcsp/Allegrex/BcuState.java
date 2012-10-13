@@ -93,30 +93,30 @@ public class BcuState extends LsuState {
     }
 
     public boolean doJR(int rs) {
-        npc = gpr[rs];
+        npc = getRegister(rs);
         return true;
     }
 
     public boolean doJALR(int rd, int rs) {
         if (rd != 0) {
-            gpr[rd] = pc + 4;
+            setRegister(rd, pc + 4);
         }
-        npc = gpr[rs];
+        npc = getRegister(rs);
         return true;
     }
 
     public boolean doBLTZ(int rs, int simm16) {
-        npc = (gpr[rs] < 0) ? branchTarget(pc, simm16) : (pc + 4);
+        npc = (getRegister(rs) < 0) ? branchTarget(pc, simm16) : (pc + 4);
         return true;
     }
 
     public boolean doBGEZ(int rs, int simm16) {
-        npc = (gpr[rs] >= 0) ? branchTarget(pc, simm16) : (pc + 4);
+        npc = (getRegister(rs) >= 0) ? branchTarget(pc, simm16) : (pc + 4);
         return true;
     }
 
     public boolean doBLTZL(int rs, int simm16) {
-        if (gpr[rs] < 0) {
+        if (getRegister(rs) < 0) {
             npc = branchTarget(pc, simm16);
             return true;
         }
@@ -125,7 +125,7 @@ public class BcuState extends LsuState {
     }
 
     public boolean doBGEZL(int rs, int simm16) {
-        if (gpr[rs] >= 0) {
+        if (getRegister(rs) >= 0) {
             npc = branchTarget(pc, simm16);
             return true;
         }
@@ -135,23 +135,23 @@ public class BcuState extends LsuState {
 
     public boolean doBLTZAL(int rs, int simm16) {
         int target = pc + 4;
-        boolean t = (gpr[rs] < 0);
-        gpr[31] = target;
+        boolean t = (getRegister(rs) < 0);
+        _ra = target;
         npc = t ? branchTarget(pc, simm16) : target;
         return true;
     }
 
     public boolean doBGEZAL(int rs, int simm16) {
         int target = pc + 4;
-        boolean t = (gpr[rs] >= 0);
-        gpr[31] = target;
+        boolean t = (getRegister(rs) >= 0);
+        _ra = target;
         npc = t ? branchTarget(pc, simm16) : target;
         return true;
     }
 
     public boolean doBLTZALL(int rs, int simm16) {
-        boolean t = (gpr[rs] < 0);
-        gpr[31] = pc + 4;
+        boolean t = (getRegister(rs) < 0);
+        _ra = pc + 4;
         if (t) {
             npc = branchTarget(pc, simm16);
         } else {
@@ -161,8 +161,8 @@ public class BcuState extends LsuState {
     }
 
     public boolean doBGEZALL(int rs, int simm16) {
-        boolean t = (gpr[rs] >= 0);
-        gpr[31] = pc + 4;
+        boolean t = (getRegister(rs) >= 0);
+        _ra = pc + 4;
         if (t) {
             npc = branchTarget(pc, simm16);
         } else {
@@ -181,13 +181,13 @@ public class BcuState extends LsuState {
     }
 
     public boolean doJAL(int uimm26) {
-        gpr[31] = pc + 4;
+        _ra = pc + 4;
         npc = jumpTarget(pc, uimm26);
         return true;
     }
 
     public boolean doBEQ(int rs, int rt, int simm16) {
-        npc = (gpr[rs] == gpr[rt]) ? branchTarget(pc, simm16) : (pc + 4);
+        npc = (getRegister(rs) == getRegister(rt)) ? branchTarget(pc, simm16) : (pc + 4);
         if (npc == pc - 4 && rs == rt) {
             Processor.log.info("Pausing emulator - branch to self (death loop)");
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_JUMPSELF);
@@ -196,22 +196,22 @@ public class BcuState extends LsuState {
     }
 
     public boolean doBNE(int rs, int rt, int simm16) {
-        npc = (gpr[rs] != gpr[rt]) ? branchTarget(pc, simm16) : (pc + 4);
+        npc = (getRegister(rs) != getRegister(rt)) ? branchTarget(pc, simm16) : (pc + 4);
         return true;
     }
 
     public boolean doBLEZ(int rs, int simm16) {
-        npc = (gpr[rs] <= 0) ? branchTarget(pc, simm16) : (pc + 4);
+        npc = (getRegister(rs) <= 0) ? branchTarget(pc, simm16) : (pc + 4);
         return true;
     }
 
     public boolean doBGTZ(int rs, int simm16) {
-        npc = (gpr[rs] > 0) ? branchTarget(pc, simm16) : (pc + 4);
+        npc = (getRegister(rs) > 0) ? branchTarget(pc, simm16) : (pc + 4);
         return true;
     }
 
     public boolean doBEQL(int rs, int rt, int simm16) {
-        if (gpr[rs] == gpr[rt]) {
+        if (getRegister(rs) == getRegister(rt)) {
             npc = branchTarget(pc, simm16);
             return true;
         }
@@ -220,7 +220,7 @@ public class BcuState extends LsuState {
     }
 
     public boolean doBNEL(int rs, int rt, int simm16) {
-        if (gpr[rs] != gpr[rt]) {
+        if (getRegister(rs) != getRegister(rt)) {
             npc = branchTarget(pc, simm16);
             return true;
         }
@@ -229,7 +229,7 @@ public class BcuState extends LsuState {
     }
 
     public boolean doBLEZL(int rs, int simm16) {
-        if (gpr[rs] <= 0) {
+        if (getRegister(rs) <= 0) {
             npc = branchTarget(pc, simm16);
             return true;
         }
@@ -238,7 +238,7 @@ public class BcuState extends LsuState {
     }
 
     public boolean doBGTZL(int rs, int simm16) {
-        if (gpr[rs] > 0) {
+        if (getRegister(rs) > 0) {
             npc = branchTarget(pc, simm16);
             return true;
         }

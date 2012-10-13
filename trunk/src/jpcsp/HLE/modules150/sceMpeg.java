@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.util.Utilities.endianSwap32;
@@ -476,7 +475,7 @@ public class sceMpeg extends HLEModule {
     protected void hleMpegRingbufferPostPut() {
         CpuState cpu = Emulator.getProcessor().cpu;
 
-        int packetsAdded = cpu.gpr[_v0];
+        int packetsAdded = cpu._v0;
         mpegRingbuffer.read(mpegRingbufferAddr);
 
         if (packetsAdded > 0) {
@@ -511,7 +510,7 @@ public class sceMpeg extends HLEModule {
             log.debug(String.format("sceMpegRingbufferPut packetsAdded=%d, packetsRead=%d", packetsAdded, mpegRingbuffer.packetsRead));
         }
 
-        cpu.gpr[_v0] = packetsAdded;
+        cpu._v0 = packetsAdded;
     }
 
     public static boolean isEnableConnector() {
@@ -2178,7 +2177,7 @@ public class sceMpeg extends HLEModule {
         insideRingbufferPut = true;
         Modules.ThreadManForUserModule.executeCallback(null, mpegRingbuffer.callback_addr, afterRingbufferPutCallback, false, mpegRingbuffer.data, numberPackets, mpegRingbuffer.callback_args);
 
-        return Emulator.getProcessor().cpu.gpr[_v0];
+        return Emulator.getProcessor().cpu._v0;
     }
 
     /**

@@ -336,7 +336,7 @@ public class sceNetApctl extends HLEModule {
 		}
 
 		if (sceNetApctlThreadTerminate) {
-			processor.cpu.gpr[2] = 0; // Exit status
+			processor.cpu._v0 = 0; // Exit status
 			Modules.ThreadManForUserModule.hleKernelExitDeleteThread();
 			sceNetApctlThread = null;
 		} else {

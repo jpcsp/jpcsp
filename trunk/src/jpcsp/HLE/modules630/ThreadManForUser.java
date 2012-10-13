@@ -16,10 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules630;
 
-import static jpcsp.Allegrex.Common._a0;
-import static jpcsp.Allegrex.Common._ra;
-import static jpcsp.Allegrex.Common._sp;
-
 import jpcsp.Emulator;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -55,8 +51,8 @@ public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
 			}
 
 			cpu.pc = savedPc;
-			cpu.gpr[_sp] = savedSp;
-			cpu.gpr[_ra] = savedRa;
+			cpu._sp = savedSp;
+			cpu._ra = savedRa;
 
 			// The return value in $v0 of the entryAdd is passed back as return value
 			// of sceKernelExtendThreadStack.
@@ -89,9 +85,9 @@ public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
 		// with the return value of entryAddr.
         SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
         int extendedStackAddr = thread.extendStack(size);
-        IAction afterAction = new AfterSceKernelExtendThreadStackAction(thread, cpu.pc, cpu.gpr[_sp], cpu.gpr[_ra]);
-        cpu.gpr[_a0] = entryParameter;
-        cpu.gpr[_sp] = extendedStackAddr + size;
+        IAction afterAction = new AfterSceKernelExtendThreadStackAction(thread, cpu.pc, cpu._sp, cpu._ra);
+        cpu._a0 = entryParameter;
+        cpu._sp = extendedStackAddr + size;
         Modules.ThreadManForUserModule.callAddress(entryAddr.getAddress(), afterAction, false);
 
         return 0;

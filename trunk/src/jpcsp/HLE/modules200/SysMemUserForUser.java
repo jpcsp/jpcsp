@@ -47,7 +47,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
             log.debug("sceKernelGetCompiledSdkVersion");
         }
 
-		cpu.gpr[2] = compiledSdkVersion;
+		cpu._v0 = compiledSdkVersion;
 	}
 
 	@HLEFunction(nid = 0x7591C7DB, version = 200)
@@ -65,14 +65,14 @@ public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
 	public void sceKernelSetCompilerVersion(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		int compVersion = cpu.gpr[4];
+		int compVersion = cpu._a0;
 
         if(log.isDebugEnabled()) {
             log.debug("sceKernelSetCompilerVersion: compVersion=" + Integer.toHexString(compVersion));
         }
 
         compilerVersion = compVersion;
-		cpu.gpr[2] = 0;
+		cpu._v0 = 0;
 	}
 
 	@HLEFunction(nid = 0xA6848DF8, version = 200)
@@ -81,7 +81,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
 
 		log.debug("Unimplemented NID function SysMemUserForUser_A6848DF8 [0xA6848DF8]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu._v0 = 0xDEADC0DE;
 	}
 
 }

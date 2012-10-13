@@ -35,7 +35,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 
 		log.debug("Unimplemented NID function sceKernelDonateWakeupThread [0x1AF94D03]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu._v0 = 0xDEADC0DE;
 	}
 
 	@HLEFunction(nid = 0x31327F19, version = 380)
@@ -44,7 +44,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 
 		log.debug("Unimplemented NID function ThreadManForUser_31327F19 [0x31327F19]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu._v0 = 0xDEADC0DE;
 	}
 
 	@HLEFunction(nid = 0x4C145944, version = 380)
@@ -63,7 +63,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 
 		log.debug("Unimplemented NID function ThreadManForUser_71040D5C [0x71040D5C]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu._v0 = 0xDEADC0DE;
 	}
 
 	@HLEFunction(nid = 0x7CFF8CF3, version = 380)
@@ -72,7 +72,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 
 		log.debug("Unimplemented NID function ThreadManForUser_7CFF8CF3 [0x7CFF8CF3]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu._v0 = 0xDEADC0DE;
 	}
 
 	@HLEFunction(nid = 0xBEED3A47, version = 380)
@@ -81,7 +81,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 
 		log.debug("Unimplemented NID function ThreadManForUser_BEED3A47 [0xBEED3A47]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu._v0 = 0xDEADC0DE;
 	}
 
 }

@@ -16,9 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
-import static jpcsp.Allegrex.Common._ra;
-import static jpcsp.Allegrex.Common._sp;
-import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.util.Utilities.sleep;
 
 import java.util.ArrayList;
@@ -64,7 +61,6 @@ import org.apache.log4j.Logger;
 public class RuntimeContext {
     public  static Logger log = Logger.getLogger("runtime");
 	private static boolean compilerEnabled = true;
-	public  static int gpr[];
 	public  static float fpr[];
 	public  static VfpuState.VfpuValue vpr[];
 	public  static int memoryInt[];
@@ -137,7 +133,7 @@ public class RuntimeContext {
         }
 
 		int returnValue;
-		int sp = cpu.gpr[_sp];
+		int sp = cpu._sp;
 
 		RuntimeThread stackThread = currentRuntimeThread;
 		try {
@@ -151,9 +147,9 @@ public class RuntimeContext {
 			}
 		}
 
-		if (stackThread != null && stackThread.isStackMaxSize() && cpu.gpr[_sp] > sp) {
+		if (stackThread != null && stackThread.isStackMaxSize() && cpu._sp > sp) {
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("jumpCall returning 0x%08X with $sp=0x%08X, start $sp=0x%08X", returnValue, cpu.gpr[_sp], sp));
+				log.debug(String.format("jumpCall returning 0x%08X with $sp=0x%08X, start $sp=0x%08X", returnValue, cpu._sp, sp));
 			}
 			throw new StackPopException(returnValue);
 		}
@@ -167,16 +163,16 @@ public class RuntimeContext {
 
 	public static void jump(int address, int returnAddress) throws Exception {
 		if (debugCodeBlockCalls && log.isDebugEnabled()) {
-			log.debug(String.format("RuntimeContext.jump starting address=0x%08X, returnAddress=0x%08X, $sp=0x%08X", address, returnAddress, cpu.gpr[_sp]));
+			log.debug(String.format("RuntimeContext.jump starting address=0x%08X, returnAddress=0x%08X, $sp=0x%08X", address, returnAddress, cpu._sp));
 		}
 
-		int sp = cpu.gpr[_sp];
+		int sp = cpu._sp;
 		while (address != returnAddress) {
 			try {
 				address = jumpCall(address);
 			} catch (StackPopException e) {
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("jumpCall catching StackPopException 0x%08X with $sp=0x%08X, start $sp=0x%08X", e.getRa(), cpu.gpr[_sp], sp));
+					log.debug(String.format("jumpCall catching StackPopException 0x%08X with $sp=0x%08X, start $sp=0x%08X", e.getRa(), cpu._sp, sp));
 				}
 				if (e.getRa() != returnAddress) {
 					throw e;
@@ -186,7 +182,7 @@ public class RuntimeContext {
 		}
 
 		if (debugCodeBlockCalls && log.isDebugEnabled()) {
-			log.debug(String.format("RuntimeContext.jump returning address=0x%08X, returnAddress=0x%08X, $sp=0x%08X", address, returnAddress, cpu.gpr[_sp]));
+			log.debug(String.format("RuntimeContext.jump returning address=0x%08X, returnAddress=0x%08X, $sp=0x%08X", address, returnAddress, cpu._sp));
 		}
 	}
 
@@ -239,13 +235,13 @@ public class RuntimeContext {
         			comment = syscallDisasm.substring(19);
         		}
     		}
-    		log.debug(String.format("Starting CodeBlock 0x%08X%s, $ra=0x%08X, $sp=0x%08X", address, comment, cpu.gpr[_ra], cpu.gpr[_sp]));
+    		log.debug(String.format("Starting CodeBlock 0x%08X%s, $ra=0x%08X, $sp=0x%08X", address, comment, cpu._ra, cpu._sp));
     	}
     }
 
     public static void debugCodeBlockEnd(int address, int returnAddress) {
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("Returning from CodeBlock 0x%08X to 0x%08X, $sp=0x%08X", address, returnAddress, cpu.gpr[_sp]));
+    		log.debug(String.format("Returning from CodeBlock 0x%08X to 0x%08X, $sp=0x%08X", address, returnAddress, cpu._sp));
     	}
     }
 
@@ -331,7 +327,7 @@ public class RuntimeContext {
 
 		IExecutable executable = getExecutable(pc);
         int newPc = 0;
-        int returnAddress = cpu.gpr[_ra];
+        int returnAddress = cpu._ra;
         boolean callbackExited = false;
 		try {
 			execWithReturnAddress(executable, returnAddress);
@@ -364,7 +360,6 @@ public class RuntimeContext {
 		processor = Emulator.getProcessor();
 		cpu = processor.cpu;
 		if (cpu != null) {
-		    gpr = processor.cpu.gpr;
 		    fpr = processor.cpu.fpr;
 		    vpr = processor.cpu.vpr;
 		}
@@ -689,7 +684,7 @@ public class RuntimeContext {
     		execWithReturnAddress(executable, ThreadManForUser.THREAD_EXIT_HANDLER_ADDRESS);
             // NOTE: When a thread exits by itself (without calling sceKernelExitThread),
             // it's exitStatus becomes it's return value.
-    		threadMan.hleKernelExitThread(processor.cpu.gpr[_v0]);
+    		threadMan.hleKernelExitThread(processor.cpu._v0);
     	} catch (StopThreadException e) {
     		// Ignore Exception
     	} catch (Throwable e) {

@@ -30,9 +30,8 @@ public class NumberHighestOneBit extends AbstractNativeCodeSequence {
 	}
 
 	static public void call(int valueReg, int bitReg) {
-		int[] gpr = getGpr();
-		int value = gpr[valueReg];
-		int bit = gpr[bitReg];
+		int value = getRegisterValue(valueReg);
+		int bit = getRegisterValue(bitReg);
 
 		for (; bit > 0; bit--) {
 			if (((value >>> bit) & 1) != 0) {
@@ -40,7 +39,7 @@ public class NumberHighestOneBit extends AbstractNativeCodeSequence {
 			}
 		}
 
-		gpr[bitReg] = bit;
+		setRegisterValue(bitReg, bit);
 	}
 
 	static private int computeSpecial1(int n) {

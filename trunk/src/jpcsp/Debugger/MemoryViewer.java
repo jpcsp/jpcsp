@@ -297,7 +297,7 @@ private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:
 }//GEN-LAST:event_formWindowDeactivated
 
 private void GoToSPActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_GoToSPActionPerformed
-    startaddress = Emulator.getProcessor().cpu.gpr[29];
+    startaddress = Emulator.getProcessor().cpu._sp;
     RefreshMemory();
 }//GEN-LAST:event_GoToSPActionPerformed
 

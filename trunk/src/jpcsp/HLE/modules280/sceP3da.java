@@ -46,15 +46,15 @@ public class sceP3da extends HLEModule {
 	public void sceP3daBridgeInit(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		int channelsNum = cpu.gpr[4]; // Values: 4
-		int samplesNum = cpu.gpr[5];  // Values: 2048
+		int channelsNum = cpu._a0; // Values: 4
+		int samplesNum = cpu._a1;  // Values: 2048
 
 		log.warn(String.format("PARTIAL: sceP3daBridgeInit channelsNum=%d, samplesNum=%d", channelsNum, samplesNum));
 
         p3daChannelsNum = channelsNum;
         p3daSamplesNum = samplesNum;
 
-		cpu.gpr[2] = 0;
+		cpu._v0 = 0;
 	}
 
 	@HLEFunction(nid = 0x43F756A2, version = 280)
@@ -63,18 +63,18 @@ public class sceP3da extends HLEModule {
 
 		log.warn("PARTIAL: sceP3daBridgeExit");
 
-		cpu.gpr[2] = 0;
+		cpu._v0 = 0;
 	}
 
 	@HLEFunction(nid = 0x013016F3, version = 280)
 	public void sceP3daBridgeCore(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		int p3daCore = cpu.gpr[4];    // Address to structure containing 2 32-bit values
-		int channelsNum = cpu.gpr[5]; // Values: 4
-		int samplesNum = cpu.gpr[6];  // Values: 2048
-		int inputAddr = cpu.gpr[7];   // Address (always the same)
-		int outputAddr = cpu.gpr[8];  // Address (alternating between 2 values separated by 0x2000)
+		int p3daCore = cpu._a0;    // Address to structure containing 2 32-bit values
+		int channelsNum = cpu._a1; // Values: 4
+		int samplesNum = cpu._a2;  // Values: 2048
+		int inputAddr = cpu._a3;   // Address (always the same)
+		int outputAddr = cpu._t0;  // Address (alternating between 2 values separated by 0x2000)
 
 		log.warn(String.format("PARTIAL: sceP3daBridgeCore p3daCore=0x%08X, channelsNum=%d, samplesNum=%d, inputAddr=0x%08X, outputAddr=0x%08X", p3daCore, channelsNum, samplesNum, inputAddr, outputAddr));
 
@@ -82,7 +82,7 @@ public class sceP3da extends HLEModule {
         p3daChannelsNum = channelsNum;
         p3daSamplesNum = samplesNum;
 
-		cpu.gpr[2] = 0;
+		cpu._v0 = 0;
 	}
 
 }

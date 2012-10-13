@@ -18,6 +18,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules200;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.TPointer;
+
 import java.util.Calendar;
 
 import jpcsp.Memory;
@@ -25,7 +27,6 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
-import jpcsp.util.Utilities;
 
 public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
 
@@ -34,7 +35,7 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
 		CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int tick_addr = cpu.gpr[4];
+        int tick_addr = cpu._a0;
 
         if (Modules.log.isDebugEnabled()) {
         	Modules.log.debug("sceRtcGetLastReincarnatedTime");
@@ -44,7 +45,7 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
         if(Memory.isAddressGood(tick_addr)) {
             mem.write64(tick_addr, hleGetCurrentTick());
         }
-        cpu.gpr[2] = 0;
+        cpu._v0 = 0;
 	}
 
 	@HLEFunction(nid = 0x62685E98, version = 200)
@@ -52,7 +53,7 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
 		CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int tick_addr = cpu.gpr[4];
+        int tick_addr = cpu._a0;
 
         if (Modules.log.isDebugEnabled()) {
         	Modules.log.debug("sceRtcGetLastAdjustedTime");
@@ -62,25 +63,15 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
         if(Memory.isAddressGood(tick_addr)) {
             mem.write64(tick_addr, hleGetCurrentTick());
         }
-        cpu.gpr[2] = 0;
+        cpu._v0 = 0;
 	}
 
 	@HLEFunction(nid = 0x1909C99B, version = 200)
-	public void sceRtcSetTime64_t(Processor processor) {
-		CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
+	public int sceRtcSetTime64_t(TPointer dateAddr, long time) {
+        ScePspDateTime dateTime = ScePspDateTime.fromUnixTime(time);
+        dateTime.write(dateAddr);
 
-        int date_addr = cpu.gpr[4];
-        long time = Utilities.getRegister64(cpu, cpu.gpr[5]);
-
-        if (Memory.isAddressGood(date_addr)) {
-            ScePspDateTime dateTime = ScePspDateTime.fromUnixTime(time);
-            dateTime.write(mem, date_addr);
-            cpu.gpr[2] = 0;
-        } else {
-            log.warn("sceRtcSetTime64_t bad address " + String.format("0x%08X", date_addr));
-            cpu.gpr[2] = -1;
-        }
+        return 0;
 	}
 
 	@HLEFunction(nid = 0xE1C93E47, version = 200)
@@ -88,8 +79,8 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
 		CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int date_addr = cpu.gpr[4];
-        int time_addr = cpu.gpr[5];
+        int date_addr = cpu._a0;
+        int time_addr = cpu._a1;
 
         if (Memory.isAddressGood(date_addr) && Memory.isAddressGood(time_addr)) {
             ScePspDateTime dateTime = new ScePspDateTime();
@@ -99,10 +90,10 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
             long unixtime = (cal.getTime().getTime() / 1000L);
             log.debug("sceRtcGetTime64_t psptime:" + dateTime + " unixtime:" + unixtime);
             mem.write64(time_addr, unixtime);
-            cpu.gpr[2] = 0;
+            cpu._v0 = 0;
         } else {
             log.warn("sceRtcGetTime64_t bad address " + String.format("0x%08X 0x%08X", date_addr, time_addr));
-            cpu.gpr[2] = -1;
+            cpu._v0 = -1;
         }
 	}
 

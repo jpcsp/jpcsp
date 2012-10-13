@@ -607,7 +607,7 @@ public class sceFont extends HLEModule {
 
             @Override
             public void execute() {
-                memFontAddr = Emulator.getProcessor().cpu.gpr[2];
+                memFontAddr = Emulator.getProcessor().cpu._v0;
 
                 log.info("FontLib's allocation callback returned 0x" + Integer.toHexString(memFontAddr));
             }
@@ -617,7 +617,7 @@ public class sceFont extends HLEModule {
 
             @Override
             public void execute() {
-                fileFontHandle = Emulator.getProcessor().cpu.gpr[2];
+                fileFontHandle = Emulator.getProcessor().cpu._v0;
 
                 log.info("FontLib's file open callback returned 0x" + Integer.toHexString(fileFontHandle));
             }

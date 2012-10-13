@@ -285,7 +285,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         gprTable.setValueAt(Integer.toHexString(cpu.getHi()), 1, 1);
         gprTable.setValueAt(Integer.toHexString(cpu.getLo()), 2, 1);
         for (int i = 0; i < 32; i++) {
-            gprTable.setValueAt(Integer.toHexString(cpu.gpr[i]), 3 + i, 1);
+            gprTable.setValueAt(Integer.toHexString(cpu.getRegister(i)), 3 + i, 1);
         }
 
         // fpr

@@ -82,11 +82,11 @@ public class FplManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return WAIT_TIMEOUT
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_TIMEOUT;
+            thread.cpuContext._v0 = ERROR_KERNEL_WAIT_TIMEOUT;
         } else {
             log.warn("FPL deleted while we were waiting for it! (timeout expired)");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
+            thread.cpuContext._v0 = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -94,11 +94,11 @@ public class FplManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return ERROR_WAIT_STATUS_RELEASED
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
+            thread.cpuContext._v0 = ERROR_KERNEL_WAIT_STATUS_RELEASED;
         } else {
             log.warn("EventFlag deleted while we were waiting for it!");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
+            thread.cpuContext._v0 = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -116,7 +116,7 @@ public class FplManager {
             SceKernelThreadInfo thread = it.next();
             if (thread.isWaitingForType(PSP_WAIT_FPL) &&
                     thread.wait.Fpl_id == fid) {
-                thread.cpuContext.gpr[2] = result;
+                thread.cpuContext._v0 = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 reschedule = true;
             }
@@ -148,7 +148,7 @@ public class FplManager {
                         log.debug(String.format("onFplFree waking thread %s", thread.toString()));
                     }
                     info.numWaitThreads--;
-                    thread.cpuContext.gpr[2] = 0;
+                    thread.cpuContext._v0 = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
                 }
@@ -162,7 +162,7 @@ public class FplManager {
                         log.debug(String.format("onFplFree waking thread %s", thread.toString()));
                     }
                     info.numWaitThreads--;
-                    thread.cpuContext.gpr[2] = 0;
+                    thread.cpuContext._v0 = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
                 }
@@ -390,14 +390,14 @@ public class FplManager {
             // has been allocated during the callback execution.
             SceKernelFplInfo fpl = fplMap.get(wait.Fpl_id);
             if (fpl == null) {
-                thread.cpuContext.gpr[2] = ERROR_KERNEL_NOT_FOUND_FPOOL;
+                thread.cpuContext._v0 = ERROR_KERNEL_NOT_FOUND_FPOOL;
                 return false;
             }
 
             // Check fpl.
             if (tryAllocateFpl(fpl) != 0) {
                 fpl.numWaitThreads--;
-                thread.cpuContext.gpr[2] = 0;
+                thread.cpuContext._v0 = 0;
                 return false;
             }
 

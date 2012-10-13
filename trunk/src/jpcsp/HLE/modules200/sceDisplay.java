@@ -38,7 +38,7 @@ public class sceDisplay extends jpcsp.HLE.modules150.sceDisplay {
 
 		log.debug("Unimplemented NID function sceDisplayGetResumeMode [0xBF79F646]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu._v0 = 0xDEADC0DE;
 	}
     
 	@HLEFunction(nid = 0x69B53541, version = 200)
@@ -47,7 +47,7 @@ public class sceDisplay extends jpcsp.HLE.modules150.sceDisplay {
 
 		log.debug("Unimplemented NID function sceDisplayGetVblankRest [0x69B53541]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu._v0 = 0xDEADC0DE;
 	}
     
 	@HLEFunction(nid = 0x21038913, version = 200)
@@ -56,7 +56,6 @@ public class sceDisplay extends jpcsp.HLE.modules150.sceDisplay {
 
 		log.debug("Unimplemented NID function sceDisplayIsVsync [0x21038913]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu._v0 = 0xDEADC0DE;
 	}
-
 }

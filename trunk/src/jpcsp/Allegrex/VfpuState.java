@@ -1383,7 +1383,7 @@ public class VfpuState extends FpuState {
         int m = (imm7 >> 2) & 7;
         int c = (imm7 >> 0) & 3;
 
-        gpr[rt] = getVprInt(m, c, r);
+        setRegister(rt, getVprInt(m, c, r));
     }
     // VFPU2:MFVC
     public void doMFVC(int rt, int imm7) {
@@ -1407,7 +1407,7 @@ public class VfpuState extends FpuState {
                     if (vcr.pfxs.neg[1]) value |=  1 << 17;
                     if (vcr.pfxs.neg[2]) value |=  1 << 18;
                     if (vcr.pfxs.neg[3]) value |=  1 << 19;
-                    gpr[rt] = value;
+                    setRegister(rt, value);
                     break;
                 case 1: /* 129 */
                     value |= vcr.pfxt.swz[0] << 0;
@@ -1426,7 +1426,7 @@ public class VfpuState extends FpuState {
                     if (vcr.pfxt.neg[1]) value |=  1 << 17;
                     if (vcr.pfxt.neg[2]) value |=  1 << 18;
                     if (vcr.pfxt.neg[3]) value |=  1 << 19;
-                    gpr[rt] = value;
+                    setRegister(rt, value);
                     break;
                 case 2: /* 130 */
                     value |= vcr.pfxd.sat[0] << 0;
@@ -1437,7 +1437,7 @@ public class VfpuState extends FpuState {
                     if (vcr.pfxd.msk[1]) value |=  1 <<  9;
                     if (vcr.pfxd.msk[2]) value |=  1 << 10;
                     if (vcr.pfxd.msk[3]) value |=  1 << 11;
-                    gpr[rt] = value;
+                    setRegister(rt, value);
                     break;
                 case 3: /* 131 */
                     for (int i = vcr.cc.length - 1; i >= 0; i--) {
@@ -1446,10 +1446,10 @@ public class VfpuState extends FpuState {
                             value |= 1;
                         }
                     }
-                    gpr[rt] = value;
+                    setRegister(rt, value);
                     break;
                 case 8: /* 136 - RCX0 */
-                    gpr[rt] = rnd.getSeed();
+                	setRegister(rt, rnd.getSeed());
                     break;
                 case 9:  /* 137 - RCX1 */
                 case 10: /* 138 - RCX2 */
@@ -1459,7 +1459,7 @@ public class VfpuState extends FpuState {
                 case 14: /* 142 - RCX6 */
                 case 15: /* 143 - RCX7 */
                     // as we do not know how VFPU generates a random number through those 8 registers, we ignore 7 of them
-                    gpr[rt] = 0x3f800000;
+                	setRegister(rt, 0x3f800000);
                     break;
                 default:
                     // These values are not supported in Jpcsp
@@ -1474,12 +1474,12 @@ public class VfpuState extends FpuState {
         int m = (imm7 >> 2) & 7;
         int c = (imm7 >> 0) & 3;
 
-        setVprInt(m, c, r, gpr[rt]);
+        setVprInt(m, c, r, getRegister(rt));
     }
 
     // VFPU2:MTVC
     public void doMTVC(int rt, int imm7) {
-        int value = gpr[rt]; 
+        int value = getRegister(rt); 
         
         switch (imm7) {
             case 0: /* 128 */
@@ -2944,7 +2944,7 @@ public class VfpuState extends FpuState {
         int m = (vt >> 2) & 7;
         int i = (vt >> 0) & 3;
 
-        setVprInt(m, i, s, memory.read32(gpr[rs] + simm14_a16));
+        setVprInt(m, i, s, memory.read32(getRegister(rs) + simm14_a16));
     }
 
     // LSU:SVS
@@ -2954,13 +2954,13 @@ public class VfpuState extends FpuState {
         int i = (vt >> 0) & 3;
 
         if (CHECK_ALIGNMENT) {
-            int address = gpr[rs] + simm14_a16;
+            int address = getRegister(rs) + simm14_a16;
             if ((address & 3) != 0) {
                 Memory.log.error(String.format("SV.S unaligned addr:0x%08x pc:0x%08x", address, pc));
             }
         }
 
-        memory.write32(gpr[rs] + simm14_a16, getVprInt(m, i, s));
+        memory.write32(getRegister(rs) + simm14_a16, getVprInt(m, i, s));
     }
 
     // LSU:LVQ
@@ -2968,7 +2968,7 @@ public class VfpuState extends FpuState {
         int m = (vt >> 2) & 7;
         int i = (vt >> 0) & 3;
 
-        int address = gpr[rs] + simm14_a16;
+        int address = getRegister(rs) + simm14_a16;
 
         if (CHECK_ALIGNMENT) {
             if ((address & 15) != 0) {
@@ -2992,7 +2992,7 @@ public class VfpuState extends FpuState {
         int m = (vt >> 2) & 7;
         int i = (vt >> 0) & 3;
 
-        int address = gpr[rs] + simm14_a16;
+        int address = getRegister(rs) + simm14_a16;
 
         if (CHECK_ALIGNMENT) {
             if ((address & 3) != 0) {
@@ -3020,7 +3020,7 @@ public class VfpuState extends FpuState {
         int m = (vt >> 2) & 7;
         int i = (vt >> 0) & 3;
 
-        int address = gpr[rs] + simm14_a16;
+        int address = getRegister(rs) + simm14_a16;
 
         if (CHECK_ALIGNMENT) {
             if ((address & 3) != 0) {
@@ -3046,7 +3046,7 @@ public class VfpuState extends FpuState {
         int m = (vt >> 2) & 7;
         int i = (vt >> 0) & 3;
 
-        int address = gpr[rs] + simm14_a16;
+        int address = getRegister(rs) + simm14_a16;
 
         if (CHECK_ALIGNMENT) {
             if ((address & 15) != 0) {
@@ -3070,7 +3070,7 @@ public class VfpuState extends FpuState {
         int m = (vt >> 2) & 7;
         int i = (vt >> 0) & 3;
 
-        int address = gpr[rs] + simm14_a16;
+        int address = getRegister(rs) + simm14_a16;
 
         if (CHECK_ALIGNMENT) {
             if ((address & 3) != 0) {
@@ -3098,7 +3098,7 @@ public class VfpuState extends FpuState {
         int m = (vt >> 2) & 7;
         int i = (vt >> 0) & 3;
 
-        int address = gpr[rs] + simm14_a16;
+        int address = getRegister(rs) + simm14_a16;
 
         if (CHECK_ALIGNMENT) {
             if ((address & 3) != 0) {

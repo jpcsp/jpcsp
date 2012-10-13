@@ -18,8 +18,6 @@ package jpcsp.HLE.modules600;
 
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 
 public class sceMpeg extends jpcsp.HLE.modules250.sceMpeg {
 
@@ -32,12 +30,10 @@ public class sceMpeg extends jpcsp.HLE.modules250.sceMpeg {
     }
 
     @HLEFunction(nid = 0x8160A2FE, version = 600)
-    public void sceMpegAvcResourceFinish(Processor processor) {
-        CpuState cpu = processor.cpu;
-
+    public int sceMpegAvcResourceFinish() {
         log.warn("IGNORING: sceMpegAvcResourceFinish");
 
-        cpu.gpr[2] = 0;
+        return 0;
     }
 
     @HLEFunction(nid = 0xAF26BB01, version = 600)

@@ -91,9 +91,9 @@ public class CompilerContext implements ICompilerContext {
 	private boolean skipDelaySlot;
 	private MethodVisitor mv;
 	private CodeInstruction codeInstruction;
-	private static final boolean storeGprLocal = true;
+	private static final boolean storeCpuLocal = true;
 	private static final boolean storeMemoryIntLocal = false;
-    private static final int LOCAL_GPR = 0;
+    private static final int LOCAL_CPU = 0;
     private static final int LOCAL_INSTRUCTION_COUNT = 1;
     private static final int LOCAL_MEMORY_INT = 2;
     private static final int LOCAL_TMP1 = 3;
@@ -202,16 +202,12 @@ public class CompilerContext implements ICompilerContext {
     	return nativeCodeManager;
     }
 
-    private void loadGpr() {
-    	if (storeGprLocal) {
-    		mv.visitVarInsn(Opcodes.ALOAD, LOCAL_GPR);
-    	} else {
-    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "gpr", "[I");
-    	}
-    }
-
     private void loadCpu() {
-		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "cpu", cpuDescriptor);
+    	if (storeCpuLocal) {
+    		mv.visitVarInsn(Opcodes.ALOAD, LOCAL_CPU);
+    	} else {
+    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "cpu", cpuDescriptor);
+    	}
 	}
 
     private void loadProcessor() {
@@ -239,9 +235,8 @@ public class CompilerContext implements ICompilerContext {
     	if (reg == _zr) {
     		loadImm(0);
     	} else {
-	    	loadGpr();
-	    	loadImm(reg);
-	        mv.visitInsn(Opcodes.IALOAD);
+	    	loadCpu();
+	        mv.visitFieldInsn(Opcodes.GETFIELD, cpuInternalName, getGprFieldName(reg), "I");
     	}
     }
 
@@ -434,22 +429,23 @@ public class CompilerContext implements ICompilerContext {
 
     public void prepareRegisterForStore(int reg) {
     	if (preparedRegisterForStore < 0) {
-        	loadGpr();
-        	loadImm(reg);
+        	loadCpu();
     		preparedRegisterForStore = reg;
     	}
     }
 
+    private String getGprFieldName(int reg) {
+    	return Common.gprNames[reg].replace('$', '_');
+    }
+
     public void storeRegister(int reg) {
     	if (preparedRegisterForStore == reg) {
-	        mv.visitInsn(Opcodes.IASTORE);
+	        mv.visitFieldInsn(Opcodes.PUTFIELD, cpuInternalName, getGprFieldName(reg), "I");
 	        preparedRegisterForStore = -1;
     	} else {
-	    	loadGpr();
+	    	loadCpu();
 	        mv.visitInsn(Opcodes.SWAP);
-	        loadImm(reg);
-	        mv.visitInsn(Opcodes.SWAP);
-	        mv.visitInsn(Opcodes.IASTORE);
+	        mv.visitFieldInsn(Opcodes.PUTFIELD, cpuInternalName, getGprFieldName(reg), "I");
     	}
     }
 
@@ -457,11 +453,10 @@ public class CompilerContext implements ICompilerContext {
     	if (preparedRegisterForStore == reg) {
     		preparedRegisterForStore = -1;
     	} else {
-    		loadGpr();
-    		loadImm(reg);
+    		loadCpu();
     	}
     	loadImm(constantValue);
-        mv.visitInsn(Opcodes.IASTORE);
+        mv.visitFieldInsn(Opcodes.PUTFIELD, cpuInternalName, getGprFieldName(reg), "I");
     }
 
     public void prepareFRegisterForStore(int reg) {
@@ -605,18 +600,18 @@ public class CompilerContext implements ICompilerContext {
 
     public void loadFcr31() {
     	loadCpu();
-        mv.visitFieldInsn(Opcodes.GETFIELD, Type.getInternalName(CpuState.class), "fcr31", Type.getDescriptor(Fcr31.class));
+        mv.visitFieldInsn(Opcodes.GETFIELD, cpuInternalName, "fcr31", Type.getDescriptor(Fcr31.class));
     }
 
     public void loadVcr() {
     	loadCpu();
-        mv.visitFieldInsn(Opcodes.GETFIELD, Type.getInternalName(CpuState.class), "vcr", Type.getDescriptor(Vcr.class));
+        mv.visitFieldInsn(Opcodes.GETFIELD, cpuInternalName, "vcr", Type.getDescriptor(Vcr.class));
     }
 
 	@Override
 	public void loadHilo() {
 		loadCpu();
-        mv.visitFieldInsn(Opcodes.GETFIELD, Type.getInternalName(CpuState.class), "hilo", Type.getDescriptor(long.class));
+        mv.visitFieldInsn(Opcodes.GETFIELD, cpuInternalName, "hilo", Type.getDescriptor(long.class));
 	}
 
 	@Override
@@ -632,7 +627,7 @@ public class CompilerContext implements ICompilerContext {
 			mv.visitInsn(Opcodes.DUP_X2);
         	mv.visitInsn(Opcodes.POP);
 		}
-        mv.visitFieldInsn(Opcodes.PUTFIELD, Type.getInternalName(CpuState.class), "hilo", Type.getDescriptor(long.class));
+        mv.visitFieldInsn(Opcodes.PUTFIELD, cpuInternalName, "hilo", Type.getDescriptor(long.class));
 
         hiloPrepared = false;
 	}
@@ -683,7 +678,7 @@ public class CompilerContext implements ICompilerContext {
     private void storePc() {
     	loadCpu();
     	loadImm(codeInstruction.getAddress());
-        mv.visitFieldInsn(Opcodes.PUTFIELD, Type.getInternalName(CpuState.class), "pc", Type.getDescriptor(int.class));
+        mv.visitFieldInsn(Opcodes.PUTFIELD, cpuInternalName, "pc", "I");
     }
 
     private void visitContinueToAddress(int returnAddress) {
@@ -1490,9 +1485,9 @@ public class CompilerContext implements ICompilerContext {
     }
 
     public void startSequenceMethod() {
-        if (storeGprLocal) {
-            mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "gpr", "[I");
-            mv.visitVarInsn(Opcodes.ASTORE, LOCAL_GPR);
+        if (storeCpuLocal) {
+            mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "cpu", cpuDescriptor);
+            mv.visitVarInsn(Opcodes.ASTORE, LOCAL_CPU);
         }
 
         if (storeMemoryIntLocal) {

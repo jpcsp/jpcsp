@@ -25,7 +25,6 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 
 import jpcsp.Memory;
-import jpcsp.Allegrex.Common;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
@@ -242,7 +241,7 @@ public abstract class PtpObject extends PdpObject {
 		SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
 		if (pollAccept(peerMacAddr, peerPortAddr, thread)) {
 			// Accept completed immediately
-			result = thread.cpuContext.gpr[Common._v0];
+			result = thread.cpuContext._v0;
 		} else if (nonblock != 0) {
 			// Accept cannot be completed in non-blocking mode
 			result = SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE;
@@ -300,7 +299,7 @@ public abstract class PtpObject extends PdpObject {
 			SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
 			if (pollRecv(data, dataLengthAddr, thread)) {
 				// Recv completed immediately
-				result = thread.cpuContext.gpr[Common._v0];
+				result = thread.cpuContext._v0;
 			} else if (nonblock != 0) {
 				// Recv cannot be completed in non-blocking mode
 				result = SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE;

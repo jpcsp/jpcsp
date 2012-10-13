@@ -37,14 +37,14 @@ public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
 	public void sceDisplayWaitVblankStartMulti(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		int cycleNum = cpu.gpr[4];  // Number of VSYNCs to wait before blocking the thread on VBLANK.
+		int cycleNum = cpu._a0;  // Number of VSYNCs to wait before blocking the thread on VBLANK.
 
         if(log.isDebugEnabled()) {
             log.debug("sceDisplayWaitVblankStartMulti cycleNum=" + cycleNum);
         }
 
         
-        cpu.gpr[2] = 0;
+        cpu._v0 = 0;
         blockCurrentThreadOnVblank(cycleNum, false);
 	}
 
@@ -52,14 +52,14 @@ public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
 	public void sceDisplayWaitVblankStartMultiCB(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		int cycleNum = cpu.gpr[4];   // Number of VSYNCs to wait before blocking the thread on VBLANK.
+		int cycleNum = cpu._a0;   // Number of VSYNCs to wait before blocking the thread on VBLANK.
 
         if(log.isDebugEnabled()) {
             log.debug("sceDisplayWaitVblankStartMultiCB cycleNum=" + cycleNum);
         }
 
         
-        cpu.gpr[2] = 0;
+        cpu._v0 = 0;
         blockCurrentThreadOnVblank(cycleNum, true);
 	}
 
