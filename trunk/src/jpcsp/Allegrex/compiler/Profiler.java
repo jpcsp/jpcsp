@@ -36,7 +36,7 @@ import org.apache.log4j.Logger;
 public class Profiler {
 
     public static Logger log = Logger.getLogger("profiler");
-    private static boolean profilerEnabled = true;
+    private static boolean profilerEnabled = false;
     private static final HashMap<Integer, Long> callCounts = new HashMap<Integer, Long>();
     private static final HashMap<Integer, Long> instructionCounts = new HashMap<Integer, Long>();
     private static final HashMap<Integer, Long> backBranchCounts = new HashMap<Integer, Long>();
