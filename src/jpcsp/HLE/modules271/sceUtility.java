@@ -144,7 +144,7 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
     public void sceUtilityLoadAvModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int module = cpu.gpr[4];
+        int module = cpu._a0;
 
         
 
@@ -156,21 +156,21 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         } else {
             log.info(String.format("sceUtilityLoadAvModule(module=0x%04X) %s loaded", module, moduleName));
         }
-        cpu.gpr[2] = result;
+        cpu._v0 = result;
     }
 
     @HLEFunction(nid = 0xF7D8D092, version = 270, checkInsideInterrupt = true)
     public void sceUtilityUnloadAvModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int module = cpu.gpr[4];
+        int module = cpu._a0;
 
         
 
         String moduleName = getAvModuleName(module);
         log.info(String.format("sceUtilityUnloadAvModule(module=0x%04X) %s unloaded", module, moduleName));
 
-        cpu.gpr[2] = hleUtilityUnloadAvModule(module);
+        cpu._v0 = hleUtilityUnloadAvModule(module);
     }
 
     @HLEFunction(nid = 0x4928BD96, version = 270, checkInsideInterrupt = true)
@@ -180,14 +180,14 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         log.warn("PARTIAL: sceUtilityMsgDialogAbort()");
         msgDialogState.abort();
 
-        cpu.gpr[2] = 0;
+        cpu._v0 = 0;
     }
 
     @HLEFunction(nid = 0x0D5BC6D2, version = 270, checkInsideInterrupt = true)
     public void sceUtilityLoadUsbModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int module = cpu.gpr[4];
+        int module = cpu._a0;
 
         
 
@@ -199,7 +199,7 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         } else {
             log.info(String.format("sceUtilityLoadUsbModule(module=0x%04X) %s loaded", module, moduleName));
         }
-        cpu.gpr[2] = result;
+        cpu._v0 = result;
     }
 
 }

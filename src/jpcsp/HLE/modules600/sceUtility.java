@@ -29,7 +29,7 @@ public class sceUtility extends jpcsp.HLE.modules303.sceUtility {
         log.warn("PARTIAL: sceUtilityGamedataInstallAbort");
         gamedataInstallState.abort();
 
-        cpu.gpr[2] = 0;
+        cpu._v0 = 0;
     }
 
 }

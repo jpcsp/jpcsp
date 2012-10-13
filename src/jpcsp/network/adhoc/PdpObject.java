@@ -28,7 +28,6 @@ import java.util.LinkedList;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.Allegrex.Common;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer16;
@@ -256,7 +255,7 @@ public abstract class PdpObject extends AdhocObject {
 			SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
 			if (pollRecv(srcMacAddr, portAddr, data, dataLengthAddr, thread)) {
 				// Recv completed immediately
-				result = thread.cpuContext.gpr[Common._v0];
+				result = thread.cpuContext._v0;
 			} else if (nonblock != 0) {
 				// Recv cannot be completed in non-blocking mode
 				result = SceKernelErrors.ERROR_NET_ADHOC_NO_DATA_AVAILABLE;
@@ -358,7 +357,7 @@ public abstract class PdpObject extends AdhocObject {
 	}
 
 	protected static void setReturnValue(SceKernelThreadInfo thread, int value) {
-    	thread.cpuContext.gpr[Common._v0] = value;
+    	thread.cpuContext._v0 = value;
     }
 
 	@Override

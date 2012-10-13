@@ -17,7 +17,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.TPointer32;
+
 import java.security.MessageDigest;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -223,22 +226,22 @@ public class UtilsForUser extends HLEModule {
 	public void sceKernelDcacheInvalidateRange(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		int addr = cpu.gpr[4];
-		int size = cpu.gpr[5];
+		int addr = cpu._a0;
+		int size = cpu._a1;
 
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("IGNORING: sceKernelDcacheInvalidateRange addr=0x%08X, size=%d", addr, size));
 		}
 
-        cpu.gpr[2] = 0;
+        cpu._v0 = 0;
 	}
 
 	@HLEFunction(nid = 0xC2DF770E, version = 150)
 	public void sceKernelIcacheInvalidateRange(Processor processor) {
         CpuState cpu = processor.cpu;
 
-		int addr = cpu.gpr[4];
-		int size = cpu.gpr[5];
+		int addr = cpu._a0;
+		int size = cpu._a1;
 
 		if (log.isInfoEnabled()) {
 			log.info(String.format("sceKernelIcacheInvalidateRange addr=0x%08X, size=%d", addr, size));
@@ -246,7 +249,7 @@ public class UtilsForUser extends HLEModule {
 
         RuntimeContext.invalidateRange(addr, size);
 
-        cpu.gpr[2] = 0;
+        cpu._v0 = 0;
 	}
 
 	@HLEFunction(nid = 0xC8186A58, version = 150)
@@ -254,9 +257,9 @@ public class UtilsForUser extends HLEModule {
 		CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
 
-        int inAddr = cpu.gpr[4];
-		int inSize = cpu.gpr[5];
-        int outAddr = cpu.gpr[6];
+        int inAddr = cpu._a0;
+		int inSize = cpu._a1;
+        int outAddr = cpu._a2;
 
         log.info("sceKernelUtilsMd5Digest (inAddr=0x" + Integer.toHexString(inAddr)
                 + ", inSize=" + inSize
@@ -280,30 +283,30 @@ public class UtilsForUser extends HLEModule {
                 mem.write8(outAddr + i, hash[i]);
             }
         }
-		cpu.gpr[2] = 0;
+		cpu._v0 = 0;
 	}
 
 	@HLEFunction(nid = 0x9E5C5086, version = 150)
 	public void sceKernelUtilsMd5BlockInit(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-        int md5CtxAddr = cpu.gpr[4];
+        int md5CtxAddr = cpu._a0;
 
         log.info("sceKernelUtilsMd5BlockInit (md5CtxAddr=0x" + Integer.toHexString(md5CtxAddr) + ")");
 
         md5Ctx = new SceKernelUtilsMd5Context();
         md5Ctx.init(md5CtxAddr);
 
-		cpu.gpr[2] = 0;
+		cpu._v0 = 0;
 	}
 
 	@HLEFunction(nid = 0x61E1E525, version = 150)
 	public void sceKernelUtilsMd5BlockUpdate(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-        int md5CtxAddr = cpu.gpr[4];
-        int inAddr = cpu.gpr[5];
-        int inSize = cpu.gpr[6];
+        int md5CtxAddr = cpu._a0;
+        int inAddr = cpu._a1;
+        int inSize = cpu._a2;
 
         log.info("sceKernelUtilsMd5BlockUpdate (md5CtxAddr=0x" + Integer.toHexString(md5CtxAddr)
                 + ", inAddr=0x" + Integer.toHexString(inAddr)
@@ -311,22 +314,22 @@ public class UtilsForUser extends HLEModule {
 
         md5Ctx.update(md5CtxAddr, inAddr, inSize);
 
-		cpu.gpr[2] = 0;
+		cpu._v0 = 0;
 	}
 
 	@HLEFunction(nid = 0xB8D24E78, version = 150)
 	public void sceKernelUtilsMd5BlockResult(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-        int md5CtxAddr = cpu.gpr[4];
-        int outAddr = cpu.gpr[5];
+        int md5CtxAddr = cpu._a0;
+        int outAddr = cpu._a1;
 
         log.info("sceKernelUtilsMd5BlockResult (md5CtxAddr=0x" + Integer.toHexString(md5CtxAddr)
                 + ", outAddr=0x" + Integer.toHexString(outAddr) + ")" );
 
         md5Ctx.result(md5CtxAddr, outAddr);
 
-        cpu.gpr[2] = 0;
+        cpu._v0 = 0;
 	}
 
 	@HLEFunction(nid = 0x840259F1, version = 150)
@@ -334,9 +337,9 @@ public class UtilsForUser extends HLEModule {
 		CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
 
-        int inAddr = cpu.gpr[4];
-		int inSize = cpu.gpr[5];
-        int outAddr = cpu.gpr[6];
+        int inAddr = cpu._a0;
+		int inSize = cpu._a1;
+        int outAddr = cpu._a2;
 
         log.info("sceKernelUtilsSha1Digest (inAddr=0x" + Integer.toHexString(inAddr)
                 + ", inSize=" + inSize
@@ -360,30 +363,30 @@ public class UtilsForUser extends HLEModule {
                 mem.write8(outAddr + i, hash[i]);
             }
         }
-		cpu.gpr[2] = 0;
+		cpu._v0 = 0;
 	}
 
 	@HLEFunction(nid = 0xF8FCD5BA, version = 150)
 	public void sceKernelUtilsSha1BlockInit(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-        int sha1CtxAddr = cpu.gpr[4];
+        int sha1CtxAddr = cpu._a0;
 
         log.info("sceKernelUtilsSha1BlockInit (sha1CtxAddr=0x" + Integer.toHexString(sha1CtxAddr) + ")");
 
         sha1Ctx = new SceKernelUtilsSha1Context();
         sha1Ctx.init(sha1CtxAddr);
 
-		cpu.gpr[2] = 0;
+		cpu._v0 = 0;
 	}
 
 	@HLEFunction(nid = 0x346F6DA8, version = 150)
 	public void sceKernelUtilsSha1BlockUpdate(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-        int sha1CtxAddr = cpu.gpr[4];
-        int inAddr = cpu.gpr[5];
-        int inSize = cpu.gpr[6];
+        int sha1CtxAddr = cpu._a0;
+        int inAddr = cpu._a1;
+        int inSize = cpu._a2;
 
         log.info("sceKernelUtilsSha1BlockUpdate (sha1CtxAddr=0x" + Integer.toHexString(sha1CtxAddr)
                 + ", inAddr=0x" + Integer.toHexString(inAddr)
@@ -391,30 +394,30 @@ public class UtilsForUser extends HLEModule {
 
         sha1Ctx.update(sha1CtxAddr, inAddr, inSize);
 
-		cpu.gpr[2] = 0;
+		cpu._v0 = 0;
 	}
 
 	@HLEFunction(nid = 0x585F1C09, version = 150)
 	public void sceKernelUtilsSha1BlockResult(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-        int sha1CtxAddr = cpu.gpr[4];
-        int outAddr = cpu.gpr[5];
+        int sha1CtxAddr = cpu._a0;
+        int outAddr = cpu._a1;
 
         log.info("sceKernelUtilsSha1BlockResult (sha1CtxAddr=0x" + Integer.toHexString(sha1CtxAddr)
                 + ", outAddr=0x" + Integer.toHexString(outAddr) + ")" );
 
         sha1Ctx.result(sha1CtxAddr, outAddr);
 
-        cpu.gpr[2] = 0;
+        cpu._v0 = 0;
 	}
 
 	@HLEFunction(nid = 0xE860E75E, version = 150)
 	public void sceKernelUtilsMt19937Init(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		int ctx_addr = cpu.gpr[4];
-		int seed = cpu.gpr[5];
+		int ctx_addr = cpu._a0;
+		int seed = cpu._a1;
 
 		// We'll use the address of the ctx as a key
         Mt19937List.remove(ctx_addr); // Remove records of any already existing context at a0
@@ -423,21 +426,21 @@ public class UtilsForUser extends HLEModule {
         // We'll overwrite all the context memory, 628 bytes
         Memory.getInstance().memset(ctx_addr, (byte) 0xCD, 628);
 
-        cpu.gpr[2] = 0;
+        cpu._v0 = 0;
 	}
 
 	@HLEFunction(nid = 0x06FB8A63, version = 150)
 	public void sceKernelUtilsMt19937UInt(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		int ctx_addr = cpu.gpr[4];
+		int ctx_addr = cpu._a0;
 
 		SceKernelUtilsMt19937Context ctx = Mt19937List.get(ctx_addr);
         if (ctx != null) {
-            cpu.gpr[2] = ctx.r.nextInt();
+            cpu._v0 = ctx.r.nextInt();
         } else {
             log.warn("sceKernelUtilsMt19937UInt uninitialised context " + Integer.toHexString(ctx_addr));
-            Emulator.getProcessor().cpu.gpr[2] = 0;
+            Emulator.getProcessor().cpu._v0 = 0;
         }
 	}
 
@@ -450,12 +453,12 @@ public class UtilsForUser extends HLEModule {
             if (log.isDebugEnabled()) {
             	log.debug("sceKernelGetGPI 0x" + String.format("%02X", gpi));
             }
-            cpu.gpr[2] = gpi;
+            cpu._v0 = gpi;
         } else {
         	if (log.isDebugEnabled()) {
         		log.debug("sceKernelGetGPI debugger not enabled");
         	}
-            cpu.gpr[2] = 0;
+            cpu._v0 = 0;
         }
 	}
 
@@ -463,7 +466,7 @@ public class UtilsForUser extends HLEModule {
 	public void sceKernelSetGPO(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		int value = cpu.gpr[4];
+		int value = cpu._a0;
 
 		if (State.debugger != null) {
             State.debugger.SetGPO(value);
@@ -476,54 +479,38 @@ public class UtilsForUser extends HLEModule {
         	}
         }
 
-        cpu.gpr[2] = 0;
+        cpu._v0 = 0;
 	}
 
 	@HLEFunction(nid = 0x91E4F6A7, version = 150)
 	public void sceKernelLibcClock(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		cpu.gpr[2] = (int) SystemTimeManager.getSystemTime();
+		cpu._v0 = (int) SystemTimeManager.getSystemTime();
 	}
 
 	@HLEFunction(nid = 0x27CC57F0, version = 150)
-	public void sceKernelLibcTime(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
-
-		int time_t_addr = cpu.gpr[4];
-
+	public int sceKernelLibcTime(@CanBeNull TPointer32 time_t_addr) {
         int seconds = (int)(Calendar.getInstance().getTimeInMillis() / 1000);
-        if (Memory.isAddressGood(time_t_addr)) {
-            mem.write32(time_t_addr, seconds);
-        }
-        Emulator.getProcessor().cpu.gpr[2] = seconds;
+        time_t_addr.setValue(seconds);
+
+        return seconds;
 	}
 
 	@HLEFunction(nid = 0x71EC4271, version = 150)
-	public void sceKernelLibcGettimeofday(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
+	public int sceKernelLibcGettimeofday(@CanBeNull TPointer32 tp, @CanBeNull TPointer32 tzp) {
+    	Clock.TimeNanos currentTimeNano = Emulator.getClock().currentTimeNanos();
+        int tv_sec = currentTimeNano.seconds;
+        int tv_usec = currentTimeNano.millis * 1000 + currentTimeNano.micros;
+        tp.setValue(0, tv_sec);
+        tp.setValue(4, tv_usec);
 
-		int tp = cpu.gpr[4];
-		int tzp = cpu.gpr[5];
+        int tz_minuteswest = 0;
+        int tz_dsttime = 0;
+        tzp.setValue(0, tz_minuteswest);
+        tzp.setValue(4, tz_dsttime);
 
-        if (Memory.isAddressGood(tp)) {
-        	Clock.TimeNanos currentTimeNano = Emulator.getClock().currentTimeNanos();
-            int tv_sec = currentTimeNano.seconds;
-            int tv_usec = currentTimeNano.millis * 1000 + currentTimeNano.micros;
-            mem.write32(tp, tv_sec);
-            mem.write32(tp + 4, tv_usec);
-        }
-
-        if (Memory.isAddressGood(tzp)) {
-            int tz_minuteswest = 0;
-            int tz_dsttime = 0;
-            mem.write32(tzp, tz_minuteswest);
-            mem.write32(tzp + 4, tz_dsttime);
-        }
-
-        cpu.gpr[2] = 0;
+        return 0;
 	}
 
 	@HLEFunction(nid = 0x79D1C3FA, version = 150)
@@ -540,8 +527,8 @@ public class UtilsForUser extends HLEModule {
 	public void sceKernelDcacheWritebackRange(Processor processor) {
         CpuState cpu = processor.cpu;
 
-		int addr = cpu.gpr[4];
-		int size = cpu.gpr[5];
+		int addr = cpu._a0;
+		int size = cpu._a1;
 
 		Modules.log.trace("IGNORING: sceKernelDcacheWritebackRange addr=0x" + Integer.toHexString(addr)
                 + ", size=" + size);
@@ -551,8 +538,8 @@ public class UtilsForUser extends HLEModule {
 	public void sceKernelDcacheWritebackInvalidateRange(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		int addr = cpu.gpr[4];
-		int size = cpu.gpr[5];
+		int addr = cpu._a0;
+		int size = cpu._a1;
 
 		Modules.log.trace("IGNORING: sceKernelDcacheWritebackInvalidateRange addr=0x" + Integer.toHexString(addr)
                 + ", size=" + size);
@@ -562,11 +549,11 @@ public class UtilsForUser extends HLEModule {
 	public void sceKernelDcacheProbe(Processor processor) {
         CpuState cpu = processor.cpu;
 
-		int addr = cpu.gpr[4];
+		int addr = cpu._a0;
 
 		Modules.log.trace("IGNORING: sceKernelDcacheProbe addr=0x" + Integer.toHexString(addr));
 
-        cpu.gpr[2] = PSP_KERNEL_DCACHE_PROBE_HIT; // Dummy.
+        cpu._v0 = PSP_KERNEL_DCACHE_PROBE_HIT; // Dummy.
 	}
 
 	@HLEFunction(nid = 0x16641D70, version = 150)
@@ -575,7 +562,7 @@ public class UtilsForUser extends HLEModule {
 
 		Modules.log.trace("UNIMPLEMENTED: sceKernelDcacheReadTag");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu._v0 = 0xDEADC0DE;
 	}
 
 	@HLEFunction(nid = 0x920F104A, version = 150)
@@ -598,11 +585,11 @@ public class UtilsForUser extends HLEModule {
 	public void sceKernelIcacheProbe(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		int addr = cpu.gpr[4];
+		int addr = cpu._a0;
 
 		Modules.log.trace("IGNORING: sceKernelIcacheProbe addr=0x" + Integer.toHexString(addr));
 
-        cpu.gpr[2] = PSP_KERNEL_ICACHE_PROBE_HIT; // Dummy.
+        cpu._v0 = PSP_KERNEL_ICACHE_PROBE_HIT; // Dummy.
 	}
 
 	@HLEFunction(nid = 0xFB05FAD0, version = 150)
@@ -611,7 +598,7 @@ public class UtilsForUser extends HLEModule {
 
 		Modules.log.trace("UNIMPLEMENTED: sceKernelIcacheReadTag");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu._v0 = 0xDEADC0DE;
 	}
 
 }

@@ -84,11 +84,11 @@ public class EventFlagManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return WAIT_TIMEOUT
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_TIMEOUT;
+            thread.cpuContext._v0 = ERROR_KERNEL_WAIT_TIMEOUT;
         } else {
             log.warn("EventFlag deleted while we were waiting for it! (timeout expired)");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
+            thread.cpuContext._v0 = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -96,11 +96,11 @@ public class EventFlagManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return ERROR_WAIT_STATUS_RELEASED
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
+            thread.cpuContext._v0 = ERROR_KERNEL_WAIT_STATUS_RELEASED;
         } else {
             log.warn("EventFlag deleted while we were waiting for it!");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
+            thread.cpuContext._v0 = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -119,7 +119,7 @@ public class EventFlagManager {
             SceKernelThreadInfo thread = it.next();
             if (thread.isWaitingForType(PSP_WAIT_EVENTFLAG) &&
                     thread.wait.EventFlag_id == evid) {
-                thread.cpuContext.gpr[2] = result;
+                thread.cpuContext._v0 = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 reschedule = true;
             }
@@ -151,7 +151,7 @@ public class EventFlagManager {
                         log.debug("onEventFlagModified waking thread 0x" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
                     }
                     event.numWaitThreads--;
-                    thread.cpuContext.gpr[2] = 0;
+                    thread.cpuContext._v0 = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
 
@@ -405,14 +405,14 @@ public class EventFlagManager {
             // has been set during the callback execution.
             SceKernelEventFlagInfo event = eventMap.get(wait.EventFlag_id);
             if (event == null) {
-                thread.cpuContext.gpr[2] = ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
+                thread.cpuContext._v0 = ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
                 return false;
             }
 
             // Check EventFlag.
             if (checkEventFlag(event, wait.EventFlag_bits, wait.EventFlag_wait, wait.EventFlag_outBits_addr)) {
                 event.numWaitThreads--;
-                thread.cpuContext.gpr[2] = 0;
+                thread.cpuContext._v0 = 0;
                 return false;
             }
 

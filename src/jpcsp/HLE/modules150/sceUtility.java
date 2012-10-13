@@ -267,15 +267,15 @@ public class sceUtility extends HLEModule {
             CpuState cpu = processor.cpu;
             Memory mem = Memory.getInstance();
 
-            paramsAddr = cpu.gpr[4];
+            paramsAddr = cpu._a0;
             if (!Memory.isAddressGood(paramsAddr)) {
                 log.error(String.format("%sInitStart bad address 0x%08X", name, paramsAddr));
-                cpu.gpr[2] = -1;
+                cpu._v0 = -1;
             } else if (status != PSP_UTILITY_DIALOG_STATUS_NONE && status != PSP_UTILITY_DIALOG_STATUS_FINISHED) {
             	if (log.isDebugEnabled()) {
             		log.debug(String.format("%sInitStart already started status=%d", name, status));
             	}
-                cpu.gpr[2] = -1;
+                cpu._v0 = -1;
             } else {
                 this.params = createParams();
 
@@ -292,7 +292,7 @@ public class sceUtility extends HLEModule {
                 	status = PSP_UTILITY_DIALOG_STATUS_INIT;
                 }
 
-                cpu.gpr[2] = validityResult;
+                cpu._v0 = validityResult;
             }
         }
 
@@ -312,7 +312,7 @@ public class sceUtility extends HLEModule {
                 log.debug(name + "GetStatus status " + status);
             }
 
-            cpu.gpr[2] = status;
+            cpu._v0 = status;
 
             // after returning FINISHED once, return NONE on following calls
             if (status == PSP_UTILITY_DIALOG_STATUS_FINISHED) {
@@ -333,18 +333,18 @@ public class sceUtility extends HLEModule {
 
             status = PSP_UTILITY_DIALOG_STATUS_FINISHED;
 
-            cpu.gpr[2] = 0;
+            cpu._v0 = 0;
         }
 
         public void executeUpdate(Processor processor) {
             CpuState cpu = processor.cpu;
 
-            drawSpeed = cpu.gpr[4]; // FPS used for internal animation sync (1 = 60 FPS; 2 = 30 FPS; 3 = 15 FPS).
+            drawSpeed = cpu._a0; // FPS used for internal animation sync (1 = 60 FPS; 2 = 30 FPS; 3 = 15 FPS).
             if (log.isDebugEnabled()) {
                 log.debug(name + "Update drawSpeed=" + drawSpeed);
             }
 
-            cpu.gpr[2] = 0;
+            cpu._v0 = 0;
 
             if (status == PSP_UTILITY_DIALOG_STATUS_INIT && isReadyForVisible()) {
                 // Move from INIT to VISIBLE
@@ -409,9 +409,9 @@ public class sceUtility extends HLEModule {
         public void executeInitStart(Processor processor) {
             CpuState cpu = processor.cpu;
 
-            log.warn(String.format("Unimplemented: %sInitStart params=0x%08X", name, cpu.gpr[4]));
+            log.warn(String.format("Unimplemented: %sInitStart params=0x%08X", name, cpu._a0));
 
-            cpu.gpr[2] = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
+            cpu._v0 = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
         }
 
         @Override
@@ -420,7 +420,7 @@ public class sceUtility extends HLEModule {
 
             log.warn("Unimplemented: " + name + "ShutdownStart");
 
-            cpu.gpr[2] = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
+            cpu._v0 = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
         }
 
         @Override
@@ -429,7 +429,7 @@ public class sceUtility extends HLEModule {
 
             log.warn("Unimplemented: " + name + "GetStatus");
 
-            cpu.gpr[2] = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
+            cpu._v0 = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
         }
 
 		@Override
@@ -438,7 +438,7 @@ public class sceUtility extends HLEModule {
 
             log.warn("Unimplemented: " + name + "Update");
 
-            cpu.gpr[2] = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
+            cpu._v0 = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
 
             return false;
 		}
@@ -1254,10 +1254,10 @@ public class sceUtility extends HLEModule {
             CpuState cpu = processor.cpu;
             Memory mem = Memory.getInstance();
 
-            paramsAddr = cpu.gpr[4];
+            paramsAddr = cpu._a0;
             if (!Memory.isAddressGood(paramsAddr)) {
                 log.error(String.format("%sContStart bad address 0x%08X", name, paramsAddr));
-                cpu.gpr[2] = -1;
+                cpu._v0 = -1;
             } else {
                 this.params = createParams();
                 params.read(mem, paramsAddr);
@@ -1267,9 +1267,9 @@ public class sceUtility extends HLEModule {
                 if (screenshotParams.isContModeOn()) {
                     // Start with INIT
                     status = PSP_UTILITY_DIALOG_STATUS_INIT;
-                    cpu.gpr[2] = 0;
+                    cpu._v0 = 0;
                 } else {
-                    cpu.gpr[2] = SceKernelErrors.ERROR_SCREENSHOT_CONT_MODE_NOT_INIT;
+                    cpu._v0 = SceKernelErrors.ERROR_SCREENSHOT_CONT_MODE_NOT_INIT;
                 }
             }
 		}
@@ -2261,7 +2261,7 @@ public class sceUtility extends HLEModule {
 
         log.warn("Unimplemented: sceUtilityRssReaderContStart");
 
-        cpu.gpr[2] = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
+        cpu._v0 = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
     }
 
     @HLEFunction(nid = 0xE7B778D8, version = 150)
@@ -2369,16 +2369,16 @@ public class sceUtility extends HLEModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int id = cpu.gpr[4];
-        int value_addr = cpu.gpr[5];
+        int id = cpu._a0;
+        int value_addr = cpu._a1;
 
         if (!Memory.isAddressGood(value_addr)) {
             log.warn("sceUtilitySetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") bad address");
-            cpu.gpr[2] = -1;
+            cpu._v0 = -1;
         } else {
             log.debug("sceUtilitySetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ")");
 
-            cpu.gpr[2] = 0;
+            cpu._v0 = 0;
             switch (id) {
                 case PSP_SYSTEMPARAM_ID_INT_ADHOC_CHANNEL:
                     Settings.getInstance().writeInt(SYSTEMPARAM_SETTINGS_OPTION_ADHOC_CHANNEL, mem.read32(value_addr));
@@ -2414,7 +2414,7 @@ public class sceUtility extends HLEModule {
 
                 default:
                     log.warn("UNIMPLEMENTED: sceUtilitySetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") unhandled id");
-                    cpu.gpr[2] = -1;
+                    cpu._v0 = -1;
                     break;
             }
         }
@@ -2424,16 +2424,16 @@ public class sceUtility extends HLEModule {
     public void sceUtilitySetSystemParamString(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int id = cpu.gpr[4];
-        int str_addr = cpu.gpr[5];
+        int id = cpu._a0;
+        int str_addr = cpu._a1;
 
         if (!Memory.isAddressGood(str_addr)) {
             log.warn("sceUtilitySetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ") bad address");
-            cpu.gpr[2] = -1;
+            cpu._v0 = -1;
         } else {
             log.debug("sceUtilitySetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ")");
 
-            cpu.gpr[2] = 0;
+            cpu._v0 = 0;
             switch (id) {
                 case PSP_SYSTEMPARAM_ID_STRING_NICKNAME:
                     Settings.getInstance().writeString(SYSTEMPARAM_SETTINGS_OPTION_NICKNAME, Utilities.readStringZ(str_addr));
@@ -2441,7 +2441,7 @@ public class sceUtility extends HLEModule {
 
                 default:
                     log.warn("UNIMPLEMENTED: sceUtilitySetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ") unhandled id");
-                    cpu.gpr[2] = -1;
+                    cpu._v0 = -1;
                     break;
             }
         }
@@ -2452,16 +2452,16 @@ public class sceUtility extends HLEModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int id = cpu.gpr[4];
-        int value_addr = cpu.gpr[5];
+        int id = cpu._a0;
+        int value_addr = cpu._a1;
 
         if (!Memory.isAddressGood(value_addr)) {
             log.warn("sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") bad address");
-            cpu.gpr[2] = -1;
+            cpu._v0 = -1;
         } else {
             log.debug("sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ")");
 
-            cpu.gpr[2] = 0;
+            cpu._v0 = 0;
             switch (id) {
                 case PSP_SYSTEMPARAM_ID_INT_ADHOC_CHANNEL:
                     mem.write32(value_addr, getSystemParamAdhocChannel());
@@ -2497,7 +2497,7 @@ public class sceUtility extends HLEModule {
 
                 default:
                     log.warn("UNIMPLEMENTED: sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") unhandled id");
-                    cpu.gpr[2] = -1;
+                    cpu._v0 = -1;
                     break;
             }
         }
@@ -2508,17 +2508,17 @@ public class sceUtility extends HLEModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int id = cpu.gpr[4];
-        int str_addr = cpu.gpr[5];
-        int len = cpu.gpr[6];
+        int id = cpu._a0;
+        int str_addr = cpu._a1;
+        int len = cpu._a2;
 
         if (!Memory.isAddressGood(str_addr)) {
             log.warn("sceUtilityGetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ",len=" + len + ") bad address");
-            cpu.gpr[2] = -1;
+            cpu._v0 = -1;
         } else {
             log.debug("sceUtilityGetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ",len=" + len + ")");
 
-            cpu.gpr[2] = 0;
+            cpu._v0 = 0;
             switch (id) {
                 case PSP_SYSTEMPARAM_ID_STRING_NICKNAME:
                     Utilities.writeStringNZ(mem, str_addr, len, getSystemParamNickname());
@@ -2526,7 +2526,7 @@ public class sceUtility extends HLEModule {
 
                 default:
                     log.warn("UNIMPLEMENTED:sceUtilityGetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ",len=" + len + ") unhandled id");
-                    cpu.gpr[2] = -1;
+                    cpu._v0 = -1;
                     break;
             }
         }
@@ -2542,7 +2542,7 @@ public class sceUtility extends HLEModule {
     public void sceUtilityCheckNetParam(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int id = cpu.gpr[4];
+        int id = cpu._a0;
 
         boolean available = (id >= 0 && id <= numberNetConfigurations);
 
@@ -2550,7 +2550,7 @@ public class sceUtility extends HLEModule {
         	log.debug(String.format("sceUtilityCheckNetParam(id=%d) available %b", id, available));
         }
 
-        cpu.gpr[2] = available ? 0 : SceKernelErrors.ERROR_NETPARAM_BAD_NETCONF;
+        cpu._v0 = available ? 0 : SceKernelErrors.ERROR_NETPARAM_BAD_NETCONF;
     }
 
     /**
@@ -2567,9 +2567,9 @@ public class sceUtility extends HLEModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int id = cpu.gpr[4];
-        int param = cpu.gpr[5];
-        int data = cpu.gpr[6];
+        int id = cpu._a0;
+        int param = cpu._a1;
+        int data = cpu._a2;
 
         if (log.isDebugEnabled()) {
         	log.debug(String.format("sceUtilityGetNetParam(id=%d, param=%d, data=0x%08X)", id, param, data));
@@ -2577,12 +2577,12 @@ public class sceUtility extends HLEModule {
 
         if (id < 0 || id > numberNetConfigurations) {
         	log.warn(String.format("sceUtilityGetNetParam invalid id=%d", id));
-        	cpu.gpr[2] = SceKernelErrors.ERROR_NETPARAM_BAD_NETCONF;
+        	cpu._v0 = SceKernelErrors.ERROR_NETPARAM_BAD_NETCONF;
         } else if (!Memory.isAddressGood(data)) {
         	log.warn(String.format("sceUtilityGetNetParam invalid data address 0x%08X", data));
-        	cpu.gpr[2] = -1;
+        	cpu._v0 = -1;
         } else {
-	        cpu.gpr[2] = 0;
+	        cpu._v0 = 0;
 	        switch (param) {
 		        case PSP_NETPARAM_NAME: {
 		        	Utilities.writeStringZ(mem, data, getNetParamName(id));
@@ -2630,7 +2630,7 @@ public class sceUtility extends HLEModule {
 		        }
 		        default: {
 		        	log.warn(String.format("sceUtilityGetNetParam invalid data address 0x%08X", data));
-		        	cpu.gpr[2] = SceKernelErrors.ERROR_NETPARAM_BAD_PARAM;
+		        	cpu._v0 = SceKernelErrors.ERROR_NETPARAM_BAD_PARAM;
 		        }
 	        }
         }
@@ -2647,7 +2647,7 @@ public class sceUtility extends HLEModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int idAddr = cpu.gpr[4];
+        int idAddr = cpu._a0;
 
         if (log.isDebugEnabled()) {
         	log.debug(String.format("sceUtilityGetNetParamLatestID: idAddr=0x%08X", idAddr));
@@ -2657,10 +2657,9 @@ public class sceUtility extends HLEModule {
         	// TODO Check if this function returns the number of net configurations
         	// or the ID the latest selected net configuration
             mem.write32(idAddr, numberNetConfigurations);
-            cpu.gpr[2] = 0;
+            cpu._v0 = 0;
         } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_NETPARAM_BAD_PARAM;
+            cpu._v0 = SceKernelErrors.ERROR_NETPARAM_BAD_PARAM;
         }
     }
-
 }

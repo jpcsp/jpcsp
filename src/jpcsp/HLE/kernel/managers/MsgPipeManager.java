@@ -99,11 +99,11 @@ public class MsgPipeManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return WAIT_TIMEOUT
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_TIMEOUT;
+            thread.cpuContext._v0 = ERROR_KERNEL_WAIT_TIMEOUT;
         } else {
             log.warn("MsgPipe deleted while we were waiting for it! (timeout expired)");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
+            thread.cpuContext._v0 = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -111,11 +111,11 @@ public class MsgPipeManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return ERROR_WAIT_STATUS_RELEASED
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
+            thread.cpuContext._v0 = ERROR_KERNEL_WAIT_STATUS_RELEASED;
         } else {
             log.warn("EventFlag deleted while we were waiting for it!");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
+            thread.cpuContext._v0 = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -131,7 +131,7 @@ public class MsgPipeManager {
             SceKernelThreadInfo thread = it.next();
             if (thread.isWaitingForType(PSP_WAIT_MSGPIPE) &&
                     thread.wait.MsgPipe_id == msgpid) {
-                thread.cpuContext.gpr[2] = result;
+                thread.cpuContext._v0 = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 reschedule = true;
             }
@@ -166,7 +166,7 @@ public class MsgPipeManager {
                     // Adjust waiting threads.
                     info.numSendWaitThreads--;
                     // Return success.
-                    thread.cpuContext.gpr[2] = 0;
+                    thread.cpuContext._v0 = 0;
                     // Wakeup.
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
@@ -182,7 +182,7 @@ public class MsgPipeManager {
                     // Adjust waiting threads.
                     info.numSendWaitThreads--;
                     // Return success.
-                    thread.cpuContext.gpr[2] = 0;
+                    thread.cpuContext._v0 = 0;
                     // Wakeup.
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
@@ -210,7 +210,7 @@ public class MsgPipeManager {
                     // Adjust waiting threads.
                     info.numReceiveWaitThreads--;
                     // Return success.
-                    thread.cpuContext.gpr[2] = 0;
+                    thread.cpuContext._v0 = 0;
                     // Wakeup.
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
@@ -226,7 +226,7 @@ public class MsgPipeManager {
                     // Adjust waiting threads.
                     info.numReceiveWaitThreads--;
                     // Return success.
-                    thread.cpuContext.gpr[2] = 0;
+                    thread.cpuContext._v0 = 0;
                     // Wakeup.
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
@@ -524,14 +524,14 @@ public class MsgPipeManager {
             // has received a new message during the callback execution.
             SceKernelMppInfo info = msgMap.get(wait.MsgPipe_id);
             if (info == null) {
-                thread.cpuContext.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
+                thread.cpuContext._v0 = ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
                 return false;
             }
 
             Memory mem = Memory.getInstance();
             if (trySendMsgPipe(mem, info, thread.wait.MsgPipe_address, thread.wait.MsgPipe_size, thread.wait.MsgPipe_waitMode, thread.wait.MsgPipe_resultSize_addr)) {
                 info.numSendWaitThreads--;
-                thread.cpuContext.gpr[2] = 0;
+                thread.cpuContext._v0 = 0;
                 return false;
             }
 
@@ -547,14 +547,14 @@ public class MsgPipeManager {
             // has been sent a new message during the callback execution.
             SceKernelMppInfo info = msgMap.get(wait.MsgPipe_id);
             if (info == null) {
-                thread.cpuContext.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
+                thread.cpuContext._v0 = ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
                 return false;
             }
 
             Memory mem = Memory.getInstance();
             if (tryReceiveMsgPipe(mem, info, wait.MsgPipe_address, wait.MsgPipe_size, wait.MsgPipe_waitMode, wait.MsgPipe_resultSize_addr)) {
                 info.numReceiveWaitThreads--;
-                thread.cpuContext.gpr[2] = 0;
+                thread.cpuContext._v0 = 0;
                 return false;
             }
 

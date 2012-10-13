@@ -76,65 +76,65 @@ public class MduState extends GprState {
 
     public final void doMFHI(int rd) {
         if (rd != 0) {
-            gpr[rd] = getHi();
+            setRegister(rd, getHi());
         }
     }
 
     public final void doMTHI(int rs) {
-        int hi = gpr[rs];
+        int hi = getRegister(rs);
         hilo = (((long) hi) << 32) | (hilo & 0xffffffffL);
     }
 
     public final void doMFLO(int rd) {
         if (rd != 0) {
-            gpr[rd] = getLo();
+            setRegister(rd, getLo());
         }
     }
 
     public final void doMTLO(int rs) {
-        int lo = gpr[rs];
+        int lo = getRegister(rs);
         hilo = (hilo & 0xffffffff00000000L) | ((lo) & 0x00000000ffffffffL);
     }
 
     public final void doMULT(int rs, int rt) {
-        hilo = ((long) gpr[rs]) * ((long) gpr[rt]);
+        hilo = ((long) getRegister(rs)) * ((long) getRegister(rt));
     }
 
     public final void doMULTU(int rs, int rt) {
-        hilo = ((gpr[rs]) & 0xffffffffL) * ((gpr[rt]) & 0xffffffffL);
+        hilo = (getRegister(rs) & 0xffffffffL) * (getRegister(rt) & 0xffffffffL);
     }
 
     public final void doDIV(int rs, int rt) {
         // According to MIPS spec., result is unpredictable when dividing by zero.
-        if (gpr[rt] != 0) {
-            int lo = gpr[rs] / gpr[rt];
-            int hi = gpr[rs] % gpr[rt];
+        if (getRegister(rt) != 0) {
+            int lo = getRegister(rs) / getRegister(rt);
+            int hi = getRegister(rs) % getRegister(rt);
             hilo = (((long) hi) << 32) | ((lo) & 0xffffffffL);
         }
     }
 
     public final void doDIVU(int rs, int rt) {
         // According to MIPS spec., result is unpredictable when dividing by zero.
-        if (gpr[rt] != 0) {
-            long x = (gpr[rs]) & 0xffffffffL;
-            long y = (gpr[rt]) & 0xffffffffL;
+        if (getRegister(rt) != 0) {
+            long x = getRegister(rs) & 0xffffffffL;
+            long y = getRegister(rt) & 0xffffffffL;
             hilo = ((x % y) << 32) | ((x / y) & 0xffffffffL);
         }
     }
 
     public final void doMADD(int rs, int rt) {
-        hilo += ((long) gpr[rs]) * ((long) gpr[rt]);
+        hilo += ((long) getRegister(rs)) * ((long) getRegister(rt));
     }
 
     public final void doMADDU(int rs, int rt) {
-        hilo += ((gpr[rs]) & 0xffffffffL) * ((gpr[rt]) & 0xffffffffL);
+        hilo += (getRegister(rs) & 0xffffffffL) * (getRegister(rt) & 0xffffffffL);
     }
 
     public final void doMSUB(int rs, int rt) {
-        hilo -= ((long) gpr[rs]) * ((long) gpr[rt]);
+        hilo -= ((long) getRegister(rs)) * ((long) getRegister(rt));
     }
 
     public final void doMSUBU(int rs, int rt) {
-        hilo -= ((gpr[rs]) & 0xffffffffL) * ((gpr[rt]) & 0xffffffffL);
+        hilo -= (getRegister(rs) & 0xffffffffL) * (getRegister(rt) & 0xffffffffL);
     }
 }

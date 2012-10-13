@@ -45,10 +45,9 @@ public class Memchr extends AbstractNativeCodeSequence {
 
 	// Returns index of char found or "n" if not found
 	static public void call(int srcAddrReg, int cReg, int nReg) {
-		int[] gpr = getGpr();
-		int srcAddr = gpr[srcAddrReg];
-		int c1 = gpr[cReg] & 0xFF;
-		int n = gpr[nReg];
+		int srcAddr = getRegisterValue(srcAddrReg);
+		int c1 = getRegisterValue(cReg) & 0xFF;
+		int n = getRegisterValue(nReg);
 
 		IMemoryReader memoryReader = MemoryReader.getMemoryReader(srcAddr, n, 1);
 		if (memoryReader != null) {

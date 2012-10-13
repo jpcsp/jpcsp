@@ -70,12 +70,12 @@ public class SyscallHandler {
             }
 
             if (isEnableIgnoreUnmappedImports()) {
-	            Modules.log.warn(String.format("IGNORING: Unmapped import at %s - %08x %08x %08x", description, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
+	            Modules.log.warn(String.format("IGNORING: Unmapped import at %s - $a0=0x%08X $a1=0x%08X $a2=0x%08X", description, cpu._a0, cpu._a1, cpu._a2));
 	        } else {
-		        Modules.log.error(String.format("Unmapped import at %s - %08x %08x %08x", description, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
+		        Modules.log.error(String.format("Unmapped import at %s - $a0=0x%08X $a1=0x%08X $a2=0x%08X", description, cpu._a0, cpu._a1, cpu._a2));
 		        Emulator.PauseEmu();
 	        }
-            cpu.gpr[2] = 0;
+            cpu._v0 = 0;
         } else {
         	// Check if this is the syscall
         	// for an HLE function currently being uninstalled
@@ -91,7 +91,7 @@ public class SyscallHandler {
 	                	break;
 	                }
 	            }
-	            Modules.log.warn(String.format("Unsupported syscall %X %s %08X %08X %08X", code, name, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
+	            Modules.log.warn(String.format("Unsupported syscall %X %s $a0=0x%08X $a1=0x%08X $a2=0x%08X", code, name, cpu._a0, cpu._a1, cpu._a2));
         	}
         }
     }

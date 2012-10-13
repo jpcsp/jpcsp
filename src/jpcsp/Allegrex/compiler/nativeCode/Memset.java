@@ -44,15 +44,14 @@ public class Memset extends AbstractNativeCodeSequence {
 
 	// Memset CodeSequence
 	static public void call(int dstAddrReg, int cReg, int nReg, int endValue) {
-		int[] gpr = getGpr();
-		int dstAddr = gpr[dstAddrReg];
-		int c = gpr[cReg];
-		int n = gpr[nReg] - endValue;
+		int dstAddr = getRegisterValue(dstAddrReg);
+		int c = getRegisterValue(cReg);
+		int n = getRegisterValue(nReg) - endValue;
 
 		getMemory().memset(dstAddr, (byte) c, n);
 
-		gpr[dstAddrReg] += n;
-		gpr[nReg] = endValue;
+		setRegisterValue(dstAddrReg, dstAddr + n);
+		setRegisterValue(nReg, endValue);
 	}
 
 	/**
@@ -65,11 +64,10 @@ public class Memset extends AbstractNativeCodeSequence {
 	 *                      4: take the 32bit of the value
 	 */
 	static public void call(int dstAddrReg, int cReg, int nStartReg, int cLength, int nEndReg) {
-		int[] gpr = getGpr();
-		int dstAddr = gpr[dstAddrReg];
-		int c = gpr[cReg];
-		int nStart = gpr[nStartReg];
-		int nEnd = gpr[nEndReg];
+		int dstAddr = getRegisterValue(dstAddrReg);
+		int c = getRegisterValue(cReg);
+		int nStart = getRegisterValue(nStartReg);
+		int nEnd = getRegisterValue(nEndReg);
 		int n = nEnd - nStart;
 
 		if (n == 0) {
@@ -117,21 +115,20 @@ public class Memset extends AbstractNativeCodeSequence {
 			Compiler.log.error("Memset.call: unsupported cLength=0x" + Integer.toHexString(cLength));
 		}
 
-		gpr[dstAddrReg] += n * cLength;
-		gpr[nStartReg] = nEnd;
+		setRegisterValue(dstAddrReg, getRegisterValue(dstAddrReg) + n * cLength);
+		setRegisterValue(nStartReg, nEnd);
 	}
 
 	// Memset CodeSequence
 	static public void callWithStep(int dstAddrReg, int cReg, int nReg, int endValue, int direction, int step) {
-		int[] gpr = getGpr();
-		int dstAddr = gpr[dstAddrReg];
-		int c = gpr[cReg];
-		int n = (endValue - gpr[nReg]) * direction * step;
+		int dstAddr = getRegisterValue(dstAddrReg);
+		int c = getRegisterValue(cReg);
+		int n = (endValue - getRegisterValue(nReg)) * direction * step;
 
 		getMemory().memset(dstAddr, (byte) c, n);
 
-		gpr[dstAddrReg] += n;
-		gpr[nReg] = endValue;
+		setRegisterValue(dstAddrReg, dstAddr + n);
+		setRegisterValue(nReg, endValue);
 	}
 
 	// Memset CodeSequence

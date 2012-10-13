@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import static jpcsp.Allegrex.Common._v0;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
@@ -2107,7 +2106,7 @@ public class sceNetInet extends HLEModule {
 	protected void unblockThread(BlockingState blockingState, int returnValue) {
 		SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getThreadById(blockingState.threadId);
 		if (thread != null) {
-			thread.cpuContext.gpr[_v0] = returnValue;
+			thread.cpuContext._v0 = returnValue;
 		}
 		if (blockingState.threadBlocked) {
 			if (log.isDebugEnabled()) {
@@ -2777,12 +2776,12 @@ public class sceNetInet extends HLEModule {
 			BlockingPollState blockingState = new BlockingPollState(selector, pollFds, timeoutUsec);
 
 			SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
-			thread.cpuContext.gpr[_v0] = 0; // This will be overwritten by the execution of the blockingState
+			thread.cpuContext._v0 = 0; // This will be overwritten by the execution of the blockingState
 			setErrno(0);
 
 			// Check if there are ready operations, otherwise, block the thread
 			blockingState.execute();
-			result = thread.cpuContext.gpr[_v0];
+			result = thread.cpuContext._v0;
 		} catch (IOException e) {
 			log.error("sceNetInetPoll", e);
 			setErrno(-1);
@@ -2872,11 +2871,11 @@ public class sceNetInet extends HLEModule {
 
 			setErrno(0);
 			SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
-			thread.cpuContext.gpr[_v0] = 0; // This will be overwritten by the execution of the blockingState
+			thread.cpuContext._v0 = 0; // This will be overwritten by the execution of the blockingState
 
 			// Check if there are ready operations, otherwise, block the thread
 			blockingState.execute();
-			result = thread.cpuContext.gpr[_v0];
+			result = thread.cpuContext._v0;
 		} catch (IOException e) {
 			log.error(e);
 			setErrno(-1);

@@ -76,11 +76,11 @@ public class LwMutexManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return WAIT_TIMEOUT
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_TIMEOUT;
+            thread.cpuContext._v0 = ERROR_KERNEL_WAIT_TIMEOUT;
         } else {
             log.warn("LwMutex deleted while we were waiting for it! (timeout expired)");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
+            thread.cpuContext._v0 = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -88,11 +88,11 @@ public class LwMutexManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return ERROR_WAIT_STATUS_RELEASED
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
+            thread.cpuContext._v0 = ERROR_KERNEL_WAIT_STATUS_RELEASED;
         } else {
             log.warn("EventFlag deleted while we were waiting for it!");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
+            thread.cpuContext._v0 = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -111,7 +111,7 @@ public class LwMutexManager {
             SceKernelThreadInfo thread = it.next();
             if (thread.isWaitingForType(PSP_WAIT_LWMUTEX) &&
                     thread.wait.LwMutex_id == lwmid) {
-                thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
+                thread.cpuContext._v0 = ERROR_KERNEL_WAIT_DELETE;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 reschedule = true;
             }
@@ -137,7 +137,7 @@ public class LwMutexManager {
                     // Update numWaitThreads
                     info.numWaitThreads--;
                     // Return success or failure
-                    thread.cpuContext.gpr[2] = 0;
+                    thread.cpuContext._v0 = 0;
                     // Wakeup
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
@@ -154,7 +154,7 @@ public class LwMutexManager {
                     // Update numWaitThreads
                     info.numWaitThreads--;
                     // Return success or failure
-                    thread.cpuContext.gpr[2] = 0;
+                    thread.cpuContext._v0 = 0;
                     // Wakeup
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
@@ -381,14 +381,14 @@ public class LwMutexManager {
             // has been unlocked during the callback execution.
             SceKernelLwMutexInfo info = lwMutexMap.get(wait.LwMutex_id);
             if (info == null) {
-                thread.cpuContext.gpr[2] = ERROR_KERNEL_LWMUTEX_NOT_FOUND;
+                thread.cpuContext._v0 = ERROR_KERNEL_LWMUTEX_NOT_FOUND;
                 return false;
             }
 
             // Check the lwmutex.
             if (tryLockLwMutex(info, wait.LwMutex_count, thread)) {
                 info.numWaitThreads--;
-                thread.cpuContext.gpr[2] = 0;
+                thread.cpuContext._v0 = 0;
                 return false;
             }
 

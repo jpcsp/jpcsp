@@ -83,7 +83,12 @@ public class AbstractAllegrexInterruptHandler {
 	}
 
 	public void copyArgumentsToCpu(CpuState cpu) {
-            System.arraycopy(arguments, 0, cpu.gpr, 4, numberArguments);
+		switch (numberArguments) {
+			case 4: cpu._a3 = arguments[3];
+			case 3: cpu._a2 = arguments[2];
+			case 2: cpu._a1 = arguments[1];
+			case 1: cpu._a0 = arguments[0];
+		}
 	}
 
 	@Override

@@ -19,9 +19,6 @@ package jpcsp;
 import static jpcsp.Allegrex.Common._a0;
 import static jpcsp.Allegrex.Common._f0;
 import static jpcsp.Allegrex.Common._f12;
-import static jpcsp.Allegrex.Common._sp;
-import static jpcsp.Allegrex.Common._v0;
-import static jpcsp.Allegrex.Common._v1;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -57,9 +54,9 @@ public class ParameterReader {
 
 	private int getParameterIntAt(int index) {
 		if (index >= maxParameterInGprRegisters) {
-			return memory.read32(cpu.gpr[_sp] + (index - maxParameterInGprRegisters) * 4);
+			return memory.read32(cpu._sp + (index - maxParameterInGprRegisters) * 4);
 		}
-		return cpu.gpr[firstParameterInGpr + index];
+		return cpu.getRegister(firstParameterInGpr + index);
 	}
 
 	private float getParameterFloatAt(int index) {
@@ -125,7 +122,7 @@ public class ParameterReader {
 	}
 	
 	public void setReturnValueInt(int value) {
-		cpu.gpr[_v0] = value;
+		cpu._v0 = value;
 	}
 
 	public void setReturnValueFloat(float value) {
@@ -134,7 +131,7 @@ public class ParameterReader {
 	}
 
 	public void setReturnValueLong(long value) {
-		cpu.gpr[_v0] = (int)((value >>  0) & 0xFFFFFFFF);
-		cpu.gpr[_v1] = (int)((value >> 32) & 0xFFFFFFFF);
+		cpu._v0 = (int)((value >>  0) & 0xFFFFFFFF);
+		cpu._v1 = (int)((value >> 32) & 0xFFFFFFFF);
 	}
 }

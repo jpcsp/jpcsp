@@ -17,14 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
-import static jpcsp.Allegrex.Common._a1;
-import static jpcsp.Allegrex.Common._a2;
-import static jpcsp.Allegrex.Common._a3;
-import static jpcsp.Allegrex.Common._t0;
-import static jpcsp.Allegrex.Common._t1;
-import static jpcsp.Allegrex.Common._t2;
-import static jpcsp.Allegrex.Common._t3;
-
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.PspString;
@@ -379,17 +371,16 @@ public class SysMemUserForUser extends HLEModule {
         if (logger.isInfoEnabled()) {
         	String formattedMsg = formatString.getString();
         	try {
-        		int[] gpr = cpu.gpr;
             	// For now, use only the 7 register parameters: $a1-$a3, $t0-$t3
             	// Further parameters should be retrieved from the stack.
         		Object[] formatParameters = new Object[] {
-        				gpr[_a1],
-        				gpr[_a2],
-        				gpr[_a3],
-        				gpr[_t0],
-        				gpr[_t1],
-        				gpr[_t2],
-        				gpr[_t3]
+        				cpu._a1,
+        				cpu._a2,
+        				cpu._a3,
+        				cpu._t0,
+        				cpu._t1,
+        				cpu._t2,
+        				cpu._t3
         		};
 
         		// Translate the C-like format string to a Java format string:

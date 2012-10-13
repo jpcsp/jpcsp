@@ -72,7 +72,7 @@ public class SceKernelThreadEventHandlerInfo extends pspAbstractMemoryMappedStru
     private class AfterEventHandler implements IAction {
 		@Override
 		public void execute() {
-			result = Emulator.getProcessor().cpu.gpr[2];
+			result = Emulator.getProcessor().cpu._v0;
 
 			if (Modules.log.isInfoEnabled()) {
 				Modules.log.info(String.format("Thread Event Handler exit detected (thid=%X, result=0x%08X)", thid, result));

@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
-import static jpcsp.Allegrex.Common._ra;
 import jpcsp.Allegrex.Common.Instruction;
 
 /**
@@ -48,7 +47,7 @@ public class InterpretExecutable implements IExecutable {
 			for (int i = 0; i < insns.length; i++) {
 				insns[i].interpret(RuntimeContext.processor, opcodes[i]);
 			}
-			returnAddress = RuntimeContext.cpu.gpr[_ra];
+			returnAddress = RuntimeContext.cpu._ra;
 		} else {
 			returnAddress = RuntimeContext.executeInterpreter(codeBlock.getStartAddress());
 		}

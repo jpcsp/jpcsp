@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import static jpcsp.Allegrex.Common._v0;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CANCELLED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
@@ -70,7 +69,7 @@ public class sceUmdUser extends HLEModule {
 			if (checkDriveStat(wait.wantedUmdStat)) {
 				waitingThreads.remove(thread);
                 // Return success
-				thread.cpuContext.gpr[2] = 0;
+				thread.cpuContext._v0 = 0;
 
 				// Do not continue the wait state
 				return false;
@@ -155,14 +154,14 @@ public class sceUmdUser extends HLEModule {
         log.info("UMD stat timedout");
         removeWaitingThread(thread);
         // Return WAIT_TIMEOUT
-        thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_TIMEOUT;
+        thread.cpuContext._v0 = ERROR_KERNEL_WAIT_TIMEOUT;
     }
 
     public void onThreadWaitReleased(SceKernelThreadInfo thread) {
         log.info("UMD stat released");
         removeWaitingThread(thread);
         // Return ERROR_WAIT_STATUS_RELEASED
-        thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
+        thread.cpuContext._v0 = ERROR_KERNEL_WAIT_STATUS_RELEASED;
     }
 
     public void onThreadDeleted(SceKernelThreadInfo thread) {
@@ -183,7 +182,7 @@ public class sceUmdUser extends HLEModule {
                 	}
                     lit.remove();
                     // Return success
-                    waitingThread.cpuContext.gpr[2] = 0;
+                    waitingThread.cpuContext._v0 = 0;
                     // Wakeup thread
                     Modules.ThreadManForUserModule.hleChangeThreadState(waitingThread, SceKernelThreadInfo.PSP_THREAD_READY);
                 }
@@ -288,7 +287,7 @@ public class sceUmdUser extends HLEModule {
             	}
                 lit.remove();
                 // Return WAIT_CANCELLED.
-                waitingThread.cpuContext.gpr[_v0] = ERROR_KERNEL_WAIT_CANCELLED;
+                waitingThread.cpuContext._v0 = ERROR_KERNEL_WAIT_CANCELLED;
                 // Wakeup thread
                 threadMan.hleChangeThreadState(waitingThread, SceKernelThreadInfo.PSP_THREAD_READY);
             }

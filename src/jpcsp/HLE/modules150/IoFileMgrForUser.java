@@ -57,7 +57,6 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
-import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
@@ -913,11 +912,11 @@ public class IoFileMgrForUser extends HLEModule {
                 // check umd is mounted
                 if (iso == null) {
                     log.error("stat - no umd mounted");
-                    Emulator.getProcessor().cpu.gpr[2] = ERROR_ERRNO_DEVICE_NOT_FOUND;
+                    Emulator.getProcessor().cpu._v0 = ERROR_ERRNO_DEVICE_NOT_FOUND;
                 // check umd is activated
                 } else if (!Modules.sceUmdUserModule.isUmdActivated()) {
                     log.warn("stat - umd mounted but not activated");
-                    Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_NO_SUCH_DEVICE;
+                    Emulator.getProcessor().cpu._v0 = ERROR_KERNEL_NO_SUCH_DEVICE;
                 } else {
                     String isofilename = trimUmdPrefix(pcfilename);
                     int mode = 4; // 4 = readable
@@ -1140,14 +1139,14 @@ public class IoFileMgrForUser extends HLEModule {
         CpuState cpu = processor.cpu;
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
-        int uid = cpu.gpr[asyncThreadRegisterArgument];
+        int uid = cpu.getRegister(asyncThreadRegisterArgument);
 
         IoInfo info = fileUids.get(uid);
         if (info == null) {
             if (log.isDebugEnabled()) {
                 log.debug(String.format("hleAsyncThread non-existing uid=%x", uid));
             }
-            cpu.gpr[Common._v0] = 0; // Exit status
+            cpu._v0 = 0; // Exit status
             // Exit and delete the thread to free its resources (e.g. its stack)
             threadMan.hleKernelExitDeleteThread();
         } else {
@@ -1229,7 +1228,7 @@ public class IoFileMgrForUser extends HLEModule {
 
             // Copy uid to Async Thread argument register after starting the thread
             // (all registers are reset when starting the thread).
-            info.asyncThread.cpuContext.gpr[asyncThreadRegisterArgument] = info.uid;
+            info.asyncThread.cpuContext.setRegister(asyncThreadRegisterArgument, info.uid);
         } else {
             triggerAsyncThread(info);
         }
@@ -1279,7 +1278,7 @@ public class IoFileMgrForUser extends HLEModule {
                         info.asyncResultPending = false;
 
                         // Return success
-                        thread.cpuContext.gpr[2] = 0;
+                        thread.cpuContext._v0 = 0;
                         // Wakeup
                         threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     }

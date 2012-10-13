@@ -29,7 +29,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules200.SysMemUserForUser {
 
 		log.debug("Unimplemented NID function sceKernelQueryMemoryInfo [0x2A3E5280]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu._v0 = 0xDEADC0DE;
 	}
     
 	@HLEFunction(nid = 0x39F49610, version = 280)
@@ -38,7 +38,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules200.SysMemUserForUser {
 
 		log.debug("Unimplemented NID function sceKernelGetPTRIG [0x39F49610]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu._v0 = 0xDEADC0DE;
 	}
     
 	@HLEFunction(nid = 0x6231A71D, version = 280)
@@ -47,8 +47,6 @@ public class SysMemUserForUser extends jpcsp.HLE.modules200.SysMemUserForUser {
 
 		log.debug("Unimplemented NID function sceKernelSetPTRIG [0x6231A71D]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu._v0 = 0xDEADC0DE;
 	}
-
-
 }

@@ -32,7 +32,6 @@ import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.Processor;
-import jpcsp.Allegrex.Common;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.pspNetMacAddress;
@@ -117,7 +116,7 @@ public class sceNetAdhocMatching extends HLEModule {
 	}
 
 	public void hleNetAdhocMatchingEventThread(Processor processor) {
-		int matchingId = processor.cpu.gpr[loopThreadRegisterArgument];
+		int matchingId = processor.cpu.getRegister(loopThreadRegisterArgument);
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("hleNetAdhocMatchingEventThread matchingId=%d", matchingId));
 		}
@@ -127,13 +126,13 @@ public class sceNetAdhocMatching extends HLEModule {
 			Modules.ThreadManForUserModule.hleKernelDelayThread(10000, false);
 		} else {
 			// Exit thread with status 0
-			processor.cpu.gpr[Common._v0] = 0;
+			processor.cpu._v0 = 0;
 			Modules.ThreadManForUserModule.hleKernelExitDeleteThread();
 		}
 	}
 
 	public void hleNetAdhocMatchingInputThread(Processor processor) {
-		int matchingId = processor.cpu.gpr[loopThreadRegisterArgument];
+		int matchingId = processor.cpu.getRegister(loopThreadRegisterArgument);
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("hleNetAdhocMatchingInputThread matchingId=%d", matchingId));
 		}
@@ -143,7 +142,7 @@ public class sceNetAdhocMatching extends HLEModule {
 			Modules.ThreadManForUserModule.hleKernelDelayThread(10000, false);
 		} else {
 			// Exit thread with status 0
-			processor.cpu.gpr[Common._v0] = 0;
+			processor.cpu._v0 = 0;
 			Modules.ThreadManForUserModule.hleKernelExitDeleteThread();
 		}
 	}

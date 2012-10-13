@@ -24,59 +24,55 @@ import jpcsp.Allegrex.compiler.Compiler;
  */
 public class MemcpySequence extends AbstractNativeCodeSequence implements INativeCodeSequence {
 	static public void call(int dstAddrReg, int srcAddrReg, int lengthReg) {
-		int[] gpr = getGpr();
-		int dstAddr = gpr[dstAddrReg];
-		int srcAddr = gpr[srcAddrReg];
-		int length  = gpr[lengthReg];
+		int dstAddr = getRegisterValue(dstAddrReg);
+		int srcAddr = getRegisterValue(srcAddrReg);
+		int length  = getRegisterValue(lengthReg);
 
 		getMemory().memcpy(dstAddr, srcAddr, length);
 
 		// Update registers
-		gpr[dstAddrReg] = dstAddr + length;
-		gpr[srcAddrReg] = srcAddr + length;
-		gpr[lengthReg]  = 0;
+		setRegisterValue(dstAddrReg, dstAddr + length);
+		setRegisterValue(srcAddrReg, srcAddr + length);
+		setRegisterValue(lengthReg, 0);
 	}
 
 	static public void call(int dstAddrReg, int srcAddrReg, int lengthReg, int dstOffset, int srcOffset) {
-		int[] gpr = getGpr();
-		int dstAddr = gpr[dstAddrReg];
-		int srcAddr = gpr[srcAddrReg];
-		int length  = gpr[lengthReg];
+		int dstAddr = getRegisterValue(dstAddrReg);
+		int srcAddr = getRegisterValue(srcAddrReg);
+		int length  = getRegisterValue(lengthReg);
 
 		getMemory().memcpy(dstAddr + dstOffset, srcAddr + srcOffset, length);
 
 		// Update registers
-		gpr[dstAddrReg] = dstAddr + length;
-		gpr[srcAddrReg] = srcAddr + length;
-		gpr[lengthReg]  = 0;
+		setRegisterValue(dstAddrReg, dstAddr + length);
+		setRegisterValue(srcAddrReg, srcAddr + length);
+		setRegisterValue(lengthReg, 0);
 	}
 
 	static public void call(int dstAddrReg, int srcAddrReg, int targetAddrReg, int targetReg) {
-		int[] gpr = getGpr();
-		int dstAddr = gpr[dstAddrReg];
-		int srcAddr = gpr[srcAddrReg];
-		int targetAddr = gpr[targetAddrReg];
+		int dstAddr = getRegisterValue(dstAddrReg);
+		int srcAddr = getRegisterValue(srcAddrReg);
+		int targetAddr = getRegisterValue(targetAddrReg);
 
-		int length = targetAddr - gpr[targetReg];
+		int length = targetAddr - getRegisterValue(targetReg);
 		getMemory().memcpy(dstAddr, srcAddr, length);
 
 		// Update registers
-		gpr[dstAddrReg] = dstAddr + length;
-		gpr[srcAddrReg] = srcAddr + length;
+		setRegisterValue(dstAddrReg, dstAddr + length);
+		setRegisterValue(srcAddrReg, srcAddr + length);
 	}
 
 	static public void call(int dstAddrReg, int srcAddrReg, int targetAddrReg, int targetReg, int dstOffset, int srcOffset, int valueReg, int valueBytes) {
-		int[] gpr = getGpr();
-		int dstAddr = gpr[dstAddrReg];
-		int srcAddr = gpr[srcAddrReg];
-		int targetAddr = gpr[targetAddrReg];
+		int dstAddr = getRegisterValue(dstAddrReg);
+		int srcAddr = getRegisterValue(srcAddrReg);
+		int targetAddr = getRegisterValue(targetAddrReg);
 
-		int length = targetAddr - gpr[targetReg];
+		int length = targetAddr - getRegisterValue(targetReg);
 		getMemory().memcpy(dstAddr + dstOffset, srcAddr + srcOffset, length);
 
 		// Update registers
-		gpr[dstAddrReg] = dstAddr + length;
-		gpr[srcAddrReg] = srcAddr + length;
+		setRegisterValue(dstAddrReg, dstAddr + length);
+		setRegisterValue(srcAddrReg, srcAddr + length);
 
 		// Update the register "valueReg" with the last value processed by the memcpy loop
 		int valueAddr = srcAddr + length - valueBytes;
@@ -87,35 +83,33 @@ public class MemcpySequence extends AbstractNativeCodeSequence implements INativ
 		case 4: value = getMemory().read32(valueAddr); break;
 		default: value = 0; Compiler.log.error("MemcpySequence.call(): Unimplemented valueBytes=" + valueBytes); break;
 		}
-		gpr[valueReg] = value;
+		setRegisterValue(valueReg, value);
 	}
 
 	static public void callWithStep(int dstAddrReg, int srcAddrReg, int lengthReg, int step, int lengthOffset) {
-		int[] gpr = getGpr();
-		int dstAddr = gpr[dstAddrReg];
-		int srcAddr = gpr[srcAddrReg];
-		int length  = (gpr[lengthReg] + lengthOffset) * step;
+		int dstAddr = getRegisterValue(dstAddrReg);
+		int srcAddr = getRegisterValue(srcAddrReg);
+		int length  = (getRegisterValue(lengthReg) + lengthOffset) * step;
 
 		getMemory().memcpy(dstAddr, srcAddr, length);
 
 		// Update registers
-		gpr[dstAddrReg] = dstAddr + length;
-		gpr[srcAddrReg] = srcAddr + length;
-		gpr[lengthReg]  = 0;
+		setRegisterValue(dstAddrReg, dstAddr + length);
+		setRegisterValue(srcAddrReg, srcAddr + length);
+		setRegisterValue(lengthReg, 0);
 	}
 
 	static public void callWithCountStep(int dstAddrReg, int srcAddrReg, int lengthReg, int count, int step) {
-		int[] gpr = getGpr();
-		int dstAddr = gpr[dstAddrReg];
-		int srcAddr = gpr[srcAddrReg];
-		int length  = (count - gpr[lengthReg]) * step;
+		int dstAddr = getRegisterValue(dstAddrReg);
+		int srcAddr = getRegisterValue(srcAddrReg);
+		int length  = (count - getRegisterValue(lengthReg)) * step;
 
 		getMemory().memcpy(dstAddr, srcAddr, length);
 
 		// Update registers
-		gpr[dstAddrReg] = dstAddr + length;
-		gpr[srcAddrReg] = srcAddr + length;
-		gpr[lengthReg]  = count;
+		setRegisterValue(dstAddrReg, dstAddr + length);
+		setRegisterValue(srcAddrReg, srcAddr + length);
+		setRegisterValue(lengthReg, count);
 	}
 
 	static public void callFixedLength(int dstAddrReg, int srcAddrReg, int dstOffset, int srcOffset, int length) {
@@ -135,15 +129,14 @@ public class MemcpySequence extends AbstractNativeCodeSequence implements INativ
 	}
 
 	static public void callIndirectLength(int dstAddrReg, int srcAddrReg, int lengthAddrReg, int lengthAddrOffset) {
-		int[] gpr = getGpr();
-		int dstAddr = gpr[dstAddrReg];
-		int srcAddr = gpr[srcAddrReg];
+		int dstAddr = getRegisterValue(dstAddrReg);
+		int srcAddr = getRegisterValue(srcAddrReg);
 		int length  = getMemory().read32(getRegisterValue(lengthAddrReg) + lengthAddrOffset);
 
 		getMemory().memcpy(dstAddr, srcAddr, length);
 
 		// Update registers
-		gpr[dstAddrReg] = dstAddr + length;
-		gpr[srcAddrReg] = srcAddr + length;
+		setRegisterValue(dstAddrReg, dstAddr + length);
+		setRegisterValue(srcAddrReg, srcAddr + length);
 	}
 }

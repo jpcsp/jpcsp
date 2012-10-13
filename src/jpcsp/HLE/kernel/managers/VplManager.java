@@ -83,11 +83,11 @@ public class VplManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return WAIT_TIMEOUT
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_TIMEOUT;
+            thread.cpuContext._v0 = ERROR_KERNEL_WAIT_TIMEOUT;
         } else {
             log.warn("VPL deleted while we were waiting for it! (timeout expired)");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
+            thread.cpuContext._v0 = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -95,11 +95,11 @@ public class VplManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return ERROR_WAIT_STATUS_RELEASED
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
+            thread.cpuContext._v0 = ERROR_KERNEL_WAIT_STATUS_RELEASED;
         } else {
             log.warn("EventFlag deleted while we were waiting for it!");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
+            thread.cpuContext._v0 = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -117,7 +117,7 @@ public class VplManager {
             SceKernelThreadInfo thread = it.next();
             if (thread.isWaitingForType(PSP_WAIT_VPL) &&
                     thread.wait.Vpl_id == vid) {
-                thread.cpuContext.gpr[2] = result;
+                thread.cpuContext._v0 = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 reschedule = true;
             }
@@ -149,7 +149,7 @@ public class VplManager {
                         log.debug(String.format("onVplFree waking thread %s", thread.toString()));
                     }
                     info.numWaitThreads--;
-                    thread.cpuContext.gpr[2] = 0;
+                    thread.cpuContext._v0 = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
                 }
@@ -163,7 +163,7 @@ public class VplManager {
                         log.debug(String.format("onVplFree waking thread %s", thread.toString()));
                     }
                     info.numWaitThreads--;
-                    thread.cpuContext.gpr[2] = 0;
+                    thread.cpuContext._v0 = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
                 }
@@ -371,14 +371,14 @@ public class VplManager {
             // has been allocated during the callback execution.
             SceKernelVplInfo vpl = vplMap.get(wait.Vpl_id);
             if (vpl == null) {
-                thread.cpuContext.gpr[2] = ERROR_KERNEL_NOT_FOUND_VPOOL;
+                thread.cpuContext._v0 = ERROR_KERNEL_NOT_FOUND_VPOOL;
                 return false;
             }
 
             // Check vpl.
             if (tryAllocateVpl(vpl, wait.Vpl_size) != 0) {
                 vpl.numWaitThreads--;
-                thread.cpuContext.gpr[2] = 0;
+                thread.cpuContext._v0 = 0;
                 return false;
             }
 

@@ -31,16 +31,16 @@ public class SysMemUserForUser extends jpcsp.HLE.modules280.SysMemUserForUser {
 	public void SysMemUserForUser_50F61D8A(Processor processor) {
 		CpuState cpu = processor.cpu;
 		
-		int uid = cpu.gpr[4];
+		int uid = cpu._a0;
 
 		SysMemInfo info = blockList.remove(uid);
         if (info == null) {
             log.warn("SysMemUserForUser_50F61D8A(uid=0x" + Integer.toHexString(uid) + ") unknown uid");
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_UNKNOWN_UID;
+            cpu._v0 = SceKernelErrors.ERROR_KERNEL_UNKNOWN_UID;
         } else {
             log.debug("SysMemUserForUser_50F61D8A(uid=0x" + Integer.toHexString(uid) + ")");
             free(info);
-            cpu.gpr[2] = 0;
+            cpu._v0 = 0;
         }
 	}
     
@@ -50,7 +50,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules280.SysMemUserForUser {
 
 		log.debug("Unimplemented NID function SysMemUserForUser_ACBD88CA [0xACBD88CA]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu._v0 = 0xDEADC0DE;
 	}
 
     // sceKernelGetMemoryBlockAddr (internal name)
@@ -59,25 +59,25 @@ public class SysMemUserForUser extends jpcsp.HLE.modules280.SysMemUserForUser {
 		CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
 		
-		int uid = cpu.gpr[4];
-		int addr = cpu.gpr[5];
+		int uid = cpu._a0;
+		int addr = cpu._a1;
 
 		SysMemInfo info = blockList.get(uid);
         if (info == null) {
             log.warn("SysMemUserForUser_DB83A952(uid=0x" + Integer.toHexString(uid)
                     + ", addr=0x" + Integer.toHexString(addr) + ") unknown uid");
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_UNKNOWN_UID;
+            cpu._v0 = SceKernelErrors.ERROR_KERNEL_UNKNOWN_UID;
         } else if (!Memory.isAddressGood(addr)) {
             log.warn("SysMemUserForUser_DB83A952(uid=0x" + Integer.toHexString(uid)
                     + ", addr=0x" + Integer.toHexString(addr) + ") bad addr");
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_ILLEGAL_ADDR;
+            cpu._v0 = SceKernelErrors.ERROR_KERNEL_ILLEGAL_ADDR;
         } else {
             if (log.isDebugEnabled()) {
         		log.debug("SysMemUserForUser_DB83A952(uid=0x" + Integer.toHexString(uid)
                     + ", addr=0x" + Integer.toHexString(addr) + ") addr 0x" + Integer.toHexString(info.addr));
         	}
             mem.write32(addr, info.addr);
-            cpu.gpr[2] = 0;
+            cpu._v0 = 0;
         }
 	}
 
@@ -87,10 +87,10 @@ public class SysMemUserForUser extends jpcsp.HLE.modules280.SysMemUserForUser {
 		CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
 		
-		int pname = cpu.gpr[4];
-		int type = cpu.gpr[5];
-		int size = cpu.gpr[6];
-		int paramsAddr = cpu.gpr[7];
+		int pname = cpu._a0;
+		int type = cpu._a1;
+		int size = cpu._a2;
+		int paramsAddr = cpu._a3;
 
 		String name = readStringNZ(pname, 32);
 		if (log.isDebugEnabled()) {
@@ -103,14 +103,14 @@ public class SysMemUserForUser extends jpcsp.HLE.modules280.SysMemUserForUser {
         	}
         }
         if (type < PSP_SMEM_Low || type > PSP_SMEM_High) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_ILLEGAL_MEMBLOCK_ALLOC_TYPE;
+            cpu._v0 = SceKernelErrors.ERROR_KERNEL_ILLEGAL_MEMBLOCK_ALLOC_TYPE;
         } else {
             // Always allocate memory in user area (partitionid == 2).
             SysMemInfo info = malloc(SysMemUserForUser.USER_PARTITION_ID, name, type, size, 0);
             if (info != null) {
-                cpu.gpr[2] = info.uid;
+                cpu._v0 = info.uid;
             } else {
-                cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_FAILED_ALLOC_MEMBLOCK;
+                cpu._v0 = SceKernelErrors.ERROR_KERNEL_FAILED_ALLOC_MEMBLOCK;
             }
         }
 	}

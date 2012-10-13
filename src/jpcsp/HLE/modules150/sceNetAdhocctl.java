@@ -31,7 +31,6 @@ import java.util.List;
 
 import jpcsp.Emulator;
 import jpcsp.Processor;
-import jpcsp.Allegrex.Common;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
@@ -335,7 +334,7 @@ public class sceNetAdhocctl extends HLEModule {
 
     	if (doTerminate) {
 			// Exit thread with status 0
-			processor.cpu.gpr[Common._v0] = 0;
+			processor.cpu._v0 = 0;
 			threadMan.hleKernelExitDeleteThread();
 			adhocctlThread = null;
 			doTerminate = false;

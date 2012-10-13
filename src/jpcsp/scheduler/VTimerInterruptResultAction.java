@@ -33,7 +33,7 @@ public class VTimerInterruptResultAction implements IAction {
 	public void execute() {
 		ThreadManForUser timerManager = Modules.ThreadManForUserModule;
 
-		int vtimerInterruptResult = Emulator.getProcessor().cpu.gpr[2];
+		int vtimerInterruptResult = Emulator.getProcessor().cpu._v0;
 		if (Modules.log.isDebugEnabled()) {
 			Modules.log.debug("VTimer returned value " + vtimerInterruptResult);
 		}

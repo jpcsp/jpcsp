@@ -17,21 +17,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules271;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.HLEUnimplemented;
 
 public class ModuleMgrForUser extends jpcsp.HLE.modules150.ModuleMgrForUser {
-
-    // Export functions
-
+	@HLEUnimplemented
     @HLEFunction(nid = 0xFEF27DC1, version = 271)
-    public void ModuleMgrForUser_FEF27DC1(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn(String.format("UNIMPLEMENTED:ModuleMgrForUser_FEF27DC1"
-            + " %08X %08X %08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
-
-        cpu.gpr[2] = 0;
+    public int ModuleMgrForUser_FEF27DC1() {
+		return 0;
     }
-
 }
