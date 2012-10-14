@@ -18,18 +18,10 @@ package jpcsp.HLE.modules600;
 
 import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 
 public class sceUtility extends jpcsp.HLE.modules303.sceUtility {
-
     @HLEFunction(nid = 0x180F7B62, version = 600)
     public void sceUtilityGamedataInstallAbort(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("PARTIAL: sceUtilityGamedataInstallAbort");
-        gamedataInstallState.abort();
-
-        cpu._v0 = 0;
+        gamedataInstallState.abort(processor);
     }
-
 }

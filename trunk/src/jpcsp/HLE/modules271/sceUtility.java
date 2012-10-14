@@ -175,12 +175,7 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
 
     @HLEFunction(nid = 0x4928BD96, version = 270, checkInsideInterrupt = true)
     public void sceUtilityMsgDialogAbort(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("PARTIAL: sceUtilityMsgDialogAbort()");
-        msgDialogState.abort();
-
-        cpu._v0 = 0;
+        msgDialogState.abort(processor);
     }
 
     @HLEFunction(nid = 0x0D5BC6D2, version = 270, checkInsideInterrupt = true)

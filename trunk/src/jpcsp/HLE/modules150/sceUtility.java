@@ -94,8 +94,7 @@ import jpcsp.util.Utilities;
 import org.apache.log4j.Logger;
 
 public class sceUtility extends HLEModule {
-
-    protected static Logger log = Modules.getLogger("sceUtility");
+    public static Logger log = Modules.getLogger("sceUtility");
 
     @Override
     public String getName() {
@@ -118,6 +117,7 @@ public class sceUtility extends HLEModule {
         htmlViewerState = new HtmlViewerUtilityDialogState("sceUtilityHtmlViewer");
         savedataErrState = new NotImplementedUtilityDialogState("sceUtilitySavedataErr");
         gamedataInstallState = new GamedataInstallUtilityDialogState("sceUtilityGamedataInstall");
+        startedDialogState = null;
 
         super.start();
     }
@@ -211,6 +211,7 @@ public class sceUtility extends HLEModule {
     protected HtmlViewerUtilityDialogState htmlViewerState;
     protected UtilityDialogState savedataErrState;
     protected GamedataInstallUtilityDialogState gamedataInstallState;
+    protected UtilityDialogState startedDialogState;
 
     private static final String dummyNetParamName = "NetConf #%d";
     private static final int numberNetConfigurations = 1;
@@ -275,7 +276,7 @@ public class sceUtility extends HLEModule {
             	if (log.isDebugEnabled()) {
             		log.debug(String.format("%sInitStart already started status=%d", name, status));
             	}
-                cpu._v0 = -1;
+                cpu._v0 = SceKernelErrors.ERROR_UTILITY_INVALID_STATUS;
             } else {
                 this.params = createParams();
 
@@ -290,6 +291,7 @@ public class sceUtility extends HLEModule {
                 if (validityResult == 0) {
                 	// Start with INIT
                 	status = PSP_UTILITY_DIALOG_STATUS_INIT;
+                	Modules.sceUtilityModule.startedDialogState = this;
                 }
 
                 cpu._v0 = validityResult;
@@ -308,8 +310,16 @@ public class sceUtility extends HLEModule {
         public void executeGetStatus(Processor processor) {
             CpuState cpu = processor.cpu;
 
+            if (Modules.sceUtilityModule.startedDialogState != null && Modules.sceUtilityModule.startedDialogState != this) {
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("%sGetStatus returning ERROR_UTILITY_WRONG_TYPE", name));
+            	}
+            	cpu._v0 = SceKernelErrors.ERROR_UTILITY_WRONG_TYPE;
+            	return;
+            }
+
             if (log.isDebugEnabled()) {
-                log.debug(name + "GetStatus status " + status);
+                log.debug(String.format("%sGetStatus status %d", name, status));
             }
 
             cpu._v0 = status;
@@ -321,11 +331,30 @@ public class sceUtility extends HLEModule {
                 // Move from INIT to VISIBLE
                 status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
                 startVisibleTimeMillis = Emulator.getClock().currentTimeMillis();
+            } else if (status == PSP_UTILITY_DIALOG_STATUS_NONE && Modules.sceUtilityModule.startedDialogState == this) {
+            	// Clear the started dialog after returning once status PSP_UTILITY_DIALOG_STATUS_NONE
+            	Modules.sceUtilityModule.startedDialogState = null;
             }
         }
 
         public void executeShutdownStart(Processor processor) {
             CpuState cpu = processor.cpu;
+
+            if (Modules.sceUtilityModule.startedDialogState != null && Modules.sceUtilityModule.startedDialogState != this) {
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("%ShutdownStart returning ERROR_UTILITY_WRONG_TYPE", name));
+            	}
+            	cpu._v0 = SceKernelErrors.ERROR_UTILITY_WRONG_TYPE;
+            	return;
+            }
+
+            if (status != PSP_UTILITY_DIALOG_STATUS_QUIT) {
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("%ShutdownStart returning ERROR_UTILITY_INVALID_STATUS", name));
+            	}
+            	cpu._v0 = SceKernelErrors.ERROR_UTILITY_INVALID_STATUS;
+            	return;
+            }
 
             if (log.isDebugEnabled()) {
                 log.debug(name + "ShutdownStart");
@@ -336,8 +365,16 @@ public class sceUtility extends HLEModule {
             cpu._v0 = 0;
         }
 
-        public void executeUpdate(Processor processor) {
+        public final void executeUpdate(Processor processor) {
             CpuState cpu = processor.cpu;
+
+            if (Modules.sceUtilityModule.startedDialogState != null && Modules.sceUtilityModule.startedDialogState != this) {
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("%Update returning ERROR_UTILITY_WRONG_TYPE", name));
+            	}
+            	cpu._v0 = SceKernelErrors.ERROR_UTILITY_WRONG_TYPE;
+            	return;
+            }
 
             drawSpeed = cpu._a0; // FPS used for internal animation sync (1 = 60 FPS; 2 = 30 FPS; 3 = 15 FPS).
             if (log.isDebugEnabled()) {
@@ -373,9 +410,33 @@ public class sceUtility extends HLEModule {
             }
         }
 
-        public void abort() {
+        public void abort(Processor processor) {
+        	CpuState cpu = processor.cpu;
+
+            if (Modules.sceUtilityModule.startedDialogState != null && Modules.sceUtilityModule.startedDialogState != this) {
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("%Abort returning ERROR_UTILITY_WRONG_TYPE", name));
+            	}
+            	cpu._v0 = SceKernelErrors.ERROR_UTILITY_WRONG_TYPE;
+            	return;
+            }
+
+            if (status != PSP_UTILITY_DIALOG_STATUS_QUIT) {
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("%Abort returning ERROR_UTILITY_INVALID_STATUS", name));
+            	}
+            	cpu._v0 = SceKernelErrors.ERROR_UTILITY_INVALID_STATUS;
+            	return;
+            }
+
+            if (log.isDebugEnabled()) {
+            	log.debug(String.format("%sAbort", name));
+            }
+
             status = PSP_UTILITY_DIALOG_STATUS_FINISHED;
             result = PSP_UTILITY_DIALOG_RESULT_ABORTED;
+
+            cpu._v0 = 0;
         }
 
         public void cancel() {
@@ -606,6 +667,14 @@ public class sceUtility extends HLEModule {
 	                        }
 	                    }
 	                    savedataParams.base.result = 0;
+	                } else if (savedataParams.saveName.length() > 0) {
+		            	String saveDir = savedataParams.getBasePath();
+		                if (Modules.IoFileMgrForUserModule.rmdir(saveDir, true)) {
+		                    savedataParams.base.result = 0;
+		                } else {
+		                    log.warn("Savedata MODE_DELETE directory not found!");
+		                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_NO_DATA;
+		                }
 	                } else {
 		                if (!isDialogOpen()) {
 		                    // Search for valid saves.
@@ -719,7 +788,7 @@ public class sceUtility extends HLEModule {
 
                             log.debug("Memory Stick Full Space = " +  MemoryStick.getSizeKbString(savedataSizeKb));
 	                    } else {
-                            log.warn("Memory Stick Full Space = no data found!");
+                            log.warn("Savedata MODE_SIZES directory not found!");
 	                        baseResult = SceKernelErrors.ERROR_SAVEDATA_SIZES_NO_DATA;
 	                    }
 	                }
