@@ -1,4 +1,7 @@
 @echo off
+rem CD to the path of the command line, this is required when running as an administrator
+cd /D "%~dp0"
+
 set PATH=%PATH%;lib\;lib\windows-x86\
 
 if NOT EXIST "%SystemRoot%\SysWOW64" goto JAVA32
