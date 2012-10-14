@@ -969,6 +969,10 @@ public class RuntimeContext {
         			Compiler.getInstance().invalidateCodeBlock(codeBlock);
         		} else if (codeBlock.getHighestAddress() >= addr && codeBlock.getHighestAddress() < addr + size) {
         			Compiler.getInstance().invalidateCodeBlock(codeBlock);
+        		} else if (size == 0x4000 && codeBlock.getHighestAddress() >= addr) {
+        			// Some applications do not clear more than 16KB as this is the size of the complete Instruction Cache.
+        			// Be conservative in this case and clear any code block above the given address.
+        			Compiler.getInstance().invalidateCodeBlock(codeBlock);
         		}
         	}
     	}
