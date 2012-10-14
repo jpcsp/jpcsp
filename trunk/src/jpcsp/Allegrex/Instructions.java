@@ -5077,7 +5077,7 @@ public void compile(ICompilerContext context, int insn) {
 		int testOpcode = (equal ? (less ? Opcodes.IFLE : Opcodes.IFEQ) : Opcodes.IFLT);
 		context.loadFTmp1();
 		context.loadFTmp2();
-		context.getMethodVisitor().visitInsn(Opcodes.FCMPL);
+		context.getMethodVisitor().visitInsn(Opcodes.FCMPL); // FCMPG and FCMPL would produce the same result as both values are not NaN
 		context.getMethodVisitor().visitJumpInsn(testOpcode, trueLabel);
 		context.getMethodVisitor().visitInsn(Opcodes.ICONST_0);
 		context.getMethodVisitor().visitJumpInsn(Opcodes.GOTO, continueLabel);
@@ -5944,7 +5944,18 @@ public void compile(ICompilerContext context, int insn) {
 				context.prepareVcrCcForStore(n);
 				context.loadVs(n);
 				context.loadVt(n);
-				mv.visitInsn(Opcodes.FCMPG);
+				// In Java, the two opcodes for float comparisons (FCMPG and FCMPL) differ
+				// only in how they handle NaN ("not a number").
+				// If one or both of the values is NaN, the FCMPG instruction pushes a 1,
+				// whereas the FCMPL instruction pushes a -1.
+				// On the PSP, comparing NaN values always returns false.
+				// - vcmp GE  => use FCMPL (-1 will be interpreted as false)
+				// - vcmp GT  => use FCMPL (-1 will be interpreted as false)
+				// - vcmp LE  => use FCMPG (1 will be interpreted as false)
+				// - vcmp LT  => use FCMPG (1 will be interpreted as false)
+				// - vcmp EQ  => use either FCMPL or FCMPG
+				// - vcmp NE  => use either FCMPL or FCMPG
+				mv.visitInsn(not ? Opcodes.FCMPL : Opcodes.FCMPG);
 				int opcodeCond = Opcodes.NOP;
 				switch (cond & 3) {
 					case 1:
@@ -6013,7 +6024,7 @@ public void compile(ICompilerContext context, int insn) {
 				case 0: {
 					mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "abs", "(F)F");
 					mv.visitInsn(Opcodes.FCONST_0);
-					mv.visitInsn(Opcodes.FCMPG);
+					mv.visitInsn(Opcodes.FCMPL); // Use FCMPL or FCMPG, it doesn't matter for testing NE or EQ
 					Label trueLabel = new Label();
 					Label afterLabel = new Label();
 					mv.visitJumpInsn(not ? Opcodes.IFNE : Opcodes.IFEQ, trueLabel);
@@ -6250,7 +6261,7 @@ public void compile(ICompilerContext context, int insn) {
 		context.prepareVdForStore(n);
 		context.loadVs(n);
 		context.loadVt(n);
-		mv.visitInsn(Opcodes.FCMPG);
+		mv.visitInsn(Opcodes.FCMPL); // Use FCMPL, not FCMPG: NaN has to return false.
 		Label trueLabel = new Label();
 		Label afterLabel = new Label();
 		mv.visitJumpInsn(Opcodes.IFGE, trueLabel);
@@ -6303,7 +6314,7 @@ public void compile(ICompilerContext context, int insn) {
 		context.prepareVdForStore(n);
 		context.loadVs(n);
 		context.loadVt(n);
-		mv.visitInsn(Opcodes.FCMPG);
+		mv.visitInsn(Opcodes.FCMPG); // Use FCMPG, not FCMPL: NaN has to return false
 		Label trueLabel = new Label();
 		Label afterLabel = new Label();
 		mv.visitJumpInsn(Opcodes.IFLT, trueLabel);
@@ -6502,7 +6513,7 @@ public void compile(ICompilerContext context, int insn) {
 		context.loadVs(n);
 		mv.visitInsn(Opcodes.DUP);
 		mv.visitLdcInsn(0.f);
-		mv.visitInsn(Opcodes.FCMPG);
+		mv.visitInsn(Opcodes.FCMPG); // Use FCMPG, not FCMPL: NaN has to be left unchanged
 		Label limitLabel = new Label();
 		Label afterLabel = new Label();
 		mv.visitJumpInsn(Opcodes.IFGT, limitLabel);
@@ -6512,7 +6523,7 @@ public void compile(ICompilerContext context, int insn) {
 		mv.visitLabel(limitLabel);
 		mv.visitInsn(Opcodes.DUP);
 		mv.visitLdcInsn(1.f);
-		mv.visitInsn(Opcodes.FCMPG);
+		mv.visitInsn(Opcodes.FCMPL); // Use FCMPL, not FCMPG: NaN has to be left unchanged
 		mv.visitJumpInsn(Opcodes.IFLE, afterLabel);
 		mv.visitInsn(Opcodes.POP);
 		mv.visitLdcInsn(1.f);
@@ -6567,7 +6578,7 @@ public void compile(ICompilerContext context, int insn) {
 		context.loadVs(n);
 		mv.visitInsn(Opcodes.DUP);
 		mv.visitLdcInsn(-1.f);
-		mv.visitInsn(Opcodes.FCMPG);
+		mv.visitInsn(Opcodes.FCMPG); // Use FCMPG, not FCMPL: NaN has to be left unchanged
 		Label limitLabel = new Label();
 		Label afterLabel = new Label();
 		mv.visitJumpInsn(Opcodes.IFGT, limitLabel);
@@ -6577,7 +6588,7 @@ public void compile(ICompilerContext context, int insn) {
 		mv.visitLabel(limitLabel);
 		mv.visitInsn(Opcodes.DUP);
 		mv.visitLdcInsn(1.f);
-		mv.visitInsn(Opcodes.FCMPG);
+		mv.visitInsn(Opcodes.FCMPL); // Use FCMPL, not FCMPG: NaN has to be left unchanged
 		mv.visitJumpInsn(Opcodes.IFLE, afterLabel);
 		mv.visitInsn(Opcodes.POP);
 		mv.visitLdcInsn(1.f);
@@ -8233,7 +8244,7 @@ public void compile(ICompilerContext context, int insn) {
 		context.loadVs(n);
 		mv.visitInsn(Opcodes.DUP);
 		mv.visitLdcInsn(0.f);
-		mv.visitInsn(Opcodes.FCMPG);
+		mv.visitInsn(Opcodes.FCMPG); // Use FCMPG or FCMPL? Need to check handling of NaN value
 		Label negativeLabel = new Label();
 		Label afterLabel = new Label();
 		mv.visitJumpInsn(Opcodes.IFLT, negativeLabel);
