@@ -17,21 +17,29 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules280;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+
 import org.apache.log4j.Logger;
 
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
+import jpcsp.util.Utilities;
 
 // Positional 3D Audio Library
+@HLELogging
 public class sceP3da extends HLEModule {
-    protected static Logger log = Modules.getLogger("sceP3da");
+    public static Logger log = Modules.getLogger("sceP3da");
 
     @Override
 	public String getName() {
 		return "sceP3da";
 	}
+
     public static final int PSP_P3DA_SAMPLES_NUM_STEP = 32;
     public static final int PSP_P3DA_SAMPLES_NUM_MIN = 64;
     public static final int PSP_P3DA_SAMPLES_NUM_DEFAULT = 256;
@@ -42,47 +50,54 @@ public class sceP3da extends HLEModule {
     protected int p3daChannelsNum;
     protected int p3daSamplesNum;
 
+    @HLEUnimplemented
 	@HLEFunction(nid = 0x374500A5, version = 280)
-	public void sceP3daBridgeInit(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int channelsNum = cpu._a0; // Values: 4
-		int samplesNum = cpu._a1;  // Values: 2048
-
-		log.warn(String.format("PARTIAL: sceP3daBridgeInit channelsNum=%d, samplesNum=%d", channelsNum, samplesNum));
-
+	public int sceP3daBridgeInit(int channelsNum, int samplesNum) {
         p3daChannelsNum = channelsNum;
         p3daSamplesNum = samplesNum;
 
-		cpu._v0 = 0;
+		return 0;
 	}
 
+    @HLEUnimplemented
 	@HLEFunction(nid = 0x43F756A2, version = 280)
-	public void sceP3daBridgeExit(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn("PARTIAL: sceP3daBridgeExit");
-
-		cpu._v0 = 0;
+	public int sceP3daBridgeExit() {
+		return 0;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x013016F3, version = 280)
-	public void sceP3daBridgeCore(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceP3daBridgeCore(TPointer32 p3daCoreAddr, int channelsNum, int samplesNum, TPointer32 inputAddr, TPointer outputAddr) {
+		int[] p3daCore = new int[2];
+		for (int i = 0; i < p3daCore.length; i++) {
+			p3daCore[i] = p3daCoreAddr.getValue(i << 2);
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("sceP3daBridgeCore p3daCore[%d]=0x%08X", i, p3daCore[i]));
+			}
+		}
 
-		int p3daCore = cpu._a0;    // Address to structure containing 2 32-bit values
-		int channelsNum = cpu._a1; // Values: 4
-		int samplesNum = cpu._a2;  // Values: 2048
-		int inputAddr = cpu._a3;   // Address (always the same)
-		int outputAddr = cpu._t0;  // Address (alternating between 2 values separated by 0x2000)
+		int[] channelBuffers = new int[channelsNum];
+		for (int i = 0; i < channelsNum; i++) {
+			channelBuffers[i] = inputAddr.getValue(i << 2);
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("sceP3daBridgeCore channelBuffer[%d]=0x%08X", i, channelBuffers[i]));
 
-		log.warn(String.format("PARTIAL: sceP3daBridgeCore p3daCore=0x%08X, channelsNum=%d, samplesNum=%d, inputAddr=0x%08X, outputAddr=0x%08X", p3daCore, channelsNum, samplesNum, inputAddr, outputAddr));
+				// Dump the memory if the channel buffer does not contain only 0's.
+				IMemoryReader memoryReader = MemoryReader.getMemoryReader(channelBuffers[i], samplesNum << 1, 2);
+				for (int j = 0; j < samplesNum; j++) {
+					if (memoryReader.readNext() != 0) {
+						log.debug(String.format("sceP3daBridgeCore non-empty channelBuffer[%d]: %s", i, Utilities.getMemoryDump(channelBuffers[i], samplesNum << 1)));
+						log.debug(String.format("sceP3daBridgeCore outputAddr: %s", Utilities.getMemoryDump(outputAddr.getAddress(), samplesNum << 2)));
+						break;
+					}
+				}
+			}
+		}
 
         // Overwrite these values, just like in sceSasCore.
         p3daChannelsNum = channelsNum;
         p3daSamplesNum = samplesNum;
 
-		cpu._v0 = 0;
+		return 0;
 	}
-
 }
