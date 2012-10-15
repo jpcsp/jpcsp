@@ -14,21 +14,34 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.HLE.modules630;
+package jpcsp.HLE.modules620;
+
+import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
-import jpcsp.Processor;
+import jpcsp.Memory;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.PspString;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.modules150.SysMemUserForUser;
+import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
+import jpcsp.util.Utilities;
 
+@HLELogging
 public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
+	public static Logger log = jpcsp.HLE.modules150.ThreadManForUser.log;
+    protected final static int PSP_ATTR_ADDR_HIGH = 0x4000;
+
 	private static class AfterSceKernelExtendThreadStackAction implements IAction {
 		private SceKernelThreadInfo thread;
 		private int savedPc;
@@ -70,14 +83,8 @@ public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
 		return (size + 0xFF) & ~0xFF;
 	}
 
-	@HLEFunction(nid = 0xBC80EC7C, version = 630, checkInsideInterrupt = true)
-    public int sceKernelExtendThreadStack(Processor processor, @CheckArgument("checkStackSize") int size, TPointer entryAddr, int entryParameter) {
-		CpuState cpu = processor.cpu;
-
-		if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelExtendThreadStack size=0x%X, entryAddr=%s, entryParameter=0x%08X", size, entryAddr, entryParameter));
-        }
-
+	@HLEFunction(nid = 0xBC80EC7C, version = 620, checkInsideInterrupt = true)
+    public int sceKernelExtendThreadStack(CpuState cpu, @CheckArgument("checkStackSize") int size, TPointer entryAddr, int entryParameter) {
         // sceKernelExtendThreadStack executes the code at entryAddr using a larger
         // stack. The entryParameter is  passed as the only parameter ($a0) to
         // the code at entryAddr.
@@ -92,4 +99,51 @@ public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
 
         return 0;
     }
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x8DAFF657, version = 620)
+	public int ThreadManForUser_8DAFF657(PspString name, int partitionid, int attr, int blockSize, int numberBlocks, @CanBeNull TPointer optionsAddr) {
+		// Similar to sceKernelAllocPartitionMemory?
+		int type = SysMemUserForUser.PSP_SMEM_LowAligned;
+		if ((attr & PSP_ATTR_ADDR_HIGH) != 0) {
+			type = SysMemUserForUser.PSP_SMEM_HighAligned;
+		}
+
+		int alignment = 4;
+		if (optionsAddr.isNotNull()) {
+			int length = optionsAddr.getValue32(0);
+			if (length >= 8) {
+				alignment = optionsAddr.getValue32(4);
+			}
+		}
+
+		blockSize = Utilities.alignUp(blockSize, 3);
+		int size = blockSize * numberBlocks;
+		SysMemInfo info = Modules.SysMemUserForUserModule.malloc(partitionid, name.getString(), type, size, alignment);
+		if (info == null) {
+			return -1;
+		}
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("ThreadManForUser_8DAFF657 allocated addr 0x%08X, returning 0x%X", info.addr, info.uid));
+		}
+
+		return info.uid;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x32BF938E, version = 620)
+	public int ThreadManForUser_32BF938E(int uid) {
+		// Similar to sceKernelFreePartitionMemory?
+		SysMemInfo info = Modules.SysMemUserForUserModule.getSysMemInfo(uid);
+		if (info == null) {
+			return -1;
+		}
+
+		// Clear the memory and free it
+		Memory.getInstance().memset(info.addr, (byte) 0, info.size);
+		Modules.SysMemUserForUserModule.free(info);
+
+		return 0;
+	}
 }
