@@ -136,6 +136,9 @@ public class UmdBrowser extends JDialog {
 		private String pathPrefix;
 
 		public MemStickTableModel(File[] paths) {
+			// Default values in case we return an error
+			umdInfoLoaded = new boolean[0];
+
 			// Collect all the programs for all the given paths
 			List<File> programList = new ArrayList<File>();
 			for (File path : paths) {
@@ -231,6 +234,10 @@ public class UmdBrowser extends JDialog {
 
 		@Override
 		public Object getValueAt(int rowIndex, int columnIndex) {
+			if (rowIndex >= umdInfoLoaded.length) {
+				return null;
+			}
+
 			try {
 				// The UMD info is loaded asynchronously.
 				// Wait for the information to be loaded.
@@ -440,7 +447,7 @@ public class UmdBrowser extends JDialog {
 	}
 
 	private void loadUmdInfo(int rowIndex) {
-		if (umdInfoLoaded[rowIndex]) {
+		if (rowIndex >= umdInfoLoaded.length || umdInfoLoaded[rowIndex]) {
 			return;
 		}
 
