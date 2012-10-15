@@ -230,7 +230,7 @@ public class SysMemUserForUser extends HLEModule {
 
         SysMemInfo sysMemInfo;
 		if (allocatedAddress == 0) {
-            log.warn(String.format("malloc cannot allocate partition=%d, type=%s, size=0x%X, addr=0x%08X", partitionid, getTypeName(type), size, addr));
+            log.warn(String.format("malloc cannot allocate partition=%d, name='%s', type=%s, size=0x%X, addr=0x%08X, maxFreeMem=0x%X, totalFreeMem=0x%X", partitionid, name, getTypeName(type), size, addr, maxFreeMemSize(), totalFreeMemSize()));
 			if (log.isTraceEnabled()) {
 				log.trace("Free list: " + freeMemoryChunks);
 				log.trace("Allocated blocks:\n" + getDebugAllocatedMem() + "\n");
@@ -240,7 +240,7 @@ public class SysMemUserForUser extends HLEModule {
 			sysMemInfo = new SysMemInfo(partitionid, name, type, size, allocatedSize, allocatedAddress);
 
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("malloc partition=%d, type=%s, size=0x%X, addr=0x%08X: returns 0x%08X", partitionid, getTypeName(type), size, addr, allocatedAddress));
+				log.debug(String.format("malloc partition=%d, name='%s', type=%s, size=0x%X, addr=0x%08X: returns 0x%08X", partitionid, name, getTypeName(type), size, addr, allocatedAddress));
 				if (log.isTraceEnabled()) {
 					log.trace("Free list after malloc: " + getDebugFreeMem());
 					log.trace("Allocated blocks after malloc:\n" + getDebugAllocatedMem() + "\n");
@@ -305,6 +305,10 @@ public class SysMemUserForUser extends HLEModule {
     	}
 
     	return totalFreeMemSize;
+    }
+
+    public SysMemInfo getSysMemInfo(int uid) {
+    	return blockList.get(uid);
     }
 
     /** @param firmwareVersion : in this format: ABB, where A = major and B = minor, for example 271 */
