@@ -101,6 +101,8 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.xml.DOMConfigurator;
 
+import com.jidesoft.plaf.LookAndFeelFactory;
+
 /**
  *
  * @author  shadow
@@ -145,6 +147,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     private JComponent fillerRight;
     private JComponent fillerTop;
     private JComponent fillerBottom;
+    private static boolean jideInitialized;
     
     @Override
 	public DisplayMode getDisplayMode() {
@@ -194,6 +197,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         	}
         }
 
+        initJide();
         createComponents();
 
         State.fileLogger.setLocation(getLocation().x + 488, getLocation().y + 18);
@@ -220,6 +224,13 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         } else {
             consolewin.setLocation(Settings.getInstance().readWindowPos("logwindow"));
         }
+    }
+
+    private void initJide() {
+    	if (!jideInitialized) {
+    		LookAndFeelFactory.installJideExtension(LookAndFeelFactory.VSNET_STYLE_WITHOUT_MENU);
+    		jideInitialized = true;
+    	}
     }
 
     /** This method is called from within the constructor to

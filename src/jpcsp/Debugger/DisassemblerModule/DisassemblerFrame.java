@@ -59,7 +59,6 @@ import jpcsp.util.OptionPaneMultiple;
 import jpcsp.util.Utilities;
 
 import com.jidesoft.list.StyledListCellRenderer;
-import com.jidesoft.plaf.LookAndFeelFactory;
 import com.jidesoft.swing.StyleRange;
 import com.jidesoft.swing.StyledLabel;
 
@@ -82,7 +81,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     private String[] selectedRegNames = new String[selectedRegColors.length];
     private final Color selectedAddressColor = new Color(255, 128, 255);
     private String selectedAddress;
-    private static boolean jideInitialized;
 
     private int srcounter;
 
@@ -92,7 +90,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         listmodel = new DefaultListModel();
         initComponents();
         ViewTooltips.register(disasmList);
-        initJide();
         disasmList.setCellRenderer(new StyledListCellRenderer() {
 			private static final long serialVersionUID = 3921020228217850610L;
 
@@ -130,13 +127,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         RefreshDebugger(true);
         wantStep = false;
-    }
-
-    private void initJide() {
-    	if (!jideInitialized) {
-    		LookAndFeelFactory.installJideExtension(LookAndFeelFactory.VSNET_STYLE_WITHOUT_MENU);
-    		jideInitialized = true;
-    	}
     }
 
     private void customizeStyledLabel(StyledLabel label, String text) {
