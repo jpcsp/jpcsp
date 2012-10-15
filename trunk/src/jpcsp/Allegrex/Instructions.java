@@ -2080,18 +2080,56 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		context.prepareRdForStore();
-		context.loadRs();
-		context.loadRt();
-		Label case1Label = new Label();
 		Label continueLabel = new Label();
-		context.getMethodVisitor().visitJumpInsn(Opcodes.IF_ICMPLE, case1Label);
-		context.loadRs();
-		context.getMethodVisitor().visitJumpInsn(Opcodes.GOTO, continueLabel);
-		context.getMethodVisitor().visitLabel(case1Label);
-		context.loadRt();
-		context.getMethodVisitor().visitLabel(continueLabel);
-		context.storeRd();
+		if (context.getRdRegisterIndex() == context.getRtRegisterIndex()) {
+			// When $rd==$rt:
+			// if ($rs > $rt) {
+			//   $rd = $rs
+			// }
+			context.loadRs();
+			context.loadRt();
+			context.getMethodVisitor().visitJumpInsn(Opcodes.IF_ICMPLE, continueLabel);
+			context.prepareRdForStore();
+			context.loadRs();
+			context.storeRd();
+			context.getMethodVisitor().visitLabel(continueLabel);
+		} else if (context.getRdRegisterIndex() == context.getRsRegisterIndex()) {
+			// When $rd==$rs:
+			// if ($rs < $rt) {
+			//   $rd = $rt
+			// }
+			context.loadRs();
+			context.loadRt();
+			context.getMethodVisitor().visitJumpInsn(Opcodes.IF_ICMPGE, continueLabel);
+			context.prepareRdForStore();
+			context.loadRt();
+			context.storeRd();
+			context.getMethodVisitor().visitLabel(continueLabel);
+		} else if (context.getRsRegisterIndex() == context.getRtRegisterIndex()) {
+			// When $rs==$rt:
+			// $rd = $rs
+			context.prepareRdForStore();
+			context.loadRs();
+			context.storeRd();
+		} else {
+			// When $rd!=$rs and $rd!=$rt and $rs!=$rt:
+			// if ($rs > $rt) {
+			//   $rd = $rs
+			// } else {
+			//   $rd = $rt
+			// }
+			context.prepareRdForStore();
+			context.loadRs();
+			context.loadRt();
+			Label case1Label = new Label();
+			context.getMethodVisitor().visitJumpInsn(Opcodes.IF_ICMPLE, case1Label);
+			context.loadRs();
+			context.getMethodVisitor().visitJumpInsn(Opcodes.GOTO, continueLabel);
+			context.getMethodVisitor().visitLabel(case1Label);
+			context.loadRt();
+			context.getMethodVisitor().visitLabel(continueLabel);
+			context.storeRd();
+		}
 	}
 }
 @Override
@@ -2124,18 +2162,56 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		context.prepareRdForStore();
-		context.loadRs();
-		context.loadRt();
-		Label case1Label = new Label();
 		Label continueLabel = new Label();
-		context.getMethodVisitor().visitJumpInsn(Opcodes.IF_ICMPGE, case1Label);
-		context.loadRs();
-		context.getMethodVisitor().visitJumpInsn(Opcodes.GOTO, continueLabel);
-		context.getMethodVisitor().visitLabel(case1Label);
-		context.loadRt();
-		context.getMethodVisitor().visitLabel(continueLabel);
-		context.storeRd();
+		if (context.getRdRegisterIndex() == context.getRtRegisterIndex()) {
+			// When $rd==$rt:
+			// if ($rs < $rt) {
+			//   $rd = $rs
+			// }
+			context.loadRs();
+			context.loadRt();
+			context.getMethodVisitor().visitJumpInsn(Opcodes.IF_ICMPGE, continueLabel);
+			context.prepareRdForStore();
+			context.loadRs();
+			context.storeRd();
+			context.getMethodVisitor().visitLabel(continueLabel);
+		} else if (context.getRdRegisterIndex() == context.getRsRegisterIndex()) {
+			// When $rd==$rs:
+			// if ($rs > $rt) {
+			//   $rd = $rt
+			// }
+			context.loadRs();
+			context.loadRt();
+			context.getMethodVisitor().visitJumpInsn(Opcodes.IF_ICMPLE, continueLabel);
+			context.prepareRdForStore();
+			context.loadRt();
+			context.storeRd();
+			context.getMethodVisitor().visitLabel(continueLabel);
+		} else if (context.getRsRegisterIndex() == context.getRtRegisterIndex()) {
+			// When $rs==$rt:
+			// $rd = $rs
+			context.prepareRdForStore();
+			context.loadRs();
+			context.storeRd();
+		} else {
+			// When $rd!=$rs and $rd!=$rt and $rs!=$rt:
+			// if ($rs < $rt) {
+			//   $rd = $rs
+			// } else {
+			//   $rd = $rt
+			// }
+			context.prepareRdForStore();
+			context.loadRs();
+			context.loadRt();
+			Label case1Label = new Label();
+			context.getMethodVisitor().visitJumpInsn(Opcodes.IF_ICMPGE, case1Label);
+			context.loadRs();
+			context.getMethodVisitor().visitJumpInsn(Opcodes.GOTO, continueLabel);
+			context.getMethodVisitor().visitLabel(case1Label);
+			context.loadRt();
+			context.getMethodVisitor().visitLabel(continueLabel);
+			context.storeRd();
+		}
 	}
 }
 @Override

@@ -589,4 +589,9 @@ public class CodeBlock {
 	public void setInterpretedOpcodes(int[] interpretedOpcodes) {
 		this.interpretedOpcodes = interpretedOpcodes;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("CodeBlock 0x%08X[0x%08X-0x%08X]", getStartAddress(), getLowestAddress(), getHighestAddress());
+	}
 }
