@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import jpcsp.util.Utilities;
+import static jpcsp.util.Utilities.alignUp;
 
 public class MemoryChunk {
 	// Start address of this MemoryChunk
@@ -37,13 +37,18 @@ public class MemoryChunk {
 	/**
 	 * Check if the memoryChunk has enough space to allocate a block.
 	 *
-	 * @param availableSize size of the requested block
+	 * @param requestedSize size of the requested block
 	 * @param addrAlignment base address alignment of the requested block
 	 * @return              true if the chunk is large enough to allocate the block
 	 *                      false if the chunk is too small for the requested block
 	 */
-	public boolean isAvailable(int availableSize, int addrAlignment) {
-		if (Utilities.alignUp(addr, addrAlignment) + availableSize <= addr + size) {
+	public boolean isAvailable(int requestedSize, int addrAlignment) {
+		// Quick check on requested size
+		if (requestedSize > size) {
+			return false;
+		}
+
+		if (alignUp(addr, addrAlignment) + requestedSize <= addr + size) {
 			return true;
 		}
 

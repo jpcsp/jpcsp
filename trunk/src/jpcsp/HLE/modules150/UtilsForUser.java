@@ -240,7 +240,7 @@ public class UtilsForUser extends HLEModule {
 	public void sceKernelIcacheInvalidateRange(Processor processor) {
         CpuState cpu = processor.cpu;
 
-		int addr = cpu._a0;
+		int addr = cpu._a0 & Memory.addressMask;
 		int size = cpu._a1;
 
 		if (log.isInfoEnabled()) {
