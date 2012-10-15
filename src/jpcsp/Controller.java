@@ -454,6 +454,20 @@ public class Controller {
     	return Math.abs(value) <= getDeadZone(component);
     }
 
+    /**
+     * Convert a float value from the range [-1..1]
+     * to an analog byte value in the range [0..255].
+     *   -1 is converted to 0
+     *   0 is converted to 128
+     *   1 is converted to 255
+     *
+     * @param value value in the range [-1..1]
+     * @return the corresponding byte value in the range [0..255].
+     */
+    private byte convertAnalogValue(float value) {
+		return (byte) ((value + 1f) * 127.5f);
+    }
+
     private void processControllerEvent(Component component, float value) {
 		Component.Identifier id = component.getIdentifier();
 		if (log.isDebugEnabled()) {
@@ -490,13 +504,13 @@ public class Controller {
 			if (isInDeadZone(component, value)) {
 				Lx = analogCenter;
 			} else {
-				Lx = (byte) (value * 127.f + 128.f);
+				Lx = convertAnalogValue(value);
 			}
 		} else if (id == analogYAxis) {
 			if (isInDeadZone(component, value)) {
 				Ly = analogCenter;
 			} else {
-				Ly = (byte) (value * 127.f + 128.f);
+				Ly = convertAnalogValue(value);
 			}
 		} else if (id == digitalXAxis) {
 			if (isInDeadZone(component, value)) {
