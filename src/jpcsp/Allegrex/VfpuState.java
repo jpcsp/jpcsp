@@ -16,6 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
+import static java.lang.Float.isInfinite;
+import static java.lang.Float.isNaN;
+import static java.lang.Math.abs;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 import java.math.BigInteger;
 import java.util.Arrays;
 
@@ -1604,21 +1610,24 @@ public class VfpuState extends FpuState {
                     case 0:
                         cc = not;
                         break;
-
                     case 1:
                         cc = not ? (v1[i] != v2[i]) : (v1[i] == v2[i]);
                         break;
-
                     case 2:
-                        cc = not ? (v1[i] >= v2[i]) : (v1[i] < v2[i]);
+                    	if (isNaN(v1[i]) || isNaN(v2[i])) {
+                    		cc = false;
+                    	} else {
+                    		cc = not ? (v1[i] >= v2[i]) : (v1[i] < v2[i]);
+                    	}
                         break;
-
                     case 3:
-                        cc = not ? (v1[i] > v2[i]) : (v1[i] <= v2[i]);
+                    	if (isNaN(v1[i]) || isNaN(v2[i])) {
+                    		cc = false;
+                    	} else {
+                    		cc = not ? (v1[i] > v2[i]) : (v1[i] <= v2[i]);
+                    	}
                         break;
-
                 }
-
 
                 vcr.cc[i] = cc;
                 cc_or = cc_or || cc;
@@ -1633,13 +1642,21 @@ public class VfpuState extends FpuState {
             for (int i = 0; i < vsize; ++i) {
                 switch (cond & 3) {
                 	// Positive or negative 0
-                	case 0: cc = (Math.abs(v1[i]) == 0f); break;
+                	case 0:
+                		cc = (abs(v1[i]) == 0f);
+                		break;
                 	// NaN
-                	case 1: cc = Float.isNaN(v1[i]); break;
+                	case 1:
+                		cc = isNaN(v1[i]);
+                		break;
                 	// Positive or negative infinity
-                	case 2: cc = Float.isInfinite(v1[i]); break;
+                	case 2:
+                		cc = isInfinite(v1[i]);
+                		break;
                 	// NaN or positive or negative infinity
-                	case 3: cc = Float.isNaN(Math.abs(v1[i])) || Float.isInfinite(v1[i]); break;
+                	case 3:
+                		cc = isNaN(abs(v1[i])) || isInfinite(v1[i]);
+                		break;
                 }
                 if (not) {
                 	cc = !cc;
@@ -1696,7 +1713,11 @@ public class VfpuState extends FpuState {
         loadVt(vsize, vt);
 
         for (int i = 0; i < vsize; ++i) {
-            v3[i] = (v1[i] >= v2[i]) ? 1.0f : 0.0f;
+        	if (isNaN(v1[i]) || isNaN(v2[i])) {
+        		v3[i] = 0f;
+        	} else {
+        		v3[i] = (v1[i] >= v2[i]) ? 1f : 0f;
+        	}
         }
 
         saveVd(vsize, vd, v3);
@@ -1708,7 +1729,11 @@ public class VfpuState extends FpuState {
         loadVt(vsize, vt);
 
         for (int i = 0; i < vsize; ++i) {
-            v3[i] = (v1[i] < v2[i]) ? 1.0f : 0.0f;
+        	if (isNaN(v1[i]) || isNaN(v2[i])) {
+        		v3[i] = 0f;
+        	} else {
+        		v3[i] = (v1[i] < v2[i]) ? 1f : 0f;
+        	}
         }
 
         saveVd(vsize, vd, v3);
@@ -1752,7 +1777,11 @@ public class VfpuState extends FpuState {
     public void doVSAT0(int vsize, int vd, int vs) {
         loadVs(vsize, vs);
         for (int i = 0; i < vsize; ++i) {
-            v3[i] = Math.min(Math.max(0.0f, v1[i]), 1.0f);
+        	if (isNaN(v1[i])) {
+        		v3[i] = v1[i];
+        	} else {
+        		v3[i] = min(max(0f, v1[i]), 1f);
+        	}
         }
         saveVd(vsize, vd, v3);
     }
@@ -1761,7 +1790,11 @@ public class VfpuState extends FpuState {
     public void doVSAT1(int vsize, int vd, int vs) {
         loadVs(vsize, vs);
         for (int i = 0; i < vsize; ++i) {
-            v3[i] = Math.min(Math.max(-1.0f, v1[i]), 1.0f);
+        	if (isNaN(v1[i])) {
+        		v3[i] = v1[i];
+        	} else {
+        		v3[i] = min(max(-1f, v1[i]), 1f);
+        	}
         }
         saveVd(vsize, vd, v3);
     }
