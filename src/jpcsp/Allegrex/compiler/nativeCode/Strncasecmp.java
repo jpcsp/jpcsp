@@ -35,8 +35,8 @@ public class Strncasecmp extends AbstractNativeCodeSequence {
 
 			if (memoryReader1 != null && memoryReader2 != null) {
 				for (int i = 0; i < n; i++) {
-					char c1 = toUpperCase[memoryReader1.readNext()];
-					char c2 = toUpperCase[memoryReader2.readNext()];
+					int c1 = toLowerCase[memoryReader1.readNext()];
+					int c2 = toLowerCase[memoryReader2.readNext()];
 					if (c1 != c2) {
 						setGprV0(c1 - c2);
 						return;
