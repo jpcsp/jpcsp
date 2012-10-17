@@ -1118,32 +1118,20 @@ public class ThreadManForUser extends HLEModule {
     		return;
     	}
 
-    	int oldPriority = thread.currentPriority;
         thread.currentPriority = newPriority;
-        // switch in the target thread if it's now higher priority
-        if ((thread.status & PSP_THREAD_READY) == PSP_THREAD_READY &&
-        		newPriority < currentThread.currentPriority) {
+        if (thread.isRunning()) {
+    		// The current thread will be moved to the front of the ready queue
+    		hleChangeThreadState(thread, PSP_THREAD_READY);
+        }
+
+        if (thread.isReady()) {
+        	// A ready thread is yielding when changing priority and moved to the end of the ready thread list.
             if (log.isDebugEnabled()) {
-                log.debug("hleKernelChangeThreadPriority yielding to thread with higher priority");
+                log.debug("hleKernelChangeThreadPriority rescheduling ready thread");
             }
-            needThreadReschedule = true;
-            hleRescheduleCurrentThread();
-        } else if ((thread.status & PSP_THREAD_READY) == PSP_THREAD_READY &&
-            		newPriority == oldPriority) {
-            if (log.isDebugEnabled()) {
-                log.debug("hleKernelChangeThreadPriority yielding to thread with same priority");
-            }
-            // Move the thread to the end of the list
         	removeFromReadyThreads(thread);
-            addToReadyThreads(thread, false);
-            needThreadReschedule = true;
-            hleRescheduleCurrentThread();
-        } else if (thread.uid == currentThread.uid && newPriority > oldPriority) {
-            if (log.isDebugEnabled()) {
-                log.debug("hleKernelChangeThreadPriority rescheduling");
-            }
-            // yield if we moved ourself to lower priority
-            needThreadReschedule = true;
+        	addToReadyThreads(thread, false);
+        	needThreadReschedule = true;
             hleRescheduleCurrentThread();
         }
     }
@@ -3408,9 +3396,9 @@ public class ThreadManForUser extends HLEModule {
             // Tested on PSP:
             // If the thread is stopped, it's current priority is replaced by it's initial priority.
             thread.currentPriority = thread.initPriority;
-            throw(new SceKernelErrorException(ERROR_KERNEL_THREAD_ALREADY_DORMANT));
+            return ERROR_KERNEL_THREAD_ALREADY_DORMANT;
         }
-        
+
         if (log.isDebugEnabled()) {
             log.debug("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid) + " newPriority:0x" + Integer.toHexString(priority) + " oldPriority:0x" + Integer.toHexString(thread.currentPriority));
         }
