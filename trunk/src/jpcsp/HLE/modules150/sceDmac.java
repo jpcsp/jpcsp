@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
 import jpcsp.Memory;
@@ -26,18 +27,17 @@ import jpcsp.graphics.VideoEngine;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceDmac extends HLEModule {
-    private static Logger log = Modules.getLogger("sceDmac");
+    public static Logger log = Modules.getLogger("sceDmac");
 
 	@Override
-	public String getName() { return "sceDmac"; }
+	public String getName() {
+		return "sceDmac";
+	}
 
     @HLEFunction(nid = 0x617F3FE6, version = 150)
     public int sceDmacMemcpy(TPointer dest, TPointer source, int size) {
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceDmacMemcpy dest=%s, source=%s, size=0x%08X", dest, source, size));
-        }
-
         // If copying to the VRAM or the frame buffer, do not cache the texture
         if (VideoEngine.isVRAM(dest.getAddress()) || Modules.sceDisplayModule.isFbAddress(dest.getAddress())) {
         	VideoEngine.getInstance().addVideoTexture(dest.getAddress(), dest.getAddress() + size);

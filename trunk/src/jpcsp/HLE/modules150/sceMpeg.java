@@ -164,6 +164,7 @@ public class sceMpeg extends HLEModule {
     public static final int audioTimestampStep = 4180;      // For audio play at 44100 Hz (2048 samples / 44100 * mpegTimestampPerSecond == 4180)
     //public static final int audioFirstTimestamp = 89249;  // The first MPEG audio AU has always this timestamp
     public static final int audioFirstTimestamp = 90000;    // The first MPEG audio AU has always this timestamp
+    public static final int videoFirstTimestamp = 90000;
     public static final long UNKNOWN_TIMESTAMP = -1;
 
     // At least 2048 bytes of MPEG data is provided when analysing the MPEG header
@@ -484,17 +485,7 @@ public class sceMpeg extends HLEModule {
         	}
     		int addr = mpegRingbuffer.data;
     		int length = packetsAdded * mpegRingbuffer.packetSize;
-        	if (checkMediaEngineState()) {
-                if (meChannel == null) {
-                	// If no MPEG header has been provided by the application (and none could be found),
-                	// just use the MPEG stream as it is, without header analysis.
-                	me.init(addr, length, 0);
-                	meChannel = new PacketChannel();
-                }
-                meChannel.write(addr, length);
-            } else if (isEnableConnector()) {
-                mpegCodec.writeVideo(addr, length);
-            }
+    		hleAddVideoData(addr, length);
             if (packetsAdded > mpegRingbuffer.packetsFree) {
                 log.warn(String.format("sceMpegRingbufferPut clamping packetsAdded old=%d, new=%d", packetsAdded, mpegRingbuffer.packetsFree));
                 packetsAdded = mpegRingbuffer.packetsFree;
@@ -511,6 +502,152 @@ public class sceMpeg extends HLEModule {
         }
 
         cpu._v0 = packetsAdded;
+    }
+
+    public void hleAddVideoData(int addr, int length) {
+    	if (length > 0) {
+	    	if (checkMediaEngineState()) {
+	            if (meChannel == null) {
+	            	// If no MPEG header has been provided by the application (and none could be found),
+	            	// just use the MPEG stream as it is, without header analysis.
+	            	me.init(addr, length, 0);
+	            	meChannel = new PacketChannel();
+	            }
+	            meChannel.write(addr, length);
+	        } else if (isEnableConnector()) {
+	            mpegCodec.writeVideo(addr, length);
+	        }
+    	}
+    }
+
+    public void hleSetTotalStreamSize(int totalStreamSize) {
+    	if (meChannel != null) {
+    		meChannel.setTotalStreamSize(totalStreamSize);
+    	}
+    }
+
+    public void hleSetChannelBufferLength(int bufferLength) {
+    	if (meChannel != null) {
+    		meChannel.setBufferLength(bufferLength);
+    	}
+    }
+
+    public void hleSetFirstTimestamp(int firstTimestamp) {
+    	if (checkMediaEngineState() && me != null) {
+    		me.setFirstTimestamp(firstTimestamp);
+    	}
+    }
+
+    public void hleCreateRingbuffer() {
+    	if (mpegRingbuffer == null) {
+    		mpegRingbuffer = new SceMpegRingbuffer(0, 0, 0, 0, 0);
+    		mpegRingbuffer.packetsRead = 1;
+    		mpegRingbufferAddr = null;
+    	}
+    }
+
+    public int hleMpegGetAvcAu(TPointer auAddr, int firstTimestamp, int noMoreDataError) {
+    	int result = 0;
+
+    	// Read Au of next Avc frame
+        if (checkMediaEngineState()) {
+        	Emulator.getClock().pause();
+        	me.setFirstTimestamp(firstTimestamp);
+            if (me.getContainer() == null) {
+                me.init(meChannel, true, true);
+            }
+        	if (!me.readVideoAu(mpegAvcAu)) {
+        		// end of video reached only when last timestamp has been reached
+        		if (mpegLastTimestamp <= 0 || mpegAvcAu.pts >= mpegLastTimestamp) {
+        			endOfVideoReached = true;
+        		}
+
+        		// Do not return an error for the very last video frame
+        		if (mpegAvcAu.pts != mpegLastTimestamp) {
+            		// No more data in ringbuffer.
+        			result = noMoreDataError;
+        		}
+        	} else {
+        		endOfVideoReached = false;
+        	}
+        	Emulator.getClock().resume();
+        } else if (isEnableConnector()) {
+        	if (!mpegCodec.readVideoAu(mpegAvcAu, videoFrameCount)) {
+        		// Avc Au was not updated by the MpegCodec
+                mpegAvcAu.pts += videoTimestampStep;
+        	}
+    		updateAvcDts();
+        }
+
+        mpegAvcAu.write(auAddr);
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("hleMpegGetAvcAu returning 0x%08X, AvcAu=%s", result, mpegAvcAu.toString()));
+    	}
+
+        if (result != 0) {
+        	delayThread(mpegDecodeErrorDelay);
+        }
+
+        return result;
+    }
+
+    public int hleMpegGetAtracAu(TPointer auAddr, int firstTimestamp) {
+    	int result = 0;
+
+    	// Read Au of next Atrac frame
+        if (checkMediaEngineState()) {
+        	Emulator.getClock().pause();
+        	me.setFirstTimestamp(firstTimestamp);
+        	if (me.getContainer() == null) {
+        		me.init(meChannel, true, true);
+        	}
+        	if (!me.readAudioAu(mpegAtracAu)) {
+        		endOfAudioReached = true;
+        		// If the audio could not be decoded or the
+        		// end of audio has been reached (Patapon 3),
+        		// simulate a successful return
+        	} else {
+        		endOfAudioReached = false;
+        	}
+        	Emulator.getClock().resume();
+        } else if (isEnableConnector() && mpegCodec.readAudioAu(mpegAtracAu, audioFrameCount)) {
+    		// Atrac Au updated by the MpegCodec
+    	}
+
+        mpegAtracAu.write(auAddr);
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("hleMpegGetAtracAu returning 0x%08X, AtracAu=%s", result, mpegAtracAu.toString()));
+    	}
+
+        if (result != 0) {
+        	delayThread(mpegDecodeErrorDelay);
+        }
+
+    	return result;
+    }
+
+    public int hleMpegAtracDecode(TPointer bufferAddr, int bufferSize) {
+    	long startTime = Emulator.getClock().microTime();
+
+    	if (checkMediaEngineState()) {
+        	Emulator.getClock().pause();
+        	int bytes = 0;
+        	if (me.stepAudio(bufferSize)) {
+                bytes = me.getCurrentAudioSamples(audioDecodeBuffer);
+                Memory.getInstance().copyToMemory(bufferAddr.getAddress(), ByteBuffer.wrap(audioDecodeBuffer, 0, bytes), bytes);
+        	}
+        	// Fill the rest of the buffer with 0's
+        	bufferAddr.clear(bytes, bufferSize - bytes);
+        	Emulator.getClock().resume();
+        } else if (isEnableConnector() && mpegCodec.readAudioFrame(bufferAddr.getAddress(), audioFrameCount)) {
+            mpegAtracAu.pts = mpegCodec.getMpegAtracCurrentTimestamp();
+        } else {
+            bufferAddr.clear(bufferSize);
+        }
+
+        delayThread(startTime, atracDecodeDelay);
+
+        return 0;
     }
 
     public static boolean isEnableConnector() {
@@ -941,7 +1078,7 @@ public class sceMpeg extends HLEModule {
             log.warn("sceMpegCreate bad size " + size);
             return SceKernelErrors.ERROR_MPEG_NO_MEMORY;
         }
-        
+
         // Update the ring buffer struct.
         if (ringbufferAddr.isNotNull()) {
         	mpegRingbuffer = SceMpegRingbuffer.fromMem(mem, ringbufferAddr.getAddress());
@@ -1277,45 +1414,10 @@ public class sceMpeg extends HLEModule {
         int result = 0;
         // Update the video timestamp (AVC).
         if (!ignoreAvc) {
-        	// Read Au of next Avc frame
-            if (checkMediaEngineState()) {
-            	Emulator.getClock().pause();
-                if (me.getContainer() == null) {
-                    me.init(meChannel, true, true);
-                }
-            	if (!me.readVideoAu(mpegAvcAu)) {
-            		// end of video reached only when last timestamp has been reached
-            		if (mpegLastTimestamp <= 0 || mpegAvcAu.pts >= mpegLastTimestamp) {
-            			endOfVideoReached = true;
-            		}
-
-            		// Do not return an error for the very last video frame
-            		if (mpegAvcAu.pts != mpegLastTimestamp) {
-                		// No more data in ringbuffer.
-            			result = SceKernelErrors.ERROR_MPEG_NO_DATA;
-            		}
-            	} else {
-            		endOfVideoReached = false;
-            	}
-            	Emulator.getClock().resume();
-            } else if (isEnableConnector()) {
-            	if (!mpegCodec.readVideoAu(mpegAvcAu, videoFrameCount)) {
-            		// Avc Au was not updated by the MpegCodec
-                    mpegAvcAu.pts += videoTimestampStep;
-            	}
-        		updateAvcDts();
-            }
-        	mpegAvcAu.write(auAddr);
-        	if (log.isDebugEnabled()) {
-        		log.debug(String.format("sceMpegGetAvcAu returning 0x%08X, AvcAu=%s", result, mpegAvcAu.toString()));
-        	}
+        	result = hleMpegGetAvcAu(auAddr, videoFirstTimestamp, SceKernelErrors.ERROR_MPEG_NO_DATA);
         }
 
         attrAddr.setValue(1); // Unknown.
-
-        if (result != 0) {
-        	delayThread(mpegDecodeErrorDelay);
-        }
 
         return result;
     }
@@ -1357,6 +1459,7 @@ public class sceMpeg extends HLEModule {
         	// Read Au of next Atrac frame
             if (checkMediaEngineState()) {
             	Emulator.getClock().pause();
+            	me.setFirstTimestamp(audioFirstTimestamp);
             	if (me.getContainer() == null) {
             		me.init(meChannel, true, true);
             	}
@@ -1439,41 +1542,16 @@ public class sceMpeg extends HLEModule {
             delayThread(mpegDecodeErrorDelay);
             return SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
         }
-    	
+
         // Update the audio timestamp (Atrac).
         int result = 0;
         if (!ignoreAtrac) {
-        	// Read Au of next Atrac frame
-            if (checkMediaEngineState()) {
-            	Emulator.getClock().pause();
-            	if (me.getContainer() == null) {
-            		me.init(meChannel, true, true);
-            	}
-            	if (!me.readAudioAu(mpegAtracAu)) {
-            		endOfAudioReached = true;
-            		// If the audio could not be decoded or the
-            		// end of audio has been reached (Patapon 3),
-            		// simulate a successful return
-            	} else {
-            		endOfAudioReached = false;
-            	}
-            	Emulator.getClock().resume();
-            } else if (isEnableConnector() && mpegCodec.readAudioAu(mpegAtracAu, audioFrameCount)) {
-        		// Atrac Au updated by the MpegCodec
-        	}
-        	mpegAtracAu.write(auAddr);
-        	if (log.isDebugEnabled()) {
-        		log.debug(String.format("sceMpegGetAtracAu returning 0x%08X, AtracAu=%s", result, mpegAtracAu.toString()));
-        	}
+        	result = hleMpegGetAtracAu(auAddr, audioFirstTimestamp);
         }
 
         // Bitfield used to store data attributes.
         attrAddr.setValue(0);     // Pointer to ATRAC3plus stream (from PSMF file).
 
-        if (result != 0) {
-        	delayThread(mpegDecodeErrorDelay);
-        }
-        
         return result;
     }
 
@@ -1530,7 +1608,7 @@ public class sceMpeg extends HLEModule {
                 frameWidth = defaultFrameWidth;
             }
         }
-        if (mpegRingbuffer != null) {
+        if (mpegRingbuffer != null && mpegRingbufferAddr != null) {
             mpegRingbuffer.read(mpegRingbufferAddr);
         }
 
@@ -1655,7 +1733,10 @@ public class sceMpeg extends HLEModule {
             if (log.isDebugEnabled()) {
                 log.debug(String.format("sceMpegAvcDecode consumed %d packets, remaining %d packets", packetsConsumed, mpegRingbuffer.packets - mpegRingbuffer.packetsFree));
             }
-            mpegRingbuffer.write(mpegRingbufferAddr);
+
+            if (mpegRingbufferAddr != null) {
+            	mpegRingbuffer.write(mpegRingbufferAddr);
+            }
         }
 
         // Correct decoding.
@@ -2047,35 +2128,16 @@ public class sceMpeg extends HLEModule {
      */
     @HLEFunction(nid = 0x800C44DF, version = 150, checkInsideInterrupt = true)
     public int sceMpegAtracDecode(@CheckArgument("checkMpegHandle") int mpeg, TPointer auAddr, TPointer bufferAddr, int init) {
-        Memory mem = Processor.memory;
-
-    	long startTime = Emulator.getClock().microTime();
         mpegAtracAu.pts += audioTimestampStep;
 
-        // External audio setup.
-        if (checkMediaEngineState()) {
-        	Emulator.getClock().pause();
-        	int bytes = 0;
-        	if (me.stepAudio(MPEG_ATRAC_ES_OUTPUT_SIZE)) {
-                bytes = me.getCurrentAudioSamples(audioDecodeBuffer);
-                mem.copyToMemory(bufferAddr.getAddress(), ByteBuffer.wrap(audioDecodeBuffer, 0, bytes), bytes);
-        	}
-        	// Fill the rest of the buffer with 0's
-        	bufferAddr.clear(bytes, MPEG_ATRAC_ES_OUTPUT_SIZE - bytes);
-        	Emulator.getClock().resume();
-        } else if (isEnableConnector() && mpegCodec.readAudioFrame(bufferAddr.getAddress(), audioFrameCount)) {
-            mpegAtracAu.pts = mpegCodec.getMpegAtracCurrentTimestamp();
-        } else {
-            bufferAddr.clear(MPEG_ATRAC_ES_OUTPUT_SIZE);
-        }
+        int result = hleMpegAtracDecode(bufferAddr, MPEG_ATRAC_ES_OUTPUT_SIZE);
+
         audioFrameCount++;
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceMpegAtracDecode currentTimestamp=%d", mpegAtracAu.pts));
         }
 
-        delayThread(startTime, atracDecodeDelay);
-
-        return 0;
+        return result;
     }
 
     protected int getPacketsFromSize(int size) {

@@ -121,7 +121,7 @@ public class HLEModuleManager {
         sceNpService(Modules.sceNpServiceModule, new String[] { "PSP_MODULE_NP_SERVICE" }),
         scePspNpDrm_user(Modules.scePspNpDrm_userModule, new String[] { "PSP_MODULE_NP_DRM" }),
         sceVaudio(Modules.sceVaudioModule, new String[] { "PSP_AV_MODULE_VAUDIO", "PSP_MODULE_AV_VAUDIO" }),
-        sceMp4(Modules.sceMp4Module),
+        sceMp4(Modules.sceMp4Module, new String[] { "PSP_MODULE_AV_MP4" }),
         sceHttp(Modules.sceHttpModule, new String[] { "libhttp_rfc", "PSP_NET_MODULE_HTTP", "PSP_MODULE_NET_HTTP" }),
         sceHttps(Modules.sceHttpsModule),
         sceSsl(Modules.sceSslModule, new String[] { "libssl", "PSP_NET_MODULE_SSL", "PSP_MODULE_NET_SSL" }),

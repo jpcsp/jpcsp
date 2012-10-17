@@ -231,6 +231,7 @@ public class IoFileMgrForUser extends HLEModule {
 
     private int defaultAsyncPriority;
     private final static int asyncThreadRegisterArgument = _s0; // $s0 is preserved across calls
+    private boolean noDelayIoOperation;
 
     private PGDFileConnector pgdFileConnector;
     private boolean allowExtractPGD;
@@ -628,6 +629,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
         ioWaitStateChecker = new IoWaitStateChecker();
         host0Path = null;
+        noDelayIoOperation = false;
 
         vfsManager = new VirtualFileSystemManager();
     	vfsManager.register(new TmpLocalVirtualFileSystem());
@@ -1097,7 +1099,7 @@ public class IoFileMgrForUser extends HLEModule {
         return result;
     }
 
-    private String getWhenceName(int whence) {
+    public static String getWhenceName(int whence) {
         switch (whence) {
             case PSP_SEEK_SET:
                 return "PSP_SEEK_SET";
@@ -1127,9 +1129,13 @@ public class IoFileMgrForUser extends HLEModule {
     }
 
     protected void delayIoOperation(IoOperation ioOperation) {
-        if (ioOperation.delayMillis > 0) {
+        if (!noDelayIoOperation && ioOperation.delayMillis > 0) {
             Modules.ThreadManForUserModule.hleKernelDelayThread(ioOperation.delayMillis * 1000, false);
         }
+    }
+
+    public void hleSetNoDelayIoOperation(boolean noDelayIoOperation) {
+    	this.noDelayIoOperation = noDelayIoOperation;
     }
 
     /*
