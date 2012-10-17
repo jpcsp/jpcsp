@@ -136,7 +136,7 @@ public class sceVaudio extends HLEModule {
 
     @HLEFunction(nid = 0x67585DFD, version = 150, checkInsideInterrupt = true)
     public int sceVaudioChRelease() {
-        if (pspVaudioChannel.isReserved()) {
+        if (!pspVaudioChannel.isReserved()) {
         	return SceKernelErrors.ERROR_AUDIO_CHANNEL_NOT_RESERVED;
         }
 
