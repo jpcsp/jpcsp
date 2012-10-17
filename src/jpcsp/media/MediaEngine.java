@@ -84,6 +84,7 @@ public class MediaEngine {
     private List<IPacket> freePackets = new LinkedList<IPacket>();
     private ExternalDecoder externalDecoder = new ExternalDecoder();
     private byte[] tempBuffer;
+    private int firstTimestamp;
 
     // External audio loading vars.
     private IContainer extContainer;
@@ -212,7 +213,7 @@ public class MediaEngine {
     			}
 
     			state.updateTimestamps();
-    			if (state.getPts() >= 90000) {
+    			if (state.getPts() >= firstTimestamp) {
     				break;
     			}
 
@@ -891,5 +892,9 @@ public class MediaEngine {
     			log.warn(String.format("Could not reset audio play position to %d", sample));
     		}
     	}
+    }
+
+    public void setFirstTimestamp(int firstTimestamp) {
+    	this.firstTimestamp = firstTimestamp;
     }
 }

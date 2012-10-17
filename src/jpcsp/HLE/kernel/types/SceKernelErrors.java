@@ -427,6 +427,8 @@ public class SceKernelErrors {
     public final static int ERROR_PSMFPLAYER_NOT_INITIALIZED                    = 0x80616001;
     public final static int ERROR_PSMFPLAYER_NO_MORE_DATA                       = 0x8061600c;
 
+    public final static int ERROR_MP4_NO_MORE_DATA                              = 0x8061700a;
+
     public final static int ERROR_MPEG_NO_DATA                                  = 0x80618001;
 
     public final static int ERROR_AVC_VIDEO_FATAL                               = 0x80628002;

@@ -190,6 +190,18 @@ public class FIFOByteBuffer {
 		buffer = null;
 	}
 
+	/**
+	 * Prepare the internal buffer to receive all least length bytes.
+	 * This is just a hint to avoid resizing the internal buffer too often.
+	 * 
+	 * @param length  recommended size in bytes for the internal buffer.
+	 */
+	public void setBufferLength(int length) {
+		if (buffer != null && length > buffer.length) {
+			checkBufferForWrite(length - buffer.length);
+		}
+	}
+
 	@Override
 	public String toString() {
 		return String.format("FIFOByteBuffer(size=%d, bufferLength=%d, readOffset=%d, writeOffset=%d)", buffer.length, bufferLength, bufferReadOffset, bufferWriteOffset);
