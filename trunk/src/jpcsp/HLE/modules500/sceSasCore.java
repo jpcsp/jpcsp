@@ -36,7 +36,7 @@ public class sceSasCore extends jpcsp.HLE.modules150.sceSasCore {
 
         checkSasAndVoiceHandlesGood(sasCore, voice);
 
-        voices[voice].setVAG(pcmAddr, size);
+        voices[voice].setPCM(pcmAddr, size);
         voices[voice].setLoopMode(loopmode);
 
         return 0;

@@ -26,32 +26,108 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.connector.AtracCodec;
 import jpcsp.util.Utilities;
 
 @HLELogging
 public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
 	public static final Logger log = jpcsp.HLE.modules150.sceAtrac3plus.log;
 
+	protected int findRIFFHeader(int addr) {
+		Memory mem = Memory.getInstance();
+		for (int i = 0; i >= -512; i -= 4) {
+			if (mem.read32(addr + i) == RIFF_MAGIC) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Found RIFF header at 0x%08X", addr + i));
+					if (log.isTraceEnabled()) {
+						log.trace(Utilities.getMemoryDump(addr + i, -i));
+					}
+				}
+				return addr + i;
+			}
+		}
+
+		return 0;
+	}
+
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x0C116E1B, version = 620)
-    public int sceAtracLowLevelDecode(@CheckArgument("checkAtracID") int atID, int sourceAddr, TPointer32 decodeAddr, TPointer samplesAddr, TPointer32 decodePosAddr) {
-        if (log.isTraceEnabled() && Memory.isAddressGood(sourceAddr)) {
-        	int length = 0x130; // How to find the input length?
-        	log.trace(String.format("sceAtracLowLevelDecode input:%s", Utilities.getMemoryDump(sourceAddr, length)));
+    public int sceAtracLowLevelDecode(@CheckArgument("checkAtracID") int atID, TPointer sourceAddr, TPointer32 sourceBytesConsumedAddr, TPointer samplesAddr, TPointer32 sampleBytesAddr) {
+        AtracID id = atracIDs.get(atID);
+        AtracCodec atracCodec = id.getAtracCodec();
+
+        if (log.isTraceEnabled()) {
+        	log.trace(String.format("sceAtracLowLevelDecode input:%s", Utilities.getMemoryDump(sourceAddr.getAddress(), id.getSourceBufferLength())));
         }
 
-        decodePosAddr.setValue(0); // Set the decoding position to 0.
-        decodeAddr.setValue(0);
-        if (samplesAddr.isAddressGood()) {
-        	// This line is causing a problem in "Heroes Phantasia JPN(NPJH50558)".
-        	// See http://www.emunewz.net/forum/showthread.php?tid=23228
-            // decodeAddr.setValue(samplesAddr.getAddress() - 2160); // Rewind to the sample's header block.
+        int sourceBytesConsumed = 0;
+        if (id.getInputBufferAddr() == 0) {
+        	int headerAddr = findRIFFHeader(sourceAddr.getAddress());
+        	if (headerAddr != 0) {
+        		sourceBytesConsumed = id.getSourceBufferLength();
+        		id.setData(headerAddr, id.getSourceBufferLength() + (sourceAddr.getAddress() - headerAddr), id.getSourceBufferLength(), false);
+        		if (atracCodec != null && id.getAtracCodecType() == PSP_MODE_AT_3) {
+        			atracCodec.setAtracChannelStartLength(0x8000); // Only 0x8000 bytes are required to start decoding AT3
+        		}
+        	}
+        } else {
+        	// Estimate source bytes to be read based on current sample position
+        	int estimatedFileOffset = (int) (((long) id.getInputFileSize()) * id.getAtracCurrentSample() / id.getAtracEndSample());
+        	sourceBytesConsumed = Math.max(0, estimatedFileOffset - id.getInputFileOffset());
+        	sourceBytesConsumed = Math.min(sourceBytesConsumed, id.getSourceBufferLength());
+        	id.addStreamData(sourceAddr.getAddress(), sourceBytesConsumed);
         }
 
-        // Erase all content in the samples address.
-        int samples = 1024; // Always return 1024 samples?
-        samplesAddr.clear(samples * 4);
-        
+        if (atracCodec != null) {
+	        int samples = atracCodec.atracDecodeData(atID, samplesAddr.getAddress());
+        	if (sourceBytesConsumed < id.getSourceBufferLength()) {
+        		// Not enough data in the channel or running soon out of data?
+        		if (samples < id.getMaxSamples() || atracCodec.getChannelLength() < 0x8000) {
+        			// Consume as much as possible...
+        			id.addStreamData(sourceAddr.getAddress() + sourceBytesConsumed, id.getSourceBufferLength() - sourceBytesConsumed);
+        			sourceBytesConsumed = id.getSourceBufferLength();
+        		}
+        	}
+
+        	if (samples <= 1) {
+	        	samples = id.getMaxSamples();
+
+	        	int sampleBytes = samples * id.getAtracChannels() * 2;
+		        samplesAddr.clear(sampleBytes);
+	        } else if (samples > 0) {
+	        	id.setDecodedSamples(samples);
+
+	        	// Always return MaxSamples
+	        	if (samples < id.getMaxSamples()) {
+	    	        int sampleBytes = samples * id.getAtracChannels() * 2;
+	        		int fillSamples = id.getMaxSamples() - samples;
+	        		int fillSampleBytes = fillSamples * id.getAtracChannels() * 2;
+	        		samplesAddr.clear(sampleBytes, fillSampleBytes);
+	        		samples = id.getMaxSamples();
+	        	}
+	        }
+
+	        int sampleBytes = samples * id.getAtracChannels() * 2;
+	        sampleBytesAddr.setValue(sampleBytes);
+
+	        if (log.isDebugEnabled()) {
+	        	log.debug(String.format("sceAtracLowLevelDecode returning %d samples (0x%X bytes), 0x%X source bytes consumed, sample position %d/%d, file position %d/%d", samples, sampleBytes, sourceBytesConsumed, id.getAtracCurrentSample(), id.getAtracEndSample(), id.getInputFileOffset(), id.getInputFileSize()));
+	        	if (log.isTraceEnabled()) {
+	        		log.trace(Utilities.getMemoryDump(samplesAddr.getAddress(), sampleBytes));
+	        	}
+	        }
+        } else {
+	        int samples = id.getMaxSamples();
+	        int sampleBytes = samples * id.getAtracChannels() * 2;
+	        sampleBytesAddr.setValue(sampleBytes);
+	        // Return empty samples
+	        samplesAddr.clear(sampleBytes);
+
+        }
+
+        // Consume a part of the Atrac3 source buffer
+        sourceBytesConsumedAddr.setValue(sourceBytesConsumed);
+
         /*
          * Low level ATRAC3+ header structure:
          * 
@@ -91,16 +167,20 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
 
 	@HLEUnimplemented
     @HLEFunction(nid = 0x1575D64B, version = 620)
-    public int sceAtracLowLevelInitDecoder(@CheckArgument("checkAtracID") int atID, TPointer32 unknownAddr) {
-		// Three int32 values are pointed by unknownAddr:
-		int unknown1 = unknownAddr.getValue(0);
-		int unknown2 = unknownAddr.getValue(4);
-		int unknown3 = unknownAddr.getValue(8);
+    public int sceAtracLowLevelInitDecoder(@CheckArgument("checkAtracID") int atID, TPointer32 paramsAddr) {
+        int numberOfChannels = paramsAddr.getValue(0);
+		int unknown = paramsAddr.getValue(4);
+		int sourceBufferLength = paramsAddr.getValue(8);
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceAtracLowLevelInitDecoder values at %s: 0x%08X 0x%08X 0x%08X", unknownAddr, unknown1, unknown2, unknown3));
+			log.debug(String.format("sceAtracLowLevelInitDecoder values at %s: numberOfChannels=%d, unknown=%d, sourceBufferLength=0x%08X", paramsAddr, numberOfChannels, unknown, sourceBufferLength));
 		}
 
-		return 0;
+        AtracID id = atracIDs.get(atID);
+
+        id.setAtracChannels(numberOfChannels);
+        id.setSourceBufferLength(sourceBufferLength);
+
+        return 0;
     }
 }

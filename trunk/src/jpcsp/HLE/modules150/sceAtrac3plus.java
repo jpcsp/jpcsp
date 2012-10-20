@@ -155,6 +155,8 @@ public class sceAtrac3plus extends HLEModule {
         protected int currentLoopNum = -1;
         protected boolean forceReloadOfData;
         protected boolean forceAllDataIsOnMemory;
+        // LowLevel decoding
+        protected int sourceBufferLength;
 
         public AtracID(int id, int codecType, AtracCodec atracCodec) {
             this.codecType = codecType;
@@ -369,6 +371,10 @@ public class sceAtrac3plus extends HLEModule {
 
         public int getAtracChannels() {
             return atracChannels;
+        }
+
+        public void setAtracChannels(int atracChannels) {
+        	this.atracChannels = atracChannels;
         }
 
         public int getAtracSampleRate() {
@@ -692,6 +698,14 @@ public class sceAtrac3plus extends HLEModule {
         @Override
 		public String toString() {
 			return String.format("AtracID[id=%d, inputBufferAddr=0x%08X, inputBufferSize=%d, inputBufferOffset=%d, inputBufferWritableBytes=%d, inputBufferNeededBytes=%d]", id, inputBufferAddr, inputBufferSize, inputBufferOffset, inputBufferWritableBytes, inputBufferNeededBytes);
+		}
+
+		public int getSourceBufferLength() {
+			return sourceBufferLength;
+		}
+
+		public void setSourceBufferLength(int sourceBufferLength) {
+			this.sourceBufferLength = sourceBufferLength;
 		}
     }
 

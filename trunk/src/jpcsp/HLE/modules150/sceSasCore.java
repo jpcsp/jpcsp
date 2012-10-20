@@ -97,7 +97,7 @@ public class sceSasCore extends HLEModule {
     public static final int PSP_SAS_ADSR_SUSTAIN = 4;
     public static final int PSP_SAS_ADSR_RELEASE = 8;
     public static final int PSP_SAS_OUTPUTMODE_STEREO = 0;
-    public static final int PSP_SAS_OUTPUTMODE_MULTICHANNEL = 1;
+    public static final int PSP_SAS_OUTPUTMODE_MONO = 1;
     public static final int PSP_SAS_EFFECT_TYPE_OFF = -1;
     public static final int PSP_SAS_EFFECT_TYPE_ROOM = 0;
     public static final int PSP_SAS_EFFECT_TYPE_UNK1 = 1;
@@ -157,6 +157,7 @@ public class sceSasCore extends HLEModule {
     	checkSasAddressGood(sasCore);
     	
         if (Processor.memory.read32(sasCore) != sasCoreUid) {
+            log.warn(String.format("%s bad sasCoreUid 0x%X (should be 0x%X)", getCallingFunctionName(3), Processor.memory.read32(sasCore), sasCoreUid));
             throw(new SceKernelErrorException(SceKernelErrors.ERROR_SAS_NOT_INIT));
         }
     }
@@ -194,9 +195,10 @@ public class sceSasCore extends HLEModule {
         }
     }
 
-    private void delayThread(long startMicros, int delayMicros) {
+    private void delayThread(long startMicros, int delayMicros, int minimumDelayMicros) {
     	long now = Emulator.getClock().microTime();
     	int threadDelayMicros = delayMicros - (int) (now - startMicros);
+    	threadDelayMicros = Math.max(threadDelayMicros, minimumDelayMicros);
     	if (threadDelayMicros > 0) {
     		Modules.ThreadManForUserModule.hleKernelDelayThread(threadDelayMicros, false);
     	} else {
@@ -209,7 +211,11 @@ public class sceSasCore extends HLEModule {
     	// 600 microseconds, independently of the number of samples generated
     	// and of the number of voices currently playing.
     	int delayMicros = 600;
-    	delayThread(startMicros, delayMicros);
+    	delayThread(startMicros, delayMicros, 0);
+    }
+
+    public int getOutputMode() {
+    	return outputMode;
     }
 
     /**
@@ -978,8 +984,8 @@ public class sceSasCore extends HLEModule {
         }
 
         checkSasHandleGood(sasCore);
-    	
-    	return outputMode;
+
+    	return getOutputMode();
     }
 
     /**
@@ -1052,7 +1058,11 @@ public class sceSasCore extends HLEModule {
 
 		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(heightsAddr, voices.length * 4, 4);
 		for (int i = 0; i < voices.length; i++) {
-			memoryWriter.writeNext(voices[i].getEnvelope().height);
+			int voiceHeight = voices[i].getEnvelope().height;
+			memoryWriter.writeNext(voiceHeight);
+			if (log.isTraceEnabled() && voiceHeight != 0) {
+				log.trace(String.format("__sceSasGetAllEnvelopeHeights height voice #%d=0x%08X", i, voiceHeight));
+			}
 		}
 		memoryWriter.flush();
 

@@ -28,6 +28,8 @@ public class SoundVoice {
 	private int vagAddress;
 	private int vagSize;
 	private AtracID atracId;
+	private int pcmAddress;
+	private int pcmSize;
     private int loopMode;
     private int pitch;
     private int noise;
@@ -234,5 +236,19 @@ public class SoundVoice {
 	public void setAtracId(AtracID atracId) {
 		this.atracId = atracId;
 		onVoiceChanged();
+	}
+
+	public void setPCM(int address, int size) {
+		pcmAddress = address;
+		pcmSize = size;
+		onVoiceChanged();
+	}
+
+	public int getPcmAddress() {
+		return pcmAddress;
+	}
+
+	public int getPcmSize() {
+		return pcmSize;
 	}
 }

@@ -16,7 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.sound;
 
+import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_OUTPUTMODE_STEREO;
 import static jpcsp.sound.SoundChannel.MAX_VOLUME;
+import jpcsp.HLE.Modules;
 import jpcsp.hardware.Audio;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
@@ -46,7 +48,7 @@ public class SoundMixer {
     	return (short) sample;
     }
 
-    private void mix(int[] stereoSamples, ISampleSource sampleSource, int startIndex, int length, int leftVol, int rightVol) {
+    private void mixStereo(int[] stereoSamples, ISampleSource sampleSource, int startIndex, int length, int leftVol, int rightVol) {
     	int endIndex = startIndex + length;
     	sampleSource.setSampleIndex(startIndex);
     	for (int i = startIndex, j = 0; i < endIndex; i++, j += 2) {
@@ -56,7 +58,16 @@ public class SoundMixer {
     	}
     }
 
-    private void copySamplesToMem(int[] mixedSamples, int addr, int samples, int leftVol, int rightVol, boolean writeSamples) {
+    private void mixMono(int[] monoSamples, ISampleSource sampleSource, int startIndex, int length, int monoVol) {
+    	int endIndex = startIndex + length;
+    	sampleSource.setSampleIndex(startIndex);
+    	for (int i = startIndex, j = 0; i < endIndex; i++, j++) {
+    		int sample = sampleSource.getNextSample();
+    		monoSamples[j] += SoundChannel.adjustSample(getSampleLeft(sample), monoVol);
+    	}
+    }
+
+    private void copyStereoSamplesToMem(int[] mixedSamples, int addr, int samples, int leftVol, int rightVol, boolean writeSamples) {
     	// Adjust the volume according to the global volume settings
     	leftVol = Audio.getVolume(leftVol);
     	rightVol = Audio.getVolume(rightVol);
@@ -82,7 +93,31 @@ public class SoundMixer {
     	memoryWriter.flush();
     }
 
+    private void copyMonoSamplesToMem(int[] mixedSamples, int addr, int samples, int monoVol, boolean writeSamples) {
+    	// Adjust the volume according to the global volume settings
+    	monoVol = Audio.getVolume(monoVol);
+
+    	if (!writeSamples) {
+    		// If the samples have not been changed and the volume settings
+    		// would also not adjust the samples, no need to copy them back to memory.
+    		if (monoVol == MAX_VOLUME) {
+    			return;
+    		}
+    	}
+
+    	int lengthInBytes = mixedSamples.length << 1;
+    	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, lengthInBytes, 2);
+    	for (int i = 0, j = 0; i < samples; i++, j++) {
+    		short sampleMono  = clampSample(mixedSamples[j]);
+    		sampleMono = SoundChannel.adjustSample(sampleMono, monoVol);
+    		memoryWriter.writeNext(sampleMono & 0xFFFF);
+    	}
+    	memoryWriter.flush();
+    }
+
     private void mix(int[] mixedSamples, int addr, int samples, int leftVol, int rightVol, boolean writeSamples) {
+    	boolean isStereo = Modules.sceSasCoreModule.getOutputMode() == PSP_SAS_OUTPUTMODE_STEREO;
+
     	for (int i = 0; i < voices.length; i++) {
     		SoundVoice voice = voices[i];
 
@@ -95,14 +130,22 @@ public class SoundMixer {
             		voice.setPlaying(false);
             	} else {
             		int numSamples = Math.min(samples, restPlay);
-            		mix(mixedSamples, sampleSource, playSample, numSamples, voice.getLeftVolume(), voice.getRightVolume());
+            		if (isStereo) {
+            			mixStereo(mixedSamples, sampleSource, playSample, numSamples, voice.getLeftVolume(), voice.getRightVolume());
+            		} else {
+            			mixMono(mixedSamples, sampleSource, playSample, numSamples, voice.getLeftVolume());
+            		}
             		writeSamples = true;
             		voice.setPlaySample(sampleSource.getSampleIndex());
             	}
             }
         }
 
-		copySamplesToMem(mixedSamples, addr, samples, leftVol, rightVol, writeSamples);
+    	if (isStereo) {
+    		copyStereoSamplesToMem(mixedSamples, addr, samples, leftVol, rightVol, writeSamples);
+    	} else {
+    		copyMonoSamplesToMem(mixedSamples, addr, samples, leftVol, writeSamples);
+    	}
     }
 
     /**
