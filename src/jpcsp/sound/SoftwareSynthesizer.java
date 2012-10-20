@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.sound;
 
+import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_OUTPUTMODE_STEREO;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.sceSasCore;
 
 public class SoftwareSynthesizer {
@@ -31,14 +33,20 @@ public class SoftwareSynthesizer {
 		if (sampleSource == null || voice.isChanged()) {
 			voice.setChanged(false);
 
-			if (voice.getAtracId() == null) {
-				// Currently we build the samples only based on the pitch.
-				// ADSR has still to be added.
-				sampleSource = new SampleSourceVAG(voice, voice.getVAGAddress(), voice.getVAGSize(), voice.getLoopMode() != sceSasCore.PSP_SAS_LOOP_MODE_OFF);
-				// Convert mono VAG to stereo
-				sampleSource = new SampleSourceMono(sampleSource);
-			} else {
+			if (voice.getAtracId() != null) {
 				sampleSource = new SampleSourceAtrac3(voice.getAtracId());
+			} else if (voice.getPcmAddress() != 0) {
+				sampleSource = new SampleSourcePCM(voice.getPcmAddress(), voice.getPcmSize());
+				if (Modules.sceSasCoreModule.getOutputMode() == PSP_SAS_OUTPUTMODE_STEREO) {
+					// Convert mono VAG to stereo
+					sampleSource = new SampleSourceMono(sampleSource);
+				}
+			} else if (voice.getVAGAddress() != 0) {
+				sampleSource = new SampleSourceVAG(voice, voice.getVAGAddress(), voice.getVAGSize(), voice.getLoopMode() != sceSasCore.PSP_SAS_LOOP_MODE_OFF);
+				if (Modules.sceSasCoreModule.getOutputMode() == PSP_SAS_OUTPUTMODE_STEREO) {
+					// Convert mono VAG to stereo
+					sampleSource = new SampleSourceMono(sampleSource);
+				}
 			}
 
 			if (voice.getPitch() != sceSasCore.PSP_SAS_PITCH_BASE) {

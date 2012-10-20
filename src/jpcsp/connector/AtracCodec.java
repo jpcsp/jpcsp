@@ -75,6 +75,11 @@ public class AtracCodec {
     // Media Engine based playback.
     protected MediaEngine me;
     protected PacketChannel atracChannel;
+	// The MediaEngine requires at least 3 * 0x8000 data bytes available
+	// during initialization. Otherwise, it will assume to have reached
+	// the end of the channel and will not further read.
+	// The readRetryCount of the container does not help.
+    protected int atracChannelStartLength = 3 * 0x8000;
     protected int currentLoopCount;
     protected boolean useMediaEngine = false;
     protected byte[] samplesBuffer;
@@ -362,11 +367,7 @@ public class AtracCodec {
         				samples = 1;
         				Memory.getInstance().memset(address, (byte) 0, samples * 4); 
         			}
-        		} else if (atracChannel.length() >= 0x8000 * 3 || atracChannel.length() >= atracFileSize) {
-            		// The MediaEngine requires at least 3 * 0x8000 data bytes available
-            		// during initialization. Otherwise, it will assume to have reached
-            		// the end of the channel and will not further read.
-            		// The readRetryCount of the container does not help.
+        		} else if (atracChannel.length() >= getAtracChannelStartLength() || atracChannel.length() >= atracFileSize) {
     				me.init(atracChannel, false, true);
     			} else {
     				// Fake returning 1 sample with remainFrames == 0
@@ -503,4 +504,12 @@ public class AtracCodec {
 
         instructionsDisplayed = true;
     }
+
+	public int getAtracChannelStartLength() {
+		return atracChannelStartLength;
+	}
+
+	public void setAtracChannelStartLength(int atracChannelStartLength) {
+		this.atracChannelStartLength = atracChannelStartLength;
+	}
 }
