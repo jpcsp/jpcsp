@@ -721,8 +721,32 @@ public class sceMpeg extends HLEModule {
     	// if we are in the first sceMpegRingbufferPut and the MPEG header has not yet
     	// been analyzed, try to read the MPEG header.
 		if (!isCurrentMpegAnalyzed() && insideRingbufferPut) {
-			// TODO Implement reading through vFile
-			if (dataInput instanceof UmdIsoFile) {
+			if (vFile != null) {
+				long currentPosition = vFile.getPosition();
+				if (currentPosition - bytesRead >= MPEG_HEADER_BUFFER_MINIMUM_SIZE) {
+					vFile.ioLseek(currentPosition - bytesRead - MPEG_HEADER_BUFFER_MINIMUM_SIZE);
+					// Read the MPEG header and analyze it
+					byte[] header = new byte[MPEG_HEADER_BUFFER_MINIMUM_SIZE];
+					if (vFile.ioRead(header, 0, MPEG_HEADER_BUFFER_MINIMUM_SIZE) == MPEG_HEADER_BUFFER_MINIMUM_SIZE) {
+						int tmpAddress = mpegRingbuffer.dataUpperBound - header.length;
+						IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(tmpAddress, header.length, 1);
+						for (int i = 0; i < header.length; i++) {
+							memoryWriter.writeNext(header[i] & 0xFF);
+						}
+						memoryWriter.flush();
+						Memory mem = Memory.getInstance();
+						if (mem.read32(tmpAddress + PSMF_MAGIC_OFFSET) == PSMF_MAGIC) {
+							analyseMpeg(tmpAddress);
+						}
+
+						// We do no longer need the IoListener...
+						if (isCurrentMpegAnalyzed()) {
+							unregisterRingbufferPutIoListener();
+						}
+					}
+					vFile.ioLseek(currentPosition);
+				}
+			} else if (dataInput instanceof UmdIsoFile) {
 		    	// Assume the MPEG header is located in the sector just before the
 				// data currently read
 				UmdIsoFile umdIsoFile = (UmdIsoFile) dataInput;
