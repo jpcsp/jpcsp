@@ -59,7 +59,6 @@ import jpcsp.HLE.kernel.types.pspCharInfo;
 import jpcsp.HLE.kernel.types.pspFontStyle;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.IoFileMgrForUser;
-import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.format.PGF;
 import jpcsp.graphics.GeCommands;
@@ -458,14 +457,13 @@ public class sceFont extends HLEModule {
         protected int seekFuncAddr;
         protected int errorFuncAddr;
         protected int ioFinishFuncAddr;
-        protected int memFontAddr;
         protected int fileFontHandle;
         protected int altCharCode;
         protected float fontHRes = 128.f;
         protected float fontVRes = 128.f;
-        protected final int handle;
+        protected int handle;
         protected int[] fonts;
-        protected SysMemInfo sysMemInfo;
+        protected int allocatedAddr;
 
         public FontLib(TPointer params) {
             read(params);
@@ -484,17 +482,7 @@ public class sceFont extends HLEModule {
             //    mem.read32(fontHandle) == FONT_IS_OPEN: font is already open
             //    mem.read32(fontHandle) == FONT_IS_CLOSED: font is not open
             //
-            sysMemInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, getName(), SysMemUserForUser.PSP_SMEM_Low, numFonts * 4 + 4, 0);
-            int addr = sysMemInfo.addr;
-            handle = addr;
-            addr += 4;
-            fonts = new int[numFonts];
-            Memory mem = Memory.getInstance();
-            for (int i = 0; i < numFonts; i++) {
-            	mem.write32(addr, FONT_IS_CLOSED);
-            	fonts[i] = addr;
-            	addr += 4;
-            }
+            triggerAllocCallback(numFonts * 4 + 4, new AfterCreateAllocCallback());
         }
 
         public int getNumFonts() {
@@ -548,8 +536,8 @@ public class sceFont extends HLEModule {
         		}
         		fontsMap.remove(fonts[i]);
         	}
-        	Modules.SysMemUserForUserModule.free(sysMemInfo);
-        	sysMemInfo = null;
+        	triggerFreeCallback(allocatedAddr);
+        	allocatedAddr = 0;
         	fonts = null;
         }
         
@@ -557,23 +545,23 @@ public class sceFont extends HLEModule {
             return handle;
         }
 
-        protected void triggerAllocCallback(int size) {
-            Modules.ThreadManForUserModule.executeCallback(null, allocFuncAddr, new AfterAllocCallback(), true, userDataAddr, size);
+        protected void triggerAllocCallback(int size, IAction afterAllocCallback) {
+            Modules.ThreadManForUserModule.executeCallback(null, allocFuncAddr, afterAllocCallback, true, userDataAddr, size);
         }
 
-        protected void triggerFreeCallback() {
-            if (Memory.isAddressGood(memFontAddr)) {
-                Modules.ThreadManForUserModule.executeCallback(null, freeFuncAddr, null, true, userDataAddr, memFontAddr);
+        protected void triggerFreeCallback(int addr) {
+            if (Memory.isAddressGood(addr)) {
+                Modules.ThreadManForUserModule.executeCallback(null, freeFuncAddr, null, true, userDataAddr, addr);
             }
         }
 
         protected void triggerOpenCallback(int fileNameAddr, int errorCodeAddr) {
-            Modules.ThreadManForUserModule.executeCallback(null, allocFuncAddr, new AfterOpenCallback(), true, userDataAddr, fileNameAddr, errorCodeAddr);
+            Modules.ThreadManForUserModule.executeCallback(null, openFuncAddr, new AfterOpenCallback(), true, userDataAddr, fileNameAddr, errorCodeAddr);
         }
 
         protected void triggerCloseCallback() {
             if (fileFontHandle != 0) {
-                Modules.ThreadManForUserModule.executeCallback(null, freeFuncAddr, null, true, userDataAddr, fileFontHandle);
+                Modules.ThreadManForUserModule.executeCallback(null, closeFuncAddr, null, true, userDataAddr, fileFontHandle);
             }
         }
 
@@ -603,18 +591,29 @@ public class sceFont extends HLEModule {
         	return fonts[index];
         }
 
-        private class AfterAllocCallback implements IAction {
-
-            @Override
+        private class AfterCreateAllocCallback implements IAction {
+			@Override
             public void execute() {
-                memFontAddr = Emulator.getProcessor().cpu._v0;
+                allocatedAddr = Emulator.getProcessor().cpu._v0;
 
-                log.info("FontLib's allocation callback returned 0x" + Integer.toHexString(memFontAddr));
+                int addr = allocatedAddr;
+                handle = addr;
+                addr += 4;
+                fonts = new int[numFonts];
+                Memory mem = Memory.getInstance();
+                for (int i = 0; i < numFonts; i++) {
+                	mem.write32(addr, FONT_IS_CLOSED);
+                	fonts[i] = addr;
+                	addr += 4;
+                }
+
+                if (log.isDebugEnabled()) {
+                	log.debug(String.format("FontLib's allocation callback returned 0x%08X", allocatedAddr));
+                }
             }
         }
 
         private class AfterOpenCallback implements IAction {
-
             @Override
             public void execute() {
                 fileFontHandle = Emulator.getProcessor().cpu._v0;
@@ -931,7 +930,6 @@ public class sceFont extends HLEModule {
 
         if (fontLib != null) {
 	        // Free all reserved font lib space and close all open font files.
-	        fontLib.triggerFreeCallback();
 	        fontLib.triggerCloseCallback();
 	        fontLib.done();
 	        fontLibsMap.remove(fontLibHandle);
