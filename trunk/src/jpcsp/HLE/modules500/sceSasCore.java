@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules500;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 
 public class sceSasCore extends jpcsp.HLE.modules150.sceSasCore {
@@ -29,9 +28,9 @@ public class sceSasCore extends jpcsp.HLE.modules150.sceSasCore {
             log.debug(String.format("__sceSasSetVoicePCM sasCore=0x%08X, voice=%d, pcmAddr=0x%08X, size=0x%08X, loopmode=%d", sasCore, voice, pcmAddr, size, loopmode));
         }
 
-        if (size <= 0 || (size & 0xF) != 0) {
+        if (size <= 0 || size > 0x10000) {
         	log.warn(String.format("__sceSasSetVoicePCM invalid size 0x%08X", size));
-        	throw(new SceKernelErrorException(SceKernelErrors.ERROR_SAS_INVALID_PARAMETER));
+        	return SceKernelErrors.ERROR_SAS_INVALID_SIZE;
         }
 
         checkSasAndVoiceHandlesGood(sasCore, voice);
