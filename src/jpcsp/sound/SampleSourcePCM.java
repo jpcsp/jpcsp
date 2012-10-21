@@ -24,14 +24,17 @@ import jpcsp.memory.MemoryReader;
  *
  */
 public class SampleSourcePCM implements ISampleSource {
+	private SoundVoice voice;
 	private int addr;
 	private int size;
 	private IMemoryReader memoryReader;
 	private int sampleIndex;
 	private int currentSampleIndex;
 	private int samples;
+	private int numberSamples = 0x10000000;
 
-	public SampleSourcePCM(int addr, int samples) {
+	public SampleSourcePCM(SoundVoice voice, int addr, int samples) {
+		this.voice = voice;
 		this.addr = addr;
 		this.samples = samples;
 		size = samples << 1;
@@ -41,6 +44,11 @@ public class SampleSourcePCM implements ISampleSource {
 	@Override
 	public int getNextSample() {
 		if (sampleIndex >= samples) {
+			if (!voice.isOn()) {
+				// Voice is off, stop playing
+				numberSamples = currentSampleIndex;
+				return 0;
+			}
 			memoryReader = MemoryReader.getMemoryReader(addr, size, 2);
 			sampleIndex = 0;
 		}
@@ -61,6 +69,6 @@ public class SampleSourcePCM implements ISampleSource {
 
 	@Override
 	public int getNumberSamples() {
-		return 0x10000000;
+		return numberSamples;
 	}
 }
