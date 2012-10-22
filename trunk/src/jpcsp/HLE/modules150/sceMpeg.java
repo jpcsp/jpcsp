@@ -106,6 +106,7 @@ public class sceMpeg extends HLEModule {
         atracStreamsMap = new HashMap<Integer, Integer>();
         avcStreamsMap = new HashMap<Integer, Integer>();
         pcmStreamsMap = new HashMap<Integer, Integer>();
+        dataStreamsMap = new HashMap<Integer, Integer>();
         mpegAtracAu = new SceMpegAu();
         mpegAvcAu = new SceMpegAu();
         afterRingbufferPutCallback = new AfterRingbufferPutCallback();
@@ -207,6 +208,9 @@ public class sceMpeg extends HLEModule {
     // MPEG PCM elementary stream.
     protected static final int MPEG_PCM_ES_SIZE = 320;
     protected static final int MPEG_PCM_ES_OUTPUT_SIZE = 320;
+    // MPEG Userdata elementary stream.
+    protected static final int MPEG_DATA_ES_SIZE = 0xA0000;
+    protected static final int MPEG_DATA_ES_OUTPUT_SIZE = 0xA0000;
     // MPEG analysis results.
     public static final int MPEG_VERSION_0012 = 0;
     public static final int MPEG_VERSION_0013 = 1;
@@ -228,9 +232,11 @@ public class sceMpeg extends HLEModule {
     protected HashMap<Integer, Integer> atracStreamsMap;
     protected HashMap<Integer, Integer> avcStreamsMap;
     protected HashMap<Integer, Integer> pcmStreamsMap;
+    protected HashMap<Integer, Integer> dataStreamsMap;
     protected boolean isAtracRegistered = false;
     protected boolean isAvcRegistered = false;
     protected boolean isPcmRegistered = false;
+    protected boolean isDataRegistered = false;
     protected boolean ignoreAtrac = false;
     protected boolean ignoreAvc = false;
     protected boolean ignorePcm = false;
@@ -546,6 +552,15 @@ public class sceMpeg extends HLEModule {
     	}
     }
 
+    public int getRegisteredAudioChannel() {
+    	// Return the first registered ATRAC stream
+    	for (Integer streamNumber : atracStreamsMap.values()) {
+    		return streamNumber;
+    	}
+
+    	return -1;
+    }
+
     public int hleMpegGetAvcAu(TPointer auAddr, int firstTimestamp, int noMoreDataError) {
     	int result = 0;
 
@@ -554,7 +569,7 @@ public class sceMpeg extends HLEModule {
         	Emulator.getClock().pause();
         	me.setFirstTimestamp(firstTimestamp);
             if (me.getContainer() == null) {
-                me.init(meChannel, true, true);
+                me.init(meChannel, true, true, getRegisteredAudioChannel());
             }
         	if (!me.readVideoAu(mpegAvcAu)) {
         		// end of video reached only when last timestamp has been reached
@@ -599,7 +614,7 @@ public class sceMpeg extends HLEModule {
         	Emulator.getClock().pause();
         	me.setFirstTimestamp(firstTimestamp);
         	if (me.getContainer() == null) {
-        		me.init(meChannel, true, true);
+        		me.init(meChannel, true, true, getRegisteredAudioChannel());
         	}
         	if (!me.readAudioAu(mpegAtracAu)) {
         		endOfAudioReached = true;
@@ -972,6 +987,10 @@ public class sceMpeg extends HLEModule {
         setCurrentMpegAnalyzed(false);
         unregisterRingbufferPutIoListener();
         VideoEngine.getInstance().resetVideoTextures();
+        atracStreamsMap.clear();
+        pcmStreamsMap.clear();
+        avcStreamsMap.clear();
+        dataStreamsMap.clear();
     }
 
     /**
@@ -1180,6 +1199,10 @@ public class sceMpeg extends HLEModule {
                 isPcmRegistered = true;
                 pcmStreamsMap.put(uid, stream_num);
                 break;
+            case MPEG_DATA_STREAM:
+            	isDataRegistered = true;
+            	dataStreamsMap.put(uid, stream_num);
+            	break;
             default:
                 log.warn("sceMpegRegistStream unknown stream type=" + stream_type);
                 break;
@@ -1219,6 +1242,10 @@ public class sceMpeg extends HLEModule {
                 isPcmRegistered = false;
                 pcmStreamsMap.remove(streamUid);
                 break;
+            case MPEG_DATA_STREAM:
+            	isDataRegistered = false;
+            	dataStreamsMap.remove(streamUid);
+            	break;
             default:
                 log.warn("sceMpegUnRegistStream unknown stream=0x" + Integer.toHexString(streamUid));
                 break;
@@ -1485,7 +1512,7 @@ public class sceMpeg extends HLEModule {
             	Emulator.getClock().pause();
             	me.setFirstTimestamp(audioFirstTimestamp);
             	if (me.getContainer() == null) {
-            		me.init(meChannel, true, true);
+            		me.init(meChannel, true, true, getRegisteredAudioChannel());
             	}
             	if (!me.readAudioAu(mpegAtracAu)) {
             		result = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
@@ -2303,14 +2330,21 @@ public class sceMpeg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x01977054, version = 150)
-    public int sceMpegGetUserdataAu() {
-        return 0;
+    public int sceMpegGetUserdataAu(@CheckArgument("checkMpegHandle") int mpeg, int streamUid, TPointer auAddr, @CanBeNull TPointer32 resultAddr) {
+    	// 2 Unknown result values
+    	resultAddr.setValue(0, 0);
+    	resultAddr.setValue(4, 0);
+
+    	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC45C99CC, version = 150)
-    public int sceMpegQueryUserdataEsSize() {
-        return 0;
+    public int sceMpegQueryUserdataEsSize(@CheckArgument("checkMpegHandle") int mpeg, TPointer32 esSizeAddr, TPointer32 outSizeAddr) {
+    	esSizeAddr.setValue(MPEG_DATA_ES_SIZE);
+    	outSizeAddr.setValue(MPEG_DATA_ES_OUTPUT_SIZE);
+
+    	return 0;
     }
 
     @HLEUnimplemented

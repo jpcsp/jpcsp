@@ -171,7 +171,7 @@ public class ExternalDecoder {
 		return true;
     }
 
-    public boolean decodeExtAudio(byte[] mpegData, int mpegFileSize, int mpegOffset) {
+    public boolean decodeExtAudio(byte[] mpegData, int mpegFileSize, int mpegOffset, int audioChannel) {
     	if (dumpPmfFile) {
 			try {
 				new File(MediaEngine.getExtAudioBasePath(mpegFileSize)).mkdirs();
@@ -185,7 +185,7 @@ public class ExternalDecoder {
 
     	MpegDemux mpegDemux = new MpegDemux(mpegData, mpegOffset);
     	try {
-    		mpegDemux.demux(false, true);
+    		mpegDemux.demux(false, true, -1, audioChannel);
 		} catch (OutOfMemoryError e) {
 			log.error(String.format("Error '%s' while decoding external audio file (mpegFileSize=%d)", e.toString(), mpegFileSize));
 			return false;
@@ -199,7 +199,7 @@ public class ExternalDecoder {
 		if (dumpAudioStreamFile) {
 			try {
 				new File(MediaEngine.getExtAudioBasePath(mpegFileSize)).mkdirs();
-				FileOutputStream pmfOut = new FileOutputStream(MediaEngine.getExtAudioPath(mpegFileSize, "audio"));
+				FileOutputStream pmfOut = new FileOutputStream(MediaEngine.getExtAudioPath(mpegFileSize, audioChannel, "audio"));
 				pmfOut.getChannel().write(audioStream);
 				audioStream.rewind();
 				pmfOut.close();
@@ -215,12 +215,12 @@ public class ExternalDecoder {
 
 		try {
 			new File(MediaEngine.getExtAudioBasePath(mpegFileSize)).mkdirs();
-			String encodedFileName = MediaEngine.getExtAudioPath(mpegFileSize, "oma");
+			String encodedFileName = MediaEngine.getExtAudioPath(mpegFileSize, audioChannel, "oma");
 			FileOutputStream os = new FileOutputStream(encodedFileName);
 			os.getChannel().write(omaBuffer);
 			os.close();
 
-			String decodedFileName = MediaEngine.getExtAudioPath(mpegFileSize, "wav");
+			String decodedFileName = MediaEngine.getExtAudioPath(mpegFileSize, audioChannel, "wav");
 
 			if (!executeExternalDecoder(encodedFileName, decodedFileName, keepOmaFile)) {
 				return false;
@@ -233,7 +233,7 @@ public class ExternalDecoder {
 		return true;
     }
 
-    public void decodeExtAudio(int address, int mpegFileSize, int mpegOffset, byte[] bufferHeaderData) {
+    public void decodeExtAudio(int address, int mpegFileSize, int mpegOffset, byte[] bufferHeaderData, int audioChannel) {
     	if (!isEnabled()) {
     		return;
     	}
@@ -244,7 +244,7 @@ public class ExternalDecoder {
     		return;
     	}
 
-    	decodeExtAudio(mpegData, mpegFileSize, mpegOffset);
+    	decodeExtAudio(mpegData, mpegFileSize, mpegOffset, audioChannel);
     }
 
     private static String getAtracAudioPath(int address, int atracFileSize, String suffix) {

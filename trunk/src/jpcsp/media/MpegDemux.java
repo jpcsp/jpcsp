@@ -185,15 +185,17 @@ public class MpegDemux {
 		if (demuxStream) {
 			PesHeader pesHeader = new PesHeader(channel);
 			length = readPesHeader(pesHeader, length, startCode);
-			if (unescape) {
-				MpegStream mpegStream = new MpegStream(buffer, index, length);
-				while (!mpegStream.isEmpty()) {
-					int b = mpegStream.read8();
-					byteStream.put((byte) b);
+			if (pesHeader.channel == channel) {
+				if (unescape) {
+					MpegStream mpegStream = new MpegStream(buffer, index, length);
+					while (!mpegStream.isEmpty()) {
+						int b = mpegStream.read8();
+						byteStream.put((byte) b);
+					}
+				} else {
+					ByteBuffer mpegStream = ByteBuffer.wrap(buffer, index, length);
+					byteStream.put(mpegStream);
 				}
-			} else {
-				ByteBuffer mpegStream = ByteBuffer.wrap(buffer, index, length);
-				byteStream.put(mpegStream);
 			}
 			skip(length);
 			if (log.isDebugEnabled()) {
@@ -204,7 +206,7 @@ public class MpegDemux {
 		}
 	}
 
-	public void demux(boolean demuxVideo, boolean demuxAudio) {
+	public void demux(boolean demuxVideo, boolean demuxAudio, int videoChannel, int audioChannel) {
 		if (demuxVideo) {
 			videoStream = ByteBuffer.allocate(length - index);
 		}
@@ -240,7 +242,7 @@ public class MpegDemux {
 				}
 				case PRIVATE_STREAM_1: {
 					// Audio stream
-					demuxStream(demuxAudio, startCode, startCode, audioStream, false);
+					demuxStream(demuxAudio, startCode, audioChannel, audioStream, false);
 					break;
 				}
 				case 0x1E0: case 0x1E1: case 0x1E2: case 0x1E3:
@@ -248,7 +250,9 @@ public class MpegDemux {
 				case 0x1E8: case 0x1E9: case 0x1EA: case 0x1EB:
 				case 0x1EC: case 0x1ED: case 0x1EE: case 0x1EF: {
 					// Video Stream
-					demuxStream(demuxVideo, startCode, startCode & 0x0F, videoStream, true);
+					if ((startCode & 0x0F) == videoChannel) {
+						demuxStream(demuxVideo, startCode, videoChannel, videoStream, true);
+					}
 					break;
 				}
 				default: {
