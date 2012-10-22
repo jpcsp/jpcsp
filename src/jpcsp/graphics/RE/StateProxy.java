@@ -569,10 +569,11 @@ public class StateProxy extends BaseRenderingEngineProxy {
 			colorMaskGreen = greenWriteEnabled;
 			colorMaskBlue = blueWriteEnabled;
 			colorMaskAlpha = alphaWriteEnabled;
-//			colorMask[0] = redWriteEnabled ? 0x00 : 0xFF;
-//			colorMask[1] = greenWriteEnabled ? 0x00 : 0xFF;
-//			colorMask[2] = blueWriteEnabled ? 0x00 : 0xFF;
-//			colorMask[3] = alphaWriteEnabled ? 0x00 : 0xFF;
+			// Force a reload of the real color mask
+			colorMask[0] = -1;
+			colorMask[1] = -1;
+			colorMask[2] = -1;
+			colorMask[3] = -1;
 		}
 	}
 
