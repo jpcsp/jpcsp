@@ -351,9 +351,9 @@ public class sceMp3 extends HLEModule {
             	// Wait to fill the ME Channel with enough data before opening the
             	// audio channel, otherwise the decoding might stop and assume
             	// an "End Of File" condition.
-            	if (checkMediaEngineChannel()) {
+            	if (me.getContainer() != null || checkMediaEngineChannel()) {
             		if (me.getContainer() == null) {
-	            		me.init(mp3Channel, false, true);
+	            		me.init(mp3Channel, false, true, 0);
 	            	}
             		me.stepAudio(getMp3MaxSamples() * getBytesPerSample());
 	                mp3DecodedBytes = copySamplesToMem(mp3PcmBuf, mp3PcmBufSize, mp3PcmBuffer);
