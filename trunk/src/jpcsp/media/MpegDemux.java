@@ -250,9 +250,11 @@ public class MpegDemux {
 				case 0x1E8: case 0x1E9: case 0x1EA: case 0x1EB:
 				case 0x1EC: case 0x1ED: case 0x1EE: case 0x1EF: {
 					// Video Stream
-					if ((startCode & 0x0F) == videoChannel) {
-						demuxStream(demuxVideo, startCode, videoChannel, videoStream, true);
+					boolean demuxStream = demuxVideo;
+					if (videoChannel >= 0 && (startCode & 0x0F) != videoChannel) {
+						demuxStream = false;
 					}
+					demuxStream(demuxStream, startCode, videoChannel, videoStream, true);
 					break;
 				}
 				default: {
