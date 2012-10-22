@@ -210,14 +210,18 @@ public class sceMp4 extends HLEModule {
         return "sceMp4";
     }
 
-	@HLEUnimplemented
-    @HLEFunction(nid = 0x68651CBC, version = 150, checkInsideInterrupt = true)
-    public int sceMp4Init(boolean unk1, boolean unk2) {
+	protected void hleMp4Init() {
 		readBufferAddr = 0;
 		readBufferSize = 0;
 		readSize = 0;
 		fileReadingInProgress = false;
 		fileReadingCompleted = false;
+	}
+
+	@HLEUnimplemented
+    @HLEFunction(nid = 0x68651CBC, version = 150, checkInsideInterrupt = true)
+    public int sceMp4Init(boolean unk1, boolean unk2) {
+		hleMp4Init();
 
 		return 0;
     }
@@ -484,5 +488,33 @@ public class sceMp4 extends HLEModule {
     public int sceMp4_131BDE57(int mp4, int unknown2, TPointer auAddr) {
     	// unknown2 = return value of sceMpegAvcResourceGetAvcEsBuf()
         return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x3C2183C7, version = 150)
+    public int mp4msv_3C2183C7(int unknown, @CanBeNull TPointer addr) {
+    	if (addr.isNotNull()) {
+    		// addr is pointing to five 32-bit values (20 bytes)
+    		log.warn(String.format("mp4msv_3C2183C7 unknown values: %s", Utilities.getMemoryDump(addr.getAddress(), 20, 4, 20)));
+    	}
+
+    	// mp4msv_3C2183C7 is called by sceMp4Init
+    	hleMp4Init();
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x9CA13D1A, version = 150)
+    public int mp4msv_9CA13D1A(int unknown, @CanBeNull TPointer addr) {
+    	if (addr.isNotNull()) {
+    		// addr is pointing to 17 32-bit values (68 bytes)
+    		log.warn(String.format("mp4msv_9CA13D1A unknown values: %s", Utilities.getMemoryDump(addr.getAddress(), 68, 4, 16)));
+    	}
+
+    	// mp4msv_9CA13D1A is called by sceMp4Init
+    	hleMp4Init();
+
+    	return 0;
     }
 }
