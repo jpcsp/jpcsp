@@ -316,7 +316,7 @@ public class MediaEngine {
      * The sceMpeg functions must call init() first for each MPEG stream and then
      * keep calling step() until the video is finished and finish() is called.
      */
-    public void init(IURLProtocolHandler channel, boolean decodeVideo, boolean decodeAudio) {
+    public void init(IURLProtocolHandler channel, boolean decodeVideo, boolean decodeAudio, int audioChannel) {
     	init();
 
     	container = IContainer.make();
@@ -374,7 +374,7 @@ public class MediaEngine {
         if (decodeAudio) {
             if (audioStreamID == -1) {
             	// Try to use an external audio file instead
-            	if (!initExtAudio()) {
+            	if (!initExtAudio(audioChannel)) {
             		log.error("MediaEngine: No audio streams found!");
             		audioStreamState = new StreamState(this, -1, null, sceMpeg.audioFirstTimestamp);
             	}
@@ -541,6 +541,13 @@ public class MediaEngine {
         return String.format("%sExtAudio.%s", getExtAudioBasePath(mpegStreamSize), suffix);
     }
 
+    public static String getExtAudioPath(int mpegStreamSize, int audioChannel, String suffix) {
+    	if (audioChannel < 0) {
+    		return getExtAudioPath(mpegStreamSize, suffix);
+    	}
+        return String.format("%sExtAudio-%d.%s", getExtAudioBasePath(mpegStreamSize), audioChannel, suffix);
+    }
+
     public boolean stepVideo() {
     	return step(videoStreamState, 0);
     }
@@ -570,10 +577,10 @@ public class MediaEngine {
         return complete;
     }
 
-    private File getExtAudioFile() {
+    private File getExtAudioFile(int audioChannel) {
         String supportedFormats[] = {"wav", "mp3", "at3", "raw", "wma", "flac", "m4a"};
         for (int i = 0; i < supportedFormats.length; i++) {
-            File f = new File(getExtAudioPath(bufferSize, supportedFormats[i]));
+            File f = new File(getExtAudioPath(bufferSize, audioChannel, supportedFormats[i]));
             if (f.canRead() && f.length() > 0) {
             	return f;
             }
@@ -582,20 +589,20 @@ public class MediaEngine {
         return null;
     }
 
-    private boolean initExtAudio() {
+    private boolean initExtAudio(int audioChannel) {
     	boolean useExtAudio = false;
 
-    	File extAudioFile = getExtAudioFile();
+    	File extAudioFile = getExtAudioFile(audioChannel);
     	if (extAudioFile == null && ExternalDecoder.isEnabled()) {
     		// Try to decode the audio using the external decoder
     		if (bufferAddress == 0) {
     			if (bufferData != null) {
-    				externalDecoder.decodeExtAudio(bufferData, bufferSize, bufferMpegOffset);
+    				externalDecoder.decodeExtAudio(bufferData, bufferSize, bufferMpegOffset, audioChannel);
     			}
     		} else {
-    			externalDecoder.decodeExtAudio(bufferAddress, bufferSize, bufferMpegOffset, bufferData);
+    			externalDecoder.decodeExtAudio(bufferAddress, bufferSize, bufferMpegOffset, bufferData, audioChannel);
     		}
-			extAudioFile = getExtAudioFile();
+			extAudioFile = getExtAudioFile(audioChannel);
     	}
 
     	if (extAudioFile != null) {

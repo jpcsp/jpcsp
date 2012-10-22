@@ -281,7 +281,7 @@ public class scePsmfPlayer extends HLEModule {
 	            me = new MediaEngine();
 	            audioDecodeBuffer = new byte[audioSamplesBytes];
 	            me.init(pmfFileData);
-	            me.init(pmfFileChannel, true, true);
+	            me.init(pmfFileChannel, true, true, Modules.sceMpegModule.getRegisteredAudioChannel());
 	        }
     	}
     }
