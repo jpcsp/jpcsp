@@ -57,6 +57,16 @@ public class scePspNpDrm_user extends HLEModule {
     private byte npDrmKey[] = new byte[PSP_NPDRM_KEY_LENGHT];
     private PGDFileConnector edatFileConnector;
 
+    protected boolean isEmptyDrmKey() {
+    	for (int i = 0; i < npDrmKey.length; i++) {
+    		if (npDrmKey[i] != 0) {
+    			return false;
+    		}
+    	}
+
+    	return true;
+    }
+
     @HLEFunction(nid = 0xA1336091, version = 150, checkInsideInterrupt = true)
     public int sceNpDrmSetLicenseeKey(TPointer npDrmKeyAddr) {
         StringBuilder key = new StringBuilder();
@@ -130,7 +140,12 @@ public class scePspNpDrm_user extends HLEModule {
     @HLELogging(level="warn")
     @HLEFunction(nid = 0x08D98894, version = 150, checkInsideInterrupt = true)
     public int sceNpDrmEdataSetupKey(int edataFd) {
-        IoInfo info = Modules.IoFileMgrForUserModule.getFileIoInfo(edataFd);    
+    	// Nothing to do if the DRM Key is all 0's
+    	if (isEmptyDrmKey()) {
+    		return 0;
+    	}
+
+    	IoInfo info = Modules.IoFileMgrForUserModule.getFileIoInfo(edataFd);    
         CryptoEngine crypto = new CryptoEngine();
         
         if (edatFileConnector == null) {
