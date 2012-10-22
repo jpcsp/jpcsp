@@ -108,7 +108,10 @@ public class VertexBuffer {
 		} else if (bufferLength == 0 || (overflowBottom && overflowTop)) {
 			// Create a new buffer
 			cachedBufferOffset = getBufferAlignment(buffer, address);
-			cachedBuffer = ByteBuffer.allocateDirect(length + cachedBufferOffset).order(ByteOrder.LITTLE_ENDIAN);
+			// Always allocate 3 additional bytes at the end to allow copy
+			// from IntBuffer without running into a buffer overflow
+			final int alignmentPaddingEnd = 3; 
+			cachedBuffer = ByteBuffer.allocateDirect(length + cachedBufferOffset + alignmentPaddingEnd).order(ByteOrder.LITTLE_ENDIAN);
 			bufferAddress = address;
 			bufferLength = length;
 			cachedMemory = new int[bufferLength >> 2];
