@@ -33,6 +33,8 @@ import javax.imageio.ImageIO;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
@@ -52,8 +54,9 @@ import jpcsp.memory.MemoryWriter;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
+@HLELogging
 public class sceJpeg extends HLEModule {
-    protected static Logger log = Modules.getLogger("sceJpeg");
+    public static Logger log = Modules.getLogger("sceJpeg");
 
 	@Override
 	public String getName() {
@@ -64,6 +67,7 @@ public class sceJpeg extends HLEModule {
 	protected int jpegHeight = Screen.height;
 	protected HashMap<Integer, BufferedImage> bufferedImages;
 	protected static final String uidPurpose = "sceJpeg-BufferedImage";
+	protected static final boolean dumpJpegFile = false;
 
 	@Override
 	public void start() {
@@ -80,6 +84,11 @@ public class sceJpeg extends HLEModule {
 	protected BufferedImage readJpegImage(TPointer jpegBuffer, int jpegBufferSize) {
 		BufferedImage bufferedImage = null;
 		byte[] buffer = readJpegImageBytes(jpegBuffer, jpegBufferSize);
+
+		if (dumpJpegFile) {
+			dumpJpegFile(jpegBuffer, jpegBufferSize);
+		}
+
 		InputStream imageInputStream = new ByteArrayInputStream(buffer);
 		try {
 			bufferedImage = ImageIO.read(imageInputStream);
@@ -125,6 +134,14 @@ public class sceJpeg extends HLEModule {
 		return (width << 16) | height;
 	}
 
+	protected static int getWidth(int widthHeight) {
+		return (widthHeight >> 16) & 0xFFF;
+	}
+
+	protected static int getHeight(int widthHeight) {
+		return widthHeight & 0xFFF;
+	}
+
 	protected byte[] readJpegImageBytes(TPointer jpegBuffer, int jpegBufferSize) {
 		byte[] buffer = new byte[jpegBufferSize];
 		IMemoryReader memoryReader = MemoryReader.getMemoryReader(jpegBuffer.getAddress(), jpegBufferSize, 1);
@@ -135,18 +152,21 @@ public class sceJpeg extends HLEModule {
 		return buffer;
 	}
 
-	protected void dumpJpegImage(TPointer jpegBuffer, int jpegBufferSize) {
+	protected void dumpJpegFile(TPointer jpegBuffer, int jpegBufferSize) {
 		byte[] buffer = readJpegImageBytes(jpegBuffer, jpegBufferSize);
 		try {
 			OutputStream os = new FileOutputStream(String.format("%s%cImage%08X.jpeg", Settings.getInstance().readString("emu.tmppath"), File.separatorChar, jpegBuffer.getAddress()));
-			os.write(buffer, 0, buffer.length);
+			os.write(buffer);
 			os.close();
 		} catch (IOException e) {
-			// Ignore
+			log.error("Error dumping Jpeg file", e);
 		}
 	}
 
 	protected void decodeImage(TPointer imageBuffer, BufferedImage bufferedImage, int width, int height, int bufferWidth, int pixelFormat, int startLine) {
+		width = Math.min(width, bufferedImage.getWidth());
+		height = Math.min(height, bufferedImage.getHeight());
+
 		int bytesPerPixel = sizeOfTextureType[pixelFormat];
 		int lineWidth = Math.min(width, bufferWidth);
 		int skipEndOfLine = Math.max(0, bufferWidth - lineWidth); 
@@ -190,10 +210,8 @@ public class sceJpeg extends HLEModule {
 
 	@HLEFunction(nid = 0x04B5AE02, version = 271)
 	public int sceJpegMJpegCsc(TPointer imageBuffer, TPointer yCbCrBuffer, int widthHeight, int bufferWidth) {
-		int height = widthHeight & 0xFFF;
-		int width = (widthHeight >> 16) & 0xFFF;
-
-		log.warn(String.format("PARTIAL sceJpegMJpegCsc imageBuffer=%s, yCbCrBuffer=%s, widthHeight=0x%08X(width=%d, height=%d), bufferWidth=%d", imageBuffer, yCbCrBuffer, widthHeight, width, height, bufferWidth));
+		int height = getHeight(widthHeight);
+		int width = getWidth(widthHeight);
 
 		decodeImage(imageBuffer, yCbCrBuffer, width, height, bufferWidth, TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888);
 
@@ -207,8 +225,6 @@ public class sceJpeg extends HLEModule {
 	 */
 	@HLEFunction(nid = 0x48B602B7, version = 271)
 	public int sceJpegDeleteMJpeg() {
-		log.warn(String.format("Ignoring sceJpegDeleteMJpeg"));
-
 		return 0;
 	}
 
@@ -219,14 +235,11 @@ public class sceJpeg extends HLEModule {
 	 */
 	@HLEFunction(nid = 0x7D2F3D7F, version = 271)
 	public int sceJpegFinishMJpeg() {
-		log.warn(String.format("Ignoring sceJpegFinishMJpeg"));
-
 		return 0;
 	}
 
 	@HLEFunction(nid = 0x91EED83C, version = 271)
 	public int sceJpegDecodeMJpegYCbCr(TPointer jpegBuffer, int jpegBufferSize, TPointer yCbCrBuffer, int yCbCrBufferSize, int unknown) {
-		log.warn(String.format("Unimplemented sceJpegDecodeMJpegYCbCr jpegBuffer=%s, jpegBufferSize=%d, yCbCrBuffer=%s, yCbCrBufferSize=%d, unknown=%d", jpegBuffer, jpegBufferSize, yCbCrBuffer, yCbCrBufferSize, unknown));
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("sceJpegDecodeMJpegYCbCr jpegBuffer: %s", Utilities.getMemoryDump(jpegBuffer.getAddress(), jpegBufferSize)));
 		}
@@ -238,15 +251,14 @@ public class sceJpeg extends HLEModule {
 	/**
 	 * Creates the decoder context.
 	 *
-	 * @param wantedWidth - The width of the frame
+	 * @param width  - The width of the frame
 	 * @param height - The height of the frame
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLELogging(level="info")
 	@HLEFunction(nid = 0x9D47469C, version = 271)
 	public int sceJpegCreateMJpeg(int width, int height) {
-		log.warn(String.format("Unimplemented sceJpegCreateMJpeg width=%d, height=%d", width, height));
-
 		jpegWidth = width;
 		jpegHeight = height;
 
@@ -260,8 +272,6 @@ public class sceJpeg extends HLEModule {
 	 */
 	@HLEFunction(nid = 0xAC9E70E6, version = 271)
 	public int sceJpegInitMJpeg() {
-		log.warn(String.format("Ignoring sceJpegInitMJpeg"));
-
 		return 0;
 	}
 
@@ -271,42 +281,38 @@ public class sceJpeg extends HLEModule {
 	 * @param jpegbuf - the buffer with the mjpeg frame
 	 * @param size - size of the buffer pointed by jpegbuf
 	 * @param rgba - buffer where the decoded data in RGBA format will be stored.
-	 *                                     It should have a size of (width * height * 4).
+	 *               It should have a size of (width * height * 4).
 	 * @param unk - Unknown, pass 0
 	 *
-	 * @return (width * 65536) + height on success, < 0 on error
+	 * @return (width << 16) + height on success, < 0 on error
 	 */
 	@HLEFunction(nid = 0x04B93CEF, version = 271)
 	public int sceJpegDecodeMJpeg(TPointer jpegBuffer, int jpegBufferSize, TPointer imageBuffer, int unknown) {
-		log.warn(String.format("Unimplemented sceJpegDecodeMJpeg jpegBuffer=%s, jpegBufferSize=%d, imageBuffer=%s, unknown=%d", jpegBuffer, jpegBufferSize, imageBuffer, unknown));
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("sceJpegDecodeMJpeg jpegBuffer: %s", Utilities.getMemoryDump(jpegBuffer.getAddress(), jpegBufferSize)));
 		}
 
-		int width;
-		int height;
 		int pixelFormat = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 		BufferedImage bufferedImage = readJpegImage(jpegBuffer, jpegBufferSize);
 		if (bufferedImage == null) {
-			width = jpegWidth;
-			height = jpegHeight;
-			generateFakeImage(imageBuffer, width, height, width, pixelFormat);
+			generateFakeImage(imageBuffer, jpegWidth, jpegHeight, jpegWidth, pixelFormat);
 		} else {
-			width = bufferedImage.getWidth();
-			height = bufferedImage.getHeight();
-			decodeImage(imageBuffer, bufferedImage, width, height, width, pixelFormat, 0);
+			decodeImage(imageBuffer, bufferedImage, jpegWidth, jpegHeight, jpegWidth, pixelFormat, 0);
 		}
 
 		// Return size of image
-		return getWidthHeight(width, height);
+		return getWidthHeight(jpegWidth, jpegHeight);
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x8F2BB012, version = 271)
 	public int sceJpeg_8F2BB012(TPointer jpegBuffer, int jpegBufferSize, @CanBeNull TPointer32 unknown1, int unknown2) {
-		log.warn(String.format("Unimplemented sceJpeg_8F2BB012 jpegBuffer=%s, jpegBufferSize=%d, unknown1=%s, unknown2=%d", jpegBuffer, jpegBufferSize, unknown1, unknown2));
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("sceJpeg_8F2BB012 jpegBuffer: %s", Utilities.getMemoryDump(jpegBuffer.getAddress(), jpegBufferSize)));
-			dumpJpegImage(jpegBuffer, jpegBufferSize);
+		}
+
+		if (dumpJpegFile) {
+			dumpJpegFile(jpegBuffer, jpegBufferSize);
 		}
 
 		unknown1.setValue(0x00020202);
@@ -327,12 +333,11 @@ public class sceJpeg extends HLEModule {
 	 * @param unknown
 	 * @return
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x67F0ED84, version = 271)
 	public int sceJpeg_67F0ED84(TPointer imageBuffer, TPointer yCbCrBuffer, int widthHeight, int bufferWidth, int unknown) {
-		int height = widthHeight & 0xFFF;
-		int width = (widthHeight >> 16) & 0xFFF;
-
-		log.warn(String.format("PARTIAL sceJpeg_67F0ED84 imageBuffer=%s, yCbCrBuffer=%s, widthHeight=0x%08X(width=%d, height=%d), bufferWidth=%d, unknown=0x%08X", imageBuffer, yCbCrBuffer, widthHeight, width, height, bufferWidth, unknown));
+		int height = getHeight(widthHeight);
+		int width = getWidth(widthHeight);
 
 		decodeImage(imageBuffer, yCbCrBuffer, width, height, bufferWidth, TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888);
 
