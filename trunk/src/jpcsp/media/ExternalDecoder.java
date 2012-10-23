@@ -247,6 +247,10 @@ public class ExternalDecoder {
     	decodeExtAudio(mpegData, mpegFileSize, mpegOffset, audioChannel);
     }
 
+    public void setStreamFile(SeekableDataInput dataInput, IVirtualFile vFile, int address, long startPosition, int length) {
+    	ioListener.setFileData(dataInput, vFile, address, startPosition, length);
+    }
+
     private static String getAtracAudioPath(int address, int atracFileSize, String suffix) {
     	return String.format("%sAtrac-%08X-%08X.%s", AtracCodec.getBaseDirectory(), atracFileSize, address, suffix);
     }
@@ -559,7 +563,12 @@ public class ExternalDecoder {
 			return fileData;
     	}
 
-    	private static boolean isFileMagicValue(int magicValue) {
+        public void setFileData(SeekableDataInput dataInput, IVirtualFile vFile, int address, long startPosition, int length) {
+        	ReadInfo ri = new ReadInfo(address, length, dataInput, vFile, startPosition);
+        	readInfos.put(address, ri);
+        }
+
+        private static boolean isFileMagicValue(int magicValue) {
     		for (int i = 0; i < fileMagics.length; i++) {
     			if (magicValue == fileMagics[i]) {
     				return true;
