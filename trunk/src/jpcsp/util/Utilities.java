@@ -47,6 +47,7 @@ import jpcsp.memory.MemoryWriter;
 
 public class Utilities {
     public static final Charset charset = Charset.forName("UTF-8");
+	private static final int[] round4 = { 0, 3, 2, 1 };
 
     public static String formatString(String type, String oldstring) {
         int counter = 0;
@@ -395,13 +396,13 @@ public class Utilities {
 
 		int srcLimit = source.limit();
 		if (source instanceof IntBuffer) {
-    		destination.asIntBuffer().put((IntBuffer) source.limit(source.position() + (lengthInBytes >> 2)));
+    		destination.asIntBuffer().put((IntBuffer) source.limit(source.position() + (round4(lengthInBytes) >> 2)));
     	} else if (source instanceof ShortBuffer) {
-    		destination.asShortBuffer().put((ShortBuffer) source.limit(source.position() + (lengthInBytes >> 1)));
+    		destination.asShortBuffer().put((ShortBuffer) source.limit(source.position() + (round2(lengthInBytes) >> 1)));
     	} else if (source instanceof ByteBuffer) {
     		destination.put((ByteBuffer) source.limit(source.position() + lengthInBytes));
     	} else if (source instanceof FloatBuffer) {
-    		destination.asFloatBuffer().put((FloatBuffer) source.limit(source.position() + (lengthInBytes >> 2)));
+    		destination.asFloatBuffer().put((FloatBuffer) source.limit(source.position() + (round4(lengthInBytes) >> 2)));
     	} else {
     		Modules.log.error("Utilities.putBuffer: Unsupported Buffer type " + source.getClass().getName());
     		Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
@@ -413,7 +414,7 @@ public class Utilities {
 		source.limit(srcLimit);
     }
 
-        /**
+    /**
      * Reads inputstream i into a String with the UTF-8 charset
      * until the inputstream is finished (don't use with infinite streams).
      * @param inputStream to read into a string
@@ -940,5 +941,13 @@ public class Utilities {
 			memoryWriter.writeNext(bytes[i + offset] & 0xFF);
 		}
 		memoryWriter.flush();
+	}
+
+	public static int round4(int n) {
+		return n + round4[n & 3];
+	}
+
+	public static int round2(int n) {
+		return n + (n & 1);
 	}
 }
