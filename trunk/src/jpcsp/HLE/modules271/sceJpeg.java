@@ -343,4 +343,27 @@ public class sceJpeg extends HLEModule {
 
         return 0;
 	}
+
+	@HLEFunction(nid = 0x64B6F978, version = 271)
+	public int sceJpeg_64B6F978(TPointer jpegBuffer, int jpegBufferSize, TPointer imageBuffer, int unknown) {
+		// Same as sceJpegDecodeMJpeg?
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("sceJpeg_64B6F978 jpegBuffer: %s", Utilities.getMemoryDump(jpegBuffer.getAddress(), jpegBufferSize)));
+		}
+
+		int pixelFormat = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+		BufferedImage bufferedImage = readJpegImage(jpegBuffer, jpegBufferSize);
+		int width = jpegWidth;
+		int height = jpegHeight;
+		if (bufferedImage == null) {
+			generateFakeImage(imageBuffer, jpegWidth, jpegHeight, jpegWidth, pixelFormat);
+		} else {
+			decodeImage(imageBuffer, bufferedImage, jpegWidth, jpegHeight, jpegWidth, pixelFormat, 0);
+			width = bufferedImage.getWidth();
+			height = bufferedImage.getHeight();
+		}
+
+		// Return size of image or getWidthHeight(jpegWidth, jpegHeight)?
+		return getWidthHeight(width, height);
+	}
 }
