@@ -161,16 +161,15 @@ public class VertexInfo {
         vinfo.positionOffset = vertexSize;
         vertexSize += size_mapping[vinfo.position] * 3;
 
-        vinfo.oneVertexSize = vertexSize;
-        vertexSize *= vinfo.morphingVertexCount;
-
         vinfo.alignmentSize = Math.max(size_mapping[vinfo.weight],
-                Math.max(color_size_mapping[vinfo.color],
+        		Math.max(color_size_mapping[vinfo.color],
                 Math.max(size_mapping[vinfo.normal],
                 Math.max(size_mapping[vinfo.texture],
                 size_mapping[vinfo.position]))));
-        vinfo.vertexSize = (vertexSize + vinfo.alignmentSize - 1) & ~(vinfo.alignmentSize - 1);
-        vinfo.oneVertexSize = (vinfo.oneVertexSize + vinfo.alignmentSize - 1) & ~(vinfo.alignmentSize - 1);
+
+        vertexSize = (vertexSize + vinfo.alignmentSize - 1) & ~(vinfo.alignmentSize - 1);
+        vinfo.oneVertexSize = vertexSize;
+        vinfo.vertexSize = vertexSize * vinfo.morphingVertexCount;
     }
 
     private void updateVertexInfoReader(boolean readTexture) {

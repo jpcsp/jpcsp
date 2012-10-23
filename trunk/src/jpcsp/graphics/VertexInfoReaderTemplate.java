@@ -666,6 +666,9 @@ public class VertexInfoReaderTemplate {
             if (position != 0) {
         		VideoEngine.log.trace(String.format("vertex type %d %f, %f, %f", position, v.p[0], v.p[1], v.p[2]));
             }
+            if (morphingVertexCount > 1) {
+            	VideoEngine.log.trace(String.format("Morphing oneVertexSize=%d, textureOffset=%d, colorOffset=%d, normalOffset=%d, positionOffset=%d", oneVertexSize, textureOffset, colorOffset, normalOffset, positionOffset));
+            }
         }
     }
 }

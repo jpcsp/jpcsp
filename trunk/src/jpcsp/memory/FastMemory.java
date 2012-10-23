@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory;
 
+import static jpcsp.util.Utilities.round4;
+
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.Arrays;
@@ -55,7 +57,7 @@ public class FastMemory extends Memory {
 		// Free previously allocated memory
 		all = null;
 
-		int allSize = (MemoryMap.END_RAM + 1) / 4;
+		int allSize = (MemoryMap.END_RAM + 1) >> 2;
 		try {
 			all = new int[allSize];
 		} catch (OutOfMemoryError e) {
@@ -126,7 +128,7 @@ public class FastMemory extends Memory {
 
 			if (traceRead) {
 				if (log.isTraceEnabled()) {
-					log.trace("read32(0x" + Integer.toHexString(address).toUpperCase() + ")=0x" + Integer.toHexString(all[address / 4]).toUpperCase() + " (" + Float.intBitsToFloat(all[address / 4]) + ")");
+					log.trace("read32(0x" + Integer.toHexString(address).toUpperCase() + ")=0x" + Integer.toHexString(all[address >> 2]).toUpperCase() + " (" + Float.intBitsToFloat(all[address >> 2]) + ")");
 				}
 			}
 
@@ -145,7 +147,7 @@ public class FastMemory extends Memory {
 	public long read64(int address) {
 		try {
 			address &= addressMask;
-			long data = (((long) all[address / 4 + 1]) << 32) | (((long) all[address / 4]) & 0xFFFFFFFFL);
+			long data = (((long) all[(address >> 2) + 1]) << 32) | (((long) all[address >> 2]) & 0xFFFFFFFFL);
 
 			if (traceRead) {
 				if (log.isTraceEnabled()) {
@@ -238,8 +240,8 @@ public class FastMemory extends Memory {
 				}
 			}
 
-			all[address / 4] = (int) data;
-			all[address / 4 + 1] = (int) (data >> 32);
+			all[address >> 2] = (int) data;
+			all[(address >> 2) + 1] = (int) (data >> 32);
 		} catch (Exception e) {
             invalidMemoryAddress(address, "write64", Emulator.EMU_STATUS_MEM_WRITE);
 		}
@@ -247,7 +249,7 @@ public class FastMemory extends Memory {
 
 	@Override
 	public IntBuffer getMainMemoryByteBuffer() {
-		return IntBuffer.wrap(all, MemoryMap.START_RAM / 4, MemoryMap.SIZE_RAM / 4);
+		return IntBuffer.wrap(all, MemoryMap.START_RAM >> 2, MemoryMap.SIZE_RAM >> 2);
 	}
 
 	@Override
@@ -255,8 +257,8 @@ public class FastMemory extends Memory {
 		address = normalizeAddress(address);
 
 		IntBuffer buffer = getMainMemoryByteBuffer();
-		buffer.position(address / 4);
-		buffer.limit((address + length + 3) / 4);
+		buffer.position(address >> 2);
+		buffer.limit(round4(address + length) >> 2);
 
 		return buffer.slice();
 	}
@@ -273,13 +275,13 @@ public class FastMemory extends Memory {
 			write8(address, data);
 		}
 
-		int count4 = length / 4;
+		int count4 = length >> 2;
 		if (count4 > 0) {
 			int data1 = data & 0xFF;
 			int data4 = (data1 << 24) | (data1 << 16) | (data1 << 8) | data1;
-			Arrays.fill(all, address / 4, address / 4 + count4, data4);
-			address += count4 * 4;
-			length -= count4 * 4;
+			Arrays.fill(all, address >> 2, (address >> 2) + count4, data4);
+			address += count4 << 2;
+			length -= count4 << 2;
 		}
 
 		for (; length > 0; address++, length--) {
