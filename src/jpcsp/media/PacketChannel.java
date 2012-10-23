@@ -65,6 +65,8 @@ public class PacketChannel extends FIFOByteBuffer implements IURLProtocolHandler
 	public void clear() {
 		super.clear();
 		setReadLength(0);
+		position = 0;
+		totalStreamSize = -1;
 	}
 
 	@Override

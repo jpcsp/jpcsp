@@ -185,7 +185,7 @@ public class MpegDemux {
 		if (demuxStream) {
 			PesHeader pesHeader = new PesHeader(channel);
 			length = readPesHeader(pesHeader, length, startCode);
-			if (pesHeader.channel == channel) {
+			if (pesHeader.channel == channel || channel < 0) {
 				if (unescape) {
 					MpegStream mpegStream = new MpegStream(buffer, index, length);
 					while (!mpegStream.isEmpty()) {

@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
+import static jpcsp.util.Utilities.round2;
+import static jpcsp.util.Utilities.round4;
+
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -29,7 +32,6 @@ public class DirectBufferUtilities {
 	protected static int directBufferSize = 100;
 	protected static ByteBuffer directBuffer = ByteBuffer.allocateDirect(directBufferSize).order(ByteOrder.nativeOrder());
 	protected static FloatBuffer directFloatBuffer = ByteBuffer.allocateDirect(128 * VideoEngine.SIZEOF_FLOAT).order(ByteOrder.nativeOrder()).asFloatBuffer();
-	protected static final int[] round4 = { 0, 3, 2, 1 };
 
 	public static FloatBuffer getDirectBuffer(float[] values) {
 		return getDirectBuffer(values, values.length);
@@ -42,14 +44,6 @@ public class DirectBufferUtilities {
 		directFloatBuffer.rewind();
 
 		return directFloatBuffer;
-	}
-
-	protected static int round4(int n) {
-		return n + round4[n & 3];
-	}
-
-	protected static int round2(int n) {
-		return n + (n & 1);
 	}
 
 	public static IntBuffer getDirectBuffer(int size, IntBuffer buffer) {

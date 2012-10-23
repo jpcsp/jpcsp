@@ -29,10 +29,12 @@ import java.util.List;
 
 import jpcsp.State;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.kernel.types.SceMpegAu;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.connector.Connector;
+import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
@@ -276,6 +278,12 @@ public class MediaEngine {
     	int n4 = data[offset + 3] & 0xFF;
 
     	return (n4 << 24) | (n3 << 16) | (n2 << 8) | n1;
+    }
+
+    public void setStreamFile(SeekableDataInput dataInput, IVirtualFile vFile, int address, long startPosition, int length) {
+    	if (ExternalDecoder.isEnabled()) {
+    		externalDecoder.setStreamFile(dataInput, vFile, address, startPosition, length);
+    	}
     }
 
     public void init(byte[] bufferData) {

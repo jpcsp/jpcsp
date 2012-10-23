@@ -58,6 +58,7 @@ import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.media.MediaEngine;
+import jpcsp.media.MpegDemux;
 import jpcsp.media.PacketChannel;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
@@ -309,7 +310,7 @@ public class sceMpeg extends HLEModule {
 
 		@Override
 		public void sceIoRead(int result, int uid, int data_addr, int size, int bytesRead, long position, SeekableDataInput dataInput, IVirtualFile vFile) {
-			Modules.sceMpegModule.onRingbufferPutIoRead(dataInput, vFile, bytesRead);
+			Modules.sceMpegModule.onRingbufferPutIoRead(dataInput, vFile, data_addr, bytesRead);
 		}
 
 		@Override
@@ -516,7 +517,7 @@ public class sceMpeg extends HLEModule {
 	            if (meChannel == null) {
 	            	// If no MPEG header has been provided by the application (and none could be found),
 	            	// just use the MPEG stream as it is, without header analysis.
-	            	me.init(addr, length, 0);
+	            	me.init(addr, Math.max(length, mpegStreamSize), 0);
 	            	meChannel = new PacketChannel();
 	            }
 	            meChannel.write(addr, length);
@@ -732,10 +733,82 @@ public class sceMpeg extends HLEModule {
     	}
     }
 
-    protected void onRingbufferPutIoRead(SeekableDataInput dataInput, IVirtualFile vFile, int bytesRead) {
+    private static boolean isMpegData(int startCode) {
+    	return startCode == MpegDemux.PACK_START_CODE;
+    }
+
+    private static boolean isMpegData(Memory mem, int addr) {
+    	int startCode = endianSwap32(mem.read32(addr));
+    	return isMpegData(startCode);
+    }
+
+    private static int getByte(byte[] data, int offset) {
+    	return data[offset] & 0xFF;
+    }
+
+    private static int getStartCode(byte[] data, int offset) {
+    	return (getByte(data, offset) << 24) |
+    	       (getByte(data, offset + 1) << 16) |
+    	       (getByte(data, offset + 2) << 8) |
+    	       getByte(data, offset + 3);
+    }
+
+    private static boolean isMpegData(byte[] data) {
+    	int startCode = getStartCode(data, 0);
+    	return isMpegData(startCode);
+    }
+
+    private static long getPackTimestamp(byte[] data, int offset) {
+    	long timestamp = 0;
+
+    	offset += 4;
+    	int b = getByte(data, offset++);
+    	if ((b & 0xC0) == 0x40) {
+    		// Format is:
+    		// - 2 bits, value 0x1
+    		// - 3 bits, timestamp[32..30]
+    		// - 1 bit, value 0x1
+    		// - 15 bits, timestamp[29..15]
+    		// - 1 bit, value 0x1
+    		// - 15 bits, timestamp[14..0]
+    		timestamp = ((long) ((b >> 3) & 0x7)) << 30;
+    		timestamp |= (b & 0x3) << 28;
+    		b = getByte(data, offset++);
+    		timestamp |= b << 20;
+    		b = getByte(data, offset++);
+    		timestamp |= (b >> 3) << 15;
+    		timestamp |= (b & 0x3) << 13;
+    		b = getByte(data, offset++);
+    		timestamp |= b << 5;
+    		b = getByte(data, offset++);
+    		timestamp |= b >> 3;
+    	} else if ((b & 0xF0) == 0x2) {
+    		// Format is:
+    		// - 4 bits, value 0x2
+    		// - 3 bits, timestamp[32..30]
+    		// - 1 bit, value 0x1
+    		// - 15 bits, timestamp[29..15]
+    		// - 1 bit, value 0x1
+    		// - 15 bits, timestamp[14..0]
+    		timestamp = ((long) ((b >> 1) & 0x7)) << 30;
+    		b = getByte(data, offset++);
+    		timestamp |= b << 22;
+    		b = getByte(data, offset++);
+    		timestamp |= (b >> 1) << 15;
+    		b = getByte(data, offset++);
+    		timestamp |= b << 7;
+    		b = getByte(data, offset++);
+    		timestamp |= b >> 1;
+    	}
+
+    	return timestamp;
+    }
+
+    protected void onRingbufferPutIoRead(SeekableDataInput dataInput, IVirtualFile vFile, int readAddress, int bytesRead) {
     	// if we are in the first sceMpegRingbufferPut and the MPEG header has not yet
     	// been analyzed, try to read the MPEG header.
 		if (!isCurrentMpegAnalyzed() && insideRingbufferPut) {
+			Memory mem = Memory.getInstance();
 			if (vFile != null) {
 				long currentPosition = vFile.getPosition();
 				if (currentPosition - bytesRead >= MPEG_HEADER_BUFFER_MINIMUM_SIZE) {
@@ -749,7 +822,6 @@ public class sceMpeg extends HLEModule {
 							memoryWriter.writeNext(header[i] & 0xFF);
 						}
 						memoryWriter.flush();
-						Memory mem = Memory.getInstance();
 						if (mem.read32(tmpAddress + PSMF_MAGIC_OFFSET) == PSMF_MAGIC) {
 							analyseMpeg(tmpAddress);
 						}
@@ -781,7 +853,6 @@ public class sceMpeg extends HLEModule {
 							memoryWriter.writeNext(headerSector[i] & 0xFF);
 						}
 						memoryWriter.flush();
-						Memory mem = Memory.getInstance();
 						if (mem.read32(tmpAddress + PSMF_MAGIC_OFFSET) == PSMF_MAGIC) {
 							analyseMpeg(tmpAddress);
 						}
@@ -794,6 +865,63 @@ public class sceMpeg extends HLEModule {
 						if (log.isDebugEnabled()) {
 							log.debug("onIoRead", e);
 						}
+					}
+				}
+			}
+
+			if (!isCurrentMpegAnalyzed() && bytesRead >= 4 && isMpegData(mem, readAddress)) {
+				// MPEG stream without a PSMF header.
+				// Try to reach the file until no more Mpeg data is found.
+				byte[] buffer = new byte[UmdIsoFile.sectorLength];
+				if (vFile != null) {
+					long currentPosition = vFile.getPosition();
+				} else {
+					try {
+						long currentPosition = dataInput.getFilePointer();
+						long startMpegPosition = currentPosition - bytesRead;
+						long endMpegPosition = currentPosition;
+						long previousTimestamp = 0;
+						while (true) {
+							try {
+								dataInput.readFully(buffer);
+							} catch (IOException e) {
+								break;
+							}
+
+							if (!isMpegData(buffer)) {
+								// No more MPEG data, we have reached the end of the MPEG stream.
+								break;
+							}
+
+							long timestamp = getPackTimestamp(buffer, 0);
+							if (log.isTraceEnabled()) {
+								log.trace(String.format("onRingbufferPutIoRead timestamp %d at offset 0x%X", timestamp, endMpegPosition));
+							}
+
+							if (timestamp < previousTimestamp) {
+								// We have reached a new MPEG stream (the timestamp is decreasing),
+								// end this stream.
+								break;
+							}
+
+							endMpegPosition += buffer.length;
+							previousTimestamp = timestamp;
+						}
+
+						mpegStreamSize = (int) (endMpegPosition - startMpegPosition);
+						if (log.isDebugEnabled()) {
+							log.debug(String.format("onRingbufferPutIoRead estimated Mpeg stream size 0x%X (startPosition=0x%X, currentPosition=0x%X, endMpegPosition=0x%X)", mpegStreamSize, startMpegPosition, currentPosition, endMpegPosition));
+						}
+						setCurrentMpegAnalyzed(true);
+						unregisterRingbufferPutIoListener();
+
+						dataInput.seek(currentPosition);
+
+						if (checkMediaEngineState()) {
+							me.setStreamFile(dataInput, vFile, readAddress, startMpegPosition, mpegStreamSize);
+						}
+					} catch (IOException e) {
+						log.error("onRingbufferPutIoRead", e);
 					}
 				}
 			}
@@ -883,7 +1011,7 @@ public class sceMpeg extends HLEModule {
         mpegLastDate = convertTimestampToDate(mpegLastTimestamp);
         avcDecodeResult = MPEG_AVC_DECODE_SUCCESS;
         avcFrameStatus = 0;
-        if ((mpegRingbuffer != null) && !isCurrentMpegAnalyzed()) {
+        if (mpegRingbuffer != null && !isCurrentMpegAnalyzed()) {
             mpegRingbuffer.reset();
             mpegRingbuffer.write(mpegRingbufferAddr);
         }
@@ -980,9 +1108,14 @@ public class sceMpeg extends HLEModule {
             me.finish();
             if (meChannel != null) {
             	meChannel.clear();
+            	meChannel = null;
             }
         } else if (isEnableConnector()) {
             mpegCodec.finish();
+        }
+        if (mpegRingbuffer != null) {
+        	mpegRingbuffer.reset();
+        	mpegRingbuffer.write(mpegRingbufferAddr);
         }
         setCurrentMpegAnalyzed(false);
         unregisterRingbufferPutIoListener();
@@ -991,6 +1124,15 @@ public class sceMpeg extends HLEModule {
         pcmStreamsMap.clear();
         avcStreamsMap.clear();
         dataStreamsMap.clear();
+        mpegStreamSize = 0;
+        mpegAtracAu.dts = UNKNOWN_TIMESTAMP;
+        mpegAtracAu.pts = 0;
+        mpegAvcAu.dts = 0;
+        mpegAvcAu.pts = 0;
+        videoFrameCount = 0;
+        audioFrameCount = 0;
+        endOfAudioReached = false;
+        endOfVideoReached = false;
     }
 
     /**
