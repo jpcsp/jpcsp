@@ -487,7 +487,7 @@ public class Compiler implements ICompiler {
         // Try again with stricter methodMaxInstructions (75% of current value)
         int methodMaxInstructions = context.getMethodMaxInstructions() * 3 / 4;
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("Catched exception '%s'' (can be ignored)", e.toString()));
+        	log.debug(String.format("Catched exception '%s' (can be ignored)", e.toString()));
         	log.debug(String.format("Retrying compilation again with maxInstruction=%d, retries left=%d...", methodMaxInstructions, retries - 1));
         }
         context = new CompilerContext(classLoader, instanceIndex);

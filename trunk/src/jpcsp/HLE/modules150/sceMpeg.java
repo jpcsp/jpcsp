@@ -875,6 +875,48 @@ public class sceMpeg extends HLEModule {
 				byte[] buffer = new byte[UmdIsoFile.sectorLength];
 				if (vFile != null) {
 					long currentPosition = vFile.getPosition();
+					long startMpegPosition = currentPosition - bytesRead;
+					long endMpegPosition = currentPosition;
+					long previousTimestamp = 0;
+					while (true) {
+						int length = vFile.ioRead(buffer, 0, buffer.length);
+						if (length < buffer.length) {
+							// End of file reached
+							break;
+						}
+
+						if (!isMpegData(buffer)) {
+							// No more MPEG data, we have reached the end of the MPEG stream.
+							break;
+						}
+
+						long timestamp = getPackTimestamp(buffer, 0);
+						if (log.isTraceEnabled()) {
+							log.trace(String.format("onRingbufferPutIoRead timestamp %d at offset 0x%X", timestamp, endMpegPosition));
+						}
+
+						if (timestamp < previousTimestamp) {
+							// We have reached a new MPEG stream (the timestamp is decreasing),
+							// end this stream.
+							break;
+						}
+
+						endMpegPosition += buffer.length;
+						previousTimestamp = timestamp;
+					}
+
+					mpegStreamSize = (int) (endMpegPosition - startMpegPosition);
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("onRingbufferPutIoRead estimated Mpeg stream size 0x%X (startPosition=0x%X, currentPosition=0x%X, endMpegPosition=0x%X)", mpegStreamSize, startMpegPosition, currentPosition, endMpegPosition));
+					}
+					setCurrentMpegAnalyzed(true);
+					unregisterRingbufferPutIoListener();
+
+					vFile.ioLseek(currentPosition);
+
+					if (checkMediaEngineState()) {
+						me.setStreamFile(dataInput, vFile, readAddress, startMpegPosition, mpegStreamSize);
+					}
 				} else {
 					try {
 						long currentPosition = dataInput.getFilePointer();
