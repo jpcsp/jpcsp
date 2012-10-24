@@ -353,7 +353,7 @@ public class sceMp3 extends HLEModule {
             	// an "End Of File" condition.
             	if (me.getContainer() != null || checkMediaEngineChannel()) {
             		if (me.getContainer() == null) {
-	            		me.init(mp3Channel, false, true, 0);
+	            		me.init(mp3Channel, false, true, 0, 0);
 	            	}
             		me.stepAudio(getMp3MaxSamples() * getBytesPerSample());
 	                mp3DecodedBytes = copySamplesToMem(mp3PcmBuf, mp3PcmBufSize, mp3PcmBuffer);

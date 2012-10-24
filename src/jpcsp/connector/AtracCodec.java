@@ -221,7 +221,7 @@ public class AtracCodec {
         			Modules.log.info("AT3+ data decoded by the external decoder.");
         			me.finish();
         			atracChannel = null;
-        			me.init(new FileProtocolHandler(decodedFile), false, true, 0);
+        			me.init(new FileProtocolHandler(decodedFile), false, true, 0, 0);
                     atracEndSample = -1;
         			return;
         		} else if (requireAllAtracData) {
@@ -348,7 +348,7 @@ public class AtracCodec {
         	        			Modules.log.info("AT3+ data decoded by the external decoder (all AT3+ data retrieved).");
         	        			me.finish();
         	        			atracChannel = null;
-        	        			me.init(new FileProtocolHandler(decodedFile), false, true, 0);
+        	        			me.init(new FileProtocolHandler(decodedFile), false, true, 0, 0);
         	                    atracEndSample = -1;
         	        		} else {
         	        			Modules.log.info("AT3+ data could not be decoded by the external decoder, even after retrieving all AT3+ data.");
@@ -368,7 +368,7 @@ public class AtracCodec {
         				Memory.getInstance().memset(address, (byte) 0, samples * 4); 
         			}
         		} else if (atracChannel.length() >= getAtracChannelStartLength() || atracChannel.length() >= atracFileSize) {
-    				me.init(atracChannel, false, true, 0);
+    				me.init(atracChannel, false, true, 0, 0);
     			} else {
     				// Fake returning 1 sample with remainFrames == 0
     				// to force a call to sceAtracAddStreamData.

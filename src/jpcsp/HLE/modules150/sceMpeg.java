@@ -562,6 +562,15 @@ public class sceMpeg extends HLEModule {
     	return -1;
     }
 
+    public int getRegisteredVideoChannel() {
+    	// Return the first registered AVC stream
+    	for (Integer streamNumber : avcStreamsMap.values()) {
+    		return streamNumber;
+    	}
+
+    	return -1;
+    }
+
     public int hleMpegGetAvcAu(TPointer auAddr, int firstTimestamp, int noMoreDataError) {
     	int result = 0;
 
@@ -570,7 +579,7 @@ public class sceMpeg extends HLEModule {
         	Emulator.getClock().pause();
         	me.setFirstTimestamp(firstTimestamp);
             if (me.getContainer() == null) {
-                me.init(meChannel, true, true, getRegisteredAudioChannel());
+                me.init(meChannel, true, true, getRegisteredVideoChannel(), getRegisteredAudioChannel());
             }
         	if (!me.readVideoAu(mpegAvcAu)) {
         		// end of video reached only when last timestamp has been reached
@@ -615,7 +624,7 @@ public class sceMpeg extends HLEModule {
         	Emulator.getClock().pause();
         	me.setFirstTimestamp(firstTimestamp);
         	if (me.getContainer() == null) {
-        		me.init(meChannel, true, true, getRegisteredAudioChannel());
+        		me.init(meChannel, true, true, getRegisteredVideoChannel(), getRegisteredAudioChannel());
         	}
         	if (!me.readAudioAu(mpegAtracAu)) {
         		endOfAudioReached = true;
@@ -1696,7 +1705,7 @@ public class sceMpeg extends HLEModule {
             	Emulator.getClock().pause();
             	me.setFirstTimestamp(audioFirstTimestamp);
             	if (me.getContainer() == null) {
-            		me.init(meChannel, true, true, getRegisteredAudioChannel());
+            		me.init(meChannel, true, true, getRegisteredVideoChannel(), getRegisteredAudioChannel());
             	}
             	if (!me.readAudioAu(mpegAtracAu)) {
             		result = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
