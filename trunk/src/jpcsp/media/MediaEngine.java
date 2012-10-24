@@ -324,7 +324,7 @@ public class MediaEngine {
      * The sceMpeg functions must call init() first for each MPEG stream and then
      * keep calling step() until the video is finished and finish() is called.
      */
-    public void init(IURLProtocolHandler channel, boolean decodeVideo, boolean decodeAudio, int audioChannel) {
+    public void init(IURLProtocolHandler channel, boolean decodeVideo, boolean decodeAudio, int videoChannel, int audioChannel) {
     	init();
 
     	container = IContainer.make();
@@ -345,27 +345,42 @@ public class MediaEngine {
 
         numStreams = container.getNumStreams();
 
+        int videoChannelIndex = 0;
+        int audioChannelIndex = 0;
         for (int i = 0; i < numStreams; i++) {
             IStream stream = container.getStream(i);
             IStreamCoder coder = stream.getStreamCoder();
 
-            if (videoStreamID == -1 && coder.getCodecType() == ICodec.Type.CODEC_TYPE_VIDEO) {
-                videoStreamID = i;
-                videoCoder = coder;
-            } else if (audioStreamID == -1 && coder.getCodecType() == ICodec.Type.CODEC_TYPE_AUDIO) {
-                audioStreamID = i;
-                audioCoder = coder;
+            if (coder.getCodecType() == ICodec.Type.CODEC_TYPE_VIDEO) {
+            	if (videoStreamID < 0) {
+            		if (videoChannel < 0 || videoChannel == videoChannelIndex) {
+            			videoStreamID = i;
+            			videoCoder = coder;
+            		}
+            	}
+            	videoChannelIndex++;
+            } else if (coder.getCodecType() == ICodec.Type.CODEC_TYPE_AUDIO) {
+            	if (audioStreamID < 0) {
+            		if (audioStreamID < 0 || audioChannel == audioChannelIndex) {
+                        audioStreamID = i;
+                        audioCoder = coder;
+            		}
+            	}
+            	audioChannelIndex++;
             }
         }
 
         if (decodeVideo) {
-            if (videoStreamID == -1) {
+            if (videoStreamID < 0) {
                 log.error("MediaEngine: No video streams found!");
             } else if (streamCoderOpen(videoCoder) < 0) {
             	videoCoder.delete();
             	videoCoder = null;
                 log.error("MediaEngine: Can't open video decoder!");
             } else {
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("Using video stream #%d from %d", videoStreamID, videoChannelIndex));
+            	}
             	videoConverter = ConverterFactory.createConverter(ConverterFactory.XUGGLER_BGR_24, videoCoder.getPixelType(), videoCoder.getWidth(), videoCoder.getHeight());
                 videoPicture = IVideoPicture.make(videoCoder.getPixelType(), videoCoder.getWidth(), videoCoder.getHeight());
             	if (videoCoder.getPixelType() != IPixelFormat.Type.BGR24) {
@@ -380,7 +395,7 @@ public class MediaEngine {
         }
 
         if (decodeAudio) {
-            if (audioStreamID == -1) {
+            if (audioStreamID < 0) {
             	// Try to use an external audio file instead
             	if (!initExtAudio(audioChannel)) {
             		log.error("MediaEngine: No audio streams found!");
@@ -391,6 +406,9 @@ public class MediaEngine {
             	audioCoder = null;
                 log.error("MediaEngine: Can't open audio decoder!");
             } else {
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("Using audio stream #%d from %d", audioStreamID, audioChannelIndex));
+            	}
         		// The creation of the audioSamples might fail
             	// if the audioCoder returns 0 channels. The audioSamples will then be
             	// created later, when trying to decode audio samples.
