@@ -396,15 +396,51 @@ public class Utilities {
 
 		int srcLimit = source.limit();
 		if (source instanceof IntBuffer) {
-    		destination.asIntBuffer().put((IntBuffer) source.limit(source.position() + (round4(lengthInBytes) >> 2)));
-    	} else if (source instanceof ShortBuffer) {
-    		destination.asShortBuffer().put((ShortBuffer) source.limit(source.position() + (round2(lengthInBytes) >> 1)));
+			int copyLength = lengthInBytes & ~3;
+    		destination.asIntBuffer().put((IntBuffer) source.limit(source.position() + (copyLength >> 2)));
+    		int restLength = lengthInBytes - copyLength;
+    		if (restLength > 0) {
+    			// 1 to 3 bytes left to copy
+    			source.limit(srcLimit);
+    			int value = ((IntBuffer) source).get();
+    			int position = destination.position() + copyLength;
+    			do {
+    				destination.put(position, (byte) value);
+    				value >>= 8;
+        			restLength--;
+        			position++;
+    			} while (restLength > 0);
+    		}
     	} else if (source instanceof ByteBuffer) {
     		destination.put((ByteBuffer) source.limit(source.position() + lengthInBytes));
+    	} else if (source instanceof ShortBuffer) {
+    		int copyLength = lengthInBytes & ~1;
+    		destination.asShortBuffer().put((ShortBuffer) source.limit(source.position() + (copyLength >> 1)));
+    		int restLength = lengthInBytes - copyLength;
+    		if (restLength > 0) {
+    			// 1 byte left to copy
+    			source.limit(srcLimit);
+    			short value = ((ShortBuffer) source).get();
+    			destination.put(destination.position() + copyLength, (byte) value);
+    		}
     	} else if (source instanceof FloatBuffer) {
-    		destination.asFloatBuffer().put((FloatBuffer) source.limit(source.position() + (round4(lengthInBytes) >> 2)));
+			int copyLength = lengthInBytes & ~3;
+    		destination.asFloatBuffer().put((FloatBuffer) source.limit(source.position() + (copyLength >> 2)));
+    		int restLength = lengthInBytes - copyLength;
+    		if (restLength > 0) {
+    			// 1 to 3 bytes left to copy
+    			source.limit(srcLimit);
+    			int value = Float.floatToRawIntBits(((FloatBuffer) source).get());
+    			int position = destination.position() + copyLength;
+    			do {
+    				destination.put(position, (byte) value);
+    				value >>= 8;
+        			restLength--;
+        			position++;
+    			} while (restLength > 0);
+    		}
     	} else {
-    		Modules.log.error("Utilities.putBuffer: Unsupported Buffer type " + source.getClass().getName());
+    		Emulator.log.error("Utilities.putBuffer: Unsupported Buffer type " + source.getClass().getName());
     		Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
     	}
 
