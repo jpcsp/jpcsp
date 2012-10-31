@@ -92,7 +92,7 @@ public class OMAFormat {
 		int omaStreamSize = header.remaining() + numCompleteFrames * frameSize + lastFrameSize;
 		// Allocate an OMA stream size large enough (better too large than too short)
 		omaStreamSize = Math.max(omaStreamSize, audioStream.remaining());
-		ByteBuffer oma = ByteBuffer.allocate(omaStreamSize);
+		ByteBuffer oma = ByteBuffer.allocate(omaStreamSize).order(ByteOrder.LITTLE_ENDIAN);
 
 		oma.put(header);
 		while (audioStream.remaining() > 8) {
