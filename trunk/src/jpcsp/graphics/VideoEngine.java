@@ -1854,7 +1854,19 @@ public class VideoEngine {
             re.setVertexInfo(context.vinfo, true, context.useVertexColor, useTexture, type);
         	re.drawArrays(type, 0, numberOfVertex);
         } else {
-	        // Do not use optimized VertexInfo reading when
+        	// In clear mode STENCIL, set the stencil value to the alpha value of the rendered color
+        	if (context.clearMode && context.clearModeStencil && context.vinfo.color != 0) {
+        		// Retrieve the alpha value of the 1st vertex
+        		// (2nd vertex for a SPRITE as this is the vertex setting the rendered color for a SPRITE).
+                int addr = context.vinfo.getAddress(mem, type == PRIM_SPRITES ? 1 : 0);
+                context.vinfo.readVertex(mem, addr, v, false);
+                float alpha = v.c[3];
+        		int stencilValue = PixelColor.getColor(alpha);
+        		re.setStencilFunc(GeCommands.STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST, stencilValue, 0xFF);
+        		re.setStencilOp(GeCommands.SOP_KEEP_STENCIL_VALUE, GeCommands.SOP_KEEP_STENCIL_VALUE, GeCommands.SOP_REPLACE_STENCIL_VALUE);
+        	}
+
+        	// Do not use optimized VertexInfo reading when
 	        // - disableOptimizedVertexInfoReading is true
 	        // - using Vertex Cache unless all the vertices are supported natively
 	        // - the Vertex are indexed
