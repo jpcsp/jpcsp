@@ -858,13 +858,14 @@ public class VideoEngine {
         }
         currentList.status = PSP_GE_LIST_STALL_REACHED;
 		long startWaitClockMillis = Emulator.getClock().milliTime();
-        if (!currentList.waitForSync(10)) {
+		int waitMillis = 10;
+        if (!currentList.waitForSync(waitMillis)) {
 			long endWaitClockMillis = Emulator.getClock().milliTime();
             if (isLogDebugEnabled) {
                 log.debug("Wait for sync while stall reached");
             }
 		    // Count only when the clock is not paused
-		    if (startWaitClockMillis != endWaitClockMillis) {
+		    if (endWaitClockMillis - startWaitClockMillis >= waitMillis - 1) {
 		    	waitForSyncCount++;
 		    }
 
@@ -878,7 +879,7 @@ public class VideoEngine {
             // This avoids aborting the first list enqueued.
             int maxStallCount = maxWaitForSyncCount;
             if (currentList.getPc() == currentList.list_addr) {
-            	maxStallCount *= 4;
+            	maxStallCount *= 15;
             }
             if (isLogDebugEnabled) {
             	maxStallCount = Integer.MAX_VALUE;
