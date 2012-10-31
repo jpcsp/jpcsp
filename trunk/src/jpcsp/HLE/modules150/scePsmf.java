@@ -28,6 +28,8 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
@@ -148,8 +150,10 @@ public class scePsmf extends HLEModule {
         private int currentEntryNumber;
 
         // Stream map.
-        private HashMap<Integer, PSMFStream> streamMap;
-        private int currentStreamNumber;
+        private List<PSMFStream> streams;
+        private int currentStreamNumber = -1;
+        private int currentVideoStreamNumber = -1;
+        private int currentAudioStreamNumber = -1;
 
         // Entry class for the PSMF streams.
         protected class PSMFStream {
@@ -262,8 +266,7 @@ public class scePsmf extends HLEModule {
 
             // Stream area:
             // At offset 0x82, each 16 bytes represent one stream.
-            streamMap = new HashMap<Integer, PSMFStream>();
-            currentStreamNumber = -1;         // Current stream number.
+            streams = new LinkedList<PSMFStream>();
 
             // Parse the stream field and assign each one to it's type.
             int numberOfStreams = 0;
@@ -283,7 +286,7 @@ public class scePsmf extends HLEModule {
                 	}
                 }
                 if (stream != null) {
-                    streamMap.put(numberOfStreams, stream);
+                    streams.add(stream);
                     numberOfStreams++;
                 }
             }
@@ -388,22 +391,22 @@ public class scePsmf extends HLEModule {
         }
 
         public int getCurrentStreamType() {
-            if (streamMap.get(currentStreamNumber) != null) {
-                return streamMap.get(currentStreamNumber).getStreamType();
+            if (currentStreamNumber >= 0 && currentStreamNumber < streams.size()) {
+                return streams.get(currentStreamNumber).getStreamType();
             }
             return -1;
         }
 
         public int getCurrentStreamChannel() {
-            if (streamMap.get(currentStreamNumber) != null) {
-                return streamMap.get(currentStreamNumber).getStreamChannel();
+            if (currentStreamNumber >= 0 && currentStreamNumber < streams.size()) {
+                return streams.get(currentStreamNumber).getStreamChannel();
             }
             return -1;
         }
 
         public int getSpecificStreamNum(int type) {
         	int num = 0;
-        	for (PSMFStream stream : streamMap.values()) {
+        	for (PSMFStream stream : streams) {
         		if (stream.isStreamOfType(type)) {
         			num++;
         		}
@@ -412,12 +415,38 @@ public class scePsmf extends HLEModule {
         	return num;
         }
 
+        private void setVideoStreamNum(int id, int channel) {
+        	if (currentVideoStreamNumber != id) {
+        		Modules.sceMpegModule.setRegisteredVideoChannel(channel);
+        		currentVideoStreamNumber = id;
+        	}
+        }
+
+        private void setAudioStreamNum(int id, int channel) {
+        	if (currentAudioStreamNumber != id) {
+        		Modules.sceMpegModule.setRegisteredAudioChannel(channel);
+        		currentAudioStreamNumber = id;
+        	}
+        }
+
         public void setStreamNum(int id) {
             currentStreamNumber = id;
+
+            int type = getCurrentStreamType();
+            int channel = getCurrentStreamChannel();
+            switch (type) {
+            	case PSMF_AVC_STREAM:
+            		setVideoStreamNum(id, channel);
+            		break;
+            	case PSMF_PCM_STREAM:
+            	case PSMF_ATRAC_STREAM:
+            		setAudioStreamNum(id, channel);
+            		break;
+            }
         }
 
         private int getStreamNumber(int type, int typeNum, int channel) {
-        	for (PSMFStream stream : streamMap.values()) {
+        	for (PSMFStream stream : streams) {
         		if (stream.isStreamOfType(type)) {
         			if (typeNum <= 0) {
         				if (channel < 0 || stream.getStreamChannel() == channel) {
@@ -436,7 +465,7 @@ public class scePsmf extends HLEModule {
         	if (streamNumber < 0) {
         		return false;
         	}
-    		currentStreamNumber = streamNumber;
+        	setStreamNum(streamNumber);
 
     		return true;
         }
@@ -446,7 +475,7 @@ public class scePsmf extends HLEModule {
         	if (streamNumber < 0) {
         		return false;
         	}
-    		currentStreamNumber = streamNumber;
+        	setStreamNum(streamNumber);
 
     		return true;
         }
