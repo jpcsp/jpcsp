@@ -126,6 +126,7 @@ public class sceAtrac3plus extends HLEModule {
         protected int atracCurrentSample;
         protected int maxSamples;
         protected int atracSampleOffset;
+        protected int lastDecodedSamples;
         // First buffer.
         protected int inputBufferAddr;
         protected int inputBufferSize;
@@ -175,6 +176,8 @@ public class sceAtrac3plus extends HLEModule {
                 this.atracCodec = null;
                 maxSamples = 0;
             }
+
+            lastDecodedSamples = maxSamples;
         }
 
         public void release() {
@@ -707,6 +710,14 @@ public class sceAtrac3plus extends HLEModule {
 		public void setSourceBufferLength(int sourceBufferLength) {
 			this.sourceBufferLength = sourceBufferLength;
 		}
+
+		public int getLastDecodedSamples() {
+			return lastDecodedSamples;
+		}
+
+		public void setLastDecodedSamples(int lastDecodedSamples) {
+			this.lastDecodedSamples = lastDecodedSamples;
+		}
     }
 
     private static class EnableConnectorSettingsListener extends AbstractBoolSettingsListener {
@@ -735,10 +746,6 @@ public class sceAtrac3plus extends HLEModule {
 
     public int getBytesPerFrame(int atID) {
     	return atracIDs.get(atID).getAtracBytesPerFrame();
-    }
-
-    protected int getRemainFrames(AtracID id) {
-    	return getRemainFrames(id, id.getMaxSamples());
     }
 
     protected int getRemainFrames(AtracID id, int samples) {
@@ -978,6 +985,7 @@ public class sceAtrac3plus extends HLEModule {
             	end = 1;
             }
         }
+        id.setLastDecodedSamples(samples);
         int remainFrames;
         if (end == 1) {
             remainFrames = -1;
@@ -1013,7 +1021,7 @@ public class sceAtrac3plus extends HLEModule {
         }
 
         AtracID id = atracIDs.get(atID);
-    	int remainFrames = getRemainFrames(id);
+    	int remainFrames = getRemainFrames(id, id.getLastDecodedSamples());
 		remainFramesAddr.setValue(remainFrames);
 
 		if (log.isDebugEnabled()) {

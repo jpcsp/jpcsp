@@ -223,6 +223,16 @@ public class ExternalDecoder {
 			String decodedFileName = MediaEngine.getExtAudioPath(mpegFileSize, audioChannel, "wav");
 
 			if (!executeExternalDecoder(encodedFileName, decodedFileName, keepOmaFile)) {
+				int channels = OMAFormat.getOMANumberAudioChannels(omaBuffer);
+				if (channels == 1) {
+					// It seems that SonicStage has problems decoding mono AT3+ data
+					// or we might generate an incorrect OMA file for monaural audio.
+					Modules.log.info("Mono AT3+ audio stream could not be decoded by the external decoder");
+				} else if (channels == 2) {
+					Modules.log.info("Stereo AT3+ audio stream could not be decoded by the external decoder");
+				} else {
+					Modules.log.info("AT3+ audio stream could not be decoded by the external decoder (channels=" + channels + ")");
+				}
 				return false;
 			}
 		} catch (IOException e) {

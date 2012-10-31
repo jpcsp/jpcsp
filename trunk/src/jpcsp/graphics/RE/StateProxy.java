@@ -37,7 +37,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected float[][] matrix;
 	protected static final int RE_BONES_MATRIX = 4;
 	protected static final int matrix4Size = 4 * 4;
-	public    static final int maxProgramId = 1000;
+	public    static final int maxProgramId = 5000;
 	public    static final int maxUniformId = 200;
 	protected int[][] uniformInt;
 	protected int[][][] uniformIntArray;
