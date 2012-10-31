@@ -48,6 +48,10 @@ public class StreamState {
 		pendingPackets = new LinkedList<IPacket>();
 	}
 
+	public void setStreamID(int streamID) {
+		this.streamID = streamID;
+	}
+
 	public IPacket getPacket() {
 		return packet;
 	}
@@ -112,13 +116,17 @@ public class StreamState {
 		au.dts = dts;
 	}
 
-	public void finish() {
-		setTimestamps(0);
+	private void releasePackets() {
 		releasePacket();
 
 		while (!pendingPackets.isEmpty()) {
 			me.release(getNextPacket());
 		}
+	}
+
+	public void finish() {
+		setTimestamps(0);
+		releasePackets();
 	}
 
 	public boolean isPacketEmpty() {

@@ -241,6 +241,8 @@ public class sceMpeg extends HLEModule {
     protected boolean ignoreAtrac = false;
     protected boolean ignoreAvc = false;
     protected boolean ignorePcm = false;
+    protected int registeredVideoChannel = -1;
+    protected int registeredAudioChannel = -1;
     // MPEG decoding results.
     protected static final int MPEG_AVC_DECODE_SUCCESS = 1;       // Internal value.
     protected static final int MPEG_AVC_DECODE_ERROR_FATAL = -8;
@@ -554,21 +556,48 @@ public class sceMpeg extends HLEModule {
     }
 
     public int getRegisteredAudioChannel() {
-    	// Return the first registered ATRAC stream
-    	for (Integer streamNumber : atracStreamsMap.values()) {
-    		return streamNumber;
+    	if (registeredAudioChannel >= 0) {
+    		return registeredAudioChannel;
     	}
 
-    	return -1;
+    	// Return the lowest registered ATRAC stream
+    	int audioChannel = -1;
+    	for (Integer streamNumber : atracStreamsMap.values()) {
+    		if (audioChannel < 0 || streamNumber < audioChannel) {
+    			audioChannel = streamNumber;
+    		}
+    	}
+
+    	return audioChannel;
     }
 
     public int getRegisteredVideoChannel() {
-    	// Return the first registered AVC stream
-    	for (Integer streamNumber : avcStreamsMap.values()) {
-    		return streamNumber;
+    	if (registeredVideoChannel >= 0) {
+    		return registeredVideoChannel;
     	}
 
-    	return -1;
+    	// Return the lowest registered AVC stream
+    	int videoChannel = -1;
+    	for (Integer streamNumber : avcStreamsMap.values()) {
+    		if (videoChannel < 0 || streamNumber < videoChannel) {
+    			videoChannel = streamNumber;
+    		}
+    	}
+
+    	return videoChannel;
+    }
+
+    public void setRegisteredVideoChannel(int registeredVideoChannel) {
+    	if (this.registeredVideoChannel != registeredVideoChannel) {
+    		this.registeredVideoChannel = registeredVideoChannel;
+    		if (checkMediaEngineState()) {
+    			me.changeVideoChannel(registeredVideoChannel);
+    		}
+    	}
+    }
+
+    public void setRegisteredAudioChannel(int registeredAudioChannel) {
+    	this.registeredAudioChannel = registeredAudioChannel;
     }
 
     public int hleMpegGetAvcAu(TPointer auAddr, int firstTimestamp, int noMoreDataError) {
@@ -1175,6 +1204,8 @@ public class sceMpeg extends HLEModule {
         pcmStreamsMap.clear();
         avcStreamsMap.clear();
         dataStreamsMap.clear();
+        registeredVideoChannel = -1;
+        registeredAudioChannel = -1;
         mpegStreamSize = 0;
         mpegAtracAu.dts = UNKNOWN_TIMESTAMP;
         mpegAtracAu.pts = 0;
@@ -1368,10 +1399,10 @@ public class sceMpeg extends HLEModule {
      * sceMpegRegistStream
      * 
      * @param mpeg
-     * @param stream_type
-     * @param stream_num
+     * @param streamType
+     * @param streamNum
      * 
-     * @return
+     * @return stream Uid
      */
     @HLEFunction(nid = 0x42560F23, version = 150, checkInsideInterrupt = true)
     public int sceMpegRegistStream(@CheckArgument("checkMpegHandle") int mpeg, int stream_type, int stream_num) {
@@ -1629,7 +1660,7 @@ public class sceMpeg extends HLEModule {
         if (mpegRingbuffer != null) {
             mpegRingbuffer.read(mpegRingbufferAddr);
         }
-        
+
         if (mpegRingbuffer.packetsRead == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
             delayThread(mpegDecodeErrorDelay);
             return SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.

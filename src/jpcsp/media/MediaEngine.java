@@ -28,7 +28,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import jpcsp.State;
-import jpcsp.HLE.Modules;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.kernel.types.SceMpegAu;
 import jpcsp.HLE.modules.sceMpeg;
@@ -57,7 +56,7 @@ import com.xuggle.xuggler.video.ConverterFactory;
 import com.xuggle.xuggler.video.IConverter;
 
 public class MediaEngine {
-	public static org.apache.log4j.Logger log = Modules.log;
+	public static org.apache.log4j.Logger log = org.apache.log4j.Logger.getLogger("me");
     protected static final int AVSEEK_FLAG_BACKWARD = 1; // seek backward
     protected static final int AVSEEK_FLAG_BYTE     = 2; // seeking based on position in bytes
     protected static final int AVSEEK_FLAG_ANY      = 4; // seek to any frame, even non-keyframes
@@ -114,6 +113,9 @@ public class MediaEngine {
     @SuppressWarnings("deprecation")
 	public static int streamCoderOpen(IStreamCoder streamCoder) {
     	try {
+        	if (streamCoder.isOpen()) {
+        		return 0;
+        	}
     		// This method is not available in Xuggle 3.4
     		return streamCoder.open(null, null);
     	} catch (NoSuchMethodError e) {
@@ -345,28 +347,37 @@ public class MediaEngine {
 
         numStreams = container.getNumStreams();
 
-        int videoChannelIndex = 0;
         int audioChannelIndex = 0;
         for (int i = 0; i < numStreams; i++) {
             IStream stream = container.getStream(i);
             IStreamCoder coder = stream.getStreamCoder();
 
             if (coder.getCodecType() == ICodec.Type.CODEC_TYPE_VIDEO) {
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("Found video stream %s", stream));
+            	}
             	if (videoStreamID < 0) {
-            		if (videoChannel < 0 || videoChannel == videoChannelIndex) {
+            		// stream.getId() returns a value 0x1En, where n is the videoChannel (e.g. 0x1E0, 0x1E1...)
+            		if (videoChannel < 0 || videoChannel == (stream.getId() & 0xF)) {
             			videoStreamID = i;
             			videoCoder = coder;
             		}
             	}
-            	videoChannelIndex++;
             } else if (coder.getCodecType() == ICodec.Type.CODEC_TYPE_AUDIO) {
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("Found audio stream %s", stream));
+            	}
             	if (audioStreamID < 0) {
-            		if (audioStreamID < 0 || audioChannel == audioChannelIndex) {
+            		if (audioChannel < 0 || audioChannel == audioChannelIndex) {
                         audioStreamID = i;
                         audioCoder = coder;
             		}
             	}
             	audioChannelIndex++;
+            } else {
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("Found unknown stream %s", stream));
+            	}
             }
         }
 
@@ -379,7 +390,7 @@ public class MediaEngine {
                 log.error("MediaEngine: Can't open video decoder!");
             } else {
             	if (log.isDebugEnabled()) {
-            		log.debug(String.format("Using video stream #%d from %d", videoStreamID, videoChannelIndex));
+            		log.debug(String.format("Using video stream #%d", videoStreamID));
             	}
             	videoConverter = ConverterFactory.createConverter(ConverterFactory.XUGGLER_BGR_24, videoCoder.getPixelType(), videoCoder.getWidth(), videoCoder.getHeight());
                 videoPicture = IVideoPicture.make(videoCoder.getPixelType(), videoCoder.getWidth(), videoCoder.getHeight());
@@ -418,6 +429,107 @@ public class MediaEngine {
         		decodedAudioSamples = new FIFOByteBuffer();
                 audioStreamState = new StreamState(this, audioStreamID, container, 0);
             }
+        }
+    }
+
+    public void changeAudioChannel(int audioChannel) {
+    	if (container == null) {
+    		return;
+    	}
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("Changing audio channel to %d", audioChannel));
+    	}
+
+    	boolean channelChanged = false;
+        int audioChannelIndex = 0;
+        for (int i = 0; i < numStreams; i++) {
+            IStream stream = container.getStream(i);
+            IStreamCoder coder = stream.getStreamCoder();
+
+            if (coder.getCodecType() == ICodec.Type.CODEC_TYPE_AUDIO) {
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("Found audio stream %s", stream));
+            	}
+        		if (audioChannel < 0 || audioChannel == audioChannelIndex) {
+        			if (audioStreamID != i) {
+        				audioStreamID = i;
+        				audioCoder = coder;
+        				channelChanged = true;
+        			}
+        			break;
+        		}
+            	audioChannelIndex++;
+        	}
+        }
+
+        if (!channelChanged) {
+			// Audio channel unchanged
+        	return;
+        }
+
+        if (audioStreamID < 0) {
+        	// Try to use an external audio file instead
+        	if (!initExtAudio(audioChannel)) {
+        		log.error("MediaEngine: No audio streams found!");
+        		audioStreamState = new StreamState(this, -1, null, sceMpeg.audioFirstTimestamp);
+        	}
+        } else if (streamCoderOpen(audioCoder) < 0) {
+        	audioCoder.delete();
+        	audioCoder = null;
+            log.error("MediaEngine: Can't open audio decoder!");
+        } else {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("Using audio stream #%d", audioStreamID));
+        	}
+            audioStreamState.setStreamID(audioStreamID);
+        }
+    }
+
+    public void changeVideoChannel(int videoChannel) {
+    	if (container == null) {
+    		return;
+    	}
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("Changing video channel to %d", videoChannel));
+    	}
+
+    	boolean channelChanged = false;
+        for (int i = 0; i < numStreams; i++) {
+            IStream stream = container.getStream(i);
+            IStreamCoder coder = stream.getStreamCoder();
+
+            if (coder.getCodecType() == ICodec.Type.CODEC_TYPE_VIDEO) {
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("Found video stream %s", stream));
+            	}
+        		// stream.getId() returns a value 0x1En, where n is the videoChannel (e.g. 0x1E0, 0x1E1...)
+        		if (videoChannel < 0 || videoChannel == (stream.getId() & 0xF)) {
+        			if (videoStreamID != i) {
+        				videoStreamID = i;
+        				videoCoder = coder;
+        				channelChanged = true;
+        			}
+        			break;
+        		}
+            }
+        }
+
+        if (!channelChanged) {
+			// Video channel unchanged
+        	return;
+        }
+
+        if (streamCoderOpen(videoCoder) < 0) {
+        	videoCoder.delete();
+        	videoCoder = null;
+            log.error("MediaEngine: Can't open video decoder!");
+        } else {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("Using video stream #%d", videoStreamID));
+        	}
+        	videoStreamState.setStreamID(videoStreamID);
         }
     }
 
