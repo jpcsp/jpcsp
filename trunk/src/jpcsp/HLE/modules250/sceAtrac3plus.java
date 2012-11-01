@@ -33,7 +33,8 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
             log.debug(String.format("sceAtracGetOutputChannel atracID=0x%X, outputChannelAddr=%s", atID, outputChannelAddr));
         }
 
-        outputChannelAddr.setValue(2);
+    	AtracID id = atracIDs.get(atID);
+        outputChannelAddr.setValue(id.getAtracChannels());
 
         return 0;
     }

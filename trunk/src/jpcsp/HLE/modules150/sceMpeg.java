@@ -258,6 +258,7 @@ public class sceMpeg extends HLEModule {
     protected static final String streamPurpose = "sceMpeg-Stream";
     private MpegRingbufferPutIoListener ringbufferPutIoListener;
     private boolean insideRingbufferPut;
+    protected static final int mpegAudioChannels = 2;
 
     private class StreamInfo {
     	private int uid;
@@ -610,7 +611,7 @@ public class sceMpeg extends HLEModule {
             if (me.getContainer() == null) {
                 me.init(meChannel, true, true, getRegisteredVideoChannel(), getRegisteredAudioChannel());
             }
-        	if (!me.readVideoAu(mpegAvcAu)) {
+        	if (!me.readVideoAu(mpegAvcAu, mpegAudioChannels)) {
         		// end of video reached only when last timestamp has been reached
         		if (mpegLastTimestamp <= 0 || mpegAvcAu.pts >= mpegLastTimestamp) {
         			endOfVideoReached = true;
@@ -655,7 +656,7 @@ public class sceMpeg extends HLEModule {
         	if (me.getContainer() == null) {
         		me.init(meChannel, true, true, getRegisteredVideoChannel(), getRegisteredAudioChannel());
         	}
-        	if (!me.readAudioAu(mpegAtracAu)) {
+        	if (!me.readAudioAu(mpegAtracAu, mpegAudioChannels)) {
         		endOfAudioReached = true;
         		// If the audio could not be decoded or the
         		// end of audio has been reached (Patapon 3),
@@ -686,7 +687,7 @@ public class sceMpeg extends HLEModule {
     	if (checkMediaEngineState()) {
         	Emulator.getClock().pause();
         	int bytes = 0;
-        	if (me.stepAudio(bufferSize)) {
+        	if (me.stepAudio(bufferSize, mpegAudioChannels)) {
                 bytes = me.getCurrentAudioSamples(audioDecodeBuffer);
                 Memory.getInstance().copyToMemory(bufferAddr.getAddress(), ByteBuffer.wrap(audioDecodeBuffer, 0, bytes), bytes);
         	}
@@ -1738,7 +1739,7 @@ public class sceMpeg extends HLEModule {
             	if (me.getContainer() == null) {
             		me.init(meChannel, true, true, getRegisteredVideoChannel(), getRegisteredAudioChannel());
             	}
-            	if (!me.readAudioAu(mpegAtracAu)) {
+            	if (!me.readAudioAu(mpegAtracAu, mpegAudioChannels)) {
             		result = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
             	}
             	Emulator.getClock().resume();
@@ -1938,7 +1939,7 @@ public class sceMpeg extends HLEModule {
         	// Suspend the emulator clock to perform time consuming HLE operation,
         	// in order to improve the timing compatibility with the PSP.
         	Emulator.getClock().pause();
-            if (me.stepVideo()) {
+            if (me.stepVideo(mpegAudioChannels)) {
             	me.writeVideoImage(buffer, frameWidth, videoPixelMode);
             	packetsConsumed = meChannel.getReadLength() / mpegRingbuffer.packetSize;
 
@@ -2203,7 +2204,7 @@ public class sceMpeg extends HLEModule {
         // Both the MediaEngine and the JpcspConnector are supporting
         // this 2 steps approach.
         if (checkMediaEngineState()) {
-            if (me.stepVideo()) {
+            if (me.stepVideo(mpegAudioChannels)) {
             	packetsConsumed = meChannel.getReadLength() / mpegRingbuffer.packetSize;
             	meChannel.setReadLength(meChannel.getReadLength() - packetsConsumed * mpegRingbuffer.packetSize);
             } else {

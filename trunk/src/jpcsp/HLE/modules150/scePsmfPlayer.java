@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_PSMFPLAYER_NOT_INITIALIZED;
+import static jpcsp.HLE.modules150.sceMpeg.mpegAudioChannels;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
@@ -516,7 +517,7 @@ public class scePsmfPlayer extends HLEModule {
         if (checkMediaEngineState() && pmfFileChannel != null) {
         	Emulator.getClock().pause();
         	startMediaEngine();
-            if (me.stepVideo()) {
+            if (me.stepVideo(mpegAudioChannels)) {
             	me.writeVideoImage(displayBuffer, videoDataFrameWidth, videoPixelMode);
 	            me.getCurrentVideoAu(psmfPlayerAvcAu);
             } else {
@@ -566,7 +567,7 @@ public class scePsmfPlayer extends HLEModule {
         if (checkMediaEngineState() && pmfFileChannel != null) {
         	Emulator.getClock().pause();
         	startMediaEngine();
-        	if (me.stepAudio(audioSamplesBytes)) {
+        	if (me.stepAudio(audioSamplesBytes, mpegAudioChannels)) {
                 bytes = me.getCurrentAudioSamples(audioDecodeBuffer);
                 if (log.isDebugEnabled()) {
                 	log.debug(String.format("scePsmfPlayerGetAudioData ME returned %d bytes (audioSamplesBytes=%d)", bytes, audioSamplesBytes));

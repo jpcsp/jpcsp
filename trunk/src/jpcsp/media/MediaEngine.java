@@ -40,6 +40,7 @@ import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Debug;
 import jpcsp.util.FIFOByteBuffer;
+import jpcsp.util.Utilities;
 
 import com.xuggle.ferry.Logger;
 import com.xuggle.xuggler.IAudioSamples;
@@ -199,7 +200,15 @@ public class MediaEngine {
     	return IPacket.make();
     }
 
-    private boolean readAu(StreamState state, SceMpegAu au) {
+    public int getAudioChannels() {
+    	if (audioCoder == null || audioCoder.getChannels() <= 0) {
+    		return 2;
+    	}
+
+    	return audioCoder.getChannels();
+    }
+
+    private boolean readAu(StreamState state, SceMpegAu au, int requiredAudioChannels) {
     	boolean successful = true;
     	if (state == null) {
     		au.dts = 0;
@@ -221,7 +230,7 @@ public class MediaEngine {
     				break;
     			}
 
-    			decodePacket(state, 0);
+    			decodePacket(state, 0, requiredAudioChannels);
     		}
     		state.getTimestamps(au);
     	}
@@ -229,8 +238,8 @@ public class MediaEngine {
     	return successful;
     }
 
-    public boolean readVideoAu(SceMpegAu au) {
-    	boolean successful = readAu(videoStreamState, au);
+    public boolean readVideoAu(SceMpegAu au, int requiredAudioChannels) {
+    	boolean successful = readAu(videoStreamState, au, requiredAudioChannels);
 
     	// On PSP, video DTS is always 1 frame behind PTS
     	if (au.pts >= sceMpeg.videoTimestampStep) {
@@ -240,8 +249,8 @@ public class MediaEngine {
     	return successful;
     }
 
-    public boolean readAudioAu(SceMpegAu au) {
-    	boolean successful = readAu(audioStreamState, au);
+    public boolean readAudioAu(SceMpegAu au, int requiredAudioChannels) {
+    	boolean successful = readAu(audioStreamState, au, requiredAudioChannels);
 
     	// On PSP, audio DTS is always set to -1
     	au.dts = sceMpeg.UNKNOWN_TIMESTAMP;
@@ -584,7 +593,7 @@ public class MediaEngine {
     	return true;
     }
 
-    private boolean decodePacket(StreamState state, int requiredAudioBytes) {
+    private boolean decodePacket(StreamState state, int requiredAudioBytes, int requiredAudioChannels) {
     	boolean complete = false;
         if (state == videoStreamState) {
         	if (videoCoder == null) {
@@ -605,7 +614,7 @@ public class MediaEngine {
         		// Decode the current audio packet
         		// and check if we have a complete audio sample,
         		// with the minimum required sample bytes
-        		if (decodeAudioPacket(state)) {
+        		if (decodeAudioPacket(state, requiredAudioChannels)) {
         			if (decodedAudioSamples.length() >= requiredAudioBytes) {
     					complete = true;
         			}
@@ -642,7 +651,7 @@ public class MediaEngine {
         return complete;
     }
 
-    private boolean decodeAudioPacket(StreamState state) {
+    private boolean decodeAudioPacket(StreamState state, int requiredAudioChannels) {
     	boolean complete = false;
         while (!state.isPacketEmpty()) {
         	if (audioSamples == null) {
@@ -662,7 +671,7 @@ public class MediaEngine {
             state.consume(decodedBytes);
 
         	if (audioSamples.isComplete()) {
-                updateSoundSamples(audioSamples);
+                updateSoundSamples(audioSamples, requiredAudioChannels);
                 complete = true;
                 break;
             }
@@ -686,12 +695,12 @@ public class MediaEngine {
         return String.format("%sExtAudio-%d.%s", getExtAudioBasePath(mpegStreamSize), audioChannel, suffix);
     }
 
-    public boolean stepVideo() {
-    	return step(videoStreamState, 0);
+    public boolean stepVideo(int requiredAudioChannels) {
+    	return step(videoStreamState, 0, requiredAudioChannels);
     }
 
-    public boolean stepAudio(int requiredAudioBytes) {
-    	boolean success = step(audioStreamState, requiredAudioBytes);
+    public boolean stepAudio(int requiredAudioBytes, int requiredAudioChannels) {
+    	boolean success = step(audioStreamState, requiredAudioBytes, requiredAudioChannels);
     	if (decodedAudioSamples != null && decodedAudioSamples.length() > 0) {
     		success = true;
     	}
@@ -699,7 +708,7 @@ public class MediaEngine {
     	return success;
     }
 
-    private boolean step(StreamState state, int requiredAudioBytes) {
+    private boolean step(StreamState state, int requiredAudioBytes, int requiredAudioChannels) {
     	boolean complete = false;
 
     	if (state != null) {
@@ -708,7 +717,7 @@ public class MediaEngine {
 		        	break;
 	    		}
 
-	    		complete = decodePacket(state, requiredAudioBytes);
+	    		complete = decodePacket(state, requiredAudioBytes, requiredAudioChannels);
 	    	}
     	}
 
@@ -869,24 +878,31 @@ public class MediaEngine {
      * @param length  the number of bytes in buffer
      * @return        the new number of bytes in tempBuffer
      */
-    private int convertSamples(IAudioSamples samples, byte[] buffer, int length) {
+    private int convertSamples(IAudioSamples samples, byte[] buffer, int length, int requiredAudioChannels) {
     	if (samples.getFormat() != IAudioSamples.Format.FMT_S16) {
     		log.error("Unsupported audio samples format: " + samples.getFormat());
     		return length;
     	}
 
-    	if (samples.getChannels() == 2) {
+    	if (samples.getChannels() == requiredAudioChannels) {
     		// Samples already in the correct format
     		return length;
     	}
 
-    	if (samples.getChannels() != 1) {
-    		log.error("Unsupported number of audio channels: " + samples.getChannels());
+    	if (samples.getChannels() == 1 && requiredAudioChannels == 2) {
+    		return convertSamplesMonoToStereo(buffer, length);
+    	} else if (samples.getChannels() == 2 && requiredAudioChannels == 1) {
+    		return convertSamplesStereoToMono(buffer, length);
+    	} else {
+    		log.error(String.format("Cannot convert %d audio channels to %d channels", samples.getChannels(), requiredAudioChannels));
     		return length;
     	}
 
+    }
+
+    private int convertSamplesMonoToStereo(byte[] buffer, int length) {
     	// Convert mono audio samples (1 channel) to stereo (2 channels)
-    	int samplesSize = length * 2;
+    	int samplesSize = length << 1;
     	if (tempBuffer == null || samplesSize > tempBuffer.length) {
     		tempBuffer = new byte[samplesSize];
     	}
@@ -904,19 +920,37 @@ public class MediaEngine {
     	return samplesSize;
     }
 
+    private int convertSamplesStereoToMono(byte[] buffer, int length) {
+    	// Convert stereo audio samples (2 channels) to mono (1 channel)
+    	int samplesSize = length >> 1;
+    	if (tempBuffer == null || samplesSize > tempBuffer.length) {
+    		tempBuffer = new byte[samplesSize];
+    	}
+
+    	for (int i = 0, j = 0; i < samplesSize; i += 2, j += 4) {
+    		int left = Utilities.readUnaligned16(buffer, j);
+    		int right = Utilities.readUnaligned16(buffer, j + 2);
+    		int mono = (left + right) >> 1;
+    		tempBuffer[i + 0] = (byte) mono;
+    		tempBuffer[i + 1] = (byte) (mono >> 8);
+    	}
+
+    	return samplesSize;
+    }
+
     /**
      * Add the audio samples to the decoded audio samples buffer.
      * 
      * @param samples          the samples to be added
      */
-    private void updateSoundSamples(IAudioSamples samples) {
+    private void updateSoundSamples(IAudioSamples samples, int requiredAudioChannels) {
     	int samplesSize = samples.getSize();
     	if (tempBuffer == null || samplesSize > tempBuffer.length) {
     		tempBuffer = new byte[samplesSize];
     	}
     	samples.get(0, tempBuffer, 0, samplesSize);
 
-    	samplesSize = convertSamples(samples, tempBuffer, samplesSize);
+    	samplesSize = convertSamples(samples, tempBuffer, samplesSize, requiredAudioChannels);
 
         decodedAudioSamples.write(tempBuffer, 0, samplesSize);
     }

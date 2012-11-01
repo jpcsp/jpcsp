@@ -355,7 +355,7 @@ public class sceMp3 extends HLEModule {
             		if (me.getContainer() == null) {
 	            		me.init(mp3Channel, false, true, 0, 0);
 	            	}
-            		me.stepAudio(getMp3MaxSamples() * getBytesPerSample());
+            		me.stepAudio(getMp3MaxSamples() * getBytesPerSample(), getMp3ChannelNum());
 	                mp3DecodedBytes = copySamplesToMem(mp3PcmBuf, mp3PcmBufSize, mp3PcmBuffer);
 	                if (log.isTraceEnabled()) {
 	                	log.trace(String.format("decoded %d samples: %s", mp3DecodedBytes, Utilities.getMemoryDump(mp3PcmBuf, mp3DecodedBytes)));
