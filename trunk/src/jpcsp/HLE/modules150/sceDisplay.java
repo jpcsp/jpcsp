@@ -179,7 +179,9 @@ public class sceDisplay extends HLEModule {
 	    	// assuming the application is doing double buffering.
 			skipNextFrameBufferSwitch = VideoEngine.getInstance().isSkipThisFrame();
 
-	        if (isUsingSoftwareRenderer()) {
+			boolean doSwapBuffers = true;
+
+			if (isUsingSoftwareRenderer()) {
 	        	// Software rendering: the processing of the GE list is done by the
 	        	// SoftwareRenderingDisplayThread.
 	        	// We just need to display the frame buffer.
@@ -191,12 +193,21 @@ public class sceDisplay extends HLEModule {
 	        	reDisplay.startDisplay();
 	        	drawFrameBufferFromMemory();
 	        	reDisplay.endDisplay();
-	        } else if (onlyGEGraphics) {
+	        } else if (isOnlyGEGraphics()) {
 	        	// Hardware rendering where only the currently rendered GE list is displayed,
 	        	// not the frame buffer from memory.
+	        	if (log.isDebugEnabled()) {
+	        		log.debug("sceDisplay.paintGL - start display - only GE");
+	        	}
 	        	re.startDisplay();
-	            VideoEngine.getInstance().update();
+
+	        	// Display this screen (i.e. swap buffers) only if something has been rendered
+	            doSwapBuffers = VideoEngine.getInstance().update();
+
 	            re.endDisplay();
+	            if (log.isDebugEnabled()) {
+	        		log.debug("sceDisplay.paintGL - end display - only GE");
+	        	}
 	        } else {
 	        	// Hardware rendering:
 	        	// 1) GE list is rendered to the screen
@@ -252,9 +263,11 @@ public class sceDisplay extends HLEModule {
 	        }
 
 	        // Perform OpenGL double buffering
-	        try {
-	        	canvas.swapBuffers();
-			} catch (LWJGLException e) {
+			if (doSwapBuffers) {
+		        try {
+		        	canvas.swapBuffers();
+				} catch (LWJGLException e) {
+				}
 			}
 
 	        // Update the current FPS every second
@@ -891,7 +904,7 @@ public class sceDisplay extends HLEModule {
     public void step(boolean immediately) {
         long now = System.currentTimeMillis();
         if (immediately || now - lastUpdate > 1000 / 60 || geDirty) {
-        	if (!onlyGEGraphics || VideoEngine.getInstance().hasDrawLists()) {
+        	if (!isOnlyGEGraphics() || VideoEngine.getInstance().hasDrawLists()) {
 	            if (geDirty || detailsDirty || displayDirty) {
                     detailsDirty = false;
                     displayDirty = false;
