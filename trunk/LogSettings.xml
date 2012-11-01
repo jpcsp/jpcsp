@@ -63,7 +63,7 @@
 <root>
 <level value ='off' />
 <appender-ref ref='JpcspAppender' />
-<appender-ref ref='HTMLAppender' />
+<appender-ref ref='TxtAppender' />
 </root>
 
 </log4j:configuration>
