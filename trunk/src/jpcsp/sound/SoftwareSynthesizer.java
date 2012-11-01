@@ -47,6 +47,8 @@ public class SoftwareSynthesizer {
 					// Convert mono VAG to stereo
 					sampleSource = new SampleSourceMono(sampleSource);
 				}
+			} else {
+				sampleSource = new SampleSourceEmpty();
 			}
 
 			if (voice.getPitch() != sceSasCore.PSP_SAS_PITCH_BASE) {
