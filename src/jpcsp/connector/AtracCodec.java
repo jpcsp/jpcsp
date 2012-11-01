@@ -83,6 +83,8 @@ public class AtracCodec {
     protected int currentLoopCount;
     protected boolean useMediaEngine = false;
     protected byte[] samplesBuffer;
+    protected int samplesChannels = 2;
+    protected int bytesPerSample = 4;
     protected ExternalDecoder externalDecoder;
     protected boolean requireAllAtracData;
     private static final String name = "AtracCodec";
@@ -117,8 +119,26 @@ public class AtracCodec {
     	if (useMediaEngine()) {
     		me.setAudioSamplesSize(atracMaxSamples);
     	}
-        atracDecodeBuffer = new byte[atracMaxSamples * 4];
-        samplesBuffer = new byte[atracMaxSamples * 4];
+    	createBuffers();
+    }
+
+    private void createBuffers() {
+        atracDecodeBuffer = new byte[atracMaxSamples * bytesPerSample];
+        samplesBuffer = new byte[atracMaxSamples * bytesPerSample];
+    }
+
+    protected void checkBuffers() {
+    	if (checkMediaEngineState()) {
+    		setChannels(me.getAudioChannels());
+    	}
+    }
+
+    protected void setChannels(int channels) {
+    	if (channels != samplesChannels) {
+    		samplesChannels = channels;
+    		bytesPerSample = channels * 2;
+    		createBuffers();
+    	}
     }
 
     protected String generateID(int address, int length, int fileSize) {
@@ -333,7 +353,7 @@ public class AtracCodec {
         }
     }
 
-    public int atracDecodeData(int atracID, int address) {
+    public int atracDecodeData(int atracID, int address, int channels) {
         int samples = 0;
         boolean isEnded = false;
 
@@ -359,13 +379,13 @@ public class AtracCodec {
         	        		me = null;
         	        	}
         	        	if (me == null) {
-        	        		return atracDecodeData(atracID, address);
+        	        		return atracDecodeData(atracID, address, channels);
         	        	}
         			} else {
         				// Fake returning 1 sample with remainFrames == 0
         				// to force a call to sceAtracAddStreamData.
         				samples = 1;
-        				Memory.getInstance().memset(address, (byte) 0, samples * 4); 
+        				Memory.getInstance().memset(address, (byte) 0, samples * bytesPerSample); 
         			}
         		} else if (atracChannel.length() >= getAtracChannelStartLength() || atracChannel.length() >= atracFileSize) {
     				me.init(atracChannel, false, true, 0, 0);
@@ -373,10 +393,11 @@ public class AtracCodec {
     				// Fake returning 1 sample with remainFrames == 0
     				// to force a call to sceAtracAddStreamData.
     				samples = 1;
-    				Memory.getInstance().memset(address, (byte) 0, samples * 4); 
+    				Memory.getInstance().memset(address, (byte) 0, samples * bytesPerSample); 
     			}
         	}
-            if (me.stepAudio(atracMaxSamples * 4)) {
+        	checkBuffers();
+            if (me.stepAudio(atracMaxSamples * bytesPerSample, channels)) {
             	samples = copySamplesToMem(address);
             }
         	if (samples == 0) {
@@ -419,7 +440,7 @@ public class AtracCodec {
 
         if (decodedStream != null) {
             try {
-                decodedStream.seek(sample * 4L);
+                decodedStream.seek(sample * bytesPerSample);
             } catch (IOException e) {
                 Modules.log.error(e);
             }
@@ -469,7 +490,7 @@ public class AtracCodec {
             mem.copyToMemory(address, ByteBuffer.wrap(samplesBuffer, 0, bytes), bytes);
         }
 
-        return bytes / 4;
+        return bytes / bytesPerSample;
     }
 
     public void finish() {

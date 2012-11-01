@@ -81,7 +81,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
         }
 
         if (atracCodec != null) {
-	        int samples = atracCodec.atracDecodeData(atID, samplesAddr.getAddress());
+	        int samples = atracCodec.atracDecodeData(atID, samplesAddr.getAddress(), id.getAtracChannels());
         	if (sourceBytesConsumed < id.getSourceBufferLength()) {
         		// Not enough data in the channel or running soon out of data?
         		if (samples < id.getMaxSamples() || atracCodec.getChannelLength() < 0x8000) {

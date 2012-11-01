@@ -943,7 +943,7 @@ public class sceAtrac3plus extends HLEModule {
         	result = SceKernelErrors.ERROR_ATRAC_BUFFER_IS_EMPTY;
         	end = 0;
         } else if (atracCodec != null) {
-            samples = atracCodec.atracDecodeData(atID, samplesAddr.getAddress());
+            samples = atracCodec.atracDecodeData(atID, samplesAddr.getAddress(), id.getAtracChannels());
             if (samples < 0) {
                 // Not using decoded data.
                 if (log.isDebugEnabled()) {

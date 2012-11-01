@@ -53,7 +53,7 @@ public class SampleSourceAtrac3 implements ISampleSource {
 	}
 
 	private void decode() {
-		bufferedSamples = codec.atracDecodeData(id.getAtracId(), buffer);
+		bufferedSamples = codec.atracDecodeData(id.getAtracId(), buffer, id.getAtracChannels());
 
 		if (id.getInputFileOffset() < id.getInputFileSize()) {
 			int requestedSize = min(id.getInputFileSize() - id.getInputFileOffset(), id.getInputBufferSize());

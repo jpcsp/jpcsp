@@ -638,6 +638,10 @@ public class Utilities {
     	       (read8(buffer, offset));
     }
 
+    public static int readUnaligned16(byte[] buffer, int offset) {
+    	return (read8(buffer, offset + 1) << 8) | read8(buffer, offset);
+    }
+
     public static void writeUnaligned32(Memory mem, int address, int data) {
         switch (address & 3) {
             case 0:
