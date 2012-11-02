@@ -46,21 +46,16 @@ public class sceCcc extends HLEModule {
 	protected static final Charset charsetSJIS = Charset.forName("Shift_JIS");
 
 	protected static byte[] addByteToArray(byte[] array, byte b) {
-		byte[] newArray;
-		if (array == null) {
-			newArray = new byte[1];
-		} else {
-			newArray = new byte[array.length + 1];
-			System.arraycopy(array, 0, newArray, 0, array.length);
-		}
-		newArray[newArray.length - 1] = b;
+		byte[] newArray = new byte[array.length + 1];
+		System.arraycopy(array, 0, newArray, 0, array.length);
+		newArray[array.length] = b;
 
 		return newArray;
 	}
 
 	protected static byte[] getBytesUTF16(int addr) {
 		IMemoryReader memoryReader = MemoryReader.getMemoryReader(addr, 2);
-		byte[] bytes = null;
+		byte[] bytes = new byte[0];
 		while (true) {
 			int utf16 = memoryReader.readNext();
 			if (utf16 == 0) {
@@ -79,7 +74,7 @@ public class sceCcc extends HLEModule {
 
 	protected static byte[] getBytesUTF8(int addr) {
 		IMemoryReader memoryReader = MemoryReader.getMemoryReader(addr, 1);
-		byte[] bytes = null;
+		byte[] bytes = new byte[0];
 		while (true) {
 			int utf8 = memoryReader.readNext();
 			if (utf8 == 0) {
