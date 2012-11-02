@@ -43,6 +43,7 @@ public class sceCcc extends HLEModule {
 
 	protected static final Charset charsetUTF8 = Charset.forName("UTF-8");
 	protected static final Charset charsetUTF16 = Charset.forName("UTF-16LE");
+	protected static final Charset charsetSJIS = Charset.forName("Shift_JIS");
 
 	protected static byte[] addByteToArray(byte[] array, byte b) {
 		byte[] newArray;
@@ -92,6 +93,10 @@ public class sceCcc extends HLEModule {
 
 	protected static String getStringUTF8(int addr) {
 		return new String(getBytesUTF8(addr), charsetUTF8);
+	}
+
+	protected static String getStringSJIS(int addr) {
+		return new String(getBytesUTF8(addr), charsetSJIS);
 	}
 
 	protected void writeStringBytes(byte[] bytes, int addr, int maxSize) {
@@ -152,8 +157,13 @@ public class sceCcc extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0x4BDEB2A8, version = 150)
-	public int sceCccStrlenUTF16() {
-		return 0;
+	public int sceCccStrlenUTF16(TPointer strUTF16) {
+    	String str = getStringUTF16(strUTF16.getAddress());
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceCccStrlenUTF16 str='%s'", str));
+    	}
+
+    	return str.length();
 	}
 
     @HLEUnimplemented
@@ -224,14 +234,19 @@ public class sceCcc extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xB4D1CBBF, version = 150)
-	public int sceCccSetTable() {
+	public int sceCccSetTable(TPointer unknown1, TPointer unknown2) {
 		return 0;
 	}
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xB7D3C112, version = 150)
-	public int sceCccStrlenUTF8() {
-		return 0;
+	public int sceCccStrlenUTF8(TPointer strUTF8) {
+    	String str = getStringUTF16(strUTF8.getAddress());
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceCccStrlenUTF8 str='%s'", str));
+    	}
+
+    	return str.length();
 	}
 
     @HLEUnimplemented
@@ -254,8 +269,15 @@ public class sceCcc extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xBEB47224, version = 150)
-	public int sceCccSJIStoUTF16() {
-		return 0;
+	public int sceCccSJIStoUTF16(TPointer dstUTF16, int dstSize, TPointer srcSJIS) {
+    	String str = getStringSJIS(srcSJIS.getAddress());
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceCccSJIStoUTF16 str='%s'", str));
+    	}
+    	byte[] bytesUTF16 = str.getBytes(charsetUTF16);
+    	writeStringBytes(bytesUTF16, dstUTF16.getAddress(), dstSize);
+
+    	return bytesUTF16.length;
 	}
 
     @HLEUnimplemented
@@ -292,8 +314,13 @@ public class sceCcc extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xD9392CCB, version = 150)
-	public int sceCccStrlenSJIS() {
-		return 0;
+	public int sceCccStrlenSJIS(TPointer strSJIS) {
+    	String str = getStringUTF16(strSJIS.getAddress());
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceCccStrlenSJIS str='%s'", str));
+    	}
+
+    	return str.length();
 	}
 
 	@HLEFunction(nid = 0xE0CF8091, version = 150)
