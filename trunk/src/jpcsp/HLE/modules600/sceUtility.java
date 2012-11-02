@@ -19,7 +19,7 @@ package jpcsp.HLE.modules600;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 
-public class sceUtility extends jpcsp.HLE.modules303.sceUtility {
+public class sceUtility extends jpcsp.HLE.modules500.sceUtility {
     @HLEFunction(nid = 0x180F7B62, version = 600)
     public void sceUtilityGamedataInstallAbort(Processor processor) {
         gamedataInstallState.abort(processor);
