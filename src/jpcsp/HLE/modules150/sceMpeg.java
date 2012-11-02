@@ -2475,7 +2475,15 @@ public class sceMpeg extends HLEModule {
      */
     @HLEFunction(nid = 0x13407F13, version = 150, checkInsideInterrupt = true)
     public int sceMpegRingbufferDestruct(TPointer ringbufferAddr) {
-        return 0;
+    	if (mpegRingbuffer != null) {
+	    	mpegRingbuffer.read(ringbufferAddr);
+	    	mpegRingbuffer.reset();
+	    	mpegRingbuffer.write(ringbufferAddr);
+	    	mpegRingbuffer = null;
+	    	mpegRingbufferAddr = null;
+    	}
+
+    	return 0;
     }
 
     /**
