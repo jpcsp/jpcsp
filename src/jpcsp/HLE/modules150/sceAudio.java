@@ -227,6 +227,9 @@ public class sceAudio extends HLEModule {
 
     public int checkChannel(int channel) {
     	if (channel < 0 || channel >= PSP_AUDIO_CHANNEL_MAX) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Invalid channel number %d", channel));
+    		}
     		throw new SceKernelErrorException(SceKernelErrors.ERROR_AUDIO_INVALID_CHANNEL);
     	}
 
@@ -236,6 +239,9 @@ public class sceAudio extends HLEModule {
     public int checkReservedChannel(int channel) {
     	channel = checkChannel(channel);
     	if (!pspPCMChannels[channel].isReserved()) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Channel not reserved %d", channel));
+    		}
     		throw new SceKernelErrorException(SceKernelErrors.ERROR_AUDIO_CHANNEL_NOT_INIT);
     	}
 
@@ -437,7 +443,7 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0xB011922F, version = 150, checkInsideInterrupt = true)
-    public int sceAudioGetChannelRestLength(@CheckArgument("checkReservedChannel") int channel) {
+    public int sceAudioGetChannelRestLength(@CheckArgument("checkChannel") int channel) {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sceAudioGetChannelRestLength channel=%d", channel));
     	}
@@ -627,7 +633,7 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0xE9D97901, version = 150, checkInsideInterrupt = true)
-    public int sceAudioGetChannelRestLen(@CheckArgument("checkReservedChannel") int channel) {
+    public int sceAudioGetChannelRestLen(@CheckArgument("checkChannel") int channel) {
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sceAudioGetChannelRestLen channel=%d", channel));
     	}
