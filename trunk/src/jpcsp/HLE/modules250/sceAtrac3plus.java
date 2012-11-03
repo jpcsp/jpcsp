@@ -34,7 +34,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         }
 
     	AtracID id = atracIDs.get(atID);
-        outputChannelAddr.setValue(id.getAtracChannels());
+        outputChannelAddr.setValue(id.getAtracOutputChannels());
 
         return 0;
     }
@@ -87,6 +87,10 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
 
         AtracID id = atracIDs.get(atID);
         id.setData(MOutHalfBuffer.getAddress(), readSize, MOutHalfBufferSize, false);
+        if (id.getAtracChannels() == 1) {
+        	// Set Mono output
+        	id.setAtracOutputChannels(1);
+        }
 
         return 0;
     }
@@ -114,7 +118,12 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
     	int codecType = getCodecType(MOutHalfBuffer.getAddress());
         int atID = hleCreateAtracID(codecType);
         if (atracIDs.containsKey(atID)) {
-            atracIDs.get(atID).setData(MOutHalfBuffer.getAddress(), readSize, MOutHalfBufferSize, false);
+        	AtracID id = atracIDs.get(atID);
+            id.setData(MOutHalfBuffer.getAddress(), readSize, MOutHalfBufferSize, false);
+            if (id.getAtracChannels() == 1) {
+            	// Set Mono output
+            	id.setAtracOutputChannels(1);
+            }
         }
 
         return atID;

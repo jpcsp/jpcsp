@@ -120,6 +120,7 @@ public class sceAtrac3plus extends HLEModule {
         // Sound data.
         protected int atracBitrate = 64;
         protected int atracChannels = 2;
+        protected int atracOutputChannels = 2;
         protected int atracSampleRate = 0xAC44;
         protected int atracBytesPerFrame = 0x0230;
         protected int atracEndSample;
@@ -163,11 +164,11 @@ public class sceAtrac3plus extends HLEModule {
             this.codecType = codecType;
             this.id = id;
             this.atracCodec = atracCodec;
-            if ((codecType == PSP_MODE_AT_3) && (Modules.sceAtrac3plusModule.atrac3Num < Modules.sceAtrac3plusModule.atrac3MaxIDsCount)) {
+            if (codecType == PSP_MODE_AT_3 && Modules.sceAtrac3plusModule.atrac3Num < Modules.sceAtrac3plusModule.atrac3MaxIDsCount) {
             	Modules.sceAtrac3plusModule.atrac3Num++;
                 maxSamples = 1024;
                 atracCodec.setAtracMaxSamples(maxSamples);
-            } else if ((codecType == PSP_MODE_AT_3_PLUS) && (Modules.sceAtrac3plusModule.atrac3plusNum < Modules.sceAtrac3plusModule.atrac3plusMaxIDsCount)) {
+            } else if (codecType == PSP_MODE_AT_3_PLUS && Modules.sceAtrac3plusModule.atrac3plusNum < Modules.sceAtrac3plusModule.atrac3plusMaxIDsCount) {
             	Modules.sceAtrac3plusModule.atrac3plusNum++;
                 maxSamples = 2048;
                 atracCodec.setAtracMaxSamples(maxSamples);
@@ -287,12 +288,15 @@ public class sceAtrac3plus extends HLEModule {
             			if (chunkSize >= 16) {
                             int compressionCode = mem.read16(currentAddr);
                             atracChannels = mem.read16(currentAddr + 2);
+                            // Atrac3 has always 2 output channels.
+                            // Atrac3+ has the same number of output channels as the number of channels in the input data.
+                            setAtracOutputChannels(codecType == PSP_MODE_AT_3_PLUS ? atracChannels : 2);
                             atracSampleRate = readUnaligned32(mem, currentAddr + 4);
                             atracBitrate = readUnaligned32(mem, currentAddr + 8);
                             atracBytesPerFrame = mem.read16(currentAddr + 12);
                             int hiBytesPerSample = mem.read16(currentAddr + 14);
                             if (log.isDebugEnabled()) {
-                                log.debug(String.format("WAVE format: magic=0x%08X('%s'), chunkSize=%d, compressionCode=0x%04X, channels=%d, sampleRate=%d, bitrate=%d, chunkAlign=%d, hiBytesPerSample=%d", chunkMagic, getStringFromInt32(chunkMagic), chunkSize, compressionCode, atracChannels, atracSampleRate, atracBitrate, atracBytesPerFrame, hiBytesPerSample));
+                                log.debug(String.format("WAVE format: magic=0x%08X('%s'), chunkSize=%d, compressionCode=0x%04X, channels=%d, outputChannels=%d, sampleRate=%d, bitrate=%d, chunkAlign=%d, hiBytesPerSample=%d", chunkMagic, getStringFromInt32(chunkMagic), chunkSize, compressionCode, atracChannels, atracOutputChannels, atracSampleRate, atracBitrate, atracBytesPerFrame, hiBytesPerSample));
                                 // Display rest of chunk as debug information
                                 StringBuilder restChunk = new StringBuilder();
                                 for (int i = 16; i < chunkSize; i++) {
@@ -309,8 +313,8 @@ public class sceAtrac3plus extends HLEModule {
             		}
             		case FACT_CHUNK_MAGIC: {
             			if (chunkSize >= 8) {
-                            atracEndSample = readUnaligned32(mem, currentAddr);
-                            atracSampleOffset = readUnaligned32(mem, currentAddr + 4); // The loop samples are offset by this value
+            				atracEndSample = readUnaligned32(mem, currentAddr);
+            				atracSampleOffset = readUnaligned32(mem, currentAddr + 4); // The loop samples are offset by this value
                             if (log.isDebugEnabled()) {
                             	log.debug(String.format("FACT Chunk: endSample=%d, sampleOffset=%d", atracEndSample, atracSampleOffset));
                             }
@@ -718,6 +722,14 @@ public class sceAtrac3plus extends HLEModule {
 		public void setLastDecodedSamples(int lastDecodedSamples) {
 			this.lastDecodedSamples = lastDecodedSamples;
 		}
+
+		public int getAtracOutputChannels() {
+			return atracOutputChannels;
+		}
+
+		public void setAtracOutputChannels(int atracOutputChannels) {
+			this.atracOutputChannels = atracOutputChannels;
+		}
     }
 
     private static class EnableConnectorSettingsListener extends AbstractBoolSettingsListener {
@@ -943,7 +955,7 @@ public class sceAtrac3plus extends HLEModule {
         	result = SceKernelErrors.ERROR_ATRAC_BUFFER_IS_EMPTY;
         	end = 0;
         } else if (atracCodec != null) {
-            samples = atracCodec.atracDecodeData(atID, samplesAddr.getAddress(), id.getAtracChannels());
+            samples = atracCodec.atracDecodeData(atID, samplesAddr.getAddress(), id.getAtracOutputChannels());
             if (samples < 0) {
                 // Not using decoded data.
                 if (log.isDebugEnabled()) {
