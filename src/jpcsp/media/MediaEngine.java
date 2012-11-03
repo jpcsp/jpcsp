@@ -200,14 +200,6 @@ public class MediaEngine {
     	return IPacket.make();
     }
 
-    public int getAudioChannels() {
-    	if (audioCoder == null || audioCoder.getChannels() <= 0) {
-    		return 2;
-    	}
-
-    	return audioCoder.getChannels();
-    }
-
     private boolean readAu(StreamState state, SceMpegAu au, int requiredAudioChannels) {
     	boolean successful = true;
     	if (state == null) {
@@ -901,7 +893,11 @@ public class MediaEngine {
     }
 
     private int convertSamplesMonoToStereo(byte[] buffer, int length) {
-    	// Convert mono audio samples (1 channel) to stereo (2 channels)
+		if (log.isDebugEnabled()) {
+			log.debug("Converting mono samples to stereo");
+		}
+
+		// Convert mono audio samples (1 channel) to stereo (2 channels)
     	int samplesSize = length << 1;
     	if (tempBuffer == null || samplesSize > tempBuffer.length) {
     		tempBuffer = new byte[samplesSize];
@@ -921,6 +917,10 @@ public class MediaEngine {
     }
 
     private int convertSamplesStereoToMono(byte[] buffer, int length) {
+		if (log.isDebugEnabled()) {
+			log.debug("Converting stereo samples to mono");
+		}
+
     	// Convert stereo audio samples (2 channels) to mono (1 channel)
     	int samplesSize = length >> 1;
     	if (tempBuffer == null || samplesSize > tempBuffer.length) {

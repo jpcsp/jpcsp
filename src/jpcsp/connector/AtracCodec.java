@@ -127,12 +127,6 @@ public class AtracCodec {
         samplesBuffer = new byte[atracMaxSamples * bytesPerSample];
     }
 
-    protected void checkBuffers() {
-    	if (checkMediaEngineState()) {
-    		setChannels(me.getAudioChannels());
-    	}
-    }
-
     protected void setChannels(int channels) {
     	if (channels != samplesChannels) {
     		samplesChannels = channels;
@@ -396,7 +390,7 @@ public class AtracCodec {
     				Memory.getInstance().memset(address, (byte) 0, samples * bytesPerSample); 
     			}
         	}
-        	checkBuffers();
+        	setChannels(channels);
             if (me.stepAudio(atracMaxSamples * bytesPerSample, channels)) {
             	samples = copySamplesToMem(address);
             }

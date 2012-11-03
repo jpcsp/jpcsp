@@ -80,8 +80,9 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
         	id.addStreamData(sourceAddr.getAddress(), sourceBytesConsumed);
         }
 
+    	int bytesPerSample = id.getAtracOutputChannels() << 1;
         if (atracCodec != null) {
-	        int samples = atracCodec.atracDecodeData(atID, samplesAddr.getAddress(), id.getAtracChannels());
+	        int samples = atracCodec.atracDecodeData(atID, samplesAddr.getAddress(), id.getAtracOutputChannels());
         	if (sourceBytesConsumed < id.getSourceBufferLength()) {
         		// Not enough data in the channel or running soon out of data?
         		if (samples < id.getMaxSamples() || atracCodec.getChannelLength() < 0x8000) {
@@ -94,22 +95,22 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
         	if (samples <= 1) {
 	        	samples = id.getMaxSamples();
 
-	        	int sampleBytes = samples * id.getAtracChannels() * 2;
+	        	int sampleBytes = samples * bytesPerSample;
 		        samplesAddr.clear(sampleBytes);
 	        } else if (samples > 0) {
 	        	id.setDecodedSamples(samples);
 
 	        	// Always return MaxSamples
 	        	if (samples < id.getMaxSamples()) {
-	    	        int sampleBytes = samples * id.getAtracChannels() * 2;
+	    	        int sampleBytes = samples * bytesPerSample;
 	        		int fillSamples = id.getMaxSamples() - samples;
-	        		int fillSampleBytes = fillSamples * id.getAtracChannels() * 2;
+	        		int fillSampleBytes = fillSamples * bytesPerSample;
 	        		samplesAddr.clear(sampleBytes, fillSampleBytes);
 	        		samples = id.getMaxSamples();
 	        	}
 	        }
 
-	        int sampleBytes = samples * id.getAtracChannels() * 2;
+	        int sampleBytes = samples * bytesPerSample;
 	        sampleBytesAddr.setValue(sampleBytes);
 
 	        if (log.isDebugEnabled()) {
@@ -120,7 +121,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
 	        }
         } else {
 	        int samples = id.getMaxSamples();
-	        int sampleBytes = samples * id.getAtracChannels() * 2;
+	        int sampleBytes = samples * bytesPerSample;
 	        sampleBytesAddr.setValue(sampleBytes);
 	        // Return empty samples
 	        samplesAddr.clear(sampleBytes);
