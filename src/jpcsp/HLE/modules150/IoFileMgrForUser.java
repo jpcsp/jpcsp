@@ -2439,6 +2439,10 @@ public class IoFileMgrForUser extends HLEModule {
                                 int hashOffset = decryptedHeader.get(7);
                                 if (log.isDebugEnabled()) {
                                 	log.debug(String.format("PGD dataSize=%d, chunkSize=%d, hashOffset=%d", dataSize, chunkSize, hashOffset));
+                                	if (log.isTraceEnabled()) {
+                                		log.trace(String.format("PGD Header: %s", Utilities.getMemoryDump(inBuf, 0, pgdHeaderSize)));
+                                		log.trace(String.format("Decrypted PGD Header: %s", Utilities.getMemoryDump(headerBufDec, 0, headerBufDec.length)));
+                                	}
                                 }
 
                                 long fileLength = (info.vFile != null) ? info.vFile.length() : info.readOnlyFile.length();

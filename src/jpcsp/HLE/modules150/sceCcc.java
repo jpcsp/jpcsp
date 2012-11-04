@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import java.nio.charset.Charset;
+import java.util.SortedMap;
 
 import org.apache.log4j.Logger;
 
@@ -41,9 +42,26 @@ public class sceCcc extends HLEModule {
 		return "sceCcc";
 	}
 
-	protected static final Charset charsetUTF8 = Charset.forName("UTF-8");
-	protected static final Charset charsetUTF16 = Charset.forName("UTF-16LE");
-	protected static final Charset charsetSJIS = Charset.forName("Shift_JIS");
+	protected static final Charset charsetUTF8 = getCharset("UTF-8");
+	protected static final Charset charsetUTF16 = getCharset("UTF-16LE");
+	protected static final Charset charsetSJIS = getCharset("Shift_JIS");
+
+	protected static Charset getCharset(String charsetName) {
+		if (!Charset.isSupported(charsetName)) {
+			log.warn(String.format("Charset not supported by this JVM: %s", charsetName));
+			if (log.isInfoEnabled()) {
+				SortedMap<String, Charset> availableCharsets = Charset.availableCharsets();
+				log.info("Supported Charsets:");
+				for (String availableCharsetName : availableCharsets.keySet()) {
+					log.info(availableCharsetName);
+				}
+			}
+
+			return Charset.defaultCharset();
+		}
+
+		return Charset.forName(charsetName);
+	}
 
 	protected static byte[] addByteToArray(byte[] array, byte b) {
 		byte[] newArray = new byte[array.length + 1];
