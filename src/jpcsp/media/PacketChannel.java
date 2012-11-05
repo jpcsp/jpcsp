@@ -69,6 +69,10 @@ public class PacketChannel extends FIFOByteBuffer implements IURLProtocolHandler
 		totalStreamSize = -1;
 	}
 
+	public void reset() {
+		super.clear();
+	}
+
 	@Override
 	public boolean isStreamed(String url, int flags) {
 		// We support seeking
@@ -88,14 +92,14 @@ public class PacketChannel extends FIFOByteBuffer implements IURLProtocolHandler
 		if (size > 0) {
 			readSize = readByteBuffer(ByteBuffer.wrap(buf, 0, size));
 			if (readSize > 0) {
-				readLength += readSize;
-				position += readSize;
 				if (log.isDebugEnabled()) {
-					log.debug(String.format("PacketChannel: read %d/%d bytes", readSize, size));
+					log.debug(String.format("PacketChannel: read %d/%d bytes, position=%d", readSize, size, position));
 					if (log.isTraceEnabled()) {
 						log.trace(Utilities.getMemoryDump(buf, 0, readSize));
 					}
 				}
+				readLength += readSize;
+				position += readSize;
 			} else {
 				log.debug("PacketChannel: End of data");
 			}

@@ -460,7 +460,7 @@ public class AtracCodec {
     	if (atracChannel == null) {
     		return;
     	}
-    	atracChannel.clear();
+    	atracChannel.reset();
     }
 
     public int getAtracEnd() {
