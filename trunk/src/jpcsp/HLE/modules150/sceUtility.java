@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
@@ -964,10 +966,10 @@ public class sceUtility extends HLEModule {
 	                    mem.write32(buffer5Addr + 16, saveFileNumEntries);
 	                    mem.write32(buffer5Addr + 20, systemFileNumEntries);
 
-	                    if(entries == null) {
+	                    if (entries == null) {
 	                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
 	                    } else {
-	                        savedataParams.base.result = 0;
+                            savedataParams.base.result = 0;
 	                    }
 	                }
 	                break;
@@ -2434,86 +2436,34 @@ public class sceUtility extends HLEModule {
     }
 
     @HLEFunction(nid = 0x45C18506, version = 150)
-    public void sceUtilitySetSystemParamInt(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
+    public int sceUtilitySetSystemParamInt(int id, int value) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceUtilitySetSystemParamInt id=%d, value=%d", id, value));
+    	}
 
-        int id = cpu._a0;
-        int value_addr = cpu._a1;
-
-        if (!Memory.isAddressGood(value_addr)) {
-            log.warn("sceUtilitySetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") bad address");
-            cpu._v0 = -1;
-        } else {
-            log.debug("sceUtilitySetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ")");
-
-            cpu._v0 = 0;
-            switch (id) {
-                case PSP_SYSTEMPARAM_ID_INT_ADHOC_CHANNEL:
-                    Settings.getInstance().writeInt(SYSTEMPARAM_SETTINGS_OPTION_ADHOC_CHANNEL, mem.read32(value_addr));
-                    break;
-
-                case PSP_SYSTEMPARAM_ID_INT_WLAN_POWERSAVE:
-                    Settings.getInstance().writeInt(SYSTEMPARAM_SETTINGS_OPTION_WLAN_POWER_SAVE, mem.read32(value_addr));
-                    break;
-
-                case PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT:
-                    Settings.getInstance().writeInt(SYSTEMPARAM_SETTINGS_OPTION_DATE_FORMAT, mem.read32(value_addr));
-                    break;
-
-                case PSP_SYSTEMPARAM_ID_INT_TIME_FORMAT:
-                    Settings.getInstance().writeInt(SYSTEMPARAM_SETTINGS_OPTION_TIME_FORMAT, mem.read32(value_addr));
-                    break;
-
-                case PSP_SYSTEMPARAM_ID_INT_TIMEZONE:
-                    Settings.getInstance().writeInt(SYSTEMPARAM_SETTINGS_OPTION_TIME_ZONE, mem.read32(value_addr));
-                    break;
-
-                case PSP_SYSTEMPARAM_ID_INT_DAYLIGHTSAVINGS:
-                    Settings.getInstance().writeInt(SYSTEMPARAM_SETTINGS_OPTION_DAYLIGHT_SAVING_TIME, mem.read32(value_addr));
-                    break;
-
-                case PSP_SYSTEMPARAM_ID_INT_LANGUAGE:
-                    Settings.getInstance().writeInt(SYSTEMPARAM_SETTINGS_OPTION_LANGUAGE, mem.read32(value_addr));
-                    break;
-
-                case PSP_SYSTEMPARAM_ID_INT_BUTTON_PREFERENCE:
-                    Settings.getInstance().writeInt(SYSTEMPARAM_SETTINGS_OPTION_BUTTON_PREFERENCE, mem.read32(value_addr));
-                    break;
-
-                default:
-                    log.warn("UNIMPLEMENTED: sceUtilitySetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") unhandled id");
-                    cpu._v0 = -1;
-                    break;
-            }
+        switch (id) {
+            case PSP_SYSTEMPARAM_ID_INT_ADHOC_CHANNEL:
+            	if (value != 0 && value != 1 && value != 6 && value != 11) {
+            		return SceKernelErrors.ERROR_UTILITY_INVALID_ADHOC_CHANNEL;
+            	}
+                Settings.getInstance().writeInt(SYSTEMPARAM_SETTINGS_OPTION_ADHOC_CHANNEL, value);
+                break;
+            case PSP_SYSTEMPARAM_ID_INT_WLAN_POWERSAVE:
+                Settings.getInstance().writeInt(SYSTEMPARAM_SETTINGS_OPTION_WLAN_POWER_SAVE, value);
+                break;
+            default:
+            	// PSP can only set above int parameters
+            	return SceKernelErrors.ERROR_UTILITY_INVALID_SYSTEM_PARAM_ID;
         }
+
+        return 0;
     }
 
+    @HLELogging(level="info")
     @HLEFunction(nid = 0x41E30674, version = 150)
-    public void sceUtilitySetSystemParamString(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu._a0;
-        int str_addr = cpu._a1;
-
-        if (!Memory.isAddressGood(str_addr)) {
-            log.warn("sceUtilitySetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ") bad address");
-            cpu._v0 = -1;
-        } else {
-            log.debug("sceUtilitySetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ")");
-
-            cpu._v0 = 0;
-            switch (id) {
-                case PSP_SYSTEMPARAM_ID_STRING_NICKNAME:
-                    Settings.getInstance().writeString(SYSTEMPARAM_SETTINGS_OPTION_NICKNAME, Utilities.readStringZ(str_addr));
-                    break;
-
-                default:
-                    log.warn("UNIMPLEMENTED: sceUtilitySetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ") unhandled id");
-                    cpu._v0 = -1;
-                    break;
-            }
-        }
+    public int sceUtilitySetSystemParamString(int id, int string) {
+    	// Always return ERROR_UTILITY_INVALID_SYSTEM_PARAM_ID
+    	return SceKernelErrors.ERROR_UTILITY_INVALID_SYSTEM_PARAM_ID;
     }
 
     @HLEFunction(nid = 0xA5DA2406, version = 150)
