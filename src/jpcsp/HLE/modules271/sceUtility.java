@@ -14,7 +14,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules271;
 
 import jpcsp.HLE.HLEFunction;
@@ -27,7 +26,7 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
 
-public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
+public class sceUtility extends jpcsp.HLE.modules260.sceUtility {
 
     public static final String[] utilityAvModuleNames = new String[] {
         "PSP_AV_MODULE_AVCODEC",
@@ -171,11 +170,6 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         log.info(String.format("sceUtilityUnloadAvModule(module=0x%04X) %s unloaded", module, moduleName));
 
         cpu._v0 = hleUtilityUnloadAvModule(module);
-    }
-
-    @HLEFunction(nid = 0x4928BD96, version = 270, checkInsideInterrupt = true)
-    public void sceUtilityMsgDialogAbort(Processor processor) {
-        msgDialogState.abort(processor);
     }
 
     @HLEFunction(nid = 0x0D5BC6D2, version = 270, checkInsideInterrupt = true)

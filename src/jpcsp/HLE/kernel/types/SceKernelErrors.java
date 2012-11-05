@@ -271,6 +271,9 @@ public class SceKernelErrors {
     public static final int ERROR_UTILITY_WRONG_TYPE                            = 0x80110005;
     public static final int ERROR_UTILITY_MODULE_NOT_FOUND                      = 0x80110006;
 
+    public static final int ERROR_UTILITY_INVALID_SYSTEM_PARAM_ID               = 0x80110103;
+    public static final int ERROR_UTILITY_INVALID_ADHOC_CHANNEL                 = 0x80110104;
+
     public static final int ERROR_SAVEDATA_LOAD_NO_MEMSTICK                     = 0x80110301;
     public static final int ERROR_SAVEDATA_LOAD_MEMSTICK_REMOVED                = 0x80110302;
     public static final int ERROR_SAVEDATA_LOAD_ACCESS_ERROR                    = 0x80110305;
