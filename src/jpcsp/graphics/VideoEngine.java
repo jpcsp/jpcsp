@@ -4080,6 +4080,10 @@ public class VideoEngine {
     private void executeCommandCTST() {
     	context.colorTestFunc = normalArgument & 3;
         re.setColorTestFunc(context.colorTestFunc);
+ 
+        if (isLogDebugEnabled) {
+        	log.debug(String.format("sceGuColorFunc colorTestFunc=%d", context.colorTestFunc));
+        }
     }
 
     private void executeCommandCREF() {
@@ -4087,6 +4091,10 @@ public class VideoEngine {
     	context.colorTestRef[1] = (normalArgument >> 8) & 0xFF;
     	context.colorTestRef[2] = (normalArgument >> 16) & 0xFF;
         re.setColorTestReference(context.colorTestRef);
+        
+        if (isLogDebugEnabled) {
+        	log.debug(String.format("sceGuColorFunc colorTestRef=0x%06X", normalArgument));
+        }
     }
 
     private void executeCommandCMSK() {
@@ -4094,6 +4102,10 @@ public class VideoEngine {
         context.colorTestMsk[1] = (normalArgument >> 8) & 0xFF;
         context.colorTestMsk[2] = (normalArgument >> 16) & 0xFF;
         re.setColorTestMask(context.colorTestMsk);
+        
+        if (isLogDebugEnabled) {
+        	log.debug(String.format("sceGuColorFunc colorTestMsk=0x%06X", normalArgument));
+        }
     }
 
     private void executeCommandATST() {
