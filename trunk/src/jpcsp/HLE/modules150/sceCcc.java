@@ -112,7 +112,7 @@ public class sceCcc extends HLEModule {
 		return new String(getBytesUTF8(addr), charsetSJIS);
 	}
 
-	protected void writeStringBytes(byte[] bytes, int addr, int maxSize) {
+	protected void writeStringBytes(byte[] bytes, int addr, int maxSize, int trailingNulls) {
 		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, 1);
 		if (bytes != null) {
 			int length = Math.min(bytes.length, maxSize - 1);
@@ -122,7 +122,9 @@ public class sceCcc extends HLEModule {
 		}
 
 		// write trailing '\0'
-		memoryWriter.writeNext(0);
+		for (int i = 0; i < trailingNulls; i++) {
+			memoryWriter.writeNext(0);
+		}
 		memoryWriter.flush();
 	}
 
@@ -163,12 +165,11 @@ public class sceCcc extends HLEModule {
 			log.debug(String.format("sceCccUTF16toUTF8 string='%s'", dstString));
 		}
 		byte[] dstBytes = dstString.getBytes(charsetUTF8);
-		writeStringBytes(dstBytes, dstAddr.getAddress(), dstSize);
+		writeStringBytes(dstBytes, dstAddr.getAddress(), dstSize, 1);
 
 		return dstBytes.length;
 	}
 
-    @HLEUnimplemented
 	@HLEFunction(nid = 0x4BDEB2A8, version = 150)
 	public int sceCccStrlenUTF16(TPointer strUTF16) {
     	String str = getStringUTF16(strUTF16.getAddress());
@@ -247,7 +248,8 @@ public class sceCcc extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xB4D1CBBF, version = 150)
-	public int sceCccSetTable(TPointer unknown1, TPointer unknown2) {
+	public int sceCccSetTable(TPointer jis2ucs, TPointer ucs2jis) {
+    	// Both tables jis2ucs and ucs2jis have a size of 0x20000 bytes
 		return 0;
 	}
 
@@ -280,7 +282,6 @@ public class sceCcc extends HLEModule {
 		return 0;
 	}
 
-    @HLEUnimplemented
 	@HLEFunction(nid = 0xBEB47224, version = 150)
 	public int sceCccSJIStoUTF16(TPointer dstUTF16, int dstSize, TPointer srcSJIS) {
     	String str = getStringSJIS(srcSJIS.getAddress());
@@ -288,7 +289,7 @@ public class sceCcc extends HLEModule {
     		log.debug(String.format("sceCccSJIStoUTF16 str='%s'", str));
     	}
     	byte[] bytesUTF16 = str.getBytes(charsetUTF16);
-    	writeStringBytes(bytesUTF16, dstUTF16.getAddress(), dstSize);
+    	writeStringBytes(bytesUTF16, dstUTF16.getAddress(), dstSize, 2);
 
     	return bytesUTF16.length;
 	}

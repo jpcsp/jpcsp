@@ -64,10 +64,12 @@ public class ModuleMgrForUser extends HLEModule {
         mpegbase,
         sceMpegbase_Driver,
         pspnet_adhoc_download,
+        pspnet_adhoc_auth,
         pspnet_ap_dialog_dummy,
         sceNetApDialogDummy_Library,
         libparse_uri,
-        libparse_http
+        libparse_http,
+        memab
     }
 
     public static final int loadHLEModuleDelay = 1000; // 1 ms delay

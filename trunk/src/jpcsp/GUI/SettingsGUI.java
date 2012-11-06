@@ -565,7 +565,7 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         adhocChannelLabel.setText(Resource.get("adhocChannel"));
 
-        adhocChannelBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Auto", "1", "2", "3", "4" }));
+        adhocChannelBox.setModel(new javax.swing.DefaultComboBoxModel(getSysparamAdhocChannels()));
 
         timezoneLabel.setText(Resource.get("timezone"));
 
