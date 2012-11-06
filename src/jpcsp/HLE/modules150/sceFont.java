@@ -576,7 +576,11 @@ public class sceFont extends HLEModule {
             readFuncAddr = params.getValue32(28);
             seekFuncAddr = params.getValue32(32);
             errorFuncAddr = params.getValue32(36);
-            ioFinishFuncAddr = params.getValue32(42);
+            ioFinishFuncAddr = params.getValue32(40);
+
+            if (log.isDebugEnabled()) {
+            	log.debug(String.format("userDataAddr 0x%08X, numFonts=%d, cacheDataAddr=0x%08X, allocFuncAddr=0x%08X, freeFuncAddr=0x%08X, openFuncAddr=0x%08X, closeFuncAddr=0x%08X, readFuncAddr=0x%08X, seekFuncAddr=0x%08X, errorFuncAddr=0x%08X, ioFinishFuncAddr=0x%08X", userDataAddr, numFonts, cacheDataAddr, allocFuncAddr, freeFuncAddr, openFuncAddr, closeFuncAddr, readFuncAddr, seekFuncAddr, errorFuncAddr, ioFinishFuncAddr));
+            }
         }
 
         public int getAltCharCode() {
@@ -726,7 +730,9 @@ public class sceFont extends HLEModule {
     public int sceFontOpenUserFile(int fontLibHandle, PspString fileName, int mode, @CanBeNull TErrorPointer32 errorCodePtr) {
         FontLib fontLib = getFontLib(fontLibHandle);
         errorCodePtr.setValue(0);
-        fontLib.triggerOpenCallback(fileName.getAddress(), errorCodePtr.getAddress());
+        if (fontLib.openFuncAddr != 0) {
+        	fontLib.triggerOpenCallback(fileName.getAddress(), errorCodePtr.getAddress());
+        }
 
         return fontLib.openFont(openFontFile(fileName.getString())).getHandle();
     }
