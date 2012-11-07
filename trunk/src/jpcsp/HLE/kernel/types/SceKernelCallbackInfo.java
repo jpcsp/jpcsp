@@ -73,6 +73,6 @@ public class SceKernelCallbackInfo extends pspAbstractMemoryMappedStructureVaria
 
 	@Override
 	public String toString() {
-		return String.format("name:'%s', thread:'%s', PC:%08X, $a0:%08X, $a1: %08X, $a2: %08X", name, Modules.ThreadManForUserModule.getThreadName(threadId), callback_addr, notifyCount, notifyArg, callback_arg_addr);
+		return String.format("uid:0x%X, name:'%s', thread:'%s', PC:%08X, $a0:%08X, $a1: %08X, $a2: %08X", uid, name, Modules.ThreadManForUserModule.getThreadName(threadId), callback_addr, notifyCount, notifyArg, callback_arg_addr);
 	}
 }

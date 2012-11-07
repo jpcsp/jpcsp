@@ -612,6 +612,17 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
     	return registeredCallbacks[type];
     }
 
+    public boolean deleteCallback(SceKernelCallbackInfo callback) {
+    	boolean deleted = false;
+    	for (int i = 0; i < registeredCallbacks.length; i++) {
+    		if (registeredCallbacks[i].removeCallback(callback) != null) {
+    			deleted = true;
+    		}
+    	}
+
+    	return deleted;
+    }
+
     public void setExitStatus(int exitStatus) {
     	this.exitStatus = exitStatus;
     	if (exitStatusAddr != null) {

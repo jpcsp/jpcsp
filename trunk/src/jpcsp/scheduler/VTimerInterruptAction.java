@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.scheduler;
 
-import jpcsp.HLE.Modules;
+import static jpcsp.HLE.modules150.ThreadManForUser.log;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelVTimerInfo;
@@ -34,8 +34,8 @@ public class VTimerInterruptAction implements IAction {
 		long now = Scheduler.getNow();
 
 		// Trigger interrupt
-		if (Modules.log.isDebugEnabled()) {
-			Modules.log.debug(String.format("Calling VTimer uid=%x, now=%d", sceKernelVTimerInfo.uid, now));
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Calling VTimer uid=0x%X, now=%d", sceKernelVTimerInfo.uid, now));
 		}
 
         sceKernelVTimerInfo.vtimerInterruptHandler = new VTimerInterruptHandler(sceKernelVTimerInfo);

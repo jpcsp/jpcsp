@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.scheduler;
 
 import jpcsp.Emulator;
+import static jpcsp.HLE.modules150.ThreadManForUser.log;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelVTimerInfo;
@@ -34,8 +35,8 @@ public class VTimerInterruptResultAction implements IAction {
 		ThreadManForUser timerManager = Modules.ThreadManForUserModule;
 
 		int vtimerInterruptResult = Emulator.getProcessor().cpu._v0;
-		if (Modules.log.isDebugEnabled()) {
-			Modules.log.debug("VTimer returned value " + vtimerInterruptResult);
+		if (log.isDebugEnabled()) {
+			log.debug("VTimer returned value " + vtimerInterruptResult);
 		}
 
 		if (vtimerInterruptResult == 0) {

@@ -154,7 +154,7 @@ import jpcsp.HLE.CheckArgument;;
  *                      The clock precision of 200us on the PSP can be observed here.
  */
 public class ThreadManForUser extends HLEModule {
-    protected static Logger log = Modules.getLogger("ThreadManForUser");
+    public static Logger log = Modules.getLogger("ThreadManForUser");
 
     @Override
     public String getName() {
@@ -1764,14 +1764,18 @@ public class ThreadManForUser extends HLEModule {
 
     /** @return true if successful. */
     public boolean hleKernelDeleteCallback(int uid) {
-        SceKernelCallbackInfo info = callbackMap.remove(uid);
-        boolean removed = info != null;
+        SceKernelCallbackInfo callback = callbackMap.remove(uid);
+        boolean removed = callback != null;
         if (removed) {
             if (log.isDebugEnabled()) {
-                log.debug("hleKernelDeleteCallback SceUID=" + Integer.toHexString(uid) + " name:'" + info.name + "'");
+                log.debug(String.format("hleKernelDeleteCallback %s", callback));
+            }
+            SceKernelThreadInfo thread = getThreadById(callback.threadId);
+            if (thread != null) {
+            	thread.deleteCallback(callback);
             }
         } else {
-            log.warn("hleKernelDeleteCallback not a callback uid 0x" + Integer.toHexString(uid));
+            log.warn(String.format("hleKernelDeleteCallback not a callback uid 0x%X", uid));
         }
 
         return removed;
@@ -2011,9 +2015,12 @@ public class ThreadManForUser extends HLEModule {
     }
 
     protected void scheduleVTimer(SceKernelVTimerInfo sceKernelVTimerInfo, long schedule) {
+    	// Remove any previous schedule
+        Scheduler.getInstance().removeAction(getVTimerScheduleForScheduler(sceKernelVTimerInfo), sceKernelVTimerInfo.vtimerInterruptAction);
+
         sceKernelVTimerInfo.schedule = schedule;
 
-        if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_RUNNING) {
+        if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_RUNNING && sceKernelVTimerInfo.handlerAddress != 0) {
             Scheduler scheduler = Scheduler.getInstance();
             scheduler.addAction(getVTimerScheduleForScheduler(sceKernelVTimerInfo), sceKernelVTimerInfo.vtimerInterruptAction);
         }
@@ -3087,9 +3094,7 @@ public class ThreadManForUser extends HLEModule {
         long schedule = scheduleAddr.getValue();
         sceKernelVTimerInfo.handlerAddress = handlerAddress.getAddress();
         sceKernelVTimerInfo.handlerArgument = handlerArgument;
-        if (!handlerAddress.isNull()) {
-            scheduleVTimer(sceKernelVTimerInfo, schedule);
-        }
+        scheduleVTimer(sceKernelVTimerInfo, schedule);
 
         return 0;
     }
@@ -3113,9 +3118,7 @@ public class ThreadManForUser extends HLEModule {
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         sceKernelVTimerInfo.handlerAddress = handlerAddress.getAddress();
         sceKernelVTimerInfo.handlerArgument = handlerArgument;
-        if (!handlerAddress.isNull()) {
-            scheduleVTimer(sceKernelVTimerInfo, schedule);
-        }
+        scheduleVTimer(sceKernelVTimerInfo, schedule);
 
         return 0;
     }
@@ -3604,7 +3607,7 @@ public class ThreadManForUser extends HLEModule {
             log.debug(String.format("sceKernelReferThreadStatus thread=%s, addr=%s", thread, ptr));
         }
 
-    	thread.write(ptr.getMemory(), ptr.getAddress());
+    	thread.write(ptr);
 
         return 0;
     }
