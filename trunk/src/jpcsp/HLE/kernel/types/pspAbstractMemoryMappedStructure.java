@@ -53,6 +53,10 @@ public abstract class pspAbstractMemoryMappedStructure {
     }
 
     public void setMaxSize(int maxSize) {
+    	// maxSize is an unsigned int
+    	if (maxSize < 0) {
+    		maxSize = Integer.MAX_VALUE;
+    	}
         this.maxSize = maxSize;
     }
 
