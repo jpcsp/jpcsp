@@ -192,10 +192,16 @@ public class sceCcc extends HLEModule {
 		return 0;
 	}
 
-    @HLEUnimplemented
 	@HLEFunction(nid = 0x6F82EE03, version = 150)
-	public int sceCccUTF8toSJIS() {
-		return 0;
+	public int sceCccUTF8toSJIS(TPointer dstAddr, int dstSize, TPointer srcAddr) {
+		String dstString = getStringUTF8(srcAddr.getAddress());
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceCccUTF8toSJIS string='%s'", dstString));
+		}
+		byte[] dstBytes = dstString.getBytes(charsetSJIS);
+		writeStringBytes(dstBytes, dstAddr.getAddress(), dstSize, 1);
+
+		return dstBytes.length;
 	}
 
     @HLEUnimplemented
