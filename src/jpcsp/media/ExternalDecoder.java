@@ -338,10 +338,19 @@ public class ExternalDecoder {
 
 		byte[] atracData;
 		if (length >= atracFileSize) {
-			// We have the complete atrac data available, no need to use the ioListener
-			atracData = new byte[atracFileSize];
-			// Copy the memory to the atracData
-			Utilities.putBuffer(ByteBuffer.wrap(atracData), Memory.getInstance().getBuffer(address, length), ByteOrder.LITTLE_ENDIAN, atracData.length);
+			// We have the complete atrac data available... in theory!
+			// Some games load a first part of the data and trigger an async read to read the rest of the data.
+			// At this point, the async read might not be completed.
+			// The PSP is obviously only using the beginning of the atrac data at the start,
+			// but here, we need the complete atrac data for decoding.
+			// So, try to use the data from the IO Listener.
+			atracData = ioListener.readFileData(address, length, atracFileSize, null);
+			if (atracData == null) {
+				// If the data cannot be found using the IO Listener, use the buffer data.
+				atracData = new byte[atracFileSize];
+				// Copy the memory to the atracData
+				Utilities.putBuffer(ByteBuffer.wrap(atracData), Memory.getInstance().getBuffer(address, length), ByteOrder.LITTLE_ENDIAN, atracData.length);
+			}
 		} else {
 			// We do not have the complete atrac data in memory, try to read
 			// the complete data from the UMD.
