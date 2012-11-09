@@ -45,6 +45,18 @@ public class sceCcc extends HLEModule {
 	protected static final Charset charsetUTF8 = getCharset("UTF-8");
 	protected static final Charset charsetUTF16 = getCharset("UTF-16LE");
 	protected static final Charset charsetSJIS = getCharset("Shift_JIS");
+	protected int errorCharUTF8;
+	protected int errorCharUTF16;
+	protected int errorCharSJIS;
+
+	@Override
+	public void stop() {
+		errorCharUTF8 = 0;
+		errorCharUTF16 = 0;
+		errorCharSJIS = 0;
+
+		super.stop();
+	}
 
 	protected static Charset getCharset(String charsetName) {
 		if (!Charset.isSupported(charsetName)) {
@@ -146,10 +158,12 @@ public class sceCcc extends HLEModule {
 		return 0;
 	}
 
-    @HLEUnimplemented
 	@HLEFunction(nid = 0x17E1D813, version = 150)
-	public int sceCccSetErrorCharUTF8() {
-		return 0;
+	public int sceCccSetErrorCharUTF8(int errorChar) {
+    	int previousErrorChar = errorCharUTF8;
+    	errorCharUTF8 = errorChar;
+
+    	return previousErrorChar;
 	}
 
     @HLEUnimplemented
@@ -270,10 +284,12 @@ public class sceCcc extends HLEModule {
     	return str.length();
 	}
 
-    @HLEUnimplemented
 	@HLEFunction(nid = 0xB8476CF4, version = 150)
-	public int sceCccSetErrorCharUTF16() {
-		return 0;
+	public int sceCccSetErrorCharUTF16(int errorChar) {
+    	int previousErrorChar = errorCharUTF16;
+    	errorCharUTF16 = errorChar;
+
+    	return previousErrorChar;
 	}
 
     @HLEUnimplemented
@@ -302,8 +318,11 @@ public class sceCcc extends HLEModule {
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xC56949AD, version = 150)
-	public int sceCccSetErrorCharSJIS() {
-		return 0;
+	public int sceCccSetErrorCharSJIS(int errorChar) {
+    	int previousErrorChar = errorCharSJIS;
+    	errorCharSJIS = errorChar;
+
+    	return previousErrorChar;
 	}
 
 	@HLEFunction(nid = 0xC6A8BEE2, version = 150)
