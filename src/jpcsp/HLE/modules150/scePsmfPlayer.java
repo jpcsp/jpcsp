@@ -107,11 +107,7 @@ public class scePsmfPlayer extends HLEModule {
     protected static final int PSMF_PLAYER_MODE_REWIND = 5;
 
     // PSMF Player stream type.
-    protected static final int PSMF_PLAYER_STREAM_AVC = sceMpeg.MPEG_AVC_STREAM;
-    protected static final int PSMF_PLAYER_STREAM_ATRAC = sceMpeg.MPEG_ATRAC_STREAM;
-    protected static final int PSMF_PLAYER_STREAM_PCM = sceMpeg.MPEG_PCM_STREAM;
     protected static final int PSMF_PLAYER_STREAM_VIDEO = 14;
-    protected static final int PSMF_PLAYER_STREAM_AUDIO = sceMpeg.MPEG_AUDIO_STREAM;
 
     // PSMF Player playback speed.
     protected static final int PSMF_PLAYER_SPEED_SLOW = 1;
@@ -287,9 +283,13 @@ public class scePsmfPlayer extends HLEModule {
     	}
     }
 
-    protected int hlePsmfPlayerSetPsmf(int psmfPlayer, PspString fileAddr, boolean doCallbacks) {
+    protected int hlePsmfPlayerSetPsmf(int psmfPlayer, PspString fileAddr, int offset, boolean doCallbacks) {
     	if (psmfPlayerStatus != PSMF_PLAYER_STATUS_INIT) {
     		return ERROR_PSMFPLAYER_NOT_INITIALIZED;
+    	}
+
+    	if (offset != 0) {
+    		log.warn(String.format("hlePsmfPlayerSetPsmf unimplemented offset=0x%X", offset));
     	}
 
     	pmfFilePath = fileAddr.getString();
@@ -364,12 +364,12 @@ public class scePsmfPlayer extends HLEModule {
 
     @HLEFunction(nid = 0x3D6D25A9, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerSetPsmf(@CheckArgument("checkPlayerInitialized") int psmfPlayer, PspString fileAddr) {
-    	return hlePsmfPlayerSetPsmf(psmfPlayer, fileAddr, false);
+    	return hlePsmfPlayerSetPsmf(psmfPlayer, fileAddr, 0, false);
     }
 
     @HLEFunction(nid = 0x58B83577, version = 150)
     public int scePsmfPlayerSetPsmfCB(@CheckArgument("checkPlayerInitialized") int psmfPlayer, PspString fileAddr) {
-    	return hlePsmfPlayerSetPsmf(psmfPlayer, fileAddr, true);
+    	return hlePsmfPlayerSetPsmf(psmfPlayer, fileAddr, 0, true);
     }
 
     @HLEFunction(nid = 0xE792CD94, version = 150, checkInsideInterrupt = true)
@@ -695,16 +695,14 @@ public class scePsmfPlayer extends HLEModule {
         return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x76C0F4AE, version = 150)
-    public int scePsmfPlayerSetPsmfOffset() {
-        return 0;
+    public int scePsmfPlayerSetPsmfOffset(@CheckArgument("checkPlayerInitialized") int psmfPlayer, PspString fileAddr, int offset) {
+    	return hlePsmfPlayerSetPsmf(psmfPlayer, fileAddr, offset, false);
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0xA72DB4F9, version = 150)
-    public int scePsmfPlayerSetPsmfOffsetCB() {
-        return 0;
+    public int scePsmfPlayerSetPsmfOffsetCB(@CheckArgument("checkPlayerInitialized") int psmfPlayer, PspString fileAddr, int offset) {
+    	return hlePsmfPlayerSetPsmf(psmfPlayer, fileAddr, offset, true);
     }
 
     @HLEUnimplemented
