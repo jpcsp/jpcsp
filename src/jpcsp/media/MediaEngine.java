@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 
+import jpcsp.Memory;
 import jpcsp.State;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.kernel.types.SceMpegAu;
@@ -631,8 +632,13 @@ public class MediaEngine {
             state.updateTimestamps();
             state.consume(decodedBytes);
 
-        	if (videoPicture.isComplete()) {
-            	if (videoConverter != null) {
+            // Xuggle 5.4 is not setting the first few frames of the video as complete.
+            // The PSP however can decode them as normal frame. Simulate the completion
+            // of the first frames of the video (until the first frame is really completed).
+            boolean simulateVideoPictureCompletion = getCurrentImg() == null;
+
+            if (videoPicture.isComplete() || simulateVideoPictureCompletion) {
+            	if (videoConverter != null && videoPicture.isComplete()) {
             		currentImg = videoConverter.toImage(videoPicture);
             	}
             	complete = true;
@@ -859,6 +865,7 @@ public class MediaEngine {
             decodedAudioSamples = null;
     	}
     	tempBuffer = null;
+    	currentImg = null;
     }
 
     /**
@@ -1025,6 +1032,8 @@ public class MediaEngine {
 	            }
                 memoryWriter.flush();
             }
+        } else {
+        	Memory.getInstance().memset(dest_addr, (byte) 0, videoPicture.getHeight() * frameWidth * bytesPerPixel);
         }
     }
 
