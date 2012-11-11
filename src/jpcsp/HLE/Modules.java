@@ -80,6 +80,7 @@ import jpcsp.HLE.modules.sceParseUri;
 import jpcsp.HLE.modules.sceUsb;
 import jpcsp.HLE.modules.sceUsbAcc;
 import jpcsp.HLE.modules.sceUsbCam;
+import jpcsp.HLE.modules.sceUsbMic;
 import jpcsp.HLE.modules.sceUtility;
 import jpcsp.HLE.modules.sceVaudio;
 import jpcsp.HLE.modules.sceWlan;
@@ -157,6 +158,7 @@ public class Modules {
     public static sceMt19937 sceMt19937Module = new sceMt19937();
     public static sceAac sceAacModule = new sceAac();
     public static sceFpu sceFpuModule = new sceFpu();
+    public static sceUsbMic sceUsbMicModule = new sceUsbMic();
 
     public static Logger log = Logger.getLogger("hle");
 

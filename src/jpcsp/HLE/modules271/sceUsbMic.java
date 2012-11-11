@@ -22,31 +22,56 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.TPointer;
 import jpcsp.HLE.modules.HLEModule;
 
 @HLELogging
-public class sceUsbAcc extends HLEModule {
-    public static Logger log = Modules.getLogger("sceUsbAcc");
+public class sceUsbMic extends HLEModule {
+	public static Logger log = Modules.getLogger("sceUsbMic");
 
 	@Override
 	public String getName() {
-		return "sceUsbAcc";
+		return "sceUsbMic";
 	}
 
 	@HLEUnimplemented
-	@HLEFunction(nid = 0x0CD7D4AA, version = 271)
-	public int sceUsbAccGetInfo(TPointer resultAddr) {
-		// resultAddr is pointing to an 8-byte area.
-		// Not sure about the content...
-		resultAddr.clear(8);
-
+	@HLEFunction(nid = 0x06128E42, version = 271)
+	public int sceUsbMicPollInputEnd() {
 		return 0;
 	}
 
 	@HLEUnimplemented
-	@HLEFunction(nid = 0x79A1C743, version = 271)
-	public int sceUsbAccGetAuthStat() {
+	@HLEFunction(nid = 0x2E6DCDCD, version = 271)
+	public int sceUsbMicInputBlocking() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x45310F07, version = 271)
+	public int sceUsbMicInputInitEx() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x5F7F368D, version = 271)
+	public int sceUsbMicInput() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x63400E20, version = 271)
+	public int sceUsbMicGetInputLength() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xB8E536EB, version = 271)
+	public int sceUsbMicInputInit() {
+		return 0;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xF899001C, version = 271)
+	public int sceUsbMicWaitInputEnd() {
 		return 0;
 	}
 }
