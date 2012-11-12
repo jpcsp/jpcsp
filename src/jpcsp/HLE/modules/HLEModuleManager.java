@@ -136,11 +136,11 @@ public class HLEModuleManager {
         scePauth(Modules.scePauthModule),
         sceMd5(Modules.sceMd5Module, new String[] { "libmd5" }),
         sceParseUri(Modules.sceParseUriModule, new String[] { "libhttp_rfc", "PSP_NET_MODULE_HTTP", "PSP_MODULE_NET_HTTP" }),
-        sceUsbAcc(Modules.sceUsbAccModule, new String[] { "PSP_MODULE_USB_MIC" }),
+        sceUsbAcc(Modules.sceUsbAccModule, new String[] { "PSP_USB_MODULE_ACC" }),
         sceMt19937(Modules.sceMt19937Module, new String[] { "libmt19937" }),
-        sceAac(Modules.sceAacModule, new String[] { "libaac", "PSP_MODULE_AV_AAC" }),
+        sceAac(Modules.sceAacModule, new String[] { "libaac", "PSP_AV_MODULE_AAC", "PSP_MODULE_AV_AAC" }),
         sceFpu(Modules.sceFpuModule, new String[] { "libfpu" }),
-        sceUsbMic(Modules.sceUsbMicModule, new String[] { "usbmic" }),
+        sceUsbMic(Modules.sceUsbMicModule, new String[] { "usbmic", "PSP_USB_MODULE_MIC", "PSP_MODULE_USB_MIC" }),
         sceAudioRouting(Modules.sceAudioRoutingModule);
 
     	private HLEModule module;

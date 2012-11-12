@@ -17,17 +17,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules271;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+
 import java.util.HashMap;
 
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
 
+@HLELogging
 public class sceUtility extends jpcsp.HLE.modules260.sceUtility {
-
     public static final String[] utilityAvModuleNames = new String[] {
         "PSP_AV_MODULE_AVCODEC",
         "PSP_AV_MODULE_SASCORE",
@@ -139,56 +139,35 @@ public class sceUtility extends jpcsp.HLE.modules260.sceUtility {
         }
     }
 
+    @HLELogging(level="info")
     @HLEFunction(nid = 0xC629AF26, version = 270, checkInsideInterrupt = true)
-    public void sceUtilityLoadAvModule(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int module = cpu._a0;
-
-        
-
+    public int sceUtilityLoadAvModule(int module) {
         String moduleName = getAvModuleName(module);
         int result = hleUtilityLoadAvModule(module, moduleName);
-        if(result == SceKernelErrors.ERROR_AV_MODULE_BAD_ID) {
+        if (result == SceKernelErrors.ERROR_AV_MODULE_BAD_ID) {
             log.info(String.format("IGNORING: sceUtilityLoadAvModule(module=0x%04X) %s", module, moduleName));
-            result = 0;
-        } else {
-            log.info(String.format("sceUtilityLoadAvModule(module=0x%04X) %s loaded", module, moduleName));
+            return 0;
         }
-        cpu._v0 = result;
+
+        return result;
     }
 
+    @HLELogging(level="info")
     @HLEFunction(nid = 0xF7D8D092, version = 270, checkInsideInterrupt = true)
-    public void sceUtilityUnloadAvModule(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int module = cpu._a0;
-
-        
-
-        String moduleName = getAvModuleName(module);
-        log.info(String.format("sceUtilityUnloadAvModule(module=0x%04X) %s unloaded", module, moduleName));
-
-        cpu._v0 = hleUtilityUnloadAvModule(module);
+    public int sceUtilityUnloadAvModule(int module) {
+        return hleUtilityUnloadAvModule(module);
     }
 
+    @HLELogging(level="info")
     @HLEFunction(nid = 0x0D5BC6D2, version = 270, checkInsideInterrupt = true)
-    public void sceUtilityLoadUsbModule(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int module = cpu._a0;
-
-        
-
+    public int sceUtilityLoadUsbModule(int module) {
         String moduleName = getUsbModuleName(module);
         int result = hleUtilityLoadUsbModule(module, moduleName);
         if (result == SceKernelErrors.ERROR_AV_MODULE_BAD_ID) {
             log.info(String.format("IGNORING: sceUtilityLoadUsbModule(module=0x%04X) %s", module, moduleName));
-            result = 0;
-        } else {
-            log.info(String.format("sceUtilityLoadUsbModule(module=0x%04X) %s loaded", module, moduleName));
+            return 0;
         }
-        cpu._v0 = result;
-    }
 
+        return result;
+    }
 }
