@@ -16,5 +16,5 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-public class sceUsbMic extends jpcsp.HLE.modules271.sceUsbMic {
+public class sceUsbMic extends jpcsp.HLE.modules260.sceUsbMic {
 }
