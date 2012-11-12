@@ -16,6 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.IntBuffer;
+
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
@@ -30,12 +34,19 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.hardware.Audio;
 import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
+import jpcsp.memory.MemoryWriter;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.sound.AudioBlockingOutputAction;
 import jpcsp.sound.SoundChannel;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
+import org.lwjgl.openal.AL10;
+import org.lwjgl.openal.ALC10;
+import org.lwjgl.openal.ALC11;
+import org.lwjgl.openal.ALCdevice;
 
 public class sceAudio extends HLEModule {
     public static Logger log = Modules.getLogger("sceAudio");
@@ -80,6 +91,17 @@ public class sceAudio extends HLEModule {
         super.start();
 	}
 
+	@Override
+	public void stop() {
+		if (inputDevice != null) {
+			ALC11.alcCaptureCloseDevice(inputDevice);
+			inputDevice = null;
+		}
+		captureBuffer = null;
+
+		super.stop();
+	}
+
 	protected static final int PSP_AUDIO_VOLUME_MAX = 0x8000;
     protected static final int PSP_AUDIO_CHANNEL_MAX = 8;
     protected static final int PSP_AUDIO_SAMPLE_MIN = 64;
@@ -92,6 +114,29 @@ public class sceAudio extends HLEModule {
 
     protected boolean disableChReserve;
     protected boolean disableBlockingAudio;
+
+	protected ALCdevice inputDevice;
+	protected ByteBuffer captureBuffer;
+	protected IntBuffer samplesBuffer;
+
+	protected static class AudioBlockingInputAction implements IAction {
+		private int threadId;
+		private int addr;
+		private int samples;
+		private int frequency;
+
+		public AudioBlockingInputAction(int threadId, int addr, int samples, int frequency) {
+			this.threadId = threadId;
+			this.addr = addr;
+			this.samples = samples;
+			this.frequency = frequency;
+		}
+
+		@Override
+		public void execute() {
+			Modules.sceAudioModule.hleAudioBlockingInput(threadId, addr, samples, frequency);
+		}
+	}
 
     private void setChReserveEnabled(boolean enabled) {
         disableChReserve = !enabled;
@@ -248,7 +293,86 @@ public class sceAudio extends HLEModule {
     	return channel;
     }
 
-    @HLEUnimplemented
+	public void hleAudioBlockingInput(int threadId, int addr, int samples, int frequency) {
+		int availableSamples = hleAudioGetInputLength();
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("hleAudioBlockingInput available samples: %d from %d", availableSamples, samples));
+		}
+
+		if (availableSamples >= samples) {
+			int bufferBytes = samples << 1;
+			if (captureBuffer == null || captureBuffer.capacity() < bufferBytes) {
+				captureBuffer = ByteBuffer.allocateDirect(bufferBytes).order(ByteOrder.LITTLE_ENDIAN);
+			} else {
+				captureBuffer.rewind();
+			}
+
+			ALC11.alcCaptureSamples(inputDevice, captureBuffer, samples);
+
+			captureBuffer.rewind();
+			IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, samples, 2);
+			for (int i = 0; i < samples; i++) {
+				short sample = captureBuffer.getShort();
+				memoryWriter.writeNext(sample & 0xFFFF);
+			}
+
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("hleAudioBlockingInput returning %d samples: %s", samples, Utilities.getMemoryDump(addr, bufferBytes, 2, 16)));
+			}
+			Modules.ThreadManForUserModule.hleUnblockThread(threadId);
+		} else {
+			blockThreadInput(threadId, addr, samples, frequency, availableSamples);
+		}
+	}
+
+	public int hleAudioGetInputLength() {
+		if (samplesBuffer == null) {
+			samplesBuffer = ByteBuffer.allocateDirect(4).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer();
+		}
+
+		ALC10.alcGetInteger(inputDevice, ALC11.ALC_CAPTURE_SAMPLES, samplesBuffer);
+
+		return samplesBuffer.get(0);
+	}
+
+	protected int getUnblockInputDelayMicros(int availableSamples, int samples, int frequency) {
+		if (availableSamples >= samples) {
+			return 0;
+		}
+
+		int missingSamples = samples - availableSamples;
+		int delayMicros = (int) (missingSamples * 1000000L / frequency);
+
+		return delayMicros;
+	}
+
+	protected void blockThreadInput(int addr, int samples, int frequency) {
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        int threadId = threadMan.getCurrentThreadID();
+		threadMan.hleBlockCurrentThread();
+		blockThreadInput(threadId, addr, samples, frequency, hleAudioGetInputLength());
+	}
+
+	protected void blockThreadInput(int threadId, int addr, int samples, int frequency, int availableSamples) {
+		int delayMicros = getUnblockInputDelayMicros(availableSamples, samples, frequency);
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("blockThreadInput waiting %d micros", delayMicros));
+		}
+		Emulator.getScheduler().addAction(Emulator.getClock().microTime() + delayMicros, new AudioBlockingInputAction(threadId, addr, samples, frequency));
+	}
+
+	public int hleAudioInputBlocking(int maxSamples, int frequency, TPointer buffer) {
+		if (inputDevice == null) {
+			inputDevice = ALC11.alcCaptureOpenDevice(null, frequency, AL10.AL_FORMAT_MONO16, 10 * 1024);
+			ALC11.alcCaptureStart(inputDevice);
+		}
+
+		blockThreadInput(buffer.getAddress(), maxSamples, frequency);
+
+		return 0;
+	}
+
+	@HLEUnimplemented
     @HLEFunction(nid = 0x80F1F7E0, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
     public int sceAudioInit() {
         return 0;
@@ -592,8 +716,12 @@ public class sceAudio extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x086E5895, version = 150, checkInsideInterrupt = true)
-    public int sceAudioInputBlocking() {
-        return 0;
+    public int sceAudioInputBlocking(int maxSamples, int frequency, TPointer buffer) {
+		if (frequency != 44100 && frequency != 22050 && frequency != 11025) {
+			return SceKernelErrors.ERROR_AUDIO_INVALID_FREQUENCY;
+		}
+
+		return hleAudioInputBlocking(maxSamples, frequency, buffer);
     }
 
     @HLEUnimplemented
@@ -605,7 +733,7 @@ public class sceAudio extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xA708C6A6, version = 150, checkInsideInterrupt = true)
     public int sceAudioGetInputLength() {
-        return 0;
+        return hleAudioGetInputLength();
     }
 
     @HLEUnimplemented

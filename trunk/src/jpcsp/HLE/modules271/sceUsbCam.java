@@ -17,12 +17,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules271;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.TPointer;
+
 import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.pspUsbCamSetupMicParam;
 import jpcsp.HLE.kernel.types.pspUsbCamSetupStillExParam;
 import jpcsp.HLE.kernel.types.pspUsbCamSetupStillParam;
 import jpcsp.HLE.kernel.types.pspUsbCamSetupVideoExParam;
@@ -30,7 +34,7 @@ import jpcsp.HLE.kernel.types.pspUsbCamSetupVideoParam;
 import jpcsp.HLE.modules.HLEModule;
 
 public class sceUsbCam extends HLEModule {
-    protected static Logger log = Modules.getLogger("sceUsbCam");
+    public static Logger log = Modules.getLogger("sceUsbCam");
 
 	@Override
 	public String getName() {
@@ -140,6 +144,8 @@ public class sceUsbCam extends HLEModule {
 	protected int zoom;
 	protected boolean autoImageReverseSW;
 	protected boolean lensDirectionAtYou;
+	protected int micFrequency;
+	protected int micGain;
 
 	/**
 	 * Convert a value PSP_USBCAM_RESOLUTION_EX_*
@@ -266,23 +272,17 @@ public class sceUsbCam extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0x03ED7A82, version = 271)
-	public void sceUsbCamSetupMic(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceUsbCamSetupMic(pspUsbCamSetupMicParam camSetupMicParam, TPointer workArea, int workAreaSize) {
+		micFrequency = camSetupMicParam.frequency;
+		micGain = camSetupMicParam.gain;
 
-		log.warn(String.format("Unimplemented sceUsbCamSetupMic"));
-
-		cpu._v0 = 0;
+		return 0;
 	}
 
+	@HLELogging(level="info")
 	@HLEFunction(nid = 0x82A64030, version = 271)
-	public void sceUsbCamStartMic(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		// No parameters
-
-		log.warn(String.format("Ignoring sceUsbCamStartMic"));
-
-		cpu._v0 = 0;
+	public int sceUsbCamStartMic() {
+		return 0;
 	}
 
 	/**
@@ -935,12 +935,8 @@ public class sceUsbCam extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0x36636925, version = 271)
-	public void sceUsbCamReadMicBlocking(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamReadMicBlocking"));
-
-		cpu._v0 = 0;
+	public int sceUsbCamReadMicBlocking(TPointer buffer, int bufferSize) {
+		return Modules.sceAudioModule.hleAudioInputBlocking(bufferSize >> 1, micFrequency, buffer);
 	}
 
 	@HLEFunction(nid = 0x3DC0088E, version = 271)
@@ -962,12 +958,8 @@ public class sceUsbCam extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0x5145868A, version = 271)
-	public void sceUsbCamStopMic(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamStopMic"));
-
-		cpu._v0 = 0;
+	public int sceUsbCamStopMic() {
+		return 0;
 	}
 
 	@HLEFunction(nid = 0x5778B452, version = 271)
