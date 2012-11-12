@@ -140,7 +140,8 @@ public class HLEModuleManager {
         sceMt19937(Modules.sceMt19937Module, new String[] { "libmt19937" }),
         sceAac(Modules.sceAacModule, new String[] { "libaac", "PSP_MODULE_AV_AAC" }),
         sceFpu(Modules.sceFpuModule, new String[] { "libfpu" }),
-        sceUsbMic(Modules.sceUsbMicModule, new String[] { "usbmic" });
+        sceUsbMic(Modules.sceUsbMicModule, new String[] { "usbmic" }),
+        sceAudioRouting(Modules.sceAudioRoutingModule);
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
