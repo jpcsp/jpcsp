@@ -348,6 +348,9 @@ public class SceKernelErrors {
     public final static int ERROR_MEMSTICK_DEVCTL_BAD_PARAMS                    = 0x80220081;
     public final static int ERROR_MEMSTICK_DEVCTL_TOO_MANY_CALLBACKS            = 0x80220082;
 
+    public final static int ERROR_USBMIC_INVALID_MAX_SAMPLES                  = 0x80243806;
+    public final static int ERROR_USBMIC_INVALID_FREQUENCY                      = 0x8024380A;
+
     public final static int ERROR_AUDIO_CHANNEL_NOT_INIT                        = 0x80260001;
     public final static int ERROR_AUDIO_CHANNEL_BUSY                            = 0x80260002;
     public final static int ERROR_AUDIO_INVALID_CHANNEL                         = 0x80260003;
