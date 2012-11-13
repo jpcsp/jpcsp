@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 
 import jpcsp.HLE.CanBeNull;
@@ -27,6 +26,7 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.Emulator;
+import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
@@ -43,6 +43,7 @@ import jpcsp.sound.SoundChannel;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.openal.AL10;
 import org.lwjgl.openal.ALC10;
 import org.lwjgl.openal.ALC11;
@@ -97,6 +98,7 @@ public class sceAudio extends HLEModule {
 			ALC11.alcCaptureCloseDevice(inputDevice);
 			inputDevice = null;
 		}
+		inputDeviceInitialized = false;
 		captureBuffer = null;
 
 		super.stop();
@@ -118,6 +120,7 @@ public class sceAudio extends HLEModule {
 	protected ALCdevice inputDevice;
 	protected ByteBuffer captureBuffer;
 	protected IntBuffer samplesBuffer;
+	protected boolean inputDeviceInitialized;
 
 	protected static class AudioBlockingInputAction implements IAction {
 		private int threadId;
@@ -293,16 +296,20 @@ public class sceAudio extends HLEModule {
     	return channel;
     }
 
-	public void hleAudioBlockingInput(int threadId, int addr, int samples, int frequency) {
+	protected void hleAudioBlockingInput(int threadId, int addr, int samples, int frequency) {
 		int availableSamples = hleAudioGetInputLength();
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("hleAudioBlockingInput available samples: %d from %d", availableSamples, samples));
 		}
 
-		if (availableSamples >= samples) {
-			int bufferBytes = samples << 1;
+		int bufferBytes = samples << 1;
+		if (inputDevice == null) {
+			// No input device available, fake device input
+			Memory.getInstance().memset(addr, (byte) 0, bufferBytes);
+			Modules.ThreadManForUserModule.hleUnblockThread(threadId);
+		} else if (availableSamples >= samples) {
 			if (captureBuffer == null || captureBuffer.capacity() < bufferBytes) {
-				captureBuffer = ByteBuffer.allocateDirect(bufferBytes).order(ByteOrder.LITTLE_ENDIAN);
+				captureBuffer = BufferUtils.createByteBuffer(bufferBytes);
 			} else {
 				captureBuffer.rewind();
 			}
@@ -326,8 +333,12 @@ public class sceAudio extends HLEModule {
 	}
 
 	public int hleAudioGetInputLength() {
+		if (inputDevice == null) {
+			return 0;
+		}
+
 		if (samplesBuffer == null) {
-			samplesBuffer = ByteBuffer.allocateDirect(4).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer();
+			samplesBuffer = BufferUtils.createIntBuffer(1);
 		}
 
 		ALC10.alcGetInteger(inputDevice, ALC11.ALC_CAPTURE_SAMPLES, samplesBuffer);
@@ -362,9 +373,21 @@ public class sceAudio extends HLEModule {
 	}
 
 	public int hleAudioInputBlocking(int maxSamples, int frequency, TPointer buffer) {
-		if (inputDevice == null) {
+		if (!inputDeviceInitialized) {
+			IntBuffer majorVersion = BufferUtils.createIntBuffer(1);
+			IntBuffer minorVersion = BufferUtils.createIntBuffer(1);
+			ALC10.alcGetInteger(null, ALC10.ALC_MAJOR_VERSION, majorVersion);
+			ALC10.alcGetInteger(null, ALC10.ALC_MINOR_VERSION, minorVersion);
+			log.info(String.format("OpenAL Version %d.%d, extensions %s", majorVersion.get(0), minorVersion.get(0), ALC10.alcGetString(null, ALC10.ALC_EXTENSIONS)));
+
 			inputDevice = ALC11.alcCaptureOpenDevice(null, frequency, AL10.AL_FORMAT_MONO16, 10 * 1024);
-			ALC11.alcCaptureStart(inputDevice);
+			if (inputDevice != null) {
+				ALC11.alcCaptureStart(inputDevice);
+			} else {
+				log.warn(String.format("No audio input device available, faking."));
+			}
+
+			inputDeviceInitialized = true;
 		}
 
 		blockThreadInput(buffer.getAddress(), maxSamples, frequency);
