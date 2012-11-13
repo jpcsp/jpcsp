@@ -17,9 +17,4 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 public class sceSasCore extends jpcsp.HLE.modules600.sceSasCore {
-
-    @Override
-    public final String getName() {
-        return "sceSasCore";
-    }
 }
