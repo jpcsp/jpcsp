@@ -37,6 +37,7 @@ import jpcsp.HLE.PspString;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TErrorPointer32;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer16;
 
 import java.io.File;
 import java.io.IOException;
@@ -1049,13 +1050,20 @@ public class sceFont extends HLEModule {
         return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x5C3E4A9E, version = 150, checkInsideInterrupt = true)
-    public int sceFontGetCharImageRect(int fontHandle, int charCode, TPointer charRectPtr) {
+    public int sceFontGetCharImageRect(int fontHandle, int charCode, TPointer16 charRectPtr) {
+        Font font = getFont(fontHandle, false);
+        pspCharInfo charInfo = font.fontInfo.getCharInfo(charCode);
+
         // This function retrieves the dimensions of a specific char.
-        // Faking.
-        charRectPtr.setValue16(0, (short) 1); // Width.
-        charRectPtr.setValue16(2, (short) 1); // Height.
+        if (charInfo != null) {
+        	charRectPtr.setValue(0, charInfo.bitmapWidth);
+        	charRectPtr.setValue(2, charInfo.bitmapHeight);
+        } else {
+        	charRectPtr.setValue(0, 0);
+        	charRectPtr.setValue(2, 0);
+        }
+
         return 0;
     }
 
