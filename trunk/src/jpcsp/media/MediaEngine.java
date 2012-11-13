@@ -567,11 +567,11 @@ public class MediaEngine {
 			        } else if (state.isStream(container, streamIndex)) {
 			        	// This is the kind of packet we are looking for
 			        	state.setPacket(packet);
-			        } else if (videoCoder != null && videoStreamState.isStream(container, streamIndex)) {
+			        } else if (videoCoder != null && videoStreamState != null && videoStreamState.isStream(container, streamIndex)) {
 			        	// We are currently not interested in video packets,
 			        	// add this packet to the video pending packets
 			        	videoStreamState.addPacket(packet);
-			        } else if (audioCoder != null && audioStreamState.isStream(container, streamIndex)) {
+			        } else if (audioCoder != null && audioStreamState != null && audioStreamState.isStream(container, streamIndex)) {
 			        	// We are currently not interested in audio packets,
 			        	// add this packet to the audio pending packets
 			        	audioStreamState.addPacket(packet);
