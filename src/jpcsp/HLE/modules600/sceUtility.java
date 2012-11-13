@@ -17,8 +17,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules600;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.Processor;
 
+@HLELogging
 public class sceUtility extends jpcsp.HLE.modules500.sceUtility {
     @HLEFunction(nid = 0x180F7B62, version = 600)
     public void sceUtilityGamedataInstallAbort(Processor processor) {

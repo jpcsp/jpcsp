@@ -17,8 +17,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules271;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
 
+@HLELogging
 public class ModuleMgrForUser extends jpcsp.HLE.modules150.ModuleMgrForUser {
 	@HLEUnimplemented
     @HLEFunction(nid = 0xFEF27DC1, version = 271)

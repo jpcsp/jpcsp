@@ -14,39 +14,29 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules280;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
 
+@HLELogging
 public class SysMemUserForUser extends jpcsp.HLE.modules200.SysMemUserForUser {
-	
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x2A3E5280, version = 280)
-	public void sceKernelQueryMemoryInfo(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.debug("Unimplemented NID function sceKernelQueryMemoryInfo [0x2A3E5280]");
-
-		cpu._v0 = 0xDEADC0DE;
+	public int sceKernelQueryMemoryInfo() {
+		return 0;
 	}
-    
+
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x39F49610, version = 280)
-	public void sceKernelGetPTRIG(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.debug("Unimplemented NID function sceKernelGetPTRIG [0x39F49610]");
-
-		cpu._v0 = 0xDEADC0DE;
+	public int sceKernelGetPTRIG() {
+		return 0;
 	}
-    
+
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x6231A71D, version = 280)
-	public void sceKernelSetPTRIG(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.debug("Unimplemented NID function sceKernelSetPTRIG [0x6231A71D]");
-
-		cpu._v0 = 0xDEADC0DE;
+	public int sceKernelSetPTRIG() {
+		return 0;
 	}
 }

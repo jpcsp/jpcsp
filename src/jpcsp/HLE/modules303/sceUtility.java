@@ -14,21 +14,20 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules303;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+
 import java.util.HashMap;
 
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
 
+@HLELogging
 public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
-
     public static enum UtilityModule {
         PSP_MODULE_NET_COMMON(0x0100),
         PSP_MODULE_NET_ADHOC(0x0101),
@@ -120,36 +119,24 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
     }
 
     @HLEFunction(nid = 0x2A2B3DE0, version = 303, checkInsideInterrupt = true)
-    public void sceUtilityLoadModule(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int module = cpu._a0;
-
-        
-
+    public int sceUtilityLoadModule(int module) {
         String moduleName = getModuleName(module);
         int result = hleUtilityLoadModule(module, moduleName);
         if (result == SceKernelErrors.ERROR_MODULE_BAD_ID) {
             log.info(String.format("IGNORING: sceUtilityLoadModule(module=0x%04X) %s", module, moduleName));
-            result = 0;
-        } else {
-            log.info(String.format("sceUtilityLoadModule(module=0x%04X) %s loaded", module, moduleName));
+            return 0;
         }
-        cpu._v0 = result;
+
+        log.info(String.format("sceUtilityLoadModule(module=0x%04X) %s loaded", module, moduleName));
+
+        return result;
     }
 
     @HLEFunction(nid = 0xE49BFE92, version = 303, checkInsideInterrupt = true)
-    public void sceUtilityUnloadModule(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int module = cpu._a0;
-
-
-        
-
+    public int sceUtilityUnloadModule(int module) {
         String moduleName = getModuleName(module);
         log.info(String.format("sceUtilityUnloadModule(module=0x%04X) %s unloaded", module, moduleName));
 
-        cpu._v0 = hleUtilityUnloadModule(module);
+        return hleUtilityUnloadModule(module);
     }
 }

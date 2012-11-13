@@ -14,37 +14,30 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules380;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.kernel.Managers;
 
+@HLELogging
 public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
-
 	@HLEFunction(nid = 0x19CFF145, version = 380, checkInsideInterrupt = true)
 	public int sceKernelCreateLwMutex(int workAreaAddr, int name_addr, int attr, int count, int option_addr) {
 		return Managers.lwmutex.sceKernelCreateLwMutex(workAreaAddr, name_addr, attr, count, option_addr);
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x1AF94D03, version = 380)
-	public void sceKernelDonateWakeupThread(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.debug("Unimplemented NID function sceKernelDonateWakeupThread [0x1AF94D03]");
-
-		cpu._v0 = 0xDEADC0DE;
+	public int sceKernelDonateWakeupThread() {
+		return 0;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x31327F19, version = 380)
-	public void ThreadManForUser_31327F19(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.debug("Unimplemented NID function ThreadManForUser_31327F19 [0x31327F19]");
-
-		cpu._v0 = 0xDEADC0DE;
+	public int ThreadManForUser_31327F19() {
+		return 0;
 	}
 
 	@HLEFunction(nid = 0x4C145944, version = 380)
@@ -57,31 +50,21 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 		return Managers.lwmutex.sceKernelDeleteLwMutex(workAreaAddr);
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x71040D5C, version = 380)
-	public void ThreadManForUser_71040D5C(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.debug("Unimplemented NID function ThreadManForUser_71040D5C [0x71040D5C]");
-
-		cpu._v0 = 0xDEADC0DE;
+	public int ThreadManForUser_71040D5C() {
+		return 0;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x7CFF8CF3, version = 380)
-	public void ThreadManForUser_7CFF8CF3(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.debug("Unimplemented NID function ThreadManForUser_7CFF8CF3 [0x7CFF8CF3]");
-
-		cpu._v0 = 0xDEADC0DE;
+	public int ThreadManForUser_7CFF8CF3() {
+		return 0;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xBEED3A47, version = 380)
-	public void ThreadManForUser_BEED3A47(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.debug("Unimplemented NID function ThreadManForUser_BEED3A47 [0xBEED3A47]");
-
-		cpu._v0 = 0xDEADC0DE;
+	public int ThreadManForUser_BEED3A47() {
+		return 0;
 	}
-
 }

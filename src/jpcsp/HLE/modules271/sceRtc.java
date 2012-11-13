@@ -16,16 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules271;
 
-import org.apache.log4j.Logger;
-
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
 
 @HLELogging
 public class sceRtc extends jpcsp.HLE.modules200.sceRtc {
-	public static Logger log = jpcsp.HLE.modules150.sceRtc.log;
-
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xFB3B18CD, version = 271)
 	public int sceRtcRegisterCallback(int callbackId) {

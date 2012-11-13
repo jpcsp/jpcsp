@@ -14,15 +14,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules380;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.TPointer;
 import jpcsp.Processor;
 import jpcsp.HLE.kernel.Managers;
 
+@HLELogging
 public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
-
 	@HLEFunction(nid = 0x15B6446B, version = 380, checkInsideInterrupt = true)
 	public int sceKernelUnlockLwMutex(int workAreaAddr, int count) {
 		return Managers.lwmutex.sceKernelUnlockLwMutex(workAreaAddr, count);
@@ -50,15 +51,13 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 
     @HLEFunction(nid = 0x37431849, version = 380, checkInsideInterrupt = true)
     public int sceKernelTryLockLwMutex_600(int workAreaAddr, int count) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelTryLockLwMutex_600 redirecting to sceKernelTryLockLwMutex");
-        }
 		return Managers.lwmutex.sceKernelTryLockLwMutex(workAreaAddr, count);
 	}
 
     @HLEFunction(nid = 0x1839852A, version = 380)
-    public int sceKernelMemcpy(int dst, int src, int length) {
-		Processor.memory.memcpy(dst, src, length);
-		return dst;
+    public int sceKernelMemcpy(TPointer dst, TPointer src, int length) {
+		Processor.memory.memcpy(dst.getAddress(), src.getAddress(), length);
+
+		return dst.getAddress();
 	}
 }

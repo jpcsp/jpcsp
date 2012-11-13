@@ -18,17 +18,11 @@ package jpcsp.HLE.modules620;
 
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
-import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 
-import org.apache.log4j.Logger;
-
 @HLELogging
 public class Kernel_Library extends jpcsp.HLE.modules380.Kernel_Library {
-	public static Logger log = jpcsp.HLE.modules150.Kernel_Library.log;
-
-	@HLEUnimplemented
 	@HLEFunction(nid = 0xFA835CDE, version = 620)
 	public int sceKernel_FA835CDE(int uid) {
 		// Similar to sceKernelGetBlockHeadAddr?
