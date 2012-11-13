@@ -32,7 +32,7 @@ import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
 
 public class sceMd5 extends HLEModule {
-    protected static Logger log = Modules.getLogger("sceMd5");
+    public static Logger log = Modules.getLogger("sceMd5");
     protected MessageDigest md5;
 
 	@Override

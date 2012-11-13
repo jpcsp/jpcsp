@@ -49,7 +49,7 @@ import jpcsp.graphics.VideoEngine;
 import org.apache.log4j.Logger;
 
 public class sceGe_user extends HLEModule {
-    private static Logger log = Modules.getLogger("sceGe_user");
+    public static Logger log = Modules.getLogger("sceGe_user");
 
     public volatile boolean waitingForSync;
     public volatile boolean syncDone;

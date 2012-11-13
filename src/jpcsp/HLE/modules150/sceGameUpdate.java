@@ -17,14 +17,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceGameUpdate extends HLEModule {
-    protected static Logger log = Modules.getLogger("sceGameUpdate");
+    public static Logger log = Modules.getLogger("sceGameUpdate");
 
     @Override
     public String getName() {

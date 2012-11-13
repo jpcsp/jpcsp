@@ -92,7 +92,7 @@ import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.PixelFormat;
 
 public class sceDisplay extends HLEModule {
-    protected static Logger log = Modules.getLogger("sceDisplay");
+    public static Logger log = Modules.getLogger("sceDisplay");
 
     @SuppressWarnings("serial")
 	class AWTGLCanvas_sceDisplay extends AWTGLCanvas {

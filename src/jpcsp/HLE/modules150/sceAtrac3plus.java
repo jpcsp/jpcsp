@@ -20,6 +20,7 @@ import static jpcsp.util.Utilities.readUnaligned32;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
@@ -40,9 +41,9 @@ import jpcsp.settings.AbstractBoolSettingsListener;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceAtrac3plus extends HLEModule {
-
-    protected static Logger log = Modules.getLogger("sceAtrac3plus");
+    public static Logger log = Modules.getLogger("sceAtrac3plus");
 
     @Override
     public String getName() {
@@ -838,10 +839,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0x780F88D1, version = 150, checkInsideInterrupt = true)
     public int sceAtracGetAtracID(int codecType) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetAtracID codecType=0x%X", codecType));
-        }
-
         int atId = hleCreateAtracID(codecType);
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceAtracGetAtracID: returning atracID=0x%08X", atId));
@@ -852,10 +849,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0x61EB33F5, version = 150, checkInsideInterrupt = true)
     public int sceAtracReleaseAtracID(@CheckArgument("checkAtracID") int atID) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracReleaseAtracID atracID=0x%X", atID));
-        }
-
         AtracCodec atracCodec = atracIDs.get(atID).getAtracCodec();
         if (atracCodec != null) {
             atracCodec.finish();
@@ -867,10 +860,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0x0E2A73AB, version = 150, checkInsideInterrupt = true)
     public int sceAtracSetData(@CheckArgument("checkAtracID") int atID, TPointer buffer, int bufferSize) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracSetData atID=0x%X, buffer=%s, bufferSize=0x%08X", atID, buffer, bufferSize));
-        }
-
         atracIDs.get(atID).setData(buffer.getAddress(), bufferSize, bufferSize, false);
 
         return 0;
@@ -878,10 +867,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0x3F6E26B5, version = 150, checkInsideInterrupt = true)
     public int sceAtracSetHalfwayBuffer(@CheckArgument("checkAtracID") int atID, TPointer halfBuffer, int readSize, int halfBufferSize) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracSetHalfwayBuffer atID=0x%X, buffer=%s, readSize=0x%08X, bufferSize=0x%08X", atID, halfBuffer, readSize, halfBufferSize));
-        }
-
         atracIDs.get(atID).setData(halfBuffer.getAddress(), readSize, halfBufferSize, false);
 
         return 0;
@@ -889,10 +874,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0x7A20E7AF, version = 150, checkInsideInterrupt = true)
     public int sceAtracSetDataAndGetID(TPointer buffer, int bufferSize) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracSetDataAndGetID buffer=%s, bufferSize=0x%08X", buffer, bufferSize));
-        }
-
         if (bufferSize < 0) {
         	// Unknown error
         	return -1;
@@ -913,10 +894,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0x0FAE370E, version = 150, checkInsideInterrupt = true)
     public int sceAtracSetHalfwayBufferAndGetID(TPointer halfBuffer, int readSize, int halfBufferSize) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracSetHalfwayBufferAndGetID halfBuffer=%s, readSize=0x%08X, halfBufferSize=0x%08X", halfBuffer, readSize, halfBufferSize));
-        }
-
         if (readSize > halfBufferSize) {
         	return SceKernelErrors.ERROR_ATRAC_INCORRECT_READ_SIZE;
         }
@@ -937,10 +914,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0x6A8C3CD5, version = 150, checkInsideInterrupt = true)
     public int sceAtracDecodeData(@CheckArgument("checkAtracID") int atID, TPointer samplesAddr, @CanBeNull TPointer32 samplesNbrAddr, @CanBeNull TPointer32 outEndAddr, @CanBeNull TPointer32 remainFramesAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracDecodeData atracID=0x%X, samplesAddr=%s, samplesNbrAddr=%s, outEndAddr=%s, remainFramesAddr=%s", atID, samplesAddr, samplesNbrAddr, outEndAddr, remainFramesAddr));
-        }
-
         if (atracIDs.get(atID).isSecondBufferNeeded() && !atracIDs.get(atID).isSecondBufferSet()) {
             log.warn(String.format("sceAtracDecodeData atracID=0x%X needs second buffer!", atID));
             return SceKernelErrors.ERROR_ATRAC_SECOND_BUFFER_NEEDED;
@@ -1023,15 +996,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0x9AE849A7, version = 150, checkInsideInterrupt = true)
     public int sceAtracGetRemainFrame(@CheckArgument("checkAtracID") int atID, TPointer32 remainFramesAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetRemainFrame atracID=0x%X, remainFramesAddr=%s", atID, remainFramesAddr));
-        }
-
-        if (!atracIDs.containsKey(atID)) {
-            log.warn("sceAtracGetRemainFrame: bad atracID= " + atID);
-            return SceKernelErrors.ERROR_ATRAC_BAD_ID;
-        }
-
         AtracID id = atracIDs.get(atID);
     	int remainFrames = getRemainFrames(id, id.getLastDecodedSamples());
 		remainFramesAddr.setValue(remainFrames);
@@ -1045,10 +1009,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0x5D268707, version = 150, checkInsideInterrupt = true)
     public int sceAtracGetStreamDataInfo(@CheckArgument("checkAtracID") int atID, @CanBeNull TPointer32 writeAddr, @CanBeNull TPointer32 writableBytesAddr, @CanBeNull TPointer32 readOffsetAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetStreamDataInfo atracID=0x%X, writeAddr=%s, writableBytesAddr=%s, readOffsetAddr=%s", atID, writeAddr, writableBytesAddr, readOffsetAddr));
-        }
-
         AtracID id = atracIDs.get(atID);
         id.update();
         writeAddr.setValue(id.getInputBufferAddr());
@@ -1064,10 +1024,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0x7DB31251, version = 150, checkInsideInterrupt = true)
     public int sceAtracAddStreamData(@CheckArgument("checkAtracID") int atID, int bytesToAdd) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracAddStreamData atracID=0x%X, bytesToAdd=0x%X", atID, bytesToAdd));
-        }
-
         AtracID id = atracIDs.get(atID);
         id.addStreamData(bytesToAdd);
         if (log.isDebugEnabled()) {
@@ -1079,10 +1035,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0x83E85EA0, version = 150, checkInsideInterrupt = true)
     public int sceAtracGetSecondBufferInfo(@CheckArgument("checkAtracID") int atID, @CanBeNull TPointer32 outPosition, @CanBeNull TPointer32 outBytes) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetSecondBufferInfo atracID=0x%X, outPosition=%s, outBytes=%s", atID, outPosition, outBytes));
-        }
-
         AtracID id = atracIDs.get(atID);
         if (!id.isSecondBufferNeeded()) {
             return SceKernelErrors.ERROR_ATRAC_SECOND_BUFFER_NOT_NEEDED;
@@ -1096,10 +1048,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0x83BF7AFD, version = 150, checkInsideInterrupt = true)
     public int sceAtracSetSecondBuffer(@CheckArgument("checkAtracID") int atID, TPointer secondBuffer, int secondBufferSize) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracSetSecondBuffer atracID=0x%X, secondBuffer=%s, secondBufferSize=0x%08X", atID, secondBuffer, secondBufferSize));
-        }
-
         AtracID id = atracIDs.get(atID);
         id.setData(secondBuffer.getAddress(), secondBufferSize, secondBufferSize, true);
 
@@ -1108,10 +1056,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0xE23E3A35, version = 150, checkInsideInterrupt = true)
     public int sceAtracGetNextDecodePosition(@CheckArgument("checkAtracID") int atID, TPointer32 posAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetNextDecodePosition atracID=0x%X, posAddr=%s", atID, posAddr));
-        }
-
         AtracID id = atracIDs.get(atID);
         if (id.getAtracCurrentSample() >= id.getAtracEndSample()) {
             return SceKernelErrors.ERROR_ATRAC_ALL_DATA_DECODED;
@@ -1124,10 +1068,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0xA2BBA8BE, version = 150, checkInsideInterrupt = true)
     public int sceAtracGetSoundSample(@CheckArgument("checkAtracID") int atID, @CanBeNull TPointer32 endSampleAddr, @CanBeNull TPointer32 loopStartSampleAddr, @CanBeNull TPointer32 loopEndSampleAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetSoundSample atracID=0x%X, endSampleAddr=%s, loopStartSampleAddr=%s, loopEndSampleAddr=%s", atID, endSampleAddr, loopStartSampleAddr, loopEndSampleAddr));
-        }
-
     	AtracID id = atracIDs.get(atID);
     	int endSample = id.getAtracEndSample();
         int loopStartSample = id.getLoopStartSample();
@@ -1147,10 +1087,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0x31668BAA, version = 150, checkInsideInterrupt = true)
     public int sceAtracGetChannel(@CheckArgument("checkAtracID") int atID, TPointer32 channelAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetChannel atracID=0x%X, channelAddr%s", atID, channelAddr));
-        }
-
     	AtracID id = atracIDs.get(atID);
         channelAddr.setValue(id.getAtracChannels());
 
@@ -1159,10 +1095,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0xD6A5F2F7, version = 150, checkInsideInterrupt = true)
     public int sceAtracGetMaxSample(@CheckArgument("checkAtracID") int atID, TPointer32 maxSamplesAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetMaxSample atracID=0x%X, maxSamplesAddr=%s", atID, maxSamplesAddr));
-        }
-
     	AtracID id = atracIDs.get(atID);
         maxSamplesAddr.setValue(id.getMaxSamples());
 
@@ -1171,10 +1103,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0x36FAABFB, version = 150, checkInsideInterrupt = true)
     public int sceAtracGetNextSample(@CheckArgument("checkAtracID") int atID, TPointer32 nbrSamplesAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetNextSample atracID=0x%X, nbrSamplesAddr=%s", atID, nbrSamplesAddr));
-        }
-
     	AtracID id = atracIDs.get(atID);
         int samples = id.getMaxSamples();
         if (id.getInputBufferOffset() >= id.getInputBufferSize()) {
@@ -1187,10 +1115,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0xA554A158, version = 150, checkInsideInterrupt = true)
     public int sceAtracGetBitrate(@CheckArgument("checkAtracID") int atID, TPointer32 bitrateAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetBitrate atracID=0x%X, bitrateAddr=%s", atID, bitrateAddr));
-        }
-
     	AtracID id = atracIDs.get(atID);
         bitrateAddr.setValue(id.getAtracBitrate());
 
@@ -1199,10 +1123,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0xFAA4F89B, version = 150, checkInsideInterrupt = true)
     public int sceAtracGetLoopStatus(@CheckArgument("checkAtracID") int atID, @CanBeNull TPointer32 loopNbr, @CanBeNull TPointer32 statusAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetLoopStatus atracID=0x%X, loopNbr=%s, statusAddr=%s", atID, loopNbr, statusAddr));
-        }
-
     	AtracID id = atracIDs.get(atID);
         loopNbr.setValue(id.getLoopNum());
         statusAddr.setValue(id.getLoopStatus());
@@ -1212,10 +1132,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0x868120B5, version = 150, checkInsideInterrupt = true)
     public int sceAtracSetLoopNum(@CheckArgument("checkAtracID") int atID, int loopNbr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracSetLoopNum atracID=0x%X, loopNbr=%d", atID, loopNbr));
-        }
-
     	AtracID id = atracIDs.get(atID);
         id.setLoopNum(loopNbr);
         id.getAtracCodec().setAtracLoopCount(loopNbr);
@@ -1225,10 +1141,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0xCA3CA3D2, version = 150, checkInsideInterrupt = true)
     public int sceAtracGetBufferInfoForReseting(@CheckArgument("checkAtracID") int atID, int sample, TPointer32 bufferInfoAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetBufferInfoForReseting atracID=0x%X, sample=%d, bufferInfoAddr=%s", atID, sample, bufferInfoAddr));
-        }
-
     	AtracID id = atracIDs.get(atID);
         id.getBufferInfoForResetting(sample, bufferInfoAddr);
 
@@ -1237,10 +1149,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0x644E5607, version = 150, checkInsideInterrupt = true)
     public int sceAtracResetPlayPosition(@CheckArgument("checkAtracID") int atID, int sample, int bytesWrittenFirstBuf, int bytesWrittenSecondBuf) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracResetPlayPosition atracId=0x%X, sample=%d, bytesWrittenFirstBuf=%d, bytesWrittenSecondBuf=%d", atID, sample, bytesWrittenFirstBuf, bytesWrittenSecondBuf));
-        }
-
         AtracID id = atracIDs.get(atID);
         id.setPlayPosition(sample, bytesWrittenFirstBuf, bytesWrittenSecondBuf);
 
@@ -1249,10 +1157,6 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0xE88F759B, version = 150, checkInsideInterrupt = true)
     public int sceAtracGetInternalErrorInfo(@CheckArgument("checkAtracID") int atID, TPointer32 errorAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracGetInternalErrorInfo atracId=0x%X, errorAddr=%s", atID, errorAddr));
-        }
-
         AtracID id = atracIDs.get(atID);
         errorAddr.setValue(id.getInternalErrorInfo());
 

@@ -28,10 +28,12 @@ import jpcsp.settings.Settings;
 import org.apache.log4j.Logger;
 
 public class sceImpose extends HLEModule {
-    private static Logger log = Modules.getLogger("sceImpose");
+    public static Logger log = Modules.getLogger("sceImpose");
 
 	@Override
-	public String getName() { return "sceImpose"; }
+	public String getName() {
+		return "sceImpose";
+	}
 
 	@Override
     public void start() {
