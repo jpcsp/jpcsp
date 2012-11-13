@@ -9159,7 +9159,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int vt = (insn>>16)&127;
 
-	return Common.disasmVDVSVT("VHTFM2", 2, vd, vs, vt);
+	return Common.disasmVDVSMVT("VHTFM2", 2, vd, vs, vt);
 }
 };
 public static final Instruction VTFM2 = new Instruction(235, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD) {
@@ -9190,7 +9190,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int vt = (insn>>16)&127;
 
-	return Common.disasmVDVSVT("VTFM2", 2, vd, vs, vt);
+	return Common.disasmVDVSMVT("VTFM2", 2, vd, vs, vt);
 }
 };
 public static final Instruction VHTFM3 = new Instruction(236, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD) {
@@ -9221,7 +9221,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int vt = (insn>>16)&127;
 
-	return Common.disasmVDVSVT("VHTFM3", 3, vd, vs, vt);
+	return Common.disasmVDVSMVT("VHTFM3", 3, vd, vs, vt);
 }
 };
 public static final Instruction VTFM3 = new Instruction(237, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
@@ -9275,7 +9275,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int vt = (insn>>16)&127;
 
-	return Common.disasmVDVSVT("VTFM3", 3, vd, vs, vt);
+	return Common.disasmVDVSMVT("VTFM3", 3, vd, vs, vt);
 }
 };
 public static final Instruction VHTFM4 = new Instruction(238, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
@@ -9331,7 +9331,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int vt = (insn>>16)&127;
 
-	return Common.disasmVDVSVT("VHTFM4", 4, vd, vs, vt);
+	return Common.disasmVDVSMVT("VHTFM4", 4, vd, vs, vt);
 }
 };
 public static final Instruction VTFM4 = new Instruction(239, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
@@ -9391,7 +9391,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int vt = (insn>>16)&127;
 
-	return Common.disasmVDVSVT("VTFM4", 4, vd, vs, vt);
+	return Common.disasmVDVSMVT("VTFM4", 4, vd, vs, vt);
 }
 };
 public static final Instruction VMSCL = new Instruction(240, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
