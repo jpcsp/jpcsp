@@ -788,6 +788,10 @@ public class Common {
         return String.format("%1$-10s %2$s, %3$s, %4$s", opname + vsuffix[vsize - 1], vprNames[vsize - 1][vd], vprNames[vsize - 1][vs], vprNames[vsize - 1][vt]);
     }
 
+    public static String disasmVDVSMVT(String opname, int vsize, int vd, int vs, int vt) {
+        return String.format("%1$-10s %2$s, %3$s, %4$s", opname + vsuffix[vsize - 1], vprNames[vsize - 1][vd], vprMatNames[vsize - 1][vs], vprNames[vsize - 1][vt]);
+    }
+
     public static String disasmVDVSVT1(String opname, int vsize, int vd, int vs, int vt) {
         return String.format("%1$-10s %2$s, %3$s, %4$s", opname + vsuffix[vsize - 1], vprNames[vsize - 1][vd], vprNames[vsize - 1][vs], vprNames[0][vt]);
     }
