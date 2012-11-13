@@ -1883,6 +1883,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         logConfigurationSettingBool("enableshaderstenciltest", "emu.enableshaderstenciltest", false);
         logConfigurationSettingBool("enableshadercolormask", "emu.enableshadercolormask", false);
         logConfigurationSettingBool("disableoptimizedvertexinforeading", "emu.disableoptimizedvertexinforeading", false);
+        logConfigurationSettingBool("saveStencilToMemory", "emu.saveStencilToMemory", false);
         logConfigurationSettingBool("useSoftwareRenderer", "emu.useSoftwareRenderer", false);
 
         logConfigurationPanel("audio");
