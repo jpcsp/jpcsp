@@ -14,10 +14,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules200;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -26,7 +27,6 @@ import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
 import jpcsp.Loader;
 import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
@@ -37,8 +37,8 @@ import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.filesystems.SeekableDataInput;
 
+@HLELogging
 public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
-
     protected static class InstallUtilityDialogState extends UtilityDialogState {
 		protected SceUtilityInstallParams installParams;
 
@@ -170,36 +170,25 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
     }
 
     @HLEFunction(nid = 0x1579A159, version = 200, checkInsideInterrupt = true)
-    public void sceUtilityLoadNetModule(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int module = cpu._a0;
-
-        
-
+    public int sceUtilityLoadNetModule(int module) {
         String moduleName = getNetModuleName(module);
         int result = hleUtilityLoadNetModule(module, moduleName);
-        if(result == SceKernelErrors.ERROR_NET_MODULE_BAD_ID) {
+        if (result == SceKernelErrors.ERROR_NET_MODULE_BAD_ID) {
             log.info(String.format("IGNORING: sceUtilityLoadNetModule(module=0x%04X) %s", module, moduleName));
-            result = 0;
-        } else {
-            log.info(String.format("sceUtilityLoadNetModule(module=0x%04X) %s loaded", module, moduleName));
+            return 0;
         }
-        cpu._v0 = result;
+
+        log.info(String.format("sceUtilityLoadNetModule(module=0x%04X) %s loaded", module, moduleName));
+
+        return result;
     }
 
     @HLEFunction(nid = 0x64D50C56, version = 200, checkInsideInterrupt = true)
-    public void sceUtilityUnloadNetModule(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int module = cpu._a0;
-
-        
-
+    public int sceUtilityUnloadNetModule(int module) {
         String moduleName = getNetModuleName(module);
         log.info(String.format("sceUtilityUnloadNetModule(module=0x%04X) %s unloaded", module, moduleName));
 
-        cpu._v0 = hleUtilityUnloadNetModule(module);
+        return hleUtilityUnloadNetModule(module);
     }
 
     @HLEFunction(nid = 0x1281DA8E, version = 200)
@@ -221,5 +210,4 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
     public void sceUtilityInstallGetStatus(Processor processor) {
     	installState.executeGetStatus(processor);
     }
-
 }

@@ -17,14 +17,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules250;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 
+@HLELogging
 public class sceMpeg extends jpcsp.HLE.modules150.sceMpeg {
     @HLEFunction(nid = 0x769BEBB6, version = 250)
     public int sceMpegRingbufferQueryPackNum(int memorySize) {
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceMpegRingbufferQueryPackNum memorySize=0x%08X", memorySize));
-        }
-
         return getPacketsFromSize(memorySize);
     }
 }

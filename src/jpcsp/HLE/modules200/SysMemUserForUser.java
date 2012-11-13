@@ -14,13 +14,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules200;
 
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
 
+@HLELogging
 public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
     private int compiledSdkVersion;
     protected int compilerVersion;
@@ -40,48 +40,27 @@ public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
 	}
 
 	@HLEFunction(nid = 0xFC114573, version = 200)
-	public void sceKernelGetCompiledSdkVersion(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		if(log.isDebugEnabled()) {
-            log.debug("sceKernelGetCompiledSdkVersion");
-        }
-
-		cpu._v0 = compiledSdkVersion;
+	public int sceKernelGetCompiledSdkVersion() {
+		return compiledSdkVersion;
 	}
 
 	@HLEFunction(nid = 0x7591C7DB, version = 200)
 	public int sceKernelSetCompiledSdkVersion(int sdkVersion) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelSetCompiledSdkVersion: sdkVersion=%08X", sdkVersion));
-        }
-
         hleSetCompiledSdkVersion(sdkVersion);
 
         return 0;
 	}
 
 	@HLEFunction(nid = 0xF77D77CB, version = 200)
-	public void sceKernelSetCompilerVersion(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceKernelSetCompilerVersion(int compilerVersion) {
+        this.compilerVersion = compilerVersion;
 
-		int compVersion = cpu._a0;
-
-        if(log.isDebugEnabled()) {
-            log.debug("sceKernelSetCompilerVersion: compVersion=" + Integer.toHexString(compVersion));
-        }
-
-        compilerVersion = compVersion;
-		cpu._v0 = 0;
+        return 0;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xA6848DF8, version = 200)
-	public void SysMemUserForUser_A6848DF8(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.debug("Unimplemented NID function SysMemUserForUser_A6848DF8 [0xA6848DF8]");
-
-		cpu._v0 = 0xDEADC0DE;
+	public int SysMemUserForUser_A6848DF8() {
+		return 0;
 	}
-
 }

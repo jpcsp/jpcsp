@@ -18,14 +18,11 @@ package jpcsp.HLE.modules200;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_UMD_NOT_READY;
 
-import org.apache.log4j.Logger;
-
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 
 @HLELogging
 public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
-	public static Logger log = jpcsp.HLE.modules150.sceUmdUser.log;
     protected boolean umdAllowReplace;
 
     @HLEFunction(nid = 0x87533940, version = 200)
