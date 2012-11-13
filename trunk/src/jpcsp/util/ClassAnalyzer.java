@@ -19,6 +19,7 @@ package jpcsp.util;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.HashMap;
 import java.util.Iterator;
 
 import org.apache.log4j.Logger;
@@ -101,11 +102,20 @@ public class ClassAnalyzer {
 			int firstIndex = Modifier.isStatic(method.getModifiers()) ? 0 : 1;
 			Class<?>[] parameterTypes = method.getParameterTypes();
 			int numberParameters = Math.min(parameterTypes.length, methodNode.localVariables.size() - firstIndex);
+
+			HashMap<Integer, Integer> parameterIndices = new HashMap<Integer, Integer>();
+			for (int i = 0, currentIndex = firstIndex; i < numberParameters; i++, currentIndex++) {
+				parameterIndices.put(currentIndex, i);
+				if (parameterTypes[i] == long.class || parameterTypes[i] == double.class) {
+					currentIndex++;
+				}
+			}
+
 			parameters = new ParameterInfo[numberParameters];
 			for (int i = 0; i < methodNode.localVariables.size(); i++) {
 				LocalVariableNode localVariableNode = (LocalVariableNode) methodNode.localVariables.get(i);
-				int parameterIndex = localVariableNode.index - firstIndex;
-				if (parameterIndex >= 0 && parameterIndex < numberParameters) {
+				if (parameterIndices.containsKey(localVariableNode.index)) {
+					int parameterIndex = parameterIndices.get(localVariableNode.index);
 					parameters[parameterIndex] = new ParameterInfo(localVariableNode.name, parameterTypes[parameterIndex]);
 				}
 			}
