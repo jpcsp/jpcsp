@@ -1397,4 +1397,8 @@ public class RESoftware extends BaseRenderingEngine {
 		// drawArrays doesn't need vertex infos in buffers, it can read directly from memory.
 		return true;
 	}
+
+	@Override
+	public void readStencil(int x, int y, int width, int height, int bufferSize, Buffer buffer) {
+	}
 }

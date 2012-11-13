@@ -1583,4 +1583,19 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	public boolean canReadAllVertexInfo() {
 		return false;
 	}
+
+	@Override
+	public void readStencil(int x, int y, int width, int height, int bufferSize, Buffer buffer) {
+		if (buffer instanceof IntBuffer) {
+			GL11.glReadPixels(x, y, width, height, GL11.GL_STENCIL_INDEX, GL11.GL_UNSIGNED_BYTE, DirectBufferUtilities.getDirectBuffer(bufferSize, (IntBuffer) buffer));
+		} else if (buffer instanceof FloatBuffer) {
+			GL11.glReadPixels(x, y, width, height, GL11.GL_STENCIL_INDEX, GL11.GL_UNSIGNED_BYTE, DirectBufferUtilities.getDirectBuffer(bufferSize, (FloatBuffer) buffer));
+		} else if (buffer instanceof ShortBuffer) {
+			GL11.glReadPixels(x, y, width, height, GL11.GL_STENCIL_INDEX, GL11.GL_UNSIGNED_BYTE, DirectBufferUtilities.getDirectBuffer(bufferSize, (ShortBuffer) buffer));
+		} else if (buffer instanceof ByteBuffer) {
+			GL11.glReadPixels(x, y, width, height, GL11.GL_STENCIL_INDEX, GL11.GL_UNSIGNED_BYTE, DirectBufferUtilities.getDirectBuffer(bufferSize, (ByteBuffer) buffer));
+		} else {
+			throw new IllegalArgumentException();
+		}
+	}
 }

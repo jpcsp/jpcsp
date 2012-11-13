@@ -85,6 +85,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolFromSettings(enableShaderStencilTestCheck, "emu.enableshaderstenciltest");
         setBoolFromSettings(enableShaderColorMaskCheck, "emu.enableshadercolormask");
         setBoolFromSettings(disableOptimizedVertexInfoReading, "emu.disableoptimizedvertexinforeading");
+        setBoolFromSettings(saveStencilToMemory, "emu.saveStencilToMemory");
         setBoolFromSettings(useSoftwareRenderer, "emu.useSoftwareRenderer");
         setBoolFromSettings(onlyGEGraphicsCheck, "emu.onlyGEGraphics");
         setBoolFromSettings(useConnector, "emu.useConnector");
@@ -178,6 +179,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolToSettings(enableShaderStencilTestCheck, "emu.enableshaderstenciltest");
         setBoolToSettings(enableShaderColorMaskCheck, "emu.enableshadercolormask");
         setBoolToSettings(disableOptimizedVertexInfoReading, "emu.disableoptimizedvertexinforeading");
+        setBoolToSettings(saveStencilToMemory, "emu.saveStencilToMemory");
         setBoolToSettings(useSoftwareRenderer, "emu.useSoftwareRenderer");
         setBoolToSettings(onlyGEGraphicsCheck, "emu.onlyGEGraphics");
         setBoolToSettings(useConnector, "emu.useConnector");
@@ -386,6 +388,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         enableShaderStencilTestCheck = new javax.swing.JCheckBox();
         enableShaderColorMaskCheck = new javax.swing.JCheckBox();
         disableOptimizedVertexInfoReading = new javax.swing.JCheckBox();
+        saveStencilToMemory = new javax.swing.JCheckBox();
         useSoftwareRenderer = new javax.swing.JCheckBox();
         AudioPanel = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
@@ -694,6 +697,8 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         disableOptimizedVertexInfoReading.setText(Resource.get("disableoptimizedvertexinforeading"));
 
+        saveStencilToMemory.setText(Resource.get("saveStencilToMemory"));
+
         useSoftwareRenderer.setText(Resource.get("useSoftwareRenderer"));
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
@@ -715,6 +720,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addComponent(enableShaderStencilTestCheck)
                     .addComponent(enableShaderColorMaskCheck)
                     .addComponent(disableOptimizedVertexInfoReading)
+                    .addComponent(saveStencilToMemory)
                     .addComponent(useSoftwareRenderer))
                 .addContainerGap())
         );
@@ -746,6 +752,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(enableShaderColorMaskCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(disableOptimizedVertexInfoReading)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(saveStencilToMemory)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(useSoftwareRenderer)
                 .addContainerGap(30, Short.MAX_VALUE))
@@ -1154,6 +1162,7 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JLabel daylightLabel;
     private javax.swing.JCheckBox disableBlockingAudioCheck;
     private javax.swing.JCheckBox disableOptimizedVertexInfoReading;
+    private javax.swing.JCheckBox saveStencilToMemory;
     private javax.swing.JCheckBox useSoftwareRenderer;
     private javax.swing.JCheckBox disableUBOCheck;
     private javax.swing.JCheckBox disableVBOCheck;

@@ -225,6 +225,7 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		addStatistic("setUniform3", 194);
 		addStatistic("waitForRenderingCompletion", 195);
 		addStatistic("canReadAllVertexInfo", 196);
+		addStatistic("readStencil", 197);
 	}
 
 	private void addStatistic(String name, int index) {
@@ -1776,5 +1777,13 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		boolean value = super.canReadAllVertexInfo();
 		statistic.end();
 		return value;
+	}
+
+	@Override
+	public void readStencil(int x, int y, int width, int height, int bufferSize, Buffer buffer) {
+		DurationStatistics statistic = statistics[197];
+		statistic.start();
+		super.readStencil(x, y, width, height, bufferSize, buffer);
+		statistic.end();
 	}
 }
