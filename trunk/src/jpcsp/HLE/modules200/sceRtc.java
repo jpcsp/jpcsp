@@ -14,56 +14,35 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules200;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer64;
 
 import java.util.Calendar;
 
-import jpcsp.Memory;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
 
+@HLELogging
 public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
-
 	@HLEFunction(nid = 0x203CEB0D, version = 200)
-	public void sceRtcGetLastReincarnatedTime(Processor processor) {
-		CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int tick_addr = cpu._a0;
-
-        if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug("sceRtcGetLastReincarnatedTime");
-        }
+	public int sceRtcGetLastReincarnatedTime(TPointer64 tickAddr) {
         // Returns the last tick that was saved upon a battery shutdown.
-        // Just return our current tick, since there's no need to mimick such behaviour.
-        if(Memory.isAddressGood(tick_addr)) {
-            mem.write64(tick_addr, hleGetCurrentTick());
-        }
-        cpu._v0 = 0;
+        // Just return our current tick, since there's no need to mimick such behavior.
+        tickAddr.setValue(hleGetCurrentTick());
+
+        return 0;
 	}
 
 	@HLEFunction(nid = 0x62685E98, version = 200)
-	public void sceRtcGetLastAdjustedTime(Processor processor) {
-		CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int tick_addr = cpu._a0;
-
-        if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug("sceRtcGetLastAdjustedTime");
-        }
+	public int sceRtcGetLastAdjustedTime(TPointer64 tickAddr) {
         // Returns the last time that was manually set by the user.
-        // Just return our current tick, since there's no need to mimick such behaviour.
-        if(Memory.isAddressGood(tick_addr)) {
-            mem.write64(tick_addr, hleGetCurrentTick());
-        }
-        cpu._v0 = 0;
+        // Just return our current tick, since there's no need to mimick such behavior.
+        tickAddr.setValue(hleGetCurrentTick());
+
+        return 0;
 	}
 
 	@HLEFunction(nid = 0x1909C99B, version = 200)
@@ -75,26 +54,17 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
 	}
 
 	@HLEFunction(nid = 0xE1C93E47, version = 200)
-	public void sceRtcGetTime64_t(Processor processor) {
-		CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
+	public int sceRtcGetTime64_t(ScePspDateTime dateTime, TPointer64 timeAddr) {
+        Calendar cal = Calendar.getInstance();
+        cal.set(dateTime.year, dateTime.month - 1, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second);
+        long unixtime = cal.getTime().getTime() / 1000L;
 
-        int date_addr = cpu._a0;
-        int time_addr = cpu._a1;
-
-        if (Memory.isAddressGood(date_addr) && Memory.isAddressGood(time_addr)) {
-            ScePspDateTime dateTime = new ScePspDateTime();
-            dateTime.read(mem, date_addr);
-            Calendar cal = Calendar.getInstance();
-            cal.set(dateTime.year, dateTime.month - 1, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second);
-            long unixtime = (cal.getTime().getTime() / 1000L);
-            log.debug("sceRtcGetTime64_t psptime:" + dateTime + " unixtime:" + unixtime);
-            mem.write64(time_addr, unixtime);
-            cpu._v0 = 0;
-        } else {
-            log.warn("sceRtcGetTime64_t bad address " + String.format("0x%08X 0x%08X", date_addr, time_addr));
-            cpu._v0 = -1;
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceRtcGetTime64_t psptime=%s returning unixtime=%d", dateTime, unixtime));
         }
-	}
 
+        timeAddr.setValue(unixtime);
+
+        return 0;
+	}
 }

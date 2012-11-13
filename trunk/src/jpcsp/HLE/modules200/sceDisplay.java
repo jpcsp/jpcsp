@@ -14,48 +14,35 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules200;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
+
 import org.lwjgl.LWJGLException;
 
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
-
+@HLELogging
 public class sceDisplay extends jpcsp.HLE.modules150.sceDisplay {
-
 	public sceDisplay() throws LWJGLException {
 		super();
 	}
 
-	@Override
-	public String getName() { return "sceDisplay"; }
-	
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xBF79F646, version = 200)
-	public void sceDisplayGetResumeMode(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.debug("Unimplemented NID function sceDisplayGetResumeMode [0xBF79F646]");
-
-		cpu._v0 = 0xDEADC0DE;
+	public int sceDisplayGetResumeMode() {
+		return 0;
 	}
     
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x69B53541, version = 200)
-	public void sceDisplayGetVblankRest(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.debug("Unimplemented NID function sceDisplayGetVblankRest [0x69B53541]");
-
-		cpu._v0 = 0xDEADC0DE;
+	public int sceDisplayGetVblankRest() {
+		return 0;
 	}
     
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x21038913, version = 200)
-	public void sceDisplayIsVsync(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.debug("Unimplemented NID function sceDisplayIsVsync [0x21038913]");
-
-		cpu._v0 = 0xDEADC0DE;
+	public int sceDisplayIsVsync() {
+		return 0;
 	}
 }
