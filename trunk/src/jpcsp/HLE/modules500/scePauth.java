@@ -18,40 +18,38 @@ package jpcsp.HLE.modules500;
 
 import org.apache.log4j.Logger;
 
-import jpcsp.Memory;
-import jpcsp.Processor;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.modules.HLEModule;
 
+@HLELogging
 public class scePauth extends HLEModule {
-    protected static Logger log = Modules.getLogger("scePauth");
+    public static Logger log = Modules.getLogger("scePauth");
 
     @Override
 	public String getName() {
 		return "scePauth";
 	}
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xF7AA47F6, version = 500)
-    public int scePauth_F7AA47F6(int inputAddr, int inputLength, int resultLengthAddr, int workArea) {
+    public int scePauth_F7AA47F6(TPointer inputAddr, int inputLength, @CanBeNull TPointer32 resultLengthAddr, TPointer workArea) {
     	// workArea is 16 bytes long
-    	log.warn(String.format("Unimplemented scePauth_F7AA47F6 inputAddr=0x%08X, inputLength=%d, resultLengthAddr=0x%08X, workArea=0x%08X", inputAddr, inputLength, resultLengthAddr, workArea));
-
-    	if (Memory.isAddressGood(resultLengthAddr)) {
-    		Processor.memory.write32(resultLengthAddr, 0);
-    	}
+    	resultLengthAddr.setValue(0);
 
     	return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x98B83B5D, version = 500)
-    public int scePauth_98B83B5D(int inputAddr, int inputLength, int resultLengthAddr, int workArea) {
+    public int scePauth_98B83B5D(TPointer inputAddr, int inputLength,  @CanBeNull TPointer32 resultLengthAddr, TPointer workArea) {
     	// workArea is 16 bytes long
-    	log.warn(String.format("Unimplemented scePauth_98B83B5D inputAddr=0x%08X, inputLength=%d, resultLengthAddr=0x%08X, workArea=0x%08X", inputAddr, inputLength, resultLengthAddr, workArea));
-
-    	if (Memory.isAddressGood(resultLengthAddr)) {
-    		Processor.memory.write32(resultLengthAddr, 0);
-    	}
+    	resultLengthAddr.setValue(0);
 
     	return 0;
     }

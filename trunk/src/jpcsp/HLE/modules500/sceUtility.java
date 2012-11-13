@@ -16,16 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules500;
 
-import org.apache.log4j.Logger;
-
 import jpcsp.Processor;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 
 @HLELogging
 public class sceUtility extends jpcsp.HLE.modules303.sceUtility {
-	public static Logger log = jpcsp.HLE.modules150.sceUtility.log;
-
 	protected UtilityDialogState storeCheckoutState;
 
 	@Override

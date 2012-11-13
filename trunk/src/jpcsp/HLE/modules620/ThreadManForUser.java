@@ -16,8 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules620;
 
-import org.apache.log4j.Logger;
-
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Allegrex.CpuState;
@@ -25,7 +23,6 @@ import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
-import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
@@ -39,7 +36,6 @@ import jpcsp.util.Utilities;
 
 @HLELogging
 public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
-	public static Logger log = jpcsp.HLE.modules150.ThreadManForUser.log;
     protected final static int PSP_ATTR_ADDR_HIGH = 0x4000;
 
 	private static class AfterSceKernelExtendThreadStackAction implements IAction {
@@ -100,7 +96,6 @@ public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
         return 0;
     }
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x8DAFF657, version = 620)
 	public int ThreadManForUser_8DAFF657(PspString name, int partitionid, int attr, int blockSize, int numberBlocks, @CanBeNull TPointer optionsAddr) {
 		// Similar to sceKernelAllocPartitionMemory?
@@ -131,7 +126,6 @@ public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
 		return info.uid;
 	}
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x32BF938E, version = 620)
 	public int ThreadManForUser_32BF938E(int uid) {
 		// Similar to sceKernelFreePartitionMemory?

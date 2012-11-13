@@ -17,12 +17,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules600;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 
+@HLELogging
 public class sceAtrac3plus extends jpcsp.HLE.modules250.sceAtrac3plus {
-	@Override
-    public String getName() { return "sceAtrac3plus"; }
-
 	public AtracID getAtracIdFromContext(int atrac3Context) {
 		for (AtracID id : atracIDs.values()) {
 			SysMemInfo context = id.getContext();
@@ -34,10 +33,9 @@ public class sceAtrac3plus extends jpcsp.HLE.modules250.sceAtrac3plus {
 		return null;
 	}
 
+	@HLELogging(level="info")
 	@HLEFunction(nid = 0x231FC6B7, version = 600, checkInsideInterrupt = true)
     public int _sceAtracGetContextAddress(int at3IDNum) {
-        log.warn(String.format("PARTIAL: _sceAtracGetContextAddress at3IDNum=%d", at3IDNum));
-
         AtracID id = atracIDs.get(at3IDNum);
         if (id == null) {
         	return 0;

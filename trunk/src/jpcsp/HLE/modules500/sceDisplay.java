@@ -14,53 +14,42 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules500;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+
 import org.lwjgl.LWJGLException;
 
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
-
+@HLELogging
 public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
-
 	public sceDisplay() throws LWJGLException {
 		super();
 	}
 
-	@Override
-	public String getName() { return "sceDisplay"; }
-
-
+	/**
+	 * Wait for Vblank start after multiple VSYNCs.
+	 *
+	 * @param cycleNum  Number of VSYNCs to wait before blocking the thread on VBLANK.
+	 * @return 0
+	 */
 	@HLEFunction(nid = 0x40F1469C, version = 500, checkInsideInterrupt = true)
-	public void sceDisplayWaitVblankStartMulti(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int cycleNum = cpu._a0;  // Number of VSYNCs to wait before blocking the thread on VBLANK.
-
-        if(log.isDebugEnabled()) {
-            log.debug("sceDisplayWaitVblankStartMulti cycleNum=" + cycleNum);
-        }
-
-        
-        cpu._v0 = 0;
+	public int sceDisplayWaitVblankStartMulti(int cycleNum) {
         blockCurrentThreadOnVblank(cycleNum, false);
+
+        return 0;
 	}
 
+	/**
+	 * Wait for Vblank start after multiple VSYNCs, with Callback execution.
+	 *
+	 * @param cycleNum  Number of VSYNCs to wait before blocking the thread on VBLANK.
+	 * @return 0
+	 */
 	@HLEFunction(nid = 0x77ED8B3A, version = 500, checkInsideInterrupt = true)
-	public void sceDisplayWaitVblankStartMultiCB(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int cycleNum = cpu._a0;   // Number of VSYNCs to wait before blocking the thread on VBLANK.
-
-        if(log.isDebugEnabled()) {
-            log.debug("sceDisplayWaitVblankStartMultiCB cycleNum=" + cycleNum);
-        }
-
-        
-        cpu._v0 = 0;
+	public int sceDisplayWaitVblankStartMultiCB(int cycleNum) {
         blockCurrentThreadOnVblank(cycleNum, true);
-	}
 
+        return 0;
+	}
 }

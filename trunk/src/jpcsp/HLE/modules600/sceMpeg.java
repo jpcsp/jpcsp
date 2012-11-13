@@ -17,37 +17,34 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules600;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 
+@HLELogging
 public class sceMpeg extends jpcsp.HLE.modules250.sceMpeg {
-
+	@HLEUnimplemented
     @HLEFunction(nid = 0x63B9536A, version = 600)
     public int sceMpegAvcResourceGetAvcDecTopAddr(int unknown) {
-        log.warn(String.format("UNIMPLEMENTED: sceMpegAvcResourceGetAvcDecTopAddr unknown=%d", unknown));
-
         // Unknown value, passed to sceMpegCreate(ddttop)
         return 0x12345678;
     }
 
     @HLEFunction(nid = 0x8160A2FE, version = 600)
     public int sceMpegAvcResourceFinish() {
-        log.warn("IGNORING: sceMpegAvcResourceFinish");
-
         return 0;
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xAF26BB01, version = 600)
     public int sceMpegAvcResourceGetAvcEsBuf() {
-        log.warn("UNIMPLEMENTED: sceMpegAvcResourceGetAvcEsBuf");
-
         // Unknown value
         return 0;
     }
 
+    @HLELogging(level="warn")
     @HLEFunction(nid = 0xFCBDB5AD, version = 600)
     public int sceMpegAvcResourceInit(int unknown) {
-        log.warn(String.format("IGNORING: sceMpegAvcResourceInit unknown=%d", unknown));
-
         if (unknown != 1) {
         	return SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
         }

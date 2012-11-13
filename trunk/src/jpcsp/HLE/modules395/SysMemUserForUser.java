@@ -17,17 +17,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules395;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 
+@HLELogging
 public class SysMemUserForUser extends jpcsp.HLE.modules380.SysMemUserForUser {
 	@HLEFunction(nid = 0xEBD5C3E6, version = 395)
 	public int sceKernelSetCompiledSdkVersion395(int sdkVersion) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelSetCompiledSdkVersion395: sdkVersion=%08X", sdkVersion));
-        }
-
         hleSetCompiledSdkVersion(sdkVersion);
 
         return 0;
 	}
-
 }

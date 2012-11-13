@@ -16,13 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules620;
 
-import org.apache.log4j.Logger;
-
 import jpcsp.Memory;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
-import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
@@ -31,8 +28,6 @@ import jpcsp.util.Utilities;
 
 @HLELogging
 public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
-	public static final Logger log = jpcsp.HLE.modules150.sceAtrac3plus.log;
-
 	protected int findRIFFHeader(int addr) {
 		Memory mem = Memory.getInstance();
 		for (int i = 0; i >= -512; i -= 4) {
@@ -50,7 +45,6 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
 		return 0;
 	}
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x0C116E1B, version = 620)
     public int sceAtracLowLevelDecode(@CheckArgument("checkAtracID") int atID, TPointer sourceAddr, TPointer32 sourceBytesConsumedAddr, TPointer samplesAddr, TPointer32 sampleBytesAddr) {
         AtracID id = atracIDs.get(atID);
@@ -168,7 +162,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
         return 0;
     }
 
-	@HLEUnimplemented
+	@HLELogging(level="info")
     @HLEFunction(nid = 0x1575D64B, version = 620)
     public int sceAtracLowLevelInitDecoder(@CheckArgument("checkAtracID") int atID, TPointer32 paramsAddr) {
         int numberOfChannels = paramsAddr.getValue(0);

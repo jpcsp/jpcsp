@@ -17,20 +17,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules630;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.hardware.Model;
 
+@HLELogging
 public class scePower extends jpcsp.HLE.modules150.scePower {
-
 	@HLEFunction(nid = 0x469989AD, version = 630)
     public int scePower_469989AD(int pllClock, int cpuClock, int busClock) {
         // Identical to scePowerSetClockFrequency.
         this.pllClock = pllClock;
         this.cpuClock = cpuClock;
         this.busClock = busClock;
-
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("scePower_469989AD pll: %d, cpu: %d, bus: %d", pllClock, cpuClock, busClock));
-        }
 
         return 0;
     }

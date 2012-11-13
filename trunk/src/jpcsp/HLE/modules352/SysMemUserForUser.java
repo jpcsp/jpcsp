@@ -14,105 +14,74 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules352;
 
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.PspString;
+import jpcsp.HLE.StringInfo;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
-import jpcsp.Memory;
-import static jpcsp.util.Utilities.readStringNZ;
 
+@HLELogging
 public class SysMemUserForUser extends jpcsp.HLE.modules280.SysMemUserForUser {
-
     // sceKernelFreeMemoryBlock (internal name)
 	@HLEFunction(nid = 0x50F61D8A, version = 352)
-	public void SysMemUserForUser_50F61D8A(Processor processor) {
-		CpuState cpu = processor.cpu;
-		
-		int uid = cpu._a0;
-
+	public int SysMemUserForUser_50F61D8A(int uid) {
 		SysMemInfo info = blockList.remove(uid);
         if (info == null) {
             log.warn("SysMemUserForUser_50F61D8A(uid=0x" + Integer.toHexString(uid) + ") unknown uid");
-            cpu._v0 = SceKernelErrors.ERROR_KERNEL_UNKNOWN_UID;
-        } else {
-            log.debug("SysMemUserForUser_50F61D8A(uid=0x" + Integer.toHexString(uid) + ")");
-            free(info);
-            cpu._v0 = 0;
+            return SceKernelErrors.ERROR_KERNEL_UNKNOWN_UID;
         }
+
+        free(info);
+
+        return 0;
 	}
-    
+
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xACBD88CA, version = 352)
-	public void SysMemUserForUser_ACBD88CA(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.debug("Unimplemented NID function SysMemUserForUser_ACBD88CA [0xACBD88CA]");
-
-		cpu._v0 = 0xDEADC0DE;
+	public int SysMemUserForUser_ACBD88CA() {
+		return 0;
 	}
 
     // sceKernelGetMemoryBlockAddr (internal name)
 	@HLEFunction(nid = 0xDB83A952, version = 352)
-	public void SysMemUserForUser_DB83A952(Processor processor) {
-		CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-		
-		int uid = cpu._a0;
-		int addr = cpu._a1;
-
+	public int SysMemUserForUser_DB83A952(int uid, TPointer32 addr) {
 		SysMemInfo info = blockList.get(uid);
         if (info == null) {
-            log.warn("SysMemUserForUser_DB83A952(uid=0x" + Integer.toHexString(uid)
-                    + ", addr=0x" + Integer.toHexString(addr) + ") unknown uid");
-            cpu._v0 = SceKernelErrors.ERROR_KERNEL_UNKNOWN_UID;
-        } else if (!Memory.isAddressGood(addr)) {
-            log.warn("SysMemUserForUser_DB83A952(uid=0x" + Integer.toHexString(uid)
-                    + ", addr=0x" + Integer.toHexString(addr) + ") bad addr");
-            cpu._v0 = SceKernelErrors.ERROR_KERNEL_ILLEGAL_ADDR;
-        } else {
-            if (log.isDebugEnabled()) {
-        		log.debug("SysMemUserForUser_DB83A952(uid=0x" + Integer.toHexString(uid)
-                    + ", addr=0x" + Integer.toHexString(addr) + ") addr 0x" + Integer.toHexString(info.addr));
-        	}
-            mem.write32(addr, info.addr);
-            cpu._v0 = 0;
+            log.warn(String.format("SysMemUserForUser_DB83A952 uid=0x%X, addr=%s: unknown uid", uid, addr));
+            return SceKernelErrors.ERROR_KERNEL_UNKNOWN_UID;
         }
+
+        addr.setValue(info.addr);
+
+        return 0;
 	}
 
 	// sceKernelAllocMemoryBlock (internal name)
 	@HLEFunction(nid = 0xFE707FDF, version = 352)
-	public void SysMemUserForUser_FE707FDF(Processor processor) {
-		CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-		
-		int pname = cpu._a0;
-		int type = cpu._a1;
-		int size = cpu._a2;
-		int paramsAddr = cpu._a3;
-
-		String name = readStringNZ(pname, 32);
-		if (log.isDebugEnabled()) {
-	        log.debug(String.format("SysMemUserForUser_FE707FDF(name='%s', type=%s, size=0x%X, paramsAddr=0x%08X", name, getTypeName(type), size, paramsAddr));
-		}
-        if (paramsAddr != 0) {
-        	int length = mem.read32(paramsAddr);
+	public int SysMemUserForUser_FE707FDF(@StringInfo(maxLength=32) PspString name, int type, int size, @CanBeNull TPointer paramsAddr) {
+        if (paramsAddr.isNotNull()) {
+        	int length = paramsAddr.getValue32();
         	if (length != 4) {
-        		log.warn("SysMemUserForUser_FE707FDF: unknown parameters with length=" + length);
+        		log.warn(String.format("SysMemUserForUser_FE707FDF: unknown parameters with length=%d", length));
         	}
         }
-        if (type < PSP_SMEM_Low || type > PSP_SMEM_High) {
-            cpu._v0 = SceKernelErrors.ERROR_KERNEL_ILLEGAL_MEMBLOCK_ALLOC_TYPE;
-        } else {
-            // Always allocate memory in user area (partitionid == 2).
-            SysMemInfo info = malloc(SysMemUserForUser.USER_PARTITION_ID, name, type, size, 0);
-            if (info != null) {
-                cpu._v0 = info.uid;
-            } else {
-                cpu._v0 = SceKernelErrors.ERROR_KERNEL_FAILED_ALLOC_MEMBLOCK;
-            }
-        }
-	}
 
+        if (type < PSP_SMEM_Low || type > PSP_SMEM_High) {
+            return SceKernelErrors.ERROR_KERNEL_ILLEGAL_MEMBLOCK_ALLOC_TYPE;
+        }
+
+        // Always allocate memory in user area (partitionid == 2).
+        SysMemInfo info = malloc(SysMemUserForUser.USER_PARTITION_ID, name.getString(), type, size, 0);
+        if (info == null) {
+        	return SceKernelErrors.ERROR_KERNEL_FAILED_ALLOC_MEMBLOCK;
+        }
+
+        return info.uid;
+	}
 }

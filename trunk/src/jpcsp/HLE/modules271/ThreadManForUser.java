@@ -17,8 +17,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules271;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.kernel.Managers;
 
+@HLELogging
 public class ThreadManForUser extends jpcsp.HLE.modules150.ThreadManForUser {
     @HLEFunction(nid = 0x0DDCD2C9, version = 271, checkInsideInterrupt = true)
     public void sceKernelTryLockMutex(int uid, int count) {

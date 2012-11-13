@@ -16,8 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules600;
 
-import org.apache.log4j.Logger;
-
 import jpcsp.Memory;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
@@ -28,7 +26,6 @@ import jpcsp.HLE.modules150.sceAtrac3plus.AtracID;
 
 @HLELogging
 public class sceSasCore extends jpcsp.HLE.modules500.sceSasCore {
-	public static Logger log = jpcsp.HLE.modules150.sceSasCore.log;
 	private static final int SASCORE_ATRAC3_CONTEXT_OFFSET = 20;
 	private static final int SASCORE_VOICE_SIZE = 56;
 
