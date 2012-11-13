@@ -1841,10 +1841,10 @@ public class VideoEngine {
         	mustComputeWeights = false;
         }
 
-    	if (maxSpriteWidth == 0 || context.scissor_x2 < maxSpriteWidth) {
+    	if (context.scissor_x2 < maxSpriteWidth) {
     		maxSpriteWidth = context.scissor_x2;
     	}
-    	if (maxSpriteHeight == 0 || context.scissor_y2 < maxSpriteHeight) {
+    	if (context.scissor_y2 < maxSpriteHeight) {
     		maxSpriteHeight = context.scissor_y2;
     	}
 

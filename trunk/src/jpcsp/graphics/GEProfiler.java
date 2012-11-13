@@ -44,6 +44,7 @@ public class GEProfiler {
     private static long geListCount;
     private static long textureLoadCount;
     private static long copyGeToMemoryCount;
+    private static long copyStencilToMemoryCount;
 
 	private static class ProfilerEnabledSettingsListerner extends AbstractBoolSettingsListener {
 		@Override
@@ -91,6 +92,7 @@ public class GEProfiler {
         log.info(String.format("GE list count: %d", geListCount));
         log.info(String.format("Texture load count: %d, average %.1f per GE list", textureLoadCount, textureLoadCount / (double) geListCount));
         log.info(String.format("Copy GE to memory: %d, average %.1f per GE list", copyGeToMemoryCount, copyGeToMemoryCount / (double) geListCount));
+        log.info(String.format("Copy Stencil to memory: %d, average %.1f per GE list", copyStencilToMemoryCount, copyStencilToMemoryCount / (double) geListCount));
         GeCommands geCommands = GeCommands.getInstance();
         for (Integer cmd : cmdCounts.keySet()) {
         	Long cmdCount = cmdCounts.get(cmd);
@@ -142,5 +144,9 @@ public class GEProfiler {
 
     public static void copyGeToMemory() {
     	copyGeToMemoryCount++;
+    }
+
+    public static void copyStencilToMemory() {
+    	copyStencilToMemoryCount++;
     }
 }

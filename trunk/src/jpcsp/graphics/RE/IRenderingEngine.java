@@ -482,4 +482,5 @@ public interface IRenderingEngine {
 	public void setBlendDFix(int dfix, float[] color);
 	public void waitForRenderingCompletion();
 	public boolean canReadAllVertexInfo();
+	public void readStencil(int x, int y, int width, int height, int bufferSize, Buffer buffer);
 }

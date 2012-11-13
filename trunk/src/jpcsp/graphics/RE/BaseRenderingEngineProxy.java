@@ -981,4 +981,9 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	public boolean canReadAllVertexInfo() {
 		return proxy.canReadAllVertexInfo();
 	}
+
+	@Override
+	public void readStencil(int x, int y, int width, int height, int bufferSize, Buffer buffer) {
+		proxy.readStencil(x, y, width, height, bufferSize, buffer);
+	}
 }
