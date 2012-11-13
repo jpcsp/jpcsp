@@ -18,6 +18,4 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 public class sceUtility extends jpcsp.HLE.modules600.sceUtility {
-	@Override
-	public final String getName() { return "sceUtility"; }
 }
