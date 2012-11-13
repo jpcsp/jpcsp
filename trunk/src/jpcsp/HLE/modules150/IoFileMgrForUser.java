@@ -38,6 +38,7 @@ import static jpcsp.util.Utilities.readStringZ;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
@@ -101,9 +102,9 @@ import org.apache.log4j.Logger;
  * 2. The PSP's filesystem supports permissions.
  * Implement PSP_O_CREAT based on Java File and it's setReadable/Writable/Executable.
  */
+@HLELogging
 public class IoFileMgrForUser extends HLEModule {
-
-    private static Logger log = Modules.getLogger("IoFileMgrForUser");
+    public static Logger log = Modules.getLogger("IoFileMgrForUser");
     private static Logger stdout = Logger.getLogger("stdout");
     private static Logger stderr = Logger.getLogger("stderr");
     public final static int PSP_O_RDONLY = 0x0001;
@@ -2555,10 +2556,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x3251EA56, version = 150, checkInsideInterrupt = true)
     public int sceIoPollAsync(int id, int res_addr) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoPollAsync redirecting to hleIoWaitAsync");
-        }
-
         return hleIoWaitAsync(id, res_addr, false, false);
     }
 
@@ -2572,10 +2569,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xE23EEC33, version = 150, checkInsideInterrupt = true)
     public int sceIoWaitAsync(int id, int res_addr) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoWaitAsync redirecting to hleIoWaitAsync");
-        }
-        
         return hleIoWaitAsync(id, res_addr, true, false);
     }
 
@@ -2589,10 +2582,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x35DBD746, version = 150, checkInsideInterrupt = true)
     public int sceIoWaitAsyncCB(int id, int res_addr) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoWaitAsyncCB redirecting to hleIoWaitAsync");
-        }
-
         return hleIoWaitAsync(id, res_addr, true, true);
     }
 
@@ -2607,10 +2596,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xCB05F8D6, version = 150, checkInsideInterrupt = true)
     public int sceIoGetAsyncStat(int id, int poll, int res_addr) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoGetAsyncStat poll=0x" + Integer.toHexString(poll) + " redirecting to hleIoWaitAsync");
-        }
-        
         return hleIoWaitAsync(id, res_addr, (poll == 0), false);
     }
 
@@ -2624,36 +2609,29 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xB293727F, version = 150, checkInsideInterrupt = true)
     public int sceIoChangeAsyncPriority(int id, int priority) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoChangeAsyncPriority id=0x" + Integer.toHexString(id) + ", priority=0x" + Integer.toHexString(priority));
-        }
-        
-        int result;
-        
         if (priority == -1) {
             priority = Modules.ThreadManForUserModule.getCurrentThread().currentPriority;
+        } else if (priority < 0) {
+        	return SceKernelErrors.ERROR_KERNEL_ILLEGAL_PRIORITY;
         }
-        if (priority < 0) {
-        	result = SceKernelErrors.ERROR_KERNEL_ILLEGAL_PRIORITY;
-        } else if (id == -1) {
+
+        if (id == -1) {
             defaultAsyncPriority = priority;
-            result = 0;
-        } else {
-            IoInfo info = fileIds.get(id);
-            if (info != null) {
-                if (log.isDebugEnabled()) {
-                    log.debug(String.format("sceIoChangeAsyncPriority changing priority of async thread from fd=%x to %d", info.id, priority));
-                }
-                info.asyncThreadPriority = priority;
-                result = 0;
-                Modules.ThreadManForUserModule.hleKernelChangeThreadPriority(info.asyncThread, priority);
-            } else {
-                log.warn("sceIoChangeAsyncPriority invalid fd=" + id);
-                result = SceKernelErrors.ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
-            }
+            return 0;
         }
-        
-        return result;
+
+        IoInfo info = fileIds.get(id);
+        if (info == null) {
+            log.warn("sceIoChangeAsyncPriority invalid fd=" + id);
+            return SceKernelErrors.ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
+        }
+
+        info.asyncThreadPriority = priority;
+        if (info.asyncThread != null) {
+        	Modules.ThreadManForUserModule.hleKernelChangeThreadPriority(info.asyncThread, priority);
+        }
+
+        return 0;
     }
 
     /**
@@ -2667,29 +2645,22 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xA12A0514, version = 150, checkInsideInterrupt = true)
     public int sceIoSetAsyncCallback(int id, int cbid, int notifyArg) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoSetAsyncCallback - id " + Integer.toHexString(id) + " cbid " + Integer.toHexString(cbid) + " arg 0x" + Integer.toHexString(notifyArg));
-        }
-        
         IoInfo info = fileIds.get(id);
-        int result;
-        
         if (info == null) {
             log.warn("sceIoSetAsyncCallback - unknown id " + Integer.toHexString(id));
-            result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
-        } else {
-            if (Modules.ThreadManForUserModule.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, cbid)) {
-                info.cbid = cbid;
-                info.notifyArg = notifyArg;
-                triggerAsyncThread(info);
-                result = 0;
-            } else {
-                log.warn("sceIoSetAsyncCallback - not a callback id " + Integer.toHexString(id));
-                result = -1;
-            }
+            return ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
         }
-        
-        return result;
+
+        if (!Modules.ThreadManForUserModule.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, cbid)) {
+            log.warn("sceIoSetAsyncCallback - not a callback id " + Integer.toHexString(id));
+            return -1;
+        }
+
+        info.cbid = cbid;
+        info.notifyArg = notifyArg;
+        triggerAsyncThread(info);
+
+        return 0;
     }
 
     /**
@@ -2701,10 +2672,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x810C4BC3, version = 150, checkInsideInterrupt = true)
     public int sceIoClose(int id) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoClose redirecting to hleIoClose");
-        }
-
         int result = hleIoClose(id, false);
         delayIoOperation(IoOperation.close);
 
@@ -2720,10 +2687,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xFF5940B6, version = 150, checkInsideInterrupt = true)
     public int sceIoCloseAsync(int id) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoCloseAsync redirecting to hleIoClose");
-        }
-
         return hleIoClose(id, true);
     }
 
@@ -2738,10 +2701,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x109F50BC, version = 150, checkInsideInterrupt = true)
     public int sceIoOpen(PspString filename, int flags, int permissions) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoOpen redirecting to hleIoOpen");
-        }
-        
         int result = hleIoOpen(filename, flags, permissions, /* async = */ false);
         delayIoOperation(IoOperation.open);
         return result;
@@ -2758,10 +2717,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x89AA9906, version = 150, checkInsideInterrupt = true)
     public int sceIoOpenAsync(PspString filename, int flags, int permissions) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoOpenAsync redirecting to hleIoOpen");
-        }
-        
         return hleIoOpen(filename, flags, permissions, /* async = */ true);
     }
 
@@ -2841,10 +2796,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x27EB27B8, version = 150, checkInsideInterrupt = true)
     public long sceIoLseek(int id, long offset, int whence) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoLseek - id " + Integer.toHexString(id) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
-        }
-
         long result = hleIoLseek(id, offset, whence, true, false);
         delayIoOperation(IoOperation.seek);
         return result;
@@ -2861,10 +2812,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x71B19E77, version = 150, checkInsideInterrupt = true)
     public int sceIoLseekAsync(int id, long offset, int whence) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoLseekAsync - id " + Integer.toHexString(id) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
-        }
-
         return (int) hleIoLseek(id, offset, whence, true, true);
     }
 
@@ -2879,10 +2826,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x68963324, version = 150, checkInsideInterrupt = true)
     public int sceIoLseek32(int id, int offset, int whence) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoLseek32 - id " + Integer.toHexString(id) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
-        }
-
         int result = (int) hleIoLseek(id, (long) offset, whence, false, false);
         delayIoOperation(IoOperation.seek);
         return result;
@@ -2897,10 +2840,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x1B385D8F, version = 150, checkInsideInterrupt = true)
     public int sceIoLseek32Async(int id, int offset, int whence) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoLseek32Async - id " + Integer.toHexString(id) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
-        }
-
         return (int) hleIoLseek(id, (long) offset, whence, false, true);
     }
 
@@ -2949,10 +2888,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xB29DDF9C, version = 150, checkInsideInterrupt = true)
     public int sceIoDopen(PspString dirname) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoDopen dirname = " + dirname);
-        }
-
         String pcfilename = getDeviceFilePath(dirname.getString());
         int result;
         String absoluteFileName = getAbsoluteFileName(dirname.getString());
@@ -3068,7 +3003,9 @@ public class IoFileMgrForUser extends HLEModule {
                 dirent.write(Memory.getInstance(), dirent_addr);
             }
         } else {
-            log.debug("sceIoDread id=" + Integer.toHexString(id) + " no more files");
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceIoDread id=0x%X no more files", id));
+        	}
             result = 0;
         }
         for (IIoListener ioListener : ioListeners) {
@@ -3087,10 +3024,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xEB092469, version = 150, checkInsideInterrupt = true)
     public int sceIoDclose(int id) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoDclose - id = " + Integer.toHexString(id));
-        }
-
         IoDirInfo info = dirIds.get(id);
         int result;
         if (info == null) {
@@ -3120,10 +3053,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xF27A9C51, version = 150, checkInsideInterrupt = true)
     public int sceIoRemove(PspString filename) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoRemove - file = " + filename.getString());
-        }
-
         String pcfilename = getDeviceFilePath(filename.getString());
         int result;
 
@@ -3168,10 +3097,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x06A70004, version = 150, checkInsideInterrupt = true)
     public int sceIoMkdir(PspString dirname, int permissions) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoMkdir dir = " + dirname.getString());
-        }
-
         String pcfilename = getDeviceFilePath(dirname.getString());
         int result;
 
@@ -3208,10 +3133,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x1117C65F, version = 150, checkInsideInterrupt = true)
     public int sceIoRmdir(PspString dirname) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoRmdir dir = " + dirname.getString());
-        }
-
         String pcfilename = getDeviceFilePath(dirname.getString());
         int result;
 
@@ -3248,11 +3169,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x55F4717D, version = 150, checkInsideInterrupt = true)
     public int sceIoChdir(PspString path) {
-
-    	if (log.isDebugEnabled()) {
-            log.debug("sceIoChdir path = " + path.getString());
-        }
-    	
     	int result;
 
         if (path.getString().equals("..")) {
@@ -3289,10 +3205,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xAB96437F, version = 150, checkInsideInterrupt = true)
     public int sceIoSync(PspString devicename, int flag) {
-    	if (log.isDebugEnabled()) {
-            log.debug("IGNORING: sceIoSync(device='" + devicename.getString() + "', flag=0x" + Integer.toHexString(flag) + ")");
-        }
-
         for (IIoListener ioListener : ioListeners) {
             ioListener.sceIoSync(0, devicename.getAddress(), devicename.getString(), flag);
         }
@@ -3309,13 +3221,9 @@ public class IoFileMgrForUser extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0xACE946E8, version = 150, checkInsideInterrupt = true)
-    public int sceIoGetstat(PspString filename, int stat_addr) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoGetstat - file = " + filename.getString() + " stat = " + Integer.toHexString(stat_addr));
-        }
-
+    public int sceIoGetstat(PspString filename, TPointer statAddr) {
         int result;
-        SceIoStat stat;
+        SceIoStat stat = null;
 
         String absoluteFileName = getAbsoluteFileName(filename.getString());
     	StringBuilder localFileName = new StringBuilder();
@@ -3324,7 +3232,6 @@ public class IoFileMgrForUser extends HLEModule {
     		stat = new SceIoStat();
     		result = vfs.ioGetstat(localFileName.toString(), stat);
     	} else if (useVirtualFileSystem) {
-    		stat = null;
             log.error(String.format("sceIoGetstat - device not found '%s'", filename));
             result = ERROR_ERRNO_DEVICE_NOT_FOUND;
     	} else {
@@ -3334,11 +3241,11 @@ public class IoFileMgrForUser extends HLEModule {
     	}
 
     	if (stat != null && result == 0) {
-            stat.write(Memory.getInstance(), stat_addr);
+            stat.write(statAddr);
         }
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoGetStat(result, filename.getAddress(), filename.getString(), stat_addr);
+            ioListener.sceIoGetStat(result, filename.getAddress(), filename.getString(), statAddr.getAddress());
         }
         
         return result;
@@ -3355,10 +3262,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xB8A740F4, version = 150, checkInsideInterrupt = true)
     public int sceIoChstat(PspString filename, int stat_addr, int bits) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoChstat - file = " + filename.getString() + ", bits=0x" + Integer.toHexString(bits));
-        }
-
         String pcfilename = getDeviceFilePath(filename.getString());
         int result;
 
@@ -3441,9 +3344,6 @@ public class IoFileMgrForUser extends HLEModule {
     public int sceIoRename(PspString pspOldFileName, PspString pspNewFileName) {
     	String oldFileName = pspOldFileName.getString();
     	String newFileName = pspNewFileName.getString();
-    	if (log.isDebugEnabled()) {
-            log.debug(String.format("sceIoRename - from '%s' to '%s'", oldFileName, newFileName));
-        }
 
     	// The new file name can omit the file directory, in which case the directory
     	// of the old file name is used.
@@ -3521,16 +3421,14 @@ public class IoFileMgrForUser extends HLEModule {
         int result = -1;
 
         if (log.isDebugEnabled()) {
-            log.debug("sceIoDevctl(device='" + devicename.getString() + "',cmd=0x" + Integer.toHexString(cmd) + ",indata=0x" + Integer.toHexString(indata_addr) + ",inlen=" + inlen + ",outdata=0x" + Integer.toHexString(outdata_addr) + ",outlen=" + outlen + ")");
-
             if (Memory.isAddressGood(indata_addr)) {
                 for (int i = 0; i < inlen; i += 4) {
-                    log.debug("sceIoDevctl indata[" + (i / 4) + "]=0x" + Integer.toHexString(mem.read32(indata_addr + i)));
+                    log.debug(String.format("sceIoDevctl indata[%d]=0x%08X", i / 4, mem.read32(indata_addr + i)));
                 }
             }
             if (Memory.isAddressGood(outdata_addr)) {
                 for (int i = 0; i < outlen; i += 4) {
-                    log.debug("sceIoDevctl outdata[" + (i / 4) + "]=0x" + Integer.toHexString(mem.read32(outdata_addr + i)));
+                    log.debug(String.format("sceIoDevctl outdata[%d]=0x%08X", i / 4, mem.read32(outdata_addr + i)));
                 }
             }
         }
@@ -3887,10 +3785,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x08BD7374, version = 150, checkInsideInterrupt = true)
     public int sceIoGetDevType(int id) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoGetDevType - id " + Integer.toHexString(id));
-        }
-        
         IoInfo info = fileIds.get(id);
         int result;
         if (info == null) {
@@ -3905,46 +3799,25 @@ public class IoFileMgrForUser extends HLEModule {
     }
 
     /**
-     * sceIoAssign
+     * sceIoAssign: mounts physicalDev on filesystemDev and sets an alias to represent it.
      * 
-     * @param alias_addr
-     * @param physical_addr
-     * @param filesystem_addr
-     * @param mode
+     * @param alias
+     * @param physicalDev
+     * @param filesystemDev
+     * @param mode 0 IOASSIGN_RDWR
+     *             1 IOASSIGN_RDONLY
      * @param arg_addr
      * @param argSize
      * 
      * @return
      */
+    @HLELogging(level="warn")
     @HLEFunction(nid = 0xB2A628C1, version = 150, checkInsideInterrupt = true)
-    public int sceIoAssign(int alias_addr, int physical_addr, int filesystem_addr, int mode, int arg_addr, int argSize) {
-        String alias = readStringZ(alias_addr);
-        String physical_dev = readStringZ(physical_addr);
-        String filesystem_dev = readStringZ(filesystem_addr);
-        String perm;
-
-        // IoAssignPerms
-        switch (mode) {
-            case 0:
-                perm = "IOASSIGN_RDWR";
-                break;
-            case 1:
-                perm = "IOASSIGN_RDONLY";
-                break;
-            default:
-                perm = "unhandled " + mode;
-                break;
-        }
-
-        // Mounts physical_dev on filesystem_dev and sets an alias to represent it.
-        log.warn("IGNORING: sceIoAssign(alias='" + alias + "', physical_dev='" + physical_dev + "', filesystem_dev='" + filesystem_dev + "', mode=" + perm + ", arg_addr=0x" + Integer.toHexString(arg_addr) + ", argSize=" + argSize + ")");
-
-        
+    public int sceIoAssign(PspString alias, PspString physicalDev, PspString filesystemDev, int mode, int arg_addr, int argSize) {
         int result = 0;
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoAssign(result, alias_addr, alias, physical_addr, physical_dev,
-                    filesystem_addr, filesystem_dev, mode, arg_addr, argSize);
+            ioListener.sceIoAssign(result, alias.getAddress(), alias.getString(), physicalDev.getAddress(), physicalDev.getString(), filesystemDev.getAddress(), filesystemDev.getString(), mode, arg_addr, argSize);
         }
         
         return result;
@@ -3957,10 +3830,9 @@ public class IoFileMgrForUser extends HLEModule {
      * 
      * @return
      */
+    @HLELogging(level="warn")
     @HLEFunction(nid = 0x6D08A871, version = 150, checkInsideInterrupt = true)
     public int sceIoUnassign(PspString alias) {
-        log.warn("IGNORING: sceIoUnassign (alias='" + alias.getString() + ")");
-
         return 0;
     }
 
@@ -3973,10 +3845,6 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xE8BC6571, version = 150, checkInsideInterrupt = true)
     public int sceIoCancel(int id) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceIoCancel - id " + Integer.toHexString(id));
-        }
-        
         IoInfo info = fileIds.get(id);
         int result;
         
@@ -3998,33 +3866,29 @@ public class IoFileMgrForUser extends HLEModule {
     /**
      * sceIoGetFdList
      * 
-     * @param out_addr
+     * @param outAddr
      * @param outSize
-     * @param fdNum_addr
+     * @param fdNumAddr
      * 
      * @return
      */
     @HLEFunction(nid = 0x5C2BE2CC, version = 150, checkInsideInterrupt = true)
-    public int sceIoGetFdList(@CanBeNull TPointer32 out_addr, int outSize, @CanBeNull TPointer32 fdNum_addr) {
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceIoGetFdList out_addr=%s, outSize=%d, fdNum_addr=%s", out_addr, outSize, fdNum_addr));
-        }
-
+    public int sceIoGetFdList(@CanBeNull TPointer32 outAddr, int outSize, @CanBeNull TPointer32 fdNumAddr) {
         int count = 0;
-        if (out_addr.isNotNull() && outSize > 0) {
+        if (outAddr.isNotNull() && outSize > 0) {
         	int offset = 0;
 	        for (Integer fd : fileIds.keySet()) {
 	        	if (offset >= outSize) {
 	        		break;
 	        	}
-	        	out_addr.setValue(offset, fd.intValue());
+	        	outAddr.setValue(offset, fd.intValue());
 	        	offset += 4;
 	        }
 	        count = offset / 4;
         }
 
         // Return the total number of files open
-    	fdNum_addr.setValue(fileIds.size());
+    	fdNumAddr.setValue(fileIds.size());
 
         return count;
     }

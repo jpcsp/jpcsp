@@ -38,7 +38,7 @@ import jpcsp.HLE.modules.HLEModule;
 import org.apache.log4j.Logger;
 
 public class sceCtrl extends HLEModule {
-    private static Logger log = Modules.getLogger("sceCtrl");
+    public static Logger log = Modules.getLogger("sceCtrl");
 
     private int cycle;
     private int mode;

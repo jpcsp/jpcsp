@@ -34,8 +34,7 @@ import jpcsp.HLE.modules.HLEModule;
 import org.apache.log4j.Logger;
 
 public class sceHttps extends HLEModule {
-
-    protected static Logger log = Modules.getLogger("sceHttps");
+    public static Logger log = Modules.getLogger("sceHttps");
 
     @Override
     public String getName() {

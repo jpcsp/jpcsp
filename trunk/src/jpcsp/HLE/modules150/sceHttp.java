@@ -42,7 +42,7 @@ import jpcsp.util.Utilities;
 import org.apache.log4j.Logger;
 
 public class sceHttp extends HLEModule {
-    protected static Logger log = Modules.getLogger("sceHttp");
+    public static Logger log = Modules.getLogger("sceHttp");
     public static final int PSP_HTTP_SYSTEM_COOKIE_HEAP_SIZE = 130 * 1024;
     private boolean isHttpInit;
     private boolean isSystemCookieLoaded;

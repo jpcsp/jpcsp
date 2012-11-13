@@ -4023,9 +4023,9 @@ public class VideoEngine {
     }
 
     private void executeCommandPSM() {
-    	context.psm = normalArgument;
+    	context.psm = normalArgument & 0x3;
         if (isLogDebugEnabled) {
-            log("psm=" + normalArgument + "(" + getPsmName(normalArgument) + ")");
+            log(String.format("psm=%d %s (0x%X)", context.psm, getPsmName(context.psm), normalArgument));
         }
         geBufChanged = true;
     }

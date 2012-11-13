@@ -18,6 +18,7 @@ package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer32;
@@ -42,9 +43,9 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class LoadExecForUser extends HLEModule {
-
-    protected static Logger log = Modules.getLogger("LoadExecForUser");
+    public static Logger log = Modules.getLogger("LoadExecForUser");
     protected int registeredExitCallbackUid;
 
     @Override
@@ -56,25 +57,22 @@ public class LoadExecForUser extends HLEModule {
         Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_EXIT, 0);
     }
 
+    @HLELogging(level="info")
     @HLEFunction(nid = 0xBD2F1094, version = 150, checkInsideInterrupt = true)
-    public int sceKernelLoadExec(PspString filename, @CanBeNull TPointer32 option_addr) {
+    public int sceKernelLoadExec(PspString filename, @CanBeNull TPointer32 optionAddr) {
         String name = filename.getString();
-
-        if (log.isInfoEnabled()) {
-        	log.info(String.format("sceKernelLoadExec file=%s optionAddr=%s", filename, option_addr));
-        }
 
         // Flush system memory to mimic a real PSP reset.
         Modules.SysMemUserForUserModule.reset();
 
         byte[] arguments = null;
         int argSize = 0;
-        if (option_addr.isNotNull()) {
-            int optSize = option_addr.getValue(0);   // Size of the option struct.
+        if (optionAddr.isNotNull()) {
+            int optSize = optionAddr.getValue(0);   // Size of the option struct.
             if (optSize >= 16) {
-	            argSize = option_addr.getValue(4);       // Size of memory required for arguments.
-	            int argAddr = option_addr.getValue(8);   // Arguments (memory area of size argSize).
-	            int keyAddr = option_addr.getValue(12);  // Pointer to an encryption key (may not be used).
+	            argSize = optionAddr.getValue(4);       // Size of memory required for arguments.
+	            int argAddr = optionAddr.getValue(8);   // Arguments (memory area of size argSize).
+	            int keyAddr = optionAddr.getValue(12);  // Pointer to an encryption key (may not be used).
 
 	            if (log.isDebugEnabled()) {
 	            	log.debug(String.format("sceKernelLoadExec params: optSize=%d, argSize=%d, argAddr=0x%08X, keyAddr=0x%08X: %s", optSize, argSize, argAddr, keyAddr, Utilities.getMemoryDump(argAddr, argSize)));
@@ -136,9 +134,9 @@ public class LoadExecForUser extends HLEModule {
         return 0;
     }
 
+    @HLELogging(level="info")
     @HLEFunction(nid = 0x2AC9954B, version = 150, checkInsideInterrupt = true)
     public int sceKernelExitGameWithStatus(int status) {
-        log.info("Program exit detected with status=" + status + " (sceKernelExitGameWithStatus)");
         Emulator.PauseEmuWithStatus(status);
         RuntimeContext.reset();
         Modules.ThreadManForUserModule.stop();
@@ -146,9 +144,9 @@ public class LoadExecForUser extends HLEModule {
         return 0;
     }
 
+    @HLELogging(level="info")
     @HLEFunction(nid = 0x05572A5F, version = 150, checkInsideInterrupt = true)
     public int sceKernelExitGame() {
-        log.info("Program exit detected (sceKernelExitGame)");
         Emulator.PauseEmu();
         RuntimeContext.reset();
         Modules.ThreadManForUserModule.stop();
@@ -158,8 +156,6 @@ public class LoadExecForUser extends HLEModule {
 
     @HLEFunction(nid = 0x4AC57943, version = 150, checkInsideInterrupt = true)
     public int sceKernelRegisterExitCallback(int uid) {
-        log.info("sceKernelRegisterExitCallback SceUID=" + Integer.toHexString(uid));
-
         if (Modules.ThreadManForUserModule.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_EXIT, uid)) {
             registeredExitCallbackUid = uid;
         }

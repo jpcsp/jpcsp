@@ -17,12 +17,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.hardware.Interrupts;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class Kernel_Library extends HLEModule {
     public static Logger log = Modules.getLogger("Kernel_Library");
 
@@ -41,10 +43,6 @@ public class Kernel_Library extends HLEModule {
      */
     @HLEFunction(nid = 0x092968F4, version = 150)
     public int sceKernelCpuSuspendIntr() {
-        if (log.isDebugEnabled()) {
-        	log.debug("sceKernelCpuSuspendIntr interruptsEnabled=" + Interrupts.isInterruptsEnabled());
-        }
-
         int returnValue;
         if (Interrupts.isInterruptsEnabled()) {
         	returnValue = flagInterruptsEnabled;
@@ -56,6 +54,16 @@ public class Kernel_Library extends HLEModule {
         return returnValue;
     }
 
+    protected void hleKernelCpuResumeIntr(int flagInterrupts) {
+        if (flagInterrupts == flagInterruptsEnabled) {
+        	Interrupts.enableInterrupts();
+        } else if (flagInterrupts == flagInterruptsDisabled) {
+        	Interrupts.disableInterrupts();
+        } else {
+        	log.warn(String.format("hleKernelCpuResumeIntr unknown flag value 0x%X", flagInterrupts));
+        }
+    }
+
     /**
      * Resume all interrupts.
      *
@@ -63,17 +71,7 @@ public class Kernel_Library extends HLEModule {
      */
     @HLEFunction(nid = 0x5F10D406, version = 150)
     public void sceKernelCpuResumeIntr(int flagInterrupts) {
-        if (log.isDebugEnabled()) {
-        	log.debug("sceKernelCpuResumeIntr flag=" + flagInterrupts);
-        }
-
-        if (flagInterrupts == flagInterruptsEnabled) {
-        	Interrupts.enableInterrupts();
-        } else if (flagInterrupts == flagInterruptsDisabled) {
-        	Interrupts.disableInterrupts();
-        } else {
-        	log.warn("sceKernelCpuResumeIntr unknown flag value " + flagInterrupts);
-        }
+    	hleKernelCpuResumeIntr(flagInterrupts);
     }
 
     /**
@@ -83,10 +81,7 @@ public class Kernel_Library extends HLEModule {
      */
     @HLEFunction(nid = 0x3B84732D, version = 150)
     public void sceKernelCpuResumeIntrWithSync(int flagInterrupts) {
-    	if (log.isDebugEnabled()) {
-        	log.debug("sceKernelCpuResumeIntrWithSync redirecting to sceKernelCpuResumeIntr");
-    	}
-    	sceKernelCpuResumeIntr(flagInterrupts);
+    	hleKernelCpuResumeIntr(flagInterrupts);
     }
 
     /**
@@ -98,8 +93,6 @@ public class Kernel_Library extends HLEModule {
      */
     @HLEFunction(nid = 0x47A0B729, version = 150)
     public boolean sceKernelIsCpuIntrSuspended(int flagInterrupts) {
-    	log.warn("sceKernelIsCpuIntrSuspended flag=" + flagInterrupts);
-
 		return flagInterrupts == flagInterruptsDisabled;
     }
 
@@ -110,10 +103,6 @@ public class Kernel_Library extends HLEModule {
      */
     @HLEFunction(nid = 0xB55249D2, version = 150)
     public boolean sceKernelIsCpuIntrEnable() {
-        if (log.isDebugEnabled()) {
-        	log.debug("sceKernelIsCpuIntrEnable interruptsEnabled=" + Interrupts.isInterruptsEnabled());
-        }
-
         return Interrupts.isInterruptsEnabled();
     }
 }

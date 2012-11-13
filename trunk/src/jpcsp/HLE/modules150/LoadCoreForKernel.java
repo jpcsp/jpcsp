@@ -14,10 +14,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.TPointer;
@@ -28,11 +28,14 @@ import jpcsp.HLE.modules.HLEModule;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class LoadCoreForKernel extends HLEModule {
-    private static Logger log = Modules.getLogger("LoadCoreForKernel");
+    public static Logger log = Modules.getLogger("LoadCoreForKernel");
 
 	@Override
-	public String getName() { return "LoadCoreForKernel"; }
+	public String getName() {
+		return "LoadCoreForKernel";
+	}
 
     @HLEUnimplemented
 	@HLEFunction(nid = 0xACE23476, version = 150)
@@ -76,10 +79,9 @@ public class LoadCoreForKernel extends HLEModule {
 		return 0;
 	}
 
+    @HLELogging(level="trace")
     @HLEFunction(nid = 0xD8779AC6, version = 150)
     public int sceKernelIcacheClearAll() {
-        log.trace("IGNORING:sceKernelIcacheClearAll");
-
         return 0;
     }
 
@@ -181,10 +183,6 @@ public class LoadCoreForKernel extends HLEModule {
 
     @HLEFunction(nid = 0xCF8A41B1, version = 150)
     public int sceKernelFindModuleByName(PspString moduleName) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceKernelFindModuleByName moduleName=%s", moduleName));
-    	}
-
         SceModule module = Managers.modules.getModuleByName(moduleName.getString());
         if (module == null) {
             log.warn(String.format("sceKernelFindModuleByName not found moduleName=%s", moduleName));
@@ -200,10 +198,6 @@ public class LoadCoreForKernel extends HLEModule {
 
     @HLEFunction(nid = 0xFB8AE27D, version = 150)
     public int sceKernelFindModuleByAddress(TPointer address) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceKernelFindModuleByAddress address=%s", address));
-    	}
-
         SceModule module = Managers.modules.getModuleByAddress(address.getAddress());
         if (module == null) {
             log.warn(String.format("sceKernelFindModuleByAddress not found module address=%s", address));
@@ -223,10 +217,6 @@ public class LoadCoreForKernel extends HLEModule {
 
     @HLEFunction(nid = 0xCCE4A157, version = 150)
     public int sceKernelFindModuleByUID(int uid) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceKernelFindModuleByUID uid=0x%X", uid));
-    	}
-
         SceModule module = Managers.modules.getModuleByUID(uid);
         if (module == null) {
             log.warn(String.format("sceKernelFindModuleByUID not found module uid=0x%X", uid));

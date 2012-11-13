@@ -16,11 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import jpcsp.Memory;
-import jpcsp.HLE.Modules;
-
 /** http://psp.jim.sh/pspsdk-doc/structSceIoDirent.html */
-public class SceIoDirent {
+public class SceIoDirent extends pspAbstractMemoryMappedStructure {
     public SceIoStat stat;
     public String filename;
 
@@ -29,31 +26,23 @@ public class SceIoDirent {
         this.filename = filename;
     }
 
-    public void write(Memory mem, int address) {
-        int len, i;
+	@Override
+	protected void read() {
+		stat = new SceIoStat();
+		read(stat);
+		filename = readStringNZ(256);
+	}
 
-        if (!Memory.isAddressGood(address) || !Memory.isAddressGood(address + sizeof()))
-            Modules.log.warn("SceIoDirent write bad address " + String.format("0x%08X", address));
-
-        stat.write(mem, address);
-
-        len = filename.length();
-        if (len > 255)
-            len = 255;
-
-        for (i = 0; i < len; i++)
-            mem.write8(address + SceIoStat.sizeof() + i, (byte)filename.charAt(i));
-
-        // Zero out remaining space, we need at least 1 to safely terminate the string
-        for (; i < 256; i++)
-            mem.write8(address + SceIoStat.sizeof() + i, (byte)0);
-
+	@Override
+	protected void write() {
+		write(stat);
+		writeStringNZ(256, filename);
         // 2 ints reserved
-        mem.write32(address + SceIoStat.sizeof() + 256, 0xcdcdcdcd);
-        mem.write32(address + SceIoStat.sizeof() + 256 + 4, 0xcdcdcdcd);
-    }
+		writeUnknown(8);
+	}
 
-    public static int sizeof() {
-        return SceIoStat.sizeof() + 256 + 8;
-    }
+	@Override
+	public int sizeof() {
+		return SceIoStat.SIZEOF + 256 + 8;
+	}
 }

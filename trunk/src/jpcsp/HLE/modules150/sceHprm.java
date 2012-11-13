@@ -27,23 +27,16 @@ import jpcsp.HLE.modules.HLEModule;
 import org.apache.log4j.Logger;
 
 public class sceHprm extends HLEModule {
-    private static Logger log = Modules.getLogger("sceHprm");
+    public static Logger log = Modules.getLogger("sceHprm");
 
     @Override
-    public String getName() { return "sceHprm"; }
+    public String getName() {
+    	return "sceHprm";
+	}
     
-    @Override
-    public void start() {
-    	hprmWarningLogged = false;
-
-        super.start();
-    }
-
     private boolean enableRemote = false;
     private boolean enableHeadphone = false;
     private boolean enableMicrophone = false;
-
-    private boolean hprmWarningLogged;
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xC7154136, version = 150)
@@ -92,15 +85,6 @@ public class sceHprm extends HLEModule {
 
     @HLEFunction(nid = 0x1910B327, version = 150)
     public int sceHprmPeekCurrentKey(TPointer32 keyAddr) {
-        if (hprmWarningLogged) {
-            if (log.isDebugEnabled()) {
-                log.debug(String.format("IGNORING: sceHprmPeekCurrentKey keyAddr=%s", keyAddr));
-            }
-        } else {
-            log.warn(String.format("IGNORING: sceHprmPeekCurrentKey keyAddr=%s", keyAddr));
-            hprmWarningLogged = true;
-        }
-
         keyAddr.setValue(0); // fake
 
         return 0; // check
@@ -108,29 +92,11 @@ public class sceHprm extends HLEModule {
 
     @HLEFunction(nid = 0x2BCEC83E, version = 150)
     public int sceHprmPeekLatch(TPointer latchAddr) {
-        if (hprmWarningLogged) {
-            if (log.isDebugEnabled()) {
-            	log.debug(String.format("IGNORING: sceHprmPeekLatch %s", latchAddr));
-            }
-        } else {
-        	log.warn(String.format("IGNORING: sceHprmPeekLatch %s", latchAddr));
-        	hprmWarningLogged = true;
-        }
-
         return 0;
     }
 
     @HLEFunction(nid = 0x40D2F9F0, version = 150)
     public int sceHprmReadLatch(TPointer latchAddr) {
-        if (hprmWarningLogged) {
-            if (log.isDebugEnabled()) {
-            	log.debug(String.format("IGNORING: sceHprmReadLatch %s", latchAddr));
-            }
-        } else {
-        	log.warn(String.format("IGNORING: sceHprmReadLatch %s", latchAddr));
-        	hprmWarningLogged = true;
-        }
-
         return 0;
     }
 }
