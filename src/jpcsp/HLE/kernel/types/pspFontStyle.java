@@ -29,6 +29,7 @@ public class pspFontStyle extends pspAbstractMemoryMappedStructure {
 	public static final int FONT_LANGUAGE_JAPANESE = 1;
 	public static final int FONT_LANGUAGE_LATIN    = 2;
 	public static final int FONT_LANGUAGE_KOREAN   = 3;
+	public static final int FONT_LANGUAGE_CHINESE  = 4;
 
 	public float fontH;           // Horizontal size.
 	public float fontV;           // Vertical size.

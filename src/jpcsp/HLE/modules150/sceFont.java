@@ -18,6 +18,7 @@ package jpcsp.HLE.modules150;
 
 import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_FAMILY_SANS_SERIF;
 import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_FAMILY_SERIF;
+import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_LANGUAGE_CHINESE;
 import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_LANGUAGE_JAPANESE;
 import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_LANGUAGE_KOREAN;
 import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_LANGUAGE_LATIN;
@@ -61,6 +62,7 @@ import jpcsp.HLE.kernel.types.pspFontStyle;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.filesystems.SeekableDataInput;
+import jpcsp.format.BWFont;
 import jpcsp.format.PGF;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.capture.CaptureImage;
@@ -254,6 +256,11 @@ public class sceFont extends HLEModule {
         fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_BOLD_ITALIC, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn14.pgf", "FTT-NewRodin Pro Latin", 0, 0));
         fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF, FONT_STYLE_BOLD_ITALIC, 0, FONT_LANGUAGE_LATIN, 0, 1, "ltn15.pgf", "FTT-Matisse Pro Latin", 0, 0));
         fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_REGULAR, 0, FONT_LANGUAGE_KOREAN, 0, 3, "kr0.pgf", "AsiaNHH(512Johab)", 0, 0));
+
+        // Add the Chinese fixed font file if it is present, i.e. if copied from a real PSP flash0:/font/gb3s1518.bwfon
+        if (Modules.IoFileMgrForUserModule.statFile(fontDirPath + "/gb3s1518.bwfon") != null) {
+        	fontRegistry.add(new FontRegistryEntry(BWFont.charBitmapWidth << 6, BWFont.charBitmapHeight << 6, 0, 0, 0, 0, 0, FONT_STYLE_REGULAR, 0, FONT_LANGUAGE_CHINESE, 0, 0, "gb3s1518.bwfon", "gb3s1518", 0, 0));
+        }
     }
 
     protected void loadDefaultSystemFont() {
@@ -326,12 +333,18 @@ public class sceFont extends HLEModule {
         Font font = null;
 
         try {
-            PGF pgfFile = new PGF(pgfBuffer);
-            if (fileName != null) {
+        	PGF pgfFile;
+        	if (fileName.endsWith(".bwfon")) {
+        		pgfFile = new BWFont(pgfBuffer, fileName);
+        	} else {
+        		pgfFile = new PGF(pgfBuffer);
+        	}
+
+        	if (fileName != null) {
                 pgfFile.setFileNamez(fileName);
             }
 
-            SceFontInfo fontInfo = new SceFontInfo(pgfFile);
+            SceFontInfo fontInfo = pgfFile.createFontInfo();
 
             font = new Font(pgfFile, fontInfo);
 
