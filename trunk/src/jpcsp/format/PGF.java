@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 
 import jpcsp.HLE.ISerializeString;
 import jpcsp.HLE.ISerializeStruct;
+import jpcsp.HLE.kernel.types.SceFontInfo;
 
 public class PGF {
 	@ISerializeStruct(size = 168)
@@ -159,6 +160,9 @@ public class PGF {
     protected int fontDataLength;
 
     protected String fileNamez = "";
+
+    protected PGF() {
+    }
 
     public PGF(ByteBuffer f) throws IOException {
         read(f);
@@ -468,5 +472,9 @@ public class PGF {
 
 	public int getYAdjustTableLength() {
 		return yAdjustTableLength;
+	}
+
+	public SceFontInfo createFontInfo() {
+		return new SceFontInfo(this);
 	}
 }

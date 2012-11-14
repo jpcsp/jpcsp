@@ -96,6 +96,9 @@ public class SceFontInfo {
     	return table;
     }
 
+    protected SceFontInfo() {
+    }
+
     public SceFontInfo(PGF fontFile) {
         // PGF.
         fileName = fontFile.getFileNamez();
@@ -350,30 +353,30 @@ public class SceFontInfo {
                     yy = pixelIndex % glyph.h;
                 }
 
-                // 4-bit color value
-                int pixelColor = value;
-                switch (pixelformat) {
-                	case sceFont.PSP_FONT_PIXELFORMAT_8:
-                        // 8-bit color value
-                		pixelColor |= pixelColor << 4;
-                		break;
-                	case sceFont.PSP_FONT_PIXELFORMAT_24:
-                        // 24-bit color value
-                		pixelColor |= pixelColor << 4;
-                		pixelColor |= pixelColor << 8;
-                		pixelColor |= pixelColor << 8;
-                		break;
-                	case sceFont.PSP_FONT_PIXELFORMAT_32:
-                        // 32-bit color value
-    					pixelColor |= pixelColor << 4;
-    					pixelColor |= pixelColor << 8;
-    					pixelColor |= pixelColor << 16;
-    					break;
-                }
-
                 int pixelX = x + xx;
                 int pixelY = y + yy;
                 if (pixelX >= clipX && pixelX < clipX + clipWidth && pixelY >= clipY && pixelY < clipY + clipHeight) {
+                    // 4-bit color value
+                    int pixelColor = value;
+                    switch (pixelformat) {
+                    	case sceFont.PSP_FONT_PIXELFORMAT_8:
+                            // 8-bit color value
+                    		pixelColor |= pixelColor << 4;
+                    		break;
+                    	case sceFont.PSP_FONT_PIXELFORMAT_24:
+                            // 24-bit color value
+                    		pixelColor |= pixelColor << 4;
+                    		pixelColor |= pixelColor << 8;
+                    		pixelColor |= pixelColor << 8;
+                    		break;
+                    	case sceFont.PSP_FONT_PIXELFORMAT_32:
+                            // 32-bit color value
+        					pixelColor |= pixelColor << 4;
+        					pixelColor |= pixelColor << 8;
+        					pixelColor |= pixelColor << 16;
+        					break;
+                    }
+
                 	Debug.setFontPixel(base, bpl, bufWidth, bufHeight, pixelX, pixelY, pixelColor, pixelformat);
                 }
 
@@ -417,5 +420,18 @@ public class SceFontInfo {
 
 	public void setFontStyle(pspFontStyle fontStyle) {
 		this.fontStyle = fontStyle;
+	}
+
+	public int getCharIndex(int charCode, int[] charmapCompressed) {
+		int charIndex = 0;
+		for (int i = 0; i < charmapCompressed.length; i += 2) {
+			if (charCode >= charmapCompressed[i] && charCode < charmapCompressed[i] + charmapCompressed[i + 1]) {
+				charIndex += charCode - charmapCompressed[i];
+				return charIndex;
+			}
+			charIndex += charmapCompressed[i + 1];
+		}
+
+		return -1;
 	}
 }
