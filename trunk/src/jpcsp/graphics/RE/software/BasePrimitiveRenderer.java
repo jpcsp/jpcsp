@@ -394,6 +394,11 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 			if (context.tex_map_mode != GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV) {
 				needTextureWrapU = true;
 				needTextureWrapV = true;
+			} else if (isTriangle && (prim.p1w <= 0f || prim.p2w <= 0f || prim.p3w <= 0f)) {
+				// Need texture wrapping if one triangle point is behind the eye:
+				// the texture coordinates might exceed the calculated range due to the perspective correction.
+				needTextureWrapU = true;
+				needTextureWrapV = true;
 			} else {
 				float tuMin, tuMax;
 				float tvMin, tvMax;

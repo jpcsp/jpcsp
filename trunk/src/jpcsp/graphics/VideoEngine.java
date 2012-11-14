@@ -2103,7 +2103,9 @@ public class VideoEngine {
 
 	                case PRIM_SPRITES:
 	                    re.setVertexInfo(context.vinfo, false, context.useVertexColor, useTexture, IRenderingEngine.RE_QUADS);
-	                	re.disableFlag(IRenderingEngine.GU_CULL_FACE);
+	                    if (!context.clearMode) {
+	                    	re.disableFlag(IRenderingEngine.GU_CULL_FACE);
+	                    }
 
 	                	float[] mvpMatrix = null;
 	                	if (!context.vinfo.transform2D) {
@@ -2256,7 +2258,9 @@ public class VideoEngine {
 	            		drawArraysStatistics.start();
 	                    re.drawArrays(IRenderingEngine.RE_QUADS, 0, numberOfVertex * 2);
 	                	drawArraysStatistics.end();
-	                    context.cullFaceFlag.updateEnabled();
+	                	if (!context.clearMode) {
+	                		context.cullFaceFlag.updateEnabled();
+	                	}
 	                    break;
 	            }
 	        }
@@ -6426,6 +6430,9 @@ public class VideoEngine {
             viewportChanged = true;
             depthChanged = true;
             materialChanged = true;
+
+            // wait for rendering completion when switching the GE buffer (in case it is reused as a texture)
+    		re.waitForRenderingCompletion();
         }
     }
     // For capture/replay
