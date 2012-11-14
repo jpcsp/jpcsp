@@ -457,6 +457,11 @@ public class sceDisplay extends HLEModule {
     private LinkedList<Long> frameTimestamps = new LinkedList<Long>();
     private boolean skipNextFrameBufferSwitch;
 
+    // Stencil copy
+	private static final int[] stencilPixelMasks = new int[] { 0, 0x7FFF, 0x0FFF, 0x00FFFFFF };
+	private static final int[] stencilValueMasks = new int[] { 0, 0x80, 0xF0, 0xFF };
+	private static final int[] stencilValueShifts = new int[] { 0, 8, 8, 24 };
+
     private class OnlyGeSettingsListener extends AbstractBoolSettingsListener {
 		@Override
 		protected void settingsValueChanged(boolean value) {
@@ -1385,6 +1390,57 @@ public class sceDisplay extends HLEModule {
 		}
     }
 
+    private void copyStencilToMemory() {
+	    if (pixelformatGe >= stencilPixelMasks.length) {
+	    	log.warn(String.format("copyGeToMemory: unimplemented pixelformat %d for Stencil buffer copy", pixelformatGe));
+	    	return;
+	    }
+    	if (stencilValueMasks[pixelformatGe] == 0) {
+    	    // No stencil value for BGR5650, nothing to copy for the stencil
+    		return;
+    	}
+
+    	// Be careful to not overwrite parts of the GE memory used by the application for another purpose.
+    	VideoEngine videoEngine = VideoEngine.getInstance();
+	    int stencilWidth = Math.min(widthGe, bufferwidthGe);
+	    int stencilHeight = Math.min(heightGe, videoEngine.getMaxSpriteHeight());
+	    if (log.isDebugEnabled()) {
+	    	log.debug(String.format("Copy stencil to GE: pixelFormat=%d, %dx%d, maxSprite=%dx%d", pixelformatGe, stencilWidth, stencilHeight, videoEngine.getMaxSpriteWidth(), videoEngine.getMaxSpriteHeight()));
+	    }
+
+	    int stencilBufferSize = stencilWidth * stencilHeight;
+	    tempByteBuffer.clear();
+	    re.setPixelStore(stencilWidth, 1);
+	    re.readStencil(0, 0, stencilWidth, stencilHeight, stencilBufferSize, tempByteBuffer);
+
+	    int bytesPerPixel = IRenderingEngine.sizeOfTextureType[pixelformatGe];
+	    IMemoryReaderWriter memoryReaderWriter = MemoryReaderWriter.getMemoryReaderWriter(topaddrGe, stencilHeight * bufferwidthGe * bytesPerPixel, bytesPerPixel);
+	    tempByteBuffer.rewind();
+		final int stencilPixelMask = stencilPixelMasks[pixelformatGe];
+		final int stencilValueMask = stencilValueMasks[pixelformatGe];
+		final int stencilValueShift = stencilValueShifts[pixelformatGe];
+	    for (int y = 0; y < stencilHeight; y++) {
+	    	// The stencil buffer is stored upside-down by OpenGL
+	    	tempByteBuffer.position((stencilHeight - y - 1) * stencilWidth);
+
+	    	for (int x = 0; x < stencilWidth; x++) {
+	    		int pixel = memoryReaderWriter.readCurrent();
+	    		int stencilValue = tempByteBuffer.get() & stencilValueMask;
+	    		pixel = (pixel & stencilPixelMask) | (stencilValue << stencilValueShift);
+	    		memoryReaderWriter.writeNext(pixel);
+	    	}
+
+	    	if (stencilWidth < bufferwidthGe) {
+	    		memoryReaderWriter.skip(bufferwidthGe - stencilWidth);
+	    	}
+	    }
+	    memoryReaderWriter.flush();
+
+	    if (GEProfiler.isProfilerEnabled()) {
+	    	GEProfiler.copyStencilToMemory();
+	    }
+    }
+
     public void copyGeToMemory(boolean preserveScreen) {
     	if (isUsingSoftwareRenderer()) {
     		// GE is already in memory when using the software renderer
@@ -1415,51 +1471,8 @@ public class sceDisplay extends HLEModule {
 
 		    copyScreenToPixels(pixelsGe, bufferwidthGe, pixelformatGe, widthGe, heightGe);
 
-		    // No stencil value for BGR5650, nothing to copy for the stencil
-		    if (saveStencilToMemory && pixelformatGe != GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650) {
-		    	// Be careful to not overwrite parts of the GE memory used by the application for another purpose.
-		    	VideoEngine videoEngine = VideoEngine.getInstance();
-			    int stencilWidth = Math.min(widthGe, bufferwidthGe);
-			    int stencilHeight = Math.min(heightGe, videoEngine.getMaxSpriteHeight());
-			    if (log.isDebugEnabled()) {
-			    	log.debug(String.format("Copy stencil to GE: pixelFormat=%d, %dx%d, maxSprite=%dx%d", pixelformatGe, stencilWidth, stencilHeight, videoEngine.getMaxSpriteWidth(), videoEngine.getMaxSpriteHeight()));
-			    }
-
-			    int stencilBufferSize = stencilWidth * stencilHeight;
-			    tempByteBuffer.clear();
-			    re.setPixelStore(stencilWidth, 1);
-			    re.readStencil(0, 0, stencilWidth, stencilHeight, stencilBufferSize, tempByteBuffer);
-
-			    int bytesPerPixel = IRenderingEngine.sizeOfTextureType[pixelformatGe];
-			    IMemoryReaderWriter memoryReaderWriter = MemoryReaderWriter.getMemoryReaderWriter(topaddrGe, stencilHeight * bufferwidthGe * bytesPerPixel, bytesPerPixel);
-			    tempByteBuffer.rewind();
-			    switch (pixelformatGe) {
-			    	case GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888:
-					    for (int y = 0; y < stencilHeight; y++) {
-					    	// The stencil buffer is stored upside-down by OpenGL
-					    	tempByteBuffer.position((stencilHeight - y - 1) * stencilWidth);
-
-					    	for (int x = 0; x < stencilWidth; x++) {
-					    		int pixel = memoryReaderWriter.readCurrent();
-					    		int stencilValue = tempByteBuffer.get() & 0xFF;
-					    		pixel = (pixel & 0x00FFFFFF) | (stencilValue << 24);
-					    		memoryReaderWriter.writeNext(pixel);
-					    	}
-			
-					    	if (stencilWidth < bufferwidthGe) {
-					    		memoryReaderWriter.skip(bufferwidthGe - stencilWidth);
-					    	}
-					    }
-
-					    if (GEProfiler.isProfilerEnabled()) {
-					    	GEProfiler.copyStencilToMemory();
-					    }
-					    break;
-		    		default:
-				    	log.warn(String.format("copyGeToMemory: unimplemented pixelformat %d for Stencil buffer copy", pixelformatGe));
-				    	break;
-			    }
-			    memoryReaderWriter.flush();
+		    if (saveStencilToMemory) {
+		    	copyStencilToMemory();
 		    }
 
 		    if (preserveScreen) {
