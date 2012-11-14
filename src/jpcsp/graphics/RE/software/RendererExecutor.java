@@ -64,7 +64,11 @@ public class RendererExecutor {
 			renderersQueue.add(renderer);
 		} else {
 			// Threads are disabled or capture is active, render immediately
-			renderer.render();
+			try {
+				renderer.render();
+			} catch (Exception e) {
+				VideoEngine.log.error("Error while rendering", e);
+			}
 		}
 	}
 
