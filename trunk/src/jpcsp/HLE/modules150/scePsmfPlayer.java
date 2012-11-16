@@ -393,6 +393,8 @@ public class scePsmfPlayer extends HLEModule {
         // loaded after scePsmfPlayerReleasePsmf has been called.
         psmfPlayerStatus = PSMF_PLAYER_STATUS_INIT;
 
+        Modules.ThreadManForUserModule.hleKernelDelayThread(10000, false);
+
         return 0;
     }
 
@@ -449,7 +451,7 @@ public class scePsmfPlayer extends HLEModule {
         // Always switch to STANDBY, because this PSMF can still be resumed.
         psmfPlayerStatus = PSMF_PLAYER_STATUS_STANDBY;
 
-        Modules.ThreadManForUserModule.hleKernelDelayThread(100000, false);
+        Modules.ThreadManForUserModule.hleKernelDelayThread(10000, false);
 
         return 0;
     }
