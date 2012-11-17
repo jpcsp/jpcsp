@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE;
 
 import jpcsp.graphics.GeCommands;
+import jpcsp.graphics.Uniforms;
+import jpcsp.settings.Settings;
 
 /**
  * @author gid15
@@ -33,6 +35,8 @@ import jpcsp.graphics.GeCommands;
  * redundant calls).
  */
 public class REFixedFunction extends BaseRenderingEngineFunction {
+	private ShaderProgram stencilShaderProgram;
+
 	public REFixedFunction(IRenderingEngine proxy) {
 		super(proxy);
 	}
@@ -189,5 +193,61 @@ public class REFixedFunction extends BaseRenderingEngineFunction {
 	public boolean canNativeClut(int textureAddress) {
 		// Shaders are required for native clut
 		return false;
+	}
+
+	@Override
+	public boolean setCopyRedToAlpha(boolean copyRedToAlpha) {
+		if (copyRedToAlpha) {
+			// The stencil index is now available in the red channel of the stencil texture.
+			// We need to copy it to the alpha channel of the GE texture.
+			// As I've not found how to perform this copy from one channel into another channel
+			// using the OpenGL fixed pipeline functionality,
+			// we use a small fragment shader program.
+			if (stencilShaderProgram == null) {
+				if (!re.isShaderAvailable()) {
+					log.info("Shaders are not available on your computer. They are required to save stencil information into the GE texture. Saving of the stencil information has been disabled.");
+					return false;
+				}
+	
+				// The fragment shader is just copying the stencil texture red channel to the GE texture alpha channel
+				String fragmentShaderSource =
+						"uniform sampler2D tex;" +
+						"void main() {" +
+						"    gl_FragColor.a = texture2DProj(tex, gl_TexCoord[0].xyz).r;" +
+						"}";
+				int shaderId = re.createShader(IRenderingEngine.RE_FRAGMENT_SHADER);
+				boolean compiled = re.compilerShader(shaderId, fragmentShaderSource);
+				if (!compiled) {
+					log.error(String.format("Cannot compile shader required for storing stencil information into the GE texture: %s", re.getShaderInfoLog(shaderId)));
+					return false;
+				}
+	
+				int stencilShaderProgramId = re.createProgram();
+				re.attachShader(stencilShaderProgramId, shaderId);
+				boolean linked = re.linkProgram(stencilShaderProgramId);
+				if (!linked) {
+					log.error(String.format("Cannot link shader required for storing stencil information into the GE texture: %s", re.getProgramInfoLog(stencilShaderProgramId)));
+					return false;
+				}
+	
+				Uniforms.tex.allocateId(re, stencilShaderProgramId);
+	
+				stencilShaderProgram = new ShaderProgram();
+				stencilShaderProgram.setProgramId(re, stencilShaderProgramId);
+	
+				if (!Settings.getInstance().readBool("emu.useshaders")) {
+					log.info("Shaders are disabled in the Jpcsp video settings. However a small shader program is required to implement the saving of the Stencil information into the GE texture. This small shader program will still be used even though the shaders are disabled in the settings. This was just for your information, you do not need to take special actions.");
+				}
+			}
+	
+			stencilShaderProgram.use(re);
+			re.setUniform(Uniforms.tex.getId(stencilShaderProgram.getProgramId()), REShader.ACTIVE_TEXTURE_NORMAL);
+			re.checkAndLogErrors("setUniform");
+		} else {
+			// Disable the shader program
+			re.useProgram(0);
+		}
+
+		return super.setCopyRedToAlpha(copyRedToAlpha);
 	}
 }

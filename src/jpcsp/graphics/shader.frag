@@ -58,6 +58,9 @@
     uniform int   blendDst;
     uniform vec3  blendSFix;
     uniform vec3  blendDFix;
+    #if COPY_RED_TO_ALPHA
+        uniform bool  copyRedToAlpha;
+    #endif
 #endif
 uniform sampler2D tex;   // The active texture
 uniform sampler2D fbTex; // The texture containing the current screen (FrameBuffer)
@@ -885,6 +888,15 @@ void main()
             ApplyColorMask(Cf, Cdst);
         #endif
     }
+
+	#if !USE_DYNAMIC_DEFINES
+		if (copyRedToAlpha)
+		{
+			Cf.a = Cf.r;
+		}
+	#elif COPY_RED_TO_ALPHA
+		Cf.a = Cf.r;
+	#endif
 
     gl_FragColor = Cf;
 }

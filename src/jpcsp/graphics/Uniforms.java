@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics;
 
+import java.util.Arrays;
+
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.graphics.RE.StateProxy;
 
@@ -82,12 +84,14 @@ public enum Uniforms {
 	blendSrc("blendSrc"),
 	blendDst("blendDst"),
 	blendSFix("blendSFix"),
-	blendDFix("blendDFix");
+	blendDFix("blendDFix"),
+	copyRedToAlpha("copyRedToAlpha");
 
 	String uniformString;
 	int[] uniformId = new int[StateProxy.maxProgramId];
 
-	Uniforms(String uniformString) {
+	private Uniforms(String uniformString) {
+		Arrays.fill(uniformId, -1);
 		this.uniformString = uniformString;
 	}
 

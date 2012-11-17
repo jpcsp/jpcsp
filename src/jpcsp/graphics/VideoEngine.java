@@ -115,7 +115,14 @@ public class VideoEngine {
         "PSM_32BIT_INDEXED",
         "PSM_DXT1",
         "PSM_DXT3",
-        "PSM_DXT5"
+        "PSM_DXT5",
+        "RE_PIXEL_STORAGE_16BIT_INDEXED_BGR5650",
+        "RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5551",
+        "RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444",
+        "RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888",
+        "RE_DEPTH_COMPONENT",
+        "RE_STENCIL_INDEX",
+        "RE_DEPTH_STENCIL"
     };
     public final static String[] logical_ops_names = new String[]{
         "LOP_CLEAR",

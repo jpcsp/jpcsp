@@ -44,7 +44,10 @@ public interface IRenderingEngine {
         2, // RE_PIXEL_STORAGE_16BIT_INDEXED_BGR5650
         2, // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5651
         2, // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444
-        4  // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
+        4, // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
+        4, // RE_DEPTH_COMPONENT
+        4, // RE_STENCIL_INDEX
+        4  // RE_DEPTH_STENCIL
 	};
 	public static final int[] alignementOfTextureBufferWidth = {
 		8, // TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650
@@ -61,7 +64,10 @@ public interface IRenderingEngine {
         8, // RE_PIXEL_STORAGE_16BIT_INDEXED_BGR5650
         8, // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5651
         8, // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444
-        4  // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
+        4, // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
+        4, // RE_DEPTH_COMPONENT
+        4, // RE_STENCIL_INDEX
+        4  // RE_DEPTH_STENCIL
 	};
 	public static final boolean[] isTextureTypeIndexed = {
 		false, // TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650
@@ -78,7 +84,10 @@ public interface IRenderingEngine {
         true,  // RE_PIXEL_STORAGE_16BIT_INDEXED_BGR5650
         true,  // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5551
         true,  // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444
-        true   // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
+        true,  // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
+        false, // RE_DEPTH_COMPONENT
+        false, // RE_STENCIL_INDEX
+        false  // RE_DEPTH_STENCIL
 	};
 
 	// Additional Texture types
@@ -88,6 +97,7 @@ public interface IRenderingEngine {
 	public static final int RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888 = 14;
 	public static final int RE_DEPTH_COMPONENT                      = 15;
 	public static final int RE_STENCIL_INDEX                        = 16;
+	public static final int RE_DEPTH_STENCIL                        = 17;
 
 	// Flags:
 	public static final int GU_ALPHA_TEST          = 0;
@@ -296,6 +306,11 @@ public interface IRenderingEngine {
 	public static final int RE_CLUT_INDEX_BLUE_ONLY  = 3;
 	public static final int RE_CLUT_INDEX_ALPHA_ONLY = 4;
 
+	// Buffers flag
+	public static final int RE_COLOR_BUFFER_BIT      = (1 << 0);
+	public static final int RE_DEPTH_BUFFER_BIT      = (1 << 1);
+	public static final int RE_STENCIL_BUFFER_BIT    = (1 << 2);
+
 	public void setRenderingEngine(IRenderingEngine re);
 	public void setGeContext(GeContext context);
 	public void exit();
@@ -483,4 +498,7 @@ public interface IRenderingEngine {
 	public void waitForRenderingCompletion();
 	public boolean canReadAllVertexInfo();
 	public void readStencil(int x, int y, int width, int height, int bufferSize, Buffer buffer);
+	public void blitFramebuffer(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, int mask, int filter);
+	public boolean checkAndLogErrors(String logComment);
+	public boolean setCopyRedToAlpha(boolean copyRedToAlpha);
 }

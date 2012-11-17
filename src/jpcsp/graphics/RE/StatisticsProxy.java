@@ -226,6 +226,9 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		addStatistic("waitForRenderingCompletion", 195);
 		addStatistic("canReadAllVertexInfo", 196);
 		addStatistic("readStencil", 197);
+		addStatistic("blitFramebuffer", 198);
+		addStatistic("checkErrors", 199);
+		addStatistic("setCopyRedToAlpha", 200);
 	}
 
 	private void addStatistic(String name, int index) {
@@ -1785,5 +1788,31 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		statistic.start();
 		super.readStencil(x, y, width, height, bufferSize, buffer);
 		statistic.end();
+	}
+
+	@Override
+	public void blitFramebuffer(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, int mask, int filter) {
+		DurationStatistics statistic = statistics[198];
+		statistic.start();
+		super.blitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
+		statistic.end();
+	}
+
+	@Override
+	public boolean checkAndLogErrors(String logComment) {
+		DurationStatistics statistic = statistics[199];
+		statistic.start();
+		boolean value = super.checkAndLogErrors(logComment);
+		statistic.end();
+		return value;
+	}
+
+	@Override
+	public boolean setCopyRedToAlpha(boolean copyRedToAlpha) {
+		DurationStatistics statistic = statistics[200];
+		statistic.start();
+		boolean value = super.setCopyRedToAlpha(copyRedToAlpha);
+		statistic.end();
+		return value;
 	}
 }

@@ -84,6 +84,7 @@ public class ShaderContextUBO extends ShaderContext {
 	private ShaderUniformInfo blendSFix;
 	private ShaderUniformInfo blendDFix;
 	private ShaderUniformInfo colorMaskEnable;
+	private ShaderUniformInfo copyRedToAlpha;
 	private ShaderUniformInfo numberBones;
 	private ShaderUniformInfo boneMatrix;
 	private ShaderUniformInfo endOfUBO;
@@ -205,6 +206,7 @@ public class ShaderContextUBO extends ShaderContext {
 		blendSrc = addShaderUniform(Uniforms.blendSrc, "int");
 		blendDst = addShaderUniform(Uniforms.blendDst, "int");
 		colorMaskEnable = addShaderUniform(Uniforms.colorMaskEnable, "bool");
+		copyRedToAlpha = addShaderUniform(Uniforms.copyRedToAlpha, "bool");
 		numberBones = addShaderUniform(Uniforms.numberBones, "int");
 		boneMatrix = addShaderUniform(Uniforms.boneMatrix, "mat4", 8);
 		// The following entry has always to be the last one
@@ -804,6 +806,14 @@ public class ShaderContextUBO extends ShaderContext {
 		if (blendDFix[0] != dfix[0] || blendDFix[1] != dfix[1] || blendDFix[2] != dfix[2]) {
 			copy(blendDFix, this.blendDFix, 0, 3);
 			super.setBlendDFix(blendDFix);
+		}
+	}
+
+	@Override
+	public void setCopyRedToAlpha(int copyRedToAlpha) {
+		if (copyRedToAlpha != getCopyRedToAlpha()) {
+			copy(copyRedToAlpha, this.copyRedToAlpha);
+			super.setCopyRedToAlpha(copyRedToAlpha);
 		}
 	}
 }

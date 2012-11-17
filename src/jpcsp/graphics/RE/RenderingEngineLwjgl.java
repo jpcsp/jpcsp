@@ -275,7 +275,10 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
         GL11.GL_RGB,                           // RE_PIXEL_STORAGE_16BIT_INDEXED_BGR5650
         GL11.GL_RGBA,                          // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5551
         GL11.GL_RGBA,                          // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444
-        GL11.GL_RGBA                           // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
+        GL11.GL_RGBA,                          // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
+        GL11.GL_DEPTH_COMPONENT,               // RE_DEPTH_COMPONENT
+        GL30.GL_DEPTH_STENCIL,                 // RE_STENCIL_INDEX
+        GL30.GL_DEPTH_STENCIL                  // RE_DEPTH_STENCIL
 	};
 	protected static final int[] textureInternalFormatToGL = {
 		GL11.GL_RGB,                           // TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650
@@ -294,7 +297,8 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
         GL11.GL_RGBA,                          // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444
         GL11.GL_RGBA,                          // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
         GL11.GL_DEPTH_COMPONENT,               // RE_DEPTH_COMPONENT
-        GL11.GL_STENCIL_INDEX                  // RE_STENCIL_INDEX
+        GL30.GL_DEPTH_STENCIL,                 // RE_STENCIL_INDEX
+        GL30.GL_DEPTH_STENCIL                  // RE_DEPTH_STENCIL
 	};
 	protected static final int[] textureTypeToGL = {
         GL12.GL_UNSIGNED_SHORT_5_6_5_REV,      // TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650
@@ -311,7 +315,10 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
         GL12.GL_UNSIGNED_SHORT_5_6_5_REV,      // RE_PIXEL_STORAGE_16BIT_INDEXED_BGR5650
         GL12.GL_UNSIGNED_SHORT_1_5_5_5_REV,    // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5551
         GL12.GL_UNSIGNED_SHORT_4_4_4_4_REV,    // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444
-        GL11.GL_UNSIGNED_BYTE                  // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
+        GL11.GL_UNSIGNED_BYTE,                 // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
+        GL11.GL_UNSIGNED_BYTE,                 // RE_DEPTH_COMPONENT
+        GL30.GL_UNSIGNED_INT_24_8,             // RE_STENCIL_INDEX
+        GL30.GL_UNSIGNED_INT_24_8              // RE_DEPTH_STENCIL
 	};
 	protected static final int[] stencilOpToGL = {
 		GL11.GL_KEEP,                // SOP_KEEP_STENCIL_VALUE
@@ -410,6 +417,11 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 		GL11.GL_PIXEL_MAP_G_TO_G,    // RE_PIXEL_MAP_G_TO_G
 		GL11.GL_PIXEL_MAP_B_TO_B,    // RE_PIXEL_MAP_B_TO_B
 		GL11.GL_PIXEL_MAP_A_TO_A     // RE_PIXEL_MAP_A_TO_A
+	};
+	protected static final int[] buffersMaskToGL = {
+		GL11.GL_COLOR_BUFFER_BIT,    // RE_COLOR_BUFFER_BIT
+		GL11.GL_DEPTH_BUFFER_BIT,    // RE_DEPTH_BUFFER_BIT
+		GL11.GL_STENCIL_BUFFER_BIT   // RE_STENCIL_BUFFER_BIT
 	};
 
 	public static String getVersion() {
@@ -1597,5 +1609,38 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 		} else {
 			throw new IllegalArgumentException();
 		}
+	}
+
+	@Override
+	public void blitFramebuffer(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, int mask, int filter) {
+		int maskGL = 0;
+		for (int i = 0; i < buffersMaskToGL.length; i++, mask >>= 1) {
+			if ((mask & 1) != 0) {
+				maskGL |= buffersMaskToGL[i];
+			}
+		}
+		GL30.glBlitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, maskGL, mipmapFilterToGL[filter]);
+	}
+
+	@Override
+	public boolean checkAndLogErrors(String logComment) {
+		boolean hasError = false;
+		while (true) {
+			int error = GL11.glGetError();
+			if (error == GL11.GL_NO_ERROR) {
+				break;
+			}
+			hasError = true;
+			if (logComment != null) {
+				log.error(String.format("Error %s: 0x%X", logComment, error));
+			}
+		}
+
+		return hasError;
+	}
+
+	@Override
+	public boolean setCopyRedToAlpha(boolean shaderCopyRedToAlpha) {
+		return true;
 	}
 }
