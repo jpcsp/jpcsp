@@ -26,9 +26,12 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.sceDisplay;
+import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.graphics.RE.buffer.IREBufferManager;
@@ -39,6 +42,7 @@ import jpcsp.util.Utilities;
  *
  */
 public class GETexture {
+	protected static Logger log = VideoEngine.log;
 	protected int address;
 	protected int length;
 	protected int bufferWidth;
@@ -56,6 +60,10 @@ public class GETexture {
 	protected Buffer buffer;
 	protected boolean useViewportResize;
 	protected float resizeScale;
+	// For copying Stencil to texture Alpha
+	private int stencilFboId = -1;
+	private int stencilTextureId = -1;
+	private static final int stencilPixelFormat = IRenderingEngine.RE_DEPTH_STENCIL;
 
 	public GETexture(int address, int bufferWidth, int width, int height, int pixelFormat, boolean useViewportResize) {
 		this.address = address;
@@ -154,8 +162,8 @@ public class GETexture {
 	}
 
 	public void copyScreenToTexture(IRenderingEngine re) {
-		if (VideoEngine.log.isDebugEnabled()) {
-			VideoEngine.log.debug(String.format("GETexture.copyScreenToTexture %s", toString()));
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("GETexture.copyScreenToTexture %s", toString()));
 		}
 
 		bind(re, false);
@@ -168,6 +176,12 @@ public class GETexture {
 		}
 		re.copyTexSubImage(0, 0, 0, 0, 0, texWidth, texHeight);
 
+		if (Modules.sceDisplayModule.isSaveStencilToMemory()) {
+			if (!copyStencilToTextureAlpha(re, texWidth, texHeight)) {
+				Modules.sceDisplayModule.setSaveStencilToMemory(false);
+			}
+		}
+
 		setChanged(true);
 	}
 
@@ -175,13 +189,17 @@ public class GETexture {
 		copyTextureToScreen(re, 0, 0, width, height, true, true, true, true, true);
 	}
 
-	public void copyTextureToScreen(IRenderingEngine re, int x, int y, int projectionWidth, int projectionHeight, boolean scaleToCanvas, boolean redWriteEnabled, boolean greenWriteEnabled, boolean blueWriteEnabled, boolean alphaWriteEnabled) {
-		if (VideoEngine.log.isDebugEnabled()) {
-			VideoEngine.log.debug(String.format("GETexture.copyTextureToScreen %s at %dx%d", toString(), x, y));
+	protected void copyTextureToScreen(IRenderingEngine re, int x, int y, int projectionWidth, int projectionHeight, boolean scaleToCanvas, boolean redWriteEnabled, boolean greenWriteEnabled, boolean blueWriteEnabled, boolean alphaWriteEnabled) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("GETexture.copyTextureToScreen %s at %dx%d", toString(), x, y));
 		}
 
 		bind(re, true);
 
+		drawTexture(re, x, y, projectionWidth, projectionHeight, scaleToCanvas, redWriteEnabled, greenWriteEnabled, blueWriteEnabled, alphaWriteEnabled);
+	}
+
+	private void drawTexture(IRenderingEngine re, int x, int y, int projectionWidth, int projectionHeight, boolean scaleToCanvas, boolean redWriteEnabled, boolean greenWriteEnabled, boolean blueWriteEnabled, boolean alphaWriteEnabled) {
 		re.startDirectRendering(true, false, true, true, true, projectionWidth, projectionHeight);
 		re.setColorMask(redWriteEnabled, greenWriteEnabled, blueWriteEnabled, alphaWriteEnabled);
 		if (scaleToCanvas) {
@@ -270,8 +288,8 @@ public class GETexture {
 			return;
 		}
 
-		if (VideoEngine.log.isDebugEnabled()) {
-			VideoEngine.log.debug(String.format("GETexture.copyTextureToMemory %s", toString()));
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("GETexture.copyTextureToMemory %s", toString()));
 		}
 
 		Buffer memoryBuffer = Memory.getInstance().getBuffer(address, length);
@@ -344,6 +362,68 @@ public class GETexture {
 			}
 		}
 
+		return true;
+	}
+
+	protected boolean copyStencilToTextureAlpha(IRenderingEngine re, int texWidth, int texHeight) {
+		re.checkAndLogErrors(null);
+
+		if (stencilFboId == -1) {
+			// Create a FBO
+			stencilFboId = re.genFramebuffer();
+			re.bindFramebuffer(IRenderingEngine.RE_DRAW_FRAMEBUFFER, stencilFboId);
+
+			// Create stencil texture and attach it to the FBO
+			stencilTextureId = re.genTexture();
+			re.bindTexture(stencilTextureId);
+			re.checkAndLogErrors("bindTexture");
+    		re.setTexImage(0, stencilPixelFormat, getTexImageWidth(), getTexImageHeight(), stencilPixelFormat, stencilPixelFormat, 0, null);
+    		if (re.checkAndLogErrors("setTexImage")) {
+    			return false;
+    		}
+            re.setTextureMipmapMinFilter(TFLT_NEAREST);
+            re.setTextureMipmapMagFilter(TFLT_NEAREST);
+            re.setTextureMipmapMinLevel(0);
+            re.setTextureMipmapMaxLevel(0);
+            re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
+			re.setFramebufferTexture(IRenderingEngine.RE_DRAW_FRAMEBUFFER, IRenderingEngine.RE_DEPTH_STENCIL_ATTACHMENT, stencilTextureId, 0);
+    		if (re.checkAndLogErrors("setFramebufferTexture RE_STENCIL_ATTACHMENT")) {
+    			return false;
+    		}
+
+			// Attach the GE texture to the FBO as well
+			re.setFramebufferTexture(IRenderingEngine.RE_DRAW_FRAMEBUFFER, IRenderingEngine.RE_COLOR_ATTACHMENT0, textureId, 0);
+    		if (re.checkAndLogErrors("setFramebufferTexture RE_COLOR_ATTACHMENT0")) {
+    			return false;
+    		}
+		} else {
+			re.bindFramebuffer(IRenderingEngine.RE_DRAW_FRAMEBUFFER, stencilFboId);
+		}
+
+		// Copy screen stencil buffer to stencil texture:
+		// - read framebuffer is screen (0)
+		// - draw/write framebuffer is our stencil FBO (stencilFboId)
+		re.blitFramebuffer(0, 0, texWidth, texHeight, 0, 0, texWidth, texHeight, IRenderingEngine.RE_STENCIL_BUFFER_BIT, GeCommands.TFLT_NEAREST);
+		if (re.checkAndLogErrors("blitFramebuffer")) {
+			return false;
+		}
+
+		re.bindTexture(stencilTextureId);
+
+		if (!re.setCopyRedToAlpha(true)) {
+			return false;
+		}
+
+		// Draw the stencil texture and update only the alpha channel of the GE texture
+		drawTexture(re, 0, 0, texWidth, texHeight, true, false, false, false, true);
+		re.checkAndLogErrors("drawTexture");
+
+		// Reset the framebuffer to the default one
+		re.bindFramebuffer(IRenderingEngine.RE_FRAMEBUFFER, 0);
+
+		re.setCopyRedToAlpha(false);
+
+		// Success
 		return true;
 	}
 

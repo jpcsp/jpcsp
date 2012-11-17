@@ -1131,7 +1131,11 @@ public class sceDisplay extends HLEModule {
         VideoEngine.log.info("Only GE Graphics: " + onlyGEGraphics);
     }
 
-    private void setSaveStencilToMemory(boolean saveStencilToMemory) {
+    public boolean isSaveStencilToMemory() {
+    	return saveStencilToMemory;
+    }
+
+    public void setSaveStencilToMemory(boolean saveStencilToMemory) {
     	this.saveStencilToMemory = saveStencilToMemory;
         VideoEngine.log.info("Save Stencil To Memory: " + saveStencilToMemory);
     }

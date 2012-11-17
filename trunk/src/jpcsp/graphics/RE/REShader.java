@@ -54,7 +54,7 @@ import jpcsp.util.Utilities;
  * to the proxy.
  */
 public class REShader extends BaseRenderingEngineFunction {
-	protected final static int ACTIVE_TEXTURE_NORMAL = 0;
+	public    final static int ACTIVE_TEXTURE_NORMAL = 0;
 	protected final static int ACTIVE_TEXTURE_CLUT = 1;
 	protected final static int ACTIVE_TEXTURE_FRAMEBUFFER = 2;
 	protected final static int ACTIVE_TEXTURE_INTEGER = 3;
@@ -711,7 +711,7 @@ public class REShader extends BaseRenderingEngineFunction {
 
 	@Override
 	public void startDisplay() {
-		re.useProgram(defaultShaderProgram.getProgramId());
+		defaultShaderProgram.use(re);
 
 		if (useRenderToTexture) {
 			sceDisplay display = Modules.sceDisplayModule;
@@ -890,23 +890,22 @@ public class REShader extends BaseRenderingEngineFunction {
 			shaderProgram = shaderProgramManager.getShaderProgram(shaderContext, hasGeometryShader);
 			if (shaderProgram.getProgramId() == -1) {
 				shaderProgram = createShader(hasGeometryShader, shaderProgram);
-				if (VideoEngine.log.isDebugEnabled()) {
-					VideoEngine.log.debug("Created shader " + shaderProgram);
+				if (log.isDebugEnabled()) {
+					log.debug("Created shader " + shaderProgram);
 				}
 				if (shaderProgram == null) {
-					VideoEngine.log.error("Cannot create shader");
+					log.error("Cannot create shader");
 					return;
 				}
 			}
-			shaderProgram.use(re);
 		} else if (hasGeometryShader) {
 			shaderProgram = defaultSpriteShaderProgram;
 		} else {
 			shaderProgram = defaultShaderProgram;
 		}
 		shaderProgram.use(re);
-		if (VideoEngine.log.isTraceEnabled()) {
-			VideoEngine.log.trace("Using shader " + shaderProgram);
+		if (log.isTraceEnabled()) {
+			log.trace("Using shader " + shaderProgram);
 		}
 		currentShaderProgram = shaderProgram;
 	}
@@ -1290,11 +1289,6 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	@Override
-	public void bindTexture(int texture) {
-		super.bindTexture(texture);
-	}
-
-	@Override
 	public void setColorMask(int redMask, int greenMask, int blueMask, int alphaMask) {
 		if (useShaderColorMask) {
 			shaderContext.setColorMask(redMask, greenMask, blueMask, alphaMask);
@@ -1369,5 +1363,11 @@ public class REShader extends BaseRenderingEngineFunction {
 		viewportWidth = width;
 		viewportHeight = height;
 		super.setViewport(x, y, width, height);
+	}
+
+	@Override
+	public boolean setCopyRedToAlpha(boolean copyRedToAlpha) {
+		shaderContext.setCopyRedToAlpha(copyRedToAlpha ? 1 : 0);
+		return super.setCopyRedToAlpha(copyRedToAlpha);
 	}
 }

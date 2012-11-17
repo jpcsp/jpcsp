@@ -747,4 +747,20 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 		}
 		super.bindActiveTexture(index, texture);
 	}
+
+	@Override
+	public void blitFramebuffer(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, int mask, int filter) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("blitFramebuffer src=(%d,%d)-(%d,%d), dst=(%d,%d)-(%d,%d), mask=0x%X, filter=%d", srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter));
+		}
+		super.blitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
+	}
+
+	@Override
+	public boolean setCopyRedToAlpha(boolean copyRedToAlpha) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setCopyRedToAlpha %b", copyRedToAlpha));
+		}
+		return super.setCopyRedToAlpha(copyRedToAlpha);
+	}
 }

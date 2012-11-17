@@ -61,13 +61,14 @@ public class ShaderProgram {
 	private int stencilOpFail; // values: [0..5]
 	private int stencilOpZFail; // values: [0..5]
 	private int stencilOpZPass; // values: [0..5]
-        private int depthTestEnable; // values: [0..1]
-        private int depthFunc; // values: [0..7]
+	private int depthTestEnable; // values: [0..1]
+	private int depthFunc; // values: [0..7]
 	private int blendTestEnable; // values: [0..1]
 	private int blendEquation; // values: [0..5]
 	private int blendSrc; // values: [0..10];
 	private int blendDst; // values: [0..10];
 	private int colorMaskEnable; // values: [0..1]
+	private int copyRedToAlpha; // values: [0..1]
 
 	public static class ShaderProgramKey {
 		private long key1;
@@ -140,13 +141,14 @@ public class ShaderProgram {
 		stencilOpFail = shaderContext.getStencilOpFail();
 		stencilOpZFail = shaderContext.getStencilOpZFail();
 		stencilOpZPass = shaderContext.getStencilOpZPass();
-                depthTestEnable = shaderContext.getDepthTestEnable();
-                depthFunc = shaderContext.getDepthFunc();
+		depthTestEnable = shaderContext.getDepthTestEnable();
+		depthFunc = shaderContext.getDepthFunc();
 		blendTestEnable = shaderContext.getBlendTestEnable();
 		blendEquation = shaderContext.getBlendEquation();
 		blendSrc = shaderContext.getBlendSrc();
 		blendDst = shaderContext.getBlendDst();
 		colorMaskEnable = shaderContext.getColorMaskEnable();
+		copyRedToAlpha = shaderContext.getCopyRedToAlpha();
 
 		key = getKey(shaderContext, hasGeometryShader);
 	}
@@ -191,13 +193,14 @@ public class ShaderProgram {
 		REShader.addDefine(defines, "STENCIL_OP_FAIL", dummyValue);
 		REShader.addDefine(defines, "STENCIL_OP_ZFAIL", dummyValue);
 		REShader.addDefine(defines, "STENCIL_OP_ZPASS", dummyValue);
-                REShader.addDefine(defines, "DEPTH_TEST_ENABLE", dummyValue);
-                REShader.addDefine(defines, "DEPTH_FUNC", dummyValue);
+		REShader.addDefine(defines, "DEPTH_TEST_ENABLE", dummyValue);
+		REShader.addDefine(defines, "DEPTH_FUNC", dummyValue);
 		REShader.addDefine(defines, "BLEND_TEST_ENABLE", dummyValue);
 		REShader.addDefine(defines, "BLEND_EQUATION", dummyValue);
 		REShader.addDefine(defines, "BLEND_SRC", dummyValue);
 		REShader.addDefine(defines, "BLEND_DST", dummyValue);
 		REShader.addDefine(defines, "COLOR_MASK_ENABLE", dummyValue);
+		REShader.addDefine(defines, "COPY_RED_TO_ALPHA", dummyValue);
 
 		return defines.toString();
 	}
@@ -241,13 +244,14 @@ public class ShaderProgram {
 		REShader.addDefine(defines, "STENCIL_OP_FAIL", stencilOpFail);
 		REShader.addDefine(defines, "STENCIL_OP_ZFAIL", stencilOpZFail);
 		REShader.addDefine(defines, "STENCIL_OP_ZPASS", stencilOpZPass);
-                REShader.addDefine(defines, "DEPTH_TEST_ENABLE", depthTestEnable);
-                REShader.addDefine(defines, "DEPTH_FUNC", depthFunc);
+		REShader.addDefine(defines, "DEPTH_TEST_ENABLE", depthTestEnable);
+		REShader.addDefine(defines, "DEPTH_FUNC", depthFunc);
 		REShader.addDefine(defines, "BLEND_TEST_ENABLE", blendTestEnable);
 		REShader.addDefine(defines, "BLEND_EQUATION", blendEquation);
 		REShader.addDefine(defines, "BLEND_SRC", blendSrc);
 		REShader.addDefine(defines, "BLEND_DST", blendDst);
 		REShader.addDefine(defines, "COLOR_MASK_ENABLE", colorMaskEnable);
+		REShader.addDefine(defines, "COPY_RED_TO_ALPHA", copyRedToAlpha);
 
 		return defines.toString();
 	}
@@ -337,9 +341,9 @@ public class ShaderProgram {
 
 		key += ((long) shaderContext.getStencilOpZPass()) << shift;
 		shift += 3;                
-                key += ((long) shaderContext.getDepthTestEnable()) << shift;
+		key += ((long) shaderContext.getDepthTestEnable()) << shift;
 		shift += 3;
-                key += ((long) shaderContext.getDepthFunc()) << shift;
+		key += ((long) shaderContext.getDepthFunc()) << shift;
 		shift += 3;                
 		key += ((long) shaderContext.getBlendTestEnable()) << shift;
 		shift++;
@@ -350,6 +354,8 @@ public class ShaderProgram {
 		key += ((long) shaderContext.getBlendDst()) << shift;
 		shift += 4;
 		key += ((long) shaderContext.getColorMaskEnable()) << shift;
+		shift++;
+		key += ((long) shaderContext.getCopyRedToAlpha()) << shift;
 		shift++;
 
 		if (shift > Long.SIZE) {

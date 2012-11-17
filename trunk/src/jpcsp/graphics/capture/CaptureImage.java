@@ -36,6 +36,7 @@ import javax.imageio.ImageIO;
 
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 
@@ -208,7 +209,7 @@ public class CaptureImage {
 			rowPadBytes = new byte[(width - readWidth) * 4 + rowPad];
 		}
 
-		boolean imageType32Bit = bufferStorage == GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+		boolean imageType32Bit = bufferStorage == GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888 || bufferStorage == IRenderingEngine.RE_DEPTH_STENCIL;
 		if (imageReader != null) {
 			byte[] completeImageBytes = new byte[imageSize];
 			for (int y = 0; y < height; y++) {

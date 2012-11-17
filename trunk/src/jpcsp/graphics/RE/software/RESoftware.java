@@ -492,8 +492,6 @@ public class RESoftware extends BaseRenderingEngine {
 
 	@Override
 	public void useProgram(int program) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
@@ -1400,5 +1398,20 @@ public class RESoftware extends BaseRenderingEngine {
 
 	@Override
 	public void readStencil(int x, int y, int width, int height, int bufferSize, Buffer buffer) {
+	}
+
+	@Override
+	public void blitFramebuffer(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, int mask, int filter) {
+	}
+
+	@Override
+	public boolean checkAndLogErrors(String logComment) {
+		// No error
+		return false;
+	}
+
+	@Override
+	public boolean setCopyRedToAlpha(boolean copyRedToAlpha) {
+		return true;
 	}
 }

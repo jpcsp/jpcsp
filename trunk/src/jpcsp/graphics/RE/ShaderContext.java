@@ -88,6 +88,7 @@ public class ShaderContext {
 	private int blendDst;
 	private float[] blendSFix = new float[3];
 	private float[] blendDFix = new float[3];
+	private int copyRedToAlpha;
 
 	public void setUniforms(IRenderingEngine re, int shaderProgram) {
 		re.setUniform(Uniforms.zPos.getId(shaderProgram), zPos);
@@ -147,6 +148,7 @@ public class ShaderContext {
 		re.setUniform(Uniforms.blendDst.getId(shaderProgram), blendDst);
 		re.setUniform3(Uniforms.blendSFix.getId(shaderProgram), blendSFix);
 		re.setUniform3(Uniforms.blendDFix.getId(shaderProgram), blendDFix);
+		re.setUniform(Uniforms.copyRedToAlpha.getId(shaderProgram), copyRedToAlpha);
 
 		setUniformsSamplers(re, shaderProgram);
 	}
@@ -675,5 +677,13 @@ public class ShaderContext {
 		this.blendDFix[0] = blendDFix[0];
 		this.blendDFix[1] = blendDFix[1];
 		this.blendDFix[2] = blendDFix[2];
+	}
+
+	public int getCopyRedToAlpha() {
+		return copyRedToAlpha;
+	}
+
+	public void setCopyRedToAlpha(int copyRedToAlpha) {
+		this.copyRedToAlpha = copyRedToAlpha;
 	}
 }
