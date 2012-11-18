@@ -334,7 +334,7 @@ public class sceFont extends HLEModule {
 
         try {
         	PGF pgfFile;
-        	if (fileName.endsWith(".bwfon")) {
+        	if (fileName != null && fileName.endsWith(".bwfon")) {
         		pgfFile = new BWFont(pgfBuffer, fileName);
         	} else {
         		pgfFile = new PGF(pgfBuffer);
