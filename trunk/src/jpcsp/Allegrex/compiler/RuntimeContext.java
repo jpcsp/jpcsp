@@ -134,13 +134,23 @@ public class RuntimeContext {
 
 		int returnValue;
 		int sp = cpu._sp;
-
 		RuntimeThread stackThread = currentRuntimeThread;
+
+		if (stackThread != null && stackThread.isStackMaxSize()) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("jumpCall stack already reached maxSize, returning 0x%08X", address));
+			}
+			throw new StackPopException(address);
+		}
+
 		try {
 			if (stackThread != null) {
 				stackThread.increaseStackSize();
 			}
 			returnValue = executable.exec();
+		} catch (StackOverflowError e) {
+			log.error(String.format("StackOverflowError stackSize=%d", stackThread.getStackSize()));
+			throw e;
 		} finally {
 			if (stackThread != null) {
 				stackThread.decreaseStackSize();
