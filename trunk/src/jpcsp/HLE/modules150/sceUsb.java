@@ -28,6 +28,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.hardware.Usb;
 
 @HLELogging
 public class sceUsb extends HLEModule {
@@ -40,30 +41,40 @@ public class sceUsb extends HLEModule {
 
 	public static final String PSP_USBBUS_DRIVERNAME = "USBBusDriver";
 
+	public static final int PSP_USB_CONNECTION_NOT_ESTABLISHED = 0x001;
 	public static final int PSP_USB_CONNECTION_ESTABLISHED = 0x002;
+	public static final int PSP_USB_CABLE_DISCONNECTED = 0x010;
 	public static final int PSP_USB_CABLE_CONNECTED = 0x020;
+	public static final int PSP_USB_DEACTIVATED = 0x100;
 	public static final int PSP_USB_ACTIVATED = 0x200;
+	protected static final int WAIT_MODE_ANDOR_MASK = 0x1;
+	protected static final int WAIT_MODE_AND = 0x0;
+	protected static final int WAIT_MODE_OR = 0x1;
 
 	protected boolean usbActivated = false;
 	protected boolean usbStarted = false;
 
 	protected int getUsbState() {
-		// Simulate that a USB cacle is always connected
-		int state = PSP_USB_CABLE_CONNECTED;
+		int state = Usb.isCableConnected() ? PSP_USB_CABLE_CONNECTED : PSP_USB_CABLE_DISCONNECTED;
 
 		// USB has been activated?
-		if (usbActivated) {
-			state |= PSP_USB_ACTIVATED;
-		}
+		state |= usbActivated ? PSP_USB_ACTIVATED : PSP_USB_DEACTIVATED;
 
 		// USB has been started?
-		if (usbStarted) {
-			state |= PSP_USB_CONNECTION_ESTABLISHED;
-		}
+		state |= usbStarted ? PSP_USB_CONNECTION_ESTABLISHED : PSP_USB_CONNECTION_NOT_ESTABLISHED;
 
 		return state;
 	}
 
+	protected boolean matchState(int waitState, int waitMode) {
+		int state = getUsbState();
+		if ((waitMode & WAIT_MODE_ANDOR_MASK) == WAIT_MODE_AND) {
+			// WAIT_MODE_AND
+			return (state & waitState) == waitState;
+		}
+		// WAIT_MODE_OR
+		return (state & waitState) != 0;
+	}
 	/**
 	 * Start a USB driver.
 	 *
@@ -106,7 +117,7 @@ public class sceUsb extends HLEModule {
 	@HLEFunction(nid = 0xC21645A4, version = 150)
 	public int sceUsbGetState() {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceUsbGetState returning %d", getUsbState()));
+			log.debug(String.format("sceUsbGetState returning 0x%X", getUsbState()));
 		}
 
 		return getUsbState();
@@ -139,7 +150,6 @@ public class sceUsb extends HLEModule {
 	 *
 	 * @return 0 on success
 	 */
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x586DB82C, version = 150)
 	public int sceUsbActivate(int pid) {
 		usbActivated = true;
@@ -154,7 +164,6 @@ public class sceUsb extends HLEModule {
 	 *
 	 * @return 0 on success
 	 */
-	@HLEUnimplemented
 	@HLEFunction(nid = 0xC572A9C8, version = 150)
 	public int sceUsbDeactivate(int pid) {
 		usbActivated = false;
@@ -162,10 +171,19 @@ public class sceUsb extends HLEModule {
 		return 0;
 	}
 
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x5BE0E002, version = 150)
 	public int sceUsbWaitState(int state, int waitMode, @CanBeNull TPointer32 timeoutAddr) {
-		return 0;
+		if (!matchState(state, waitMode)) {
+			log.warn(String.format("Unimplemented sceUsbWaitState state=0x%X, waitMode=0x%X, timeoutAddr=%s - non-matching state not implemented", state, waitMode, timeoutAddr));
+			Modules.ThreadManForUserModule.hleBlockCurrentThread();
+			return 0;
+		}
+
+		int usbState = getUsbState();
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceUsbWaitState returning 0x%X", usbState));
+		}
+		return usbState;
 	}
 
 	@HLEUnimplemented

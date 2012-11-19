@@ -18,10 +18,12 @@ package jpcsp.HLE.modules271;
 
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -147,6 +149,19 @@ public class sceUsbCam extends HLEModule {
 	protected int micFrequency;
 	protected int micGain;
 
+	// Faked video reading
+	protected long lastVideoFrameMillis;
+	protected static final int[] framerateFrameDurationMillis = new int[] {
+		267, // PSP_USBCAM_FRAMERATE_3_75_FPS
+		200, // PSP_USBCAM_FRAMERATE_5_FPS
+		133, // PSP_USBCAM_FRAMERATE_7_5_FPS
+		100, // PSP_USBCAM_FRAMERATE_10_FPS
+		67, // PSP_USBCAM_FRAMERATE_15_FPS
+		50, // PSP_USBCAM_FRAMERATE_20_FPS
+		33, // PSP_USBCAM_FRAMERATE_30_FPS
+		17 // PSP_USBCAM_FRAMERATE_60_FPS
+	};
+
 	/**
 	 * Convert a value PSP_USBCAM_RESOLUTION_EX_*
 	 * to the corresponding PSP_USBCAM_RESOLUTION_*
@@ -168,6 +183,13 @@ public class sceUsbCam extends HLEModule {
 		}
 
 		return resolutionEx;
+	}
+
+	protected int getFramerateFrameDurationMillis() {
+		if (frameRate < 0 || frameRate > PSP_USBCAM_FRAMERATE_60_FPS) {
+			return framerateFrameDurationMillis[PSP_USBCAM_FRAMERATE_60_FPS];
+		}
+		return framerateFrameDurationMillis[frameRate];
 	}
 
 	protected int readFakeVideoFrame() {
@@ -294,19 +316,24 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return size of acquired frame on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x7DAC0C71, version = 271)
-	public void sceUsbCamReadVideoFrameBlocking(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int jpegBuffer = cpu._a0;
-		int jpegBufferSize = cpu._a1;
-
-		log.warn(String.format("Unimplemented sceUsbCamReadVideoFrameBlocking jpegBuffer=0x%08X, jpegBufferSize=%d", jpegBuffer, jpegBufferSize));
-
-		this.jpegBuffer = jpegBuffer;
+	public int sceUsbCamReadVideoFrameBlocking(TPointer jpegBuffer, int jpegBufferSize) {
+		this.jpegBuffer = jpegBuffer.getAddress();
 		this.jpegBufferSize = jpegBufferSize;
 
-		cpu._v0 = readFakeVideoFrame();
+		long now = Emulator.getClock().currentTimeMillis();
+		int millisSinceLastFrame = (int) (now - lastVideoFrameMillis);
+		int frameDurationMillis = getFramerateFrameDurationMillis();
+		if (millisSinceLastFrame >= 0 && millisSinceLastFrame < frameDurationMillis) {
+			int delayMillis = frameDurationMillis - millisSinceLastFrame;
+			Modules.ThreadManForUserModule.hleKernelDelayThread(delayMillis * 1000, false);
+			lastVideoFrameMillis = now + delayMillis;
+		} else {
+			lastVideoFrameMillis = now;
+		}
+
+		return readFakeVideoFrame();
 	}
 
 	/**

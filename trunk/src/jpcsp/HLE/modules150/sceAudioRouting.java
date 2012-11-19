@@ -20,6 +20,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 
@@ -29,6 +30,7 @@ public class sceAudioRouting extends HLEModule {
 	protected static final int AUDIO_ROUTING_SPEAKER_OFF = 0;
 	protected static final int AUDIO_ROUTING_SPEAKER_ON = 1;
 	protected int audioRoutingMode = AUDIO_ROUTING_SPEAKER_ON;
+	protected int audioRoutineVolumeMode = AUDIO_ROUTING_SPEAKER_ON;
 
 	@Override
 	public String getName() {
@@ -60,5 +62,21 @@ public class sceAudioRouting extends HLEModule {
 	@HLEFunction(nid = 0x39240E7D, version = 150)
 	public int sceAudioRoutingGetMode() {
 		return audioRoutingMode;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0x28235C56, version = 150)
+	public int sceAudioRoutingGetVolumeMode() {
+		return audioRoutineVolumeMode;
+	}
+
+	@HLEUnimplemented
+	@HLEFunction(nid = 0xBB548475, version = 150)
+	public int sceAudioRoutingSetVolumeMode(int mode) {
+		int previousMode = audioRoutineVolumeMode;
+
+		audioRoutineVolumeMode = mode;
+
+		return previousMode;
 	}
 }
