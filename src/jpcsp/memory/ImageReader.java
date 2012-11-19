@@ -790,8 +790,8 @@ public class ImageReader {
 
 			//compressedImageSize = round4(width) * round4(height) * 4 / compressionRatio;
 
-			buffer = new int[width * 4]; // DXT images are compressed in blocks of 4 rows
-			maxIndex = buffer.length;
+			buffer = new int[round4(width) << 2]; // DXT images are compressed in blocks of 4 rows
+			maxIndex = width << 2;
 			index = maxIndex;
 		}
 
