@@ -417,15 +417,15 @@ public class sceUtility extends HLEModule {
 
             if (Modules.sceUtilityModule.startedDialogState != null && Modules.sceUtilityModule.startedDialogState != this) {
             	if (log.isDebugEnabled()) {
-            		log.debug(String.format("%Abort returning ERROR_UTILITY_WRONG_TYPE", name));
+            		log.debug(String.format("%sAbort returning ERROR_UTILITY_WRONG_TYPE", name));
             	}
             	cpu._v0 = SceKernelErrors.ERROR_UTILITY_WRONG_TYPE;
             	return;
             }
 
-            if (status != PSP_UTILITY_DIALOG_STATUS_QUIT) {
+            if (status != PSP_UTILITY_DIALOG_STATUS_VISIBLE) {
             	if (log.isDebugEnabled()) {
-            		log.debug(String.format("%Abort returning ERROR_UTILITY_INVALID_STATUS", name));
+            		log.debug(String.format("%sAbort returning ERROR_UTILITY_INVALID_STATUS", name));
             	}
             	cpu._v0 = SceKernelErrors.ERROR_UTILITY_INVALID_STATUS;
             	return;
@@ -435,7 +435,10 @@ public class sceUtility extends HLEModule {
             	log.debug(String.format("%sAbort", name));
             }
 
-            status = PSP_UTILITY_DIALOG_STATUS_FINISHED;
+            if (dialog != null) {
+            	dialog.dispose();
+            }
+            status = PSP_UTILITY_DIALOG_STATUS_QUIT;
             result = PSP_UTILITY_DIALOG_RESULT_ABORTED;
 
             cpu._v0 = 0;

@@ -19,15 +19,11 @@ package jpcsp.HLE.modules260;
 import jpcsp.Processor;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
-import jpcsp.HLE.HLEUnimplemented;
 
 @HLELogging
 public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
-	@HLEUnimplemented
 	@HLEFunction(nid = 0x4928BD96, version = 260)
-	public int sceUtilityMsgDialogAbort(Processor processor) {
+	public void sceUtilityMsgDialogAbort(Processor processor) {
 		msgDialogState.abort(processor);
-
-		return 0;
 	}
 }
