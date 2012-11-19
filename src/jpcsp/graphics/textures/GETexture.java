@@ -96,6 +96,20 @@ public class GETexture {
 		// Create the texture if not yet created or
 		// re-create it if the viewport resize factor has been changed dynamically.
 		if (textureId == -1 || viewportResizeScaleFactor != resizeScale) {
+			// The Jpcsp window has been resized. Recreate all the textures using the new size.
+			if (textureId != -1) {
+				re.deleteTexture(textureId);
+				textureId = -1;
+			}
+			if (stencilTextureId != -1) {
+				re.deleteTexture(stencilTextureId);
+				stencilTextureId = -1;
+			}
+			if (stencilFboId != -1) {
+				re.deleteFramebuffer(stencilFboId);
+				stencilFboId = -1;
+			}
+
 			resizeScale = viewportResizeScaleFactor;
 
 			if (useViewportResize) {
@@ -106,9 +120,6 @@ public class GETexture {
 				texT = height / (float) heightPow2;
 			}
 
-			if (textureId != -1) {
-				re.deleteTexture(textureId);
-			}
 			textureId = re.genTexture();
 			re.bindTexture(textureId);
     		re.setTexImage(0, pixelFormat, getTexImageWidth(), getTexImageHeight(), pixelFormat, pixelFormat, 0, null);
@@ -415,11 +426,11 @@ public class GETexture {
 		}
 
 		// Draw the stencil texture and update only the alpha channel of the GE texture
-		drawTexture(re, 0, 0, texWidth, texHeight, true, false, false, false, true);
+		drawTexture(re, 0, 0, width, height, true, false, false, false, true);
 		re.checkAndLogErrors("drawTexture");
 
 		// Reset the framebuffer to the default one
-		re.bindFramebuffer(IRenderingEngine.RE_FRAMEBUFFER, 0);
+		re.bindFramebuffer(IRenderingEngine.RE_DRAW_FRAMEBUFFER, 0);
 
 		re.setCopyRedToAlpha(false);
 
