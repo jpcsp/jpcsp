@@ -253,7 +253,7 @@ public abstract class Memory {
 	public long read64(int address) {
 		long low = read32(address);
 		long high = read32(address + 4);
-		return low | high << 32;
+		return (low & 0xFFFFFFFFL) | (high << 32);
 	}
 
 	public void write64(int address, long data) {
