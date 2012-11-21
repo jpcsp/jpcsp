@@ -8776,6 +8776,76 @@
 08939348:[27BD0010]: addiu      $sp, $sp, 16
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="Color.float2int">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.arithmetic.Color</Class>
+		<Method>float2int</Method>
+		<IsReturning>false</IsReturning>
+		<Parameters>@089F9FE0,@089F9FF8</Parameters>
+		<CodeInstructions><![CDATA[
+089F9FE0:[DA600000/FC1F0003]: lv.q       C000.q, 0($s3)
+089F9FE4:[D0048080]: vsat0.q    C000.q, C000.q
+089F9FE8:[DF0100FF]: VIIM.s     S010.s, 0x00FF
+089F9FEC:[65018080]: vscl.q     C000.q, C000.q, S010.s
+089F9FF0:[D2378080]: vf2iz.q    C000.q, C000.q, 23
+089F9FF4:[D03C8080]: vi2uc.q    S000.s, C000.q
+089F9FF8:[48650000/FFE0FFFF]: mfv.s      $a1, S000.s
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="sortFloatArray8Reverse">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Sort</Class>
+		<Method>sortFloatArray8Reverse</Method>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+088F8F18:[27BDFFF0]: addiu      $sp, $sp, -16
+088F8F1C:[2CA60002]: sltiu      $a2, $a1, 2
+088F8F20:[14C0002B]: bne        $a2, $zr, 0x088F8FD0
+088F8F24:[00A03025]: or         $a2, $a1, $zr <=> move $a2, $a1
+088F8F28:[24A5FFFF]: addiu      $a1, $a1, -1
+088F8F2C:[000638C0]: sll        $a3, $a2, 0x0003
+088F8F30:[00E63023]: subu       $a2, $a3, $a2
+088F8F34:[34070000]: ori        $a3, $zr, 0 <=> li $a3, 0
+088F8F38:[000630C2]: srl        $a2, $a2, 0x0003
+088F8F3C:[34020000]: ori        $v0, $zr, 0 <=> li $v0, 0
+088F8F40:[340B0000]: ori        $t3, $zr, 0 <=> li $t3, 0
+088F8F44:[00804825]: or         $t1, $a0, $zr <=> move $t1, $a0
+088F8F48:[00873821]: addu       $a3, $a0, $a3
+088F8F4C:[01665021]: addu       $t2, $t3, $a2
+088F8F50:[000A40C0]: sll        $t0, $t2, 0x0003
+088F8F54:[C52C0004]: lwc1       $f12, 4($t1)
+088F8F58:[00881821]: addu       $v1, $a0, $t0
+088F8F5C:[C46D0004]: lwc1       $f13, 4($v1)
+088F8F60:[460D603C]: c.lt.s     $f12, $f13
+088F8F64:[00000000]: nop
+088F8F68:[45020010]: bc1fl  0x088F8FAC
+088F8F6C:[256B0001]: addiu      $t3, $t3, 1
+088F8F70:[8CE30004]: lw         $v1, 4($a3)
+088F8F74:[8CE20000]: lw         $v0, 0($a3)
+088F8F78:[00884021]: addu       $t0, $a0, $t0
+088F8F7C:[AFA30004]: sw         $v1, 4($sp)
+088F8F80:[AFA20000]: sw         $v0, 0($sp)
+088F8F84:[8D0D0004]: lw         $t5, 4($t0)
+088F8F88:[8D0C0000]: lw         $t4, 0($t0)
+088F8F8C:[34020001]: ori        $v0, $zr, 1 <=> li $v0, 1
+088F8F90:[ACED0004]: sw         $t5, 4($a3)
+088F8F94:[ACEC0000]: sw         $t4, 0($a3)
+088F8F98:[8FAD0004]: lw         $t5, 4($sp)
+088F8F9C:[8FAC0000]: lw         $t4, 0($sp)
+088F8FA0:[AD0D0004]: sw         $t5, 4($t0)
+088F8FA4:[AD0C0000]: sw         $t4, 0($t0)
+088F8FA8:[256B0001]: addiu      $t3, $t3, 1
+088F8FAC:[25290008]: addiu      $t1, $t1, 8
+088F8FB0:[0145402B]: sltu       $t0, $t2, $a1
+088F8FB4:[1500FFE5]: bne        $t0, $zr, 0x088F8F4C
+088F8FB8:[24E70008]: addiu      $a3, $a3, 8
+088F8FBC:[1440FFDC]: bne        $v0, $zr, 0x088F8F30
+088F8FC0:[000638C0]: sll        $a3, $a2, 0x0003
+088F8FC4:[2CC70002]: sltiu      $a3, $a2, 2
+088F8FC8:[10E0FFD9]: beq        $a3, $zr, 0x088F8F30
+088F8FCC:[000638C0]: sll        $a3, $a2, 0x0003
+088F8FD0:[03E00008]: jr         $ra
+088F8FD4:[27BD0010]: addiu      $sp, $sp, 16
+]]></CodeInstructions>
+	</NativeCodeSequence>
 <!--
 	<NativeCodeSequence name="XXX">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.XXX</Class>
