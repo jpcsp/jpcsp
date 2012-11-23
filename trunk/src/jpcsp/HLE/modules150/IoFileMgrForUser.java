@@ -873,6 +873,27 @@ public class IoFileMgrForUser extends HLEModule {
     	return rmdir(f, recursive);
     }
 
+    public boolean deleteFile(String pspfilename) {
+    	String pcfilename = getDeviceFilePath(pspfilename);
+    	if (pcfilename == null) {
+    		return false;
+    	}
+
+    	String absoluteFileName = getAbsoluteFileName(pspfilename);
+    	StringBuilder localFileName = new StringBuilder();
+    	IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
+    	boolean fileDeleted;
+    	if (vfs != null) {
+    		int result = vfs.ioRemove(localFileName.toString());
+    		fileDeleted = result >= 0;
+    	} else {
+    		File f = new File(pcfilename);
+    		fileDeleted = f.delete();
+    	}
+
+    	return fileDeleted;
+    }
+
     public String[] listFiles(String dir, String pattern) {
         String pcfilename = getDeviceFilePath(dir);
         if (pcfilename == null) {
