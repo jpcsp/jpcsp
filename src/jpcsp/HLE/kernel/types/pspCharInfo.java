@@ -54,21 +54,21 @@ public class pspCharInfo extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void read() {
-		bitmapWidth = read32();
-		bitmapHeight = read32();
-		bitmapLeft = read32();
-		bitmapTop = read32();
-		sfp26Width = read32();
-		sfp26Height = read32();
-		sfp26Ascender = read32();
-		sfp26Descender = read32();
-		sfp26BearingHX = read32();
-		sfp26BearingHY = read32();
-		sfp26BearingVX = read32();
-		sfp26BearingVY = read32();
-		sfp26AdvanceH = read32();
-		sfp26AdvanceV = read32();
-		readUnknown(4);
+		bitmapWidth = read32();    // Offset 0
+		bitmapHeight = read32();   // Offset 4
+		bitmapLeft = read32();     // Offset 8
+		bitmapTop = read32();      // Offset 12
+		sfp26Width = read32();     // Offset 16
+		sfp26Height = read32();    // Offset 20
+		sfp26Ascender = read32();  // Offset 24
+		sfp26Descender = read32(); // Offset 28
+		sfp26BearingHX = read32(); // Offset 32
+		sfp26BearingHY = read32(); // Offset 36
+		sfp26BearingVX = read32(); // Offset 40
+		sfp26BearingVY = read32(); // Offset 44
+		sfp26AdvanceH = read32();  // Offset 48
+		sfp26AdvanceV = read32();  // Offset 52
+		readUnknown(4);            // Offset 56
 	}
 
 	@Override
