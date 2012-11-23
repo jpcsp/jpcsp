@@ -296,32 +296,55 @@ public class sceFont extends HLEModule {
         int fontBufWidth = bufferWidth;
         int fontBpl = bufferWidth * sceDisplay.getPixelFormatBytes(bufferStorage);
         int fontBufHeight = MemoryMap.SIZE_VRAM / fontBpl;
-        int x = 0;
-        int y = 0;
         SceFontInfo fontInfo = font.fontInfo;
         PGF pgf = font.pgf;
 
         int memoryLength = fontBpl * fontBufHeight * sceDisplay.getPixelFormatBytes(bufferStorage);
-        Memory.getInstance().memset(addr, (byte) 0, memoryLength);
+        Memory mem = Memory.getInstance();
+        mem.memset(addr, (byte) 0, memoryLength);
+
+        Buffer memoryBuffer = Memory.getInstance().getBuffer(addr, memoryLength);
+        String fileNamePrefix = String.format("Font-%s-", pgf.getFileNamez());
 
         int maxGlyphWidth = pgf.getMaxSize()[0] >> 6;
         int maxGlyphHeight = pgf.getMaxSize()[1] >> 6;
-        for (int charCode = pgf.getFirstGlyphInCharMap(); charCode <= pgf.getLastGlyphInCharMap(); charCode++) {
-            fontInfo.printFont(addr, fontBpl, fontBufWidth, fontBufHeight, x, y, 0, 0, fontBufWidth, fontBufHeight, fontPixelFormat, charCode, ' ');
+        int level = 0;
+        int x = 0;
+        int y = 0;
+        int firstCharCode = pgf.getFirstGlyphInCharMap();
+        int lastCharCode = pgf.getLastGlyphInCharMap();
+        for (int charCode = firstCharCode; charCode <= lastCharCode; charCode++) {
+        	if (x == 0) {
+        		String linePrefix = String.format("0x%04X: ", charCode);
+                Debug.printFramebuffer(addr, fontBufWidth, x, y, 0xFFFFFFFF, 0x00000000, bufferStorage, linePrefix);
+                x += linePrefix.length() * jpcsp.util.Debug.Font.charWidth;
+        	}
+
+        	fontInfo.printFont(addr, fontBpl, fontBufWidth, fontBufHeight, x, y, 0, 0, fontBufWidth, fontBufHeight, fontPixelFormat, charCode, ' ');
 
             x += maxGlyphWidth;
-            if (x + maxGlyphWidth >= fontBufWidth) {
+            if (x + maxGlyphWidth > fontBufWidth) {
                 x = 0;
                 y += maxGlyphHeight;
-                if (y >= fontBufHeight) {
-                    break;
+                if (y + maxGlyphHeight > fontBufHeight) {
+                    CaptureImage image = new CaptureImage(addr, level, memoryBuffer, fontBufWidth, fontBufHeight, bufferWidth, bufferStorage, false, 0, false, true, fileNamePrefix);
+                	log.info(String.format("Dumping font %s from charCode 0x%04X to file %s", pgf.getFontName(), firstCharCode, image.getFileName()));
+                    try {
+                        image.write();
+                    } catch (IOException e) {
+                        log.error(e);
+                    }
+                    mem.memset(addr, (byte) 0, memoryLength);
+                    level++;
+                    firstCharCode = charCode + 1;
+                    x = 0;
+                    y = 0;
                 }
             }
         }
 
-        Buffer memoryBuffer = Memory.getInstance().getBuffer(addr, memoryLength);
-        String fileNamePrefix = String.format("Font-%s-", pgf.getFileNamez());
-        CaptureImage image = new CaptureImage(addr, 0, memoryBuffer, fontBufWidth, fontBufHeight, bufferWidth, bufferStorage, false, 0, false, true, fileNamePrefix);
+        CaptureImage image = new CaptureImage(addr, level, memoryBuffer, fontBufWidth, fontBufHeight, bufferWidth, bufferStorage, false, 0, false, true, fileNamePrefix);
+    	log.info(String.format("Dumping font %s from charCode 0x%04X to file %s", pgf.getFontName(), firstCharCode, image.getFileName()));
         try {
             image.write();
         } catch (IOException e) {

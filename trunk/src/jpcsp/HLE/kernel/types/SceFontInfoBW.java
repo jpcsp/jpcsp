@@ -76,11 +76,15 @@ public class SceFontInfoBW extends SceFontInfo {
     	pspCharInfo charInfo = new pspCharInfo();
 
     	charInfo.bitmapWidth = charBitmapWidth;
-    	charInfo.bitmapHeight = charBitmapHeight;
+    	charInfo.bitmapHeight = charBitmapHeight + 1;
+    	charInfo.bitmapTop = charBitmapWidth;
     	charInfo.sfp26Width = charBitmapWidth << 6;
-    	charInfo.sfp26Height = charBitmapHeight << 6;
-    	charInfo.sfp26AdvanceH = charBitmapWidth << 6;
-    	charInfo.sfp26AdvanceV = charBitmapHeight << 6;
+    	charInfo.sfp26Height = (charBitmapHeight + 1) << 6;
+    	charInfo.sfp26Ascender = charBitmapHeight << 6;
+    	charInfo.sfp26BearingHY = charBitmapHeight << 6;
+    	charInfo.sfp26BearingVX = -480; // -7.5
+    	charInfo.sfp26AdvanceH = (charBitmapWidth + 1) << 6;
+    	charInfo.sfp26AdvanceV = (charBitmapHeight + 2) << 6;
 
     	return charInfo;
 	}
