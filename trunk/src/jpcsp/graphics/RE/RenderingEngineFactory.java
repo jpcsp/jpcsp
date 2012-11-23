@@ -26,6 +26,7 @@ import jpcsp.util.DurationStatistics;
  */
 public class RenderingEngineFactory {
 	private static final boolean enableDebugProxy = false;
+	private static final boolean enableCheckErrorsProxy = false;
 	private static final boolean enableStatisticsProxy = false;
 
 	private static IRenderingEngine createRenderingEngine(boolean enableSoftwareRendering) {
@@ -38,6 +39,10 @@ public class RenderingEngineFactory {
 		} else {
 			// RenderingEngine performing the OpenGL calls by using the LWJGL library
 			re = RenderingEngineLwjgl.newInstance();
+		}
+
+		if (enableCheckErrorsProxy) {
+			re = new CheckErrorsProxy(re);
 		}
 
 		if (enableStatisticsProxy && DurationStatistics.collectStatistics) {

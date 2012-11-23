@@ -1626,13 +1626,45 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	public boolean checkAndLogErrors(String logComment) {
 		boolean hasError = false;
 		while (true) {
-			int error = GL11.glGetError();
+			int error;
+			try {
+				error = GL11.glGetError();
+			} catch (NullPointerException e) {
+				// Ignore Exception
+				error = GL11.GL_NO_ERROR;
+			}
+
 			if (error == GL11.GL_NO_ERROR) {
 				break;
 			}
+
 			hasError = true;
 			if (logComment != null) {
-				log.error(String.format("Error %s: 0x%X", logComment, error));
+				String errorComment;
+				switch (error) {
+					case GL11.GL_INVALID_ENUM: errorComment = "GL_INVALID_ENUM"; break;
+					case GL11.GL_INVALID_OPERATION: errorComment = "GL_INVALID_OPERATION"; break;
+					case GL11.GL_INVALID_VALUE: errorComment = "GL_INVALID_VALUE"; break;
+					default: errorComment = String.format("0x%X"); break;
+				}
+
+				// Build a stack trace and exclude uninteresting RE stack elements:
+				// - exclude this method (first stack trace element)
+				// - exclude method checkAndLogErrors
+				// - exclude methods from class BaseRenderingEngineProxy
+				StackTraceElement[] stackTrace = new Throwable().getStackTrace();
+				StringBuilder stackTraceLog = new StringBuilder();
+				int count = 0;
+				for (int i = 1; i < stackTrace.length && count < 6; i++) {
+					String className = stackTrace[i].getClassName();
+					if (!BaseRenderingEngineProxy.class.getName().equals(className) && !CheckErrorsProxy.class.getName().equals(className)) {
+						stackTraceLog.append(stackTrace[i]);
+						stackTraceLog.append("\n");
+						count++;
+					}
+				}
+
+				log.error(String.format("Error %s: %s\n%s", logComment, errorComment, stackTraceLog.toString()));
 			}
 		}
 
