@@ -1150,4 +1150,20 @@ public class StateProxy extends BaseRenderingEngineProxy {
 			this.dfix = dfix;
 		}
 	}
+
+	@Override
+	public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, long offset) {
+		// id==-1 is a non-existing vertex attrib
+		if (id >= 0) {
+			super.setVertexAttribPointer(id, size, type, normalized, stride, offset);
+		}
+	}
+
+	@Override
+	public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, int bufferSize, Buffer buffer) {
+		// id==-1 is a non-existing vertex attrib
+		if (id >= 0) {
+			super.setVertexAttribPointer(id, size, type, normalized, stride, bufferSize, buffer);
+		}
+	}
 }

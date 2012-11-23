@@ -1562,7 +1562,7 @@ public class sceDisplay extends HLEModule {
         pixelsFb.clear();
         reDisplay.bindTexture(texFb);
         reDisplay.setTextureFormat(pixelformatFb, false);
-        reDisplay.setPixelStore(bufferwidthFb, pixelformatFb);
+        reDisplay.setPixelStore(bufferwidthFb, getPixelFormatBytes(pixelformatFb));
         int textureSize = bufferwidthFb * height * getPixelFormatBytes(pixelformatFb);
         reDisplay.setTexSubImage(0,
             0, 0, bufferwidthFb, height,
