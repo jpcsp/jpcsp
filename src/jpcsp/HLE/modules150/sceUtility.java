@@ -1132,6 +1132,17 @@ public class sceUtility extends HLEModule {
 	                }
 	                break;
 
+	            case SceUtilitySavedataParam.MODE_ERASESECURE:
+	                if (savedataParams.fileName != null) {
+	                    String save = savedataParams.getFileName(savedataParams.saveName, savedataParams.fileName);
+	                    Modules.IoFileMgrForUserModule.deleteFile(save);
+	                    savedataParams.base.result = 0;
+	                } else {
+	                    log.warn("Savedata MODE_ERASESECURE no fileName specified!");
+	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
+	                }
+	            	break;
+
 	            default:
 	                log.warn("Savedata - Unsupported mode " + savedataParams.mode);
 	                savedataParams.base.result = -1;

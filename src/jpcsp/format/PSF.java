@@ -221,6 +221,10 @@ public class PSF {
     /** kxploit patcher tool adds "\nKXPloit Boot by PSP-DEV Team" */
     public String getPrintableString(String key) {
         String rawString = getString(key);
+        if (rawString == null) {
+        	return null;
+        }
+
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < rawString.length(); i++) {
             char c = rawString.charAt(i);
