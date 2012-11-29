@@ -250,8 +250,9 @@ public interface IRenderingEngine {
 	public static final int RE_GEOMETRY_VERTICES_OUT = 2;
 
 	// Buffer Target
-	public static final int RE_ARRAY_BUFFER        = 0;
-	public static final int RE_UNIFORM_BUFFER      = 1;
+	public static final int RE_ARRAY_BUFFER         = 0;
+	public static final int RE_UNIFORM_BUFFER       = 1;
+	public static final int RE_ELEMENT_ARRAY_BUFFER = 2;
 
 	// Framebuffer Target
 	public static final int RE_FRAMEBUFFER         = 0;
@@ -401,6 +402,8 @@ public interface IRenderingEngine {
 	public String getProgramInfoLog(int program);
 	public boolean isExtensionAvailable(String name);
 	public void drawArrays(int primitive, int first, int count);
+	public void drawElements(int primitive, int count, int indexType, Buffer indices, int indicesOffset);
+	public void drawElements(int primitive, int count, int indexType, long indicesOffset);
 	public int genBuffer();
 	public void deleteBuffer(int buffer);
 	public void setBufferData(int target, int size, Buffer buffer, int usage);

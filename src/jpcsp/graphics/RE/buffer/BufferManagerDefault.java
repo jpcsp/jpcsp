@@ -41,7 +41,7 @@ public class BufferManagerDefault extends BaseBufferManager {
 	}
 
 	@Override
-	public int genBuffer(int type, int size, int usage) {
+	public int genBuffer(int target, int type, int size, int usage) {
 		int totalSize = size * sizeOfType[type];
 		ByteBuffer byteBuffer = createByteBuffer(totalSize);
 
@@ -53,48 +53,48 @@ public class BufferManagerDefault extends BaseBufferManager {
 	}
 
 	@Override
-	public void bindBuffer(int buffer) {
+	public void bindBuffer(int target, int buffer) {
 		// Not supported
 	}
 
 	@Override
 	public void setColorPointer(int buffer, int size, int type, int stride, int offset) {
 		BufferInfo bufferInfo = buffers.get(buffer);
-		re.setColorPointer(size, type, stride, bufferInfo.getBufferSize(), bufferInfo.getBufferPosition(offset));
+		re.setColorPointer(size, type, stride, bufferInfo.getBufferSize() - offset, bufferInfo.getBufferPosition(offset));
 	}
 
 	@Override
 	public void setNormalPointer(int buffer, int type, int stride, int offset) {
 		BufferInfo bufferInfo = buffers.get(buffer);
-		re.setNormalPointer(type, stride, bufferInfo.getBufferSize(), bufferInfo.getBufferPosition(offset));
+		re.setNormalPointer(type, stride, bufferInfo.getBufferSize() - offset, bufferInfo.getBufferPosition(offset));
 	}
 
 	@Override
 	public void setTexCoordPointer(int buffer, int size, int type, int stride, int offset) {
 		BufferInfo bufferInfo = buffers.get(buffer);
-		re.setTexCoordPointer(size, type, stride, bufferInfo.getBufferSize(), bufferInfo.getBufferPosition(offset));
+		re.setTexCoordPointer(size, type, stride, bufferInfo.getBufferSize() - offset, bufferInfo.getBufferPosition(offset));
 	}
 
 	@Override
 	public void setVertexAttribPointer(int buffer, int id, int size, int type, boolean normalized, int stride, int offset) {
 		BufferInfo bufferInfo = buffers.get(buffer);
-		re.setVertexAttribPointer(id, size, type, normalized, stride, bufferInfo.getBufferSize(), bufferInfo.getBufferPosition(offset));
+		re.setVertexAttribPointer(id, size, type, normalized, stride, bufferInfo.getBufferSize() - offset, bufferInfo.getBufferPosition(offset));
 	}
 
 	@Override
 	public void setVertexPointer(int buffer, int size, int type, int stride, int offset) {
 		BufferInfo bufferInfo = buffers.get(buffer);
-		re.setVertexPointer(size, type, stride, bufferInfo.getBufferSize(), bufferInfo.getBufferPosition(offset));
+		re.setVertexPointer(size, type, stride, bufferInfo.getBufferSize() - offset, bufferInfo.getBufferPosition(offset));
 	}
 
 	@Override
 	public void setWeightPointer(int buffer, int size, int type, int stride, int offset) {
 		BufferInfo bufferInfo = buffers.get(buffer);
-		re.setWeightPointer(size, type, stride, bufferInfo.getBufferSize(), bufferInfo.getBufferPosition(offset));
+		re.setWeightPointer(size, type, stride, bufferInfo.getBufferSize() - offset, bufferInfo.getBufferPosition(offset));
 	}
 
 	@Override
-	public void setBufferData(int buffer, int size, Buffer data, int usage) {
+	public void setBufferData(int target, int buffer, int size, Buffer data, int usage) {
 		BufferInfo bufferInfo = buffers.get(buffer);
 		if (bufferInfo.byteBuffer != data) {
 			bufferInfo.byteBuffer.clear();

@@ -1211,4 +1211,16 @@ public class CheckErrorsProxy extends BaseRenderingEngineProxy {
 		re.checkAndLogErrors("setCopyRedToAlpha");
 		return value;
 	}
+
+	@Override
+	public void drawElements(int primitive, int count, int indexType, Buffer indices, int indicesOffset) {
+		super.drawElements(primitive, count, indexType, indices, indicesOffset);
+		re.checkAndLogErrors("drawElements");
+	}
+
+	@Override
+	public void drawElements(int primitive, int count, int indexType, long indicesOffset) {
+		super.drawElements(primitive, count, indexType, indicesOffset);
+		re.checkAndLogErrors("drawElements");
+	}
 }

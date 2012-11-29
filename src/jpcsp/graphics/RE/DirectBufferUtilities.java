@@ -120,47 +120,48 @@ public class DirectBufferUtilities {
 		return directBuffer;
 	}
 
-	private static ByteBuffer getByteBuffer(int size, Buffer buffer) {
+	private static ByteBuffer getByteBuffer(int size, Buffer buffer, int bufferOffset) {
 		if (buffer instanceof ByteBuffer) {
 			buffer.limit(size);
+			buffer.position(bufferOffset);
 			return (ByteBuffer) buffer;
 		} else if (buffer instanceof IntBuffer) {
 			size = round4(size);
 			ByteBuffer directBuffer = allocateDirectBuffer(size);
 			directBuffer.asIntBuffer().put((IntBuffer) ((IntBuffer) buffer).slice().limit(size >> 2));
-			directBuffer.rewind();
+			directBuffer.position(bufferOffset);
 			return directBuffer;
 		} else if (buffer instanceof ShortBuffer) {
 			size = round2(size);
 			ByteBuffer directBuffer = allocateDirectBuffer(size);
 			directBuffer.asShortBuffer().put((ShortBuffer) ((ShortBuffer) buffer).slice().limit(size >> 1));
-			directBuffer.rewind();
+			directBuffer.position(bufferOffset);
 			return directBuffer;
 		} else if (buffer instanceof FloatBuffer) {
 			size = round4(size);
 			ByteBuffer directBuffer = allocateDirectBuffer(size);
 			directBuffer.asFloatBuffer().put((FloatBuffer) ((FloatBuffer) buffer).slice().limit(size >> 2));
-			directBuffer.rewind();
+			directBuffer.position(bufferOffset);
 			return directBuffer;
 		}
 
 		throw new IllegalArgumentException();
 	}
 
-	public static ByteBuffer getDirectByteBuffer(int size, Buffer buffer) {
-		return getDirectBuffer(size, getByteBuffer(size, buffer));
+	public static ByteBuffer getDirectByteBuffer(int size, Buffer buffer, int bufferOffset) {
+		return getDirectBuffer(size, getByteBuffer(size, buffer, bufferOffset));
 	}
 
-	public static FloatBuffer getDirectFloatBuffer(int size, Buffer buffer) {
-		return getDirectBuffer(size, getByteBuffer(size, buffer).asFloatBuffer());
+	public static FloatBuffer getDirectFloatBuffer(int size, Buffer buffer, int bufferOffset) {
+		return getDirectBuffer(size, getByteBuffer(size, buffer, bufferOffset).asFloatBuffer());
 	}
 
-	public static IntBuffer getDirectIntBuffer(int size, Buffer buffer) {
-		return getDirectBuffer(size, getByteBuffer(size, buffer).asIntBuffer());
+	public static IntBuffer getDirectIntBuffer(int size, Buffer buffer, int bufferOffset) {
+		return getDirectBuffer(size, getByteBuffer(size, buffer, bufferOffset).asIntBuffer());
 	}
 
-	public static ShortBuffer getDirectShortBuffer(int size, Buffer buffer) {
-		return getDirectBuffer(size, getByteBuffer(size, buffer).asShortBuffer());
+	public static ShortBuffer getDirectShortBuffer(int size, Buffer buffer, int bufferOffset) {
+		return getDirectBuffer(size, getByteBuffer(size, buffer, bufferOffset).asShortBuffer());
 	}
 
 	public static ByteBuffer allocateDirectBuffer(int size) {

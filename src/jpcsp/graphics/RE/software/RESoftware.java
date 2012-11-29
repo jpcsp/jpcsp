@@ -1414,4 +1414,12 @@ public class RESoftware extends BaseRenderingEngine {
 	public boolean setCopyRedToAlpha(boolean copyRedToAlpha) {
 		return true;
 	}
+
+	@Override
+	public void drawElements(int primitive, int count, int indexType, Buffer indices, int indicesOffset) {
+	}
+
+	@Override
+	public void drawElements(int primitive, int count, int indexType, long indicesOffset) {
+	}
 }

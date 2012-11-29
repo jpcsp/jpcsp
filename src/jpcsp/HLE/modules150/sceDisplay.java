@@ -153,7 +153,7 @@ public class sceDisplay extends HLEModule {
 	    			GETextureManager.getInstance().reset(reDisplay);
 	    		}
 	    		VideoEngine.getInstance().start();
-	        	drawBuffer = reDisplay.getBufferManager().genBuffer(IRenderingEngine.RE_FLOAT, 16, IRenderingEngine.RE_DYNAMIC_DRAW);
+	        	drawBuffer = reDisplay.getBufferManager().genBuffer(IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_FLOAT, 16, IRenderingEngine.RE_DYNAMIC_DRAW);
 		    	startModules = false;
 		    	if (saveGEToTexture && !re.isFramebufferObjectAvailable()) {
 		    		saveGEToTexture = false;
@@ -1550,7 +1550,7 @@ public class sceDisplay extends HLEModule {
         reDisplay.enableClientState(IRenderingEngine.RE_VERTEX);
         bufferManager.setTexCoordPointer(drawBuffer, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 0);
         bufferManager.setVertexPointer(drawBuffer, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 2 * SIZEOF_FLOAT);
-        bufferManager.setBufferData(drawBuffer, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_DYNAMIC_DRAW);
+        bufferManager.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, drawBuffer, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_DYNAMIC_DRAW);
         reDisplay.drawArrays(IRenderingEngine.RE_QUADS, 0, 4);
 
         reDisplay.endDirectRendering();

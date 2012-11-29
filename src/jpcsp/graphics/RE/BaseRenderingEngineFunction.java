@@ -163,7 +163,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 
             // We need 24 * vertex (having 3 floats each) for one BBOX.
             // We reserve space for 10 bboxes.
-            bboxBuffer = getBufferManager().genBuffer(RE_FLOAT, 10 * 24 * 3, RE_DYNAMIC_DRAW);
+            bboxBuffer = getBufferManager().genBuffer(RE_ARRAY_BUFFER, RE_FLOAT, 10 * 24 * 3, RE_DYNAMIC_DRAW);
         }
 
         useVertexArray = Settings.getInstance().readBool("emu.enablevao") && super.isVertexArrayAvailable();
@@ -629,7 +629,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
             re.disableClientState(IRenderingEngine.RE_NORMAL);
             re.enableClientState(IRenderingEngine.RE_VERTEX);
             bufferManager.setVertexPointer(bboxBuffer, 3, IRenderingEngine.RE_FLOAT, 3 * SIZEOF_FLOAT, 0);
-            bufferManager.setBufferData(bboxBuffer, bboxNumberVertex * 3 * SIZEOF_FLOAT, bufferManager.getBuffer(bboxBuffer).rewind(), RE_DYNAMIC_DRAW);
+            bufferManager.setBufferData(RE_ARRAY_BUFFER, bboxBuffer, bboxNumberVertex * 3 * SIZEOF_FLOAT, bufferManager.getBuffer(bboxBuffer).rewind(), RE_DYNAMIC_DRAW);
             re.drawArrays(RE_QUADS, 0, bboxNumberVertex);
 
             re.endQuery();

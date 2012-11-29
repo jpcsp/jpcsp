@@ -1030,30 +1030,46 @@ public class REShader extends BaseRenderingEngineFunction {
 		re.setVertexAttribPointer(currentShaderProgram.getShaderAttribTexture(), size, type, false, stride, offset);
 	}
 
-	@Override
-	public void drawArrays(int type, int first, int count) {
-		if (type == GU_SPRITES) {
-			type = spriteGeometryShaderInputType;
+	private int prepareDraw(int primitive, boolean burstMode) {
+		if (primitive == GU_SPRITES) {
+			primitive = spriteGeometryShaderInputType;
 		}
-		// The uniform values are specific to a shader program:
-		// update the uniform values after switching the active shader program.
-		shaderContext.setUniforms(re, currentShaderProgram.getProgramId());
+		if (!burstMode) {
+			// The uniform values are specific to a shader program:
+			// update the uniform values after switching the active shader program.
+			shaderContext.setUniforms(re, currentShaderProgram.getProgramId());
+		}
 		loadFbTexture();
 		loadIntegerTexture();
-		super.drawArrays(type, first, count);
+
+		return primitive;
 	}
 
 	@Override
-	public void drawArraysBurstMode(int type, int first, int count) {
+	public void drawArrays(int primitive, int first, int count) {
+		primitive = prepareDraw(primitive, false);
+		super.drawArrays(primitive, first, count);
+	}
+
+	@Override
+	public void drawArraysBurstMode(int primitive, int first, int count) {
 		// drawArraysBurstMode is equivalent to drawArrays
 		// but without the need to set the uniforms (they are unchanged
 		// since the last call to drawArrays).
-		if (type == GU_SPRITES) {
-			type = spriteGeometryShaderInputType;
-		}
-		loadFbTexture();
-		loadIntegerTexture();
-		super.drawArraysBurstMode(type, first, count);
+		primitive = prepareDraw(primitive, true);
+		super.drawArraysBurstMode(primitive, first, count);
+	}
+
+	@Override
+	public void drawElements(int primitive, int count, int indexType, Buffer indices, int indicesOffset) {
+		primitive = prepareDraw(primitive, false);
+		super.drawElements(primitive, count, indexType, indices, indicesOffset);
+	}
+
+	@Override
+	public void drawElements(int primitive, int count, int indexType, long indicesOffset) {
+		primitive = prepareDraw(primitive, false);
+		super.drawElements(primitive, count, indexType, indicesOffset);
 	}
 
 	@Override

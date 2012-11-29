@@ -52,7 +52,7 @@ public class VertexInfo {
     public int normalOffset;
     public int positionOffset;
     public int alignmentSize;
-    private static int[] size_mapping = new int[]{0, 1, 2, 4};
+    public static int[] size_mapping = new int[]{0, 1, 2, 4};
     private static int[] size_padding = new int[]{0, 0, 1, 3};
     private static int[] color_size_mapping = new int[]{0, 1, 1, 1, 2, 2, 2, 4};
     private static int[] color_size_padding = new int[]{0, 0, 0, 0, 1, 1, 1, 3};
