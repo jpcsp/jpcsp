@@ -519,10 +519,9 @@ public final String category() { return "MIPS I"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	//int imm20 = (insn>>6)&1048575;
-
-
-            
+	int imm20 = (insn>>6)&1048575;
+	Emulator.log.error(String.format("Allegrex break 0x%05X", imm20));
+	Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_BREAK);
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
@@ -569,9 +568,7 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-
-
-            
+	Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_HALT);
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
