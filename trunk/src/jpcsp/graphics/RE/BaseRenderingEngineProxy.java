@@ -1001,4 +1001,14 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	public boolean setCopyRedToAlpha(boolean copyRedToAlpha) {
 		return proxy.setCopyRedToAlpha(copyRedToAlpha);
 	}
+
+	@Override
+	public void drawElements(int primitive, int count, int indexType, Buffer indices, int indicesOffset) {
+		proxy.drawElements(primitive, count, indexType, indices, indicesOffset);
+	}
+
+	@Override
+	public void drawElements(int primitive, int count, int indexType, long indicesOffset) {
+		proxy.drawElements(primitive, count, indexType, indicesOffset);
+	}
 }

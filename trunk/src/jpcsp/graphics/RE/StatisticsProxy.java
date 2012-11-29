@@ -229,6 +229,8 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		addStatistic("blitFramebuffer", 198);
 		addStatistic("checkErrors", 199);
 		addStatistic("setCopyRedToAlpha", 200);
+		addStatistic("drawElements", 201);
+		addStatistic("drawElements", 202);
 	}
 
 	private void addStatistic(String name, int index) {
@@ -1814,5 +1816,21 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		boolean value = super.setCopyRedToAlpha(copyRedToAlpha);
 		statistic.end();
 		return value;
+	}
+
+	@Override
+	public void drawElements(int primitive, int count, int indexType, Buffer indices, int indicesOffset) {
+		DurationStatistics statistic = statistics[201];
+		statistic.start();
+		super.drawElements(primitive, count, indexType, indices, indicesOffset);
+		statistic.end();
+	}
+
+	@Override
+	public void drawElements(int primitive, int count, int indexType, long indicesOffset) {
+		DurationStatistics statistic = statistics[202];
+		statistic.start();
+		super.drawElements(primitive, count, indexType, indicesOffset);
+		statistic.end();
 	}
 }

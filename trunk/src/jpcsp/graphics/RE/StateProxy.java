@@ -206,7 +206,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		texEnvf = new float[17];
 		texEnvi = new int[17];
 		vertexColor = new float[4];
-		bindBuffer = new int[2];
+		bindBuffer = new int[3];
 		lightAmbientColor = new float[4][4];
 		lightSpecularColor = new float[4][4];
 		lightDiffuseColor = new float[4][4];

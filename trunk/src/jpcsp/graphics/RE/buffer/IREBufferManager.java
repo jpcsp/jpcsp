@@ -29,8 +29,8 @@ import jpcsp.graphics.RE.IRenderingEngine;
 public interface IREBufferManager {
 	public void setRenderingEngine(IRenderingEngine re);
 	public boolean useVBO();
-	public int genBuffer(int type, int size, int usage);
-	public void bindBuffer(int buffer);
+	public int genBuffer(int target, int type, int size, int usage);
+	public void bindBuffer(int target, int buffer);
 	public void deleteBuffer(int buffer);
 	public ByteBuffer getBuffer(int buffer);
 	public void setTexCoordPointer(int buffer, int size, int type, int stride, int offset);
@@ -39,5 +39,5 @@ public interface IREBufferManager {
 	public void setNormalPointer(int buffer, int type, int stride, int offset);
 	public void setWeightPointer(int buffer, int size, int type, int stride, int offset);
 	public void setVertexAttribPointer(int buffer, int id, int size, int type, boolean normalized, int stride, int offset);
-	public void setBufferData(int buffer, int size, Buffer data, int usage);
+	public void setBufferData(int target, int buffer, int size, Buffer data, int usage);
 }

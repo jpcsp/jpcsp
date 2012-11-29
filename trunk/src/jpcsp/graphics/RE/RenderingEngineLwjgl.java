@@ -363,7 +363,8 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	};
 	protected static final int[] bufferTargetToGL = {
 		GL15.GL_ARRAY_BUFFER,         // RE_ARRAY_BUFFER
-		ARBUniformBufferObject.GL_UNIFORM_BUFFER // RE_UNIFORM_BUFFER
+		ARBUniformBufferObject.GL_UNIFORM_BUFFER, // RE_UNIFORM_BUFFER
+		GL15.GL_ELEMENT_ARRAY_BUFFER  // RE_ELEMENT_ARRAY_BUFFER
 	};
 	protected static final int[] matrixModeToGL = {
 		GL11.GL_PROJECTION,          // GU_PROJECTION
@@ -997,13 +998,13 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	public void setColorPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
 		switch (type) {
 			case RE_FLOAT:
-				GL11.glColorPointer(size, stride, getDirectFloatBuffer(bufferSize, buffer));
+				GL11.glColorPointer(size, stride, getDirectFloatBuffer(bufferSize, buffer, 0));
 				break;
 			case RE_BYTE:
-				GL11.glColorPointer(size, false, stride, getDirectByteBuffer(bufferSize, buffer));
+				GL11.glColorPointer(size, false, stride, getDirectByteBuffer(bufferSize, buffer, 0));
 				break;
 			case RE_UNSIGNED_BYTE:
-				GL11.glColorPointer(size, true, stride, getDirectByteBuffer(bufferSize, buffer));
+				GL11.glColorPointer(size, true, stride, getDirectByteBuffer(bufferSize, buffer, 0));
 				break;
 			default:
 				throw new IllegalArgumentException();
@@ -1019,13 +1020,13 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	public void setNormalPointer(int type, int stride, int bufferSize, Buffer buffer) {
 		switch (type) {
 			case RE_FLOAT:
-				GL11.glNormalPointer(stride, getDirectFloatBuffer(bufferSize, buffer));
+				GL11.glNormalPointer(stride, getDirectFloatBuffer(bufferSize, buffer, 0));
 				break;
 			case RE_BYTE:
-				GL11.glNormalPointer(stride, getDirectByteBuffer(bufferSize, buffer));
+				GL11.glNormalPointer(stride, getDirectByteBuffer(bufferSize, buffer, 0));
 				break;
 			case RE_INT:
-				GL11.glNormalPointer(stride, getDirectIntBuffer(bufferSize, buffer));
+				GL11.glNormalPointer(stride, getDirectIntBuffer(bufferSize, buffer, 0));
 				break;
 			default:
 				throw new IllegalArgumentException();
@@ -1041,13 +1042,13 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	public void setTexCoordPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
 		switch (type) {
 			case RE_FLOAT:
-				GL11.glTexCoordPointer(size, stride, getDirectFloatBuffer(bufferSize, buffer));
+				GL11.glTexCoordPointer(size, stride, getDirectFloatBuffer(bufferSize, buffer, 0));
 				break;
 			case RE_SHORT:
-				GL11.glTexCoordPointer(size, stride, getDirectShortBuffer(bufferSize, buffer));
+				GL11.glTexCoordPointer(size, stride, getDirectShortBuffer(bufferSize, buffer, 0));
 				break;
 			case RE_INT:
-				GL11.glTexCoordPointer(size, stride, getDirectIntBuffer(bufferSize, buffer));
+				GL11.glTexCoordPointer(size, stride, getDirectIntBuffer(bufferSize, buffer, 0));
 				break;
 			default:
 				throw new IllegalArgumentException();
@@ -1063,13 +1064,13 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	public void setVertexPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
 		switch (type) {
 			case RE_FLOAT:
-				GL11.glVertexPointer(size, stride, getDirectFloatBuffer(bufferSize, buffer));
+				GL11.glVertexPointer(size, stride, getDirectFloatBuffer(bufferSize, buffer, 0));
 				break;
 			case RE_SHORT:
-				GL11.glVertexPointer(size, stride, getDirectShortBuffer(bufferSize, buffer));
+				GL11.glVertexPointer(size, stride, getDirectShortBuffer(bufferSize, buffer, 0));
 				break;
 			case RE_INT:
-				GL11.glVertexPointer(size, stride, getDirectIntBuffer(bufferSize, buffer));
+				GL11.glVertexPointer(size, stride, getDirectIntBuffer(bufferSize, buffer, 0));
 				break;
 			default:
 				throw new IllegalArgumentException();
@@ -1085,25 +1086,25 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, int bufferSize, Buffer buffer) {
 		switch (type) {
 			case RE_FLOAT:
-				GL20.glVertexAttribPointer(id, size, false, stride, getDirectFloatBuffer(bufferSize, buffer));
+				GL20.glVertexAttribPointer(id, size, false, stride, getDirectFloatBuffer(bufferSize, buffer, 0));
 				break;
 			case RE_SHORT:
-				GL20.glVertexAttribPointer(id, size, false, false, stride, getDirectShortBuffer(bufferSize, buffer));
+				GL20.glVertexAttribPointer(id, size, false, false, stride, getDirectShortBuffer(bufferSize, buffer, 0));
 				break;
 			case RE_UNSIGNED_SHORT:
-				GL20.glVertexAttribPointer(id, size, true, false, stride, getDirectShortBuffer(bufferSize, buffer));
+				GL20.glVertexAttribPointer(id, size, true, false, stride, getDirectShortBuffer(bufferSize, buffer, 0));
 				break;
 			case RE_INT:
-				GL20.glVertexAttribPointer(id, size, false, false, stride, getDirectIntBuffer(bufferSize, buffer));
+				GL20.glVertexAttribPointer(id, size, false, false, stride, getDirectIntBuffer(bufferSize, buffer, 0));
 				break;
 			case RE_UNSIGNED_INT:
-				GL20.glVertexAttribPointer(id, size, true, false, stride, getDirectIntBuffer(bufferSize, buffer));
+				GL20.glVertexAttribPointer(id, size, true, false, stride, getDirectIntBuffer(bufferSize, buffer, 0));
 				break;
 			case RE_BYTE:
-				GL20.glVertexAttribPointer(id, size, false, false, stride, getDirectByteBuffer(bufferSize, buffer));
+				GL20.glVertexAttribPointer(id, size, false, false, stride, getDirectByteBuffer(bufferSize, buffer, 0));
 				break;
 			case RE_UNSIGNED_BYTE:
-				GL20.glVertexAttribPointer(id, size, true, false, stride, getDirectByteBuffer(bufferSize, buffer));
+				GL20.glVertexAttribPointer(id, size, true, false, stride, getDirectByteBuffer(bufferSize, buffer, 0));
 				break;
 			default:
 				throw new IllegalArgumentException();
@@ -1135,7 +1136,7 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 
 	@Override
 	public void setCompressedTexImage(int level, int internalFormat, int width, int height, int compressedSize, Buffer buffer) {
-        GL13.glCompressedTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, getDirectByteBuffer(compressedSize, buffer));
+        GL13.glCompressedTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, getDirectByteBuffer(compressedSize, buffer, 0));
 	}
 
 	@Override
@@ -1674,5 +1675,28 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	@Override
 	public boolean setCopyRedToAlpha(boolean shaderCopyRedToAlpha) {
 		return true;
+	}
+
+	@Override
+	public void drawElements(int primitive, int count, int indexType, Buffer indices, int indicesOffset) {
+		switch (indexType) {
+			case IRenderingEngine.RE_UNSIGNED_BYTE:
+				GL11.glDrawElements(primitiveToGL[primitive], DirectBufferUtilities.getDirectByteBuffer(count, indices, indicesOffset));
+				break;
+			case IRenderingEngine.RE_UNSIGNED_SHORT:
+				GL11.glDrawElements(primitiveToGL[primitive], DirectBufferUtilities.getDirectShortBuffer(count << 1, indices, indicesOffset));
+				break;
+			case IRenderingEngine.RE_UNSIGNED_INT:
+				GL11.glDrawElements(primitiveToGL[primitive], DirectBufferUtilities.getDirectIntBuffer(count << 2, indices, indicesOffset));
+				break;
+			default:
+				log.error(String.format("drawElements unknown indexType=%d", indexType));
+				break;
+		}
+	}
+
+	@Override
+	public void drawElements(int primitive, int count, int indexType, long indicesOffset) {
+		GL11.glDrawElements(primitiveToGL[primitive], count, pointerTypeToGL[indexType], indicesOffset);
 	}
 }

@@ -129,7 +129,7 @@ public class GETexture {
             re.setTextureMipmapMaxLevel(0);
             re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
             if (drawBufferId == -1) {
-            	drawBufferId = re.getBufferManager().genBuffer(IRenderingEngine.RE_FLOAT, 16, IRenderingEngine.RE_DYNAMIC_DRAW);
+            	drawBufferId = re.getBufferManager().genBuffer(IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_FLOAT, 16, IRenderingEngine.RE_DYNAMIC_DRAW);
             }
 		} else {
 			re.bindTexture(textureId);
@@ -254,7 +254,7 @@ public class GETexture {
         re.enableClientState(IRenderingEngine.RE_VERTEX);
         bufferManager.setTexCoordPointer(drawBufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 0);
         bufferManager.setVertexPointer(drawBufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 2 * SIZEOF_FLOAT);
-        bufferManager.setBufferData(drawBufferId, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_DYNAMIC_DRAW);
+        bufferManager.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, drawBufferId, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_DYNAMIC_DRAW);
         re.drawArrays(IRenderingEngine.RE_QUADS, 0, 4);
 
         re.endDirectRendering();

@@ -763,4 +763,20 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 		}
 		return super.setCopyRedToAlpha(copyRedToAlpha);
 	}
+
+	@Override
+	public void drawElements(int primitive, int count, int indexType, Buffer indices, int indicesOffset) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("drawElements primitive=%d, count=%d, indexType=%d, indicesOffset=%d", primitive, count, indexType, indicesOffset));
+		}
+		super.drawElements(primitive, count, indexType, indices, indicesOffset);
+	}
+
+	@Override
+	public void drawElements(int primitive, int count, int indexType, long indicesOffset) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("drawElements primitive=%d, count=%d, indexType=%d, indicesOffset=%d", primitive, count, indexType, indicesOffset));
+		}
+		super.drawElements(primitive, count, indexType, indicesOffset);
+	}
 }
