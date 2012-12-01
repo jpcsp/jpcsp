@@ -309,6 +309,6 @@ public class PspGeList {
 
 	@Override
 	public String toString() {
-		return String.format("PspGeList[id=0x%x, status=%s, pc=0x%08X, stall=0x%08X, cbid=0x%X, ended=%b, finished=%b, paused=%b, restarted=%b, reset=%b]", id, PSP_GE_LIST_STRINGS[status], pc, stall_addr, cbid, ended, finished, paused, restarted, reset);
+		return String.format("PspGeList[id=0x%x, status=%s, list=0x%08X, pc=0x%08X, stall=0x%08X, cbid=0x%X, ended=%b, finished=%b, paused=%b, restarted=%b, reset=%b]", id, PSP_GE_LIST_STRINGS[status], list_addr, pc, stall_addr, cbid, ended, finished, paused, restarted, reset);
 	}
 }

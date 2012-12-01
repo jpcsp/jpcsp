@@ -2870,15 +2870,22 @@ public class VideoEngine {
     }
 
     private void executeCommandEND() {
-        // Try to end the current list.
-        // The list only ends (isEnded() == true) if FINISH was called previously.
-        // In SIGNAL + END cases, isEnded() still remains false.
-        currentList.endList();
-        currentList.pauseList();
-        if (isLogDebugEnabled) {
-            log(helper.getCommandString(END) + " pc=0x" + Integer.toHexString(currentList.getPc()));
-        }
-        updateGeBuf();
+        Memory mem = Memory.getInstance();
+        int previousCommand = command(mem.read32(currentList.getPc() - 8));
+        // Ignore the END command if the command before was not SIGNAL or FINISH
+    	if (previousCommand == SIGNAL || previousCommand == FINISH) {
+	        // Try to end the current list.
+	        // The list only ends (isEnded() == true) if FINISH was called previously.
+	        // In SIGNAL + END cases, isEnded() still remains false.
+	        currentList.endList();
+	        currentList.pauseList();
+	        if (isLogDebugEnabled) {
+	            log(String.format("%s pc=0x%08X", helper.getCommandString(END), currentList.getPc()));
+	        }
+	        updateGeBuf();
+    	} else if (isLogWarnEnabled) {
+    		log.warn(String.format("Ignoring %s 0x%06X command without %s/%s at pc=0x%08X", helper.getCommandString(END), normalArgument, helper.getCommandString(SIGNAL), helper.getCommandString(FINISH), currentList.getPc() - 4));
+    	}
     }
 
     private void executeCommandSIGNAL() {
