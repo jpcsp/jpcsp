@@ -99,8 +99,11 @@ JPCSP v0.7 (????????):
 
 -> Draft implementation for the support of Video UMDs;
 
--> Basic network support: Infrastructure network is almost complete.
-   Adhoc network or Signin to the Playstation Network are not supported at all.
+-> Basic network support:
+   Infrastructure network is almost complete.
+   Adhoc network is only working between two Jpcsp, not with a real PSP.
+   Port shifting is available to support running two Jpcsp instances on the same computer.
+   Signin to the PlayStation Network is not supported at all.
 
 -> A lot of compatibility improvements in almost all of the PSP modules.
 
@@ -210,7 +213,7 @@ JPCSP v0.5 (March 09, 2010):
 
 1. Getting started:
 
-Be sure to have JRE (Java Runtime Environement) installed in your computer
+Be sure to have JRE (Java Runtime Environment) installed in your computer
 before attempting to run JPCSP.
 
 NOTE: It is strongly advised that even on a 64-bit OS, you should install the
@@ -270,13 +273,20 @@ The "Help" menu contains the "About" window.
 
 4. Command-Line options:
 
-Usage: java -Xmx512m -jar jpcsp.jar <OPTIONS>
+Usage: java -Xmx1024m -Xss2m -XX:MaxPermSize=128m -XX:ReservedCodeCacheSize=64m -Djava.library.path=lib/windows-x86 -jar bin/jpcsp.jar <OPTIONS>
+
+Available <OPTIONS>:
 
   -d, --debugger             Open debugger at start.
   -f, --loadfile FILE        Load a file.
                              Example: ms0/PSP/GAME/pspsolitaire/EBOOT.PBP
   -u, --loadumd FILE         Load a UMD. Example: umdimages/cube.iso
   -r, --run                  Run loaded file or umd. Use with -f or -u option.
+  -t, --tests                Run the automated tests.
+  --netClientPortShift N     Increase Network client ports by N (e.g. N = 100).
+                             Only required when running 2 Jpcsp instances on the same computer.
+  --netServerPortShift N     Increase Network server ports by N (e.g. N = 100).
+                             Only required when running 2 Jpcsp instances on the same computer.
 
 
 
@@ -332,7 +342,6 @@ the user interface will be overridden regardless of their state.
 
 
 - Media Engine:
-NOTE: Currently, only supported in 32-bit Windows.
 The "Media Engine" can be enabled under "Options" > "Configuration" > "Media".
 This allows JPCSP to use the FFMPEG's wrapper Xuggler to decode and playback
 ingame videos (instead of faked MPEG data) and audio (ATRAC3 only).
@@ -418,6 +427,7 @@ under "Options" > "Configuration" > "General". The data will be saved in the fil
 Use "Reset Profiler Information" under "Debug" to clear the current profiler data
 and re-start collecting profiler information from now on.
 
+For additional information, see the detailed profiler information below.
 
 - ISO contents:
 You can dump the current ISO/CSO image's contents into an illustrative .txt
@@ -569,7 +579,7 @@ So, to the different options:
     but is only relevant when using shaders.
     It is only available as an option because it has a negative impact on the
     performance (lower FPS).
-- Disable optmized VertexInfo reading:
+- Disable optimized VertexInfo reading:
     you might try this option if graphics are sometimes corrupted.
     This option has a negative impact on the performance (lower FPS), but
     provides higher compatibility.
@@ -612,6 +622,183 @@ require a fixed FPS rate for an application to run correctly, there is no genera
 Also, Jpcsp will only skip a maximum of 75% of the frames, a minimum of 25% will always
 be displayed. Skipping more than 75% of the frames would make the application run very jerky.
 
+
+10. Profiler
+
+10.1 What is profiling and how to use it?
+
+Profiling in Jpcsp is a dynamic analysis of the PSP application being run
+that measures the time spent by the PSP application in different parts
+of its code and that collects different statistics in order to help
+the development of further Jpcsp optimizations.
+
+The Jpcsp profiler is collecting information about
+- the PSP CPU: i.e. the frequency and duration of all the application
+  MIPS/Allegrex function calls;
+- the PSP GPU: i.e. the frequency and duration of the critical graphic
+  commands used to render the application display.
+
+For those reading the Wikipedia article on profiling
+    http://en.wikipedia.org/wiki/Profiling_%28computer_programming%29
+the Jpcsp profiler is a "Flat" and "Instrumenting" profiler. 
+
+The profiler has to be enabled in the compiler configuration options:
+Options -> Configuration -> Compiler tab -> select "Output profiler to profiler.txt".
+It has to be enabled before running the application i.e., it cannot be enabled "on-the-fly".
+The profiler information is then collected when starting the application
+during the whole application run until leaving Jpcsp.
+When Jpcsp is closed, the complete profiler information is written into a file "profiler.txt".
+
+Also, when enabling the profiler, keep the other compiler option
+"Maximum method size" to its default value of 3000.
+
+
+10.2 How to make the best use of profiling
+
+An application run is typically having the following phases:
+- Intro (developer Logos)
+- Loading
+- Menu
+- Video
+- In-game play
+Some of them might be mixed (e.g. further loading or video's can happen
+during the in-game play), but the approach is usually very similar.
+When profiling, it is important to understand that these phases usually
+involve different part of the application code or are using different graphics
+rendering.
+For example, a loading phase is typically involving the application code
+doing the reading of files, the parsing or decoding of data and preparing the data
+structures in PSP memory. The graphics during a Loading phase are very simple,
+usually only a "Loading..." graphic.
+The display of a video is involving a completely different part of the application
+code i.e., the part calling the PSP functions to decode and display Mpeg videos,
+including the Mpeg audio.
+The in-game play is usually the most CPU and GPU intensive part of the application,
+where game logic has to be applied, complex graphics have to be rendered and
+background music or sound effects have to be output.
+As a rough estimation, the following overview usually applies:
+- Intro: low PSP CPU usage, simple graphics, no or simple audio (BGM)
+- Loading: high PSP CPU usage, simple graphics, no audio
+- Menu: low PSP CPU usage, simple graphics, simple audio (BGM)
+- Video: low PSP CPU usage (but high HLE emulation usage to decode the Mpeg),
+         simple graphics (Video image), simple audio (Video audio)
+- In-game play: high PSP CPU usage, complex graphics,
+                complex audio (mix of BGM and sound effects)
+
+When profiling the whole application from the beginning, all the different
+phases are mixed together in the profiler data and it is then not always
+obvious which part of Jpcsp has to be optimized in order to bring the most
+benefit. As the in-game play is usually the phase having the lowest performance
+(i.e. the lowest FPS), it makes sense to collect only profiling information
+for that phase so that it is not mixed with other information which could
+bias the observations. For this, Jpcsp has the menu option
+"Debug -> Reset Profiler Information": when reaching the part of the application
+having the low performance that you would like to profile (it could be only
+some particular scenes from the in-game play that have a poor performance),
+select the menu option to reset the profiler information, let Jpcsp run in that
+part for at least 10 seconds (so that enough statistical information can be
+collected) and then close Jpcsp. The generated profiler file will then only
+contain information since the last reset of the profiler.
+The profiler file and the associated log file (at INFO level) have then to be
+posted on the official forum under the related game thread. Also explain for
+which part you collected the profiler information (e.g. for the whole run
+or if you have reset the profiler at some point).
+This profile file is then analysed by the Jpcsp development team and
+the collection information might help improving the Jpcsp performance.
+Note that it doesn't necessarily mean that the performance will be
+improved, but at least it gives some chances to have it improved...
+
+
+10.3 Analyzing the output of the profiler
+
+This chapter is just to give an insight on how the development team is analyzing the
+information collected by the profiler.
+
+The profiler.txt is organized in 2 sections:
+- first, the CodeBlocks profiling information, describing the most intensively
+  used code blocks (one code block is usually corresponding to one C function
+  in the source code of the application): the code blocks are sorted based on
+  the number of instructions dynamically executed within the code block.
+- second, the Graphical Engine (GE) profiler is displaying statistics on
+  selected GE commands (PRIM, BEZIER, SPLINE, TRXKICK, BBOX) and the most
+  used VTYPE parameters.
+
+Each CodeBlock starts with a line like:
+	_S1_2_8900B88 602.910 instructions (52,461%), 630 calls (08900B88 - 08900C38, length 45)
+The number of instructions dynamically executed in this CodeBlock is listed, with
+a percentage compared to the total number of instructions executed in all the CodeBlocks.
+When this percentage is high (usually above 10%), this CodeBlock is worth looking closer at it.
+We want to optimize only those parts that have the most impact!
+The number of times this CodeBlock was called is also given: a high number of instructions and
+a low number of calls means this is a CodeBlock performing a lot of loops internally.
+A lot of loops is good for optimizations: this is usually where the most benefit can be gained.
+When the number of calls is very high, it means that the CodeBlock is executing "straight"
+without loops and an optimization will probably not be very effective. It is probably
+better to look at the caller: why is this CodeBlock called so often?
+The position in memory of the CodeBlock (lowest address - highest address) and the static number of
+MIPS instructions is also listed.
+
+After this first line, the complete disassembled code of the CodeBlock is listed, but only
+if it is not too large (the limit is based on the number of MIPS instructions and can be configured
+at jpcsp.Allegrex.compiler.Profiler.codeLogMaxLength).
+
+After complete disassembled code, the back branches executed the most are separately listed.
+For example:
+	Back Branch 08900C2C 2.520 times (length 11)
+	    08900BF4:[1568FFE8]: bne        $t3, $t0, 0x08900B98
+	    08900BF8:[000B1100]: sll        $v0, $t3, 0x0004
+	    08900BFC:[00803021]: addu       $a2, $a0, $zr <=> move $a2, $a0
+	    08900C00:[03A03821]: addu       $a3, $sp, $zr <=> move $a3, $sp
+	    08900C04:[27A80040]: addiu      $t0, $sp, 64
+	--> 08900C08:[8CE20000]: lw         $v0, 0($a3)
+	    08900C0C:[8CE30004]: lw         $v1, 4($a3)
+	    08900C10:[8CE40008]: lw         $a0, 8($a3)
+	    08900C14:[8CE5000C]: lw         $a1, 12($a3)
+	    08900C18:[24E70010]: addiu      $a3, $a3, 16
+	    08900C1C:[ACC20000]: sw         $v0, 0($a2)
+	    08900C20:[ACC30004]: sw         $v1, 4($a2)
+	    08900C24:[ACC40008]: sw         $a0, 8($a2)
+	    08900C28:[ACC5000C]: sw         $a1, 12($a2)
+	--> 08900C2C:[14E8FFF6]: bne        $a3, $t0, 0x08900C08
+	    08900C30:[24C60010]: addiu      $a2, $a2, 16
+	    08900C34:[03E00008]: jr         $ra
+	    08900C38:[27BD0040]: addiu      $sp, $sp, 64
+A back branch is usually (but not necessarily) indicating a loop.
+A few context instructions are also listed before and after the back branch so that
+it can be read more easily. The branching and the target instructions are marked
+with "-->".
+In the above example, a typical memory copy can be recognized (copying 16 bytes
+at each loop).
+
+The best optimization result is when the functionality of the CodeBlock
+can be recognized as a whole, for example, if the CodeBlock is implementing
+a typical libc function like memcpy or strlen.
+In that case, the CodeBlock can be added to the Compiler.xml file and a native
+Java implementation (if not yet available) can be added.
+The effort is worth optimizing such cases as such functions are usually
+reused in several applications and are coming from common base libraries.
+
+Other optimization possibilities are in the loops (based on the Back Branch
+analysis): only the loops having the most impact (i.e. number of times the loop
+is executed times the loop length) should be analysed. Here, the potential of
+re-usability in other applications is quite low as there are good chances that
+the C compiler will compile part of the source code with a different pattern
+each time (different registers used or different instructions sequence).
+Most of these optimizations concern the recognition of partial memcpy
+operations (those that were inlined by the C compiler as an optimization).
+
+The section of the GE profiler lists different statistics converning the
+graphics display:
+- number of GE lists (number of sceGeListEnqueue...)
+- number of texture loads (texture found in the cache are not counted).
+  This is to check that the texture cache is doing a good job.
+- Copy GE to memory: number of times the GE is copied back to memory
+- Copy Stencil to memory: number of times the Stencil information is copied back to memory
+- PRIM, BEZIER, SPLINE, TRXKICK, BBOX: number of times these commands were called
+- different VTYPE combinations, sorted, most used first.
+Each statistic is giving the total number of calls and the average
+number of calls per GE list (total number of calls divided by the number of GE lists).
+The average per GE list is probably the most relevant information.
 
 ...............................................................................
 
@@ -670,6 +857,9 @@ Beta-testers:
 - l2sp
 - ionelush2001
 - rcoltrane
+- montcer9012
+- nash67
+- sum2012
 ...and a lot more
 
 ...............................................................................
