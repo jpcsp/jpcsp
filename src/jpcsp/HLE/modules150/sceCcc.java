@@ -260,10 +260,16 @@ public class sceCcc extends HLEModule {
 		return 0;
 	}
 
-    @HLEUnimplemented
 	@HLEFunction(nid = 0xA62E6E80, version = 150)
-	public int sceCccSJIStoUTF8() {
-		return 0;
+	public int sceCccSJIStoUTF8(TPointer dstUTF8, int dstSize, TPointer srcSJIS) {
+    	String str = getStringSJIS(srcSJIS.getAddress());
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceCccSJIStoUTF8 str='%s'", str));
+    	}
+    	byte[] bytesUTF8 = str.getBytes(charsetUTF8);
+    	writeStringBytes(bytesUTF8, dstUTF8.getAddress(), dstSize, 1);
+
+    	return bytesUTF8.length;
 	}
 
     @HLEUnimplemented
