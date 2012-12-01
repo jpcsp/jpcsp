@@ -1081,6 +1081,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		for (int i = 0; i < vertexAttribArray.length; i++) {
 			vertexAttribArray[i].setUndefined();
 		}
+		bindBuffer[IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER] = -1;
 	}
 
 	@Override
