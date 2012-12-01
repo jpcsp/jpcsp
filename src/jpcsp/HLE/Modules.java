@@ -162,7 +162,7 @@ public class Modules {
     public static sceFpu sceFpuModule = new sceFpu();
     public static sceUsbMic sceUsbMicModule = new sceUsbMic();
     public static sceAudioRouting sceAudioRoutingModule = new sceAudioRouting();
-    public static sceUsbGps sceusbGpsModule = new sceUsbGps();
+    public static sceUsbGps sceUsbGpsModule = new sceUsbGps();
 
     public static Logger log = Logger.getLogger("hle");
 
