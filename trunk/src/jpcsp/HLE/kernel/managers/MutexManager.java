@@ -211,15 +211,19 @@ public class MutexManager {
             log.debug("sceKernelCreateMutex(name='" + name + "',attr=0x" + Integer.toHexString(attr) + ",count=0x" + Integer.toHexString(count) + ",option_addr=0x" + Integer.toHexString(option_addr) + ")");
         }
 
-        SceKernelMutexInfo info = new SceKernelMutexInfo(name, count, attr);
-        mutexMap.put(info.uid, info);
+        if (count < 0 || (count > 1 && (attr & PSP_MUTEX_ATTR_ALLOW_RECURSIVE) == 0)) {
+        	cpu._v0 = SceKernelErrors.ERROR_KERNEL_ILLEGAL_COUNT;
+        } else {
+	        SceKernelMutexInfo info = new SceKernelMutexInfo(name, count, attr);
+	        mutexMap.put(info.uid, info);
 
-        // If the initial count is 0, the mutex is not acquired.
-        if (count > 0) {
-            info.threadid = Modules.ThreadManForUserModule.getCurrentThreadID();
+	        // If the initial count is 0, the mutex is not acquired.
+	        if (count > 0) {
+	            info.threadid = Modules.ThreadManForUserModule.getCurrentThreadID();
+	        }
+
+	        cpu._v0 = info.uid;
         }
-
-        cpu._v0 = info.uid;
     }
 
     public void sceKernelDeleteMutex(int uid) {
@@ -349,18 +353,24 @@ public class MutexManager {
             log.warn("sceKernelCancelMutex UID " + Integer.toHexString(uid) + " not locked");
             cpu._v0 = -1;
         } else {
-            // Write previous numWaitThreads count.
-            if (Memory.isAddressGood(numWaitThreadAddr)) {
-                mem.write32(numWaitThreadAddr, info.numWaitThreads);
+            if (newcount < 0) {
+            	newcount = info.initCount;
             }
-            // Set new count.
-            if (newcount == -1) {
-                info.lockedCount = info.initCount;
+            if (newcount > 1 && (info.attr & PSP_MUTEX_ATTR_ALLOW_RECURSIVE) == 0) {
+            	log.warn(String.format("sceKernelCancelMutex uid=%d, newcount=%d - illegal count", uid, newcount));
+            	cpu._v0 = SceKernelErrors.ERROR_KERNEL_ILLEGAL_COUNT;
             } else {
-                info.lockedCount = newcount;
+                // Write previous numWaitThreads count.
+                if (Memory.isAddressGood(numWaitThreadAddr)) {
+                    mem.write32(numWaitThreadAddr, info.numWaitThreads);
+                }
+
+                // Set new count.
+	            info.lockedCount = newcount;
+
+	            cpu._v0 = 0;
+	            onMutexCancelled(uid);
             }
-            cpu._v0 = 0;
-            onMutexCancelled(uid);
         }
     }
 

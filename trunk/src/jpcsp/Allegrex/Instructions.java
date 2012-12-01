@@ -568,6 +568,7 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
+	Emulator.log.error("Allegrex halt");
 	Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_HALT);
 }
 @Override
