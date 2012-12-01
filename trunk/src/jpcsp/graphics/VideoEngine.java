@@ -1991,6 +1991,9 @@ public class VideoEngine {
 	        	re.setVertexInfo(context.vinfo, re.canAllNativeVertexInfo(), context.useVertexColor, useTexture, type);
 
 	            if (needSetDataPointers) {
+    				if (context.vinfo.index != 0) {
+    					bufferManager.bindBuffer(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId);
+    				}
 		            if (useTexture) {
 		                boolean textureNative;
 		                int textureOffset;
