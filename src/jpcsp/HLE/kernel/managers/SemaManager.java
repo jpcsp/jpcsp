@@ -388,15 +388,15 @@ public class SemaManager {
             log.debug("sceKernelCancelSema semaid=0x" + Integer.toHexString(semaid) + " newcount=" + newcount + " numWaitThreadAddr=0x" + Integer.toHexString(numWaitThreadAddr));
         }
 
-        if (newcount <= 0 && newcount != -1) {
-            return ERROR_KERNEL_ILLEGAL_COUNT;
-        }
-
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
         SceKernelSemaInfo sema = semaMap.get(semaid);
         if (sema == null) {
             log.warn("sceKernelCancelSema - unknown uid 0x" + Integer.toHexString(semaid));
             return ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
+        }
+
+        if (newcount > sema.maxCount) {
+            return ERROR_KERNEL_ILLEGAL_COUNT;
         }
 
         // Write previous numWaitThreads count.
@@ -405,8 +405,8 @@ public class SemaManager {
         }
         sema.numWaitThreads = 0;
         // Reset this semaphore's count based on newcount.
-        // Note: If newcount is -1, the count becomes this semaphore's initCount.
-        if (newcount == -1) {
+        // Note: If newcount is negative, the count becomes this semaphore's initCount.
+        if (newcount < 0) {
             sema.currentCount = sema.initCount;
         } else {
             sema.currentCount = newcount;
