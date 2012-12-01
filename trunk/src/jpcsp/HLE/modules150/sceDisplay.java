@@ -286,7 +286,7 @@ public class sceDisplay extends HLEModule {
 		
 		@Override
 		protected void initGL() {
-			setSwapInterval(1);
+			setSwapInterval(0);
 			super.initGL();
 
 			// Collect debugging information...
