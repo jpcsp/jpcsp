@@ -81,6 +81,7 @@ import jpcsp.HLE.modules.sceParseUri;
 import jpcsp.HLE.modules.sceUsb;
 import jpcsp.HLE.modules.sceUsbAcc;
 import jpcsp.HLE.modules.sceUsbCam;
+import jpcsp.HLE.modules.sceUsbGps;
 import jpcsp.HLE.modules.sceUsbMic;
 import jpcsp.HLE.modules.sceUtility;
 import jpcsp.HLE.modules.sceVaudio;
@@ -161,6 +162,7 @@ public class Modules {
     public static sceFpu sceFpuModule = new sceFpu();
     public static sceUsbMic sceUsbMicModule = new sceUsbMic();
     public static sceAudioRouting sceAudioRoutingModule = new sceAudioRouting();
+    public static sceUsbGps sceusbGpsModule = new sceUsbGps();
 
     public static Logger log = Logger.getLogger("hle");
 
