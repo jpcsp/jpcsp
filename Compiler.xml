@@ -8846,6 +8846,49 @@
 088F8FD4:[27BD0010]: addiu      $sp, $sp, 16
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="sceGuCallList">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.graphics.sceGu</Class>
+		<Method>sceGuCallList</Method>
+		<IsHook>true</IsHook>
+		<CodeInstructions><![CDATA[
+0898EE94:[27BDFFF0]: addiu      $sp, $sp, -16
+0898EE98:[AFB00000]: sw         $s0, 0($sp)
+0898EE9C:[3C0208B2]: lui        $v0, 0x08B2 <=> li $v0, 0x08B20000
+0898EEA0:[00042C02]: srl        $a1, $a0, 0x0010
+0898EEA4:[AFBF0004]: sw         $ra, 4($sp)
+0898EEA8:[3C030011]: lui        $v1, 0x0011 <=> li $v1, 0x00110000
+0898EEAC:[00808021]: addu       $s0, $a0, $zr <=> move $s0, $a0
+0898EEB0:[8C46D8A0]: lw         $a2, -10080($v0)
+0898EEB4:[00042202]: srl        $a0, $a0, 0x0008
+0898EEB8:[3C02000F]: lui        $v0, 0x000F <=> li $v0, 0x000F0000
+0898EEBC:[00A32825]: or         $a1, $a1, $v1
+0898EEC0:[00821824]: and        $v1, $a0, $v0
+0898EEC4:[24020001]: addiu      $v0, $zr, 1 <=> li $v0, 1
+0898EEC8:[10C2000E]: beq        $a2, $v0, 0x0898EF04
+0898EECC:[2404000E]: addiu      $a0, $zr, 14 <=> li $a0, 14
+0898EED0:[00602821]: addu       $a1, $v1, $zr <=> move $a1, $v1
+0898EED4:[0E26395E/FC000000]: jal        0x0898E578
+0898EED8:[24040010]: addiu      $a0, $zr, 16 <=> li $a0, 16
+0898EEDC:[3C0500FF]: lui        $a1, 0x00FF <=> li $a1, 0x00FF0000
+0898EEE0:[34A5FFFF]: ori        $a1, $a1, -1
+0898EEE4:[02052824]: and        $a1, $s0, $a1
+0898EEE8:[2404000A]: addiu      $a0, $zr, 10 <=> li $a0, 10
+0898EEEC:[0E26396A/FC000000]: jal        0x0898E5A8
+0898EEF0:[00000000]: nop
+0898EEF4:[8FBF0004]: lw         $ra, 4($sp)
+0898EEF8:[8FB00000]: lw         $s0, 0($sp)
+0898EEFC:[03E00008]: jr         $ra
+0898EF00:[27BD0010]: addiu      $sp, $sp, 16
+0898EF04:[0E26395E/FC000000]: jal        0x0898E578
+0898EF08:[00000000]: nop
+0898EF0C:[3205FFFF]: andi       $a1, $s0, -1
+0898EF10:[0E26395E/FC000000]: jal        0x0898E578
+0898EF14:[2404000C]: addiu      $a0, $zr, 12 <=> li $a0, 12
+0898EF18:[00002021]: addu       $a0, $zr, $zr <=> li $a0, 0
+0898EF1C:[0A263BBB/FC000000]: j          0x0898EEEC
+0898EF20:[00002821]: addu       $a1, $zr, $zr <=> li $a1, 0
+]]></CodeInstructions>
+	</NativeCodeSequence>
 <!--
 	<NativeCodeSequence name="XXX">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.XXX</Class>
