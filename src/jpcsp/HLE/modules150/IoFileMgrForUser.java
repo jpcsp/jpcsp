@@ -603,6 +603,16 @@ public class IoFileMgrForUser extends HLEModule {
     			vfsManager.unregister("disc0");
     			vfsManager.unregister("umd0");
     			vfsManager.unregister("umd1");
+
+    			// Register the local path if the application has been loaded as a file (and not as an UMD).
+    			if (filepath != null) {
+    				int colon = filepath.indexOf(':');
+    				if (colon >= 0) {
+    					String device = filepath.substring(0, colon);
+    					device = device.toLowerCase();
+    					vfsManager.register(device, new LocalVirtualFileSystem(device + ":\\"));
+    				}
+    			}
     		}
     	}
     }
