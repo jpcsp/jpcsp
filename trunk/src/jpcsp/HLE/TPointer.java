@@ -21,6 +21,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import jpcsp.Memory;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryReader;
+import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
 
 final public class TPointer implements ITPointerBase {
@@ -152,6 +156,32 @@ final public class TPointer implements ITPointerBase {
 	
 	public <T> T getObject(Class<T> objectClass, int offset) {
 		return SerializeMemory.unserialize(objectClass, new TPointerInputStream(offset));
+	}
+
+	public byte[] getArray8(int n) {
+		return getArray8(0, n);
+	}
+
+	public byte[] getArray8(int offset, int n) {
+		byte[] bytes = new byte[n];
+		IMemoryReader memoryReader = MemoryReader.getMemoryReader(getAddress() + offset, n, 1);
+		for (int i = 0; i < n; i++) {
+			bytes[i] = (byte) memoryReader.readNext();
+		}
+
+		return bytes;
+	}
+
+	public void setArray(byte[] bytes, int n) {
+		setArray(0, bytes, n);
+	}
+
+	public void setArray(int offset, byte[] bytes, int n) {
+		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(getAddress() + offset, n, 1);
+		for (int i = 0; i < n; i++) {
+			memoryWriter.writeNext(bytes[i] & 0xFF);
+		}
+		memoryWriter.flush();
 	}
 
 	/**
