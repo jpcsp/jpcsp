@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.ListIterator;
 
 import jpcsp.Allegrex.Common.Instruction;
+import jpcsp.Allegrex.compiler.nativeCode.HookCodeInstruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeInstruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
@@ -319,38 +320,46 @@ public class CodeBlock {
     		CodeInstruction codeInstruction = lit.next();
     		NativeCodeSequence nativeCodeSequence = nativeCodeManager.getNativeCodeSequence(codeInstruction, this);
     		if (nativeCodeSequence != null) {
-    			NativeCodeInstruction nativeCodeInstruction = new NativeCodeInstruction(codeInstruction.getAddress(), nativeCodeSequence);
+    			if (nativeCodeSequence.isHook()) {
+    				HookCodeInstruction hookCodeInstruction = new HookCodeInstruction(nativeCodeSequence, codeInstruction);
 
-    			if (nativeCodeInstruction.isBranching()) {
-    				setIsBranchTarget(nativeCodeInstruction.getBranchingTo());
-    			}
-
-    			if (nativeCodeSequence.isWholeCodeBlock()) {
-    				codeInstructions.clear();
-    				codeInstructions.add(nativeCodeInstruction);
+    				// Replace the current code instruction by the hook code instruction
+    				lit.remove();
+    				lit.add(hookCodeInstruction);
     			} else {
-    				// Remove the first opcode that started this native code sequence
-	    			lit.remove();
+    				NativeCodeInstruction nativeCodeInstruction = new NativeCodeInstruction(codeInstruction.getAddress(), nativeCodeSequence);
 
-	    			// Add any code instructions that need to be inserted before
-	    			// the native code sequence
-	    			List<CodeInstruction> beforeCodeInstructions = nativeCodeSequence.getBeforeCodeInstructions();
-	    			if (beforeCodeInstructions != null) {
-	    				for (CodeInstruction beforeCodeInstruction : beforeCodeInstructions) {
-	    					CodeInstruction newCodeInstruction = new CodeInstruction(beforeCodeInstruction);
-	    					newCodeInstruction.setAddress(codeInstruction.getAddress());
-
-	    					lit.add(newCodeInstruction);
-	    				}
+	    			if (nativeCodeInstruction.isBranching()) {
+	    				setIsBranchTarget(nativeCodeInstruction.getBranchingTo());
 	    			}
 
-	    			// Add the native code sequence itself
-	    			lit.add(nativeCodeInstruction);
+	    			if (nativeCodeSequence.isWholeCodeBlock()) {
+	    				codeInstructions.clear();
+	    				codeInstructions.add(nativeCodeInstruction);
+	    			} else {
+	    				// Remove the first opcode that started this native code sequence
+		    			lit.remove();
 
-	    			// Remove the further opcodes from the native code sequence
-	    			for (int i = nativeCodeSequence.getNumOpcodes() - 1; i > 0 && lit.hasNext(); i--) {
-	    				lit.next();
-	    				lit.remove();
+		    			// Add any code instructions that need to be inserted before
+		    			// the native code sequence
+		    			List<CodeInstruction> beforeCodeInstructions = nativeCodeSequence.getBeforeCodeInstructions();
+		    			if (beforeCodeInstructions != null) {
+		    				for (CodeInstruction beforeCodeInstruction : beforeCodeInstructions) {
+		    					CodeInstruction newCodeInstruction = new CodeInstruction(beforeCodeInstruction);
+		    					newCodeInstruction.setAddress(codeInstruction.getAddress());
+
+		    					lit.add(newCodeInstruction);
+		    				}
+		    			}
+
+		    			// Add the native code sequence itself
+		    			lit.add(nativeCodeInstruction);
+
+		    			// Remove the further opcodes from the native code sequence
+		    			for (int i = nativeCodeSequence.getNumOpcodes() - 1; i > 0 && lit.hasNext(); i--) {
+		    				lit.next();
+		    				lit.remove();
+		    			}
 	    			}
     			}
     		}

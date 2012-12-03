@@ -16,8 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler.nativeCode.graphics;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Memory;
 import jpcsp.Allegrex.compiler.nativeCode.AbstractNativeCodeSequence;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.graphics.AsyncVertexCache;
 import jpcsp.graphics.GeCommands;
@@ -33,6 +36,7 @@ import jpcsp.memory.MemoryWriter;
  *
  */
 public class sceGu extends AbstractNativeCodeSequence {
+	protected static Logger log = VideoEngine.log;
 	private static final boolean writeTFLUSH = false;
 	private static final boolean writeTSYNC = false;
 	private static final boolean writeDUMMY = false;
@@ -618,5 +622,42 @@ public class sceGu extends AbstractNativeCodeSequence {
 		listWriter.flush();
 
 		mem.write32(context + listCurrentOffset, jumpAddr + 16);
+	}
+
+	static private int getListSize(int listAddr) {
+		IMemoryReader memoryReader = MemoryReader.getMemoryReader(listAddr, 4);
+		for (int i = 1; true; i++) {
+			int instruction = memoryReader.readNext();
+			int cmd = VideoEngine.command(instruction);
+			if (cmd == GeCommands.RET) {
+				return i;
+			}
+		}
+	}
+
+	static public void sceGuCallList() {
+		int callAddr = getGprA0();
+		if (Modules.ThreadManForUserModule.isCurrentThreadStackAddress(callAddr)) {
+			// Some games are calling GE lists stored on the thread stack... dirty programming!
+			// Such a list can be overwritten as the thread stack gets used in further calls.
+			// These changes are however not seen immediately by the GE engine due to the memory caching.
+			// The developer of the games probably never found this bug due to the PSP hardware memory caching.
+			// This is however an issue with Jpcsp as no memory caching is implemented.
+			// So, we simulate a memory cache here by reading the called list into an array and force the
+			// VideoEngine to reuse these cached values when processing the GE list.
+			int listSize = getListSize(callAddr);
+			int memorySize = listSize << 2;
+
+			if (log.isInfoEnabled()) {
+				log.info(String.format("sceGuCallList Stack address 0x%08X-0x%08X", callAddr, callAddr + memorySize));
+			}
+
+			int[] instructions = new int[listSize];
+			IMemoryReader memoryReader = MemoryReader.getMemoryReader(callAddr, memorySize, 4);
+			for (int i = 0; i < listSize; i++) {
+				instructions[i] = memoryReader.readNext();
+			}
+			VideoEngine.getInstance().addCachedInstructions(callAddr, instructions);
+		}
 	}
 }

@@ -750,6 +750,10 @@ public class ThreadManForUser extends HLEModule {
     	return callbackMap.get(uid);
     }
 
+    public boolean isCurrentThreadStackAddress(int address) {
+    	return currentThread.isStackAddress(address & Memory.addressMask);
+    }
+
     /**
      * Enter the current thread in a wait state.
      *
