@@ -19,7 +19,7 @@ int cpuFreq = 222;
 int startSystemTime;
 
 float pspDurationMillis[] = { 0, 910, 1137, 1214, 1023, 1125, 1227, 962, 1007, 1066, 1364, 682, 682, 819, 819, 819, 819, 682, 1214, 1227,
-                              866, 1072, 1360, 792, 770, 920, 238, 323 };
+                              866, 1072, 1360, 792, 770, 920, 163, 243, 227 };
 char *testNames[] = { "", "Empty loop", "Simple loop", "read32", "read16", "read8", "write32", "write16", "write8",
                       "Function call no params", "Function call with params",
 					  "FPU add.s", "FPU mul.s",
@@ -27,7 +27,8 @@ char *testNames[] = { "", "Empty loop", "Simple loop", "read32", "read16", "read
 					  "LWC1", "SWC1",
 					  "memcpy (native)", "memset (native)", "strcpy (native)",
 					  "memcpy (non-native)", "memset (non-native)", "strcpy (non-native)",
-					  "syscall, fast, no params", "syscall, fast, one param"
+					  "syscall, fast, no params", "syscall, fast, one param",
+					  "jalr"
                     };
 
 #define KB(n)	((n) * 1024)
@@ -598,6 +599,23 @@ int runTest27()
 	return sum;
 }
 
+void runTest28a()
+{
+}
+
+void (*fn28)() = runTest28a;
+
+void runTest28()
+{
+	startTest();
+	int i;
+	for (i = 5000000; i > 0; i--)
+	{
+		(*fn28)();
+	}
+	endTest(28);
+}
+
 
 void runTest()
 {
@@ -630,6 +648,7 @@ void runTest()
 	runTest25();
 	runTest26();
 	runTest27();
+	runTest28();
 
 	printResult("Overall performance index", sumDurationMillis, sumPspDurationMillis);
 }
