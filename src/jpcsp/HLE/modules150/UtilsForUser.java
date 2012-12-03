@@ -19,6 +19,8 @@ package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
 import java.security.MessageDigest;
@@ -53,8 +55,9 @@ import org.apache.log4j.Logger;
  *           int tz_dsttime; // type of dst correction to apply
  *      };
  */
+@HLELogging
 public class UtilsForUser extends HLEModule {
-    private static Logger log = Modules.getLogger("UtilsForUser");
+    public static Logger log = Modules.getLogger("UtilsForUser");
 
 	private HashMap<Integer, SceKernelUtilsMt19937Context> Mt19937List;
     private SceKernelUtilsMd5Context md5Ctx;
@@ -95,33 +98,23 @@ public class UtilsForUser extends HLEModule {
             buf = new byte[64];
         }
 
-        public void init (int ctx_addr) {
-            Memory mem = Memory.getInstance();
-            mem.write32(ctx_addr, part1);
-            mem.write32(ctx_addr + 4, part2);
-            mem.write32(ctx_addr + 8, part3);
-            mem.write32(ctx_addr + 12, part4);
-            mem.write32(ctx_addr + 16, padding);
-            mem.write16(ctx_addr + 20, tmpBytesRemaining);
-            mem.write16(ctx_addr + 22, tmpBytesCalculated);
-            mem.write64(ctx_addr + 24, fullDataSize);
-            for (int i = 0; i < 64; i++) {
-                mem.write8(ctx_addr + 32 + i, buf[i]);
-            }
+        public void init(TPointer ctxAddr) {
+        	ctxAddr.setValue32(0, part1);
+        	ctxAddr.setValue32(4, part2);
+        	ctxAddr.setValue32(8, part3);
+        	ctxAddr.setValue32(12, part4);
+        	ctxAddr.setValue32(16, padding);
+        	ctxAddr.setValue16(20, tmpBytesRemaining);
+        	ctxAddr.setValue16(22, tmpBytesCalculated);
+        	ctxAddr.setValue64(24, fullDataSize);
+        	ctxAddr.setArray(32, buf, 64);
         }
 
-        public void update (int ctx_addr, int data_addr, int data_size) {
-            Memory mem = Memory.getInstance();
-            input = new byte[data_size];
-            if (Memory.isAddressGood(data_addr)) {
-                for (int i = 0; i < data_size; i++) {
-                    input[i] = (byte) mem.read8(data_addr + i);
-                }
-            }
+        public void update(TPointer ctx_addr, TPointer data_addr, int data_size) {
+            input = data_addr.getArray8(data_size);
         }
 
-        public void result (int ctx_addr, int result_addr) {
-            Memory mem = Memory.getInstance();
+        public void result(TPointer ctx_addr, TPointer result_addr) {
             byte[] hash = null;
             try {
                 MessageDigest md = MessageDigest.getInstance("MD5");
@@ -129,10 +122,8 @@ public class UtilsForUser extends HLEModule {
             } catch (Exception e) {
                 // Ignore...
             }
-            if ((hash != null) && Memory.isAddressGood(result_addr)) {
-                for (int i = 0; i < 16; i++) {
-                    mem.write8(result_addr + i, hash[i]);
-                }
+            if (hash != null) {
+            	result_addr.setArray(hash, 16);
             }
         }
     }
@@ -207,7 +198,9 @@ public class UtilsForUser extends HLEModule {
     }
 
 	@Override
-	public String getName() { return "UtilsForUser"; }
+	public String getName() {
+		return "UtilsForUser";
+	}
 
 	@Override
 	public void start() {
@@ -222,114 +215,66 @@ public class UtilsForUser extends HLEModule {
     protected static final int PSP_KERNEL_DCACHE_PROBE_HIT = 1;
     protected static final int PSP_KERNEL_DCACHE_PROBE_HIT_DIRTY = 2;
 
+    @HLELogging(level="trace")
 	@HLEFunction(nid = 0xBFA98062, version = 150)
-	public void sceKernelDcacheInvalidateRange(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int addr = cpu._a0;
-		int size = cpu._a1;
-
-		if (log.isTraceEnabled()) {
-			log.trace(String.format("IGNORING: sceKernelDcacheInvalidateRange addr=0x%08X, size=%d", addr, size));
-		}
-
-        cpu._v0 = 0;
+	public int sceKernelDcacheInvalidateRange(TPointer addr, int size) {
+        return 0;
 	}
 
+    @HLELogging(level="info")
 	@HLEFunction(nid = 0xC2DF770E, version = 150)
-	public void sceKernelIcacheInvalidateRange(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-		int addr = cpu._a0 & Memory.addressMask;
-		int size = cpu._a1;
-
+	public int sceKernelIcacheInvalidateRange(TPointer addr, int size) {
 		if (log.isInfoEnabled()) {
-			log.info(String.format("sceKernelIcacheInvalidateRange addr=0x%08X, size=%d", addr, size));
+			log.info(String.format("sceKernelIcacheInvalidateRange addr=%s, size=%d", addr, size));
 		}
 
-        RuntimeContext.invalidateRange(addr, size);
+        RuntimeContext.invalidateRange(addr.getAddress(), size);
 
-        cpu._v0 = 0;
+        return 0;
 	}
 
+    @HLELogging(level="info")
 	@HLEFunction(nid = 0xC8186A58, version = 150)
-	public void sceKernelUtilsMd5Digest(Processor processor) {
-		CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
-
-        int inAddr = cpu._a0;
-		int inSize = cpu._a1;
-        int outAddr = cpu._a2;
-
-        log.info("sceKernelUtilsMd5Digest (inAddr=0x" + Integer.toHexString(inAddr)
-                + ", inSize=" + inSize
-                + ", outAddr=0x" + Integer.toHexString(outAddr) + ")");
-
-        byte[] input = new byte[inSize];
+	public int sceKernelUtilsMd5Digest(TPointer inAddr, int inSize, TPointer outAddr) {
+        byte[] input = inAddr.getArray8(inSize);
         byte[] hash = null;
-        if (Memory.isAddressGood(inAddr)) {
-            for (int i = 0; i < inSize; i++) {
-                input[i] = (byte) mem.read8(inAddr + i);
-            }
-        }
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
             hash = md.digest(input);
         } catch (Exception e) {
             // Ignore...
+        	log.warn("sceKernelUtilsMd5Digest", e);
         }
-        if ((hash != null) && Memory.isAddressGood(outAddr)) {
-            for (int i = 0; i < 16; i++) {
-                mem.write8(outAddr + i, hash[i]);
-            }
+        if (hash != null) {
+        	outAddr.setArray(hash, 16);
         }
-		cpu._v0 = 0;
+
+        return 0;
 	}
 
+    @HLELogging(level="info")
 	@HLEFunction(nid = 0x9E5C5086, version = 150)
-	public void sceKernelUtilsMd5BlockInit(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-        int md5CtxAddr = cpu._a0;
-
-        log.info("sceKernelUtilsMd5BlockInit (md5CtxAddr=0x" + Integer.toHexString(md5CtxAddr) + ")");
-
+	public int sceKernelUtilsMd5BlockInit(TPointer md5CtxAddr) {
         md5Ctx = new SceKernelUtilsMd5Context();
         md5Ctx.init(md5CtxAddr);
 
-		cpu._v0 = 0;
+		return 0;
 	}
 
+    @HLELogging(level="info")
 	@HLEFunction(nid = 0x61E1E525, version = 150)
-	public void sceKernelUtilsMd5BlockUpdate(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-        int md5CtxAddr = cpu._a0;
-        int inAddr = cpu._a1;
-        int inSize = cpu._a2;
-
-        log.info("sceKernelUtilsMd5BlockUpdate (md5CtxAddr=0x" + Integer.toHexString(md5CtxAddr)
-                + ", inAddr=0x" + Integer.toHexString(inAddr)
-                + ", inSize=" + inSize + ")" );
-
+	public int sceKernelUtilsMd5BlockUpdate(TPointer md5CtxAddr, TPointer inAddr, int inSize) {
         md5Ctx.update(md5CtxAddr, inAddr, inSize);
 
-		cpu._v0 = 0;
+		return 0;
 	}
 
+    @HLELogging(level="info")
 	@HLEFunction(nid = 0xB8D24E78, version = 150)
-	public void sceKernelUtilsMd5BlockResult(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-        int md5CtxAddr = cpu._a0;
-        int outAddr = cpu._a1;
-
-        log.info("sceKernelUtilsMd5BlockResult (md5CtxAddr=0x" + Integer.toHexString(md5CtxAddr)
-                + ", outAddr=0x" + Integer.toHexString(outAddr) + ")" );
-
+	public int sceKernelUtilsMd5BlockResult(TPointer md5CtxAddr, TPointer outAddr) {
         md5Ctx.result(md5CtxAddr, outAddr);
 
-        cpu._v0 = 0;
+        return 0;
 	}
 
 	@HLEFunction(nid = 0x840259F1, version = 150)
