@@ -251,6 +251,11 @@ public class NativeCodeManager {
 			nativeCodeSequence.setMethodName(methodName);
 		}
 
+		String isHookString = getContent(element.getElementsByTagName("IsHook"));
+		if (isHookString != null) {
+			nativeCodeSequence.setHook(Boolean.parseBoolean(isHookString));
+		}
+
 		String codeInstructions = getContent(element.getElementsByTagName("CodeInstructions"));
 		loadNativeCodeOpcodes(nativeCodeSequence, codeInstructions);
 

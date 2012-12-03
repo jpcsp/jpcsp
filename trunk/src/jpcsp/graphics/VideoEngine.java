@@ -51,6 +51,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
@@ -261,6 +262,7 @@ public class VideoEngine {
     private String export3DDirectory;
     private IGraphicsExporter exporter;
     private boolean hasModdedTextureDirectory;
+    private HashMap<Integer, int[]> cachedInstructions;
 
     public static class MatrixUpload {
         private final float[] matrix;
@@ -562,6 +564,8 @@ public class VideoEngine {
         viewportChanged = true;
         depthChanged = true;
         materialChanged = true;
+
+        cachedInstructions = new HashMap<Integer, int[]>();
     }
 
     public IRenderingEngine getRenderingEngine() {
@@ -2858,6 +2862,18 @@ public class VideoEngine {
         int oldPc = currentList.getPc();
         currentList.callRelativeOffset(normalArgument);
         int newPc = currentList.getPc();
+        if (cachedInstructions.containsKey(newPc)) {
+        	int[] instructions = cachedInstructions.get(newPc);
+        	if (instructions != null) {
+        		int memorySize = instructions.length << 2;
+        		if (isLogInfoEnabled) {
+        			log.info(String.format("call using cached instructions 0x%08X-0x%08X", newPc, newPc + memorySize));
+        		}
+        		IMemoryReader memoryReader = MemoryReader.getMemoryReader(instructions, 0, memorySize);
+        		currentList.setMemoryReader(memoryReader);
+        	}
+        }
+
         if (isLogDebugEnabled) {
             log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(CALL), oldPc, newPc));
         }
@@ -6687,6 +6703,15 @@ public class VideoEngine {
 
 	public boolean isSkipThisFrame() {
 		return skipThisFrame;
+	}
+
+	public void addCachedInstructions(int address, int[] instructions) {
+		cachedInstructions.put(address, instructions);
+	}
+
+	public void clearCachedInstructions() {
+		// TODO When should be cached instructions be cleared?
+		cachedInstructions.clear();
 	}
 
 	private class SaveContextAction implements IAction {

@@ -630,6 +630,14 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
     	}
     }
 
+    public boolean isStackAddress(int address) {
+    	if (stackAddr == 0 || stackSize <= 0) {
+    		return false;
+    	}
+
+    	return address >= stackAddr && address < (stackAddr + stackSize);
+    }
+
     @Override
     public String toString() {
     	return String.format("%s(uid=0x%X, Status=%s, Wait=%s, doCallbacks=%b)", name, uid, getStatusName(), getWaitName(), doCallbacks);

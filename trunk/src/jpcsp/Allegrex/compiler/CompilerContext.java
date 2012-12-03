@@ -3257,4 +3257,8 @@ public class CompilerContext implements ICompilerContext {
 			endPfxCompiled(vsize, true);
 		}
 	}
+
+	public void visitHook(NativeCodeSequence nativeCodeSequence) {
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(nativeCodeSequence.getNativeCodeSequenceClass()), nativeCodeSequence.getMethodName(), "()V");
+	}
 }

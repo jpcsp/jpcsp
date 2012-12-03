@@ -36,6 +36,7 @@ public class NativeCodeSequence {
 	private boolean wholeCodeBlock = false;
 	private String methodName = "call";
 	private List<CodeInstruction> beforeCodeInstructions;
+	private boolean isHook = false;
 
 	private static class NativeOpcodeInfo {
 		private int opcode;
@@ -262,5 +263,13 @@ public class NativeCodeSequence {
 			beforeCodeInstructions = new LinkedList<CodeInstruction>();
 		}
 		beforeCodeInstructions.add(codeInstruction);
+	}
+
+	public boolean isHook() {
+		return isHook;
+	}
+
+	public void setHook(boolean isHook) {
+		this.isHook = isHook;
 	}
 }

@@ -302,6 +302,10 @@ public class PspGeList {
 		}
 	}
 
+	public void setMemoryReader(IMemoryReader memoryReader) {
+		this.memoryReader = memoryReader;
+	}
+
 	public int readNextInstruction() {
 		pc += 4;
 		return memoryReader.readNext();

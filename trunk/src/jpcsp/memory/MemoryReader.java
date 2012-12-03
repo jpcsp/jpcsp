@@ -133,6 +133,11 @@ public class MemoryReader {
 		return null;
 	}
 
+	public static IMemoryReader getMemoryReader(int[] ints, int offset, int length) {
+		return new MemoryReaderInts32(ints, offset, length);
+		
+	}
+
 	// The Java JIT compiler is producing slightly faster code for "final" methods.
 	// Added "final" here only for performance reasons. Can be removed if inheritance
 	// of these classes is required.
@@ -590,6 +595,36 @@ public class MemoryReader {
 		@Override
 		public void skip(int n) {
 			offset += n * 4;
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return 0;
+		}
+	}
+
+	private final static class MemoryReaderInts32 implements IMemoryReader {
+		private final int[] ints;
+		private int offset;
+		private int maxOffset;
+
+		public MemoryReaderInts32(int[] ints, int offset, int length) {
+			this.ints = ints;
+			this.offset = offset;
+			maxOffset = offset + (length >> 2);
+		}
+
+		@Override
+		public int readNext() {
+			if (offset >= maxOffset) {
+				return 0;
+			}
+			return ints[offset++];
+		}
+
+		@Override
+		public void skip(int n) {
+			offset += n;
 		}
 
 		@Override

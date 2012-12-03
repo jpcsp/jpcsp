@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler.nativeCode;
 
+import org.apache.log4j.Logger;
+
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
@@ -27,6 +30,7 @@ import jpcsp.memory.MemoryReader;
  *
  */
 public abstract class AbstractNativeCodeSequence implements INativeCodeSequence {
+	protected static Logger log = Emulator.log;
 	protected static int[] toUpperCase = buildToUpperCase();
 	protected static int[] toLowerCase = buildToLowerCase();
 
