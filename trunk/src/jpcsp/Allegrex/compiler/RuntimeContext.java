@@ -19,6 +19,7 @@ package jpcsp.Allegrex.compiler;
 import static jpcsp.util.Utilities.sleep;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -28,6 +29,7 @@ import java.util.Map.Entry;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.MemoryMap;
 import jpcsp.Processor;
 import jpcsp.State;
 import jpcsp.Allegrex.CpuState;
@@ -85,6 +87,8 @@ public class RuntimeContext {
 	public  static final boolean checkCodeModification = false;
 	private static final int idleSleepMicros = 1000;
 	private static final Map<Integer, CodeBlock> codeBlocks = Collections.synchronizedMap(new HashMap<Integer, CodeBlock>());
+	// A fast lookup array for executables (to improve the performance of the Allegrex jalr instruction)
+	private static IExecutable[] fastExecutableLookup;
 	private static final Map<SceKernelThreadInfo, RuntimeThread> threads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
 	private static final Map<SceKernelThreadInfo, RuntimeThread> toBeStoppedThreads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
 	private static final Map<SceKernelThreadInfo, RuntimeThread> alreadyStoppedThreads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
@@ -293,7 +297,9 @@ public class RuntimeContext {
 
         sceDisplayModule = Modules.sceDisplayModule;
 
-        return true;
+        fastExecutableLookup = new IExecutable[(MemoryMap.END_USERSPACE - MemoryMap.START_USERSPACE + 1) >> 2];
+
+		return true;
     }
 
     public static boolean canExecuteCallback(SceKernelThreadInfo callbackThread) {
@@ -762,13 +768,30 @@ public class RuntimeContext {
     }
 
     public static IExecutable getExecutable(int address) {
-        CodeBlock codeBlock = codeBlocks.get(address);
-        IExecutable executable;
-        if (codeBlock == null) {
-            executable = Compiler.getInstance().compile(address);
-        } else {
-            executable = codeBlock.getExecutable();
-        }
+    	// Check if we have already the executable in the fastExecutableLookup array
+		int fastExecutableLoopukIndex = (address - MemoryMap.START_USERSPACE) >> 2;
+		IExecutable executable = null;
+		try {
+			executable = fastExecutableLookup[fastExecutableLoopukIndex];
+		} catch (ArrayIndexOutOfBoundsException e) {
+			// Ignore exception
+		}
+
+		if (executable == null) {
+	        CodeBlock codeBlock = getCodeBlock(address);
+	        if (codeBlock == null) {
+	            executable = Compiler.getInstance().compile(address);
+	        } else {
+	            executable = codeBlock.getExecutable();
+	        }
+
+	        // Store the executable in the fastExecutableLookup array
+	        try {
+	    		fastExecutableLookup[fastExecutableLoopukIndex] = executable;
+	    	} catch (ArrayIndexOutOfBoundsException e) {
+	    		// Ignore exception
+	    	}
+		}
 
         return executable;
     }
@@ -949,6 +972,9 @@ public class RuntimeContext {
     		log.debug("RuntimeContext.reset");
     		Compiler.getInstance().reset();
     		codeBlocks.clear();
+    		if (fastExecutableLookup != null) {
+    			Arrays.fill(fastExecutableLookup, null);
+    		}
     		currentThread = null;
     		currentRuntimeThread = null;
     		reset = true;
@@ -963,6 +989,7 @@ public class RuntimeContext {
         if (compilerEnabled) {
     		log.debug("RuntimeContext.invalidateAll");
             codeBlocks.clear();
+    		Arrays.fill(fastExecutableLookup, null);
             Compiler.getInstance().invalidateAll();
     	}
     }
