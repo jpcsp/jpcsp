@@ -227,7 +227,7 @@ public class PspGeList {
     }
 
     public boolean isStallReached() {
-    	return pc == stall_addr;
+    	return pc == stall_addr && stall_addr != 0;
     }
 
     public void startList() {

@@ -30,7 +30,7 @@ import jpcsp.MemoryMap;
 public class MemoryReader {
 	private static int getMaxLength(int address) {
 		int length;
-		
+
 		if (address >= MemoryMap.START_RAM && address <= MemoryMap.END_RAM) {
 			length = MemoryMap.END_RAM - address + 1;
 		} else if (address >= MemoryMap.START_VRAM && address <= MemoryMap.END_VRAM) {
