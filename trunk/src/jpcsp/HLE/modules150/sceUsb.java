@@ -186,6 +186,21 @@ public class sceUsb extends HLEModule {
 		return usbState;
 	}
 
+	@HLEFunction(nid = 0x616F2B61, version = 150)
+	public int sceUsbWaitStateCB(int state, int waitMode, @CanBeNull TPointer32 timeoutAddr) {
+		if (!matchState(state, waitMode)) {
+			log.warn(String.format("Unimplemented sceUsbWaitStateCB state=0x%X, waitMode=0x%X, timeoutAddr=%s - non-matching state not implemented", state, waitMode, timeoutAddr));
+			Modules.ThreadManForUserModule.hleBlockCurrentThread();
+			return 0;
+		}
+
+		int usbState = getUsbState();
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceUsbWaitStateCB returning 0x%X", usbState));
+		}
+		return usbState;
+	}
+
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x1C360735, version = 150)
 	public int sceUsbWaitCancel() {
