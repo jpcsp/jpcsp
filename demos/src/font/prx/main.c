@@ -99,7 +99,15 @@ void sceFontNewLibTest()
 void sceFontOpenTest()
 {
 	uint errorCode = -1;
-	fontHandle = sceFontOpen(libHandle, 0, 0777, &errorCode);
+	FontStyle fontStyle;
+	int fontIndex;
+
+	memset(&fontStyle, 0, sizeof(fontStyle));
+	fontStyle.fontLanguage = 4;
+	fontIndex = sceFontFindOptimumFont(libHandle, &fontStyle, &errorCode);
+	pspDebugScreenPrintf("sceFontFindOptimumFont returns %2d, errorCode=0x%X (language=Chinese)\n", fontIndex, errorCode);
+
+	fontHandle = sceFontOpen(libHandle, fontIndex, 0777, &errorCode);
 	pspDebugScreenPrintf("fontHandle = 0x%08X, errorCode=0x%08X\n", fontHandle, errorCode);
 }
 
@@ -126,9 +134,16 @@ void sceFontGetFontInfoTest()
 
 void sceFontGetCharInfoTest(int charCode)
 {
+	char charString[20];
+	if (charCode < ' ') {
+		sprintf(charString, "0x%04X", charCode);
+	} else {
+		sprintf(charString, "'%c'", charCode);
+	}
+
 	CharInfo charInfo;
 	int result = sceFontGetCharInfo(fontHandle, charCode, &charInfo);
-	pspDebugScreenPrintf("sceFontGetCharInfo returns 0x%08X\n", result);
+	pspDebugScreenPrintf("sceFontGetCharInfo (%s) returns 0x%08X\n", charString, result);
 	pspDebugScreenPrintf("   bitmap %dx%d at (%d,%d)\n", charInfo.bitmapWidth, charInfo.bitmapHeight, charInfo.bitmapLeft, charInfo.bitmapTop);
 	pspDebugScreenPrintf("   spf26Width/Height      : %d / %d\n", charInfo.spf26Width, charInfo.spf26Height);
 	pspDebugScreenPrintf("   spf26Ascender/Descender: %d / %d\n", charInfo.spf26Ascender, charInfo.spf26Ascender);
@@ -273,6 +288,11 @@ void sceFontFindOptimumFontTest()
 	fontStyle.fontCountry = 1;
 	result = sceFontFindOptimumFont(libHandle, &fontStyle, &errorCode);
 	pspDebugScreenPrintf("sceFontFindOptimumFont returns %2d, errorCode=0x%X (non-existing)\n", result, errorCode);
+
+	memset(&fontStyle, 0, sizeof(fontStyle));
+	fontStyle.fontLanguage = 4;
+	result = sceFontFindOptimumFont(libHandle, &fontStyle, &errorCode);
+	pspDebugScreenPrintf("sceFontFindOptimumFont returns %2d, errorCode=0x%X (language=Chinese)\n", result, errorCode);
 }
 
 void sceFontCloseTest()
@@ -381,6 +401,7 @@ int main_thread(SceSize _argc, ScePVoid _argp)
 			pspDebugScreenClear();
 			printInstructions();
 			sceFontGetCharInfoTest('R');
+			sceFontGetCharInfoTest(0x000D);
 		}
 
 		if (buttonDown & PSP_CTRL_RIGHT)
