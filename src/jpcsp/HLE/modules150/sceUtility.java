@@ -1012,7 +1012,13 @@ public class sceUtility extends HLEModule {
 	                    savedataParams.base.result = 0;
 	                    savedataParams.write(mem);
 	                } catch (FileNotFoundException e) {
-	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_FILE_NOT_FOUND;
+	                	if (savedataParams.isGameDirectoryPresent()) {
+		                	// Directory exists but file does not exist
+	                		savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_FILE_NOT_FOUND;
+	                	} else {
+		                	// Directory does not exist
+		                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
+	                	}
 	                } catch (IOException e) {
 	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
 	                } catch (Exception e) {

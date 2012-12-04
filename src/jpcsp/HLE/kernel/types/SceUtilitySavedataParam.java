@@ -670,6 +670,13 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         return isPresent(gameName, saveName);
     }
 
+    public boolean isGameDirectoryPresent() {
+    	String path = getBasePath();
+    	SceIoStat gameDirectoryStat = Modules.IoFileMgrForUserModule.statFile(path);
+
+    	return gameDirectoryStat != null;
+    }
+
     public long getTimestamp(String gameName, String saveName) {
         String sfoFileName = getFileName(saveName, paramSfoFileName);
         SceIoStat sfoStat = Modules.IoFileMgrForUserModule.statFile(sfoFileName);
