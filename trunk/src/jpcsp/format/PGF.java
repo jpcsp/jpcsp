@@ -283,7 +283,7 @@ public class PGF {
             shadowCharMap[i] = readUByte(f);
         }
 
-        if(revision == 3) {
+        if (revision == 3) {
             charmapCompressionTable1 = new int[2][compCharMapLength1];
             for(int i = 0; i < compCharMapLength1; i++) {
                 charmapCompressionTable1[0][i] = readUHalf(f);

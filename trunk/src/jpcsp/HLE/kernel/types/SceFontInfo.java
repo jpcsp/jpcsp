@@ -393,7 +393,9 @@ public class SceFontInfo {
     	pspCharInfo charInfo = new pspCharInfo();
     	Glyph glyph = getCharGlyph(charCode, FONT_PGF_CHARGLYPH);
     	if (glyph == null) {
-    		return null;
+    		// For a character not present in the font, return pspCharInfo with all fields set to 0.
+    		// Confirmed on a PSP.
+    		return charInfo;
     	}
 
     	charInfo.bitmapWidth = glyph.w;
