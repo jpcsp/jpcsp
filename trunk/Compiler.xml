@@ -8853,12 +8853,12 @@
 		<CodeInstructions><![CDATA[
 0898EE94:[27BDFFF0]: addiu      $sp, $sp, -16
 0898EE98:[AFB00000]: sw         $s0, 0($sp)
-0898EE9C:[3C0208B2]: lui        $v0, 0x08B2 <=> li $v0, 0x08B20000
+0898EE9C:[3C0208B2/FFFF0000]: lui        $v0, 0x08B2 <=> li $v0, 0x08B20000
 0898EEA0:[00042C02]: srl        $a1, $a0, 0x0010
 0898EEA4:[AFBF0004]: sw         $ra, 4($sp)
 0898EEA8:[3C030011]: lui        $v1, 0x0011 <=> li $v1, 0x00110000
 0898EEAC:[00808021]: addu       $s0, $a0, $zr <=> move $s0, $a0
-0898EEB0:[8C46D8A0]: lw         $a2, -10080($v0)
+0898EEB0:[8C46D8A0/FFFF0000]: lw         $a2, -10080($v0)
 0898EEB4:[00042202]: srl        $a0, $a0, 0x0008
 0898EEB8:[3C02000F]: lui        $v0, 0x000F <=> li $v0, 0x000F0000
 0898EEBC:[00A32825]: or         $a1, $a1, $v1
