@@ -1085,4 +1085,19 @@ public class MediaEngine {
     public void setFirstTimestamp(int firstTimestamp) {
     	this.firstTimestamp = firstTimestamp;
     }
+
+    private void setStartPts(long startPts, IContainer container, int streamID) {
+    	if (container.seekKeyFrame(streamID, startPts, 0) < 0) {
+    		log.warn(String.format("Could not set the starting PTS to %d", startPts));
+    	}
+    }
+
+    public void setStartPts(long startPts) {
+    	if (container != null) {
+    		setStartPts(startPts, container, videoStreamID);
+    	}
+    	if (extContainer != null) {
+    		setStartPts(startPts / 2, extContainer, audioStreamID);
+    	}
+    }
 }
