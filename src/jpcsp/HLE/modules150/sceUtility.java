@@ -464,6 +464,22 @@ public class sceUtility extends HLEModule {
 		public void setMinimumVisibleDurationMillis(int minimumVisibleDurationMillis) {
 			this.minimumVisibleDurationMillis = minimumVisibleDurationMillis;
 		}
+
+		protected String getDialogTitle(String key, String defaultTitle) {
+			String title;
+
+			if (key == null) {
+				title = Resource.get(name);
+			} else {
+				title = Resource.get(name + "." + key);
+			}
+
+			if (title == null) {
+				title = defaultTitle;
+			}
+
+			return title;
+		}
     }
 
     protected static class NotImplementedUtilityDialogState extends UtilityDialogState {
@@ -1677,7 +1693,8 @@ public class sceUtility extends HLEModule {
 
 			createDialog(savedataDialogState, null);
 
-			dialog.setTitle("Savedata List");
+			String title = savedataDialogState.getDialogTitle(savedataParams.getModeName(), "Savedata List");
+			dialog.setTitle(title);
             dialog.setSize(Settings.getInstance().readWindowSize(savedataDialogState.name, 400, 401));
 
             final JButton selectButton = new JButton("Select");
