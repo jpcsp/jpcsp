@@ -288,6 +288,15 @@ public class scePsmfPlayer extends HLEModule {
     	}
     }
 
+    public static void synchronizeVideoWithAudio(SceMpegAu avcAu, SceMpegAu audioAu) {
+    	long delayPts = avcAu.pts - audioAu.pts;
+        if (delayPts > 0) {
+        	long delayMicros = delayPts * 1000000 / sceMpeg.mpegTimestampPerSecond;
+        	delayMicros = Math.min(delayMicros, 200000);
+        	Modules.ThreadManForUserModule.hleKernelDelayThread((int) delayMicros, false);
+        }
+    }
+
     protected int hlePsmfPlayerSetPsmf(int psmfPlayer, PspString fileAddr, int offset, boolean doCallbacks) {
     	if (psmfPlayerStatus != PSMF_PLAYER_STATUS_INIT) {
     		return ERROR_PSMFPLAYER_NOT_INITIALIZED;
@@ -483,6 +492,13 @@ public class scePsmfPlayer extends HLEModule {
     		return ERROR_PSMFPLAYER_NOT_INITIALIZED;
     	}
 
+    	if (playMode == PSMF_PLAYER_MODE_PAUSE) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("scePsmfPlayerGetVideoData in pause mode, returning 0x%08X", result));
+    		}
+    		return result;
+    	}
+
     	if (psmfPlayerAtracAu.pts != 0 && psmfPlayerAvcAu.pts > psmfPlayerAtracAu.pts + psmfMaxAheadTimestamp) {
             // If we're ahead of audio, return an error.
         	result = SceKernelErrors.ERROR_PSMFPLAYER_NO_MORE_DATA;
@@ -538,16 +554,18 @@ public class scePsmfPlayer extends HLEModule {
             generateFakePSMFVideo(displayBuffer, videoDataFrameWidth);
         }
 
-        // TODO Check if timestamp is returned
-        if (videoDataAddr.isNotNull()) {
-        	videoDataAddr.setValue(8, (int) psmfPlayerAvcAu.dts);
-        }
+        // Return updated timestamp
+    	videoDataAddr.setValue(8, (int) psmfPlayerAvcAu.dts);
 
         if (log.isDebugEnabled()) {
             log.debug(String.format("scePsmfPlayerGetVideoData avcAu=[%s], returning 0x%08X", psmfPlayerAvcAu, result));
         }
 
-        sceMpeg.delayThread(startTime, sceMpeg.avcDecodeDelay);
+        if (psmfPlayerAtracAu.pts != 0) {
+        	synchronizeVideoWithAudio(psmfPlayerAvcAu, psmfPlayerAtracAu);
+        } else {
+        	sceMpeg.delayThread(startTime, sceMpeg.avcDecodeDelay);
+        }
 
         return result;
     }
@@ -555,6 +573,13 @@ public class scePsmfPlayer extends HLEModule {
     @HLEFunction(nid = 0xB9848A74, version = 150, checkInsideInterrupt = true)
     public int scePsmfPlayerGetAudioData(@CheckArgument("checkPlayerPlaying") int psmfPlayer, TPointer audioDataAddr) {
     	int result = 0;
+
+    	if (playMode == PSMF_PLAYER_MODE_PAUSE) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("scePsmfPlayerGetAudioData in pause mode, returning 0x%08X", result));
+    		}
+    		return result;
+    	}
 
         if (psmfPlayerAvcAu.pts != 0 && psmfPlayerAtracAu.pts > psmfPlayerAvcAu.pts + psmfMaxAheadTimestamp) {
             // If we're ahead of video, return an error.

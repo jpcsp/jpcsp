@@ -35,9 +35,7 @@ public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
 	 */
 	@HLEFunction(nid = 0x40F1469C, version = 500, checkInsideInterrupt = true)
 	public int sceDisplayWaitVblankStartMulti(int cycleNum) {
-        blockCurrentThreadOnVblank(cycleNum, false);
-
-        return 0;
+		return hleDisplayWaitVblankStart(cycleNum, false);
 	}
 
 	/**
@@ -48,8 +46,6 @@ public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
 	 */
 	@HLEFunction(nid = 0x77ED8B3A, version = 500, checkInsideInterrupt = true)
 	public int sceDisplayWaitVblankStartMultiCB(int cycleNum) {
-        blockCurrentThreadOnVblank(cycleNum, true);
-
-        return 0;
+		return hleDisplayWaitVblankStart(cycleNum, true);
 	}
 }
