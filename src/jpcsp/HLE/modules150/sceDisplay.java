@@ -1660,7 +1660,7 @@ public class sceDisplay extends HLEModule {
         // We only use "temp" buffer in this function, its limit() will get restored on the next call to clear()
     }
 
-    protected void blockCurrentThreadOnVblank(int cycles, boolean doCallbacks) {
+    public int hleDisplayWaitVblankStart(int cycles, boolean doCallbacks) {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelThreadInfo thread = threadMan.getCurrentThread();
         int threadId = threadMan.getCurrentThreadID();
@@ -1685,6 +1685,8 @@ public class sceDisplay extends HLEModule {
         } else {
         	threadMan.hleBlockCurrentThread();
         }
+
+        return 0;
     }
 
     private void hleVblankStart() {
@@ -2081,8 +2083,7 @@ public class sceDisplay extends HLEModule {
         	log.debug("sceDisplayWaitVblankStart");
         }
 
-        blockCurrentThreadOnVblank(1, false);
-        return 0;
+        return hleDisplayWaitVblankStart(1, false);
     }
 
     @HLEFunction(nid = 0x46F186C3, version = 150, checkInsideInterrupt = true)
@@ -2091,8 +2092,7 @@ public class sceDisplay extends HLEModule {
         	log.debug("sceDisplayWaitVblankStartCB");
         }
 
-        blockCurrentThreadOnVblank(1, true);
-        return 0;
+        return hleDisplayWaitVblankStart(1, true);
     }
 
     @HLEFunction(nid = 0x773DD3A3, version = 150)

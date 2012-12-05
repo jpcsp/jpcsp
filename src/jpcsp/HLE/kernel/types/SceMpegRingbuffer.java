@@ -16,34 +16,34 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import jpcsp.Memory;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
 
-// some field info from noxa/pspplayer
 public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
+	private static final int ringbufferPacketSize = 2048;
     // PSP info
-    public int packets;
-    public int packetsRead;
-    public int packetsWritten;
-    public int packetsFree; // pspsdk: unk2, noxa: iUnk0
-    public int packetSize; // 2048
-    public int data; // address, ring buffer
-    public int callback_addr; // see sceMpegRingbufferPut
-    public int callback_args;
-    public int dataUpperBound;
-    public int semaID; // unused?
-    public int mpeg; // pointer to mpeg struct, fixed up in sceMpegCreate
+    private int packets;
+    private int packetsRead;
+    private int packetsWritten;
+    private int packetsInRingbuffer;
+    private int packetSize; // 2048
+    private int data; // address, ring buffer
+    private int callbackAddr; // see sceMpegRingbufferPut
+    private int callbackArgs;
+    private int dataUpperBound;
+    private int semaID; // unused?
+    private int mpeg; // pointer to mpeg struct, fixed up in sceMpegCreate
 
-    public SceMpegRingbuffer(int packets, int data, int size, int callback_addr, int callback_args) {
+    public SceMpegRingbuffer(int packets, int data, int size, int callbackAddr, int callbackArgs) {
         this.packets = packets;
         this.packetsRead = 0;
         this.packetsWritten = 0;
-        this.packetsFree = 0; // set later
-        this.packetSize = 2048;
+        this.packetsInRingbuffer = 0;
+        this.packetSize = ringbufferPacketSize;
         this.data = data;
-        this.callback_addr = callback_addr;
-        this.callback_args = callback_args;
-        this.dataUpperBound = data + packets * 2048;
+        this.callbackAddr = callbackAddr;
+        this.callbackArgs = callbackArgs;
+        this.dataUpperBound = data + packets * ringbufferPacketSize;
         this.semaID = -1;
         this.mpeg = 0;
 
@@ -56,35 +56,32 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
     private SceMpegRingbuffer() {
     }
 
-    public static SceMpegRingbuffer fromMem(Memory mem, int address) {
+    public static SceMpegRingbuffer fromMem(TPointer address) {
         SceMpegRingbuffer ringbuffer = new SceMpegRingbuffer();
-        ringbuffer.read(mem, address);
+        ringbuffer.read(address);
+
         return ringbuffer;
     }
 
     public void reset() {
     	packetsRead = 0;
     	packetsWritten = 0;
-    	packetsFree = packets;
-    }
-
-    public boolean isEmpty() {
-    	return packetsFree == packets;
+    	packetsInRingbuffer = 0;
     }
 
 	@Override
 	protected void read() {
-        packets         = read32();
-        packetsRead     = read32();
-        packetsWritten  = read32();
-        packetsFree     = read32();
-        packetSize      = read32();
-        data            = read32();
-        callback_addr   = read32();
-        callback_args   = read32();
-        dataUpperBound  = read32();
-        semaID          = read32();
-        mpeg            = read32();
+        packets             = read32();
+        packetsRead         = read32();
+        packetsWritten      = read32();
+        packetsInRingbuffer = read32();
+        packetSize          = read32();
+        data                = read32();
+        callbackAddr        = read32();
+        callbackArgs        = read32();
+        dataUpperBound      = read32();
+        semaID              = read32();
+        mpeg                = read32();
 	}
 
 	@Override
@@ -92,14 +89,89 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
         write32(packets);
         write32(packetsRead);
         write32(packetsWritten);
-        write32(packetsFree);
+        write32(packetsInRingbuffer);
         write32(packetSize);
         write32(data);
-        write32(callback_addr);
-        write32(callback_args);
+        write32(callbackAddr);
+        write32(callbackArgs);
         write32(dataUpperBound);
         write32(semaID);
         write32(mpeg);
+	}
+
+	public int getFreePackets() {
+		return packets - packetsInRingbuffer;
+	}
+
+	public void addPackets(int packetsAdded) {
+		packetsRead += packetsAdded;
+		packetsWritten += packetsAdded;
+		packetsInRingbuffer += packetsAdded;
+	}
+
+	public void consumeAllPackets() {
+		packetsInRingbuffer = 0;
+	}
+
+	public int getPacketsInRingbuffer() {
+		return packetsInRingbuffer;
+	}
+
+    public boolean isEmpty() {
+    	return getPacketsInRingbuffer() == 0;
+    }
+
+	public void consumePackets(int consumedPackets) {
+		if (consumedPackets > 0) {
+			packetsInRingbuffer -= consumedPackets;
+			if (packetsInRingbuffer < 0) {
+				packetsInRingbuffer = 0;
+			}
+		}
+	}
+
+	public int getReadPackets() {
+		return packetsRead;
+	}
+
+	public void setReadPackets(int packetsRead) {
+		this.packetsRead = packetsRead;
+	}
+
+	public int getProcessedPackets() {
+		return getReadPackets() - getPacketsInRingbuffer();
+	}
+
+	public int getTotalPackets() {
+		return packets;
+	}
+
+	public int getPacketSize() {
+		return packetSize;
+	}
+
+	public int getBaseDataAddr() {
+		return data;
+	}
+
+	public int getTmpAddress(int length) {
+		return dataUpperBound - length;
+	}
+
+	public void setMpeg(int mpeg) {
+		this.mpeg = mpeg;
+	}
+
+	public int getUpperDataAddr() {
+		return dataUpperBound;
+	}
+
+	public int getCallbackAddr() {
+		return callbackAddr;
+	}
+
+	public int getCallbackArgs() {
+		return callbackArgs;
 	}
 
 	@Override
@@ -109,6 +181,6 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public String toString() {
-		return String.format("SceMpegRingbuffer(packets=%d, packetsRead=%d, packetsWritten=%d, packetsFree=%d, packetSize=%d)", packets, packetsRead, packetsWritten, packetsFree, packetSize);
+		return String.format("SceMpegRingbuffer(packets=%d, packetsRead=%d, packetsWritten=%d, packetsFree=%d, packetSize=%d)", packets, packetsRead, packetsWritten, getFreePackets(), packetSize);
 	}
 }

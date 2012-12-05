@@ -16,6 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_ATRAC_STREAM;
+import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_AUDIO_STREAM;
+import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_AVC_STREAM;
+import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_DATA_STREAM;
+import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_PCM_STREAM;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.util.Utilities.endianSwap32;
@@ -36,6 +41,7 @@ import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Random;
 import java.util.TimeZone;
 
@@ -52,6 +58,7 @@ import jpcsp.HLE.kernel.types.SceMpegAu;
 import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules150.IoFileMgrForUser.IIoListener;
+import jpcsp.HLE.modules150.scePsmf.PSMFStream;
 import jpcsp.connector.MpegCodec;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
@@ -123,6 +130,7 @@ public class sceMpeg extends HLEModule {
         audioDecodeBuffer = new byte[MPEG_ATRAC_ES_OUTPUT_SIZE];
         allocatedEsBuffers = new boolean[2];
         streamMap = new HashMap<Integer, StreamInfo>();
+        psmfStreams = null;
 
         if (headerIoListener == null) {
         	headerIoListener = new MpegHeaderIoListener();
@@ -155,6 +163,7 @@ public class sceMpeg extends HLEModule {
     public static final int PSMF_STREAM_SIZE_OFFSET = 0xC;
     public static final int PSMF_FIRST_TIMESTAMP_OFFSET = 0x56;
     public static final int PSMF_LAST_TIMESTAMP_OFFSET = 0x5C;
+    public static final int PSMF_NUMBER_STREAMS = 0x80;
     public static final int PSMF_FRAME_WIDTH_OFFSET = 0x8E;
     public static final int PSMF_FRAME_HEIGHT_OFFSET = 0x8F;
     protected static final int MPEG_MEMSIZE = 0x10000;      // 64k.
@@ -178,6 +187,7 @@ public class sceMpeg extends HLEModule {
     protected AfterRingbufferPutCallback afterRingbufferPutCallback;
     protected TPointer mpegRingbufferAddr;
     protected int mpegStreamSize;
+    protected LinkedList<PSMFStream> psmfStreams;
     protected SceMpegAu mpegAtracAu;
     protected SceMpegAu mpegAvcAu;
     protected long lastAtracSystemTime;
@@ -222,12 +232,6 @@ public class sceMpeg extends HLEModule {
     protected int mpegMagic;
     protected int mpegOffset;
     protected int mpegStreamAddr;
-    // MPEG streams.
-    public static final int MPEG_AVC_STREAM = 0;
-    public static final int MPEG_ATRAC_STREAM = 1;
-    public static final int MPEG_PCM_STREAM = 2;
-    public static final int MPEG_DATA_STREAM = 3;      // Arbitrary user defined type. Can represent audio or video.
-    public static final int MPEG_AUDIO_STREAM = 15;
     protected static final int MPEG_AU_MODE_DECODE = 0;
     protected static final int MPEG_AU_MODE_SKIP = 1;
     protected HashMap<Integer, Integer> atracStreamsMap;
@@ -491,24 +495,22 @@ public class sceMpeg extends HLEModule {
 
         if (packetsAdded > 0) {
         	if (log.isTraceEnabled()) {
-        		log.trace(String.format("hleMpegRingbufferPostPut:%s", Utilities.getMemoryDump(mpegRingbuffer.data, packetsAdded * mpegRingbuffer.packetSize, 4, 16)));
+        		log.trace(String.format("hleMpegRingbufferPostPut:%s", Utilities.getMemoryDump(mpegRingbuffer.getBaseDataAddr(), packetsAdded * mpegRingbuffer.getPacketSize())));
         	}
-    		int addr = mpegRingbuffer.data;
-    		int length = packetsAdded * mpegRingbuffer.packetSize;
+    		int addr = mpegRingbuffer.getBaseDataAddr();
+    		int length = packetsAdded * mpegRingbuffer.getPacketSize();
     		hleAddVideoData(addr, length);
-            if (packetsAdded > mpegRingbuffer.packetsFree) {
-                log.warn(String.format("sceMpegRingbufferPut clamping packetsAdded old=%d, new=%d", packetsAdded, mpegRingbuffer.packetsFree));
-                packetsAdded = mpegRingbuffer.packetsFree;
+            if (packetsAdded > mpegRingbuffer.getFreePackets()) {
+                log.warn(String.format("sceMpegRingbufferPut clamping packetsAdded old=%d, new=%d", packetsAdded, mpegRingbuffer.getFreePackets()));
+                packetsAdded = mpegRingbuffer.getFreePackets();
             }
-            mpegRingbuffer.packetsRead += packetsAdded;
-            mpegRingbuffer.packetsWritten += packetsAdded;
-            mpegRingbuffer.packetsFree -= packetsAdded;
+            mpegRingbuffer.addPackets(packetsAdded);
             mpegRingbuffer.write(mpegRingbufferAddr);
         }
 
         insideRingbufferPut = false;
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceMpegRingbufferPut packetsAdded=%d, packetsRead=%d", packetsAdded, mpegRingbuffer.packetsRead));
+            log.debug(String.format("sceMpegRingbufferPut packetsAdded=%d, packetsRead=%d", packetsAdded, mpegRingbuffer.getReadPackets()));
         }
 
         cpu._v0 = packetsAdded;
@@ -551,7 +553,7 @@ public class sceMpeg extends HLEModule {
     public void hleCreateRingbuffer() {
     	if (mpegRingbuffer == null) {
     		mpegRingbuffer = new SceMpegRingbuffer(0, 0, 0, 0, 0);
-    		mpegRingbuffer.packetsRead = 1;
+    		mpegRingbuffer.setReadPackets(1);
     		mpegRingbufferAddr = null;
     	}
     }
@@ -855,7 +857,7 @@ public class sceMpeg extends HLEModule {
 					// Read the MPEG header and analyze it
 					byte[] header = new byte[MPEG_HEADER_BUFFER_MINIMUM_SIZE];
 					if (vFile.ioRead(header, 0, MPEG_HEADER_BUFFER_MINIMUM_SIZE) == MPEG_HEADER_BUFFER_MINIMUM_SIZE) {
-						int tmpAddress = mpegRingbuffer.dataUpperBound - header.length;
+						int tmpAddress = mpegRingbuffer.getTmpAddress(header.length);
 						IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(tmpAddress, header.length, 1);
 						for (int i = 0; i < header.length; i++) {
 							memoryWriter.writeNext(header[i] & 0xFF);
@@ -886,7 +888,7 @@ public class sceMpeg extends HLEModule {
 					try {
 						// Read the MPEG header sector and analyze it
 						byte[] headerSector = umdIsoReader.readSector(headerSectorNumber);
-						int tmpAddress = mpegRingbuffer.dataUpperBound - headerSector.length;
+						int tmpAddress = mpegRingbuffer.getTmpAddress(headerSector.length);
 						IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(tmpAddress, headerSector.length, 1);
 						for (int i = 0; i < headerSector.length; i++) {
 							memoryWriter.writeNext(headerSector[i] & 0xFF);
@@ -1088,6 +1090,7 @@ public class sceMpeg extends HLEModule {
         	}
         }
 
+        psmfStreams = scePsmf.readPsmfStreams(mem, bufferAddr, null);
         mpegFirstDate = convertTimestampToDate(mpegFirstTimestamp);
         mpegLastDate = convertTimestampToDate(mpegLastTimestamp);
         avcDecodeResult = MPEG_AVC_DECODE_SUCCESS;
@@ -1125,6 +1128,21 @@ public class sceMpeg extends HLEModule {
 	        	log.trace(Utilities.getMemoryDump(bufferAddr, MPEG_HEADER_BUFFER_MINIMUM_SIZE));
 	        }
         }
+    }
+
+    protected boolean hasPsmfStream(int streamType) {
+    	if (psmfStreams == null) {
+    		// Header not analyzed, assume that the PSMF has the given stream
+    		return true;
+    	}
+
+    	for (PSMFStream stream : psmfStreams) {
+    		if (stream.isStreamOfType(streamType)) {
+    			return true;
+    		}
+    	}
+
+    	return false;
     }
 
     public static int getMaxAheadTimestamp(int packets) {
@@ -1185,7 +1203,11 @@ public class sceMpeg extends HLEModule {
     }
 
     protected void finishMpeg() {
-        if (checkMediaEngineState()) {
+    	if (log.isDebugEnabled()) {
+    		log.debug("finishMpeg");
+    	}
+
+    	if (checkMediaEngineState()) {
             me.finish();
             if (meChannel != null) {
             	meChannel.clear();
@@ -1216,6 +1238,7 @@ public class sceMpeg extends HLEModule {
         audioFrameCount = 0;
         endOfAudioReached = false;
         endOfVideoReached = false;
+        psmfStreams = null;
     }
 
     /**
@@ -1349,13 +1372,9 @@ public class sceMpeg extends HLEModule {
 
         // Update the ring buffer struct.
         if (ringbufferAddr.isNotNull()) {
-        	mpegRingbuffer = SceMpegRingbuffer.fromMem(mem, ringbufferAddr.getAddress());
-	        if (mpegRingbuffer.packetSize == 0) {
-	        	mpegRingbuffer.packetsFree = 0;
-	        } else {
-	        	mpegRingbuffer.packetsFree = (mpegRingbuffer.dataUpperBound - mpegRingbuffer.data) / mpegRingbuffer.packetSize;
-	        }
-	        mpegRingbuffer.mpeg = mpeg.getAddress();
+        	mpegRingbuffer = SceMpegRingbuffer.fromMem(ringbufferAddr);
+        	mpegRingbuffer.reset();
+	        mpegRingbuffer.setMpeg(mpeg.getAddress());
 	        mpegRingbuffer.write(mem, ringbufferAddr.getAddress());
         }
 
@@ -1368,7 +1387,7 @@ public class sceMpeg extends HLEModule {
         mem.write32(mpegHandle + 12, -1);
         mem.write32(mpegHandle + 16, ringbufferAddr.getAddress());
         if (mpegRingbuffer != null) {
-        	mem.write32(mpegHandle + 20, mpegRingbuffer.dataUpperBound);
+        	mem.write32(mpegHandle + 20, mpegRingbuffer.getUpperDataAddr());
         }
 
         // Initialize mpeg values.
@@ -1411,21 +1430,21 @@ public class sceMpeg extends HLEModule {
     	int uid = info.getUid();
         // Register the respective stream.
         switch (stream_type) {
-            case MPEG_AVC_STREAM:
-                isAvcRegistered = true;
+            case PSMF_AVC_STREAM:
+        		isAvcRegistered = true;
                 avcStreamsMap.put(uid, stream_num);
                 break;
-            case MPEG_AUDIO_STREAM:  // Unknown purpose. Use Atrac anyway.
-            case MPEG_ATRAC_STREAM:
-                isAtracRegistered = true;
+            case PSMF_AUDIO_STREAM:  // Unknown purpose. Use Atrac anyway.
+            case PSMF_ATRAC_STREAM:
+        		isAtracRegistered = true;
                 atracStreamsMap.put(uid, stream_num);
                 break;
-            case MPEG_PCM_STREAM:
-                isPcmRegistered = true;
+            case PSMF_PCM_STREAM:
+        		isPcmRegistered = true;
                 pcmStreamsMap.put(uid, stream_num);
                 break;
-            case MPEG_DATA_STREAM:
-            	isDataRegistered = true;
+            case PSMF_DATA_STREAM:
+        		isDataRegistered = true;
             	dataStreamsMap.put(uid, stream_num);
             	break;
             default:
@@ -1454,20 +1473,20 @@ public class sceMpeg extends HLEModule {
 
     	// Unregister the respective stream.
         switch (info.getType()) {
-            case MPEG_AVC_STREAM:
+            case PSMF_AVC_STREAM:
                 isAvcRegistered = false;
                 avcStreamsMap.remove(streamUid);
                 break;
-            case MPEG_AUDIO_STREAM:  // Unknown purpose. Use Atrac anyway.
-            case MPEG_ATRAC_STREAM:
+            case PSMF_AUDIO_STREAM:  // Unknown purpose. Use Atrac anyway.
+            case PSMF_ATRAC_STREAM:
                 isAtracRegistered = false;
                 atracStreamsMap.remove(streamUid);
                 break;
-            case MPEG_PCM_STREAM:
+            case PSMF_PCM_STREAM:
                 isPcmRegistered = false;
                 pcmStreamsMap.remove(streamUid);
                 break;
-            case MPEG_DATA_STREAM:
+            case PSMF_DATA_STREAM:
             	isDataRegistered = false;
             	dataStreamsMap.remove(streamUid);
             	break;
@@ -1614,22 +1633,22 @@ public class sceMpeg extends HLEModule {
         StreamInfo info = getStreamInfo(streamUid);
         if (info != null) {
 	        switch (info.getType()) {
-	            case MPEG_AVC_STREAM:
+	            case PSMF_AVC_STREAM:
 	                if(mode == MPEG_AU_MODE_DECODE) {
 	                    ignoreAvc = false;
 	                } else if (mode == MPEG_AU_MODE_SKIP) {
 	                    ignoreAvc = true;
 	                }
 	                break;
-	            case MPEG_AUDIO_STREAM:
-	            case MPEG_ATRAC_STREAM:
+	            case PSMF_AUDIO_STREAM:
+	            case PSMF_ATRAC_STREAM:
 	                if(mode == MPEG_AU_MODE_DECODE) {
 	                    ignoreAtrac = false;
 	                } else if (mode == MPEG_AU_MODE_SKIP) {
 	                    ignoreAtrac = true;
 	                }
 	                break;
-	            case MPEG_PCM_STREAM:
+	            case PSMF_PCM_STREAM:
 	                if(mode == MPEG_AU_MODE_DECODE) {
 	                    ignorePcm = false;
 	                } else if (mode == MPEG_AU_MODE_SKIP) {
@@ -1662,7 +1681,7 @@ public class sceMpeg extends HLEModule {
             mpegRingbuffer.read(mpegRingbufferAddr);
         }
 
-        if (mpegRingbuffer.packetsRead == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
+        if (mpegRingbuffer.getReadPackets() == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
             delayThread(mpegDecodeErrorDelay);
             return SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
         }
@@ -1678,7 +1697,7 @@ public class sceMpeg extends HLEModule {
             return -1;
         }
 
-        if ((mpegAvcAu.pts > mpegAtracAu.pts + maxAheadTimestamp) && isAtracRegistered) {
+        if ((mpegAvcAu.pts > mpegAtracAu.pts + maxAheadTimestamp) && isAtracRegistered && hasPsmfStream(PSMF_AUDIO_STREAM)) {
             // Video is ahead of audio, deliver no video data to wait for audio.
             if (log.isDebugEnabled()) {
                 log.debug(String.format("sceMpegGetAvcAu video ahead of audio: %d - %d", mpegAvcAu.pts, mpegAtracAu.pts));
@@ -1714,7 +1733,7 @@ public class sceMpeg extends HLEModule {
             mpegRingbuffer.read(mpegRingbufferAddr);
         }
         
-        if (mpegRingbuffer.packetsRead == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
+        if (mpegRingbuffer.getReadPackets() == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
             delayThread(mpegDecodeErrorDelay);
             return SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
         }
@@ -1779,7 +1798,7 @@ public class sceMpeg extends HLEModule {
             mpegRingbuffer.read( mpegRingbufferAddr);
         }
 
-        if (mpegRingbuffer.packetsRead == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
+        if (mpegRingbuffer.getReadPackets() == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
             log.debug("sceMpegGetAtracAu ringbuffer empty");
             delayThread(mpegDecodeErrorDelay);
             return SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
@@ -1801,15 +1820,15 @@ public class sceMpeg extends HLEModule {
     		}
 
     		// Consume all the remaining packets, if any.
-    		if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
-    			mpegRingbuffer.packetsFree = mpegRingbuffer.packets;
+    		if (!mpegRingbuffer.isEmpty()) {
+    			mpegRingbuffer.consumeAllPackets();
     			mpegRingbuffer.write(mpegRingbufferAddr);
     		}
 
     		return SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
     	}
-    	
-    	if ((mpegAtracAu.pts > mpegAvcAu.pts + maxAheadTimestamp) && isAvcRegistered && !endOfAudioReached) {
+
+    	if ((mpegAtracAu.pts > mpegAvcAu.pts + maxAheadTimestamp) && isAvcRegistered && hasPsmfStream(PSMF_AVC_STREAM) && !endOfAudioReached) {
             // Audio is ahead of video, deliver no audio data to wait for video.
         	// This error is not returned when the end of audio has been reached (Patapon 3).
             if (log.isDebugEnabled()) {
@@ -1893,7 +1912,7 @@ public class sceMpeg extends HLEModule {
             return -1;
         }
 
-        if (mpegRingbuffer.packetsRead == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
+        if (mpegRingbuffer.getReadPackets() == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
             log.debug("sceMpegAvcDecode ringbuffer empty");
             return SceKernelErrors.ERROR_AVC_VIDEO_FATAL;
         }
@@ -1913,9 +1932,8 @@ public class sceMpeg extends HLEModule {
 
         long startTime = Emulator.getClock().microTime();
 
-        int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
-        int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
-        int processedSize = processedPackets * mpegRingbuffer.packetSize;
+        int processedPackets = mpegRingbuffer.getProcessedPackets();
+        int processedSize = processedPackets * mpegRingbuffer.getPacketSize();
 
         // let's go with 3 packets per frame for now
         int packetsConsumed = 3;
@@ -1925,7 +1943,7 @@ public class sceMpeg extends HLEModule {
             if (processedSizeBasedOnTimestamp < processedSize) {
                 packetsConsumed = 0;
             } else {
-                packetsConsumed = (processedSizeBasedOnTimestamp - processedSize) / mpegRingbuffer.packetSize;
+                packetsConsumed = (processedSizeBasedOnTimestamp - processedSize) / mpegRingbuffer.getPacketSize();
                 if (packetsConsumed > 10) {
                     packetsConsumed = 10;
                 }
@@ -1941,25 +1959,25 @@ public class sceMpeg extends HLEModule {
         	Emulator.getClock().pause();
             if (me.stepVideo(mpegAudioChannels)) {
             	me.writeVideoImage(buffer, frameWidth, videoPixelMode);
-            	packetsConsumed = meChannel.getReadLength() / mpegRingbuffer.packetSize;
+            	packetsConsumed = meChannel.getReadLength() / mpegRingbuffer.getPacketSize();
 
             	// The MediaEngine is already consuming all the remaining
             	// packets when approaching the end of the video. The PSP
             	// is only consuming the last packet when reaching the end,
             	// not before.
             	// Consuming all the remaining packets?
-            	if (mpegRingbuffer.packetsFree + packetsConsumed >= mpegRingbuffer.packets) {
+            	if (mpegRingbuffer.getFreePackets() + packetsConsumed >= mpegRingbuffer.getTotalPackets()) {
             		// Having not yet reached the last timestamp?
             		if (mpegLastTimestamp > 0 && mpegAvcAu.pts < mpegLastTimestamp) {
             			// Do not yet consume all the remaining packets, leave 2 packets
-            			packetsConsumed = mpegRingbuffer.packets - mpegRingbuffer.packetsFree - 2;
+            			packetsConsumed = mpegRingbuffer.getTotalPackets() - mpegRingbuffer.getFreePackets() - 2;
             		}
             	}
 
-            	meChannel.setReadLength(meChannel.getReadLength() - packetsConsumed * mpegRingbuffer.packetSize);
+            	meChannel.setReadLength(meChannel.getReadLength() - packetsConsumed * mpegRingbuffer.getPacketSize());
             } else {
             	// Consume all the remaining packets
-            	packetsConsumed = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
+            	packetsConsumed = mpegRingbuffer.getTotalPackets() - mpegRingbuffer.getFreePackets();
             }
         	Emulator.getClock().resume();
             avcFrameStatus = 1;
@@ -2004,10 +2022,10 @@ public class sceMpeg extends HLEModule {
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceMpegAvcDecode currentTimestamp=%d", mpegAvcAu.pts));
         }
-        if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets && packetsConsumed > 0) {
-            mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
+        if (!mpegRingbuffer.isEmpty() && packetsConsumed > 0) {
+        	mpegRingbuffer.consumePackets(packetsConsumed);
             if (log.isDebugEnabled()) {
-                log.debug(String.format("sceMpegAvcDecode consumed %d packets, remaining %d packets", packetsConsumed, mpegRingbuffer.packets - mpegRingbuffer.packetsFree));
+                log.debug(String.format("sceMpegAvcDecode consumed %d packets, remaining %d packets", packetsConsumed, mpegRingbuffer.getPacketsInRingbuffer()));
             }
 
             if (mpegRingbufferAddr != null) {
@@ -2169,7 +2187,7 @@ public class sceMpeg extends HLEModule {
             return -1;
         }
 
-        if (mpegRingbuffer.packetsRead == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
+        if (mpegRingbuffer.getReadPackets() == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
             log.debug("sceMpegAvcDecodeYCbCr ringbuffer empty");
             return SceKernelErrors.ERROR_AVC_VIDEO_FATAL;
         }
@@ -2177,9 +2195,8 @@ public class sceMpeg extends HLEModule {
         // Decode the video data in YCbCr mode.
     	long startTime = Emulator.getClock().microTime();
 
-        int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
-        int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
-        int processedSize = processedPackets * mpegRingbuffer.packetSize;
+        int processedPackets = mpegRingbuffer.getProcessedPackets();
+        int processedSize = processedPackets * mpegRingbuffer.getPacketSize();
 
         // let's go with 3 packets per frame for now
         int packetsConsumed = 3;
@@ -2189,7 +2206,7 @@ public class sceMpeg extends HLEModule {
             if (processedSizeBasedOnTimestamp < processedSize) {
                 packetsConsumed = 0;
             } else {
-                packetsConsumed = (processedSizeBasedOnTimestamp - processedSize) / mpegRingbuffer.packetSize;
+                packetsConsumed = (processedSizeBasedOnTimestamp - processedSize) / mpegRingbuffer.getPacketSize();
                 if (packetsConsumed > 10) {
                     packetsConsumed = 10;
                 }
@@ -2205,11 +2222,11 @@ public class sceMpeg extends HLEModule {
         // this 2 steps approach.
         if (checkMediaEngineState()) {
             if (me.stepVideo(mpegAudioChannels)) {
-            	packetsConsumed = meChannel.getReadLength() / mpegRingbuffer.packetSize;
-            	meChannel.setReadLength(meChannel.getReadLength() - packetsConsumed * mpegRingbuffer.packetSize);
+            	packetsConsumed = meChannel.getReadLength() / mpegRingbuffer.getPacketSize();
+            	meChannel.setReadLength(meChannel.getReadLength() - packetsConsumed * mpegRingbuffer.getPacketSize());
             } else {
             	// Consume all the remaining packets
-            	packetsConsumed = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
+            	packetsConsumed = mpegRingbuffer.getPacketsInRingbuffer();
             }
             avcFrameStatus = 1;
         } else if (isEnableConnector()) {
@@ -2235,8 +2252,8 @@ public class sceMpeg extends HLEModule {
             log.debug(String.format("sceMpegAvcDecodeYCbCr currentTimestamp=%d", mpegAvcAu.pts));
         }
 
-        if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets && packetsConsumed > 0) {
-            mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
+        if (!mpegRingbuffer.isEmpty() && packetsConsumed > 0) {
+        	mpegRingbuffer.consumePackets(packetsConsumed);
             mpegRingbuffer.write(mpegRingbufferAddr);
         }
 
@@ -2296,7 +2313,7 @@ public class sceMpeg extends HLEModule {
             return -1;
         }
 
-        if (mpegRingbuffer.packetsRead == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
+        if (mpegRingbuffer.getReadPackets() == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
             log.debug("sceMpegAvcCsc ringbuffer empty");
             return SceKernelErrors.ERROR_AVC_VIDEO_FATAL;
         }
@@ -2324,9 +2341,8 @@ public class sceMpeg extends HLEModule {
         } else {
         	long startTime = Emulator.getClock().microTime();
 
-            int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
-            int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
-            int processedSize = processedPackets * mpegRingbuffer.packetSize;
+            int processedPackets = mpegRingbuffer.getProcessedPackets();
+            int processedSize = processedPackets * mpegRingbuffer.getPacketSize();
 
             // let's go with 3 packets per frame for now
             int packetsConsumed = 3;
@@ -2336,7 +2352,7 @@ public class sceMpeg extends HLEModule {
                 if (processedSizeBasedOnTimestamp < processedSize) {
                     packetsConsumed = 0;
                 } else {
-                    packetsConsumed = (processedSizeBasedOnTimestamp - processedSize) / mpegRingbuffer.packetSize;
+                    packetsConsumed = (processedSizeBasedOnTimestamp - processedSize) / mpegRingbuffer.getPacketSize();
                     if (packetsConsumed > 10) {
                         packetsConsumed = 10;
                     }
@@ -2383,8 +2399,8 @@ public class sceMpeg extends HLEModule {
                 log.debug(String.format("sceMpegAvcCsc currentTimestamp=%d", mpegAvcAu.pts));
             }
 
-            if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets && packetsConsumed > 0) {
-                mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
+            if (!mpegRingbuffer.isEmpty() && packetsConsumed > 0) {
+                mpegRingbuffer.consumePackets(packetsConsumed);
                 mpegRingbuffer.write(mpegRingbufferAddr);
             }
             delayThread(startTime, avcDecodeDelay);
@@ -2521,7 +2537,7 @@ public class sceMpeg extends HLEModule {
 
         mpegRingbuffer.read(mpegRingbufferAddr);
         insideRingbufferPut = true;
-        Modules.ThreadManForUserModule.executeCallback(null, mpegRingbuffer.callback_addr, afterRingbufferPutCallback, false, mpegRingbuffer.data, numberPackets, mpegRingbuffer.callback_args);
+        Modules.ThreadManForUserModule.executeCallback(null, mpegRingbuffer.getCallbackAddr(), afterRingbufferPutCallback, false, mpegRingbuffer.getBaseDataAddr(), numberPackets, mpegRingbuffer.getCallbackArgs());
 
         return Emulator.getProcessor().cpu._v0;
     }
@@ -2539,10 +2555,10 @@ public class sceMpeg extends HLEModule {
 
     	mpegRingbuffer.read(mpegRingbufferAddr);
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceMpegRingbufferAvailableSize returning %d", mpegRingbuffer.packetsFree));
+            log.debug(String.format("sceMpegRingbufferAvailableSize returning %d", mpegRingbuffer.getFreePackets()));
         }
 
-        return mpegRingbuffer.packetsFree;
+        return mpegRingbuffer.getFreePackets();
     }
 
     /**
