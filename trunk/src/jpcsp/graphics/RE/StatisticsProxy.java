@@ -231,6 +231,8 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		addStatistic("setCopyRedToAlpha", 200);
 		addStatistic("drawElements", 201);
 		addStatistic("drawElements", 202);
+		addStatistic("multiDrawElements", 203);
+		addStatistic("drawElementsBurstMode", 204);
 	}
 
 	private void addStatistic(String name, int index) {
@@ -1831,6 +1833,22 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		DurationStatistics statistic = statistics[202];
 		statistic.start();
 		super.drawElements(primitive, count, indexType, indicesOffset);
+		statistic.end();
+	}
+
+	@Override
+	public void multiDrawElements(int primitive, IntBuffer first, IntBuffer count, int indexType, long indicesOffset) {
+		DurationStatistics statistic = statistics[203];
+		statistic.start();
+		super.multiDrawElements(primitive, first, count, indexType, indicesOffset);
+		statistic.end();
+	}
+
+	@Override
+	public void drawElementsBurstMode(int primitive, int count, int indexType, long indicesOffset) {
+		DurationStatistics statistic = statistics[204];
+		statistic.start();
+		super.drawElementsBurstMode(primitive, count, indexType, indicesOffset);
 		statistic.end();
 	}
 }

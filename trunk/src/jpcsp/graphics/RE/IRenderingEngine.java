@@ -485,6 +485,8 @@ public interface IRenderingEngine {
 	public boolean isVertexArrayAvailable();
 	public void multiDrawArrays(int primitive, IntBuffer first, IntBuffer count);
 	public void drawArraysBurstMode(int primitive, int first, int count);
+	public void multiDrawElements(int primitive, IntBuffer first, IntBuffer count, int indexType, long indicesOffset);
+	public void drawElementsBurstMode(int primitive, int count, int indexType, long indicesOffset);
 	public void setPixelTransfer(int parameter, int value);
 	public void setPixelTransfer(int parameter, float value);
 	public void setPixelTransfer(int parameter, boolean value);

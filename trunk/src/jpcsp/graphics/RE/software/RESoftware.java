@@ -1422,4 +1422,12 @@ public class RESoftware extends BaseRenderingEngine {
 	@Override
 	public void drawElements(int primitive, int count, int indexType, long indicesOffset) {
 	}
+
+	@Override
+	public void multiDrawElements(int primitive, IntBuffer first, IntBuffer count, int indexType, long indicesOffset) {
+	}
+
+	@Override
+	public void drawElementsBurstMode(int primitive, int count, int indexType, long indicesOffset) {
+	}
 }

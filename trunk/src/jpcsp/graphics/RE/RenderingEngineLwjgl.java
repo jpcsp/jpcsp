@@ -1699,4 +1699,14 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	public void drawElements(int primitive, int count, int indexType, long indicesOffset) {
 		GL11.glDrawElements(primitiveToGL[primitive], count, pointerTypeToGL[indexType], indicesOffset);
 	}
+
+	@Override
+	public void multiDrawElements(int primitive, IntBuffer first, IntBuffer count, int indexType, long indicesOffset) {
+		// Not implemented here
+	}
+
+	@Override
+	public void drawElementsBurstMode(int primitive, int count, int indexType, long indicesOffset) {
+		drawElements(primitive, count, indexType, indicesOffset);
+	}
 }

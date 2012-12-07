@@ -1223,4 +1223,16 @@ public class CheckErrorsProxy extends BaseRenderingEngineProxy {
 		super.drawElements(primitive, count, indexType, indicesOffset);
 		re.checkAndLogErrors("drawElements");
 	}
+
+	@Override
+	public void multiDrawElements(int primitive, IntBuffer first, IntBuffer count, int indexType, long indicesOffset) {
+		super.multiDrawElements(primitive, first, count, indexType, indicesOffset);
+		re.checkAndLogErrors("multiDrawElements");
+	}
+
+	@Override
+	public void drawElementsBurstMode(int primitive, int count, int indexType, long indicesOffset) {
+		super.drawElementsBurstMode(primitive, count, indexType, indicesOffset);
+		re.checkAndLogErrors("drawElementsBurstMode");
+	}
 }

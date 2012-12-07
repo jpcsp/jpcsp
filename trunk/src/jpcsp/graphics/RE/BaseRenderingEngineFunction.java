@@ -770,7 +770,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
             int positionFirst = first.position();
             int positionCount = count.position();
             if (primitive == GeCommands.PRIM_POINT || primitive == GeCommands.PRIM_LINE || primitive == GeCommands.PRIM_TRIANGLE || primitive == IRenderingEngine.RE_QUADS) {
-                // Independant elements can be rendered in one drawArrays call
+                // Independent elements can be rendered in one drawArrays call
                 // if all the elements are sequentially defined
                 boolean sequential = true;
                 int firstIndex = first.get(positionFirst);
@@ -1024,4 +1024,44 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 
         super.setBlendSFix(dfix, color);
     }
+
+	@Override
+	public void multiDrawElements(int primitive, IntBuffer first, IntBuffer count, int indexType, long indicesOffset) {
+        int primitiveCount = first.remaining();
+        int positionFirst = first.position();
+        int positionCount = count.position();
+        if (primitive == GeCommands.PRIM_POINT || primitive == GeCommands.PRIM_LINE || primitive == GeCommands.PRIM_TRIANGLE || primitive == IRenderingEngine.RE_QUADS) {
+            // Independent elements can be rendered in one drawElements call
+            // if all the elements are sequentially defined and the first
+        	// index is 0
+            boolean sequential = true;
+            int firstIndex = first.get(positionFirst);
+            int currentIndex = firstIndex;
+            if (firstIndex != 0) {
+            	sequential = false;
+            } else {
+	            for (int i = 1; i < primitiveCount; i++) {
+	                currentIndex += count.get(positionCount + i - 1);
+	                if (currentIndex != first.get(positionFirst + i)) {
+	                    sequential = false;
+	                    break;
+	                }
+	            }
+            }
+
+            if (sequential) {
+                re.drawElements(primitive, currentIndex - firstIndex + count.get(positionCount + primitiveCount - 1), indexType, indicesOffset);
+                return;
+            }
+        }
+
+        // Implement multiDrawElements using multiple drawElements.
+        // The first call is using drawElements and the subsequent calls,
+        // drawElementsBurstMode (allowing a faster implementation).
+        int bytesPerIndex = sizeOfType[indexType];
+        re.drawElements(primitive, count.get(positionCount), indexType, indicesOffset + first.get(positionFirst) * bytesPerIndex);
+        for (int i = 1; i < primitiveCount; i++) {
+            re.drawElementsBurstMode(primitive, count.get(positionCount + i), indexType, indicesOffset + first.get(positionFirst + i) * bytesPerIndex);
+        }
+	}
 }
