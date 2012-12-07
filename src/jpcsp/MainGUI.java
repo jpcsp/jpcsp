@@ -1576,10 +1576,11 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         // Load unpacked BOOT.BIN as if it came from the umd
         File file = new File(filename);
         if (file.exists()) {
-            FileChannel roChannel = new RandomAccessFile(file, "r").getChannel();
+        	RandomAccessFile raf = new RandomAccessFile(file, "r");
+            FileChannel roChannel = raf.getChannel();
             ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int) roChannel.size());
             emulator.load("disc0:/PSP_GAME/SYSDIR/EBOOT.BIN", readbuffer);
-            roChannel.close();
+            raf.close();
             Emulator.log.info("Using unpacked UMD EBOOT.BIN image");
             return true;
         }

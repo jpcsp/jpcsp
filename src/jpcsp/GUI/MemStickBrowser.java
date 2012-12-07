@@ -193,16 +193,18 @@ public class MemStickBrowser extends JDialog {
                             }
                         });
                         if(psffile.length > 0) {
-                            FileChannel roChannel = new RandomAccessFile(psffile[0], "r").getChannel();
-                            ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
+                        	RandomAccessFile raf = new RandomAccessFile(psffile[0], "r");
+                            FileChannel roChannel = raf.getChannel();
+                            ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int) roChannel.size());
                             psfs[i] = new PSF();
                             psfs[i].read(readbuffer);
-                            roChannel.close();
+                            raf.close();
                         }
                     }
                     if(programs[i].getName().toLowerCase().endsWith(".pbp")) {
                         // Load packed icon
-                        FileChannel roChannel = new RandomAccessFile(metapbp, "r").getChannel();
+                    	RandomAccessFile raf = new RandomAccessFile(metapbp, "r");
+                        FileChannel roChannel = raf.getChannel();
                         // Limit the size of the data read from the file to 100Kb.
                         // Some PBP files for demos can be very large (over 200GB)
                         // and raise an OutOfMemory exception.
@@ -210,15 +212,16 @@ public class MemStickBrowser extends JDialog {
                         ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, size);
                         pbps[i] = new PBP(readbuffer);
                         PSF psf = pbps[i].readPSF(readbuffer);
-                        if (psf != null)
+                        if (psf != null) {
                             psfs[i] = psf;
-                        if(pbps[i].getSizeIcon0() > 0) {
+                        }
+                        if (pbps[i].getSizeIcon0() > 0) {
                             byte[] icon0 = new byte[pbps[i].getSizeIcon0()];
                             readbuffer.position((int) pbps[i].getOffsetIcon0());
                             readbuffer.get(icon0);
                             icons[i] = new ImageIcon(icon0);
                         }
-                        roChannel.close();
+                        raf.close();
                     }
 
                     // default icon

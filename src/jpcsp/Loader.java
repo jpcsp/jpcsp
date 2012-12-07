@@ -238,11 +238,12 @@ public class Loader {
             // Load PSF embedded in PBP
             FileChannel roChannel;
             try {
-                roChannel = new RandomAccessFile(metapbp, "r").getChannel();
+            	RandomAccessFile raf = new RandomAccessFile(metapbp, "r");
+                roChannel = raf.getChannel();
                 ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
                 PBP meta = new PBP(readbuffer);
                 module.psf = meta.readPSF(readbuffer);
-                roChannel.close();
+                raf.close();
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } catch (IOException e) {
@@ -258,11 +259,12 @@ public class Loader {
             });
             if (psffile != null && psffile.length > 0) {
                 try {
-                    FileChannel roChannel = new RandomAccessFile(psffile[0], "r").getChannel();
+                	RandomAccessFile raf = new RandomAccessFile(psffile[0], "r");
+                    FileChannel roChannel = raf.getChannel();
                     ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
                     module.psf = new PSF();
                     module.psf.read(readbuffer);
-                    roChannel.close();
+                    raf.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

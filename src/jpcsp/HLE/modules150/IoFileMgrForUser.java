@@ -1076,8 +1076,7 @@ public class IoFileMgrForUser extends HLEModule {
                     String mode = getMode(flags);
 
                     try {
-                        SeekableRandomFile raf = new SeekableRandomFile(pcfilename, mode);
-                        resultFile = raf;
+                    	resultFile = new SeekableRandomFile(pcfilename, mode);
                     } catch (FileNotFoundException e) {
                         if (log.isDebugEnabled()) {
                             log.debug("getFile - file not found '" + pcfilename + "' (ok to ignore this message, debug purpose only)");

@@ -86,6 +86,7 @@ public class sceDeflt extends HLEModule {
 				}
 				if (decompressedLength + length > outBufferLength) {
 					log.warn(String.format("sceGzipDecompress : decompress buffer too small inBuffer=%s, outLength=%d", inBufferAddr, outBufferLength));
+					is.close();
 					return SceKernelErrors.ERROR_INVALID_SIZE;
 				}
 
@@ -96,6 +97,7 @@ public class sceDeflt extends HLEModule {
 				}
 				decompressedLength += length;
 			}
+			is.close();
 			memoryWriter.flush();
 			result = decompressedLength;
 		} catch (IOException e) {
