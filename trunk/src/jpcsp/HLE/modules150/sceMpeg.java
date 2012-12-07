@@ -24,8 +24,6 @@ import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_PCM_STREAM;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.util.Utilities.endianSwap32;
-import static jpcsp.util.Utilities.read8;
-import static jpcsp.util.Utilities.readUnaligned32;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
@@ -1037,7 +1035,7 @@ public class sceMpeg extends HLEModule {
     	IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, size, 1);
     	for (int i = 0; i < size; i++) {
     		int b = memoryReader.readNext();
-    		if (read8(buffer, i) != b) {
+    		if (Utilities.read8(buffer, i) != b) {
     			return false;
     		}
     	}
@@ -1056,19 +1054,48 @@ public class sceMpeg extends HLEModule {
         return -1;
     }
 
+    public static int read8(Memory mem, int bufferAddr, byte[] buffer, int offset) {
+    	if (buffer != null) {
+    		return Utilities.read8(buffer, offset);
+    	}
+    	return mem.read8(bufferAddr + offset);
+    }
+
+    public static int readUnaligned32(Memory mem, int bufferAddr, byte[] buffer, int offset) {
+    	if (buffer != null) {
+    		return Utilities.readUnaligned32(buffer, offset);
+    	}
+    	return Utilities.readUnaligned32(mem, bufferAddr + offset);
+    }
+
+    public static int read32(Memory mem, int bufferAddr, byte[] buffer, int offset) {
+    	if (buffer != null) {
+    		return Utilities.readUnaligned32(buffer, offset);
+    	}
+    	return mem.read32(bufferAddr + offset);
+    }
+
+    public static int read16(Memory mem, int bufferAddr, byte[] buffer, int offset) {
+    	if (buffer != null) {
+    		return Utilities.readUnaligned16(buffer, offset);
+    	}
+    	return mem.read16(bufferAddr + offset);
+    }
+
     protected void analyseMpeg(int bufferAddr) {
         Memory mem = Memory.getInstance();
+        byte[] mpegHeader = null;
 
         mpegStreamAddr = bufferAddr;
-        mpegMagic = mem.read32(bufferAddr + PSMF_MAGIC_OFFSET);
-        mpegRawVersion = mem.read32(bufferAddr + PSMF_STREAM_VERSION_OFFSET);
+        mpegMagic = read32(mem, bufferAddr, mpegHeader, PSMF_MAGIC_OFFSET);
+        mpegRawVersion = read32(mem, bufferAddr, mpegHeader, PSMF_STREAM_VERSION_OFFSET);
         mpegVersion = getMpegVersion(mpegRawVersion);
-        mpegOffset = endianSwap32(mem.read32(bufferAddr + PSMF_STREAM_OFFSET_OFFSET));
-        mpegStreamSize = endianSwap32(mem.read32(bufferAddr + PSMF_STREAM_SIZE_OFFSET));
-        mpegFirstTimestamp = endianSwap32(readUnaligned32(mem, bufferAddr + PSMF_FIRST_TIMESTAMP_OFFSET));
-        mpegLastTimestamp = endianSwap32(readUnaligned32(mem, bufferAddr + PSMF_LAST_TIMESTAMP_OFFSET));
-        avcDetailFrameWidth = (mem.read8(bufferAddr + PSMF_FRAME_WIDTH_OFFSET) * 0x10);
-        avcDetailFrameHeight = (mem.read8(bufferAddr + PSMF_FRAME_HEIGHT_OFFSET) * 0x10);
+        mpegOffset = endianSwap32(read32(mem, bufferAddr, mpegHeader, PSMF_STREAM_OFFSET_OFFSET));
+        mpegStreamSize = endianSwap32(read32(mem, bufferAddr, mpegHeader, PSMF_STREAM_SIZE_OFFSET));
+        mpegFirstTimestamp = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, PSMF_FIRST_TIMESTAMP_OFFSET));
+        mpegLastTimestamp = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, PSMF_LAST_TIMESTAMP_OFFSET));
+        avcDetailFrameWidth = read8(mem, bufferAddr, mpegHeader, PSMF_FRAME_WIDTH_OFFSET) * 0x10;
+        avcDetailFrameHeight = read8(mem, bufferAddr, mpegHeader, PSMF_FRAME_HEIGHT_OFFSET) * 0x10;
 
         // Sanity check
         if (mpegFirstTimestamp != 90000 || mpegFirstTimestamp > mpegLastTimestamp || mpegLastTimestamp <= 0) {
@@ -1083,14 +1110,15 @@ public class sceMpeg extends HLEModule {
         				log.trace(Utilities.getMemoryDump(completeMpegHeader, 0, MPEG_HEADER_BUFFER_MINIMUM_SIZE));
         			}
         		}
-        		mpegFirstTimestamp = endianSwap32(readUnaligned32(completeMpegHeader, PSMF_FIRST_TIMESTAMP_OFFSET));
-        		mpegLastTimestamp = endianSwap32(readUnaligned32(completeMpegHeader, PSMF_LAST_TIMESTAMP_OFFSET));
-        		avcDetailFrameWidth = read8(completeMpegHeader, PSMF_FRAME_WIDTH_OFFSET) * 0x10;
-        		avcDetailFrameHeight = read8(completeMpegHeader, PSMF_FRAME_HEIGHT_OFFSET) * 0x10;
+        		mpegHeader = completeMpegHeader;
+                mpegFirstTimestamp = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, PSMF_FIRST_TIMESTAMP_OFFSET));
+                mpegLastTimestamp = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, PSMF_LAST_TIMESTAMP_OFFSET));
+                avcDetailFrameWidth = read8(mem, bufferAddr, mpegHeader, PSMF_FRAME_WIDTH_OFFSET) * 0x10;
+                avcDetailFrameHeight = read8(mem, bufferAddr, mpegHeader, PSMF_FRAME_HEIGHT_OFFSET) * 0x10;
         	}
         }
 
-        psmfStreams = scePsmf.readPsmfStreams(mem, bufferAddr, null);
+        psmfStreams = scePsmf.readPsmfStreams(mem, bufferAddr, mpegHeader, null);
         mpegFirstDate = convertTimestampToDate(mpegFirstTimestamp);
         mpegLastDate = convertTimestampToDate(mpegLastTimestamp);
         avcDecodeResult = MPEG_AVC_DECODE_SUCCESS;
