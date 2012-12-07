@@ -578,6 +578,8 @@ public class scePsmfPlayer extends HLEModule {
     		if (log.isDebugEnabled()) {
     			log.debug(String.format("scePsmfPlayerGetAudioData in pause mode, returning 0x%08X", result));
     		}
+    		// Clear the audio buffer (silent audio returned)
+    		audioDataAddr.clear(audioSamplesBytes);
     		return result;
     	}
 
