@@ -16,8 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.sound;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Memory;
-import jpcsp.HLE.Modules;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.util.Utilities;
@@ -27,6 +28,7 @@ import jpcsp.util.Utilities;
  *
  */
 public class SampleSourceVAG implements ISampleSource {
+	private static Logger log = SoftwareSynthesizer.log;
 	private SoundVoice voice;
 	private int address;
 	private int numberSamples;
@@ -77,11 +79,8 @@ public class SampleSourceVAG implements ISampleSource {
             int dataSize = Integer.reverseBytes(mem.read32(address + 12));
             int sampleRate = Integer.reverseBytes(mem.read32(address + 16));
             String dataName = new StringBuffer(Utilities.readStringNZ(address + 32, 16)).reverse().toString();
-            if (Modules.log.isDebugEnabled()) {
-                Modules.log.debug("SampleSourceVAG found VAG/ADPCM data: version=" + version
-                        + ", size=" + dataSize
-                        + ", sampleRate=" + sampleRate
-                        + ", dataName=" + dataName);
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("SampleSourceVAG found VAG/ADPCM data: version=%d, size=%d, sampleRate=%d, dataName='%s'", version, dataSize, sampleRate, dataName));
             }
             address += 0x30;
         }
@@ -157,6 +156,10 @@ public class SampleSourceVAG implements ISampleSource {
 		}
 
 		short sample = samples[sampleIndex];
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("SampleSourceVAG.getNextSample[%d/%d]=0x%04X, voice=%d", sampleIndex, currentVAGBlock, sample & 0xFFFF, voice.getIndex()));
+		}
+
 		sampleIndex++;
 		currentSampleIndex++;
 
@@ -182,6 +185,7 @@ public class SampleSourceVAG implements ISampleSource {
 
 		currentSampleIndex = index;
 		currentVAGBlock = index / 28;
+
 		if (currentVAGBlock >= numberVGABlocks) {
 			sampleIndex = samples.length;
 		} else {
@@ -190,6 +194,10 @@ public class SampleSourceVAG implements ISampleSource {
 			if (unpackNextVAGBlock()) {
 				sampleIndex = index % 28;
 			}
+		}
+
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("SampleSourceVAG.setSampleIndex %d = %d/%d, voice=%d", index, sampleIndex, currentVAGBlock, voice.getIndex()));
 		}
 	}
 
