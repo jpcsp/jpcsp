@@ -136,7 +136,12 @@ public class SoundMixer {
             			mixMono(mixedSamples, sampleSource, playSample, numSamples, voice.getLeftVolume());
             		}
             		writeSamples = true;
-            		voice.setPlaySample(sampleSource.getSampleIndex());
+
+            		playSample = sampleSource.getSampleIndex();
+            		voice.setPlaySample(playSample);
+            		if (sampleSource.getNumberSamples() <= playSample) {
+            			voice.setPlaying(false);
+            		}
             	}
             }
         }

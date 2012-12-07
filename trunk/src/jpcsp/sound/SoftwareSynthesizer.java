@@ -17,10 +17,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.sound;
 
 import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_OUTPUTMODE_STEREO;
+
+import org.apache.log4j.Logger;
+
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.sceSasCore;
 
 public class SoftwareSynthesizer {
+	public static Logger log = Logger.getLogger("sound");
 	private SoundVoice voice;
 	private ISampleSource sampleSource;
 	private static final int defaultDelay = 32;
@@ -62,6 +66,9 @@ public class SoftwareSynthesizer {
 			if (defaultDelay > 0) {
 				sampleSource = new SampleSourceWithDelay(sampleSource, defaultDelay);
 			}
+
+			// Reset voice to start
+			voice.setPlaySample(0);
 		}
 
 		return sampleSource;
