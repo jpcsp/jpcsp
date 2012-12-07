@@ -779,4 +779,26 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 		}
 		super.drawElements(primitive, count, indexType, indicesOffset);
 	}
+
+	@Override
+	public void multiDrawElements(int primitive, IntBuffer first, IntBuffer count, int indexType, long indicesOffset) {
+		if (isLogDebugEnabled) {
+			StringBuilder s = new StringBuilder();
+			int n = first.remaining();
+			int p = first.position();
+			for (int i = 0; i < n; i++) {
+				s.append(String.format(" (%d,%d)", first.get(p + i), count.get(p + i)));
+			}
+			log.debug(String.format("multiDrawElements primitive=%d, count=%d,%s, indexType=%d, indicesOffset=%d", primitive, n, s.toString(), indexType, indicesOffset));
+		}
+		super.multiDrawElements(primitive, first, count, indexType, indicesOffset);
+	}
+
+	@Override
+	public void drawElementsBurstMode(int primitive, int count, int indexType, long indicesOffset) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("drawElementsBurstMode primitive=%d, count=%d, indexType=%d, indicesOffset=%d", primitive, count, indexType, indicesOffset));
+		}
+		super.drawElementsBurstMode(primitive, count, indexType, indicesOffset);
+	}
 }

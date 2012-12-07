@@ -1710,6 +1710,18 @@ public class VideoEngine {
     	return currentFirst + currentNumberOfVertex - initialFirst;
     }
 
+    private int getIndexedNumberOfVertexInfo(int bytesPerIndex, int numberOfVertex) {
+    	int maxIndex = -1;
+    	int indexBufferSize = numberOfVertex * bytesPerIndex;
+		IMemoryReader memoryReader = MemoryReader.getMemoryReader(context.vinfo.ptr_index, indexBufferSize, bytesPerIndex);
+		for (int i = 0; i < numberOfVertex; i++) {
+			int index = memoryReader.readNext();
+			maxIndex = max(maxIndex, index);
+		}
+
+		return maxIndex + 1;
+    }
+
     private void executeCommandPRIM() {
         int numberOfVertex = normalArgument & 0xFFFF;
         int type = ((normalArgument >> 16) & 0x7);
@@ -1920,14 +1932,8 @@ public class VideoEngine {
         		int bytesPerIndex = VertexInfo.size_mapping[context.vinfo.index];
         		long indicesBufferOffset = 0;
 	        	if (context.vinfo.index != 0) {
-		        	int maxIndex = -1;
 		        	int indexBufferSize = numberOfVertex * bytesPerIndex;
-	        		IMemoryReader memoryReader = MemoryReader.getMemoryReader(context.vinfo.ptr_index, indexBufferSize, bytesPerIndex);
-	        		for (int i = 0; i < numberOfVertex; i++) {
-	        			int index = memoryReader.readNext();
-	        			maxIndex = max(maxIndex, index);
-	        		}
-	        		numberOfVertexInfo = maxIndex + 1;
+	        		numberOfVertexInfo = getIndexedNumberOfVertexInfo(bytesPerIndex, numberOfVertex);
 
 	        		Buffer indicesBuffer = mem.getBuffer(context.vinfo.ptr_index, indexBufferSize);
 	        		bufferManager.setBufferData(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId, indexBufferSize, indicesBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
@@ -1963,10 +1969,20 @@ public class VideoEngine {
 	        		int multiDrawNumberOfVertex = checkMultiDraw(firstVertex, type, numberOfVertex, multiDrawFirst, multiDrawCount);
 					if (multiDrawNumberOfVertex > 0) {
 						multiDrawArrays = true;
-						numberOfVertex = multiDrawNumberOfVertex;
-						size = context.vinfo.vertexSize * multiDrawNumberOfVertex;
-		        		vertexData = mem.getBuffer(vertexAddress, size);
-						vertexBuffer.load(re, vertexData, vertexAddress, size);
+			        	if (context.vinfo.index != 0) {
+			        		// Reload the now extended buffer for indices
+			        		numberOfVertexInfo = getIndexedNumberOfVertexInfo(bytesPerIndex, numberOfVertex);
+
+				        	int indexBufferSize = multiDrawNumberOfVertex * bytesPerIndex;
+			        		Buffer indicesBuffer = mem.getBuffer(context.vinfo.ptr_index, indexBufferSize);
+			        		bufferManager.setBufferData(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId, indexBufferSize, indicesBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
+			        		indicesBufferOffset = getBufferOffset(indicesBuffer, context.vinfo.ptr_index);
+			        	} else {
+							numberOfVertex = multiDrawNumberOfVertex;
+							size = context.vinfo.vertexSize * multiDrawNumberOfVertex;
+			        		vertexData = mem.getBuffer(vertexAddress, size);
+							vertexBuffer.load(re, vertexData, vertexAddress, size);
+			        	}
 					}
 
 					if (needSetDataPointers) {
@@ -2033,7 +2049,11 @@ public class VideoEngine {
 
 	        	drawArraysStatistics.start();
 	        	if (context.vinfo.index != 0) {
-	        		re.drawElements(type, numberOfVertex, indexTypes[context.vinfo.index], indicesBufferOffset);
+	        		if (multiDrawArrays) {
+	        			re.multiDrawElements(type, multiDrawFirst, multiDrawCount, indexTypes[context.vinfo.index], indicesBufferOffset);
+	        		} else {
+	        			re.drawElements(type, numberOfVertex, indexTypes[context.vinfo.index], indicesBufferOffset);
+	        		}
 	        	} else if (multiDrawArrays) {
 	        		re.multiDrawArrays(type, multiDrawFirst, multiDrawCount);
 	        	} else {

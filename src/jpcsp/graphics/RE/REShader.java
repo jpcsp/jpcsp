@@ -1073,6 +1073,15 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	@Override
+	public void drawElementsBurstMode(int primitive, int count, int indexType, long indicesOffset) {
+		// drawElementsBurstMode is equivalent to drawElements
+		// but without the need to set the uniforms (they are unchanged
+		// since the last call to drawElements).
+		primitive = prepareDraw(primitive, true);
+		super.drawElementsBurstMode(primitive, count, indexType, indicesOffset);
+	}
+
+	@Override
 	public boolean canNativeClut(int textureAddress) {
 		// The clut processing is implemented into the fragment shader
 		// and the clut values are passed as a sampler2D

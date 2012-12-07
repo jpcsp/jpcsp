@@ -520,7 +520,7 @@ public abstract class BasePrimitiveRenderer extends BaseRenderer {
 	 * @param value  floating-point 2D position coordinate
 	 * @return       screen coordinate
 	 */
-	private static final int positionCoordinate2D(float value) {
+	protected static final int positionCoordinate2D(float value) {
 		return (int) (value + 0.437f);
 	}
 
