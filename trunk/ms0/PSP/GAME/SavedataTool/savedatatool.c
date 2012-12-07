@@ -32,17 +32,16 @@ unsigned char g_dataBuf[0x100000];
 unsigned char g_readIcon0[100000];
 unsigned char g_readIcon1[100000];
 unsigned char g_readPic1[100000];
-unsigned char buffer1[20];
-unsigned char buffer2[64];
-unsigned char buffer3[28];
-unsigned char buffer4[12];
-unsigned char buffer5[72 * 0x1f];
-unsigned char buffer6[40];
-unsigned char buffer7[184];
-unsigned char buffer8[100000];
-unsigned char buffer9[100000];
-unsigned char buffer10[100000];
-unsigned char buffer11[100000];
+unsigned char msFreeBuffer[20];
+unsigned char msDataBuffer[64];
+unsigned char utilityDataBuffer[28];
+unsigned char idListBuffer[12];
+unsigned char idListDataBuffer[72 * 0x1f];
+unsigned char fileListBuffer[40];
+unsigned char sizeBuffer[184];
+unsigned char saveFileEntriesAddr[100000];
+unsigned char saveFileSecureEntriesAddr[100000];
+unsigned char saveFileSystemEntriesAddr[100000];
 
 char* g_gameName;
 char* g_saveName;
@@ -157,20 +156,21 @@ typedef struct
 	int sizeOfReadSnd0Buf;
 	int sizeOfReadSnd0;
 	int unknown18;
-        unsigned char* newData;
-        int focus;
-	unsigned char unknown19[4];
+	unsigned char* newData;
+	int focus;
+	int abortStatus;
 #if FW15
 	char unknown20[12];
 #else
-	unsigned char *ptr1;
-	unsigned char *ptr2;
-	unsigned char *ptr3;
+	unsigned char *msFreeAddr;
+	unsigned char *msDataAddr;
+	unsigned char *utilityDataAddr;
 	char key[16];
-	char unknown20[8];
-	unsigned char *ptr4;
-	unsigned char *ptr5;
-	unsigned char *ptr6;
+	int secureVersion;
+	int multiStatus;
+	unsigned char *idListAddr;
+	unsigned char *fileListAddr;
+	unsigned char *sizeAddr;
 #endif
 } SceUtilitySavedataParamNew;
 
@@ -203,40 +203,39 @@ void initSavedata(SceUtilitySavedataParamNew* savedata, int mode) {
 	savedata->accessThread = 0x13;
 	savedata->fontThread = 0x12;
 	savedata->soundThread = 0x10;
-	memset(buffer1, 0, sizeof(buffer1));
-	memset(buffer2, 0, sizeof(buffer2));
-	memset(buffer3, 0, sizeof(buffer3));
-	memset(buffer4, 0, sizeof(buffer4));
-	memset(buffer5, 0, sizeof(buffer5));
-	memset(buffer6, 0, sizeof(buffer6));
-	memset(buffer7, 0, sizeof(buffer7));
-	memset(buffer8, 0, sizeof(buffer8));
-	memset(buffer9, 0, sizeof(buffer9));
-	memset(buffer10, 0, sizeof(buffer10));
-	memset(buffer11, 0, sizeof(buffer11));
-	savedata->ptr1 = buffer1;
-	savedata->ptr2 = buffer2;
-	strcpy((char *) buffer2, g_gameName);
-	strcpy((char *) (buffer2 + 16), g_saveName);
-	savedata->ptr3 = buffer3;
-	savedata->ptr4 = buffer4;
-	*((int *) (buffer4 + 0)) = sizeof(buffer5) / 72;
-	*((int *) (buffer4 + 8)) = (int) &buffer5;
-	savedata->ptr5 = buffer6;
-	*((int *) (buffer6 + 24)) = (int) &buffer8;
-	*((int *) (buffer6 + 28)) = (int) &buffer10;
-	*((int *) (buffer6 + 32)) = (int) &buffer9;
-	savedata->ptr6 = buffer7;
-	memset(buffer7, 0x12, sizeof(buffer7));
-	*((int *) (buffer7 + 0)) = 1;
-	*((int *) (buffer7 + 4)) = 1;
-	*((int *) (buffer7 + 8)) = (int) &buffer10;
-	*((int *) (buffer7 + 12)) = (int) &buffer11;
-	int *entry = (int *) buffer10;
+	memset(msFreeBuffer, 0, sizeof(msFreeBuffer));
+	memset(msDataBuffer, 0, sizeof(msDataBuffer));
+	memset(utilityDataBuffer, 0, sizeof(utilityDataBuffer));
+	memset(idListBuffer, 0, sizeof(idListBuffer));
+	memset(idListDataBuffer, 0, sizeof(idListDataBuffer));
+	memset(fileListBuffer, 0, sizeof(fileListBuffer));
+	memset(sizeBuffer, 0, sizeof(sizeBuffer));
+	memset(saveFileSecureEntriesAddr, 0, sizeof(saveFileSecureEntriesAddr));
+	memset(saveFileSystemEntriesAddr, 0, sizeof(saveFileSystemEntriesAddr));
+	memset(saveFileEntriesAddr, 0, sizeof(saveFileEntriesAddr));
+	savedata->msFreeAddr = msFreeBuffer;
+	savedata->msDataAddr = msDataBuffer;
+	strcpy((char *) msDataBuffer, g_gameName);
+	strcpy((char *) (msDataBuffer + 16), g_saveName);
+	savedata->utilityDataAddr = utilityDataBuffer;
+	savedata->idListAddr = idListBuffer;
+	*((int *) (idListBuffer + 0)) = sizeof(idListDataBuffer) / 72;
+	*((int *) (idListBuffer + 8)) = (int) &idListDataBuffer;
+	savedata->fileListAddr = fileListBuffer;
+	*((int *) (fileListBuffer + 24)) = (int) &saveFileSecureEntriesAddr;
+	*((int *) (fileListBuffer + 28)) = (int) &saveFileEntriesAddr;
+	*((int *) (fileListBuffer + 32)) = (int) &saveFileSystemEntriesAddr;
+	savedata->sizeAddr = sizeBuffer;
+	memset(sizeBuffer, 0x12, sizeof(sizeBuffer));
+	*((int *) (sizeBuffer + 0)) = 1;
+	*((int *) (sizeBuffer + 4)) = 1;
+	*((int *) (sizeBuffer + 8)) = (int) &saveFileSecureEntriesAddr;
+	*((int *) (sizeBuffer + 12)) = (int) &saveFileEntriesAddr;
+	int *entry = (int *) saveFileEntriesAddr;
 	entry[0] = 0x70000000;
 	entry[1] = 0;
 	strcpy((char *) (entry + 2), "FILE1");
-	entry = (int *) buffer11;
+	entry = (int *) saveFileSecureEntriesAddr;
 	entry[0] = 0x70000000;
 	entry[1] = 0;
 	strcpy((char *) (entry + 2), "FILE2");
@@ -249,6 +248,12 @@ void initSavedata(SceUtilitySavedataParamNew* savedata, int mode) {
 	strcpy(savedata->dataNameAsciiZ, g_dataName);
 	savedata->dataBuf = g_dataBuf;
 	savedata->sizeOfDataBuf = sizeof(g_dataBuf);
+	savedata->readIcon0Buf = g_readIcon0;
+	savedata->sizeOfReadIcon0Buf = sizeof(g_readIcon0);
+	savedata->readIcon1Buf = g_readIcon1;
+	savedata->sizeOfReadIcon1Buf = sizeof(g_readIcon1);
+	savedata->readPic1Buf = g_readPic1;
+	savedata->sizeOfReadPic1Buf = sizeof(g_readPic1);
 }
 
 void mainImpl()
@@ -295,44 +300,93 @@ void mainImpl()
 	strcpy(buf, "data name: ");
 	print(strcat(buf, g_dataName));
 	y++;
-	print("press 'x' for load or 'o' for update savedata,");
-	print("press triangle for savedata mode 8");
-	print("press square for savedata mode 11");
-	print("press up for savedata mode 15");
-	print("press down for savedata mode 22 (GETSIZE)");
+	print("Press Cross    for savedata mode 0  (AUTOLOAD)");
+    print("Press Circle   for savedata mode 1  (AUTOSAVE)");
+	print("Press Triangle for savedata mode 8  (SIZES)");
+	print("Press Square   for savedata mode 11 (LIST)");
+	print("Press Left     for savedata mode 12 (FILES)");
+	print("Press Up       for savedata mode 15 (READSECURE)");
+	print("Press Down     for savedata mode 22 (GETSIZE)");
 	y++;
 
 	sceCtrlSetSamplingCycle(0); 
 	sceCtrlSetSamplingMode(0); 
 	SceCtrlData ctrl;
-	int update;
-	while(1) { 
+	int mode = -1;
+	while (mode < 0) { 
 		sceCtrlReadBufferPositive(&ctrl, 1); 
 		if (ctrl.Buttons & CTRL_CROSS) { 
-			update = 0;
-			break;
+			mode = 0; // AUTOLOAD
 		} else if (ctrl.Buttons & CTRL_CIRCLE) { 
-			update = 1;
-			break;
+			mode = 1; // AUTOSAVE
 		} else if (ctrl.Buttons & CTRL_TRIANGLE) {
-			update = 2;
-			break;
+			mode = 8; // SIZES
 		} else if (ctrl.Buttons & CTRL_SQUARE) {
-			update = 3;
-			break;
+			mode = 11; // LIST
 		} else if (ctrl.Buttons & CTRL_UP) {
-			update = 4;
-			break;
+			mode = 15; // READSECURE
 		} else if (ctrl.Buttons & CTRL_DOWN) {
-			update = 22; // Mode 22 (GETSIZE)
-			break;
+			mode = 22; // GETSIZE
+		} else if (ctrl.Buttons & CTRL_LEFT) {
+			mode = 12; // FILES
 		}
 		sceDisplayWaitVblankStart();
 	}
 
-	// write savedata or update
-	if (update == 1) {
-		initSavedata(&savedata, 1);
+	if (mode == 0) {
+		print("Loading savedata with mode 0 (AUTOLOAD)...");
+		initSavedata(&savedata, mode);
+		result = sceUtilitySavedataInitStart((SceUtilitySavedataParam *) &savedata);
+		if (result) {
+			print("sceUtilitySavedataInitStart failed");
+			printHex(result);
+			return;
+		}
+		previousResult = -1;
+		while (1) {
+			result = sceUtilitySavedataGetStatus();
+			if (result != previousResult) {
+				print("sceUtilitySavedataGetStatus result:");
+				printHex(result);
+				previousResult = result;
+			}
+			if (result == 3) break;
+			sceUtilitySavedataUpdate(1);
+			sceDisplayWaitVblankStart();
+		}
+
+		// write data	
+		print("writing extracted savedata...");
+		fd = sceIoOpen("ms0:/params.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/params.bin");
+			return;
+		}
+		sceIoWrite(fd, &savedata.paramsSfoTitle, PARAMS_LEN);
+		sceIoClose(fd);
+		fd = sceIoOpen("ms0:/data.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/data.bin");
+			return;
+		}
+		sceIoWrite(fd, g_dataBuf, savedata.sizeOfData);	
+		sceIoClose(fd);
+		fd = sceIoOpen("ms0:/savedata.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/savedata.bin");
+			return;
+		}
+		sceIoWrite(fd, &savedata, sizeof(savedata));
+		sceIoClose(fd);
+	} else if (mode == 1) {
+		print("Loading savedata with mode 1 (AUTOSAVE)...");
+		initSavedata(&savedata, mode);
+		savedata.readIcon0Buf = 0;
+		savedata.sizeOfReadIcon0Buf = 0;
+		savedata.readIcon1Buf = 0;
+		savedata.sizeOfReadIcon1Buf = 0;
+		savedata.readPic1Buf = 0;
+		savedata.sizeOfReadPic1Buf = 0;
 
 		// load extracted data
 		print("loading extracted savedata...");
@@ -372,62 +426,9 @@ void mainImpl()
 			sceUtilitySavedataUpdate(1);
 			sceDisplayWaitVblankStart();
 		}
-	} else if (update == 0) {
-		// load savedata
-		print("loading savedata...");
-		initSavedata(&savedata, 0);
-		savedata.readIcon0Buf = g_readIcon0;
-		savedata.sizeOfReadIcon0Buf = sizeof(g_readIcon0);
-		savedata.readIcon1Buf = g_readIcon1;
-		savedata.sizeOfReadIcon1Buf = sizeof(g_readIcon1);
-		savedata.readPic1Buf = g_readPic1;
-		savedata.sizeOfReadPic1Buf = sizeof(g_readPic1);
-		result = sceUtilitySavedataInitStart((SceUtilitySavedataParam *) &savedata);
-		if (result) {
-			print("sceUtilitySavedataInitStart failed");
-			printHex(result);
-			return;
-		}
-		previousResult = -1;
-		while (1) {
-			result = sceUtilitySavedataGetStatus();
-			if (result != previousResult) {
-				print("sceUtilitySavedataGetStatus result:");
-				printHex(result);
-				previousResult = result;
-			}
-			if (result == 3) break;
-			sceUtilitySavedataUpdate(1);
-			sceDisplayWaitVblankStart();
-		}
-
-		// write data	
-		print("writing extracted savedata...");
-		fd = sceIoOpen("ms0:/params.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
-		if (!fd) {
-			print("can't open ms0:/params.bin");
-			return;
-		}
-		sceIoWrite(fd, &savedata.paramsSfoTitle, PARAMS_LEN);
-		sceIoClose(fd);
-		fd = sceIoOpen("ms0:/data.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
-		if (!fd) {
-			print("can't open ms0:/data.bin");
-			return;
-		}
-		sceIoWrite(fd, g_dataBuf, savedata.sizeOfData);	
-		sceIoClose(fd);
-		fd = sceIoOpen("ms0:/savedata.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
-		if (!fd) {
-			print("can't open ms0:/savedata.bin");
-			return;
-		}
-		sceIoWrite(fd, &savedata, sizeof(savedata));
-		sceIoClose(fd);
-	} else if (update == 2) {
-		// Test savedata mode 8
-		print("loading savedata with mode 8...");
-		initSavedata(&savedata, 8);
+	} else if (mode == 8) {
+		print("loading savedata with mode 8 (SIZES)...");
+		initSavedata(&savedata, mode);
 		/* savedata.sizeOfDataBuf = 0x1000; */
 		savedata.sizeOfData = savedata.sizeOfDataBuf;
 		result = sceUtilitySavedataInitStart((SceUtilitySavedataParam *) &savedata);
@@ -461,40 +462,39 @@ void mainImpl()
 #if FW15
 #else
 		char buffer[100];
-		sprintf(buffer, "Free space: %s", buffer1 + 12);
+		sprintf(buffer, "Free space: %s", msFreeBuffer + 12);
 		print(buffer);
-		sprintf(buffer, "Required space1: %s", buffer3 + 8);
+		sprintf(buffer, "Required space1: %s", utilityDataBuffer + 8);
 		print(buffer);
-		sprintf(buffer, "Required space2: %s", buffer3 + 20);
+		sprintf(buffer, "Required space2: %s", utilityDataBuffer + 20);
 		print(buffer);
-		fd = sceIoOpen("ms0:/buffer1.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		fd = sceIoOpen("ms0:/msFreeBuffer.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
 		if (!fd) {
-			print("can't open ms0:/buffer1.bin");
+			print("can't open ms0:/msFreeBuffer.bin");
 			return;
 		}
-		sceIoWrite(fd, buffer1, sizeof(buffer1));
+		sceIoWrite(fd, msFreeBuffer, sizeof(msFreeBuffer));
 		sceIoClose(fd);
 
-		fd = sceIoOpen("ms0:/buffer2.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		fd = sceIoOpen("ms0:/msDataBuffer.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
 		if (!fd) {
-			print("can't open ms0:/buffer2.bin");
+			print("can't open ms0:/msDataBuffer.bin");
 			return;
 		}
-		sceIoWrite(fd, buffer2, sizeof(buffer2));
+		sceIoWrite(fd, msDataBuffer, sizeof(msDataBuffer));
 		sceIoClose(fd);
 
-		fd = sceIoOpen("ms0:/buffer3.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		fd = sceIoOpen("ms0:/utilityDataBuffer.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
 		if (!fd) {
-			print("can't open ms0:/buffer3.bin");
+			print("can't open ms0:/utilityDataBuffer.bin");
 			return;
 		}
-		sceIoWrite(fd, buffer3, sizeof(buffer3));
+		sceIoWrite(fd, utilityDataBuffer, sizeof(utilityDataBuffer));
 		sceIoClose(fd);
 #endif
-	} else if (update == 3) {
-		// Test savedata mode 11
-		print("loading savedata with mode 11...");
-		initSavedata(&savedata, 11);
+	} else if (mode == 11) {
+		print("Loading savedata with mode 11 (LIST)...");
+		initSavedata(&savedata, mode);
 		result = sceUtilitySavedataInitStart((SceUtilitySavedataParam *) &savedata);
 		if (result) {
 			print("sceUtilitySavedataInitStart failed");
@@ -514,11 +514,11 @@ void mainImpl()
 			sceDisplayWaitVblankStart();
 		}
 
-		int numEntries = *((int *) (buffer4 + 4));
+		int numEntries = *((int *) (idListBuffer + 4));
 		int i;
 		char buffer[100];
 		for (i = 0; i < numEntries; i++) {
-			sprintf(buffer, "Name: %s", (char *) (buffer5 + i * 72 + 52));
+			sprintf(buffer, "Name: %s", (char *) (idListDataBuffer + i * 72 + 52));
 			print(buffer);
 		}
 
@@ -533,58 +533,57 @@ void mainImpl()
 		sceIoClose(fd);
 #if FW15
 #else
-		fd = sceIoOpen("ms0:/buffer4.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		fd = sceIoOpen("ms0:/idListBuffer.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
 		if (!fd) {
-			print("can't open ms0:/buffer4.bin");
+			print("can't open ms0:/idListBuffer.bin");
 			return;
 		}
-		sceIoWrite(fd, buffer4, sizeof(buffer4));
+		sceIoWrite(fd, idListBuffer, sizeof(idListBuffer));
 		sceIoClose(fd);
 
-		fd = sceIoOpen("ms0:/buffer5.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		fd = sceIoOpen("ms0:/idListDataBuffer.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
 		if (!fd) {
-			print("can't open ms0:/buffer5.bin");
+			print("can't open ms0:/idListDataBuffer.bin");
 			return;
 		}
-		sceIoWrite(fd, buffer5, sizeof(buffer5));
+		sceIoWrite(fd, idListDataBuffer, sizeof(idListDataBuffer));
 		sceIoClose(fd);
 
-		fd = sceIoOpen("ms0:/buffer6.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		fd = sceIoOpen("ms0:/fileListBuffer.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
 		if (!fd) {
-			print("can't open ms0:/buffer6.bin");
+			print("can't open ms0:/fileListBuffer.bin");
 			return;
 		}
-		sceIoWrite(fd, buffer6, sizeof(buffer6));
+		sceIoWrite(fd, fileListBuffer, sizeof(fileListBuffer));
 		sceIoClose(fd);
 
-		fd = sceIoOpen("ms0:/buffer7.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		fd = sceIoOpen("ms0:/sizeBuffer.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
 		if (!fd) {
-			print("can't open ms0:/buffer7.bin");
+			print("can't open ms0:/sizeBuffer.bin");
 			return;
 		}
-		sceIoWrite(fd, buffer7, sizeof(buffer7));
+		sceIoWrite(fd, sizeBuffer, sizeof(sizeBuffer));
 		sceIoClose(fd);
 
-		fd = sceIoOpen("ms0:/buffer8.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		fd = sceIoOpen("ms0:/saveFileSecureEntriesAddr.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
 		if (!fd) {
-			print("can't open ms0:/buffer8.bin");
+			print("can't open ms0:/saveFileSecureEntriesAddr.bin");
 			return;
 		}
-		sceIoWrite(fd, buffer8, sizeof(buffer8));
+		sceIoWrite(fd, saveFileSecureEntriesAddr, sizeof(saveFileSecureEntriesAddr));
 		sceIoClose(fd);
 
-		fd = sceIoOpen("ms0:/buffer9.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		fd = sceIoOpen("ms0:/saveFileSystemEntriesAddr.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
 		if (!fd) {
-			print("can't open ms0:/buffer9.bin");
+			print("can't open ms0:/saveFileSystemEntriesAddr.bin");
 			return;
 		}
-		sceIoWrite(fd, buffer9, sizeof(buffer9));
+		sceIoWrite(fd, saveFileSystemEntriesAddr, sizeof(saveFileSystemEntriesAddr));
 		sceIoClose(fd);
 #endif
-	} else if (update == 4) {
-		// Test savedata mode 15
-		print("loading savedata with mode 15...");
-		initSavedata(&savedata, 15);
+	} else if (mode == 15) {
+		print("Loading savedata with mode 15 (READSECURE)...");
+		initSavedata(&savedata, mode);
 		result = sceUtilitySavedataInitStart((SceUtilitySavedataParam *) &savedata);
 		if (result) {
 			print("sceUtilitySavedataInitStart failed");
@@ -629,10 +628,9 @@ void mainImpl()
 		}
 		sceIoWrite(fd, &savedata, sizeof(savedata));
 		sceIoClose(fd);
-	} else if (update == 22) {
-		// Test savedata mode 22
-		print("loading savedata with mode 22...");
-		initSavedata(&savedata, 22);
+	} else if (mode == 22) {
+		print("Loading savedata with mode 22...");
+		initSavedata(&savedata, mode);
 
 		result = sceUtilitySavedataInitStart((SceUtilitySavedataParam *) &savedata);
 		if (result) {
@@ -679,44 +677,126 @@ void mainImpl()
 		sceIoWrite(fd, &savedata, sizeof(savedata));
 		sceIoClose(fd);
 
-		fd = sceIoOpen("ms0:/buffer7.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		fd = sceIoOpen("ms0:/sizeBuffer.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
 		if (!fd) {
-			print("can't open ms0:/buffer7.bin");
+			print("can't open ms0:/sizeBuffer.bin");
 			return;
 		}
-		sceIoWrite(fd, buffer7, sizeof(buffer7));
+		sceIoWrite(fd, sizeBuffer, sizeof(sizeBuffer));
 		sceIoClose(fd);
 
-		fd = sceIoOpen("ms0:/buffer8.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		fd = sceIoOpen("ms0:/saveFileSecureEntriesAddr.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
 		if (!fd) {
-			print("can't open ms0:/buffer8.bin");
+			print("can't open ms0:/saveFileSecureEntriesAddr.bin");
 			return;
 		}
-		sceIoWrite(fd, buffer8, sizeof(buffer8));
+		sceIoWrite(fd, saveFileSecureEntriesAddr, sizeof(saveFileSecureEntriesAddr));
 		sceIoClose(fd);
 
-		fd = sceIoOpen("ms0:/buffer9.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		fd = sceIoOpen("ms0:/saveFileSystemEntriesAddr.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
 		if (!fd) {
-			print("can't open ms0:/buffer9.bin");
+			print("can't open ms0:/saveFileSystemEntriesAddr.bin");
 			return;
 		}
-		sceIoWrite(fd, buffer9, sizeof(buffer9));
+		sceIoWrite(fd, saveFileSystemEntriesAddr, sizeof(saveFileSystemEntriesAddr));
 		sceIoClose(fd);
 
-		fd = sceIoOpen("ms0:/buffer10.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		fd = sceIoOpen("ms0:/saveFileEntriesAddr.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
 		if (!fd) {
-			print("can't open ms0:/buffer10.bin");
+			print("can't open ms0:/saveFileEntriesAddr.bin");
 			return;
 		}
-		sceIoWrite(fd, buffer10, sizeof(buffer10));
+		sceIoWrite(fd, saveFileEntriesAddr, sizeof(saveFileEntriesAddr));
 		sceIoClose(fd);
 
-		fd = sceIoOpen("ms0:/buffer11.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		fd = sceIoOpen("ms0:/saveFileSecureEntriesAddr.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
 		if (!fd) {
-			print("can't open ms0:/buffer11.bin");
+			print("can't open ms0:/saveFileSecureEntriesAddr.bin");
 			return;
 		}
-		sceIoWrite(fd, buffer11, sizeof(buffer11));
+		sceIoWrite(fd, saveFileSecureEntriesAddr, sizeof(saveFileSecureEntriesAddr));
+		sceIoClose(fd);
+	} else if (mode == 12) {
+		print("Loading savedata with mode 12 (FILES)...");
+		initSavedata(&savedata, mode);
+		result = sceUtilitySavedataInitStart((SceUtilitySavedataParam *) &savedata);
+		if (result) {
+			print("sceUtilitySavedataInitStart failed");
+			printHex(result);
+			return;
+		}
+		previousResult = -1;
+		while (1) {
+			result = sceUtilitySavedataGetStatus();
+			if (result != previousResult) {
+				print("sceUtilitySavedataGetStatus result:");
+				printHex(result);
+				previousResult = result;
+			}
+			if (result == 3) break;
+			sceUtilitySavedataUpdate(1);
+			sceDisplayWaitVblankStart();
+		}
+
+		int numSecureEntries = *((int *) (fileListBuffer + 12));
+		int numEntries = *((int *) (fileListBuffer + 16));
+		int numSystemEntries = *((int *) (fileListBuffer + 20));
+
+		int i;
+		char buffer[100];
+		for (i = 0; i < numSecureEntries; i++) {
+			sprintf(buffer, "Secure Entry Name: '%s'", (char *) (saveFileSecureEntriesAddr + i * 80 + 64));
+			print(buffer);
+		}
+		for (i = 0; i < numEntries; i++) {
+			sprintf(buffer, "Entry Name: '%s'", (char *) (saveFileEntriesAddr + i * 80 + 64));
+			print(buffer);
+		}
+		for (i = 0; i < numSystemEntries; i++) {
+			sprintf(buffer, "System Entry Name: '%s'", (char *) (saveFileSystemEntriesAddr + i * 80 + 64));
+			print(buffer);
+		}
+
+		// write data
+		print("writing savedata structure...");
+		fd = sceIoOpen("ms0:/savedata.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/savedata.bin");
+			return;
+		}
+		sceIoWrite(fd, &savedata, sizeof(savedata));
+		sceIoClose(fd);
+
+		fd = sceIoOpen("ms0:/fileListBuffer.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/fileListBuffer.bin");
+			return;
+		}
+		sceIoWrite(fd, fileListBuffer, sizeof(fileListBuffer));
+		sceIoClose(fd);
+
+		fd = sceIoOpen("ms0:/saveFileEntriesAddr.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/saveFileEntriesAddr.bin");
+			return;
+		}
+		sceIoWrite(fd, saveFileEntriesAddr, sizeof(saveFileEntriesAddr));
+		sceIoClose(fd);
+
+		fd = sceIoOpen("ms0:/saveFileSecureEntriesAddr.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/saveFileSecureEntriesAddr.bin");
+			return;
+		}
+		sceIoWrite(fd, saveFileSecureEntriesAddr, sizeof(saveFileSecureEntriesAddr));
+		sceIoClose(fd);
+
+		fd = sceIoOpen("ms0:/saveFileSystemEntriesAddr.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/saveFileSystemEntriesAddr.bin");
+			return;
+		}
+		sceIoWrite(fd, saveFileSystemEntriesAddr, sizeof(saveFileSystemEntriesAddr));
 		sceIoClose(fd);
 	}
 
