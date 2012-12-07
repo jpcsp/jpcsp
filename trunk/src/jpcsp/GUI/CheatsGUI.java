@@ -663,6 +663,7 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
 						addCheatLine(line);
 					}
 				}
+				reader.close();
 			} catch (IOException e) {
 				Emulator.log.error("Import from cheat.db", e);
 			}

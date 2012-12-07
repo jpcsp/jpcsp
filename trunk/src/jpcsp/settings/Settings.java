@@ -394,6 +394,7 @@ public class Settings {
 				case VOLPLUS:  writeKey("volPlus", value); break;
 				case SCREEN:   writeKey("screen", value); break;
 				case MUSIC:    writeKey("music", value); break;
+				case RELEASED: break;
 			}
 		}
 		writeSettings();
@@ -427,6 +428,7 @@ public class Settings {
 				case VOLPLUS:  writeController("volPlus", value); break;
 				case SCREEN:   writeController("screen", value); break;
 				case MUSIC:    writeController("music", value); break;
+				case RELEASED: break;
 			}
 		}
 		writeSettings();

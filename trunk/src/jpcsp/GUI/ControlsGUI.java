@@ -14,7 +14,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.GUI;
 
 import java.awt.event.ItemEvent;
@@ -194,6 +193,7 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 	        case VOLPLUS:  fieldVolPlus.setText(value); break;
 	        case SCREEN:   fieldScreen.setText(value); break;
 	        case MUSIC:    fieldMusic.setText(value); break;
+	        case RELEASED: break;
         }
 	}
 

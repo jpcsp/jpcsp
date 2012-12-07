@@ -112,6 +112,7 @@ public class scePspNpDrm_user extends HLEModule {
 
             // Read the encrypted PSPEDATA header.
             file.readFully(inBuf);
+            file.close();
 
             // Generate a new name hash for this file and compare with the one stored in it's header.
             System.arraycopy(inBuf, 0x10, dataBuf, 0, 0x30);

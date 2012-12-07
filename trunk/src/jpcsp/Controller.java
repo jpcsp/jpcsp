@@ -266,6 +266,7 @@ public class Controller {
 			            case VOLPLUS:  keyCode = PSP_CTRL_VOLUP; break;
 			            case SCREEN:   keyCode = PSP_CTRL_SCREEN; break;
 			            case MUSIC:    keyCode = PSP_CTRL_NOTE; break;
+			            case RELEASED: break;
 					}
 					if (keyCode != -1) {
 						buttonComponents.put(component.getIdentifier(), keyCode);
@@ -416,6 +417,8 @@ public class Controller {
                     res = true;
                 }
                 break;
+            default:
+            	break;
         }
         return res;
     }

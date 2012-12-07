@@ -69,6 +69,7 @@ public class AES128 {
             for (int i = 0; i < bytes.length; i++) {
                 bytes[i] = (byte) dIn.read();
             }
+            dIn.close();
             return bytes;
         } catch (Exception e) {
             e.printStackTrace();
@@ -90,6 +91,7 @@ public class AES128 {
             for (int i = 0; i < bytes.length; i++) {
                 bytes[i] = (byte) dIn.read();
             }
+            dIn.close();
             return bytes;
         } catch (Exception e) {
             e.printStackTrace();
