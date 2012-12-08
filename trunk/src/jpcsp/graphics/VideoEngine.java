@@ -4284,13 +4284,19 @@ public class VideoEngine {
             log.warn("Unhandled blend operation " + context.blendEquation);
             context.blendEquation = ALPHA_SOURCE_BLEND_OPERATION_ADD;
         }
-    	if (context.blend_src > ALPHA_FIX) {
-            error("Unhandled alpha blend src used " + context.blend_src);
-            context.blend_src = ALPHA_SOURCE_ALPHA;
+
+        // Tested on PSP: alpha blend src/dst values in range [11..15] are equivalent to ALPHA_FIX
+        if (context.blend_src > ALPHA_FIX) {
+    		if (isLogDebugEnabled) {
+    			log.debug(String.format("alpha blend src %d changed to ALPHA_FIX", context.blend_src));
+    		}
+            context.blend_src = ALPHA_FIX;
     	}
     	if (context.blend_dst > ALPHA_FIX) {
-            error("Unhandled alpha blend dst used " + context.blend_dst);
-            context.blend_dst = ALPHA_ONE_MINUS_SOURCE_ALPHA;
+    		if (isLogDebugEnabled) {
+    			log.debug(String.format("alpha blend dst %d changed to ALPHA_FIX", context.blend_dst));
+    		}
+            context.blend_dst = ALPHA_FIX;
     	}
 
         re.setBlendEquation(context.blendEquation);
