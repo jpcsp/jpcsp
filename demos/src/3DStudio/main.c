@@ -466,7 +466,7 @@ char *blendOpNames[] = { "GU_ADD", "GU_SUBTRACT", "GU_REVERSE_SUBTRACT", "GU_MIN
 
 int blendFuncSrc = 2;
 int blendFuncDst = 3;
-char *blendFuncNames[] = { "GU_SRC_COLOR", "GU_ONE_MINUS_SRC_COLOR", "GU_SRC_ALPHA", "GU_ONE_MINUS_SRC_ALPHA", "GU_DST_ALPHA", "GU_ONE_MINUS_DST_ALPHA", "GU_DOUBLE_SRC_ALPHA", "GU_ONE_MINUS_DOUBLE_SRC_ALPHA", "GU_DOUBLE_DST_ALPHA", "GU_ONE_MINUS_DOUBLE_DST_ALPHA", "GU_FIX" };
+char *blendFuncNames[] = { "GU_SRC_COLOR", "GU_ONE_MINUS_SRC_COLOR", "GU_SRC_ALPHA", "GU_ONE_MINUS_SRC_ALPHA", "GU_DST_ALPHA", "GU_ONE_MINUS_DST_ALPHA", "GU_DOUBLE_SRC_ALPHA", "GU_ONE_MINUS_DOUBLE_SRC_ALPHA", "GU_DOUBLE_DST_ALPHA", "GU_ONE_MINUS_DOUBLE_DST_ALPHA", "GU_FIX", "UNKNOWN 11", "UNKNOWN 12", "UNKNOWN 13", "UNKNOWN 14", "UNKNOWN 15" };
 struct Color blendSFix;
 struct Color blendDFix;
 
@@ -1633,10 +1633,10 @@ void init()
 	addAttribute("sceGuBlendFunc op", &blendOp, NULL, x, y, 0, 5, 1, NULL);
 	setAttributeValueNames(&blendOpNames[0]);
 	y++;
-	addAttribute("src", &blendFuncSrc, NULL, x + 15, y, 0, 10, 1, NULL);
+	addAttribute("src", &blendFuncSrc, NULL, x + 15, y, 0, 15, 1, NULL);
 	setAttributeValueNames(&blendFuncNames[0]);
 	y++;
-	addAttribute("dst", &blendFuncDst, NULL, x + 15, y, 0, 10, 1, NULL);
+	addAttribute("dst", &blendFuncDst, NULL, x + 15, y, 0, 15, 1, NULL);
 	setAttributeValueNames(&blendFuncNames[0]);
 	y++;
 	addColorAttribute("SFix R", &blendSFix, x + 15, y, 0, 0x10);
