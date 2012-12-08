@@ -66,9 +66,6 @@ public class SoftwareSynthesizer {
 			if (defaultDelay > 0) {
 				sampleSource = new SampleSourceWithDelay(sampleSource, defaultDelay);
 			}
-
-			// Reset voice to start
-			voice.setPlaySample(0);
 		}
 
 		return sampleSource;
