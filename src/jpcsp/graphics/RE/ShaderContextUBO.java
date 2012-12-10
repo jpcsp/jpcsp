@@ -244,7 +244,11 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void initShaderProgram(IRenderingEngine re, int shaderProgram) {
 		int blockIndex = re.getUniformBlockIndex(shaderProgram, uniformBlockName);
-		re.setUniformBlockBinding(shaderProgram, blockIndex, bindingPoint);
+		// The uniform block might have been eliminated by the shader compiler
+		// if it was not used at all.
+		if (blockIndex >= 0) {
+			re.setUniformBlockBinding(shaderProgram, blockIndex, bindingPoint);
+		}
 
 		if (data == null) {
 			for (ShaderUniformInfo shaderUniformInfo : shaderUniformInfos) {

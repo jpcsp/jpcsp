@@ -5121,6 +5121,8 @@ public class VideoEngine {
             // first save the GE to memory before loading the texture.
             if (tex_addr == (context.fbp | MemoryMap.START_VRAM) && context.texture_storage == context.psm && context.texture_buffer_width[0] == context.fbw) {
             	display.copyGeToMemory(true);
+            	// Re-bind the texture to be loaded, as the bind might have been changed during the GE copy.
+            	re.bindTexture(context.currentTextureId);
             }
 
             Buffer final_buffer = null;
