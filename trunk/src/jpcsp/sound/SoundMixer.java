@@ -137,11 +137,7 @@ public class SoundMixer {
             		}
             		writeSamples = true;
 
-            		playSample = sampleSource.getSampleIndex();
-            		voice.setPlaySample(playSample);
-            		if (sampleSource.getNumberSamples() <= playSample) {
-            			voice.setPlaying(false);
-            		}
+            		voice.setPlaySample(sampleSource.getSampleIndex());
             	}
             }
         }
