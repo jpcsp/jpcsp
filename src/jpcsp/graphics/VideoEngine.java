@@ -263,6 +263,7 @@ public class VideoEngine {
     private IGraphicsExporter exporter;
     private boolean hasModdedTextureDirectory;
     private HashMap<Integer, int[]> cachedInstructions;
+    private long listStartMicroTime;
 
     public static class MatrixUpload {
         private final float[] matrix;
@@ -985,6 +986,7 @@ public class VideoEngine {
         executeHleAction();
 
         if (isGeProfilerEnabled) {
+        	listStartMicroTime = Emulator.getClock().microTime();
         	GEProfiler.startGeList();
         }
 
@@ -1021,6 +1023,10 @@ public class VideoEngine {
         }
 
         if (currentList.isDone()) {
+        	if (isGeProfilerEnabled) {
+        		long listEndMicroTime = Emulator.getClock().microTime();
+        		GEProfiler.geListDuration(listEndMicroTime - listStartMicroTime);
+        	}
         	Modules.sceGe_userModule.hleGeListSyncDone(currentList);
         }
 

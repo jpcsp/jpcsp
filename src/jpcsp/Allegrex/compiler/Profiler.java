@@ -47,6 +47,9 @@ public class Profiler {
     private static final int backBranchContextBefore = 5;
     private static final int backBranchContextAfter = 3;
     private static ProfilerEnabledSettingsListerner profilerEnabledSettingsListerner;
+    private static int compilationCount;
+    private static long compilationTimeMicros;
+    private static long longestCompilationTimeMicros;
 
 	private static class ProfilerEnabledSettingsListerner extends AbstractBoolSettingsListener {
 		@Override
@@ -80,6 +83,9 @@ public class Profiler {
         callCounts.clear();
         instructionCounts.clear();
         backBranchCounts.clear();
+        compilationCount = 0;
+        compilationTimeMicros = 0;
+        longestCompilationTimeMicros = 0;
     }
 
     public static void exit() {
@@ -98,6 +104,7 @@ public class Profiler {
         }
 
         int count = 0;
+        log.info(String.format("Compilation time %dms, %d calls, average %.1fms, longest %dms", compilationTimeMicros / 1000, compilationCount, compilationTimeMicros / (double) compilationCount / 1000, longestCompilationTimeMicros / 1000));
         log.info(String.format("CodeBlocks profiling information (%,d total cycles):", allCycles));
         for (CodeBlock codeBlock : sortedCodeBlocks) {
             long callCount = getCallCount(codeBlock);
@@ -111,7 +118,6 @@ public class Profiler {
             logCodeBlock(codeBlock, allCycles, instructionCount, callCount, count, sortedBackBranches);
             count++;
         }
-
     }
 
     private static void logCodeBlock(CodeBlock codeBlock, long allCycles, long instructionCount, long callCount, int count, List<Integer> sortedBackBranches) {
@@ -272,5 +278,13 @@ public class Profiler {
 
             return codeBlock2.getStartAddress() - codeBlock1.getStartAddress();
         }
+    }
+
+    public static void addCompilation(long compilationTimeMicros) {
+    	compilationCount++;
+    	Profiler.compilationTimeMicros += compilationTimeMicros;
+    	if (compilationTimeMicros > longestCompilationTimeMicros) {
+    		longestCompilationTimeMicros = compilationTimeMicros;
+    	}
     }
 }
