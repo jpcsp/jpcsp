@@ -511,6 +511,11 @@ public class Compiler implements ICompiler {
     	// in some applications while compiling large MIPS functions.
     	Emulator.getClock().pause();
 
+    	long compilationStartMicros = 0;
+    	if (Profiler.isProfilerEnabled()) {
+    		compilationStartMicros = System.nanoTime() / 1000;
+    	}
+
     	compileDuration.start();
         CompilerContext context = new CompilerContext(classLoader, instanceIndex);
         IExecutable executable = null;
@@ -539,6 +544,11 @@ public class Compiler implements ICompiler {
             }
         }
         compileDuration.end();
+
+        if (Profiler.isProfilerEnabled()) {
+        	long compilationEndMicros = System.nanoTime() / 1000;
+        	Profiler.addCompilation(compilationEndMicros - compilationStartMicros);
+        }
 
         if (executable == null) {
             Compiler.log.debug("Compilation failed with maxInstruction=" + context.getMethodMaxInstructions());
