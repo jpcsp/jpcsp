@@ -290,7 +290,7 @@ public class VertexInfo {
         }
 
         // Check if the bone matrix has changed, only if not using Skinning Shaders
-        if (weight != 0 && numberOfWeightsForBuffer == 0) {
+        if (weight != 0 && numberOfWeightsForBuffer == 0 && boneMatrix != null) {
             for (int i = 0; i < skinningWeightCount; i++) {
                 for (int j = 0; j < 12; j++) {
                     if (cachedBoneMatrix[i][j] != boneMatrix[i][j]) {
