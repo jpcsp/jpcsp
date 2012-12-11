@@ -55,7 +55,7 @@ void __attribute__((noinline)) vhtfm4(ScePspFVector4 *v0, ScePspFMatrix4 *m0, Sc
    : "+m" (*v0) : "m" (*m0) ,"m" (*v1) );
 }
 
-void __attribute__((noinline)) vtfm3(ScePspFVector4 *v0, ScePspFMatrix4 *m0, ScePspFVector4 *v1)
+void __attribute__((noinline)) vtfm3_E(ScePspFVector4 *v0, ScePspFMatrix4 *m0, ScePspFVector4 *v1)
 {
 	asm volatile (
    "lv.q   C100, 0x00+%1\n"
@@ -68,6 +68,24 @@ void __attribute__((noinline)) vtfm3(ScePspFVector4 *v0, ScePspFMatrix4 *m0, Sce
    "lv.q   C000, %0\n"
 
    "vtfm3.t C000, E100, C200\n"
+
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*m0) ,"m" (*v1) );
+}
+
+void __attribute__((noinline)) vtfm3_M(ScePspFVector4 *v0, ScePspFMatrix4 *m0, ScePspFVector4 *v1)
+{
+	asm volatile (
+   "lv.q   C100, 0x00+%1\n"
+   "lv.q   C110, 0x10+%1\n"
+   "lv.q   C120, 0x20+%1\n"
+   "lv.q   C130, 0x30+%1\n"
+
+   "lv.q   C200, %2\n"
+
+   "lv.q   C000, %0\n"
+
+   "vtfm3.t C000, M100, C200\n"
 
    "sv.q   C000, %0\n"
    : "+m" (*v0) : "m" (*m0) ,"m" (*v1) );
@@ -1011,6 +1029,22 @@ void startNewScreen()
 	printf("Press Triangle to exit\n");
 }
 
+int divq(int a, int b) {
+	return a / b;
+}
+
+int divr(int a, int b) {
+	return a % b;
+}
+
+unsigned int divuq(unsigned int a, unsigned int b) {
+	return a / b;
+}
+
+unsigned int divur(unsigned int a, unsigned int b) {
+	return a % b;
+}
+
 int main(int argc, char *argv[])
 {
     SceCtrlData pad;
@@ -1029,6 +1063,19 @@ int main(int argc, char *argv[])
     repeatDelay.tv_usec = 0;
 
 	startNewScreen();
+
+	printf("Signed   Divide by zero hi=0x%08X, lo=0x%08X\n", divr(0x12345678, 0), divq(0x12345678, 0));
+	printf("Unsigned Divide by zero hi=0x%08X, lo=0x%08X\n", divur(0x12345678, 0), divuq(0x12345678, 0));
+	printf("Unsigned Divide by zero hi=0x%08X, lo=0x%08X\n", divur(0, 0), divuq(0, 0));
+	printf("Unsigned Divide by zero hi=0x%08X, lo=0x%08X\n", divur(0x1, 0), divuq(0x1, 0));
+	printf("Unsigned Divide by zero hi=0x%08X, lo=0x%08X\n", divur(0x10, 0), divuq(0x10, 0));
+	printf("Unsigned Divide by zero hi=0x%08X, lo=0x%08X\n", divur(0x100, 0), divuq(0x100, 0));
+	printf("Unsigned Divide by zero hi=0x%08X, lo=0x%08X\n", divur(0x1000, 0), divuq(0x1000, 0));
+	printf("Unsigned Divide by zero hi=0x%08X, lo=0x%08X\n", divur(0xFFFF, 0), divuq(0xFFFF, 0));
+	printf("Unsigned Divide by zero hi=0x%08X, lo=0x%08X\n", divur(0x10000, 0), divuq(0x10000, 0));
+	printf("Unsigned Divide by zero hi=0x%08X, lo=0x%08X\n", divur(0x100000, 0), divuq(0x100000, 0));
+	printf("Unsigned Divide by zero hi=0x%08X, lo=0x%08X\n", divur(0x1000000, 0), divuq(0x1000000, 0));
+	printf("Unsigned Divide by zero hi=0x%08X, lo=0x%08X\n", divur(0x10000000, 0), divuq(0x10000000, 0));
 
 	while(!done)
 	{
@@ -1089,8 +1136,11 @@ int main(int argc, char *argv[])
 			printf("vhtfm4 : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 
 			initValues();
-			vtfm3(&v0, &m1, &v1);
-			printf("vtfm3  : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			vtfm3_E(&v0, &m1, &v1);
+			printf("vtfm3_E: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			initValues();
+			vtfm3_M(&v0, &m1, &v1);
+			printf("vtfm3_M: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 
 			initValues();
 			vhtfm3(&v0, &m1, &v1);

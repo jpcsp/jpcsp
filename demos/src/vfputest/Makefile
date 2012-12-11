@@ -2,7 +2,7 @@ TARGET = vfputest
 OBJS = main.o
 
 INCDIR = 
-CFLAGS = -O1 -G0 -Wall -mno-gpopt -fno-strict-aliasing -fsingle-precision-constant -fomit-frame-pointer -ffast-math
+CFLAGS = -O1 -G0 -Wall -mno-gpopt -fno-strict-aliasing -fsingle-precision-constant -fomit-frame-pointer -ffast-math -mno-check-zero-division
 CXXFLAGS = -fno-exceptions -fno-rtti
 ASFLAGS = 
 
