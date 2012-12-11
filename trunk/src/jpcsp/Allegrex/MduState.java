@@ -105,20 +105,34 @@ public class MduState extends GprState {
     }
 
     public final void doDIV(int rs, int rt) {
-        // According to MIPS spec., result is unpredictable when dividing by zero.
-        if (getRegister(rt) != 0) {
-            int lo = getRegister(rs) / getRegister(rt);
-            int hi = getRegister(rs) % getRegister(rt);
+    	int rsValue = getRegister(rs);
+    	int rtValue = getRegister(rt);
+        if (rtValue == 0) {
+            // According to MIPS spec., result is unpredictable when dividing by zero.
+        	// However on a PSP, hi is set to $rs register value and lo is set to 0x0000FFFF/0xFFFFFFFF.
+        	// This has been tested on a real PSP using vfputest.pbp.
+        	long lo = rsValue > 0xFFFF ? 0xFFFFFFFFL : 0x0000FFFFL;
+        	hilo = (((long) rsValue) << 32) | lo;
+        } else {
+            int lo = rsValue / rtValue;
+            int hi = rsValue % rtValue;
             hilo = (((long) hi) << 32) | ((lo) & 0xffffffffL);
         }
     }
 
     public final void doDIVU(int rs, int rt) {
-        // According to MIPS spec., result is unpredictable when dividing by zero.
-        if (getRegister(rt) != 0) {
-            long x = getRegister(rs) & 0xffffffffL;
-            long y = getRegister(rt) & 0xffffffffL;
-            hilo = ((x % y) << 32) | ((x / y) & 0xffffffffL);
+    	int rsValue = getRegister(rs);
+    	int rtValue = getRegister(rt);
+        if (rtValue == 0) {
+            // According to MIPS spec., result is unpredictable when dividing by zero.
+        	// However on a PSP, hi is set to $rs register value and lo is set to 0x0000FFFF/0xFFFFFFFF.
+        	// This has been tested on a real PSP using vfputest.pbp.
+        	long lo = rsValue > 0xFFFF ? 0xFFFFFFFFL : 0x0000FFFFL;
+        	hilo = (((long) rsValue) << 32) | lo;
+        } else {
+            long x = rsValue & 0xFFFFFFFFL;
+            long y = rtValue & 0xFFFFFFFFL;
+            hilo = ((x % y) << 32) | ((x / y) & 0xFFFFFFFFL);
         }
     }
 

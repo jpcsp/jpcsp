@@ -2671,31 +2671,33 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	if (!context.isRtRegister0()) {
-        // According to MIPS spec., result is unpredictable when dividing by zero.
-		// Here, do nothing when dividing by zero.
-		Label divideByZero = new Label();
-		context.loadRt();
-		context.getMethodVisitor().visitJumpInsn(Opcodes.IFEQ, divideByZero);
+	Label divideByZero = new Label();
+	Label afterInstruction = new Label();
+	context.loadRt();
+	context.getMethodVisitor().visitJumpInsn(Opcodes.IFEQ, divideByZero);
 
-		context.loadRs();
-		context.loadRt();
-		context.getMethodVisitor().visitInsn(Opcodes.DUP2);
-		context.getMethodVisitor().visitInsn(Opcodes.IREM);
-		context.getMethodVisitor().visitInsn(Opcodes.I2L);
-		context.loadImm(32);
-		context.getMethodVisitor().visitInsn(Opcodes.LSHL);
-		context.getMethodVisitor().visitInsn(Opcodes.DUP2_X2);
-		context.getMethodVisitor().visitInsn(Opcodes.POP2);
-		context.getMethodVisitor().visitInsn(Opcodes.IDIV);
-		context.getMethodVisitor().visitInsn(Opcodes.I2L);
-		context.getMethodVisitor().visitLdcInsn(0x00000000FFFFFFFFL);
-		context.getMethodVisitor().visitInsn(Opcodes.LAND);
-		context.getMethodVisitor().visitInsn(Opcodes.LOR);
-		context.storeHilo();
+	context.loadRs();
+	context.loadRt();
+	context.getMethodVisitor().visitInsn(Opcodes.DUP2);
+	context.getMethodVisitor().visitInsn(Opcodes.IREM);
+	context.getMethodVisitor().visitInsn(Opcodes.I2L);
+	context.loadImm(32);
+	context.getMethodVisitor().visitInsn(Opcodes.LSHL);
+	context.getMethodVisitor().visitInsn(Opcodes.DUP2_X2);
+	context.getMethodVisitor().visitInsn(Opcodes.POP2);
+	context.getMethodVisitor().visitInsn(Opcodes.IDIV);
+	context.getMethodVisitor().visitInsn(Opcodes.I2L);
+	context.getMethodVisitor().visitLdcInsn(0x00000000FFFFFFFFL);
+	context.getMethodVisitor().visitInsn(Opcodes.LAND);
+	context.getMethodVisitor().visitInsn(Opcodes.LOR);
+	context.storeHilo();
+	context.getMethodVisitor().visitJumpInsn(Opcodes.GOTO, afterInstruction);
 
-		context.getMethodVisitor().visitLabel(divideByZero);
-	}
+	// Division by zero handled by the interpreted instruction
+	context.getMethodVisitor().visitLabel(divideByZero);
+	context.compileInterpreterInstruction();
+
+	context.getMethodVisitor().visitLabel(afterInstruction);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2724,36 +2726,40 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	if (!context.isRtRegister0()) {
-        // According to MIPS spec., result is unpredictable when dividing by zero.
-		// Here, do nothing when dividing by zero.
-		Label divideByZero = new Label();
-		context.loadRt();
-		context.getMethodVisitor().visitJumpInsn(Opcodes.IFEQ, divideByZero);
+    // According to MIPS spec., result is unpredictable when dividing by zero.
+	// Here, do nothing when dividing by zero.
+	Label divideByZero = new Label();
+	Label afterInstruction = new Label();
+	context.loadRt();
+	context.getMethodVisitor().visitJumpInsn(Opcodes.IFEQ, divideByZero);
 
-		context.loadRs();
-		context.getMethodVisitor().visitInsn(Opcodes.I2L);
-		context.getMethodVisitor().visitLdcInsn(0x00000000FFFFFFFFL);
-		context.getMethodVisitor().visitInsn(Opcodes.LAND);
-		context.getMethodVisitor().visitInsn(Opcodes.DUP2);
-		context.loadRt();
-		context.getMethodVisitor().visitInsn(Opcodes.I2L);
-		context.getMethodVisitor().visitLdcInsn(0x00000000FFFFFFFFL);
-		context.getMethodVisitor().visitInsn(Opcodes.LAND);
-		context.getMethodVisitor().visitInsn(Opcodes.DUP2_X2);
-		context.getMethodVisitor().visitInsn(Opcodes.LREM);
-		context.loadImm(32);
-		context.getMethodVisitor().visitInsn(Opcodes.LSHL);
-		context.storeLTmp1();
-		context.getMethodVisitor().visitInsn(Opcodes.LDIV);
-		context.getMethodVisitor().visitLdcInsn(0x00000000FFFFFFFFL);
-		context.getMethodVisitor().visitInsn(Opcodes.LAND);
-		context.loadLTmp1();
-		context.getMethodVisitor().visitInsn(Opcodes.LOR);
-		context.storeHilo();
+	context.loadRs();
+	context.getMethodVisitor().visitInsn(Opcodes.I2L);
+	context.getMethodVisitor().visitLdcInsn(0x00000000FFFFFFFFL);
+	context.getMethodVisitor().visitInsn(Opcodes.LAND);
+	context.getMethodVisitor().visitInsn(Opcodes.DUP2);
+	context.loadRt();
+	context.getMethodVisitor().visitInsn(Opcodes.I2L);
+	context.getMethodVisitor().visitLdcInsn(0x00000000FFFFFFFFL);
+	context.getMethodVisitor().visitInsn(Opcodes.LAND);
+	context.getMethodVisitor().visitInsn(Opcodes.DUP2_X2);
+	context.getMethodVisitor().visitInsn(Opcodes.LREM);
+	context.loadImm(32);
+	context.getMethodVisitor().visitInsn(Opcodes.LSHL);
+	context.storeLTmp1();
+	context.getMethodVisitor().visitInsn(Opcodes.LDIV);
+	context.getMethodVisitor().visitLdcInsn(0x00000000FFFFFFFFL);
+	context.getMethodVisitor().visitInsn(Opcodes.LAND);
+	context.loadLTmp1();
+	context.getMethodVisitor().visitInsn(Opcodes.LOR);
+	context.storeHilo();
+	context.getMethodVisitor().visitJumpInsn(Opcodes.GOTO, afterInstruction);
 
-		context.getMethodVisitor().visitLabel(divideByZero);
-	}
+	// Division by zero handled by the interpreted instruction
+	context.getMethodVisitor().visitLabel(divideByZero);
+	context.compileInterpreterInstruction();
+
+	context.getMethodVisitor().visitLabel(afterInstruction);
 }
 @Override
 public String disasm(int address, int insn) {
