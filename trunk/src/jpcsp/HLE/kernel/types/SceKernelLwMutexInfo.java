@@ -60,6 +60,6 @@ public class SceKernelLwMutexInfo extends pspAbstractMemoryMappedStructureVariab
 
     @Override
     public String toString() {
-        return String.format("SceKernelLwMutexInfo(uid=%x, name=%s, mutexUid=%x, lwMutexOpaqueWorkAreaAddr=0x%X, initCount=%d, lockedCount=%d, numWaitThreads=%d, attr=0x%X, threadid=0x%X)", uid, name, lwMutexUid, lwMutexOpaqueWorkAreaAddr, initCount, lockedCount, numWaitThreads, attr, threadid);
+        return String.format("SceKernelLwMutexInfo(uid=0x%X, name=%s, mutexUid=0x%X, lwMutexOpaqueWorkAreaAddr=0x%X, initCount=%d, lockedCount=%d, numWaitThreads=%d, attr=0x%X, threadid=0x%X)", uid, name, lwMutexUid, lwMutexOpaqueWorkAreaAddr, initCount, lockedCount, numWaitThreads, attr, threadid);
     }
 }

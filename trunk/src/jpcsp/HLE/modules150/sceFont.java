@@ -767,9 +767,8 @@ public class sceFont extends HLEModule {
     public int sceFontOpenUserFile(int fontLibHandle, PspString fileName, int mode, @CanBeNull TErrorPointer32 errorCodePtr) {
         FontLib fontLib = getFontLib(fontLibHandle);
         errorCodePtr.setValue(0);
-        if (fontLib.openFuncAddr != 0) {
-        	fontLib.triggerOpenCallback(fileName.getAddress(), errorCodePtr.getAddress());
-        }
+
+        // "open" callback is not called in this case. Tested on PSP.
 
         return fontLib.openFont(openFontFile(fileName.getString())).getHandle();
     }

@@ -2726,8 +2726,6 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-    // According to MIPS spec., result is unpredictable when dividing by zero.
-	// Here, do nothing when dividing by zero.
 	Label divideByZero = new Label();
 	Label afterInstruction = new Label();
 	context.loadRt();

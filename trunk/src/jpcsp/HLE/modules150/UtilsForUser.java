@@ -350,7 +350,8 @@ public class UtilsForUser extends HLEModule {
 
 	@HLELogging(level="trace")
 	@HLEFunction(nid = 0x3EE30821, version = 150)
-	public void sceKernelDcacheWritebackRange(TPointer addr, int size) {
+	public int sceKernelDcacheWritebackRange(TPointer addr, int size) {
+		return 0;
 	}
 
 	@HLELogging(level="trace")

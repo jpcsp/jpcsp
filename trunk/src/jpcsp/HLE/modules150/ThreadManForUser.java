@@ -1736,22 +1736,18 @@ public class ThreadManForUser extends HLEModule {
         }
     }
 
-    public void hleKernelDelayThread(int micros, boolean doCallbacks) {
-        // wait type
-        currentThread.waitType = PSP_WAIT_DELAY;
-
+    public int hleKernelDelayThread(int micros, boolean doCallbacks) {
         if (micros < THREAD_DELAY_MINIMUM_MICROS) {
         	micros = THREAD_DELAY_MINIMUM_MICROS;
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("hleKernelDelayThread micros=" + micros + ", callbacks=" + doCallbacks);
+            log.debug(String.format("hleKernelDelayThread micros=%d, callbacks=%b", micros, doCallbacks));
         }
 
-        // Wait on a timeout only
-        hleKernelThreadWait(currentThread, micros, false);
-        hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
-        hleRescheduleCurrentThread(doCallbacks);
+    	hleKernelThreadEnterWaitState(currentThread, PSP_WAIT_DELAY, 0, null, micros, false, doCallbacks);
+
+        return 0;
     }
 
     public SceKernelCallbackInfo hleKernelCreateCallback(String name, int func_addr, int user_arg_addr) {
@@ -2433,14 +2429,14 @@ public class ThreadManForUser extends HLEModule {
 
     /** wait the current thread for a certain number of microseconds */
     @HLEFunction(nid = 0xCEADEB47, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public void sceKernelDelayThread(int micros) {
-        hleKernelDelayThread(micros, /* doCallbacks = */ false);
+    public int sceKernelDelayThread(int micros) {
+        return hleKernelDelayThread(micros, /* doCallbacks = */ false);
     }
 
     /** wait the current thread for a certain number of microseconds */
     @HLEFunction(nid = 0x68DA9E36, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public void sceKernelDelayThreadCB(int micros) {
-        hleKernelDelayThread(micros, /* doCallbacks = */ true);
+    public int sceKernelDelayThreadCB(int micros) {
+        return hleKernelDelayThread(micros, /* doCallbacks = */ true);
     }
 
     /**
@@ -2452,13 +2448,9 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xBD123D9E, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public int sceKernelDelaySysClockThread(TPointer64 sysclocksPointer) {
-        if (!sysclocksPointer.isAddressGood()) {
-        	return -1;
-        }
         long sysclocks = sysclocksPointer.getValue();
         int micros = SystemTimeManager.hleSysClock2USec32(sysclocks);
-        hleKernelDelayThread(micros, false);
-        return 0; 
+        return hleKernelDelayThread(micros, false);
     }
 
     /**
@@ -2470,19 +2462,10 @@ public class ThreadManForUser extends HLEModule {
      *
      */
     @HLEFunction(nid = 0x1181E963, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public int sceKernelDelaySysClockThreadCB(int sysclocks_addr) {
-        Memory mem = Memory.getInstance();
-
-        if (!Memory.isAddressGood(sysclocks_addr)) {
-            log.warn("sceKernelDelaySysClockThreadCB invalid sysclocks address 0x" + Integer.toHexString(sysclocks_addr));
-            return -1;
-        }
-
-        long sysclocks = mem.read64(sysclocks_addr);
+    public int sceKernelDelaySysClockThreadCB(TPointer64 sysclocksAddr) {
+        long sysclocks = sysclocksAddr.getValue();
         int micros = SystemTimeManager.hleSysClock2USec32(sysclocks);
-        hleKernelDelayThread(micros, true);
-        
-        return 0;
+        return hleKernelDelayThread(micros, true);
     }
 
     @HLEFunction(nid = 0xD6DA4BA1, version = 150, checkInsideInterrupt = true)

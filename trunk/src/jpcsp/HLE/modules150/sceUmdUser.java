@@ -33,6 +33,7 @@ import java.util.ListIterator;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.kernel.types.pspUmdInfo;
@@ -314,6 +315,9 @@ public class sceUmdUser extends HLEModule {
     public int sceUmdGetDiscInfo(TPointer pspUmdInfoAddr) {
         pspUmdInfo umdInfo = new pspUmdInfo();
         umdInfo.read(pspUmdInfoAddr);
+        if (umdInfo.sizeof() != 8) {
+        	return SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
+        }
         umdInfo.type = pspUmdInfo.PSP_UMD_TYPE_GAME;
         umdInfo.write(pspUmdInfoAddr);
 

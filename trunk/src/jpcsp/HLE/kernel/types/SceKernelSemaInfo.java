@@ -49,4 +49,9 @@ public class SceKernelSemaInfo extends pspAbstractMemoryMappedStructureVariableL
 		write32(maxCount);
 		write32(numWaitThreads);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("SceKernelSemaInfo(uid=0x%X, name=%s, attr=0x%X, currentCount=%d)", uid, name, attr, currentCount);
+	}
 }
