@@ -50,6 +50,7 @@ void fontFree(void *data, void *p)
 
 u32 fontOpen(void *data, char* fileName, u32 *pErrorCode)
 {
+	pspDebugScreenPrintf("fontOpen(0x%08X, %s)\n", (uint) data, fileName);
 	return sceIoOpen(fileName, PSP_O_RDONLY, 0);
 }
 
@@ -108,6 +109,14 @@ void sceFontOpenTest()
 	pspDebugScreenPrintf("sceFontFindOptimumFont returns %2d, errorCode=0x%X (language=Chinese)\n", fontIndex, errorCode);
 
 	fontHandle = sceFontOpen(libHandle, fontIndex, 0777, &errorCode);
+	pspDebugScreenPrintf("fontHandle = 0x%08X, errorCode=0x%08X\n", fontHandle, errorCode);
+}
+
+void sceFontOpenUserFileTest()
+{
+	uint errorCode = -1;
+
+	fontHandle = sceFontOpenUserFile(libHandle, "ms0:/test/x.pgf", 1, &errorCode);
 	pspDebugScreenPrintf("fontHandle = 0x%08X, errorCode=0x%08X\n", fontHandle, errorCode);
 }
 
@@ -313,6 +322,7 @@ void printInstructions()
 	pspDebugScreenPrintf("Press Down to test sceFontGetCharGlyphImage_Clip('R')\n");
 	pspDebugScreenPrintf("Press Up to test sceFontFindOptimumFont()\n");
 	pspDebugScreenPrintf("Press RTrigger to test sceFontClose()\n");
+	pspDebugScreenPrintf("Press LTrigger to test sceFontOpenUserFile()\n");
 }
 
 int main_thread(SceSize _argc, ScePVoid _argp)
@@ -430,6 +440,13 @@ int main_thread(SceSize _argc, ScePVoid _argp)
 			pspDebugScreenClear();
 			printInstructions();
 			sceFontCloseTest();
+		}
+
+		if (buttonDown & PSP_CTRL_LTRIGGER)
+		{
+			pspDebugScreenClear();
+			printInstructions();
+			sceFontOpenUserFileTest();
 		}
 
 		if (buttonDown & PSP_CTRL_TRIANGLE)
