@@ -109,10 +109,10 @@ public class MduState extends GprState {
     	int rtValue = getRegister(rt);
         if (rtValue == 0) {
             // According to MIPS spec., result is unpredictable when dividing by zero.
-        	// However on a PSP, hi is set to $rs register value and lo is set to 0x0000FFFF/0xFFFFFFFF.
-        	// This has been tested on a real PSP using vfputest.pbp.
-        	long lo = rsValue > 0xFFFF ? 0xFFFFFFFFL : 0x0000FFFFL;
-        	hilo = (((long) rsValue) << 32) | lo;
+            // However on a PSP, hi is set to $rs register value and lo is set to 0x0000FFFF/0xFFFFFFFF.
+            // This has been tested on a real PSP using vfputest.pbp.
+            long lo = rsValue > 0xFFFF ? 0xFFFFFFFFL : 0x0000FFFFL;
+            hilo = (((long) rsValue) << 32) | lo;
         } else {
             int lo = rsValue / rtValue;
             int hi = rsValue % rtValue;
@@ -125,10 +125,10 @@ public class MduState extends GprState {
     	int rtValue = getRegister(rt);
         if (rtValue == 0) {
             // According to MIPS spec., result is unpredictable when dividing by zero.
-        	// However on a PSP, hi is set to $rs register value and lo is set to 0x0000FFFF/0xFFFFFFFF.
-        	// This has been tested on a real PSP using vfputest.pbp.
-        	long lo = rsValue > 0xFFFF ? 0xFFFFFFFFL : 0x0000FFFFL;
-        	hilo = (((long) rsValue) << 32) | lo;
+            // However on a PSP, hi is set to $rs register value and lo is set to 0x0000FFFF/0xFFFFFFFF.
+            // This has been tested on a real PSP using vfputest.pbp.
+            long lo = rsValue > 0xFFFF ? 0xFFFFFFFFL : 0x0000FFFFL;
+            hilo = (((long) rsValue) << 32) | lo;
         } else {
             long x = rsValue & 0xFFFFFFFFL;
             long y = rtValue & 0xFFFFFFFFL;
