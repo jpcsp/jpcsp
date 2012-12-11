@@ -606,7 +606,6 @@ public class sceMpeg extends HLEModule {
 
     	// Read Au of next Avc frame
         if (checkMediaEngineState()) {
-        	Emulator.getClock().pause();
         	me.setFirstTimestamp(firstTimestamp);
             if (me.getContainer() == null) {
                 me.init(meChannel, true, true, getRegisteredVideoChannel(), getRegisteredAudioChannel());
@@ -625,7 +624,6 @@ public class sceMpeg extends HLEModule {
         	} else {
         		endOfVideoReached = false;
         	}
-        	Emulator.getClock().resume();
         } else if (isEnableConnector()) {
         	if (!mpegCodec.readVideoAu(mpegAvcAu, videoFrameCount)) {
         		// Avc Au was not updated by the MpegCodec
@@ -651,7 +649,6 @@ public class sceMpeg extends HLEModule {
 
     	// Read Au of next Atrac frame
         if (checkMediaEngineState()) {
-        	Emulator.getClock().pause();
         	me.setFirstTimestamp(firstTimestamp);
         	if (me.getContainer() == null) {
         		me.init(meChannel, true, true, getRegisteredVideoChannel(), getRegisteredAudioChannel());
@@ -664,7 +661,6 @@ public class sceMpeg extends HLEModule {
         	} else {
         		endOfAudioReached = false;
         	}
-        	Emulator.getClock().resume();
         } else if (isEnableConnector() && mpegCodec.readAudioAu(mpegAtracAu, audioFrameCount)) {
     		// Atrac Au updated by the MpegCodec
     	}
@@ -685,7 +681,6 @@ public class sceMpeg extends HLEModule {
     	long startTime = Emulator.getClock().microTime();
 
     	if (checkMediaEngineState()) {
-        	Emulator.getClock().pause();
         	int bytes = 0;
         	if (me.stepAudio(bufferSize, mpegAudioChannels)) {
                 bytes = me.getCurrentAudioSamples(audioDecodeBuffer);
@@ -693,7 +688,6 @@ public class sceMpeg extends HLEModule {
         	}
         	// Fill the rest of the buffer with 0's
         	bufferAddr.clear(bytes, bufferSize - bytes);
-        	Emulator.getClock().resume();
         } else if (isEnableConnector() && mpegCodec.readAudioFrame(bufferAddr.getAddress(), audioFrameCount)) {
             mpegAtracAu.pts = mpegCodec.getMpegAtracCurrentTimestamp();
         } else {
@@ -1781,7 +1775,6 @@ public class sceMpeg extends HLEModule {
         if (!ignorePcm) {
         	// Read Au of next Atrac frame
             if (checkMediaEngineState()) {
-            	Emulator.getClock().pause();
             	me.setFirstTimestamp(audioFirstTimestamp);
             	if (me.getContainer() == null) {
             		me.init(meChannel, true, true, getRegisteredVideoChannel(), getRegisteredAudioChannel());
@@ -1789,7 +1782,6 @@ public class sceMpeg extends HLEModule {
             	if (!me.readAudioAu(mpegAtracAu, mpegAudioChannels)) {
             		result = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
             	}
-            	Emulator.getClock().resume();
             } else if (isEnableConnector() && mpegCodec.readAudioAu(mpegAtracAu, audioFrameCount)) {
         		// Atrac Au updated by the MpegCodec
         	}
@@ -1984,7 +1976,6 @@ public class sceMpeg extends HLEModule {
         if (checkMediaEngineState()) {
         	// Suspend the emulator clock to perform time consuming HLE operation,
         	// in order to improve the timing compatibility with the PSP.
-        	Emulator.getClock().pause();
             if (me.stepVideo(mpegAudioChannels)) {
             	me.writeVideoImage(buffer, frameWidth, videoPixelMode);
             	packetsConsumed = meChannel.getReadLength() / mpegRingbuffer.getPacketSize();
@@ -2007,7 +1998,6 @@ public class sceMpeg extends HLEModule {
             	// Consume all the remaining packets
             	packetsConsumed = mpegRingbuffer.getTotalPackets() - mpegRingbuffer.getFreePackets();
             }
-        	Emulator.getClock().resume();
             avcFrameStatus = 1;
         } else if (isEnableConnector() && mpegCodec.readVideoFrame(buffer, frameWidth, width, height, videoPixelMode, videoFrameCount)) {
             packetsConsumed = mpegCodec.getPacketsConsumed();
