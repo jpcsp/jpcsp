@@ -622,7 +622,19 @@ public class CodeInstruction {
 	public String toString() {
     	StringBuilder result = new StringBuilder();
 
-    	result.append(isBranching()    ? "<" : " ");
+    	String branchingFlag;
+    	if (isBranching()) {
+    		if (hasFlags(Instruction.FLAG_STARTS_NEW_BLOCK)) {
+    			branchingFlag = "<"; // branching "out" of current block
+    		} else if (getBranchingTo() <= getAddress()) {
+    			branchingFlag = "^"; // branching "up"
+    		} else {
+    			branchingFlag = "v"; // branching "down"
+    		}
+    	} else {
+    		branchingFlag = " "; // no branching
+    	}
+    	result.append(branchingFlag);
     	result.append(isBranchTarget() ? ">" : " ");
     	result.append(" 0x");
     	result.append(Integer.toHexString(getAddress()).toUpperCase());
