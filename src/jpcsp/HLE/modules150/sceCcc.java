@@ -124,20 +124,25 @@ public class sceCcc extends HLEModule {
 		return new String(getBytesUTF8(addr), charsetSJIS);
 	}
 
-	protected void writeStringBytes(byte[] bytes, int addr, int maxSize, int trailingNulls) {
+	protected int writeStringBytes(byte[] bytes, int addr, int maxSize, int trailingNulls) {
+		int bytesWritten = 0;
 		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, 1);
 		if (bytes != null) {
 			int length = Math.min(bytes.length, maxSize - 1);
 			for (int i = 0; i < length; i++) {
 				memoryWriter.writeNext(bytes[i] & 0xFF);
 			}
+			bytesWritten += length;
 		}
 
 		// write trailing '\0'
 		for (int i = 0; i < trailingNulls; i++) {
 			memoryWriter.writeNext(0);
 		}
+
 		memoryWriter.flush();
+
+		return bytesWritten;
 	}
 
     @HLEUnimplemented
@@ -146,10 +151,24 @@ public class sceCcc extends HLEModule {
 		return 0;
 	}
 
-    @HLEUnimplemented
 	@HLEFunction(nid = 0x068C4320, version = 150)
-	public int sceCccEncodeSJIS() {
-		return 0;
+	public int sceCccEncodeSJIS(TPointer32 dstAddr, int ucs4char) {
+    	char[] chars = Character.toChars(ucs4char);
+    	if (chars == null) {
+    		return 0;
+    	}
+
+    	String s = new String(chars);
+    	byte[] bytes = s.getBytes(charsetSJIS);
+    	int addr = dstAddr.getValue();
+    	int length = writeStringBytes(bytes, addr, 100, 0);
+    	dstAddr.setValue(addr + length);
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceCccEncodeSJIS encoding '%s' into %d bytes", s, length));
+    	}
+
+    	return 0;
 	}
 
     @HLEUnimplemented
@@ -179,9 +198,7 @@ public class sceCcc extends HLEModule {
 			log.debug(String.format("sceCccUTF16toUTF8 string='%s'", dstString));
 		}
 		byte[] dstBytes = dstString.getBytes(charsetUTF8);
-		writeStringBytes(dstBytes, dstAddr.getAddress(), dstSize, 1);
-
-		return dstBytes.length;
+		return writeStringBytes(dstBytes, dstAddr.getAddress(), dstSize, 1);
 	}
 
 	@HLEFunction(nid = 0x4BDEB2A8, version = 150)
@@ -213,9 +230,7 @@ public class sceCcc extends HLEModule {
 			log.debug(String.format("sceCccUTF8toSJIS string='%s'", dstString));
 		}
 		byte[] dstBytes = dstString.getBytes(charsetSJIS);
-		writeStringBytes(dstBytes, dstAddr.getAddress(), dstSize, 1);
-
-		return dstBytes.length;
+		return writeStringBytes(dstBytes, dstAddr.getAddress(), dstSize, 1);
 	}
 
     @HLEUnimplemented
@@ -230,10 +245,24 @@ public class sceCcc extends HLEModule {
 		return 0;
 	}
 
-    @HLEUnimplemented
 	@HLEFunction(nid = 0x8406F469, version = 150)
-	public int sceCccEncodeUTF16() {
-		return 0;
+	public int sceCccEncodeUTF16(TPointer32 dstAddr, int ucs4char) {
+    	char[] chars = Character.toChars(ucs4char);
+    	if (chars == null) {
+    		return 0;
+    	}
+
+    	String s = new String(chars);
+    	byte[] bytes = s.getBytes(charsetUTF16);
+    	int addr = dstAddr.getValue();
+    	int length = writeStringBytes(bytes, addr, 100, 0);
+    	dstAddr.setValue(addr + length);
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceCccEncodeUTF16 encoding '%s' into %d bytes", s, length));
+    	}
+
+    	return 0;
 	}
 
     @HLEUnimplemented
@@ -242,10 +271,24 @@ public class sceCcc extends HLEModule {
 		return 0;
 	}
 
-    @HLEUnimplemented
 	@HLEFunction(nid = 0x92C05851, version = 150)
-	public int sceCccEncodeUTF8() {
-		return 0;
+	public int sceCccEncodeUTF8(TPointer32 dstAddr, int ucs4char) {
+    	char[] chars = Character.toChars(ucs4char);
+    	if (chars == null) {
+    		return 0;
+    	}
+
+    	String s = new String(chars);
+    	byte[] bytes = s.getBytes(charsetUTF8);
+    	int addr = dstAddr.getValue();
+    	int length = writeStringBytes(bytes, addr, 100, 0);
+    	dstAddr.setValue(addr + length);
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceCccEncodeUTF8 encoding '%s' into %d bytes", s, length));
+    	}
+
+    	return 0;
 	}
 
     @HLEUnimplemented
@@ -267,9 +310,7 @@ public class sceCcc extends HLEModule {
     		log.debug(String.format("sceCccSJIStoUTF8 str='%s'", str));
     	}
     	byte[] bytesUTF8 = str.getBytes(charsetUTF8);
-    	writeStringBytes(bytesUTF8, dstUTF8.getAddress(), dstSize, 1);
-
-    	return bytesUTF8.length;
+    	return writeStringBytes(bytesUTF8, dstUTF8.getAddress(), dstSize, 1);
 	}
 
     @HLEUnimplemented
@@ -317,9 +358,7 @@ public class sceCcc extends HLEModule {
     		log.debug(String.format("sceCccSJIStoUTF16 str='%s'", str));
     	}
     	byte[] bytesUTF16 = str.getBytes(charsetUTF16);
-    	writeStringBytes(bytesUTF16, dstUTF16.getAddress(), dstSize, 2);
-
-    	return bytesUTF16.length;
+    	return writeStringBytes(bytesUTF16, dstUTF16.getAddress(), dstSize, 2);
 	}
 
     @HLEUnimplemented
