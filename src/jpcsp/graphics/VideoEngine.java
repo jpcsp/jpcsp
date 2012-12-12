@@ -4985,7 +4985,15 @@ public class VideoEngine {
     	if (alignment <= 0) {
     		return bufferWidth;
     	}
-    	return (bufferWidth + alignment) & ~alignment;
+    	bufferWidth &= ~alignment;
+
+    	if (bufferWidth == 0) {
+    		// bufferWidth of 0 is the same as the smallest valid bufferWidth
+    		// (tested on PSP)
+    		bufferWidth = alignment + 1;
+    	}
+
+    	return bufferWidth;
     }
 
     private static int readLittleEndianShort(InputStream is) throws IOException {
