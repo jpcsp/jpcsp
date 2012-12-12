@@ -632,7 +632,9 @@ public class sceMpeg extends HLEModule {
     		updateAvcDts();
         }
 
-        mpegAvcAu.write(auAddr);
+        if (auAddr != null) {
+        	mpegAvcAu.write(auAddr);
+        }
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("hleMpegGetAvcAu returning 0x%08X, AvcAu=%s", result, mpegAvcAu.toString()));
     	}
@@ -2580,19 +2582,36 @@ public class sceMpeg extends HLEModule {
     }
 
     /**
-     * sceMpegNextAvcRpAu
+     * sceMpegNextAvcRpAu - skip one video frame
      * 
-     * @param p1
-     * @param p2
-     * @param p3
-     * @param p4
+     * @param mpeg
+     * @param unknown
      * 
      * @return
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x3C37A7A6, version = 150, checkInsideInterrupt = true)
-    public int sceMpegNextAvcRpAu(int p1, int p2, int p3, int p4) {
-        return 0;
+    public int sceMpegNextAvcRpAu(@CheckArgument("checkMpegHandle") int mpeg, int streamUid) {
+        if (!streamMap.containsKey(streamUid)) {
+            log.warn(String.format("sceMpegNextAvcRpAu bad stream 0x%X", streamUid));
+            return -1;
+        }
+
+        int result = hleMpegGetAvcAu(null, videoFirstTimestamp, SceKernelErrors.ERROR_MPEG_NO_DATA);
+        if (result != 0) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceMpegNextAvcRpAu returning 0x%08X", result));
+        	}
+        	return result;
+        }
+
+        if (checkMediaEngineState()) {
+    		me.stepVideo(mpegAudioChannels);
+    	}
+
+    	videoFrameCount++;
+
+    	return 0;
     }
 
     @HLEUnimplemented
