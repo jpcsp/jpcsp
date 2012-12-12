@@ -538,7 +538,6 @@ public class scePsmfPlayer extends HLEModule {
 
     	// Write video data.
         if (checkMediaEngineState() && pmfFileChannel != null) {
-        	Emulator.getClock().pause();
         	startMediaEngine();
             if (me.stepVideo(mpegAudioChannels)) {
             	me.writeVideoImage(displayBuffer, videoDataFrameWidth, videoPixelMode);
@@ -547,7 +546,6 @@ public class scePsmfPlayer extends HLEModule {
 	        	psmfPlayerAvcAu.pts += psmfPlayerVideoTimestampStep;
 	        	psmfPlayerAvcAu.dts = psmfPlayerAvcAu.pts - psmfPlayerVideoTimestampStep;
             }
-        	Emulator.getClock().resume();
         } else {
         	psmfPlayerAvcAu.pts += psmfPlayerVideoTimestampStep;
         	psmfPlayerAvcAu.dts = psmfPlayerAvcAu.pts - psmfPlayerVideoTimestampStep;
@@ -599,7 +597,6 @@ public class scePsmfPlayer extends HLEModule {
         Memory mem = Memory.getInstance();
     	int bytes = 0;
         if (checkMediaEngineState() && pmfFileChannel != null) {
-        	Emulator.getClock().pause();
         	startMediaEngine();
         	if (me.stepAudio(audioSamplesBytes, mpegAudioChannels)) {
                 bytes = me.getCurrentAudioSamples(audioDecodeBuffer);
@@ -611,7 +608,6 @@ public class scePsmfPlayer extends HLEModule {
         	} else {
         		psmfPlayerAtracAu.pts += psmfPlayerAudioTimestampStep;
         	}
-        	Emulator.getClock().resume();
     	} else {
     		psmfPlayerAtracAu.pts += psmfPlayerAudioTimestampStep;
     		psmfPlayerAtracAu.dts = -1;
