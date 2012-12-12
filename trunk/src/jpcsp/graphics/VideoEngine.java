@@ -6170,7 +6170,7 @@ public class VideoEngine {
         if (useVertexCache) {
         	int numberOfVertex = context.patch_div_t * (context.patch_div_s + 1) * 2;
         	vertexCacheLookupStatistics.start();
-        	cachedVertexInfo = VertexCache.getInstance().getVertex(context.vinfo, numberOfVertex, null, 0);
+        	cachedVertexInfo = VertexCache.getInstance().getVertex(context.vinfo, numberOfVertex, context.bone_uploaded_matrix, 0);
         	vertexCacheLookupStatistics.end();
         }
 
@@ -6266,7 +6266,7 @@ public class VideoEngine {
         if (useVertexCache) {
         	int numberOfVertex = context.patch_div_t * (context.patch_div_s + 1) * 2;
         	vertexCacheLookupStatistics.start();
-        	cachedVertexInfo = VertexCache.getInstance().getVertex(context.vinfo, numberOfVertex, null, 0);
+        	cachedVertexInfo = VertexCache.getInstance().getVertex(context.vinfo, numberOfVertex, context.bone_uploaded_matrix, 0);
         	vertexCacheLookupStatistics.end();
         }
 
@@ -6394,7 +6394,7 @@ public class VideoEngine {
 	        if (useVertexCache) {
 	        	cachedVertexInfo = new VertexInfo(context.vinfo);
 	        	int numberOfVertex = numberOfVertexPerRow * context.patch_div_t;
-	        	VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, null, 0);
+	        	VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, 0);
 	        	int size = drawFloatBuffer.position();
 	        	drawFloatBuffer.rewind();
 	        	needSetDataPointers = cachedVertexInfo.loadVertex(re, drawFloatBuffer, size);
@@ -6443,6 +6443,9 @@ public class VideoEngine {
             for (int v = 0; v < vcount; v++) {
                 int addr = context.vinfo.getAddress(mem, v * ucount + u);
                 VertexState vs = context.vinfo.readVertex(mem, addr, readTexture);
+    			if (context.vinfo.weight != 0 && context.vinfo.position != 0) {
+    			    doSkinning(context.bone_uploaded_matrix, context.vinfo, vs);
+    			}
                 if (isLogDebugEnabled) {
                 	log(String.format("control point #%d,%d p(%f,%f,%f) t(%f,%f), c(0x%08X)",
                 			u, v,
