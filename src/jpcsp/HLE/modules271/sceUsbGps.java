@@ -16,8 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules271;
 
+import java.util.Calendar;
+import java.util.TimeZone;
+
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
@@ -25,7 +29,10 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.TPointer64;
+import jpcsp.HLE.kernel.types.pspUsbGpsData;
+import jpcsp.HLE.kernel.types.pspUsbGpsSatData;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.hardware.GPS;
 
 @HLELogging
 public class sceUsbGps extends HLEModule {
@@ -44,7 +51,7 @@ public class sceUsbGps extends HLEModule {
 
 	@Override
 	public void start() {
-		gpsState = GPS_STATE_OFF;
+		gpsState = GPS_STATE_ON;
 		super.start();
 	}
 
@@ -63,6 +70,7 @@ public class sceUsbGps extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x54D26AA4, version = 271)
 	public int sceUsbGpsGetInitDataLocation(TPointer64 unknown) {
+		unknown.setValue(0);
 		return 0;
 	}
 
@@ -94,7 +102,38 @@ public class sceUsbGps extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x934EC2B2, version = 271)
-	public int sceUsbGpsGetData(TPointer gpsDataAddr, TPointer satDataAddr) {
+	public int sceUsbGpsGetData(@CanBeNull TPointer gpsDataAddr, @CanBeNull TPointer satDataAddr) {
+		if (gpsDataAddr.isNotNull()) {
+			pspUsbGpsData gpsData = new pspUsbGpsData();
+			gpsData.setCalendar(Calendar.getInstance(TimeZone.getTimeZone("GMT")));
+			gpsData.hdop = 1f;
+
+			// Return location of New-York City
+			gpsData.latitude = GPS.getPositionLatitude();
+			gpsData.longitude = GPS.getPositionLongitude();
+			gpsData.altitude = GPS.getPositionAltitude();
+
+			gpsData.speed = 0f;
+			gpsData.bearing = 180f;
+			gpsData.write(gpsDataAddr);
+		}
+
+		if (satDataAddr.isNotNull()) {
+			pspUsbGpsSatData satData = new pspUsbGpsSatData();
+
+			// Simulate 6 satellites in view
+			final int satellitesInView = 6;
+			satData.setSatellitesInView(satellitesInView);
+			for (int i = 0; i < satellitesInView; i++) {
+				satData.satInfo[i].id = i;
+				satData.satInfo[i].elevation = 0;
+				satData.satInfo[i].azimuth = (short) (i * (360 / satellitesInView)); // Assume azimuth is in range 0..360
+				satData.satInfo[i].snr = 0;
+				satData.satInfo[i].good = 1;
+			}
+			satData.write(satDataAddr);
+		}
+
 		return 0;
 	}
 
@@ -107,6 +146,8 @@ public class sceUsbGps extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x9F267D34, version = 271)
 	public int sceUsbGpsOpen() {
+		GPS.initialize();
+
 		return 0;
 	}
 

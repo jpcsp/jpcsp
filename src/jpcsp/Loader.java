@@ -1183,8 +1183,9 @@ public class Loader {
 	                for (int j = 0; j < functionCount; j++) {
 	                    int nid = nidReader.readNext();
 	                    int exportAddress = exportReader.readNext();
-                        // Only accept exports from custom modules (attr != 0x4000) and with valid export addresses.
-                        if (Memory.isAddressGood(exportAddress) && ((entHeader.getAttr() & 0x4000) != 0x4000)) {
+                        // Only accept exports with valid export addresses and
+	                    // from custom modules (attr != 0x4000) unless the module is a homebrew (loaded from MemoryStick).
+                        if (Memory.isAddressGood(exportAddress) && ((entHeader.getAttr() & 0x4000) != 0x4000) || module.pspfilename.startsWith("ms0:")) {
                             nidMapper.addModuleNid(moduleName, nid, exportAddress);
                             entCount++;
                             if (log.isDebugEnabled()) {
