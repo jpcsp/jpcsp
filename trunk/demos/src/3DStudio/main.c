@@ -433,6 +433,8 @@ int texBias1 = 0;
 int texBias2 = 0;
 float texSlope1 = 0;
 float texSlope2 = 0;
+int textureBufferWidth1 = TEXTURE_WIDTH;
+int textureBufferWidth2 = TEXTURE_WIDTH;
 
 int texFunc1 = 0;
 int texFunc2 = 0;
@@ -1009,6 +1011,7 @@ void drawRectangles()
 	int level;
 	int width;
 	int height;
+	int bufferWidth;
 	int numberMipmaps = 0;
 	int i;
 
@@ -1204,9 +1207,9 @@ void drawRectangles()
 	sceGuTexMode(tpsm1, numberMipmaps, texture1_a2, 0);
 	sceGuTexLevelMode(texLevelMode1, texBias1 / 16.0);
 	sceGuTexSlope(texSlope1);
-	for (level = 0, width = TEXTURE_WIDTH, height = TEXTURE_HEIGHT; level <= numberMipmaps; level++, width /= 2, height /= 2)
+	for (level = 0, width = TEXTURE_WIDTH, height = TEXTURE_HEIGHT, bufferWidth = textureBufferWidth1; level <= numberMipmaps; level++, width /= 2, height /= 2, bufferWidth /= 2)
 	{
-		sceGuTexImage(level, width, height, width, texture1[level]); 
+		sceGuTexImage(level, width, height, bufferWidth, texture1[level]); 
 	}
 	if (texFuncDouble1)
 	{
@@ -1334,9 +1337,9 @@ void drawRectangles()
 	sceGuTexMode(tpsm2, numberMipmaps, texture2_a2, 0);
 	sceGuTexLevelMode(texLevelMode2, texBias2 / 16.0);
 	sceGuTexSlope(texSlope2);
-	for (level = 0, width = TEXTURE_WIDTH, height = TEXTURE_HEIGHT; level <= numberMipmaps; level++, width /= 2, height /= 2)
+	for (level = 0, width = TEXTURE_WIDTH, height = TEXTURE_HEIGHT, bufferWidth = textureBufferWidth2; level <= numberMipmaps; level++, width /= 2, height /= 2, bufferWidth /= 2)
 	{
-		sceGuTexImage(level, width, height, width, texture2[level]); 
+		sceGuTexImage(level, width, height, bufferWidth, texture2[level]); 
 	}
 	if (texFuncDouble2)
 	{
@@ -1786,6 +1789,9 @@ void init()
 	addAttribute(", V", NULL, &texOffsetV1, x + 31, y, -10, 10, 0.1, NULL);
 	y++;
 
+	addAttribute("Texture Buffer Width", &textureBufferWidth1, NULL, x + 6, y, 0, TEXTURE_WIDTH, 1, NULL);
+	y++;
+
 	rectangle2VertexColor.r = 0xFF;
 	rectangle2VertexColor.g = 0x00;
 	rectangle2VertexColor.b = 0x00;
@@ -1872,6 +1878,9 @@ void init()
 	y++;
 	addAttribute("Offset U", NULL, &texOffsetU2, x + 14, y, -10, 10, 0.1, NULL);
 	addAttribute(", V", NULL, &texOffsetV2, x + 31, y, -10, 10, 0.1, NULL);
+	y++;
+
+	addAttribute("Texture Buffer Width", &textureBufferWidth2, NULL, x + 6, y, 0, TEXTURE_WIDTH, 1, NULL);
 	y++;
 
 	addAttribute("Use Vertex Color", &vertexColorFlag, NULL, x, y, 0, 1, 1, NULL);
