@@ -1773,28 +1773,25 @@ public class VideoEngine {
         if (isLogDebugEnabled) {
             switch (type) {
                 case PRIM_POINT:
-                    log("prim point " + numberOfVertex + "x");
+                    log(String.format("prim %d point (%d vertices)", numberOfVertex, numberOfVertex));
                     break;
                 case PRIM_LINE:
-                    log("prim line " + (numberOfVertex / 2) + "x");
+                    log(String.format("prim %d line (%d vertices)", numberOfVertex / 2, numberOfVertex));
                     break;
                 case PRIM_LINES_STRIPS:
-                    log("prim lines_strips " + (numberOfVertex - 1) + "x");
+                    log(String.format("prim %d line strips (%d vertices)", numberOfVertex - 1, numberOfVertex));
                     break;
                 case PRIM_TRIANGLE:
-                    log("prim triangle " + (numberOfVertex / 3) + "x");
+                    log(String.format("prim %d triangle (%d vertices)", numberOfVertex / 3, numberOfVertex));
                     break;
                 case PRIM_TRIANGLE_STRIPS:
-                    log("prim triangle_strips " + (numberOfVertex - 2) + "x");
+                    log(String.format("prim %d triangle strips (%d vertices)", numberOfVertex - 2, numberOfVertex));
                     break;
                 case PRIM_TRIANGLE_FANS:
-                    log("prim triangle_fans " + (numberOfVertex - 2) + "x");
+                    log(String.format("prim %d triangle fans (%d vertices)", numberOfVertex - 2, numberOfVertex));
                     break;
                 case PRIM_SPRITES:
-                    log("prim sprites " + (numberOfVertex / 2) + "x");
-                    break;
-                default:
-                    VideoEngine.log.warn("prim unhandled " + type);
+                    log(String.format("prim %d sprites (%d vertices)", numberOfVertex / 2, numberOfVertex));
                     break;
             }
         }
@@ -1942,8 +1939,8 @@ public class VideoEngine {
 	        		numberOfVertexInfo = getIndexedNumberOfVertexInfo(bytesPerIndex, numberOfVertex);
 
 	        		Buffer indicesBuffer = mem.getBuffer(context.vinfo.ptr_index, indexBufferSize);
-	        		bufferManager.setBufferData(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId, indexBufferSize, indicesBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
 	        		indicesBufferOffset = getBufferOffset(indicesBuffer, context.vinfo.ptr_index);
+	        		bufferManager.setBufferData(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId, indexBufferSize + (int) indicesBufferOffset, indicesBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
 	        	}
 
 	        	vertexReadingStatistics.start();
@@ -1981,8 +1978,8 @@ public class VideoEngine {
 
 				        	int indexBufferSize = multiDrawNumberOfVertex * bytesPerIndex;
 			        		Buffer indicesBuffer = mem.getBuffer(context.vinfo.ptr_index, indexBufferSize);
-			        		bufferManager.setBufferData(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId, indexBufferSize, indicesBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
 			        		indicesBufferOffset = getBufferOffset(indicesBuffer, context.vinfo.ptr_index);
+			        		bufferManager.setBufferData(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId, indexBufferSize + (int) indicesBufferOffset, indicesBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
 			        	} else {
 							numberOfVertex = multiDrawNumberOfVertex;
 							size = context.vinfo.vertexSize * multiDrawNumberOfVertex;
@@ -3762,7 +3759,9 @@ public class VideoEngine {
     }
 
     private void executeCommandFBW() {
-    	context.fbp = (context.fbp & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
+    	// Clear upper 4 bits of fbp, they are unused
+    	// (and some applications set them, e.g.: fbp=0x10198010 has to be interpreted as fbp=0x00198010).
+    	context.fbp = (context.fbp & 0x00ffffff) | ((normalArgument << 8) & 0x0f000000);
     	context.fbw = normalArgument & 0xffff;
         if (isLogDebugEnabled) {
             log(String.format("%s fbp=0x%08X, fbw=%d", helper.getCommandString(FBW), context.fbp, context.fbw));
