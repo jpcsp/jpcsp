@@ -103,7 +103,9 @@ public class sceDisplay extends HLEModule {
 
 		@Override
 		protected void paintGL() {
-	    	if (log.isTraceEnabled()) {
+			VideoEngine videoEngine = VideoEngine.getInstance();
+
+			if (log.isTraceEnabled()) {
 	    		log.trace(String.format("paintGL resize=%f, size(%dx%d), canvas(%dx%d), location(%d,%d)", viewportResizeFilterScaleFactor, canvas.getSize().width, canvas.getSize().height, canvasWidth, canvasHeight, canvas.getLocation().x, canvas.getLocation().y));
 	    	}
 
@@ -137,7 +139,7 @@ public class sceDisplay extends HLEModule {
 	    			re = RenderingEngineFactory.createRenderingEngine();
 	    			if (isUsingSoftwareRenderer()) {
 	    				reDisplay = RenderingEngineFactory.createRenderingEngineForDisplay();
-	    				reDisplay.setGeContext(VideoEngine.getInstance().getContext());
+	    				reDisplay.setGeContext(videoEngine.getContext());
 	    			} else {
 	    				reDisplay = re;
 	    			}
@@ -152,7 +154,7 @@ public class sceDisplay extends HLEModule {
 	    		if (saveGEToTexture) {
 	    			GETextureManager.getInstance().reset(reDisplay);
 	    		}
-	    		VideoEngine.getInstance().start();
+	    		videoEngine.start();
 	        	drawBuffer = reDisplay.getBufferManager().genBuffer(IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_FLOAT, 16, IRenderingEngine.RE_DYNAMIC_DRAW);
 		    	startModules = false;
 		    	if (saveGEToTexture && !re.isFramebufferObjectAvailable()) {
@@ -179,7 +181,7 @@ public class sceDisplay extends HLEModule {
 
 	    	// If we are not rendering this frame, skip the next sceDisplaySetFrameBuf call,
 	    	// assuming the application is doing double buffering.
-			skipNextFrameBufferSwitch = VideoEngine.getInstance().isSkipThisFrame();
+			skipNextFrameBufferSwitch = videoEngine.isSkipThisFrame();
 
 			boolean doSwapBuffers = true;
 
@@ -189,7 +191,7 @@ public class sceDisplay extends HLEModule {
 	        	// We just need to display the frame buffer.
 	        	if (softwareRenderingDisplayThread == null) {
 	        		re.startDisplay();
-	        		VideoEngine.getInstance().update();
+	        		videoEngine.update();
 	        		re.endDisplay();
 	        	}
 	        	reDisplay.startDisplay();
@@ -204,7 +206,7 @@ public class sceDisplay extends HLEModule {
 	        	re.startDisplay();
 
 	        	// Display this screen (i.e. swap buffers) only if something has been rendered
-	            doSwapBuffers = VideoEngine.getInstance().update();
+	            doSwapBuffers = videoEngine.update();
 
 	            re.endDisplay();
 	            if (log.isDebugEnabled()) {
@@ -221,13 +223,13 @@ public class sceDisplay extends HLEModule {
 	        	re.startDisplay();
 
 	        	// The GE will be reloaded to the screen by the VideoEngine
-	            if (VideoEngine.getInstance().update()) {
+	            if (videoEngine.update()) {
 	                // Save the GE only if it actually drew something
 	            	if (log.isDebugEnabled()) {
 	            		log.debug(String.format("sceDisplay.paintGL - saving the GE to memory 0x%08X", topaddrGe));
 	            	}
 
-	            	if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(topaddrGe)) {
+	            	if (saveGEToTexture && !videoEngine.isVideoTexture(topaddrGe)) {
 	            		GETexture geTexture = GETextureManager.getInstance().getGETexture(reDisplay, topaddrGe, bufferwidthGe, widthGe, heightGe, pixelformatGe, true);
 	            		geTexture.copyScreenToTexture(re);
 	            	} else {
@@ -250,7 +252,7 @@ public class sceDisplay extends HLEModule {
 	        	if (log.isDebugEnabled()) {
 	        		log.debug(String.format("sceDisplay.paintGL - rendering the FB 0x%08X", topaddrFb));
 	        	}
-	        	if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(topaddrFb)) {
+	        	if (saveGEToTexture && !videoEngine.isVideoTexture(topaddrFb)) {
 	        		GETexture geTexture = GETextureManager.getInstance().getGETexture(reDisplay, topaddrFb, bufferwidthFb, width, height, pixelformatFb, true);
 	        		geTexture.copyTextureToScreen(reDisplay);
 	        	} else {
@@ -266,6 +268,7 @@ public class sceDisplay extends HLEModule {
 
 	        // Perform OpenGL double buffering
 			if (doSwapBuffers) {
+				paintFrameCount++;
 		        try {
 		        	canvas.swapBuffers();
 				} catch (LWJGLException e) {
@@ -428,9 +431,10 @@ public class sceDisplay extends HLEModule {
     // fps counter variables
     private long prevStatsTime;
     private long frameCount;
+    private long paintFrameCount;
     private long prevFrameCount;
+    private long prevPaintFrameCount;
     private long reportCount;
-    private double averageFPS = 0.0;
 
     private int vcount;
     private long lastVblankMicroTime;
@@ -844,9 +848,10 @@ public class sceDisplay extends HLEModule {
 
         prevStatsTime = 0;
         frameCount = 0;
+        paintFrameCount = 0;
+        prevFrameCount = 0;
         prevFrameCount = 0;
         reportCount = 0;
-        averageFPS = 0.0;
 
         vcount = 0;
 
@@ -1350,9 +1355,20 @@ public class sceDisplay extends HLEModule {
 
         if (realElapsedTime > 1000L) {
             reportCount++;
-            int lastFPS = (int)(frameCount - prevFrameCount);
-            averageFPS = (double)frameCount / reportCount;
+
+            if (frameCount == prevFrameCount) {
+            	// If the application is not using a double-buffering technique
+            	// for the framebuffer display (i.e. if the application is not changing
+            	// the value of the framebuffer address), then use the number
+            	// of GE list executed to compute the FPS value.
+        		frameCount = paintFrameCount;
+        		prevFrameCount = prevPaintFrameCount;
+            }
+
+            int lastFPS = (int) (frameCount - prevFrameCount);
+            double averageFPS = frameCount / (double) reportCount;
             prevFrameCount = frameCount;
+            prevPaintFrameCount = paintFrameCount;
             prevStatsTime = timeNow;
 
             Emulator.setFpsTitle(String.format("FPS: %d, averageFPS: %.1f", lastFPS, averageFPS));
