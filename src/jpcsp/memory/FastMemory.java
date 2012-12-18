@@ -271,7 +271,9 @@ public class FastMemory extends Memory {
 	public void memset(int address, byte data, int length) {
 		address = normalizeAddress(address);
 
-		for (; !isIntAligned(address) && length > 0; address++, length--) {
+        Modules.sceDisplayModule.write8(address);
+
+        for (; !isIntAligned(address) && length > 0; address++, length--) {
 			write8(address, data);
 		}
 
@@ -355,7 +357,9 @@ public class FastMemory extends Memory {
     	destination = normalizeAddress(destination);
 		source = normalizeAddress(source);
 
-		if (isIntAligned(source) && isIntAligned(destination) && isIntAligned(length)) {
+        Modules.sceDisplayModule.write8(destination);
+
+        if (isIntAligned(source) && isIntAligned(destination) && isIntAligned(length)) {
 			// Source, destination and length are "int"-aligned
 			memcpyAligned4(destination, source, length, checkOverlap);
 		} else if ((source & 0x03) == (destination & 0x03) && (!checkOverlap || !areOverlapping(destination, source, length))) {
