@@ -142,7 +142,8 @@ public class HLEModuleManager {
         sceFpu(Modules.sceFpuModule, new String[] { "libfpu" }),
         sceUsbMic(Modules.sceUsbMicModule, new String[] { "usbmic", "PSP_USB_MODULE_MIC", "PSP_MODULE_USB_MIC" }),
         sceAudioRouting(Modules.sceAudioRoutingModule),
-        sceUsbGps(Modules.sceUsbGpsModule, new String[] { "PSP_USB_MODULE_GPS", "PSP_MODULE_USB_GPS" });
+        sceUsbGps(Modules.sceUsbGpsModule, new String[] { "PSP_USB_MODULE_GPS", "PSP_MODULE_USB_GPS" }),
+        sceAudiocodec(Modules.sceAudiocodecModule, new String[] { "PSP_AV_MODULE_AVCODEC", "PSP_MODULE_AV_AVCODEC" });
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
