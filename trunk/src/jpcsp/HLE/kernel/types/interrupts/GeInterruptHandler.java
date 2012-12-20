@@ -24,6 +24,8 @@ public class GeInterruptHandler extends AbstractInterruptHandler {
 
 	public GeInterruptHandler(GeCallbackInterruptHandler geCallbackInterruptHandler, int listId, int behavior, int id) {
 		this.geCallbackInterruptHandler = geCallbackInterruptHandler;
+
+		// Argument $a0 of GE callback is the signal/finish ID
 		geCallbackInterruptHandler.setId(id);
 
 		if (listId >= 0) {

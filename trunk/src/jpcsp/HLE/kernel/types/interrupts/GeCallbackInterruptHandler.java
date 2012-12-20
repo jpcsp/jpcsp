@@ -17,9 +17,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types.interrupts;
 
 public class GeCallbackInterruptHandler extends AbstractAllegrexInterruptHandler {
-	public GeCallbackInterruptHandler(int address, int argument) {
-		// call: PspGeCallback(int id, void *argument)
-		super(address, 0, argument);
+	public GeCallbackInterruptHandler(int address, int argument, int listAddr) {
+		// call: PspGeCallback(int id, void *argument, void *listAddr)
+		// Callback arguments:
+		// - $a0: signal/finish ID (will be set dynamically by the GeInterruptHandler)
+		// - $a1: callback argument provided by sceGeSetCallback
+		// - $a2: base address of the list (this argument is not described in the PSPSDK)
+		super(address, 0, argument, listAddr);
 	}
 
 	public int getId() {
