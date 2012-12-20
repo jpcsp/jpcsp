@@ -1658,7 +1658,7 @@ public class sceMpeg extends HLEModule {
         if (info != null) {
 	        switch (info.getType()) {
 	            case PSMF_AVC_STREAM:
-	                if(mode == MPEG_AU_MODE_DECODE) {
+	                if (mode == MPEG_AU_MODE_DECODE) {
 	                    ignoreAvc = false;
 	                } else if (mode == MPEG_AU_MODE_SKIP) {
 	                    ignoreAvc = true;
@@ -1666,14 +1666,14 @@ public class sceMpeg extends HLEModule {
 	                break;
 	            case PSMF_AUDIO_STREAM:
 	            case PSMF_ATRAC_STREAM:
-	                if(mode == MPEG_AU_MODE_DECODE) {
+	                if (mode == MPEG_AU_MODE_DECODE) {
 	                    ignoreAtrac = false;
 	                } else if (mode == MPEG_AU_MODE_SKIP) {
 	                    ignoreAtrac = true;
 	                }
 	                break;
 	            case PSMF_PCM_STREAM:
-	                if(mode == MPEG_AU_MODE_DECODE) {
+	                if (mode == MPEG_AU_MODE_DECODE) {
 	                    ignorePcm = false;
 	                } else if (mode == MPEG_AU_MODE_SKIP) {
 	                    ignorePcm = true;
