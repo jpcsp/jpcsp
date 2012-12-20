@@ -111,11 +111,11 @@ public class PspGeList {
     }
 
     public void pushSignalCallback(int listId, int behavior, int signal) {
-        Modules.sceGe_userModule.triggerSignalCallback(cbid, listId, behavior, signal);
+        Modules.sceGe_userModule.triggerSignalCallback(cbid, listId, list_addr, behavior, signal);
     }
 
     public void pushFinishCallback(int listId, int arg) {
-    	Modules.sceGe_userModule.triggerFinishCallback(cbid, listId, arg);
+    	Modules.sceGe_userModule.triggerFinishCallback(cbid, listId, list_addr, arg);
     }
 
     private void pushStack(int value) {
