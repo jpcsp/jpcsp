@@ -80,8 +80,8 @@ public class sceAtrac3plus extends HLEModule {
     protected static final int PSP_ATRAC_STATUS_NONLOOP_STREAM_DATA = 0;
     protected static final int PSP_ATRAC_STATUS_LOOP_STREAM_DATA = 1;
 
-    protected static final int PSP_MODE_AT_3_PLUS = 0x00001000;
-    protected static final int PSP_MODE_AT_3 = 0x00001001;
+    protected static final int PSP_MODE_AT_3_PLUS = sceAudiocodec.PSP_CODEC_AT3PLUS;
+    protected static final int PSP_MODE_AT_3 = sceAudiocodec.PSP_CODEC_AT3;
 
     // Tested on PSP:
     // Only 2 atracIDs per format can be registered at the same time.
@@ -149,6 +149,7 @@ public class sceAtrac3plus extends HLEModule {
         protected boolean isSecondBufferNeeded;
         protected boolean isSecondBufferSet;
         protected int internalErrorInfo;
+        protected int inputFileDataOffset;
         // Loops
         protected int loopNum;
         protected int numLoops;
@@ -253,6 +254,7 @@ public class sceAtrac3plus extends HLEModule {
             atracCurrentSample = 0;
             isSecondBufferNeeded = false;
             numLoops = 0;
+            inputFileDataOffset = 0;
 
             if (bufferSize < 12) {
             	log.error(String.format("Atrac buffer too small %d", bufferSize));
@@ -297,7 +299,7 @@ public class sceAtrac3plus extends HLEModule {
                             atracBytesPerFrame = mem.read16(currentAddr + 12);
                             int hiBytesPerSample = mem.read16(currentAddr + 14);
                             if (log.isDebugEnabled()) {
-                                log.debug(String.format("WAVE format: magic=0x%08X('%s'), chunkSize=%d, compressionCode=0x%04X, channels=%d, outputChannels=%d, sampleRate=%d, bitrate=%d, chunkAlign=%d, hiBytesPerSample=%d", chunkMagic, getStringFromInt32(chunkMagic), chunkSize, compressionCode, atracChannels, atracOutputChannels, atracSampleRate, atracBitrate, atracBytesPerFrame, hiBytesPerSample));
+                                log.debug(String.format("WAVE format: magic=0x%08X('%s'), chunkSize=%d, compressionCode=0x%04X, channels=%d, outputChannels=%d, sampleRate=%d, bitrate=%d, bytesPerFrame=%d, hiBytesPerSample=%d", chunkMagic, getStringFromInt32(chunkMagic), chunkSize, compressionCode, atracChannels, atracOutputChannels, atracSampleRate, atracBitrate, atracBytesPerFrame, hiBytesPerSample));
                                 // Display rest of chunk as debug information
                                 StringBuilder restChunk = new StringBuilder();
                                 for (int i = 16; i < chunkSize; i++) {
@@ -352,6 +354,8 @@ public class sceAtrac3plus extends HLEModule {
             		}
             		case DATA_CHUNK_MAGIC: {
             			foundData = true;
+            			// Offset of the data chunk in the input file
+            			inputFileDataOffset = currentAddr - inputBufferAddr;
             			break;
             		}
             	}
@@ -582,12 +586,16 @@ public class sceAtrac3plus extends HLEModule {
         }
 
         public void getBufferInfoForResetting(int sample, TPointer32 bufferInfoAddr) {
-            // Holds buffer related parameters.
+        	// Offset of the given sample in the input file.
+        	// Assuming "atracBytesPerFrame" bytes in the input file for each "maxSamples" samples.
+        	int inputFileSampleOffset = inputFileDataOffset + sample / maxSamples * atracBytesPerFrame;
+
+        	// Holds buffer related parameters.
             // Main buffer.
             bufferInfoAddr.setValue(0, inputBufferAddr);                 // Pointer to current writing position in the buffer.
             bufferInfoAddr.setValue(4, inputBufferWritableBytes);        // Number of bytes which can be written to the buffer.
             bufferInfoAddr.setValue(8, inputBufferNeededBytes);          // Number of bytes that must to be written to the buffer.
-            bufferInfoAddr.setValue(12, inputFileOffset);                // Read offset for input file.
+            bufferInfoAddr.setValue(12, inputFileSampleOffset);          // Read offset in the input file for the given sample.
             // Secondary buffer.
             bufferInfoAddr.setValue(16, secondInputBufferAddr);          // Pointer to current writing position in the buffer.
             bufferInfoAddr.setValue(20, secondInputBufferWritableBytes); // Number of bytes which can be written to the buffer.
