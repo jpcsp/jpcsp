@@ -27,6 +27,8 @@ import java.nio.Buffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.memory.BufferedMemoryReader;
 import jpcsp.memory.ImageReader;
 
@@ -35,6 +37,7 @@ import jpcsp.memory.ImageReader;
  *
  */
 public class VertexInfoReader {
+	private static Logger log = VideoEngine.log;
 	private VideoEngine videoEngine;
 	private BufferedMemoryReader memoryReader;
 	private VertexInfo vertexInfo;
@@ -362,7 +365,7 @@ public class VertexInfoReader {
 	 *							elements. The native elements are not included.
 	 *							Returns "null" if all the elements are native.
 	 */
-	public Buffer read(VertexInfo vertexInfo, int address, int numberOfVertex, boolean canAllNativeVertexInfo) {
+	public Buffer read(VertexInfo vertexInfo, int address, int firstVertex, int numberOfVertex, boolean canAllNativeVertexInfo) {
 		videoEngine = VideoEngine.getInstance();
 		this.vertexInfo = vertexInfo;
 		this.canAllNativeVertexInfo = canAllNativeVertexInfo;
@@ -371,30 +374,30 @@ public class VertexInfoReader {
 
 		// Don't need to read the vertex data if all elements are native
 		if (isAllNative()) {
-			if (VideoEngine.log.isDebugEnabled()) {
-				VideoEngine.log.debug(String.format("Not reading Vertex, all native at 0x%08X", address));
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Not reading Vertex, all native at 0x%08X", address));
 			}
 			return null;
 		}
 
 		// Display debug information on non-native elements
-		if (VideoEngine.log.isDebugEnabled()) {
-			VideoEngine.log.debug(String.format("Reading %d Vertex at 0x%08X", numberOfVertex, address));
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Reading %d Vertex at 0x%08X", numberOfVertex, address));
 			if (!textureNative) {
-				VideoEngine.log.debug("Texture non-native " + vertexInfo.toString());
+				log.debug("Texture non-native " + vertexInfo.toString());
 			}
 			if (!colorNative) {
-				VideoEngine.log.debug("Color non-native " + vertexInfo.toString());
+				log.debug("Color non-native " + vertexInfo.toString());
 			}
 			if (!normalNative) {
-				VideoEngine.log.debug("Normal non-native " + vertexInfo.toString());
+				log.debug("Normal non-native " + vertexInfo.toString());
 			}
 			if (!positionNative) {
-				VideoEngine.log.debug("Position non-native " + vertexInfo.toString());
+				log.debug("Position non-native " + vertexInfo.toString());
 			}
 		}
 
-		setAddress(address);
+		setAddress(address + firstVertex * vertexInfo.vertexSize);
 		createVertexDataBuffer(numberOfVertex);
 
 		// Prepare all the element readers

@@ -40,4 +40,5 @@ public interface IREBufferManager {
 	public void setWeightPointer(int buffer, int size, int type, int stride, int offset);
 	public void setVertexAttribPointer(int buffer, int id, int size, int type, boolean normalized, int stride, int offset);
 	public void setBufferData(int target, int buffer, int size, Buffer data, int usage);
+	public void setBufferSubData(int target, int buffer, int offset, int size, Buffer data, int usage);
 }

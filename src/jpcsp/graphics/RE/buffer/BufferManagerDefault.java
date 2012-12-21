@@ -103,4 +103,15 @@ public class BufferManagerDefault extends BaseBufferManager {
 			bufferInfo.byteBuffer.position(0);
 		}
 	}
+
+	@Override
+	public void setBufferSubData(int target, int buffer, int offset, int size, Buffer data, int usage) {
+		BufferInfo bufferInfo = buffers.get(buffer);
+		if (bufferInfo.byteBuffer != data) {
+			bufferInfo.byteBuffer.clear();
+			Utilities.putBuffer(bufferInfo.byteBuffer, data, ByteOrder.nativeOrder());
+		} else {
+			bufferInfo.byteBuffer.position(0);
+		}
+	}
 }
