@@ -39,11 +39,13 @@ public class Texture {
 	private int textureId = -1;	// id created by genTexture
 	private boolean loaded = false;	// is the texture already loaded?
 	private TextureCache textureCache;
-	private final static int hashStride = 64 + 8;
+	private final static int defaultHashStride = 64 + 8;
+	private final static int smallHashStride = 12;
 	private short[] cachedValues16;
 	private int[] cachedValues32;
 	private int bufferLengthInBytes;
 	private int lineWidthInBytes;
+	private int hashStrideInBytes;
 
 	public Texture(TextureCache textureCache, int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels, boolean mipmapShareClut, short[] values16, int[] values32) {
 		this.textureCache = textureCache;
@@ -63,32 +65,29 @@ public class Texture {
 
 		bufferLengthInBytes = lineWidth * height;
 		lineWidthInBytes = lineWidth;
-		switch (pixelStorage) {
-			case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
-			case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
-			case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444:
-			case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED:
-				bufferLengthInBytes *= 2;
-				lineWidthInBytes *= 2;
-				break;
-			case GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888:
-			case GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED:
-				bufferLengthInBytes *= 4;
-				lineWidthInBytes *= 4;
-				break;
-			case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT1:
-				bufferLengthInBytes = VideoEngine.getCompressedTextureSize(lineWidth, height, 8);
-				break;
-			case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT3:
-			case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT5:
-				bufferLengthInBytes = VideoEngine.getCompressedTextureSize(lineWidth, height, 4);
-				break;
-			case GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED:
-				bufferLengthInBytes /= 2;
-				lineWidthInBytes /= 2;
-				break;
-			case GeCommands.TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED:
-				break;
+		hashStrideInBytes = defaultHashStride;
+		int bytesPerPixel = IRenderingEngine.sizeOfTextureType[pixelStorage];
+		if (bytesPerPixel <= 0) {
+			// Special texture types
+			switch (pixelStorage) {
+				case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT1:
+					bufferLengthInBytes = VideoEngine.getCompressedTextureSize(lineWidth, height, 8);
+					break;
+				case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT3:
+				case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT5:
+					bufferLengthInBytes = VideoEngine.getCompressedTextureSize(lineWidth, height, 4);
+					break;
+				case GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED:
+					bufferLengthInBytes >>= 1;
+					lineWidthInBytes >>= 1;
+					// Take a smaller hash stride for 4-bit indexed textures to better detect small texture changes
+					// (e.g. for textures representing text)
+					hashStrideInBytes = smallHashStride;
+					break;
+			}
+		} else {
+			bufferLengthInBytes *= bytesPerPixel;
+			lineWidthInBytes *= bytesPerPixel;
 		}
 
 		if (values16 != null) {
@@ -98,7 +97,15 @@ public class Texture {
 			cachedValues32 = new int[lineWidth];
 			System.arraycopy(values32, 0, cachedValues32, 0, lineWidth);
 		} else {
-			hashCode = hashCode(addr, bufferLengthInBytes, lineWidthInBytes, clutAddr, clutNumBlocks, mipmapLevels);
+			if (lineWidthInBytes < hashStrideInBytes) {
+				if (lineWidthInBytes <= 32) {
+					// No stride at all for narrow textures
+					hashStrideInBytes = 0;
+				} else {
+					hashStrideInBytes = lineWidthInBytes - 4;
+				}
+			}
+			hashCode = hashCode(addr, bufferLengthInBytes, lineWidthInBytes, hashStrideInBytes, clutAddr, clutNumBlocks, mipmapLevels);
 		}
 	}
 
@@ -114,7 +121,7 @@ public class Texture {
 	 * @param mipmapLevels        number of mipmaps
 	 * @return                    hashcode value
 	 */
-	private static int hashCode(int addr, int bufferLengthInBytes, int lineWidthInBytes, int clutAddr, int clutNumBlocks, int mipmapLevels) {
+	private static int hashCode(int addr, int bufferLengthInBytes, int lineWidthInBytes, int strideInBytes, int clutAddr, int clutNumBlocks, int mipmapLevels) {
 		int hashCode = mipmapLevels;
 
 		if (addr != 0) {
@@ -122,15 +129,6 @@ public class Texture {
 				VideoEngine.log.debug("Texture.hashCode: " + bufferLengthInBytes + " bytes");
 			}
 
-			int strideInBytes = hashStride;
-			if (lineWidthInBytes < hashStride) {
-				if (lineWidthInBytes <= 32) {
-					// No stride at all for narrow textures
-					strideInBytes = 0;
-				} else {
-					strideInBytes = lineWidthInBytes - 4;
-				}
-			}
 			hashCode = Hash.getHashCode(hashCode, addr, bufferLengthInBytes, strideInBytes);
 		}
 
@@ -173,7 +171,7 @@ public class Texture {
 			if (values32 != null) {
 				return equals(values32);
 			}
-			int hashCode = hashCode(addr, bufferLengthInBytes, lineWidthInBytes, clutAddr, clutNumBlocks, mipmapLevels);
+			int hashCode = hashCode(addr, bufferLengthInBytes, lineWidthInBytes, hashStrideInBytes, clutAddr, clutNumBlocks, mipmapLevels);
 			if (hashCode != hashCode()) {
 				return false;
 			}
