@@ -29,6 +29,8 @@ import jpcsp.settings.Settings;
  *
  */
 public class BufferManagerVBO extends BaseBufferManager {
+	private int currentBufferDataSize;
+
 	public static boolean useVBO(IRenderingEngine re) {
         return !Settings.getInstance().readBool("emu.disablevbo")
             && re.isExtensionAvailable("GL_ARB_vertex_buffer_object");
@@ -109,5 +111,18 @@ public class BufferManagerVBO extends BaseBufferManager {
 	public void setBufferData(int target, int buffer, int size, Buffer data, int usage) {
 		bindBuffer(target, buffer);
 		re.setBufferData(target, size, data, usage);
+		currentBufferDataSize = size;
+	}
+
+	@Override
+	public void setBufferSubData(int target, int buffer, int offset, int size, Buffer data, int usage) {
+		bindBuffer(target, buffer);
+
+		int requiredBufferDataSize = offset + size;
+		if (requiredBufferDataSize > currentBufferDataSize) {
+			re.setBufferData(target, requiredBufferDataSize, null, usage);
+		}
+
+		re.setBufferSubData(target, offset, size, data);
 	}
 }

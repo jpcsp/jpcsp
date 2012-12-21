@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics;
 
 import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_CANCEL_DONE;
 import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_DONE;
 import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_DRAWING;
@@ -1716,16 +1717,21 @@ public class VideoEngine {
     	return currentFirst + currentNumberOfVertex - initialFirst;
     }
 
-    private int getIndexedNumberOfVertexInfo(int bytesPerIndex, int numberOfVertex) {
+    private VertexIndexInfo getVertexIndexInfo(int bytesPerIndex, int numberOfVertex) {
     	int maxIndex = -1;
+    	int minIndex = Integer.MAX_VALUE;
     	int indexBufferSize = numberOfVertex * bytesPerIndex;
 		IMemoryReader memoryReader = MemoryReader.getMemoryReader(context.vinfo.ptr_index, indexBufferSize, bytesPerIndex);
 		for (int i = 0; i < numberOfVertex; i++) {
 			int index = memoryReader.readNext();
 			maxIndex = max(maxIndex, index);
+			minIndex = min(minIndex, index);
+		}
+		if (isLogDebugEnabled) {
+			log.debug(String.format("getIndexedNumberOfVertexInfo %d: [%d..%d]", numberOfVertex, minIndex, maxIndex));
 		}
 
-		return maxIndex + 1;
+		return new VertexIndexInfo(minIndex, maxIndex);
     }
 
     private void executeCommandPRIM() {
@@ -1736,10 +1742,9 @@ public class VideoEngine {
         	return;
         }
 
-        Memory mem = Memory.getInstance();
         if (!Memory.isAddressGood(context.vinfo.ptr_vertex)) {
             // Abort here to avoid a lot of useless memory read errors...
-            error(helper.getCommandString(PRIM) + " Invalid vertex address 0x" + Integer.toHexString(context.vinfo.ptr_vertex));
+            error(String.format("%s: Invalid vertex address 0x%08X", helper.getCommandString(PRIM), context.vinfo.ptr_vertex));
             return;
         }
 
@@ -1796,6 +1801,7 @@ public class VideoEngine {
             }
         }
 
+        Memory mem = Memory.getInstance();
         initRendering();
 
         int nTexCoord = 2;
@@ -1934,9 +1940,12 @@ public class VideoEngine {
 	        	int numberOfVertexInfo = numberOfVertex;
         		int bytesPerIndex = VertexInfo.size_mapping[context.vinfo.index];
         		long indicesBufferOffset = 0;
+        		int firstVertexInfo = 0;
 	        	if (context.vinfo.index != 0) {
 		        	int indexBufferSize = numberOfVertex * bytesPerIndex;
-	        		numberOfVertexInfo = getIndexedNumberOfVertexInfo(bytesPerIndex, numberOfVertex);
+		        	VertexIndexInfo vertexIndexInfo = getVertexIndexInfo(bytesPerIndex, numberOfVertex);
+	        		numberOfVertexInfo = vertexIndexInfo.getNumberOfVertex();
+	        		firstVertexInfo = vertexIndexInfo.getMinIndex();
 
 	        		Buffer indicesBuffer = mem.getBuffer(context.vinfo.ptr_index, indexBufferSize);
 	        		indicesBufferOffset = getBufferOffset(indicesBuffer, context.vinfo.ptr_index);
@@ -1944,7 +1953,7 @@ public class VideoEngine {
 	        	}
 
 	        	vertexReadingStatistics.start();
-	            Buffer buffer = vertexInfoReader.read(context.vinfo, context.vinfo.ptr_vertex, numberOfVertexInfo, re.canAllNativeVertexInfo());
+	            Buffer buffer = vertexInfoReader.read(context.vinfo, context.vinfo.ptr_vertex, firstVertexInfo, numberOfVertexInfo, re.canAllNativeVertexInfo());
 	        	vertexReadingStatistics.end();
 
 	        	int stride;
@@ -1955,7 +1964,7 @@ public class VideoEngine {
 	        	if (useVertexCache && buffer == null) {
 	        		stride = context.vinfo.vertexSize;
 	        		useBufferManager = false;
-	        		final int vertexAddress = context.vinfo.ptr_vertex;
+	        		int vertexAddress = context.vinfo.ptr_vertex + firstVertexInfo * context.vinfo.vertexSize;
 	        		VertexBuffer vertexBuffer = VertexBufferManager.getInstance().getVertexBuffer(re, vertexAddress, size, stride, re.isVertexArrayAvailable());
 	        		Buffer vertexData = mem.getBuffer(vertexAddress, size);
 	        		vertexBuffer.load(re, vertexData, vertexAddress, size);
@@ -1964,7 +1973,8 @@ public class VideoEngine {
 	    				needSetDataPointers = vertexArray.bind(re);
 	    				firstVertex = vertexArray.getVertexOffset(vertexAddress);
 	        		} else {
-	            		vertexInfoReader.addNativeOffset(vertexBuffer.getBufferOffset(vertexAddress));
+	        			// add buffer offset relative to vinfo.ptr_vertex (and not relative to vertexAddress)
+	            		vertexInfoReader.addNativeOffset(vertexBuffer.getBufferOffset(context.vinfo.ptr_vertex));
 	        		}
 
 	        		// Check if multiple PRIM's are defined in sequence and
@@ -1972,20 +1982,25 @@ public class VideoEngine {
 	        		int multiDrawNumberOfVertex = checkMultiDraw(firstVertex, type, numberOfVertex, multiDrawFirst, multiDrawCount);
 					if (multiDrawNumberOfVertex > 0) {
 						multiDrawArrays = true;
+						numberOfVertex = multiDrawNumberOfVertex;
 			        	if (context.vinfo.index != 0) {
 			        		// Reload the now extended buffer for indices
-			        		numberOfVertexInfo = getIndexedNumberOfVertexInfo(bytesPerIndex, numberOfVertex);
+			        		VertexIndexInfo vertexIndexInfo = getVertexIndexInfo(bytesPerIndex, multiDrawNumberOfVertex);
+			        		numberOfVertexInfo = vertexIndexInfo.getNumberOfVertex();
+			        		firstVertexInfo = vertexIndexInfo.getMinIndex();
 
 				        	int indexBufferSize = multiDrawNumberOfVertex * bytesPerIndex;
 			        		Buffer indicesBuffer = mem.getBuffer(context.vinfo.ptr_index, indexBufferSize);
 			        		indicesBufferOffset = getBufferOffset(indicesBuffer, context.vinfo.ptr_index);
 			        		bufferManager.setBufferData(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId, indexBufferSize + (int) indicesBufferOffset, indicesBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
+
+			        		vertexAddress = context.vinfo.ptr_vertex + firstVertexInfo * context.vinfo.vertexSize;
+			        		size = context.vinfo.vertexSize * numberOfVertexInfo;
 			        	} else {
-							numberOfVertex = multiDrawNumberOfVertex;
 							size = context.vinfo.vertexSize * multiDrawNumberOfVertex;
-			        		vertexData = mem.getBuffer(vertexAddress, size);
-							vertexBuffer.load(re, vertexData, vertexAddress, size);
 			        	}
+		        		vertexData = mem.getBuffer(vertexAddress, size);
+						vertexBuffer.load(re, vertexData, vertexAddress, size);
 					}
 
 					if (needSetDataPointers) {
@@ -1999,15 +2014,23 @@ public class VideoEngine {
 	                useBufferManager = true;
 
 	                if (buffer != null) {
-		            	bufferManager.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, stride * numberOfVertexInfo, buffer, IRenderingEngine.RE_STREAM_DRAW);
+	                	if (firstVertexInfo == 0) {
+	                		bufferManager.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, stride * numberOfVertexInfo, buffer, IRenderingEngine.RE_STREAM_DRAW);
+	                	} else {
+	                		bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, firstVertexInfo * stride, stride * numberOfVertexInfo, buffer, IRenderingEngine.RE_STREAM_DRAW);
+	                	}
 		            }
 
 		            if (vertexInfoReader.hasNative()) {
 		                // Copy the VertexInfo from Memory to the nativeBuffer
 		                // (a direct buffer is required by glXXXPointer())
-		        		Buffer vertexData = mem.getBuffer(context.vinfo.ptr_vertex, size);
+		        		Buffer vertexData = mem.getBuffer(context.vinfo.ptr_vertex + firstVertexInfo * context.vinfo.vertexSize, size);
 		        		size = fixNativeBufferOffset(vertexData, size);
-		            	bufferManager.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, nativeBufferId, size, vertexData, IRenderingEngine.RE_STREAM_DRAW);
+		        		if (firstVertexInfo == 0) {
+		        			bufferManager.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, nativeBufferId, size, vertexData, IRenderingEngine.RE_STREAM_DRAW);
+		        		} else {
+		        			bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, nativeBufferId, firstVertexInfo * context.vinfo.vertexSize, size, vertexData, IRenderingEngine.RE_STREAM_DRAW);
+		        		}
 		            }
 	        	}
 
@@ -6812,5 +6835,27 @@ public class VideoEngine {
 
     		return start == this.start && end == this.end;
     	}
+    }
+
+    protected static class VertexIndexInfo {
+    	private int minIndex;
+		private int maxIndex;
+
+    	public VertexIndexInfo(int minIndex, int maxIndex) {
+			this.minIndex = minIndex;
+			this.maxIndex = maxIndex;
+		}
+
+		public int getMinIndex() {
+			return minIndex;
+		}
+
+		public int getMaxIndex() {
+			return maxIndex;
+		}
+ 
+		public int getNumberOfVertex() {
+			return maxIndex - minIndex + 1;
+		}
     }
 }
