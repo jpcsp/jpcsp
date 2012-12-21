@@ -5436,12 +5436,16 @@ public class VideoEngine {
 	                        // PSP DXT1 hardware format reverses the colors and the per-pixel
 	                        // bits, and encodes the color in RGB 565 format
 	                        int i = 0;
+	                        int readWidth = min(context.texture_buffer_width[level], context.texture_width[level]);
+	                        // Skip width if the buffer width is larger than the texture width
+	                        int skipWidth = max(0, (context.texture_buffer_width[level] - context.texture_width[level]) >> 1);
 	                        for (int y = 0; y < context.texture_height[level]; y += 4) {
-	                            for (int x = 0; x < context.texture_buffer_width[level]; x += 4, i += 2) {
+	                            for (int x = 0; x < readWidth; x += 4, i += 2) {
 	                                tmp_texture_buffer32[i + 1] = memoryReader.readNext();
 	                                tmp_texture_buffer32[i + 0] = memoryReader.readNext();
 	                            }
-	                            for (int x = context.texture_buffer_width[level]; x < context.texture_width[level]; x += 4, i += 2) {
+	                            memoryReader.skip(skipWidth);
+	                            for (int x = readWidth; x < context.texture_width[level]; x += 4, i += 2) {
 	                                tmp_texture_buffer32[i + 0] = 0;
 	                                tmp_texture_buffer32[i + 1] = 0;
 	                            }
@@ -5460,8 +5464,11 @@ public class VideoEngine {
 	                        // PSP DXT3 format reverses the alpha and color parts of each block,
 	                        // and reverses the color and per-pixel terms in the color part.
 	                        int i = 0;
+	                        int readWidth = min(context.texture_buffer_width[level], context.texture_width[level]);
+	                        // Skip width if the buffer width is larger than the texture width
+	                        int skipWidth = max(0, context.texture_buffer_width[level] - context.texture_width[level]);
 	                        for (int y = 0; y < context.texture_height[level]; y += 4) {
-	                            for (int x = 0; x < context.texture_buffer_width[level]; x += 4, i += 4) {
+	                            for (int x = 0; x < readWidth; x += 4, i += 4) {
 	                                // Color
 	                                tmp_texture_buffer32[i + 3] = memoryReader.readNext();
 	                                tmp_texture_buffer32[i + 2] = memoryReader.readNext();
@@ -5469,7 +5476,8 @@ public class VideoEngine {
 	                                tmp_texture_buffer32[i + 0] = memoryReader.readNext();
 	                                tmp_texture_buffer32[i + 1] = memoryReader.readNext();
 	                            }
-	                            for (int x = context.texture_buffer_width[level]; x < context.texture_width[level]; x += 4, i += 4) {
+	                            memoryReader.skip(skipWidth);
+	                            for (int x = readWidth; x < context.texture_width[level]; x += 4, i += 4) {
 	                                tmp_texture_buffer32[i + 0] = 0;
 	                                tmp_texture_buffer32[i + 1] = 0;
 	                                tmp_texture_buffer32[i + 2] = 0;
@@ -5492,8 +5500,11 @@ public class VideoEngine {
 	                        // the alpha part, the 2 reference alpha values are swapped with the
 	                        // alpha interpolation values.
 	                        int i = 0;
+	                        int readWidth = min(context.texture_buffer_width[level], context.texture_width[level]);
+	                        // Skip width if the buffer width is larger than the texture width
+	                        int skipWidth = max(0, context.texture_buffer_width[level] - context.texture_width[level]);
 	                        for (int y = 0; y < context.texture_height[level]; y += 4) {
-	                            for (int x = 0; x < context.texture_buffer_width[level]; x += 4, i += 8) {
+	                            for (int x = 0; x < readWidth; x += 4, i += 8) {
 	                                // Color
 	                                tmp_texture_buffer16[i + 6] = (short) memoryReader.readNext();
 	                                tmp_texture_buffer16[i + 7] = (short) memoryReader.readNext();
@@ -5505,7 +5516,8 @@ public class VideoEngine {
 	                                tmp_texture_buffer16[i + 3] = (short) memoryReader.readNext();
 	                                tmp_texture_buffer16[i + 0] = (short) memoryReader.readNext();
 	                            }
-	                            for (int x = context.texture_buffer_width[level]; x < context.texture_width[level]; x += 4, i += 8) {
+	                            memoryReader.skip(skipWidth);
+	                            for (int x = readWidth; x < context.texture_width[level]; x += 4, i += 8) {
 	                                tmp_texture_buffer16[i + 0] = 0;
 	                                tmp_texture_buffer16[i + 1] = 0;
 	                                tmp_texture_buffer16[i + 2] = 0;

@@ -155,15 +155,15 @@ public class ImageReader {
 				hasClut = true;
 				break;
 			case TPSM_PIXEL_STORAGE_MODE_DXT1:
-				imageReader = new DXT1Decoder(imageReader, width, height);
+				imageReader = new DXT1Decoder(imageReader, width, height, bufferWidth);
 				isCompressed = true;
 				break;
 			case TPSM_PIXEL_STORAGE_MODE_DXT3:
-				imageReader = new DXT3Decoder(imageReader, width, height);
+				imageReader = new DXT3Decoder(imageReader, width, height, bufferWidth);
 				isCompressed = true;
 				break;
 			case TPSM_PIXEL_STORAGE_MODE_DXT5:
-				imageReader = new DXT5Decoder(imageReader, width, height);
+				imageReader = new DXT5Decoder(imageReader, width, height, bufferWidth);
 				isCompressed = true;
 				break;
 		}
@@ -777,15 +777,17 @@ public class ImageReader {
 	 */
 	private static abstract class DXTDecoder extends ImageDecoder {
 		protected final int width;
+		protected final int bufferWidthSkip;
 		protected final int dxtLevel;
 		protected final int[] buffer;
 		protected int index;
 		protected final int maxIndex;
 		protected final int[] colors = new int[4];
 
-		public DXTDecoder(IMemoryReader memoryReader, int width, int height, int dxtLevel, int compressionRatio) {
+		public DXTDecoder(IMemoryReader memoryReader, int width, int height, int bufferWidth, int dxtLevel, int compressionRatio) {
 			super(memoryReader);
 			this.width = width;
+			this.bufferWidthSkip = Math.max(0, getBufferWidthSkip(width, bufferWidth));
 			this.dxtLevel = dxtLevel;
 
 			//compressedImageSize = round4(width) * round4(height) * 4 / compressionRatio;
@@ -856,6 +858,8 @@ public class ImageReader {
 
 				storePixels(strideX, bits, color3transparent);
 			}
+
+			memoryReader.skip(bufferWidthSkip);
 		}
 
 		@Override
@@ -869,7 +873,7 @@ public class ImageReader {
 		}
 
 		protected int getSkipLength() {
-			return (width / 4) * (2 + getAlphaSkipLength());
+			return (width / 4) * (2 + getAlphaSkipLength()) + bufferWidthSkip;
 		}
 
 		@Override
@@ -892,6 +896,7 @@ public class ImageReader {
 		protected abstract void storePixels(int strideX, int bits, boolean color3transparent);
 		protected abstract void readAlpha();
 		protected abstract int getAlphaSkipLength();
+		protected abstract int getBufferWidthSkip(int width, int bufferWidth);
 	}
 
 	/**
@@ -903,8 +908,8 @@ public class ImageReader {
 	 *       TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888
 	 */
 	private static final class DXT1Decoder extends DXTDecoder {
-		public DXT1Decoder(IMemoryReader memoryReader, int width, int height) {
-			super(memoryReader, width, height, 1, 8);
+		public DXT1Decoder(IMemoryReader memoryReader, int width, int height, int bufferWidth) {
+			super(memoryReader, width, height, bufferWidth, 1, 8);
 		}
 
 		@Override
@@ -933,6 +938,11 @@ public class ImageReader {
 			// No alpha
 			return 0;
 		}
+
+		@Override
+		protected int getBufferWidthSkip(int width, int bufferWidth) {
+			return (bufferWidth - width) >> 1;
+		}
 	}
 
 	/**
@@ -946,8 +956,8 @@ public class ImageReader {
 	private static final class DXT3Decoder extends DXTDecoder {
 		private long alpha;
 
-		public DXT3Decoder(IMemoryReader memoryReader, int width, int height) {
-			super(memoryReader, width, height, 3, 4);
+		public DXT3Decoder(IMemoryReader memoryReader, int width, int height, int bufferWidth) {
+			super(memoryReader, width, height, bufferWidth, 3, 4);
 		}
 
 		@Override
@@ -971,6 +981,11 @@ public class ImageReader {
 		protected int getAlphaSkipLength() {
 			return 2;
 		}
+
+		@Override
+		protected int getBufferWidthSkip(int width, int bufferWidth) {
+			return bufferWidth - width;
+		}
 	}
 
 	/**
@@ -985,8 +1000,8 @@ public class ImageReader {
 		private int[] alpha = new int[8];
 		private long alphaLookup;
 
-		public DXT5Decoder(IMemoryReader memoryReader, int width, int height) {
-			super(memoryReader, width, height, 5, 4);
+		public DXT5Decoder(IMemoryReader memoryReader, int width, int height, int bufferWidth) {
+			super(memoryReader, width, height, bufferWidth, 5, 4);
 		}
 
 		@Override
@@ -1030,6 +1045,11 @@ public class ImageReader {
 		@Override
 		protected int getAlphaSkipLength() {
 			return 2;
+		}
+
+		@Override
+		protected int getBufferWidthSkip(int width, int bufferWidth) {
+			return bufferWidth - width;
 		}
 	}
 
