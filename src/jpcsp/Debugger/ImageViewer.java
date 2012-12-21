@@ -64,9 +64,10 @@ public class ImageViewer extends JFrame {
 	private int imageHeight = 272;
 	private boolean imageSwizzle = false;
 	private boolean useAlpha = false;
+	private int backgroundColor = 0;
 	private int pixelFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 	private int clutAddress = 0;
-	private int clutNumberBlocks = 0;
+	private int clutNumberBlocks = 32;
 	private int clutFormat = GeCommands.CMODE_FORMAT_32BIT_ABGR8888;
 	private int clutStart = 0;
 	private int clutShift = 0;
@@ -83,6 +84,16 @@ public class ImageViewer extends JFrame {
 	private JComboBox clutFormatField;
 	private JCheckBox swizzleField;
 	private JCheckBox useAlphaField;
+	private JComboBox backgroundColorField;
+
+	private static final Color[] backgroundColors = new Color[] {
+		Color.WHITE,
+		Color.BLACK,
+		Color.RED,
+		Color.GREEN,
+		Color.BLUE,
+		Color.GRAY
+	};
 
 	public ImageViewer() {
 		init();
@@ -139,6 +150,8 @@ public class ImageViewer extends JFrame {
     	swizzleField = new JCheckBox(Resource.get("swizzle"));
 
     	useAlphaField = new JCheckBox(Resource.get("usealpha"));
+
+    	backgroundColorField = new JComboBox(new String[] { "White", "Black", "Red", "Green", "Blue", "Gray" });
 
     	JLabel clutLabel = new JLabel(Resource.get("clut"));
     	clutAddressField = new JTextField();
@@ -205,6 +218,7 @@ public class ImageViewer extends JFrame {
 						.addComponent(clutAddressField, GroupLayout.PREFERRED_SIZE, 70, GroupLayout.PREFERRED_SIZE)
 						.addComponent(clutNumberBlocksField, GroupLayout.PREFERRED_SIZE, 32, GroupLayout.PREFERRED_SIZE)
 						.addComponent(clutFormatField, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
+						.addComponent(backgroundColorField, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
 						)
 				.addGroup(layout.createSequentialGroup()
 						.addComponent(goToAddress)
@@ -231,6 +245,7 @@ public class ImageViewer extends JFrame {
 						.addComponent(clutAddressField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 						.addComponent(clutNumberBlocksField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 						.addComponent(clutFormatField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+						.addComponent(backgroundColorField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 						)
 				.addGroup(layout.createParallelGroup()
 						.addComponent(goToAddress)
@@ -294,6 +309,7 @@ public class ImageViewer extends JFrame {
 		pixelFormat = pixelFormatField.getSelectedIndex();
 		imageSwizzle = swizzleField.isSelected();
 		useAlpha = useAlphaField.isSelected();
+		backgroundColor = backgroundColorField.getSelectedIndex();
 
 		try {
 			clutAddress = (int) Utilities.parseAddress(clutAddressField.getText());
@@ -322,6 +338,7 @@ public class ImageViewer extends JFrame {
 		pixelFormatField.setSelectedIndex(pixelFormat);
 		swizzleField.setSelected(imageSwizzle);
 		useAlphaField.setSelected(useAlpha);
+		backgroundColorField.setSelectedIndex(backgroundColor);
 		clutAddressField.setText(String.format("0x%X", clutAddress));
 		clutNumberBlocksField.setText(String.format("%d", clutNumberBlocks));
 		clutFormatField.setSelectedIndex(clutFormat);
@@ -372,6 +389,10 @@ public class ImageViewer extends JFrame {
 			if (Memory.isAddressGood(startAddress)) {
 				Insets insets = getInsets();
 				int minWidth = Math.min(imageWidth, bufferWidth);
+
+				g.setColor(backgroundColors[backgroundColor]);
+				g.fillRect(insets.left, insets.top, minWidth, imageHeight);
+
 				IMemoryReader imageReader = ImageReader.getImageReader(startAddress, imageWidth, imageHeight, bufferWidth, pixelFormat, imageSwizzle, clutAddress, clutFormat, clutNumberBlocks, clutStart, clutShift, clutMask, null, null);
 
 				for (int y = 0; y < imageHeight; y++) {
