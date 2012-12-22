@@ -2116,7 +2116,8 @@ public class sceUtility extends HLEModule {
                             SceIoStat sfoStat = Modules.IoFileMgrForUserModule.statFile(sfoFileName);
                             Calendar cal = Calendar.getInstance();
                             ScePspDateTime pspTime = sfoStat.mtime;
-                            cal.set(pspTime.year, pspTime.month, pspTime.day, pspTime.hour, pspTime.minute, pspTime.second);
+                            // pspTime.month has a value in range [1..12], Calendar requires a value in range [0..11]
+                            cal.set(pspTime.year, pspTime.month - 1, pspTime.day, pspTime.hour, pspTime.minute, pspTime.second);
 
                             descriptions[i] = String.format("%1$s\n%4$tF %4$tR\n%2$s\n%3$s", title, savedataTitle, detail, cal);
                             int numberLines = 1 + count(descriptions[i], "\n");
