@@ -6679,6 +6679,73 @@
 089622A0:[8FBF0000]: lw         $ra, 0($sp)
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="sceGuDrawArray">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.graphics.sceGu</Class>
+		<Parameters>@089149FC,@08914A08,8,1</Parameters>
+		<Method>sceGuDrawArray</Method>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+089149B8:[3C1900FF]: lui        $t9, 0x00FF <=> li $t9, 0x00FF0000
+089149BC:[3738FFFF]: ori        $t8, $t9, -1
+089149C0:[00B86024]: and        $t4, $a1, $t8
+089149C4:[3C0F1200]: lui        $t7, 0x1200 <=> li $t7, 0x12000000
+089149C8:[00075E02]: srl        $t3, $a3, 0x0018
+089149CC:[316D000F]: andi       $t5, $t3, 15
+089149D0:[018F4825]: or         $t1, $t4, $t7
+089149D4:[00087E02]: srl        $t7, $t0, 0x0018
+089149D8:[3C0B1000]: lui        $t3, 0x1000 <=> li $t3, 0x10000000
+089149DC:[31EE000F]: andi       $t6, $t7, 15
+089149E0:[0300C821]: addu       $t9, $t8, $zr <=> move $t9, $t8
+089149E4:[000D5400]: sll        $t2, $t5, 0x0010
+089149E8:[00F8C024]: and        $t8, $a3, $t8
+089149EC:[3C030200]: lui        $v1, 0x0200 <=> li $v1, 0x02000000
+089149F0:[014B6825]: or         $t5, $t2, $t3
+089149F4:[03035025]: or         $t2, $t8, $v1
+089149F8:[000E1C00]: sll        $v1, $t6, 0x0010
+089149FC:[3C020899/FFFF0000]: lui        $v0, 0x0899 <=> li $v0, 0x08990000
+08914A00:[006B7025]: or         $t6, $v1, $t3
+08914A04:[30830007]: andi       $v1, $a0, 7
+08914A08:[8C4CB9CC/FFFF0000]: lw         $t4, -17972($v0)
+08914A0C:[00031400]: sll        $v0, $v1, 0x0010
+08914A10:[00461825]: or         $v1, $v0, $a2
+08914A14:[27BDFFF0]: addiu      $sp, $sp, -16
+08914A18:[01197824]: and        $t7, $t0, $t9
+08914A1C:[3C180100]: lui        $t8, 0x0100 <=> li $t8, 0x01000000
+08914A20:[3C060400]: lui        $a2, 0x0400 <=> li $a2, 0x04000000
+08914A24:[AFBF0000]: sw         $ra, 0($sp)
+08914A28:[01F85825]: or         $t3, $t7, $t8
+08914A2C:[10A00005]: beq        $a1, $zr, 0x08914A44
+08914A30:[00662025]: or         $a0, $v1, $a2
+08914A34:[8D860008]: lw         $a2, 8($t4)
+08914A38:[24C50004]: addiu      $a1, $a2, 4
+08914A3C:[ACC90000]: sw         $t1, 0($a2)
+08914A40:[AD850008]: sw         $a1, 8($t4)
+08914A44:[10E00007]: beq        $a3, $zr, 0x08914A64
+08914A48:[00000000]: nop
+08914A4C:[8D830008]: lw         $v1, 8($t4)
+08914A50:[24670004]: addiu      $a3, $v1, 4
+08914A54:[24E90004]: addiu      $t1, $a3, 4
+08914A58:[AC6D0000]: sw         $t5, 0($v1)
+08914A5C:[AD890008]: sw         $t1, 8($t4)
+08914A60:[ACEA0000]: sw         $t2, 0($a3)
+08914A64:[51000008]: beql       $t0, $zr, 0x08914A88
+08914A68:[8D8D0008]: lw         $t5, 8($t4)
+08914A6C:[8D8A0008]: lw         $t2, 8($t4)
+08914A70:[25480004]: addiu      $t0, $t2, 4
+08914A74:[AD4E0000]: sw         $t6, 0($t2)
+08914A78:[250E0004]: addiu      $t6, $t0, 4
+08914A7C:[AD8E0008]: sw         $t6, 8($t4)
+08914A80:[AD0B0000]: sw         $t3, 0($t0)
+08914A84:[8D8D0008]: lw         $t5, 8($t4)
+08914A88:[ADA40000]: sw         $a0, 0($t5)
+08914A8C:[25A40004]: addiu      $a0, $t5, 4
+08914A90:[0E245B76/FC000000]: jal        0x08916DD8
+08914A94:[AD840008]: sw         $a0, 8($t4)
+08914A98:[8FBF0000]: lw         $ra, 0($sp)
+08914A9C:[03E00008]: jr         $ra
+08914AA0:[27BD0010]: addiu      $sp, $sp, 16
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="sceGuDrawArrayN">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.graphics.sceGu</Class>
 		<Parameters>@08C0006C,@08C0007C,8,0</Parameters>
