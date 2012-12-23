@@ -158,4 +158,12 @@ public class VertexBufferManager {
 
 		VideoEngine.log.info(String.format("VertexBufferManager: %d buffers, total length %d", vertexBuffers.size(), length));
 	}
+
+	public synchronized void reset(IRenderingEngine re) {
+		for (ListIterator<VertexBuffer> lit = vertexBuffers.listIterator(); lit.hasNext(); ) {
+			VertexBuffer vertexBuffer = lit.next();
+			vertexBuffer.delete(re);
+			lit.remove();
+		}
+	}
 }

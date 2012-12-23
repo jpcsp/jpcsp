@@ -265,6 +265,8 @@ public class VideoEngine {
     private boolean hasModdedTextureDirectory;
     private HashMap<Integer, int[]> cachedInstructions;
     private long listStartMicroTime;
+    private boolean wantClearTextureCache;
+    private boolean wantClearVertexCache;
 
     public static class MatrixUpload {
         private final float[] matrix;
@@ -755,6 +757,18 @@ public class VideoEngine {
         }
 
         context.update();
+
+        if (wantClearTextureCache) {
+            TextureCache.getInstance().reset(re);
+            GETextureManager.getInstance().reset(re);
+            wantClearTextureCache = false;
+        }
+
+        if (wantClearVertexCache) {
+        	VertexCache.getInstance().reset(re);
+        	VertexBufferManager.getInstance().reset(re);
+        	wantClearVertexCache = false;
+        }
 
         hasModdedTextureDirectory = new File(getModdedTextureDirectory()).isDirectory();
 
@@ -6791,6 +6805,16 @@ public class VideoEngine {
 	public void clearCachedInstructions() {
 		// TODO When should be cached instructions be cleared?
 		cachedInstructions.clear();
+	}
+
+	public void clearTextureCache() {
+		// Clear the cache before starting the rendering
+		wantClearTextureCache = true;
+	}
+
+	public void clearVertexCache() {
+		// Clear the cache before starting the rendering
+		wantClearVertexCache = true;
 	}
 
 	private class SaveContextAction implements IAction {

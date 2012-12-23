@@ -299,6 +299,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         InstructionCounter = new javax.swing.JMenuItem();
         DumpIso = new javax.swing.JMenuItem();
         ResetProfiler = new javax.swing.JMenuItem();
+        ClearTextureCache = new javax.swing.JMenuItem();
+        ClearVertexCache = new javax.swing.JMenuItem();
         CheatsMenu = new javax.swing.JMenu();
         cwcheat = new javax.swing.JMenuItem();
         LanguageMenu = new javax.swing.JMenu();
@@ -784,6 +786,24 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         DebugMenu.add(ResetProfiler);
+
+        ClearTextureCache.setText(Resource.get("clearTextureCache"));
+        ClearTextureCache.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	ClearTextureCacheActionPerformed(evt);
+            }
+        });
+        DebugMenu.add(ClearTextureCache);
+
+        ClearVertexCache.setText(Resource.get("clearVertexCache"));
+        ClearVertexCache.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	ClearVertexCacheActionPerformed(evt);
+            }
+        });
+        DebugMenu.add(ClearVertexCache);
 
         MenuBar.add(DebugMenu);
 
@@ -1990,6 +2010,14 @@ private void ResetProfilerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     GEProfiler.reset();
 }//GEN-LAST:event_ResetProfilerActionPerformed
 
+private void ClearTextureCacheActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClearTextureCacheActionPerformed
+	VideoEngine.getInstance().clearTextureCache();
+}//GEN-LAST:event_ClearTextureCacheActionPerformed
+
+private void ClearVertexCacheActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClearVertexCacheActionPerformed
+	VideoEngine.getInstance().clearVertexCache();
+}//GEN-LAST:event_ClearVertexCacheActionPerformed
+
 private void ShotItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShotItemActionPerformed
     if (umdvideoplayer != null) {
         umdvideoplayer.takeScreenshot();
@@ -2466,6 +2494,8 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JMenu RecentMenu;
     private javax.swing.JButton ResetButton;
     private javax.swing.JMenuItem ResetProfiler;
+    private javax.swing.JMenuItem ClearTextureCache;
+    private javax.swing.JMenuItem ClearVertexCache;
     private javax.swing.JMenu ResizeMenu;
     private javax.swing.JMenu FrameSkipMenu;
     private javax.swing.JCheckBoxMenuItem FrameSkipNone;
