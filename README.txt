@@ -122,6 +122,10 @@ JPCSP v0.7 (????????):
 
 -> Added texture modding
 
+-> Added functions to clear the texture and vertex caches
+
+-> Added option to change the PSP clock speed
+
 
 
 
