@@ -26,9 +26,20 @@ public class Clock {
 		reset();
 	}
 
+	public Clock(Clock clock) {
+		if (clock != null) {
+			this.baseNanos = clock.baseNanos;
+			this.pauseNanos = clock.pauseNanos;
+			this.baseTimeMillis = clock.baseTimeMillis;
+			this.isPaused = clock.isPaused;
+		} else {
+			reset();
+		}
+	}
+
 	public synchronized void pause() {
 		if (!isPaused) {
-			pauseNanos = System.nanoTime();
+			pauseNanos = getSystemNanoTime();
 			isPaused = true;
 		}
 	}
@@ -36,14 +47,14 @@ public class Clock {
 	public synchronized void resume() {
 		if (isPaused) {
 			// Do not take into account the elapsed time between pause() & resume()
-			baseNanos += System.nanoTime() - pauseNanos;
+			baseNanos += getSystemNanoTime() - pauseNanos;
 			isPaused = false;
 		}
 	}
 
 	public synchronized void reset() {
-		baseNanos = System.nanoTime();
-		baseTimeMillis = System.currentTimeMillis();
+		baseNanos = getSystemNanoTime();
+		baseTimeMillis = getSystemMilliTime();
 
 		// Start with a paused Clock
 		pauseNanos = baseNanos;
@@ -56,7 +67,7 @@ public class Clock {
 		if (isPaused) {
 			now = pauseNanos;
 		} else {
-			now = System.nanoTime();
+			now = getSystemNanoTime();
 		}
 
 		return now - baseNanos;
@@ -86,6 +97,14 @@ public class Clock {
 		timeNano.seconds = (int) (currentTimeMillis / 1000);
 
 		return timeNano;
+	}
+
+	protected long getSystemNanoTime() {
+		return System.nanoTime();
+	}
+
+	protected long getSystemMilliTime() {
+		return System.currentTimeMillis();
 	}
 
 	public static class TimeNanos {
