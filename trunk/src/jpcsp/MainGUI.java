@@ -244,6 +244,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         filtersGroup = new javax.swing.ButtonGroup();
         resGroup = new javax.swing.ButtonGroup();
         frameSkipGroup = new javax.swing.ButtonGroup();
+        clockSpeedGroup = new javax.swing.ButtonGroup();
         mainToolBar = new javax.swing.JToolBar();
         RunButton = new javax.swing.JToggleButton();
         PauseButton = new javax.swing.JToggleButton();
@@ -282,6 +283,13 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ExportAllElements = new javax.swing.JMenuItem();
         ExportMenu = new javax.swing.JMenu();
         AudioOpt = new javax.swing.JMenu();
+        ClockSpeedOpt = new javax.swing.JMenu();
+        ClockSpeedNormal = new javax.swing.JCheckBoxMenuItem();
+        ClockSpeed50 = new javax.swing.JCheckBoxMenuItem();
+        ClockSpeed75 = new javax.swing.JCheckBoxMenuItem();
+        ClockSpeed150 = new javax.swing.JCheckBoxMenuItem();
+        ClockSpeed200 = new javax.swing.JCheckBoxMenuItem();
+        ClockSpeed300 = new javax.swing.JCheckBoxMenuItem();
         MuteOpt = new javax.swing.JCheckBoxMenuItem();
         ControlsConf = new javax.swing.JMenuItem();
         ConfigMenu = new javax.swing.JMenuItem();
@@ -654,6 +662,81 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         AudioOpt.add(MuteOpt);
 
         OptionsMenu.add(AudioOpt);
+
+        ClockSpeedOpt.setText(Resource.get("clockSpeed"));
+
+        clockSpeedGroup.add(ClockSpeedNormal);
+        ClockSpeedNormal.setText(Resource.get("clockSpeedNormal"));
+        ClockSpeedNormal.setSelected(true);
+        ClockSpeedNormal.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	ClockSpeedNormalActionPerformed(evt);
+            }
+        });
+        ClockSpeedOpt.add(ClockSpeedNormal);
+
+        clockSpeedGroup.add(ClockSpeed50);
+        ClockSpeed50.setText(Resource.get("clockSpeedNormal"));
+        ClockSpeed50.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	ClockSpeed50ActionPerformed(evt);
+            }
+        });
+        ClockSpeedOpt.add(ClockSpeed50);
+
+        clockSpeedGroup.add(ClockSpeed75);
+        ClockSpeed50.setText(Resource.get("clockSpeed50"));
+        ClockSpeed50.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	ClockSpeed50ActionPerformed(evt);
+            }
+        });
+        ClockSpeedOpt.add(ClockSpeed50);
+
+        clockSpeedGroup.add(ClockSpeed75);
+        ClockSpeed75.setText(Resource.get("clockSpeed75"));
+        ClockSpeed75.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	ClockSpeed75ActionPerformed(evt);
+            }
+        });
+        ClockSpeedOpt.add(ClockSpeed75);
+
+        clockSpeedGroup.add(ClockSpeed150);
+        ClockSpeed150.setText(Resource.get("clockSpeed150"));
+        ClockSpeed150.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	ClockSpeed150ActionPerformed(evt);
+            }
+        });
+        ClockSpeedOpt.add(ClockSpeed150);
+
+        clockSpeedGroup.add(ClockSpeed200);
+        ClockSpeed200.setText(Resource.get("clockSpeed200"));
+        ClockSpeed200.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	ClockSpeed200ActionPerformed(evt);
+            }
+        });
+        ClockSpeedOpt.add(ClockSpeed200);
+
+        clockSpeedGroup.add(ClockSpeed300);
+        ClockSpeed300.setText(Resource.get("clockSpeed300"));
+        ClockSpeed300.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+			public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	ClockSpeed300ActionPerformed(evt);
+            }
+        });
+        ClockSpeedOpt.add(ClockSpeed300);
+
+        OptionsMenu.add(ClockSpeedOpt);
 
         ControlsConf.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F11, 0));
         ControlsConf.setText("Controls");
@@ -2171,6 +2254,36 @@ private void MuteOptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     Audio.setMuted(MuteOpt.isSelected());
 }//GEN-LAST:event_MuteOptActionPerformed
 
+private void ClockSpeedNormalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClockSpeedNormalActionPerformed
+	// Set clock speed to 1/1
+	Emulator.setVariableSpeedClock(1, 1);
+}//GEN-LAST:event_ClockSpeedNormalActionPerformed
+
+private void ClockSpeed50ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClockSpeed50ActionPerformed
+	// Set clock speed to 1/2
+	Emulator.setVariableSpeedClock(1, 2);
+}//GEN-LAST:event_ClockSpeed50ActionPerformed
+
+private void ClockSpeed75ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClockSpeed75ActionPerformed
+	// Set clock speed to 3/4
+	Emulator.setVariableSpeedClock(3, 4);
+}//GEN-LAST:event_ClockSpeed75ActionPerformed
+
+private void ClockSpeed150ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClockSpeed150ActionPerformed
+	// Set clock speed to 3/2
+	Emulator.setVariableSpeedClock(3, 2);
+}//GEN-LAST:event_ClockSpeed150ActionPerformed
+
+private void ClockSpeed200ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClockSpeed200ActionPerformed
+	// Set clock speed to 2/1
+	Emulator.setVariableSpeedClock(2, 1);
+}//GEN-LAST:event_ClockSpeed200ActionPerformed
+
+private void ClockSpeed300ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClockSpeed300ActionPerformed
+	// Set clock speed to 3/1
+	Emulator.setVariableSpeedClock(3, 1);
+}//GEN-LAST:event_ClockSpeed300ActionPerformed
+
 private void ToggleLoggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ToggleLoggerActionPerformed
     if (!consolewin.isVisible() && snapConsole) {
         mainwindowPos = this.getLocation();
@@ -2453,6 +2566,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenuItem About;
     private javax.swing.JMenu AudioOpt;
+    private javax.swing.JMenu ClockSpeedOpt;
     private javax.swing.JMenuItem Catalan;
     private javax.swing.JMenu CheatsMenu;
     private javax.swing.JMenuItem ChinesePRC;
@@ -2484,6 +2598,12 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JMenu LoggerMenu;
     private javax.swing.JMenuBar MenuBar;
     private javax.swing.JCheckBoxMenuItem MuteOpt;
+    private javax.swing.JCheckBoxMenuItem ClockSpeedNormal;
+    private javax.swing.JCheckBoxMenuItem ClockSpeed50;
+    private javax.swing.JCheckBoxMenuItem ClockSpeed75;
+    private javax.swing.JCheckBoxMenuItem ClockSpeed150;
+    private javax.swing.JCheckBoxMenuItem ClockSpeed200;
+    private javax.swing.JCheckBoxMenuItem ClockSpeed300;
     private javax.swing.JMenuItem OpenFile;
     private javax.swing.JMenuItem OpenMemStick;
     private javax.swing.JMenu OptionsMenu;
@@ -2529,6 +2649,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JMenuItem openUmd;
     private javax.swing.ButtonGroup resGroup;
     private javax.swing.ButtonGroup frameSkipGroup;
+    private javax.swing.ButtonGroup clockSpeedGroup;
     private javax.swing.JCheckBoxMenuItem threeTimesResize;
     private javax.swing.JCheckBoxMenuItem twoTimesResize;
     // End of variables declaration//GEN-END:variables

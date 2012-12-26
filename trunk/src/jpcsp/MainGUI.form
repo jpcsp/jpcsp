@@ -8,6 +8,8 @@
     </Component>
     <Component class="javax.swing.ButtonGroup" name="frameSkipGroup">
     </Component>
+    <Component class="javax.swing.ButtonGroup" name="clockSpeedGroup">
+    </Component>
     <Menu class="javax.swing.JMenuBar" name="MenuBar">
       <SubComponents>
         <Menu class="javax.swing.JMenu" name="FileMenu">
@@ -387,6 +389,94 @@
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="MuteOptActionPerformed"/>
                   </Events>
                 </MenuItem>
+              </SubComponents>
+            </Menu>
+            <Menu class="javax.swing.JMenu" name="ClockSpeedOpt">
+              <Properties>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection code="Resource.get(&quot;clockSpeed&quot;)" type="code"/>
+                </Property>
+              </Properties>
+              <SubComponents>
+                 <MenuItem class="javax.swing.JCheckBoxMenuItem" name="ClockSpeedNormal">
+                   <Properties>
+                     <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
+                       <ComponentRef name="clockSpeedGroup"/>
+                     </Property>
+                     <Property name="selected" type="boolean" value="true"/>
+                     <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                       <Connection code="Resource.get(&quot;clockSpeedNormal&quot;)" type="code"/>
+                     </Property>
+                   </Properties>
+                   <Events>
+                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="clockSpeedNormalActionPerformed"/>
+                   </Events>
+                 </MenuItem>
+                 <MenuItem class="javax.swing.JCheckBoxMenuItem" name="ClockSpeed50">
+                   <Properties>
+                     <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
+                       <ComponentRef name="clockSpeedGroup"/>
+                     </Property>
+                     <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                       <Connection code="Resource.get(&quot;clockSpeed50&quot;)" type="code"/>
+                     </Property>
+                   </Properties>
+                   <Events>
+                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="clockSpeed50ActionPerformed"/>
+                   </Events>
+                 </MenuItem>
+                 <MenuItem class="javax.swing.JCheckBoxMenuItem" name="ClockSpeed75">
+                   <Properties>
+                     <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
+                       <ComponentRef name="clockSpeedGroup"/>
+                     </Property>
+                     <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                       <Connection code="Resource.get(&quot;clockSpeed75&quot;)" type="code"/>
+                     </Property>
+                   </Properties>
+                   <Events>
+                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="clockSpeed75ActionPerformed"/>
+                   </Events>
+                 </MenuItem>
+                 <MenuItem class="javax.swing.JCheckBoxMenuItem" name="ClockSpeed150">
+                   <Properties>
+                     <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
+                       <ComponentRef name="clockSpeedGroup"/>
+                     </Property>
+                     <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                       <Connection code="Resource.get(&quot;clockSpeed150&quot;)" type="code"/>
+                     </Property>
+                   </Properties>
+                   <Events>
+                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="clockSpeed150ActionPerformed"/>
+                   </Events>
+                 </MenuItem>
+                 <MenuItem class="javax.swing.JCheckBoxMenuItem" name="ClockSpeed200">
+                   <Properties>
+                     <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
+                       <ComponentRef name="clockSpeedGroup"/>
+                     </Property>
+                     <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                       <Connection code="Resource.get(&quot;clockSpeed200&quot;)" type="code"/>
+                     </Property>
+                   </Properties>
+                   <Events>
+                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="clockSpeed200ActionPerformed"/>
+                   </Events>
+                 </MenuItem>
+                 <MenuItem class="javax.swing.JCheckBoxMenuItem" name="ClockSpeed300">
+                   <Properties>
+                     <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
+                       <ComponentRef name="clockSpeedGroup"/>
+                     </Property>
+                     <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                       <Connection code="Resource.get(&quot;clockSpeed300&quot;)" type="code"/>
+                     </Property>
+                   </Properties>
+                   <Events>
+                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="clockSpeed300ActionPerformed"/>
+                   </Events>
+                 </MenuItem>
               </SubComponents>
             </Menu>
             <MenuItem class="javax.swing.JMenuItem" name="ControlsConf">

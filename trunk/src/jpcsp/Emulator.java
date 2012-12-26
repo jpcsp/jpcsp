@@ -378,6 +378,10 @@ public class Emulator implements Runnable {
     	return clock;
     }
 
+    private static void setClock(Clock clock) {
+    	Emulator.clock = clock;
+    }
+
     public static Scheduler getScheduler() {
     	return scheduler;
     }
@@ -411,5 +415,16 @@ public class Emulator implements Runnable {
     /** @param firmwareVersion : in this format: "A.BB", where A = major and B = minor, for example "2.71" */
     public void setFirmwareVersion(String firmwareVersion) {
         setFirmwareVersion(HLEModuleManager.psfFirmwareVersionToInt(firmwareVersion));
+    }
+
+    public static void setVariableSpeedClock(int numerator, int denominator) {
+    	if (getClock() instanceof VariableSpeedClock) {
+			// Update the speed of the current variable speed clock
+			((VariableSpeedClock) getClock()).setSpeed(numerator, denominator);
+    	} else if (numerator != 1 || denominator != 1) {
+    		// Change the clock to a variable speed clock with the given speed
+    		VariableSpeedClock variableSpeedClock = new VariableSpeedClock(clock, numerator, denominator);
+    		setClock(variableSpeedClock);
+    	}
     }
 }
