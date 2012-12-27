@@ -1358,7 +1358,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     }
 
 private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterDebuggerActionPerformed
-    PauseEmu();
     if (State.debugger == null) {
         State.debugger = new DisassemblerFrame(emulator);
         State.debugger.setLocation(Settings.getInstance().readWindowPos("disassembler"));
@@ -1577,7 +1576,6 @@ private void ElfHeaderViewerActionPerformed(java.awt.event.ActionEvent evt) {//G
 }//GEN-LAST:event_ElfHeaderViewerActionPerformed
 
 private void EnterMemoryViewerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterMemoryViewerActionPerformed
-    PauseEmu();
     if (State.memoryViewer == null) {
         State.memoryViewer = new MemoryViewer();
         State.memoryViewer.setLocation(Settings.getInstance().readWindowPos("memoryview"));
@@ -2067,7 +2065,6 @@ private void InstructionCounterActionPerformed(java.awt.event.ActionEvent evt) {
 }//GEN-LAST:event_InstructionCounterActionPerformed
 
 private void FileLogActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FileLogActionPerformed
-    PauseEmu();
     startWindowDialog(State.fileLogger);
 }//GEN-LAST:event_FileLogActionPerformed
 

@@ -128,7 +128,9 @@ public abstract class AbstractVirtualFile implements IVirtualFile {
 		try {
 			return file.length();
 		} catch (IOException e) {
-			log.error("length", e);
+			if (log.isDebugEnabled()) {
+				log.debug("length", e);
+			}
 		}
 
 		return 0;
