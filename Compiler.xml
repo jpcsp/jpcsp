@@ -4174,6 +4174,27 @@
     088D5560:[0083100A]: movz       $v0, $a0, $v1
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="strrchr">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Strrchr</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+089C4738:[00053600]: sll        $a2, $a1, 0x0018
+089C473C:[80850000]: lb         $a1, 0($a0)
+089C4740:[34020000]: ori        $v0, $zr, 0 <=> li $v0, 0
+089C4744:[10A00007]: beq        $a1, $zr, 0x089C4764
+089C4748:[00063603]: sra        $a2, $a2, 0x0018
+089C474C:[50A60001]: beql       $a1, $a2, 0x089C4754
+089C4750:[00801025]: or         $v0, $a0, $zr <=> move $v0, $a0
+089C4754:[24840001]: addiu      $a0, $a0, 1
+089C4758:[80850000]: lb         $a1, 0($a0)
+089C475C:[14A0FFFB]: bne        $a1, $zr, 0x089C474C
+089C4760:[00000000]: nop
+089C4764:[50A60001]: beql       $a1, $a2, 0x089C476C
+089C4768:[00801025]: or         $v0, $a0, $zr <=> move $v0, $a0
+089C476C:[03E00008]: jr         $ra
+089C4770:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="strcmp">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Strcmp</Class>
 		<IsReturning>true</IsReturning>
