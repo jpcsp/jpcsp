@@ -88,6 +88,7 @@ public class sceNetAdhoc extends HLEModule {
 	private static final String replicaIdPurpose = "sceNetAdhoc-Replica";
     private static final int adhocGameModePort = 31000;
     private DatagramSocket gameModeSocket;
+    private boolean isInitialized;
 
     protected static class GameModeScheduledAction implements IAction {
     	private final int scheduleRepeatMicros;
@@ -252,6 +253,7 @@ public class sceNetAdhoc extends HLEModule {
 	    ptpObjects = new HashMap<Integer, PtpObject>();
 	    currentFreePort = 0x4000;
 	    replicaGameModeAreas = new LinkedList<sceNetAdhoc.GameModeArea>();
+	    isInitialized = false;
 
 	    super.start();
 	}
@@ -294,6 +296,12 @@ public class sceNetAdhoc extends HLEModule {
 
     public boolean hasNetPortShiftActive() {
     	return netServerPortShift > 0 || netClientPortShift > 0;
+    }
+
+    protected void checkInitialized() {
+    	if (!isInitialized) {
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_NET_ADHOC_NOT_INITIALIZED);
+    	}
     }
 
     public void hleExitGameMode() {
@@ -430,6 +438,8 @@ public class sceNetAdhoc extends HLEModule {
     }
 
 	public int checkPdpId(int pdpId) {
+		checkInitialized();
+
 		if (!pdpObjects.containsKey(pdpId)) {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Invalid Pdp Id=%d", pdpId));
@@ -441,6 +451,8 @@ public class sceNetAdhoc extends HLEModule {
 	}
 
 	public int checkPtpId(int ptpId) {
+		checkInitialized();
+
 		if (!ptpObjects.containsKey(ptpId)) {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Invalid Ptp Id=%d", ptpId));
@@ -460,13 +472,19 @@ public class sceNetAdhoc extends HLEModule {
 	}
 
 	/**
-     * Initialise the adhoc library.
+     * Initialize the adhoc library.
      *
      * @return 0 on success, < 0 on error
      */
     @HLEFunction(nid = 0xE1D621D7, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocInit() {
         log.info(String.format("sceNetAdhocInit: using MAC address=%s, nick name='%s'", sceNet.convertMacAddressToString(Wlan.getMacAddress()), sceUtility.getSystemParamNickname()));
+
+        if (isInitialized) {
+        	return SceKernelErrors.ERROR_NET_ADHOC_ALREADY_INITIALIZED;
+        }
+
+        isInitialized = true;
 
         return 0;
     }
@@ -478,11 +496,15 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0xA62C6F57, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocTerm() {
-        return 0;
+    	isInitialized = false;
+
+    	return 0;
     }
 
     @HLEFunction(nid = 0x7A662D6B, version = 150)
     public int sceNetAdhocPollSocket(TPointer socketsAddr, int count, int timeout, int nonblock) {
+		checkInitialized();
+
     	Memory mem = Memory.getInstance();
 
         int countEvents = 0;
@@ -559,7 +581,9 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0x6F92741B, version = 150)
     public int sceNetAdhocPdpCreate(pspNetMacAddress macAddress, int port, int bufSize, int unk1) {
-		if (port == 0) {
+    	checkInitialized();
+
+    	if (port == 0) {
 			// Allocate a free port
 			port = getFreePort();
 			if (log.isDebugEnabled()) {
@@ -660,6 +684,8 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0xC7C1FC57, version = 150)
     public int sceNetAdhocGetPdpStat(TPointer32 sizeAddr, @CanBeNull TPointer buf) {
+		checkInitialized();
+
     	final int objectInfoSize = 20;
 
     	sizeAddr.setValue(objectInfoSize * pdpObjects.size());
@@ -739,6 +765,8 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0x877F6D66, version = 150)
     public int sceNetAdhocPtpOpen(pspNetMacAddress srcMacAddress, int srcPort, pspNetMacAddress destMacAddress, int destPort, int bufSize, int retryDelay, int retryCount, int unk1) {
+		checkInitialized();
+
     	PtpObject ptpObject = getNetworkAdapter().createPtpObject();
     	ptpObject.setMacAddress(srcMacAddress);
     	ptpObject.setPort(srcPort);
@@ -792,6 +820,8 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0xE08BDAC1, version = 150)
     public int sceNetAdhocPtpListen(pspNetMacAddress srcMacAddress, int srcPort, int bufSize, int retryDelay, int retryCount, int queue, int unk1) {
+		checkInitialized();
+
     	PtpObject ptpObject = getNetworkAdapter().createPtpObject();
     	ptpObject.setMacAddress(srcMacAddress);
     	ptpObject.setPort(srcPort);
@@ -920,6 +950,8 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0xB9685118, version = 150)
     public int sceNetAdhocGetPtpStat(TPointer32 sizeAddr, @CanBeNull TPointer buf) {
+		checkInitialized();
+
     	final int objectInfoSize = 36;
 
     	// Return size required
@@ -1016,6 +1048,8 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0x7F75C338, version = 150)
     public int sceNetAdhocGameModeCreateMaster(TPointer data, int size) {
+		checkInitialized();
+
         masterGameModeArea = new GameModeArea(data.getAddress(), size);
         startGameMode();
 
@@ -1033,6 +1067,8 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0x3278AB0C, version = 150)
     public int sceNetAdhocGameModeCreateReplica(pspNetMacAddress macAddress, TPointer data, int size) {
+		checkInitialized();
+
         boolean found = false;
         int result = 0;
         for (GameModeArea gameModeArea : replicaGameModeAreas) {
@@ -1067,6 +1103,8 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0x98C204C8, version = 150)
     public int sceNetAdhocGameModeUpdateMaster() {
+		checkInitialized();
+
         if (masterGameModeArea != null) {
         	if (log.isTraceEnabled()) {
         		log.trace(String.format("Master Game Mode Area: %s", Utilities.getMemoryDump(masterGameModeArea.addr, masterGameModeArea.size)));
@@ -1087,6 +1125,8 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0xFA324B4E, version = 150)
     public int sceNetAdhocGameModeUpdateReplica(int id, @CanBeNull TPointer infoAddr) {
+		checkInitialized();
+
         for (GameModeArea gameModeArea : replicaGameModeAreas) {
         	if (gameModeArea.id == id) {
         		GameModeUpdateInfo gameModeUpdateInfo = new GameModeUpdateInfo();
@@ -1126,6 +1166,8 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0xA0229362, version = 150)
     public int sceNetAdhocGameModeDeleteMaster() {
+		checkInitialized();
+
         masterGameModeArea = null;
         if (replicaGameModeAreas.size() <= 0) {
         	stopGameMode();
@@ -1143,6 +1185,8 @@ public class sceNetAdhoc extends HLEModule {
      */
     @HLEFunction(nid = 0x0B2228E9, version = 150)
     public int sceNetAdhocGameModeDeleteReplica(int id) {
+		checkInitialized();
+
         for (GameModeArea gameModeArea : replicaGameModeAreas) {
         	if (gameModeArea.id == id) {
         		replicaGameModeAreas.remove(gameModeArea);
