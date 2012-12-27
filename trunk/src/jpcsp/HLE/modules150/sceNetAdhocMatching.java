@@ -47,6 +47,7 @@ public class sceNetAdhocMatching extends HLEModule {
     public static Logger log = Modules.getLogger("sceNetAdhocMatching");
     protected HashMap<Integer, MatchingObject> matchingObjects;
     public static final int loopThreadRegisterArgument = _s0; // $s0 is preserved across calls
+    private boolean isInitialized;
 
     /**
      * Matching events used in pspAdhocMatchingCallback
@@ -99,6 +100,7 @@ public class sceNetAdhocMatching extends HLEModule {
 	@Override
 	public void start() {
 		matchingObjects = new HashMap<Integer, MatchingObject>();
+		isInitialized = false;
 
 		super.start();
 	}
@@ -108,6 +110,8 @@ public class sceNetAdhocMatching extends HLEModule {
 	}
 
 	public int checkMatchingId(int matchingId) {
+    	checkInitialized();
+
 		if (!matchingObjects.containsKey(matchingId)) {
 			throw new SceKernelErrorException(SceKernelErrors.ERROR_NET_ADHOC_INVALID_MATCHING_ID);
 		}
@@ -157,6 +161,12 @@ public class sceNetAdhocMatching extends HLEModule {
 		return String.format("Unknown mode %d", mode);
 	}
 
+	protected void checkInitialized() {
+		if (!isInitialized) {
+			throw new SceKernelErrorException(SceKernelErrors.ERROR_NET_ADHOC_MATCHING_NOT_INITIALIZED);
+		}
+	}
+
 	/**
      * Initialize the Adhoc matching library
      *
@@ -166,7 +176,13 @@ public class sceNetAdhocMatching extends HLEModule {
      */
     @HLEFunction(nid = 0x2A2A1E07, version = 150)
     public int sceNetAdhocMatchingInit(int memsize) {
-		return 0;
+    	if (isInitialized) {
+    		return SceKernelErrors.ERROR_NET_ADHOC_MATCHING_ALREADY_INITIALIZED;
+    	}
+
+    	isInitialized = true;
+
+    	return 0;
     }
 
     /**
@@ -176,7 +192,9 @@ public class sceNetAdhocMatching extends HLEModule {
      */
     @HLEFunction(nid = 0x7945ECDA, version = 150)
     public int sceNetAdhocMatchingTerm() {
-        return 0;
+    	isInitialized = false;
+
+    	return 0;
     }
 
     /**
@@ -196,6 +214,8 @@ public class sceNetAdhocMatching extends HLEModule {
      */
     @HLEFunction(nid = 0xCA5EDA6F, version = 150)
     public int sceNetAdhocMatchingCreate(int mode, int maxPeers, int port, int bufSize, int helloDelay, int pingDelay, int initCount, int msgDelay, @CanBeNull TPointer callback) {
+    	checkInitialized();
+
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sceNetAdhocMatchingCreate mode=%s", getModeName(mode)));
     	}
@@ -294,7 +314,7 @@ public class sceNetAdhocMatching extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xEC19337D, version = 150)
     public int sceNetAdhocMatchingAbortSendData(@CheckArgument("checkMatchingId") int matchingId, pspNetMacAddress macAddress) {
-        return 0;
+    	return 0;
     }
 
     /**
@@ -451,6 +471,8 @@ public class sceNetAdhocMatching extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x9C5CFB7D, version = 150)
     public int sceNetAdhocMatchingGetPoolStat() {
+    	checkInitialized();
+
     	return 0;
     }
 
@@ -462,6 +484,8 @@ public class sceNetAdhocMatching extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x40F8F435, version = 150)
     public int sceNetAdhocMatchingGetPoolMaxAlloc() {
+    	checkInitialized();
+
     	return 0;
     }
 }

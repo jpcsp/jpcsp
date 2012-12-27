@@ -21,6 +21,7 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
+import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.StringInfo;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
@@ -79,7 +80,7 @@ public class sceNetAdhocctl extends HLEModule {
     public static final int ADHOC_ID_LENGTH = 9;
     public static final int MAX_GAME_MODE_MACS = 16;
 
-    protected boolean initialized;
+    private boolean isInitialized;
 	protected int adhocctlCurrentState;
     protected String adhocctlCurrentGroup;
     protected String adhocctlCurrentIBSS;
@@ -210,10 +211,16 @@ public class sceNetAdhocctl extends HLEModule {
 		adhocctlCurrentIBSS = "Jpcsp";
 		adhocctlCurrentMode = PSP_ADHOCCTL_MODE_NONE;
 		adhocctlCurrentChannel = Wlan.getAdhocChannel();
-		initialized = false;
+		isInitialized = false;
 		networkAdapter = Modules.sceNetModule.getNetworkAdapter();
 
 		super.start();
+	}
+
+	protected void checkInitialized() {
+		if (!isInitialized) {
+			throw new SceKernelErrorException(SceKernelErrors.ERROR_NET_ADHOCCTL_NOT_INITIALIZED);
+		}
 	}
 
 	public void hleNetAdhocctlAddGameModeMac(byte[] macAddr) {
@@ -560,7 +567,11 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0xE26F226E, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocctlInit(int stackSize, int priority, @CanBeNull TPointer product) {
-        if (product.isNotNull()) {
+    	if (isInitialized) {
+    		return SceKernelErrors.ERROR_NET_ADHOCCTL_ALREADY_INITIALIZED;
+    	}
+
+    	if (product.isNotNull()) {
             adhocctlCurrentType = product.getValue32(0); // 0 - Commercial type / 1 - Debug type.
             adhocctlCurrentAdhocID = product.getStringNZ(4, ADHOC_ID_LENGTH);
             if (log.isDebugEnabled()) {
@@ -578,7 +589,7 @@ public class sceNetAdhocctl extends HLEModule {
 
         networkAdapter.sceNetAdhocctlInit();
 
-        initialized = true;
+        isInitialized = true;
 
         return 0;
     }
@@ -591,7 +602,7 @@ public class sceNetAdhocctl extends HLEModule {
     @HLEFunction(nid = 0x9D689E13, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocctlTerm() {
         doTerminate = true;
-        initialized = false;
+        isInitialized = false;
 
         networkAdapter.sceNetAdhocctlTerm();
 
@@ -607,9 +618,7 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x0AD043ED, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocctlConnect(@CanBeNull @StringInfo(maxLength=GROUP_NAME_LENGTH) PspString groupName) {
-        if (!initialized) {
-        	return SceKernelErrors.ERROR_NET_ADHOCCTL_NOT_INITIALIZED;
-        }
+    	checkInitialized();
 
         hleNetAdhocctlConnect(groupName.getString());
 
@@ -625,9 +634,7 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0xEC0635C1, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocctlCreate(@CanBeNull @StringInfo(maxLength=GROUP_NAME_LENGTH) PspString groupName) {
-        if (!initialized) {
-        	return SceKernelErrors.ERROR_NET_ADHOCCTL_NOT_INITIALIZED;
-        }
+    	checkInitialized();
 
         setGroupName(groupName.getString(), PSP_ADHOCCTL_MODE_NORMAL);
 
@@ -645,9 +652,7 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x5E7F79C9, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocctlJoin(TPointer scanInfoAddr) {
-        if (!initialized) {
-        	return SceKernelErrors.ERROR_NET_ADHOCCTL_NOT_INITIALIZED;
-        }
+    	checkInitialized();
 
         if (scanInfoAddr.isAddressGood()) {
             // IBSS Data field.
@@ -676,6 +681,8 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x08FFF7A0, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocctlScan() {
+    	checkInitialized();
+
         doScan = true;
 
         networkAdapter.sceNetAdhocctlScan();
@@ -690,6 +697,8 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x34401D65, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocctlDisconnect() {
+    	checkInitialized();
+
         doDisconnect = true;
 
         networkAdapter.sceNetAdhocctlDisconnect();
@@ -713,7 +722,9 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x20B317A0, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocctlAddHandler(TPointer adhocctlHandlerAddr, int adhocctlHandlerArg) {
-        AdhocctlHandler adhocctlHandler = new AdhocctlHandler(adhocctlHandlerAddr.getAddress(), adhocctlHandlerArg);
+    	checkInitialized();
+
+    	AdhocctlHandler adhocctlHandler = new AdhocctlHandler(adhocctlHandlerAddr.getAddress(), adhocctlHandlerArg);
         int id = adhocctlHandler.getId();
         if (id == SceUidManager.INVALID_ID) {
         	return SceKernelErrors.ERROR_NET_ADHOCCTL_TOO_MANY_HANDLERS;
@@ -736,6 +747,8 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x6402490B, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocctlDelHandler(int id) {
+    	checkInitialized();
+
         AdhocctlHandler handler = adhocctlIdMap.remove(id);
         if (handler != null) {
         	handler.delete();
@@ -753,6 +766,8 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x75ECD386, version = 150, checkInsideInterrupt = true)
     public int sceNetAdhocctlGetState(TPointer32 stateAddr) {
+    	checkInitialized();
+
         stateAddr.setValue(adhocctlCurrentState);
 
         return 0;
@@ -767,6 +782,8 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x362CBE8F, version = 150)
     public int sceNetAdhocctlGetAdhocId(TPointer addr) {
+    	checkInitialized();
+
     	if (log.isDebugEnabled()) {
     		log.debug(String.format("sceNetAdhocctlGetAdhocId returning type=%d, adhocID='%s'", adhocctlCurrentType, adhocctlCurrentAdhocID));
     	}
@@ -786,6 +803,8 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0xE162CB14, version = 150)
     public int sceNetAdhocctlGetPeerList(TPointer32 sizeAddr, @CanBeNull TPointer buf) {
+    	checkInitialized();
+
         int size = sizeAddr.getValue();
 		SceNetAdhocctlPeerInfo peerInfo = new SceNetAdhocctlPeerInfo();
     	sizeAddr.setValue(peerInfo.sizeof() * peers.size());
@@ -831,6 +850,8 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x8DB83FDC, version = 150)
     public int sceNetAdhocctlGetPeerInfo(pspNetMacAddress macAddress, int size, TPointer peerInfoAddr) {
+    	checkInitialized();
+
         for (AdhocctlPeer peer : peers) {
         	if (macAddress.equals(peer.macAddress)) {
         		if (log.isDebugEnabled()) {
@@ -860,6 +881,8 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x99560ABE, version = 150)
     public int sceNetAdhocctlGetAddrByName(@StringInfo(maxLength=NICK_NAME_LENGTH) PspString nickName, TPointer32 sizeAddr, @CanBeNull TPointer buf) {
+    	checkInitialized();
+
         // Search for peers matching the given nick name
         LinkedList<AdhocctlPeer> matchingPeers = new LinkedList<sceNetAdhocctl.AdhocctlPeer>();
         for (AdhocctlPeer peer : peers) {
@@ -912,6 +935,8 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x8916C003, version = 150)
     public int sceNetAdhocctlGetNameByAddr(pspNetMacAddress macAddress, TPointer nickNameAddr) {
+    	checkInitialized();
+
         String nickName = "";
         for (AdhocctlPeer peer : peers) {
         	if (sceNetAdhoc.isSameMacAddress(macAddress.macAddress, peer.macAddress)) {
@@ -933,7 +958,9 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0xDED9D28E, version = 150)
     public int sceNetAdhocctlGetParameter(TPointer paramsAddr) {
-        if (log.isDebugEnabled()) {
+    	checkInitialized();
+
+    	if (log.isDebugEnabled()) {
         	log.debug(String.format("sceNetAdhocctlGetParameter returning channel=%d, group='%s', IBSS='%s', nickName='%s'", adhocctlCurrentChannel, adhocctlCurrentGroup, adhocctlCurrentIBSS, sceUtility.getSystemParamNickname()));
         }
         paramsAddr.setValue32(0, adhocctlCurrentChannel);
@@ -954,6 +981,8 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x81AEE1BE, version = 150)
     public int sceNetAdhocctlGetScanInfo(TPointer32 sizeAddr, @CanBeNull TPointer buf) {
+    	checkInitialized();
+
     	final int scanInfoSize = 28;
 
     	int size = sizeAddr.getValue();
@@ -1018,6 +1047,8 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0xA5C055CE, version = 150)
     public int sceNetAdhocctlCreateEnterGameMode(@CanBeNull @StringInfo(maxLength=GROUP_NAME_LENGTH) PspString groupName, int unknown, int num, TPointer macsAddr, int timeout, int unknown2) {
+    	checkInitialized();
+
         gameModeMacs.clear();
         requiredGameModeMacs.clear();
         for (int i = 0; i < num; i++) {
@@ -1039,6 +1070,8 @@ public class sceNetAdhocctl extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0xB0B80E80, version = 150)
     public int sceNetAdhocctlCreateEnterGameModeMin() {
+    	checkInitialized();
+
     	return 0;
     }
 
@@ -1054,6 +1087,8 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x1FF89745, version = 150)
     public int sceNetAdhocctlJoinEnterGameMode(@StringInfo(maxLength=GROUP_NAME_LENGTH) PspString groupName, pspNetMacAddress macAddress, int timeout, int unknown) {
+    	checkInitialized();
+
         doJoin = true;
         setGroupName(groupName.getString(), PSP_ADHOCCTL_MODE_GAMEMODE);
 
@@ -1067,6 +1102,8 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0xCF8E084D, version = 150)
     public int sceNetAdhocctlExitGameMode() {
+    	checkInitialized();
+
         doDisconnect = true;
         Modules.sceNetAdhocModule.hleExitGameMode();
 
@@ -1082,6 +1119,8 @@ public class sceNetAdhocctl extends HLEModule {
      */
     @HLEFunction(nid = 0x5A014CE0, version = 150)
     public int sceNetAdhocctlGetGameModeInfo(TPointer gameModeInfoAddr) {
+    	checkInitialized();
+
         int offset = 0;
         gameModeInfoAddr.setValue32(offset, gameModeMacs.size());
         offset += 4;

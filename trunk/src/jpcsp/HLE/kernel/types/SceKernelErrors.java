@@ -374,12 +374,17 @@ public class SceKernelErrors {
     public final static int ERROR_NET_ADHOC_INVALID_ADDR                        = 0x80410702;
     public final static int ERROR_NET_ADHOC_NO_DATA_AVAILABLE                   = 0x80410709;
     public final static int ERROR_NET_ADHOC_PORT_IN_USE                         = 0x8041070a;
+    public final static int ERROR_NET_ADHOC_NOT_INITIALIZED                     = 0x80410712;
+    public final static int ERROR_NET_ADHOC_ALREADY_INITIALIZED                 = 0x80410713;
     public final static int ERROR_NET_ADHOC_DISCONNECTED                        = 0x8041070c;
     public final static int ERROR_NET_ADHOC_TIMEOUT                             = 0x80410715;
     public final static int ERROR_NET_ADHOC_CONNECTION_REFUSED                  = 0x80410718;
 
     public final static int ERROR_NET_ADHOC_INVALID_MATCHING_ID                 = 0x80410807;
+    public final static int ERROR_NET_ADHOC_MATCHING_ALREADY_INITIALIZED        = 0x80410812;
+    public final static int ERROR_NET_ADHOC_MATCHING_NOT_INITIALIZED            = 0x80410813;
 
+    public final static int ERROR_NET_ADHOCCTL_ALREADY_INITIALIZED              = 0x80410b07;
     public final static int ERROR_NET_ADHOCCTL_NOT_INITIALIZED                  = 0x80410b08;
     public final static int ERROR_NET_ADHOCCTL_TOO_MANY_HANDLERS                = 0x80410b12;
 
