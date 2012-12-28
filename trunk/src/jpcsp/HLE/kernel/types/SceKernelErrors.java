@@ -129,7 +129,7 @@ public class SceKernelErrors {
     public final static int ERROR_KERNEL_ILLEGAL_PERMISSION                     = 0x800200d1;
     public final static int ERROR_KERNEL_ILLEGAL_ARGUMENT                       = 0x800200d2;
     public final static int ERROR_KERNEL_ILLEGAL_ADDR                           = 0x800200d3;
-    public final static int ERROR_KERNEL_MEMORY_AREA_OUT_OF_RANGE               = 0x800200d4;
+    public final static int ERROR_KERNEL_OUT_OF_RANGE                           = 0x800200d4;
     public final static int ERROR_KERNEL_MEMORY_AREA_IS_OVERLAP                 = 0x800200d5;
     public final static int ERROR_KERNEL_ILLEGAL_PARTITION_ID                   = 0x800200d6;
     public final static int ERROR_KERNEL_PARTITION_IN_USE                       = 0x800200d7;
