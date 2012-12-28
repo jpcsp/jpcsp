@@ -73,21 +73,7 @@ public class sceSuspendForUser extends HLEModule {
         return Managers.semas.hleKernelWaitSema(volatileMemSema, volatileMemSignal, 0, false);
     }
 
-    @HLELogging(level="trace")
-    @HLEFunction(nid = 0xEADB1BD7, version = 150, checkInsideInterrupt = true)
-    public int sceKernelPowerLock(int type) {
-        return 0;
-    }
-
-    @HLELogging(level="trace")
-    @HLEFunction(nid = 0x3AEE7261, version = 150, checkInsideInterrupt = true)
-    public int sceKernelPowerUnlock(int type) {
-        return 0;
-    }
-
-    @HLELogging(level="trace")
-    @HLEFunction(nid = 0x090CCB3F, version = 150, checkInsideInterrupt = true)
-    public int sceKernelPowerTick(int flag) {
+    public int hleKernelPowerTick(int flag) {
     	// The PSP is checking each of the lower 8 bits of the flag value to tick different
     	// components.
     	// Here we check only a few known bits...
@@ -112,6 +98,24 @@ public class sceSuspendForUser extends HLEModule {
         }
 
         return 0;
+    }
+
+    @HLELogging(level="trace")
+    @HLEFunction(nid = 0xEADB1BD7, version = 150, checkInsideInterrupt = true)
+    public int sceKernelPowerLock(int type) {
+        return 0;
+    }
+
+    @HLELogging(level="trace")
+    @HLEFunction(nid = 0x3AEE7261, version = 150, checkInsideInterrupt = true)
+    public int sceKernelPowerUnlock(int type) {
+        return 0;
+    }
+
+    @HLELogging(level="trace")
+    @HLEFunction(nid = 0x090CCB3F, version = 150, checkInsideInterrupt = true)
+    public int sceKernelPowerTick(int flag) {
+    	return hleKernelPowerTick(flag);
     }
 
     @HLEFunction(nid = 0x3E0271D3, version = 150, checkInsideInterrupt = true)

@@ -94,10 +94,10 @@ public class scePower extends HLEModule {
         return backlightMaximum;
     }
 
-    @HLEUnimplemented
+    @HLELogging(level="trace")
     @HLEFunction(nid = 0xEFD3C963, version = 150)
-    public int scePowerTick() {
-    	return 0;
+    public int scePowerTick(int flag) {
+    	return Modules.sceSuspendForUserModule.hleKernelPowerTick(flag);
     }
 
     @HLEUnimplemented
