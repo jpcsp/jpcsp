@@ -73,12 +73,6 @@ public class CSOFileSectorDevice extends ISOFileSectorDevice {
 
 	@Override
 	public void readSector(int sectorNumber, byte[] buffer, int offset) throws IOException {
-		if (sectorNumber < 0 || sectorNumber >= numSectors) {
-			Arrays.fill(buffer, offset, offset + sectorLength, (byte) 0);
-        	log.warn(String.format("Sector number %d out of ISO (numSectors=%d)", sectorNumber, numSectors));
-        	return;
-		}
-
 		long sectorOffset = sectorOffsets[sectorNumber];
         long sectorEnd = sectorOffsets[sectorNumber + 1];
 
