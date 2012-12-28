@@ -84,6 +84,7 @@ import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.DumpDebugState;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.SceKernelErrorException;
@@ -162,8 +163,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     private HashMap<Integer, SceKernelThreadInfo> threadMap;
-    private HashMap<Integer, SceKernelThreadEventHandlerInfo> threadEventHandlerMap;
-    private HashMap<Integer, Integer> threadEventMap;
+    private HashMap<Integer, SceKernelThreadEventHandlerInfo> threadEventHandlers;
     private LinkedList<SceKernelThreadInfo> readyThreads;
     private SceKernelThreadInfo currentThread;
     private SceKernelThreadInfo idle0, idle1;
@@ -230,8 +230,7 @@ public class ThreadManForUser extends HLEModule {
     @Override
     public void start() {
         threadMap = new HashMap<Integer, SceKernelThreadInfo>();
-        threadEventMap = new HashMap<Integer, Integer>();
-        threadEventHandlerMap = new HashMap<Integer, SceKernelThreadEventHandlerInfo>();
+        threadEventHandlers = new HashMap<Integer, SceKernelThreadEventHandlerInfo>();
         readyThreads = new LinkedList<SceKernelThreadInfo>();
         statistics = new Statistics();
 
@@ -1106,15 +1105,11 @@ public class ThreadManForUser extends HLEModule {
     }
 
     private void triggerThreadEvent(SceKernelThreadInfo thread, SceKernelThreadInfo contextThread, int event) {
-        if (threadEventMap.containsKey(thread.uid)) {
-            int handlerUid = threadEventMap.get(thread.uid);
-            SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
-
-            // Check if this handler's mask matches the function.
-            if (handler.hasEventMask(event)) {
-                handler.triggerThreadEventHandler(contextThread, event);
-            }
-        }
+    	for (SceKernelThreadEventHandlerInfo handler : threadEventHandlers.values()) {
+    		if (handler.appliesFor(getCurrentThread(), thread, event)) {
+    			handler.triggerThreadEventHandler(contextThread, event);
+    		}
+    	}
     }
 
     public void hleKernelChangeThreadPriority(SceKernelThreadInfo thread, int newPriority) {
@@ -1283,19 +1278,7 @@ public class ThreadManForUser extends HLEModule {
             if (log.isTraceEnabled()) {
                 log.trace("End of callback " + callback);
             }
-            cpu.setRegister(CALLBACKID_REGISTER, callback.getSavedIdRegister());
-            cpu._ra = callback.getSavedRa();
-            cpu.pc = callback.getSavedPc();
-            IAction afterAction = callback.getAfterAction();
-            if (afterAction != null) {
-                afterAction.execute();
-            }
-
-            // Do we need to restore $v0/$v1?
-            if (callback.isReturnVoid()) {
-            	cpu._v0 = callback.getSavedV0();
-            	cpu._v1 = callback.getSavedV1();
-            }
+            callback.executeExit(cpu);
         }
     }
 
@@ -1313,10 +1296,10 @@ public class ThreadManForUser extends HLEModule {
      * @param returnVoid  the code has a void return value, i.e. $v0/$v1 have to be restored
      */
     public void callAddress(int address, IAction afterAction, boolean returnVoid) {
-        callAddress(null, address, afterAction, returnVoid, null);
+        callAddress(null, address, afterAction, returnVoid, false, null);
     }
 
-    private void callAddress(SceKernelThreadInfo thread, int address, IAction afterAction, boolean returnVoid, int[] parameters) {
+    private void callAddress(SceKernelThreadInfo thread, int address, IAction afterAction, boolean returnVoid, boolean preserveCpuState, int[] parameters) {
         if (thread != null) {
             // Save the wait state of the thread to restore it after the call
             int status = thread.status;
@@ -1334,7 +1317,7 @@ public class ThreadManForUser extends HLEModule {
         }
 
         int callbackId = callbackManager.getNewCallbackId();
-        Callback callback = new Callback(callbackId, address, parameters, afterAction, returnVoid);
+        Callback callback = new Callback(callbackId, address, parameters, afterAction, returnVoid, preserveCpuState);
 
         callbackManager.addCallback(callback);
 
@@ -1372,7 +1355,7 @@ public class ThreadManForUser extends HLEModule {
             log.debug(String.format("Execute callback 0x%08X, afterAction=%s, returnVoid=%b", address, afterAction, returnVoid));
         }
 
-        callAddress(thread, address, afterAction, returnVoid, null);
+        callAddress(thread, address, afterAction, returnVoid, false, null);
     }
 
     /**
@@ -1392,7 +1375,7 @@ public class ThreadManForUser extends HLEModule {
             log.debug(String.format("Execute callback 0x%08X($a0=0x%08X), afterAction=%s, returnVoid=%b", address, registerA0, afterAction, returnVoid));
         }
 
-        callAddress(thread, address, afterAction, returnVoid, new int[]{registerA0});
+        callAddress(thread, address, afterAction, returnVoid, false, new int[]{registerA0});
     }
 
     /**
@@ -1413,7 +1396,7 @@ public class ThreadManForUser extends HLEModule {
             log.debug(String.format("Execute callback 0x%08X($a0=0x%08X, $a1=0x%08X), afterAction=%s, returnVoid=%b", address, registerA0, registerA1, afterAction, returnVoid));
         }
 
-        callAddress(thread, address, afterAction, returnVoid, new int[]{registerA0, registerA1});
+        callAddress(thread, address, afterAction, returnVoid, false, new int[]{registerA0, registerA1});
     }
 
     /**
@@ -1435,7 +1418,31 @@ public class ThreadManForUser extends HLEModule {
             log.debug(String.format("Execute callback 0x%08X($a0=0x%08X, $a1=0x%08X, $a2=0x%08X), afterAction=%s, returnVoid=%b", address, registerA0, registerA1, registerA2, afterAction, returnVoid));
         }
 
-        callAddress(thread, address, afterAction, returnVoid, new int[]{registerA0, registerA1, registerA2});
+        callAddress(thread, address, afterAction, returnVoid, false, new int[]{registerA0, registerA1, registerA2});
+    }
+
+    /**
+     * Trigger a call to a callback in the context of a thread.
+     * This call can return before the completion of the callback. Use the
+     * "afterAction" parameter to trigger some actions that need to be executed
+     * after the callback (e.g. to evaluate a return value in cpu.gpr[2]).
+     *
+     * @param thread      the callback has to be executed by this thread (null means the currentThread)
+     * @param address     address of the callback
+     * @param afterAction action to be executed after the completion of the callback
+     * @param returnVoid  the callback has a void return value, i.e. $v0/$v1 have to be restored
+     * @param preserverCpuState preserve the complete CpuState while executing the callback.
+     *                    All the registers will be restored after the callback execution.
+     * @param registerA0  first parameter of the callback ($a0)
+     * @param registerA1  second parameter of the callback ($a1)
+     * @param registerA2  third parameter of the callback ($a2)
+     */
+    public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction, boolean returnVoid, boolean preserverCpuState, int registerA0, int registerA1, int registerA2) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("Execute callback 0x%08X($a0=0x%08X, $a1=0x%08X, $a2=0x%08X), afterAction=%s, returnVoid=%b, preserverCpuState=%b", address, registerA0, registerA1, registerA2, afterAction, returnVoid, preserverCpuState));
+        }
+
+        callAddress(thread, address, afterAction, returnVoid, preserverCpuState, new int[]{registerA0, registerA1, registerA2});
     }
 
     /**
@@ -1458,7 +1465,7 @@ public class ThreadManForUser extends HLEModule {
             log.debug(String.format("Execute callback 0x%08X($a0=0x%08X, $a1=0x%08X, $a2=0x%08X, $a3=0x%08X), afterAction=%s, returnVoid=%b", address, registerA0, registerA1, registerA2, registerA3, afterAction, returnVoid));
         }
 
-        callAddress(thread, address, afterAction, returnVoid, new int[]{registerA0, registerA1, registerA2, registerA3});
+        callAddress(thread, address, afterAction, returnVoid, false, new int[]{registerA0, registerA1, registerA2, registerA3});
     }
 
     /**
@@ -1481,7 +1488,7 @@ public class ThreadManForUser extends HLEModule {
             log.debug(String.format("Execute callback 0x%08X($a0=0x%08X, $a1=0x%08X, $a2=0x%08X, $a3=0x%08X, $t0=0x%08X), afterAction=%s, returnVoid=%b", address, registerA0, registerA1, registerA2, registerA3, registerT0, afterAction, returnVoid));
         }
 
-        callAddress(thread, address, afterAction, returnVoid, new int[]{registerA0, registerA1, registerA2, registerA3, registerT0});
+        callAddress(thread, address, afterAction, returnVoid, false, new int[]{registerA0, registerA1, registerA2, registerA3, registerT0});
     }
 
     @HLEFunction(nid = HLESyscallNid, version = 150)
@@ -1639,8 +1646,15 @@ public class ThreadManForUser extends HLEModule {
         // Set thread $gp
         thread.cpuContext._gp = gp;
 
+        // Update the exit status.
+        thread.exitStatus = ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
+
         // switch in the target thread if it's higher priority
         hleChangeThreadState(thread, PSP_THREAD_READY);
+
+        // Execute the event in the context of the starting thread
+        triggerThreadEvent(thread, thread, THREAD_EVENT_START);
+
         if (thread.currentPriority < currentThread.currentPriority) {
             if (log.isDebugEnabled()) {
                 log.debug("hleKernelStartThread switching in thread immediately");
@@ -2094,55 +2108,39 @@ public class ThreadManForUser extends HLEModule {
         return 0;
     }
 
+    @HLELogging
     @HLEFunction(nid = 0x0C106E53, version = 150, checkInsideInterrupt = true)
-    public int sceKernelRegisterThreadEventHandler(@StringInfo(maxLength = 32) String name, int thid, int mask, int handler_func, int common_addr) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelRegisterThreadEventHandler name=" + name + ", thid=0x" + Integer.toHexString(thid) + ", mask=0x" + Integer.toHexString(mask) + ", handler_func=0x" + Integer.toHexString(handler_func) + ", common_addr=0x" + Integer.toHexString(common_addr));
+    public int sceKernelRegisterThreadEventHandler(@StringInfo(maxLength = 32) String name, int thid, int mask, TPointer handlerFunc, int commonAddr) {
+        switch (thid) {
+	        case SceKernelThreadEventHandlerInfo.THREAD_EVENT_ID_CURRENT:
+	        	// Only allowed for THREAD_EVENT_EXIT (doesn't make sense for the other events).
+	        	if (mask != SceKernelThreadEventHandlerInfo.THREAD_EVENT_EXIT) {
+	        		return SceKernelErrors.ERROR_KERNEL_OUT_OF_RANGE;
+	        	}
+	        	thid = getCurrentThreadID();
+	        	break;
+	        case SceKernelThreadEventHandlerInfo.THREAD_EVENT_ID_USER:
+	        	// Always allowed
+	        	break;
+	        case SceKernelThreadEventHandlerInfo.THREAD_EVENT_ID_KERN:
+	        case SceKernelThreadEventHandlerInfo.THREAD_EVENT_ID_ALL:
+	        	// Only allowed in kernel mode
+	        	if (!isKernelMode()) {
+	        		return ERROR_KERNEL_NOT_FOUND_THREAD;
+	        	}
+	        	break;
+        	default:
+        		SceKernelThreadInfo thread = getThreadById(thid);
+        		if (thread == null) {
+	        		return ERROR_KERNEL_NOT_FOUND_THREAD;
+        		}
+        		break;
         }
 
-        if (threadMap.containsKey(thid)) {
-            SceKernelThreadEventHandlerInfo handler = new SceKernelThreadEventHandlerInfo(name, thid, mask, handler_func, common_addr);
-            threadEventHandlerMap.put(handler.uid, handler);
-            threadEventMap.put(thid, handler.uid);
-            return handler.uid;
-        }
-        
-        SceKernelThreadEventHandlerInfo handler = new SceKernelThreadEventHandlerInfo(name, thid, mask, handler_func, common_addr);
-        if (thid == SceKernelThreadEventHandlerInfo.THREAD_EVENT_ID_CURRENT) {
-            threadEventHandlerMap.put(handler.uid, handler);
-            threadEventMap.put(getCurrentThread().uid, handler.uid);
-            return handler.uid;
-        }
-        
-        if (thid == SceKernelThreadEventHandlerInfo.THREAD_EVENT_ID_USER) {
-            threadEventHandlerMap.put(handler.uid, handler);
-            for (SceKernelThreadInfo thread : threadMap.values()) {
-                if (thread.isUserMode()) {
-                    threadEventMap.put(thread.uid, handler.uid);
-                }
-            }
-            return handler.uid;
-        }
-        
-        if (thid == SceKernelThreadEventHandlerInfo.THREAD_EVENT_ID_KERN && isKernelMode()) {
-            threadEventHandlerMap.put(handler.uid, handler);
-            for (SceKernelThreadInfo thread : threadMap.values()) {
-                if (thread.isKernelMode()) {
-                    threadEventMap.put(thread.uid, handler.uid);
-                }
-            }
-            return handler.uid;
-        }
-        
-        if (thid == SceKernelThreadEventHandlerInfo.THREAD_EVENT_ID_ALL && isKernelMode()) {
-            threadEventHandlerMap.put(handler.uid, handler);
-            for (SceKernelThreadInfo thread : threadMap.values()) {
-                threadEventMap.put(thread.uid, handler.uid);
-            }
-            return handler.uid;
-        }
-        
-       	return ERROR_KERNEL_NOT_FOUND_THREAD;
+        SceKernelThreadEventHandlerInfo handler = new SceKernelThreadEventHandlerInfo(name, thid, mask, handlerFunc.getAddress(), commonAddr);
+        threadEventHandlers.put(handler.uid, handler);
+
+        return handler.uid;
     }
 
     @HLEFunction(nid = 0x72F3C145, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
@@ -2151,11 +2149,11 @@ public class ThreadManForUser extends HLEModule {
             log.debug("sceKernelReleaseThreadEventHandler uid=0x" + Integer.toHexString(uid));
         }
 
-        if (!threadEventHandlerMap.containsKey(uid)) {
+        if (!threadEventHandlers.containsKey(uid)) {
         	return ERROR_KERNEL_NOT_FOUND_THREAD_EVENT_HANDLER;
         }
 
-    	SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.remove(uid);
+    	SceKernelThreadEventHandlerInfo handler = threadEventHandlers.remove(uid);
     	handler.release();
         return 0;
     }
@@ -2166,11 +2164,11 @@ public class ThreadManForUser extends HLEModule {
             log.debug("sceKernelReferThreadEventHandlerStatus uid=0x" + Integer.toHexString(uid) + ", status_addr=0x" + Integer.toHexString(statusPointer.getAddress()));
         }
 
-        if (!threadEventHandlerMap.containsKey(uid)) {
+        if (!threadEventHandlers.containsKey(uid)) {
         	return ERROR_KERNEL_NOT_FOUND_THREAD_EVENT_HANDLER;
         }
 
-        threadEventHandlerMap.get(uid).write(statusPointer.getMemory(), statusPointer.getAddress());
+        threadEventHandlers.get(uid).write(statusPointer.getMemory(), statusPointer.getAddress());
         return 0;
     }
 
@@ -2337,7 +2335,7 @@ public class ThreadManForUser extends HLEModule {
 
     @HLEFunction(nid = 0xFCCFAD26, version = 150)
     public int sceKernelCancelWakeupThread(@CheckArgument("checkThreadIDAllow0") int uid) {
-        SceKernelThreadInfo thread = getThread(uid);
+        SceKernelThreadInfo thread = getThreadById(uid);
 
         if (log.isDebugEnabled()) {
             log.debug("sceKernelCancelWakeupThread SceUID=" + Integer.toHexString(uid) + ") wakeupCount=" + thread.wakeupCount);
@@ -2382,7 +2380,7 @@ public class ThreadManForUser extends HLEModule {
 
     @HLEFunction(nid = 0x75156E8F, version = 150)
     public int sceKernelResumeThread(@CheckArgument("checkThreadID") int uid) {
-        SceKernelThreadInfo thread = getThread(uid);
+        SceKernelThreadInfo thread = getThreadById(uid);
 
         if (!thread.isSuspended()) {
             log.warn("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " not suspended (status=" + thread.status + ")");
@@ -3215,15 +3213,9 @@ public class ThreadManForUser extends HLEModule {
             return ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
         }
 
-        // Remember the currentThread as it might be changed when starting the thread
-        SceKernelThreadInfo callingThread = currentThread;
-
         log.debug("sceKernelStartThread redirecting to hleKernelStartThread");
 
         hleKernelStartThread(thread, len, data_addr, thread.gpReg_addr);
-        thread.exitStatus = ERROR_KERNEL_THREAD_IS_NOT_DORMANT; // Update the exit status.
-
-        triggerThreadEvent(thread, callingThread, THREAD_EVENT_START);
 
         return 0;
     }
@@ -3379,7 +3371,7 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = 0x71BC9871, version = 150)
     public int sceKernelChangeThreadPriority(@CheckArgument("checkThreadIDAllow0") int uid, @CheckArgument("checkThreadPriority") int priority) {
         SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
-        SceKernelThreadInfo thread = getThread(uid);
+        SceKernelThreadInfo thread = getThreadById(uid);
 
         if (thread.isStopped()) {
             log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid) + " newPriority:0x" + Integer.toHexString(priority) + " oldPriority:0x" + Integer.toHexString(thread.currentPriority) + " thread is stopped, ignoring");
@@ -3427,15 +3419,11 @@ public class ThreadManForUser extends HLEModule {
     }
     
     protected SceKernelThreadInfo getThreadCurrentIsInvalid(int uid) {
-    	SceKernelThreadInfo thread = getThread(uid);
+    	SceKernelThreadInfo thread = getThreadById(uid);
     	if (thread == currentThread) {
             throw(new SceKernelErrorException(ERROR_KERNEL_ILLEGAL_THREAD));
     	}
     	return thread;
-    }
-    
-    protected SceKernelThreadInfo getThread(int uid) {
-        return threadMap.get(uid);
     }
 
     /**
@@ -3531,7 +3519,7 @@ public class ThreadManForUser extends HLEModule {
     /** @return ERROR_NOT_FOUND_THREAD on uid < 0, uid == 0 and thread not found */
     @HLEFunction(nid = 0x3B183E26, version = 150)
     public int sceKernelGetThreadExitStatus(@CheckArgument("checkThreadID") int uid) {
-        SceKernelThreadInfo thread = getThread(uid);
+        SceKernelThreadInfo thread = getThreadById(uid);
         if (!thread.isStopped()) {
             if (log.isDebugEnabled()) {
                 log.debug(String.format("sceKernelGetThreadExitStatus not stopped uid=0x%x", uid));
@@ -3562,7 +3550,7 @@ public class ThreadManForUser extends HLEModule {
      * */
     @HLEFunction(nid = 0x52089CA1, version = 150, checkInsideInterrupt = true)
     public int sceKernelGetThreadStackFreeSize(@CheckArgument("checkThreadIDAllow0") int uid) {
-    	SceKernelThreadInfo thread = getThread(uid);
+    	SceKernelThreadInfo thread = getThreadById(uid);
 
     	// The stack is filled with 0xFF when the thread starts.
     	// Scan for the unused stack space by looking for the first 32-bit value
@@ -3588,7 +3576,7 @@ public class ThreadManForUser extends HLEModule {
      **/
     @HLEFunction(nid = 0x17C1684E, version = 150)
     public int sceKernelReferThreadStatus(@CheckArgument("checkThreadIDAllow0") int uid, TPointer ptr) {
-        SceKernelThreadInfo thread = getThread(uid);
+        SceKernelThreadInfo thread = getThreadById(uid);
 
     	if (log.isDebugEnabled()) {
             log.debug(String.format("sceKernelReferThreadStatus thread=%s, addr=%s", thread, ptr));
@@ -3601,7 +3589,7 @@ public class ThreadManForUser extends HLEModule {
 
     @HLEFunction(nid = 0xFFC36A14, version = 150, checkInsideInterrupt = true)
     public int sceKernelReferThreadRunStatus(@CheckArgument("checkThreadIDAllow0") int uid, TPointer ptr) {
-    	SceKernelThreadInfo thread = getThread(uid);
+    	SceKernelThreadInfo thread = getThreadById(uid);
 
     	if (log.isDebugEnabled()) {
             log.debug(String.format("sceKernelReferThreadRunStatus thread=%s, addr=%s", thread, ptr));
@@ -3851,46 +3839,21 @@ public class ThreadManForUser extends HLEModule {
         private int savedV1;
         private IAction afterAction;
         private boolean returnVoid;
+        private boolean preserveCpuState;
+        private CpuState savedCpuState;
 
-        public Callback(int id, int address, int[] parameters, IAction afterAction, boolean returnVoid) {
+        public Callback(int id, int address, int[] parameters, IAction afterAction, boolean returnVoid, boolean preserveCpuState) {
             this.id = id;
             this.address = address;
             this.parameters = parameters;
             this.afterAction = afterAction;
             this.returnVoid = returnVoid;
-        }
-
-        public IAction getAfterAction() {
-            return afterAction;
+            this.preserveCpuState = preserveCpuState;
         }
 
         public int getId() {
             return id;
         }
-
-        public int getSavedIdRegister() {
-            return savedIdRegister;
-        }
-
-        public int getSavedRa() {
-            return savedRa;
-        }
-
-        public int getSavedPc() {
-            return savedPc;
-        }
-
-		public int getSavedV0() {
-			return savedV0;
-		}
-
-		public int getSavedV1() {
-			return savedV1;
-		}
-
-		public boolean isReturnVoid() {
-			return returnVoid;
-		}
 
 		public void execute(SceKernelThreadInfo thread) {
 			CpuState cpu = thread.cpuContext;
@@ -3900,6 +3863,9 @@ public class ThreadManForUser extends HLEModule {
 	        savedPc = cpu.pc;
 	        savedV0 = cpu._v0;
 	        savedV1 = cpu._v1;
+	        if (preserveCpuState) {
+	        	savedCpuState = new CpuState(cpu);
+			}
 
 	        // Copy parameters ($a0, $a1, ...) to the cpu
 	        if (parameters != null) {
@@ -3915,14 +3881,33 @@ public class ThreadManForUser extends HLEModule {
 	        RuntimeContext.executeCallback();
 		}
 
+		public void executeExit(CpuState cpu) {
+            cpu.setRegister(CALLBACKID_REGISTER, savedIdRegister);
+            cpu._ra = savedRa;
+            cpu.pc = savedPc;
+
+			if (afterAction != null) {
+                afterAction.execute();
+            }
+
+			if (preserveCpuState) {
+				cpu.copy(savedCpuState);
+			} else {
+	            // Do we need to restore $v0/$v1?
+	            if (returnVoid) {
+	            	cpu._v0 = savedV0;
+	            	cpu._v1 = savedV1;
+	            }
+			}
+		}
+
 		@Override
         public String toString() {
-            return String.format("Callback address=0x%08X,id=%d,returnVoid=%b", address, getId(), isReturnVoid());
+            return String.format("Callback address=0x%08X,id=%d,returnVoid=%b", address, getId(), returnVoid);
         }
     }
 
     private class AfterCallAction implements IAction {
-
         SceKernelThreadInfo thread;
         int status;
         int waitType;

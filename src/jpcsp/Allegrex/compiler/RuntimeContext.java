@@ -697,6 +697,11 @@ public class RuntimeContext {
 		thread.setInSyscall(false);
     	try {
     		updateStaticVariables();
+
+    		// Execute any thread event handler for THREAD_EVENT_START
+    		// in the thread context, before starting the thread execution.
+    		threadMan.checkPendingCallbacks();
+
     		execWithReturnAddress(executable, ThreadManForUser.THREAD_EXIT_HANDLER_ADDRESS);
             // NOTE: When a thread exits by itself (without calling sceKernelExitThread),
             // it's exitStatus becomes it's return value.

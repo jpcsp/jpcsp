@@ -26,10 +26,10 @@ public class SceKernelThreadEventHandlerInfo extends pspAbstractMemoryMappedStru
 	public int mask;
     public int handler;
     public final int common;
+    private boolean active;
 
     // Internal info.
 	public final int uid;
-    public int result;  // Return value from the handler's callback.
 
 	private static final String uidPurpose = "ThreadMan-ThreadEventHandler";
 
@@ -51,6 +51,7 @@ public class SceKernelThreadEventHandlerInfo extends pspAbstractMemoryMappedStru
 		this.mask = mask;
         this.handler = handler;
         this.common = common;
+		setActive(true);
 
 		uid = SceUidManager.getNewUid(uidPurpose);
 	}
@@ -59,6 +60,7 @@ public class SceKernelThreadEventHandlerInfo extends pspAbstractMemoryMappedStru
 		SceUidManager.releaseUid(uid, uidPurpose);
 		mask = 0;
 		handler = 0;
+		setActive(false);
 	}
 
 	public boolean hasEventMask(int event) {
@@ -66,19 +68,37 @@ public class SceKernelThreadEventHandlerInfo extends pspAbstractMemoryMappedStru
 	}
 
 	public void triggerThreadEventHandler(SceKernelThreadInfo contextThread, int event) {
-        Modules.ThreadManForUserModule.executeCallback(contextThread, handler, new AfterEventHandler(), false, event, thid, common);
+		// Execute the handler and preserve the complete CpuState (i.e. restore all the CPU register after the execution of the handler)
+        Modules.ThreadManForUserModule.executeCallback(contextThread, handler, new AfterEventHandler(), false, true, event, thid, common);
     }
 
-    private class AfterEventHandler implements IAction {
-		@Override
-		public void execute() {
-			result = Emulator.getProcessor().cpu._v0;
-
-			if (Modules.log.isInfoEnabled()) {
-				Modules.log.info(String.format("Thread Event Handler exit detected (thid=%X, result=0x%08X)", thid, result));
-			}
+	public boolean appliesFor(SceKernelThreadInfo currentThread, SceKernelThreadInfo thread, int event) {
+		if ((mask & event) == 0) {
+			return false;
 		}
-    }
+		if (!isActive()) {
+			return false;
+		}
+		if (!currentThread.isUserMode() && thread.isUserMode()) {
+			return false;
+		}
+		if (thid == THREAD_EVENT_ID_ALL || thid == THREAD_EVENT_ID_KERN || thid == thread.uid) {
+			return true;
+		}
+		if (thid == THREAD_EVENT_ID_USER && thread.isUserMode() && currentThread.isUserMode()) {
+			return true;
+		}
+
+		return false;
+	}
+
+	public boolean isActive() {
+		return active;
+	}
+
+	public void setActive(boolean active) {
+		this.active = active;
+	}
 
 	@Override
 	protected void write() {
@@ -89,4 +109,20 @@ public class SceKernelThreadEventHandlerInfo extends pspAbstractMemoryMappedStru
 		write32(handler);
         write32(common);
 	}
+
+	private class AfterEventHandler implements IAction {
+		@Override
+		public void execute() {
+			int result = Emulator.getProcessor().cpu._v0;
+
+			// The event handler is deleted when it returns a value != 0
+			if (result != 0) {
+				setActive(false);
+			}
+
+			if (Modules.log.isInfoEnabled()) {
+				Modules.log.info(String.format("Thread Event Handler exit detected (thid=0x%X, result=0x%08X)", thid, result));
+			}
+		}
+    }
 }
