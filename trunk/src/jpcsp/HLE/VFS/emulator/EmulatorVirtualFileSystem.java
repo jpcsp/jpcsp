@@ -22,23 +22,23 @@ import jpcsp.HLE.VFS.AbstractVirtualFileSystem;
 import jpcsp.autotests.AutoTestsOutput;
 
 public class EmulatorVirtualFileSystem extends AbstractVirtualFileSystem {
-	public static final int EMULATOR_DEVCTL__GET_HAS_DISPLAY = 1;
-	public static final int EMULATOR_DEVCTL__SEND_OUTPUT = 2;
-	public static final int EMULATOR_DEVCTL__IS_EMULATOR = 3;
+	public static final int EMULATOR_DEVCTL_GET_HAS_DISPLAY = 1;
+	public static final int EMULATOR_DEVCTL_SEND_OUTPUT = 2;
+	public static final int EMULATOR_DEVCTL_IS_EMULATOR = 3;
 
 	@Override
 	public int ioDevctl(String deviceName, int command, TPointer inputPointer, int inputLength, TPointer outputPointer, int outputLength) {
     	switch (command) {
-			case EMULATOR_DEVCTL__GET_HAS_DISPLAY:
+			case EMULATOR_DEVCTL_GET_HAS_DISPLAY:
 				if (!outputPointer.isAddressGood() || outputLength < 4) {
 					return super.ioDevctl(deviceName, command, inputPointer, inputLength, outputPointer, outputLength);
 				}
 				outputPointer.setValue32(1);
 				break;
-			case EMULATOR_DEVCTL__SEND_OUTPUT:
+			case EMULATOR_DEVCTL_SEND_OUTPUT:
 				AutoTestsOutput.appendString(new String(Memory.getInstance().readChunk(inputPointer.getAddress(), inputLength).array()));
 				break;
-			case EMULATOR_DEVCTL__IS_EMULATOR:
+			case EMULATOR_DEVCTL_IS_EMULATOR:
 				break;
 			default:
 				// Unknown command

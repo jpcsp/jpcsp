@@ -18,124 +18,77 @@ package jpcsp.filesystems.umdiso;
 
 import static jpcsp.filesystems.umdiso.UmdIsoFile.sectorLength;
 
-import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 
-import jpcsp.Emulator;
 import jpcsp.filesystems.umdiso.iso9660.Iso9660Directory;
 import jpcsp.filesystems.umdiso.iso9660.Iso9660File;
 import jpcsp.filesystems.umdiso.iso9660.Iso9660Handler;
 import jpcsp.util.Utilities;
 
-import org.bolet.jgz.Inflater;
-
 /**
  *
- * @author gigaherz
+ * @author gigaherz, gid15
  */
 public class UmdIsoReader {
-	public static int startSector = 16;
-    RandomAccessFile fileReader;
-    private HashMap<String, Iso9660File> fileCache = new HashMap<String, Iso9660File>();
-    private HashMap<String, Iso9660Directory> dirCache = new HashMap<String, Iso9660Directory>();
-
-    enum FileFormat {
-        Uncompressed,
-        CompressedCSO,
-        CompressedDAX,
-        Unknown
-    }
-    FileFormat format;
-    int numSectors;
-    long[] sectorOffsets;
-    int offsetShift;
-    String name;
-
-    private int Ubyte(byte b) {
-        return (b)&255;
-    }
-
-    private int BytesToInt(byte[] bytes, int offset) throws ArrayIndexOutOfBoundsException {
-        return Ubyte(bytes[offset+0]) | (Ubyte(bytes[offset+1])<<8) | (Ubyte(bytes[offset+2])<<16) | (bytes[offset+3]<<24);
-    }
+	public static final int startSector = 16;
+	private static final int headerLength = 24;
+    private final ISectorDevice sectorDevice;
+    private final HashMap<String, Iso9660File> fileCache = new HashMap<String, Iso9660File>();
+    private final HashMap<String, Iso9660Directory> dirCache = new HashMap<String, Iso9660Directory>();
+    private final int numSectors;
 
     public UmdIsoReader(String umdFilename) throws IOException, FileNotFoundException {
-        name = umdFilename;
-        fileReader = new RandomAccessFile(umdFilename,"r");
-        format = FileFormat.Uncompressed;
-        numSectors = (int)(fileReader.length() / sectorLength);
+        RandomAccessFile fileReader = new RandomAccessFile(umdFilename,"r");
 
-        /*
-            u32 'CISO'
-            u32 0?
-            u32 image size in bytes (why? it could have been sectors and make thigns simpler!)
-            u32 sector size? (00000800 = 2048 = sector size)
-            u32 ? (1)
-            u32[] sector offsets (as many as image size / sector size, I guess)
-        */
-
-        byte[] id = new byte[24];
-
+        byte[] header = new byte[headerLength];
         fileReader.seek(0);
-        fileReader.read(id);
+        fileReader.read(header);
 
-        if((((char)id[0])=='C')&&
-           (((char)id[1])=='I')&&
-           (((char)id[2])=='S')&&
-           (((char)id[3])=='O')) {
-            format = FileFormat.CompressedCSO;
-            int lenInbytes = BytesToInt(id,8);
-            int sectorSize = BytesToInt(id,16);
-            //int version = Ubyte(id[20]);
-            offsetShift = Ubyte(id[21]);
-            numSectors = lenInbytes/sectorSize;
-            sectorOffsets = new long[numSectors+1];
-            byte[] offsetData = new byte[(numSectors+1)*4];
-            fileReader.readFully(offsetData);
-
-            for(int i = 0; i <= numSectors; i++)  {
-                sectorOffsets[i] = (BytesToInt(offsetData, i*4))&0xFFFFFFFFl;
-                if(i > 0) {
-                    if((sectorOffsets[i]&0x7FFFFFFF) < (sectorOffsets[i-1]&0x7FFFFFFF)) {
-                        throw new IOException("Invalid offset [" + i + "]: " + sectorOffsets[i] + "<" + sectorOffsets[i-1]);
-                    }
-                }
-            }
+        if (header[0] == 'C' && header[1] == 'I' && header[2] == 'S' && header[3] == 'O') {
+        	sectorDevice = new CSOFileSectorDevice(fileReader, header);
+        } else {
+        	sectorDevice = new ISOFileSectorDevice(fileReader);
         }
+        numSectors = sectorDevice.getNumSectors();
 
-        id = new byte[6];
-        UmdIsoFile f = null;
-        try {
-            f = new UmdIsoFile(this, startSector, sectorLength, null, null);
-            f.read(id);
-        } catch(ArrayIndexOutOfBoundsException e) {
-            // UmdIsoFile constructor calls readSector and will fail if given a file less than 2048 bytes in size
-            format = FileFormat.Unknown;
-            throw new IOException("Unsupported file format or corrupt file.");
-        } finally {
-            Utilities.close(f);
+        if (!hasIsoHeader()) {
+        	throw new IOException(String.format("Unsupported file format or corrupted file '%s'.", umdFilename));
         }
+    }
 
-        if((((char)id[1])=='C')&&
-           (((char)id[2])=='D')&&
-           (((char)id[3])=='0')&&
-           (((char)id[4])=='0')&&
-           (((char)id[5])=='1')) {
-            if(format == FileFormat.Uncompressed) {
-                numSectors = (int)(fileReader.length() / sectorLength);
-            }
-            return;
-        }
+    public UmdIsoReader(ISectorDevice sectorDevice) throws IOException {
+    	this.sectorDevice = sectorDevice;
+    	numSectors = sectorDevice.getNumSectors();
+    }
 
-        format = FileFormat.Unknown;
-        throw new IOException("Unsupported file format or corrupt file.");
+    private boolean hasIsoHeader() throws IOException {
+    	if (numSectors <= 0) {
+    		return false;
+    	}
+
+		UmdIsoFile f = new UmdIsoFile(this, startSector, sectorLength, null, null);
+    	byte[] header = new byte[6];
+    	int length = f.read(header);
+    	f.close();
+    	if (length < header.length) {
+    		return false;
+    	}
+
+		if (header[1] != 'C' || header[2] != 'D' || header[3] != '0' || header[4] != '0' || header[5] != '1') {
+			return false;
+		}
+
+		return true;
+    }
+
+    public int getNumSectors() {
+    	return numSectors;
     }
 
     /**
@@ -149,22 +102,7 @@ public class UmdIsoReader {
      * @throws IOException
      */
     public int readSectors(int sectorNumber, int numberSectors, byte[] buffer, int offset) throws IOException {
-        if ((sectorNumber < 0) || ((sectorNumber + numberSectors) > numSectors)) {
-            throw new ArrayIndexOutOfBoundsException("Sectors Start=" + sectorNumber + ",Length=" + numberSectors + " out of bounds.");
-        }
-
-        if (format == FileFormat.Uncompressed) {
-        	// Read an uncompressed ISO file in one call
-        	fileReader.seek(((long) sectorLength) * sectorNumber);
-        	fileReader.read(buffer, offset, numberSectors * sectorLength);
-        } else {
-        	// Read sector per sector for the other formats
-	        for (int i = 0; i < numberSectors; i++) {
-	        	readSector(sectorNumber + i, buffer, offset + i * sectorLength);
-	        }
-        }
-
-        return numberSectors;
+    	return sectorDevice.readSectors(sectorNumber, numberSectors, buffer, offset);
     }
 
     /**
@@ -176,55 +114,7 @@ public class UmdIsoReader {
      * @throws IOException
      */
     public void readSector(int sectorNumber, byte[] buffer, int offset) throws IOException {
-        if (sectorNumber < 0 || sectorNumber >= numSectors) {
-        	Arrays.fill(buffer, offset, offset + sectorLength, (byte) 0);
-        	Emulator.log.warn(String.format("Sector number %d out of ISO (numSectors=%d)", sectorNumber, numSectors));
-        	return;
-        }
-
-        if (format == FileFormat.Uncompressed) {
-            fileReader.seek(((long) sectorLength) * sectorNumber);
-            fileReader.read(buffer, offset, sectorLength);
-            return;
-        }
-
-        if (format == FileFormat.CompressedCSO) {
-            long sectorOffset = sectorOffsets[sectorNumber];
-            long sectorEnd    = sectorOffsets[sectorNumber+1];
-
-            if ((sectorOffset & 0x80000000) != 0) {
-                long realOffset = (sectorOffset&0x7fffffff) << offsetShift;
-                fileReader.seek(realOffset);
-                fileReader.read(buffer, offset, sectorLength);
-                return;
-            }
-
-            sectorEnd    = (sectorEnd    & 0x7fffffff ) << offsetShift;
-            sectorOffset = (sectorOffset & 0x7fffffff ) << offsetShift;
-
-            int compressedLength = (int)(sectorEnd - sectorOffset);
-            if (compressedLength < 0) {
-            	for (int i = 0; i < sectorLength; i++) {
-            		buffer[offset + i] = 0;
-            	}
-            	return;
-            }
-
-            byte[] compressedData = new byte[compressedLength];
-            fileReader.seek(sectorOffset);
-            fileReader.read(compressedData);
-
-            try {
-                Inflater inf = new Inflater();
-                ByteArrayInputStream b = new ByteArrayInputStream(compressedData);
-                inf.reset(b);
-                inf.readAll(buffer, offset, sectorLength);
-            } catch(IOException e) {
-                throw new IOException("Exception while uncompressing sector from " + name);
-            }
-            return;
-        }
-        throw new IOException("Unsupported file format or corrupt file.");
+    	sectorDevice.readSector(sectorNumber, buffer, offset);
     }
 
     /**
@@ -431,10 +321,6 @@ public class UmdIsoReader {
 
     public boolean isDirectory(String filePath) throws IOException, FileNotFoundException {
         return ((getFileProperties(filePath) & 2) == 2);
-    }
-
-    public String getFilename() {
-        return name;
     }
 
     private String getFileNameRecursive(int fileStartSector, String path, String[] files) throws FileNotFoundException, IOException {
