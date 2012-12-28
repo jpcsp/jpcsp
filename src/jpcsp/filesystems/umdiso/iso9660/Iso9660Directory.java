@@ -29,7 +29,7 @@ import jpcsp.filesystems.umdiso.UmdIsoReader;
  * @author gigaherz
  */
 public class Iso9660Directory {
-    private List<Iso9660File> files;
+    private final List<Iso9660File> files;
 
     public Iso9660Directory(UmdIsoReader r, int directorySector, int directorySize) throws IOException {
         // parse directory sector
@@ -37,7 +37,8 @@ public class Iso9660Directory {
 
         files = new ArrayList<Iso9660File>();
 
-        byte[] b;
+        byte[] b = new byte[256];
+
         while (directorySize >= 1) {
             int entryLength = dataStream.read();
 
@@ -48,11 +49,9 @@ public class Iso9660Directory {
             }
 
             directorySize -= entryLength;
+            int readLength = dataStream.read(b, 0, entryLength - 1);
+            Iso9660File file = new Iso9660File(b, readLength);
 
-            b = new byte[entryLength - 1];
-            dataStream.read(b);
-
-            Iso9660File file = new Iso9660File(b,b.length);
             files.add(file);
         }
 
@@ -64,20 +63,23 @@ public class Iso9660Directory {
     }
 
     public int getFileIndex(String fileName) throws FileNotFoundException {
-        for (int i = 0; i < files.size(); i++) {
-            String file = files.get(i).getFileName();
-            if (file.equalsIgnoreCase(fileName)) {
+    	int i = 0;
+    	for (Iso9660File file : files) {
+            if (file.getFileName().equalsIgnoreCase(fileName)) {
                 return i;
             }
-        }
+            i++;
+    	}
 
-        throw new FileNotFoundException("File " + fileName + " not found in directory.");
+        throw new FileNotFoundException(String.format("File '%s' not found in directory.", fileName));
     }
 
     public String[] getFileList() throws FileNotFoundException {
         String[] list = new String[files.size()];
-        for (int i = 0; i < files.size(); i++) {
-            list[i] = files.get(i).getFileName();
+        int i = 0;
+        for (Iso9660File file : files) {
+        	list[i] = file.getFileName();
+        	i++;
         }
         return list;
     }
