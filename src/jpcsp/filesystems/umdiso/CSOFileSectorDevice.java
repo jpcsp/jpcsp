@@ -16,8 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.filesystems.umdiso;
 
-import static jpcsp.filesystems.umdiso.UmdIsoFile.sectorLength;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -33,8 +31,8 @@ public class CSOFileSectorDevice extends ISOFileSectorDevice {
 	protected long[] sectorOffsets;
 	private static final long sectorOffsetMask = 0x7FFFFFFFL;
 
-	public CSOFileSectorDevice(RandomAccessFile fileReader, byte[] header) throws IOException {
-		super(fileReader);
+	public CSOFileSectorDevice(RandomAccessFile fileAccess, byte[] header) throws IOException {
+		super(fileAccess);
 		ByteBuffer byteBuffer = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN);
 
         /*
@@ -53,7 +51,7 @@ public class CSOFileSectorDevice extends ISOFileSectorDevice {
 		sectorOffsets = new long[numSectors + 1];
 
 		byte[] offsetData = new byte[(numSectors + 1) * 4];
-		fileReader.readFully(offsetData);
+		fileAccess.readFully(offsetData);
 		ByteBuffer offsetBuffer = ByteBuffer.wrap(offsetData).order(ByteOrder.LITTLE_ENDIAN);
 
 		for (int i = 0; i <= numSectors; i++) {
@@ -78,8 +76,8 @@ public class CSOFileSectorDevice extends ISOFileSectorDevice {
 
         if ((sectorOffset & 0x80000000) != 0) {
             long realOffset = (sectorOffset & sectorOffsetMask) << offsetShift;
-            fileReader.seek(realOffset);
-            fileReader.read(buffer, offset, sectorLength);
+            fileAccess.seek(realOffset);
+            fileAccess.read(buffer, offset, sectorLength);
         } else {
 	        sectorEnd = (sectorEnd & sectorOffsetMask) << offsetShift;
 	        sectorOffset = (sectorOffset & sectorOffsetMask) << offsetShift;
@@ -89,8 +87,8 @@ public class CSOFileSectorDevice extends ISOFileSectorDevice {
 	        	Arrays.fill(buffer, offset, offset + sectorLength, (byte) 0);
 	        } else {
 		        byte[] compressedData = new byte[compressedLength];
-		        fileReader.seek(sectorOffset);
-		        fileReader.read(compressedData);
+		        fileAccess.seek(sectorOffset);
+		        fileAccess.read(compressedData);
 
 		        try {
 		            Inflater inf = new Inflater();
@@ -111,5 +109,15 @@ public class CSOFileSectorDevice extends ISOFileSectorDevice {
         }
 
         return numberSectors;
+	}
+
+	@Override
+	public void writeSector(int sectorNumber, byte[] buffer, int offset) throws IOException {
+		throw new IOException("CSO is read-only");
+	}
+
+	@Override
+	public void writeSectors(int sectorNumber, int numberSectors, byte[] buffer, int offset) throws IOException {
+		throw new IOException("CSO is read-only");
 	}
 }

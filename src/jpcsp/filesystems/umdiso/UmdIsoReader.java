@@ -69,6 +69,10 @@ public class UmdIsoReader {
     	numSectors = sectorDevice.getNumSectors();
     }
 
+    public void close() throws IOException {
+    	sectorDevice.close();
+    }
+
     private boolean hasIsoHeader() throws IOException {
     	if (numSectors <= 0) {
     		return false;
