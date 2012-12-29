@@ -16,8 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.filesystems.umdiso;
 
-import static jpcsp.filesystems.umdiso.UmdIsoFile.sectorLength;
-
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
@@ -28,21 +26,21 @@ import jpcsp.Emulator;
 
 public class ISOFileSectorDevice implements ISectorDevice {
 	protected static Logger log = Emulator.log;
-	protected RandomAccessFile fileReader;
+	protected RandomAccessFile fileAccess;
 
-	public ISOFileSectorDevice(RandomAccessFile fileReader) {
-		this.fileReader = fileReader;
+	public ISOFileSectorDevice(RandomAccessFile fileAccess) {
+		this.fileAccess = fileAccess;
 	}
 
 	@Override
 	public int getNumSectors() throws IOException {
-		return (int) (fileReader.length() / sectorLength);
+		return (int) (fileAccess.length() / sectorLength);
 	}
 
 	@Override
 	public void readSector(int sectorNumber, byte[] buffer, int offset) throws IOException {
-        fileReader.seek(((long) sectorLength) * sectorNumber);
-        int length = fileReader.read(buffer, offset, sectorLength);
+        fileAccess.seek(((long) sectorLength) * sectorNumber);
+        int length = fileAccess.read(buffer, offset, sectorLength);
         if (length < sectorLength) {
         	Arrays.fill(buffer, length, sectorLength, (byte) 0);
         }
@@ -50,9 +48,26 @@ public class ISOFileSectorDevice implements ISectorDevice {
 
 	@Override
 	public int readSectors(int sectorNumber, int numberSectors, byte[] buffer, int offset) throws IOException {
-    	fileReader.seek(((long) sectorLength) * sectorNumber);
-    	int length = fileReader.read(buffer, offset, numberSectors * sectorLength);
+    	fileAccess.seek(((long) sectorLength) * sectorNumber);
+    	int length = fileAccess.read(buffer, offset, numberSectors * sectorLength);
 
     	return length / sectorLength;
+	}
+
+	@Override
+	public void close() throws IOException {
+		fileAccess.close();
+		fileAccess = null;
+	}
+
+	@Override
+	public void writeSector(int sectorNumber, byte[] buffer, int offset) throws IOException {
+		writeSectors(sectorNumber, 1, buffer, offset);
+	}
+
+	@Override
+	public void writeSectors(int sectorNumber, int numberSectors, byte[] buffer, int offset) throws IOException {
+        fileAccess.seek(((long) sectorLength) * sectorNumber);
+        fileAccess.write(buffer, offset, numberSectors * sectorLength);
 	}
 }

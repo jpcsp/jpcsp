@@ -1149,8 +1149,25 @@ public class IoFileMgrForUser extends HLEModule {
         this.filepath = filepath;
     }
 
+    public void exit() {
+    	closeIsoReader();
+    }
+
+    private void closeIsoReader() {
+    	if (iso != null) {
+    		try {
+				iso.close();
+			} catch (IOException e) {
+				log.error("Error closing ISO reader", e);
+			}
+    		iso = null;
+    	}
+    }
+
     public void setIsoReader(UmdIsoReader iso) {
-        this.iso = iso;
+    	closeIsoReader();
+
+    	this.iso = iso;
 
         registerUmdIso();
     }

@@ -28,7 +28,7 @@ import jpcsp.filesystems.SeekableInputStream;
  * @author gigaherz
  */
 public class UmdIsoFile extends SeekableInputStream {
-	public static final int sectorLength = 2048;
+	public static final int sectorLength = ISectorDevice.sectorLength;
     private int startSectorNumber;
     private int currentSectorNumber;
     private long currentOffset;

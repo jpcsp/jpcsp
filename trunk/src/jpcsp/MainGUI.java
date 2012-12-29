@@ -2385,6 +2385,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
         ProOnlineNetworkAdapter.exit();
         Modules.ThreadManForUserModule.exit();
         Modules.sceDisplayModule.exit();
+        Modules.IoFileMgrForUserModule.exit();
         VideoEngine.exit();
         Screen.exit();
         Emulator.exit();
