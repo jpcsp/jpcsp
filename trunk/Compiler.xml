@@ -8695,6 +8695,419 @@
 08A06310:[25080004]: addiu      $t0, $t0, 4
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpySequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
+		<Method>callFixedLength</Method>
+		<Parameters>$a1,$a0,0,0,14</Parameters>
+		<CodeInstructions><![CDATA[
+08BB80F0:[808A0000]: lb         $t2, 0($a0)
+08BB80F4:[808B0001]: lb         $t3, 1($a0)
+08BB80F8:[80820002]: lb         $v0, 2($a0)
+08BB80FC:[A0AA0000]: sb         $t2, 0($a1)
+08BB8100:[808A0003]: lb         $t2, 3($a0)
+08BB8104:[A0AB0001]: sb         $t3, 1($a1)
+08BB8108:[808B0004]: lb         $t3, 4($a0)
+08BB810C:[A0A20002]: sb         $v0, 2($a1)
+08BB8110:[80820005]: lb         $v0, 5($a0)
+08BB8114:[A0AA0003]: sb         $t2, 3($a1)
+08BB8118:[808A0006]: lb         $t2, 6($a0)
+08BB811C:[A0AB0004]: sb         $t3, 4($a1)
+08BB8120:[808B0007]: lb         $t3, 7($a0)
+08BB8124:[A0A20005]: sb         $v0, 5($a1)
+08BB8128:[80820008]: lb         $v0, 8($a0)
+08BB812C:[A0AA0006]: sb         $t2, 6($a1)
+08BB8130:[808A0009]: lb         $t2, 9($a0)
+08BB8134:[A0AB0007]: sb         $t3, 7($a1)
+08BB8138:[808B000A]: lb         $t3, 10($a0)
+08BB813C:[A0A20008]: sb         $v0, 8($a1)
+08BB8140:[8082000B]: lb         $v0, 11($a0)
+08BB8144:[A0AA0009]: sb         $t2, 9($a1)
+08BB8148:[808A000C]: lb         $t2, 12($a0)
+08BB814C:[A0AB000A]: sb         $t3, 10($a1)
+08BB8150:[8084000D]: lb         $a0, 13($a0)
+08BB8154:[A0A2000B]: sb         $v0, 11($a1)
+08BB8158:[A0AA000C]: sb         $t2, 12($a1)
+08BB815C:[A0A4000D]: sb         $a0, 13($a1)
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpySequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
+		<Method>callFixedLength</Method>
+		<Parameters>$a2,$a3,0,0,14</Parameters>
+		<CodeInstructions><![CDATA[
+08BB8160:[80E40000]: lb         $a0, 0($a3)
+08BB8164:[80E50001]: lb         $a1, 1($a3)
+08BB8168:[80EA0002]: lb         $t2, 2($a3)
+08BB816C:[A0C40000]: sb         $a0, 0($a2)
+08BB8170:[80E40003]: lb         $a0, 3($a3)
+08BB8174:[A0C50001]: sb         $a1, 1($a2)
+08BB8178:[80E50004]: lb         $a1, 4($a3)
+08BB817C:[A0CA0002]: sb         $t2, 2($a2)
+08BB8180:[80EA0005]: lb         $t2, 5($a3)
+08BB8184:[A0C40003]: sb         $a0, 3($a2)
+08BB8188:[80E40006]: lb         $a0, 6($a3)
+08BB818C:[A0C50004]: sb         $a1, 4($a2)
+08BB8190:[80E50007]: lb         $a1, 7($a3)
+08BB8194:[A0CA0005]: sb         $t2, 5($a2)
+08BB8198:[80EA0008]: lb         $t2, 8($a3)
+08BB819C:[A0C40006]: sb         $a0, 6($a2)
+08BB81A0:[80E40009]: lb         $a0, 9($a3)
+08BB81A4:[A0C50007]: sb         $a1, 7($a2)
+08BB81A8:[80E5000A]: lb         $a1, 10($a3)
+08BB81AC:[A0CA0008]: sb         $t2, 8($a2)
+08BB81B0:[80EA000B]: lb         $t2, 11($a3)
+08BB81B4:[A0C40009]: sb         $a0, 9($a2)
+08BB81B8:[80E4000C]: lb         $a0, 12($a3)
+08BB81BC:[A0C5000A]: sb         $a1, 10($a2)
+08BB81C0:[80E5000D]: lb         $a1, 13($a3)
+08BB81C4:[A0CA000B]: sb         $t2, 11($a2)
+08BB81C8:[A0C4000C]: sb         $a0, 12($a2)
+08BB81CC:[A0C5000D]: sb         $a1, 13($a2)
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpySequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
+		<Method>callFixedLength</Method>
+		<Parameters>$t0,$t1,0,0,14</Parameters>
+		<BranchInstruction>@08BB823C</BranchInstruction>
+		<CodeInstructions><![CDATA[
+08BB81D0:[81240000]: lb         $a0, 0($t1)
+08BB81D4:[81250001]: lb         $a1, 1($t1)
+08BB81D8:[81260002]: lb         $a2, 2($t1)
+08BB81DC:[A1040000]: sb         $a0, 0($t0)
+08BB81E0:[81240003]: lb         $a0, 3($t1)
+08BB81E4:[A1050001]: sb         $a1, 1($t0)
+08BB81E8:[81250004]: lb         $a1, 4($t1)
+08BB81EC:[A1060002]: sb         $a2, 2($t0)
+08BB81F0:[81260005]: lb         $a2, 5($t1)
+08BB81F4:[A1040003]: sb         $a0, 3($t0)
+08BB81F8:[81240006]: lb         $a0, 6($t1)
+08BB81FC:[A1050004]: sb         $a1, 4($t0)
+08BB8200:[81250007]: lb         $a1, 7($t1)
+08BB8204:[A1060005]: sb         $a2, 5($t0)
+08BB8208:[81260008]: lb         $a2, 8($t1)
+08BB820C:[A1040006]: sb         $a0, 6($t0)
+08BB8210:[81240009]: lb         $a0, 9($t1)
+08BB8214:[A1050007]: sb         $a1, 7($t0)
+08BB8218:[8125000A]: lb         $a1, 10($t1)
+08BB821C:[A1060008]: sb         $a2, 8($t0)
+08BB8220:[8126000B]: lb         $a2, 11($t1)
+08BB8224:[A1040009]: sb         $a0, 9($t0)
+08BB8228:[8124000C]: lb         $a0, 12($t1)
+08BB822C:[A105000A]: sb         $a1, 10($t0)
+08BB8230:[8125000D]: lb         $a1, 13($t1)
+08BB8234:[A106000B]: sb         $a2, 11($t0)
+08BB8238:[A104000C]: sb         $a0, 12($t0)
+08BB823C:[10000055]: b          0x08BB8394
+08BB8240:[A105000D]: sb         $a1, 13($t0)
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpySequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
+		<Method>callFixedLength</Method>
+		<Parameters>$a2,$t1,0,0,14</Parameters>
+		<CodeInstructions><![CDATA[
+08BB82B4:[81240000]: lb         $a0, 0($t1)
+08BB82B8:[81250001]: lb         $a1, 1($t1)
+08BB82BC:[812A0002]: lb         $t2, 2($t1)
+08BB82C0:[A0C40000]: sb         $a0, 0($a2)
+08BB82C4:[81240003]: lb         $a0, 3($t1)
+08BB82C8:[A0C50001]: sb         $a1, 1($a2)
+08BB82CC:[81250004]: lb         $a1, 4($t1)
+08BB82D0:[A0CA0002]: sb         $t2, 2($a2)
+08BB82D4:[812A0005]: lb         $t2, 5($t1)
+08BB82D8:[A0C40003]: sb         $a0, 3($a2)
+08BB82DC:[81240006]: lb         $a0, 6($t1)
+08BB82E0:[A0C50004]: sb         $a1, 4($a2)
+08BB82E4:[81250007]: lb         $a1, 7($t1)
+08BB82E8:[A0CA0005]: sb         $t2, 5($a2)
+08BB82EC:[812A0008]: lb         $t2, 8($t1)
+08BB82F0:[A0C40006]: sb         $a0, 6($a2)
+08BB82F4:[81240009]: lb         $a0, 9($t1)
+08BB82F8:[A0C50007]: sb         $a1, 7($a2)
+08BB82FC:[8125000A]: lb         $a1, 10($t1)
+08BB8300:[A0CA0008]: sb         $t2, 8($a2)
+08BB8304:[812A000B]: lb         $t2, 11($t1)
+08BB8308:[A0C40009]: sb         $a0, 9($a2)
+08BB830C:[8124000C]: lb         $a0, 12($t1)
+08BB8310:[A0C5000A]: sb         $a1, 10($a2)
+08BB8314:[8125000D]: lb         $a1, 13($t1)
+08BB8318:[A0CA000B]: sb         $t2, 11($a2)
+08BB831C:[A0C4000C]: sb         $a0, 12($a2)
+08BB8320:[A0C5000D]: sb         $a1, 13($a2)
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpySequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
+		<Method>callFixedLength</Method>
+		<Parameters>$t0,$a3,0,0,14</Parameters>
+		<CodeInstructions><![CDATA[
+08BB8324:[80E40000]: lb         $a0, 0($a3)
+08BB8328:[80E50001]: lb         $a1, 1($a3)
+08BB832C:[80E60002]: lb         $a2, 2($a3)
+08BB8330:[A1040000]: sb         $a0, 0($t0)
+08BB8334:[80E40003]: lb         $a0, 3($a3)
+08BB8338:[A1050001]: sb         $a1, 1($t0)
+08BB833C:[80E50004]: lb         $a1, 4($a3)
+08BB8340:[A1060002]: sb         $a2, 2($t0)
+08BB8344:[80E60005]: lb         $a2, 5($a3)
+08BB8348:[A1040003]: sb         $a0, 3($t0)
+08BB834C:[80E40006]: lb         $a0, 6($a3)
+08BB8350:[A1050004]: sb         $a1, 4($t0)
+08BB8354:[80E50007]: lb         $a1, 7($a3)
+08BB8358:[A1060005]: sb         $a2, 5($t0)
+08BB835C:[80E60008]: lb         $a2, 8($a3)
+08BB8360:[A1040006]: sb         $a0, 6($t0)
+08BB8364:[80E40009]: lb         $a0, 9($a3)
+08BB8368:[A1050007]: sb         $a1, 7($t0)
+08BB836C:[80E5000A]: lb         $a1, 10($a3)
+08BB8370:[A1060008]: sb         $a2, 8($t0)
+08BB8374:[80E6000B]: lb         $a2, 11($a3)
+08BB8378:[A1040009]: sb         $a0, 9($t0)
+08BB837C:[80E4000C]: lb         $a0, 12($a3)
+08BB8380:[A105000A]: sb         $a1, 10($t0)
+08BB8384:[80E5000D]: lb         $a1, 13($a3)
+08BB8388:[A106000B]: sb         $a2, 11($t0)
+08BB838C:[A104000C]: sb         $a0, 12($t0)
+08BB8390:[A105000D]: sb         $a1, 13($t0)
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpySequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
+		<Method>callFixedLength</Method>
+		<Parameters>$a1,$a0,0,0,16</Parameters>
+		<CodeInstructions><![CDATA[
+08BB6F80:[808A0000]: lb         $t2, 0($a0)
+08BB6F84:[808B0001]: lb         $t3, 1($a0)
+08BB6F88:[80820002]: lb         $v0, 2($a0)
+08BB6F8C:[A0AA0000]: sb         $t2, 0($a1)
+08BB6F90:[808A0003]: lb         $t2, 3($a0)
+08BB6F94:[A0AB0001]: sb         $t3, 1($a1)
+08BB6F98:[808B0004]: lb         $t3, 4($a0)
+08BB6F9C:[A0A20002]: sb         $v0, 2($a1)
+08BB6FA0:[80820005]: lb         $v0, 5($a0)
+08BB6FA4:[A0AA0003]: sb         $t2, 3($a1)
+08BB6FA8:[808A0006]: lb         $t2, 6($a0)
+08BB6FAC:[A0AB0004]: sb         $t3, 4($a1)
+08BB6FB0:[808B0007]: lb         $t3, 7($a0)
+08BB6FB4:[A0A20005]: sb         $v0, 5($a1)
+08BB6FB8:[80820008]: lb         $v0, 8($a0)
+08BB6FBC:[A0AA0006]: sb         $t2, 6($a1)
+08BB6FC0:[808A0009]: lb         $t2, 9($a0)
+08BB6FC4:[A0AB0007]: sb         $t3, 7($a1)
+08BB6FC8:[808B000A]: lb         $t3, 10($a0)
+08BB6FCC:[A0A20008]: sb         $v0, 8($a1)
+08BB6FD0:[8082000B]: lb         $v0, 11($a0)
+08BB6FD4:[A0AA0009]: sb         $t2, 9($a1)
+08BB6FD8:[808A000C]: lb         $t2, 12($a0)
+08BB6FDC:[A0AB000A]: sb         $t3, 10($a1)
+08BB6FE0:[808B000D]: lb         $t3, 13($a0)
+08BB6FE4:[A0A2000B]: sb         $v0, 11($a1)
+08BB6FE8:[8082000E]: lb         $v0, 14($a0)
+08BB6FEC:[A0AA000C]: sb         $t2, 12($a1)
+08BB6FF0:[8084000F]: lb         $a0, 15($a0)
+08BB6FF4:[A0AB000D]: sb         $t3, 13($a1)
+08BB6FF8:[A0A2000E]: sb         $v0, 14($a1)
+08BB6FFC:[A0A4000F]: sb         $a0, 15($a1)
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpySequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
+		<Method>callFixedLength</Method>
+		<Parameters>$a2,$a3,0,0,16</Parameters>
+		<CodeInstructions><![CDATA[
+08BB7000:[80E40000]: lb         $a0, 0($a3)
+08BB7004:[80E50001]: lb         $a1, 1($a3)
+08BB7008:[80EA0002]: lb         $t2, 2($a3)
+08BB700C:[A0C40000]: sb         $a0, 0($a2)
+08BB7010:[80E40003]: lb         $a0, 3($a3)
+08BB7014:[A0C50001]: sb         $a1, 1($a2)
+08BB7018:[80E50004]: lb         $a1, 4($a3)
+08BB701C:[A0CA0002]: sb         $t2, 2($a2)
+08BB7020:[80EA0005]: lb         $t2, 5($a3)
+08BB7024:[A0C40003]: sb         $a0, 3($a2)
+08BB7028:[80E40006]: lb         $a0, 6($a3)
+08BB702C:[A0C50004]: sb         $a1, 4($a2)
+08BB7030:[80E50007]: lb         $a1, 7($a3)
+08BB7034:[A0CA0005]: sb         $t2, 5($a2)
+08BB7038:[80EA0008]: lb         $t2, 8($a3)
+08BB703C:[A0C40006]: sb         $a0, 6($a2)
+08BB7040:[80E40009]: lb         $a0, 9($a3)
+08BB7044:[A0C50007]: sb         $a1, 7($a2)
+08BB7048:[80E5000A]: lb         $a1, 10($a3)
+08BB704C:[A0CA0008]: sb         $t2, 8($a2)
+08BB7050:[80EA000B]: lb         $t2, 11($a3)
+08BB7054:[A0C40009]: sb         $a0, 9($a2)
+08BB7058:[80E4000C]: lb         $a0, 12($a3)
+08BB705C:[A0C5000A]: sb         $a1, 10($a2)
+08BB7060:[80E5000D]: lb         $a1, 13($a3)
+08BB7064:[A0CA000B]: sb         $t2, 11($a2)
+08BB7068:[80EA000E]: lb         $t2, 14($a3)
+08BB706C:[A0C4000C]: sb         $a0, 12($a2)
+08BB7070:[80E4000F]: lb         $a0, 15($a3)
+08BB7074:[A0C5000D]: sb         $a1, 13($a2)
+08BB7078:[A0CA000E]: sb         $t2, 14($a2)
+08BB707C:[A0C4000F]: sb         $a0, 15($a2)
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpySequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
+		<Method>callFixedLength</Method>
+		<Parameters>$t0,$t1,0,0,16</Parameters>
+		<BranchInstruction>@08BB70FC</BranchInstruction>
+		<CodeInstructions><![CDATA[
+08BB7080:[81240000]: lb         $a0, 0($t1)
+08BB7084:[81250001]: lb         $a1, 1($t1)
+08BB7088:[81260002]: lb         $a2, 2($t1)
+08BB708C:[A1040000]: sb         $a0, 0($t0)
+08BB7090:[81240003]: lb         $a0, 3($t1)
+08BB7094:[A1050001]: sb         $a1, 1($t0)
+08BB7098:[81250004]: lb         $a1, 4($t1)
+08BB709C:[A1060002]: sb         $a2, 2($t0)
+08BB70A0:[81260005]: lb         $a2, 5($t1)
+08BB70A4:[A1040003]: sb         $a0, 3($t0)
+08BB70A8:[81240006]: lb         $a0, 6($t1)
+08BB70AC:[A1050004]: sb         $a1, 4($t0)
+08BB70B0:[81250007]: lb         $a1, 7($t1)
+08BB70B4:[A1060005]: sb         $a2, 5($t0)
+08BB70B8:[81260008]: lb         $a2, 8($t1)
+08BB70BC:[A1040006]: sb         $a0, 6($t0)
+08BB70C0:[81240009]: lb         $a0, 9($t1)
+08BB70C4:[A1050007]: sb         $a1, 7($t0)
+08BB70C8:[8125000A]: lb         $a1, 10($t1)
+08BB70CC:[A1060008]: sb         $a2, 8($t0)
+08BB70D0:[8126000B]: lb         $a2, 11($t1)
+08BB70D4:[A1040009]: sb         $a0, 9($t0)
+08BB70D8:[8124000C]: lb         $a0, 12($t1)
+08BB70DC:[A105000A]: sb         $a1, 10($t0)
+08BB70E0:[8125000D]: lb         $a1, 13($t1)
+08BB70E4:[A106000B]: sb         $a2, 11($t0)
+08BB70E8:[8126000E]: lb         $a2, 14($t1)
+08BB70EC:[A104000C]: sb         $a0, 12($t0)
+08BB70F0:[8124000F]: lb         $a0, 15($t1)
+08BB70F4:[A105000D]: sb         $a1, 13($t0)
+08BB70F8:[A106000E]: sb         $a2, 14($t0)
+08BB70FC:[10000061]: b          0x08BB7284
+08BB7100:[A104000F]: sb         $a0, 15($t0)
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpySequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
+		<Method>callFixedLength</Method>
+		<Parameters>$a1,$a0,0,0,16</Parameters>
+		<CodeInstructions><![CDATA[
+08BB7104:[808A0000]: lb         $t2, 0($a0)
+08BB7108:[808B0001]: lb         $t3, 1($a0)
+08BB710C:[80820002]: lb         $v0, 2($a0)
+08BB7110:[A0AA0000]: sb         $t2, 0($a1)
+08BB7114:[808A0003]: lb         $t2, 3($a0)
+08BB7118:[A0AB0001]: sb         $t3, 1($a1)
+08BB711C:[808B0004]: lb         $t3, 4($a0)
+08BB7120:[A0A20002]: sb         $v0, 2($a1)
+08BB7124:[80820005]: lb         $v0, 5($a0)
+08BB7128:[A0AA0003]: sb         $t2, 3($a1)
+08BB712C:[808A0006]: lb         $t2, 6($a0)
+08BB7130:[A0AB0004]: sb         $t3, 4($a1)
+08BB7134:[808B0007]: lb         $t3, 7($a0)
+08BB7138:[A0A20005]: sb         $v0, 5($a1)
+08BB713C:[80820008]: lb         $v0, 8($a0)
+08BB7140:[A0AA0006]: sb         $t2, 6($a1)
+08BB7144:[808A0009]: lb         $t2, 9($a0)
+08BB7148:[A0AB0007]: sb         $t3, 7($a1)
+08BB714C:[808B000A]: lb         $t3, 10($a0)
+08BB7150:[A0A20008]: sb         $v0, 8($a1)
+08BB7154:[8082000B]: lb         $v0, 11($a0)
+08BB7158:[A0AA0009]: sb         $t2, 9($a1)
+08BB715C:[808A000C]: lb         $t2, 12($a0)
+08BB7160:[A0AB000A]: sb         $t3, 10($a1)
+08BB7164:[808B000D]: lb         $t3, 13($a0)
+08BB7168:[A0A2000B]: sb         $v0, 11($a1)
+08BB716C:[8082000E]: lb         $v0, 14($a0)
+08BB7170:[A0AA000C]: sb         $t2, 12($a1)
+08BB7174:[8084000F]: lb         $a0, 15($a0)
+08BB7178:[A0AB000D]: sb         $t3, 13($a1)
+08BB717C:[A0A2000E]: sb         $v0, 14($a1)
+08BB7180:[A0A4000F]: sb         $a0, 15($a1)
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpySequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
+		<Method>callFixedLength</Method>
+		<Parameters>$a2,$t1,0,0,16</Parameters>
+		<CodeInstructions><![CDATA[
+08BB7184:[81240000]: lb         $a0, 0($t1)
+08BB7188:[81250001]: lb         $a1, 1($t1)
+08BB718C:[812A0002]: lb         $t2, 2($t1)
+08BB7190:[A0C40000]: sb         $a0, 0($a2)
+08BB7194:[81240003]: lb         $a0, 3($t1)
+08BB7198:[A0C50001]: sb         $a1, 1($a2)
+08BB719C:[81250004]: lb         $a1, 4($t1)
+08BB71A0:[A0CA0002]: sb         $t2, 2($a2)
+08BB71A4:[812A0005]: lb         $t2, 5($t1)
+08BB71A8:[A0C40003]: sb         $a0, 3($a2)
+08BB71AC:[81240006]: lb         $a0, 6($t1)
+08BB71B0:[A0C50004]: sb         $a1, 4($a2)
+08BB71B4:[81250007]: lb         $a1, 7($t1)
+08BB71B8:[A0CA0005]: sb         $t2, 5($a2)
+08BB71BC:[812A0008]: lb         $t2, 8($t1)
+08BB71C0:[A0C40006]: sb         $a0, 6($a2)
+08BB71C4:[81240009]: lb         $a0, 9($t1)
+08BB71C8:[A0C50007]: sb         $a1, 7($a2)
+08BB71CC:[8125000A]: lb         $a1, 10($t1)
+08BB71D0:[A0CA0008]: sb         $t2, 8($a2)
+08BB71D4:[812A000B]: lb         $t2, 11($t1)
+08BB71D8:[A0C40009]: sb         $a0, 9($a2)
+08BB71DC:[8124000C]: lb         $a0, 12($t1)
+08BB71E0:[A0C5000A]: sb         $a1, 10($a2)
+08BB71E4:[8125000D]: lb         $a1, 13($t1)
+08BB71E8:[A0CA000B]: sb         $t2, 11($a2)
+08BB71EC:[812A000E]: lb         $t2, 14($t1)
+08BB71F0:[A0C4000C]: sb         $a0, 12($a2)
+08BB71F4:[8124000F]: lb         $a0, 15($t1)
+08BB71F8:[A0C5000D]: sb         $a1, 13($a2)
+08BB71FC:[A0CA000E]: sb         $t2, 14($a2)
+08BB7200:[A0C4000F]: sb         $a0, 15($a2)
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpySequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
+		<Method>callFixedLength</Method>
+		<Parameters>$t0,$a3,0,0,16</Parameters>
+		<CodeInstructions><![CDATA[
+08BB7204:[80E40000]: lb         $a0, 0($a3)
+08BB7208:[80E50001]: lb         $a1, 1($a3)
+08BB720C:[80E60002]: lb         $a2, 2($a3)
+08BB7210:[A1040000]: sb         $a0, 0($t0)
+08BB7214:[80E40003]: lb         $a0, 3($a3)
+08BB7218:[A1050001]: sb         $a1, 1($t0)
+08BB721C:[80E50004]: lb         $a1, 4($a3)
+08BB7220:[A1060002]: sb         $a2, 2($t0)
+08BB7224:[80E60005]: lb         $a2, 5($a3)
+08BB7228:[A1040003]: sb         $a0, 3($t0)
+08BB722C:[80E40006]: lb         $a0, 6($a3)
+08BB7230:[A1050004]: sb         $a1, 4($t0)
+08BB7234:[80E50007]: lb         $a1, 7($a3)
+08BB7238:[A1060005]: sb         $a2, 5($t0)
+08BB723C:[80E60008]: lb         $a2, 8($a3)
+08BB7240:[A1040006]: sb         $a0, 6($t0)
+08BB7244:[80E40009]: lb         $a0, 9($a3)
+08BB7248:[A1050007]: sb         $a1, 7($t0)
+08BB724C:[80E5000A]: lb         $a1, 10($a3)
+08BB7250:[A1060008]: sb         $a2, 8($t0)
+08BB7254:[80E6000B]: lb         $a2, 11($a3)
+08BB7258:[A1040009]: sb         $a0, 9($t0)
+08BB725C:[80E4000C]: lb         $a0, 12($a3)
+08BB7260:[A105000A]: sb         $a1, 10($t0)
+08BB7264:[80E5000D]: lb         $a1, 13($a3)
+08BB7268:[A106000B]: sb         $a2, 11($t0)
+08BB726C:[80E6000E]: lb         $a2, 14($a3)
+08BB7270:[A104000C]: sb         $a0, 12($t0)
+08BB7274:[80E4000F]: lb         $a0, 15($a3)
+08BB7278:[A105000D]: sb         $a1, 13($t0)
+08BB727C:[A106000E]: sb         $a2, 14($t0)
+08BB7280:[A104000F]: sb         $a0, 15($t0)
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="MultDiv">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.arithmetic.MultDiv</Class>
 		<Method>call</Method>
