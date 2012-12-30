@@ -16,11 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS.local;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.HLE.VFS.ITmpVirtualFileSystem;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.settings.Settings;
 
 public class TmpLocalVirtualFileSystem extends LocalVirtualFileSystem implements ITmpVirtualFileSystem {
+	protected static Logger log = Logger.getLogger("vfs");
+
 	public TmpLocalVirtualFileSystem() {
 		super(Settings.getInstance().readString("emu.tmppath") + "/");
 	}
@@ -28,6 +32,10 @@ public class TmpLocalVirtualFileSystem extends LocalVirtualFileSystem implements
 	@Override
 	public IVirtualFile ioOpen(String fileName, int flags, int mode, IPurpose purpose) {
 		String purposeFileName = purpose.getFileName(fileName);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("TmpLocalVirtualFileSystem ioOpen %s -> %s", fileName, purposeFileName));
+		}
 
 		return ioOpen(purposeFileName, flags, mode);
 	}

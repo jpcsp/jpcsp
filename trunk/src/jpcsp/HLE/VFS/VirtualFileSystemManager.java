@@ -134,4 +134,15 @@ public class VirtualFileSystemManager {
 			localFileName.setLength(localFileName.length() - 1);
 		}
 	}
+
+	public static String getFileNameLastPart(String fileName) {
+		if (fileName != null) {
+			int lastSepIndex = fileName.lastIndexOf('/');
+			if (lastSepIndex >= 0) {
+				fileName = fileName.substring(lastSepIndex + 1);
+			}
+		}
+
+		return fileName;
+	}
 }
