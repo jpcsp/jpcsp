@@ -107,7 +107,7 @@ public class UmdIsoVirtualFileSystem extends AbstractVirtualFileSystem {
         stat.init(mode, attr, size, ctime, atime, mtime);
 
         if (startSector > 0) {
-            stat.setReserved(0, startSector);
+            stat.setStartSector(startSector);
         }
 
         return 0;

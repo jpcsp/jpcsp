@@ -974,7 +974,7 @@ public class IoFileMgrForUser extends HLEModule {
                                 ScePspDateTime.fromUnixTime(0),
                                 ScePspDateTime.fromUnixTime(timestamp));
                         if (startSector > 0) {
-                            stat.setReserved(0, startSector);
+                            stat.setStartSector(startSector);
                         }
                     } catch (FileNotFoundException fnfe) {
                         // If file wasn't found, try looking for a directory.
@@ -992,7 +992,7 @@ public class IoFileMgrForUser extends HLEModule {
                                     ScePspDateTime.fromUnixTime(0),
                                     ScePspDateTime.fromUnixTime(timestamp));
                             if (startSector > 0) {
-                                stat.setReserved(0, startSector);
+                                stat.setStartSector(startSector);
                             }
                         } catch (FileNotFoundException dnfe) {
                             log.warn("stat - '" + isofilename + "' umd file/dir not found");

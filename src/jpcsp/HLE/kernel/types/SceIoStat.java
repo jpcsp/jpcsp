@@ -19,19 +19,13 @@ package jpcsp.HLE.kernel.types;
 /** http://psp.jim.sh/pspsdk-doc/structSceIoStat.html */
 public class SceIoStat extends pspAbstractMemoryMappedStructure {
 	public static final int SIZEOF = 16 + ScePspDateTime.SIZEOF * 3 + 24;
-    public int mode; // permissions?
-    public int attr; // ?
+    public int mode;
+    public int attr;
     public long size;
     public ScePspDateTime ctime;
     public ScePspDateTime atime;
     public ScePspDateTime mtime;
-    private int[] reserved = new int[] { 0x12121212
-    								   , 0x34343434
-    								   , 0x56565656
-    								   , 0x78787878
-    								   , 0x9a9a9a9a
-    								   , 0xbcbcbcbc
-    								   };
+    private int[] reserved = new int[] { 0, 0, 0, 0, 0, 0 };
 
     public SceIoStat() {
     }
@@ -57,7 +51,15 @@ public class SceIoStat extends pspAbstractMemoryMappedStructure {
     	return reserved[index];
     }
 
-	@Override
+    public void setStartSector(int value) {
+    	setReserved(0, value);
+    }
+
+    public int getStartSector() {
+    	return getReserved(0);
+    }
+
+    @Override
 	protected void read() {
         mode = read32();
         attr = read32();

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS;
 
+import static java.lang.Math.abs;
 import jpcsp.State;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceIoStat;
@@ -31,12 +32,21 @@ public interface ITmpVirtualFileSystem extends IVirtualFileSystem {
 	public static class PurposePGD implements IPurpose {
 		@Override
 		public String getFileName(String fileName) {
-			int startSector = 0;
+			int fileId = 0;
+
 			SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(fileName);
 			if (stat != null) {
-				startSector = stat.getReserved(0);
+				// Use the UMD start sector as file ID.
+				fileId = stat.getStartSector();
 			}
-			return String.format("%s/PGD/File-%d/PGDfile.raw.decrypted", State.discId, startSector);
+
+			if (fileId == 0 && fileName != null) {
+				// If the file is not stored on the UMD (e.g. stored on ms0:),
+				// use a unique ID based on the file name as file ID.
+				fileId = abs(VirtualFileSystemManager.getFileNameLastPart(fileName).hashCode());
+			}
+
+			return String.format("%s/PGD/File-%d/PGDfile.raw.decrypted", State.discId, fileId);
 		}
 	}
 }

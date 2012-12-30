@@ -99,7 +99,7 @@ public class PGDFileConnector {
         SeekableDataInput fileInput = null;
         SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(fileName);
         if (stat != null) {
-            int startSector = stat.getReserved(0);
+            int startSector = stat.getStartSector();
             id = generateID(startSector);
             String decryptedCompleteFileName = getCompleteFileName(decryptedFileName);
             File decryptedFile = new File(decryptedCompleteFileName);
@@ -118,7 +118,7 @@ public class PGDFileConnector {
         Modules.log.info(String.format("decryptPGDFile(fileName='%s', key=%s)", fileName, keyHex));
         SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(fileName);
         if (stat != null) {
-            int startSector = stat.getReserved(0);
+            int startSector = stat.getStartSector();
             id = generateID(startSector);
 
             new File(getBaseDirectory(id)).mkdirs();
