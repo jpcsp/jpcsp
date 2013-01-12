@@ -4,6 +4,7 @@
 	<property name="debuglevel" value="source,lines,vars" />
 	<property name="target" value="1.6" />
 	<property name="source" value="1.6" />
+	<property name="source.encoding" value="UTF-8" />
 
 	<property name="jpcsp.mainclass" value="jpcsp.MainGUI" />
 	<property name="jpcsp.version" value="0.6" />
@@ -83,7 +84,7 @@
 	<target name="build-subprojects" />
 	<target depends="init" name="build-project">
 		<echo message="${ant.project.name}: ${ant.file}" />
-		<javac debug="true" debuglevel="${debuglevel}" destdir="bin/class" source="${source}" target="${target}">
+		<javac debug="true" debuglevel="${debuglevel}" destdir="bin/class" source="${source}" encoding="${source.encoding}" target="${target}">
 			<src path="src" />
 			<classpath refid="Jpcsp.classpath" />
 		</javac>
