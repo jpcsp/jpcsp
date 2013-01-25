@@ -378,6 +378,7 @@ public class SceKernelErrors {
     public final static int ERROR_NET_ADHOC_ALREADY_INITIALIZED                 = 0x80410713;
     public final static int ERROR_NET_ADHOC_DISCONNECTED                        = 0x8041070c;
     public final static int ERROR_NET_ADHOC_TIMEOUT                             = 0x80410715;
+    public final static int ERROR_NET_ADHOC_NO_ENTRY                            = 0x80410716;
     public final static int ERROR_NET_ADHOC_CONNECTION_REFUSED                  = 0x80410718;
 
     public final static int ERROR_NET_ADHOC_INVALID_MATCHING_ID                 = 0x80410807;
