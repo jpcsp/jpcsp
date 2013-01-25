@@ -205,6 +205,6 @@ public class ScePspDateTime extends pspAbstractMemoryMappedStructure {
 
     @Override
     public String toString() {
-        return String.format("%04d-%02d-%02d %02d:%02d:%02d", year, month, day, hour, minute, second);
+        return String.format("%04d-%02d-%02d %02d:%02d:%02d micros=%d", year, month, day, hour, minute, second, microsecond);
     }
 }
