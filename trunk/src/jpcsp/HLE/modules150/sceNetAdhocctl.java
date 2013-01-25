@@ -165,7 +165,7 @@ public class sceNetAdhocctl extends HLEModule {
     	}
 
     	public void updateTimestamp() {
-    		timestamp = Emulator.getClock().microTime();
+    		timestamp = getCurrentTimestamp();
     	}
 
     	public boolean equals(String nickName, byte[] macAddress) {
@@ -215,6 +215,10 @@ public class sceNetAdhocctl extends HLEModule {
 		networkAdapter = Modules.sceNetModule.getNetworkAdapter();
 
 		super.start();
+	}
+
+	protected static long getCurrentTimestamp() {
+		return Emulator.getClock().microTime();
 	}
 
 	protected void checkInitialized() {
@@ -852,22 +856,32 @@ public class sceNetAdhocctl extends HLEModule {
     public int sceNetAdhocctlGetPeerInfo(pspNetMacAddress macAddress, int size, TPointer peerInfoAddr) {
     	checkInitialized();
 
-        for (AdhocctlPeer peer : peers) {
-        	if (macAddress.equals(peer.macAddress)) {
-        		if (log.isDebugEnabled()) {
-        			log.debug(String.format("sceNetAdhocctlGetPeerInfo returning PeerInfo %s", peer));
-        		}
-        		SceNetAdhocctlPeerInfo peerInfo = new SceNetAdhocctlPeerInfo();
-        		peerInfo.nickName = peer.nickName;
-        		peerInfo.macAddress = new pspNetMacAddress();
-        		peerInfo.macAddress.setMacAddress(peer.macAddress);
-        		peerInfo.timestamp = peer.timestamp;
-        		peerInfo.write(peerInfoAddr);
-        		break;
-        	}
-        }
+    	int result = SceKernelErrors.ERROR_NET_ADHOC_NO_ENTRY;
+    	if (sceNetAdhoc.isMyMacAddress(macAddress.macAddress)) {
+    		SceNetAdhocctlPeerInfo peerInfo = new SceNetAdhocctlPeerInfo();
+    		peerInfo.nickName = sceUtility.getSystemParamNickname();
+    		peerInfo.macAddress = new pspNetMacAddress(Wlan.getMacAddress());
+    		peerInfo.timestamp = getCurrentTimestamp();
+    		peerInfo.write(peerInfoAddr);
+    		result = 0;
+    	} else {
+	        for (AdhocctlPeer peer : peers) {
+	        	if (macAddress.equals(peer.macAddress)) {
+	        		if (log.isDebugEnabled()) {
+	        			log.debug(String.format("sceNetAdhocctlGetPeerInfo returning PeerInfo %s", peer));
+	        		}
+	        		SceNetAdhocctlPeerInfo peerInfo = new SceNetAdhocctlPeerInfo();
+	        		peerInfo.nickName = peer.nickName;
+	        		peerInfo.macAddress = new pspNetMacAddress(peer.macAddress);
+	        		peerInfo.timestamp = peer.timestamp;
+	        		peerInfo.write(peerInfoAddr);
+	        		result = 0;
+	        		break;
+	        	}
+	        }
+    	}
 
-        return 0;
+        return result;
     }
 
     /**
