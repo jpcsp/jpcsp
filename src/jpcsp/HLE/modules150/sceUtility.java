@@ -809,7 +809,13 @@ public class sceUtility extends HLEModule {
 
                             log.debug("Memory Stick Full Space = " +  MemoryStick.getSizeKbString(savedataSizeKb));
 	                    } else {
-                            log.warn("Savedata MODE_SIZES directory not found!");
+                            mem.write32(buffer2Addr + 36, 0); // Number of sectors.
+                            mem.write32(buffer2Addr + 40, 0); // Size in Kb.
+                            Utilities.writeStringNZ(mem, buffer2Addr + 44, 8, "");
+                            mem.write32(buffer2Addr + 52, 0);
+                            Utilities.writeStringNZ(mem, buffer2Addr + 56, 8, "");
+
+                            log.debug(String.format("Savedata MODE_SIZES directory not found, gameName='%s', saveName='%s'", gameName, saveName));
 	                        baseResult = SceKernelErrors.ERROR_SAVEDATA_SIZES_NO_DATA;
 	                    }
 	                }
