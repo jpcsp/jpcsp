@@ -310,11 +310,29 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
         }
         cpuContext._k0 = 0;
         cpuContext._k1 = 0;
-        float nanValue = Float.intBitsToFloat(0x7F800001);
+        int intNanValue = 0x7F800001;
+        float nanValue = Float.intBitsToFloat(intNanValue);
         for (int i = Common._f31; i >= Common._f0; i--) {
         	cpuContext.fpr[i] = nanValue;
         }
         cpuContext.hilo = 0xDEADBEEFDEADBEEFL;
+
+        if ((attr & PSP_THREAD_ATTR_VFPU) != 0) {
+        	// Reset the VFPU context
+        	for (int m = 0; m < 8; m++) {
+        		for (int c = 0; c < 4; c++) {
+        			for (int r = 0; r < 4; r++) {
+        				cpuContext.setVprInt(m, c, r, intNanValue);
+        			}
+        		}
+        	}
+        	for (int i = 0; i < cpuContext.vcr.cc.length; i++) {
+        		cpuContext.vcr.cc[i] = true;
+        	}
+        	cpuContext.vcr.pfxs.reset();
+        	cpuContext.vcr.pfxt.reset();
+        	cpuContext.vcr.pfxd.reset();
+        }
 
         // sp, 512 byte padding at the top for user data, this will get re-jigged when we call start thread
         cpuContext._sp = stackAddr + stackSize - 512;
