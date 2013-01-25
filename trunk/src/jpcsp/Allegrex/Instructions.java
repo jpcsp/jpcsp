@@ -9013,17 +9013,17 @@ public void interpret(Processor processor, int insn) {
 	int vd = (insn>>16)&127;
 
 
-                processor.cpu.doVIIM(vd, imm16);
+                processor.cpu.doVIIM(vd, (int)(short) imm16);
             
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
 	final int vsize = 1;
 	final int vd = context.getVtRegisterIndex(); // vd index stored as vt
-	int imm16 = context.getImm16(false);
+	int simm16 = context.getImm16(true);
 	context.startPfxCompiled();
 	context.prepareVdForStore(vsize, vd, 0);
-	context.getMethodVisitor().visitLdcInsn((float) imm16);
+	context.getMethodVisitor().visitLdcInsn((float) simm16);
 	context.storeVd(vsize, vd, 0);
 	context.endPfxCompiled();
 }
