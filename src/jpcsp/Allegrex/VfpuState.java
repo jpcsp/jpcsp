@@ -197,7 +197,9 @@ public class VfpuState extends FpuState {
             public boolean enabled;
 
             public void reset() {
-                Arrays.fill(swz, 0);
+            	for (int i = 0; i < swz.length; i++) {
+            		swz[i] = i;
+            	}
                 Arrays.fill(abs, false);
                 Arrays.fill(cst, false);
                 Arrays.fill(neg, false);
