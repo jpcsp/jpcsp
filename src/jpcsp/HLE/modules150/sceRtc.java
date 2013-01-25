@@ -341,6 +341,7 @@ public class sceRtc extends HLEModule {
     public int sceRtcGetTick(ScePspDateTime time, TPointer64 ticksAddr) {
         // use java library to convert a date to seconds, then multiply it by the tick resolution
         Calendar cal = new GregorianCalendar(time.year, time.month - 1, time.day, time.hour, time.minute, time.second);
+        cal.set(Calendar.MILLISECOND, time.microsecond / 1000);
         cal.setTimeZone(ScePspDateTime.GMT);
         long ticks = rtcMagicOffset + (cal.getTimeInMillis() * 1000L) + (time.microsecond % 1000);
         ticksAddr.setValue(ticks);
