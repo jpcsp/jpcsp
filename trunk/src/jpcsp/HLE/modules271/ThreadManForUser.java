@@ -27,8 +27,8 @@ import jpcsp.HLE.kernel.Managers;
 @HLELogging
 public class ThreadManForUser extends jpcsp.HLE.modules150.ThreadManForUser {
     @HLEFunction(nid = 0x0DDCD2C9, version = 271, checkInsideInterrupt = true)
-    public void sceKernelTryLockMutex(int uid, int count) {
-        Managers.mutex.sceKernelTryLockMutex(uid, count);
+    public int sceKernelTryLockMutex(int uid, int count) {
+        return Managers.mutex.sceKernelTryLockMutex(uid, count);
     }
 
     @HLEFunction(nid = 0x5BF4DD27, version = 271, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
