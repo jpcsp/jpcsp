@@ -863,22 +863,30 @@ public class sceNetAdhocctl extends HLEModule {
     		peerInfo.macAddress = new pspNetMacAddress(Wlan.getMacAddress());
     		peerInfo.timestamp = getCurrentTimestamp();
     		peerInfo.write(peerInfoAddr);
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("sceNetAdhocctlGetPeerInfo for own MAC address, returning %s", peerInfo));
+    		}
     		result = 0;
     	} else {
 	        for (AdhocctlPeer peer : peers) {
 	        	if (macAddress.equals(peer.macAddress)) {
-	        		if (log.isDebugEnabled()) {
-	        			log.debug(String.format("sceNetAdhocctlGetPeerInfo returning PeerInfo %s", peer));
-	        		}
 	        		SceNetAdhocctlPeerInfo peerInfo = new SceNetAdhocctlPeerInfo();
 	        		peerInfo.nickName = peer.nickName;
 	        		peerInfo.macAddress = new pspNetMacAddress(peer.macAddress);
 	        		peerInfo.timestamp = peer.timestamp;
 	        		peerInfo.write(peerInfoAddr);
+	        		if (log.isDebugEnabled()) {
+	        			log.debug(String.format("sceNetAdhocctlGetPeerInfo returning %s", peerInfo));
+	        		}
 	        		result = 0;
 	        		break;
 	        	}
 	        }
+    	}
+    	if (result != 0) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("sceNetAdhocctlGetPeerInfo returning 0x%08X", result));
+    		}
     	}
 
         return result;
