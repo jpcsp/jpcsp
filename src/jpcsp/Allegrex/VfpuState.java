@@ -2613,7 +2613,13 @@ public class VfpuState extends FpuState {
 
         for (int i = 0; i < vsize; ++i) {
             float value = Math.scalb(v1[i], imm5);
-            v3i[i] = (int) Math.floor(value);
+            double dvalue = Math.floor(value);
+            if (Double.isNaN(dvalue)) {
+            	// PSP is returning this value for a NaN (normal case would return 0 for a NaN)
+            	v3i[i] = 0x7FFFFFFF;
+            } else {
+            	v3i[i] = (int) dvalue;
+            }
         }
 
         saveVdInt(vsize, vd, v3i);
