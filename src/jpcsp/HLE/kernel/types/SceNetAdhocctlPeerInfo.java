@@ -51,4 +51,9 @@ public class SceNetAdhocctlPeerInfo extends pspAbstractMemoryMappedStructure {
 	public int sizeof() {
 		return 152;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("nickName='%s', macAddress=%s, timestamp=%d", nickName, macAddress, timestamp);
+	}
 }
