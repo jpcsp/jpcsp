@@ -8444,7 +8444,17 @@ public void compile(ICompilerContext context, int insn) {
 		}
 		mv.visitInsn(Opcodes.F2D);
 		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "floor", "(D)D");
+		Label continueLabel = new Label();
+		Label notNaNValueLabel = new Label();
+		mv.visitInsn(Opcodes.DUP2);
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Double.class), "isNaN", "(D)Z");
+		mv.visitJumpInsn(Opcodes.IFEQ, notNaNValueLabel);
+		mv.visitInsn(Opcodes.POP2);
+		context.loadImm(0x7FFFFFFF);
+		mv.visitJumpInsn(Opcodes.GOTO, continueLabel);
+		mv.visitLabel(notNaNValueLabel);
 		mv.visitInsn(Opcodes.D2I);
+		mv.visitLabel(continueLabel);
 		context.storeVdInt(n);
 	}
 	context.endPfxCompiled(false);
