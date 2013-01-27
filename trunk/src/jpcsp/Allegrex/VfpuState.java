@@ -2580,7 +2580,13 @@ public class VfpuState extends FpuState {
 
         for (int i = 0; i < vsize; ++i) {
             float value = Math.scalb(v1[i], imm5);
-            v3i[i] = Math.round(value);
+            if (Float.isNaN(value)) {
+            	// PSP is returning this value for a NaN (normal case would return 0 for a NaN)
+            	v3i[i] = 0x7FFFFFFF;
+            } else {
+            	// PSP is rounding using Math.rint and not using Math.round
+            	v3i[i] = (int) Math.rint(value);
+            }
         }
 
         saveVdInt(vsize, vd, v3i);
@@ -2591,7 +2597,13 @@ public class VfpuState extends FpuState {
 
         for (int i = 0; i < vsize; ++i) {
             float value = Math.scalb(v1[i], imm5);
-            v3i[i] = v1[i] >= 0 ? (int) Math.floor(value) : (int) Math.ceil(value);
+            double dvalue = v1[i] >= 0 ? Math.floor(value) : Math.ceil(value);
+            if (Double.isNaN(dvalue)) {
+            	// PSP is returning this value for a NaN (normal case would return 0 for a NaN)
+            	v3i[i] = 0x7FFFFFFF;
+            } else {
+            	v3i[i] = (int) dvalue;
+            }
         }
 
         saveVdInt(vsize, vd, v3i);
@@ -2602,7 +2614,13 @@ public class VfpuState extends FpuState {
 
         for (int i = 0; i < vsize; ++i) {
             float value = Math.scalb(v1[i], imm5);
-            v3i[i] = (int) Math.ceil(value);
+            double dvalue = Math.ceil(value);
+            if (Double.isNaN(dvalue)) {
+            	// PSP is returning this value for a NaN (normal case would return 0 for a NaN)
+            	v3i[i] = 0x7FFFFFFF;
+            } else {
+            	v3i[i] = (int) dvalue;
+            }
         }
 
         saveVdInt(vsize, vd, v3i);
