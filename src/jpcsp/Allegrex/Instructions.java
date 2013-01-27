@@ -8275,7 +8275,19 @@ public void compile(ICompilerContext context, int insn) {
 			context.loadImm(imm5);
 			mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "scalb", "(FI)F");
 		}
-		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "round", "(F)I");
+		Label afterLabel = new Label();
+		Label notNaNValueLabel = new Label();
+		mv.visitInsn(Opcodes.DUP);
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "isNaN", "(F)Z");
+		mv.visitJumpInsn(Opcodes.IFEQ, notNaNValueLabel);
+		mv.visitInsn(Opcodes.POP);
+		context.loadImm(0x7FFFFFFF);
+		mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
+		mv.visitLabel(notNaNValueLabel);
+		mv.visitInsn(Opcodes.F2D);
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "rint", "(D)D");
+		mv.visitInsn(Opcodes.D2I);
+		mv.visitLabel(afterLabel);
 		context.storeVdInt(n);
 	}
 	context.endPfxCompiled(false);
@@ -8324,7 +8336,7 @@ public void compile(ICompilerContext context, int insn) {
 		mv.visitLdcInsn(0.f);
 		mv.visitInsn(Opcodes.FCMPG); // Use FCMPG or FCMPL? Need to check handling of NaN value
 		Label negativeLabel = new Label();
-		Label afterLabel = new Label();
+		Label afterSignTestLabel = new Label();
 		mv.visitJumpInsn(Opcodes.IFLT, negativeLabel);
 		if (imm5 != 0) {
 			context.loadImm(imm5);
@@ -8332,8 +8344,7 @@ public void compile(ICompilerContext context, int insn) {
 		}
 		mv.visitInsn(Opcodes.F2D);
 		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "floor", "(D)D");
-		mv.visitInsn(Opcodes.D2I);
-		mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
+		mv.visitJumpInsn(Opcodes.GOTO, afterSignTestLabel);
 		mv.visitLabel(negativeLabel);
 		if (imm5 != 0) {
 			context.loadImm(imm5);
@@ -8341,6 +8352,17 @@ public void compile(ICompilerContext context, int insn) {
 		}
 		mv.visitInsn(Opcodes.F2D);
 		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "ceil", "(D)D");
+		mv.visitLabel(afterSignTestLabel);
+
+		Label afterLabel = new Label();
+		Label notNaNValueLabel = new Label();
+		mv.visitInsn(Opcodes.DUP2);
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Double.class), "isNaN", "(D)Z");
+		mv.visitJumpInsn(Opcodes.IFEQ, notNaNValueLabel);
+		mv.visitInsn(Opcodes.POP2);
+		context.loadImm(0x7FFFFFFF);
+		mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
+		mv.visitLabel(notNaNValueLabel);
 		mv.visitInsn(Opcodes.D2I);
 		mv.visitLabel(afterLabel);
 		context.storeVdInt(n);
@@ -8393,7 +8415,17 @@ public void compile(ICompilerContext context, int insn) {
 		}
 		mv.visitInsn(Opcodes.F2D);
 		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "ceil", "(D)D");
+		Label afterLabel = new Label();
+		Label notNaNValueLabel = new Label();
+		mv.visitInsn(Opcodes.DUP2);
+		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Double.class), "isNaN", "(D)Z");
+		mv.visitJumpInsn(Opcodes.IFEQ, notNaNValueLabel);
+		mv.visitInsn(Opcodes.POP2);
+		context.loadImm(0x7FFFFFFF);
+		mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
+		mv.visitLabel(notNaNValueLabel);
 		mv.visitInsn(Opcodes.D2I);
+		mv.visitLabel(afterLabel);
 		context.storeVdInt(n);
 	}
 	context.endPfxCompiled(false);
@@ -8444,17 +8476,17 @@ public void compile(ICompilerContext context, int insn) {
 		}
 		mv.visitInsn(Opcodes.F2D);
 		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "floor", "(D)D");
-		Label continueLabel = new Label();
+		Label afterLabel = new Label();
 		Label notNaNValueLabel = new Label();
 		mv.visitInsn(Opcodes.DUP2);
 		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Double.class), "isNaN", "(D)Z");
 		mv.visitJumpInsn(Opcodes.IFEQ, notNaNValueLabel);
 		mv.visitInsn(Opcodes.POP2);
 		context.loadImm(0x7FFFFFFF);
-		mv.visitJumpInsn(Opcodes.GOTO, continueLabel);
+		mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
 		mv.visitLabel(notNaNValueLabel);
 		mv.visitInsn(Opcodes.D2I);
-		mv.visitLabel(continueLabel);
+		mv.visitLabel(afterLabel);
 		context.storeVdInt(n);
 	}
 	context.endPfxCompiled(false);
