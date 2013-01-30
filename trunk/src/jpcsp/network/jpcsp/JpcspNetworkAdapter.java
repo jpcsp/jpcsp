@@ -201,36 +201,40 @@ public class JpcspNetworkAdapter extends BaseNetworkAdapter {
 		try {
 			openSocket();
 
-	    	byte[] bytes = new byte[JpcspAdhocctlMessage.getMessageLength()];
-	    	DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
-	    	adhocctlSocket.receive(packet);
-	    	JpcspAdhocctlMessage adhocctlMessage = new JpcspAdhocctlMessage(packet.getData(), packet.getLength());
+			// Poll all the available messages.
+			// Exiting the loop only when no more messages are available (SocketTimeoutException)
+			while (true) {
+		    	byte[] bytes = new byte[JpcspAdhocctlMessage.getMessageLength()];
+		    	DatagramPacket packet = new DatagramPacket(bytes, bytes.length);
+		    	adhocctlSocket.receive(packet);
+		    	JpcspAdhocctlMessage adhocctlMessage = new JpcspAdhocctlMessage(packet.getData(), packet.getLength());
 
-	    	if (log.isDebugEnabled()) {
-	    		log.debug(String.format("broadcast received from peer: %s", adhocctlMessage));
-	    	}
-
-	    	// Ignore messages coming from myself
-	    	if (!sceNetAdhoc.isSameMacAddress(Wlan.getMacAddress(), adhocctlMessage.macAddress)) {
-		    	if (adhocctlMessage.groupName.equals(sceNetAdhocctlModule.hleNetAdhocctlGetGroupName())) {
-		    		sceNetAdhocctlModule.hleNetAdhocctlAddPeer(adhocctlMessage.nickName, new pspNetMacAddress(adhocctlMessage.macAddress));
+		    	if (log.isDebugEnabled()) {
+		    		log.debug(String.format("broadcast received from peer: %s", adhocctlMessage));
 		    	}
 
-		    	if (adhocctlMessage.ibss.equals(sceNetAdhocctlModule.hleNetAdhocctlGetIBSS())) {
-		    		sceNetAdhocctlModule.hleNetAdhocctlAddNetwork(adhocctlMessage.groupName, new pspNetMacAddress(adhocctlMessage.macAddress), adhocctlMessage.channel, adhocctlMessage.ibss, adhocctlMessage.mode);
+		    	// Ignore messages coming from myself
+		    	if (!sceNetAdhoc.isSameMacAddress(Wlan.getMacAddress(), adhocctlMessage.macAddress)) {
+			    	if (adhocctlMessage.groupName.equals(sceNetAdhocctlModule.hleNetAdhocctlGetGroupName())) {
+			    		sceNetAdhocctlModule.hleNetAdhocctlAddPeer(adhocctlMessage.nickName, new pspNetMacAddress(adhocctlMessage.macAddress));
+			    	}
 
-		    		if (adhocctlMessage.mode == PSP_ADHOCCTL_MODE_GAMEMODE) {
-		    			sceNetAdhocctlModule.hleNetAdhocctlAddGameModeMac(adhocctlMessage.macAddress);
-		    			if (sceNetAdhocctlModule.hleNetAdhocctlGetRequiredGameModeMacs().size() <= 0) {
-		    				sceNetAdhocctlModule.hleNetAdhocctlSetGameModeJoinComplete(adhocctlMessage.gameModeComplete);
-		    				if (adhocctlMessage.gameModeComplete) {
-		    					byte[][] macs = adhocctlMessage.gameModeMacs;
-		    					if (macs != null) {
-		    						sceNetAdhocctlModule.hleNetAdhocctlSetGameModeMacs(macs);
+			    	if (adhocctlMessage.ibss.equals(sceNetAdhocctlModule.hleNetAdhocctlGetIBSS())) {
+			    		sceNetAdhocctlModule.hleNetAdhocctlAddNetwork(adhocctlMessage.groupName, new pspNetMacAddress(adhocctlMessage.macAddress), adhocctlMessage.channel, adhocctlMessage.ibss, adhocctlMessage.mode);
+
+			    		if (adhocctlMessage.mode == PSP_ADHOCCTL_MODE_GAMEMODE) {
+			    			sceNetAdhocctlModule.hleNetAdhocctlAddGameModeMac(adhocctlMessage.macAddress);
+			    			if (sceNetAdhocctlModule.hleNetAdhocctlGetRequiredGameModeMacs().size() <= 0) {
+			    				sceNetAdhocctlModule.hleNetAdhocctlSetGameModeJoinComplete(adhocctlMessage.gameModeComplete);
+			    				if (adhocctlMessage.gameModeComplete) {
+			    					byte[][] macs = adhocctlMessage.gameModeMacs;
+			    					if (macs != null) {
+			    						sceNetAdhocctlModule.hleNetAdhocctlSetGameModeMacs(macs);
+			    					}
 		    					}
-	    					}
-		    			}
-		    		}
+			    			}
+			    		}
+			    	}
 		    	}
 	    	}
 		} catch (SocketException e) {
