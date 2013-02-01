@@ -519,6 +519,16 @@ public class IoFileMgrForUser extends HLEModule {
             }
             if (!info.asyncPending) {
                 // Async IO is already completed
+            	if (info.asyncResultPending) {
+            		if (Memory.isAddressGood(wait.Io_resultAddr)) {
+            			if (log.isDebugEnabled()) {
+            				log.debug(String.format("IoWaitStateChecker - async completed, writing pending result 0x%X", info.result));
+            			}
+            			Memory.getInstance().write64(wait.Io_resultAddr, info.result);
+            		}
+            		info.asyncResultPending = false;
+                    info.result = ERROR_KERNEL_NO_ASYNC_OP;
+            	}
                 return false;
             }
 
