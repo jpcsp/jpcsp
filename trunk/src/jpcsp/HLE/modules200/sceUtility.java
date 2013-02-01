@@ -18,6 +18,7 @@ package jpcsp.HLE.modules200;
 
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.TPointer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -26,7 +27,6 @@ import java.util.HashMap;
 import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
 import jpcsp.Loader;
-import jpcsp.Processor;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
@@ -47,7 +47,7 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
 		}
 
 		@Override
-		protected boolean executeUpdateVisible(Processor processor) {
+		protected boolean executeUpdateVisible() {
 			boolean keepVisible = false;
 
 			log.warn(String.format("Partial sceUtilityInstallUpdate %s", installParams.toString()));
@@ -192,22 +192,22 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
     }
 
     @HLEFunction(nid = 0x1281DA8E, version = 200)
-    public void sceUtilityInstallInitStart(Processor processor) {
-        installState.executeInitStart(processor);
+    public int sceUtilityInstallInitStart(TPointer paramsAddr) {
+        return installState.executeInitStart(paramsAddr);
     }
 
     @HLEFunction(nid = 0x5EF1C24A, version = 200)
-    public void sceUtilityInstallShutdownStart(Processor processor) {
-    	installState.executeShutdownStart(processor);
+    public int sceUtilityInstallShutdownStart() {
+    	return installState.executeShutdownStart();
     }
 
     @HLEFunction(nid = 0xA03D29BA, version = 200)
-    public void sceUtilityInstallUpdate(Processor processor) {
-    	installState.executeUpdate(processor);
+    public int sceUtilityInstallUpdate(int drawSpeed) {
+    	return installState.executeUpdate(drawSpeed);
     }
 
     @HLEFunction(nid = 0xC4700FA3, version = 200)
-    public void sceUtilityInstallGetStatus(Processor processor) {
-    	installState.executeGetStatus(processor);
+    public int sceUtilityInstallGetStatus() {
+    	return installState.executeGetStatus();
     }
 }

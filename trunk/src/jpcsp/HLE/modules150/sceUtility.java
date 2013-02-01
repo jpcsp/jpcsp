@@ -18,6 +18,9 @@ package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 
 import java.awt.Component;
 import java.awt.Container;
@@ -95,6 +98,7 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceUtility extends HLEModule {
     public static Logger log = Modules.getLogger("sceUtility");
 
@@ -133,16 +137,18 @@ public class sceUtility extends HLEModule {
     public static final String SYSTEMPARAM_SETTINGS_OPTION_DAYLIGHT_SAVING_TIME = "emu.sysparam.daylightsavings";
     public static final String SYSTEMPARAM_SETTINGS_OPTION_LANGUAGE = "emu.impose.language";
     public static final String SYSTEMPARAM_SETTINGS_OPTION_BUTTON_PREFERENCE = "emu.impose.button";
+    public static final String SYSTEMPARAM_SETTINGS_OPTION_LOCK_PARENTAL_LEVEL = "emu.sysparam.locl.parentallevel";
 
-    public static final int PSP_SYSTEMPARAM_ID_STRING_NICKNAME = 1;
-    public static final int PSP_SYSTEMPARAM_ID_INT_ADHOC_CHANNEL = 2;
-    public static final int PSP_SYSTEMPARAM_ID_INT_WLAN_POWERSAVE = 3;
-    public static final int PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT = 4;
-    public static final int PSP_SYSTEMPARAM_ID_INT_TIME_FORMAT = 5;
-    public static final int PSP_SYSTEMPARAM_ID_INT_TIMEZONE = 6;
-    public static final int PSP_SYSTEMPARAM_ID_INT_DAYLIGHTSAVINGS = 7;
-    public static final int PSP_SYSTEMPARAM_ID_INT_LANGUAGE = 8;
-    public static final int PSP_SYSTEMPARAM_ID_INT_BUTTON_PREFERENCE = 9;
+    public static final int PSP_SYSTEMPARAM_ID_STRING_NICKNAME = 1; // PSP Registry "/CONFIG/SYSTEM/owner_name"
+    public static final int PSP_SYSTEMPARAM_ID_INT_ADHOC_CHANNEL = 2; // PSP Registry "/CONFIG/NETWORK/ADHOC/channel"
+    public static final int PSP_SYSTEMPARAM_ID_INT_WLAN_POWERSAVE = 3; // PSP Registry "/CONFIG/SYSTEM/POWER_SAVING/wlan_mode"
+    public static final int PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT = 4; // PSP Registry "/CONFIG/DATE/date_format"
+    public static final int PSP_SYSTEMPARAM_ID_INT_TIME_FORMAT = 5; // PSP Registry "/CONFIG/DATE/time_format"
+    public static final int PSP_SYSTEMPARAM_ID_INT_TIMEZONE = 6; // PSP Registry "/CONFIG/DATE/time_zone_offset"
+    public static final int PSP_SYSTEMPARAM_ID_INT_DAYLIGHTSAVINGS = 7; // PSP Registry "/CONFIG/DATE/summer_time"
+    public static final int PSP_SYSTEMPARAM_ID_INT_LANGUAGE = 8; // PSP Registry "/CONFIG/SYSTEM/XMB/language"
+    public static final int PSP_SYSTEMPARAM_ID_INT_BUTTON_PREFERENCE = 9; // PSP Registry "/CONFIG/SYSTEM/XMB/button_assign"
+    public static final int PSP_SYSTEMPARAM_ID_INT_LOCK_PARENTAL_LEVEL = 10; // PSP Registry "/CONFIG/SYSTEM/LOCK/parental_level"
 
     public static final int PSP_SYSTEMPARAM_LANGUAGE_JAPANESE = 0;
     public static final int PSP_SYSTEMPARAM_LANGUAGE_ENGLISH = 1;
@@ -221,7 +227,7 @@ public class sceUtility extends HLEModule {
     protected abstract static class UtilityDialogState {
         protected String name;
         protected pspAbstractMemoryMappedStructure params;
-        protected int paramsAddr;
+        protected TPointer paramsAddr;
         protected int status;
         protected int result;
         protected UtilityDialog dialog;
@@ -266,38 +272,31 @@ public class sceUtility extends HLEModule {
             status = PSP_UTILITY_DIALOG_STATUS_QUIT;
         }
 
-        public void executeInitStart(Processor processor) {
-            CpuState cpu = processor.cpu;
-            Memory mem = Memory.getInstance();
-
-            paramsAddr = cpu._a0;
-            if (!Memory.isAddressGood(paramsAddr)) {
-                log.error(String.format("%sInitStart bad address 0x%08X", name, paramsAddr));
-                cpu._v0 = -1;
-            } else if (status != PSP_UTILITY_DIALOG_STATUS_NONE && status != PSP_UTILITY_DIALOG_STATUS_FINISHED) {
+        public int executeInitStart(TPointer paramsAddr) {
+            if (status != PSP_UTILITY_DIALOG_STATUS_NONE && status != PSP_UTILITY_DIALOG_STATUS_FINISHED) {
             	if (log.isDebugEnabled()) {
             		log.debug(String.format("%sInitStart already started status=%d", name, status));
             	}
-                cpu._v0 = SceKernelErrors.ERROR_UTILITY_INVALID_STATUS;
-            } else {
-                this.params = createParams();
-
-                params.read(mem, paramsAddr);
-
-                if (log.isInfoEnabled()) {
-                    log.info(String.format("%sInitStart 0x%08X-0x%08X: %s", name, paramsAddr, paramsAddr + params.sizeof(), params.toString()));
-                }
-
-                int validityResult = checkValidity();
-
-                if (validityResult == 0) {
-                	// Start with INIT
-                	status = PSP_UTILITY_DIALOG_STATUS_INIT;
-                	Modules.sceUtilityModule.startedDialogState = this;
-                }
-
-                cpu._v0 = validityResult;
+                return SceKernelErrors.ERROR_UTILITY_INVALID_STATUS;
             }
+            this.paramsAddr = paramsAddr;
+            this.params = createParams();
+
+            params.read(paramsAddr);
+
+            if (log.isInfoEnabled()) {
+                log.info(String.format("%sInitStart %s-0x%08X: %s", name, paramsAddr, paramsAddr.getAddress() + params.sizeof(), params.toString()));
+            }
+
+            int validityResult = checkValidity();
+
+            if (validityResult == 0) {
+            	// Start with INIT
+            	status = PSP_UTILITY_DIALOG_STATUS_INIT;
+            	Modules.sceUtilityModule.startedDialogState = this;
+            }
+
+            return validityResult;
         }
 
         private boolean isReadyForVisible() {
@@ -309,22 +308,19 @@ public class sceUtility extends HLEModule {
         	return true;
         }
 
-        public void executeGetStatus(Processor processor) {
-            CpuState cpu = processor.cpu;
-
+        public int executeGetStatus() {
             if (Modules.sceUtilityModule.startedDialogState != null && Modules.sceUtilityModule.startedDialogState != this) {
             	if (log.isDebugEnabled()) {
             		log.debug(String.format("%sGetStatus returning ERROR_UTILITY_WRONG_TYPE", name));
             	}
-            	cpu._v0 = SceKernelErrors.ERROR_UTILITY_WRONG_TYPE;
-            	return;
+            	return SceKernelErrors.ERROR_UTILITY_WRONG_TYPE;
             }
 
             if (log.isDebugEnabled()) {
                 log.debug(String.format("%sGetStatus status %d", name, status));
             }
 
-            cpu._v0 = status;
+            int previousStatus = status;
 
             // after returning FINISHED once, return NONE on following calls
             if (status == PSP_UTILITY_DIALOG_STATUS_FINISHED) {
@@ -337,25 +333,23 @@ public class sceUtility extends HLEModule {
             	// Clear the started dialog after returning once status PSP_UTILITY_DIALOG_STATUS_NONE
             	Modules.sceUtilityModule.startedDialogState = null;
             }
+
+            return previousStatus;
         }
 
-        public void executeShutdownStart(Processor processor) {
-            CpuState cpu = processor.cpu;
-
+        public int executeShutdownStart() {
             if (Modules.sceUtilityModule.startedDialogState != null && Modules.sceUtilityModule.startedDialogState != this) {
             	if (log.isDebugEnabled()) {
             		log.debug(String.format("%ShutdownStart returning ERROR_UTILITY_WRONG_TYPE", name));
             	}
-            	cpu._v0 = SceKernelErrors.ERROR_UTILITY_WRONG_TYPE;
-            	return;
+            	return SceKernelErrors.ERROR_UTILITY_WRONG_TYPE;
             }
 
             if (status != PSP_UTILITY_DIALOG_STATUS_QUIT) {
             	if (log.isDebugEnabled()) {
             		log.debug(String.format("%ShutdownStart returning ERROR_UTILITY_INVALID_STATUS", name));
             	}
-            	cpu._v0 = SceKernelErrors.ERROR_UTILITY_INVALID_STATUS;
-            	return;
+            	return SceKernelErrors.ERROR_UTILITY_INVALID_STATUS;
             }
 
             if (log.isDebugEnabled()) {
@@ -364,26 +358,24 @@ public class sceUtility extends HLEModule {
 
             status = PSP_UTILITY_DIALOG_STATUS_FINISHED;
 
-            cpu._v0 = 0;
+            return 0;
         }
 
-        public final void executeUpdate(Processor processor) {
-            CpuState cpu = processor.cpu;
-
+        /**
+         * @param drawSpeed FPS used for internal animation sync (1 = 60 FPS; 2 = 30 FPS; 3 = 15 FPS)
+         * @return
+         */
+        public final int executeUpdate(int drawSpeed) {
             if (Modules.sceUtilityModule.startedDialogState != null && Modules.sceUtilityModule.startedDialogState != this) {
             	if (log.isDebugEnabled()) {
             		log.debug(String.format("%Update returning ERROR_UTILITY_WRONG_TYPE", name));
             	}
-            	cpu._v0 = SceKernelErrors.ERROR_UTILITY_WRONG_TYPE;
-            	return;
+            	return SceKernelErrors.ERROR_UTILITY_WRONG_TYPE;
             }
 
-            drawSpeed = cpu._a0; // FPS used for internal animation sync (1 = 60 FPS; 2 = 30 FPS; 3 = 15 FPS).
             if (log.isDebugEnabled()) {
                 log.debug(name + "Update drawSpeed=" + drawSpeed);
             }
-
-            cpu._v0 = 0;
 
             if (status == PSP_UTILITY_DIALOG_STATUS_INIT && isReadyForVisible()) {
                 // Move from INIT to VISIBLE
@@ -393,9 +385,9 @@ public class sceUtility extends HLEModule {
                 // Some games reach sceUtilitySavedataInitStart with empty params which only
                 // get filled with a subsequent call to sceUtilitySavedataUpdate (eg.: To Love-Ru).
                 // This is why we have to re-read the params here.
-                params.read(Memory.getInstance(), paramsAddr);
+                params.read(paramsAddr);
 
-                boolean keepVisible = executeUpdateVisible(processor);
+                boolean keepVisible = executeUpdateVisible();
 
                 if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE && isDialogOpen()) {
                 	dialog.checkController();
@@ -410,6 +402,8 @@ public class sceUtility extends HLEModule {
                 	}
                 }
             }
+
+            return 0;
         }
 
         public void abort(Processor processor) {
@@ -449,7 +443,7 @@ public class sceUtility extends HLEModule {
             result = PSP_UTILITY_DIALOG_RESULT_CANCELED;
         }
 
-        protected abstract boolean executeUpdateVisible(Processor processor);
+        protected abstract boolean executeUpdateVisible();
 
         protected abstract pspAbstractMemoryMappedStructure createParams();
 
@@ -488,39 +482,29 @@ public class sceUtility extends HLEModule {
         }
 
         @Override
-        public void executeInitStart(Processor processor) {
-            CpuState cpu = processor.cpu;
+        public int executeInitStart(TPointer paramsAddr) {
+            log.warn(String.format("Unimplemented: %sInitStart params=%s", name, paramsAddr));
 
-            log.warn(String.format("Unimplemented: %sInitStart params=0x%08X", name, cpu._a0));
-
-            cpu._v0 = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
+            return SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
         }
 
         @Override
-        public void executeShutdownStart(Processor processor) {
-            CpuState cpu = processor.cpu;
-
+        public int executeShutdownStart() {
             log.warn("Unimplemented: " + name + "ShutdownStart");
 
-            cpu._v0 = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
+            return SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
         }
 
         @Override
-        public void executeGetStatus(Processor processor) {
-            CpuState cpu = processor.cpu;
-
+        public int executeGetStatus() {
             log.warn("Unimplemented: " + name + "GetStatus");
 
-            cpu._v0 = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
+            return SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
         }
 
 		@Override
-		protected boolean executeUpdateVisible(Processor processor) {
-            CpuState cpu = processor.cpu;
-
+		protected boolean executeUpdateVisible() {
             log.warn("Unimplemented: " + name + "Update");
-
-            cpu._v0 = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
 
             return false;
 		}
@@ -562,7 +546,7 @@ public class sceUtility extends HLEModule {
 		}
 
 		@Override
-		protected boolean executeUpdateVisible(Processor processor) {
+		protected boolean executeUpdateVisible() {
 	        Memory mem = Processor.memory;
 
 	        switch (savedataParams.mode) {
@@ -1195,7 +1179,7 @@ public class sceUtility extends HLEModule {
 		}
 
 		@Override
-		protected boolean executeUpdateVisible(Processor processor) {
+		protected boolean executeUpdateVisible() {
 	        Memory mem = Processor.memory;
 
 	        if (!isDialogOpen()) {
@@ -1233,7 +1217,7 @@ public class sceUtility extends HLEModule {
 		}
 
 		@Override
-		protected boolean executeUpdateVisible(Processor processor) {
+		protected boolean executeUpdateVisible() {
 	        Memory mem = Processor.memory;
 
 	        if (!isDialogOpen()) {
@@ -1275,7 +1259,7 @@ public class sceUtility extends HLEModule {
 		}
 
 		@Override
-		protected boolean executeUpdateVisible(Processor processor) {
+		protected boolean executeUpdateVisible() {
 			// TODO to be implemented
 			return false;
 		}
@@ -1295,7 +1279,7 @@ public class sceUtility extends HLEModule {
 		}
 
 		@Override
-		protected boolean executeUpdateVisible(Processor processor) {
+		protected boolean executeUpdateVisible() {
 			boolean keepVisible = false;
 
 			if (netconfParams.netAction == SceUtilityNetconfParams.PSP_UTILITY_NETCONF_CONNECT_APNET ||
@@ -1350,12 +1334,12 @@ public class sceUtility extends HLEModule {
 		}
 
 		@Override
-		protected boolean executeUpdateVisible(Processor processor) {
+		protected boolean executeUpdateVisible() {
 			// TODO to be implemented
 			return false;
 		}
 
-        protected void executeContStart(Processor processor) {
+        protected int executeContStart(TPointer paramsAddr) {
 			// Continuous mode which takes several screenshots
             // on regular intervals set by an internal counter.
 
@@ -1363,28 +1347,20 @@ public class sceUtility extends HLEModule {
             // be initialized with sceUtilityScreenshotInitStart and the startupType
             // parameter has to be PSP_UTILITY_SCREENSHOT_TYPE_CONT_AUTO, otherwise, an
             // error is returned.
-
-            CpuState cpu = processor.cpu;
-            Memory mem = Memory.getInstance();
-
-            paramsAddr = cpu._a0;
-            if (!Memory.isAddressGood(paramsAddr)) {
-                log.error(String.format("%sContStart bad address 0x%08X", name, paramsAddr));
-                cpu._v0 = -1;
-            } else {
-                this.params = createParams();
-                params.read(mem, paramsAddr);
-                if (log.isInfoEnabled()) {
-                    log.info(String.format("%sContStart %s", name, params.toString()));
-                }
-                if (screenshotParams.isContModeOn()) {
-                    // Start with INIT
-                    status = PSP_UTILITY_DIALOG_STATUS_INIT;
-                    cpu._v0 = 0;
-                } else {
-                    cpu._v0 = SceKernelErrors.ERROR_SCREENSHOT_CONT_MODE_NOT_INIT;
-                }
+            this.paramsAddr = paramsAddr;
+            this.params = createParams();
+            params.read(paramsAddr);
+            if (log.isInfoEnabled()) {
+                log.info(String.format("%sContStart %s", name, params.toString()));
             }
+
+            if (!screenshotParams.isContModeOn()) {
+            	return SceKernelErrors.ERROR_SCREENSHOT_CONT_MODE_NOT_INIT;
+            }
+
+            // Start with INIT
+            status = PSP_UTILITY_DIALOG_STATUS_INIT;
+            return 0;
 		}
 
 		@Override
@@ -1408,7 +1384,7 @@ public class sceUtility extends HLEModule {
 		}
 
 		@Override
-		protected boolean executeUpdateVisible(Processor processor) {
+		protected boolean executeUpdateVisible() {
 			return false;
 		}
     }
@@ -1427,7 +1403,7 @@ public class sceUtility extends HLEModule {
 		}
 
 		@Override
-		protected boolean executeUpdateVisible(Processor processor) {
+		protected boolean executeUpdateVisible() {
 			return false;
 		}
     }
@@ -1440,7 +1416,7 @@ public class sceUtility extends HLEModule {
 		}
 
 		@Override
-		protected boolean executeUpdateVisible(Processor processor) {
+		protected boolean executeUpdateVisible() {
 			// TODO to be implemented
 			return false;
 		}
@@ -1969,6 +1945,10 @@ public class sceUtility extends HLEModule {
     	return Settings.getInstance().readInt(SYSTEMPARAM_SETTINGS_OPTION_BUTTON_PREFERENCE, PSP_SYSTEMPARAM_BUTTON_CROSS);
     }
 
+    public static int getSystemParamLockParentalLevel() {
+    	return Settings.getInstance().readInt(SYSTEMPARAM_SETTINGS_OPTION_LOCK_PARENTAL_LEVEL, 0);
+    }
+
     protected static String getNetParamName(int id) {
     	if (id == 0) {
     		return "";
@@ -2186,305 +2166,298 @@ public class sceUtility extends HLEModule {
     }
 
     @HLEFunction(nid = 0xC492F751, version = 150)
-    public void sceUtilityGameSharingInitStart(Processor processor) {
-        gameSharingState.executeInitStart(processor);
+    public int sceUtilityGameSharingInitStart(TPointer paramsAddr) {
+        return gameSharingState.executeInitStart(paramsAddr);
     }
 
     @HLEFunction(nid = 0xEFC6F80F, version = 150)
-    public void sceUtilityGameSharingShutdownStart(Processor processor) {
-        gameSharingState.executeShutdownStart(processor);
+    public int sceUtilityGameSharingShutdownStart() {
+        return gameSharingState.executeShutdownStart();
     }
 
     @HLEFunction(nid = 0x7853182D, version = 150)
-    public void sceUtilityGameSharingUpdate(Processor processor) {
-    	gameSharingState.executeUpdate(processor);
+    public int sceUtilityGameSharingUpdate(int drawSpeed) {
+    	return gameSharingState.executeUpdate(drawSpeed);
     }
 
     @HLEFunction(nid = 0x946963F3, version = 150)
-    public void sceUtilityGameSharingGetStatus(Processor processor) {
-        gameSharingState.executeGetStatus(processor);
+    public int sceUtilityGameSharingGetStatus() {
+        return gameSharingState.executeGetStatus();
     }
 
     @HLEFunction(nid = 0x3AD50AE7, version = 150)
-    public void sceNetplayDialogInitStart(Processor processor) {
-        netplayDialogState.executeInitStart(processor);
+    public int sceNetplayDialogInitStart(TPointer paramsAddr) {
+    	return netplayDialogState.executeInitStart(paramsAddr);
     }
 
     @HLEFunction(nid = 0xBC6B6296, version = 150)
-    public void sceNetplayDialogShutdownStart(Processor processor) {
-        netplayDialogState.executeShutdownStart(processor);
+    public int sceNetplayDialogShutdownStart() {
+    	return netplayDialogState.executeShutdownStart();
     }
 
     @HLEFunction(nid = 0x417BED54, version = 150)
-    public void sceNetplayDialogUpdate(Processor processor) {
-    	netplayDialogState.executeUpdate(processor);
+    public int sceNetplayDialogUpdate(int drawSpeed) {
+    	return netplayDialogState.executeUpdate(drawSpeed);
     }
 
     @HLEFunction(nid = 0xB6CEE597, version = 150)
-    public void sceNetplayDialogGetStatus(Processor processor) {
-        netplayDialogState.executeGetStatus(processor);
+    public int sceNetplayDialogGetStatus() {
+    	return netplayDialogState.executeGetStatus();
     }
 
     @HLEFunction(nid = 0x4DB1E739, version = 150)
-    public void sceUtilityNetconfInitStart(Processor processor) {
-        netconfState.executeInitStart(processor);
+    public int sceUtilityNetconfInitStart(TPointer paramsAddr) {
+    	return netconfState.executeInitStart(paramsAddr);
     }
 
     @HLEFunction(nid = 0xF88155F6, version = 150)
-    public void sceUtilityNetconfShutdownStart(Processor processor) {
-        netconfState.executeShutdownStart(processor);
+    public int sceUtilityNetconfShutdownStart() {
+    	return netconfState.executeShutdownStart();
     }
 
     @HLEFunction(nid = 0x91E70E35, version = 150)
-    public void sceUtilityNetconfUpdate(Processor processor) {
-    	netconfState.executeUpdate(processor);
+    public int sceUtilityNetconfUpdate(int drawSpeed) {
+    	return netconfState.executeUpdate(drawSpeed);
     }
 
     @HLEFunction(nid = 0x6332AA39, version = 150)
-    public void sceUtilityNetconfGetStatus(Processor processor) {
-        netconfState.executeGetStatus(processor);
+    public int sceUtilityNetconfGetStatus() {
+    	return netconfState.executeGetStatus();
     }
 
     @HLEFunction(nid = 0x50C4CD57, version = 150)
-    public void sceUtilitySavedataInitStart(Processor processor) {
-        savedataState.executeInitStart(processor);
+    public int sceUtilitySavedataInitStart(TPointer paramsAddr) {
+    	return savedataState.executeInitStart(paramsAddr);
     }
 
     @HLEFunction(nid = 0x9790B33C, version = 150)
-    public void sceUtilitySavedataShutdownStart(Processor processor) {
-        savedataState.executeShutdownStart(processor);
+    public int sceUtilitySavedataShutdownStart() {
+    	return savedataState.executeShutdownStart();
     }
 
     @HLEFunction(nid = 0xD4B95FFB, version = 150)
-    public void sceUtilitySavedataUpdate(Processor processor) {
-    	savedataState.executeUpdate(processor);
+    public int sceUtilitySavedataUpdate(int drawSpeed) {
+    	return savedataState.executeUpdate(drawSpeed);
     }
 
     @HLEFunction(nid = 0x8874DBE0, version = 150)
-    public void sceUtilitySavedataGetStatus(Processor processor) {
-        savedataState.executeGetStatus(processor);
+    public int sceUtilitySavedataGetStatus() {
+    	return savedataState.executeGetStatus();
     }
 
     @HLEFunction(nid = 0x2995D020, version = 150)
-    public void sceUtilitySavedataErrInitStart(Processor processor) {
-        savedataErrState.executeInitStart(processor);
+    public int sceUtilitySavedataErrInitStart(TPointer paramsAddr) {
+    	return savedataErrState.executeInitStart(paramsAddr);
     }
 
     @HLEFunction(nid = 0xB62A4061, version = 150)
-    public void sceUtilitySavedataErrShutdownStart(Processor processor) {
-        savedataErrState.executeShutdownStart(processor);
+    public int sceUtilitySavedataErrShutdownStart() {
+    	return savedataErrState.executeShutdownStart();
     }
 
     @HLEFunction(nid = 0xED0FAD38, version = 150)
-    public void sceUtilitySavedataErrUpdate(Processor processor) {
-    	savedataErrState.executeUpdate(processor);
+    public int sceUtilitySavedataErrUpdate(int drawSpeed) {
+    	return savedataErrState.executeUpdate(drawSpeed);
     }
 
     @HLEFunction(nid = 0x88BC7406, version = 150)
-    public void sceUtilitySavedataErrGetStatus(Processor processor) {
-        savedataErrState.executeGetStatus(processor);
+    public int sceUtilitySavedataErrGetStatus() {
+    	return savedataErrState.executeGetStatus();
     }
 
     @HLEFunction(nid = 0x2AD8E239, version = 150)
-    public void sceUtilityMsgDialogInitStart(Processor processor) {
-        msgDialogState.executeInitStart(processor);
+    public int sceUtilityMsgDialogInitStart(TPointer paramsAddr) {
+    	return msgDialogState.executeInitStart(paramsAddr);
     }
 
     @HLEFunction(nid = 0x67AF3428, version = 150)
-    public void sceUtilityMsgDialogShutdownStart(Processor processor) {
-        msgDialogState.executeShutdownStart(processor);
+    public int sceUtilityMsgDialogShutdownStart() {
+    	return msgDialogState.executeShutdownStart();
     }
 
     @HLEFunction(nid = 0x95FC253B, version = 150)
-    public void sceUtilityMsgDialogUpdate(Processor processor) {
-    	msgDialogState.executeUpdate(processor);
+    public int sceUtilityMsgDialogUpdate(int drawSpeed) {
+    	return msgDialogState.executeUpdate(drawSpeed);
     }
 
     @HLEFunction(nid = 0x9A1C91D7, version = 150)
-    public void sceUtilityMsgDialogGetStatus(Processor processor) {
-        msgDialogState.executeGetStatus(processor);
+    public int sceUtilityMsgDialogGetStatus() {
+    	return msgDialogState.executeGetStatus();
     }
 
     @HLEFunction(nid = 0xF6269B82, version = 150)
-    public void sceUtilityOskInitStart(Processor processor) {
-        oskState.executeInitStart(processor);
+    public int sceUtilityOskInitStart(TPointer paramsAddr) {
+    	return oskState.executeInitStart(paramsAddr);
     }
 
     @HLEFunction(nid = 0x3DFAEBA9, version = 150)
-    public void sceUtilityOskShutdownStart(Processor processor) {
-        oskState.executeShutdownStart(processor);
+    public int sceUtilityOskShutdownStart() {
+    	return oskState.executeShutdownStart();
     }
 
     @HLEFunction(nid = 0x4B85C861, version = 150)
-    public void sceUtilityOskUpdate(Processor processor) {
-    	oskState.executeUpdate(processor);
+    public int sceUtilityOskUpdate(int drawSpeed) {
+    	return oskState.executeUpdate(drawSpeed);
     }
 
     @HLEFunction(nid = 0xF3F76017, version = 150)
-    public void sceUtilityOskGetStatus(Processor processor) {
-        oskState.executeGetStatus(processor);
+    public int sceUtilityOskGetStatus() {
+    	return oskState.executeGetStatus();
     }
 
     @HLEFunction(nid = 0x16D02AF0, version = 150)
-    public void sceUtilityNpSigninInitStart(Processor processor) {
-        npSigninState.executeInitStart(processor);
+    public int sceUtilityNpSigninInitStart(TPointer paramsAddr) {
+    	return npSigninState.executeInitStart(paramsAddr);
     }
 
     @HLEFunction(nid = 0xE19C97D6, version = 150)
-    public void sceUtilityNpSigninShutdownStart(Processor processor) {
-        npSigninState.executeShutdownStart(processor);
+    public int sceUtilityNpSigninShutdownStart() {
+    	return npSigninState.executeShutdownStart();
     }
 
     @HLEFunction(nid = 0xF3FBC572, version = 150)
-    public void sceUtilityNpSigninUpdate(Processor processor) {
-    	npSigninState.executeUpdate(processor);
+    public int sceUtilityNpSigninUpdate(int drawSpeed) {
+    	return npSigninState.executeUpdate(drawSpeed);
     }
 
     @HLEFunction(nid = 0x86ABDB1B, version = 150)
-    public void sceUtilityNpSigninGetStatus(Processor processor) {
-        npSigninState.executeGetStatus(processor);
+    public int sceUtilityNpSigninGetStatus() {
+    	return npSigninState.executeGetStatus();
     }
 
     @HLEFunction(nid = 0x42071A83, version = 150)
-    public void sceUtilityPS3ScanInitStart(Processor processor) {
-        PS3ScanState.executeInitStart(processor);
+    public int sceUtilityPS3ScanInitStart(TPointer paramsAddr) {
+    	return PS3ScanState.executeInitStart(paramsAddr);
     }
 
     @HLEFunction(nid = 0xD17A0573, version = 150)
-    public void sceUtilityPS3ScanShutdownStart(Processor processor) {
-        PS3ScanState.executeShutdownStart(processor);
+    public int sceUtilityPS3ScanShutdownStart() {
+    	return PS3ScanState.executeShutdownStart();
     }
 
     @HLEFunction(nid = 0xD852CDCE, version = 150)
-    public void sceUtilityPS3ScanUpdate(Processor processor) {
-    	PS3ScanState.executeUpdate(processor);
+    public int sceUtilityPS3ScanUpdate(int drawSpeed) {
+    	return PS3ScanState.executeUpdate(drawSpeed);
     }
 
     @HLEFunction(nid = 0x89317C8F, version = 150)
-    public void sceUtilityPS3ScanGetStatus(Processor processor) {
-        PS3ScanState.executeGetStatus(processor);
+    public int sceUtilityPS3ScanGetStatus() {
+    	return PS3ScanState.executeGetStatus();
     }
 
     @HLEFunction(nid = 0x81c44706, version = 150)
-    public void sceUtilityRssReaderInitStart(Processor processor) {
-        rssReaderState.executeInitStart(processor);
+    public int sceUtilityRssReaderInitStart(TPointer paramsAddr) {
+    	return rssReaderState.executeInitStart(paramsAddr);
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xB0FB7FF5, version = 150)
-    public void sceUtilityRssReaderContStart(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented: sceUtilityRssReaderContStart");
-
-        cpu._v0 = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
+    public int sceUtilityRssReaderContStart() {
+        return SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
     }
 
     @HLEFunction(nid = 0xE7B778D8, version = 150)
-    public void sceUtilityRssReaderShutdownStart(Processor processor) {
-        rssReaderState.executeShutdownStart(processor);
+    public int sceUtilityRssReaderShutdownStart() {
+    	return rssReaderState.executeShutdownStart();
     }
 
     @HLEFunction(nid = 0x6F56F9CF, version = 150)
-    public void sceUtilityRssReaderUpdate(Processor processor) {
-    	rssReaderState.executeUpdate(processor);
+    public int sceUtilityRssReaderUpdate(int drawSpeed) {
+    	return rssReaderState.executeUpdate(drawSpeed);
     }
 
     @HLEFunction(nid = 0x8326AB05, version = 150)
-    public void sceUtilityRssReaderGetStatus(Processor processor) {
-        rssReaderState.executeGetStatus(processor);
+    public int sceUtilityRssReaderGetStatus() {
+    	return rssReaderState.executeGetStatus();
     }
 
     @HLEFunction(nid = 0x4B0A8FE5, version = 150)
-    public void sceUtilityRssSubscriberInitStart(Processor processor) {
-        rssSubscriberState.executeInitStart(processor);
+    public int sceUtilityRssSubscriberInitStart(TPointer paramsAddr) {
+    	return rssSubscriberState.executeInitStart(paramsAddr);
     }
 
     @HLEFunction(nid = 0x06A48659, version = 150)
-    public void sceUtilityRssSubscriberShutdownStart(Processor processor) {
-        rssSubscriberState.executeShutdownStart(processor);
+    public int sceUtilityRssSubscriberShutdownStart() {
+    	return rssSubscriberState.executeShutdownStart();
     }
 
     @HLEFunction(nid = 0xA084E056, version = 150)
-    public void sceUtilityRssSubscriberUpdate(Processor processor) {
-    	rssSubscriberState.executeUpdate(processor);
+    public int sceUtilityRssSubscriberUpdate(int drawSpeed) {
+    	return rssSubscriberState.executeUpdate(drawSpeed);
     }
 
     @HLEFunction(nid = 0x2B96173B, version = 150)
-    public void sceUtilityRssSubscriberGetStatus(Processor processor) {
-        rssSubscriberState.executeGetStatus(processor);
+    public int sceUtilityRssSubscriberGetStatus() {
+    	return rssSubscriberState.executeGetStatus();
     }
 
     @HLEFunction(nid = 0x0251B134, version = 150)
-    public void sceUtilityScreenshotInitStart(Processor processor) {
-        screenshotState.executeInitStart(processor);
+    public int sceUtilityScreenshotInitStart(TPointer paramsAddr) {
+    	return screenshotState.executeInitStart(paramsAddr);
     }
 
     @HLEFunction(nid = 0x86A03A27, version = 150)
-    public void sceUtilityScreenshotContStart(Processor processor) {
-        screenshotState.executeContStart(processor);
+    public int sceUtilityScreenshotContStart(TPointer paramsAddr) {
+    	return screenshotState.executeContStart(paramsAddr);
     }
 
     @HLEFunction(nid = 0xF9E0008C, version = 150)
-    public void sceUtilityScreenshotShutdownStart(Processor processor) {
-        screenshotState.executeShutdownStart(processor);
+    public int sceUtilityScreenshotShutdownStart() {
+    	return screenshotState.executeShutdownStart();
     }
 
     @HLEFunction(nid = 0xAB083EA9, version = 150)
-    public void sceUtilityScreenshotUpdate(Processor processor) {
-    	screenshotState.executeUpdate(processor);
+    public int sceUtilityScreenshotUpdate(int drawSpeed) {
+    	return screenshotState.executeUpdate(drawSpeed);
     }
 
     @HLEFunction(nid = 0xD81957B7, version = 150)
-    public void sceUtilityScreenshotGetStatus(Processor processor) {
-        screenshotState.executeGetStatus(processor);
+    public int sceUtilityScreenshotGetStatus() {
+    	return screenshotState.executeGetStatus();
     }
 
     @HLEFunction(nid = 0xCDC3AA41, version = 150)
-    public void sceUtilityHtmlViewerInitStart(Processor processor) {
-        htmlViewerState.executeInitStart(processor);
+    public int sceUtilityHtmlViewerInitStart(TPointer paramsAddr) {
+    	return htmlViewerState.executeInitStart(paramsAddr);
     }
 
     @HLEFunction(nid = 0xF5CE1134, version = 150)
-    public void sceUtilityHtmlViewerShutdownStart(Processor processor) {
-        htmlViewerState.executeShutdownStart(processor);
+    public int sceUtilityHtmlViewerShutdownStart() {
+    	return htmlViewerState.executeShutdownStart();
     }
 
     @HLEFunction(nid = 0x05AFB9E4, version = 150)
-    public void sceUtilityHtmlViewerUpdate(Processor processor) {
-    	htmlViewerState.executeUpdate(processor);
+    public int sceUtilityHtmlViewerUpdate(int drawSpeed) {
+    	return htmlViewerState.executeUpdate(drawSpeed);
     }
 
     @HLEFunction(nid = 0xBDA7D894, version = 150)
-    public void sceUtilityHtmlViewerGetStatus(Processor processor) {
-        htmlViewerState.executeGetStatus(processor);
+    public int sceUtilityHtmlViewerGetStatus() {
+    	return htmlViewerState.executeGetStatus();
     }
 
     @HLEFunction(nid = 0x24AC31EB, version = 150)
-    public void sceUtilityGamedataInstallInitStart(Processor processor) {
-        gamedataInstallState.executeInitStart(processor);
+    public int sceUtilityGamedataInstallInitStart(TPointer paramsAddr) {
+    	return gamedataInstallState.executeInitStart(paramsAddr);
     }
 
     @HLEFunction(nid = 0x32E32DCB, version = 150)
-    public void sceUtilityGamedataInstallShutdownStart(Processor processor) {
-        gamedataInstallState.executeShutdownStart(processor);
+    public int sceUtilityGamedataInstallShutdownStart() {
+    	return gamedataInstallState.executeShutdownStart();
     }
 
     @HLEFunction(nid = 0x4AECD179, version = 150)
-    public void sceUtilityGamedataInstallUpdate(Processor processor) {
-    	gamedataInstallState.executeUpdate(processor);
+    public int sceUtilityGamedataInstallUpdate(int drawSpeed) {
+    	return gamedataInstallState.executeUpdate(drawSpeed);
     }
 
     @HLEFunction(nid = 0xB57E95D9, version = 150)
-    public void sceUtilityGamedataInstallGetStatus(Processor processor) {
-        gamedataInstallState.executeGetStatus(processor);
+    public int sceUtilityGamedataInstallGetStatus() {
+    	return gamedataInstallState.executeGetStatus();
     }
 
     @HLEFunction(nid = 0x45C18506, version = 150)
     public int sceUtilitySetSystemParamInt(int id, int value) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceUtilitySetSystemParamInt id=%d, value=%d", id, value));
-    	}
-
         switch (id) {
             case PSP_SYSTEMPARAM_ID_INT_ADHOC_CHANNEL:
             	if (value != 0 && value != 1 && value != 6 && value != 11) {
@@ -2511,109 +2484,73 @@ public class sceUtility extends HLEModule {
     }
 
     @HLEFunction(nid = 0xA5DA2406, version = 150)
-    public void sceUtilityGetSystemParamInt(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int id = cpu._a0;
-        int value_addr = cpu._a1;
-
-        if (!Memory.isAddressGood(value_addr)) {
-            log.warn("sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") bad address");
-            cpu._v0 = -1;
-        } else {
-            log.debug("sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ")");
-
-            cpu._v0 = 0;
-            switch (id) {
-                case PSP_SYSTEMPARAM_ID_INT_ADHOC_CHANNEL:
-                    mem.write32(value_addr, getSystemParamAdhocChannel());
-                    break;
-
-                case PSP_SYSTEMPARAM_ID_INT_WLAN_POWERSAVE:
-                    mem.write32(value_addr, getSystemParamWlanPowersave());
-                    break;
-
-                case PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT:
-                    mem.write32(value_addr, getSystemParamDateFormat());
-                    break;
-
-                case PSP_SYSTEMPARAM_ID_INT_TIME_FORMAT:
-                    mem.write32(value_addr, getSystemParamTimeFormat());
-                    break;
-
-                case PSP_SYSTEMPARAM_ID_INT_TIMEZONE:
-                    mem.write32(value_addr, getSystemParamTimeZone());
-                    break;
-
-                case PSP_SYSTEMPARAM_ID_INT_DAYLIGHTSAVINGS:
-                    mem.write32(value_addr, getSystemParamDaylightSavingTime());
-                    break;
-
-                case PSP_SYSTEMPARAM_ID_INT_LANGUAGE:
-                    mem.write32(value_addr, getSystemParamLanguage());
-                    break;
-
-                case PSP_SYSTEMPARAM_ID_INT_BUTTON_PREFERENCE:
-                    mem.write32(value_addr, getSystemParamLanguage());
-                    break;
-
-                default:
-                    log.warn("UNIMPLEMENTED: sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") unhandled id");
-                    cpu._v0 = -1;
-                    break;
-            }
+    public int sceUtilityGetSystemParamInt(int id, TPointer32 valueAddr) {
+        switch (id) {
+            case PSP_SYSTEMPARAM_ID_INT_ADHOC_CHANNEL:
+                valueAddr.setValue(getSystemParamAdhocChannel());
+                break;
+            case PSP_SYSTEMPARAM_ID_INT_WLAN_POWERSAVE:
+            	valueAddr.setValue(getSystemParamWlanPowersave());
+                break;
+            case PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT:
+            	valueAddr.setValue(getSystemParamDateFormat());
+                break;
+            case PSP_SYSTEMPARAM_ID_INT_TIME_FORMAT:
+            	valueAddr.setValue(getSystemParamTimeFormat());
+                break;
+            case PSP_SYSTEMPARAM_ID_INT_TIMEZONE:
+            	valueAddr.setValue(getSystemParamTimeZone());
+                break;
+            case PSP_SYSTEMPARAM_ID_INT_DAYLIGHTSAVINGS:
+            	valueAddr.setValue(getSystemParamDaylightSavingTime());
+                break;
+            case PSP_SYSTEMPARAM_ID_INT_LANGUAGE:
+            	valueAddr.setValue(getSystemParamLanguage());
+                break;
+            case PSP_SYSTEMPARAM_ID_INT_BUTTON_PREFERENCE:
+            	valueAddr.setValue(getSystemParamButtonPreference());
+                break;
+            case PSP_SYSTEMPARAM_ID_INT_LOCK_PARENTAL_LEVEL:
+            	// This system param ID was introduced somewhere between v5.00 (not available) and v6.20 (available)
+            	if (Emulator.getInstance().getFirmwareVersion() <= 500) {
+                    log.warn(String.format("sceUtilityGetSystemParamInt id=%d, value_addr=%s PSP_SYSTEMPARAM_ID_INT_LOCK_PARENTAL_LEVEL not available in PSP v%d", id, valueAddr, Emulator.getInstance().getFirmwareVersion()));
+                    return SceKernelErrors.ERROR_UTILITY_INVALID_SYSTEM_PARAM_ID;
+            	}
+        		valueAddr.setValue(getSystemParamLockParentalLevel());
+            	break;
+            default:
+                log.warn(String.format("sceUtilityGetSystemParamInt id=%d, valueAddr=%s invalid id", id, valueAddr));
+                return SceKernelErrors.ERROR_UTILITY_INVALID_SYSTEM_PARAM_ID;
         }
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x34B78343, version = 150)
-    public void sceUtilityGetSystemParamString(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int id = cpu._a0;
-        int str_addr = cpu._a1;
-        int len = cpu._a2;
-
-        if (!Memory.isAddressGood(str_addr)) {
-            log.warn("sceUtilityGetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ",len=" + len + ") bad address");
-            cpu._v0 = -1;
-        } else {
-            log.debug("sceUtilityGetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ",len=" + len + ")");
-
-            cpu._v0 = 0;
-            switch (id) {
-                case PSP_SYSTEMPARAM_ID_STRING_NICKNAME:
-                    Utilities.writeStringNZ(mem, str_addr, len, getSystemParamNickname());
-                    break;
-
-                default:
-                    log.warn("UNIMPLEMENTED:sceUtilityGetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ",len=" + len + ") unhandled id");
-                    cpu._v0 = -1;
-                    break;
-            }
+    public int sceUtilityGetSystemParamString(int id, TPointer strAddr, int len) {
+        switch (id) {
+            case PSP_SYSTEMPARAM_ID_STRING_NICKNAME:
+            	strAddr.setStringNZ(len, getSystemParamNickname());
+                break;
+            default:
+                log.warn(String.format("sceUtilityGetSystemParamString id=%d, strAddr=%s, len=%d invalid id", id, strAddr, len));
+                return SceKernelErrors.ERROR_UTILITY_INVALID_SYSTEM_PARAM_ID;
         }
+
+        return 0;
     }
 
     /**
-     * Check existance of a Net Configuration
+     * Check existence of a Net Configuration
      *
      * @param id - id of net Configuration (1 to n)
      * @return 0 on success,
      */
     @HLEFunction(nid = 0x5EEE6548, version = 150)
-    public void sceUtilityCheckNetParam(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int id = cpu._a0;
-
+    public int sceUtilityCheckNetParam(int id) {
         boolean available = (id >= 0 && id <= numberNetConfigurations);
 
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceUtilityCheckNetParam(id=%d) available %b", id, available));
-        }
-
-        cpu._v0 = available ? 0 : SceKernelErrors.ERROR_NETPARAM_BAD_NETCONF;
+        return available ? 0 : SceKernelErrors.ERROR_NETPARAM_BAD_NETCONF;
     }
 
     /**
@@ -2626,77 +2563,52 @@ public class sceUtility extends HLEModule {
      * @return 0 on success,
      */
     @HLEFunction(nid = 0x434D4B3A, version = 150)
-    public void sceUtilityGetNetParam(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int id = cpu._a0;
-        int param = cpu._a1;
-        int data = cpu._a2;
-
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceUtilityGetNetParam(id=%d, param=%d, data=0x%08X)", id, param, data));
-        }
-
+    public int sceUtilityGetNetParam(int id, int param, TPointer data) {
         if (id < 0 || id > numberNetConfigurations) {
         	log.warn(String.format("sceUtilityGetNetParam invalid id=%d", id));
-        	cpu._v0 = SceKernelErrors.ERROR_NETPARAM_BAD_NETCONF;
-        } else if (!Memory.isAddressGood(data)) {
-        	log.warn(String.format("sceUtilityGetNetParam invalid data address 0x%08X", data));
-        	cpu._v0 = -1;
-        } else {
-	        cpu._v0 = 0;
-	        switch (param) {
-		        case PSP_NETPARAM_NAME: {
-		        	Utilities.writeStringZ(mem, data, getNetParamName(id));
-		        	break;
-		        }
-		        case PSP_NETPARAM_SSID: {
-		        	Utilities.writeStringZ(mem, data, sceNetApctl.getSSID());
-		        	break;
-		        }
-		        case PSP_NETPARAM_SECURE: {
-		        	mem.write32(data, 1);
-		        	break;
-		        }
-		        case PSP_NETPARAM_WEPKEY: {
-		        	Utilities.writeStringZ(mem, data, "XXXXXXXXXXXXXXXXX");
-		        	break;
-		        }
-		        case PSP_NETPARAM_IS_STATIC_IP: {
-		        	mem.write32(data, 0);
-		        	break;
-		        }
-		        case PSP_NETPARAM_IP: {
-		        	Utilities.writeStringZ(mem, data, sceNetApctl.getLocalHostIP());
-		        	break;
-		        }
-		        case PSP_NETPARAM_NETMASK: {
-		        	Utilities.writeStringZ(mem, data, sceNetApctl.getSubnetMask());
-		        	break;
-		        }
-		        case PSP_NETPARAM_ROUTE: {
-		        	Utilities.writeStringZ(mem, data, sceNetApctl.getGateway());
-		        	break;
-		        }
-		        case PSP_NETPARAM_MANUAL_DNS: {
-		        	mem.write32(data, 0);
-		        	break;
-		        }
-		        case PSP_NETPARAM_PRIMARYDNS: {
-		        	Utilities.writeStringZ(mem, data, sceNetApctl.getPrimaryDNS());
-		        	break;
-		        }
-		        case PSP_NETPARAM_SECONDARYDNS: {
-		        	Utilities.writeStringZ(mem, data, sceNetApctl.getSecondaryDNS());
-		        	break;
-		        }
-		        default: {
-		        	log.warn(String.format("sceUtilityGetNetParam invalid data address 0x%08X", data));
-		        	cpu._v0 = SceKernelErrors.ERROR_NETPARAM_BAD_PARAM;
-		        }
-	        }
+        	return SceKernelErrors.ERROR_NETPARAM_BAD_NETCONF;
         }
+
+        switch (param) {
+	        case PSP_NETPARAM_NAME:
+	        	data.setStringZ(getNetParamName(id));
+	        	break;
+	        case PSP_NETPARAM_SSID:
+	        	data.setStringZ(sceNetApctl.getSSID());
+	        	break;
+	        case PSP_NETPARAM_SECURE:
+	        	data.setValue32(1);
+	        	break;
+	        case PSP_NETPARAM_WEPKEY:
+	        	data.setStringZ("XXXXXXXXXXXXXXXXX");
+	        	break;
+	        case PSP_NETPARAM_IS_STATIC_IP:
+	        	data.setValue32(0);
+	        	break;
+	        case PSP_NETPARAM_IP:
+	        	data.setStringZ(sceNetApctl.getLocalHostIP());
+	        	break;
+	        case PSP_NETPARAM_NETMASK:
+	        	data.setStringZ(sceNetApctl.getSubnetMask());
+	        	break;
+	        case PSP_NETPARAM_ROUTE:
+	        	data.setStringZ(sceNetApctl.getGateway());
+	        	break;
+	        case PSP_NETPARAM_MANUAL_DNS:
+	        	data.setValue32(0);
+	        	break;
+	        case PSP_NETPARAM_PRIMARYDNS:
+	        	data.setStringZ(sceNetApctl.getPrimaryDNS());
+	        	break;
+	        case PSP_NETPARAM_SECONDARYDNS:
+	        	data.setStringZ(sceNetApctl.getSecondaryDNS());
+	        	break;
+	        default:
+	        	log.warn(String.format("sceUtilityGetNetParam invalid param %d", param));
+	        	return SceKernelErrors.ERROR_NETPARAM_BAD_PARAM;
+        }
+
+        return 0;
     }
 
     /**
@@ -2706,23 +2618,11 @@ public class sceUtility extends HLEModule {
      * @return 0 on success,
      */
     @HLEFunction(nid = 0x4FED24D8, version = 150)
-    public void sceUtilityGetNetParamLatestID(Processor processor) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
+    public int sceUtilityGetNetParamLatestID(TPointer32 idAddr) {
+    	// TODO Check if this function returns the number of net configurations
+    	// or the ID the latest selected net configuration
+        idAddr.setValue(numberNetConfigurations);
 
-        int idAddr = cpu._a0;
-
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceUtilityGetNetParamLatestID: idAddr=0x%08X", idAddr));
-        }
-
-        if (Memory.isAddressGood(idAddr)) {
-        	// TODO Check if this function returns the number of net configurations
-        	// or the ID the latest selected net configuration
-            mem.write32(idAddr, numberNetConfigurations);
-            cpu._v0 = 0;
-        } else {
-            cpu._v0 = SceKernelErrors.ERROR_NETPARAM_BAD_PARAM;
-        }
+        return 0;
     }
 }
