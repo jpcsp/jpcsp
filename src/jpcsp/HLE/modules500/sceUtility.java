@@ -16,9 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules500;
 
-import jpcsp.Processor;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.TPointer;
 
 @HLELogging
 public class sceUtility extends jpcsp.HLE.modules303.sceUtility {
@@ -32,22 +32,22 @@ public class sceUtility extends jpcsp.HLE.modules303.sceUtility {
 	}
 
 	@HLEFunction(nid = 0xDA97F1AA, version = 500)
-	public void sceUtilityStoreCheckoutInitStart(Processor processor) {
-		storeCheckoutState.executeInitStart(processor);
+	public int sceUtilityStoreCheckoutInitStart(TPointer paramsAddr) {
+		return storeCheckoutState.executeInitStart(paramsAddr);
 	}
 
 	@HLEFunction(nid = 0x54A5C62F, version = 500)
-	public void sceUtilityStoreCheckoutShutdownStart(Processor processor) {
-		storeCheckoutState.executeShutdownStart(processor);
+	public int sceUtilityStoreCheckoutShutdownStart() {
+		return storeCheckoutState.executeShutdownStart();
 	}
 
 	@HLEFunction(nid = 0xB8592D5F, version = 500)
-	public void sceUtilityStoreCheckoutUpdate(Processor processor) {
-		storeCheckoutState.executeUpdate(processor);
+	public int sceUtilityStoreCheckoutUpdate(int drawSpeed) {
+		return storeCheckoutState.executeUpdate(drawSpeed);
 	}
 
 	@HLEFunction(nid = 0x3AAD51DC, version = 500)
-	public void sceUtilityStoreCheckoutGetStatus(Processor processor) {
-		storeCheckoutState.executeGetStatus(processor);
+	public int sceUtilityStoreCheckoutGetStatus() {
+		return storeCheckoutState.executeGetStatus();
 	}
 }
