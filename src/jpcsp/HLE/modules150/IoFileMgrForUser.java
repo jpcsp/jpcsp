@@ -1411,6 +1411,13 @@ public class IoFileMgrForUser extends HLEModule {
     	}
     }
 
+    public IVirtualFileSystem getVirtualFileSystem(String pspfilename, StringBuilder localFileName) {
+        String absoluteFileName = getAbsoluteFileName(pspfilename);
+        IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
+
+        return vfs;
+    }
+
     /*
      * HLE functions.
      */

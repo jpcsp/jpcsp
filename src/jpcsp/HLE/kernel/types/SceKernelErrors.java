@@ -311,6 +311,7 @@ public class SceKernelErrors {
     public static final int ERROR_SAVEDATA_SAVE_NO_SPACE                        = 0x80110383;
     public static final int ERROR_SAVEDATA_SAVE_MEMSTICK_PROTECTED              = 0x80110384;
     public static final int ERROR_SAVEDATA_SAVE_ACCESS_ERROR                    = 0x80110385;
+    public static final int ERROR_SAVEDATA_SAVE_DATA_BROKEN                     = 0x80110386;
     public static final int ERROR_SAVEDATA_SAVE_BAD_PARAMS                      = 0x80110388;
     public static final int ERROR_SAVEDATA_SAVE_NO_UMD                          = 0x80110389;
     public static final int ERROR_SAVEDATA_SAVE_WRONG_UMD                       = 0x8011038a;
