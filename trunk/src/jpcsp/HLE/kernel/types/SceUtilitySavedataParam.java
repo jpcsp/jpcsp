@@ -30,6 +30,7 @@ import jpcsp.memory.MemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
@@ -236,13 +237,13 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         read(base);
         setMaxSize(base.totalSizeof());
 
-        mode = read32();
-        bind = read32();
-        overwrite = read32() == 0 ? false : true;
-        gameName = readStringNZ(13);
+        mode = read32(); // Offset 48
+        bind = read32(); // Offset 52
+        overwrite = read32() == 0 ? false : true; // Offset 56
+        gameName = readStringNZ(13); // Offset 60
         readUnknown(3);
-        saveName = readStringNZ(20);
-        saveNameListAddr = read32();
+        saveName = readStringNZ(20); // Offset 76
+        saveNameListAddr = read32(); // Offset 96
         if (Memory.isAddressGood(saveNameListAddr)) {
             List<String> newSaveNameList = new ArrayList<String>();
             boolean endOfList = false;
@@ -256,41 +257,41 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
             }
             saveNameList = newSaveNameList.toArray(new String[newSaveNameList.size()]);
         }
-        fileName = readStringNZ(13);
+        fileName = readStringNZ(13); // Offset 100
         readUnknown(3);
-        dataBuf = read32();
-        dataBufSize = read32();
-        dataSize = read32();
+        dataBuf = read32(); // Offset 116
+        dataBufSize = read32(); // Offset 120
+        dataSize = read32(); // Offset 124
 
         sfoParam = new PspUtilitySavedataSFOParam();
-        read(sfoParam);
+        read(sfoParam); // Offset 128
         icon0FileData = new PspUtilitySavedataFileData();
-        read(icon0FileData);
+        read(icon0FileData); // Offset 1412
         icon1FileData = new PspUtilitySavedataFileData();
-        read(icon1FileData);
+        read(icon1FileData); // Offset 1428
         pic1FileData = new PspUtilitySavedataFileData();
-        read(pic1FileData);
+        read(pic1FileData); // Offset 1444
         snd0FileData = new PspUtilitySavedataFileData();
-        read(snd0FileData);
+        read(snd0FileData); // Offset 1460
 
-        newDataAddr = read32();
+        newDataAddr = read32(); // Offset 1476
         if (newDataAddr != 0) {
             newData = new PspUtilitySavedataListSaveNewData();
             newData.read(mem, newDataAddr);
         } else {
             newData = null;
         }
-        focus = read32();
-        abortStatus = read32();
-        msFreeAddr = read32();
-        msDataAddr = read32();
-        utilityDataAddr = read32();
-        read8Array(key);
-        secureVersion = read32();
-        multiStatus = read32();
-        idListAddr = read32();
-        fileListAddr = read32();
-        sizeAddr = read32();
+        focus = read32(); // Offset 1480
+        abortStatus = read32(); // Offset 1484
+        msFreeAddr = read32(); // Offset 1488
+        msDataAddr = read32(); // Offset 1492
+        utilityDataAddr = read32(); // Offset 1496
+        read8Array(key); // Offset 1500
+        secureVersion = read32(); // Offset 1516
+        multiStatus = read32(); // Offset 1520
+        idListAddr = read32(); // Offset 1524
+        fileListAddr = read32(); // Offset 1528
+        sizeAddr = read32(); // Offset 1532
     }
 
     @Override
@@ -335,10 +336,14 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
     }
 
     public String getBasePath() {
-        return getBasePath(saveName);
+        return getBasePath(gameName, saveName);
     }
 
     public String getBasePath(String saveName) {
+    	return getBasePath(gameName, saveName);
+    }
+
+    public String getBasePath(String gameName, String saveName) {
         String path = savedataPath + gameName;
         if (saveName != null && !anyFileName.equals(saveName)) {
             path += saveName;
@@ -351,28 +356,26 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         return getBasePath(saveName) + fileName;
     }
 
-    private int getFileSize(String fileName) {
-        int size = 0;
-
-        if (fileName != null && fileName.length() > 0) {
-            SceIoStat fileStat = Modules.IoFileMgrForUserModule.statFile(getFileName(saveName, fileName));
-            if (fileStat != null) {
-                size = (int) fileStat.size;
-            }
-        }
-
-        return size;
-    }
-
     public int getSizeKb(String gameName, String saveName) {
-        int sizeKb;
+        int sizeKb = 0;
 
-        sizeKb = Utilities.getSizeKb(getFileSize(fileName));
-        sizeKb += Utilities.getSizeKb(getFileSize(icon0FileName));
-        sizeKb += Utilities.getSizeKb(getFileSize(icon1FileName));
-        sizeKb += Utilities.getSizeKb(getFileSize(pic1FileName));
-        sizeKb += Utilities.getSizeKb(getFileSize(snd0FileName));
-        sizeKb += Utilities.getSizeKb(getFileSize(paramSfoFileName));
+        String path = getBasePath(saveName);
+        StringBuilder localFileName = new StringBuilder();
+        IVirtualFileSystem vfs = Modules.IoFileMgrForUserModule.getVirtualFileSystem(path, localFileName);
+        if (vfs != null) {
+        	String[] fileNames = vfs.ioDopen(localFileName.toString());
+        	if (fileNames != null) {
+        		for (int i = 0; i < fileNames.length; i++) {
+            		SceIoStat stat = new SceIoStat();
+            		SceIoDirent dirent = new SceIoDirent(stat, fileNames[i]);
+            		int result = vfs.ioDread(localFileName.toString(), dirent);
+            		if (result > 0) {
+            			sizeKb += Utilities.getSizeKb((int) stat.size);
+            		}
+        		}
+        		vfs.ioDclose(localFileName.toString());
+        	}
+        }
 
         return sizeKb;
     }
@@ -625,6 +628,16 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         fileInput.close();
 
         return true;
+    }
+
+    public boolean isDirectoryPresent(String gameName, String saveName) {
+    	String path = getBasePath(saveName);
+    	SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(path);
+    	if (stat != null && (stat.attr & 0x20) == 0) {
+    		return true;
+    	}
+
+    	return false;
     }
 
     public boolean isPresent(String gameName, String saveName) {
