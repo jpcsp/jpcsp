@@ -952,7 +952,7 @@ public class sceAtrac3plus extends HLEModule {
                     end = 0;
                 }
 
-                samplesAddr.clear(samples * 4);  // 4 empty bytes per sample.
+                samplesAddr.clear(samples * id.getAtracOutputChannels() * 2);  // 2 empty bytes per sample and channel.
             } else if (samples == 0) {
                 // Using decoded data and all samples have been decoded.
                 result = SceKernelErrors.ERROR_ATRAC_ALL_DATA_DECODED;
