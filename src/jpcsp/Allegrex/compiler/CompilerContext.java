@@ -40,7 +40,6 @@ import jpcsp.Allegrex.VfpuState;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.FpuState.Fcr31;
 import jpcsp.Allegrex.VfpuState.Vcr;
-import jpcsp.Allegrex.VfpuState.VfpuValue;
 import jpcsp.Allegrex.VfpuState.Vcr.PfxDst;
 import jpcsp.Allegrex.VfpuState.Vcr.PfxSrc;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeInstruction;
@@ -134,8 +133,6 @@ public class CompilerContext implements ICompilerContext {
     private static final String memoryDescriptor = Type.getDescriptor(Memory.class);
     private static final String memoryInternalName = Type.getInternalName(Memory.class);
     private static final String profilerInternalName = Type.getInternalName(Profiler.class);
-    private static final String vfpuValueDescriptor = Type.getDescriptor(VfpuValue.class);
-    private static final String vfpuValueInternalName = Type.getInternalName(VfpuValue.class);
 	public  static final String executableDescriptor = Type.getDescriptor(IExecutable.class);
 	public  static final String executableInternalName = Type.getInternalName(IExecutable.class);
 	private static Set<Integer> fastSyscalls;
@@ -226,8 +223,12 @@ public class CompilerContext implements ICompilerContext {
 		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "fpr", "[F");
     }
 
-    private void loadVpr() {
-		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "vpr", "[" + vfpuValueDescriptor);
+    private void loadVprFloat() {
+		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "vprFloat", "[F");
+    }
+
+    private void loadVprInt() {
+		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "vprInt", "[I");
     }
 
     @Override
@@ -336,14 +337,16 @@ public class CompilerContext implements ICompilerContext {
     }
 
     private void loadVRegister(int m, int c, int r, boolean isFloat) {
-        loadVpr();
-        loadImm(VfpuState.getVprIndex(m, c, r));
-        mv.visitInsn(Opcodes.AALOAD);
-        if (isFloat) {
-        	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, vfpuValueInternalName, "getFloat", "()F");
-        } else {
-        	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, vfpuValueInternalName, "getInt", "()I");
-        }
+    	int index = VfpuState.getVprIndex(m, c, r);
+    	if (isFloat) {
+    		loadVprFloat();
+    		loadImm(index);
+            mv.visitInsn(Opcodes.FALOAD);
+    	} else {
+    		loadVprInt();
+    		loadImm(index);
+            mv.visitInsn(Opcodes.IALOAD);
+    	}
     }
 
     private void loadCstValue(Float cstValue, boolean isFloat) {
@@ -519,13 +522,28 @@ public class CompilerContext implements ICompilerContext {
     	}
     }
 
-    private void prepareVRegisterForStore(int m, int c, int r) {
-        loadVpr();
-        loadImm(VfpuState.getVprIndex(m, c, r));
-        mv.visitInsn(Opcodes.AALOAD);
+    private void prepareVRegisterForStore(int m, int c, int r, boolean isFloat) {
+    	int index = VfpuState.getVprIndex(m, c, r);
+    	if (isFloat) {
+    		// Prepare the array and index for the int value
+    		loadVprInt();
+    		loadImm(index);
+
+    		// Prepare the array and index for the float value
+    		loadVprFloat();
+    		loadImm(index);
+    	} else {
+    		// Prepare the array and index for the float value
+    		loadVprFloat();
+    		loadImm(index);
+
+    		// Prepare the array and index for the int value
+    		loadVprInt();
+    		loadImm(index);
+    	}
     }
 
-    public void prepareVRegisterForStore(int vsize, int reg, int n, VfpuPfxDstState pfxDstState) {
+    public void prepareVRegisterForStore(int vsize, int reg, int n, VfpuPfxDstState pfxDstState, boolean isFloat) {
     	if (preparedRegisterForStore < 0) {
             if (!isPfxDstMasked(pfxDstState, n)) {
             	int m = (reg >> 2) & 7;
@@ -534,24 +552,24 @@ public class CompilerContext implements ICompilerContext {
             	switch (vsize) {
             		case 1: {
                         s = (reg >> 5) & 3;
-                        prepareVRegisterForStore(m, i, s);
+                        prepareVRegisterForStore(m, i, s, isFloat);
             			break;
             		}
             		case 2: {
                         s = (reg & 64) >> 5;
                         if ((reg & 32) != 0) {
-                            prepareVRegisterForStore(m, s + n, i);
+                            prepareVRegisterForStore(m, s + n, i, isFloat);
                         } else {
-                            prepareVRegisterForStore(m, i, s + n);
+                            prepareVRegisterForStore(m, i, s + n, isFloat);
                         }
                         break;
             		}
                     case 3: {
                         s = (reg & 64) >> 6;
                         if ((reg & 32) != 0) {
-                            prepareVRegisterForStore(m, s + n, i);
+                            prepareVRegisterForStore(m, s + n, i, isFloat);
                         } else {
-                            prepareVRegisterForStore(m, i, s + n);
+                            prepareVRegisterForStore(m, i, s + n, isFloat);
                         }
                         break;
             		}
@@ -560,9 +578,9 @@ public class CompilerContext implements ICompilerContext {
                     		Emulator.log.error(String.format("Unsupported Vreg=%d at ", reg, getCodeInstruction()));
                     	}
                         if ((reg & 32) != 0) {
-                            prepareVRegisterForStore(m, n, i);
+                            prepareVRegisterForStore(m, n, i, isFloat);
                         } else {
-                            prepareVRegisterForStore(m, i, n);
+                            prepareVRegisterForStore(m, i, n, isFloat);
                         }
                     	break;
                     }
@@ -587,9 +605,17 @@ public class CompilerContext implements ICompilerContext {
             } else {
                 applyPfxDstPostfix(pfxDstState, n);
                 if (isFloat) {
-                	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, vfpuValueInternalName, "setFloat", "(F)V");
+                	// Keep a copy of the value for the int value
+                	mv.visitInsn(Opcodes.DUP_X2);
+                	mv.visitInsn(Opcodes.FASTORE); // First store the float value
+                	convertVFloatToInt();
+                	mv.visitInsn(Opcodes.IASTORE); // Second store the int value
                 } else {
-                	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, vfpuValueInternalName, "setInt", "(I)V");
+                	// Keep a copy of the value for the float value
+                	mv.visitInsn(Opcodes.DUP_X2);
+                	mv.visitInsn(Opcodes.IASTORE); // First store the int value
+                	convertVIntToFloat();
+                	mv.visitInsn(Opcodes.FASTORE); // Second store the float value
                 }
             }
 	        preparedRegisterForStore = -1;
@@ -2801,18 +2827,47 @@ public class CompilerContext implements ICompilerContext {
 		if (pfxVdOverlap && n < vsize - 1) {
 			// Do nothing, value will be store in tmp local variable
 		} else {
-			prepareVRegisterForStore(vsize, vd, n, vfpuPfxdState);
+			prepareVRegisterForStore(vsize, vd, n, vfpuPfxdState, true);
+		}
+	}
+
+	@Override
+	public void prepareVdForStoreInt(int n) {
+		prepareVdForStoreInt(getVsize(), n);
+	}
+
+	@Override
+	public void prepareVdForStoreInt(int vsize, int n) {
+		prepareVdForStoreInt(vsize, getVdRegisterIndex(), n);
+	}
+
+	@Override
+	public void prepareVdForStoreInt(int vsize, int vd, int n) {
+		if (pfxVdOverlap && n < vsize - 1) {
+			// Do nothing, value will be store in tmp local variable
+		} else {
+			prepareVRegisterForStore(vsize, vd, n, vfpuPfxdState, false);
 		}
 	}
 
 	@Override
 	public void prepareVtForStore(int n) {
-		prepareVRegisterForStore(getVsize(), getVtRegisterIndex(), n, null);
+		prepareVRegisterForStore(getVsize(), getVtRegisterIndex(), n, null, true);
 	}
 
 	@Override
 	public void prepareVtForStore(int vsize, int n) {
-		prepareVRegisterForStore(vsize, getVtRegisterIndex(), n, null);
+		prepareVRegisterForStore(vsize, getVtRegisterIndex(), n, null, true);
+	}
+
+	@Override
+	public void prepareVtForStoreInt(int n) {
+		prepareVRegisterForStore(getVsize(), getVtRegisterIndex(), n, null, false);
+	}
+
+	@Override
+	public void prepareVtForStoreInt(int vsize, int n) {
+		prepareVRegisterForStore(vsize, getVtRegisterIndex(), n, null, false);
 	}
 
 	@Override
@@ -2885,7 +2940,12 @@ public class CompilerContext implements ICompilerContext {
 
 	@Override
 	public void prepareVtForStore(int vsize, int vt, int n) {
-		prepareVRegisterForStore(vsize, vt, n, null);
+		prepareVRegisterForStore(vsize, vt, n, null, true);
+	}
+
+	@Override
+	public void prepareVtForStoreInt(int vsize, int vt, int n) {
+		prepareVRegisterForStore(vsize, vt, n, null, false);
 	}
 
 	@Override
@@ -3123,7 +3183,11 @@ public class CompilerContext implements ICompilerContext {
 			// Write back the temporary overlap variables
 			pfxVdOverlap = false;
 			for (int n = 0; n < vsize - 1; n++) {
-				prepareVdForStore(vsize, vd, n);
+				if (isFloat) {
+					prepareVdForStore(vsize, vd, n);
+				} else {
+					prepareVdForStoreInt(vsize, vd, n);
+				}
 				loadFTmpVd(n, isFloat);
 				if (isFloat) {
 					storeVd(vsize, vd, n);
@@ -3218,7 +3282,7 @@ public class CompilerContext implements ICompilerContext {
 			startPfxCompiled(false);
 
 			for (int n = 0; n < vsize; n++) {
-				prepareVdForStore(n);
+				prepareVdForStoreInt(n);
 				loadVsInt(n);
 				storeVdInt(n);
 			}
