@@ -35,7 +35,6 @@ import jpcsp.State;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.Instructions;
-import jpcsp.Allegrex.VfpuState;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
@@ -63,9 +62,10 @@ import org.apache.log4j.Logger;
 public class RuntimeContext {
     public  static Logger log = Logger.getLogger("runtime");
 	private static boolean compilerEnabled = true;
-	public  static float fpr[];
-	public  static VfpuState.VfpuValue vpr[];
-	public  static int memoryInt[];
+	public  static float[] fpr;
+	public  static float[] vprFloat;
+	public  static int[] vprInt;
+	public  static int[] memoryInt;
 	public  static Processor processor;
 	public  static CpuState cpu;
 	public  static Memory memory;
@@ -377,7 +377,8 @@ public class RuntimeContext {
 		cpu = processor.cpu;
 		if (cpu != null) {
 		    fpr = processor.cpu.fpr;
-		    vpr = processor.cpu.vpr;
+		    vprFloat = processor.cpu.vprFloat;
+		    vprInt = processor.cpu.vprInt;
 		}
     }
 

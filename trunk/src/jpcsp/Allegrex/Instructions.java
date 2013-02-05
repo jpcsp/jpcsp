@@ -4244,7 +4244,7 @@ public void compile(ICompilerContext context, int insn) {
 	int simm14 = context.getImm14(true);
 	int rs = context.getRsRegisterIndex();
 
-	context.prepareVtForStore(1, vt, 0);
+	context.prepareVtForStoreInt(1, vt, 0);
 	context.memRead32(rs, simm14);
 	context.storeVtInt(1, vt, 0);
 }
@@ -4353,7 +4353,7 @@ public void compile(ICompilerContext context, int insn) {
     final int vsize = 4;
 
     for (int n = 0; n < vsize; n++) {
-    	context.prepareVtForStore(vsize, vt, n);
+    	context.prepareVtForStoreInt(vsize, vt, n);
     	context.memRead32(rs, simm14 + n * 4);
     	context.storeVtInt(vsize, vt, n);
     }
@@ -5929,7 +5929,7 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	context.prepareVdForStore(1, 0);
+	context.prepareVdForStoreInt(1, 0);
 	context.loadRt();
 	context.storeVdInt(1, 0);
 }
@@ -7537,7 +7537,7 @@ public void compile(ICompilerContext context, int insn) {
 	if (vsize == 4) {
 		MethodVisitor mv = context.getMethodVisitor();
 		context.startPfxCompiled(false);
-		context.prepareVdForStore(1, 0);
+		context.prepareVdForStoreInt(1, 0);
 		for (int n = 0; n < vsize; n++) {
 			context.loadVsInt(n);
 			mv.visitInsn(Opcodes.DUP);
@@ -8269,7 +8269,7 @@ public void compile(ICompilerContext context, int insn) {
 	MethodVisitor mv = context.getMethodVisitor();
 	context.startPfxCompiled(false);
 	for (int n = 0; n < vsize; n++) {
-		context.prepareVdForStore(n);
+		context.prepareVdForStoreInt(n);
 		context.loadVs(n);
 		if (imm5 != 0) {
 			context.loadImm(imm5);
@@ -8330,7 +8330,7 @@ public void compile(ICompilerContext context, int insn) {
 	MethodVisitor mv = context.getMethodVisitor();
 	context.startPfxCompiled(false);
 	for (int n = 0; n < vsize; n++) {
-		context.prepareVdForStore(n);
+		context.prepareVdForStoreInt(n);
 		context.loadVs(n);
 		mv.visitInsn(Opcodes.DUP);
 		mv.visitLdcInsn(0.f);
@@ -8407,7 +8407,7 @@ public void compile(ICompilerContext context, int insn) {
 	MethodVisitor mv = context.getMethodVisitor();
 	context.startPfxCompiled(false);
 	for (int n = 0; n < vsize; n++) {
-		context.prepareVdForStore(n);
+		context.prepareVdForStoreInt(n);
 		context.loadVs(n);
 		if (imm5 != 0) {
 			context.loadImm(imm5);
@@ -8468,7 +8468,7 @@ public void compile(ICompilerContext context, int insn) {
 	MethodVisitor mv = context.getMethodVisitor();
 	context.startPfxCompiled(false);
 	for (int n = 0; n < vsize; n++) {
-		context.prepareVdForStore(n);
+		context.prepareVdForStoreInt(n);
 		context.loadVs(n);
 		if (imm5 != 0) {
 			context.loadImm(imm5);
@@ -8583,7 +8583,7 @@ public void compile(ICompilerContext context, int insn) {
 		context.loadVcrCc(imm3);
 		mv.visitJumpInsn(Opcodes.IFEQ, notMoveLabel);
 		for (int n = 0; n < vsize; n++) {
-			context.prepareVdForStore(n);
+			context.prepareVdForStoreInt(n);
 			context.loadVsInt(n);
 			context.storeVdInt(n);
 		}
@@ -8592,7 +8592,7 @@ public void compile(ICompilerContext context, int insn) {
 		mv.visitLabel(notMoveLabel);
 		if (context.getPfxdState().isKnown() && context.getPfxdState().pfxDst.enabled) {
 			for (int n = 0; n < vsize; n++) {
-				context.prepareVdForStore(n);
+				context.prepareVdForStoreInt(n);
 				context.loadVdInt(n);
 				context.storeVdInt(n);
 			}
@@ -8606,13 +8606,13 @@ public void compile(ICompilerContext context, int insn) {
 			Label afterLabel = new Label();
 			context.loadVcrCc(n);
 			mv.visitJumpInsn(Opcodes.IFEQ, notMoveLabel);
-			context.prepareVdForStore(n);
+			context.prepareVdForStoreInt(n);
 			context.loadVsInt(n);
 			context.storeVdInt(n);
 			mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
 			mv.visitLabel(notMoveLabel);
 			if (context.getPfxdState().isKnown() && context.getPfxdState().pfxDst.enabled) {
-				context.prepareVdForStore(n);
+				context.prepareVdForStoreInt(n);
 				context.loadVdInt(n);
 				context.storeVdInt(n);
 			}
@@ -8666,7 +8666,7 @@ public void compile(ICompilerContext context, int insn) {
 		context.loadVcrCc(imm3);
 		mv.visitJumpInsn(Opcodes.IFNE, notMoveLabel);
 		for (int n = 0; n < vsize; n++) {
-			context.prepareVdForStore(n);
+			context.prepareVdForStoreInt(n);
 			context.loadVsInt(n);
 			context.storeVdInt(n);
 		}
@@ -8674,7 +8674,7 @@ public void compile(ICompilerContext context, int insn) {
 		mv.visitLabel(notMoveLabel);
 		if (context.getPfxdState().isKnown() && context.getPfxdState().pfxDst.enabled) {
 			for (int n = 0; n < vsize; n++) {
-				context.prepareVdForStore(n);
+				context.prepareVdForStoreInt(n);
 				context.loadVdInt(n);
 				context.storeVdInt(n);
 			}
@@ -8686,13 +8686,13 @@ public void compile(ICompilerContext context, int insn) {
 			Label afterLabel = new Label();
 			context.loadVcrCc(n);
 			mv.visitJumpInsn(Opcodes.IFNE, notMoveLabel);
-			context.prepareVdForStore(n);
+			context.prepareVdForStoreInt(n);
 			context.loadVsInt(n);
 			context.storeVdInt(n);
 			mv.visitJumpInsn(Opcodes.GOTO, afterLabel);
 			mv.visitLabel(notMoveLabel);
 			if (context.getPfxdState().isKnown() && context.getPfxdState().pfxDst.enabled) {
-				context.prepareVdForStore(n);
+				context.prepareVdForStoreInt(n);
 				context.loadVdInt(n);
 				context.storeVdInt(n);
 			}
@@ -8701,7 +8701,7 @@ public void compile(ICompilerContext context, int insn) {
 	} else {
 		// Always copy
 		for (int n = 0; n < vsize; n++) {
-			context.prepareVdForStore(n);
+			context.prepareVdForStoreInt(n);
 			context.loadVsInt(n);
 			context.storeVdInt(n);
 		}
@@ -9620,7 +9620,7 @@ public void compile(ICompilerContext context, int insn) {
 	context.startPfxCompiled(false);
 	for (int i = 0; i < vsize; i++) {
 		for (int n = 0; n < vsize; n++) {
-			context.prepareVdForStore(vsize, vd + i, n);
+			context.prepareVdForStoreInt(vsize, vd + i, n);
 			context.loadVsInt(vsize, vs + i, n);
 			context.storeVdInt(vsize, vd + i, n);
 		}

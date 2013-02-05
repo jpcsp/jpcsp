@@ -48,7 +48,7 @@ public class VfpuState extends FpuState {
 	// so it is important to keep all the bits unchanged while loading & storing
 	// values from VFPU registers.
 	// This is the reason why this implementation is keeping VFPU values into
-	// a VfpuValue class keeping both int and float representations, instead
+	// a arrays keeping both int and float representations, instead
 	// of just using float values.
 	//
 	// This has a performance impact on VFPU instructions but provides accuracy.
@@ -63,52 +63,14 @@ public class VfpuState extends FpuState {
     //    getVpr(m, c, r)
     // and
     //    setVpr(m, c, r, value)
-    // are getting a value and setting a value into the vpr array,
+    // are getting a value and setting a value into the vpr arrays,
     // doing the mapping from the matrix index to the linear index.
     //
-    //public float[][][] vpr; // [matrix][column][row]
-    public final VfpuValue[] vpr = new VfpuValue[128];
-
-    public static final class VfpuValue {
-    	private int intValue;
-    	private float floatValue;
-
-    	public VfpuValue() {
-    	}
-
-    	public VfpuValue(VfpuValue that) {
-    		floatValue = that.floatValue;
-    		intValue = that.intValue;
-    	}
-
-    	public int getInt() {
-    		return intValue;
-    	}
-
-    	public float getFloat() {
-    		return floatValue;
-    	}
-
-    	public void setInt(int value) {
-    		intValue = value;
-    		floatValue = Float.intBitsToFloat(value);
-    	}
-
-    	public void setFloat(float value) {
-    		floatValue = value;
-    		intValue = Float.floatToRawIntBits(value);
-    	}
-
-    	public void reset() {
-    		floatValue = 0;
-    		intValue = 0;
-    	}
-
-    	public void copy(VfpuValue that) {
-    		floatValue = that.floatValue;
-    		intValue = that.intValue;
-    	}
-    }
+	// Also, keep the int and float values in two different arrays to allow the
+	// Java JIT compiler to generate more efficient native code.
+	//
+    public final float[] vprFloat = new float[128];
+    public final int[] vprInt = new int[128];
 
     public static final float floatConstants[] = {
         0.0f,
@@ -291,8 +253,9 @@ public class VfpuState extends FpuState {
     public Vcr vcr;
 
     private void resetFpr() {
-    	for (int i = 0; i < vpr.length; i++) {
-    		vpr[i].reset();
+    	for (int i = 0; i < vprFloat.length; i++) {
+    		vprFloat[i] = 0f;
+    		vprInt[i] = 0;
     	}
     }
 
@@ -312,53 +275,91 @@ public class VfpuState extends FpuState {
     public VfpuState() {
         vcr = new Vcr();
         rnd = new Random();
-        for (int i = 0; i < vpr.length; i++) {
-        	vpr[i] = new VfpuValue();
-        }
     }
 
     public void copy(VfpuState that) {
         super.copy(that);
-        for (int i = 0; i < vpr.length; i++) {
-        	vpr[i].copy(that.vpr[i]);
-        }
+        System.arraycopy(that.vprFloat, 0, vprFloat, 0, vprFloat.length);
+        System.arraycopy(that.vprInt, 0, vprInt, 0, vprInt.length);
         vcr.copy(that.vcr);
     }
 
     public VfpuState(VfpuState that) {
         super(that);
-        for (int i = 0; i < vpr.length; i++) {
-        	vpr[i] = new VfpuValue(that.vpr[i]);
-        }
+        System.arraycopy(that.vprFloat, 0, vprFloat, 0, vprFloat.length);
+        System.arraycopy(that.vprInt, 0, vprInt, 0, vprInt.length);
         vcr = new Vcr(that.vcr);
     }
 
+    /**
+     * Get the index of the Vpr register into the vprInt and vprFloat arrays.
+     * @param m register matrix index
+     * @param c register column index
+     * @param r register row index
+     * @return the index of the Vpr register into the vprInt and vprFloat arrays.
+     */
     public static int getVprIndex(int m, int c, int r) {
         return (m << 4) + (c << 2) + r;
     }
 
+    /**
+     * Return the value of the given Vpr register, as a float value.
+     * @param m register matrix index
+     * @param c register column index
+     * @param r register row index
+     * @return the value of the Vpr register, as a float value.
+     */
     public float getVprFloat(int m, int c, int r) {
-        return vpr[getVprIndex(m, c, r)].getFloat();
+        return vprFloat[getVprIndex(m, c, r)];
     }
 
+    /**
+     * Return the value of the given Vpr register, as a 32-bit integer value.
+     * @param m register matrix index
+     * @param c register column index
+     * @param r register row index
+     * @return the value of the Vpr register, as a 32-bit integer value.
+     */
     public int getVprInt(int m, int c, int r) {
-        return vpr[getVprIndex(m, c, r)].getInt();
+        return vprInt[getVprIndex(m, c, r)];
     }
 
+    /**
+     * Set the value of the given Vpr register.
+     * The value is given as a float value.
+     * @param m register matrix index
+     * @param c register column index
+     * @param r register row index
+     * @param value the value to be set to the Vpr register, as a float value.
+     */
     public void setVprFloat(int m, int c, int r, float value) {
-        vpr[getVprIndex(m, c, r)].setFloat(value);
+    	int index = getVprIndex(m, c, r);
+    	vprFloat[index] = value;
+    	vprInt[index] = Float.floatToRawIntBits(value);
     }
 
+    /**
+     * Set the value of the given Vpr register.
+     * The value is given as a 32-bit integer value.
+     * @param m register matrix index
+     * @param c register column index
+     * @param r register row index
+     * @param value the value to be set to the Vpr register, as a 32-bit integer value.
+     */
     public void setVprInt(int m, int c, int r, int value) {
-        vpr[getVprIndex(m, c, r)].setInt(value);
+    	int index = getVprIndex(m, c, r);
+    	vprFloat[index] = Float.intBitsToFloat(value);
+    	vprInt[index] = value;
     }
 
-    private static float[] v1 = new float[4];
-    private static float[] v2 = new float[4];
-    private static float[] v3 = new float[4];
-    private static int[] v1i = new int[4];
-    private static int[] v2i = new int[4];
-    private static int[] v3i = new int[4];
+    // Temporary variables
+    private final float[] v1 = new float[4];
+    private final float[] v2 = new float[4];
+    private final float[] v3 = new float[4];
+    private final int[] v1i = new int[4];
+    private final int[] v2i = new int[4];
+    private final int[] v3i = new int[4];
+
     // VFPU stuff
     private float transformVr(int swz, boolean abs, boolean cst, boolean neg, float[] x) {
         float value = 0.0f;

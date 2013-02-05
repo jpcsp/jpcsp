@@ -87,9 +87,15 @@ public interface ICompilerContext {
     public void prepareVdForStore(int n);
     public void prepareVdForStore(int vsize, int n);
     public void prepareVdForStore(int vsize, int vd, int n);
+    public void prepareVdForStoreInt(int n);
+    public void prepareVdForStoreInt(int vsize, int n);
+    public void prepareVdForStoreInt(int vsize, int vd, int n);
     public void prepareVtForStore(int n);
     public void prepareVtForStore(int vsize, int n);
     public void prepareVtForStore(int vsize, int vt, int n);
+    public void prepareVtForStoreInt(int n);
+    public void prepareVtForStoreInt(int vsize, int n);
+    public void prepareVtForStoreInt(int vsize, int vt, int n);
     public void prepareHiloForStore();
     public void prepareFCrForStore();
     public void prepareFcr31cForStore();
