@@ -1197,7 +1197,13 @@ public class sceUtility extends HLEModule {
 	        	msgDialog = new MsgDialog(msgDialogParams, this);
 	        	openDialog(msgDialog);
 	        } else if (!isDialogActive()) {
-	        	msgDialogParams.buttonPressed = msgDialog.buttonPressed;
+	        	// buttonPressed is only set for mode TEXT, not for mode ERROR
+	        	if (msgDialogParams.mode == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_MODE_TEXT) {
+	        		msgDialogParams.buttonPressed = msgDialog.buttonPressed;
+	        	} else {
+	        		msgDialogParams.buttonPressed = SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_INVALID;
+	        	}
+
 	        	if (log.isDebugEnabled()) {
 	        		log.debug(String.format("sceUtilityMsgDialog returning buttonPressed=%d", msgDialogParams.buttonPressed));
 	        	}
