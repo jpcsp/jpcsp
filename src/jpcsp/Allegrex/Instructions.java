@@ -12,9 +12,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.Allegrex;
-
 
 import static jpcsp.Allegrex.Common.Instruction.FLAGS_BRANCH_INSTRUCTION;
 import static jpcsp.Allegrex.Common.Instruction.FLAGS_LINK_INSTRUCTION;
@@ -33,6 +31,8 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.VfpuState.Vcr.PfxDst;
 import jpcsp.Allegrex.VfpuState.Vcr.PfxSrc;
+import jpcsp.Allegrex.compiler.CodeInstruction;
+import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.ICompilerContext;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.SyscallHandler;
@@ -4352,11 +4352,49 @@ public void compile(ICompilerContext context, int insn) {
 	int rs = context.getRsRegisterIndex();
     final int vsize = 4;
 
-    for (int n = 0; n < vsize; n++) {
-    	context.prepareVtForStoreInt(vsize, vt, n);
-    	context.memRead32(rs, simm14 + n * 4);
-    	context.storeVtInt(vsize, vt, n);
+    int countSequence = 1;
+    int address = context.getCodeInstruction().getAddress();
+
+    // Compare LV.Q opcode and vt1 flag
+    final int opcodeMask = 0xFFE00003;
+    for (int i = 1; true; i++) {
+    	CodeInstruction nextCodeInstruction = context.getCodeInstruction(address + i * 4);
+    	boolean isSequence = false;
+    	if (nextCodeInstruction != null) {
+    		int nextInsn = nextCodeInstruction.getOpcode();
+    		if (nextCodeInstruction != null && (nextInsn & opcodeMask) == (insn & opcodeMask)) {
+    			int nextSimm14 = nextCodeInstruction.getImm14(true);
+    			if (nextSimm14 == simm14 + i * 16) {
+	    			int nextVt5 = (nextInsn >> 16) & 31;
+	    			if (nextVt5 == vt5 + i) {
+	    				isSequence = true;
+	    			}
+    			}
+    		}
+    	}
+
+    	if (!isSequence) {
+    		break;
+    	}
+		countSequence++;
     }
+
+	if (context.compileVFPULoad(context.getRsRegisterIndex(), simm14, vt, countSequence * 4)) {
+		if (countSequence > 1) {
+	    	if (Compiler.log.isDebugEnabled()) {
+	    		Compiler.log.debug(String.format("lv.q sequence 0x%08X-0x%08X", address, address + countSequence * 4 - 4));
+	    	}
+
+	    	// Skip the next lv.q instructions
+	    	context.skipInstructions(countSequence - 1, false);
+		}
+	} else {
+	    for (int n = 0; n < vsize; n++) {
+	    	context.prepareVtForStoreInt(vsize, vt, n);
+	    	context.memRead32(rs, simm14 + n * 4);
+	    	context.storeVtInt(vsize, vt, n);
+	    }
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4577,11 +4615,49 @@ public void compile(ICompilerContext context, int insn) {
 	int rs = context.getRsRegisterIndex();
     int vsize = 4;
 
-    for (int n = 0; n < vsize; n++) {
-    	context.prepareMemWrite32(rs, simm14 + n * 4);
-    	context.loadVtInt(vsize, vt, n);
-    	context.memWrite32(rs, simm14 + n * 4);
+    int countSequence = 1;
+    int address = context.getCodeInstruction().getAddress();
+
+    // Compare SV.Q opcode and vt1 flag
+    final int opcodeMask = 0xFFE00001;
+    for (int i = 1; i < 4; i++) {
+    	CodeInstruction nextCodeInstruction = context.getCodeInstruction(address + i * 4);
+    	boolean isSequence = false;
+    	if (nextCodeInstruction != null) {
+    		int nextInsn = nextCodeInstruction.getOpcode();
+    		if (nextCodeInstruction != null && (nextInsn & opcodeMask) == (insn & opcodeMask)) {
+    			int nextSimm14 = nextCodeInstruction.getImm14(true);
+    			if (nextSimm14 == simm14 + i * 16) {
+	    			int nextVt5 = (nextInsn >> 16) & 31;
+	    			if (nextVt5 == vt5 + i) {
+	    				isSequence = true;
+	    			}
+    			}
+    		}
+    	}
+
+    	if (!isSequence) {
+    		break;
+    	}
+		countSequence++;
     }
+
+	if (context.compileVFPUStore(context.getRsRegisterIndex(), simm14, vt, countSequence * 4)) {
+		if (countSequence > 1) {
+	    	if (Compiler.log.isDebugEnabled()) {
+	    		Compiler.log.debug(String.format("sv.q sequence 0x%08X-0x%08X", address, address + countSequence * 4 - 4));
+	    	}
+
+	    	// Skip the next sv.q instructions
+	    	context.skipInstructions(countSequence - 1, false);
+		}
+	} else {
+        for (int n = 0; n < vsize; n++) {
+        	context.prepareMemWrite32(rs, simm14 + n * 4);
+        	context.loadVtInt(vsize, vt, n);
+        	context.memWrite32(rs, simm14 + n * 4);
+        }
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4603,30 +4679,12 @@ public final String category() { return "MIPS I/VFPU"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int vt1 = (insn>>0)&1;
-	int imm14 = (insn>>2)&16383;
-	int vt5 = (insn>>16)&31;
-	int rs = (insn>>21)&31;
-
-
-				// Checked using VfpuTest: VWB.Q is equivalent to SV.Q
-                processor.cpu.doSVQ((vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));
-            
+	// Checked using VfpuTest: VWB.Q is equivalent to SV.Q
+	SVQ.interpret(processor, insn);
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	int vt1 = (insn>>0)&1;
-	int vt5 = (insn>>16)&31;
-	int vt = vt5 | (vt1<<5);
-	int simm14 = context.getImm14(true);
-	int rs = context.getRsRegisterIndex();
-    int vsize = 4;
-
-    for (int n = 0; n < vsize; n++) {
-    	context.prepareMemWrite32(rs, simm14 + n * 4);
-    	context.loadVtInt(vsize, vt, n);
-    	context.memWrite32(rs, simm14 + n * 4);
-    }
+	SVQ.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6540,8 +6598,7 @@ public void compile(ICompilerContext context, int insn) {
 	int id = context.getVdRegisterIndex() & 3;
 	for (int n = 0; n < vsize; n++) {
 		context.prepareVdForStore(n);
-		float value = (id == n ? 1.0f : 0.0f);
-		context.getMethodVisitor().visitLdcInsn(value);
+		context.getMethodVisitor().visitInsn(id == n ? Opcodes.FCONST_1 : Opcodes.FCONST_0);
 		context.storeVd(n);
 	}
 	context.endPfxCompiled();
@@ -6709,7 +6766,7 @@ public void compile(ICompilerContext context, int insn) {
 	int vsize = context.getVsize();
 	for (int n = 0; n < vsize; n++) {
 		context.prepareVdForStore(n);
-		context.getMethodVisitor().visitLdcInsn(0.0f);
+		context.getMethodVisitor().visitInsn(Opcodes.FCONST_0);
 		context.storeVd(n);
 	}
 	context.endPfxCompiled();
@@ -6747,7 +6804,7 @@ public void compile(ICompilerContext context, int insn) {
 	int vsize = context.getVsize();
 	for (int n = 0; n < vsize; n++) {
 		context.prepareVdForStore(n);
-		context.getMethodVisitor().visitLdcInsn(1.0f);
+		context.getMethodVisitor().visitInsn(Opcodes.FCONST_1);
 		context.storeVd(n);
 	}
 	context.endPfxCompiled();
@@ -9665,8 +9722,7 @@ public void compile(ICompilerContext context, int insn) {
 		int id = (vd + i) & 3;
 		for (int n = 0; n < vsize; n++) {
 			context.prepareVdForStore(vsize, vd + i, n);
-			float value = (id == n ? 1.0f : 0.0f);
-			context.getMethodVisitor().visitLdcInsn(value);
+			context.getMethodVisitor().visitInsn(id == n ? Opcodes.FCONST_1 : Opcodes.FCONST_0);
 			context.storeVd(vsize, vd + i, n);
 		}
 		context.flushPfxCompiled(vsize, vd + i, true);
@@ -9708,7 +9764,7 @@ public void compile(ICompilerContext context, int insn) {
 	for (int i = 0; i < vsize; i++) {
 		for (int n = 0; n < vsize; n++) {
 			context.prepareVdForStore(vsize, vd + i, n);
-			context.getMethodVisitor().visitLdcInsn(0.0f);
+			context.getMethodVisitor().visitInsn(Opcodes.FCONST_0);
 			context.storeVd(vsize, vd + i, n);
 		}
 		context.flushPfxCompiled(vsize, vd + i, true);
@@ -9750,7 +9806,7 @@ public void compile(ICompilerContext context, int insn) {
 	for (int i = 0; i < vsize; i++) {
 		for (int n = 0; n < vsize; n++) {
 			context.prepareVdForStore(vsize, vd + i, n);
-			context.getMethodVisitor().visitLdcInsn(1.0f);
+			context.getMethodVisitor().visitInsn(Opcodes.FCONST_1);
 			context.storeVd(vsize, vd + i, n);
 		}
 		context.flushPfxCompiled(vsize, vd + i, true);

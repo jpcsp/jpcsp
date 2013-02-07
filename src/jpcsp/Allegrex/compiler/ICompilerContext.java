@@ -164,4 +164,9 @@ public interface ICompilerContext {
     public boolean isVsVdOverlap();
     public boolean isVtVdOverlap();
     public void compileVFPUInstr(Object cstBefore, int opcode, String mathFunction);
+    public boolean compileVFPULoad(int registerIndex, int offset, int vt, int count);
+    public boolean compileVFPUStore(int registerIndex, int offset, int vt, int count);
+    public CodeInstruction getCodeInstruction();
+    public CodeInstruction getCodeInstruction(int address);
+    public void skipInstructions(int numberInstructionsToBeSkipped, boolean skipDelaySlot);
 }
