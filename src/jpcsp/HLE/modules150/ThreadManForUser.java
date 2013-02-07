@@ -1706,12 +1706,17 @@ public class ThreadManForUser extends HLEModule {
             return ERROR_KERNEL_NOT_FOUND_THREAD;
         }
 
+        int result = 0;
         if (isBannedThread(thread)) {
             log.warn(String.format("hleKernelWaitThreadEnd %s banned, not waiting", thread.toString()));
             hleRescheduleCurrentThread();
         } else if (thread.isStopped()) {
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("hleKernelWaitThreadEnd %s thread already stopped, not waiting", thread.toString()));
+        	}
+        	if (returnExitStatus) {
+        		// Return the thread exit status
+        		result = thread.exitStatus;
         	}
             hleRescheduleCurrentThread();
         } else {
@@ -1721,7 +1726,7 @@ public class ThreadManForUser extends HLEModule {
         	hleKernelThreadEnterWaitState(waitingThread, PSP_WAIT_THREAD_END, uid, waitThreadEndWaitStateChecker, timeoutAddr, callbacks);
         }
 
-        return 0;
+        return result;
     }
 
     /**
