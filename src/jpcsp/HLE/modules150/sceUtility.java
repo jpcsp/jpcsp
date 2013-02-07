@@ -308,6 +308,10 @@ public class sceUtility extends HLEModule {
         	return true;
         }
 
+        protected boolean hasDialog() {
+        	return true;
+        }
+
         public int executeGetStatus() {
             if (Modules.sceUtilityModule.startedDialogState != null && Modules.sceUtilityModule.startedDialogState != this) {
             	if (log.isDebugEnabled()) {
@@ -326,9 +330,14 @@ public class sceUtility extends HLEModule {
             if (status == PSP_UTILITY_DIALOG_STATUS_FINISHED) {
                 status = PSP_UTILITY_DIALOG_STATUS_NONE;
             } else if (status == PSP_UTILITY_DIALOG_STATUS_INIT && isReadyForVisible()) {
-                // Move from INIT to VISIBLE
-                status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
-                startVisibleTimeMillis = Emulator.getClock().currentTimeMillis();
+            	if (hasDialog() || executeUpdateVisible()) {
+            		// Move from INIT to VISIBLE
+            		status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
+            		startVisibleTimeMillis = Emulator.getClock().currentTimeMillis();
+            	} else {
+            		// Move from INIT to QUIT, no dialog displayed
+            		status = PSP_UTILITY_DIALOG_STATUS_QUIT;
+            	}
             } else if (status == PSP_UTILITY_DIALOG_STATUS_NONE && Modules.sceUtilityModule.startedDialogState == this) {
             	// Clear the started dialog after returning once status PSP_UTILITY_DIALOG_STATUS_NONE
             	Modules.sceUtilityModule.startedDialogState = null;
@@ -378,9 +387,14 @@ public class sceUtility extends HLEModule {
             }
 
             if (status == PSP_UTILITY_DIALOG_STATUS_INIT && isReadyForVisible()) {
-                // Move from INIT to VISIBLE
-                status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
-                startVisibleTimeMillis = Emulator.getClock().currentTimeMillis();
+            	if (hasDialog() || executeUpdateVisible()) {
+            		// Move from INIT to VISIBLE
+            		status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
+            		startVisibleTimeMillis = Emulator.getClock().currentTimeMillis();
+            	} else {
+            		// Move from INIT to QUIT, no dialog displayed
+            		status = PSP_UTILITY_DIALOG_STATUS_QUIT;
+            	}
             } else if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE) {
                 // Some games reach sceUtilitySavedataInitStart with empty params which only
                 // get filled with a subsequent call to sceUtilitySavedataUpdate (eg.: To Love-Ru).
@@ -1178,6 +1192,24 @@ public class sceUtility extends HLEModule {
 	        }
 
 	        return false;
+		}
+
+		@Override
+		protected boolean hasDialog() {
+			switch (savedataParams.mode) {
+				// Only these modes have a dialog with the user
+				case SceUtilitySavedataParam.MODE_LOAD:
+				case SceUtilitySavedataParam.MODE_SAVE:
+				case SceUtilitySavedataParam.MODE_LISTLOAD:
+				case SceUtilitySavedataParam.MODE_LISTSAVE:
+				case SceUtilitySavedataParam.MODE_LISTDELETE:
+				case SceUtilitySavedataParam.MODE_DELETE:
+				case SceUtilitySavedataParam.MODE_SINGLEDELETE:
+					return true;
+			}
+
+			// The other modes are silent
+			return false;
 		}
     }
 
