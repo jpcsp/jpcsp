@@ -1269,6 +1269,7 @@ public class IoFileMgrForUser extends HLEModule {
             // Inherit priority from current thread if no default priority set
             int asyncPriority = info.asyncThreadPriority;
             if (asyncPriority < 0) {
+            	// Take the priority of the thread executing the first async operation.
                 asyncPriority = threadMan.getCurrentThread().currentPriority;
             }
 
@@ -2674,7 +2675,8 @@ public class IoFileMgrForUser extends HLEModule {
     @HLEFunction(nid = 0xB293727F, version = 150, checkInsideInterrupt = true)
     public int sceIoChangeAsyncPriority(int id, int priority) {
         if (priority == -1) {
-            priority = Modules.ThreadManForUserModule.getCurrentThread().currentPriority;
+        	// Take the priority of the thread executing the first async operation,
+        	// do not take the priority of the thread executing sceIoChangeAsyncPriority().
         } else if (priority < 0) {
         	return SceKernelErrors.ERROR_KERNEL_ILLEGAL_PRIORITY;
         }
@@ -2692,6 +2694,12 @@ public class IoFileMgrForUser extends HLEModule {
 
         info.asyncThreadPriority = priority;
         if (info.asyncThread != null) {
+        	if (priority < 0) {
+        		// If the async thread has already been started,
+        		// change its priority to the priority of the current thread,
+        		// i.e. to the priority of the thread having called sceIoChangeAsyncPriority().
+        		priority = Modules.ThreadManForUserModule.getCurrentThread().currentPriority;
+        	}
         	Modules.ThreadManForUserModule.hleKernelChangeThreadPriority(info.asyncThread, priority);
         }
 
