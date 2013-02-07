@@ -135,6 +135,7 @@ public class CompilerContext implements ICompilerContext {
     private static final String profilerInternalName = Type.getInternalName(Profiler.class);
 	public  static final String executableDescriptor = Type.getDescriptor(IExecutable.class);
 	public  static final String executableInternalName = Type.getInternalName(IExecutable.class);
+	private static final String arraycopyDescriptor = "(" + Type.getDescriptor(Object.class) + "I" + Type.getDescriptor(Object.class) + "II)V";
 	private static Set<Integer> fastSyscalls;
 	private int instanceIndex;
 	private NativeCodeSequence preparedCallNativeCodeBlock = null;
@@ -1847,8 +1848,14 @@ public class CompilerContext implements ICompilerContext {
 		this.mv = mv;
 	}
 
+	@Override
 	public CodeInstruction getCodeInstruction() {
 		return codeInstruction;
+	}
+
+	@Override
+	public CodeInstruction getCodeInstruction(int address) {
+		return getCodeBlock().getCodeInstruction(address);
 	}
 
 	public void setCodeInstruction(CodeInstruction codeInstruction) {
@@ -2622,6 +2629,7 @@ public class CompilerContext implements ICompilerContext {
 		return skipDelaySlot;
 	}
 
+	@Override
 	public void skipInstructions(int numberInstructionsToBeSkipped, boolean skipDelaySlot) {
 		this.numberInstructionsToBeSkipped = numberInstructionsToBeSkipped;
 		this.skipDelaySlot = skipDelaySlot;
@@ -3324,5 +3332,112 @@ public class CompilerContext implements ICompilerContext {
 
 	public void visitHook(NativeCodeSequence nativeCodeSequence) {
 		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(nativeCodeSequence.getNativeCodeSequenceClass()), nativeCodeSequence.getMethodName(), "()V");
+	}
+
+	@Override
+	public boolean compileVFPULoad(int registerIndex, int offset, int vt, int count) {
+		if (RuntimeContext.memoryInt == null) {
+			// Can only generate an optimized code sequence for memoryInt
+			return false;
+		}
+
+		if ((vt & 32) != 0) {
+		    // Optimization possible only for column access
+			return false;
+		}
+
+		// Build parameters for
+    	//    System.arraycopy(Object src, int srcPos, Object dest, int destPos, int length)
+    	// i.e.
+    	//    System.arraycopy(RuntimeContext.memoryInt,
+    	//                     RuntimeContext.checkMemoryRead32(rs + simm14, pc) >>> 2,
+    	//                     RuntimeContext.vprInt,
+    	//                     vprIndex,
+    	//                     countSequence * 4);
+    	loadMemoryInt();
+
+    	loadRegister(registerIndex);
+		if (offset != 0) {
+			loadImm(offset);
+			mv.visitInsn(Opcodes.IADD);
+		}
+    	if (checkMemoryAccess()) {
+    		loadImm(getCodeInstruction().getAddress());
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(RuntimeContext.class), "checkMemoryRead32", "(II)I");
+            loadImm(2);
+            mv.visitInsn(Opcodes.IUSHR);
+    	} else {
+    		loadImm(2);
+			mv.visitInsn(Opcodes.ISHL);
+			loadImm(4);
+			mv.visitInsn(Opcodes.IUSHR);
+    	}
+
+    	loadVprInt();
+    	int vprIndex = VfpuState.getVprIndex((vt >> 2) & 7, vt & 3, (vt & 64) >> 6);
+    	loadImm(vprIndex);
+    	loadImm(count);
+    	mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(System.class), "arraycopy", arraycopyDescriptor);
+
+    	// Set the VPR float values
+    	for (int i = 0; i < count; i++) {
+    		loadVprFloat();
+    		loadImm(vprIndex + i);
+    		loadVprInt();
+    		loadImm(vprIndex + i);
+    		mv.visitInsn(Opcodes.IALOAD);
+    		convertVIntToFloat();
+    		mv.visitInsn(Opcodes.FASTORE);
+    	}
+
+    	return true;
+	}
+
+	@Override
+	public boolean compileVFPUStore(int registerIndex, int offset, int vt, int count) {
+		if (RuntimeContext.memoryInt == null) {
+			// Can only generate an optimized code sequence for memoryInt
+			return false;
+		}
+
+		if ((vt & 32) != 0) {
+		    // Optimization possible only for column access
+			return false;
+		}
+
+		// Build parameters for
+    	//    System.arraycopy(Object src, int srcPos, Object dest, int destPos, int length)
+    	// i.e.
+    	//    System.arraycopy(RuntimeContext.vprInt,
+    	//                     vprIndex,
+    	//                     RuntimeContext.memoryInt,
+    	//                     RuntimeContext.checkMemoryWrite32(rs + simm14, pc) >>> 2,
+    	//                     countSequence * 4);
+    	loadVprInt();
+    	int vprIndex = VfpuState.getVprIndex((vt >> 2) & 7, vt & 3, (vt & 64) >> 6);
+    	loadImm(vprIndex);
+    	loadMemoryInt();
+
+    	loadRegister(registerIndex);
+		if (offset != 0) {
+			loadImm(offset);
+			mv.visitInsn(Opcodes.IADD);
+		}
+    	if (checkMemoryAccess()) {
+    		loadImm(getCodeInstruction().getAddress());
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(RuntimeContext.class), "checkMemoryWrite32", "(II)I");
+            loadImm(2);
+            mv.visitInsn(Opcodes.IUSHR);
+    	} else {
+    		loadImm(2);
+			mv.visitInsn(Opcodes.ISHL);
+			loadImm(4);
+			mv.visitInsn(Opcodes.IUSHR);
+    	}
+
+    	loadImm(count);
+    	mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(System.class), "arraycopy", arraycopyDescriptor);
+
+    	return true;
 	}
 }
