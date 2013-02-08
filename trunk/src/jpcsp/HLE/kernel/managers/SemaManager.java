@@ -18,6 +18,7 @@ package jpcsp.HLE.kernel.managers;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_COUNT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_SEMA_OVERFLOW;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_SEMA_ZERO;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CANCELLED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
@@ -284,11 +285,31 @@ public class SemaManager {
     }
 
     public int hleKernelSignalSema(SceKernelSemaInfo sema, int signal) {
-        sema.currentCount += signal;
-        if (sema.currentCount > sema.maxCount) {
-            sema.currentCount = sema.maxCount;
-        }
+    	// Check that currentCount will not exceed the maxCount
+    	// after releasing all the threads waiting on this sema.
+    	int newCount = sema.currentCount + signal;
+    	if (newCount > sema.maxCount) {
+	        for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iterator(); it.hasNext();) {
+	            SceKernelThreadInfo thread = it.next();
+	            if (thread.isWaitingForType(PSP_WAIT_SEMA) && thread.wait.Semaphore_id == sema.uid) {
+	            	newCount -= thread.wait.Semaphore_signal;
+	            }
+	        }
+	        if (newCount > sema.maxCount) {
+	        	return ERROR_KERNEL_SEMA_OVERFLOW;
+	        }
+    	}
+
+    	sema.currentCount += signal;
+
         onSemaphoreModified(sema);
+
+        // Sanity check...
+        if (sema.currentCount > sema.maxCount) {
+        	// This situation should never happen, otherwise something went wrong
+        	// in the overflow check above.
+        	log.error(String.format("hleKernelSignalSema currentCount %d exceeding maxCount %d", sema.currentCount, sema.maxCount));
+        }
 
         return 0;
     }
