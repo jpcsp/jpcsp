@@ -412,7 +412,7 @@ public class CompilerContext implements ICompilerContext {
     		}
             case 4: {
             	if ((reg & 64) != 0) {
-            		Emulator.log.error(String.format("Unsupported Vreg=%d at ", reg, getCodeInstruction()));
+            		Emulator.log.error(String.format("Unsupported Vreg=%d at %s", reg, getCodeInstruction()));
             	}
                 Float cstValue = getPfxSrcCstValue(pfxSrcState, n);
                 if (cstValue != null) {
@@ -576,7 +576,7 @@ public class CompilerContext implements ICompilerContext {
             		}
                     case 4: {
                     	if ((reg & 64) != 0) {
-                    		Emulator.log.error(String.format("Unsupported Vreg=%d at ", reg, getCodeInstruction()));
+                    		Emulator.log.error(String.format("Unsupported Vreg=%d at %s", reg, getCodeInstruction()));
                     	}
                         if ((reg & 32) != 0) {
                             prepareVRegisterForStore(m, n, i, isFloat);
