@@ -1009,8 +1009,13 @@ public class RuntimeContext {
         	// Invalidate the code blocks located in the given range
         	for (CodeBlock codeBlock : codeBlocks.values()) {
         		if (codeBlock.getLowestAddress() >= addr && codeBlock.getLowestAddress() < addr + size) {
+        			// Code block starts in the invalidated range
         			Compiler.getInstance().invalidateCodeBlock(codeBlock);
         		} else if (codeBlock.getHighestAddress() >= addr && codeBlock.getHighestAddress() < addr + size) {
+        			// Code block ends in the invalidated range
+        			Compiler.getInstance().invalidateCodeBlock(codeBlock);
+        		} else if (codeBlock.getLowestAddress() < addr && codeBlock.getHighestAddress() >= addr + size) {
+        			// Code block overlaps the invalidated range
         			Compiler.getInstance().invalidateCodeBlock(codeBlock);
         		} else if (size == 0x4000 && codeBlock.getHighestAddress() >= addr) {
         			// Some applications do not clear more than 16KB as this is the size of the complete Instruction Cache.
