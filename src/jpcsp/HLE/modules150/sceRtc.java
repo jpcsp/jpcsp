@@ -20,6 +20,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.TimeZone;
 
 import jpcsp.Clock.TimeNanos;
 import jpcsp.Emulator;
@@ -103,6 +104,10 @@ public class sceRtc extends HLEModule {
     	return result;
     }
 
+    protected TimeZone getLocalTimeZone() {
+    	return TimeZone.getDefault();
+    }
+
     /**
      * Obtains the Tick Resolution.
      * 
@@ -155,23 +160,20 @@ public class sceRtc extends HLEModule {
         return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x34885E0D, version = 150)
     public int sceRtcConvertUtcToLocalTime(TPointer64 utcPtr, TPointer64 localPtr) {
-        long utc = utcPtr.getValue();
-        long local = utc;
-        // TODO
-        localPtr.setValue(local);
+    	// Add the offset of the local time zone to UTC
+        TimeZone localTimeZone = getLocalTimeZone();
+        hleRtcTickAdd64(localPtr, utcPtr, localTimeZone.getRawOffset(), 1000L);
 
         return 0;
     }
 
-    @HLEUnimplemented
     @HLEFunction(nid = 0x779242A2, version = 150)
     public int sceRtcConvertLocalTimeToUTC(TPointer64 localPtr, TPointer64 utcPtr) {
-        long local = localPtr.getValue();
-        long utc = local; // TODO
-        utcPtr.setValue(utc);
+    	// Subtract the offset of the local time zone to UTC
+        TimeZone localTimeZone = getLocalTimeZone();
+        hleRtcTickAdd64(utcPtr, localPtr, -localTimeZone.getRawOffset(), 1000L);
 
         return 0;
     }
