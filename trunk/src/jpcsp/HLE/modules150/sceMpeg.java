@@ -952,7 +952,7 @@ public class sceMpeg extends HLEModule {
 					if (checkMediaEngineState()) {
 						me.setStreamFile(dataInput, vFile, readAddress, startMpegPosition, mpegStreamSize);
 					}
-				} else {
+				} else if (dataInput != null) {
 					try {
 						long currentPosition = dataInput.getFilePointer();
 						long startMpegPosition = currentPosition - bytesRead;
