@@ -294,6 +294,12 @@ public class sceUtility extends HLEModule {
             	// Start with INIT
             	status = PSP_UTILITY_DIALOG_STATUS_INIT;
             	Modules.sceUtilityModule.startedDialogState = this;
+
+            	// Move directly to status VISIBLE when there is no dialog needed.
+            	if (!hasDialog()) {
+            		status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
+            		startVisibleTimeMillis = Emulator.getClock().currentTimeMillis();
+            	}
             }
 
             return validityResult;
@@ -330,14 +336,9 @@ public class sceUtility extends HLEModule {
             if (status == PSP_UTILITY_DIALOG_STATUS_FINISHED) {
                 status = PSP_UTILITY_DIALOG_STATUS_NONE;
             } else if (status == PSP_UTILITY_DIALOG_STATUS_INIT && isReadyForVisible()) {
-            	if (hasDialog() || executeUpdateVisible()) {
-            		// Move from INIT to VISIBLE
-            		status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
-            		startVisibleTimeMillis = Emulator.getClock().currentTimeMillis();
-            	} else {
-            		// Move from INIT to QUIT, no dialog displayed
-            		status = PSP_UTILITY_DIALOG_STATUS_QUIT;
-            	}
+        		// Move from INIT to VISIBLE
+        		status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
+        		startVisibleTimeMillis = Emulator.getClock().currentTimeMillis();
             } else if (status == PSP_UTILITY_DIALOG_STATUS_NONE && Modules.sceUtilityModule.startedDialogState == this) {
             	// Clear the started dialog after returning once status PSP_UTILITY_DIALOG_STATUS_NONE
             	Modules.sceUtilityModule.startedDialogState = null;
@@ -387,14 +388,9 @@ public class sceUtility extends HLEModule {
             }
 
             if (status == PSP_UTILITY_DIALOG_STATUS_INIT && isReadyForVisible()) {
-            	if (hasDialog() || executeUpdateVisible()) {
-            		// Move from INIT to VISIBLE
-            		status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
-            		startVisibleTimeMillis = Emulator.getClock().currentTimeMillis();
-            	} else {
-            		// Move from INIT to QUIT, no dialog displayed
-            		status = PSP_UTILITY_DIALOG_STATUS_QUIT;
-            	}
+        		// Move from INIT to VISIBLE
+        		status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
+        		startVisibleTimeMillis = Emulator.getClock().currentTimeMillis();
             } else if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE) {
                 // Some games reach sceUtilitySavedataInitStart with empty params which only
                 // get filled with a subsequent call to sceUtilitySavedataUpdate (eg.: To Love-Ru).
