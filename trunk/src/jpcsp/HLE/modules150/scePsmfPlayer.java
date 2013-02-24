@@ -136,7 +136,6 @@ public class scePsmfPlayer extends HLEModule {
 
     // PMSF info.
     // TODO: Parse the right values from the PSMF file.
-    protected int psmfCurrentPts = 0;
     protected int psmfAvcStreamNum = 1;
     protected int psmfAtracStreamNum = 1;
     protected int psmfPcmStreamNum = 0;
@@ -310,13 +309,13 @@ public class scePsmfPlayer extends HLEModule {
 
         // Get the file and read it to a buffer.
         try {
+            if (log.isInfoEnabled()) {
+            	log.info(String.format("Loading PSMF file '%s'", pmfFilePath));
+            }
+
             SeekableDataInput psmfFile = Modules.IoFileMgrForUserModule.getFile(pmfFilePath, 0);
             pmfFileData = new byte[(int) psmfFile.length()];
             psmfFile.readFully(pmfFileData);
-
-            if (log.isInfoEnabled()) {
-            	log.info(String.format("'%s' PSMF file loaded.", pmfFilePath));
-            }
 
             if (checkMediaEngineState()) {
                 pmfFileChannel = new PacketChannel(pmfFileData);
@@ -640,7 +639,7 @@ public class scePsmfPlayer extends HLEModule {
     		return ERROR_PSMFPLAYER_NOT_INITIALIZED;
     	}
 
-    	psmfInfoAddr.setValue(0, psmfCurrentPts);
+    	psmfInfoAddr.setValue(0, (int) psmfPlayerAvcAu.pts);
         psmfInfoAddr.setValue(4, psmfAvcStreamNum);
         psmfInfoAddr.setValue(8, psmfAtracStreamNum);
         psmfInfoAddr.setValue(12, psmfPcmStreamNum);
