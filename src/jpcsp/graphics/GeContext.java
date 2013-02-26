@@ -37,6 +37,9 @@ import jpcsp.graphics.RE.IRenderingEngine;
  */
 public class GeContext extends pspAbstractMemoryMappedStructure {
 	private final static Logger log = VideoEngine.log;
+	// pspsdk defines the context as an array of 512 unsigned int's
+	public static final int SIZE_OF = 512 * 4;
+
 	protected IRenderingEngine re;
 	protected boolean dirty;
 
@@ -619,8 +622,7 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public int sizeof() {
-		// pspsdk defines the context as an array of 512 unsigned int's
-		return 512 * 4;
+		return SIZE_OF;
 	}
 
     @Override

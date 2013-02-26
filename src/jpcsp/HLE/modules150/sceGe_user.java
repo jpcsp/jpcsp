@@ -353,6 +353,28 @@ public class sceGe_user extends HLEModule {
     	return mode;
     }
 
+    public int hleGeListEnQueue(TPointer listAddr, @CanBeNull TPointer stallAddr, int cbid, @CanBeNull TPointer argAddr, int saveContextAddr) {
+        int result;
+    	synchronized (this) {
+	    	PspGeList list = listFreeQueue.poll();
+	    	if (list == null) {
+	    		log.warn("sceGeListEnQueue no more free list available!");
+	    		throw new SceKernelErrorException(SceKernelErrors.ERROR_OUT_OF_MEMORY);
+	    	}
+
+	    	list.init(listAddr.getAddress(), stallAddr.getAddress(), cbid, argAddr.getAddress());
+	    	list.setSaveContextAddr(saveContextAddr);
+    		startGeList(list);
+            result = list.id;
+		}
+
+    	if (log.isDebugEnabled()) {
+			log.debug(String.format("sceGeListEnQueue returning 0x%X", result));
+		}
+
+		return result;
+    }
+
     @HLEFunction(nid = 0x1F6752AD, version = 150)
     public int sceGeEdramGetSize() {
         return MemoryMap.SIZE_VRAM;
@@ -438,24 +460,7 @@ public class sceGe_user extends HLEModule {
     		throw new SceKernelErrorException(SceKernelErrors.ERROR_BUSY);
     	}
 
-        int result;
-    	synchronized (this) {
-	    	PspGeList list = listFreeQueue.poll();
-	    	if (list == null) {
-	    		log.warn("sceGeListEnQueue no more free list available!");
-	    		throw new SceKernelErrorException(SceKernelErrors.ERROR_OUT_OF_MEMORY);
-	    	}
-
-	    	list.init(listAddr.getAddress(), stallAddr.getAddress(), cbid, argAddr.getAddress());
-    		startGeList(list);
-            result = list.id;
-		}
-
-    	if (log.isDebugEnabled()) {
-			log.debug(String.format("sceGeListEnQueue returning 0x%X", result));
-		}
-
-		return result;
+    	return hleGeListEnQueue(listAddr, stallAddr, cbid, argAddr, 0);
     }
 
     @HLEFunction(nid = 0x1C0D95A6, version = 150)

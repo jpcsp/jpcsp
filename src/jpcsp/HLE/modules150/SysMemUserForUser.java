@@ -58,7 +58,7 @@ public class SysMemUserForUser extends HLEModule {
     public static Logger log = Modules.getLogger("SysMemUserForUser");
     protected static Logger stdout = Logger.getLogger("stdout");
     protected static HashMap<Integer, SysMemInfo> blockList;
-    protected static MemoryChunkList freeMemoryChunks;
+    protected static MemoryChunkList[] freeMemoryChunks;
     protected int firmwareVersion = 150;
     public static final int defaultSizeAlignment = 256;
     protected boolean memory64MB = false;
@@ -97,13 +97,22 @@ public class SysMemUserForUser extends HLEModule {
         super.stop();
 	}
 
-    public void reset() {
+	private MemoryChunkList createMemoryChunkList(int startAddr, int endAddr) {
+		startAddr &= Memory.addressMask;
+		endAddr &= Memory.addressMask;
+
+		MemoryChunk initialMemory = new MemoryChunk(startAddr, endAddr - startAddr + 1);
+
+		return new MemoryChunkList(initialMemory);
+	}
+
+	public void reset() {
 		blockList = new HashMap<Integer, SysMemInfo>();
 
-        int startFreeMem = MemoryMap.START_USERSPACE;
-        int endFreeMem = MemoryMap.END_USERSPACE;
-        MemoryChunk initialMemory = new MemoryChunk(startFreeMem, endFreeMem - startFreeMem + 1);
-        freeMemoryChunks = new MemoryChunkList(initialMemory);
+        // free memory chunks for each partition
+        freeMemoryChunks = new MemoryChunkList[3];
+        freeMemoryChunks[USER_PARTITION_ID] = createMemoryChunkList(MemoryMap.START_USERSPACE, MemoryMap.END_USERSPACE);
+        freeMemoryChunks[KERNEL_PARTITION_ID] = createMemoryChunkList(MemoryMap.START_KERNEL, MemoryMap.END_KERNEL);
 	}
 
     public void setMemory64MB(boolean isMemory64MB) {
@@ -199,40 +208,44 @@ public class SysMemUserForUser extends HLEModule {
     // Allocates to 256-byte alignment
     public SysMemInfo malloc(int partitionid, String name, int type, int size, int addr) {
         int allocatedAddress = 0;
+        int allocatedSize = 0;
 
-        int alignment = defaultSizeAlignment - 1;
+        if (partitionid >= 0 && partitionid < freeMemoryChunks.length && freeMemoryChunks[partitionid] != null) {
+        	MemoryChunkList freeMemoryChunk = freeMemoryChunks[partitionid];
+        	int alignment = defaultSizeAlignment - 1;
 
-        // The allocated size has not to be aligned to the requested alignment
-        // (for PSP_SMEM_LowAligned or PSP_SMEM_HighAligned),
-        // it is only aligned to the default size alignment.
-        int allocatedSize = Utilities.alignUp(size, alignment);
+	        // The allocated size has not to be aligned to the requested alignment
+	        // (for PSP_SMEM_LowAligned or PSP_SMEM_HighAligned),
+	        // it is only aligned to the default size alignment.
+	        allocatedSize = Utilities.alignUp(size, alignment);
 
-        if (type == PSP_SMEM_LowAligned || type == PSP_SMEM_HighAligned) {
-            // Use the alignment provided in the addr parameter
-            alignment = addr - 1;
-        }
+	        if (type == PSP_SMEM_LowAligned || type == PSP_SMEM_HighAligned) {
+	            // Use the alignment provided in the addr parameter
+	            alignment = addr - 1;
+	        }
 
-        switch (type) {
-        	case PSP_SMEM_Low:
-        	case PSP_SMEM_LowAligned:
-        		allocatedAddress = freeMemoryChunks.allocLow(allocatedSize, alignment);
-        		break;
-        	case PSP_SMEM_High:
-        	case PSP_SMEM_HighAligned:
-        		allocatedAddress = freeMemoryChunks.allocHigh(allocatedSize, alignment);
-        		break;
-        	case PSP_SMEM_Addr:
-        		allocatedAddress = freeMemoryChunks.alloc(addr, allocatedSize);
-        		break;
-    		default:
-    			log.warn(String.format("malloc: unknown type %s", getTypeName(type)));
+	        switch (type) {
+	        	case PSP_SMEM_Low:
+	        	case PSP_SMEM_LowAligned:
+	        		allocatedAddress = freeMemoryChunk.allocLow(allocatedSize, alignment);
+	        		break;
+	        	case PSP_SMEM_High:
+	        	case PSP_SMEM_HighAligned:
+	        		allocatedAddress = freeMemoryChunk.allocHigh(allocatedSize, alignment);
+	        		break;
+	        	case PSP_SMEM_Addr:
+	        		allocatedAddress = freeMemoryChunk.alloc(addr, allocatedSize);
+	        		break;
+	    		default:
+	    			log.warn(String.format("malloc: unknown type %s", getTypeName(type)));
+	        }
         }
 
         SysMemInfo sysMemInfo;
 		if (allocatedAddress == 0) {
             log.warn(String.format("malloc cannot allocate partition=%d, name='%s', type=%s, size=0x%X, addr=0x%08X, maxFreeMem=0x%X, totalFreeMem=0x%X", partitionid, name, getTypeName(type), size, addr, maxFreeMemSize(), totalFreeMemSize()));
 			if (log.isTraceEnabled()) {
-				log.trace("Free list: " + freeMemoryChunks);
+				log.trace("Free list: " + getDebugFreeMem());
 				log.trace("Allocated blocks:\n" + getDebugAllocatedMem() + "\n");
 			}
 			sysMemInfo = null;
@@ -252,7 +265,7 @@ public class SysMemUserForUser extends HLEModule {
     }
 
     public String getDebugFreeMem() {
-    	return freeMemoryChunks.toString();
+    	return freeMemoryChunks[USER_PARTITION_ID].toString();
     }
 
     public String getDebugAllocatedMem() {
@@ -276,7 +289,7 @@ public class SysMemUserForUser extends HLEModule {
     	if (info != null) {
     		info.free();
 	    	MemoryChunk memoryChunk = new MemoryChunk(info.addr, info.allocatedSize);
-	    	freeMemoryChunks.add(memoryChunk);
+	    	freeMemoryChunks[info.partitionid].add(memoryChunk);
 
 	    	if (log.isDebugEnabled()) {
 	    		log.debug(String.format("free %s", info.toString()));
@@ -290,7 +303,7 @@ public class SysMemUserForUser extends HLEModule {
 
     public int maxFreeMemSize() {
     	int maxFreeMemSize = 0;
-    	for (MemoryChunk memoryChunk = freeMemoryChunks.getLowMemoryChunk(); memoryChunk != null; memoryChunk = memoryChunk.next) {
+    	for (MemoryChunk memoryChunk = freeMemoryChunks[USER_PARTITION_ID].getLowMemoryChunk(); memoryChunk != null; memoryChunk = memoryChunk.next) {
     		if (memoryChunk.size > maxFreeMemSize) {
     			maxFreeMemSize = memoryChunk.size;
     		}
@@ -300,7 +313,7 @@ public class SysMemUserForUser extends HLEModule {
 
     public int totalFreeMemSize() {
         int totalFreeMemSize = 0;
-    	for (MemoryChunk memoryChunk = freeMemoryChunks.getLowMemoryChunk(); memoryChunk != null; memoryChunk = memoryChunk.next) {
+    	for (MemoryChunk memoryChunk = freeMemoryChunks[USER_PARTITION_ID].getLowMemoryChunk(); memoryChunk != null; memoryChunk = memoryChunk.next) {
     		totalFreeMemSize += memoryChunk.size;
     	}
 
@@ -337,7 +350,7 @@ public class SysMemUserForUser extends HLEModule {
             allocatedSize += info.size;
         }
 
-        for (MemoryChunk memoryChunk = freeMemoryChunks.getLowMemoryChunk(); memoryChunk != null; memoryChunk = memoryChunk.next) {
+        for (MemoryChunk memoryChunk = freeMemoryChunks[USER_PARTITION_ID].getLowMemoryChunk(); memoryChunk != null; memoryChunk = memoryChunk.next) {
             for (int i = memoryChunk.addr; i < memoryChunk.addr + memoryChunk.size; i += SLOT_SIZE) {
                 if (i >= 0x08800000 && i < 0x0A000000) {
                     fragmented[(i - 0x08800000) / SLOT_SIZE] = true;

@@ -108,7 +108,7 @@ public class Debug {
         		} else {
         			newColor = (oldColor & 0xF0) | pixelColor;
         		}
-        		mem.write8(framebufferAddr, (byte) newColor);
+        		mem.write8(framebufferAddr, (byte) Math.max(newColor, oldColor));
         		break;
         	}
         	case sceFont.PSP_FONT_PIXELFORMAT_8: {

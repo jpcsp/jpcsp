@@ -60,6 +60,7 @@ public class PspGeList {
     private boolean restarted;
     private Semaphore sync; // Used for async display
     private IMemoryReader memoryReader;
+    private int saveContextAddr;
 
     public PspGeList(int id) {
     	videoEngine = VideoEngine.getInstance();
@@ -309,6 +310,18 @@ public class PspGeList {
 	public int readNextInstruction() {
 		pc += 4;
 		return memoryReader.readNext();
+	}
+
+	public int getSaveContextAddr() {
+		return saveContextAddr;
+	}
+
+	public void setSaveContextAddr(int saveContextAddr) {
+		this.saveContextAddr = saveContextAddr;
+	}
+
+	public boolean hasSaveContextAddr() {
+		return saveContextAddr != 0;
 	}
 
 	@Override

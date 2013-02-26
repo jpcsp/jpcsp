@@ -1000,6 +1000,11 @@ public class VideoEngine {
 
         executeHleAction();
 
+        // Save the context at the beginning of the list processing to the given address (used by sceGu).
+        if (currentList.hasSaveContextAddr()) {
+        	saveContext(currentList.getSaveContextAddr());
+        }
+
         if (isGeProfilerEnabled) {
         	listStartMicroTime = Emulator.getClock().microTime();
         	GEProfiler.startGeList();
@@ -1046,6 +1051,11 @@ public class VideoEngine {
         }
 
         executeHleAction();
+
+        // Restore the context to the state at the beginning of the list processing (used by sceGu).
+        if (currentList.hasSaveContextAddr()) {
+        	restoreContext(currentList.getSaveContextAddr());
+        }
     }
 
     public PspGeList getCurrentList() {
