@@ -17,8 +17,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_PSMFPLAYER_NOT_INITIALIZED;
+import static jpcsp.HLE.modules150.sceMpeg.convertTimestampToDate;
 import static jpcsp.HLE.modules150.sceMpeg.mpegAudioChannels;
+import static jpcsp.HLE.modules150.sceMpeg.readUnaligned32;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+import static jpcsp.util.Utilities.endianSwap32;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
@@ -82,8 +85,6 @@ public class scePsmfPlayer extends HLEModule {
     protected int psmfMaxAheadTimestamp = 40000;
 
     // PSMF Player timestamp vars.
-    protected Date psmfPlayerLastDate;
-    protected long psmfPlayerLastTimestamp;
     protected SceMpegAu psmfPlayerAvcAu;
     protected SceMpegAu psmfPlayerAtracAu;
 
@@ -140,6 +141,8 @@ public class scePsmfPlayer extends HLEModule {
     protected int psmfAtracStreamNum = 1;
     protected int psmfPcmStreamNum = 0;
     protected int psmfPlayerVersion = PSMF_PLAYER_VERSION_FULL;
+    protected Date psmfLastDate;
+    protected long psmfLastTimestamp;
 
     // PSMF Player playback params.
     protected int displayBuffer;
@@ -181,11 +184,6 @@ public class scePsmfPlayer extends HLEModule {
         useMediaEngine = state;
     }
 
-    protected Date convertPsmfTimestampToDate(long timestamp) {
-        long millis = timestamp / (psmfTimestampPerSecond / 1000);
-        return new Date(millis);
-    }
-
     private void generateFakePSMFVideo(int dest_addr, int frameWidth) {
         Memory mem = Memory.getInstance();
 
@@ -216,35 +214,16 @@ public class scePsmfPlayer extends HLEModule {
             }
         }
 
-        Date currentDate = convertPsmfTimestampToDate(psmfPlayerAvcAu.pts);
+        Date currentDate = convertTimestampToDate(psmfPlayerAvcAu.pts);
         SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
         dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
 
         Debug.printFramebuffer(dest_addr, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked PSMF Player video. ");
 
         String displayedString;
-        if (psmfPlayerLastDate != null) {
-            displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(psmfPlayerLastDate));
+        if (psmfLastDate != null) {
+            displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(psmfLastDate));
             Debug.printFramebuffer(dest_addr, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
-        }
-    }
-
-    protected int getPsmfFileDataInt8(int index) {
-    	return pmfFileData[index] & 0xFF;
-    }
-
-    protected int getPsmfFileDataInt32(int index) {
-        return (getPsmfFileDataInt8(index    ) << 24) |
-               (getPsmfFileDataInt8(index + 1) << 16) |
-               (getPsmfFileDataInt8(index + 2) <<  8) |
-               (getPsmfFileDataInt8(index + 3)      );
-    }
-
-    protected void analyzePSMFLastTimestamp() {
-        if (pmfFileData != null) {
-            // Endian swapped inside the buffer.
-            psmfPlayerLastTimestamp = getPsmfFileDataInt32(sceMpeg.PSMF_LAST_TIMESTAMP_OFFSET);
-            psmfPlayerLastDate = convertPsmfTimestampToDate(psmfPlayerLastTimestamp);
         }
     }
 
@@ -317,11 +296,16 @@ public class scePsmfPlayer extends HLEModule {
             pmfFileData = new byte[(int) psmfFile.length()];
             psmfFile.readFully(pmfFileData);
 
+            psmfLastTimestamp = endianSwap32(readUnaligned32(null, 0, pmfFileData, sceMpeg.PSMF_LAST_TIMESTAMP_OFFSET));
+            psmfLastDate = convertTimestampToDate(psmfLastTimestamp);
+
             if (checkMediaEngineState()) {
                 pmfFileChannel = new PacketChannel(pmfFileData);
             }
+        } catch (OutOfMemoryError e) {
+        	log.error("hlePsmfPlayerSetPsmf", e);
         } catch (IOException e) {
-        	log.error("scePsmfPlayerSetPsmf", e);
+        	log.error("hlePsmfPlayerSetPsmf", e);
         }
 
         // Switch to STANDBY.
@@ -433,8 +417,6 @@ public class scePsmfPlayer extends HLEModule {
         psmfPlayerAvcAu.dts = initPts;
         psmfPlayerAvcAu.pts = initPts;
 
-        analyzePSMFLastTimestamp();
-
         startMediaEngine();
 
         // Switch to PLAYING.
@@ -474,7 +456,7 @@ public class scePsmfPlayer extends HLEModule {
         // Can be called from interrupt.
         // Check playback status.
         if (psmfPlayerAvcAu.pts > 0) {
-            if (psmfPlayerAvcAu.pts > psmfPlayerLastTimestamp) {
+            if (psmfPlayerAvcAu.pts > psmfLastTimestamp) {
                 // If we've reached the last timestamp, change the status to PLAYING_FINISHED.
                 psmfPlayerStatus = PSMF_PLAYER_STATUS_PLAYING_FINISHED;
             }
@@ -639,8 +621,8 @@ public class scePsmfPlayer extends HLEModule {
     		return ERROR_PSMFPLAYER_NOT_INITIALIZED;
     	}
 
-    	psmfInfoAddr.setValue(0, (int) psmfPlayerAvcAu.pts);
-        psmfInfoAddr.setValue(4, psmfAvcStreamNum);
+    	psmfInfoAddr.setValue(0, (int) psmfLastTimestamp);
+    	psmfInfoAddr.setValue(4, psmfAvcStreamNum);
         psmfInfoAddr.setValue(8, psmfAtracStreamNum);
         psmfInfoAddr.setValue(12, psmfPcmStreamNum);
         psmfInfoAddr.setValue(16, psmfPlayerVersion);

@@ -723,7 +723,7 @@ public class sceMpeg extends HLEModule {
         }
     }
 
-    protected Date convertTimestampToDate(long timestamp) {
+    public static Date convertTimestampToDate(long timestamp) {
         long millis = timestamp / (mpegTimestampPerSecond / 1000);
         return new Date(millis);
     }
