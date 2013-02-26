@@ -363,6 +363,15 @@ public class sceAtrac3plus extends HLEModule {
             	currentAddr += chunkSize;
             	bufferSize -= chunkSize;
             }
+
+            if (loops != null) {
+            	// If a loop end is past the atrac end, assume the atrac end
+	            for (LoopInfo loop : loops) {
+	            	if (loop.endSample > atracEndSample) {
+	            		loop.endSample = atracEndSample;
+	            	}
+	            }
+            }
         }
 
         public int getAtracId() {
