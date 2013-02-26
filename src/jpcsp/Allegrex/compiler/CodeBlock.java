@@ -378,6 +378,8 @@ public class CodeBlock {
     }
 
     private void compile(CompilerContext context, MethodVisitor mv, List<CodeInstruction> codeInstructions) {
+    	context.optimizeSequence(codeInstructions);
+
     	int numberInstructionsToBeSkipped = 0;
         for (CodeInstruction codeInstruction : codeInstructions) {
             if (numberInstructionsToBeSkipped > 0) {
