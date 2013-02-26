@@ -388,7 +388,7 @@ public class ThreadManForUser extends HLEModule {
         
 
         // This memory is always reserved on a real PSP
-        SysMemInfo info = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "ThreadMan-RootMem", SysMemUserForUser.PSP_SMEM_Addr, 0x4000, MemoryMap.START_USERSPACE);
+        SysMemInfo info = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, "ThreadMan-RootMem", SysMemUserForUser.PSP_SMEM_Addr, 0x4000, MemoryMap.START_USERSPACE);
         int reservedMem = info.addr;
 
         mem.write32(IDLE_THREAD_ADDRESS + 0, instruction_addiu);

@@ -40,6 +40,8 @@ public class SceFontInfoBW extends SceFontInfo {
 		charmapCompressed = fontFile.getCharmapCompressed();
 		int numberCharBitmaps = fontData.length / charBitmapBytes;
 		charBitmapData = new short[numberCharBitmaps][charBitmapHeight];
+		shadowScaleX = 24;
+		shadowScaleY = 24;
 
 		int fontDataIndex = 0;
 		for (int i = 0; i < numberCharBitmaps; i++) {
@@ -51,7 +53,11 @@ public class SceFontInfoBW extends SceFontInfo {
 	}
 
 	@Override
-	public void printFont(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode) {
+	public void printFont(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode, int glyphType) {
+		if (glyphType != FONT_PGF_CHARGLYPH) {
+			return;
+		}
+
 		int charIndex = getCharIndex(charCode, charmapCompressed);
 		if (charIndex < 0 || charIndex >= charBitmapData.length) {
 			return;
@@ -72,8 +78,11 @@ public class SceFontInfoBW extends SceFontInfo {
 	}
 
 	@Override
-	public pspCharInfo getCharInfo(int charCode) {
+	public pspCharInfo getCharInfo(int charCode, int glyphType) {
     	pspCharInfo charInfo = new pspCharInfo();
+    	if (glyphType != FONT_PGF_CHARGLYPH) {
+    		return charInfo;
+    	}
 
     	charInfo.bitmapWidth = charBitmapWidth;
     	charInfo.bitmapHeight = charBitmapHeight + 1;

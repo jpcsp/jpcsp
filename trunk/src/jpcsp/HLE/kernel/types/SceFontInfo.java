@@ -54,7 +54,8 @@ public class SceFontInfo {
     protected int firstGlyph;
 
     // Shadow characters properties and glyphs.
-    protected int shadowscale;
+    protected int shadowScaleX;
+    protected int shadowScaleY;
     protected Glyph[] shadowGlyphs;
 
     // Font style from registry
@@ -110,7 +111,8 @@ public class SceFontInfo {
         charmap_compr = new int[charmap_compr_len * 4];
         advancex = fontFile.getMaxAdvance()[0]/16;
         advancey = fontFile.getMaxAdvance()[1]/16;
-        shadowscale = fontFile.getShadowScale()[0];
+        shadowScaleX = fontFile.getShadowScale()[0];
+        shadowScaleY = fontFile.getShadowScale()[1];
         glyphs = new Glyph[fontFile.getCharPointerLength()];
         shadowGlyphs = new Glyph[fontFile.getShadowMapLength()];
         firstGlyph = fontFile.getFirstGlyphInCharMap();
@@ -141,7 +143,7 @@ public class SceFontInfo {
 	        for (int i = 0; i < glyphs.length; i++) {
 	        	int shadowId = glyphs[i].shadowID;
 	        	if (shadowId >= 0 && shadowId < shadowMap.length && shadowId < shadowGlyphs.length) {
-		        	int charId = shadowMap[shadowId];
+		        	int charId = getCharID(shadowMap[shadowId]);
 		        	if (charId >= 0 && charId < glyphs.length) {
 		        		if (shadowGlyphs[shadowId] == null) {
 		        			shadowGlyphs[shadowId] = getGlyph(fontdata, (charPointers[charId] * 4 * 8), FONT_PGF_SHADOWGLYPH, fontFile);
@@ -273,27 +275,34 @@ public class SceFontInfo {
         return glyph;
     }
 
+    private int getCharID(int charCode) {
+    	// TODO Implement compressed charmap (PGF revision 3)
+    	charCode -= firstGlyph;
+    	if (charCode >= 0 && charCode < charmap.length) {
+    		charCode = charmap[charCode];
+    	}
+
+    	return charCode;
+    }
+
     private Glyph getCharGlyph(int charCode, int glyphType) {
     	if (charCode < firstGlyph) {
     		return null;
     	}
 
-    	charCode -= firstGlyph;
-    	if (charCode < charmap.length) {
-    		charCode = charmap[charCode];
-    	}
+    	charCode = getCharID(charCode);
+        if (charCode < 0 || charCode >= glyphs.length) {
+            return null;
+        }
 
-    	Glyph glyph;
-        if (glyphType == FONT_PGF_CHARGLYPH) {
-            if (charCode >= glyphs.length) {
+        Glyph glyph = glyphs[charCode];
+
+        if (glyphType == FONT_PGF_SHADOWGLYPH) {
+        	int shadowID = glyph.shadowID;
+            if (shadowID < 0 || shadowID >= shadowGlyphs.length) {
                 return null;
             }
-            glyph = glyphs[charCode];
-        } else {
-            if (charCode >= shadowGlyphs.length) {
-                return null;
-            }
-            glyph = shadowGlyphs[charCode];
+            glyph = shadowGlyphs[shadowID];
         }
 
         return glyph;
@@ -319,7 +328,7 @@ public class SceFontInfo {
         	return;
         }
 
-    	long bitPtr = glyph.ptr * 8;
+        long bitPtr = glyph.ptr * 8;
         final int nibbleBits = 4;
         int nibble;
         int value = 0;
@@ -327,6 +336,14 @@ public class SceFontInfo {
         boolean bitmapHorizontalRows = (glyph.flags & FONT_PGF_BMP_OVERLAY) == FONT_PGF_BMP_H_ROWS;
         int numberPixels = glyph.w * glyph.h;
         int pixelIndex = 0;
+
+        int scaleX = 1;
+        int scaleY = 1;
+        if (glyphType == FONT_PGF_SHADOWGLYPH) {
+        	scaleX = 64 / shadowScaleX;
+        	scaleY = 64 / shadowScaleY;
+        }
+
         while (pixelIndex < numberPixels && bitPtr + 8 < fontdataBits) {
             nibble = getBits(nibbleBits, fontdata, bitPtr);
             bitPtr += nibbleBits;
@@ -353,8 +370,8 @@ public class SceFontInfo {
                     yy = pixelIndex % glyph.h;
                 }
 
-                int pixelX = x + xx;
-                int pixelY = y + yy;
+                int pixelX = x + xx * scaleX;
+                int pixelY = y + yy * scaleY;
                 if (pixelX >= clipX && pixelX < clipX + clipWidth && pixelY >= clipY && pixelY < clipY + clipHeight) {
                     // 4-bit color value
                     int pixelColor = value;
@@ -377,7 +394,11 @@ public class SceFontInfo {
         					break;
                     }
 
-                	Debug.setFontPixel(base, bpl, bufWidth, bufHeight, pixelX, pixelY, pixelColor, pixelformat);
+                    for (int yyy = 0; yyy < scaleY; yyy++) {
+                    	for (int xxx = 0; xxx < scaleX; xxx++) {
+                        	Debug.setFontPixel(base, bpl, bufWidth, bufHeight, pixelX + xxx, pixelY + yyy, pixelColor, pixelformat);
+                    	}
+                    }
                 }
 
                 pixelIndex++;
@@ -385,13 +406,13 @@ public class SceFontInfo {
         }
     }
 
-    public void printFont(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode) {
-        generateFontTexture(base, bpl, bufWidth, bufHeight, x, y, clipX, clipY, clipWidth, clipHeight, pixelformat, charCode, altCharCode, FONT_PGF_CHARGLYPH);
+    public void printFont(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode, int glyphType) {
+        generateFontTexture(base, bpl, bufWidth, bufHeight, x, y, clipX, clipY, clipWidth, clipHeight, pixelformat, charCode, altCharCode, glyphType);
     }
 
-    public pspCharInfo getCharInfo(int charCode) {
+    public pspCharInfo getCharInfo(int charCode, int glyphType) {
     	pspCharInfo charInfo = new pspCharInfo();
-    	Glyph glyph = getCharGlyph(charCode, FONT_PGF_CHARGLYPH);
+    	Glyph glyph = getCharGlyph(charCode, glyphType);
     	if (glyph == null) {
     		// For a character not present in the font, return pspCharInfo with all fields set to 0.
     		// Confirmed on a PSP.
@@ -412,6 +433,17 @@ public class SceFontInfo {
     	charInfo.sfp26BearingVY = glyph.yAdjustV;
     	charInfo.sfp26AdvanceH = glyph.advanceH;
     	charInfo.sfp26AdvanceV = glyph.advanceV;
+
+    	if (glyphType == FONT_PGF_SHADOWGLYPH) {
+            int scaleX = 64 / shadowScaleX;
+            int scaleY = 64 / shadowScaleY;
+            charInfo.bitmapWidth *= scaleX;
+            charInfo.bitmapHeight *= scaleY;
+            charInfo.bitmapLeft *= scaleX;
+            charInfo.bitmapTop *= scaleY;
+            charInfo.sfp26Ascender *= scaleY;
+            charInfo.sfp26Descender *= scaleY;
+    	}
 
     	return charInfo;
     }

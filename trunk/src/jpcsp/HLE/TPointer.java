@@ -30,6 +30,7 @@ import jpcsp.util.Utilities;
 final public class TPointer implements ITPointerBase {
 	private Memory memory;
 	private int address;
+	public static final TPointer NULL = new TPointer(null, 0);
 
 	private class TPointerOutputStream extends OutputStream {
 		private int offset = 0;

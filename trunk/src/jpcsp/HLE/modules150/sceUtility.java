@@ -16,21 +16,40 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static jpcsp.HLE.modules150.sceFont.PSP_FONT_PIXELFORMAT_4;
+import static jpcsp.graphics.GeCommands.ALPHA_ONE_MINUS_SOURCE_ALPHA;
+import static jpcsp.graphics.GeCommands.ALPHA_SOURCE_ALPHA;
+import static jpcsp.graphics.GeCommands.ALPHA_SOURCE_BLEND_OPERATION_ADD;
+import static jpcsp.graphics.GeCommands.CMODE_FORMAT_32BIT_ABGR8888;
+import static jpcsp.graphics.GeCommands.PRIM_SPRITES;
+import static jpcsp.graphics.GeCommands.TFLT_LINEAR;
+import static jpcsp.graphics.GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_MODULATE;
+import static jpcsp.graphics.GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_REPLACE;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED;
+import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
+import static jpcsp.graphics.GeCommands.VTYPE_POSITION_FORMAT_16_BIT;
+import static jpcsp.graphics.GeCommands.VTYPE_TEXTURE_FORMAT_16_BIT;
+import static jpcsp.graphics.GeCommands.VTYPE_TRANSFORM_PIPELINE_RAW_COORD;
+import static jpcsp.graphics.RE.IRenderingEngine.GU_TEXTURE_2D;
+import static jpcsp.graphics.VideoEngine.alignBufferWidth;
+import static jpcsp.memory.ImageReader.colorARGBtoABGR;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
-import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.Frame;
-import java.awt.Image;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -38,10 +57,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Calendar;
 
+import javax.imageio.ImageIO;
 import javax.swing.BoxLayout;
-import javax.swing.GroupLayout;
-import javax.swing.Icon;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
@@ -49,19 +66,9 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRootPane;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.ListSelectionModel;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.table.AbstractTableModel;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableColumnModel;
-import javax.swing.table.TableColumn;
 
 import jpcsp.Controller;
 import jpcsp.Emulator;
@@ -70,9 +77,9 @@ import jpcsp.Processor;
 import jpcsp.Resource;
 import jpcsp.State;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.GUI.CancelButton;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SystemTimeManager;
+import jpcsp.HLE.kernel.types.SceFontInfo;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
@@ -87,14 +94,20 @@ import jpcsp.HLE.kernel.types.SceUtilitySavedataParam;
 import jpcsp.HLE.kernel.types.SceUtilityScreenshotParams;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.kernel.types.SceUtilityOskParams.SceUtilityOskData;
+import jpcsp.HLE.kernel.types.pspCharInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.sceCtrl;
 import jpcsp.HLE.modules.sceNetApctl;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.format.PSF;
+import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.hardware.MemoryStick;
+import jpcsp.hardware.Screen;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryWriter;
 import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
+import jpcsp.util.sceGu;
 
 import org.apache.log4j.Logger;
 
@@ -205,6 +218,12 @@ public class sceUtility extends HLEModule {
     protected static final int maxLineLengthForDialog = 80;
     protected static final int[] fontHeightSavedataList = new int[]{12, 12, 12, 12, 12, 12, 9, 8, 7, 6};
 
+    protected static final int icon0Width = 144;
+    protected static final int icon0Height = 80;
+	protected static final int icon0PixelFormat = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+	// Round-up width to next valid buffer width
+	protected static final int icon0BufferWidth = alignBufferWidth(icon0Width + IRenderingEngine.alignementOfTextureBufferWidth[icon0PixelFormat] - 1, icon0PixelFormat);
+
     protected GameSharingUtilityDialogState gameSharingState;
     protected UtilityDialogState netplayDialogState;
     protected NetconfUtilityDialogState netconfState;
@@ -234,11 +253,14 @@ public class sceUtility extends HLEModule {
         protected int drawSpeed;
         protected int minimumVisibleDurationMillis;
         protected long startVisibleTimeMillis;
+        protected int buttonPressed;
+        protected GuUtilityDialog guDialog;
 
         public UtilityDialogState(String name) {
             this.name = name;
             status = PSP_UTILITY_DIALOG_STATUS_NONE;
             result = PSP_UTILITY_DIALOG_RESULT_OK;
+            buttonPressed = SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_INVALID;
         }
 
         protected void openDialog(UtilityDialog dialog) {
@@ -247,8 +269,13 @@ public class sceUtility extends HLEModule {
         	dialog.setVisible(true);
         }
 
+        protected void openDialog(GuUtilityDialog guDialog) {
+    		status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
+    		this.guDialog = guDialog;
+        }
+
         protected boolean isDialogOpen() {
-        	return dialog != null;
+        	return dialog != null || guDialog != null;
         }
 
         protected void updateDialog() {
@@ -260,7 +287,17 @@ public class sceUtility extends HLEModule {
         }
 
         protected boolean isDialogActive() {
-        	return isDialogOpen() && dialog.isVisible();
+        	if (isDialogOpen()) {
+	        	if (dialog != null) {
+	        		return dialog.isVisible();
+	        	}
+
+	        	if (guDialog != null) {
+	        		return guDialog.isVisible();
+	        	}
+        	}
+
+        	return false;
         }
 
         protected void finishDialog() {
@@ -269,7 +306,14 @@ public class sceUtility extends HLEModule {
 	            Settings.getInstance().writeWindowSize(name, dialog.getSize());
 	            dialog = null;
         	}
+        	if (guDialog != null) {
+        		guDialog = null;
+        	}
             status = PSP_UTILITY_DIALOG_STATUS_QUIT;
+        }
+
+        public int getButtonPressed() {
+        	return buttonPressed;
         }
 
         public int executeInitStart(TPointer paramsAddr) {
@@ -397,10 +441,19 @@ public class sceUtility extends HLEModule {
                 // This is why we have to re-read the params here.
                 params.read(paramsAddr);
 
+                if (guDialog != null) {
+                	guDialog.update();
+                }
+
                 boolean keepVisible = executeUpdateVisible();
 
                 if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE && isDialogOpen()) {
-                	dialog.checkController();
+                	if (dialog != null) {
+                		dialog.checkController();
+                	}
+                	if (guDialog != null) {
+                		guDialog.checkController();
+                	}
                 }
 
                 if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE && !isDialogOpen() && !keepVisible) {
@@ -601,10 +654,10 @@ public class sceUtility extends HLEModule {
 	                        }
 	                    }
 
-	                    SavedataDialog savedataDialog = new SavedataDialog(savedataParams, this, validNames.toArray(new String[validNames.size()]));
-	                    openDialog(savedataDialog);
+    		        	GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, validNames.toArray(new String[validNames.size()]));
+    		        	openDialog(gu);
 	                } else if (!isDialogActive()) {
-	                	if (dialog.buttonPressed != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
+	                	if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
 	                		// Dialog cancelled
 	                		savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_BAD_PARAMS;
 	                	} else if (saveListSelection == null) {
@@ -613,6 +666,9 @@ public class sceUtility extends HLEModule {
 		                } else {
 		                    savedataParams.saveName = saveListSelection;
 		                    try {
+		                    	if (log.isDebugEnabled()) {
+		                    		log.debug(String.format("Loading savedata %s", savedataParams.saveName));
+		                    	}
 		                        savedataParams.load(mem);
 		                        savedataParams.base.result = 0;
 		                        savedataParams.write(mem);
@@ -659,10 +715,10 @@ public class sceUtility extends HLEModule {
 
 	            case SceUtilitySavedataParam.MODE_LISTSAVE: {
 	            	if (!isDialogOpen()) {
-	            		SavedataDialog savedataDialog = new SavedataDialog(savedataParams, this, savedataParams.saveNameList);
-	            		openDialog(savedataDialog);
+	            		GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, savedataParams.saveNameList);
+    		        	openDialog(gu);
 	            	} else if (!isDialogActive()) {
-	                	if (dialog.buttonPressed != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
+	                	if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
 	                		// Dialog cancelled
 	                		savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_BAD_PARAMS;
 	                	} else if (saveListSelection == null) {
@@ -671,6 +727,9 @@ public class sceUtility extends HLEModule {
 		                } else {
 		                    savedataParams.saveName = saveListSelection;
 		                    try {
+		                    	if (log.isDebugEnabled()) {
+		                    		log.debug(String.format("Saving savedata %s", savedataParams.saveName));
+		                    	}
 		                        savedataParams.save(mem);
 		                        savedataParams.base.result = 0;
 		                    } catch (IOException e) {
@@ -718,10 +777,10 @@ public class sceUtility extends HLEModule {
 		                        }
 	                    	}
 
-		                    SavedataDialog savedataDialog = new SavedataDialog(savedataParams, this, validNames.toArray(new String[validNames.size()]));
-		                    openDialog(savedataDialog);
+	                    	GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, validNames.toArray(new String[validNames.size()]));
+	    		        	openDialog(gu);
 		                } else if (!isDialogActive()) {
-		                	if (dialog.buttonPressed != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
+		                	if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
 		                		// Dialog cancelled
 		                		savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
 		                	} else if (saveListSelection == null) {
@@ -1706,83 +1765,270 @@ public class sceUtility extends HLEModule {
 		}
     }
 
-    protected static class SavedataDialog extends UtilityDialog {
-		private static final long serialVersionUID = 3753863112417187248L;
-		private final JTable table;
+    protected static abstract class GuUtilityDialog {
+		protected long pressedTimestamp;
+		protected static final int repeatDelay = 100000;
+		protected boolean downPressedButton;
+		protected boolean downPressedAnalog;
+		protected boolean upPressedButton;
+		protected boolean upPressedAnalog;
+		protected sceGu gu;
+		protected UtilityDialogState utilityDialogState;
+		private int x;
+		private int y;
+		private int textX;
+		private int textY;
+		private int textWidth;
+		private int textHeight;
+		private int textLineHeight;
+		private int textAddr;
+
+		protected void createDialog(final UtilityDialogState utilityDialogState, String message) {
+			this.utilityDialogState = utilityDialogState;
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Free memory total=0x%X, max=0x%X", Modules.SysMemUserForUserModule.totalFreeMemSize(), Modules.SysMemUserForUserModule.maxFreeMemSize()));
+			}
+
+			// Allocate 1 MB
+			gu = new sceGu(1 * 1024 * 1024);
+		}
+
+		protected void dispose() {
+			gu.free();
+			gu = null;
+		}
+
+		public boolean isVisible() {
+			return gu != null;
+		}
+
+		protected void update() {
+			gu.sceGuStart();
+			updateDialog();
+			gu.sceGuDisable(IRenderingEngine.GU_BLEND);
+			gu.sceGuFinish();
+
+			checkController();
+		}
+
+		private void drawText(SceFontInfo fontInfo, int baseAscender, char c, int glyphType) {
+			pspCharInfo charInfo = fontInfo.getCharInfo(c, glyphType);
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("drawText '%c'(%d), glyphType=0x%X, baseAscender=%d, position (%d,%d), %s", c, (int) c, glyphType, baseAscender, x, y, charInfo));
+			}
+
+			if (charInfo == null) {
+				return;
+			}
+
+			if (c == '\n') {
+				x = textX;
+				y += textLineHeight;
+				return;
+			}
+
+			fontInfo.printFont(textAddr, textWidth / 2, textWidth, textHeight, x - textX + charInfo.bitmapLeft, y - textY + baseAscender - charInfo.bitmapTop, 0, 0, textWidth, textHeight, PSP_FONT_PIXELFORMAT_4, c, ' ', glyphType);
+
+			if (glyphType != SceFontInfo.FONT_PGF_CHARGLYPH) {
+				// Take the advanceH from the character, not from the shadow
+				charInfo = fontInfo.getCharInfo(c, SceFontInfo.FONT_PGF_CHARGLYPH);
+			}
+			x += charInfo.sfp26AdvanceH >> 6;
+		}
+
+		protected void drawTextWithShadow(int textX, int textY, int textWidth, int textHeight, int textLineHeight, SceFontInfo fontInfo, int baseAscender, int textColor, int shadowColor, float scale, String s) {
+			drawText(textX, textY, textWidth, textHeight, textLineHeight, fontInfo, baseAscender, scale, shadowColor, s, SceFontInfo.FONT_PGF_SHADOWGLYPH);
+			drawText(textX, textY, textWidth, textHeight, textLineHeight, fontInfo, baseAscender, scale, textColor, s, SceFontInfo.FONT_PGF_CHARGLYPH);
+		}
+
+		protected void drawText(int textX, int textY, int textWidth, int textHeight, int textLineHeight, SceFontInfo fontInfo, int baseAscender, float scale, int color, String s, int glyphType) {
+			this.textX = textX;
+			this.textY = textY;
+			this.textWidth = textWidth;
+			this.textHeight = textHeight;
+			this.textLineHeight = textLineHeight;
+			x = textX;
+			y = textY;
+
+			textAddr = gu.sceGuGetMemory(textWidth * textHeight / 2);
+			if (textAddr == 0) {
+				return;
+			}
+
+			for (int i = 0; i < s.length(); i++) {
+				drawText(fontInfo, baseAscender, s.charAt(i), glyphType);
+			}
+
+			final int numberOfVertex = 2;
+			int textVertexAddr = gu.sceGuGetMemory(10 * numberOfVertex);
+			IMemoryWriter vertexWriter = MemoryWriter.getMemoryWriter(textVertexAddr, 2);
+			// Texture (0,0)
+			vertexWriter.writeNext(0);
+			vertexWriter.writeNext(0);
+			// Position
+			vertexWriter.writeNext(textX);
+			vertexWriter.writeNext(textY);
+			vertexWriter.writeNext(0);
+			// Texture (textWidth,textHeigt)
+			vertexWriter.writeNext(textWidth);
+			vertexWriter.writeNext(textHeight);
+			// Position
+			vertexWriter.writeNext(textX + (int) (textWidth * scale));
+			vertexWriter.writeNext(textY + (int) (textHeight * scale));
+			vertexWriter.writeNext(0);
+			vertexWriter.flush();
+
+			int clutAddr = gu.sceGuGetMemory(16 * 4);
+			IMemoryWriter clutWriter = MemoryWriter.getMemoryWriter(clutAddr, 4);
+			color &= 0x00FFFFFF;
+			for (int i = 0; i < 16; i++) {
+				int alpha = (i << 4) | i;
+				clutWriter.writeNext((alpha << 24) | color);
+			}
+			gu.sceGuClutMode(CMODE_FORMAT_32BIT_ABGR8888, 0, 0xFF, 0);
+			gu.sceGuClutLoad(2, clutAddr);
+
+			gu.sceGuTexMode(TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED, 0, false);
+			gu.sceGuTexFunc(TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_MODULATE, true, false);
+			gu.sceGuTexEnvColor(0x000000);
+			gu.sceGuTexWrap(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
+			gu.sceGuTexFilter(TFLT_LINEAR, TFLT_LINEAR);
+			gu.sceGuEnable(GU_TEXTURE_2D);
+			gu.sceGuTexImage(0, 512, 256, textWidth, textAddr);
+			gu.sceGuDrawArray(PRIM_SPRITES, (VTYPE_TRANSFORM_PIPELINE_RAW_COORD << 23) | (VTYPE_TEXTURE_FORMAT_16_BIT << 0) | (VTYPE_POSITION_FORMAT_16_BIT << 7), numberOfVertex, 0, textVertexAddr);
+		}
+
+		protected abstract void updateDialog();
+
+        public void checkController() {
+			if (isConfirmButtonPressed()) {
+				utilityDialogState.buttonPressed = SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK;
+				dispose();
+			} else if (isCancelButtonPressed()) {
+				utilityDialogState.buttonPressed = SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_ESC;
+				dispose();
+			}
+		}
+
+		protected boolean isButtonPressed(int button) {
+        	Controller controller = State.controller;
+        	if ((controller.getButtons() & button) == button) {
+        		return true;
+        	}
+
+        	return false;
+        }
+
+        protected boolean isConfirmButtonPressed() {
+        	return isButtonPressed(getSystemParamButtonPreference() == PSP_SYSTEMPARAM_BUTTON_CIRCLE ? sceCtrl.PSP_CTRL_CIRCLE : sceCtrl.PSP_CTRL_CROSS);
+        }
+
+        protected boolean isCancelButtonPressed() {
+        	return isButtonPressed(getSystemParamButtonPreference() == PSP_SYSTEMPARAM_BUTTON_CIRCLE ? sceCtrl.PSP_CTRL_CROSS : sceCtrl.PSP_CTRL_CIRCLE);
+        }
+
+        private int getControllerLy() {
+        	return State.controller.getLy() & 0xFF;
+        }
+
+        private int getControllerAnalogCenter() {
+        	return Controller.analogCenter & 0xFF;
+        }
+
+        private void checkRepeat() {
+        	if (pressedTimestamp != 0 && SystemTimeManager.getSystemTime() - pressedTimestamp > repeatDelay) {
+        		upPressedAnalog = false;
+        		upPressedButton = false;
+        		downPressedAnalog = false;
+        		downPressedButton = false;
+        		pressedTimestamp = 0;
+        	}
+        }
+
+        protected boolean isUpPressed() {
+        	checkRepeat();
+        	if (upPressedButton || upPressedAnalog) {
+            	if (!isButtonPressed(sceCtrl.PSP_CTRL_UP)) {
+            		upPressedButton = false;
+            	}
+
+            	if (getControllerLy() >= getControllerAnalogCenter()) {
+            		upPressedAnalog = false;
+            	}
+
+            	return false;
+        	}
+
+        	if (isButtonPressed(sceCtrl.PSP_CTRL_UP)) {
+        		upPressedButton = true;
+        		pressedTimestamp = SystemTimeManager.getSystemTime();
+        		return true;
+        	}
+
+        	if (getControllerLy() < getControllerAnalogCenter()) {
+        		upPressedAnalog = true;
+        		pressedTimestamp = SystemTimeManager.getSystemTime();
+        		return true;
+        	}
+
+        	return false;
+        }
+
+        protected boolean isDownPressed() {
+        	checkRepeat();
+        	if (downPressedButton || downPressedAnalog) {
+            	if (!isButtonPressed(sceCtrl.PSP_CTRL_DOWN)) {
+            		downPressedButton = false;
+            	}
+
+            	if (getControllerLy() <= getControllerAnalogCenter()) {
+            		downPressedAnalog = false;
+            	}
+
+            	return false;
+        	}
+
+        	if (isButtonPressed(sceCtrl.PSP_CTRL_DOWN)) {
+        		downPressedButton = true;
+        		pressedTimestamp = SystemTimeManager.getSystemTime();
+        		return true;
+        	}
+
+        	if (getControllerLy() > getControllerAnalogCenter()) {
+        		downPressedAnalog = true;
+        		pressedTimestamp = SystemTimeManager.getSystemTime();
+        		return true;
+        	}
+
+        	return false;
+        }
+    }
+
+    protected static class GuSavedataDialog extends GuUtilityDialog {
 		private SavedataUtilityDialogState savedataDialogState;
 		private SceUtilitySavedataParam savedataParams;
 		private final String[] saveNames;
+		private int selectedRow;
+		private int numberRows;
 
-		public SavedataDialog(final SceUtilitySavedataParam savedataParams, final SavedataUtilityDialogState savedataDialogState, final String[] saveNames) {
+		public GuSavedataDialog(final SceUtilitySavedataParam savedataParams, final SavedataUtilityDialogState savedataDialogState, final String[] saveNames) {
 			this.savedataDialogState = savedataDialogState;
 			this.savedataParams = savedataParams;
 			this.saveNames = saveNames;
 
 			createDialog(savedataDialogState, null);
 
-			String title = savedataDialogState.getDialogTitle(savedataParams.getModeName(), "Savedata List");
-			dialog.setTitle(title);
-            dialog.setSize(Settings.getInstance().readWindowSize(savedataDialogState.name, 400, 401));
+			numberRows = saveNames == null ? 0 : saveNames.length;
 
-            final JButton selectButton = new JButton("Select");
-            selectButton.setActionCommand(actionCommandOK);
-            setDefaultButton(selectButton);
-
-            final JButton cancelButton = new CancelButton(dialog);
-            cancelButton.setActionCommand(actionCommandESC);
-            cancelButton.addActionListener(closeActionListener);
-
-            SavedataListTableModel savedataListTableModel = new SavedataListTableModel(saveNames, savedataParams);
-            SavedataListTableColumnModel savedataListTableColumnModel = new SavedataListTableColumnModel();
-            savedataListTableColumnModel.setFontHeight(savedataListTableModel.getFontHeight());
-
-            table = new JTable(savedataListTableModel, savedataListTableColumnModel);
-            table.setRowHeight(80);
-            table.setRowSelectionAllowed(true);
-            table.setColumnSelectionAllowed(false);
-            table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-            table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-                @Override
-                public void valueChanged(ListSelectionEvent event) {
-                    selectButton.setEnabled(!((ListSelectionModel) event.getSource()).isSelectionEmpty());
-                }
-            });
-            table.setFont(new Font("SansSerif", Font.PLAIN, fontHeightSavedataList[0]));
-            JScrollPane listScroll = new JScrollPane(table);
-
-            GroupLayout layout = new GroupLayout(dialog.getRootPane());
-            layout.setAutoCreateGaps(true);
-            layout.setAutoCreateContainerGaps(true);
-
-            layout.setHorizontalGroup(layout.createParallelGroup(
-                    GroupLayout.Alignment.TRAILING).addComponent(listScroll).addGroup(
-                    layout.createSequentialGroup().addComponent(selectButton).addComponent(cancelButton)));
-
-            layout.setVerticalGroup(layout.createSequentialGroup().addComponent(
-                    listScroll).addGroup(
-                    layout.createParallelGroup(GroupLayout.Alignment.BASELINE).addComponent(selectButton).addComponent(cancelButton)));
-
-            dialog.getRootPane().setLayout(layout);
-
-            selectButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent event) {
-                    if (updateSelection()) {
-    					processActionCommand(event.getActionCommand());
-                        dispose();
-                    }
-                }
-            });
-
-            // Define the selected row according to the focus field
-            int selectedRow = 0;
+			// Define the selected row according to the focus field
+            selectedRow = 0;
             switch (savedataParams.focus) {
             	case SceUtilitySavedataParam.FOCUS_FIRSTLIST: {
             		selectedRow = 0;
             		break;
             	}
             	case SceUtilitySavedataParam.FOCUS_LASTLIST: {
-            		selectedRow = table.getRowCount() - 1;
+            		selectedRow = numberRows - 1;
             		break;
             	}
             	case SceUtilitySavedataParam.FOCUS_LATEST: {
@@ -1826,12 +2072,6 @@ public class sceUtility extends HLEModule {
             		break;
             	}
             }
-
-            if (selectedRow >= 0 && selectedRow < table.getRowCount()) {
-				table.changeSelection(selectedRow, table.getSelectedColumn(), false, false);
-            }
-
-            endDialog();
 		}
 
 		private boolean isEmpty(String saveName) {
@@ -1842,19 +2082,219 @@ public class sceUtility extends HLEModule {
 			return savedataParams.getTimestamp(savedataParams.gameName, saveName);
 		}
 
-		private boolean updateSelection() {
-			int selectedRow = table.getSelectedRow();
-            if (selectedRow >= 0 && selectedRow < saveNames.length) {
-                savedataDialogState.saveListSelection = saveNames[selectedRow];
-                return true;
+		private int getIcon0(int index) {
+			if (index < 0 || index >= saveNames.length) {
+				return 0;
+			}
+
+			BufferedImage image = null;
+
+        	// Get icon0 file
+            String iconFileName = savedataParams.getFileName(saveNames[index], SceUtilitySavedataParam.icon0FileName);
+            SeekableDataInput iconDataInput = Modules.IoFileMgrForUserModule.getFile(iconFileName, IoFileMgrForUser.PSP_O_RDONLY);
+            if (iconDataInput != null) {
+                try {
+                    int length = (int) iconDataInput.length();
+                    byte[] iconBuffer = new byte[length];
+                    iconDataInput.readFully(iconBuffer);
+                    iconDataInput.close();
+                    image = ImageIO.read(new ByteArrayInputStream(iconBuffer));
+                } catch (IOException e) {
+                	log.debug("getIcon0", e);
+                }
             }
 
-            return false;
+            // Default icon
+            if (image == null) {
+            	try {
+					image = ImageIO.read(getClass().getResource("/jpcsp/images/icon0.png"));
+				} catch (IOException e) {
+					log.error("Cannot read default icon0.png", e);
+				}
+            }
+
+            if (image == null) {
+            	return 0;
+            }
+
+            int bytesPerPixel = IRenderingEngine.sizeOfTextureType[icon0PixelFormat];
+            int textureAddr = gu.sceGuGetMemory(icon0BufferWidth * icon0Height * bytesPerPixel);
+            if (textureAddr == 0) {
+            	return 0;
+            }
+
+            IMemoryWriter textureWriter = MemoryWriter.getMemoryWriter(textureAddr, bytesPerPixel);
+            for (int y = 0; y < icon0Height; y++) {
+            	for (int x = 0; x < icon0Width; x++) {
+            		int colorARGB = image.getRGB(x, y);
+            		int colorABGR = colorARGBtoABGR(colorARGB);
+            		textureWriter.writeNext(colorABGR);
+            	}
+            	for (int x = icon0Width; x < icon0BufferWidth; x++) {
+            		textureWriter.writeNext(0);
+            	}
+            }
+            textureWriter.flush();
+
+            return textureAddr;
+		}
+
+		private PSF getPsf(int index, Calendar savedTime) {
+			PSF psf = null;
+			if (index < 0 || index >= saveNames.length) {
+				return psf;
+			}
+
+			String sfoFileName = savedataParams.getFileName(saveNames[selectedRow], SceUtilitySavedataParam.paramSfoFileName);
+            SeekableDataInput sfoDataInput = Modules.IoFileMgrForUserModule.getFile(sfoFileName, IoFileMgrForUser.PSP_O_RDONLY);
+            if (sfoDataInput != null) {
+                try {
+                    int length = (int) sfoDataInput.length();
+                    byte[] sfoBuffer = new byte[length];
+                    sfoDataInput.readFully(sfoBuffer);
+                    sfoDataInput.close();
+
+                    psf = new PSF();
+                    psf.read(ByteBuffer.wrap(sfoBuffer));
+
+                    SceIoStat sfoStat = Modules.IoFileMgrForUserModule.statFile(sfoFileName);
+                    ScePspDateTime pspTime = sfoStat.mtime;
+                    // pspTime.month has a value in range [1..12], Calendar requires a value in range [0..11]
+                    savedTime.set(pspTime.year, pspTime.month - 1, pspTime.day, pspTime.hour, pspTime.minute, pspTime.second);
+                } catch (IOException e) {
+                }
+            }
+
+            return psf;
+		}
+
+		private void drawIcon(int iconIndex, int iconX, int iconY, int iconWidth, int iconHeight) {
+			int textureAddr = getIcon0(iconIndex);
+			if (textureAddr == 0) {
+				return;
+			}
+
+			int numberOfVertex = 2;
+			int iconVertexAddr = gu.sceGuGetMemory(10 * numberOfVertex);
+			if (iconVertexAddr == 0) {
+				return;
+			}
+			IMemoryWriter vertexWriter = MemoryWriter.getMemoryWriter(iconVertexAddr, 2);
+			// Texture
+			vertexWriter.writeNext(0);
+			vertexWriter.writeNext(0);
+			// Position
+			vertexWriter.writeNext(iconX);
+			vertexWriter.writeNext(iconY);
+			vertexWriter.writeNext(0);
+			// Texture
+			vertexWriter.writeNext(icon0Width);
+			vertexWriter.writeNext(icon0Height);
+			// Position
+			vertexWriter.writeNext(iconX + iconWidth);
+			vertexWriter.writeNext(iconY + iconHeight);
+			vertexWriter.writeNext(0);
+			vertexWriter.flush();
+
+			gu.sceGuTexEnvColor(0x000000);
+			gu.sceGuTexMode(icon0PixelFormat, 0, false);
+			gu.sceGuTexImage(0, 256, 128, icon0BufferWidth, textureAddr);
+			gu.sceGuTexFunc(TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_REPLACE, true, false);
+			gu.sceGuTexFilter(TFLT_LINEAR, TFLT_LINEAR);
+			gu.sceGuTexWrap(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
+			gu.sceGuEnable(GU_TEXTURE_2D);
+			gu.sceGuDrawArray(PRIM_SPRITES, (VTYPE_TRANSFORM_PIPELINE_RAW_COORD << 23) | (VTYPE_TEXTURE_FORMAT_16_BIT << 0) | (VTYPE_POSITION_FORMAT_16_BIT << 7), numberOfVertex, 0, iconVertexAddr);
+		}
+
+		@Override
+		protected void updateDialog() {
+			int baseX = 26;
+			int baseY = 96;
+
+			gu.sceGuDisable(IRenderingEngine.GU_DEPTH_TEST);
+			gu.sceGuDisable(IRenderingEngine.GU_ALPHA_TEST);
+			gu.sceGuDisable(IRenderingEngine.GU_FOG);
+			gu.sceGuDisable(IRenderingEngine.GU_LIGHTING);
+			gu.sceGuDisable(IRenderingEngine.GU_COLOR_LOGIC_OP);
+			gu.sceGuDisable(IRenderingEngine.GU_STENCIL_TEST);
+			gu.sceGuDisable(IRenderingEngine.GU_CULL_FACE);
+			gu.sceGuDisable(IRenderingEngine.GU_SCISSOR_TEST);
+
+			gu.sceGuBlendFunc(ALPHA_SOURCE_BLEND_OPERATION_ADD, ALPHA_SOURCE_ALPHA, ALPHA_ONE_MINUS_SOURCE_ALPHA, 0, 0);
+			gu.sceGuEnable(IRenderingEngine.GU_BLEND);
+
+			drawIcon(selectedRow, baseX, baseY, icon0Width, icon0Height);
+
+			// Use "jpn0" font
+			SceFontInfo fontInfo = Modules.sceFontModule.getFont(0).fontInfo;
+
+			// Get values (title, detail...) from SFO file
+			Calendar savedTime = Calendar.getInstance();
+			PSF psf = getPsf(selectedRow, savedTime);
+			if (psf != null) {
+				String title = psf.getString("TITLE");
+                String detail = psf.getString("SAVEDATA_DETAIL");
+                String savedataTitle = psf.getString("SAVEDATA_TITLE");
+
+    			int baseAscender = 15;
+
+                int textX = baseX + 154;
+                int textY = baseY + 23;
+                int textWidth = 512;
+                int textHeight = 32;
+                int titleColor = 0xD1C6BA;
+                int textColor = 0xFFFFFF;
+                int shadowColor = 0x000000;
+
+                drawTextWithShadow(textX, textY, textWidth, textHeight, 20, fontInfo, baseAscender, titleColor, shadowColor, 0.85f, title);
+
+                textY += 22;
+                drawTextWithShadow(textX, textY, textWidth, textHeight, 20, fontInfo, baseAscender, textColor, shadowColor, 0.7f, String.format("%tF %tR", savedTime, savedTime));
+
+                int lineY = textY - 6;
+                int lineX = textX;
+                int buttonX = textX + 3;
+
+                textX -= 5;
+                textY += 23;
+                drawTextWithShadow(textX, textY, textWidth, textHeight, 20, fontInfo, baseAscender, textColor, shadowColor, 0.7f, savedataTitle);
+
+                textY += 24;
+                textHeight = Screen.height - textY;
+                drawTextWithShadow(textX, textY, textWidth, textHeight, 20, fontInfo, baseAscender, textColor, shadowColor, 0.7f, detail);
+
+                // Draw horizontal line below title
+                gu.sceGuDrawLine(lineX, lineY, Screen.width, lineY, 0xFFFFFFFF);
+
+    			drawTextWithShadow(buttonX, 254, textWidth, textHeight, 20, fontInfo, baseAscender, textColor, shadowColor, 0.75f, "X Enter");
+                drawTextWithShadow(buttonX + 77, 254, textWidth, textHeight, 20, fontInfo, baseAscender, textColor, shadowColor, 0.75f, "O Back");
+			}
+
+			if (selectedRow > 0) {
+				drawIcon(selectedRow - 1, 58, 38, 80, 44);
+				if (selectedRow > 1) {
+					drawIcon(selectedRow - 2, 58, -5, 80, 44);
+				}
+			}
+			if (selectedRow < numberRows - 1) {
+				drawIcon(selectedRow + 1, 58, 190, 80, 44);
+				if (selectedRow < numberRows - 2) {
+					drawIcon(selectedRow + 2, 58, 233, 80, 44);
+				}
+			}
+
+			// Draw rectangle on the top of the screen
+			gu.sceGuDrawRectangle(0, 0, Screen.width, 22, 0x80605C54);
+
+			// Draw dialog title in top rectangle
+			String dialogTitle = savedataDialogState.getDialogTitle(savedataParams.getModeName(), "Savedata List");
+			drawText(30, 4, 128, 32, 20, fontInfo, 15, 0.82f, 0xFFFFFF, dialogTitle, SceFontInfo.FONT_PGF_CHARGLYPH);
+			// Draw filled circle just before dialog title
+			drawText(9, 5, 32, 32, 20, fontInfo, 15, 0.65f, 0xFFFFFF, new String(Character.toChars(0x25CF)), SceFontInfo.FONT_PGF_CHARGLYPH);
 		}
 
 		@Override
 		public void checkController() {
-			int selectedRow = table.getSelectedRow();
 			if (isDownPressed()) {
 				// One row down
 				selectedRow++;
@@ -1866,19 +2306,19 @@ public class sceUtility extends HLEModule {
 				selectedRow = 0;
 			} else if (isButtonPressed(sceCtrl.PSP_CTRL_RTRIGGER)) {
 				// Last row
-				selectedRow = table.getRowCount() - 1;
+				selectedRow = numberRows - 1;
 			}
 
-			// Update selected row if changed
-			if (selectedRow != table.getSelectedRow()) {
-				selectedRow = Math.min(selectedRow, table.getRowCount() - 1);
-				selectedRow = Math.max(selectedRow, 0);
-				table.changeSelection(selectedRow, table.getSelectedColumn(), false, false);
+			selectedRow = max(selectedRow, 0);
+			selectedRow = min(selectedRow, numberRows - 1);
+
+			if (selectedRow >= 0) {
+				savedataDialogState.saveListSelection = saveNames[selectedRow];
+			} else {
+				savedataDialogState.saveListSelection = null;
 			}
 
-			if (updateSelection() || isCancelButtonPressed()) {
-				super.checkController();
-			}
+			super.checkController();
 		}
     }
 
@@ -2025,189 +2465,12 @@ public class sceUtility extends HLEModule {
         return formattedMessage.toString();
     }
 
-    protected static class SavedataListTableColumnModel extends DefaultTableColumnModel {
-        private static final long serialVersionUID = -2460343777558549264L;
-        private int fontHeight = 12;
-
-        private final class CellRenderer extends DefaultTableCellRenderer {
-
-            private static final long serialVersionUID = 6230063075762638253L;
-
-            @Override
-            public Component getTableCellRendererComponent(JTable table,
-                    Object obj, boolean isSelected, boolean hasFocus,
-                    int row, int column) {
-                if (obj instanceof Icon) {
-                    setIcon((Icon) obj);
-                } else if (obj instanceof String) {
-                    JTextArea textArea = new JTextArea((String) obj);
-                    textArea.setFont(new Font("SansSerif", Font.PLAIN, fontHeight));
-                    if (isSelected) {
-                        textArea.setForeground(table.getSelectionForeground());
-                        textArea.setBackground(table.getSelectionBackground());
-                    } else {
-                        textArea.setForeground(table.getForeground());
-                        textArea.setBackground(table.getBackground());
-                    }
-                    return textArea;
-                } else {
-                    setIcon(null);
-                }
-                return super.getTableCellRendererComponent(table, obj, isSelected, hasFocus, row, column);
-            }
-        }
-
-        public SavedataListTableColumnModel() {
-            setColumnMargin(0);
-            CellRenderer cellRenderer = new CellRenderer();
-            TableColumn tableColumn = new TableColumn(0, 144, cellRenderer, null);
-            tableColumn.setHeaderValue(Resource.get("icon"));
-            tableColumn.setMaxWidth(144);
-            tableColumn.setMinWidth(144);
-            TableColumn tableColumn2 = new TableColumn(1, 100, cellRenderer, null);
-            tableColumn2.setHeaderValue(Resource.get("title"));
-            addColumn(tableColumn);
-            addColumn(tableColumn2);
-        }
-
-        public void setFontHeight(int fontHeight) {
-            this.fontHeight = fontHeight;
-        }
-    }
-
-    /**
-     * Count how many times a string "find" occurs in a string "s".
-     * @param s    the string where to count
-     * @param find count how many times this string occurs in string "s"
-     * @return     the number of times "find" occurs in "s"
-     */
-    private static int count(String s, String find) {
-        int count = 0;
-        int i = 0;
-        while ((i = s.indexOf(find, i)) >= 0) {
-            count++;
-            i = i + find.length();
-        }
-        return count;
-    }
-
     private static int computeMemoryStickRequiredSpaceKb(int sizeByte) {
         int sizeKb = Utilities.getSizeKb(sizeByte);
         int sectorSizeKb = MemoryStick.getSectorSizeKb();
         int numberSectors = (sizeKb + sectorSizeKb - 1) / sectorSizeKb;
 
         return numberSectors * sectorSizeKb;
-    }
-
-    protected static class SavedataListTableModel extends AbstractTableModel {
-        private static final long serialVersionUID = -8867168909834783380L;
-        private int numberRows;
-        private ImageIcon[] icons;
-        private String[] descriptions;
-        private int fontHeight = 12;
-
-        public SavedataListTableModel(String[] saveNames, SceUtilitySavedataParam savedataParams) {
-            numberRows = saveNames == null ? 0 : saveNames.length;
-            icons = new ImageIcon[numberRows];
-            descriptions = new String[numberRows];
-
-            for (int i = 0; i < numberRows; i++) {
-                if (saveNames[i] != null) {
-                    // Get icon0 file
-                    String iconFileName = savedataParams.getFileName(saveNames[i], SceUtilitySavedataParam.icon0FileName);
-                    SeekableDataInput iconDataInput = Modules.IoFileMgrForUserModule.getFile(iconFileName, IoFileMgrForUser.PSP_O_RDONLY);
-                    if (iconDataInput != null) {
-                        try {
-                            int length = (int) iconDataInput.length();
-                            byte[] iconBuffer = new byte[length];
-                            iconDataInput.readFully(iconBuffer);
-                            iconDataInput.close();
-                            icons[i] = new ImageIcon(iconBuffer);
-                        } catch (IOException e) {
-                        }
-                    }
-
-                    // Get values (title, detail...) from SFO file
-                    String sfoFileName = savedataParams.getFileName(saveNames[i], SceUtilitySavedataParam.paramSfoFileName);
-                    SeekableDataInput sfoDataInput = Modules.IoFileMgrForUserModule.getFile(sfoFileName, IoFileMgrForUser.PSP_O_RDONLY);
-                    if (sfoDataInput != null) {
-                        try {
-                            int length = (int) sfoDataInput.length();
-                            byte[] sfoBuffer = new byte[length];
-                            sfoDataInput.readFully(sfoBuffer);
-                            sfoDataInput.close();
-
-                            PSF psf = new PSF();
-                            psf.read(ByteBuffer.wrap(sfoBuffer));
-                            String title = psf.getString("TITLE");
-                            String detail = psf.getString("SAVEDATA_DETAIL");
-                            String savedataTitle = psf.getString("SAVEDATA_TITLE");
-
-                            // Get Modification time of SFO file
-                            SceIoStat sfoStat = Modules.IoFileMgrForUserModule.statFile(sfoFileName);
-                            Calendar cal = Calendar.getInstance();
-                            ScePspDateTime pspTime = sfoStat.mtime;
-                            // pspTime.month has a value in range [1..12], Calendar requires a value in range [0..11]
-                            cal.set(pspTime.year, pspTime.month - 1, pspTime.day, pspTime.hour, pspTime.minute, pspTime.second);
-
-                            descriptions[i] = String.format("%1$s\n%4$tF %4$tR\n%2$s\n%3$s", title, savedataTitle, detail, cal);
-                            int numberLines = 1 + count(descriptions[i], "\n");
-                            if (numberLines < fontHeightSavedataList.length) {
-                                setFontHeight(fontHeightSavedataList[numberLines]);
-                            } else {
-                                setFontHeight(fontHeightSavedataList[fontHeightSavedataList.length - 1]);
-                            }
-                        } catch (IOException e) {
-                        }
-                    }
-                }
-
-                // default icon
-                if (icons[i] == null) {
-                    icons[i] = new ImageIcon(getClass().getResource("/jpcsp/images/icon0.png"));
-                }
-
-                // default description
-                if (descriptions[i] == null) {
-                    descriptions[i] = "Not present";
-                }
-
-                // Rescale over sized icons
-                if (icons[i] != null) {
-                    Image image = icons[i].getImage();
-                    if (image.getWidth(null) > 144 || image.getHeight(null) > 80) {
-                        image = image.getScaledInstance(144, 80, Image.SCALE_SMOOTH);
-                        icons[i].setImage(image);
-                    }
-                }
-            }
-        }
-
-        @Override
-        public int getColumnCount() {
-            return 2;
-        }
-
-        @Override
-        public int getRowCount() {
-            return numberRows;
-        }
-
-        @Override
-        public Object getValueAt(int rowIndex, int columnIndex) {
-            if (columnIndex == 0) {
-                return icons[rowIndex];
-            }
-            return descriptions[rowIndex];
-        }
-
-        public int getFontHeight() {
-            return fontHeight;
-        }
-
-        public void setFontHeight(int fontHeight) {
-            this.fontHeight = fontHeight;
-        }
     }
 
     @HLEFunction(nid = 0xC492F751, version = 150)
