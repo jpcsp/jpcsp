@@ -25,7 +25,11 @@ import static jpcsp.Allegrex.Common._zr;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
@@ -35,6 +39,7 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.Allegrex.GprState;
 import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.VfpuState;
 import jpcsp.Allegrex.Common.Instruction;
@@ -3439,5 +3444,184 @@ public class CompilerContext implements ICompilerContext {
     	mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(System.class), "arraycopy", arraycopyDescriptor);
 
     	return true;
+	}
+
+	/**
+	 * Search for a sequence of instructions saving registers onto the stack
+	 * at the beginning of a code block and replace them by a meta
+	 * instruction allowing a more efficient compiled code.
+	 * 
+	 * For example, a typical code block sequence looks like this:
+	 *		addiu      $sp, $sp, -32
+	 *		sw         $s3, 12($sp)
+	 *		addu       $s3, $a0, $zr <=> move $s3, $a0
+	 *		lui        $a0, 0x0307 <=> li $a0, 0x03070000
+	 *		ori        $a0, $a0, 16
+	 *		sw         $s2, 8($sp)
+	 *		addu       $s2, $a1, $zr <=> move $s2, $a1
+	 *		sw         $s1, 4($sp)
+	 *		sw         $s0, 0($sp)
+	 *		lui        $s0, 0x0000 <=> li $s0, 0x00000000
+	 *		sw         $ra, 16($sp)
+	 *		jal        0x0nnnnnnn
+	 *		...
+	 *
+	 * This method will identify the "sw" instructions saving registers onto the
+	 * stack and will merge them into a single meta instruction (SequenceSWCodeInstruction).
+	 * 
+	 * In the above example:
+	 * 		addiu      $sp, $sp, -32
+	 * 		sw         $s0/$s1/$s2/$s3/$ra, 0/4/8/12/16($sp)
+	 * 		addu       $s3, $a0, $zr <=> move $s3, $a0
+	 * 		lui        $a0, 0x0307 <=> li $a0, 0x03070000
+	 * 		ori        $a0, $a0, 16
+	 * 		addu       $s2, $a1, $zr <=> move $s2, $a1
+	 * 		lui        $s0, 0x0000 <=> li $s0, 0x00000000
+	 * 		jal        0x0nnnnnnn
+	 * 		...
+	 * 
+	 * @param codeInstructions the list of code instruction to be optimized.
+	 */
+	public void optimizeSequence(List<CodeInstruction> codeInstructions) {
+		// Optimization only possible for memoryInt
+		if (RuntimeContext.memoryInt == null) {
+			return;
+		}
+
+		int decreaseSpInstruction = -1;
+		int stackSize = 0;
+		int currentInstructionIndex = 0;
+		int maxSpOffset = Integer.MAX_VALUE;
+		int swSequenceCount = 0;
+
+		int[] storeSpInstructions = null;
+		int[] storeSpRegisters = null;
+		List<CodeInstruction> storeSpCodeInstructions = null;
+		boolean[] modifiedRegisters = new boolean[GprState.NUMBER_REGISTERS];
+		Arrays.fill(modifiedRegisters, false);
+
+		for (ListIterator<CodeInstruction> lit = codeInstructions.listIterator(); lit.hasNext(); currentInstructionIndex++) {
+			CodeInstruction codeInstruction = lit.next();
+
+			// Stop optimization when reaching a branch, branch target or delay slot
+			if (codeInstruction.isBranching() || codeInstruction.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT)) {
+				break;
+			}
+			if (codeInstruction.isBranchTarget() && codeBlock.getStartAddress() != codeInstruction.getAddress()) {
+				break;
+			}
+
+			// Check for a "sw" instruction if we have already seen an "addiu $sp, $sp, -nn".
+			if (decreaseSpInstruction >= 0) {
+				// Check for a "sw" instruction...
+				if (codeInstruction.getInsn() == Instructions.SW) {
+					int rs = codeInstruction.getRsRegisterIndex();
+					int rt = codeInstruction.getRtRegisterIndex();
+					// ...saving an unmodified register to the stack...
+					if (rs == _sp) {
+						int simm16 = codeInstruction.getImm16(true);
+						if (!modifiedRegisters[rt]) {
+							// ...at a valid stack offset
+							if (simm16 >= 0 && simm16 < stackSize && (simm16 & 3) == 0 && simm16 < maxSpOffset) {
+								storeSpCodeInstructions.add(codeInstruction);
+								storeSpInstructions[simm16 >> 2] = currentInstructionIndex;
+								storeSpRegisters[simm16 >> 2] = rt;
+								swSequenceCount++;
+							}
+						} else {
+							// The register saved to the stack has already been modified.
+							// Do not optimize values above this stack offset.
+							maxSpOffset = simm16;
+						}
+					}
+				}
+			}
+
+			// Check for a "addiu $sp, $sp, -nn" instruction
+			if (codeInstruction.getInsn() == Instructions.ADDI || codeInstruction.getInsn() == Instructions.ADDIU) {
+				if (codeInstruction.getRtRegisterIndex() == _sp && codeInstruction.getRsRegisterIndex() == _sp && codeInstruction.getImm16(true) < 0) {
+					decreaseSpInstruction = currentInstructionIndex;
+					stackSize = -codeInstruction.getImm16(true);
+					storeSpInstructions = new int[stackSize >> 2];
+					Arrays.fill(storeSpInstructions, -1);
+					storeSpRegisters = new int[storeSpInstructions.length];
+					Arrays.fill(storeSpRegisters, -1);
+					storeSpCodeInstructions = new LinkedList<CodeInstruction>();
+				}
+			}
+
+			if (codeInstruction.getInsn() == Instructions.LW) {
+				if (codeInstruction.getRsRegisterIndex() == _sp) {
+					// Loading a register from the stack.
+					// Do not optimize values above this stack offset.
+					maxSpOffset = codeInstruction.getImm16(true);
+				}
+			}
+
+			if (codeInstruction.hasFlags(Instruction.FLAG_WRITES_RT)) {
+				modifiedRegisters[codeInstruction.getRtRegisterIndex()] = true;
+			}
+			if (codeInstruction.hasFlags(Instruction.FLAG_WRITES_RD)) {
+				modifiedRegisters[codeInstruction.getRdRegisterIndex()] = true;
+			}
+		}
+
+		// If we have found more than one "sw" instructions, replace them by a meta code instruction.
+		if (swSequenceCount > 1) {
+			int[] offsets = new int[swSequenceCount];
+			int[] registers = new int[swSequenceCount];
+
+			int index = 0;
+			for (int i = 0; i < storeSpInstructions.length && index < swSequenceCount; i++) {
+				if (storeSpInstructions[i] >= 0) {
+					offsets[index] = i << 2;
+					registers[index] = storeSpRegisters[i];
+					index++;
+				}
+			}
+
+			// Remove all the "sw" instructions...
+			codeInstructions.removeAll(storeSpCodeInstructions);
+
+			// ... and replace them by a meta code instruction
+			SequenceSWCodeInstruction sequenceSWCodeInstruction = new SequenceSWCodeInstruction(_sp, offsets, registers);
+			codeInstructions.add(decreaseSpInstruction + 1, sequenceSWCodeInstruction);
+		}
+	}
+
+	@Override
+	public void compileSWsequence(int baseRegister, int[] offsets, int[] registers) {
+		loadRegister(baseRegister);
+		int offset = offsets[0];
+		if (offset != 0) {
+			loadImm(offset);
+			mv.visitInsn(Opcodes.IADD);
+		}
+    	if (checkMemoryAccess()) {
+    		loadImm(getCodeInstruction().getAddress());
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(RuntimeContext.class), "checkMemoryWrite32", "(II)I");
+            loadImm(2);
+            mv.visitInsn(Opcodes.IUSHR);
+    	} else {
+    		loadImm(2);
+			mv.visitInsn(Opcodes.ISHL);
+			loadImm(4);
+			mv.visitInsn(Opcodes.IUSHR);
+    	}
+    	storeTmp1();
+
+    	for (int i = 0; i < offsets.length; i++) {
+    		int rt = registers[i];
+
+    		if (offset != offsets[i]) {
+        		mv.visitIincInsn(LOCAL_TMP1, (offsets[i] - offset) >> 2);
+        		offset = offsets[i];
+    		}
+
+    		loadMemoryInt();
+    		loadTmp1();
+    		loadRegister(rt);
+    		mv.visitInsn(Opcodes.IASTORE);
+    	}
 	}
 }

@@ -5232,7 +5232,7 @@ public String disasm(int address, int insn) {
 return Common.disasmCcondS(fcond, fs, ft);
 }
 };
-public static final Instruction MFC1 = new Instruction(141) {
+public static final Instruction MFC1 = new Instruction(141, FLAG_WRITES_RT) {
 
 @Override
 public final String name() { return "MFC1"; }
@@ -5886,7 +5886,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVD1VSVT("vdet", 1+one+(two<<1), vd, vs, vt);
 }
 };
-public static final Instruction MFV = new Instruction(159) {
+public static final Instruction MFV = new Instruction(159, FLAG_WRITES_RT) {
 
 @Override
 public final String name() { return "MFV"; }
@@ -5919,7 +5919,7 @@ public String disasm(int address, int insn) {
 	return Common.disasmVDRS("mfv", imm7, rt);
 }
 };
-public static final Instruction MFVC = new Instruction(160) {
+public static final Instruction MFVC = new Instruction(160, FLAG_WRITES_RT) {
 
 @Override
 public final String name() { return "MFVC"; }
