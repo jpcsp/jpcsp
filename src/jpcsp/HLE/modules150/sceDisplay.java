@@ -31,6 +31,7 @@ import java.awt.image.BufferedImage;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.io.File;
+import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -282,7 +283,7 @@ public class sceDisplay extends HLEModule {
 	            statistics.end();
 	        }
 
-	        if (getscreen) {
+	        if (wantScreenshot) {
 	        	saveScreen();
 	        }
 		}
@@ -307,21 +308,8 @@ public class sceDisplay extends HLEModule {
 			super.setBounds(x, y, width, height);
 		}
 
-		@Override
-		public void componentMoved(ComponentEvent e) {
-	        captureX = getX();
-	        captureY = getY();
-	        captureWidth = getWidth();
-	        captureHeight = getHeight();
-		}
-
 	    @Override
 		public void componentResized(ComponentEvent e) {
-	        captureX = getX();
-	        captureY = getY();
-	        captureWidth = getWidth();
-	        captureHeight = getHeight();
-
 	        setViewportResizeScaleFactor(getWidth(), getHeight());
 	    }
     }
@@ -415,12 +403,8 @@ public class sceDisplay extends HLEModule {
     private float texS;
     private float texT;
 
-    private int captureX;
-    private int captureY;
-    private int captureWidth;
-    private int captureHeight;
     private Robot captureRobot;
-    public boolean getscreen = false;
+    private boolean wantScreenshot;
 
     //Rotation vars
     private float texS1, texS2, texS3, texS4;
@@ -881,10 +865,6 @@ public class sceDisplay extends HLEModule {
     		log.info("Saving GE to Textures");
     	}
 
-        captureX = Settings.getInstance().readInt("gui.windows.mainwindow.x") + 4;
-        captureY = Settings.getInstance().readInt("gui.windows.mainwindow.y") + 76;
-        captureWidth = getCanvasWidth();
-        captureHeight = getCanvasHeight();
         try {
             captureRobot = new Robot();
             captureRobot.setAutoDelay(0);
@@ -1223,28 +1203,25 @@ public class sceDisplay extends HLEModule {
     }
 
     public void saveScreen() {
-        int tag = 0;
-        String fileName = State.discId + "-" + "Shot" + "-" + tag + ".png";
-        File screenshot = new File(fileName);
-        File directory = new File(System.getProperty("user.dir"));
-
-        for(File file : directory.listFiles()) {
-            if (file.getName().contains(State.discId + "-" + "Shot")) {
-                fileName = State.discId + "-" + "Shot" + "-" + ++tag + ".png";
-                screenshot = new File(fileName);
+    	String fileFormat = "png";
+        String fileName;
+        for (int id = 1; true; id++) {
+            fileName = String.format("%s-Shot-%d.%s", State.discId, id, fileFormat);
+            if (!new File(fileName).exists()) {
+            	break;
             }
         }
 
-        Rectangle rect = new Rectangle(captureX, captureY, captureWidth, captureHeight);
+        Rectangle rect = Emulator.getMainGUI().getCaptureRectangle();
         try {
             BufferedImage img = captureRobot.createScreenCapture(rect);
-            ImageIO.write(img, "png", screenshot);
+            ImageIO.write(img, fileFormat, new File(fileName));
             img.flush();
-        } catch (Exception e) {
-            return;
+        } catch (IOException e) {
+        	log.error("Error saving screenshot", e);
         }
 
-        getscreen = false;
+        wantScreenshot = false;
     }
 
 
@@ -1811,6 +1788,10 @@ public class sceDisplay extends HLEModule {
 
 	public void setCalledFromCommandLine() {
 		calledFromCommandLine = true;
+	}
+
+	public void takeScreenshot() {
+		wantScreenshot = true;
 	}
 
 	@HLEFunction(nid = 0x0E20F177, version = 150, checkInsideInterrupt = true)

@@ -1,6 +1,7 @@
 package jpcsp.autotests;
 
 import java.awt.DisplayMode;
+import java.awt.Rectangle;
 import java.awt.Window;
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -40,6 +41,7 @@ public class AutoTestsRunner {
 		@Override public void setFullScreenDisplaySize() { }
 		@Override public void startWindowDialog(Window window) { }
 		@Override public void startBackgroundWindowDialog(Window window) { }
+		@Override public Rectangle getCaptureRectangle() { return null; }
 	}
 	
 	public AutoTestsRunner() {

@@ -1,6 +1,7 @@
 package jpcsp.GUI;
 
 import java.awt.DisplayMode;
+import java.awt.Rectangle;
 import java.awt.Window;
 
 public interface IMainGUI {
@@ -37,4 +38,6 @@ public interface IMainGUI {
      * Restore the full screen window if required.
      */
 	void endWindowDialog();
+
+	Rectangle getCaptureRectangle();
 }

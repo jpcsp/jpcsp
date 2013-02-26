@@ -25,6 +25,7 @@ import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Insets;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -2102,7 +2103,7 @@ private void ShotItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     if (umdvideoplayer != null) {
         umdvideoplayer.takeScreenshot();
     }
-    Modules.sceDisplayModule.getscreen = true;
+    Modules.sceDisplayModule.takeScreenshot();
 }//GEN-LAST:event_ShotItemActionPerformed
 
 private void RotateItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RotateItemActionPerformed
@@ -2767,4 +2768,13 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 			}
 		}
     }
+
+	@Override
+	public Rectangle getCaptureRectangle() {
+        Insets insets = getInsets();
+        Rectangle canvasBounds = Modules.sceDisplayModule.getCanvas().getBounds();
+        Rectangle contentBounds = getContentPane().getBounds();
+
+        return new Rectangle(getX() + insets.left + contentBounds.x + canvasBounds.x, getY() + insets.top + contentBounds.y + canvasBounds.y, canvasBounds.width, canvasBounds.height);
+	}
 }
