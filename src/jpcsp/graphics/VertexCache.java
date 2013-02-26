@@ -131,7 +131,7 @@ public class VertexCache {
 		vertexAlreadyChecked.add(getKey(vertexInfo));
 	}
 
-	public void reset(IRenderingEngine re) {
+	public synchronized void reset(IRenderingEngine re) {
 		for (VertexInfo vertexInfo : cache.values()) {
 			vertexInfo.deleteVertex(re);
 		}
