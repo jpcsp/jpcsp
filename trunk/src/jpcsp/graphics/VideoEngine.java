@@ -761,6 +761,7 @@ public class VideoEngine {
         if (wantClearTextureCache) {
             TextureCache.getInstance().reset(re);
             GETextureManager.getInstance().reset(re);
+            resetVideoTextures();
             wantClearTextureCache = false;
         }
 
@@ -4829,6 +4830,9 @@ public class VideoEngine {
     		synchronized (videoTextures) {
         		for (AddressRange addressRange : videoTextures) {
         			if (addressRange.contains(tex_addr)) {
+        				if (log.isDebugEnabled()) {
+        					log.debug(String.format("Texture at 0x%08X is a video texture", tex_addr));
+        				}
         				return true;
         			}
         		}
