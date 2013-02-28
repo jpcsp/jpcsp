@@ -336,8 +336,10 @@ public class ThreadManForUser extends HLEModule {
     }
 
     public void hleKernelSetThreadArguments(SceKernelThreadInfo thread, String argument) {
-    	int address = prepareThreadArguments(thread, argument.length() + 1);
+    	// The PSP is passing an argumentSize 1 byte (0x00) larger than the real string.
+    	int address = prepareThreadArguments(thread, argument.length() + 2);
     	writeStringZ(Memory.getInstance(), address, argument);
+    	Memory.getInstance().write8(address + argument.length() + 1, (byte) 0);
     }
 
     public void hleKernelSetThreadArguments(SceKernelThreadInfo thread, byte[] argument, int argumentSize) {
