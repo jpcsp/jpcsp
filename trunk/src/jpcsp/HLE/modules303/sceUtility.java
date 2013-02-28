@@ -124,7 +124,17 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
         int result = hleUtilityLoadModule(module, moduleName);
         if (result == SceKernelErrors.ERROR_MODULE_BAD_ID) {
             log.info(String.format("IGNORING: sceUtilityLoadModule(module=0x%04X) %s", module, moduleName));
-            return 0;
+            result = 0;
+
+            if (module == UtilityModule.PSP_MODULE_NET_HTTPSTORAGE.id) {
+            	// The game "Kamen Rider Climax Heroes OOO - ULJS00331" is checking that the return value of
+            	//     sceUtilityLoadModule(PSP_MODULE_NET_HTTPSTORAGE)
+            	// has a defined value.
+            	// The return value must match: result * 100 / 6532 = 0x00B99F84
+            	result = 0x2F5CE6C3;
+            }
+
+            return result;
         }
 
         log.info(String.format("sceUtilityLoadModule(module=0x%04X) %s loaded", module, moduleName));
