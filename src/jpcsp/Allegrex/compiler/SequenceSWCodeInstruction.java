@@ -44,7 +44,7 @@ public class SequenceSWCodeInstruction extends CodeInstruction {
 
 	@Override
 	public String toString() {
-		StringBuilder result = new StringBuilder("             - sw         ");
+		StringBuilder result = new StringBuilder(String.format("   0x%X - sw         ", getAddress()));
 
 		for (int i = 0; i < registers.length; i++) {
 			if (i > 0) {

@@ -3521,12 +3521,16 @@ public class CompilerContext implements ICompilerContext {
 					if (rs == _sp) {
 						int simm16 = codeInstruction.getImm16(true);
 						if (!modifiedRegisters[rt]) {
-							// ...at a valid stack offset
+							// ...at a valid stack offset...
 							if (simm16 >= 0 && simm16 < stackSize && (simm16 & 3) == 0 && simm16 < maxSpOffset) {
-								storeSpCodeInstructions.add(codeInstruction);
-								storeSpInstructions[simm16 >> 2] = currentInstructionIndex;
-								storeSpRegisters[simm16 >> 2] = rt;
-								swSequenceCount++;
+								int index = simm16 >> 2;
+								// ...at a still ununsed stack offset
+								if (storeSpInstructions[index] < 0) {
+									storeSpCodeInstructions.add(codeInstruction);
+									storeSpInstructions[index] = currentInstructionIndex;
+									storeSpRegisters[index] = rt;
+									swSequenceCount++;
+								}
 							}
 						} else {
 							// The register saved to the stack has already been modified.
@@ -3539,7 +3543,10 @@ public class CompilerContext implements ICompilerContext {
 
 			// Check for a "addiu $sp, $sp, -nn" instruction
 			if (codeInstruction.getInsn() == Instructions.ADDI || codeInstruction.getInsn() == Instructions.ADDIU) {
-				if (codeInstruction.getRtRegisterIndex() == _sp && codeInstruction.getRsRegisterIndex() == _sp && codeInstruction.getImm16(true) < 0) {
+				int rs = codeInstruction.getRsRegisterIndex();
+				int rt = codeInstruction.getRtRegisterIndex();
+				int simm16 = codeInstruction.getImm16(true);
+				if (rt == _sp && rs == _sp && simm16 < 0) {
 					decreaseSpInstruction = currentInstructionIndex;
 					stackSize = -codeInstruction.getImm16(true);
 					storeSpInstructions = new int[stackSize >> 2];
@@ -3547,13 +3554,17 @@ public class CompilerContext implements ICompilerContext {
 					storeSpRegisters = new int[storeSpInstructions.length];
 					Arrays.fill(storeSpRegisters, -1);
 					storeSpCodeInstructions = new LinkedList<CodeInstruction>();
+				} else if (rs == _sp && simm16 >= 0) {
+					// Loading a stack address into a register (e.g. "addiu $xx, $sp, nnn").
+					// Do not optimize values above this stack offset (nnn).
+					maxSpOffset = simm16;
 				}
 			}
 
 			if (codeInstruction.getInsn() == Instructions.LW) {
 				if (codeInstruction.getRsRegisterIndex() == _sp) {
-					// Loading a register from the stack.
-					// Do not optimize values above this stack offset.
+					// Loading a register from the stack (e.g. "lw $reg, nnn($sp)").
+					// Do not optimize values above this stack offset (nnn).
 					maxSpOffset = codeInstruction.getImm16(true);
 				}
 			}
@@ -3585,6 +3596,7 @@ public class CompilerContext implements ICompilerContext {
 
 			// ... and replace them by a meta code instruction
 			SequenceSWCodeInstruction sequenceSWCodeInstruction = new SequenceSWCodeInstruction(_sp, offsets, registers);
+			sequenceSWCodeInstruction.setAddress(storeSpCodeInstructions.get(0).getAddress());
 			codeInstructions.add(decreaseSpInstruction + 1, sequenceSWCodeInstruction);
 		}
 	}
