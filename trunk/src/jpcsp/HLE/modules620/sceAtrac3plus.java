@@ -65,6 +65,8 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
         		}
         		// Allow looping
         		id.setLoopNum(-1);
+        	} else {
+        		id.setAtracOutputChannels(id.getAtracChannels());
         	}
         } else {
         	// Estimate source bytes to be read based on current sample position
