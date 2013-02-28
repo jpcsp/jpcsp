@@ -787,8 +787,9 @@ public class sceAtrac3plus extends HLEModule {
                 // If we could not decode all the requested samples, request more data
             	id.setInputBufferOffset(id.getInputBufferSize());
             	remainFrames = 0;
-            } else if (id.getAtracCodec().getChannelLength() <= 0) {
-                // If the channel is empty, request more data
+            } else if (id.getAtracCodec().getChannelLength() < 32768) {
+            	// The media engine is reading chunks of 32768 bytes from the channel.
+                // If the channel contains less than one chunk, request more data.
             	id.setInputBufferOffset(id.getInputBufferSize());
             	remainFrames = 0;
             }
