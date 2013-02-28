@@ -33,9 +33,39 @@ public class sceNp extends HLEModule {
         return "sceNp";
     }
 
+    protected boolean initialized;
+
+	@Override
+	public void start() {
+		initialized = false;
+		super.start();
+	}
+
+    /**
+     * Initialization.
+     * 
+     * @return
+     */
     @HLEUnimplemented
     @HLEFunction(nid = 0x857B47D3, version = 150, checkInsideInterrupt = true)
     public int sceNp_857B47D3() {
+    	// No parameters
+    	initialized = true;
+
+    	return 0;
+    }
+
+    /**
+     * Termination.
+     * 
+     * @return
+     */
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x37E1E274, version = 150, checkInsideInterrupt = true)
+    public int sceNp_37E1E274() {
+    	// No parameters
+    	initialized = false;
+
     	return 0;
     }
 }

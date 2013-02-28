@@ -426,6 +426,10 @@ public class SceKernelErrors {
     public final static int ERROR_FONT_INVALID_PARAMETER                        = 0x80460003;
     public final static int ERROR_FONT_TOO_MANY_OPEN_FONTS                      = 0x80460009;
 
+    public final static int ERROR_NPAUTH_NOT_INIT                               = 0x80550302;
+
+    public final static int ERROR_NPSERVICE_NOT_INIT                            = 0x80550502;
+
     public final static int ERROR_MPEG_BAD_VERSION                              = 0x80610002;
     public final static int ERROR_MPEG_NO_MEMORY                                = 0x80610022;
     public final static int ERROR_MPEG_INVALID_ADDR                             = 0x80610103;

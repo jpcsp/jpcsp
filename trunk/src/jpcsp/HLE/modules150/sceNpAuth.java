@@ -18,8 +18,11 @@ package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
 
 import org.apache.log4j.Logger;
@@ -33,22 +36,62 @@ public class sceNpAuth extends HLEModule {
         return "sceNpAuth";
     }
 
+    private boolean initialized;
     private int npMemSize;     // Memory allocated by the NP utility.
     private int npMaxMemSize;  // Maximum memory used by the NP utility.
     private int npFreeMemSize; // Free memory available to use by the NP utility.
 
+	@Override
+	public void start() {
+		initialized = false;
+		super.start();
+	}
+
+    protected void checkInitialized() {
+    	if (!initialized) {
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_NPAUTH_NOT_INIT);
+    	}
+    }
+
+    /**
+     * Initialization.
+     * 
+     * @param poolSize
+     * @param stackSize
+     * @param threadPriority
+     * @return
+     */
+    @HLEUnimplemented
     @HLEFunction(nid = 0xA1DE86F8, version = 150, checkInsideInterrupt = true)
     public int sceNpAuth_A1DE86F8(int poolSize, int stackSize, int threadPriority) {
         npMemSize = poolSize;
         npMaxMemSize = poolSize / 2;    // Dummy
         npFreeMemSize = poolSize - 16;  // Dummy.
 
+        initialized = true;
+
         return 0;
     }
 
-    @HLEFunction(nid = 0xCD86A656, version = 150, checkInsideInterrupt = true)
-    public int sceNpAuth_CD86A656(TPointer32 memStatAddr) {
-        memStatAddr.setValue(0, npMemSize);
+    /**
+     * Termination.
+     * 
+     * @return
+     */
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x4EC1F667, version = 150, checkInsideInterrupt = true)
+    public int sceNpAuth_4EC1F667() {
+    	initialized = false;
+
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xF4531ADC, version = 150, checkInsideInterrupt = true)
+    public int sceNpAuth_F4531ADC(TPointer32 memStatAddr) {
+    	checkInitialized();
+
+    	memStatAddr.setValue(0, npMemSize);
         memStatAddr.setValue(4, npMaxMemSize);
         memStatAddr.setValue(8, npFreeMemSize);
 

@@ -18,8 +18,11 @@ package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
 
 import org.apache.log4j.Logger;
@@ -33,22 +36,60 @@ public class sceNpService extends HLEModule {
         return "sceNpService";
     }
 
+    private boolean initialized;
     private int npManagerMemSize;     // Memory allocated by the NP Manager utility.
     private int npManagerMaxMemSize;  // Maximum memory used by the NP Manager utility.
     private int npManagerFreeMemSize; // Free memory available to use by the NP Manager utility.
 
+	@Override
+	public void start() {
+		initialized = false;
+		super.start();
+	}
+
+    protected void checkInitialized() {
+    	if (!initialized) {
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_NPSERVICE_NOT_INIT);
+    	}
+    }
+
+	/**
+     * Initialization.
+     * 
+     * @param poolSize
+     * @param stackSize
+     * @param threadPriority
+     * @return
+     */
+    @HLEUnimplemented
     @HLEFunction(nid = 0x0F8F5821, version = 150, checkInsideInterrupt = true)
     public int sceNpService_0F8F5821(int poolSize, int stackSize, int threadPriority) {
         npManagerMemSize = poolSize;
         npManagerMaxMemSize = poolSize / 2;    // Dummy
         npManagerFreeMemSize = poolSize - 16;  // Dummy.
 
+        initialized = true;
+
         return 0;
     }
 
+    /**
+     * Termination.
+     * @return
+     */
+    @HLEUnimplemented
     @HLEFunction(nid = 0x00ACFAC3, version = 150, checkInsideInterrupt = true)
-    public int sceNpService_00ACFAC3(TPointer32 memStatAddr) {
-        memStatAddr.setValue(0, npManagerMemSize);
+    public int sceNpService_00ACFAC3() {
+    	initialized = false;
+    	return 0;
+    }
+
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x250488F9, version = 150, checkInsideInterrupt = true)
+    public int sceNpService_250488F9(TPointer32 memStatAddr) {
+    	checkInitialized();
+
+    	memStatAddr.setValue(0, npManagerMemSize);
         memStatAddr.setValue(4, npManagerMaxMemSize);
         memStatAddr.setValue(8, npManagerFreeMemSize);
 
