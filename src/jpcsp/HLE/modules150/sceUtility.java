@@ -25,7 +25,6 @@ import static jpcsp.graphics.GeCommands.ALPHA_SOURCE_BLEND_OPERATION_ADD;
 import static jpcsp.graphics.GeCommands.CMODE_FORMAT_32BIT_ABGR8888;
 import static jpcsp.graphics.GeCommands.PRIM_SPRITES;
 import static jpcsp.graphics.GeCommands.TFLT_LINEAR;
-import static jpcsp.graphics.GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_MODULATE;
 import static jpcsp.graphics.GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_REPLACE;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED;
@@ -255,6 +254,7 @@ public class sceUtility extends HLEModule {
         protected long startVisibleTimeMillis;
         protected int buttonPressed;
         protected GuUtilityDialog guDialog;
+        protected boolean isOnlyGeGraphics;
 
         public UtilityDialogState(String name) {
             this.name = name;
@@ -272,6 +272,14 @@ public class sceUtility extends HLEModule {
         protected void openDialog(GuUtilityDialog guDialog) {
     		status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
     		this.guDialog = guDialog;
+
+    		// The option "Only GE Graphics" cannot be used during the
+    		// rendering of the GU dialog. The GE list has to be rendered
+    		// additionally to the application display.
+    		isOnlyGeGraphics = Modules.sceDisplayModule.isOnlyGEGraphics();
+    		if (isOnlyGeGraphics) {
+    			Modules.sceDisplayModule.setOnlyGEGraphics(false);
+    		}
         }
 
         protected boolean isDialogOpen() {
@@ -307,6 +315,11 @@ public class sceUtility extends HLEModule {
 	            dialog = null;
         	}
         	if (guDialog != null) {
+        		// Reset the previous state of the option "Only GE Graphics"
+        		if (isOnlyGeGraphics) {
+        			Modules.sceDisplayModule.setOnlyGEGraphics(isOnlyGeGraphics);
+        		}
+
         		guDialog = null;
         	}
             status = PSP_UTILITY_DIALOG_STATUS_QUIT;
@@ -1889,7 +1902,7 @@ public class sceUtility extends HLEModule {
 			gu.sceGuClutLoad(2, clutAddr);
 
 			gu.sceGuTexMode(TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED, 0, false);
-			gu.sceGuTexFunc(TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_MODULATE, true, false);
+			gu.sceGuTexFunc(TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_REPLACE, true, false);
 			gu.sceGuTexEnvColor(0x000000);
 			gu.sceGuTexWrap(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
 			gu.sceGuTexFilter(TFLT_LINEAR, TFLT_LINEAR);

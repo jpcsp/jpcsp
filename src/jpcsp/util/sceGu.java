@@ -146,7 +146,7 @@ public class sceGu {
 	private void sceGuSetFlag(int flag, int value) {
 		switch (flag) {
 			case IRenderingEngine.GU_ALPHA_TEST:          sendCommandi(GeCommands.ATE, value);   break;
-			case IRenderingEngine.GU_DEPTH_TEST:          sendCommandi(GeCommands.DTE, value);   break;
+			case IRenderingEngine.GU_DEPTH_TEST:          sendCommandi(GeCommands.ZTE, value);   break;
 			case IRenderingEngine.GU_SCISSOR_TEST:                                               break;
 			case IRenderingEngine.GU_STENCIL_TEST:        sendCommandi(GeCommands.STE, value);   break;
 			case IRenderingEngine.GU_BLEND:               sendCommandi(GeCommands.ABE, value);   break;
