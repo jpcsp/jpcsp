@@ -9390,6 +9390,126 @@
 0898EF20:[00002821]: addu       $a1, $zr, $zr <=> li $a1, 0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="LongIntegerMult">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.LongInteger</Class>
+		<Method>mult</Method>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+089C1320:[00A60018]: mult       $a1, $a2
+089C1324:[00005012]: mflo       $t2
+089C1328:[00860019]: multu      $a0, $a2
+089C132C:[00004810]: mfhi       $t1
+089C1330:[00001012]: mflo       $v0
+089C1334:[00870018]: mult       $a0, $a3
+089C1338:[00002012]: mflo       $a0
+089C133C:[008A2021]: addu       $a0, $a0, $t2
+089C1340:[03E00008]: jr         $ra
+089C1344:[00891821]: addu       $v1, $a0, $t1
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="LongIntegerDiv">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.LongInteger</Class>
+		<Method>div</Method>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+089C191C:[27BDFFF0]: addiu      $sp, $sp, -16
+089C1920:[AFB10004]: sw         $s1, 4($sp)
+089C1924:[00E04021]: addu       $t0, $a3, $zr <=> move $t0, $a3
+089C1928:[00A05021]: addu       $t2, $a1, $zr <=> move $t2, $a1
+089C192C:[AFB00000]: sw         $s0, 0($sp)
+089C1930:[00C04821]: addu       $t1, $a2, $zr <=> move $t1, $a2
+089C1934:[14E000E9]: bne        $a3, $zr, 0x089C1CDC
+089C1938:[00807021]: addu       $t6, $a0, $zr <=> move $t6, $a0
+089C193C:[00A6102B]: sltu       $v0, $a1, $a2
+089C1940:[10400056]: beq        $v0, $zr, 0x089C1A9C
+089C1944:[3402FFFF]: ori        $v0, $zr, -1 <=> li $v0, 65535
+089C1948:[24030008]: addiu      $v1, $zr, 8 <=> li $v1, 8
+089C194C:[2CC40100]: sltiu      $a0, $a2, 256
+089C1950:[00602821]: addu       $a1, $v1, $zr <=> move $a1, $v1
+089C1954:[0046102B]: sltu       $v0, $v0, $a2
+089C1958:[10400008]: beq        $v0, $zr, 0x089C197C
+089C195C:[0004280B]: movn       $a1, $zr, $a0 <=> move $a1, $a0
+089C1960:[3C0200FF]: lui        $v0, 0x00FF <=> li $v0, 0x00FF0000
+089C1964:[3442FFFF]: ori        $v0, $v0, -1
+089C1968:[24030010]: addiu      $v1, $zr, 16 <=> li $v1, 16
+089C196C:[0046102B]: sltu       $v0, $v0, $a2
+089C1970:[24040018]: addiu      $a0, $zr, 24 <=> li $a0, 24
+089C1974:[00602821]: addu       $a1, $v1, $zr <=> move $a1, $v1
+089C1978:[0082280B]: movn       $a1, $a0, $v0
+089C197C:[3C0308A2/FFFF0000]: lui        $v1, 0x08A2 <=> li $v1, 0x08A20000
+089C1980:[00A61006]: srlv       $v0, $a2, $a1
+089C1984:[2463A090/FFFF0000]: addiu      $v1, $v1, -24432
+089C1988:[00431021]: addu       $v0, $v0, $v1
+089C198C:[90440000]: lbu        $a0, 0($v0)
+089C1990:[24020020]: addiu      $v0, $zr, 32 <=> li $v0, 32
+089C1994:[00852021]: addu       $a0, $a0, $a1
+089C1998:[00443823]: subu       $a3, $v0, $a0
+089C199C:[50E00008]: beql       $a3, $zr, 0x089C19C0
+089C19A0:[00093C02]: srl        $a3, $t1, 0x0010
+089C19A4:[00471023]: subu       $v0, $v0, $a3
+089C19A8:[004E1006]: srlv       $v0, $t6, $v0
+089C19AC:[00EA1804]: sllv       $v1, $t2, $a3
+089C19B0:[00625025]: or         $t2, $v1, $v0
+089C19B4:[00EE7004]: sllv       $t6, $t6, $a3
+089C19B8:[00E94804]: sllv       $t1, $t1, $a3
+089C19BC:[00093C02]: srl        $a3, $t1, 0x0010
+089C19C0:[0147001B]: divu       $t2, $a3
+089C19C4:[312CFFFF]: andi       $t4, $t1, -1
+089C19C8:[000E2402]: srl        $a0, $t6, 0x0010
+089C19CC:[50E00001]: beql       $a3, $zr, 0x089C19D4
+089C19D0:[000001CD]: break      0x00007
+089C19D4:[00001812]: mflo       $v1
+089C19D8:[00001010]: mfhi       $v0
+089C19DC:[00005812]: mflo       $t3
+089C19E0:[006C0018]: mult       $v1, $t4
+089C19E4:[00021400]: sll        $v0, $v0, 0x0010
+089C19E8:[00443025]: or         $a2, $v0, $a0
+089C19EC:[00002812]: mflo       $a1
+089C19F0:[00C5182B]: sltu       $v1, $a2, $a1
+089C19F4:[1060000A]: beq        $v1, $zr, 0x089C1A20
+089C19F8:[0147001B]: divu       $t2, $a3
+089C19FC:[00C93021]: addu       $a2, $a2, $t1
+089C1A00:[00C9102B]: sltu       $v0, $a2, $t1
+089C1A04:[14400006]: bne        $v0, $zr, 0x089C1A20
+089C1A08:[256BFFFF]: addiu      $t3, $t3, -1
+089C1A0C:[00C5102B]: sltu       $v0, $a2, $a1
+089C1A10:[50400004]: beql       $v0, $zr, 0x089C1A24
+089C1A14:[00C53023]: subu       $a2, $a2, $a1
+089C1A18:[256BFFFF]: addiu      $t3, $t3, -1
+089C1A1C:[00C93021]: addu       $a2, $a2, $t1
+089C1A20:[00C53023]: subu       $a2, $a2, $a1
+089C1A24:[00C7001B]: divu       $a2, $a3
+089C1A28:[31C4FFFF]: andi       $a0, $t6, -1
+089C1A2C:[50E00001]: beql       $a3, $zr, 0x089C1A34
+089C1A30:[000001CD]: break      0x00007
+089C1A34:[00001812]: mflo       $v1
+089C1A38:[00001010]: mfhi       $v0
+089C1A3C:[00004012]: mflo       $t0
+089C1A40:[006C0018]: mult       $v1, $t4
+089C1A44:[00021400]: sll        $v0, $v0, 0x0010
+089C1A48:[00442025]: or         $a0, $v0, $a0
+089C1A4C:[00002812]: mflo       $a1
+089C1A50:[0085182B]: sltu       $v1, $a0, $a1
+089C1A54:[10600008]: beq        $v1, $zr, 0x089C1A78
+089C1A58:[00C7001B]: divu       $a2, $a3
+089C1A5C:[00892021]: addu       $a0, $a0, $t1
+089C1A60:[0089102B]: sltu       $v0, $a0, $t1
+089C1A64:[14400004]: bne        $v0, $zr, 0x089C1A78
+089C1A68:[2508FFFF]: addiu      $t0, $t0, -1
+089C1A6C:[0085102B]: sltu       $v0, $a0, $a1
+089C1A70:[0002102B]: sltu       $v0, $zr, $v0 <=> move $v0, $v0
+089C1A74:[01024023]: subu       $t0, $t0, $v0
+089C1A78:[000B1400]: sll        $v0, $t3, 0x0010
+089C1A7C:[00482025]: or         $a0, $v0, $t0
+089C1A80:[00003021]: addu       $a2, $zr, $zr <=> li $a2, 0
+089C1A84:[8FB10004]: lw         $s1, 4($sp)
+089C1A88:[8FB00000]: lw         $s0, 0($sp)
+089C1A8C:[00801021]: addu       $v0, $a0, $zr <=> move $v0, $a0
+089C1A90:[00C01821]: addu       $v1, $a2, $zr <=> move $v1, $a2
+089C1A94:[03E00008]: jr         $ra
+089C1A98:[27BD0010]: addiu      $sp, $sp, 16
+]]></CodeInstructions>
+	</NativeCodeSequence>
 <!--
 	<NativeCodeSequence name="XXX">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.XXX</Class>
