@@ -16,7 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.graphics.Uniforms;
+import jpcsp.graphics.VideoEngine;
 
 /**
  * @author gid15
@@ -26,6 +29,7 @@ import jpcsp.graphics.Uniforms;
  * shader program.
  */
 public class ShaderContext {
+	protected static Logger log = VideoEngine.log;
 	private float zPos;
 	private float zScale;
 	private int[] matFlags = new int[3];
