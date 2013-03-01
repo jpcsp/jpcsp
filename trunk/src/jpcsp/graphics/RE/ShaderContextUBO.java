@@ -16,12 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
+import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 
 import jpcsp.graphics.Uniforms;
-import jpcsp.graphics.VideoEngine;
 import jpcsp.settings.Settings;
 
 /**
@@ -104,17 +105,23 @@ public class ShaderContextUBO extends ShaderContext {
 		private String structureName;
 		private String type;
 		private int offset;
+		private int matrixSize;
+		private boolean used;
 
 		public ShaderUniformInfo(Uniforms uniform, String type) {
 			name = uniform.getUniformString();
 			structureName = this.name;
 			this.type = type;
+			used = true;
+			matrixSize = 0;
 		}
 
 		public ShaderUniformInfo(Uniforms uniform, String type, int matrixSize) {
 			name = uniform.getUniformString();
 			structureName = String.format("%s[%d]", name, matrixSize);
 			this.type = type;
+			this.matrixSize = matrixSize;
+			used = true;
 		}
 
 		public String getName() {
@@ -137,8 +144,23 @@ public class ShaderContextUBO extends ShaderContext {
 			return type;
 		}
 
+		public boolean isUsed() {
+			return used;
+		}
+
+		public void setUnused() {
+			used = false;
+		}
+
+		public int getMatrixSize() {
+			return matrixSize;
+		}
+
 		@Override
 		public String toString() {
+			if (!isUsed()) {
+				return String.format("%s(unused)", getName());
+			}
 			return String.format("%s(offset=%d)", getName(), getOffset());
 		}
 	}
@@ -251,10 +273,30 @@ public class ShaderContextUBO extends ShaderContext {
 		}
 
 		if (data == null) {
+			int previousOffset = -1;
 			for (ShaderUniformInfo shaderUniformInfo : shaderUniformInfos) {
 				int index = re.getUniformIndex(shaderProgram, shaderUniformInfo.getName());
 				int offset = re.getActiveUniformOffset(shaderProgram, index);
+
+				// Nvidia workaround: the offset of the first uniform is returned as 1 instead of 0.
+				if (offset == 1) {
+					offset = 0;
+				}
+
 				shaderUniformInfo.setOffset(offset);
+
+				// An unused uniform has the same offset as its previous uniform.
+				// An unused uniform should not be copied into the UBO buffer,
+				// otherwise it would overwrite the previous uniform value.
+				if (offset < 0 || offset == previousOffset) {
+					shaderUniformInfo.setUnused();
+				}
+
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Uniform %s", shaderUniformInfo));
+				}
+
+				previousOffset = offset;
 			}
 
 			// The size returned by
@@ -262,9 +304,18 @@ public class ShaderContextUBO extends ShaderContext {
 			// is not reliable as the driver is free to reduce array sizes when they
 			// are not used in the shader.
 			// Use a dummy element of the structure to find the total structure size.
-			bufferSize = endOfUBO.getOffset() + 4;
-			if (VideoEngine.log.isDebugEnabled()) {
-				VideoEngine.log.debug(String.format("UBO Structure size: %d (including endOfUBO)", bufferSize));
+			int lastOffset;
+			if (endOfUBO.getOffset() <= 0 || !endOfUBO.isUsed()) {
+				// If the endOfUBO uniform has been eliminated by the shader compiler,
+				// estimate the end of the buffer by using the offset of the boneMatrix uniform.
+				lastOffset = boneMatrix.getOffset() + boneMatrix.getMatrixSize() * 4 * 4 * SIZEOF_FLOAT;
+			} else {
+				lastOffset = endOfUBO.getOffset();
+			}
+			bufferSize = lastOffset + 4;
+
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("UBO Structure size: %d (including endOfUBO)", bufferSize));
 			}
 
 			buffer = re.genBuffer();
@@ -311,36 +362,49 @@ public class ShaderContextUBO extends ShaderContext {
 	}
 
 	protected void copy(int value, ShaderUniformInfo shaderUniformInfo) {
-		prepareCopy(shaderUniformInfo.getOffset(), 4);
-		data.putInt(value);
+		// Do not copy unused uniform, to avoid overwriting other used uniforms
+		if (shaderUniformInfo.isUsed()) {
+			prepareCopy(shaderUniformInfo.getOffset(), 4);
+			data.putInt(value);
+		}
 	}
 
 	protected void copy(int value, ShaderUniformInfo shaderUniformInfo, int index) {
-		prepareCopy(shaderUniformInfo.getOffset() + index * 4, 4);
-		data.putInt(value);
+		if (shaderUniformInfo.isUsed()) {
+			prepareCopy(shaderUniformInfo.getOffset() + index * 4, 4);
+			data.putInt(value);
+		}
 	}
 
 	protected void copy(float value, ShaderUniformInfo shaderUniformInfo) {
-		prepareCopy(shaderUniformInfo.getOffset(), 4);
-		data.putFloat(value);
+		if (shaderUniformInfo.isUsed()) {
+			prepareCopy(shaderUniformInfo.getOffset(), 4);
+			data.putFloat(value);
+		}
 	}
 
 	protected void copy(float value, ShaderUniformInfo shaderUniformInfo, int index) {
-		prepareCopy(shaderUniformInfo.getOffset() + index * 4, 4);
-		data.putFloat(value);
+		if (shaderUniformInfo.isUsed()) {
+			prepareCopy(shaderUniformInfo.getOffset() + index * 4, 4);
+			data.putFloat(value);
+		}
 	}
 
 	protected void copy(float[] values, ShaderUniformInfo shaderUniformInfo, int start, int end) {
-		prepareCopy(shaderUniformInfo.getOffset() + start * 4, (end - start) * 4);
-		for (int i = start; i < end; i++) {
-			data.putFloat(values[i]);
+		if (shaderUniformInfo.isUsed()) {
+			prepareCopy(shaderUniformInfo.getOffset() + start * 4, (end - start) * 4);
+			for (int i = start; i < end; i++) {
+				data.putFloat(values[i]);
+			}
 		}
 	}
 
 	protected void copy(int[] values, ShaderUniformInfo shaderUniformInfo, int start, int end) {
-		prepareCopy(shaderUniformInfo.getOffset() + start * 4, (end - start) * 4);
-		for (int i = start; i < end; i++) {
-			data.putInt(values[i]);
+		if (shaderUniformInfo.isUsed()) {
+			prepareCopy(shaderUniformInfo.getOffset() + start * 4, (end - start) * 4);
+			for (int i = start; i < end; i++) {
+				data.putInt(values[i]);
+			}
 		}
 	}
 
