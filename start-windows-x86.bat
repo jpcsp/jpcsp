@@ -12,10 +12,11 @@ goto JAVA
 set key=HKEY_LOCAL_MACHINE\SOFTWARE\JavaSoft\Java Runtime Environment
 
 :JAVA
-set JAVA_CMD=java.exe
+set JAVA_CMD=%ProgramFiles%\Java\jre7\bin\java.exe
+if not exist "%JAVA_CMD%" set JAVA_CMD=java.exe
 
 rem Checking if the "reg" command is available
-reg /? >NUL
+reg /? >NUL 2>NUL
 if ERRORLEVEL 1 goto RUN
 
 set JAVA_VERSION=
@@ -27,14 +28,22 @@ set JAVA_CMD=%JAVA_HOME%\bin\java.exe
 if not exist "%JAVA_CMD%" goto JAVAMISSING
 
 :RUN
+
+rem Use -Xmx768m for Windows XP, -Xmx1024m for all other Windows versions
+set MAX_MEM_SIZE=1024m
+ver | findstr "5\.1\." > nul
+if %ERRORLEVEL% EQU 0 set MAX_MEM_SIZE=768m
+
 echo Running Jpcsp 32bit...
-"%JAVA_CMD%" -Xmx1024m -Xss2m -XX:MaxPermSize=128m -XX:ReservedCodeCacheSize=64m -Djava.library.path=lib/windows-x86 -jar bin/jpcsp.jar %*
+"%JAVA_CMD%" -Xmx%MAX_MEM_SIZE% -Xss2m -XX:MaxPermSize=128m -XX:ReservedCodeCacheSize=64m -Djava.library.path=lib/windows-x86 -jar bin/jpcsp.jar %*
 if ERRORLEVEL 1 goto PAUSE
 goto END
 
 :JAVAMISSING
 echo The required version of Java has not been installed or isn't recognized.
-echo Go to http://java.sun.com to install the 32bit Java JRE.
+echo Go to
+echo     http://www.oracle.com/technetwork/java/javase/downloads/index.html
+echo to install the "Windows x86" Java JRE.
 
 :PAUSE
 pause
