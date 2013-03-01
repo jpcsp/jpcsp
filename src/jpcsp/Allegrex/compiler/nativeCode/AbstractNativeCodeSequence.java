@@ -65,7 +65,7 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 	}
 
 	static protected long getLong(int low, int high) {
-		return (((long) high) << 32) | low;
+		return (((long) high) << 32) | (low & 0xFFFFFFFFL);
 	}
 
 	static protected int getGprA0() {
