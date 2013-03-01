@@ -16,13 +16,21 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_INVALID_FORMAT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_INVALID_MODE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_INVALID_POINTER;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_INVALID_SIZE;
 import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
 import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
 import static jpcsp.util.Utilities.makePow2;
 
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
 import java.awt.Dimension;
@@ -92,6 +100,7 @@ import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.PixelFormat;
 
+@HLELogging
 public class sceDisplay extends HLEModule {
     public static Logger log = Modules.getLogger("sceDisplay");
 
@@ -958,14 +967,14 @@ public class sceDisplay extends HLEModule {
 
     public void hleDisplaySetGeMode(int width, int height) {
         if (width <= 0 || height <= 0) {
-            log.warn("hleDisplaySetGeMode(" + width + "," + height + ") bad params");
+    		log.warn(String.format("hleDisplaySetGeMode width=%d, height=%d bad params", width, height));
         } else {
-            log.debug("hleDisplaySetGeMode(width=" + width + ",height=" + height + ")");
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("hleDisplaySetGeMode width=%d, height=%d", width, height));
+        	}
             widthGe = width;
             heightGe = height;
-            bottomaddrGe =
-                topaddrGe + bufferwidthGe * heightGe *
-                getPixelFormatBytes(pixelformatGe);
+            bottomaddrGe = topaddrGe + bufferwidthGe * heightGe * getPixelFormatBytes(pixelformatGe);
             pixelsGe = getPixels(topaddrGe, bottomaddrGe);
         }
     }
@@ -1012,17 +1021,14 @@ public class sceDisplay extends HLEModule {
             bufferwidth <= 0 ||
             pixelformat < 0 || pixelformat > 3 ||
             (sync != PSP_DISPLAY_SETBUF_IMMEDIATE && sync != PSP_DISPLAY_SETBUF_NEXTFRAME)) {
-            String msg = "hleDisplaySetGeBuf bad params ("
-                + Integer.toHexString(topaddr)
-                + "," + bufferwidth
-                + "," + pixelformat + ")";
-
             // First time is usually initializing GE, so we can ignore it
             if (setGeBufCalledAtLeastOnce) {
-                log.warn(msg);
+            	log.warn(String.format("hleDisplaySetGeBuf topaddr=0x%08X, bufferwidth=%d, pixelformat=%d bad params", topaddr, bufferwidth, pixelformat));
                 gotBadGeBufParams = true;
             } else {
-                log.debug(msg);
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("hleDisplaySetGeBuf topaddr=0x%08X, bufferwidth=%d, pixelformat=%d bad params", topaddr, bufferwidth, pixelformat));
+            	}
                 setGeBufCalledAtLeastOnce = true;
             }
 
@@ -1031,10 +1037,9 @@ public class sceDisplay extends HLEModule {
 		if (gotBadGeBufParams) {
 		    // print when we get good params after bad params
 		    gotBadGeBufParams = false;
-		    log.info("hleDisplaySetGeBuf ok ("
-		        + Integer.toHexString(topaddr)
-		        + "," + bufferwidth
-		        + "," + pixelformat + ")");
+		    if (log.isInfoEnabled()) {
+		    	log.info(String.format("hleDisplaySetGeBuf topaddr=0x%08X, bufferwidth=%d, pixelformat=%d OK", topaddr, bufferwidth, pixelformat));
+		    }
 		}
 
     	if (re.isVertexArrayAvailable()) {
@@ -1111,9 +1116,9 @@ public class sceDisplay extends HLEModule {
         return onlyGEGraphics;
     }
 
-    private void setOnlyGEGraphics(boolean onlyGEGraphics) {
+    public void setOnlyGEGraphics(boolean onlyGEGraphics) {
         this.onlyGEGraphics = onlyGEGraphics;
-        VideoEngine.log.info("Only GE Graphics: " + onlyGEGraphics);
+        log.info(String.format("Only GE Graphics: %b", onlyGEGraphics));
     }
 
     public boolean isSaveStencilToMemory() {
@@ -1122,7 +1127,7 @@ public class sceDisplay extends HLEModule {
 
     public void setSaveStencilToMemory(boolean saveStencilToMemory) {
     	this.saveStencilToMemory = saveStencilToMemory;
-        VideoEngine.log.info("Save Stencil To Memory: " + saveStencilToMemory);
+        log.info(String.format("Save Stencil To Memory: %b", saveStencilToMemory));
     }
 
     private void setUseSoftwareRenderer(boolean useSoftwareRenderer) {
@@ -1796,10 +1801,6 @@ public class sceDisplay extends HLEModule {
 
 	@HLEFunction(nid = 0x0E20F177, version = 150, checkInsideInterrupt = true)
     public int sceDisplaySetMode(int displayMode, int displayWidth, int displayHeight) {
-        if (log.isDebugEnabled()) {
-        	log.debug("sceDisplaySetMode(mode=" + displayMode + ",width=" + displayWidth + ",height=" + displayHeight + ")");
-        }
-
         if (displayWidth <= 0 || displayHeight <= 0) {
             return SceKernelErrors.ERROR_INVALID_SIZE;
         }
@@ -1833,85 +1834,77 @@ public class sceDisplay extends HLEModule {
     
     @HLEFunction(nid = 0xDBA6C4C4, version = 150)
     public float sceDisplayGetFramePerSec() {
-    	if (log.isDebugEnabled()) {
-    		log.debug("sceDisplayGetFramePerSec ret: " + FRAME_PER_SEC);
-    	}
     	return FRAME_PER_SEC;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x7ED59BC4, version = 150, checkInsideInterrupt = true)
     public int sceDisplaySetHoldMode(int holdMode) {
-        log.warn("IGNORING: sceDisplaySetHoldMode holdMode=" + holdMode);
-
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xA544C486, version = 150, checkInsideInterrupt = true)
     public int sceDisplaySetResumeMode(int resumeMode) {
-        log.warn("IGNORING: sceDisplaySetResumeMode resumeMode=" + resumeMode);
-
         return 0;
     }
 
     @HLEFunction(nid = 0x289D82FE, version = 150)
-    public int sceDisplaySetFrameBuf(int topaddr, int bufferwidth, int pixelformat, int syncType) {
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceDisplaySetFrameBuf(topaddr=0x%08X, bufferwidth=%d, pixelformat=%d, syncType=%d)", topaddr, bufferwidth, pixelformat, syncType));
-        }
+    public int sceDisplaySetFrameBuf(@CanBeNull TPointer topaddr, int bufferwidth, int pixelformat, int syncType) {
+        return hleDisplaySetFrameBuf(topaddr.getAddress(), bufferwidth, pixelformat, syncType);
+    }
 
-        return hleDisplaySetFrameBuf(topaddr, bufferwidth, pixelformat, syncType);
+    private int hleDisplaySetFrameBufError(int topaddr, int bufferwidth, int pixelformat, int syncType, int error, String errorString) {
+        log.warn(String.format("sceDisplaySetFrameBuf topaddr=0x%08X, bufferwidth=%d, pixelformat=%d, syncType=%d %s: returning 0x%08X", topaddr, bufferwidth, pixelformat, syncType, errorString, error));
+        gotBadFbBufParams = true;
+        return error;
     }
 
     public int hleDisplaySetFrameBuf(int topaddr, int bufferwidth, int pixelformat, int syncType) {
-		topaddr &= Memory.addressMask;
+    	// The PSP is performing the following parameter checks in this sequence
 
-        if ((bufferwidth < 0 || (bufferwidth & (bufferwidth - 1)) != 0) ||
-                ((bufferwidth == 0) && (topaddr != 0))) {
-            log.warn(
-                "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
-                ", bufferwidth=" + bufferwidth +
-                ", pixelformat=" + pixelformat +
-                ", syncType=" + syncType + ") bad bufferwidth");
-            isFbShowing = false;
-            gotBadFbBufParams = true;
-            return SceKernelErrors.ERROR_INVALID_SIZE;
+    	if (syncType != PSP_DISPLAY_SETBUF_IMMEDIATE && syncType != PSP_DISPLAY_SETBUF_NEXTFRAME) {
+    		return hleDisplaySetFrameBufError(topaddr, bufferwidth, pixelformat, syncType, ERROR_INVALID_MODE, "bad syncType");
         }
-        if (pixelformat < 0 || pixelformat > 3) {
-            log.warn(
-                "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
-                ", bufferwidth=" + bufferwidth +
-                ", pixelformat=" + pixelformat +
-                ", syncType=" + syncType + ") bad pixelformat");
-            isFbShowing = false;
-            gotBadFbBufParams = true;
-            return -1;
+
+        if ((topaddr & 0xF) != 0) {
+    		return hleDisplaySetFrameBufError(topaddr, bufferwidth, pixelformat, syncType, ERROR_INVALID_POINTER, "bad topaddr");
         }
-        if (syncType != PSP_DISPLAY_SETBUF_IMMEDIATE && syncType != PSP_DISPLAY_SETBUF_NEXTFRAME) {
-            log.warn(
-                "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
-                ", bufferwidth=" + bufferwidth +
-                ", pixelformat=" + pixelformat +
-                ", syncType=" + syncType + ") bad syncType");
-            isFbShowing = false;
-            gotBadFbBufParams = true;
-            return SceKernelErrors.ERROR_INVALID_MODE;
+
+        if (topaddr != 0 && !Memory.isRAM(topaddr) && !Memory.isVRAM(topaddr)) {
+    		return hleDisplaySetFrameBufError(topaddr, bufferwidth, pixelformat, syncType, ERROR_INVALID_POINTER, "bad topaddr");
         }
-        if (topaddr == 0) {
+
+        if ((bufferwidth & 0x3F) != 0) {
+    		return hleDisplaySetFrameBufError(topaddr, bufferwidth, pixelformat, syncType, ERROR_INVALID_SIZE, "bad bufferwidth");
+    	}
+
+    	// bufferwidth can only be 0 when topaddr is NULL
+    	if (bufferwidth == 0 && topaddr != 0) {
+    		return hleDisplaySetFrameBufError(topaddr, bufferwidth, pixelformat, syncType, ERROR_INVALID_SIZE, "bad bufferwidth");
+    	}
+
+    	if (pixelformat < 0 || pixelformat > TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888) {
+    		return hleDisplaySetFrameBufError(topaddr, bufferwidth, pixelformat, syncType, ERROR_INVALID_FORMAT, "bad pixelformat");
+    	}
+
+    	if (topaddr == 0) {
             // If topaddr is NULL, the PSP's screen will be displayed as fully black
             // as the output is blocked. Under these circumstances, bufferwidth can be 0.
-            log.warn(
-                "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
-                ", bufferwidth=" + bufferwidth +
-                ", pixelformat=" + pixelformat +
-                ", syncType=" + syncType + ") (blocking display output)");
+            log.info(String.format("sceDisplaySetFrameBuf topaddr=0x%08X, bufferwidth=%d, pixelformat=%d, syncType=%d (blocking display output)", topaddr, bufferwidth, pixelformat, syncType));
             isFbShowing = false;
             gotBadFbBufParams = true;
             return 0;
         }
-        if (!Memory.isAddressGood(topaddr)) {
-            return SceKernelErrors.ERROR_INVALID_POINTER;
+
+        if (gotBadFbBufParams) {
+            gotBadFbBufParams = false;
+            log.info(String.format("sceDisplaySetFrameBuf topaddr=0x%08X, bufferwidth=%d, pixelformat=%d, syncType=%d ok", topaddr, bufferwidth, pixelformat, syncType));
+        }
+
+        if (topaddr == topaddrFb && bufferwidth == bufferwidthFb && pixelformat == pixelformatFb && syncType == sync) {
+        	// No FB parameter changed, nothing to do...
+        	return 0;
         }
 
         if (topaddr != topaddrFb) {
@@ -1957,11 +1950,6 @@ public class sceDisplay extends HLEModule {
     		skipNextFrameBufferSwitch = false;
     	}
 
-        if (gotBadFbBufParams) {
-            gotBadFbBufParams = false;
-            log.info(String.format("sceDisplaySetFrameBuf(topaddr=0x%08X, bufferwidth=%d, pixelformat=%d, syncType=%d ok", topaddr, bufferwidth, pixelformat, syncType));
-        }
-
         if (pixelformat != pixelformatFb || bufferwidth != bufferwidthFb || makePow2(height) != makePow2(height)) {
             createTex = true;
         }
@@ -1978,14 +1966,13 @@ public class sceDisplay extends HLEModule {
         texT = (float) height / (float) makePow2(height);
 
         detailsDirty = true;
+        isFbShowing = true;
 
         if (State.captureGeNextFrame && CaptureManager.hasListExecuted()) {
             CaptureManager.captureFrameBufDetails();
             CaptureManager.endCapture();
             State.captureGeNextFrame = false;
         }
-
-        isFbShowing = true;
 
         VideoEngine.getInstance().hleSetFrameBuf(topaddrFb, bufferwidthFb, pixelformatFb);
 
@@ -2001,13 +1988,6 @@ public class sceDisplay extends HLEModule {
      */
     @HLEFunction(nid = 0xEEDA2E54, version = 150)
     public int sceDisplayGetFrameBuf(TPointer32 topaddrAddr, TPointer32 bufferwidthAddr, TPointer32 pixelformatAddr, int syncType) {
-        if (log.isDebugEnabled()) {
-    		log.debug(String.format(
-    			"sceDisplayGetFrameBuf topaddrAddr=0x%08X, bufferwidthAddr=0x%08X, pixelformatAddr=0x%08X, sync=%d",
-    			topaddrAddr.getAddress(), bufferwidthAddr.getAddress(), pixelformatAddr.getAddress(), syncType
-    		));
-        }
-
         topaddrAddr.setValue(topaddrFb);
         bufferwidthAddr.setValue(bufferwidthFb);
         pixelformatAddr.setValue(pixelformatFb);
@@ -2017,19 +1997,12 @@ public class sceDisplay extends HLEModule {
 
     @HLEFunction(nid = 0xB4F378FA, version = 150)
     public boolean sceDisplayIsForeground() {
-        if (log.isDebugEnabled()) {
-    		log.debug("sceDisplayIsForeground ret: " + isFbShowing);
-    	}
         return isFbShowing;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x31C4BAA8, version = 150)
     public int sceDisplayGetBrightness(int leveladdr, int unkaddr) {
-        log.warn("IGNORING: sceDisplayGetBrightness leveladdr=0x"
-                + Integer.toHexString(leveladdr) + ", unkaddr=0x"
-                + Integer.toHexString(unkaddr));
-        
         return 0;
     }
 
@@ -2052,10 +2025,6 @@ public class sceDisplay extends HLEModule {
 
     @HLEFunction(nid = 0x36CDFADE, version = 150, checkInsideInterrupt = true)
     public int sceDisplayWaitVblank() {
-        if (log.isDebugEnabled()) {
-        	log.debug("sceDisplayWaitVblank");
-        }
-
         if (!isVblank()) {
     		sceDisplayWaitVblankStart();
     	}
@@ -2064,10 +2033,6 @@ public class sceDisplay extends HLEModule {
 
     @HLEFunction(nid = 0x8EB9EC49, version = 150, checkInsideInterrupt = true)
     public int sceDisplayWaitVblankCB() {
-        if (log.isDebugEnabled()) {
-        	log.debug("sceDisplayWaitVblankCB");
-        }
-
         if (!isVblank()) {
         	sceDisplayWaitVblankStartCB();
         }
@@ -2076,19 +2041,11 @@ public class sceDisplay extends HLEModule {
 
     @HLEFunction(nid = 0x984C27E7, version = 150, checkInsideInterrupt = true)
     public int sceDisplayWaitVblankStart() {
-        if (log.isDebugEnabled()) {
-        	log.debug("sceDisplayWaitVblankStart");
-        }
-
         return hleDisplayWaitVblankStart(1, false);
     }
 
     @HLEFunction(nid = 0x46F186C3, version = 150, checkInsideInterrupt = true)
     public int sceDisplayWaitVblankStartCB() {
-        if (log.isDebugEnabled()) {
-        	log.debug("sceDisplayWaitVblankStartCB");
-        }
-
         return hleDisplayWaitVblankStart(1, true);
     }
 
