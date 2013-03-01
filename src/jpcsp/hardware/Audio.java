@@ -48,16 +48,20 @@ public class Audio {
 		Audio.volume = volume;
 	}
 
-	public static boolean isMuted() {
+	private static void init() {
 		if (audioMutedSettingsListerner == null) {
 			audioMutedSettingsListerner = new AudioMutedSettingsListerner();
 			Settings.getInstance().registerSettingsListener("HardwareAudio", "emu.mutesound", audioMutedSettingsListerner);
 		}
+	}
 
+	public static boolean isMuted() {
+		init();
 		return muted;
 	}
 
 	public static void setMuted(boolean muted) {
+		init();
 		Audio.muted = muted;
 	}
 
