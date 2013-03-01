@@ -283,8 +283,8 @@ public abstract class Memory {
     	memcpy(destination, source, length, true);
     }
 
-    public int normalizeAddress(int address) {
-    	address = address & addressMask;
+    public static int normalizeAddress(int address) {
+    	address &= addressMask;
 
     	// Test on a PSP: 0x4200000 is equivalent to 0x4000000
     	if ((address & 0xFF000000) == MemoryMap.START_VRAM) {
@@ -315,5 +315,15 @@ public abstract class Memory {
     private void setIgnoreInvalidMemoryAccess(boolean ignoreInvalidMemoryAccess) {
         this.ignoreInvalidMemoryAccess = ignoreInvalidMemoryAccess;
         Memory.log.info("Ignore invalid memory access: " + ignoreInvalidMemoryAccess);
+    }
+
+    public static boolean isRAM(int address) {
+    	address &= addressMask;
+    	return address >= MemoryMap.START_RAM && address <= MemoryMap.END_RAM;
+    }
+
+    public static boolean isVRAM(int address) {
+    	address &= addressMask;
+    	return address >= MemoryMap.START_VRAM && address <= MemoryMap.END_VRAM;
     }
 }
