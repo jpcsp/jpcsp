@@ -5590,7 +5590,7 @@ public class VideoEngine {
                 }
 
                 if (State.captureGeNextFrame) {
-                	boolean vramImage = isVRAM(tex_addr);
+                	boolean vramImage = Memory.isVRAM(tex_addr);
                 	boolean overwriteFile = !vramImage;
                     if (vramImage || !CaptureManager.isImageCaptured(texaddr)) {
                         CaptureManager.captureImage(texaddr, level, final_buffer, context.texture_width[level], context.texture_height[level], context.texture_buffer_width[level], buffer_storage, compressedTexture, compressedTextureSize, false, overwriteFile);
@@ -6632,12 +6632,6 @@ public class VideoEngine {
     private boolean isVertexBufferEmbedded() {
         // stall_addr may be 0
         return (context.vinfo.ptr_vertex >= currentList.list_addr && context.vinfo.ptr_vertex < currentList.getStallAddr());
-    }
-
-    public static boolean isVRAM(int addr) {
-        addr &= Memory.addressMask;
-
-        return addr >= MemoryMap.START_VRAM && addr <= MemoryMap.END_VRAM;
     }
 
     public int getClutNumEntries() {

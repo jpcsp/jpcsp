@@ -85,6 +85,7 @@ import jpcsp.Debugger.DumpDebugState;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.SceKernelErrorException;
@@ -154,6 +155,7 @@ import jpcsp.HLE.CheckArgument;;
  *                      lower or the same priority.
  *                      The clock precision of 200us on the PSP can be observed here.
  */
+@HLELogging
 public class ThreadManForUser extends HLEModule {
     public static Logger log = Modules.getLogger("ThreadManForUser");
 
@@ -2108,14 +2110,12 @@ public class ThreadManForUser extends HLEModule {
         } while (handled && checkCurrentThread == currentThread);
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x6E9EA350, version = 150)
     public int _sceKernelReturnFromCallback() {
-        log.warn("Unimplemented _sceKernelReturnFromCallback");
-
         return 0;
     }
 
-    @HLELogging
     @HLEFunction(nid = 0x0C106E53, version = 150, checkInsideInterrupt = true)
     public int sceKernelRegisterThreadEventHandler(@StringInfo(maxLength = 32) String name, int thid, int mask, TPointer handlerFunc, int commonAddr) {
         switch (thid) {
@@ -2152,10 +2152,6 @@ public class ThreadManForUser extends HLEModule {
 
     @HLEFunction(nid = 0x72F3C145, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public int sceKernelReleaseThreadEventHandler(int uid) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelReleaseThreadEventHandler uid=0x" + Integer.toHexString(uid));
-        }
-
         if (!threadEventHandlers.containsKey(uid)) {
         	return ERROR_KERNEL_NOT_FOUND_THREAD_EVENT_HANDLER;
         }
@@ -2167,10 +2163,6 @@ public class ThreadManForUser extends HLEModule {
 
     @HLEFunction(nid = 0x369EEB6B, version = 150)
     public int sceKernelReferThreadEventHandlerStatus(int uid, TPointer statusPointer) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelReferThreadEventHandlerStatus uid=0x" + Integer.toHexString(uid) + ", status_addr=0x" + Integer.toHexString(statusPointer.getAddress()));
-        }
-
         if (!threadEventHandlers.containsKey(uid)) {
         	return ERROR_KERNEL_NOT_FOUND_THREAD_EVENT_HANDLER;
         }
@@ -2200,9 +2192,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xC11BA8C4, version = 150)
     public int sceKernelNotifyCallback(int uid, int arg) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelNotifyCallback uid=0x" + Integer.toHexString(uid) + ", arg=0x" + Integer.toHexString(arg));
-        }
         SceKernelCallbackInfo callback = callbackMap.get(uid);
         if (callback == null) {
             return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_CALLBACK;
@@ -2228,10 +2217,6 @@ public class ThreadManForUser extends HLEModule {
 
     @HLEFunction(nid = 0xBA4051D6, version = 150)
     public int sceKernelCancelCallback(int uid) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelCancelCallback uid=0x" + Integer.toHexString(uid));
-        }
-
         SceKernelCallbackInfo callback = callbackMap.get(uid);
         if (callback == null) {
             return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_CALLBACK;
@@ -2245,9 +2230,6 @@ public class ThreadManForUser extends HLEModule {
     /** Return the current notifyCount for a specific callback */
     @HLEFunction(nid = 0x2A3D44FF, version = 150)
     public int sceKernelGetCallbackCount(int uid) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelGetCallbackCount uid=0x" + Integer.toHexString(uid));
-        }
         SceKernelCallbackInfo callback = callbackMap.get(uid);
         if (callback == null) {
         	return SceKernelErrors.ERROR_KERNEL_NOT_FOUND_CALLBACK;
@@ -2263,10 +2245,6 @@ public class ThreadManForUser extends HLEModule {
     /** Check callbacks, only on the current thread. */
     @HLEFunction(nid = 0x349D6D6C, version = 150, checkInsideInterrupt = true)
     public int sceKernelCheckCallback() {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelCheckCallback(void)");
-        }
-
         // Remember the currentThread, as it might have changed after
         // the execution of a callback.
         SceKernelThreadInfo thread = currentThread;
@@ -2284,10 +2262,6 @@ public class ThreadManForUser extends HLEModule {
 
     @HLEFunction(nid = 0x730ED8BC, version = 150)
     public int sceKernelReferCallbackStatus(int uid, TPointer infoPointer) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelReferCallbackStatus SceUID=" + Integer.toHexString(uid) + " info=" + Integer.toHexString(infoPointer.getAddress()));
-        }
-
         SceKernelCallbackInfo info = hleKernelReferCallbackStatus(uid);
         if (info == null) {
             log.warn("sceKernelReferCallbackStatus unknown uid 0x" + Integer.toHexString(uid));
@@ -2306,10 +2280,6 @@ public class ThreadManForUser extends HLEModule {
     /** sleep the current thread (using wait) */
     @HLEFunction(nid = 0x9ACE131E, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public int sceKernelSleepThread() {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelSleepThread SceUID=" + Integer.toHexString(currentThread.uid) + " name:'" + currentThread.name + "'");
-        }
-
         return hleKernelSleepThread(false);
     }
 
@@ -2317,10 +2287,6 @@ public class ThreadManForUser extends HLEModule {
      * in our implementation we have to use wait, not suspend otherwise we don't handle callbacks. */
     @HLEFunction(nid = 0x82826F70, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public int sceKernelSleepThreadCB() {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelSleepThreadCB SceUID=" + Integer.toHexString(currentThread.uid) + " name:'" + currentThread.name + "'");
-        }
-
         int result = hleKernelSleepThread(true);
         checkCallbacks();
 
@@ -2344,14 +2310,14 @@ public class ThreadManForUser extends HLEModule {
     public int sceKernelCancelWakeupThread(@CheckArgument("checkThreadIDAllow0") int uid) {
         SceKernelThreadInfo thread = getThreadById(uid);
 
+        int result = thread.wakeupCount;
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelCancelWakeupThread SceUID=" + Integer.toHexString(uid) + ") wakeupCount=" + thread.wakeupCount);
+            log.debug(String.format("sceKernelCancelWakeupThread thread=%s returning %d", thread, result));
         }
-        try {
-        	return thread.wakeupCount;
-        } finally {
-        	thread.wakeupCount = 0;        	
-        }
+
+        thread.wakeupCount = 0;
+
+        return result;
     }
 
     @HLEFunction(nid = 0x9944F31F, version = 150)
@@ -2370,10 +2336,6 @@ public class ThreadManForUser extends HLEModule {
         		log.debug(String.format("sceKernelSuspendThread thread already stopped: thread=%s", thread.toString()));
         	}
         	return ERROR_KERNEL_THREAD_ALREADY_DORMANT;
-        }
-
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelSuspendThread SceUID=" + Integer.toHexString(uid));
         }
 
         if (thread.isWaiting()) {
@@ -2398,10 +2360,6 @@ public class ThreadManForUser extends HLEModule {
             return 0;
         }
 
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "'");
-        }
-
         if (thread.isWaiting()) {
             hleChangeThreadState(thread, PSP_THREAD_WAITING);
         } else {
@@ -2413,19 +2371,11 @@ public class ThreadManForUser extends HLEModule {
 
     @HLEFunction(nid = 0x278C0DF5, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public int sceKernelWaitThreadEnd(@CheckArgument("checkThreadID") int uid, int timeout_addr) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelWaitThreadEnd redirecting to hleKernelWaitThreadEnd(callbacks=false)");
-        }
-
         return hleKernelWaitThreadEnd(currentThread, uid, timeout_addr, false, true);
     }
 
     @HLEFunction(nid = 0x840E8133, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public int sceKernelWaitThreadEndCB(@CheckArgument("checkThreadID") int uid, int timeout_addr) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelWaitThreadEndCB redirecting to hleKernelWaitThreadEnd(callbacks=true)");
-        }
-
         int result = hleKernelWaitThreadEnd(currentThread, uid, timeout_addr, true, true);
         checkCallbacks();
 
@@ -2779,10 +2729,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x6652B8CA, version = 150)
     public int sceKernelSetAlarm(int delayUsec, TPointer handlerAddress, int handlerArgument) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelSetAlarm delayUsec=%d, handlerAddress=%s, handlerArgument=0x%08X)", delayUsec, handlerAddress, handlerArgument));
-        }
-
         return hleKernelSetAlarm(delayUsec, handlerAddress, handlerArgument);
     }
 
@@ -2797,10 +2743,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xB2C25152, version = 150)
     public int sceKernelSetSysClockAlarm(TPointer64 delaySysclockAddr, TPointer handlerAddress, int handlerArgument) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelSetSysClockAlarm delaySysclockAddr=%s, handlerAddress=%s, handlerArgument=0x%08X)", delaySysclockAddr, handlerAddress, handlerArgument));
-        }
-
         long delaySysclock = delaySysclockAddr.getValue();
         long delayUsec = SystemTimeManager.hleSysClock2USec(delaySysclock);
 
@@ -2816,10 +2758,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x7E65B999, version = 150)
     public int sceKernelCancelAlarm(int alarmUid) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelCancelAlarm uid=0x%X", alarmUid));
-        }
-
         SceKernelAlarmInfo sceKernelAlarmInfo = alarms.get(alarmUid);
         if (sceKernelAlarmInfo == null) {
             log.warn(String.format("sceKernelCancelAlarm unknown uid=0x%x", alarmUid));
@@ -2841,10 +2779,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xDAA3F564, version = 150)
     public int sceKernelReferAlarmStatus(int alarmUid, TPointer infoAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelReferAlarmStatus uid=0x%X, infoAddr=%s", alarmUid, infoAddr));
-        }
-
         SceKernelAlarmInfo sceKernelAlarmInfo = alarms.get(alarmUid);
         if (sceKernelAlarmInfo == null) {
             log.warn(String.format("sceKernelReferAlarmStatus unknown uid=0x%x", alarmUid));
@@ -2866,10 +2800,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x20FFF560, version = 150, checkInsideInterrupt = true)
     public int sceKernelCreateVTimer(PspString name, @CanBeNull TPointer optAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelCreateVTimer name=%s, optAddr=%s", name, optAddr));
-        }
-
         SceKernelVTimerInfo sceKernelVTimerInfo = new SceKernelVTimerInfo(name.getString());
         vtimers.put(sceKernelVTimerInfo.uid, sceKernelVTimerInfo);
 
@@ -2885,10 +2815,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x328F9E52, version = 150, checkInsideInterrupt = true)
     public int sceKernelDeleteVTimer(@CheckArgument("checkVTimerID") int vtimerUid) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelDeleteVTimer uid=0x%X", vtimerUid));
-        }
-
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.remove(vtimerUid);
         sceKernelVTimerInfo.delete();
 
@@ -2905,10 +2831,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xB3A59970, version = 150)
     public int sceKernelGetVTimerBase(@CheckArgument("checkVTimerID") int vtimerUid, TPointer64 baseAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelGetVTimerBase uid=0x%X, baseAddr=%s", vtimerUid, baseAddr));
-        }
-
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         baseAddr.setValue(sceKernelVTimerInfo.base);
 
@@ -2924,10 +2846,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xB7C18B77, version = 150)
     public long sceKernelGetVTimerBaseWide(@CheckArgument("checkVTimerID") int vtimerUid) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelGetVTimerBaseWide uid=0x%X", vtimerUid));
-        }
-
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
 
         return sceKernelVTimerInfo.base;
@@ -2943,10 +2861,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x034A921F, version = 150)
     public int sceKernelGetVTimerTime(@CheckArgument("checkVTimerID") int vtimerUid, TPointer64 timeAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelGetVTimerTime uid=0x%X, timeAddr=%s", vtimerUid, timeAddr));
-        }
-
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         long time = getVTimerTime(sceKernelVTimerInfo);
         if (log.isDebugEnabled()) {
@@ -2966,10 +2880,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xC0B3FFD2, version = 150)
     public long sceKernelGetVTimerTimeWide(@CheckArgument("checkVTimerID") int vtimerUid) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelGetVTimerTimeWide uid=0x%X", vtimerUid));
-        }
-
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         long time = getVTimerTime(sceKernelVTimerInfo);
         if (log.isDebugEnabled()) {
@@ -2989,10 +2899,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x542AD630, version = 150, checkInsideInterrupt = true)
     public int sceKernelSetVTimerTime(@CheckArgument("checkVTimerID") int vtimerUid, TPointer64 timeAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelSetVTimerTime uid=0x%X, timeAddr=%s", vtimerUid, timeAddr));
-        }
-
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         long time = timeAddr.getValue();
         setVTimer(sceKernelVTimerInfo, time);
@@ -3010,10 +2916,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xFB6425C3, version = 150, checkInsideInterrupt = true)
     public int sceKernelSetVTimerTimeWide(@CheckArgument("checkVTimerID") int vtimerUid, long time) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelSetVTimerTime uid=0x%X, time=%d", vtimerUid, time));
-        }
-
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         setVTimer(sceKernelVTimerInfo, time);
 
@@ -3029,10 +2931,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xC68D9437, version = 150)
     public int sceKernelStartVTimer(@CheckArgument("checkVTimerID") int vtimerUid) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelStartVTimer uid=0x%X", vtimerUid));
-        }
-
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_RUNNING) {
             return 1; // already started
@@ -3052,10 +2950,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xD0AEEE87, version = 150)
     public int sceKernelStopVTimer(@CheckArgument("checkVTimerID") int vtimerUid) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelStopVTimer uid=0x%X", vtimerUid));
-        }
-
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_STOPPED) {
             return 0; // already stopped
@@ -3078,10 +2972,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xD8B299AE, version = 150)
     public int sceKernelSetVTimerHandler(@CheckArgument("checkVTimerID") int vtimerUid, TPointer64 scheduleAddr, @CanBeNull TPointer handlerAddress, int handlerArgument) {
-        if (log.isDebugEnabled()) {
-            log.warn(String.format("sceKernelSetVTimerHandler uid=0x%X, scheduleAddr=%s, handlerAddress=%s, handlerArgument=0x%08X", vtimerUid, scheduleAddr, handlerAddress, handlerArgument));
-        }
-
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         long schedule = scheduleAddr.getValue();
         sceKernelVTimerInfo.handlerAddress = handlerAddress.getAddress();
@@ -3103,10 +2993,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x53B00E9A, version = 150)
     public int sceKernelSetVTimerHandlerWide(@CheckArgument("checkVTimerID") int vtimerUid, long schedule, TPointer handlerAddress, int handlerArgument) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelSetVTimerHandlerWide uid=0x%X, schedule=%d, handlerAddress=%s, handlerArgument=0x%08X", vtimerUid, schedule, handlerAddress, handlerArgument));
-        }
-
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         sceKernelVTimerInfo.handlerAddress = handlerAddress.getAddress();
         sceKernelVTimerInfo.handlerArgument = handlerArgument;
@@ -3124,10 +3010,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0xD2D615EF, version = 150)
     public int sceKernelCancelVTimerHandler(@CheckArgument("checkVTimerID") int vtimerUid) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelCancelVTimerHandler uid=0x%X", vtimerUid));
-        }
-
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         cancelVTimer(sceKernelVTimerInfo);
 
@@ -3144,10 +3026,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x5F32BEAA, version = 150)
     public int sceKernelReferVTimerStatus(@CheckArgument("checkVTimerID") int vtimerUid, TPointer infoAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelReferVTimerStatus uid=0x%X, infoAddr=%s", vtimerUid, infoAddr));
-        }
-
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         sceKernelVTimerInfo.write(Memory.getInstance(), infoAddr.getAddress());
 
@@ -3156,9 +3034,6 @@ public class ThreadManForUser extends HLEModule {
 
     @HLEFunction(nid = 0x446D8DE6, version = 150)
     public int sceKernelCreateThread(@StringInfo(maxLength = 32) String name, int entry_addr, int initPriority, int stackSize, int attr, int option_addr) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelCreateThread redirecting to hleKernelCreateThread");
-        }
         SceKernelThreadInfo thread = hleKernelCreateThread(name, entry_addr, initPriority, stackSize, attr, option_addr);
 
         if (thread.stackSize > 0 && thread.getStackAddr() == 0) {
@@ -3196,9 +3071,6 @@ public class ThreadManForUser extends HLEModule {
             return ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
         }
 
-        if (log.isDebugEnabled()) {
-    		log.debug("sceKernelDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
-    	}
         // Mark thread for deletion
         setToBeDeletedThread(thread);
 
@@ -3220,8 +3092,6 @@ public class ThreadManForUser extends HLEModule {
             return ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
         }
 
-        log.debug("sceKernelStartThread redirecting to hleKernelStartThread");
-
         hleKernelStartThread(thread, len, data_addr, thread.gpReg_addr);
 
         return 0;
@@ -3237,10 +3107,6 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = 0xAA73C935, version = 150, checkInsideInterrupt = true)
     public int sceKernelExitThread(int exitStatus) {
         SceKernelThreadInfo thread = currentThread;
-
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelExitThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' exitStatus:0x" + Integer.toHexString(exitStatus));
-        }
 
         if (exitStatus < 0) {
         	thread.setExitStatus(ERROR_KERNEL_ILLEGAL_ARGUMENT);
@@ -3261,10 +3127,6 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = 0x809CE29B, version = 150, checkInsideInterrupt = true)
     public int sceKernelExitDeleteThread(int exitStatus) {
         SceKernelThreadInfo thread = currentThread;
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelExitDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' exitStatus:0x" + Integer.toHexString(exitStatus));
-        }
-
         thread.setExitStatus(exitStatus);
 
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
@@ -3283,8 +3145,6 @@ public class ThreadManForUser extends HLEModule {
     public int sceKernelTerminateThread(@CheckArgument("checkThreadID") int uid) {
         SceKernelThreadInfo thread = getThreadCurrentIsInvalid(uid);
 
-        log.debug("sceKernelTerminateThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
-
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
 
         terminateThread(thread);
@@ -3297,8 +3157,6 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = 0x383F7BCC, version = 150, checkInsideInterrupt = true)
     public int sceKernelTerminateDeleteThread(@CheckArgument("checkThreadID") int uid) {
         SceKernelThreadInfo thread = getThreadCurrentIsInvalid(uid);
-
-        log.debug("sceKernelTerminateDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_DELETE);
@@ -3339,10 +3197,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x27E22EC2, version = 150, checkInsideInterrupt = true)
     public int sceKernelResumeDispatchThread(int state) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelResumeDispatchThread(state=" + state + ")");
-        }
-        
         boolean isInterruptsDisabled = Interrupts.isInterruptsDisabled(); 
 
         if (state == SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED) {
@@ -3360,7 +3214,7 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = 0xEA748E31, version = 150)
     public int sceKernelChangeCurrentThreadAttr(int removeAttr, int addAttr) {
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelChangeCurrentThreadAttr" + " removeAttr:0x" + Integer.toHexString(removeAttr) + " addAttr:0x" + Integer.toHexString(addAttr) + " oldAttr:0x" + Integer.toHexString(currentThread.attr));
+            log.debug(String.format("sceKernelChangeCurrentThreadAttr removeAttr=0x%X, addAttr=0x%X, currentAttr=0x%X", removeAttr, addAttr, currentThread.attr));
         }
 
         int newAttr = (currentThread.attr & ~removeAttr) | addAttr;
@@ -3389,7 +3243,7 @@ public class ThreadManForUser extends HLEModule {
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid) + " newPriority:0x" + Integer.toHexString(priority) + " oldPriority:0x" + Integer.toHexString(thread.currentPriority));
+            log.debug(String.format("sceKernelChangeThreadPriority thread=%s, newPriority=0x%X, oldPriority=0x%X", thread, priority, thread.currentPriority));
         }
         hleKernelChangeThreadPriority(thread, priority);
 
@@ -3442,10 +3296,6 @@ public class ThreadManForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x912354A7, version = 150)
     public int sceKernelRotateThreadReadyQueue(@CheckArgument("checkThreadPriority") int priority) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelRotateThreadReadyQueue priority=" + priority);
-        }
-
         synchronized (readyThreads) {
             for (SceKernelThreadInfo thread : readyThreads) {
                 if (thread.currentPriority == priority) {
@@ -3508,7 +3358,7 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = 0x293B45B8, version = 150, checkInsideInterrupt = true)
     public int sceKernelGetThreadId() {
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelGetThreadId returning uid=0x" + Integer.toHexString(currentThread.uid));
+            log.debug(String.format("sceKernelGetThreadId returning uid=0x%X", currentThread.uid));
         }
 
         return currentThread.uid;
@@ -3517,7 +3367,7 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = 0x94AA61EE, version = 150, checkInsideInterrupt = true)
     public int sceKernelGetThreadCurrentPriority() {
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelGetThreadCurrentPriority returning currentPriority=" + currentThread.currentPriority);
+            log.debug(String.format("sceKernelGetThreadCurrentPriority returning currentPriority=%d", currentThread.currentPriority));
         }
 
         return currentThread.currentPriority;
@@ -3535,8 +3385,9 @@ public class ThreadManForUser extends HLEModule {
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelGetThreadExitStatus uid=0x" + Integer.toHexString(uid) + " exitStatus=0x" + Integer.toHexString(thread.exitStatus));
+            log.debug(String.format("sceKernelGetThreadExitStatus thread=%s returning exitStatus=0x%08X", thread, thread.exitStatus));
         }
+
         return thread.exitStatus;
     }
 
@@ -3602,7 +3453,7 @@ public class ThreadManForUser extends HLEModule {
             log.debug(String.format("sceKernelReferThreadRunStatus thread=%s, addr=%s", thread, ptr));
         }
 
-        thread.writeRunStatus(ptr.getMemory(), ptr.getAddress());
+        thread.writeRunStatus(ptr);
         
         return 0;
     }
@@ -3629,15 +3480,6 @@ public class ThreadManForUser extends HLEModule {
      * save full count to idcount_addr */
     @HLEFunction(nid = 0x94416130, version = 150, checkInsideInterrupt = true)
     public int sceKernelGetThreadmanIdList(int type, TPointer32 readBufPtr, int readBufSize, TPointer32 idCountPtr) {
-        if (log.isDebugEnabled()) {
-            log.debug(
-            	"sceKernelGetThreadmanIdList type=" + type +
-            	" readbuf:0x" + Integer.toHexString(readBufPtr.getAddress()) +
-            	" readbufsize:" + readBufSize +
-            	" idcount:0x" + Integer.toHexString(idCountPtr.getAddress())
-            );
-        }
-
         if (type != SCE_KERNEL_TMID_Thread) {
             log.warn("UNIMPLEMENTED:sceKernelGetThreadmanIdList type=" + type);
             idCountPtr.setValue(0);
@@ -3670,10 +3512,6 @@ public class ThreadManForUser extends HLEModule {
 
     @HLEFunction(nid = 0x57CF62DD, version = 150)
     public int sceKernelGetThreadmanIdType(int uid) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelGetThreadmanIdType uid=0x" + uid);
-        }
-
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", false)) {
             return SCE_KERNEL_TMID_Thread;
         }
@@ -3732,20 +3570,12 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = 0x64D4540E, version = 150)
     public int sceKernelReferThreadProfiler() {
         // Can be safely ignored. Only valid in debug mode on a real PSP.
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelReferThreadProfiler");
-        }
-
         return 0;
     }
 
     @HLEFunction(nid = 0x8218B4DD, version = 150)
     public int sceKernelReferGlobalProfiler() {
         // Can be safely ignored. Only valid in debug mode on a real PSP.
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelReferGlobalProfiler");
-        }
-
         return 0;
     }
 

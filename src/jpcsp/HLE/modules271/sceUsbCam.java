@@ -20,13 +20,11 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
-import jpcsp.Memory;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.pspUsbCamSetupMicParam;
 import jpcsp.HLE.kernel.types.pspUsbCamSetupStillExParam;
@@ -35,6 +33,7 @@ import jpcsp.HLE.kernel.types.pspUsbCamSetupVideoExParam;
 import jpcsp.HLE.kernel.types.pspUsbCamSetupVideoParam;
 import jpcsp.HLE.modules.HLEModule;
 
+@HLELogging
 public class sceUsbCam extends HLEModule {
     public static Logger log = Modules.getLogger("sceUsbCam");
 
@@ -127,7 +126,7 @@ public class sceUsbCam extends HLEModule {
 
 	protected int workArea;
 	protected int workAreaSize;
-	protected int jpegBuffer;
+	protected TPointer jpegBuffer;
 	protected int jpegBufferSize;
 
 	// Camera settings
@@ -193,10 +192,8 @@ public class sceUsbCam extends HLEModule {
 	}
 
 	protected int readFakeVideoFrame() {
-		Memory mem = Processor.memory;
-
 		// Image has to be stored in Jpeg format in buffer
-		mem.memset(jpegBuffer, (byte) 0x00, jpegBufferSize);
+		jpegBuffer.clear(jpegBufferSize);
 
 		return jpegBufferSize;
 	}
@@ -210,21 +207,10 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x17F7B2FB, version = 271)
-	public void sceUsbCamSetupVideo(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
-
-		int param = cpu._a0;
-		int workArea = cpu._a1;
-		int workAreaSize = cpu._a2;
-
-		pspUsbCamSetupVideoParam usbCamSetupVideoParam = new pspUsbCamSetupVideoParam();
-		usbCamSetupVideoParam.read(mem, param);
-
-		log.warn(String.format("Partial sceUsbCamSetupVideo param=0x%08X, workArea=0x%08X, workAreaSize=%d, param=%s", param, workArea, workAreaSize, usbCamSetupVideoParam.toString()));
-
-		this.workArea = workArea;
+	public int sceUsbCamSetupVideo(pspUsbCamSetupVideoParam usbCamSetupVideoParam, TPointer workArea, int workAreaSize) {
+		this.workArea = workArea.getAddress();
 		this.workAreaSize = workAreaSize;
 		resolution = usbCamSetupVideoParam.resolution;
 		frameRate = usbCamSetupVideoParam.framerate;
@@ -237,7 +223,7 @@ public class sceUsbCam extends HLEModule {
 		frameSize = usbCamSetupVideoParam.framesize;
 		evLevel = usbCamSetupVideoParam.evlevel;
 
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -248,17 +234,12 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xF93C4669, version = 271)
-	public void sceUsbCamAutoImageReverseSW(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceUsbCamAutoImageReverseSW(boolean on) {
+		autoImageReverseSW = on;
 
-		int on = cpu._a0;
-
-		autoImageReverseSW = (on != 1);
-
-		log.warn(String.format("Partial sceUsbCamAutoImageReverseSW on=%d", on));
-
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -266,15 +247,11 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x574A8C3F, version = 271)
-	public void sceUsbCamStartVideo(Processor processor) {
-		CpuState cpu = processor.cpu;
-
+	public int sceUsbCamStartVideo() {
 		// No parameters
-
-		log.warn(String.format("Ignoring sceUsbCamStartVideo"));
-
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -282,15 +259,11 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	*/
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x6CF32CB9, version = 271)
-	public void sceUsbCamStopVideo(Processor processor) {
-		CpuState cpu = processor.cpu;
-
+	public int sceUsbCamStopVideo() {
 		// No parameters
-
-		log.warn(String.format("Ignoring sceUsbCamStopVideo"));
-
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	@HLEFunction(nid = 0x03ED7A82, version = 271)
@@ -319,7 +292,7 @@ public class sceUsbCam extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x7DAC0C71, version = 271)
 	public int sceUsbCamReadVideoFrameBlocking(TPointer jpegBuffer, int jpegBufferSize) {
-		this.jpegBuffer = jpegBuffer.getAddress();
+		this.jpegBuffer = jpegBuffer;
 		this.jpegBufferSize = jpegBufferSize;
 
 		long now = Emulator.getClock().currentTimeMillis();
@@ -346,19 +319,13 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x99D86281, version = 271)
-	public void sceUsbCamReadVideoFrame(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int jpegBuffer = cpu._a0;
-		int jpegBufferSize = cpu._a1;
-
-		log.warn(String.format("Unimplemented sceUsbCamReadVideoFrame jpegBuffer=0x%08X, jpegBufferSize=%d", jpegBuffer, jpegBufferSize));
-
+	public int sceUsbCamReadVideoFrame(TPointer jpegBuffer, int jpegBufferSize) {
 		this.jpegBuffer = jpegBuffer;
 		this.jpegBufferSize = jpegBufferSize;
 
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -367,27 +334,21 @@ public class sceUsbCam extends HLEModule {
 	 * @return the size of the acquired frame if it has been read,
 	 * 0 if the frame has not yet been read, < 0 on error.
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x41E73E95, version = 271)
-	public void sceUsbCamPollReadVideoFrameEnd(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamPollReadVideoFrameEnd"));
-
-		cpu._v0 = readFakeVideoFrame();
+	public int sceUsbCamPollReadVideoFrameEnd() {
+		return readFakeVideoFrame();
 	}
 
 	/**
-	 * Waits untils the current frame has been read.
+	 * Waits until the current frame has been read.
 	 *
-	 * @return the size of the acquired frame on sucess, < 0 on error
+	 * @return the size of the acquired frame on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xF90B2293, version = 271)
-	public void sceUsbCamWaitReadVideoFrameEnd(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamWaitReadVideoFrameEnd"));
-
-		cpu._v0 = readFakeVideoFrame();
+	public int sceUsbCamWaitReadVideoFrameEnd() {
+		return readFakeVideoFrame();
 	}
 
 	/**
@@ -396,13 +357,10 @@ public class sceUsbCam extends HLEModule {
 	 * @return 1 if the camera is "looking to you", 0 if the camera
 	 * is "looking to the other side".
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x4C34F553, version = 271)
-	public void sceUsbCamGetLensDirection(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamGetLensDirection"));
-
-		cpu._v0 = lensDirectionAtYou ? 1 : 0;
+	public boolean sceUsbCamGetLensDirection() {
+		return lensDirectionAtYou;
 	}
 
 	/**
@@ -412,18 +370,10 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x3F0CF289, version = 271)
-	public void sceUsbCamSetupStill(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int paramAddr = cpu._a0;
-
-		pspUsbCamSetupStillParam usbCamSetupStillParam = new pspUsbCamSetupStillParam();
-		usbCamSetupStillParam.read(Processor.memory, paramAddr);
-
-		log.warn(String.format("Unimplemented sceUsbCamSetupStill param=0x%08X, %s", paramAddr, usbCamSetupStillParam.toString()));
-
-		cpu._v0 = 0;
+	public int sceUsbCamSetupStill(pspUsbCamSetupStillParam usbCamSetupStillParam) {
+		return 0;
 	}
 
 	/**
@@ -433,18 +383,10 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x0A41A298, version = 271)
-	public void sceUsbCamSetupStillEx(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int paramAddr = cpu._a0;
-
-		pspUsbCamSetupStillExParam usbCamSetupStillExParam = new pspUsbCamSetupStillExParam();
-		usbCamSetupStillExParam.read(Processor.memory, paramAddr);
-
-		log.warn(String.format("Unimplemented sceUsbCamSetupStillEx param=0x%08X, %s", paramAddr, usbCamSetupStillExParam.toString()));
-
-		cpu._v0 = 0;
+	public int sceUsbCamSetupStillEx(pspUsbCamSetupStillExParam usbCamSetupStillExParam) {
+		return 0;
 	}
 
 	/**
@@ -456,16 +398,10 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return size of acquired image on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x61BE5CAC, version = 271)
-	public void sceUsbCamStillInputBlocking(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int buffer = cpu._a0;
-		int size = cpu._a1;
-
-		log.warn(String.format("Unimplemented sceUsbCamStillInputBlocking buffer=0x%08X, size=%d", buffer, size));
-
-		cpu._v0 = 0;
+	public int sceUsbCamStillInputBlocking(TPointer buffer, int size) {
+		return 0;
 	}
 
 	/**
@@ -478,16 +414,10 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xFB0A6C5D, version = 271)
-	public void sceUsbCamStillInput(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int buffer = cpu._a0;
-		int size = cpu._a1;
-
-		log.warn(String.format("Unimplemented sceUsbCamStillInput buffer=0x%08X, size=%d", buffer, size));
-
-		cpu._v0 = 0;
+	public int sceUsbCamStillInput(TPointer buffer, int size) {
+		return 0;
 	}
 
 	/**
@@ -495,13 +425,10 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return the size of the acquired image on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x7563AFA1, version = 271)
-	public void sceUsbCamStillWaitInputEnd(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamStillWaitInputEnd"));
-
-		cpu._v0 = 0;
+	public int sceUsbCamStillWaitInputEnd() {
+		return 0;
 	}
 
 	/**
@@ -510,13 +437,10 @@ public class sceUsbCam extends HLEModule {
 	 * @return the size of the acquired image if still input has ended,
 	 * 0 if the input has not ended, < 0 on error.
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x1A46CFE7, version = 271)
-	public void sceUsbCamStillPollInputEnd(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamStillPollInputEnd"));
-
-		cpu._v0 = 0;
+	public int sceUsbCamStillPollInputEnd() {
+		return 0;
 	}
 
 	/**
@@ -524,13 +448,10 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xA720937C, version = 271)
-	public void sceUsbCamStillCancelInput(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamStillCancelInput"));
-
-		cpu._v0 = 0;
+	public int sceUsbCamStillCancelInput() {
+		return 0;
 	}
 
 	/**
@@ -538,13 +459,10 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return the size of the acquired image on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xE5959C36, version = 271)
-	public void sceUsbCamStillGetInputLength(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamStillGetInputLength"));
-
-		cpu._v0 = 0;
+	public int sceUsbCamStillGetInputLength() {
+		return 0;
 	}
 
 	/**
@@ -556,21 +474,10 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xCFE9E999, version = 271)
-	public void sceUsbCamSetupVideoEx(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
-
-		int param = cpu._a0;
-		int workArea = cpu._a1;
-		int workAreaSize = cpu._a2;
-
-		pspUsbCamSetupVideoExParam usbCamSetupVideoExParam = new pspUsbCamSetupVideoExParam();
-		usbCamSetupVideoExParam.read(mem, param);
-
-		log.warn(String.format("Partial sceUsbCamSetupVideoEx param=0x%08X, workArea=0x%08X, workAreaSize=%d, param=%s", param, workArea, workAreaSize, usbCamSetupVideoExParam.toString()));
-
-		this.workArea = workArea;
+	public int sceUsbCamSetupVideoEx(pspUsbCamSetupVideoExParam usbCamSetupVideoExParam, TPointer workArea, int workAreaSize) {
+		this.workArea = workArea.getAddress();
 		this.workAreaSize = workAreaSize;
 		resolution = convertResolutionExToResolution(usbCamSetupVideoExParam.resolution);
 		frameRate = usbCamSetupVideoExParam.framerate;
@@ -583,7 +490,7 @@ public class sceUsbCam extends HLEModule {
 		frameSize = usbCamSetupVideoExParam.framesize;
 		evLevel = usbCamSetupVideoExParam.evlevel;
 
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -591,13 +498,10 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return the size of the acquired frame on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xDF9D0C92, version = 271)
-	public void sceUsbCamGetReadVideoFrameSize(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamGetReadVideoFrameSize"));
-
-		cpu._v0 = jpegBufferSize;
+	public int sceUsbCamGetReadVideoFrameSize() {
+		return jpegBufferSize;
 	}
 
 	/**
@@ -607,17 +511,12 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x6E205974, version = 271)
-	public void sceUsbCamSetSaturation(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int saturation = cpu._a0;
-
-		log.warn(String.format("Unimplemented sceUsbCamSetSaturation %d", saturation));
-
+	public int sceUsbCamSetSaturation(int saturation) {
 		this.saturation = saturation;
 
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -627,17 +526,12 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x4F3D84D5, version = 271)
-	public void sceUsbCamSetBrightness(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int brightness = cpu._a0;
-
-		log.warn(String.format("Unimplemented sceUsbCamSetBrightness %d", brightness));
-
+	public int sceUsbCamSetBrightness(int brightness) {
 		this.brightness = brightness;
 
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -647,17 +541,12 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x09C26C7E, version = 271)
-	public void sceUsbCamSetContrast(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int contrast = cpu._a0;
-
-		log.warn(String.format("Unimplemented sceUsbCamSetContrast %d", contrast));
-
+	public int sceUsbCamSetContrast(int contrast) {
 		this.contrast = contrast;
 
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -667,17 +556,12 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x622F83CC, version = 271)
-	public void sceUsbCamSetSharpness(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int sharpness = cpu._a0;
-
-		log.warn(String.format("Unimplemented sceUsbCamSetSharpness %d", sharpness));
-
+	public int sceUsbCamSetSharpness(int sharpness) {
 		this.sharpness = sharpness;
 
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -687,17 +571,12 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xD4876173, version = 271)
-	public void sceUsbCamSetImageEffectMode(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceUsbCamSetImageEffectMode(int imageEffectMode) {
+		this.imageEffectMode = imageEffectMode;
 
-		int effectMode = cpu._a0;
-
-		log.warn(String.format("Unimplemented sceUsbCamSetImageEffectMode %d", effectMode));
-
-		this.imageEffectMode = effectMode;
-
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -707,17 +586,12 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x1D686870, version = 271)
-	public void sceUsbCamSetEvLevel(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int evLevel = cpu._a0;
-
-		log.warn(String.format("Unimplemented sceUsbCamSetEvLevel %d", evLevel));
-
+	public int sceUsbCamSetEvLevel(int evLevel) {
 		this.evLevel = evLevel;
 
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -727,18 +601,13 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x951BEDF5, version = 271)
-	public void sceUsbCamSetReverseMode(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int reverseMode = cpu._a0;
-
-		log.warn(String.format("Unimplemented sceUsbCamSetReverseMode %d", reverseMode));
-
+	public int sceUsbCamSetReverseMode(int reverseMode) {
 		this.flip = (reverseMode & PSP_USBCAM_FLIP) != 0;
 		this.mirror = (reverseMode & PSP_USBCAM_MIRROR) != 0;
 
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -748,17 +617,12 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @returns 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xC484901F, version = 271)
-	public void sceUsbCamSetZoom(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int zoom = cpu._a0;
-
-		log.warn(String.format("Unimplemented sceUsbCamSetZoom %d", zoom));
-
+	public int sceUsbCamSetZoom(int zoom) {
 		this.zoom = zoom;
 
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -768,17 +632,12 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x383E9FA8, version = 271)
-	public void sceUsbCamGetSaturation(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceUsbCamGetSaturation(TPointer32 saturationAddr) {
+		saturationAddr.setValue(saturation);
 
-		int saturationAddr = cpu._a0;
-
-		log.warn(String.format("Unimplemented sceUsbCamGetSaturation 0x%08X", saturationAddr));
-
-		Processor.memory.write32(saturationAddr, saturation);
-
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -788,17 +647,12 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x70F522C5, version = 271)
-	public void sceUsbCamGetBrightness(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceUsbCamGetBrightness(TPointer32 brightnessAddr) {
+		brightnessAddr.setValue(brightness);
 
-		int brightnessAddr = cpu._a0;
-
-		log.warn(String.format("Unimplemented sceUsbCamGetBrightness 0x%08X", brightnessAddr));
-
-		Processor.memory.write32(brightnessAddr, brightness);
-
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -808,17 +662,12 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xA063A957, version = 271)
-	public void sceUsbCamGetContrast(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceUsbCamGetContrast(TPointer32 contrastAddr) {
+		contrastAddr.setValue(contrast);
 
-		int contrastAddr = cpu._a0;
-
-		log.warn(String.format("Unimplemented sceUsbCamGetContrast 0x%08X", contrastAddr));
-
-		Processor.memory.write32(contrastAddr, contrast);
-
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -828,17 +677,12 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xFDB68C23, version = 271)
-	public void sceUsbCamGetSharpness(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceUsbCamGetSharpness(TPointer32 sharpnessAddr) {
+		sharpnessAddr.setValue(sharpness);
 
-		int sharpnessAddr = cpu._a0;
-
-		log.warn(String.format("Unimplemented sceUsbCamGetSharpness 0x%08X", sharpnessAddr));
-
-		Processor.memory.write32(sharpnessAddr, sharpness);
-
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -848,17 +692,12 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x994471E0, version = 271)
-	public void sceUsbCamGetImageEffectMode(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceUsbCamGetImageEffectMode(TPointer32 imageEffectModeAddr) {
+		imageEffectModeAddr.setValue(imageEffectMode);
 
-		int effectModeAddr = cpu._a0;
-
-		log.warn(String.format("Unimplemented sceUsbCamGetImageEffectMode 0x%08X", effectModeAddr));
-
-		Processor.memory.write32(effectModeAddr, imageEffectMode);
-
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -868,17 +707,12 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x2BCD50C0, version = 271)
-	public void sceUsbCamGetEvLevel(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceUsbCamGetEvLevel(TPointer32 evLevelAddr) {
+		evLevelAddr.setValue(evLevel);
 
-		int evLevelAddr = cpu._a0;
-
-		log.warn(String.format("Unimplemented sceUsbCamGetEvLevel 0x%08X", evLevelAddr));
-
-		Processor.memory.write32(evLevelAddr, evLevel);
-
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -888,14 +722,9 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xD5279339, version = 271)
-	public void sceUsbCamGetReverseMode(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int reverseModeAddr = cpu._a0;
-
-		log.warn(String.format("Unimplemented sceUsbCamGetReverseMode 0x%08X", reverseModeAddr));
-
+	public int sceUsbCamGetReverseMode(TPointer32 reverseModeAddr) {
 		int reverseMode = 0;
 		if (mirror) {
 			reverseMode |= PSP_USBCAM_MIRROR;
@@ -904,9 +733,9 @@ public class sceUsbCam extends HLEModule {
 			reverseMode |= PSP_USBCAM_FLIP;
 		}
 
-		Processor.memory.write32(reverseModeAddr, reverseMode);
+		reverseModeAddr.setValue(reverseMode);
 
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -916,17 +745,12 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 0 on success, < 0 on error
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x9E8AAF8D, version = 271)
-	public void sceUsbCamGetZoom(Processor processor) {
-		CpuState cpu = processor.cpu;
+	public int sceUsbCamGetZoom(TPointer32 zoomAddr) {
+		zoomAddr.setValue(zoom);
 
-		int zoomAddr = cpu._a0;
-
-		log.warn(String.format("Unimplemented sceUsbCamGetZoom 0x%08X", zoomAddr));
-
-		Processor.memory.write32(zoomAddr, zoom);
-
-		cpu._v0 = 0;
+		return 0;
 	}
 
 	/**
@@ -934,31 +758,22 @@ public class sceUsbCam extends HLEModule {
 	 *
 	 * @return 1 if it is set to automatic, 0 otherwise
 	 */
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x11A1F128, version = 271)
-	public void sceUsbCamGetAutoImageReverseState(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamGetAutoImageReverseState"));
-
-		cpu._v0 = autoImageReverseSW ? 1 : 0;
+	public boolean sceUsbCamGetAutoImageReverseState() {
+		return autoImageReverseSW;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x08AEE98A, version = 271)
-	public void sceUsbCamSetMicGain(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamSetMicGain"));
-
-		cpu._v0 = 0;
+	public int sceUsbCamSetMicGain() {
+		return 0;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x2E930264, version = 271)
-	public void sceUsbCamSetupMicEx(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamSetupMicEx"));
-
-		cpu._v0 = 0;
+	public int sceUsbCamSetupMicEx() {
+		return 0;
 	}
 
 	@HLEFunction(nid = 0x36636925, version = 271)
@@ -966,22 +781,16 @@ public class sceUsbCam extends HLEModule {
 		return Modules.sceAudioModule.hleAudioInputBlocking(bufferSize >> 1, micFrequency, buffer);
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x3DC0088E, version = 271)
-	public void sceUsbCamReadMic(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamReadMic"));
-
-		cpu._v0 = 0;
+	public int sceUsbCamReadMic() {
+		return 0;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x41EE8797, version = 271)
-	public void sceUsbCamUnregisterLensRotationCallback(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamUnregisterLensRotationCallback"));
-
-		cpu._v0 = 0;
+	public int sceUsbCamUnregisterLensRotationCallback() {
+		return 0;
 	}
 
 	@HLEFunction(nid = 0x5145868A, version = 271)
@@ -989,58 +798,39 @@ public class sceUsbCam extends HLEModule {
 		return 0;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x5778B452, version = 271)
-	public void sceUsbCamGetMicDataLength(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamGetMicDataLength"));
-
-		cpu._v0 = 0;
+	public int sceUsbCamGetMicDataLength() {
+		return 0;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x6784E6A8, version = 271)
-	public void sceUsbCamSetAntiFlicker(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamSetAntiFlicker"));
-
-		cpu._v0 = 0;
+	public int sceUsbCamSetAntiFlicker() {
+		return 0;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xAA7D94BA, version = 271)
-	public void sceUsbCamGetAntiFlicker(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamGetAntiFlicker"));
-
-		cpu._v0 = 0;
+	public int sceUsbCamGetAntiFlicker() {
+		return 0;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xB048A67D, version = 271)
-	public void sceUsbCamWaitReadMicEnd(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamWaitReadMicEnd"));
-
-		cpu._v0 = 0;
+	public int sceUsbCamWaitReadMicEnd() {
+		return 0;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xD293A100, version = 271)
-	public void sceUsbCamRegisterLensRotationCallback(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamRegisterLensRotationCallback"));
-
-		cpu._v0 = 0;
+	public int sceUsbCamRegisterLensRotationCallback() {
+		return 0;
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0xF8847F60, version = 271)
-	public void sceUsbCamPollReadMicEnd(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		log.warn(String.format("Unimplemented sceUsbCamPollReadMicEnd"));
-
-		cpu._v0 = 0;
+	public int sceUsbCamPollReadMicEnd() {
+		return 0;
 	}
-
 }

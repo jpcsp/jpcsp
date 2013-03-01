@@ -128,11 +128,11 @@ public class PspGeList {
     }
 
     public int getAddressRel(int argument) {
-    	return mem.normalizeAddress((videoEngine.getBase() | argument));
+    	return Memory.normalizeAddress((videoEngine.getBase() | argument));
     }
 
     public int getAddressRelOffset(int argument) {
-    	return mem.normalizeAddress((videoEngine.getBase() | argument) + videoEngine.getBaseOffset());
+    	return Memory.normalizeAddress((videoEngine.getBase() | argument) + videoEngine.getBaseOffset());
     }
 
     public boolean isStackEmpty() {
@@ -153,7 +153,7 @@ public class PspGeList {
 	}
 
     public void jumpAbsolute(int argument) {
-    	setPc(mem.normalizeAddress(argument));
+    	setPc(Memory.normalizeAddress(argument));
     }
 
     public void jumpRelative(int argument) {

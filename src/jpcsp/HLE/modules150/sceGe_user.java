@@ -19,6 +19,7 @@ package jpcsp.HLE.modules150;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 
@@ -48,6 +49,7 @@ import jpcsp.graphics.VideoEngine;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceGe_user extends HLEModule {
     public static Logger log = Modules.getLogger("sceGe_user");
 
@@ -429,10 +431,6 @@ public class sceGe_user extends HLEModule {
 
     @HLEFunction(nid = 0x438A385A, version = 150)
     public int sceGeSaveContext(TPointer contextAddr) {
-        if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceGeSaveContext contextAddr=%s", contextAddr));
-    	}
-
     	VideoEngine.getInstance().hleSaveContext(contextAddr.getAddress());
 
     	return 0;
@@ -440,10 +438,6 @@ public class sceGe_user extends HLEModule {
 
     @HLEFunction(nid = 0x0BF608FB, version = 150)
     public int sceGeRestoreContext(TPointer contextAddr) {
-        if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceGeRestoreContext contextAddr=%s", contextAddr));
-    	}
-
     	VideoEngine.getInstance().hleRestoreContext(contextAddr.getAddress());
 
     	return 0;
@@ -451,10 +445,6 @@ public class sceGe_user extends HLEModule {
 
     @HLEFunction(nid = 0xAB49E76A, version = 150)
     public int sceGeListEnQueue(TPointer listAddr, @CanBeNull TPointer stallAddr, int cbid, @CanBeNull TPointer argAddr) {
-        if (log.isDebugEnabled()) {
-	        log.debug(String.format("sceGeListEnQueue(list=%s, stall=%s, cbid=0x%X, arg=%s)", listAddr, stallAddr, cbid, argAddr));
-    	}
-
     	if (VideoEngine.getInstance().hasDrawList(listAddr.getAddress())) {
     		log.warn("sceGeListEnQueue can't enqueue duplicate list address");
     		throw new SceKernelErrorException(SceKernelErrors.ERROR_BUSY);
@@ -465,10 +455,6 @@ public class sceGe_user extends HLEModule {
 
     @HLEFunction(nid = 0x1C0D95A6, version = 150)
     public int sceGeListEnQueueHead(TPointer listAddr, @CanBeNull TPointer stallAddr, int cbid, @CanBeNull TPointer argAddr) {
-        if (log.isDebugEnabled()) {
-	        log.debug(String.format("sceGeListEnQueueHead(list=%s, stall=%s, cbid=0x%X, arg=%s)", listAddr, stallAddr, cbid, argAddr));
-    	}
-
     	if (VideoEngine.getInstance().hasDrawList(listAddr.getAddress())) {
     		log.warn("sceGeListEnQueueHead can't enqueue duplicate list address");
     		throw new SceKernelErrorException(SceKernelErrors.ERROR_BUSY);
@@ -496,10 +482,6 @@ public class sceGe_user extends HLEModule {
 
     @HLEFunction(nid = 0x5FB86AB0, version = 150)
     public int sceGeListDeQueue(@CheckArgument("checkListId") int id) {
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceGeListDeQueue(id=0x%X)", id));
-        }
-
     	synchronized (this) {
         	PspGeList list = allGeLists[id];
         	list.reset();
@@ -513,10 +495,6 @@ public class sceGe_user extends HLEModule {
 
     @HLEFunction(nid = 0xE0D68148, version = 150)
     public int sceGeListUpdateStallAddr(@CheckArgument("checkListId") int id, @CanBeNull TPointer stallAddr) {
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceGeListUpdateStallAddr(id=0x%X, stall=%s)", id, stallAddr));
-        }
-
     	synchronized (this) {
         	PspGeList list = allGeLists[id];
         	if (list.getStallAddr() != stallAddr.getAddress()) {
@@ -530,13 +508,9 @@ public class sceGe_user extends HLEModule {
 
     @HLEFunction(nid = 0x03444EB4, version = 150)
     public int sceGeListSync(@CheckArgument("checkListId") int id, @CheckArgument("checkMode") int mode) {
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceGeListSync(id=0x%X, mode=%d)", id, mode));
-        }
-
         if (mode == 0 && IntrManager.getInstance().isInsideInterrupt()) {
     		log.debug("sceGeListSync (mode==0) cannot be called inside an interrupt handler!");
-    		throw new SceKernelErrorException(SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT);
+    		return SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
         }
 
         PspGeList list = null;
@@ -570,13 +544,9 @@ public class sceGe_user extends HLEModule {
 
     @HLEFunction(nid = 0xB287BD61, version = 150)
     public int sceGeDrawSync(@CheckArgument("checkMode") int mode) {
-        if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceGeDrawSync mode=%d", mode));
-    	}
-
         if (mode == 0 && IntrManager.getInstance().isInsideInterrupt()) {
             log.debug("sceGeDrawSync (mode==0) cannot be called inside an interrupt handler!");
-            throw new SceKernelErrorException(SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT);
+            return SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
         }
 
         // no synchronization on "this" required because we are not accessing
@@ -608,10 +578,6 @@ public class sceGe_user extends HLEModule {
 
     @HLEFunction(nid = 0xB448EC0D, version = 150)
     public int sceGeBreak(@CheckArgument("checkMode") int mode, TPointer brk_addr) {
-        if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceGeBreak mode=%d, brk_addr=%s", mode, brk_addr));
-    	}
-
         int result = 0;
         PspGeList list = VideoEngine.getInstance().getCurrentList();
         if (mode == 0) {  // Pause the current list only.
@@ -634,16 +600,11 @@ public class sceGe_user extends HLEModule {
 
     @HLEFunction(nid = 0x4C06E472, version = 150)
     public int sceGeContinue() {
-    	Memory mem = Memory.getInstance();
-
-        if (log.isDebugEnabled()) {
-    		log.debug("sceGeContinue()");
-    	}
-
     	PspGeList list = VideoEngine.getInstance().getCurrentList();
     	if (list != null) {
     		synchronized (this) {
         		if (list.status == PSP_GE_LIST_END_REACHED) {
+        	    	Memory mem = Memory.getInstance();
                 	if (mem.read32(list.getPc()) == (GeCommands.FINISH << 24) &&
                 		mem.read32(list.getPc() + 4) == (GeCommands.END << 24)) {
                 		list.readNextInstruction();
@@ -684,10 +645,6 @@ public class sceGe_user extends HLEModule {
 
     @HLEFunction(nid = 0x05DB22CE, version = 150, checkInsideInterrupt = true)
     public int sceGeUnsetCallback(int cbid) {
-        if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceGeUnsetCallback cbid=0x%X", cbid));
-    	}
-
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelCallbackInfo callbackSignal = signalCallbacks.remove(cbid);
         SceKernelCallbackInfo callbackFinish = finishCallbacks.remove(cbid);

@@ -72,7 +72,7 @@ public class VertexBuffer {
 	}
 
 	public VertexBuffer(int address, int stride) {
-		bufferAddress = Memory.getInstance().normalizeAddress(address);
+		bufferAddress = Memory.normalizeAddress(address);
 		bufferLength = 0;
 		this.stride = stride;
 	}
@@ -245,7 +245,7 @@ public class VertexBuffer {
 	}
 
 	public synchronized void load(IRenderingEngine re, Buffer buffer, int address, int length) {
-		address = Memory.getInstance().normalizeAddress(address);
+		address = Memory.normalizeAddress(address);
 
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("VertexBuffer.load(0x%08X, %d) in %s", address, length, this.toString()));
@@ -316,12 +316,12 @@ public class VertexBuffer {
     }
 
 	public int getBufferOffset(int address) {
-		address = Memory.getInstance().normalizeAddress(address);
+		address = Memory.normalizeAddress(address);
 		return address - bufferAddress;
 	}
 
 	public boolean isAddressInside(int address, int length, int gapSize) {
-		address = Memory.getInstance().normalizeAddress(address);
+		address = Memory.normalizeAddress(address);
 		int endAddress = address + length;
 		int startBuffer = bufferAddress - gapSize;
 		int endBuffer = bufferAddress + bufferLength + gapSize;

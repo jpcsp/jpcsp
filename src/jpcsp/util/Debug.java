@@ -235,9 +235,9 @@ public class Debug {
         public static int charSize = 8;
 		public static int charWidth = 8;
 		public static int charHeight = 8;
-        public static char[] font = null;
+        public static byte[] font = null;
 
-        public static void setDebugFont(char[] newFont) {
+        public static void setDebugFont(byte[] newFont) {
             font = newFont;
         }
         public static void setDebugCharWidth(int width) {

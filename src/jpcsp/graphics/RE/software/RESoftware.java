@@ -1325,7 +1325,7 @@ public class RESoftware extends BaseRenderingEngine {
 
 	@Override
 	public boolean canNativeClut(int textureAddress) {
-		if (VideoEngine.isVRAM(textureAddress)) {
+		if (Memory.isVRAM(textureAddress)) {
 			return true;
 		}
 		return !useTextureCache;

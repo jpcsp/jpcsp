@@ -22,6 +22,7 @@ import java.nio.IntBuffer;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
@@ -49,6 +50,7 @@ import org.lwjgl.openal.ALC10;
 import org.lwjgl.openal.ALC11;
 import org.lwjgl.openal.ALCdevice;
 
+@HLELogging
 public class sceAudio extends HLEModule {
     public static Logger log = Modules.getLogger("sceAudio");
 
@@ -296,7 +298,23 @@ public class sceAudio extends HLEModule {
     	return channel;
     }
 
-	protected void hleAudioBlockingInput(int threadId, int addr, int samples, int frequency) {
+    public int checkSampleCount(int sampleCount) {
+        if (sampleCount <= 0 || sampleCount > 0xFFC0 || (sampleCount & 0x3F) != 0) {
+        	return SceKernelErrors.ERROR_AUDIO_OUTPUT_SAMPLE_DATA_SIZE_NOT_ALIGNED;
+        }
+
+    	return sampleCount;
+    }
+
+    public int checkSmallSampleCount(int sampleCount) {
+    	if (sampleCount < 17 || sampleCount >= 4095 + 17) {
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_AUDIO_OUTPUT_SAMPLE_DATA_SIZE_NOT_ALIGNED);
+    	}
+
+    	return sampleCount;
+    }
+
+    protected void hleAudioBlockingInput(int threadId, int addr, int samples, int frequency) {
 		int availableSamples = hleAudioGetInputLength();
 		if (log.isTraceEnabled()) {
 			log.trace(String.format("hleAudioBlockingInput available samples: %d from %d", availableSamples, samples));
@@ -409,12 +427,8 @@ public class sceAudio extends HLEModule {
 
     @HLEFunction(nid = 0xA2BEAA6C, version = 150, moduleName = "sceAudio_driver", checkInsideInterrupt = true)
     public int sceAudioSetFrequency(int frequency) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceAudioSetFrequency frequency=%d", frequency));
-    	}
-
     	if (frequency != 44100 && frequency != 48000) {
-        	return -1;
+        	return SceKernelErrors.ERROR_AUDIO_INVALID_FREQUENCY;
         }
 
         for (int i = 0; i < pspPCMChannels.length; i++) {
@@ -530,14 +544,10 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0x5EC81C55, version = 150, checkInsideInterrupt = true)
-    public int sceAudioChReserve(int channel, int sampleCount, int format) {
+    public int sceAudioChReserve(int channel, @CheckArgument("checkSampleCount") int sampleCount, int format) {
         if (disableChReserve) {
             log.warn(String.format("IGNORED sceAudioChReserve channel=%d, sampleCount=%d, format=%d", channel, sampleCount, format));
             return -1;
-        }
-
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceAudioChReserve channel=%d, sampleCount=%d, format=%d", channel, sampleCount, format));
         }
 
         if (channel != -1) {
@@ -575,10 +585,6 @@ public class sceAudio extends HLEModule {
 
     @HLEFunction(nid = 0x6FC46853, version = 150, checkInsideInterrupt = true)
     public int sceAudioChRelease(@CheckArgument("checkChannel") int channel) {
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceAudioChRelease channel=%d", channel));
-        }
-
         if (!pspPCMChannels[channel].isReserved()) {
         	return SceKernelErrors.ERROR_AUDIO_CHANNEL_NOT_RESERVED;
         }
@@ -591,19 +597,11 @@ public class sceAudio extends HLEModule {
 
     @HLEFunction(nid = 0xB011922F, version = 150, checkInsideInterrupt = true)
     public int sceAudioGetChannelRestLength(@CheckArgument("checkChannel") int channel) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceAudioGetChannelRestLength channel=%d", channel));
-    	}
-
     	return hleAudioGetChannelRestLen(pspPCMChannels[channel]);
     }
 
     @HLEFunction(nid = 0xCB2E439E, version = 150, checkInsideInterrupt = true)
-    public int sceAudioSetChannelDataLen(@CheckArgument("checkReservedChannel") int channel, int sampleCount) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAudioSetChannelDataLen channel=%d, sampleCount=%d", channel, sampleCount));
-        }
-
+    public int sceAudioSetChannelDataLen(@CheckArgument("checkReservedChannel") int channel, @CheckArgument("checkSampleCount") int sampleCount) {
         pspPCMChannels[channel].setSampleLength(sampleCount);
 
         return 0;
@@ -611,10 +609,6 @@ public class sceAudio extends HLEModule {
 
     @HLEFunction(nid = 0x95FD0C2D, version = 150, checkInsideInterrupt = true)
     public int sceAudioChangeChannelConfig(@CheckArgument("checkReservedChannel") int channel, int format) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceAudioChangeChannelConfig channel=%d, format=%d", channel, format));
-    	}
-
     	pspPCMChannels[channel].setFormat(format);
 
         return 0;
@@ -622,54 +616,33 @@ public class sceAudio extends HLEModule {
 
     @HLEFunction(nid = 0xB7E1D8E7, version = 150, checkInsideInterrupt = true)
     public int sceAudioChangeChannelVolume(@CheckArgument("checkReservedChannel") int channel, int leftvol, int rightvol) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceAudioChangeChannelVolume channel=%d, leftvol=0x%X, rightvol=0x%X", channel, leftvol, rightvol));
-    	}
-
     	return changeChannelVolume(pspPCMChannels[channel], leftvol, rightvol);
     }
 
     @HLEFunction(nid = 0x01562BA3, version = 150, checkInsideInterrupt = true)
     public int sceAudioOutput2Reserve(int sampleCount) {
-        if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceAudioOutput2Reserve sampleCount=%d", sampleCount));
-        }
-
         return hleAudioSRCChReserve(sampleCount, 44100, SoundChannel.FORMAT_STEREO);
     }
 
     @HLEFunction(nid = 0x43196845, version = 150, checkInsideInterrupt = true)
     public int sceAudioOutput2Release() {
-    	if (log.isDebugEnabled()) {
-    		log.debug("sceAudioOutput2Release redirecting to sceAudioSRCChRelease");
-    	}
         return sceAudioSRCChRelease();
     }
 
     @HLEFunction(nid = 0x2D53F36E, version = 150, checkInsideInterrupt = true)
     public int sceAudioOutput2OutputBlocking(int vol, @CanBeNull TPointer buf) {
-    	if (log.isDebugEnabled()) {
-    		log.debug("sceAudioOutput2OutputBlocking redirecting to sceAudioSRCOutputBlocking");
-    	}
         return sceAudioSRCOutputBlocking(vol, buf);
     }
 
     @HLEFunction(nid = 0x647CEF33, version = 150, checkInsideInterrupt = true)
     public int sceAudioOutput2GetRestSample() {
-    	if (log.isDebugEnabled()) {
-    		log.debug("sceAudioOutput2GetRestSample");
-    	}
         return hleAudioGetChannelRestLen(pspSRCChannel);
     }
 
     @HLEFunction(nid = 0x63F2889C, version = 150, checkInsideInterrupt = true)
-    public int sceAudioOutput2ChangeLength(int sampleCount) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceAudioOutput2ChangeLength sampleCount=%d", sampleCount));
-    	}
-
+    public int sceAudioOutput2ChangeLength(@CheckArgument("checkSmallSampleCount") int sampleCount) {
     	if (!pspSRCChannel.isReserved()) {
-        	return -1;
+        	return SceKernelErrors.ERROR_AUDIO_CHANNEL_NOT_RESERVED;
         }
 
         pspSRCChannel.setSampleLength(sampleCount);
@@ -679,19 +652,11 @@ public class sceAudio extends HLEModule {
 
     @HLEFunction(nid = 0x38553111, version = 150, checkInsideInterrupt = true)
     public int sceAudioSRCChReserve(int sampleCount, int freq, int format) {
-        if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceAudioSRCChReserve sampleCount=%d, freq=%d, format=%d", sampleCount, freq, format));
-        }
-
         return hleAudioSRCChReserve(sampleCount, freq, format);
     }
 
     @HLEFunction(nid = 0x5C37C0AE, version = 150, checkInsideInterrupt = true)
     public int sceAudioSRCChRelease() {
-    	if (log.isDebugEnabled()) {
-    		log.debug("sceAudioSRCChRelease");
-    	}
-
     	if (pspSRCChannel.isReserved()) {
             pspSRCChannel.release();
             pspSRCChannel.setReserved(false);
@@ -785,11 +750,6 @@ public class sceAudio extends HLEModule {
 
     @HLEFunction(nid = 0xE9D97901, version = 150, checkInsideInterrupt = true)
     public int sceAudioGetChannelRestLen(@CheckArgument("checkChannel") int channel) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceAudioGetChannelRestLen channel=%d", channel));
-    	}
-
     	return hleAudioGetChannelRestLen(pspPCMChannels[channel]);
     }
-
 }
