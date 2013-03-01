@@ -92,7 +92,7 @@ public abstract class CachedTexture implements IRandomTextureAccess {
 
 		if (buffer == memAll) {
 			int textureAddress = bufferOffset << 2;
-			if (VideoEngine.isVRAM(textureAddress)) {
+			if (Memory.isVRAM(textureAddress)) {
 				cachedTexture.setVRAMTexture(true);
 			}
 		}

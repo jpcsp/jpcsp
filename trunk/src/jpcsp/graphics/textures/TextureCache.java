@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Memory;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.util.CacheStatistics;
@@ -152,7 +153,7 @@ public class TextureCache {
 	}
 
 	private boolean isVramTexture(Texture texture) {
-		return VideoEngine.isVRAM(texture.getAddr());
+		return Memory.isVRAM(texture.getAddr());
 	}
 
 	public void deleteVramTextures(IRenderingEngine re, int addr, int length) {

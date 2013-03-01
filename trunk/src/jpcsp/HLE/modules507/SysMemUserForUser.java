@@ -27,5 +27,4 @@ public class SysMemUserForUser extends jpcsp.HLE.modules500.SysMemUserForUser {
 
         return 0;
 	}
-
 }

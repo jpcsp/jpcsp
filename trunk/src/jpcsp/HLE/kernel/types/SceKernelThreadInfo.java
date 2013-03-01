@@ -31,6 +31,7 @@ import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules.SysMemUserForUser;
@@ -411,8 +412,8 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
     // SceKernelThreadRunStatus.
     // Represents a smaller subset of SceKernelThreadInfo containing only the most volatile parts
     // of the thread (mostly used for debugging).
-    public void writeRunStatus(Memory mem, int address) {
-    	start(mem, address);
+    public void writeRunStatus(TPointer pointer) {
+    	start(pointer.getMemory(), pointer.getAddress());
     	super.write();
     	write32(status);
     	write32(currentPriority);

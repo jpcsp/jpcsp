@@ -18,6 +18,7 @@ package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
@@ -37,6 +38,7 @@ import jpcsp.HLE.modules.HLEModule;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceCtrl extends HLEModule {
     public static Logger log = Modules.getLogger("sceCtrl");
 
@@ -343,7 +345,7 @@ public class sceCtrl extends HLEModule {
     public int sceCtrlSetSamplingCycle(int newCycle) {
     	int oldCycle = cycle;
         this.cycle = newCycle;
-    	
+
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceCtrlSetSamplingCycle cycle=%d returning %d", newCycle, oldCycle));
         }
@@ -353,9 +355,6 @@ public class sceCtrl extends HLEModule {
 
     @HLEFunction(nid = 0x02BAAD91, version = 150, checkInsideInterrupt = true)
     public int sceCtrlGetSamplingCycle(TPointer32 cycleAddr) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceCtrlGetSamplingCycle cycleAddr=%s", cycleAddr));
-    	}
     	cycleAddr.setValue(cycle);
 
         return 0;
@@ -375,9 +374,6 @@ public class sceCtrl extends HLEModule {
 
     @HLEFunction(nid = 0xDA6B76A1, version = 150)
     public int sceCtrlGetSamplingMode(TPointer32 modeAddr) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceCtrlGetSamplingMode modeAddr=%s", modeAddr));
-    	}
     	modeAddr.setValue(mode);
 
     	return 0;
@@ -385,46 +381,26 @@ public class sceCtrl extends HLEModule {
 
     @HLEFunction(nid = 0x3A622550, version = 150)
     public int sceCtrlPeekBufferPositive(TPointer dataAddr, int numBuf) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceCtrlPeekBufferPositive dataAddr=%s, numBuf=%d", dataAddr, numBuf));
-        }
-
         return hleCtrlReadBufferImmediately(dataAddr.getAddress(), numBuf, true, true);
     }
 
     @HLEFunction(nid = 0xC152080A, version = 150)
     public int sceCtrlPeekBufferNegative(TPointer dataAddr, int numBuf) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceCtrlPeekBufferNegative dataAddr=%s, numBuf=%d", dataAddr, numBuf));
-        }
-
         return hleCtrlReadBufferImmediately(dataAddr.getAddress(), numBuf, false, true);
     }
 
     @HLEFunction(nid = 0x1F803938, version = 150, checkInsideInterrupt = true)
     public int sceCtrlReadBufferPositive(TPointer dataAddr, int numBuf) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceCtrlReadBufferPositive dataAddr=%s, numBuf=%d", dataAddr, numBuf));
-        }
-
         return hleCtrlReadBuffer(dataAddr.getAddress(), numBuf, true);
     }
 
     @HLEFunction(nid = 0x60B81F86, version = 150, checkInsideInterrupt = true)
     public int sceCtrlReadBufferNegative(TPointer dataAddr, int numBuf) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceCtrlReadBufferNegative dataAddr=%s, numBuf=%d", dataAddr, numBuf));
-        }
-
         return hleCtrlReadBuffer(dataAddr.getAddress(), numBuf, false);
     }
 
     @HLEFunction(nid = 0xB1D0E5CD, version = 150)
     public int sceCtrlPeekLatch(TPointer32 latchAddr) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceCtrlPeekLatch latchAddr=%s", latchAddr));
-    	}
-
     	latchAddr.setValue(0, uiMake);
         latchAddr.setValue(4, uiBreak);
         latchAddr.setValue(8, uiPress);
@@ -435,10 +411,6 @@ public class sceCtrl extends HLEModule {
 
     @HLEFunction(nid = 0x0B588501, version = 150)
     public int sceCtrlReadLatch(TPointer32 latchAddr) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceCtrlReadLatch latchAddr=%s", latchAddr));
-    	}
-
     	latchAddr.setValue(0, uiMake);
         latchAddr.setValue(4, uiBreak);
         latchAddr.setValue(8, uiPress);
@@ -452,10 +424,6 @@ public class sceCtrl extends HLEModule {
 
     @HLEFunction(nid = 0xA7144800, version = 150)
     public int sceCtrlSetIdleCancelThreshold(int idlereset, int idleback) {
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceCtrlSetIdleCancelThreshold idlereset=%d, idleback=%d", idlereset, idleback));
-        }
-
         this.idlereset = idlereset;
         this.idleback  = idleback;
 
@@ -464,10 +432,6 @@ public class sceCtrl extends HLEModule {
 
     @HLEFunction(nid = 0x687660FA, version = 150)
     public int sceCtrlGetIdleCancelThreshold(@CanBeNull TPointer32 idleresetAddr, @CanBeNull TPointer32 idlebackAddr) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceCtrlGetIdleCancelThreshold idleresetAddr=%s, idlebackAddr=%s", idleresetAddr, idlebackAddr));
-    	}
-
     	idleresetAddr.setValue(idlereset);
     	idlebackAddr.setValue(idleback);
 

@@ -26,6 +26,7 @@ import java.util.HashMap;
 
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.PspString;
 import jpcsp.HLE.SceKernelErrorException;
@@ -41,6 +42,7 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceHttp extends HLEModule {
     public static Logger log = Modules.getLogger("sceHttp");
     public static final int PSP_HTTP_SYSTEM_COOKIE_HEAP_SIZE = 130 * 1024;
@@ -383,12 +385,9 @@ public class sceHttp extends HLEModule {
      * @param heapSize - Memory pool size? Pass 20000
      * @return 0 on success, < 0 on error.
      */
+    @HLELogging(level="info")
     @HLEFunction(nid = 0xAB1ABE07, version = 150, checkInsideInterrupt = true)
     public int sceHttpInit(int heapSize) {
-    	if (log.isInfoEnabled()) {
-    		log.info(String.format("sceHttpInit heapSize=0x%X", heapSize));
-    	}
-
         if (isHttpInit) {
             return SceKernelErrors.ERROR_HTTP_ALREADY_INIT;
         }
@@ -404,10 +403,9 @@ public class sceHttp extends HLEModule {
      *
      * @return 0 on success, < 0 on error.
      */
+    @HLEUnimplemented
     @HLEFunction(nid = 0xD1C8945E, version = 150, checkInsideInterrupt = true)
     public int sceHttpEnd() {
-        log.warn("PARTIAL sceHttpEnd");
-
         checkHttpInit();
 
         isSystemCookieLoaded = false;
@@ -423,10 +421,9 @@ public class sceHttp extends HLEModule {
      * @param contentlength - The size of the content
      * @return 0 on success, < 0 on error.
      */
+    @HLEUnimplemented
     @HLEFunction(nid = 0x0282A3BD, version = 150)
     public int sceHttpGetContentLength(int requestId, TPointer32 contentLength){
-    	log.warn(String.format("Partial sceHttpGetContentLength requestId=%d, contentLength=%s", requestId, contentLength));
-
     	HttpRequest httpRequest = getHttpRequest(requestId);
     	contentLength.setValue(httpRequest.getContentLength());
 
@@ -590,10 +587,9 @@ public class sceHttp extends HLEModule {
      * @param contentlength - Length of the content (POST method only)
      * @return A request ID on success, < 0 on error.
      */
+    @HLEUnimplemented
     @HLEFunction(nid = 0x47347B50, version = 150)
     public int sceHttpCreateRequest(int connectionId, int method, PspString path, int contentLength) {
-    	log.warn(String.format("Partial sceHttpCreateRequest connectionId=%d, method=%d, path='%s', contentLength=%d", connectionId, method, path, contentLength));
-
     	HttpConnection httpConnection = getHttpConnection(connectionId);
     	HttpRequest httpRequest = new HttpRequest();
     	httpRequest.setMethod(method);
@@ -624,10 +620,9 @@ public class sceHttp extends HLEModule {
      * @param statuscode - The status code from the host (200 is ok, 404 is not found etc)
      * @return 0 on success, < 0 on error.
      */
+    @HLEUnimplemented
     @HLEFunction(nid = 0x4CC7D78F, version = 150)
     public int sceHttpGetStatusCode(int requestId, TPointer32 statusCode) {
-    	log.warn(String.format("Partial sceHttpGetStatusCode requestId=%d, statusCode=%s", requestId, statusCode));
-
     	HttpRequest httpRequest = getHttpRequest(requestId);
     	statusCode.setValue(httpRequest.getStatusCode());
 
@@ -731,10 +726,9 @@ public class sceHttp extends HLEModule {
      * @param unknown1 - Pass 0
      * @return A connection ID on success, < 0 on error.
      */
+    @HLEUnimplemented
     @HLEFunction(nid = 0x8EEFD953, version = 150)
     public int sceHttpCreateConnection(int templateId, PspString host, PspString protocol, int port, int unknown1) {
-    	log.warn(String.format("Partial sceHttpCreateConnection templateId=%d, host=%s, protocol=%s, port=%s, unknown1=0x%08X", templateId, host, protocol, port, unknown1));
-
     	HttpTemplate httpTemplate = getHttpTemplate(templateId);
     	HttpConnection httpConnection = new HttpConnection();
     	httpConnection.setUrl(host.getString(), protocol.getString(), port);
@@ -788,10 +782,9 @@ public class sceHttp extends HLEModule {
      * @param unknown2 - Pass 0
      * @return A template ID on success, < 0 on error.
      */
+    @HLEUnimplemented
     @HLEFunction(nid = 0x9B1F1F36, version = 150)
     public int sceHttpCreateTemplate(PspString agent, int unknown1, int unknown2) {
-    	log.warn(String.format("Partial sceHttpCreateTemplate agent=%s, unknown1=0x%08X, unknown2=0x%08X", agent, unknown1, unknown2));
-
     	HttpTemplate httpTemplate = new HttpTemplate();
     	httpTemplate.setAgent(agent.getString());
 
@@ -849,10 +842,9 @@ public class sceHttp extends HLEModule {
      * @param contentlength - Length of the content (POST method only)
      * @return A request ID on success, < 0 on error.
      */
+    @HLEUnimplemented
     @HLEFunction(nid = 0xB509B09E, version = 150)
     public int sceHttpCreateRequestWithURL(int connectionId, int method, PspString url, int contentLength) {
-    	log.warn(String.format("Partial sceHttpCreateRequestWithURL connectionId=%d, method=%d, url=%s, contentLength=%d", connectionId, method, url, contentLength));
-
     	HttpConnection httpConnection = getHttpConnection(connectionId);
     	HttpRequest httpRequest = new HttpRequest();
     	httpRequest.setUrl(url.getString());
@@ -870,10 +862,9 @@ public class sceHttp extends HLEModule {
      * @param datasize - For POST methods specify the size of the post data, otherwise pass 0
      * @return 0 on success, < 0 on error.
      */
+    @HLEUnimplemented
     @HLEFunction(nid = 0xBB70706F, version = 150)
     public int sceHttpSendRequest(int requestId, @CanBeNull TPointer data, int dataSize) {
-    	log.warn(String.format("Partial sceHttpSendRequest requestId=%d, data=%s, dataSize=%d", requestId, data, dataSize));
-
     	HttpRequest httpRequest = getHttpRequest(requestId);
     	httpRequest.send(data.getAddress(), dataSize);
 
@@ -936,10 +927,9 @@ public class sceHttp extends HLEModule {
      * @param unknown1 - Pass 0
      * @return A connection ID on success, < 0 on error.
      */
+    @HLEUnimplemented
     @HLEFunction(nid = 0xCDF8ECB9, version = 150)
     public int sceHttpCreateConnectionWithURL(int templateId, PspString url, int unknown1) {
-    	log.warn(String.format("Partial sceHttpCreateConnectionWithURL templateId=%d, url=%s, unknown1=0x%08X", templateId, url, unknown1));
-
     	HttpTemplate httpTemplate = getHttpTemplate(templateId);
     	HttpConnection httpConnection = new HttpConnection();
     	httpConnection.setUrl(url.getString());
@@ -948,10 +938,9 @@ public class sceHttp extends HLEModule {
     	return httpConnection.getId();
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0xD081EC8F, version = 150)
     public int sceHttpGetNetworkErrno(int requestId, TPointer32 errno) {
-    	log.warn(String.format("Partial sceHttpGetNetworkErrno requestId=%d, errno=%s", requestId, errno));
-
     	errno.setValue(0);
 
     	return 0;
@@ -983,10 +972,9 @@ public class sceHttp extends HLEModule {
      * @param datasize - Size of the buffer 
      * @return The size read into the data buffer, 0 if there is no more data, < 0 on error.
      */
+    @HLEUnimplemented
     @HLEFunction(nid = 0xEDEEB999, version = 150)
     public int sceHttpReadData(int requestId, TPointer data, int dataSize) {
-    	log.warn(String.format("Partial sceHttpReadData requestId=%d, data=%s, dataSize=%d", requestId, data, dataSize));
-
     	HttpRequest httpRequest = getHttpRequest(requestId);
     	int readSize = httpRequest.readData(data.getAddress(), dataSize);
 

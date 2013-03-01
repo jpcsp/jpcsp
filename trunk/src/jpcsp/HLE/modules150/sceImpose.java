@@ -14,10 +14,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.Modules;
@@ -27,6 +27,7 @@ import jpcsp.settings.Settings;
 
 import org.apache.log4j.Logger;
 
+@HLELogging
 public class sceImpose extends HLEModule {
     public static Logger log = Modules.getLogger("sceImpose");
 
@@ -87,10 +88,6 @@ public class sceImpose extends HLEModule {
 
 	@HLEFunction(nid = 0x72189C48, version = 150)
 	public int sceImposeSetUMDPopup(int mode) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceImposeSetUMDPopup mode=%d", mode));
-		}
-
         umdPopupStatus = mode;
         
         return 0;
@@ -98,8 +95,6 @@ public class sceImpose extends HLEModule {
 
 	@HLEFunction(nid = 0xE0887BC8, version = 150)
 	public int sceImposeGetUMDPopup() {
-		log.debug("sceImposeGetUMDPopup");
-
 		return umdPopupStatus;
 	}
 
@@ -138,12 +133,8 @@ public class sceImpose extends HLEModule {
 
 	@HLEFunction(nid = 0x8C943191, version = 150)
 	public int sceImposeGetBatteryIconStatus(TPointer32 chargingPtr, TPointer32 iconStatusPtr) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceImposeGetBatteryIconStatus chargingPtr=%s, iconStatusPtr=%s", chargingPtr, iconStatusPtr));
-		}
-
 		int batteryPowerPercent = Battery.getCurrentPowerPercent();
-        
+
         // Possible values for iconStatus: 0..3
         int iconStatus = Math.min(batteryPowerPercent / 25, 3);
         boolean charging = Battery.isCharging();
@@ -156,17 +147,11 @@ public class sceImpose extends HLEModule {
 
     @HLEFunction(nid = 0x8F6E3518, version = 150)
     public int sceImposeGetBacklightOffTime() {
-		log.debug("sceImposeGetBacklightOffTime");
-
 		return backlightOffTime;
 	}
 
     @HLEFunction(nid = 0x967F6D4A, version = 150)
     public int sceImposeSetBacklightOffTime(int time) {
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceImposeSetBacklightOffTime time=%d", time));
-    	}
-
         backlightOffTime = time;
 
 		return 0;

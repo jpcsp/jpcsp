@@ -22,6 +22,8 @@ import java.security.NoSuchAlgorithmException;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.HLEFunction;
+import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.modules.HLEModule;
@@ -31,6 +33,7 @@ import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
 
+@HLELogging
 public class sceMd5 extends HLEModule {
     public static Logger log = Modules.getLogger("sceMd5");
     protected MessageDigest md5;
@@ -85,39 +88,35 @@ public class sceMd5 extends HLEModule {
 		}
 	}
 
+	@HLEUnimplemented
 	@HLEFunction(nid = 0x19884A15, version = 150)
     public int sceMd5_19884A15(TPointer unknown) {
-    	log.warn(String.format("PARTIAL sceMd5_19884A15 unknown=%s", unknown));
-
     	md5.reset();
 
     	return 0;
     }
 
+	@HLEUnimplemented
     @HLEFunction(nid = 0xA30206C2, version = 150)
     public int sceMd5_A30206C2(TPointer unknown1, TPointer sourceAddr, int size) {
-    	log.warn(String.format("PARTIAL sceMd5_A30206C2 unknown1=%s, sourceAddr=%s, size=%d: %s", unknown1, sourceAddr, size, Utilities.getMemoryDump(sourceAddr.getAddress(), size)));
-
     	byte[] source = getMemoryBytes(sourceAddr.getAddress(), size);
     	md5.update(source);
 
     	return 0;
     }
 
+	@HLEUnimplemented
     @HLEFunction(nid = 0x4876AFFF, version = 150)
     public int sceMd5_4876AFFF(TPointer unknown1, TPointer resultAddr) {
-    	log.warn(String.format("PARTIAL sceMd5_4876AFFF unknown1=%s, resultAddr=%s", unknown1, resultAddr));
-
     	byte[] result = md5.digest();
     	writeMd5Digest(resultAddr.getAddress(), result);
 
     	return 0;
     }
 
+	@HLEUnimplemented
     @HLEFunction(nid = 0x98E31A9E, version = 150)
     public int sceMd5_98E31A9E(TPointer sourceAddr, int size, TPointer resultAddr) {
-    	log.warn(String.format("PARTIAL sceMd5_98E31A9E sourceAddr=%s, size=%d, resultAddr=%s: %s", sourceAddr, size, resultAddr, Utilities.getMemoryDump(sourceAddr.getAddress(), size)));
-
     	byte[] source = getMemoryBytes(sourceAddr.getAddress(), size);
 		md5.reset();
 		byte[] result = md5.digest(source);

@@ -1046,7 +1046,7 @@ public class RuntimeContext {
 
     public static boolean checkMemoryPointer(int address) {
         if (!Memory.isAddressGood(address)) {
-            if (!Memory.isRawAddressGood(memory.normalizeAddress(address))) {
+            if (!Memory.isRawAddressGood(Memory.normalizeAddress(address))) {
                 return false;
             }
         }
@@ -1068,7 +1068,7 @@ public class RuntimeContext {
         	if (memory.read32AllowedInvalidAddress(rawAddress)) {
         		rawAddress = 0;
         	} else {
-                int normalizedAddress = memory.normalizeAddress(address);
+                int normalizedAddress = Memory.normalizeAddress(address);
                 if (Memory.isRawAddressGood(normalizedAddress)) {
                     rawAddress = normalizedAddress;
                 } else {
@@ -1086,7 +1086,7 @@ public class RuntimeContext {
     public static int checkMemoryRead16(int address, int pc) throws StopThreadException {
         int rawAddress = address & Memory.addressMask;
         if (!Memory.isRawAddressGood(rawAddress)) {
-            int normalizedAddress = memory.normalizeAddress(address);
+            int normalizedAddress = Memory.normalizeAddress(address);
             if (Memory.isRawAddressGood(normalizedAddress)) {
                 rawAddress = normalizedAddress;
             } else {
@@ -1103,7 +1103,7 @@ public class RuntimeContext {
     public static int checkMemoryRead8(int address, int pc) throws StopThreadException {
         int rawAddress = address & Memory.addressMask;
         if (!Memory.isRawAddressGood(rawAddress)) {
-            int normalizedAddress = memory.normalizeAddress(address);
+            int normalizedAddress = Memory.normalizeAddress(address);
             if (Memory.isRawAddressGood(normalizedAddress)) {
                 rawAddress = normalizedAddress;
             } else {
@@ -1120,7 +1120,7 @@ public class RuntimeContext {
     public static int checkMemoryWrite32(int address, int pc) throws StopThreadException {
         int rawAddress = address & Memory.addressMask;
         if (!Memory.isRawAddressGood(rawAddress)) {
-            int normalizedAddress = memory.normalizeAddress(address);
+            int normalizedAddress = Memory.normalizeAddress(address);
             if (Memory.isRawAddressGood(normalizedAddress)) {
                 rawAddress = normalizedAddress;
             } else {
@@ -1139,7 +1139,7 @@ public class RuntimeContext {
     public static int checkMemoryWrite16(int address, int pc) throws StopThreadException {
         int rawAddress = address & Memory.addressMask;
         if (!Memory.isRawAddressGood(rawAddress)) {
-            int normalizedAddress = memory.normalizeAddress(address);
+            int normalizedAddress = Memory.normalizeAddress(address);
             if (Memory.isRawAddressGood(normalizedAddress)) {
                 rawAddress = normalizedAddress;
             } else {
@@ -1158,7 +1158,7 @@ public class RuntimeContext {
     public static int checkMemoryWrite8(int address, int pc) throws StopThreadException {
         int rawAddress = address & Memory.addressMask;
         if (!Memory.isRawAddressGood(rawAddress)) {
-            int normalizedAddress = memory.normalizeAddress(address);
+            int normalizedAddress = Memory.normalizeAddress(address);
             if (Memory.isRawAddressGood(normalizedAddress)) {
                 rawAddress = normalizedAddress;
             } else {

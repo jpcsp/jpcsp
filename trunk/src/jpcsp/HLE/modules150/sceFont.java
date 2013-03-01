@@ -268,10 +268,9 @@ public class sceFont extends HLEModule {
             SeekableDataInput fontFile = Modules.IoFileMgrForUserModule.getFile(fontDirPath + "/" + customFontFile, IoFileMgrForUser.PSP_O_RDONLY);
             if (fontFile != null) {
                 fontFile.skipBytes(32);  // Skip custom header.
-                char[] c = new char[(int) fontFile.length() - 32];
-                for (int i = 0; i < c.length; i++) {
-                    c[i] = (char) (fontFile.readByte() & 0xFF);
-                }
+                byte[] c = new byte[(int) fontFile.length() - 32];
+                fontFile.readFully(c);
+                fontFile.close();
                 Debug.Font.setDebugFont(c); // Set the internal debug font.
                 Debug.Font.setDebugCharSize(8);
                 Debug.Font.setDebugCharHeight(8);
