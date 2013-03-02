@@ -2137,13 +2137,15 @@ public class sceUtility extends HLEModule {
             }
 
             IMemoryWriter textureWriter = MemoryWriter.getMemoryWriter(textureAddr, bytesPerPixel);
-            for (int y = 0; y < icon0Height; y++) {
-            	for (int x = 0; x < icon0Width; x++) {
+            int width = Math.min(image.getWidth(), icon0Width);
+            int height = Math.min(image.getHeight(), icon0Height);
+            for (int y = 0; y < height; y++) {
+            	for (int x = 0; x < width; x++) {
             		int colorARGB = image.getRGB(x, y);
             		int colorABGR = colorARGBtoABGR(colorARGB);
             		textureWriter.writeNext(colorABGR);
             	}
-            	for (int x = icon0Width; x < icon0BufferWidth; x++) {
+            	for (int x = width; x < icon0BufferWidth; x++) {
             		textureWriter.writeNext(0);
             	}
             }
