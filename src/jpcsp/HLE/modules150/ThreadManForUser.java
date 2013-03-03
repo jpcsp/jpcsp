@@ -121,6 +121,7 @@ import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.util.DurationStatistics;
 
 import org.apache.log4j.Logger;
+
 import jpcsp.HLE.CheckArgument;;
 
 /*
@@ -338,10 +339,14 @@ public class ThreadManForUser extends HLEModule {
     }
 
     public void hleKernelSetThreadArguments(SceKernelThreadInfo thread, String argument) {
-    	// The PSP is passing an argumentSize 1 byte (0x00) larger than the real string.
-    	int address = prepareThreadArguments(thread, argument.length() + 2);
+    	// The PSP is passing an argumentSize 1 byte (0x00) larger than the real string...
+    	// but only on newer firmwares (not sure from which version, assume version 200).
+    	int extraBytes = Modules.SysMemUserForUserModule.getFirmwareVersion() >= 200 ? 1 : 0;
+    	int address = prepareThreadArguments(thread, argument.length() + 1 + extraBytes);
     	writeStringZ(Memory.getInstance(), address, argument);
-    	Memory.getInstance().write8(address + argument.length() + 1, (byte) 0);
+    	if (extraBytes > 0) {
+    		Memory.getInstance().memset(address + argument.length() + 1, (byte) 0, extraBytes);
+    	}
     }
 
     public void hleKernelSetThreadArguments(SceKernelThreadInfo thread, byte[] argument, int argumentSize) {
