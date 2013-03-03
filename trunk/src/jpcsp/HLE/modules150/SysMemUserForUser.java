@@ -329,6 +329,10 @@ public class SysMemUserForUser extends HLEModule {
     	this.firmwareVersion = firmwareVersion;
     }
 
+    public int getFirmwareVersion() {
+    	return firmwareVersion;
+    }
+
     // note: we're only looking at user memory, so 0x08800000 - 0x0A000000
     // this is mainly to make it fit on one console line
     public void dumpSysMemInfo() {
