@@ -1816,10 +1816,13 @@ public class sceUtility extends HLEModule {
 		}
 
 		protected void update() {
-			gu.sceGuStart();
-			updateDialog();
-			gu.sceGuDisable(IRenderingEngine.GU_BLEND);
-			gu.sceGuFinish();
+			// Do not overwrite a sceGu list still in drawing state
+			if (!gu.isListDrawing()) {
+				gu.sceGuStart();
+				updateDialog();
+				gu.sceGuDisable(IRenderingEngine.GU_BLEND);
+				gu.sceGuFinish();
+			}
 
 			checkController();
 		}

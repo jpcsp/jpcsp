@@ -377,6 +377,21 @@ public class sceGe_user extends HLEModule {
 		return result;
     }
 
+    public int hleGeListSync(int id) {
+    	if (id < 0 || id >= NUMBER_GE_LISTS) {
+    		return -1;
+    	}
+
+    	PspGeList list = null;
+    	int result;
+    	synchronized (this) {
+        	list = allGeLists[id];
+    		result = list.status;
+		}
+
+    	return result;
+    }
+
     @HLEFunction(nid = 0x1F6752AD, version = 150)
     public int sceGeEdramGetSize() {
         return MemoryMap.SIZE_VRAM;
