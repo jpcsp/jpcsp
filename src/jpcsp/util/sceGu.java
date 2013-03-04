@@ -31,6 +31,7 @@ import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.modules.sceGe_user;
 import jpcsp.HLE.modules150.SysMemUserForUser;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.graphics.GeCommands;
@@ -54,6 +55,7 @@ public class sceGu {
 	private int topAddr;
 	private int listAddr;
 	private IMemoryWriter listWriter;
+	private int listId = -1;
 
 	public sceGu(int totalMemorySize) {
 		sysMemInfo = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "sceGu", SysMemUserForUser.PSP_SMEM_Low, totalMemorySize, 0);
@@ -115,6 +117,7 @@ public class sceGu {
 
 		listAddr = bottomAddr;
 		listWriter = MemoryWriter.getMemoryWriter(listAddr, 4);
+		listId = -1;
 
 		Memory.getInstance().memset(bottomAddr, (byte) 0, topAddr - bottomAddr);
 
@@ -140,7 +143,21 @@ public class sceGu {
 		int saveContextAddr = sceGuGetMemory(GeContext.SIZE_OF);
 
 		Memory mem = Memory.getInstance();
-		Modules.sceGe_userModule.hleGeListEnQueue(new TPointer(mem, listAddr), TPointer.NULL, -1, TPointer.NULL, saveContextAddr);
+		listId = Modules.sceGe_userModule.hleGeListEnQueue(new TPointer(mem, listAddr), TPointer.NULL, -1, TPointer.NULL, saveContextAddr);
+	}
+
+	public boolean isListDrawing() {
+		if (listId < 0) {
+			return false;
+		}
+
+		int listState = Modules.sceGe_userModule.hleGeListSync(listId);
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceGu list 0x%X: state %d", listId, listState));
+		}
+
+		return listState == sceGe_user.PSP_GE_LIST_DRAWING || listState == sceGe_user.PSP_GE_LIST_QUEUED;
 	}
 
 	private void sceGuSetFlag(int flag, int value) {
