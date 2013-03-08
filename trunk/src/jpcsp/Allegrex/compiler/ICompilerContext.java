@@ -170,4 +170,5 @@ public interface ICompilerContext {
     public CodeInstruction getCodeInstruction(int address);
     public void skipInstructions(int numberInstructionsToBeSkipped, boolean skipDelaySlot);
     public void compileSWsequence(int baseRegister, int[] offsets, int[] registers);
+    public void compileLWsequence(int baseRegister, int[] offsets, int[] registers);
 }

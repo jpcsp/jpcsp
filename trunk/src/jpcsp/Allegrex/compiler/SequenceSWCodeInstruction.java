@@ -25,9 +25,9 @@ import org.objectweb.asm.MethodVisitor;
  *
  */
 public class SequenceSWCodeInstruction extends CodeInstruction {
-	private int baseRegister;
-	private int[] offsets;
-	private int[] registers;
+	protected int baseRegister;
+	protected int[] offsets;
+	protected int[] registers;
 
 	public SequenceSWCodeInstruction(int baseRegister, int[] offsets, int[] registers) {
 		this.baseRegister = baseRegister;
@@ -38,13 +38,26 @@ public class SequenceSWCodeInstruction extends CodeInstruction {
 	@Override
 	public void compile(CompilerContext context, MethodVisitor mv) {
 		startCompile(context, mv);
-		context.compileSWsequence(baseRegister, offsets, registers);
+		compileInstruction(context);
 		context.endInstruction();
+	}
+
+	protected String getInstructionName() {
+		return "sw";
+	}
+
+	protected void compileInstruction(CompilerContext context) {
+		context.compileSWsequence(baseRegister, offsets, registers);
+	}
+
+	@Override
+	public boolean hasFlags(int flags) {
+		return false;
 	}
 
 	@Override
 	public String toString() {
-		StringBuilder result = new StringBuilder(String.format("   0x%X - sw         ", getAddress()));
+		StringBuilder result = new StringBuilder(String.format("   0x%X - %s         ", getAddress(), getInstructionName()));
 
 		for (int i = 0; i < registers.length; i++) {
 			if (i > 0) {
@@ -64,10 +77,5 @@ public class SequenceSWCodeInstruction extends CodeInstruction {
 		result.append(")");
 
 		return result.toString();
-	}
-
-	@Override
-	public boolean hasFlags(int flags) {
-		return false;
 	}
 }
