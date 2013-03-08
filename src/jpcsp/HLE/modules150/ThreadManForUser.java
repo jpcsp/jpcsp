@@ -240,6 +240,8 @@ public class ThreadManForUser extends HLEModule {
         callbackMap = new HashMap<Integer, SceKernelCallbackInfo>();
         callbackManager.Initialize();
 
+        // Reserve the memory user the internal handlers
+        Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "ThreadMan-InternalHandlers", SysMemUserForUser.PSP_SMEM_Addr, 0x100, MemoryMap.START_RAM);
         installIdleThreads();
         installThreadExitHandler();
         installCallbackExitHandler();
