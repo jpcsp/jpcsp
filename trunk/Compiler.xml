@@ -4084,6 +4084,34 @@
 08805098:[27BD0008]: addiu      $sp, $sp, 8
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="strncat">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Strncat</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+08A7F8A8:[80880000]: lb         $t0, 0($a0)
+08A7F8AC:[00801025]: or         $v0, $a0, $zr <=> move $v0, $a0
+08A7F8B0:[11000005]: beq        $t0, $zr, 0x08A7F8C8
+08A7F8B4:[24C7FFFF]: addiu      $a3, $a2, -1
+08A7F8B8:[24840001]: addiu      $a0, $a0, 1
+08A7F8BC:[80880000]: lb         $t0, 0($a0)
+08A7F8C0:[5500FFFE]: bnel       $t0, $zr, 0x08A7F8BC
+08A7F8C4:[24840001]: addiu      $a0, $a0, 1
+08A7F8C8:[00C04025]: or         $t0, $a2, $zr <=> move $t0, $a2
+08A7F8CC:[1100000A]: beq        $t0, $zr, 0x08A7F8F8
+08A7F8D0:[00E03025]: or         $a2, $a3, $zr <=> move $a2, $a3
+08A7F8D4:[80A70000]: lb         $a3, 0($a1)
+08A7F8D8:[24A50001]: addiu      $a1, $a1, 1
+08A7F8DC:[A0870000]: sb         $a3, 0($a0)
+08A7F8E0:[10E00005]: beq        $a3, $zr, 0x08A7F8F8
+08A7F8E4:[24840001]: addiu      $a0, $a0, 1
+08A7F8E8:[14C0FFF7]: bne        $a2, $zr, 0x08A7F8C8
+08A7F8EC:[24C7FFFF]: addiu      $a3, $a2, -1
+08A7F8F0:[1000FFF5]: b          0x08A7F8C8
+08A7F8F4:[A0800000]: sb         $zr, 0($a0)
+08A7F8F8:[03E00008]: jr         $ra
+08A7F8FC:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="strchr">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Strchr</Class>
 		<IsReturning>true</IsReturning>
@@ -9508,6 +9536,259 @@
 089C1A90:[00C01821]: addu       $v1, $a2, $zr <=> move $v1, $a2
 089C1A94:[03E00008]: jr         $ra
 089C1A98:[27BD0010]: addiu      $sp, $sp, 16
+089C1A9C:[14C00008]: bne        $a2, $zr, 0x089C1AC0
+089C1AA0:[24030008]: addiu      $v1, $zr, 8 <=> li $v1, 8
+089C1AA4:[24020001]: addiu      $v0, $zr, 1 <=> li $v0, 1
+089C1AA8:[0047001B]: divu       $v0, $a3
+089C1AAC:[50C00001]: beql       $a2, $zr, 0x089C1AB4
+089C1AB0:[000001CD]: break      0x00007
+089C1AB4:[00004812]: mflo       $t1
+089C1AB8:[3402FFFF]: ori        $v0, $zr, -1 <=> li $v0, 65535
+089C1ABC:[24030008]: addiu      $v1, $zr, 8 <=> li $v1, 8
+089C1AC0:[2D240100]: sltiu      $a0, $t1, 256
+089C1AC4:[00602821]: addu       $a1, $v1, $zr <=> move $a1, $v1
+089C1AC8:[0049102B]: sltu       $v0, $v0, $t1
+089C1ACC:[10400008]: beq        $v0, $zr, 0x089C1AF0
+089C1AD0:[0004280B]: movn       $a1, $zr, $a0 <=> move $a1, $a0
+089C1AD4:[3C0200FF]: lui        $v0, 0x00FF <=> li $v0, 0x00FF0000
+089C1AD8:[3442FFFF]: ori        $v0, $v0, -1
+089C1ADC:[24030010]: addiu      $v1, $zr, 16 <=> li $v1, 16
+089C1AE0:[0049102B]: sltu       $v0, $v0, $t1
+089C1AE4:[24040018]: addiu      $a0, $zr, 24 <=> li $a0, 24
+089C1AE8:[00602821]: addu       $a1, $v1, $zr <=> move $a1, $v1
+089C1AEC:[0082280B]: movn       $a1, $a0, $v0
+089C1AF0:[3C0308A2/FFFF0000]: lui        $v1, 0x08A2 <=> li $v1, 0x08A20000
+089C1AF4:[00A91006]: srlv       $v0, $t1, $a1
+089C1AF8:[2463A090/FFFF0000]: addiu      $v1, $v1, -24432
+089C1AFC:[00431021]: addu       $v0, $v0, $v1
+089C1B00:[90440000]: lbu        $a0, 0($v0)
+089C1B04:[24020020]: addiu      $v0, $zr, 32 <=> li $v0, 32
+089C1B08:[00852021]: addu       $a0, $a0, $a1
+089C1B0C:[00443823]: subu       $a3, $v0, $a0
+089C1B10:[14E00035]: bne        $a3, $zr, 0x089C1BE8
+089C1B14:[00472823]: subu       $a1, $v0, $a3
+089C1B18:[01495023]: subu       $t2, $t2, $t1
+089C1B1C:[24060001]: addiu      $a2, $zr, 1 <=> li $a2, 1
+089C1B20:[00094402]: srl        $t0, $t1, 0x0010
+089C1B24:[3130FFFF]: andi       $s0, $t1, -1
+089C1B28:[0148001B]: divu       $t2, $t0
+089C1B2C:[000E2402]: srl        $a0, $t6, 0x0010
+089C1B30:[51000001]: beql       $t0, $zr, 0x089C1B38
+089C1B34:[000001CD]: break      0x00007
+089C1B38:[00001812]: mflo       $v1
+089C1B3C:[00001010]: mfhi       $v0
+089C1B40:[00005812]: mflo       $t3
+089C1B44:[00700018]: mult       $v1, $s0
+089C1B48:[00021400]: sll        $v0, $v0, 0x0010
+089C1B4C:[00443825]: or         $a3, $v0, $a0
+089C1B50:[00002812]: mflo       $a1
+089C1B54:[00E5182B]: sltu       $v1, $a3, $a1
+089C1B58:[1060000A]: beq        $v1, $zr, 0x089C1B84
+089C1B5C:[0148001B]: divu       $t2, $t0
+089C1B60:[00E93821]: addu       $a3, $a3, $t1
+089C1B64:[00E9102B]: sltu       $v0, $a3, $t1
+089C1B68:[14400006]: bne        $v0, $zr, 0x089C1B84
+089C1B6C:[256BFFFF]: addiu      $t3, $t3, -1
+089C1B70:[00E5102B]: sltu       $v0, $a3, $a1
+089C1B74:[50400004]: beql       $v0, $zr, 0x089C1B88
+089C1B78:[00E53823]: subu       $a3, $a3, $a1
+089C1B7C:[256BFFFF]: addiu      $t3, $t3, -1
+089C1B80:[00E93821]: addu       $a3, $a3, $t1
+089C1B84:[00E53823]: subu       $a3, $a3, $a1
+089C1B88:[00E8001B]: divu       $a3, $t0
+089C1B8C:[31C4FFFF]: andi       $a0, $t6, -1
+089C1B90:[51000001]: beql       $t0, $zr, 0x089C1B98
+089C1B94:[000001CD]: break      0x00007
+089C1B98:[00001812]: mflo       $v1
+089C1B9C:[00001010]: mfhi       $v0
+089C1BA0:[00005012]: mflo       $t2
+089C1BA4:[00700018]: mult       $v1, $s0
+089C1BA8:[00021400]: sll        $v0, $v0, 0x0010
+089C1BAC:[00442025]: or         $a0, $v0, $a0
+089C1BB0:[00002812]: mflo       $a1
+089C1BB4:[0085182B]: sltu       $v1, $a0, $a1
+089C1BB8:[10600008]: beq        $v1, $zr, 0x089C1BDC
+089C1BBC:[00E8001B]: divu       $a3, $t0
+089C1BC0:[00892021]: addu       $a0, $a0, $t1
+089C1BC4:[0089102B]: sltu       $v0, $a0, $t1
+089C1BC8:[14400004]: bne        $v0, $zr, 0x089C1BDC
+089C1BCC:[254AFFFF]: addiu      $t2, $t2, -1
+089C1BD0:[0085102B]: sltu       $v0, $a0, $a1
+089C1BD4:[0002102B]: sltu       $v0, $zr, $v0 <=> move $v0, $v0
+089C1BD8:[01425023]: subu       $t2, $t2, $v0
+089C1BDC:[000B1400]: sll        $v0, $t3, 0x0010
+089C1BE0:[0A2706A1/FC000000]: j          0x089C1A84
+089C1BE4:[004A2025]: or         $a0, $v0, $t2
+089C1BE8:[00E94804]: sllv       $t1, $t1, $a3
+089C1BEC:[00094402]: srl        $t0, $t1, 0x0010
+089C1BF0:[00AA6006]: srlv       $t4, $t2, $a1
+089C1BF4:[0188001B]: divu       $t4, $t0
+089C1BF8:[3130FFFF]: andi       $s0, $t1, -1
+089C1BFC:[00AE1806]: srlv       $v1, $t6, $a1
+089C1C00:[00EA1004]: sllv       $v0, $t2, $a3
+089C1C04:[00435025]: or         $t2, $v0, $v1
+089C1C08:[000A2C02]: srl        $a1, $t2, 0x0010
+089C1C0C:[00EE7004]: sllv       $t6, $t6, $a3
+089C1C10:[51000001]: beql       $t0, $zr, 0x089C1C18
+089C1C14:[000001CD]: break      0x00007
+089C1C18:[01005821]: addu       $t3, $t0, $zr <=> move $t3, $t0
+089C1C1C:[02008821]: addu       $s1, $s0, $zr <=> move $s1, $s0
+089C1C20:[00003012]: mflo       $a2
+089C1C24:[00002010]: mfhi       $a0
+089C1C28:[00007812]: mflo       $t7
+089C1C2C:[00D00018]: mult       $a2, $s0
+089C1C30:[00042400]: sll        $a0, $a0, 0x0010
+089C1C34:[00853825]: or         $a3, $a0, $a1
+089C1C38:[00006812]: mflo       $t5
+089C1C3C:[00ED102B]: sltu       $v0, $a3, $t5
+089C1C40:[1040000A]: beq        $v0, $zr, 0x089C1C6C
+089C1C44:[0188001B]: divu       $t4, $t0
+089C1C48:[00E93821]: addu       $a3, $a3, $t1
+089C1C4C:[00E9102B]: sltu       $v0, $a3, $t1
+089C1C50:[14400006]: bne        $v0, $zr, 0x089C1C6C
+089C1C54:[24CFFFFF]: addiu      $t7, $a2, -1
+089C1C58:[00ED102B]: sltu       $v0, $a3, $t5
+089C1C5C:[50400004]: beql       $v0, $zr, 0x089C1C70
+089C1C60:[00ED3823]: subu       $a3, $a3, $t5
+089C1C64:[25EFFFFF]: addiu      $t7, $t7, -1
+089C1C68:[00E93821]: addu       $a3, $a3, $t1
+089C1C6C:[00ED3823]: subu       $a3, $a3, $t5
+089C1C70:[00EB001B]: divu       $a3, $t3
+089C1C74:[3144FFFF]: andi       $a0, $t2, -1
+089C1C78:[51600001]: beql       $t3, $zr, 0x089C1C80
+089C1C7C:[000001CD]: break      0x00007
+089C1C80:[00001812]: mflo       $v1
+089C1C84:[00001010]: mfhi       $v0
+089C1C88:[00003012]: mflo       $a2
+089C1C8C:[00710018]: mult       $v1, $s1
+089C1C90:[00021400]: sll        $v0, $v0, 0x0010
+089C1C94:[00442025]: or         $a0, $v0, $a0
+089C1C98:[00006812]: mflo       $t5
+089C1C9C:[008D182B]: sltu       $v1, $a0, $t5
+089C1CA0:[1060000A]: beq        $v1, $zr, 0x089C1CCC
+089C1CA4:[00EB001B]: divu       $a3, $t3
+089C1CA8:[00892021]: addu       $a0, $a0, $t1
+089C1CAC:[0089102B]: sltu       $v0, $a0, $t1
+089C1CB0:[14400006]: bne        $v0, $zr, 0x089C1CCC
+089C1CB4:[24C6FFFF]: addiu      $a2, $a2, -1
+089C1CB8:[008D102B]: sltu       $v0, $a0, $t5
+089C1CBC:[10400004]: beq        $v0, $zr, 0x089C1CD0
+089C1CC0:[000F1400]: sll        $v0, $t7, 0x0010
+089C1CC4:[24C6FFFF]: addiu      $a2, $a2, -1
+089C1CC8:[00892021]: addu       $a0, $a0, $t1
+089C1CCC:[000F1400]: sll        $v0, $t7, 0x0010
+089C1CD0:[00463025]: or         $a2, $v0, $a2
+089C1CD4:[0A2706CA/FC000000]: j          0x089C1B28
+089C1CD8:[008D5023]: subu       $t2, $a0, $t5
+089C1CDC:[00A7102B]: sltu       $v0, $a1, $a3
+089C1CE0:[00002021]: addu       $a0, $zr, $zr <=> li $a0, 0
+089C1CE4:[1440FF67]: bne        $v0, $zr, 0x089C1A84
+089C1CE8:[00003021]: addu       $a2, $zr, $zr <=> li $a2, 0
+089C1CEC:[3402FFFF]: ori        $v0, $zr, -1 <=> li $v0, 65535
+089C1CF0:[24030008]: addiu      $v1, $zr, 8 <=> li $v1, 8
+089C1CF4:[2CE40100]: sltiu      $a0, $a3, 256
+089C1CF8:[00602821]: addu       $a1, $v1, $zr <=> move $a1, $v1
+089C1CFC:[0047102B]: sltu       $v0, $v0, $a3
+089C1D00:[10400008]: beq        $v0, $zr, 0x089C1D24
+089C1D04:[0004280B]: movn       $a1, $zr, $a0 <=> move $a1, $a0
+089C1D08:[3C0200FF]: lui        $v0, 0x00FF <=> li $v0, 0x00FF0000
+089C1D0C:[3442FFFF]: ori        $v0, $v0, -1
+089C1D10:[24030010]: addiu      $v1, $zr, 16 <=> li $v1, 16
+089C1D14:[0047102B]: sltu       $v0, $v0, $a3
+089C1D18:[24040018]: addiu      $a0, $zr, 24 <=> li $a0, 24
+089C1D1C:[00602821]: addu       $a1, $v1, $zr <=> move $a1, $v1
+089C1D20:[0082280B]: movn       $a1, $a0, $v0
+089C1D24:[3C0308A2/FFFF0000]: lui        $v1, 0x08A2 <=> li $v1, 0x08A20000
+089C1D28:[00A81006]: srlv       $v0, $t0, $a1
+089C1D2C:[2463A090/FFFF0000]: addiu      $v1, $v1, -24432
+089C1D30:[00431021]: addu       $v0, $v0, $v1
+089C1D34:[90440000]: lbu        $a0, 0($v0)
+089C1D38:[24020020]: addiu      $v0, $zr, 32 <=> li $v0, 32
+089C1D3C:[00852021]: addu       $a0, $a0, $a1
+089C1D40:[00443823]: subu       $a3, $v0, $a0
+089C1D44:[14E00007]: bne        $a3, $zr, 0x089C1D64
+089C1D48:[00472823]: subu       $a1, $v0, $a3
+089C1D4C:[01C9102B]: sltu       $v0, $t6, $t1
+089C1D50:[010A182B]: sltu       $v1, $t0, $t2
+089C1D54:[38420001]: xori       $v0, $v0, 1
+089C1D58:[00621825]: or         $v1, $v1, $v0
+089C1D5C:[0A2706A0/FC000000]: j          0x089C1A80
+089C1D60:[0003202B]: sltu       $a0, $zr, $v1 <=> move $a0, $v1
+089C1D64:[00A91006]: srlv       $v0, $t1, $a1
+089C1D68:[00E81804]: sllv       $v1, $t0, $a3
+089C1D6C:[00624025]: or         $t0, $v1, $v0
+089C1D70:[00085C02]: srl        $t3, $t0, 0x0010
+089C1D74:[00AA6006]: srlv       $t4, $t2, $a1
+089C1D78:[018B001B]: divu       $t4, $t3
+089C1D7C:[3110FFFF]: andi       $s0, $t0, -1
+089C1D80:[00AE1806]: srlv       $v1, $t6, $a1
+089C1D84:[00EA1004]: sllv       $v0, $t2, $a3
+089C1D88:[00435025]: or         $t2, $v0, $v1
+089C1D8C:[000A2C02]: srl        $a1, $t2, 0x0010
+089C1D90:[00EE7004]: sllv       $t6, $t6, $a3
+089C1D94:[00E94804]: sllv       $t1, $t1, $a3
+089C1D98:[51600001]: beql       $t3, $zr, 0x089C1DA0
+089C1D9C:[000001CD]: break      0x00007
+089C1DA0:[00003012]: mflo       $a2
+089C1DA4:[00002010]: mfhi       $a0
+089C1DA8:[00007812]: mflo       $t7
+089C1DAC:[00D00018]: mult       $a2, $s0
+089C1DB0:[00042400]: sll        $a0, $a0, 0x0010
+089C1DB4:[00853825]: or         $a3, $a0, $a1
+089C1DB8:[00006812]: mflo       $t5
+089C1DBC:[00ED102B]: sltu       $v0, $a3, $t5
+089C1DC0:[1040000A]: beq        $v0, $zr, 0x089C1DEC
+089C1DC4:[018B001B]: divu       $t4, $t3
+089C1DC8:[00E83821]: addu       $a3, $a3, $t0
+089C1DCC:[00E8102B]: sltu       $v0, $a3, $t0
+089C1DD0:[14400006]: bne        $v0, $zr, 0x089C1DEC
+089C1DD4:[24CFFFFF]: addiu      $t7, $a2, -1
+089C1DD8:[00ED102B]: sltu       $v0, $a3, $t5
+089C1DDC:[50400004]: beql       $v0, $zr, 0x089C1DF0
+089C1DE0:[00ED3823]: subu       $a3, $a3, $t5
+089C1DE4:[25EFFFFF]: addiu      $t7, $t7, -1
+089C1DE8:[00E83821]: addu       $a3, $a3, $t0
+089C1DEC:[00ED3823]: subu       $a3, $a3, $t5
+089C1DF0:[00EB001B]: divu       $a3, $t3
+089C1DF4:[3144FFFF]: andi       $a0, $t2, -1
+089C1DF8:[51600001]: beql       $t3, $zr, 0x089C1E00
+089C1DFC:[000001CD]: break      0x00007
+089C1E00:[00001812]: mflo       $v1
+089C1E04:[00001010]: mfhi       $v0
+089C1E08:[00003012]: mflo       $a2
+089C1E0C:[00700018]: mult       $v1, $s0
+089C1E10:[00021400]: sll        $v0, $v0, 0x0010
+089C1E14:[00442825]: or         $a1, $v0, $a0
+089C1E18:[00006812]: mflo       $t5
+089C1E1C:[00AD182B]: sltu       $v1, $a1, $t5
+089C1E20:[1060000A]: beq        $v1, $zr, 0x089C1E4C
+089C1E24:[00EB001B]: divu       $a3, $t3
+089C1E28:[00A82821]: addu       $a1, $a1, $t0
+089C1E2C:[00A8102B]: sltu       $v0, $a1, $t0
+089C1E30:[14400006]: bne        $v0, $zr, 0x089C1E4C
+089C1E34:[24C6FFFF]: addiu      $a2, $a2, -1
+089C1E38:[00AD102B]: sltu       $v0, $a1, $t5
+089C1E3C:[10400004]: beq        $v0, $zr, 0x089C1E50
+089C1E40:[000F1400]: sll        $v0, $t7, 0x0010
+089C1E44:[00A82821]: addu       $a1, $a1, $t0
+089C1E48:[24C6FFFF]: addiu      $a2, $a2, -1
+089C1E4C:[000F1400]: sll        $v0, $t7, 0x0010
+089C1E50:[00462025]: or         $a0, $v0, $a2
+089C1E54:[00AD2823]: subu       $a1, $a1, $t5
+089C1E58:[00890019]: multu      $a0, $t1
+089C1E5C:[00001810]: mfhi       $v1
+089C1E60:[00A3102B]: sltu       $v0, $a1, $v1
+089C1E64:[5440FF06]: bnel       $v0, $zr, 0x089C1A80
+089C1E68:[2484FFFF]: addiu      $a0, $a0, -1
+089C1E6C:[00651026]: xor        $v0, $v1, $a1
+089C1E70:[00002812]: mflo       $a1
+089C1E74:[01C5182B]: sltu       $v1, $t6, $a1
+089C1E78:[2C420001]: sltiu      $v0, $v0, 1
+089C1E7C:[00431024]: and        $v0, $v0, $v1
+089C1E80:[1040FF00]: beq        $v0, $zr, 0x089C1A84
+089C1E84:[00003021]: addu       $a2, $zr, $zr <=> li $a2, 0
+089C1E88:[0A2706A1/FC000000]: j          0x089C1A84
+089C1E8C:[2484FFFF]: addiu      $a0, $a0, -1
 ]]></CodeInstructions>
 	</NativeCodeSequence>
 <!--
