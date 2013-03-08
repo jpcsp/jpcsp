@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
+
 public class ThreadWaitInfo {
     public boolean forever;
     public long microTimeTimeout; // when Clock.microTime() reaches microTimeTimeout the wait has expired
@@ -31,7 +34,7 @@ public class ThreadWaitInfo {
     public int EventFlag_id;
     public int EventFlag_bits;
     public int EventFlag_wait;
-    public int EventFlag_outBits_addr;
+    public TPointer32 EventFlag_outBits_addr;
 
     // Semaphore
     public int Semaphore_id;
@@ -54,10 +57,10 @@ public class ThreadWaitInfo {
 
     // MsgPipe
     public int MsgPipe_id;
-    public int MsgPipe_address;
+    public TPointer MsgPipe_address;
     public int MsgPipe_size;
     public int MsgPipe_waitMode;
-    public int MsgPipe_resultSize_addr;
+    public TPointer32 MsgPipe_resultSize_addr;
     public boolean MsgPipe_isSend; // true if send, false if receive
 
     //Mbx
@@ -66,12 +69,12 @@ public class ThreadWaitInfo {
 
     //FPL
     public int Fpl_id;
-    public int Fpl_dataAddr;
+    public TPointer32 Fpl_dataAddr;
 
     //VPL
     public int Vpl_id;
     public int Vpl_size;
-    public int Vpl_dataAddr;
+    public TPointer32 Vpl_dataAddr;
 
     // Thread blocked (used internally)
     public IAction onUnblockAction;

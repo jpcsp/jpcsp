@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.TPointer.NULL;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_INVALID_MODE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_POWER_VMEM_IN_USE;
 import jpcsp.HLE.CanBeNull;
@@ -48,7 +49,7 @@ public class sceSuspendForUser extends HLEModule {
     public void start() {
     	super.start();
 
-    	volatileMemSema = Managers.semas.hleKernelCreateSema("ScePowerVmem", 0, volatileMemSignal, volatileMemSignal, 0);
+    	volatileMemSema = Managers.semas.hleKernelCreateSema("ScePowerVmem", 0, volatileMemSignal, volatileMemSignal, NULL);
     }
 
     protected int hleKernelVolatileMemLock(int type, TPointer32 paddr, TPointer32 psize, boolean trylock) {
@@ -70,7 +71,7 @@ public class sceSuspendForUser extends HLEModule {
 
         // If the volatile mem is already locked, the current thread has to wait
         // until it is unlocked.
-        return Managers.semas.hleKernelWaitSema(volatileMemSema, volatileMemSignal, 0, false);
+        return Managers.semas.hleKernelWaitSema(volatileMemSema, volatileMemSignal, TPointer32.NULL, false);
     }
 
     public int hleKernelPowerTick(int flag) {

@@ -34,15 +34,15 @@ import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High;
 import java.util.HashMap;
 import java.util.Iterator;
 
-import jpcsp.Memory;
-import jpcsp.Processor;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.SceKernelVplInfo;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
-import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -180,17 +180,20 @@ public class VplManager {
     	return info.alloc(size);
     }
 
-    public int sceKernelCreateVpl(int name_addr, int partitionid, int attr, int size, int opt_addr) {
-        Memory mem = Processor.memory;
-
-        String name = Utilities.readStringZ(name_addr);
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelCreateVpl(name=%s, partition=%d, attr=0x%X, size=0x%X, opt=0x%08X)", name, partitionid, attr, size, opt_addr));
+    public int checkVplID(int uid) {
+        SceUidManager.checkUidPurpose(uid, "ThreadMan-Vpl", true);
+        if (!vplMap.containsKey(uid)) {
+            log.warn(String.format("checkVplID unknown uid=0x%X", uid));
+            throw new SceKernelErrorException(ERROR_KERNEL_NOT_FOUND_VPOOL);
         }
 
-        if (Memory.isAddressGood(opt_addr)) {
-            int optsize = mem.read32(opt_addr);
-            log.warn("sceKernelCreateVpl option at 0x" + Integer.toHexString(opt_addr) + " (size=" + optsize + ")");
+        return uid;
+    }
+
+    public int sceKernelCreateVpl(String name, int partitionid, int attr, int size, TPointer option) {
+        if (option.isNotNull()) {
+            int optionSize = option.getValue32();
+            log.warn(String.format("sceKernelCreateVpl option at %s, size=%d", option, optionSize));
         }
 
         int memType = PSP_SMEM_Low;
@@ -212,7 +215,7 @@ public class VplManager {
         }
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelCreateVpl '%s' assigned uid 0x%X", name, info.uid));
+        	log.debug(String.format("sceKernelCreateVpl returning %s", info));
         }
         vplMap.put(info.uid, info);
 
@@ -220,18 +223,9 @@ public class VplManager {
     }
 
     public int sceKernelDeleteVpl(int uid) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelDeleteVpl(uid=0x" + Integer.toHexString(uid) + ")");
-        }
-
         SceKernelVplInfo info = vplMap.remove(uid);
-        if (info == null) {
-            log.warn("sceKernelDeleteVpl unknown uid=0x" + Integer.toHexString(uid));
-            return ERROR_KERNEL_NOT_FOUND_VPOOL;
-        }
-
         if (info.freeSize < info.poolSize) {
-            log.warn("sceKernelDeleteVpl approx " + (info.poolSize - info.freeSize) + " unfreed bytes allocated");
+            log.warn(String.format("sceKernelDeleteVpl approx 0x%X unfreed bytes allocated", info.poolSize - info.freeSize));
         }
         info.delete();
         onVplDeleted(uid);
@@ -239,19 +233,8 @@ public class VplManager {
         return 0;
     }
 
-    private int hleKernelAllocateVpl(int uid, int size, int data_addr, int timeout_addr, boolean wait, boolean doCallbacks) {
-        Memory mem = Memory.getInstance();
-
-        if (log.isDebugEnabled()) {
-            log.debug("hleKernelAllocateVpl uid=0x" + Integer.toHexString(uid) + " size=0x" + Integer.toHexString(size) + " data_addr=0x" + Integer.toHexString(data_addr) + " timeout_addr=0x" + Integer.toHexString(timeout_addr) + " callbacks=" + doCallbacks);
-        }
-
-        SceUidManager.checkUidPurpose(uid, "ThreadMan-Vpl", true);
+    private int hleKernelAllocateVpl(int uid, int size, TPointer32 dataAddr, TPointer32 timeoutAddr, boolean wait, boolean doCallbacks) {
         SceKernelVplInfo vpl = vplMap.get(uid);
-        if (vpl == null) {
-            log.warn("hleKernelAllocateVpl unknown uid=0x" + Integer.toHexString(uid));
-            return ERROR_KERNEL_NOT_FOUND_VPOOL;
-        }
         if (size <= 0 || size > vpl.poolSize) {
         	return ERROR_KERNEL_ILLEGAL_MEMSIZE;
         }
@@ -260,7 +243,7 @@ public class VplManager {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         if (addr == 0) {
             if (log.isDebugEnabled()) {
-                log.debug("hleKernelAllocateVpl - '" + vpl.name + "' fast check failed");
+                log.debug(String.format("hleKernelAllocateVpl %s fast check failed", vpl));
             }
             if (!wait) {
                 return ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
@@ -271,53 +254,34 @@ public class VplManager {
             // Wait on a specific fpl
             currentThread.wait.Vpl_id = uid;
             currentThread.wait.Vpl_size = size;
-            currentThread.wait.Vpl_dataAddr = data_addr;
-            threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_VPL, uid, vplWaitStateChecker, timeout_addr, doCallbacks);
+            currentThread.wait.Vpl_dataAddr = dataAddr;
+            threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_VPL, uid, vplWaitStateChecker, timeoutAddr.getAddress(), doCallbacks);
         } else {
             // Success, do not reschedule the current thread.
             if (log.isDebugEnabled()) {
-                log.debug(String.format("hleKernelAllocateVpl - '%s' fast check succeeded, allocated addr=0x%08X", vpl.name, addr));
+                log.debug(String.format("hleKernelAllocateVpl %s fast check succeeded, allocated addr=0x%08X", vpl, addr));
             }
-            mem.write32(data_addr, addr);
+            dataAddr.setValue(addr);
         }
 
         return 0;
     }
 
-    public int sceKernelAllocateVpl(int uid, int size, int data_addr, int timeout_addr) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelAllocateVpl redirecting to hleKernelAllocateVpl(callbacks=false)");
-        }
-        return hleKernelAllocateVpl(uid, size, data_addr, timeout_addr, true, false);
+    public int sceKernelAllocateVpl(int uid, int size, TPointer32 dataAddr, TPointer32 timeoutAddr) {
+        return hleKernelAllocateVpl(uid, size, dataAddr, timeoutAddr, true, false);
     }
 
-    public int sceKernelAllocateVplCB(int uid, int size, int data_addr, int timeout_addr) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelAllocateVplCB redirecting to hleKernelAllocateVpl(callbacks=true)");
-        }
-        return hleKernelAllocateVpl(uid, size, data_addr, timeout_addr, true, true);
+    public int sceKernelAllocateVplCB(int uid, int size, TPointer32 dataAddr, TPointer32 timeoutAddr) {
+        return hleKernelAllocateVpl(uid, size, dataAddr, timeoutAddr, true, true);
     }
 
-    public int sceKernelTryAllocateVpl(int uid, int size, int data_addr) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelTryAllocateVpl redirecting to hleKernelAllocateVpl");
-        }
-        return hleKernelAllocateVpl(uid, size, data_addr, 0, false, false);
+    public int sceKernelTryAllocateVpl(int uid, int size, TPointer32 dataAddr) {
+        return hleKernelAllocateVpl(uid, size, dataAddr, TPointer32.NULL, false, false);
     }
 
-    public int sceKernelFreeVpl(int uid, int data_addr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelFreeVpl(uid=0x%x, data=0x%08X)", uid, data_addr));
-        }
-
+    public int sceKernelFreeVpl(int uid, TPointer dataAddr) {
         SceKernelVplInfo info = vplMap.get(uid);
-        if (info == null) {
-        	if (log.isDebugEnabled()) {
-        		log.debug(String.format("sceKernelFreeVpl unknown uid=0x%x", uid));
-        	}
-            return ERROR_KERNEL_NOT_FOUND_VPOOL;
-        }
-        if (!info.free(data_addr)) {
+        if (!info.free(dataAddr.getAddress())) {
         	return ERROR_KERNEL_ILLEGAL_MEMBLOCK;
         }
 
@@ -326,45 +290,22 @@ public class VplManager {
         return 0;
 	}
 
-    public int sceKernelCancelVpl(int uid, int numWaitThreadAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelCancelVpl(uid=0x" + Integer.toHexString(uid) + ",numWaitThreadAddr=0x" + Integer.toHexString(numWaitThreadAddr) + ")");
-        }
-
+    public int sceKernelCancelVpl(int uid, TPointer32 numWaitThreadAddr) {
         SceKernelVplInfo info = vplMap.get(uid);
-        if (info == null) {
-            log.warn("sceKernelCancelVpl unknown uid=0x" + Integer.toHexString(uid));
-            return ERROR_KERNEL_NOT_FOUND_VPOOL;
-        }
-
-        Memory mem = Memory.getInstance();
-        if (Memory.isAddressGood(numWaitThreadAddr)) {
-            mem.write32(numWaitThreadAddr, info.numWaitThreads);
-        }
+        numWaitThreadAddr.setValue(info.numWaitThreads);
         onVplCancelled(uid);
 
         return 0;
     }
 
-    public int sceKernelReferVplStatus(int uid, int info_addr) {
-        Memory mem = Processor.memory;
-
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelReferVplStatus(uid=0x" + Integer.toHexString(uid) + ",info=0x" + Integer.toHexString(info_addr) + ")");
-        }
-
+    public int sceKernelReferVplStatus(int uid, TPointer infoAddr) {
         SceKernelVplInfo info = vplMap.get(uid);
-        if (info == null) {
-            log.warn("sceKernelReferVplStatus unknown uid=0x" + Integer.toHexString(uid));
-            return ERROR_KERNEL_NOT_FOUND_VPOOL;
-        }
-        info.write(mem, info_addr);
+        info.write(infoAddr);
 
         return 0;
     }
 
     private class VplWaitStateChecker implements IWaitStateChecker {
-
         @Override
         public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
             // Check if the thread has to continue its wait state or if the vpl
@@ -389,5 +330,4 @@ public class VplManager {
 
     private VplManager() {
     }
-
 }

@@ -529,7 +529,7 @@ public class sceSasCore extends HLEModule {
     public int __sceSasSetVoice(int sasCore, int voice, int vagAddr, int size, int loopmode) {
         if (size <= 0 || (size & 0xF) != 0) {
         	log.warn(String.format("__sceSasSetVoice invalid size 0x%08X", size));
-        	throw(new SceKernelErrorException(SceKernelErrors.ERROR_SAS_INVALID_PARAMETER));
+        	return SceKernelErrors.ERROR_SAS_INVALID_PARAMETER;
         }
 
         checkSasAndVoiceHandlesGood(sasCore, voice);

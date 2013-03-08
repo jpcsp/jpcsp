@@ -52,6 +52,6 @@ public class SceKernelSemaInfo extends pspAbstractMemoryMappedStructureVariableL
 
 	@Override
 	public String toString() {
-		return String.format("SceKernelSemaInfo(uid=0x%X, name=%s, attr=0x%X, currentCount=%d)", uid, name, attr, currentCount);
+		return String.format("SceKernelSemaInfo(uid=0x%X, name='%s', attr=0x%X, currentCount=%d, maxCount=%d, numWaitThreads=%d)", uid, name, attr, currentCount, maxCount, numWaitThreads);
 	}
 }

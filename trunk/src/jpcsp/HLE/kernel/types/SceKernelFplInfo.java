@@ -100,8 +100,9 @@ public class SceKernelFplInfo extends pspAbstractMemoryMappedStructureVariableLe
     }
 
     public void freeBlock(int blockId) {
-        if (!isBlockAllocated(blockId))
+        if (!isBlockAllocated(blockId)) {
             throw new IllegalArgumentException("Block " + blockId + " is not allocated");
+        }
 
         blockAllocated[blockId] = false;
         freeBlocks++;
@@ -109,8 +110,9 @@ public class SceKernelFplInfo extends pspAbstractMemoryMappedStructureVariableLe
 
     /** @return the address of the allocated block */
     public int allocateBlock(int blockId) {
-        if (isBlockAllocated(blockId))
+        if (isBlockAllocated(blockId)) {
             throw new IllegalArgumentException("Block " + blockId + " is already allocated");
+        }
 
         blockAllocated[blockId] = true;
         freeBlocks--;
@@ -120,21 +122,30 @@ public class SceKernelFplInfo extends pspAbstractMemoryMappedStructureVariableLe
 
     /** @return the block index or -1 on failure */
     public int findFreeBlock() {
-        for (int i = 0; i < numBlocks; i++)
-            if (!isBlockAllocated(i))
+        for (int i = 0; i < numBlocks; i++) {
+            if (!isBlockAllocated(i)) {
                 return i;
+            }
+        }
         return -1;
     }
 
     /** @return the block index or -1 on failure */
     public int findBlockByAddress(int addr) {
-        for (int i = 0; i < numBlocks; i++)
-            if (blockAddress[i] == addr)
+        for (int i = 0; i < numBlocks; i++) {
+            if (blockAddress[i] == addr) {
                 return i;
+            }
+        }
         return -1;
     }
 
     public void deleteSysMemInfo() {
     	Modules.SysMemUserForUserModule.free(sysMemInfo);
     }
+
+	@Override
+	public String toString() {
+		return String.format("SceKernelFplInfo[uid=0x%X, name='%s', attr=0x%X, blockSize=0x%X, numBlocks=0x%X, freeBlocks=0x%X]", uid, name, attr, blockSize, numBlocks, freeBlocks);
+	}
 }

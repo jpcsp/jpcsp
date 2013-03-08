@@ -27,24 +27,23 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RE
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_SEMA;
-import static jpcsp.util.Utilities.readStringNZ;
 
 import java.util.HashMap;
 import java.util.Iterator;
 
-import jpcsp.Memory;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelSemaInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
 
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 public class SemaManager {
-
     protected static Logger log = Modules.getLogger("ThreadManForUser");
 
     private HashMap<Integer, SceKernelSemaInfo> semaMap;
@@ -192,12 +191,28 @@ public class SemaManager {
         return success;
     }
 
-    public SceKernelSemaInfo hleKernelCreateSema(String name, int attr, int initVal, int maxVal, int option) {
-        if (Memory.isAddressGood(option)) {
+    public int checkSemaID(int semaid) {
+        SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
+        if (!semaMap.containsKey(semaid)) {
+        	if (semaid == 0) {
+            	// Some applications systematically try to signal a semaid=0.
+            	// Do not spam WARNings for this case.
+        		log.debug(String.format("checkSemaID - unknown uid 0x%X", semaid));
+        	} else {
+        		log.warn(String.format("checkSemaID - unknown uid 0x%X", semaid));
+        	}
+            throw new SceKernelErrorException(ERROR_KERNEL_NOT_FOUND_SEMAPHORE);
+        }
+
+        return semaid;
+    }
+
+    public SceKernelSemaInfo hleKernelCreateSema(String name, int attr, int initVal, int maxVal, TPointer option) {
+        if (option.isNotNull()) {
             // The first int does not seem to be the size of the struct, found values:
             // SSX On Tour: 0, 0x08B0F9E4, 0x0892E664, 0x08AF7257 (some values are used in more than one semaphore)
-            int optsize = Memory.getInstance().read32(option);
-            log.warn("sceKernelCreateSema option at 0x" + Integer.toHexString(option) + " (size=" + optsize + ")");
+            int optionSize = option.getValue32();
+            log.warn(String.format("sceKernelCreateSema option at %s, size=%d", option, optionSize));
         }
 
         SceKernelSemaInfo sema = new SceKernelSemaInfo(name, attr, initVal, maxVal);
@@ -206,7 +221,7 @@ public class SemaManager {
         return sema;
     }
 
-    public int hleKernelWaitSema(SceKernelSemaInfo sema, int signal, int timeout_addr, boolean doCallbacks) {
+    public int hleKernelWaitSema(SceKernelSemaInfo sema, int signal, TPointer32 timeoutAddr, boolean doCallbacks) {
         if (!tryWaitSemaphore(sema, signal)) {
             // Failed, but it's ok, just wait a little
             if (log.isDebugEnabled()) {
@@ -219,7 +234,7 @@ public class SemaManager {
             // Wait on a specific semaphore
             currentThread.wait.Semaphore_id = sema.uid;
             currentThread.wait.Semaphore_signal = signal;
-            threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_SEMA, sema.uid, semaWaitStateChecker, timeout_addr, doCallbacks);
+            threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_SEMA, sema.uid, semaWaitStateChecker, timeoutAddr.getAddress(), doCallbacks);
         } else {
             // Success, do not reschedule the current thread.
             if (log.isDebugEnabled()) {
@@ -230,11 +245,7 @@ public class SemaManager {
         return 0;
     }
 
-    private int hleKernelWaitSema(int semaid, int signal, int timeout_addr, boolean doCallbacks) {
-        if (log.isDebugEnabled()) {
-            log.debug("hleKernelWaitSema(id=0x" + Integer.toHexString(semaid) + ",signal=" + signal + ",timeout=0x" + Integer.toHexString(timeout_addr) + ") callbacks=" + doCallbacks);
-        }
-
+    private int hleKernelWaitSema(int semaid, int signal, TPointer32 timeoutAddr, boolean doCallbacks) {
         if (signal <= 0) {
             log.warn("hleKernelWaitSema - bad signal " + signal);
             return ERROR_KERNEL_ILLEGAL_COUNT;
@@ -245,27 +256,12 @@ public class SemaManager {
             }
         	return ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
         }
-        SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
         SceKernelSemaInfo sema = semaMap.get(semaid);
-        if (sema == null) {
-        	// Some applications systematically try to wait on semaid=0.
-        	// Do not spam WARNings for this case.
-        	if (semaid == 0) {
-        		if (log.isDebugEnabled()) {
-                    log.debug(String.format("hleKernelWaitSema - unknown uid 0x%X", semaid));
-        		}
-        	} else {
-        		if (log.isEnabledFor(Level.WARN)) {
-                    log.warn(String.format("hleKernelWaitSema - unknown uid 0x%X", semaid));
-        		}
-        	}
-            return ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
-        }
         if (signal > sema.maxCount) {
         	return ERROR_KERNEL_ILLEGAL_COUNT;
         }
 
-        return hleKernelWaitSema(sema, signal, timeout_addr, doCallbacks);
+        return hleKernelWaitSema(sema, signal, timeoutAddr, doCallbacks);
     }
 
     public int hleKernelPollSema(SceKernelSemaInfo sema, int signal) {
@@ -314,74 +310,33 @@ public class SemaManager {
         return 0;
     }
 
-    public int sceKernelCreateSema(int name_addr, int attr, int initVal, int maxVal, int option) {
-        String name;
-        if (name_addr == 0) {
-            log.info("sceKernelCreateSema name address is 0! Assuming empty name");
-            name = "";
-        } else {
-            name = readStringNZ(name_addr, 32);
-        }
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelCreateSema name= " + name + " attr= 0x" + Integer.toHexString(attr) + " initVal= " + initVal + " maxVal= " + maxVal + " option= 0x" + Integer.toHexString(option));
-        }
-
+    public int sceKernelCreateSema(String name, int attr, int initVal, int maxVal, TPointer option) {
         SceKernelSemaInfo sema = hleKernelCreateSema(name, attr, initVal, maxVal, option);
 
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelCreateSema name= " + name + " created with uid=0x" + Integer.toHexString(sema.uid));
+            log.debug(String.format("sceKernelCreateSema %s", sema));
         }
 
         return sema.uid;
     }
 
     public int sceKernelDeleteSema(int semaid) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelDeleteSema id=0x" + Integer.toHexString(semaid));
-        }
-
-        SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
-        SceKernelSemaInfo sema = semaMap.remove(semaid);
-        if (sema == null) {
-            log.warn("sceKernelDeleteSema - unknown uid 0x" + Integer.toHexString(semaid));
-            return ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
-        }
-
+        semaMap.remove(semaid);
         onSemaphoreDeleted(semaid);
 
         return 0;
     }
 
-    public int sceKernelWaitSema(int semaid, int signal, int timeout_addr) {
-        return hleKernelWaitSema(semaid, signal, timeout_addr, false);
+    public int sceKernelWaitSema(int semaid, int signal, TPointer32 timeoutAddr) {
+        return hleKernelWaitSema(semaid, signal, timeoutAddr, false);
     }
 
-    public int sceKernelWaitSemaCB(int semaid, int signal, int timeout_addr) {
-        return hleKernelWaitSema(semaid, signal, timeout_addr, true);
+    public int sceKernelWaitSemaCB(int semaid, int signal, TPointer32 timeoutAddr) {
+        return hleKernelWaitSema(semaid, signal, timeoutAddr, true);
     }
 
     public int sceKernelSignalSema(int semaid, int signal) {
-        SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
         SceKernelSemaInfo sema = semaMap.get(semaid);
-        if (sema == null) {
-        	// Some applications systematically try to signal a semaid=0.
-        	// Do not spam WARNings for this case.
-        	if (semaid == 0) {
-        		if (log.isDebugEnabled()) {
-                    log.debug(String.format("sceKernelSignalSema - unknown uid 0x%X", semaid));
-        		}
-        	} else {
-        		if (log.isEnabledFor(Level.WARN)) {
-                    log.warn(String.format("sceKernelSignalSema - unknown uid 0x%X", semaid));
-        		}
-        	}
-            return ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
-        }
-
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelSignalSema id=0x" + Integer.toHexString(semaid) + " name='" + sema.name + "' signal=" + signal);
-        }
-
         return hleKernelSignalSema(sema, signal);
     }
 
@@ -392,38 +347,19 @@ public class SemaManager {
             return ERROR_KERNEL_ILLEGAL_COUNT;
         }
 
-        SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
         SceKernelSemaInfo sema = semaMap.get(semaid);
-        if (sema == null) {
-            log.warn(String.format("sceKernelPollSema id=0x%X, signal=%d: unknown uid", semaid, signal));
-            return ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
-        }
-
         return hleKernelPollSema(sema, signal);
     }
 
-    public int sceKernelCancelSema(int semaid, int newcount, int numWaitThreadAddr) {
-        Memory mem = Memory.getInstance();
-
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelCancelSema semaid=0x" + Integer.toHexString(semaid) + " newcount=" + newcount + " numWaitThreadAddr=0x" + Integer.toHexString(numWaitThreadAddr));
-        }
-
-        SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
+    public int sceKernelCancelSema(int semaid, int newcount, TPointer32 numWaitThreadAddr) {
         SceKernelSemaInfo sema = semaMap.get(semaid);
-        if (sema == null) {
-            log.warn("sceKernelCancelSema - unknown uid 0x" + Integer.toHexString(semaid));
-            return ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
-        }
 
         if (newcount > sema.maxCount) {
             return ERROR_KERNEL_ILLEGAL_COUNT;
         }
 
         // Write previous numWaitThreads count.
-        if (Memory.isAddressGood(numWaitThreadAddr)) {
-            mem.write32(numWaitThreadAddr, sema.numWaitThreads);
-        }
+        numWaitThreadAddr.setValue(sema.numWaitThreads);
         sema.numWaitThreads = 0;
         // Reset this semaphore's count based on newcount.
         // Note: If newcount is negative, the count becomes this semaphore's initCount.
@@ -437,27 +373,17 @@ public class SemaManager {
         return 0;
     }
 
-    public int sceKernelReferSemaStatus(int semaid, int addr) {
-        Memory mem = Memory.getInstance();
-
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelReferSemaStatus id= 0x" + Integer.toHexString(semaid) + " addr= 0x" + Integer.toHexString(addr));
-        }
-
-        SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
+    public int sceKernelReferSemaStatus(int semaid, TPointer addr) {
         SceKernelSemaInfo sema = semaMap.get(semaid);
-        if (sema == null) {
-            log.warn("sceKernelReferSemaStatus - unknown uid 0x" + Integer.toHexString(semaid));
-            return ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
+        sema.write(addr);
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceKernelReferSemaStatus returning %s", sema));
         }
-
-        sema.write(mem, addr);
 
         return 0;
     }
 
     private class SemaWaitStateChecker implements IWaitStateChecker {
-
         @Override
         public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
             // Check if the thread has to continue its wait state or if the sema
@@ -482,5 +408,4 @@ public class SemaManager {
 
     private SemaManager() {
     }
-
 }
