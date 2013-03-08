@@ -33,7 +33,7 @@ public class LoadExecForUser extends jpcsp.HLE.modules150.LoadExecForUser {
     		log.debug(String.format("LoadExecForUser_362A956B registeredExitCallbackUid=0x%X", registeredExitCallbackUid));
     	}
 
-    	SceKernelCallbackInfo callbackInfo = Modules.ThreadManForUserModule.hleKernelReferCallbackStatus(registeredExitCallbackUid);
+    	SceKernelCallbackInfo callbackInfo = Modules.ThreadManForUserModule.getCallbackInfo(registeredExitCallbackUid);
     	if (callbackInfo == null) {
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("LoadExecForUser_362A956B registeredExitCallbackUid=0x%x callback not found", registeredExitCallbackUid));

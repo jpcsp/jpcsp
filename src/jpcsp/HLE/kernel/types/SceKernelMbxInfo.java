@@ -132,4 +132,9 @@ public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructureVariableLe
     public boolean hasMessage() {
     	return firstMessageAddr != 0;
     }
+
+	@Override
+	public String toString() {
+		return String.format("SceKernelMbxInfo[uid=0x%X, name='%s', attr=0x%X]", uid, name, attr);
+	}
 }

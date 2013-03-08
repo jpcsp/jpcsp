@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -97,17 +96,11 @@ public class Resource {
 	 * bundles in inverse order or <code>null</code> if no value can be found
 	 * for <code>key</code>.
 	 */
-	protected static String getResource(List<ResourceBundle> bundles, String key)
-	{
-		Iterator<ResourceBundle> it = bundles.iterator();
-
-		while (it.hasNext())
-		{
-			ResourceBundle bundle = it.next();
-			try
-			{
+	protected static String getResource(List<ResourceBundle> bundles, String key) {
+		for (ResourceBundle bundle : bundles) {
+			try {
 				return bundle.getString(key);
-			} catch (MissingResourceException mrex) {
+			} catch (MissingResourceException e) {
 				// Ignore exception, skip to the next resource bundle
             }
 		}

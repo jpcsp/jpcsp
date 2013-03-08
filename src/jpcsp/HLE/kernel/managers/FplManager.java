@@ -34,16 +34,16 @@ import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High;
 import java.util.HashMap;
 import java.util.Iterator;
 
-import jpcsp.Memory;
-import jpcsp.Processor;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.SceKernelErrorException;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelFplInfo;
 import jpcsp.HLE.kernel.types.SceKernelFplOptParam;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
-import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -188,39 +188,42 @@ public class FplManager {
         return addr;
     }
 
-    public int sceKernelCreateFpl(int name_addr, int partitionid, int attr, int blocksize, int blocks, int opt_addr) {
-        Memory mem = Processor.memory;
-
-        String name = Utilities.readStringZ(name_addr);
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelCreateFpl(name='" + name + "',partition=" + partitionid + ",attr=0x" + Integer.toHexString(attr) + ",blocksize=0x" + Integer.toHexString(blocksize) + ",blocks=" + blocks + ",opt=0x" + Integer.toHexString(opt_addr) + ")");
+    public int checkFplID(int uid) {
+        SceUidManager.checkUidPurpose(uid, "ThreadMan-Fpl", true);
+        if (!fplMap.containsKey(uid)) {
+            log.warn(String.format("checkFplID unknown uid=0x%X", uid));
+            throw new SceKernelErrorException(ERROR_KERNEL_NOT_FOUND_FPOOL);
         }
 
+        return uid;
+    }
+
+    public int sceKernelCreateFpl(String name, int partitionid, int attr, int blocksize, int blocks, TPointer option) {
         int memType = PSP_SMEM_Low;
         if ((attr & PSP_FPL_ATTR_ADDR_HIGH) == PSP_FPL_ATTR_ADDR_HIGH) {
             memType = PSP_SMEM_High;
         }
         int memAlign = 4;  // 4-bytes is default.
-        if (Memory.isAddressGood(opt_addr)) {
-            int optsize = mem.read32(opt_addr);
+        if (option.isNotNull()) {
+            int optionSize = option.getValue32();
             // Up to firmware 6.20 only two FplOptParam fields exist, being the
             // first one the struct size, the second is the memory alignment (0 is default,
             // which is 4-byte/32-bit).
-            if ((optsize >= 4) && (optsize <= 8)) {
+            if ((optionSize >= 4) && (optionSize <= 8)) {
                 SceKernelFplOptParam optParams = new SceKernelFplOptParam();
-                optParams.read(mem, opt_addr);
+                optParams.read(option);
                 if (optParams.align > 0) {
                     memAlign = optParams.align;
                 }
                 if (log.isDebugEnabled()) {
-                	log.debug("sceKernelCreateFpl options: struct size=" + optParams.sizeof() + ", alignment=0x" + Integer.toHexString(optParams.align));
+                	log.debug(String.format("sceKernelCreateFpl options: struct size=%d, alignment=0x%X", optParams.sizeof(), optParams.align));
                 }
             } else {
-                log.warn("sceKernelCreateFpl option at 0x" + Integer.toHexString(opt_addr) + " (size=" + optsize + ")");
+                log.warn(String.format("sceKernelCreateFpl option at %s, size=%d", option, optionSize));
             }
         }
         if ((attr & ~PSP_FPL_ATTR_MASK) != 0) {
-            log.warn("sceKernelCreateFpl bad attr value 0x" + Integer.toHexString(attr));
+            log.warn(String.format("sceKernelCreateFpl bad attr value 0x%X", attr));
             return ERROR_KERNEL_ILLEGAL_ATTR;
         }
         if (blocksize == 0) {
@@ -234,7 +237,7 @@ public class FplManager {
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelCreateFpl '" + name + "' assigned uid " + Integer.toHexString(info.uid));
+            log.debug(String.format("sceKernelCreateFpl returning %s", info));
         }
         fplMap.put(info.uid, info);
 
@@ -242,19 +245,9 @@ public class FplManager {
     }
 
     public int sceKernelDeleteFpl(int uid) {
-        String msg = "sceKernelDeleteFpl(uid=0x" + Integer.toHexString(uid) + ")";
-
         SceKernelFplInfo info = fplMap.remove(uid);
-        if (info == null) {
-            log.warn(msg + " unknown uid");
-            return ERROR_KERNEL_NOT_FOUND_FPOOL;
-        }
-        msg += " '" + info.name + "'";
-        if (log.isDebugEnabled()) {
-            log.debug(msg);
-        }
         if (info.freeBlocks < info.numBlocks) {
-            log.warn(msg + " " + (info.numBlocks - info.freeBlocks) + " unfreed blocks, continuing");
+            log.warn(String.format("sceKernelDeleteFpl %s unfreed blocks, deleting", info.numBlocks - info.freeBlocks));
         }
         info.deleteSysMemInfo();
         onFplDeleted(uid);
@@ -262,24 +255,13 @@ public class FplManager {
         return 0;
     }
 
-    private int hleKernelAllocateFpl(int uid, int data_addr, int timeout_addr, boolean wait, boolean doCallbacks) {
-        Memory mem = Memory.getInstance();
-
-        if (log.isDebugEnabled()) {
-            log.debug("hleKernelAllocateFpl uid=0x" + Integer.toHexString(uid) + " data_addr=0x" + Integer.toHexString(data_addr) + " timeout_addr=0x" + Integer.toHexString(timeout_addr) + " callbacks=" + doCallbacks);
-        }
-
-        SceUidManager.checkUidPurpose(uid, "ThreadMan-Fpl", true);
+    private int hleKernelAllocateFpl(int uid, TPointer32 dataAddr, TPointer32 timeoutAddr, boolean wait, boolean doCallbacks) {
         SceKernelFplInfo fpl = fplMap.get(uid);
-        if (fpl == null) {
-            log.warn("hleKernelAllocateFpl unknown uid=0x" + Integer.toHexString(uid));
-            return ERROR_KERNEL_NOT_FOUND_FPOOL;
-        }
         int addr = tryAllocateFpl(fpl);
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         if (addr == 0) {
             if (log.isDebugEnabled()) {
-                log.debug("hleKernelAllocateFpl - '" + fpl.name + "' fast check failed");
+                log.debug(String.format("hleKernelAllocateFpl %s fast check failed", fpl));
             }
             if (!wait) {
             	return ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
@@ -288,53 +270,36 @@ public class FplManager {
             // Go to wait state
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
             currentThread.wait.Fpl_id = uid;
-            currentThread.wait.Fpl_dataAddr = data_addr;
-            threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_FPL, uid, fplWaitStateChecker, timeout_addr, doCallbacks);
+            currentThread.wait.Fpl_dataAddr = dataAddr;
+            threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_FPL, uid, fplWaitStateChecker, timeoutAddr.getAddress(), doCallbacks);
         } else {
             // Success, do not reschedule the current thread.
             if (log.isDebugEnabled()) {
-                log.debug("hleKernelAllocateFpl - '" + fpl.name + "' fast check succeeded");
+                log.debug(String.format("hleKernelAllocateFpl %s fast check succeeded", fpl));
             }
-            mem.write32(data_addr, addr);
+            dataAddr.setValue(addr);
         }
 
         return 0;
     }
 
-    public int sceKernelAllocateFpl(int uid, int data_addr, int timeout_addr) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelAllocateFpl redirecting to hleKernelAllocateFpl(callbacks=false)");
-        }
-        return hleKernelAllocateFpl(uid, data_addr, timeout_addr, true, false);
+    public int sceKernelAllocateFpl(int uid, TPointer32 dataAddr, TPointer32 timeoutAddr) {
+        return hleKernelAllocateFpl(uid, dataAddr, timeoutAddr, true, false);
     }
 
-    public int sceKernelAllocateFplCB(int uid, int data_addr, int timeout_addr) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelAllocateFplCB redirecting to hleKernelAllocateFpl(callbacks=true)");
-        }
-        return hleKernelAllocateFpl(uid, data_addr, timeout_addr, true, true);
+    public int sceKernelAllocateFplCB(int uid, TPointer32 dataAddr, TPointer32 timeoutAddr) {
+        return hleKernelAllocateFpl(uid, dataAddr, timeoutAddr, true, true);
     }
 
-    public int sceKernelTryAllocateFpl(int uid, int data_addr) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelTryAllocateFpl redirecting to hleKernelAllocateFpl");
-        }
-        return hleKernelAllocateFpl(uid, data_addr, 0, false, false);
+    public int sceKernelTryAllocateFpl(int uid, TPointer32 dataAddr) {
+        return hleKernelAllocateFpl(uid, dataAddr, TPointer32.NULL, false, false);
     }
 
-    public int sceKernelFreeFpl(int uid, int data_addr) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelFreeFpl(uid=0x" + Integer.toHexString(uid) + ",data=0x" + Integer.toHexString(data_addr) + ")");
-        }
-
+    public int sceKernelFreeFpl(int uid, TPointer dataAddr) {
         SceKernelFplInfo info = fplMap.get(uid);
-        if (info == null) {
-            log.warn("sceKernelFreeFpl unknown uid");
-            return ERROR_KERNEL_NOT_FOUND_FPOOL;
-        }
-        int block = info.findBlockByAddress(data_addr);
-        if (block == -1) {
-            log.warn("sceKernelFreeFpl unknown block address=0x" + Integer.toHexString(data_addr));
+        int block = info.findBlockByAddress(dataAddr.getAddress());
+        if (block < 0) {
+            log.warn(String.format("sceKernelFreeFpl unknown block address=%s", dataAddr));
             return ERROR_KERNEL_ILLEGAL_MEMBLOCK;
         }
 
@@ -344,46 +309,22 @@ public class FplManager {
         return 0;
     }
 
-    public int sceKernelCancelFpl(int uid, int numWaitThreadAddr) {
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelCancelFpl(uid=0x" + Integer.toHexString(uid) + ",numWaitThreadAddr=0x" + Integer.toHexString(numWaitThreadAddr) + ")");
-        }
-
+    public int sceKernelCancelFpl(int uid, TPointer32 numWaitThreadAddr) {
         SceKernelFplInfo info = fplMap.get(uid);
-        if (info == null) {
-            log.warn("sceKernelCancelFpl unknown uid=0x" + Integer.toHexString(uid));
-            return ERROR_KERNEL_NOT_FOUND_FPOOL;
-        }
-
-        Memory mem = Memory.getInstance();
-        if (Memory.isAddressGood(numWaitThreadAddr)) {
-            mem.write32(numWaitThreadAddr, info.numWaitThreads);
-        }
+        numWaitThreadAddr.setValue(info.numWaitThreads);
         onFplCancelled(uid);
 
         return 0;
     }
 
-    public int sceKernelReferFplStatus(int uid, int info_addr) {
-        Memory mem = Processor.memory;
-
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelReferFplStatus(uid=0x" + Integer.toHexString(uid) + ",info_addr=0x" + Integer.toHexString(info_addr) + ")");
-        }
-
+    public int sceKernelReferFplStatus(int uid, TPointer infoAddr) {
         SceKernelFplInfo info = fplMap.get(uid);
-        if (info == null) {
-            log.warn("sceKernelReferFplStatus unknown uid=0x" + Integer.toHexString(uid));
-            return ERROR_KERNEL_NOT_FOUND_FPOOL;
-        }
-
-        info.write(mem, info_addr);
+        info.write(infoAddr);
 
         return 0;
     }
 
     private class FplWaitStateChecker implements IWaitStateChecker {
-
         @Override
         public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
             // Check if the thread has to continue its wait state or if the fpl
@@ -408,5 +349,4 @@ public class FplManager {
 
     private FplManager() {
     }
-
 }
