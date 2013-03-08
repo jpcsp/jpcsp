@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.kernel.managers.SemaManager;
+import jpcsp.HLE.kernel.managers.ThreadWaitingList;
 
 public class SceKernelSemaInfo extends pspAbstractMemoryMappedStructureVariableLength {
     public final String name;
@@ -24,7 +26,7 @@ public class SceKernelSemaInfo extends pspAbstractMemoryMappedStructureVariableL
     public final int initCount;
     public int currentCount;
     public final int maxCount;
-    public int numWaitThreads;
+    public ThreadWaitingList threadWaitingList;
 
     public final int uid;
 
@@ -34,9 +36,9 @@ public class SceKernelSemaInfo extends pspAbstractMemoryMappedStructureVariableL
         this.initCount = initCount;
         this.currentCount = initCount;
         this.maxCount = maxCount;
-        this.numWaitThreads = 0;
 
         uid = SceUidManager.getNewUid("ThreadMan-sema");
+        threadWaitingList = ThreadWaitingList.createThreadWaitingList(SceKernelThreadInfo.PSP_WAIT_SEMA, uid, attr, SemaManager.PSP_SEMA_ATTR_PRIORITY);
     }
 
 	@Override
@@ -47,11 +49,15 @@ public class SceKernelSemaInfo extends pspAbstractMemoryMappedStructureVariableL
 		write32(initCount);
 		write32(currentCount);
 		write32(maxCount);
-		write32(numWaitThreads);
+		write32(getNumWaitThreads());
+	}
+
+	public int getNumWaitThreads() {
+		return threadWaitingList.getNumWaitingThreads();
 	}
 
 	@Override
 	public String toString() {
-		return String.format("SceKernelSemaInfo(uid=0x%X, name='%s', attr=0x%X, currentCount=%d, maxCount=%d, numWaitThreads=%d)", uid, name, attr, currentCount, maxCount, numWaitThreads);
+		return String.format("SceKernelSemaInfo(uid=0x%X, name='%s', attr=0x%X, currentCount=%d, maxCount=%d, numWaitThreads=%d)", uid, name, attr, currentCount, maxCount, getNumWaitThreads());
 	}
 }
