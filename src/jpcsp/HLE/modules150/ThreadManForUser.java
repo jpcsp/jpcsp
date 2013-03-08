@@ -343,7 +343,7 @@ public class ThreadManForUser extends HLEModule {
     public void hleKernelSetThreadArguments(SceKernelThreadInfo thread, String argument) {
     	// The PSP is passing an argumentSize 1 byte (0x00) larger than the real string...
     	// but only on newer firmwares (not sure from which version, assume version 200).
-    	int extraBytes = Modules.SysMemUserForUserModule.getFirmwareVersion() >= 200 ? 1 : 0;
+    	int extraBytes = Modules.SysMemUserForUserModule.getFirmwareVersion() > 200 ? 1 : 0;
     	int address = prepareThreadArguments(thread, argument.length() + 1 + extraBytes);
     	writeStringZ(Memory.getInstance(), address, argument);
     	if (extraBytes > 0) {
