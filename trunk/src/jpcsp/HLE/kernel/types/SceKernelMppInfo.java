@@ -18,7 +18,9 @@ package jpcsp.HLE.kernel.types;
 
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.managers.MsgPipeManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.kernel.managers.ThreadWaitingList;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 
 public class SceKernelMppInfo extends pspAbstractMemoryMappedStructureVariableLength {
@@ -28,8 +30,8 @@ public class SceKernelMppInfo extends pspAbstractMemoryMappedStructureVariableLe
     public final int attr;
     public final int bufSize;
     public int freeSize;
-    public int numSendWaitThreads;
-    public int numReceiveWaitThreads;
+    public final ThreadWaitingList sendThreadWaitingList;
+    public final ThreadWaitingList receiveThreadWaitingList;
 
     private final SysMemInfo sysMemInfo;
     // Internal info
@@ -45,8 +47,6 @@ public class SceKernelMppInfo extends pspAbstractMemoryMappedStructureVariableLe
 
         bufSize = size;
         freeSize = size;
-        numSendWaitThreads = 0;
-        numReceiveWaitThreads = 0;
 
         sysMemInfo = Modules.SysMemUserForUserModule.malloc(partitionid, "ThreadMan-MsgPipe", memType, size, 0);
         if (sysMemInfo == null) {
@@ -55,6 +55,8 @@ public class SceKernelMppInfo extends pspAbstractMemoryMappedStructureVariableLe
         address = sysMemInfo.addr;
 
         uid = SceUidManager.getNewUid("ThreadMan-MsgPipe");
+        sendThreadWaitingList = ThreadWaitingList.createThreadWaitingList(SceKernelThreadInfo.PSP_WAIT_MSGPIPE, uid, attr, MsgPipeManager.PSP_MPP_ATTR_SEND_PRIORITY);
+        receiveThreadWaitingList = ThreadWaitingList.createThreadWaitingList(SceKernelThreadInfo.PSP_WAIT_MSGPIPE, uid, attr, MsgPipeManager.PSP_MPP_ATTR_RECEIVE_PRIORITY);
         this.partitionid = partitionid;
         head = 0;
         tail = 0;
@@ -83,8 +85,8 @@ public class SceKernelMppInfo extends pspAbstractMemoryMappedStructureVariableLe
 		write32(attr);
 		write32(bufSize);
 		write32(freeSize);
-		write32(numSendWaitThreads);
-		write32(numReceiveWaitThreads);
+		write32(getNumSendWaitThreads());
+		write32(getNumReceiveWaitThreads());
 	}
 
     public int availableReadSize() {
@@ -127,4 +129,17 @@ public class SceKernelMppInfo extends pspAbstractMemoryMappedStructureVariableLe
             head = (head + copySize) % bufSize;
         }
     }
+
+    public int getNumSendWaitThreads() {
+		return sendThreadWaitingList.getNumWaitingThreads();
+	}
+
+    public int getNumReceiveWaitThreads() {
+		return receiveThreadWaitingList.getNumWaitingThreads();
+	}
+
+	@Override
+	public String toString() {
+		return String.format("SceKernelMppInfo(uid=0x%X, name='%s', attr=0x%X, bufSize=0x%X, freeSize=0x%X, numSendWaitThreads=%d, numReceiveWaitThreads=%d)", uid, name, attr, bufSize, freeSize, getNumSendWaitThreads(), getNumReceiveWaitThreads());
+	}
 }

@@ -51,12 +51,10 @@ public class MsgPipeManager {
     private MsgPipeSendWaitStateChecker msgPipeSendWaitStateChecker;
     private MsgPipeReceiveWaitStateChecker msgPipeReceiveWaitStateChecker;
 
-    private static final int PSP_MPP_ATTR_SEND_FIFO = 0;
-    private static final int PSP_MPP_ATTR_SEND_PRIORITY = 0x100;
-    private static final int PSP_MPP_ATTR_RECEIVE_FIFO = 0;
-    private static final int PSP_MPP_ATTR_RECEIVE_PRIORITY = 0x1000;
-    private static final int PSP_MPP_ATTR_SEND = PSP_MPP_ATTR_SEND_FIFO | PSP_MPP_ATTR_SEND_PRIORITY;
-    private static final int PSP_MPP_ATTR_RECEIVE = PSP_MPP_ATTR_RECEIVE_FIFO | PSP_MPP_ATTR_RECEIVE_PRIORITY;
+    public static final int PSP_MPP_ATTR_SEND_FIFO = 0;
+    public static final int PSP_MPP_ATTR_SEND_PRIORITY = 0x100;
+    public static final int PSP_MPP_ATTR_RECEIVE_FIFO = 0;
+    public static final int PSP_MPP_ATTR_RECEIVE_PRIORITY = 0x1000;
     private final static int PSP_MPP_ATTR_ADDR_HIGH = 0x4000;
 
     protected static final int PSP_MPP_WAIT_MODE_COMPLETE = 0; // receive always a complete buffer
@@ -69,27 +67,18 @@ public class MsgPipeManager {
     }
 
     private boolean removeWaitingThread(SceKernelThreadInfo thread) {
-        if (thread.isWaitingForType(PSP_WAIT_MSGPIPE)) {
-            // Update numSendWaitThreads.
-            SceKernelMppInfo info = msgMap.get(thread.wait.MsgPipe_id);
-            if (info != null) {
-            	if (thread.wait.MsgPipe_isSend) {
-	                info.numSendWaitThreads--;
-	                if (info.numSendWaitThreads < 0) {
-	                    log.warn("removing waiting thread " + Integer.toHexString(thread.uid) + ", MsgPipe " + Integer.toHexString(info.uid) + " numSendWaitThreads underflowed");
-	                    info.numSendWaitThreads = 0;
-	                }
-            	} else {
-                    info.numReceiveWaitThreads--;
-                    if (info.numReceiveWaitThreads < 0) {
-                        log.warn("removing waiting thread " + Integer.toHexString(thread.uid) + ", MsgPipe " + Integer.toHexString(info.uid) + " numReceiveWaitThreads underflowed");
-                        info.numReceiveWaitThreads = 0;
-                    }
-            	}
-                return true;
-            }
+        SceKernelMppInfo info = msgMap.get(thread.wait.MsgPipe_id);
+        if (info == null) {
+        	return false;
         }
-        return false;
+
+        if (thread.wait.MsgPipe_isSend) {
+        	info.sendThreadWaitingList.removeWaitingThread(thread);
+    	} else {
+    		info.receiveThreadWaitingList.removeWaitingThread(thread);
+    	}
+
+    	return true;
     }
 
     public void onThreadWaitTimeout(SceKernelThreadInfo thread) {
@@ -126,8 +115,7 @@ public class MsgPipeManager {
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
-            if (thread.isWaitingForType(PSP_WAIT_MSGPIPE) &&
-                    thread.wait.MsgPipe_id == msgpid) {
+            if (thread.isWaitingFor(PSP_WAIT_MSGPIPE, msgpid)) {
                 thread.cpuContext._v0 = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 reschedule = true;
@@ -151,40 +139,25 @@ public class MsgPipeManager {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         boolean reschedule = false;
 
-        // Find threads waiting on this XXX and wake them up.
-        if ((info.attr & PSP_MPP_ATTR_SEND) == PSP_MPP_ATTR_SEND_FIFO) {
-            for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
-                SceKernelThreadInfo thread = it.next();
-                if (thread.isWaitingForType(PSP_WAIT_MSGPIPE) &&
-                        thread.wait.MsgPipe_isSend &&
-                        thread.wait.MsgPipe_id == info.uid &&
-                        trySendMsgPipe(info, thread.wait.MsgPipe_address, thread.wait.MsgPipe_size, thread.wait.MsgPipe_waitMode, thread.wait.MsgPipe_resultSize_addr)) {
-                    // Adjust waiting threads.
-                    info.numSendWaitThreads--;
-                    // Return success.
-                    thread.cpuContext._v0 = 0;
-                    // Wakeup.
-                    threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
-                    reschedule = true;
-                }
+        SceKernelThreadInfo checkedThread = null;
+        while (true) {
+            SceKernelThreadInfo thread = info.sendThreadWaitingList.getNextWaitingThread(checkedThread);
+            if (thread == null) {
+            	break;
             }
-        } else if ((info.attr & PSP_MPP_ATTR_SEND) == PSP_MPP_ATTR_SEND_PRIORITY) {
-            for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext();) {
-                SceKernelThreadInfo thread = it.next();
-                if (thread.isWaitingForType(PSP_WAIT_MSGPIPE) &&
-                        thread.wait.MsgPipe_isSend &&
-                        thread.wait.MsgPipe_id == info.uid &&
-                        trySendMsgPipe(info, thread.wait.MsgPipe_address, thread.wait.MsgPipe_size, thread.wait.MsgPipe_waitMode, thread.wait.MsgPipe_resultSize_addr)) {
-                    // Adjust waiting threads.
-                    info.numSendWaitThreads--;
-                    // Return success.
-                    thread.cpuContext._v0 = 0;
-                    // Wakeup.
-                    threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
-                    reschedule = true;
+            if (thread.wait.MsgPipe_isSend && trySendMsgPipe(info, thread.wait.MsgPipe_address, thread.wait.MsgPipe_size, thread.wait.MsgPipe_waitMode, thread.wait.MsgPipe_resultSize_addr)) {
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("onMsgPipeSendModified waking thread %s", thread));
                 }
+                info.sendThreadWaitingList.removeWaitingThread(thread);
+                thread.cpuContext._v0 = 0;
+                threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                reschedule = true;
+            } else {
+            	checkedThread = thread;
             }
         }
+
         // Reschedule only if threads waked up.
         if (reschedule) {
             threadMan.hleRescheduleCurrentThread();
@@ -195,39 +168,25 @@ public class MsgPipeManager {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         boolean reschedule = false;
 
-        if ((info.attr & PSP_MPP_ATTR_RECEIVE) == PSP_MPP_ATTR_RECEIVE_FIFO) {
-            for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
-                SceKernelThreadInfo thread = it.next();
-                if (thread.isWaitingForType(PSP_WAIT_MSGPIPE) &&
-                        !thread.wait.MsgPipe_isSend &&
-                        thread.wait.MsgPipe_id == info.uid &&
-                        tryReceiveMsgPipe(info, thread.wait.MsgPipe_address, thread.wait.MsgPipe_size, thread.wait.MsgPipe_waitMode, thread.wait.MsgPipe_resultSize_addr)) {
-                    // Adjust waiting threads.
-                    info.numReceiveWaitThreads--;
-                    // Return success.
-                    thread.cpuContext._v0 = 0;
-                    // Wakeup.
-                    threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
-                    reschedule = true;
-                }
+        SceKernelThreadInfo checkedThread = null;
+        while (true) {
+            SceKernelThreadInfo thread = info.receiveThreadWaitingList.getNextWaitingThread(checkedThread);
+            if (thread == null) {
+            	break;
             }
-        } else if ((info.attr & PSP_MPP_ATTR_RECEIVE) == PSP_MPP_ATTR_RECEIVE_PRIORITY) {
-            for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext();) {
-                SceKernelThreadInfo thread = it.next();
-                if (thread.isWaitingForType(PSP_WAIT_MSGPIPE) &&
-                        !thread.wait.MsgPipe_isSend &&
-                        thread.wait.MsgPipe_id == info.uid &&
-                        tryReceiveMsgPipe(info, thread.wait.MsgPipe_address, thread.wait.MsgPipe_size, thread.wait.MsgPipe_waitMode, thread.wait.MsgPipe_resultSize_addr)) {
-                    // Adjust waiting threads.
-                    info.numReceiveWaitThreads--;
-                    // Return success.
-                    thread.cpuContext._v0 = 0;
-                    // Wakeup.
-                    threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
-                    reschedule = true;
+            if (!thread.wait.MsgPipe_isSend && tryReceiveMsgPipe(info, thread.wait.MsgPipe_address, thread.wait.MsgPipe_size, thread.wait.MsgPipe_waitMode, thread.wait.MsgPipe_resultSize_addr)) {
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("onMsgPipeReceiveModified waking thread %s", thread));
                 }
+                info.receiveThreadWaitingList.removeWaitingThread(thread);
+                thread.cpuContext._v0 = 0;
+                threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                reschedule = true;
+            } else {
+            	checkedThread = thread;
             }
         }
+
         // Reschedule only if threads waked up.
         if (reschedule) {
             threadMan.hleRescheduleCurrentThread();
@@ -328,8 +287,8 @@ public class MsgPipeManager {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("hleKernelSendMsgPipe %s waiting for 0x%X bytes to become available", info, size));
                 }
-                info.numSendWaitThreads++;
                 SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+                info.sendThreadWaitingList.addWaitingThread(currentThread);
                 // Wait on a specific MsgPipe.
                 currentThread.wait.MsgPipe_isSend = true;
                 currentThread.wait.MsgPipe_id = uid;
@@ -343,7 +302,7 @@ public class MsgPipeManager {
         } else {
             // Success, do not reschedule the current thread.
             if (log.isDebugEnabled()) {
-                log.debug("hleKernelSendMsgPipe - '" + info.name + "' fast check succeeded");
+                log.debug(String.format("hleKernelSendMsgPipe %s fast check succeeded", info));
             }
             onMsgPipeReceiveModified(info);
         }
@@ -377,8 +336,8 @@ public class MsgPipeManager {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("hleKernelReceiveMsgPipe %s waiting for 0x%X bytes to become available", info, size));
                 }
-                info.numReceiveWaitThreads++;
                 SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+                info.receiveThreadWaitingList.addWaitingThread(currentThread);
                 // Wait on a specific MsgPipe.
                 currentThread.wait.MsgPipe_isSend = false;
                 currentThread.wait.MsgPipe_id = uid;
@@ -418,10 +377,10 @@ public class MsgPipeManager {
     public int sceKernelCancelMsgPipe(int uid, TPointer32 sendAddr, TPointer32 recvAddr) {
         SceKernelMppInfo info = msgMap.get(uid);
 
-        sendAddr.setValue(info.numSendWaitThreads);
-        recvAddr.setValue(info.numReceiveWaitThreads);
-        info.numSendWaitThreads = 0;
-        info.numReceiveWaitThreads = 0;
+        sendAddr.setValue(info.getNumSendWaitThreads());
+        recvAddr.setValue(info.getNumReceiveWaitThreads());
+        info.sendThreadWaitingList.removeAllWaitingThreads();
+        info.receiveThreadWaitingList.removeAllWaitingThreads();
         onMsgPipeCancelled(uid);
 
         return 0;
@@ -446,7 +405,7 @@ public class MsgPipeManager {
             }
 
             if (trySendMsgPipe(info, thread.wait.MsgPipe_address, thread.wait.MsgPipe_size, thread.wait.MsgPipe_waitMode, thread.wait.MsgPipe_resultSize_addr)) {
-                info.numSendWaitThreads--;
+                info.sendThreadWaitingList.removeWaitingThread(thread);
                 thread.cpuContext._v0 = 0;
                 return false;
             }
@@ -467,7 +426,7 @@ public class MsgPipeManager {
             }
 
             if (tryReceiveMsgPipe(info, wait.MsgPipe_address, wait.MsgPipe_size, wait.MsgPipe_waitMode, wait.MsgPipe_resultSize_addr)) {
-                info.numReceiveWaitThreads--;
+            	info.receiveThreadWaitingList.removeWaitingThread(thread);
                 thread.cpuContext._v0 = 0;
                 return false;
             }

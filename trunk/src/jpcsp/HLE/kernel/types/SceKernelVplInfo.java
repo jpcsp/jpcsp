@@ -23,6 +23,7 @@ import java.util.HashMap;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.kernel.managers.ThreadWaitingList;
 import jpcsp.HLE.kernel.managers.VplManager;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.util.Utilities;
@@ -33,7 +34,7 @@ public class SceKernelVplInfo extends pspAbstractMemoryMappedStructureVariableLe
     public final int attr;
     public final int poolSize;
     public int freeSize;
-    public int numWaitThreads;
+    public final ThreadWaitingList threadWaitingList;
 
     public static final int vplHeaderSize = 32;
     public static final int vplBlockHeaderSize = 8;
@@ -53,11 +54,11 @@ public class SceKernelVplInfo extends pspAbstractMemoryMappedStructureVariableLe
         poolSize = size - vplHeaderSize; // 32 bytes overhead per VPL
 
         freeSize = poolSize;
-        numWaitThreads = 0;
 
         dataBlockMap = new HashMap<Integer, Integer>();
 
         uid = SceUidManager.getNewUid("ThreadMan-Vpl");
+        threadWaitingList = ThreadWaitingList.createThreadWaitingList(SceKernelThreadInfo.PSP_WAIT_VPL, uid, attr, VplManager.PSP_VPL_ATTR_PRIORITY);
         this.partitionid = partitionid;
 
         // Reserve psp memory
@@ -107,7 +108,7 @@ public class SceKernelVplInfo extends pspAbstractMemoryMappedStructureVariableLe
 		write32(attr);
 		write32(poolSize);
 		write32(freeSize);
-		write32(numWaitThreads);
+		write32(getNumWaitingThreads());
 	}
 
     /** @return true on success */
@@ -169,6 +170,10 @@ public class SceKernelVplInfo extends pspAbstractMemoryMappedStructureVariableLe
 
         return addr;
     }
+
+    public int getNumWaitingThreads() {
+		return threadWaitingList.getNumWaitingThreads();
+	}
 
 	@Override
 	public String toString() {
