@@ -16,14 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import jpcsp.HLE.kernel.managers.MutexManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.kernel.managers.ThreadWaitingList;
 
 public class SceKernelMutexInfo extends pspAbstractMemoryMappedStructureVariableLength {
     public final String name;
     public final int attr;
     public final int initCount;
     public int lockedCount;
-    public int numWaitThreads;
+    public final ThreadWaitingList threadWaitingList;
 
     public final int uid;
     public int threadid;
@@ -34,9 +36,9 @@ public class SceKernelMutexInfo extends pspAbstractMemoryMappedStructureVariable
 
         initCount = count;
         lockedCount = count;
-        numWaitThreads = 0;
 
         uid = SceUidManager.getNewUid("ThreadMan-Mutex");
+        threadWaitingList = ThreadWaitingList.createThreadWaitingList(SceKernelThreadInfo.PSP_WAIT_MUTEX, uid, attr, MutexManager.PSP_MUTEX_ATTR_PRIORITY);
     }
 
 	@Override
@@ -46,11 +48,15 @@ public class SceKernelMutexInfo extends pspAbstractMemoryMappedStructureVariable
 		write32(attr);
 		write32(initCount);
 		write32(lockedCount);
-		write32(numWaitThreads);
+		write32(getNumWaitingThreads());
+	}
+
+    public int getNumWaitingThreads() {
+		return threadWaitingList.getNumWaitingThreads();
 	}
 
     @Override
     public String toString() {
-        return String.format("SceKernelMutexInfo(uid=0x%X, name=%s, initCount=%d, lockedCount=%d, numWaitThreads=%d, attr=0x%X)", uid, name, initCount, lockedCount, numWaitThreads, attr);
+        return String.format("SceKernelMutexInfo(uid=0x%X, name='%s', attr=0x%X, initCount=%d, lockedCount=%d, numWaitThreads=%d, attr=0x%X)", uid, name, attr, initCount, lockedCount, getNumWaitingThreads());
     }
 }

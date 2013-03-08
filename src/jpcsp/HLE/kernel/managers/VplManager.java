@@ -47,15 +47,14 @@ import jpcsp.HLE.modules.ThreadManForUser;
 import org.apache.log4j.Logger;
 
 public class VplManager {
-
     public static Logger log = Modules.getLogger("ThreadManForUser");
 
     private HashMap<Integer, SceKernelVplInfo> vplMap;
     private VplWaitStateChecker vplWaitStateChecker;
 
-    protected final static int PSP_VPL_ATTR_FIFO =         0;
-    protected final static int PSP_VPL_ATTR_PRIORITY = 0x100;
-    protected final static int PSP_VPL_ATTR_PASS =     0x200;   // Allow threads that want to allocate small memory blocks to bypass the waiting queue (less memory goes first).
+    public final static int PSP_VPL_ATTR_FIFO =         0;
+    public final static int PSP_VPL_ATTR_PRIORITY = 0x100;
+    private final static int PSP_VPL_ATTR_PASS =     0x200;   // Allow threads that want to allocate small memory blocks to bypass the waiting queue (less memory goes first).
     public final static int PSP_VPL_ATTR_ADDR_HIGH =  0x4000;   // Create the VPL in high memory.
     public final static int PSP_VPL_ATTR_EXT =        0x8000;   // Automatically extend the VPL's memory area (when allocating a block from the VPL and the remaining size is too small, this flag tells the VPL to automatically attempt to extend it's memory area).
     public final static int PSP_VPL_ATTR_MASK = PSP_VPL_ATTR_EXT | PSP_VPL_ATTR_ADDR_HIGH | PSP_VPL_ATTR_PASS | PSP_VPL_ATTR_PRIORITY | 0xFF; // Anything outside this mask is an illegal attr.
@@ -66,17 +65,14 @@ public class VplManager {
     }
 
     private boolean removeWaitingThread(SceKernelThreadInfo thread) {
-        // Update numWaitThreads
         SceKernelVplInfo fpl = vplMap.get(thread.wait.Vpl_id);
-        if (fpl != null) {
-            fpl.numWaitThreads--;
-            if (fpl.numWaitThreads < 0) {
-                log.warn("removing waiting thread " + Integer.toHexString(thread.uid) + ", vpl " + Integer.toHexString(fpl.uid) + " numWaitThreads underflowed");
-                fpl.numWaitThreads = 0;
-            }
-            return true;
+        if (fpl == null) {
+        	return false;
         }
-        return false;
+
+        fpl.threadWaitingList.removeWaitingThread(thread);
+
+        return true;
     }
 
     public void onThreadWaitTimeout(SceKernelThreadInfo thread) {
@@ -115,8 +111,7 @@ public class VplManager {
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
-            if (thread.isWaitingForType(PSP_WAIT_VPL) &&
-                    thread.wait.Vpl_id == vid) {
+            if (thread.isWaitingFor(PSP_WAIT_VPL, vid)) {
                 thread.cpuContext._v0 = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 reschedule = true;
@@ -140,35 +135,28 @@ public class VplManager {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         boolean reschedule = false;
 
-        if ((info.attr & PSP_VPL_ATTR_PRIORITY) == PSP_VPL_ATTR_FIFO) {
-            for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
-                SceKernelThreadInfo thread = it.next();
-                if (thread.isWaitingForType(PSP_WAIT_VPL) &&
-                        thread.wait.Vpl_id == info.uid) {
-                    if (log.isDebugEnabled()) {
-                        log.debug(String.format("onVplFree waking thread %s", thread.toString()));
-                    }
-                    info.numWaitThreads--;
-                    thread.cpuContext._v0 = 0;
-                    threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
-                    reschedule = true;
-                }
+        SceKernelThreadInfo checkedThread = null;
+        while (info.freeSize > 0) {
+            SceKernelThreadInfo thread = info.threadWaitingList.getNextWaitingThread(checkedThread);
+            if (thread == null) {
+            	break;
             }
-        } else if ((info.attr & PSP_VPL_ATTR_PRIORITY) == PSP_VPL_ATTR_PRIORITY) {
-            for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext();) {
-                SceKernelThreadInfo thread = it.next();
-                if (thread.isWaitingForType(PSP_WAIT_VPL) &&
-                        thread.wait.Vpl_id == info.uid) {
-                    if (log.isDebugEnabled()) {
-                        log.debug(String.format("onVplFree waking thread %s", thread.toString()));
-                    }
-                    info.numWaitThreads--;
-                    thread.cpuContext._v0 = 0;
-                    threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
-                    reschedule = true;
+            int addr = tryAllocateVpl(info, thread.wait.Vpl_size);
+            if (addr != 0) {
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("onVplFree waking thread %s", thread));
                 }
+                // Return allocated address
+                thread.wait.Vpl_dataAddr.setValue(addr);
+                info.threadWaitingList.removeWaitingThread(thread);
+                thread.cpuContext._v0 = 0;
+                threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                reschedule = true;
+            } else {
+            	checkedThread = thread;
             }
         }
+
         // Reschedule only if threads waked up.
         if (reschedule) {
             threadMan.hleRescheduleCurrentThread();
@@ -248,9 +236,9 @@ public class VplManager {
             if (!wait) {
                 return ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
             }
-            vpl.numWaitThreads++;
             // Go to wait state
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+            vpl.threadWaitingList.addWaitingThread(currentThread);
             // Wait on a specific fpl
             currentThread.wait.Vpl_id = uid;
             currentThread.wait.Vpl_size = size;
@@ -292,7 +280,8 @@ public class VplManager {
 
     public int sceKernelCancelVpl(int uid, TPointer32 numWaitThreadAddr) {
         SceKernelVplInfo info = vplMap.get(uid);
-        numWaitThreadAddr.setValue(info.numWaitThreads);
+        numWaitThreadAddr.setValue(info.getNumWaitingThreads());
+        info.threadWaitingList.removeAllWaitingThreads();
         onVplCancelled(uid);
 
         return 0;
@@ -317,8 +306,11 @@ public class VplManager {
             }
 
             // Check vpl.
-            if (tryAllocateVpl(vpl, wait.Vpl_size) != 0) {
-                vpl.numWaitThreads--;
+            int addr = tryAllocateVpl(vpl, wait.Vpl_size);
+            if (addr != 0) {
+            	// Return the allocated address
+            	wait.Vpl_dataAddr.setValue(addr);
+            	vpl.threadWaitingList.removeWaitingThread(thread);
                 thread.cpuContext._v0 = 0;
                 return false;
             }
