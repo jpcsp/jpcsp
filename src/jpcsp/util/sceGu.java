@@ -271,6 +271,10 @@ public class sceGu {
 		sendCommandi(GeCommands.TFLT, (mag << 8) | min);
 	}
 
+	public void sceGuDrawHorizontalLine(int x0, int x1, int y, int color) {
+		sceGuDrawLine(x0, y, x1, y, color);
+	}
+
 	public void sceGuDrawLine(int x0, int y0, int x1, int y1, int color) {
         int numberOfVertex = 2;
         int lineVertexAddr = sceGuGetMemory(12 * numberOfVertex);
@@ -319,11 +323,17 @@ public class sceGu {
         lineVertexWriter.writeNext(x1);
         lineVertexWriter.writeNext(y1);
         lineVertexWriter.writeNext(0);
-        lineVertexWriter.flush();
         // Align on 32-bit
         lineVertexWriter.writeNext(0);
+        lineVertexWriter.flush();
 
         sceGuDisable(IRenderingEngine.GU_TEXTURE_2D);
 		sceGuDrawArray(GeCommands.PRIM_SPRITES, (VTYPE_TRANSFORM_PIPELINE_RAW_COORD << 23) | (VTYPE_COLOR_FORMAT_32BIT_ABGR_8888 << 2) | (VTYPE_POSITION_FORMAT_16_BIT << 7), numberOfVertex, 0, lineVertexAddr);
+	}
+
+	public void sceGuClear(int color) {
+		sendCommandi(GeCommands.CLEAR, 0x701);
+		sceGuDrawRectangle(0, 0, Screen.width, Screen.height, color);
+		sendCommandi(GeCommands.CLEAR, 0);
 	}
 }

@@ -55,6 +55,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.LinkedList;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.swing.BoxLayout;
@@ -214,7 +216,7 @@ public class sceUtility extends HLEModule {
     public static final int PSP_NETPARAM_UNKNOWN1     = 16; // int
     public static final int PSP_NETPARAM_UNKNOWN2     = 17; // int
 
-    protected static final int maxLineLengthForDialog = 80;
+    protected static final int maxLineLengthForDialog = 40;
     protected static final int[] fontHeightSavedataList = new int[]{12, 12, 12, 12, 12, 12, 9, 8, 7, 6};
 
     protected static final int icon0Width = 144;
@@ -260,7 +262,7 @@ public class sceUtility extends HLEModule {
             this.name = name;
             status = PSP_UTILITY_DIALOG_STATUS_NONE;
             result = PSP_UTILITY_DIALOG_RESULT_OK;
-            buttonPressed = SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_INVALID;
+            setButtonPressed(SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_INVALID);
         }
 
         protected void openDialog(UtilityDialog dialog) {
@@ -327,6 +329,10 @@ public class sceUtility extends HLEModule {
 
         public int getButtonPressed() {
         	return buttonPressed;
+        }
+
+        public void setButtonPressed(int buttonPressed) {
+        	this.buttonPressed = buttonPressed;
         }
 
         public int executeInitStart(TPointer paramsAddr) {
@@ -455,7 +461,7 @@ public class sceUtility extends HLEModule {
                 params.read(paramsAddr);
 
                 if (guDialog != null) {
-                	guDialog.update();
+                	guDialog.update(drawSpeed);
                 }
 
                 boolean keepVisible = executeUpdateVisible();
@@ -1283,7 +1289,6 @@ public class sceUtility extends HLEModule {
 
     protected static class MsgDialogUtilityDialogState extends UtilityDialogState {
 		protected SceUtilityMsgDialogParams msgDialogParams;
-		protected MsgDialog msgDialog;
 
     	public MsgDialogUtilityDialogState(String name) {
 			super(name);
@@ -1294,12 +1299,12 @@ public class sceUtility extends HLEModule {
 	        Memory mem = Processor.memory;
 
 	        if (!isDialogOpen()) {
-	        	msgDialog = new MsgDialog(msgDialogParams, this);
-	        	openDialog(msgDialog);
+	        	GuMsgDialog gu = new GuMsgDialog(msgDialogParams, this);
+	        	openDialog(gu);
 	        } else if (!isDialogActive()) {
 	        	// buttonPressed is only set for mode TEXT, not for mode ERROR
 	        	if (msgDialogParams.mode == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_MODE_TEXT) {
-	        		msgDialogParams.buttonPressed = msgDialog.buttonPressed;
+	        		msgDialogParams.buttonPressed = getButtonPressed();
 	        	} else {
 	        		msgDialogParams.buttonPressed = SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_INVALID;
 	        	}
@@ -1311,7 +1316,6 @@ public class sceUtility extends HLEModule {
 	            msgDialogParams.write(mem);
 	        	finishDialog();
 	        } else {
-	        	msgDialog.checkController();
 	        	updateDialog();
 	        }
 
@@ -1785,6 +1789,10 @@ public class sceUtility extends HLEModule {
 		protected boolean downPressedAnalog;
 		protected boolean upPressedButton;
 		protected boolean upPressedAnalog;
+		protected boolean leftPressedButton;
+		protected boolean leftPressedAnalog;
+		protected boolean rightPressedButton;
+		protected boolean rightPressedAnalog;
 		protected sceGu gu;
 		protected UtilityDialogState utilityDialogState;
 		private int x;
@@ -1795,12 +1803,23 @@ public class sceUtility extends HLEModule {
 		private int textHeight;
 		private int textLineHeight;
 		private int textAddr;
+		private SceFontInfo defaultFontInfo;
+        protected static final int baseAscender = 15;
+        protected static final int defaultTextWidth = 512;
+        protected static final int defaultTextHeight = 32;
+        protected static final int textColor = 0xFFFFFF;
+        protected static final int shadowColor = 0x000000;
+        protected boolean softShadows;
+        protected long startDialogMillis;
+        protected int drawSpeed;
 
-		protected void createDialog(final UtilityDialogState utilityDialogState, String message) {
+		protected void createDialog(final UtilityDialogState utilityDialogState) {
 			this.utilityDialogState = utilityDialogState;
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Free memory total=0x%X, max=0x%X", Modules.SysMemUserForUserModule.totalFreeMemSize(), Modules.SysMemUserForUserModule.maxFreeMemSize()));
 			}
+
+			startDialogMillis = Emulator.getClock().milliTime();
 
 			// Allocate 1 MB
 			gu = new sceGu(1 * 1024 * 1024);
@@ -1815,12 +1834,29 @@ public class sceUtility extends HLEModule {
 			return gu != null;
 		}
 
-		protected void update() {
+		protected void update(int drawSpeed) {
+			this.drawSpeed = drawSpeed;
+
 			// Do not overwrite a sceGu list still in drawing state
 			if (!gu.isListDrawing()) {
 				gu.sceGuStart();
+
+				// Disable all common flags
+				gu.sceGuDisable(IRenderingEngine.GU_DEPTH_TEST);
+				gu.sceGuDisable(IRenderingEngine.GU_ALPHA_TEST);
+				gu.sceGuDisable(IRenderingEngine.GU_FOG);
+				gu.sceGuDisable(IRenderingEngine.GU_LIGHTING);
+				gu.sceGuDisable(IRenderingEngine.GU_COLOR_LOGIC_OP);
+				gu.sceGuDisable(IRenderingEngine.GU_STENCIL_TEST);
+				gu.sceGuDisable(IRenderingEngine.GU_CULL_FACE);
+				gu.sceGuDisable(IRenderingEngine.GU_SCISSOR_TEST);
+
+				// Enable standard alpha blending
+				gu.sceGuBlendFunc(ALPHA_SOURCE_BLEND_OPERATION_ADD, ALPHA_SOURCE_ALPHA, ALPHA_ONE_MINUS_SOURCE_ALPHA, 0, 0);
+				gu.sceGuEnable(IRenderingEngine.GU_BLEND);
+
 				updateDialog();
-				gu.sceGuDisable(IRenderingEngine.GU_BLEND);
+
 				gu.sceGuFinish();
 			}
 
@@ -1829,8 +1865,8 @@ public class sceUtility extends HLEModule {
 
 		private void drawText(SceFontInfo fontInfo, int baseAscender, char c, int glyphType) {
 			pspCharInfo charInfo = fontInfo.getCharInfo(c, glyphType);
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("drawText '%c'(%d), glyphType=0x%X, baseAscender=%d, position (%d,%d), %s", c, (int) c, glyphType, baseAscender, x, y, charInfo));
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("drawText '%c'(%d), glyphType=0x%X, baseAscender=%d, position (%d,%d), %s", c, (int) c, glyphType, baseAscender, x, y, charInfo));
 			}
 
 			if (charInfo == null) {
@@ -1852,9 +1888,43 @@ public class sceUtility extends HLEModule {
 			x += charInfo.sfp26AdvanceH >> 6;
 		}
 
+		protected int getTextLength(SceFontInfo fontInfo, String s) {
+			int length = 0;
+
+			for (int i = 0; i < s.length(); i++) {
+				length += getTextLength(fontInfo, s.charAt(i));
+			}
+
+			return length;
+		}
+
+		protected int getTextLength(SceFontInfo fontInfo, char c) {
+			pspCharInfo charInfo = fontInfo.getCharInfo(c, SceFontInfo.FONT_PGF_CHARGLYPH);
+			if (charInfo == null) {
+				return 0;
+			}
+			return charInfo.sfp26AdvanceH >> 6;
+		}
+
+		protected void drawTextWithShadow(int textX, int textY, float scale, String s) {
+			drawTextWithShadow(textX, textY, textColor, scale, s);
+		}
+
+		protected void drawTextWithShadow(int textX, int textY, int textColor, float scale, String s) {
+			int textHeight = defaultTextHeight;
+			if (s.contains("\n")) {
+				textHeight = Screen.height - textY;
+			}
+			drawTextWithShadow(textX, textY, defaultTextWidth, textHeight, 20, getDefaultFontInfo(), baseAscender, textColor, shadowColor, scale, s);
+		}
+
 		protected void drawTextWithShadow(int textX, int textY, int textWidth, int textHeight, int textLineHeight, SceFontInfo fontInfo, int baseAscender, int textColor, int shadowColor, float scale, String s) {
 			drawText(textX, textY, textWidth, textHeight, textLineHeight, fontInfo, baseAscender, scale, shadowColor, s, SceFontInfo.FONT_PGF_SHADOWGLYPH);
 			drawText(textX, textY, textWidth, textHeight, textLineHeight, fontInfo, baseAscender, scale, textColor, s, SceFontInfo.FONT_PGF_CHARGLYPH);
+		}
+
+		protected void setSoftShadows(boolean softShadows) {
+			this.softShadows = softShadows;
 		}
 
 		protected void drawText(int textX, int textY, int textWidth, int textHeight, int textLineHeight, SceFontInfo fontInfo, int baseAscender, float scale, int color, String s, int glyphType) {
@@ -1899,6 +1969,12 @@ public class sceUtility extends HLEModule {
 			color &= 0x00FFFFFF;
 			for (int i = 0; i < 16; i++) {
 				int alpha = (i << 4) | i;
+
+				// Reduce alpha by factor 2 if soft shadows are required (MsgDialog)
+				if (softShadows && glyphType == SceFontInfo.FONT_PGF_SHADOWGLYPH) {
+					alpha >>= 1;
+				}
+
 				clutWriter.writeNext((alpha << 24) | color);
 			}
 			gu.sceGuClutMode(CMODE_FORMAT_32BIT_ABGR8888, 0, 0xFF, 0);
@@ -1917,11 +1993,11 @@ public class sceUtility extends HLEModule {
 		protected abstract void updateDialog();
 
         public void checkController() {
-			if (isConfirmButtonPressed()) {
-				utilityDialogState.buttonPressed = SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK;
+			if (canConfirm() && isConfirmButtonPressed()) {
+				utilityDialogState.setButtonPressed(getButtonPressedOK());
 				dispose();
-			} else if (isCancelButtonPressed()) {
-				utilityDialogState.buttonPressed = SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_ESC;
+			} else if (canCancel() && isCancelButtonPressed()) {
+				utilityDialogState.setButtonPressed(SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_ESC);
 				dispose();
 			}
 		}
@@ -1936,19 +2012,35 @@ public class sceUtility extends HLEModule {
         }
 
         protected boolean isConfirmButtonPressed() {
-        	return isButtonPressed(getSystemParamButtonPreference() == PSP_SYSTEMPARAM_BUTTON_CIRCLE ? sceCtrl.PSP_CTRL_CIRCLE : sceCtrl.PSP_CTRL_CROSS);
+        	return isButtonPressed(areButtonsSwapped() ? sceCtrl.PSP_CTRL_CIRCLE : sceCtrl.PSP_CTRL_CROSS);
         }
 
         protected boolean isCancelButtonPressed() {
-        	return isButtonPressed(getSystemParamButtonPreference() == PSP_SYSTEMPARAM_BUTTON_CIRCLE ? sceCtrl.PSP_CTRL_CROSS : sceCtrl.PSP_CTRL_CIRCLE);
+        	return isButtonPressed(areButtonsSwapped() ? sceCtrl.PSP_CTRL_CROSS : sceCtrl.PSP_CTRL_CIRCLE);
         }
 
         private int getControllerLy() {
         	return State.controller.getLy() & 0xFF;
         }
 
+        private int getControllerLx() {
+        	return State.controller.getLx() & 0xFF;
+        }
+
         private int getControllerAnalogCenter() {
         	return Controller.analogCenter & 0xFF;
+        }
+
+        protected boolean canConfirm() {
+        	return true;
+        }
+
+        protected boolean canCancel() {
+        	return true;
+        }
+
+        protected int getButtonPressedOK() {
+        	return SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK;
         }
 
         private void checkRepeat() {
@@ -1957,6 +2049,10 @@ public class sceUtility extends HLEModule {
         		upPressedButton = false;
         		downPressedAnalog = false;
         		downPressedButton = false;
+        		leftPressedAnalog = false;
+        		leftPressedButton = false;
+        		rightPressedAnalog = false;
+        		rightPressedButton = false;
         		pressedTimestamp = 0;
         	}
         }
@@ -2018,21 +2114,126 @@ public class sceUtility extends HLEModule {
 
         	return false;
         }
+
+        protected boolean isLeftPressed() {
+        	checkRepeat();
+        	if (leftPressedButton || leftPressedAnalog) {
+            	if (!isButtonPressed(sceCtrl.PSP_CTRL_LEFT)) {
+            		leftPressedButton = false;
+            	}
+
+            	if (getControllerLx() >= getControllerAnalogCenter()) {
+            		leftPressedAnalog = false;
+            	}
+
+            	return false;
+        	}
+
+        	if (isButtonPressed(sceCtrl.PSP_CTRL_LEFT)) {
+        		leftPressedButton = true;
+        		pressedTimestamp = SystemTimeManager.getSystemTime();
+        		return true;
+        	}
+
+        	if (getControllerLx() < getControllerAnalogCenter()) {
+        		leftPressedAnalog = true;
+        		pressedTimestamp = SystemTimeManager.getSystemTime();
+        		return true;
+        	}
+
+        	return false;
+        }
+
+        protected boolean isRightPressed() {
+        	checkRepeat();
+        	if (rightPressedButton || rightPressedAnalog) {
+            	if (!isButtonPressed(sceCtrl.PSP_CTRL_RIGHT)) {
+            		rightPressedButton = false;
+            	}
+
+            	if (getControllerLx() <= getControllerAnalogCenter()) {
+            		rightPressedAnalog = false;
+            	}
+
+            	return false;
+        	}
+
+        	if (isButtonPressed(sceCtrl.PSP_CTRL_RIGHT)) {
+        		rightPressedButton = true;
+        		pressedTimestamp = SystemTimeManager.getSystemTime();
+        		return true;
+        	}
+
+        	if (getControllerLx() > getControllerAnalogCenter()) {
+        		rightPressedAnalog = true;
+        		pressedTimestamp = SystemTimeManager.getSystemTime();
+        		return true;
+        	}
+
+        	return false;
+        }
+
+        protected SceFontInfo getDefaultFontInfo() {
+        	if (defaultFontInfo == null) {
+	    		// Use "jpn0" font
+	    		defaultFontInfo = Modules.sceFontModule.getFont(0).fontInfo;
+        	}
+        	return defaultFontInfo;
+        }
+
+        private String getCross() {
+        	return "X";
+        }
+
+        private String getCircle() {
+        	return "O";
+        }
+
+        protected boolean areButtonsSwapped() {
+        	return getSystemParamButtonPreference() == PSP_SYSTEMPARAM_BUTTON_CIRCLE;
+        }
+
+        protected void drawEnter() {
+            String confirm = areButtonsSwapped() ? getCircle() : getCross();
+			drawTextWithShadow(183, 254, 0.75f, String.format("%s Enter", confirm));
+        }
+
+        protected void drawBack() {
+            String cancel = areButtonsSwapped() ? getCross() : getCircle();
+            drawTextWithShadow(260, 254, 0.75f, String.format("%s Back", cancel));
+        }
+
+        protected int getAnimationIndex(int maxIndex) {
+        	if (drawSpeed <= 0) {
+        		return maxIndex;
+        	}
+
+        	long now = Emulator.getClock().currentTimeMillis();
+        	int durationMillis = (int) (now - startDialogMillis);
+
+        	int animationIndex = durationMillis % 500 * (maxIndex + 1) / 500;
+    		if (((durationMillis / 500) % 2) != 0) {
+    			// Revert the animation index every 0.5 second
+    			animationIndex = maxIndex - animationIndex;
+    		}
+
+    		return animationIndex;
+        }
     }
 
     protected static class GuSavedataDialog extends GuUtilityDialog {
-		private SavedataUtilityDialogState savedataDialogState;
-		private SceUtilitySavedataParam savedataParams;
+		private final SavedataUtilityDialogState savedataDialogState;
+		private final SceUtilitySavedataParam savedataParams;
 		private final String[] saveNames;
+		private final int numberRows;
 		private int selectedRow;
-		private int numberRows;
 
 		public GuSavedataDialog(final SceUtilitySavedataParam savedataParams, final SavedataUtilityDialogState savedataDialogState, final String[] saveNames) {
 			this.savedataDialogState = savedataDialogState;
 			this.savedataParams = savedataParams;
 			this.saveNames = saveNames;
 
-			createDialog(savedataDialogState, null);
+			createDialog(savedataDialogState);
 
 			numberRows = saveNames == null ? 0 : saveNames.length;
 
@@ -2049,7 +2250,7 @@ public class sceUtility extends HLEModule {
             	}
             	case SceUtilitySavedataParam.FOCUS_LATEST: {
             		long latestTimestamp = Long.MIN_VALUE;
-            		for (int i = 0; i < saveNames.length; i++) {
+            		for (int i = 0; i < numberRows; i++) {
             			long timestamp = getTimestamp(saveNames[i]);
             			if (timestamp > latestTimestamp) {
             				latestTimestamp = timestamp;
@@ -2060,7 +2261,7 @@ public class sceUtility extends HLEModule {
             	}
             	case SceUtilitySavedataParam.FOCUS_OLDEST: {
             		long oldestTimestamp = Long.MAX_VALUE;
-            		for (int i = 0; i < saveNames.length; i++) {
+            		for (int i = 0; i < numberRows; i++) {
             			long timestamp = getTimestamp(saveNames[i]);
             			if (timestamp < oldestTimestamp) {
             				oldestTimestamp = timestamp;
@@ -2070,7 +2271,7 @@ public class sceUtility extends HLEModule {
             		break;
             	}
             	case SceUtilitySavedataParam.FOCUS_FIRSTEMPTY: {
-            		for (int i = 0; i < saveNames.length; i++) {
+            		for (int i = 0; i < numberRows; i++) {
             			if (isEmpty(saveNames[i])) {
             				selectedRow = i;
             				break;
@@ -2079,7 +2280,7 @@ public class sceUtility extends HLEModule {
             		break;
             	}
             	case SceUtilitySavedataParam.FOCUS_LASTEMPTY: {
-            		for (int i = saveNames.length - 1; i >= 0; i--) {
+            		for (int i = numberRows - 1; i >= 0; i--) {
             			if (isEmpty(saveNames[i])) {
             				selectedRow = i;
             				break;
@@ -2226,79 +2427,54 @@ public class sceUtility extends HLEModule {
 
 		@Override
 		protected void updateDialog() {
-			int baseX = 26;
-			int baseY = 96;
+            if (numberRows > 0) {
+				drawIcon(selectedRow, 26, 96, icon0Width, icon0Height);
 
-			gu.sceGuDisable(IRenderingEngine.GU_DEPTH_TEST);
-			gu.sceGuDisable(IRenderingEngine.GU_ALPHA_TEST);
-			gu.sceGuDisable(IRenderingEngine.GU_FOG);
-			gu.sceGuDisable(IRenderingEngine.GU_LIGHTING);
-			gu.sceGuDisable(IRenderingEngine.GU_COLOR_LOGIC_OP);
-			gu.sceGuDisable(IRenderingEngine.GU_STENCIL_TEST);
-			gu.sceGuDisable(IRenderingEngine.GU_CULL_FACE);
-			gu.sceGuDisable(IRenderingEngine.GU_SCISSOR_TEST);
+				// Get values (title, detail...) from SFO file
+				Calendar savedTime = Calendar.getInstance();
+				PSF psf = getPsf(selectedRow, savedTime);
+				if (psf != null) {
+					String title = psf.getString("TITLE");
+	                String detail = psf.getString("SAVEDATA_DETAIL");
+	                String savedataTitle = psf.getString("SAVEDATA_TITLE");
 
-			gu.sceGuBlendFunc(ALPHA_SOURCE_BLEND_OPERATION_ADD, ALPHA_SOURCE_ALPHA, ALPHA_ONE_MINUS_SOURCE_ALPHA, 0, 0);
-			gu.sceGuEnable(IRenderingEngine.GU_BLEND);
+	                int textX = 180;
+	                int textY = 119;
 
-			drawIcon(selectedRow, baseX, baseY, icon0Width, icon0Height);
+	                drawTextWithShadow(textX, textY, 0xD1C6BA, 0.85f, title);
 
-			// Use "jpn0" font
-			SceFontInfo fontInfo = Modules.sceFontModule.getFont(0).fontInfo;
+	                textY += 22;
+	                drawTextWithShadow(textX, textY, 0.7f, String.format("%tF %tR", savedTime, savedTime));
 
-			// Get values (title, detail...) from SFO file
-			Calendar savedTime = Calendar.getInstance();
-			PSF psf = getPsf(selectedRow, savedTime);
-			if (psf != null) {
-				String title = psf.getString("TITLE");
-                String detail = psf.getString("SAVEDATA_DETAIL");
-                String savedataTitle = psf.getString("SAVEDATA_TITLE");
+	                // Draw horizontal line below title
+	                gu.sceGuDrawHorizontalLine(textX, Screen.width, textY - 6, 0xFF000000 | textColor);
 
-    			int baseAscender = 15;
+	                textX -= 5;
+	                textY += 23;
+	                drawTextWithShadow(textX, textY, 0.7f, savedataTitle);
 
-                int textX = baseX + 154;
-                int textY = baseY + 23;
-                int textWidth = 512;
-                int textHeight = 32;
-                int titleColor = 0xD1C6BA;
-                int textColor = 0xFFFFFF;
-                int shadowColor = 0x000000;
+	                textY += 24;
+	                drawTextWithShadow(textX, textY, 0.7f, detail);
 
-                drawTextWithShadow(textX, textY, textWidth, textHeight, 20, fontInfo, baseAscender, titleColor, shadowColor, 0.85f, title);
-
-                textY += 22;
-                drawTextWithShadow(textX, textY, textWidth, textHeight, 20, fontInfo, baseAscender, textColor, shadowColor, 0.7f, String.format("%tF %tR", savedTime, savedTime));
-
-                int lineY = textY - 6;
-                int lineX = textX;
-                int buttonX = textX + 3;
-
-                textX -= 5;
-                textY += 23;
-                drawTextWithShadow(textX, textY, textWidth, textHeight, 20, fontInfo, baseAscender, textColor, shadowColor, 0.7f, savedataTitle);
-
-                textY += 24;
-                textHeight = Screen.height - textY;
-                drawTextWithShadow(textX, textY, textWidth, textHeight, 20, fontInfo, baseAscender, textColor, shadowColor, 0.7f, detail);
-
-                // Draw horizontal line below title
-                gu.sceGuDrawLine(lineX, lineY, Screen.width, lineY, 0xFFFFFFFF);
-
-    			drawTextWithShadow(buttonX, 254, textWidth, textHeight, 20, fontInfo, baseAscender, textColor, shadowColor, 0.75f, "X Enter");
-                drawTextWithShadow(buttonX + 77, 254, textWidth, textHeight, 20, fontInfo, baseAscender, textColor, shadowColor, 0.75f, "O Back");
-			}
-
-			if (selectedRow > 0) {
-				drawIcon(selectedRow - 1, 58, 38, 80, 44);
-				if (selectedRow > 1) {
-					drawIcon(selectedRow - 2, 58, -5, 80, 44);
+	                drawEnter();
+	                drawBack();
 				}
-			}
-			if (selectedRow < numberRows - 1) {
-				drawIcon(selectedRow + 1, 58, 190, 80, 44);
-				if (selectedRow < numberRows - 2) {
-					drawIcon(selectedRow + 2, 58, 233, 80, 44);
+
+				if (selectedRow > 0) {
+					drawIcon(selectedRow - 1, 58, 38, 80, 44);
+					if (selectedRow > 1) {
+						drawIcon(selectedRow - 2, 58, -5, 80, 44);
+					}
 				}
+				if (selectedRow < numberRows - 1) {
+					drawIcon(selectedRow + 1, 58, 190, 80, 44);
+					if (selectedRow < numberRows - 2) {
+						drawIcon(selectedRow + 2, 58, 233, 80, 44);
+					}
+				}
+			} else {
+                drawTextWithShadow(180 , 230, 0.75f, "No data available");
+                drawBack();
 			}
 
 			// Draw rectangle on the top of the screen
@@ -2306,9 +2482,9 @@ public class sceUtility extends HLEModule {
 
 			// Draw dialog title in top rectangle
 			String dialogTitle = savedataDialogState.getDialogTitle(savedataParams.getModeName(), "Savedata List");
-			drawText(30, 4, 128, 32, 20, fontInfo, 15, 0.82f, 0xFFFFFF, dialogTitle, SceFontInfo.FONT_PGF_CHARGLYPH);
+			drawText(30, 4, 128, 32, 20, getDefaultFontInfo(), 15, 0.82f, 0xFFFFFF, dialogTitle, SceFontInfo.FONT_PGF_CHARGLYPH);
 			// Draw filled circle just before dialog title
-			drawText(9, 5, 32, 32, 20, fontInfo, 15, 0.65f, 0xFFFFFF, new String(Character.toChars(0x25CF)), SceFontInfo.FONT_PGF_CHARGLYPH);
+			drawText(9, 5, 32, 32, 20, getDefaultFontInfo(), 15, 0.65f, 0xFFFFFF, new String(Character.toChars(0x25CF)), SceFontInfo.FONT_PGF_CHARGLYPH);
 		}
 
 		@Override
@@ -2338,58 +2514,160 @@ public class sceUtility extends HLEModule {
 
 			super.checkController();
 		}
+
+		@Override
+		protected boolean canConfirm() {
+			// Can only confirm if at least one row is displayed
+			return numberRows > 0;
+		}
     }
 
-    protected static class MsgDialog extends UtilityDialog {
-		private static final long serialVersionUID = 3823899730551154698L;
+    protected static class GuMsgDialog extends GuUtilityDialog {
 		protected SceUtilityMsgDialogParams msgDialogParams;
+		protected boolean isYesSelected;
 
-		public MsgDialog(final SceUtilityMsgDialogParams msgDialogParams, MsgDialogUtilityDialogState msgDialogState) {
+		public GuMsgDialog(final SceUtilityMsgDialogParams msgDialogParams, MsgDialogUtilityDialogState msgDialogState) {
 			this.msgDialogParams = msgDialogParams;
-			createDialog(msgDialogState, msgDialogParams.message);
+			isYesSelected = msgDialogParams.isOptionYesNoDefaultYes();
 
-    		if (msgDialogParams.isOptionYesNo()) {
-    			JButton yesButton = new JButton("Yes");
-    			JButton noButton = new JButton("No");
-    			yesButton.addActionListener(closeActionListener);
-    			yesButton.setActionCommand(actionCommandYES);
-    			noButton.addActionListener(closeActionListener);
-    			noButton.setActionCommand(actionCommandNO);
-    			confirmButtonActionCommand = actionCommandYES;
-    			cancelButtonActionCommand = actionCommandNO;
-    			buttonPane.add(yesButton);
-    			buttonPane.add(noButton);
-    			if (msgDialogParams.isOptionYesNoDefaultYes()) {
-    				setDefaultButton(yesButton);
-    			} else if (msgDialogParams.isOptionYesNoDefaultNo()) {
-    				setDefaultButton(noButton);
-    			}
-    		} else if (msgDialogParams.isOptionOk()) {
-    			JButton okButton = new JButton("Ok");
-    			okButton.addActionListener(closeActionListener);
-    			okButton.setActionCommand(actionCommandOK);
-    			buttonPane.add(okButton);
-    			setDefaultButton(okButton);
-    		} else if (msgDialogParams.mode == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_MODE_TEXT) {
-    			JButton okButton = new JButton("Ok");
-    			okButton.addActionListener(closeActionListener);
-    			okButton.setActionCommand(actionCommandOK);
-    			buttonPane.add(okButton);
-    			setDefaultButton(okButton);
-    		} else if (msgDialogParams.mode == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_MODE_ERROR) {
-    			String errorMessage = String.format("Error 0x%08X", msgDialogParams.errorValue);
-    			JLabel errorMessageLabel = new JLabel(errorMessage);
-    			messagePane.add(errorMessageLabel);
+			createDialog(msgDialogState);
+		}
 
-    			JButton okButton = new JButton("Ok");
-    			okButton.addActionListener(closeActionListener);
-    			okButton.setActionCommand(actionCommandOK);
-    			buttonPane.add(okButton);
-    			setDefaultButton(okButton);
-    		}
+		@Override
+		protected void updateDialog() {
+			// Shadows are softer in MsgDialog
+			setSoftShadows(true);
 
-    		endDialog();
-    	}
+			// Clear screen in light gray color
+			gu.sceGuClear(0xFF968681);
+
+			int buttonY = 192;
+			String message = getMessage();
+			if (message != null) {
+				int currentLineLength = 0;
+				List<String> lines = new LinkedList<String>();
+				StringBuilder currentLine = new StringBuilder();
+				int splitLineIndex = -1;
+				int maxLineLength = 430;
+				int longestLine = 0;
+				SceFontInfo fontInfo = getDefaultFontInfo();
+				for (int i = 0; i < message.length(); i++) {
+					char c = message.charAt(i);
+					if (c == '\n') {
+						longestLine = Math.max(longestLine, currentLineLength);
+						lines.add(currentLine.toString());
+						currentLine.setLength(0);
+						currentLineLength = 0;
+						splitLineIndex = -1;
+					} else {
+						int charLength = getTextLength(fontInfo, c);
+						if (currentLineLength + charLength > maxLineLength) {
+							if (splitLineIndex < 0) {
+								splitLineIndex = currentLine.length();
+							}
+							String line = currentLine.substring(0, splitLineIndex);
+							longestLine = Math.max(longestLine, getTextLength(fontInfo, line));
+							lines.add(line);
+							currentLine.delete(0, splitLineIndex);
+							currentLineLength = getTextLength(fontInfo, currentLine.toString());
+						}
+
+						currentLine.append(c);
+						currentLineLength += charLength;
+
+						if (c == ' ') {
+							splitLineIndex = currentLine.length();
+						}
+					}
+				}
+				if (currentLine.length() > 0) {
+					lines.add(currentLine.toString());
+				}
+	    		final int lineHeight = 19;
+	    		int lineCount = lines.size();
+	    		int textHeight = lineHeight * lineCount;
+	    		int totalHeight = textHeight + 24;
+	    		if (msgDialogParams.isOptionYesNo() || msgDialogParams.isOptionOk()) {
+	    			// Add height for button(s)
+	    			totalHeight += 33;
+	    		}
+	    		int topLineY = (Screen.height - totalHeight) / 2;
+	    		buttonY = topLineY + totalHeight - 29;
+
+	    		int lineColor = 0xFFDFDAD9;
+	    		// Draw top line
+	    		gu.sceGuDrawHorizontalLine(60, 420, topLineY, lineColor);
+	    		// Draw bottom line
+	    		gu.sceGuDrawHorizontalLine(60, 420, topLineY + totalHeight, lineColor);
+
+	    		final float scale = 0.79f;
+	    		int y = topLineY + 17;
+	    		// Center the text
+	    		final int x = 63 + (360 - Math.round(longestLine * scale)) / 2;
+	    		for (String line : lines) {
+	    			drawTextWithShadow(x, y, scale, line);
+	    			y += lineHeight;
+	    		}
+			}
+
+			if (msgDialogParams.isOptionYesNo()) {
+				drawButton(185, buttonY, "Yes", isYesSelected);
+				drawButton(255, buttonY, "No", !isYesSelected);
+			} else if (msgDialogParams.isOptionOk()) {
+				drawButton(223, buttonY, "OK", true);
+			}
+
+			if ((msgDialogParams.options & SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_NORMAL) != 0 && !msgDialogParams.isOptionOk() && !msgDialogParams.isOptionYesNo()) {
+				drawBack();
+			} else {
+				drawEnter();
+				if ((msgDialogParams.options & SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_DISABLE_CANCEL) == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_ENABLE_CANCEL) {
+					drawBack();
+				}
+			}
+		}
+
+		protected void drawButton(int x, int y, String text, boolean selected) {
+			if (selected) {
+				int alpha = getAnimationIndex(0xFF);
+				gu.sceGuDrawRectangle(x, y, x + text.length() * 17, y + 16, (alpha << 24) | 0xC5C8CF);
+			}
+			drawTextWithShadow(x + 5, y + 2, 0.8f, text);
+		}
+
+		protected String getMessage() {
+			if (msgDialogParams.mode == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_MODE_ERROR) {
+				return String.format("Error 0x%08X", msgDialogParams.errorValue);
+			}
+			return msgDialogParams.message;
+		}
+
+		@Override
+		protected boolean canCancel() {
+			return (msgDialogParams.options & SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_DISABLE_CANCEL) == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_ENABLE_CANCEL;
+		}
+
+		@Override
+		public void checkController() {
+			if (msgDialogParams.isOptionYesNo()) {
+				if (isLeftPressed()) {
+					isYesSelected = true;
+				} else if (isRightPressed()) {
+					isYesSelected = false;
+				}
+			}
+
+			super.checkController();
+		}
+
+		@Override
+		protected int getButtonPressedOK() {
+			if (msgDialogParams.isOptionYesNo()) {
+				return isYesSelected ? SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_YES : SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_NO;
+			}
+
+			return super.getButtonPressedOK();
+		}
     }
 
     protected static class OskDialog extends UtilityDialog {
