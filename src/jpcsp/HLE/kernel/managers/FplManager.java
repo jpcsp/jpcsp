@@ -54,8 +54,8 @@ public class FplManager {
     private HashMap<Integer, SceKernelFplInfo> fplMap;
     private FplWaitStateChecker fplWaitStateChecker;
 
-    private final static int PSP_FPL_ATTR_FIFO = 0;
-    private final static int PSP_FPL_ATTR_PRIORITY = 0x100;
+    public final static int PSP_FPL_ATTR_FIFO = 0;
+    public final static int PSP_FPL_ATTR_PRIORITY = 0x100;
     private final static int PSP_FPL_ATTR_MASK = 0x41FF;            // Anything outside this mask is an illegal attr.
     private final static int PSP_FPL_ATTR_ADDR_HIGH = 0x4000;       // Create the fpl in high memory.
 
@@ -65,17 +65,14 @@ public class FplManager {
     }
 
     private boolean removeWaitingThread(SceKernelThreadInfo thread) {
-        // Update numWaitThreads
         SceKernelFplInfo fpl = fplMap.get(thread.wait.Fpl_id);
-        if (fpl != null) {
-            fpl.numWaitThreads--;
-            if (fpl.numWaitThreads < 0) {
-                log.warn("removing waiting thread " + Integer.toHexString(thread.uid) + ", fpl " + Integer.toHexString(fpl.uid) + " numWaitThreads underflowed");
-                fpl.numWaitThreads = 0;
-            }
-            return true;
+        if (fpl == null) {
+        	return false;
         }
-        return false;
+
+        fpl.threadWaitingList.removeWaitingThread(thread);
+
+        return true;
     }
 
     public void onThreadWaitTimeout(SceKernelThreadInfo thread) {
@@ -114,13 +111,13 @@ public class FplManager {
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
-            if (thread.isWaitingForType(PSP_WAIT_FPL) &&
-                    thread.wait.Fpl_id == fid) {
+            if (thread.isWaitingFor(PSP_WAIT_FPL, fid)) {
                 thread.cpuContext._v0 = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 reschedule = true;
             }
         }
+
         // Reschedule only if threads waked up.
         if (reschedule) {
             threadMan.hleRescheduleCurrentThread();
@@ -139,35 +136,29 @@ public class FplManager {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         boolean reschedule = false;
 
-        if ((info.attr & PSP_FPL_ATTR_PRIORITY) == PSP_FPL_ATTR_FIFO) {
-            for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
-                SceKernelThreadInfo thread = it.next();
-                if (thread.isWaitingForType(PSP_WAIT_FPL) &&
-                        thread.wait.Fpl_id == info.uid) {
-                    if (log.isDebugEnabled()) {
-                        log.debug(String.format("onFplFree waking thread %s", thread.toString()));
-                    }
-                    info.numWaitThreads--;
-                    thread.cpuContext._v0 = 0;
-                    threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
-                    reschedule = true;
-                }
+        SceKernelThreadInfo checkedThread = null;
+        while (info.freeBlocks > 0) {
+            SceKernelThreadInfo thread = info.threadWaitingList.getNextWaitingThread(checkedThread);
+            if (thread == null) {
+            	break;
             }
-        } else if ((info.attr & PSP_FPL_ATTR_PRIORITY) == PSP_FPL_ATTR_PRIORITY) {
-            for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext();) {
-                SceKernelThreadInfo thread = it.next();
-                if (thread.isWaitingForType(PSP_WAIT_FPL) &&
-                        thread.wait.Fpl_id == info.uid) {
-                    if (log.isDebugEnabled()) {
-                        log.debug(String.format("onFplFree waking thread %s", thread.toString()));
-                    }
-                    info.numWaitThreads--;
-                    thread.cpuContext._v0 = 0;
-                    threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
-                    reschedule = true;
+            int addr = tryAllocateFpl(info);
+            if (addr != 0) {
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("onFplFree waking thread %s", thread));
                 }
+                // Return the allocated address
+                thread.wait.Fpl_dataAddr.setValue(addr);
+
+                info.threadWaitingList.removeWaitingThread(thread);
+                thread.cpuContext._v0 = 0;
+                threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                reschedule = true;
+            } else {
+            	checkedThread = thread;
             }
         }
+
         // Reschedule only if threads waked up.
         if (reschedule) {
             threadMan.hleRescheduleCurrentThread();
@@ -266,9 +257,9 @@ public class FplManager {
             if (!wait) {
             	return ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
             }
-            fpl.numWaitThreads++;
             // Go to wait state
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+            fpl.threadWaitingList.addWaitingThread(currentThread);
             currentThread.wait.Fpl_id = uid;
             currentThread.wait.Fpl_dataAddr = dataAddr;
             threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_FPL, uid, fplWaitStateChecker, timeoutAddr.getAddress(), doCallbacks);
@@ -311,7 +302,8 @@ public class FplManager {
 
     public int sceKernelCancelFpl(int uid, TPointer32 numWaitThreadAddr) {
         SceKernelFplInfo info = fplMap.get(uid);
-        numWaitThreadAddr.setValue(info.numWaitThreads);
+        numWaitThreadAddr.setValue(info.getNumWaitThreads());
+        info.threadWaitingList.removeAllWaitingThreads();
         onFplCancelled(uid);
 
         return 0;
@@ -336,8 +328,10 @@ public class FplManager {
             }
 
             // Check fpl.
-            if (tryAllocateFpl(fpl) != 0) {
-                fpl.numWaitThreads--;
+            int addr = tryAllocateFpl(fpl);
+            if (addr != 0) {
+            	fpl.threadWaitingList.removeWaitingThread(thread);
+            	thread.wait.Fpl_dataAddr.setValue(addr);
                 thread.cpuContext._v0 = 0;
                 return false;
             }

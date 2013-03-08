@@ -17,13 +17,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.kernel.managers.ThreadWaitingList;
+import jpcsp.HLE.kernel.managers.ThreadWaitingListFIFO;
 
 public class SceKernelEventFlagInfo extends pspAbstractMemoryMappedStructureVariableLength {
     public final String name;
     public final int attr;
     public final int initPattern;
     public int currentPattern;
-    public int numWaitThreads;
+    public final ThreadWaitingList threadWaitingList;
 
     public final int uid;
 
@@ -32,9 +34,10 @@ public class SceKernelEventFlagInfo extends pspAbstractMemoryMappedStructureVari
         this.attr = attr;
         this.initPattern = initPattern;
         this.currentPattern = currentPattern;
-        numWaitThreads = 0;
 
         uid = SceUidManager.getNewUid("ThreadMan-eventflag");
+        // It seems that a FIFO list is always used for EventFlags
+        threadWaitingList = new ThreadWaitingListFIFO(SceKernelThreadInfo.PSP_WAIT_EVENTFLAG, uid);
     }
 
 	@Override
@@ -44,6 +47,15 @@ public class SceKernelEventFlagInfo extends pspAbstractMemoryMappedStructureVari
 		write32(attr);
 		write32(initPattern);
 		write32(currentPattern);
-		write32(numWaitThreads);
+		write32(getNumWaitThreads());
+	}
+
+	public int getNumWaitThreads() {
+		return threadWaitingList.getNumWaitingThreads();
+	}
+
+	@Override
+	public String toString() {
+		return String.format("SceKernelEventFlagInfo(uid=0x%X, name='%s', attr=0x%X, initPattern=%d, currentPattern=%d, numWaitThreads=%d)", uid, name, attr, initPattern, currentPattern, getNumWaitThreads());
 	}
 }

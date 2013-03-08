@@ -19,13 +19,14 @@ package jpcsp.HLE.modules380;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.Managers;
 
 @HLELogging
 public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 	@HLEFunction(nid = 0x19CFF145, version = 380, checkInsideInterrupt = true)
-	public int sceKernelCreateLwMutex(int workAreaAddr, int name_addr, int attr, int count, int option_addr) {
-		return Managers.lwmutex.sceKernelCreateLwMutex(workAreaAddr, name_addr, attr, count, option_addr);
+	public int sceKernelCreateLwMutex(TPointer workAreaAddr, String name, int attr, int count, int option_addr) {
+		return Managers.lwmutex.sceKernelCreateLwMutex(workAreaAddr, name, attr, count, option_addr);
 	}
 
 	@HLEUnimplemented
@@ -41,12 +42,12 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 	}
 
 	@HLEFunction(nid = 0x4C145944, version = 380)
-	public int sceKernelReferLwMutexStatusByID(int uid, int addr) {
+	public int sceKernelReferLwMutexStatusByID(int uid, TPointer addr) {
 		return Managers.lwmutex.sceKernelReferLwMutexStatusByID(uid, addr);
 	}
 
 	@HLEFunction(nid = 0x60107536, version = 380, checkInsideInterrupt = true)
-	public int sceKernelDeleteLwMutex(int workAreaAddr) {
+	public int sceKernelDeleteLwMutex(TPointer workAreaAddr) {
 		return Managers.lwmutex.sceKernelDeleteLwMutex(workAreaAddr);
 	}
 

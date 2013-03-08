@@ -108,8 +108,7 @@ public class SemaManager {
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
-            if (thread.isWaitingForType(PSP_WAIT_SEMA) &&
-                    thread.wait.Semaphore_id == semaid) {
+            if (thread.isWaitingFor(PSP_WAIT_SEMA, semaid)) {
                 thread.cpuContext._v0 = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 reschedule = true;

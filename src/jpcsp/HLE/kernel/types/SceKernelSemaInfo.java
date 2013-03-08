@@ -26,7 +26,7 @@ public class SceKernelSemaInfo extends pspAbstractMemoryMappedStructureVariableL
     public final int initCount;
     public int currentCount;
     public final int maxCount;
-    public ThreadWaitingList threadWaitingList;
+    public final ThreadWaitingList threadWaitingList;
 
     public final int uid;
 

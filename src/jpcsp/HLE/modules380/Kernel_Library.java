@@ -19,38 +19,39 @@ package jpcsp.HLE.modules380;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.Processor;
 import jpcsp.HLE.kernel.Managers;
 
 @HLELogging
 public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 	@HLEFunction(nid = 0x15B6446B, version = 380, checkInsideInterrupt = true)
-	public int sceKernelUnlockLwMutex(int workAreaAddr, int count) {
+	public int sceKernelUnlockLwMutex(TPointer workAreaAddr, int count) {
 		return Managers.lwmutex.sceKernelUnlockLwMutex(workAreaAddr, count);
 	}
 
 	@HLEFunction(nid = 0x1FC64E09, version = 380, checkInsideInterrupt = true)
-	public int sceKernelLockLwMutexCB(int workAreaAddr, int count, int timeout_addr) {
-		return Managers.lwmutex.sceKernelLockLwMutexCB(workAreaAddr, count, timeout_addr);
+	public int sceKernelLockLwMutexCB(TPointer workAreaAddr, int count, TPointer32 timeoutAddr) {
+		return Managers.lwmutex.sceKernelLockLwMutexCB(workAreaAddr, count, timeoutAddr);
 	}
 
 	@HLEFunction(nid = 0xBEA46419, version = 380, checkInsideInterrupt = true)
-	public int sceKernelLockLwMutex(int workAreaAddr, int count, int timeout_addr) {
-		return Managers.lwmutex.sceKernelLockLwMutex(workAreaAddr, count, timeout_addr);
+	public int sceKernelLockLwMutex(TPointer workAreaAddr, int count, TPointer32 timeoutAddr) {
+		return Managers.lwmutex.sceKernelLockLwMutex(workAreaAddr, count, timeoutAddr);
 	}
 
 	@HLEFunction(nid = 0xC1734599, version = 380)
-	public int sceKernelReferLwMutexStatus(int workAreaAddr, int addr) {
+	public int sceKernelReferLwMutexStatus(TPointer workAreaAddr, TPointer addr) {
 		return Managers.lwmutex.sceKernelReferLwMutexStatus(workAreaAddr, addr);
 	}
 
 	@HLEFunction(nid = 0xDC692EE3, version = 380, checkInsideInterrupt = true)
-	public int sceKernelTryLockLwMutex(int workAreaAddr, int count) {
+	public int sceKernelTryLockLwMutex(TPointer workAreaAddr, int count) {
 		return Managers.lwmutex.sceKernelTryLockLwMutex(workAreaAddr, count);
 	}
 
     @HLEFunction(nid = 0x37431849, version = 380, checkInsideInterrupt = true)
-    public int sceKernelTryLockLwMutex_600(int workAreaAddr, int count) {
+    public int sceKernelTryLockLwMutex_600(TPointer workAreaAddr, int count) {
 		return Managers.lwmutex.sceKernelTryLockLwMutex(workAreaAddr, count);
 	}
 

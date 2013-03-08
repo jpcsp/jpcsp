@@ -67,17 +67,14 @@ public class EventFlagManager {
     /** Don't call this unless thread.waitType == PSP_WAIT_EVENTFLAG
      * @return true if the thread was waiting on a valid event flag */
     private boolean removeWaitingThread(SceKernelThreadInfo thread) {
-        // Update numWaitThreads
         SceKernelEventFlagInfo event = eventMap.get(thread.wait.EventFlag_id);
-        if (event != null) {
-            event.numWaitThreads--;
-            if (event.numWaitThreads < 0) {
-                log.warn("removing waiting thread " + Integer.toHexString(thread.uid) + ", event " + Integer.toHexString(event.uid) + " numWaitThreads underflowed");
-                event.numWaitThreads = 0;
-            }
-            return true;
+        if (event == null) {
+        	return false;
         }
-        return false;
+
+        event.threadWaitingList.removeWaitingThread(thread);
+
+        return true;
     }
 
     /** Don't call this unless thread.wait.waitingOnEventFlag == true */
@@ -118,8 +115,7 @@ public class EventFlagManager {
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
-            if (thread.isWaitingForType(PSP_WAIT_EVENTFLAG) &&
-                    thread.wait.EventFlag_id == evid) {
+            if (thread.isWaitingFor(PSP_WAIT_EVENTFLAG, evid)) {
                 thread.cpuContext._v0 = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 reschedule = true;
@@ -143,25 +139,25 @@ public class EventFlagManager {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         boolean reschedule = false;
 
-        for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
-            SceKernelThreadInfo thread = it.next();
-            if (thread.isWaitingForType(PSP_WAIT_EVENTFLAG) &&
-                    thread.wait.EventFlag_id == event.uid) {
-                if (checkEventFlag(event, thread.wait.EventFlag_bits, thread.wait.EventFlag_wait, thread.wait.EventFlag_outBits_addr)) {
-                    if (log.isDebugEnabled()) {
-                        log.debug(String.format("onEventFlagModified waking thread %s", thread));
-                    }
-                    event.numWaitThreads--;
-                    thread.cpuContext._v0 = 0;
-                    threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
-                    reschedule = true;
-
-                    if (event.currentPattern == 0) {
-                        break;
-                    }
+        SceKernelThreadInfo checkedThread = null;
+        while (event.currentPattern != 0) {
+            SceKernelThreadInfo thread = event.threadWaitingList.getNextWaitingThread(checkedThread);
+            if (thread == null) {
+            	break;
+            }
+            if (checkEventFlag(event, thread.wait.EventFlag_bits, thread.wait.EventFlag_wait, thread.wait.EventFlag_outBits_addr)) {
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("onEventFlagModified waking thread %s", thread));
                 }
+                event.threadWaitingList.removeWaitingThread(thread);
+                thread.cpuContext._v0 = 0;
+                threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                reschedule = true;
+            } else {
+            	checkedThread = thread;
             }
         }
+
         // Reschedule only if threads waked up.
         if (reschedule) {
             threadMan.hleRescheduleCurrentThread();
@@ -213,8 +209,8 @@ public class EventFlagManager {
     public int sceKernelDeleteEventFlag(int uid) {
         SceKernelEventFlagInfo event = eventMap.remove(uid);
 
-        if (event.numWaitThreads > 0) {
-            log.warn(String.format("sceKernelDeleteEventFlag numWaitThreads %d", event.numWaitThreads));
+        if (event.getNumWaitThreads() > 0) {
+            log.warn(String.format("sceKernelDeleteEventFlag numWaitThreads %d", event.getNumWaitThreads()));
         }
         onEventFlagDeleted(uid);
 
@@ -251,7 +247,7 @@ public class EventFlagManager {
         }
 
         SceKernelEventFlagInfo event = eventMap.get(uid);
-        if (event.numWaitThreads >= 1 && (event.attr & PSP_EVENT_WAITMULTIPLE) != PSP_EVENT_WAITMULTIPLE) {
+        if (event.getNumWaitThreads() >= 1 && (event.attr & PSP_EVENT_WAITMULTIPLE) != PSP_EVENT_WAITMULTIPLE) {
             log.warn("hleKernelWaitEventFlag already another thread waiting on it");
             return ERROR_KERNEL_EVENT_FLAG_NO_MULTI_PERM;
         }
@@ -261,9 +257,9 @@ public class EventFlagManager {
             if (log.isDebugEnabled()) {
                 log.debug(String.format("hleKernelWaitEventFlag - %s fast check failed", event));
             }
-            event.numWaitThreads++;
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+            event.threadWaitingList.addWaitingThread(currentThread);
             // Wait on a specific event flag
             currentThread.wait.EventFlag_id = uid;
             currentThread.wait.EventFlag_bits = bits;
@@ -307,9 +303,9 @@ public class EventFlagManager {
     public int sceKernelCancelEventFlag(int uid, int newPattern, TPointer32 numWaitThreadAddr) {
         SceKernelEventFlagInfo event = eventMap.get(uid);
 
-        numWaitThreadAddr.setValue(event.numWaitThreads);
+        numWaitThreadAddr.setValue(event.getNumWaitThreads());
+        event.threadWaitingList.removeAllWaitingThreads();
         event.currentPattern = newPattern;
-        event.numWaitThreads = 0;
         onEventFlagCancelled(uid);
 
         return 0;
@@ -323,7 +319,6 @@ public class EventFlagManager {
     }
 
     private class EventFlagWaitStateChecker implements IWaitStateChecker {
-
         @Override
         public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
             // Check if the thread has to continue its wait state or if the event flag
@@ -336,7 +331,7 @@ public class EventFlagManager {
 
             // Check EventFlag.
             if (checkEventFlag(event, wait.EventFlag_bits, wait.EventFlag_wait, wait.EventFlag_outBits_addr)) {
-                event.numWaitThreads--;
+                event.threadWaitingList.removeWaitingThread(thread);
                 thread.cpuContext._v0 = 0;
                 return false;
             }
@@ -348,5 +343,4 @@ public class EventFlagManager {
 
     private EventFlagManager() {
     }
-
 }
