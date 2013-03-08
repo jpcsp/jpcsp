@@ -17,13 +17,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import jpcsp.Memory;
+import jpcsp.HLE.kernel.managers.MbxManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.kernel.managers.ThreadWaitingList;
 
 public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructureVariableLength {
     //Mbx info
     public final String name;
     public final int attr;
-    public int numWaitThreads;
+    public final ThreadWaitingList threadWaitingList;
     private int numMessages;
     private int firstMessageAddr;
 
@@ -35,12 +37,12 @@ public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructureVariableLe
         this.name = name;
         this.attr = attr;
 
-        numWaitThreads = 0;
         numMessages = 0;
         firstMessageAddr = 0;
         lastMessageAddr = 0;
 
         uid = SceUidManager.getNewUid("ThreadMan-Mbx");
+        threadWaitingList = ThreadWaitingList.createThreadWaitingList(SceKernelThreadInfo.PSP_WAIT_MBX, uid, attr, MbxManager.PSP_MBX_ATTR_PRIORITY);
     }
 
 	@Override
@@ -48,7 +50,7 @@ public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructureVariableLe
 		super.write();
 		writeStringNZ(32, name);
 		write32(attr);
-		write32(numWaitThreads);
+		write32(getNumWaitThreads());
 		write32(numMessages);
 		write32(firstMessageAddr);
 	}
@@ -133,8 +135,12 @@ public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructureVariableLe
     	return firstMessageAddr != 0;
     }
 
+	public int getNumWaitThreads() {
+		return threadWaitingList.getNumWaitingThreads();
+	}
+
 	@Override
 	public String toString() {
-		return String.format("SceKernelMbxInfo[uid=0x%X, name='%s', attr=0x%X]", uid, name, attr);
+		return String.format("SceKernelMbxInfo[uid=0x%X, name='%s', attr=0x%X, numWaitingThreads=%d]", uid, name, attr, getNumWaitThreads());
 	}
 }

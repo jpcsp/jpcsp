@@ -17,7 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.managers.FplManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.kernel.managers.ThreadWaitingList;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 
 public class SceKernelFplInfo extends pspAbstractMemoryMappedStructureVariableLength {
@@ -27,7 +29,7 @@ public class SceKernelFplInfo extends pspAbstractMemoryMappedStructureVariableLe
     public final int blockSize;
     public final int numBlocks;
     public int freeBlocks;
-    public int numWaitThreads;
+    public final ThreadWaitingList threadWaitingList;
 
     private final SysMemInfo sysMemInfo;
     // Internal info
@@ -45,7 +47,6 @@ public class SceKernelFplInfo extends pspAbstractMemoryMappedStructureVariableLe
         this.numBlocks = numBlocks;
 
         freeBlocks = numBlocks;
-        numWaitThreads = 0;
 
         uid = SceUidManager.getNewUid("ThreadMan-Fpl");
         this.partitionid = partitionid;
@@ -67,6 +68,8 @@ public class SceKernelFplInfo extends pspAbstractMemoryMappedStructureVariableLe
         for (int i = 0; i < numBlocks; i++) {
             blockAddress[i] = sysMemInfo.addr + alignedBlockSize * i;
         }
+
+        threadWaitingList = ThreadWaitingList.createThreadWaitingList(SceKernelThreadInfo.PSP_WAIT_FPL, uid, attr, FplManager.PSP_FPL_ATTR_PRIORITY);
     }
 
     public static SceKernelFplInfo tryCreateFpl(String name, int partitionid, int attr, int blockSize, int numBlocks, int memType, int memAlign) {
@@ -92,7 +95,7 @@ public class SceKernelFplInfo extends pspAbstractMemoryMappedStructureVariableLe
 		write32(blockSize);
 		write32(numBlocks);
 		write32(freeBlocks);
-		write32(numWaitThreads);
+		write32(getNumWaitThreads());
 	}
 
     public boolean isBlockAllocated(int blockId) {
@@ -144,8 +147,12 @@ public class SceKernelFplInfo extends pspAbstractMemoryMappedStructureVariableLe
     	Modules.SysMemUserForUserModule.free(sysMemInfo);
     }
 
+	public int getNumWaitThreads() {
+		return threadWaitingList.getNumWaitingThreads();
+	}
+
 	@Override
 	public String toString() {
-		return String.format("SceKernelFplInfo[uid=0x%X, name='%s', attr=0x%X, blockSize=0x%X, numBlocks=0x%X, freeBlocks=0x%X]", uid, name, attr, blockSize, numBlocks, freeBlocks);
+		return String.format("SceKernelFplInfo[uid=0x%X, name='%s', attr=0x%X, blockSize=0x%X, numBlocks=0x%X, freeBlocks=0x%X, numWaitThreads=%d]", uid, name, attr, blockSize, numBlocks, freeBlocks, getNumWaitThreads());
 	}
 }

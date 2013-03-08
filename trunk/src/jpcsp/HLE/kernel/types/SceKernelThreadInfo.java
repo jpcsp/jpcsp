@@ -599,6 +599,14 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
     	return this.waitType == waitType;
     }
 
+    public boolean isWaitingFor(int waitType, int waitId) {
+    	if (!isWaitingForType(waitType)) {
+    		return false;
+    	}
+
+    	return this.waitId == waitId;
+    }
+
     public boolean isRunning() {
         return (status & PSP_THREAD_RUNNING) != 0;
     }

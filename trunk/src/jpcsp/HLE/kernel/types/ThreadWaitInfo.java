@@ -65,7 +65,7 @@ public class ThreadWaitInfo {
 
     //Mbx
     public int Mbx_id;
-    public int Mbx_resultAddr;
+    public TPointer32 Mbx_resultAddr;
 
     //FPL
     public int Fpl_id;

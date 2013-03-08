@@ -42,14 +42,13 @@ import jpcsp.HLE.modules.ThreadManForUser;
 import org.apache.log4j.Logger;
 
 public class MbxManager {
-
     protected static Logger log = Modules.getLogger("ThreadManForUser");
 
     private HashMap<Integer, SceKernelMbxInfo> mbxMap;
     private MbxWaitStateChecker mbxWaitStateChecker;
 
-    private final static int PSP_MBX_ATTR_FIFO = 0;
-    private final static int PSP_MBX_ATTR_PRIORITY = 0x100;
+    public final static int PSP_MBX_ATTR_FIFO = 0;
+    public final static int PSP_MBX_ATTR_PRIORITY = 0x100;
     private final static int PSP_MBX_ATTR_MSG_FIFO = 0;           // Add new messages by FIFO.
     private final static int PSP_MBX_ATTR_MSG_PRIORITY = 0x400;   // Add new messages by MsgPacket priority.
 
@@ -60,15 +59,13 @@ public class MbxManager {
 
     private boolean removeWaitingThread(SceKernelThreadInfo thread) {
         SceKernelMbxInfo info = mbxMap.get(thread.wait.Mbx_id);
-        if (info != null) {
-            info.numWaitThreads--;
-            if (info.numWaitThreads < 0) {
-                log.warn("Removing waiting thread " + Integer.toHexString(thread.uid) + ", Mbx " + Integer.toHexString(info.uid) + " numWaitThreads underflowed");
-                info.numWaitThreads = 0;
-            }
-            return true;
+        if (info == null) {
+        	return false;
         }
-        return false;
+
+        info.threadWaitingList.removeWaitingThread(thread);
+
+        return true;
     }
 
     public void onThreadWaitTimeout(SceKernelThreadInfo thread) {
@@ -104,8 +101,7 @@ public class MbxManager {
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
-            if (thread.isWaitingForType(PSP_WAIT_MBX) &&
-                    thread.wait.Mbx_id == mbxid) {
+            if (thread.isWaitingFor(PSP_WAIT_MBX, mbxid)) {
                 thread.cpuContext._v0 = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 reschedule = true;
@@ -129,43 +125,28 @@ public class MbxManager {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         boolean reschedule = false;
 
-        if ((info.attr & PSP_MBX_ATTR_PRIORITY) == PSP_MBX_ATTR_FIFO) {
-            for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
-                SceKernelThreadInfo thread = it.next();
-                if (thread.isWaitingForType(PSP_WAIT_MBX) &&
-                        thread.wait.Mbx_id == info.uid &&
-                        info.hasMessage()) {
-                    if (log.isDebugEnabled()) {
-                        log.debug(String.format("onMbxModified waking thread %s", thread.toString()));
-                    }
-                    Memory mem = Memory.getInstance();
-                    int msgAddr = info.removeMsg(mem);
-                    mem.write32(thread.wait.Mbx_resultAddr, msgAddr);
-                    info.numWaitThreads--;
-                    thread.cpuContext._v0 = 0;
-                    threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
-                    reschedule = true;
-                }
+        SceKernelThreadInfo checkedThread = null;
+        while (info.hasMessage()) {
+            SceKernelThreadInfo thread = info.threadWaitingList.getNextWaitingThread(checkedThread);
+            if (thread == null) {
+            	break;
             }
-        } else if ((info.attr & PSP_MBX_ATTR_PRIORITY) == PSP_MBX_ATTR_PRIORITY) {
-            for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext();) {
-                SceKernelThreadInfo thread = it.next();
-                if (thread.isWaitingForType(PSP_WAIT_MBX) &&
-                        thread.wait.Mbx_id == info.uid &&
-                        info.hasMessage()) {
-                    if (log.isDebugEnabled()) {
-                        log.debug(String.format("onMbxModified waking thread %s", thread.toString()));
-                    }
-                    Memory mem = Memory.getInstance();
-                    int msgAddr = info.removeMsg(mem);
-                    mem.write32(thread.wait.Mbx_resultAddr, msgAddr);
-                    info.numWaitThreads--;
-                    thread.cpuContext._v0 = 0;
-                    threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
-                    reschedule = true;
+            if (info.hasMessage()) {
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("onMbxModified waking thread %s", thread));
                 }
+                Memory mem = Memory.getInstance();
+                int msgAddr = info.removeMsg(mem);
+                thread.wait.Mbx_resultAddr.setValue(msgAddr);
+                info.threadWaitingList.removeWaitingThread(thread);
+                thread.cpuContext._v0 = 0;
+                threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                reschedule = true;
+            } else {
+            	checkedThread = thread;
             }
         }
+
         // Reschedule only if threads waked up.
         if (reschedule) {
             threadMan.hleRescheduleCurrentThread();
@@ -223,10 +204,10 @@ public class MbxManager {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("hleKernelReceiveMbx - %s (waiting)", info));
                 }
-                info.numWaitThreads++;
                 SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+                info.threadWaitingList.addWaitingThread(currentThread);
                 currentThread.wait.Mbx_id = uid;
-                currentThread.wait.Mbx_resultAddr = addrMsgAddr.getAddress();
+                currentThread.wait.Mbx_resultAddr = addrMsgAddr;
                 threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_MBX, uid, mbxWaitStateChecker, timeoutAddr.getAddress(), doCallbacks);
             } else {
                 if (log.isDebugEnabled()) {
@@ -260,7 +241,8 @@ public class MbxManager {
 
     public int sceKernelCancelReceiveMbx(int uid, TPointer32 pnumAddr) {
         SceKernelMbxInfo info = mbxMap.get(uid);
-        pnumAddr.setValue(info.numWaitThreads);
+        pnumAddr.setValue(info.getNumWaitThreads());
+        info.threadWaitingList.removeAllWaitingThreads();
         onMbxCancelled(uid);
 
         return 0;
@@ -274,7 +256,6 @@ public class MbxManager {
     }
 
     private class MbxWaitStateChecker implements IWaitStateChecker {
-
         @Override
         public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
             // Check if the thread has to continue its wait state or if the mbx
@@ -289,8 +270,8 @@ public class MbxManager {
             if (info.hasMessage()) {
                 Memory mem = Memory.getInstance();
                 int msgAddr = info.removeMsg(mem);
-                mem.write32(wait.Mbx_resultAddr, msgAddr);
-                info.numWaitThreads--;
+                wait.Mbx_resultAddr.setValue(msgAddr);
+                info.threadWaitingList.removeWaitingThread(thread);
                 thread.cpuContext._v0 = 0;
                 return false;
             }
@@ -302,5 +283,4 @@ public class MbxManager {
 
     private MbxManager() {
     }
-
 }

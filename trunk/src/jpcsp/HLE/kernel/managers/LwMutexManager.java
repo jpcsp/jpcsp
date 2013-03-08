@@ -30,27 +30,25 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_LWMUTEX;
 import java.util.HashMap;
 import java.util.Iterator;
 
-import jpcsp.Memory;
-import jpcsp.Processor;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.TPointer;
+import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelLwMutexInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
-import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
 public class LwMutexManager {
-
     protected static Logger log = Modules.getLogger("ThreadManForUser");
 
     private HashMap<Integer, SceKernelLwMutexInfo> lwMutexMap;
     private LwMutexWaitStateChecker lwMutexWaitStateChecker;
 
-    private final static int PSP_LWMUTEX_ATTR_FIFO = 0;
-    private final static int PSP_LWMUTEX_ATTR_PRIORITY = 0x100;
+    public final static int PSP_LWMUTEX_ATTR_FIFO = 0;
+    public final static int PSP_LWMUTEX_ATTR_PRIORITY = 0x100;
     private final static int PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE = 0x200;
 
     public void reset() {
@@ -59,17 +57,14 @@ public class LwMutexManager {
     }
 
     private boolean removeWaitingThread(SceKernelThreadInfo thread) {
-        // Update numWaitThreads
         SceKernelLwMutexInfo info = lwMutexMap.get(thread.wait.LwMutex_id);
-        if (info != null) {
-            info.numWaitThreads--;
-            if (info.numWaitThreads < 0) {
-                log.warn("removing waiting thread " + Integer.toHexString(thread.uid) + ", lwmutex " + Integer.toHexString(info.uid) + " numWaitThreads underflowed");
-                info.numWaitThreads = 0;
-            }
-            return true;
+        if (info == null) {
+        	return false;
         }
-        return false;
+
+        info.threadWaitingList.removeWaitingThread(thread);
+
+        return true;
     }
 
     public void onThreadWaitTimeout(SceKernelThreadInfo thread) {
@@ -109,8 +104,7 @@ public class LwMutexManager {
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
-            if (thread.isWaitingForType(PSP_WAIT_LWMUTEX) &&
-                    thread.wait.LwMutex_id == lwmid) {
+            if (thread.isWaitingFor(PSP_WAIT_LWMUTEX, lwmid)) {
                 thread.cpuContext._v0 = ERROR_KERNEL_WAIT_DELETE;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 reschedule = true;
@@ -126,41 +120,27 @@ public class LwMutexManager {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         boolean reschedule = false;
 
-        if ((info.attr & PSP_LWMUTEX_ATTR_PRIORITY) == PSP_LWMUTEX_ATTR_FIFO) {
-            for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iterator(); it.hasNext();) {
-                SceKernelThreadInfo thread = it.next();
-                if (thread.isWaitingForType(PSP_WAIT_LWMUTEX) &&
-                        thread.wait.LwMutex_id == info.uid &&
-                        tryLockLwMutex(info, thread.wait.LwMutex_count, thread)) {
-                    // New thread is taking control of LwMutex.
-                    info.threadid = thread.uid;
-                    // Update numWaitThreads
-                    info.numWaitThreads--;
-                    // Return success or failure
-                    thread.cpuContext._v0 = 0;
-                    // Wakeup
-                    threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
-                    reschedule = true;
-                }
+        SceKernelThreadInfo checkedThread = null;
+        while (true) {
+            SceKernelThreadInfo thread = info.threadWaitingList.getNextWaitingThread(checkedThread);
+            if (thread == null) {
+            	break;
             }
-        } else if ((info.attr & PSP_LWMUTEX_ATTR_PRIORITY) == PSP_LWMUTEX_ATTR_PRIORITY) {
-            for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iteratorByPriority(); it.hasNext();) {
-                SceKernelThreadInfo thread = it.next();
-                if (thread.isWaitingForType(PSP_WAIT_LWMUTEX) &&
-                        thread.wait.LwMutex_id == info.uid &&
-                        tryLockLwMutex(info, thread.wait.LwMutex_count, thread)) {
-                    // New thread is taking control of LwMutex.
-                    info.threadid = thread.uid;
-                    // Update numWaitThreads
-                    info.numWaitThreads--;
-                    // Return success or failure
-                    thread.cpuContext._v0 = 0;
-                    // Wakeup
-                    threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
-                    reschedule = true;
+            if (tryLockLwMutex(info, thread.wait.LwMutex_count, thread)) {
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("onLwMutexModified waking thread %s", thread));
                 }
+                // New thread is taking control of LwMutex.
+                info.threadid = thread.uid;
+                info.threadWaitingList.removeWaitingThread(thread);
+                thread.cpuContext._v0 = 0;
+                threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                reschedule = true;
+            } else {
+            	checkedThread = thread;
             }
         }
+
         // Reschedule only if threads waked up.
         if (reschedule) {
             Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
@@ -185,10 +165,10 @@ public class LwMutexManager {
         return false;
     }
 
-    private int hleKernelLockLwMutex(int uid, int count, int timeout_addr, boolean wait, boolean doCallbacks) {
+    private int hleKernelLockLwMutex(int uid, int count, TPointer32 timeoutAddr, boolean wait, boolean doCallbacks) {
         SceKernelLwMutexInfo info = lwMutexMap.get(uid);
         if (info == null) {
-            log.warn(String.format("hleKernelLockLwMutex uid=%d, count=%d, timeout_addr=0x%08X, wait=%b, doCallbacks=%b -  - unknown UID", uid, count, timeout_addr, wait, doCallbacks));
+            log.warn(String.format("hleKernelLockLwMutex uid=%d, count=%d, timeout_addr=%s, wait=%b, doCallbacks=%b -  - unknown UID", uid, count, timeoutAddr, wait, doCallbacks));
             return ERROR_KERNEL_LWMUTEX_NOT_FOUND;
         }
 
@@ -196,15 +176,15 @@ public class LwMutexManager {
         SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
         if (!tryLockLwMutex(info, count, currentThread)) {
             if (log.isDebugEnabled()) {
-                log.debug(String.format("hleKernelLockLwMutex %s, count=%d, timeout_addr=0x%08X, wait=%b, doCallbacks=%b - fast check failed", info.toString(), count, timeout_addr, wait, doCallbacks));
+                log.debug(String.format("hleKernelLockLwMutex %s, count=%d, timeout_addr=%s, wait=%b, doCallbacks=%b - fast check failed", info.toString(), count, timeoutAddr, wait, doCallbacks));
             }
             if (wait && info.threadid != currentThread.uid) {
                 // Failed, but it's ok, just wait a little
-                info.numWaitThreads++;
+            	info.threadWaitingList.addWaitingThread(currentThread);
                 // Wait on a specific lwmutex
                 currentThread.wait.LwMutex_id = uid;
                 currentThread.wait.LwMutex_count = count;
-                threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_LWMUTEX, uid, lwMutexWaitStateChecker, timeout_addr, doCallbacks);
+                threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_LWMUTEX, uid, lwMutexWaitStateChecker, timeoutAddr.getAddress(), doCallbacks);
             } else {
                 if ((info.attr & PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE) != PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE) {
                     return ERROR_KERNEL_LWMUTEX_RECURSIVE_NOT_ALLOWED;
@@ -214,27 +194,19 @@ public class LwMutexManager {
         } else {
             // Success, do not reschedule the current thread.
             if (log.isDebugEnabled()) {
-                log.debug(String.format("hleKernelLockLwMutex %s, count=%d, timeout_addr=0x%08X, wait=%b, doCallbacks=%b - fast check succeeded", info.toString(), count, timeout_addr, wait, doCallbacks));
+                log.debug(String.format("hleKernelLockLwMutex %s, count=%d, timeout_addr=%s, wait=%b, doCallbacks=%b - fast check succeeded", info.toString(), count, timeoutAddr, wait, doCallbacks));
             }
         }
 
         return 0;
     }
 
-    public int sceKernelCreateLwMutex(int workAreaAddr, int name_addr, int attr, int count, int option_addr) {
-        Memory mem = Processor.memory;
-
-        String name = Utilities.readStringNZ(mem, name_addr, 32);
-
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelCreateLwMutex (workAreaAddr='" + Integer.toHexString(workAreaAddr) + "', name='" + name + "', attr=0x" + Integer.toHexString(attr) + ", count=0x" + Integer.toHexString(count) + ", option_addr=0x" + Integer.toHexString(option_addr) + ")");
-        }
-
+    public int sceKernelCreateLwMutex(TPointer workAreaAddr, String name, int attr, int count, int option_addr) {
         SceKernelLwMutexInfo info = new SceKernelLwMutexInfo(workAreaAddr, name, count, attr);
         lwMutexMap.put(info.uid, info);
 
         // If the initial count is 0, the lwmutex is not acquired.
-        if(count > 0) {
+        if (count > 0) {
             info.threadid = Modules.ThreadManForUserModule.getCurrentThreadID();
         }
 
@@ -242,14 +214,8 @@ public class LwMutexManager {
         return 0;
     }
 
-    public int sceKernelDeleteLwMutex(int workAreaAddr) {
-        Memory mem = Processor.memory;
-
-        int uid = mem.read32(workAreaAddr);
-
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelDeleteLwMutex (workAreaAddr='" + Integer.toHexString(workAreaAddr) + ")");
-        }
+    public int sceKernelDeleteLwMutex(TPointer workAreaAddr) {
+        int uid = workAreaAddr.getValue32();
 
         SceKernelLwMutexInfo info = lwMutexMap.remove(uid);
         if (info == null) {
@@ -257,54 +223,29 @@ public class LwMutexManager {
             return ERROR_KERNEL_LWMUTEX_NOT_FOUND;
         }
 
-        mem.write32(workAreaAddr, 0);  // Clear uid.
+        workAreaAddr.setValue32(0);  // Clear uid.
         onLwMutexDeleted(uid);
 
         return 0;
     }
 
-    public int sceKernelLockLwMutex(int workAreaAddr, int count, int timeout_addr) {
-        Memory mem = Processor.memory;
-
-        int uid = mem.read32(workAreaAddr);
-
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelLockLwMutex redirecting to hleKernelLockLwMutex");
-        }
-        return hleKernelLockLwMutex(uid, count, timeout_addr, true, false);
+    public int sceKernelLockLwMutex(TPointer workAreaAddr, int count, TPointer32 timeoutAddr) {
+        int uid = workAreaAddr.getValue32();
+        return hleKernelLockLwMutex(uid, count, timeoutAddr, true, false);
     }
 
-    public int sceKernelLockLwMutexCB(int workAreaAddr, int count, int timeout_addr) {
-        Memory mem = Processor.memory;
-
-        int uid = mem.read32(workAreaAddr);
-
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelLockLwMutexCB redirecting to hleKernelLockLwMutex");
-        }
-        return hleKernelLockLwMutex(uid, count, timeout_addr, true, true);
+    public int sceKernelLockLwMutexCB(TPointer workAreaAddr, int count, TPointer32 timeoutAddr) {
+        int uid = workAreaAddr.getValue32();
+        return hleKernelLockLwMutex(uid, count, timeoutAddr, true, true);
     }
 
-    public int sceKernelTryLockLwMutex(int workAreaAddr, int count) {
-        Memory mem = Processor.memory;
-
-        int uid = mem.read32(workAreaAddr);
-
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelTryLockLwMutex redirecting to hleKernelLockLwMutex");
-        }
-        return hleKernelLockLwMutex(uid, count, 0, false, false);
+    public int sceKernelTryLockLwMutex(TPointer workAreaAddr, int count) {
+        int uid = workAreaAddr.getValue32();
+        return hleKernelLockLwMutex(uid, count, TPointer32.NULL, false, false);
     }
 
-    public int sceKernelUnlockLwMutex(int workAreaAddr, int count) {
-        Memory mem = Processor.memory;
-
-        int uid = mem.read32(workAreaAddr);
-
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelUnlockLwMutex (workAreaAddr=0x" + Integer.toHexString(workAreaAddr) + ", count=" + count + ")");
-        }
-
+    public int sceKernelUnlockLwMutex(TPointer workAreaAddr, int count) {
+        int uid = workAreaAddr.getValue32();
         SceKernelLwMutexInfo info = lwMutexMap.get(uid);
         if (info == null) {
             log.warn("sceKernelUnlockLwMutex unknown uid");
@@ -327,54 +268,32 @@ public class LwMutexManager {
         return 0;
     }
 
-    public int sceKernelReferLwMutexStatus(int workAreaAddr, int addr) {
-        Memory mem = Processor.memory;
-
-        int uid = mem.read32(workAreaAddr);
-
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelReferLwMutexStatus (workAreaAddr=0x" + Integer.toHexString(workAreaAddr) + ", addr=0x" + addr + ")");
-        }
-
+    public int sceKernelReferLwMutexStatus(TPointer workAreaAddr, TPointer addr) {
+        int uid = workAreaAddr.getValue32();
         SceKernelLwMutexInfo info = lwMutexMap.get(uid);
         if (info == null) {
             log.warn("sceKernelReferLwMutexStatus unknown UID " + Integer.toHexString(uid));
             return ERROR_KERNEL_LWMUTEX_NOT_FOUND;
         }
-        if (!Memory.isAddressGood(addr)) {
-            log.warn("sceKernelReferLwMutexStatus bad address 0x" + Integer.toHexString(addr));
-            return -1;
-        }
 
-        info.write(mem, addr);
+        info.write(addr);
 
         return 0;
     }
 
-    public int sceKernelReferLwMutexStatusByID(int uid, int addr) {
-        Memory mem = Processor.memory;
-
-        if (log.isDebugEnabled()) {
-            log.debug("sceKernelReferLwMutexStatus (uid=0x" + Integer.toHexString(uid) + ", addr=0x" + addr + ")");
-        }
-
+    public int sceKernelReferLwMutexStatusByID(int uid, TPointer addr) {
         SceKernelLwMutexInfo info = lwMutexMap.get(uid);
         if (info == null) {
             log.warn("sceKernelReferLwMutexStatus unknown UID " + Integer.toHexString(uid));
             return ERROR_KERNEL_LWMUTEX_NOT_FOUND;
         }
-        if (!Memory.isAddressGood(addr)) {
-            log.warn("sceKernelReferLwMutexStatus bad address 0x" + Integer.toHexString(addr));
-            return -1;
-        }
 
-        info.write(mem, addr);
+        info.write(addr);
 
         return 0;
     }
 
     private class LwMutexWaitStateChecker implements IWaitStateChecker {
-
         @Override
         public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
             // Check if the thread has to continue its wait state or if the lwmutex
@@ -387,7 +306,7 @@ public class LwMutexManager {
 
             // Check the lwmutex.
             if (tryLockLwMutex(info, wait.LwMutex_count, thread)) {
-                info.numWaitThreads--;
+            	info.threadWaitingList.removeWaitingThread(thread);
                 thread.cpuContext._v0 = 0;
                 return false;
             }
