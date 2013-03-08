@@ -25,7 +25,6 @@ import static jpcsp.HLE.modules150.IoFileMgrForUser.PSP_O_WRONLY;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
@@ -83,16 +82,18 @@ public class LocalVirtualFileSystem extends AbstractVirtualFileSystem {
 			return null;
 		}
 
+		LocalVirtualFile localVirtualFile = new LocalVirtualFile(raf);
+
 		if (hasFlag(flags, PSP_O_WRONLY) && hasFlag(flags, PSP_O_TRUNC)) {
-            // When writing, PSP_O_TRUNC resets the file to be written (truncate to 0 length).
-        	try {
-				raf.setLength(0);
-			} catch (IOException e) {
-				log.error("ioOpen.setLength", e);
-			}
+            // When writing, PSP_O_TRUNC truncates the file at the position of the first write.
+        	// E.g.:
+        	//    open(PSP_O_TRUNC)
+        	//    seek(0x1000)
+        	//    write()  -> truncates the file at the position 0x1000 before writing
+			localVirtualFile.setTruncateAtNextWrite(true);
         }
 
-        return new LocalVirtualFile(raf);
+		return localVirtualFile;
 	}
 
 	@Override
