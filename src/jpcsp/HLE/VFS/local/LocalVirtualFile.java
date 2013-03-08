@@ -25,6 +25,7 @@ import jpcsp.util.Utilities;
 
 public class LocalVirtualFile extends AbstractVirtualFile {
 	protected SeekableRandomFile file;
+	protected boolean truncateAtNextWrite;
 
 	public LocalVirtualFile(SeekableRandomFile file) {
 		super(file);
@@ -46,6 +47,15 @@ public class LocalVirtualFile extends AbstractVirtualFile {
 	@Override
 	public int ioWrite(byte[] inputBuffer, int inputOffset, int inputLength) {
 		try {
+			if (isTruncateAtNextWrite()) {
+            	// The file was open with PSP_O_TRUNC: truncate the file at the first write
+				long position = getPosition();
+				if (position < file.length()) {
+					file.setLength(getPosition());
+				}
+				setTruncateAtNextWrite(false);
+			}
+
 			file.write(inputBuffer, inputOffset, inputLength);
 		} catch (IOException e) {
 			log.error("ioWrite", e);
@@ -53,5 +63,13 @@ public class LocalVirtualFile extends AbstractVirtualFile {
 		}
 
 		return inputLength;
+	}
+
+	public boolean isTruncateAtNextWrite() {
+		return truncateAtNextWrite;
+	}
+
+	public void setTruncateAtNextWrite(boolean truncateAtNextWrite) {
+		this.truncateAtNextWrite = truncateAtNextWrite;
 	}
 }

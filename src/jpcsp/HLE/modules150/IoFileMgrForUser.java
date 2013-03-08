@@ -265,6 +265,7 @@ public class IoFileMgrForUser extends HLEModule {
         public int asyncThreadPriority = defaultAsyncPriority;
         public SceKernelThreadInfo asyncThread;
         public IAction asyncAction;
+        private boolean truncateAtNextWrite;
 
         // Async callback
         public int cbid = -1;
@@ -354,7 +355,7 @@ public class IoFileMgrForUser extends HLEModule {
                     msFile.setLength(length);
                 }
             } catch (IOException ioe) {
-                // Ignore.
+            	log.debug("truncate", ioe);
             }
         }
 
@@ -368,6 +369,14 @@ public class IoFileMgrForUser extends HLEModule {
 
         	return info;
         }
+
+		public boolean isTruncateAtNextWrite() {
+			return truncateAtNextWrite;
+		}
+
+		public void setTruncateAtNextWrite(boolean truncateAtNextWrite) {
+			this.truncateAtNextWrite = truncateAtNextWrite;
+		}
 
 		@Override
 		public String toString() {
@@ -1678,8 +1687,12 @@ public class IoFileMgrForUser extends HLEModule {
                         info = new IoInfo(filename, raf, mode, flags, permissions);
                         if ((flags & PSP_O_WRONLY) == PSP_O_WRONLY &&
                                 (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
-                            // When writing, PSP_O_TRUNC resets the file to be written (truncate to 0 length).
-                            info.truncate(0);
+                            // When writing, PSP_O_TRUNC truncates the file at the position of the first write.
+                        	// E.g.:
+                        	//    open(PSP_O_TRUNC)
+                        	//    seek(0x1000)
+                        	//    write()  -> truncates the file at the position 0x1000 before writing
+                        	info.setTruncateAtNextWrite(true);
                         }
                         info.result = ERROR_KERNEL_NO_ASYNC_OP; // sceIoOpenAsync will set this properly
                         result = info.id;
@@ -1788,7 +1801,10 @@ public class IoFileMgrForUser extends HLEModule {
             result = size;
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("hleIoWrite(id=" + Integer.toHexString(id) + ",data=0x" + Integer.toHexString(data_addr) + ",size=0x" + Integer.toHexString(size) + ") async=" + async);
+                log.debug(String.format("hleIoWrite(id=0x%X, data=0x%08X, size=0x%X) async=%b", id, data_addr, size, async));
+                if (log.isTraceEnabled()) {
+                	log.trace(String.format("hleIoWrite: %s", Utilities.getMemoryDump(data_addr, Math.min(size, 32))));
+                }
             }
             try {
                 info = fileIds.get(id);
@@ -1843,6 +1859,14 @@ public class IoFileMgrForUser extends HLEModule {
                         if (towrite > 0) {
                             info.msFile.write(junk, 0, towrite);
                         }
+                    }
+
+                    if (info.isTruncateAtNextWrite()) {
+                    	// The file was open with PSP_O_TRUNC: truncate the file at the first write
+                    	if (info.position < info.readOnlyFile.length()) {
+                    		info.truncate((int) info.position);
+                    	}
+                    	info.setTruncateAtNextWrite(false);
                     }
 
                     info.position += size;
@@ -2068,7 +2092,7 @@ public class IoFileMgrForUser extends HLEModule {
                             }
                             info.position = offset;
 
-                            if (offset < info.readOnlyFile.length()) {
+                            if (offset <= info.readOnlyFile.length()) {
                                 info.readOnlyFile.seek(offset);
                             }
                             break;
@@ -2083,7 +2107,7 @@ public class IoFileMgrForUser extends HLEModule {
                             }
                             info.position += offset;
 
-                            if (info.position < info.readOnlyFile.length()) {
+                            if (info.position <= info.readOnlyFile.length()) {
                                 info.readOnlyFile.seek(info.position);
                             }
                             break;
@@ -2098,7 +2122,7 @@ public class IoFileMgrForUser extends HLEModule {
                             }
                             info.position = info.readOnlyFile.length() + offset;
 
-                            if (info.position < info.readOnlyFile.length()) {
+                            if (info.position <= info.readOnlyFile.length()) {
                                 info.readOnlyFile.seek(info.position);
                             }
                             break;
