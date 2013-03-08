@@ -3636,4 +3636,41 @@ public class CompilerContext implements ICompilerContext {
     		mv.visitInsn(Opcodes.IASTORE);
     	}
 	}
+
+	@Override
+	public void compileLWsequence(int baseRegister, int[] offsets, int[] registers) {
+		loadRegister(baseRegister);
+		int offset = offsets[0];
+		if (offset != 0) {
+			loadImm(offset);
+			mv.visitInsn(Opcodes.IADD);
+		}
+    	if (checkMemoryAccess()) {
+    		loadImm(getCodeInstruction().getAddress());
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(RuntimeContext.class), "checkMemoryRead32", "(II)I");
+            loadImm(2);
+            mv.visitInsn(Opcodes.IUSHR);
+    	} else {
+    		loadImm(2);
+			mv.visitInsn(Opcodes.ISHL);
+			loadImm(4);
+			mv.visitInsn(Opcodes.IUSHR);
+    	}
+    	storeTmp1();
+
+    	for (int i = 0; i < offsets.length; i++) {
+    		int rt = registers[i];
+
+    		if (offset != offsets[i]) {
+        		mv.visitIincInsn(LOCAL_TMP1, (offsets[i] - offset) >> 2);
+        		offset = offsets[i];
+    		}
+
+    		prepareRegisterForStore(rt);
+    		loadMemoryInt();
+    		loadTmp1();
+    		mv.visitInsn(Opcodes.IALOAD);
+    		storeRegister(rt);
+    	}
+	}
 }
