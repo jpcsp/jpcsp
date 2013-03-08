@@ -21,6 +21,7 @@ import org.apache.log4j.Logger;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
@@ -146,11 +147,19 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 	}
 
 	static protected int getStrlen(int srcAddr) {
+		return getStrlen(srcAddr, Integer.MAX_VALUE);
+	}
+
+	static protected int getStrlen(int srcAddr, int maxLength) {
 		int srcAddr3 = srcAddr & 3;
 		// Reading 32-bit values is much faster
 		IMemoryReader memoryReader = MemoryReader.getMemoryReader(srcAddr - srcAddr3, 4);
 		if (memoryReader == null) {
-			jpcsp.Allegrex.compiler.Compiler.log.warn("getStrlen: null MemoryReader");
+			Compiler.log.warn("getStrlen: null MemoryReader");
+			return 0;
+		}
+
+		if (maxLength <= 0) {
 			return 0;
 		}
 
@@ -166,7 +175,7 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 					return 1;
 				}
 				if ((value & 0xFF000000) == 0) {
-					return 2;
+					return Math.min(2, maxLength);
 				}
 				offset = 3;
 				break;
@@ -190,7 +199,7 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 		}
 
 		// Read 32-bit values and check for a null-byte
-		while (true) {
+		while (offset < maxLength) {
 			value = memoryReader.readNext();
 			if ((value & 0x000000FF) == 0) {
 				return offset;
@@ -199,13 +208,15 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 				return offset + 1;
 			}
 			if ((value & 0x00FF0000) == 0) {
-				return offset + 2;
+				return Math.min(offset + 2, maxLength);
 			}
 			if ((value & 0xFF000000) == 0) {
-				return offset + 3;
+				return Math.min(offset + 3, maxLength);
 			}
 			offset += 4;
 		}
+
+		return maxLength;
 	}
 
 	static protected int getRelocatedAddress(int address1, int address2) {
