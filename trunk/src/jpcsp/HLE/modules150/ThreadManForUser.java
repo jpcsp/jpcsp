@@ -2570,7 +2570,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x7C0DC2A0, version = 150, checkInsideInterrupt = true)
-    public int sceKernelCreateMsgPipe(String name, int partitionid, int attr, int size, TPointer option) {
+    public int sceKernelCreateMsgPipe(String name, int partitionid, int attr, int size, @CanBeNull TPointer option) {
         return Managers.msgPipes.sceKernelCreateMsgPipe(name, partitionid, attr, size, option);
     }
 
@@ -2620,7 +2620,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x56C039B5, version = 150, checkInsideInterrupt = true)
-    public int sceKernelCreateVpl(String name, int partitionid, int attr, int size, TPointer option) {
+    public int sceKernelCreateVpl(String name, int partitionid, int attr, int size, @CanBeNull TPointer option) {
         return Managers.vpl.sceKernelCreateVpl(name, partitionid, attr, size, option);
     }
 
@@ -2660,7 +2660,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0xC07BB470, version = 150, checkInsideInterrupt = true)
-    public int sceKernelCreateFpl(String name, int partitionid, int attr, int blocksize, int blocks, TPointer option) {
+    public int sceKernelCreateFpl(String name, int partitionid, int attr, int blocksize, int blocks, @CanBeNull TPointer option) {
         return Managers.fpl.sceKernelCreateFpl(name, partitionid, attr, blocksize, blocks, option);
     }
 
@@ -2690,7 +2690,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0xA8AA591F, version = 150)
-    public int sceKernelCancelFpl(@CheckArgument("checkFplID") int uid, TPointer32 numWaitThreadAddr) {
+    public int sceKernelCancelFpl(@CheckArgument("checkFplID") int uid, @CanBeNull TPointer32 numWaitThreadAddr) {
         return Managers.fpl.sceKernelCancelFpl(uid, numWaitThreadAddr);
     }
 
