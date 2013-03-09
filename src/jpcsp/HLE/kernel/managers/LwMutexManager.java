@@ -201,7 +201,7 @@ public class LwMutexManager {
         return 0;
     }
 
-    public int sceKernelCreateLwMutex(TPointer workAreaAddr, String name, int attr, int count, int option_addr) {
+    public int sceKernelCreateLwMutex(TPointer workAreaAddr, String name, int attr, int count, TPointer option) {
         SceKernelLwMutexInfo info = new SceKernelLwMutexInfo(workAreaAddr, name, count, attr);
         lwMutexMap.put(info.uid, info);
 
