@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules380;
 
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
@@ -25,8 +26,8 @@ import jpcsp.HLE.kernel.Managers;
 @HLELogging
 public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 	@HLEFunction(nid = 0x19CFF145, version = 380, checkInsideInterrupt = true)
-	public int sceKernelCreateLwMutex(TPointer workAreaAddr, String name, int attr, int count, int option_addr) {
-		return Managers.lwmutex.sceKernelCreateLwMutex(workAreaAddr, name, attr, count, option_addr);
+	public int sceKernelCreateLwMutex(TPointer workAreaAddr, String name, int attr, int count, @CanBeNull TPointer option) {
+		return Managers.lwmutex.sceKernelCreateLwMutex(workAreaAddr, name, attr, count, option);
 	}
 
 	@HLEUnimplemented

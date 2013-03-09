@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules380;
 
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.TPointer;
@@ -31,12 +32,12 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 	}
 
 	@HLEFunction(nid = 0x1FC64E09, version = 380, checkInsideInterrupt = true)
-	public int sceKernelLockLwMutexCB(TPointer workAreaAddr, int count, TPointer32 timeoutAddr) {
+	public int sceKernelLockLwMutexCB(TPointer workAreaAddr, int count, @CanBeNull TPointer32 timeoutAddr) {
 		return Managers.lwmutex.sceKernelLockLwMutexCB(workAreaAddr, count, timeoutAddr);
 	}
 
 	@HLEFunction(nid = 0xBEA46419, version = 380, checkInsideInterrupt = true)
-	public int sceKernelLockLwMutex(TPointer workAreaAddr, int count, TPointer32 timeoutAddr) {
+	public int sceKernelLockLwMutex(TPointer workAreaAddr, int count, @CanBeNull TPointer32 timeoutAddr) {
 		return Managers.lwmutex.sceKernelLockLwMutex(workAreaAddr, count, timeoutAddr);
 	}
 
