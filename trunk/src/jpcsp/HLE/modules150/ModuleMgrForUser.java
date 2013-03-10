@@ -449,7 +449,7 @@ public class ModuleMgrForUser extends HLEModule {
             // Wait for the end of the module start thread.
             // Do no return the thread exit status as the result of this call,
             // return the module ID.
-            threadMan.hleKernelWaitThreadEnd(currentThread, thread.uid, 0, false, false);
+            threadMan.hleKernelWaitThreadEnd(currentThread, thread.uid, TPointer32.NULL, false, false);
         } else if (entryAddr == 0) {
             Modules.log.info("sceKernelStartModule - no entry address");
             sceModule.start();

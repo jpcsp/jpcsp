@@ -1706,6 +1706,8 @@ public class ThreadManForUser extends HLEModule {
         // Execute the event in the context of the starting thread
         triggerThreadEvent(thread, thread, THREAD_EVENT_START);
 
+        RuntimeContext.onThreadStart(thread);
+
         if (thread.currentPriority < currentThread.currentPriority) {
             if (log.isDebugEnabled()) {
                 log.debug("hleKernelStartThread switching in thread immediately");
@@ -1746,7 +1748,7 @@ public class ThreadManForUser extends HLEModule {
         }
     }
 
-    public int hleKernelWaitThreadEnd(SceKernelThreadInfo waitingThread, int uid, int timeoutAddr, boolean callbacks, boolean returnExitStatus) {
+    public int hleKernelWaitThreadEnd(SceKernelThreadInfo waitingThread, int uid, TPointer32 timeoutAddr, boolean callbacks, boolean returnExitStatus) {
         if (log.isDebugEnabled()) {
             log.debug(String.format("hleKernelWaitThreadEnd SceUID=0x%X, callbacks=%b", uid, callbacks));
         }
@@ -1759,11 +1761,11 @@ public class ThreadManForUser extends HLEModule {
 
         int result = 0;
         if (isBannedThread(thread)) {
-            log.warn(String.format("hleKernelWaitThreadEnd %s banned, not waiting", thread.toString()));
+            log.warn(String.format("hleKernelWaitThreadEnd %s banned, not waiting", thread));
             hleRescheduleCurrentThread();
         } else if (thread.isStopped()) {
         	if (log.isDebugEnabled()) {
-        		log.debug(String.format("hleKernelWaitThreadEnd %s thread already stopped, not waiting", thread.toString()));
+        		log.debug(String.format("hleKernelWaitThreadEnd %s thread already stopped, not waiting, exitStatus=0x%08X", thread, thread.exitStatus));
         	}
         	if (returnExitStatus) {
         		// Return the thread exit status
@@ -1774,7 +1776,7 @@ public class ThreadManForUser extends HLEModule {
             // Wait on a specific thread end
         	waitingThread.wait.ThreadEnd_id = uid;
         	waitingThread.wait.ThreadEnd_returnExitStatus = returnExitStatus;
-        	hleKernelThreadEnterWaitState(waitingThread, PSP_WAIT_THREAD_END, uid, waitThreadEndWaitStateChecker, timeoutAddr, callbacks);
+        	hleKernelThreadEnterWaitState(waitingThread, PSP_WAIT_THREAD_END, uid, waitThreadEndWaitStateChecker, timeoutAddr.getAddress(), callbacks);
         }
 
         return result;
@@ -2391,13 +2393,13 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x278C0DF5, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public int sceKernelWaitThreadEnd(@CheckArgument("checkThreadID") int uid, int timeout_addr) {
-        return hleKernelWaitThreadEnd(currentThread, uid, timeout_addr, false, true);
+    public int sceKernelWaitThreadEnd(@CheckArgument("checkThreadID") int uid, TPointer32 timeoutAddr) {
+        return hleKernelWaitThreadEnd(currentThread, uid, timeoutAddr, false, true);
     }
 
     @HLEFunction(nid = 0x840E8133, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public int sceKernelWaitThreadEndCB(@CheckArgument("checkThreadID") int uid, int timeout_addr) {
-        int result = hleKernelWaitThreadEnd(currentThread, uid, timeout_addr, true, true);
+    public int sceKernelWaitThreadEndCB(@CheckArgument("checkThreadID") int uid, TPointer32 timeoutAddr) {
+        int result = hleKernelWaitThreadEnd(currentThread, uid, timeoutAddr, true, true);
         checkCallbacks();
 
         return result;
@@ -3158,8 +3160,13 @@ public class ThreadManForUser extends HLEModule {
 
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
 
+        // Return this exit status to threads currently waiting on the thread end
+        thread.setExitStatus(ERROR_KERNEL_THREAD_IS_TERMINATED);
+
         terminateThread(thread);
-        thread.setExitStatus(ERROR_KERNEL_THREAD_IS_TERMINATED); // Update the exit status.
+
+        // Return this exit status to threads that will wait on this thread end later on
+        thread.setExitStatus(ERROR_KERNEL_THREAD_ALREADY_DORMANT);
 
         return 0;
     }
