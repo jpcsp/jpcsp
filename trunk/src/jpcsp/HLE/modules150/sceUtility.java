@@ -94,6 +94,7 @@ import jpcsp.HLE.kernel.types.SceUtilityOskParams;
 import jpcsp.HLE.kernel.types.SceUtilitySavedataParam;
 import jpcsp.HLE.kernel.types.SceUtilityScreenshotParams;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
+import jpcsp.HLE.kernel.types.pspUtilityDialogCommon;
 import jpcsp.HLE.kernel.types.SceUtilityOskParams.SceUtilityOskData;
 import jpcsp.HLE.kernel.types.pspCharInfo;
 import jpcsp.HLE.modules.HLEModule;
@@ -1812,8 +1813,13 @@ public class sceUtility extends HLEModule {
         protected boolean softShadows;
         protected long startDialogMillis;
         protected int drawSpeed;
+        private boolean buttonsSwapped;
 
-		protected void createDialog(final UtilityDialogState utilityDialogState) {
+        protected GuUtilityDialog(pspUtilityDialogCommon utilityDialogCommon) {
+        	buttonsSwapped = (utilityDialogCommon.buttonSwap == pspUtilityDialogCommon.BUTTON_ACCEPT_CIRCLE);
+        }
+
+        protected void createDialog(final UtilityDialogState utilityDialogState) {
 			this.utilityDialogState = utilityDialogState;
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Free memory total=0x%X, max=0x%X", Modules.SysMemUserForUserModule.totalFreeMemSize(), Modules.SysMemUserForUserModule.maxFreeMemSize()));
@@ -2190,7 +2196,7 @@ public class sceUtility extends HLEModule {
         }
 
         protected boolean areButtonsSwapped() {
-        	return getSystemParamButtonPreference() == PSP_SYSTEMPARAM_BUTTON_CIRCLE;
+        	return buttonsSwapped;
         }
 
         protected void drawEnter() {
@@ -2229,6 +2235,7 @@ public class sceUtility extends HLEModule {
 		private int selectedRow;
 
 		public GuSavedataDialog(final SceUtilitySavedataParam savedataParams, final SavedataUtilityDialogState savedataDialogState, final String[] saveNames) {
+			super(savedataParams.base);
 			this.savedataDialogState = savedataDialogState;
 			this.savedataParams = savedataParams;
 			this.saveNames = saveNames;
@@ -2527,6 +2534,7 @@ public class sceUtility extends HLEModule {
 		protected boolean isYesSelected;
 
 		public GuMsgDialog(final SceUtilityMsgDialogParams msgDialogParams, MsgDialogUtilityDialogState msgDialogState) {
+			super(msgDialogParams.base);
 			this.msgDialogParams = msgDialogParams;
 			isYesSelected = msgDialogParams.isOptionYesNoDefaultYes();
 
