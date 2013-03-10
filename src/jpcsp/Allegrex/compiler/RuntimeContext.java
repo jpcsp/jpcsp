@@ -914,6 +914,11 @@ public class RuntimeContext {
     	}
     }
 
+    public static void onThreadStart(SceKernelThreadInfo thread) {
+    	// The thread is starting, if a stop was still pending, cancel the stop.
+    	toBeStoppedThreads.remove(thread);
+    }
+
     private static void stopAllThreads() {
 		synchronized (threads) {
 			toBeStoppedThreads.putAll(threads);
