@@ -80,6 +80,7 @@ public class PspGeList {
         restarted = false;
         memoryReader = null;
         pc = 0;
+        saveContextAddr = 0;
     }
 
     public void init(int list_addr, int stall_addr, int cbid, int arg_addr) {
