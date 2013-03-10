@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
+import static java.lang.Math.min;
 import static jpcsp.Allegrex.Common._f0;
 import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common._sp;
@@ -3511,10 +3512,12 @@ public class CompilerContext implements ICompilerContext {
 				break;
 			}
 
+			Instruction insn = codeInstruction.getInsn();
+
 			// Check for a "sw" instruction if we have already seen an "addiu $sp, $sp, -nn".
 			if (decreaseSpInstruction >= 0) {
 				// Check for a "sw" instruction...
-				if (codeInstruction.getInsn() == Instructions.SW) {
+				if (insn == Instructions.SW) {
 					int rs = codeInstruction.getRsRegisterIndex();
 					int rt = codeInstruction.getRtRegisterIndex();
 					// ...saving an unmodified register to the stack...
@@ -3535,14 +3538,14 @@ public class CompilerContext implements ICompilerContext {
 						} else {
 							// The register saved to the stack has already been modified.
 							// Do not optimize values above this stack offset.
-							maxSpOffset = simm16;
+							maxSpOffset = min(maxSpOffset, simm16);
 						}
 					}
 				}
 			}
 
 			// Check for a "addiu $sp, $sp, -nn" instruction
-			if (codeInstruction.getInsn() == Instructions.ADDI || codeInstruction.getInsn() == Instructions.ADDIU) {
+			if (insn == Instructions.ADDI || insn == Instructions.ADDIU) {
 				int rs = codeInstruction.getRsRegisterIndex();
 				int rt = codeInstruction.getRtRegisterIndex();
 				int simm16 = codeInstruction.getImm16(true);
@@ -3557,15 +3560,30 @@ public class CompilerContext implements ICompilerContext {
 				} else if (rs == _sp && simm16 >= 0) {
 					// Loading a stack address into a register (e.g. "addiu $xx, $sp, nnn").
 					// Do not optimize values above this stack offset (nnn).
-					maxSpOffset = simm16;
+					maxSpOffset = min(maxSpOffset, simm16);
 				}
-			}
-
-			if (codeInstruction.getInsn() == Instructions.LW) {
-				if (codeInstruction.getRsRegisterIndex() == _sp) {
-					// Loading a register from the stack (e.g. "lw $reg, nnn($sp)").
-					// Do not optimize values above this stack offset (nnn).
-					maxSpOffset = codeInstruction.getImm16(true);
+			// Check for a "addu $reg, $sp, $reg" instruction
+			} else if (insn == Instructions.ADD || insn == Instructions.ADDU) {
+				int rs = codeInstruction.getRsRegisterIndex();
+				int rt = codeInstruction.getRtRegisterIndex();
+				if (rs == _sp || rt == _sp) {
+					// Loading the stack address into a register (e.g. "addu $reg, $sp, $zr").
+					// The stack could be accessed at any address, stop optimizing.
+					break;
+				}
+			} else if (insn == Instructions.LW || insn == Instructions.SWC1 || insn == Instructions.LWC1) {
+				int rs = codeInstruction.getRsRegisterIndex();
+				int simm16 = codeInstruction.getImm16(true);
+				if (rs == _sp && simm16 >= 0) {
+					// Accessing the stack, do not optimize values above this stack offset.
+					maxSpOffset = min(maxSpOffset, simm16);
+				}
+			} else if (insn == Instructions.SVQ || insn == Instructions.LVQ) {
+				int rs = codeInstruction.getRsRegisterIndex();
+				int simm14 = codeInstruction.getImm14(true);
+				if (rs == _sp && simm14 >= 0) {
+					// Accessing the stack, do not optimize values above this stack offset.
+					maxSpOffset = min(maxSpOffset, simm14);
 				}
 			}
 
@@ -3574,6 +3592,11 @@ public class CompilerContext implements ICompilerContext {
 			}
 			if (codeInstruction.hasFlags(Instruction.FLAG_WRITES_RD)) {
 				modifiedRegisters[codeInstruction.getRdRegisterIndex()] = true;
+			}
+
+			if (maxSpOffset <= 0) {
+				// Nothing more to do if the complete stack should not be optimized
+				break;
 			}
 		}
 
