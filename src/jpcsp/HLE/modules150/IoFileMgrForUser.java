@@ -3817,6 +3817,7 @@ public class IoFileMgrForUser extends HLEModule {
             // Check if the device is assigned/inserted (fatms0).
             case 0x02425823: {
                 log.debug("sceIoDevctl check assigned device (fatms0)");
+                needDelayIoOperation = false;
                 if (!devicename.getString().equals("fatms0:")) {
                 	result = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
                 } else if (Memory.isAddressGood(outdata_addr) && outlen >= 4) {
