@@ -2393,12 +2393,12 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x278C0DF5, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public int sceKernelWaitThreadEnd(@CheckArgument("checkThreadID") int uid, TPointer32 timeoutAddr) {
+    public int sceKernelWaitThreadEnd(@CheckArgument("checkThreadID") int uid, @CanBeNull TPointer32 timeoutAddr) {
         return hleKernelWaitThreadEnd(currentThread, uid, timeoutAddr, false, true);
     }
 
     @HLEFunction(nid = 0x840E8133, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public int sceKernelWaitThreadEndCB(@CheckArgument("checkThreadID") int uid, TPointer32 timeoutAddr) {
+    public int sceKernelWaitThreadEndCB(@CheckArgument("checkThreadID") int uid, @CanBeNull TPointer32 timeoutAddr) {
         int result = hleKernelWaitThreadEnd(currentThread, uid, timeoutAddr, true, true);
         checkCallbacks();
 
