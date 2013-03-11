@@ -718,7 +718,7 @@ public class scePsmfPlayer extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x2D0E4E0A, version = 150, checkInsideInterrupt = true)
-    public int scePsmfPlayerSetTempBuf(int psmfPlayer) {
+    public int scePsmfPlayerSetTempBuf(int psmfPlayer, TPointer tempBufAddr, int tempBufSize) {
         return 0;
     }
 
