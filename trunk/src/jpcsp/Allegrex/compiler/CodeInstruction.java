@@ -624,6 +624,14 @@ public class CodeInstruction {
 		return false;
 	}
 
+	public String disasm(int address, int opcode) {
+		if (getInsn() == null) {
+			return toString();
+		}
+
+		return getInsn().disasm(address, opcode);
+	}
+
 	@Override
 	public String toString() {
     	StringBuilder result = new StringBuilder();
@@ -645,7 +653,7 @@ public class CodeInstruction {
     	result.append(" 0x");
     	result.append(Integer.toHexString(getAddress()).toUpperCase());
     	result.append(" - ");
-    	result.append(getInsn().disasm(getAddress(), getOpcode()));
+    	result.append(disasm(getAddress(), getOpcode()));
 
     	return result.toString();
     }

@@ -179,13 +179,7 @@ public class Profiler {
             if (address == highlightAddress) {
                 prefix = "-->";
             }
-            String disasm;
-            if (codeInstruction.getInsn() == null) {
-                disasm = codeInstruction.toString();
-            } else {
-                disasm = codeInstruction.getInsn().disasm(address, opcode);
-            }
-            log.info(String.format("%s %08X:[%08X]: %s", prefix, address, opcode, disasm));
+            log.info(String.format("%s %08X:[%08X]: %s", prefix, address, opcode, codeInstruction.disasm(address, opcode)));
         }
     }
 

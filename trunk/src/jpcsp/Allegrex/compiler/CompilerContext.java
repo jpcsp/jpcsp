@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
@@ -3488,6 +3487,10 @@ public class CompilerContext implements ICompilerContext {
 		if (RuntimeContext.memoryInt == null) {
 			return;
 		}
+		// Disable optimizations when the profiler is enabled.
+		if (Profiler.isProfilerEnabled()) {
+			return;
+		}
 
 		int decreaseSpInstruction = -1;
 		int stackSize = 0;
@@ -3501,9 +3504,7 @@ public class CompilerContext implements ICompilerContext {
 		boolean[] modifiedRegisters = new boolean[GprState.NUMBER_REGISTERS];
 		Arrays.fill(modifiedRegisters, false);
 
-		for (ListIterator<CodeInstruction> lit = codeInstructions.listIterator(); lit.hasNext(); currentInstructionIndex++) {
-			CodeInstruction codeInstruction = lit.next();
-
+		for (CodeInstruction codeInstruction : codeInstructions) {
 			// Stop optimization when reaching a branch, branch target or delay slot
 			if (codeInstruction.isBranching() || codeInstruction.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT)) {
 				break;
@@ -3598,6 +3599,8 @@ public class CompilerContext implements ICompilerContext {
 				// Nothing more to do if the complete stack should not be optimized
 				break;
 			}
+
+			currentInstructionIndex++;
 		}
 
 		// If we have found more than one "sw" instructions, replace them by a meta code instruction.
@@ -3625,7 +3628,16 @@ public class CompilerContext implements ICompilerContext {
 	}
 
 	@Override
-	public void compileSWsequence(int baseRegister, int[] offsets, int[] registers) {
+	public boolean compileSWsequence(int baseRegister, int[] offsets, int[] registers) {
+		// Optimization only possible for memoryInt
+		if (RuntimeContext.memoryInt == null) {
+			return false;
+		}
+		// Disable optimizations when the profiler is enabled.
+		if (Profiler.isProfilerEnabled()) {
+			return false;
+		}
+
 		loadRegister(baseRegister);
 		int offset = offsets[0];
 		if (offset != 0) {
@@ -3658,10 +3670,21 @@ public class CompilerContext implements ICompilerContext {
     		loadRegister(rt);
     		mv.visitInsn(Opcodes.IASTORE);
     	}
+
+    	return true;
 	}
 
 	@Override
-	public void compileLWsequence(int baseRegister, int[] offsets, int[] registers) {
+	public boolean compileLWsequence(int baseRegister, int[] offsets, int[] registers) {
+		// Optimization only possible for memoryInt
+		if (RuntimeContext.memoryInt == null) {
+			return false;
+		}
+		// Disable optimizations when the profiler is enabled.
+		if (Profiler.isProfilerEnabled()) {
+			return false;
+		}
+
 		loadRegister(baseRegister);
 		int offset = offsets[0];
 		if (offset != 0) {
@@ -3695,5 +3718,7 @@ public class CompilerContext implements ICompilerContext {
     		mv.visitInsn(Opcodes.IALOAD);
     		storeRegister(rt);
     	}
+
+    	return true;
 	}
 }
