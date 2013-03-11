@@ -425,7 +425,7 @@ public class Compiler implements ICompiler {
                         if (branchingTo != 0) {  // Ignore "J 0x00000000" instruction
                         	if (checkDynamicBranching) {
 	                        	// Analyse only the jump instructions that are jumping to
-	                        	// non-writeable memory sections. A jump to a writeable memory
+	                        	// non-writable memory sections. A jump to a writable memory
 	                        	// section has to be interpreted at runtime to check if the
 	                        	// reached code has not been changed (i.e. invalidated).
                         		if (!memorySections.canWrite(branchingTo, false)) {

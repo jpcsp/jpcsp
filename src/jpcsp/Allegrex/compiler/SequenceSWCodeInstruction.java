@@ -56,8 +56,8 @@ public class SequenceSWCodeInstruction extends CodeInstruction {
 	}
 
 	@Override
-	public String toString() {
-		StringBuilder result = new StringBuilder(String.format("   0x%X - %s         ", getAddress(), getInstructionName()));
+	public String disasm(int address, int opcode) {
+		StringBuilder result = new StringBuilder(String.format("%-10s ", getInstructionName()));
 
 		for (int i = 0; i < registers.length; i++) {
 			if (i > 0) {
