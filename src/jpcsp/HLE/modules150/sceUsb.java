@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import java.util.HashMap;
+
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -27,7 +29,10 @@ import jpcsp.HLE.TPointer32;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.hardware.Usb;
 
 @HLELogging
@@ -53,6 +58,16 @@ public class sceUsb extends HLEModule {
 
 	protected boolean usbActivated = false;
 	protected boolean usbStarted = false;
+	protected HashMap<String, SceModule> loadedModules;
+
+	@Override
+	public void start() {
+		usbActivated = false;
+		usbStarted = false;
+		loadedModules = new HashMap<String, SceModule>();
+
+		super.start();
+	}
 
 	protected int getUsbState() {
 		int state = Usb.isCableConnected() ? PSP_USB_CABLE_CONNECTED : PSP_USB_CABLE_DISCONNECTED;
@@ -75,6 +90,7 @@ public class sceUsb extends HLEModule {
 		// WAIT_MODE_OR
 		return (state & waitState) != 0;
 	}
+
 	/**
 	 * Start a USB driver.
 	 *
@@ -86,8 +102,16 @@ public class sceUsb extends HLEModule {
 	 */
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xAE5DE6AF, version = 150)
-	public int sceUsbStart(PspString driverName, int size, @CanBeNull TPointer args) {
+	public int sceUsbStart(String driverName, int size, @CanBeNull TPointer args) {
 		usbStarted = true;
+
+		HLEModuleManager moduleManager = HLEModuleManager.getInstance();
+		if (moduleManager.hasFlash0Module(driverName)) {
+			log.info(String.format("Loading HLE module '%s'", driverName));
+			int sceModuleId = moduleManager.LoadFlash0Module(driverName);
+			SceModule module = Managers.modules.getModuleByUID(sceModuleId);
+			loadedModules.put(driverName, module);
+		}
 
 		return 0;
 	}
@@ -105,6 +129,12 @@ public class sceUsb extends HLEModule {
 	@HLEFunction(nid = 0xC2464FA0, version = 150)
 	public int sceUsbStop(PspString driverName, int size, @CanBeNull TPointer args) {
 		usbStarted = false;
+
+		SceModule module = loadedModules.remove(driverName);
+		if (module != null) {
+			HLEModuleManager moduleManager = HLEModuleManager.getInstance();
+			moduleManager.UnloadFlash0Module(module);
+		}
 
 		return 0;
 	}

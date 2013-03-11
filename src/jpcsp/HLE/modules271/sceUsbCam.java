@@ -148,6 +148,9 @@ public class sceUsbCam extends HLEModule {
 	protected int micFrequency;
 	protected int micGain;
 
+	protected TPointer readMicBuffer;
+	protected int readMicBufferSize;
+
 	// Faked video reading
 	protected long lastVideoFrameMillis;
 	protected static final int[] framerateFrameDurationMillis = new int[] {
@@ -192,6 +195,10 @@ public class sceUsbCam extends HLEModule {
 	}
 
 	protected int readFakeVideoFrame() {
+		if (jpegBuffer == null) {
+			return 0;
+		}
+
 		// Image has to be stored in Jpeg format in buffer
 		jpegBuffer.clear(jpegBufferSize);
 
@@ -783,7 +790,10 @@ public class sceUsbCam extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x3DC0088E, version = 271)
-	public int sceUsbCamReadMic() {
+	public int sceUsbCamReadMic(TPointer buffer, int bufferSize) {
+		readMicBuffer = buffer;
+		readMicBufferSize = bufferSize;
+
 		return 0;
 	}
 
@@ -819,7 +829,7 @@ public class sceUsbCam extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xB048A67D, version = 271)
 	public int sceUsbCamWaitReadMicEnd() {
-		return 0;
+		return Modules.sceAudioModule.hleAudioInputBlocking(readMicBufferSize >> 1, micFrequency, readMicBuffer);
 	}
 
 	@HLEUnimplemented
