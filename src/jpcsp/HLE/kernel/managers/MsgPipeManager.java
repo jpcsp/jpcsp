@@ -246,6 +246,10 @@ public class MsgPipeManager {
         return uid;
     }
 
+    public SceKernelMppInfo getMsgPipeInfo(int uid) {
+    	return msgMap.get(uid);
+    }
+
     public int sceKernelCreateMsgPipe(String name, int partitionid, int attr, int size, TPointer option) {
         if (option.isNotNull()) {
             int optionSize = option.getValue32();

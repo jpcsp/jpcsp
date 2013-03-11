@@ -16,5 +16,5 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-public class StdioForUser extends jpcsp.HLE.modules150.StdioForUser {
+public class StdioForUser extends jpcsp.HLE.modules330.StdioForUser {
 }
