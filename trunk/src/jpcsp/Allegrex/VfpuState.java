@@ -1769,7 +1769,7 @@ public class VfpuState extends FpuState {
 
     // VFPU4:VIDT
     public void doVIDT(int vsize, int vd) {
-        int id = vd & 3;
+        int id = vd % vsize;
         for (int i = 0; i < vsize; ++i) {
             v3[i] = (id == i) ? 1.0f : 0.0f;
         }
