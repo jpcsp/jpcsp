@@ -20,6 +20,9 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_PSMFPLAYER_NOT_INITIA
 import static jpcsp.HLE.modules150.sceMpeg.convertTimestampToDate;
 import static jpcsp.HLE.modules150.sceMpeg.mpegAudioChannels;
 import static jpcsp.HLE.modules150.sceMpeg.readUnaligned32;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551;
+import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.util.Utilities.endianSwap32;
 import jpcsp.HLE.CanBeNull;
@@ -637,11 +640,31 @@ public class scePsmfPlayer extends HLEModule {
     	}
 
     	if (configMode == PSMF_PLAYER_CONFIG_MODE_LOOP) {              // Sets if the video is looped or not.
+    		if (configAttr < 0 || configAttr > 1) {
+    			return SceKernelErrors.ERROR_PSMFPLAYER_INVALID_CONFIG_VALUE;
+    		}
             videoLoopStatus = configAttr;
         } else if (configMode == PSMF_PLAYER_CONFIG_MODE_PIXEL_TYPE) { // Sets the display's pixel type.
-            videoPixelMode = configAttr;
+        	switch (configAttr) {
+	        	case PSMF_PLAYER_PIXEL_TYPE_NONE:
+	        		// -1 means nothing to change
+	        		break;
+	        	case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
+	        	case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
+	        	case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444:
+	        	case TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888:
+	        		videoPixelMode = configAttr;
+	        		break;
+	        	case 4:
+	        		// This value is accepted, but its function is unknown
+	                log.warn(String.format("scePsmfPlayerConfigPlayer unknown pixelMode=%d", configAttr));
+	                break;
+	            default:
+	            	return SceKernelErrors.ERROR_PSMFPLAYER_INVALID_CONFIG_VALUE;
+        	}
         } else {
-            log.warn(String.format("scePsmfPlayerConfigPlayer unknown configMode=%d, configAddr=%d", configMode, configAttr));
+            log.warn(String.format("scePsmfPlayerConfigPlayer invalid configMode=%d, configAttr=%d", configMode, configAttr));
+            return SceKernelErrors.ERROR_PSMFPLAYER_INVALID_CONFIG_MODE;
         }
 
         return 0;
