@@ -19,8 +19,11 @@ package jpcsp.HLE.modules330;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelMppInfo;
+import jpcsp.HLE.modules.IoFileMgrForUser;
 
 @HLELogging
 public class StdioForUser extends jpcsp.HLE.modules150.StdioForUser {
@@ -28,7 +31,13 @@ public class StdioForUser extends jpcsp.HLE.modules150.StdioForUser {
     @HLEFunction(nid = 0x432D8F5C, version = 300)
     public int sceKernelRegisterStdoutPipe(int msgPipeUid) {
     	SceKernelMppInfo msgPipeInfo = Managers.msgPipes.getMsgPipeInfo(msgPipeUid);
+    	if (msgPipeInfo == null) {
+    		return SceKernelErrors.ERROR_KERNEL_ILLEGAL_ARGUMENT;
+    	}
+
     	log.info(String.format("sceKernelRegisterStdoutPipe %s", msgPipeInfo));
+
+    	Modules.IoFileMgrForUserModule.hleRegisterStdPipe(IoFileMgrForUser.STDOUT_ID, msgPipeInfo);
 
     	return 0;
     }
