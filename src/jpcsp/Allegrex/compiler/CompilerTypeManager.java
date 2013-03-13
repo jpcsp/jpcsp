@@ -32,16 +32,12 @@ public class CompilerTypeManager {
 		compilerTypeInformations = new HashMap<Class<?>, CompilerTypeInformation>();
 		defaultCompilerTypeInformation = new CompilerTypeInformation(null, null, "%s");
 
-		addCompilerTypeInformation(int.class,
-				new CompilerTypeInformation(Type.getInternalName(Integer.class), "(I)V", "0x%X"));
-		addCompilerTypeInformation(boolean.class,
-				new CompilerTypeInformation(Type.getInternalName(Boolean.class), "(Z)V", "%b"));
-		addCompilerTypeInformation(long.class,
-				new CompilerTypeInformation(Type.getInternalName(Long.class), "(J)V", "0x%X"));
-		addCompilerTypeInformation(short.class,
-				new CompilerTypeInformation(Type.getInternalName(Short.class), "(S)V", "0x%X"));
-		addCompilerTypeInformation(float.class,
-				new CompilerTypeInformation(Type.getInternalName(Float.class), "(F)V", "%f"));
+		addCompilerTypeInformation(int.class, new CompilerTypeInformation(Type.getInternalName(Integer.class), "(I)V", "0x%X"));
+		addCompilerTypeInformation(boolean.class, new CompilerTypeInformation(Type.getInternalName(Boolean.class), "(Z)V", "%b"));
+		addCompilerTypeInformation(long.class, new CompilerTypeInformation(Type.getInternalName(Long.class), "(J)V", "0x%X"));
+		addCompilerTypeInformation(short.class, new CompilerTypeInformation(Type.getInternalName(Short.class), "(S)V", "0x%X"));
+		addCompilerTypeInformation(float.class, new CompilerTypeInformation(Type.getInternalName(Float.class), "(F)V", "%f"));
+		addCompilerTypeInformation(String.class, new CompilerTypeInformation(null, null, "'%s'"));
 	}
 
 	private void addCompilerTypeInformation(Class<?> type, CompilerTypeInformation compilerTypeInformation) {

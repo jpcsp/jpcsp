@@ -943,8 +943,11 @@ public void compile(ICompilerContext context, int insn) {
 			} else {
 				context.loadRs();
 				if (!context.isRtRegister0()) {
-					context.loadRt();
-					context.getMethodVisitor().visitInsn(Opcodes.IOR);
+					// OR-ing a register with itself is a simple move.
+					if (context.getRsRegisterIndex() != context.getRtRegisterIndex()) {
+						context.loadRt();
+						context.getMethodVisitor().visitInsn(Opcodes.IOR);
+					}
 				}
 			}
 			context.storeRd();
