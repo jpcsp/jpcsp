@@ -70,12 +70,15 @@ import jpcsp.HLE.VFS.iso.UmdIsoVirtualFileSystem;
 import jpcsp.HLE.VFS.local.LocalVirtualFileSystem;
 import jpcsp.HLE.VFS.local.TmpLocalVirtualFileSystem;
 import jpcsp.HLE.VFS.memoryStick.MemoryStickVirtualFileSystem;
+import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.managers.MsgPipeManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceIoDirent;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.SceKernelMppInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
@@ -159,6 +162,7 @@ public class IoFileMgrForUser extends HLEModule {
     public final static int STDIN_ID = 0;
     public final static int STDOUT_ID = 1;
     public final static int STDERR_ID = 2;
+    protected SceKernelMppInfo[] stdRedirects;
 
     private final static int MIN_ID = 3;
     private final static int MAX_ID = 63;
@@ -660,6 +664,7 @@ public class IoFileMgrForUser extends HLEModule {
         ioWaitStateChecker = new IoWaitStateChecker();
         host0Path = null;
         noDelayIoOperation = false;
+        stdRedirects = new SceKernelMppInfo[3];
 
         vfsManager = new VirtualFileSystemManager();
     	vfsManager.register(new TmpLocalVirtualFileSystem());
@@ -1785,25 +1790,28 @@ public class IoFileMgrForUser extends HLEModule {
         return result;
     }
 
-    private int hleIoWrite(int id, int data_addr, int size, boolean async) {
+    private int hleIoWrite(int id, TPointer dataAddr, int size, boolean async) {
         IoInfo info = null;
         int result;
 
         if (id == STDOUT_ID) {
             // stdout
-            String message = Utilities.stripNL(readStringNZ(data_addr, size));
+            String message = Utilities.stripNL(readStringNZ(dataAddr.getAddress(), size));
             stdout.info(message);
+            if (stdRedirects[id] != null) {
+            	Managers.msgPipes.hleKernelSendMsgPipe(stdRedirects[id].uid, dataAddr, size, MsgPipeManager.PSP_MPP_WAIT_MODE_COMPLETE, TPointer32.NULL, TPointer32.NULL, false, false);
+            }
             result = size;
         } else if (id == STDERR_ID) {
             // stderr
-            String message = Utilities.stripNL(readStringNZ(data_addr, size));
+            String message = Utilities.stripNL(readStringNZ(dataAddr.getAddress(), size));
             stderr.info(message);
             result = size;
         } else {
             if (log.isDebugEnabled()) {
-                log.debug(String.format("hleIoWrite(id=0x%X, data=0x%08X, size=0x%X) async=%b", id, data_addr, size, async));
+                log.debug(String.format("hleIoWrite(id=0x%X, data=0x%08X, size=0x%X) async=%b", id, dataAddr, size, async));
                 if (log.isTraceEnabled()) {
-                	log.trace(String.format("hleIoWrite: %s", Utilities.getMemoryDump(data_addr, Math.min(size, 32))));
+                	log.trace(String.format("hleIoWrite: %s", Utilities.getMemoryDump(dataAddr.getAddress(), Math.min(size, 32))));
                 }
             }
             try {
@@ -1814,8 +1822,8 @@ public class IoFileMgrForUser extends HLEModule {
                 } else if (info.asyncPending || info.asyncResultPending) {
                     log.warn("hleIoWrite - id " + Integer.toHexString(id) + " PSP_ERROR_ASYNC_BUSY");
                     result = ERROR_KERNEL_ASYNC_BUSY;
-                } else if ((data_addr < MemoryMap.START_RAM) && (data_addr + size > MemoryMap.END_RAM)) {
-                    log.warn("hleIoWrite - id " + Integer.toHexString(id) + " data is outside of ram 0x" + Integer.toHexString(data_addr) + " - 0x" + Integer.toHexString(data_addr + size));
+                } else if ((dataAddr.getAddress() < MemoryMap.START_RAM) && (dataAddr.getAddress() + size > MemoryMap.END_RAM)) {
+                    log.warn("hleIoWrite - id " + Integer.toHexString(id) + " data is outside of ram 0x" + Integer.toHexString(dataAddr.getAddress()) + " - 0x" + Integer.toHexString(dataAddr.getAddress() + size));
                     result = -1;
                 } else if (info.vFile != null) {
                     if ((info.flags & PSP_O_APPEND) == PSP_O_APPEND) {
@@ -1823,7 +1831,6 @@ public class IoFileMgrForUser extends HLEModule {
                         info.position = info.vFile.length();
                     }
 
-                	TPointer dataAddr = new TPointer(Memory.getInstance(), data_addr);
                     if (info.position > info.vFile.length()) {
                         int towrite = (int) (info.position - info.vFile.length());
 
@@ -1871,7 +1878,7 @@ public class IoFileMgrForUser extends HLEModule {
 
                     info.position += size;
 
-                    Utilities.write(info.msFile, data_addr, size);
+                    Utilities.write(info.msFile, dataAddr.getAddress(), size);
                     result = size;
                 }
             } catch (IOException e) {
@@ -1881,7 +1888,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
         result = (int) updateResult(info, result, async, false, IoOperation.write, null, size);
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoWrite(result, id, data_addr, size, size);
+            ioListener.sceIoWrite(result, id, dataAddr.getAddress(), size, size);
         }
 
         return result;
@@ -2635,6 +2642,14 @@ public class IoFileMgrForUser extends HLEModule {
         return result;
     }
 
+    public void hleRegisterStdPipe(int id, SceKernelMppInfo msgPipeInfo) {
+    	if (id < 0 || id >= stdRedirects.length) {
+    		return;
+    	}
+
+    	stdRedirects[id] = msgPipeInfo;
+    }
+
     /**
      * sceIoPollAsync
      * 
@@ -2856,8 +2871,8 @@ public class IoFileMgrForUser extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0x42EC03AC, version = 150, checkInsideInterrupt = true)
-    public int sceIoWrite(int id, int data_addr, int size) {
-        int result = hleIoWrite(id, data_addr, size, false);
+    public int sceIoWrite(int id, TPointer dataAddr, int size) {
+        int result = hleIoWrite(id, dataAddr, size, false);
 
         // Do not delay output on stdout/stderr
         if (id != STDOUT_ID && id != STDERR_ID) {
@@ -2877,8 +2892,8 @@ public class IoFileMgrForUser extends HLEModule {
      * @return
      */
     @HLEFunction(nid = 0x0FACAB19, version = 150, checkInsideInterrupt = true)
-    public int sceIoWriteAsync(int id, int data_addr, int size) {
-        return hleIoWrite(id, data_addr, size, true);
+    public int sceIoWriteAsync(int id, TPointer dataAddr, int size) {
+        return hleIoWrite(id, dataAddr, size, true);
     }
 
     /**
