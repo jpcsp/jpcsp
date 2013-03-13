@@ -147,7 +147,66 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 	}
 
 	static protected int getStrlen(int srcAddr) {
-		return getStrlen(srcAddr, Integer.MAX_VALUE);
+		int srcAddr3 = srcAddr & 3;
+		// Reading 32-bit values is much faster
+		IMemoryReader memoryReader = MemoryReader.getMemoryReader(srcAddr - srcAddr3, 4);
+		if (memoryReader == null) {
+			Compiler.log.warn("getStrlen: null MemoryReader");
+			return 0;
+		}
+
+		int value;
+		int offset = 0;
+		switch (srcAddr3) {
+			case 1:
+				value = memoryReader.readNext();
+				if ((value & 0x0000FF00) == 0) {
+					return 0;
+				}
+				if ((value & 0x00FF0000) == 0) {
+					return 1;
+				}
+				if ((value & 0xFF000000) == 0) {
+					return 2;
+				}
+				offset = 3;
+				break;
+			case 2:
+				value = memoryReader.readNext();
+				if ((value & 0x00FF0000) == 0) {
+					return 0;
+				}
+				if ((value & 0xFF000000) == 0) {
+					return 1;
+				}
+				offset = 2;
+				break;
+			case 3:
+				value = memoryReader.readNext();
+				if ((value & 0xFF000000) == 0) {
+					return 0;
+				}
+				offset = 1;
+				break;
+		}
+
+		// Read 32-bit values and check for a null-byte
+		while (true) {
+			value = memoryReader.readNext();
+			if ((value & 0x000000FF) == 0) {
+				return offset;
+			}
+			if ((value & 0x0000FF00) == 0) {
+				return offset + 1;
+			}
+			if ((value & 0x00FF0000) == 0) {
+				return offset + 2;
+			}
+			if ((value & 0xFF000000) == 0) {
+				return offset + 3;
+			}
+			offset += 4;
+		}
 	}
 
 	static protected int getStrlen(int srcAddr, int maxLength) {
