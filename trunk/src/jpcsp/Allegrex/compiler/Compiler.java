@@ -271,8 +271,10 @@ public class Compiler implements ICompiler {
     		// If the application is invalidating the same code block too many times,
     		// do no longer try to recompile it each time, interpret it.
     		if (codeBlock.getInstanceIndex() > maxRecompileExecutable) {
-    			codeBlock.setInterpreted(true);
-    			executable.setExecutable(new InterpretExecutable(codeBlock));
+    			if (!codeBlock.isInterpreted()) {
+	    			codeBlock.setInterpreted(true);
+	    			executable.setExecutable(new InterpretExecutable(codeBlock));
+    			}
     		} else {
 	    		// Force a recompilation of the codeBlock at the next execution
 	        	RecompileExecutable recompileExecutable = new RecompileExecutable(codeBlock);

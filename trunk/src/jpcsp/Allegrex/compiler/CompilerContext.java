@@ -2047,42 +2047,11 @@ public class CompilerContext implements ICompilerContext {
 			loadMemoryInt();
 		}
 
-		loadRegister(registerIndex);
-		if (offset != 0) {
-			loadImm(offset);
-			mv.visitInsn(Opcodes.IADD);
-		}
-
-		if (RuntimeContext.debugMemoryRead) {
-			if (!RuntimeContext.debugMemoryReadWriteNoSP || registerIndex != _sp) {
-				mv.visitInsn(Opcodes.DUP);
-				loadImm(0);
-			    loadImm(codeInstruction.getAddress());
-				loadImm(1);
-				loadImm(32);
-			    mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "debugMemoryReadWrite", "(IIIZI)V");
-			}
-		}
+		prepareMemIndex(registerIndex, offset, true, 32);
 
 		if (RuntimeContext.memoryInt == null) {
 	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read32", "(I)I");
 		} else {
-			if (registerIndex == _sp) {
-				// No need to check for a valid memory access when referencing the $sp register
-				loadImm(2);
-    			mv.visitInsn(Opcodes.IUSHR);
-			} else if (checkMemoryAccess()) {
-                loadImm(codeInstruction.getAddress());
-                mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryRead32", "(II)I");
-                loadImm(2);
-                mv.visitInsn(Opcodes.IUSHR);
-            } else {
-    			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
-    			loadImm(2);
-    			mv.visitInsn(Opcodes.ISHL);
-    			loadImm(4);
-    			mv.visitInsn(Opcodes.IUSHR);
-            }
 			mv.visitInsn(Opcodes.IALOAD);
 		}
 	}
@@ -2193,18 +2162,22 @@ public class CompilerContext implements ICompilerContext {
 		}
 	}
 
-	@Override
-	public void prepareMemWrite32(int registerIndex, int offset) {
-		if (RuntimeContext.memoryInt == null) {
-			loadMemory();
-		} else {
-			loadMemoryInt();
-		}
-
+	private void prepareMemIndex(int registerIndex, int offset, boolean isRead, int width) {
 		loadRegister(registerIndex);
 		if (offset != 0) {
 			loadImm(offset);
 			mv.visitInsn(Opcodes.IADD);
+		}
+
+		if (RuntimeContext.debugMemoryRead && isRead) {
+			if (!RuntimeContext.debugMemoryReadWriteNoSP || registerIndex != _sp) {
+				mv.visitInsn(Opcodes.DUP);
+				loadImm(0);
+			    loadImm(codeInstruction.getAddress());
+				loadImm(isRead);
+				loadImm(width);
+			    mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "debugMemoryReadWrite", "(IIIZI)V");
+			}
 		}
 
 		if (RuntimeContext.memoryInt != null) {
@@ -2214,7 +2187,8 @@ public class CompilerContext implements ICompilerContext {
     			mv.visitInsn(Opcodes.IUSHR);
 			} else if (checkMemoryAccess()) {
 	            loadImm(codeInstruction.getAddress());
-	            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryWrite32", "(II)I");
+	            String checkMethodName = String.format("checkMemory%s%d", isRead ? "Read" : "Write", width);
+	            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, checkMethodName, "(II)I");
                 loadImm(2);
                 mv.visitInsn(Opcodes.IUSHR);
 	        } else {
@@ -2225,6 +2199,17 @@ public class CompilerContext implements ICompilerContext {
     			mv.visitInsn(Opcodes.IUSHR);
 	        }
 		}
+	}
+
+	@Override
+	public void prepareMemWrite32(int registerIndex, int offset) {
+		if (RuntimeContext.memoryInt == null) {
+			loadMemory();
+		} else {
+			loadMemoryInt();
+		}
+
+		prepareMemIndex(registerIndex, offset, false, 32);
 
 		memWritePrepared = true;
 	}
@@ -3627,8 +3612,7 @@ public class CompilerContext implements ICompilerContext {
 		}
 	}
 
-	@Override
-	public boolean compileSWsequence(int baseRegister, int[] offsets, int[] registers) {
+	private boolean compileSWLWsequence(int baseRegister, int[] offsets, int[] registers, boolean isLW) {
 		// Optimization only possible for memoryInt
 		if (RuntimeContext.memoryInt == null) {
 			return false;
@@ -3638,23 +3622,8 @@ public class CompilerContext implements ICompilerContext {
 			return false;
 		}
 
-		loadRegister(baseRegister);
 		int offset = offsets[0];
-		if (offset != 0) {
-			loadImm(offset);
-			mv.visitInsn(Opcodes.IADD);
-		}
-    	if (checkMemoryAccess()) {
-    		loadImm(getCodeInstruction().getAddress());
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(RuntimeContext.class), "checkMemoryWrite32", "(II)I");
-            loadImm(2);
-            mv.visitInsn(Opcodes.IUSHR);
-    	} else {
-    		loadImm(2);
-			mv.visitInsn(Opcodes.ISHL);
-			loadImm(4);
-			mv.visitInsn(Opcodes.IUSHR);
-    	}
+		prepareMemIndex(baseRegister, offset, isLW, 32);
     	storeTmp1();
 
     	for (int i = 0; i < offsets.length; i++) {
@@ -3665,60 +3634,30 @@ public class CompilerContext implements ICompilerContext {
         		offset = offsets[i];
     		}
 
-    		loadMemoryInt();
-    		loadTmp1();
-    		loadRegister(rt);
-    		mv.visitInsn(Opcodes.IASTORE);
+    		if (isLW) {
+    			prepareRegisterForStore(rt);
+        		loadMemoryInt();
+        		loadTmp1();
+        		mv.visitInsn(Opcodes.IALOAD);
+        		storeRegister(rt);
+    		} else {
+    			loadMemoryInt();
+    			loadTmp1();
+    			loadRegister(rt);
+    			mv.visitInsn(Opcodes.IASTORE);
+    		}
     	}
 
     	return true;
 	}
 
 	@Override
+	public boolean compileSWsequence(int baseRegister, int[] offsets, int[] registers) {
+		return compileSWLWsequence(baseRegister, offsets, registers, false);
+	}
+
+	@Override
 	public boolean compileLWsequence(int baseRegister, int[] offsets, int[] registers) {
-		// Optimization only possible for memoryInt
-		if (RuntimeContext.memoryInt == null) {
-			return false;
-		}
-		// Disable optimizations when the profiler is enabled.
-		if (Profiler.isProfilerEnabled()) {
-			return false;
-		}
-
-		loadRegister(baseRegister);
-		int offset = offsets[0];
-		if (offset != 0) {
-			loadImm(offset);
-			mv.visitInsn(Opcodes.IADD);
-		}
-    	if (checkMemoryAccess()) {
-    		loadImm(getCodeInstruction().getAddress());
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(RuntimeContext.class), "checkMemoryRead32", "(II)I");
-            loadImm(2);
-            mv.visitInsn(Opcodes.IUSHR);
-    	} else {
-    		loadImm(2);
-			mv.visitInsn(Opcodes.ISHL);
-			loadImm(4);
-			mv.visitInsn(Opcodes.IUSHR);
-    	}
-    	storeTmp1();
-
-    	for (int i = 0; i < offsets.length; i++) {
-    		int rt = registers[i];
-
-    		if (offset != offsets[i]) {
-        		mv.visitIincInsn(LOCAL_TMP1, (offsets[i] - offset) >> 2);
-        		offset = offsets[i];
-    		}
-
-    		prepareRegisterForStore(rt);
-    		loadMemoryInt();
-    		loadTmp1();
-    		mv.visitInsn(Opcodes.IALOAD);
-    		storeRegister(rt);
-    	}
-
-    	return true;
+		return compileSWLWsequence(baseRegister, offsets, registers, true);
 	}
 }
