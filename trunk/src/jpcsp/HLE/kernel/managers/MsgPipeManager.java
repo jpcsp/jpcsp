@@ -37,6 +37,7 @@ import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelMppInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
@@ -57,8 +58,8 @@ public class MsgPipeManager {
     public static final int PSP_MPP_ATTR_RECEIVE_PRIORITY = 0x1000;
     private final static int PSP_MPP_ATTR_ADDR_HIGH = 0x4000;
 
-    protected static final int PSP_MPP_WAIT_MODE_COMPLETE = 0; // receive always a complete buffer
-    protected static final int PSP_MPP_WAIT_MODE_PARTIAL = 1;  // can receive a partial buffer
+    public static final int PSP_MPP_WAIT_MODE_COMPLETE = 0; // receive always a complete buffer
+    public static final int PSP_MPP_WAIT_MODE_PARTIAL = 1;  // can receive a partial buffer
 
     public void reset() {
         msgMap = new HashMap<Integer, SceKernelMppInfo>();
@@ -195,21 +196,35 @@ public class MsgPipeManager {
 
     private boolean trySendMsgPipe(SceKernelMppInfo info, TPointer addr, int size, int waitMode, TPointer32 resultSizeAddr) {
         if (size > 0) {
-            int availableSize = info.availableWriteSize();
-            if (availableSize == 0) {
-                return false;
-            }
-            // Trying to send more than available?
-            if (size > availableSize) {
-                // Do we need to send the complete size?
-                if (waitMode == PSP_MPP_WAIT_MODE_COMPLETE) {
-                    return false;
-                }
-                // We can just send the available size.
-                size = availableSize;
-            }
+        	// When the bufSize is 0, the data is transfered directly
+        	// from the sender to the receiver without being buffered.
+        	if (info.bufSize == 0) {
+        		info.setUserData(addr.getAddress(), size);
+        		onMsgPipeReceiveModified(info);
+        		if (info.getUserSize() > 0) {
+        			// wait if nothing has been sent or
+        			// if we have to wait to send everything
+        			if (size == info.getUserSize() || waitMode == PSP_MPP_WAIT_MODE_COMPLETE) {
+        				return false;
+        			}
+        		}
+        	} else {
+	            int availableSize = info.availableWriteSize();
+	            if (availableSize == 0) {
+	                return false;
+	            }
+	            // Trying to send more than available?
+	            if (size > availableSize) {
+	                // Do we need to send the complete size?
+	                if (waitMode == PSP_MPP_WAIT_MODE_COMPLETE) {
+	                    return false;
+	                }
+	                // We can just send the available size.
+	                size = availableSize;
+	            }
+	            info.append(addr.getMemory(), addr.getAddress(), size);
+        	}
         }
-        info.append(addr.getMemory(), addr.getAddress(), size);
         resultSizeAddr.setValue(size);
 
         return true;
@@ -230,9 +245,23 @@ public class MsgPipeManager {
                 // We can just receive the available size.
                 size = availableSize;
             }
+            info.consume(addr.getMemory(), addr.getAddress(), size);
+
+            if (info.bufSize == 0 && info.availableReadSize() == 0 && info.getNumSendWaitThreads() > 0) {
+            	SceKernelThreadInfo thread = info.sendThreadWaitingList.getFirstWaitingThread();
+                if (thread.wait.MsgPipe_isSend) {
+                    if (log.isDebugEnabled()) {
+                        log.debug(String.format("tryReceiveMsgPipe waking thread %s", thread));
+                    }
+                    ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+                    info.sendThreadWaitingList.removeWaitingThread(thread);
+                    thread.cpuContext._v0 = 0;
+                    threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                    threadMan.hleRescheduleCurrentThread();
+                }
+            }
         }
         resultSizeAddr.setValue(size);
-        info.consume(addr.getMemory(), addr.getAddress(), size);
 
         return true;
     }
@@ -261,7 +290,13 @@ public class MsgPipeManager {
             memType = PSP_SMEM_High;
         }
 
-        SceKernelMppInfo info = SceKernelMppInfo.tryCreateMpp(name, partitionid, attr, size, memType);
+        SceKernelMppInfo info = new SceKernelMppInfo(name, partitionid, attr, size, memType);
+        if (!info.isMemoryAllocated()) {
+        	log.warn(String.format("sceKernelCreateMsgPipe name='%s', partitionId=%d, attr=0x%X, size=0x%X, option=%s not enough memory", name, partitionid, attr, size, option));
+        	info.delete();
+        	return SceKernelErrors.ERROR_KERNEL_NO_MEMORY;
+        }
+
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceKernelCreateMsgPipe returning %s", info));
         }
@@ -272,15 +307,15 @@ public class MsgPipeManager {
 
     public int sceKernelDeleteMsgPipe(int uid) {
         SceKernelMppInfo info = msgMap.remove(uid);
-        info.deleteSysMemInfo();
+        info.delete();
         onMsgPipeDeleted(uid);
 
         return 0;
     }
 
-    private int hleKernelSendMsgPipe(int uid, TPointer msgAddr, int size, int waitMode, TPointer32 resultSizeAddr, TPointer32 timeoutAddr, boolean doCallbacks, boolean poll) {
+    public int hleKernelSendMsgPipe(int uid, TPointer msgAddr, int size, int waitMode, TPointer32 resultSizeAddr, TPointer32 timeoutAddr, boolean doCallbacks, boolean poll) {
         SceKernelMppInfo info = msgMap.get(uid);
-        if (size > info.bufSize) {
+        if (info.bufSize != 0 && size > info.bufSize) {
             log.warn(String.format("hleKernelSendMsgPipe illegal size 0x%X max 0x%X", size, info.bufSize));
             return ERROR_KERNEL_ILLEGAL_SIZE;
         }
@@ -298,6 +333,7 @@ public class MsgPipeManager {
                 currentThread.wait.MsgPipe_id = uid;
                 currentThread.wait.MsgPipe_address = msgAddr;
                 currentThread.wait.MsgPipe_size = size;
+                currentThread.wait.MsgPipe_resultSize_addr = resultSizeAddr;
                 threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_MSGPIPE, uid, msgPipeSendWaitStateChecker, timeoutAddr.getAddress(), doCallbacks);
             } else {
                 log.warn(String.format("hleKernelSendMsgPipe illegal size 0x%X, max 0x%X (pipe needs consuming)", size, info.freeSize));
@@ -328,7 +364,7 @@ public class MsgPipeManager {
 
     private int hleKernelReceiveMsgPipe(int uid, TPointer msgAddr, int size, int waitMode, TPointer32 resultSizeAddr, TPointer32 timeoutAddr, boolean doCallbacks, boolean poll) {
         SceKernelMppInfo info = msgMap.get(uid);
-        if (size > info.bufSize) {
+        if (info.bufSize != 0 && size > info.bufSize) {
             log.warn(String.format("hleKernelReceiveMsgPipe illegal size 0x%X, max 0x%X", size, info.bufSize));
             return ERROR_KERNEL_ILLEGAL_SIZE;
         }

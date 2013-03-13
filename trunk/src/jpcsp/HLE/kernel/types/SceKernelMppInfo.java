@@ -40,21 +40,26 @@ public class SceKernelMppInfo extends pspAbstractMemoryMappedStructureVariableLe
     public final int address;
     private int head; // relative to address
     private int tail; // relative to address
+    private static final String uidPurpose = "ThreadMan-MsgPipe";
+    public int userAddress;
+    public int userSize;
 
-    private SceKernelMppInfo(String name, int partitionid, int attr, int size, int memType) {
+    public SceKernelMppInfo(String name, int partitionid, int attr, int size, int memType) {
         this.name = name;
         this.attr = attr;
 
         bufSize = size;
         freeSize = size;
 
-        sysMemInfo = Modules.SysMemUserForUserModule.malloc(partitionid, "ThreadMan-MsgPipe", memType, size, 0);
-        if (sysMemInfo == null) {
-            throw new RuntimeException("SceKernelFplInfo: not enough free mem");
+        if (size != 0) {
+            sysMemInfo = Modules.SysMemUserForUserModule.malloc(partitionid, "ThreadMan-MsgPipe", memType, size, 0);
+            address = sysMemInfo.addr;
+        } else {
+        	sysMemInfo = null;
+        	address = 0;
         }
-        address = sysMemInfo.addr;
 
-        uid = SceUidManager.getNewUid("ThreadMan-MsgPipe");
+        uid = SceUidManager.getNewUid(uidPurpose);
         sendThreadWaitingList = ThreadWaitingList.createThreadWaitingList(SceKernelThreadInfo.PSP_WAIT_MSGPIPE, uid, attr, MsgPipeManager.PSP_MPP_ATTR_SEND_PRIORITY);
         receiveThreadWaitingList = ThreadWaitingList.createThreadWaitingList(SceKernelThreadInfo.PSP_WAIT_MSGPIPE, uid, attr, MsgPipeManager.PSP_MPP_ATTR_RECEIVE_PRIORITY);
         this.partitionid = partitionid;
@@ -62,23 +67,18 @@ public class SceKernelMppInfo extends pspAbstractMemoryMappedStructureVariableLe
         tail = 0;
     }
 
-    public static SceKernelMppInfo tryCreateMpp(String name, int partitionid, int attr, int size, int memType) {
-        SceKernelMppInfo info = null;
-        int alignedSize = (size + 0xFF) & ~0xFF; // 256 byte align (or is this stage done by pspsysmem? aren't we using 64-bytes in pspsysmem?)
-        int maxFreeSize = Modules.SysMemUserForUserModule.maxFreeMemSize();
-
-        if (size <= 0) {
-            Modules.log.warn("tryCreateMpp invalid size " + size);
-        } else if (alignedSize > maxFreeSize) {
-            Modules.log.warn("tryCreateMpp not enough free mem (want=" + alignedSize + ",free=" + maxFreeSize + ",diff=" + (alignedSize - maxFreeSize) + ")");
-        } else {
-            info = new SceKernelMppInfo(name, partitionid, attr, size, memType);
-        }
-
-        return info;
+    public boolean isMemoryAllocated() {
+    	return bufSize == 0 || sysMemInfo != null;
     }
 
-	@Override
+    public void delete() {
+    	if (sysMemInfo != null) {
+    		Modules.SysMemUserForUserModule.free(sysMemInfo);
+    	}
+    	SceUidManager.releaseUid(uid, uidPurpose);
+    }
+
+    @Override
 	protected void write() {
 		super.write();
 		writeStringNZ(32, name);
@@ -90,15 +90,14 @@ public class SceKernelMppInfo extends pspAbstractMemoryMappedStructureVariableLe
 	}
 
     public int availableReadSize() {
+    	if (bufSize == 0) {
+    		return getUserSize();
+    	}
         return bufSize - freeSize;
     }
 
     public int availableWriteSize() {
         return freeSize;
-    }
-
-    public void deleteSysMemInfo() {
-        Modules.SysMemUserForUserModule.free(sysMemInfo);
     }
 
     // this will clobber itself if used carelessly but won't overflow outside of its allocated memory
@@ -117,16 +116,20 @@ public class SceKernelMppInfo extends pspAbstractMemoryMappedStructureVariableLe
     }
 
     public void consume(Memory mem, int dst, int size) {
-        int copySize;
+        if (bufSize == 0) {
+        	mem.memcpy(dst, userAddress, size);
+        	userAddress += size;
+        	userSize -= size;
+        } else {
+        	freeSize += size;
 
-        freeSize += size;
-
-        while (size > 0) {
-            copySize = Math.min(bufSize - head, size);
-            mem.memcpy(dst, address + head, copySize);
-            dst += copySize;
-            size -= copySize;
-            head = (head + copySize) % bufSize;
+	        while (size > 0) {
+	            int copySize = Math.min(bufSize - head, size);
+	            mem.memcpy(dst, address + head, copySize);
+	            dst += copySize;
+	            size -= copySize;
+	            head = (head + copySize) % bufSize;
+	        }
         }
     }
 
@@ -138,7 +141,16 @@ public class SceKernelMppInfo extends pspAbstractMemoryMappedStructureVariableLe
 		return receiveThreadWaitingList.getNumWaitingThreads();
 	}
 
-	@Override
+    public void setUserData(int address, int size) {
+    	userAddress = address;
+    	userSize = size;
+    }
+
+    public int getUserSize() {
+    	return userSize;
+    }
+
+    @Override
 	public String toString() {
 		return String.format("SceKernelMppInfo(uid=0x%X, name='%s', attr=0x%X, bufSize=0x%X, freeSize=0x%X, numSendWaitThreads=%d, numReceiveWaitThreads=%d)", uid, name, attr, bufSize, freeSize, getNumSendWaitThreads(), getNumReceiveWaitThreads());
 	}
