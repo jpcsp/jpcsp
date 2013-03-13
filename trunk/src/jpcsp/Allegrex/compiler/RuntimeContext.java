@@ -85,6 +85,7 @@ public class RuntimeContext {
 	public  static final String pauseEmuWithStatus = "pauseEmuWithStatus";
 	public  static final boolean enableLineNumbers = true;
 	public  static final boolean checkCodeModification = false;
+	private static final boolean invalidateAllCodeBlocks = false;
 	private static final int idleSleepMicros = 1000;
 	private static final Map<Integer, CodeBlock> codeBlocks = Collections.synchronizedMap(new HashMap<Integer, CodeBlock>());
 	// A fast lookup array for executables (to improve the performance of the Allegrex jalr instruction)
@@ -999,10 +1000,29 @@ public class RuntimeContext {
 
     public static void invalidateAll() {
         if (compilerEnabled) {
-    		log.debug("RuntimeContext.invalidateAll");
-            codeBlocks.clear();
-    		Arrays.fill(fastExecutableLookup, null);
-            Compiler.getInstance().invalidateAll();
+    		if (invalidateAllCodeBlocks) {
+    			// Simple method: invalidate all the code blocks,
+    			// independently if their were modified or not.
+        		log.debug("RuntimeContext.invalidateAll simple");
+                codeBlocks.clear();
+        		Arrays.fill(fastExecutableLookup, null);
+                Compiler.getInstance().invalidateAll();
+    		} else {
+    			// Advanced method: check all the code blocks for a modification
+    			// of their opcodes and invalidate only those code blocks that
+    			// have been modified.
+        		log.debug("RuntimeContext.invalidateAll advanced");
+        		Compiler compiler = Compiler.getInstance();
+	    		for (CodeBlock codeBlock : codeBlocks.values()) {
+	    			if (log.isDebugEnabled()) {
+	    				log.debug(String.format("invalidateAll %s: opcodes changed %b", codeBlock, codeBlock.areOpcodesChanged()));
+	    			}
+
+	    			if (codeBlock.areOpcodesChanged()) {
+	    				compiler.invalidateCodeBlock(codeBlock);
+	    			}
+	    		}
+    		}
     	}
     }
 
@@ -1012,21 +1032,19 @@ public class RuntimeContext {
         		log.debug(String.format("RuntimeContext.invalidateRange(addr=0x%08X, size=%d)", addr, size));
         	}
 
-        	// Invalidate the code blocks located in the given range
+        	// Check if the code blocks located in the given range have to be invalidated
+    		Compiler compiler = Compiler.getInstance();
         	for (CodeBlock codeBlock : codeBlocks.values()) {
-        		if (codeBlock.getLowestAddress() >= addr && codeBlock.getLowestAddress() < addr + size) {
-        			// Code block starts in the invalidated range
-        			Compiler.getInstance().invalidateCodeBlock(codeBlock);
-        		} else if (codeBlock.getHighestAddress() >= addr && codeBlock.getHighestAddress() < addr + size) {
-        			// Code block ends in the invalidated range
-        			Compiler.getInstance().invalidateCodeBlock(codeBlock);
-        		} else if (codeBlock.getLowestAddress() < addr && codeBlock.getHighestAddress() >= addr + size) {
-        			// Code block overlaps the invalidated range
-        			Compiler.getInstance().invalidateCodeBlock(codeBlock);
-        		} else if (size == 0x4000 && codeBlock.getHighestAddress() >= addr) {
-        			// Some applications do not clear more than 16KB as this is the size of the complete Instruction Cache.
-        			// Be conservative in this case and clear any code block above the given address.
-        			Compiler.getInstance().invalidateCodeBlock(codeBlock);
+    			if (size == 0x4000 && codeBlock.getHighestAddress() >= addr) {
+	    			// Some applications do not clear more than 16KB as this is the size of the complete Instruction Cache.
+	    			// Be conservative in this case and check any code block above the given address.
+	    			if (codeBlock.areOpcodesChanged()) {
+	    				compiler.invalidateCodeBlock(codeBlock);
+	    			}
+    			} else if (codeBlock.isOverlappingWithAddressRange(addr, size)) {
+        			if (codeBlock.areOpcodesChanged()) {
+        				compiler.invalidateCodeBlock(codeBlock);
+        			}
         		}
         	}
     	}

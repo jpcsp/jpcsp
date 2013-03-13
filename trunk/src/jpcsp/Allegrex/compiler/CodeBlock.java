@@ -60,6 +60,7 @@ public class CodeBlock {
 	private boolean interpreted = false;
 	private Instruction[] interpretedInstructions;
 	private int[] interpretedOpcodes;
+	private MemoryRanges memoryRanges = new MemoryRanges();
 
 	public CodeBlock(int startAddress, int instanceCount) {
 		this.startAddress = startAddress;
@@ -72,7 +73,7 @@ public class CodeBlock {
 
 	public void addInstruction(int address, int opcode, Instruction insn, boolean isBranchTarget, boolean isBranching, int branchingTo) {
 		if (Compiler.log.isTraceEnabled()) {
-			Compiler.log.trace("CodeBlock.addInstruction 0x" + Integer.toHexString(address).toUpperCase() + " - " + insn.disasm(address, opcode));
+			Compiler.log.trace(String.format("CodeBlock.addInstruction 0x%X - %s", address, insn.disasm(address, opcode)));
 		}
 
 		CodeInstruction codeInstruction = new CodeInstruction(address, opcode, insn, isBranchTarget, isBranching, branchingTo);
@@ -99,6 +100,8 @@ public class CodeBlock {
 		if (address > highestAddress) {
 			highestAddress = address;
 		}
+
+		memoryRanges.addAddress(address);
 	}
 
 	public void setIsBranchTarget(int address) {
@@ -367,6 +370,8 @@ public class CodeBlock {
     }
 
     private void prepare(CompilerContext context, int methodMaxInstructions) {
+    	memoryRanges.updateValues();
+
     	scanNativeCodeSequences(context);
 
     	if (codeInstructions.size() > methodMaxInstructions) {
@@ -599,6 +604,18 @@ public class CodeBlock {
 
 	public void setInterpretedOpcodes(int[] interpretedOpcodes) {
 		this.interpretedOpcodes = interpretedOpcodes;
+	}
+
+	public boolean areOpcodesChanged() {
+		if (isInterpreted()) {
+			return false;
+		}
+
+		return memoryRanges.areValuesChanged();
+	}
+
+	public boolean isOverlappingWithAddressRange(int address, int size) {
+		return memoryRanges.isOverlappingWithAddressRange(address, size);
 	}
 
 	@Override
