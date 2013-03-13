@@ -9719,7 +9719,7 @@ public void compile(ICompilerContext context, int insn) {
 	int vsize = context.getVsize();
 	int vd = context.getVdRegisterIndex();
 	for (int i = 0; i < vsize; i++) {
-		int id = (vd + i) % vsize;
+		int id = (vd + i) & 3;
 		for (int n = 0; n < vsize; n++) {
 			context.prepareVdForStore(vsize, vd + i, n);
 			context.getMethodVisitor().visitInsn(id == n ? Opcodes.FCONST_1 : Opcodes.FCONST_0);
