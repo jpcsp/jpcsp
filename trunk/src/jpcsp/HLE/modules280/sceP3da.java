@@ -98,6 +98,8 @@ public class sceP3da extends HLEModule {
         p3daChannelsNum = channelsNum;
         p3daSamplesNum = samplesNum;
 
-		return 0;
+        Modules.ThreadManForUserModule.hleKernelDelayThread(600, false);
+
+        return 0;
 	}
 }
