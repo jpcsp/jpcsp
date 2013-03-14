@@ -895,13 +895,27 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
-		context.prepareRdForStore();
-		context.loadRs();
-		context.loadRt();
-		context.getMethodVisitor().visitInsn(Opcodes.IOR);
-		context.loadImm(-1);
-		context.getMethodVisitor().visitInsn(Opcodes.IXOR);
-		context.storeRd();
+		if (context.isRsRegister0() && context.isRtRegister0()) {
+			// nor $zr, $zr is equivalent to storing -1
+			context.storeRd(-1);
+		} else {
+			context.prepareRdForStore();
+			if (context.isRsRegister0()) {
+				context.loadRt();
+			} else {
+				context.loadRs();
+				if (!context.isRtRegister0()) {
+					// OR-ing a register with itself is a simple move.
+					if (context.getRsRegisterIndex() != context.getRtRegisterIndex()) {
+						context.loadRt();
+						context.getMethodVisitor().visitInsn(Opcodes.IOR);
+					}
+				}
+			}
+			context.loadImm(-1);
+			context.getMethodVisitor().visitInsn(Opcodes.IXOR);
+			context.storeRd();
+		}
 	}
 }
 @Override
@@ -9722,10 +9736,9 @@ public void compile(ICompilerContext context, int insn) {
 	int vsize = context.getVsize();
 	int vd = context.getVdRegisterIndex();
 	for (int i = 0; i < vsize; i++) {
-		int id = (vd + i) & 3;
 		for (int n = 0; n < vsize; n++) {
 			context.prepareVdForStore(vsize, vd + i, n);
-			context.getMethodVisitor().visitInsn(id == n ? Opcodes.FCONST_1 : Opcodes.FCONST_0);
+			context.getMethodVisitor().visitInsn(i == n ? Opcodes.FCONST_1 : Opcodes.FCONST_0);
 			context.storeVd(vsize, vd + i, n);
 		}
 		context.flushPfxCompiled(vsize, vd + i, true);
