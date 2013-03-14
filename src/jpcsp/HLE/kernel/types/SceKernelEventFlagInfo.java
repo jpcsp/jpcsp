@@ -56,6 +56,6 @@ public class SceKernelEventFlagInfo extends pspAbstractMemoryMappedStructureVari
 
 	@Override
 	public String toString() {
-		return String.format("SceKernelEventFlagInfo(uid=0x%X, name='%s', attr=0x%X, initPattern=%d, currentPattern=%d, numWaitThreads=%d)", uid, name, attr, initPattern, currentPattern, getNumWaitThreads());
+		return String.format("SceKernelEventFlagInfo(uid=0x%X, name='%s', attr=0x%X, initPattern=0x%X, currentPattern=0x%X, numWaitThreads=%d)", uid, name, attr, initPattern, currentPattern, getNumWaitThreads());
 	}
 }
