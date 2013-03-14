@@ -42,6 +42,7 @@ public class AutoTestsRunner {
 		@Override public void startWindowDialog(Window window) { }
 		@Override public void startBackgroundWindowDialog(Window window) { }
 		@Override public Rectangle getCaptureRectangle() { return null; }
+		@Override public void onUmdChange() { }
 	}
 	
 	public AutoTestsRunner() {

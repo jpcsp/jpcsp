@@ -206,6 +206,24 @@ public class sceUmdUser extends HLEModule {
         return 0;
     }
 
+    protected int getNotificationArg() {
+    	int notifyArg;
+
+    	if (iso != null) {
+        	notifyArg = PSP_UMD_PRESENT | PSP_UMD_READABLE;
+        	// The PSP is returning 0x32 instead of 0x22 when
+        	//     sceKernelSetCompiledSdkVersion()
+        	// has been called (i.e. when sceKernelGetCompiledSdkVersion() != 0).
+        	if (Modules.SysMemUserForUserModule.hleKernelGetCompiledSdkVersion() != 0) {
+        		notifyArg |= PSP_UMD_READY;
+        	}
+        } else {
+        	notifyArg = PSP_UMD_NOT_PRESENT | PSP_UMD_NOT_READY;
+        }
+
+    	return notifyArg;
+    }
+
     @HLEFunction(nid = 0x46EBB729, version = 150)
     public boolean sceUmdCheckMedium() {
         return iso != null;
@@ -218,18 +236,7 @@ public class sceUmdUser extends HLEModule {
 
         // Notify the callback.
         // The callback will be executed at the next sceXXXXCB() syscall.
-        int notifyArg;
-        if (iso != null) {
-        	notifyArg = PSP_UMD_PRESENT | PSP_UMD_READABLE;
-        	// The PSP is returning 0x32 instead of 0x22 when
-        	//     sceKernelSetCompiledSdkVersion()
-        	// has been called (i.e. when sceKernelGetCompiledSdkVersion() != 0).
-        	if (Modules.SysMemUserForUserModule.hleKernelGetCompiledSdkVersion() != 0) {
-        		notifyArg |= PSP_UMD_READY;
-        	}
-        } else {
-        	notifyArg = PSP_UMD_NOT_PRESENT | PSP_UMD_NOT_READY;
-        }
+        int notifyArg = getNotificationArg();
     	Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, notifyArg);
 
     	checkWaitingThreads();
