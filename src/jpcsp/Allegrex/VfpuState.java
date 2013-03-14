@@ -2948,9 +2948,8 @@ public class VfpuState extends FpuState {
     // VFPU6:VMIDT
     public void doVMIDT(int vsize, int vd) {
         for (int i = 0; i < vsize; ++i) {
-            int id = (vd + i) & 3;
             for (int j = 0; j < vsize; ++j) {
-                v3[j] = (id == j) ? 1.0f : 0.0f;
+                v3[j] = (i == j) ? 1.0f : 0.0f;
             }
             saveVd(vsize, vd + i, v3);
         }
