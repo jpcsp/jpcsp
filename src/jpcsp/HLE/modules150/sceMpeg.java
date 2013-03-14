@@ -2243,6 +2243,20 @@ public class sceMpeg extends HLEModule {
         if (checkMediaEngineState()) {
             if (me.stepVideo(mpegAudioChannels)) {
             	packetsConsumed = meChannel.getReadLength() / mpegRingbuffer.getPacketSize();
+
+            	// The MediaEngine is already consuming all the remaining
+            	// packets when approaching the end of the video. The PSP
+            	// is only consuming the last packet when reaching the end,
+            	// not before.
+            	// Consuming all the remaining packets?
+            	if (mpegRingbuffer.getFreePackets() + packetsConsumed >= mpegRingbuffer.getTotalPackets()) {
+            		// Having not yet reached the last timestamp?
+            		if (mpegLastTimestamp > 0 && mpegAvcAu.pts < mpegLastTimestamp) {
+            			// Do not yet consume all the remaining packets, leave 2 packets
+            			packetsConsumed = mpegRingbuffer.getTotalPackets() - mpegRingbuffer.getFreePackets() - 2;
+            		}
+            	}
+
             	meChannel.setReadLength(meChannel.getReadLength() - packetsConsumed * mpegRingbuffer.getPacketSize());
             } else {
             	// Consume all the remaining packets
