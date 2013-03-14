@@ -1427,8 +1427,41 @@ public class IoFileMgrForUser extends HLEModule {
     }
 
     public IVirtualFileSystem getVirtualFileSystem(String pspfilename, StringBuilder localFileName) {
-        String absoluteFileName = getAbsoluteFileName(pspfilename);
+    	boolean umdRegistered = false;
+    	boolean msRegistered = false;
+
+    	// This call wants to use the VFS.
+    	// If the UMD has not been registered, register it just for this call
+    	if (!useVirtualFileSystem) {
+			if (iso != null && Modules.sceUmdUserModule.isUmdActivated()) {
+				IVirtualFileSystem vfsIso = new UmdIsoVirtualFileSystem(iso);
+	        	vfsManager.register("disc0", vfsIso);
+	        	vfsManager.register("umd0", vfsIso);
+	        	vfsManager.register("umd1", vfsIso);
+	        	umdRegistered = true;
+			}
+
+			vfsManager.register("ms0", new LocalVirtualFileSystem("ms0/"));
+	        vfsManager.register("fatms0", new LocalVirtualFileSystem("ms0/"));
+	        vfsManager.register("flash0", new LocalVirtualFileSystem("flash0/"));
+	        vfsManager.register("mscmhc0", new MemoryStickVirtualFileSystem());
+	        msRegistered = true;
+    	}
+
+		String absoluteFileName = getAbsoluteFileName(pspfilename);
         IVirtualFileSystem vfs = vfsManager.getVirtualFileSystem(absoluteFileName, localFileName);
+
+        if (umdRegistered) {
+			vfsManager.unregister("disc0");
+			vfsManager.unregister("umd0");
+			vfsManager.unregister("umd1");
+        }
+        if (msRegistered) {
+			vfsManager.unregister("ms0");
+	        vfsManager.unregister("fatms0");
+	        vfsManager.unregister("flash0");
+	        vfsManager.unregister("mscmhc0");
+        }
 
         return vfs;
     }

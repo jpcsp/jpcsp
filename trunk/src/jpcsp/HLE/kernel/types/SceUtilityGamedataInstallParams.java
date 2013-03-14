@@ -21,10 +21,12 @@ public class SceUtilityGamedataInstallParams extends pspAbstractMemoryMappedStru
     public int unk1;
     public String gameName;
     public String dataName;
-    public int unk2;
     public String gamedataParamsGameTitle;
     public String gamedataParamsDataTitle;
     public String gamedataParamsData;
+    public int unk2;
+    public int unkResult1;
+    public int unkResult2;
 
     @Override
     protected void read() {
@@ -35,12 +37,15 @@ public class SceUtilityGamedataInstallParams extends pspAbstractMemoryMappedStru
         unk1 = read32();
         gameName = readStringNZ(13);
         readUnknown(3);
-        dataName = readStringNZ(13);
-        readUnknown(3);
-        unk2 = read32();
+        dataName = readStringNZ(20);
         gamedataParamsGameTitle = readStringNZ(128);
         gamedataParamsDataTitle = readStringNZ(128);
-        gamedataParamsData = readStringNZ(1112);
+        gamedataParamsData = readStringNZ(1024);
+        unk2 = read8();
+        readUnknown(7);
+        unkResult1 = read32();
+        unkResult2 = read32();
+        readUnknown(48);
     }
 
     @Override
@@ -51,12 +56,15 @@ public class SceUtilityGamedataInstallParams extends pspAbstractMemoryMappedStru
         write32(unk1);
         writeStringNZ(13, gameName);
         writeUnknown(3);
-        writeStringNZ(13, dataName);
-        writeUnknown(3);
-        write32(unk2);
+        writeStringNZ(20, dataName);
         writeStringNZ(128, gamedataParamsGameTitle);
         writeStringNZ(128, gamedataParamsDataTitle);
-        writeStringNZ(1112, gamedataParamsData);
+        writeStringNZ(1024, gamedataParamsData);
+        write8((byte) unk2);
+        writeUnknown(7);
+        write32(unkResult1);
+        write32(unkResult2);
+        writeUnknown(48);
     }
 
     @Override
@@ -66,8 +74,6 @@ public class SceUtilityGamedataInstallParams extends pspAbstractMemoryMappedStru
 
     @Override
     public String toString() {
-        // TODO
-        StringBuilder sb = new StringBuilder();
-        return sb.toString();
+    	return String.format("unk1=0x%08X, gameName='%s', dataName='%s', gameTitle='%s', dataTitle='%s', data='%s', unk2=0x%02X", unk1, gameName, dataName, gamedataParamsGameTitle, gamedataParamsDataTitle, gamedataParamsData, unk2);
     }
 }

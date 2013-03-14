@@ -79,6 +79,8 @@ import jpcsp.Resource;
 import jpcsp.State;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.VFS.IVirtualFile;
+import jpcsp.HLE.VFS.IVirtualFileSystem;
 import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.kernel.types.SceFontInfo;
 import jpcsp.HLE.kernel.types.SceIoStat;
@@ -1507,6 +1509,58 @@ public class sceUtility extends HLEModule {
 
 		@Override
 		protected boolean executeUpdateVisible() {
+			IoFileMgrForUser fileMgr = Modules.IoFileMgrForUserModule;
+			StringBuilder sourceLocalFileName = new StringBuilder();
+			IVirtualFileSystem ivfs = fileMgr.getVirtualFileSystem("disc0:/PSP_GAME/INSDIR", sourceLocalFileName);
+			if (ivfs != null) {
+				String[] fileNames = ivfs.ioDopen(sourceLocalFileName.toString());
+				if (fileNames != null) {
+					ivfs.ioDclose(sourceLocalFileName.toString());
+
+					StringBuilder destinationLocalFileName = new StringBuilder();
+					IVirtualFileSystem ovfs = fileMgr.getVirtualFileSystem(String.format("%s%s%s", SceUtilitySavedataParam.savedataPath, gamedataInstallParams.gameName, gamedataInstallParams.dataName), destinationLocalFileName);
+					if (ovfs != null) {
+						int numberFiles = 0;
+						for (int i = 0; i < fileNames.length; i++) {
+							String fileName = fileNames[i];
+							// Skip iso special files
+							if (!fileName.equals(".") && !fileName.equals("\01")) {
+								String sourceFileName = String.format("%s/%s", sourceLocalFileName.toString(), fileName);
+								IVirtualFile ivf = ivfs.ioOpen(sourceFileName, IoFileMgrForUser.PSP_O_RDONLY, 0);
+								if (ivf != null) {
+									String destinationFileName = String.format("%s/%s", destinationLocalFileName.toString(), fileName);
+									IVirtualFile ovf = ovfs.ioOpen(destinationFileName, IoFileMgrForUser.PSP_O_WRONLY | IoFileMgrForUser.PSP_O_CREAT, 0777);
+									if (ovf != null) {
+										if (log.isDebugEnabled()) {
+											log.debug(String.format("GamedataInstall: copying file disc0:/%s to ms0:/%s", sourceFileName, destinationFileName));
+										}
+										byte[] buffer = new byte[512 * 1024];
+										long restLength = ivf.length();
+										while (restLength > 0) {
+											int length = buffer.length;
+											if (length > restLength) {
+												length = (int) restLength;
+											}
+											length = ivf.ioRead(buffer, 0, length);
+											ovf.ioWrite(buffer, 0, length);
+
+											restLength -= length;
+										}
+										ovf.ioClose();
+										numberFiles++;
+									}
+									ivf.ioClose();
+								}
+							}
+						}
+						// TODO Not sure about the values to return here
+						gamedataInstallParams.unkResult1 = numberFiles;
+						gamedataInstallParams.unkResult2 = numberFiles;
+						gamedataInstallParams.write(paramsAddr);
+					}
+				}
+			}
+
 			return false;
 		}
     }
