@@ -50,7 +50,10 @@ public class UmdIsoFile extends SeekableInputStream {
         // Truncate the file length in that case to the available sectors.
         // This might be some sort of copy protection?
         // E.g. "Kamen no Maid Guy: Boyoyon Battle Royale"
-        int endSectorNumber = this.startSectorNumber + (int) ((lengthInBytes + sectorLength - 1) / sectorLength);
+        int endSectorNumber = this.startSectorNumber + ((int) ((lengthInBytes + sectorLength - 1) / sectorLength));
+        if (lengthInBytes > 0) {
+        	endSectorNumber--;
+        }
         if (endSectorNumber >= reader.getNumSectors()) {
         	endSectorNumber = reader.getNumSectors() - 1;
         	lengthInBytes = (endSectorNumber - startSector + 1) * sectorLength;
