@@ -201,6 +201,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         initJide();
         createComponents();
 
+        onUmdChange();
+
         State.fileLogger.setLocation(getLocation().x + 488, getLocation().y + 18);
         setTitle(MetaInformation.FULL_NAME);
 
@@ -256,6 +258,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         OpenFile = new javax.swing.JMenuItem();
         OpenMemStick = new javax.swing.JMenuItem();
         RecentMenu = new javax.swing.JMenu();
+        switchUmd = new javax.swing.JMenuItem();
         jSeparator2 = new javax.swing.JSeparator();
         SaveSnap = new javax.swing.JMenuItem();
         LoadSnap = new javax.swing.JMenuItem();
@@ -426,6 +429,17 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         RecentMenu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/RecentIcon.png"))); // NOI18N
         RecentMenu.setText(Resource.get("loadrecent"));
         FileMenu.add(RecentMenu);
+
+        switchUmd.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadUmdIcon.png"))); // NOI18N
+        switchUmd.setText(Resource.get("switchUmd"));
+        switchUmd.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                switchUmdActionPerformed(evt);
+            }
+        });
+        FileMenu.add(switchUmd);
+
         FileMenu.add(jSeparator2);
 
         SaveSnap.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.SHIFT_MASK));
@@ -1665,7 +1679,41 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         }
     }
 }//GEN-LAST:event_openUmdActionPerformed
-    /** Don't call this directly, see loadUMD(File file) */
+
+private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_switchUmdActionPerformed
+    if (Settings.getInstance().readBool("emu.umdbrowser")) {
+    	List<File> umdPaths = new LinkedList<File>();
+    	umdPaths.add(new File(Settings.getInstance().readString("emu.umdpath") + "/"));
+    	for (int i = 1; true; i++) {
+    		String umdPath = Settings.getInstance().readString(String.format("emu.umdpath.%d", i), null);
+    		if (umdPath == null) {
+    			break;
+    		}
+    		umdPaths.add(new File(umdPath + "/"));
+    	}
+        umdbrowser = new UmdBrowser(this, umdPaths.toArray(new File[umdPaths.size()]));
+        umdbrowser.setSwitchingUmd(true);
+        umdbrowser.setVisible(true);
+    } else {
+        final JFileChooser fc = makeJFileChooser();
+        String lastOpenedFolder = Settings.getInstance().readString("gui.lastOpenedUmdFolder");
+        if (lastOpenedFolder != null) {
+        	fc.setCurrentDirectory(new File(lastOpenedFolder));
+        }
+        fc.setDialogTitle(Resource.get("switchUmd"));
+        int returnVal = fc.showOpenDialog(this);
+
+        if (userChooseSomething(returnVal)) {
+        	Settings.getInstance().writeString("gui.lastOpenedUmdFolder", fc.getSelectedFile().getParent());
+            File file = fc.getSelectedFile();
+            switchUMD(file);
+        } else {
+            return;
+        }
+    }
+}//GEN-LAST:event_switchUmdActionPerformed
+
+	/** Don't call this directly, see loadUMD(File file) */
     private boolean loadUMD(UmdIsoReader iso, String bootPath) throws IOException {
         boolean success = false;
         try {
@@ -1727,6 +1775,25 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             } catch (IOException vioe) {
                 // Ignore.
             }
+        } catch (IOException ioe) {
+            // Ignore.
+        }
+    }
+
+    public void switchUMD(File file) {
+        try {
+            // Raising an exception here means the ISO/CSO is not a PSP_GAME.
+            UmdIsoReader iso = new UmdIsoReader(file.getPath());
+            iso.getFile("PSP_GAME/param.sfo");
+
+            Emulator.log.info(String.format("Switching to the UMD %s", file));
+
+            Modules.IoFileMgrForUserModule.setIsoReader(iso);
+            Modules.sceUmdUserModule.setIsoReader(iso);
+
+            Modules.sceUmdUserModule.hleUmdSwitch();
+        } catch (FileNotFoundException e) {
+            // Ignore.
         } catch (IOException ioe) {
             // Ignore.
         }
@@ -2429,6 +2496,12 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
         PauseButton.setSelected(Emulator.run && Emulator.pause);
     }
 
+    @Override
+    public void onUmdChange() {
+        // Only enable the menu entry "Switch UMD" when sceUmdReplacePermit has been called by the application.
+        switchUmd.setEnabled(Modules.sceUmdUserModule.isUmdAllowReplace());
+    }
+
     /** set the FPS portion of the title */
     @Override
 	public void setMainTitle(String message) {
@@ -2646,6 +2719,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JCheckBoxMenuItem noneCheck;
     private javax.swing.JCheckBoxMenuItem oneTimeResize;
     private javax.swing.JMenuItem openUmd;
+    private javax.swing.JMenuItem switchUmd;
     private javax.swing.ButtonGroup resGroup;
     private javax.swing.ButtonGroup frameSkipGroup;
     private javax.swing.ButtonGroup clockSpeedGroup;

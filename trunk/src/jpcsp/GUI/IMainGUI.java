@@ -40,4 +40,5 @@ public interface IMainGUI {
 	void endWindowDialog();
 
 	Rectangle getCaptureRectangle();
+	void onUmdChange();
 }

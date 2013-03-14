@@ -18,27 +18,53 @@ package jpcsp.HLE.modules200;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_UMD_NOT_READY;
 
+import jpcsp.Emulator;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 
 @HLELogging
 public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
-    protected boolean umdAllowReplace;
+    private boolean umdAllowReplace;
 
-    @HLEFunction(nid = 0x87533940, version = 200)
+	public boolean isUmdAllowReplace() {
+		return umdAllowReplace;
+	}
+
+	private void setUmdAllowReplace(boolean umdAllowReplace) {
+		this.umdAllowReplace = umdAllowReplace;
+
+		// Update the visibility of the "Switch UMD" menu item
+		Emulator.getMainGUI().onUmdChange();
+	}
+
+	@Override
+	public void start() {
+		setUmdAllowReplace(false);
+
+		super.start();
+	}
+
+	public void hleUmdSwitch() {
+		int notifyArg = getNotificationArg() | PSP_UMD_CHANGED;
+    	Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, notifyArg);
+	}
+
+	@HLEFunction(nid = 0x87533940, version = 200)
     public int sceUmdReplaceProhibit() {
         if ((getUmdStat() & PSP_UMD_READY) != PSP_UMD_READY || (getUmdStat() & PSP_UMD_READABLE) != PSP_UMD_READABLE) {
             return ERROR_UMD_NOT_READY;
         }
 
-        umdAllowReplace = false;
+        setUmdAllowReplace(false);
 
         return 0;
     }
 
     @HLEFunction(nid = 0xCBE9F02A, version = 200)
     public int sceUmdReplacePermit() {
-        umdAllowReplace = true;
+    	setUmdAllowReplace(true);
 
         return 0;
     }

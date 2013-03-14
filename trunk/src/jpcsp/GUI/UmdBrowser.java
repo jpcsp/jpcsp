@@ -295,6 +295,7 @@ public class UmdBrowser extends JDialog {
 	private UmdBrowserPmf umdBrowserPmf;
 	private UmdBrowserSound umdBrowserSound;
 	private int lastRowIndex = -1;
+	private boolean isSwitchingUmd;
 
 	public UmdBrowser(MainGUI gui, File[] paths) {
 		super(gui);
@@ -664,12 +665,19 @@ public class UmdBrowser extends JDialog {
 		Settings.getInstance().writeWindowSize(windowNameForSettings, getSize());
 
 		File selectedFile = programs[table.getSelectedRow()];
-        gui.loadUMD(selectedFile);
+		if (isSwitchingUmd()) {
+			gui.switchUMD(selectedFile);
 
-		setVisible(false);
-		dispose();
+			setVisible(false);
+			dispose();
+		} else {
+			gui.loadUMD(selectedFile);
 
-		gui.loadAndRun();
+			setVisible(false);
+			dispose();
+
+			gui.loadAndRun();
+		}
 	}
 
 	@Override
@@ -700,7 +708,15 @@ public class UmdBrowser extends JDialog {
 				loadUmdInfo(i);
 			}
 		}
+	}
 
+	public boolean isSwitchingUmd() {
+		return isSwitchingUmd;
+	}
+
+	public void setSwitchingUmd(boolean isSwitchingUmd) {
+		this.isSwitchingUmd = isSwitchingUmd;
+		loadButton.setText(Resource.get(isSwitchingUmd() ? "switch" : "load"));
 	}
 
 	private class PmfBorder extends AbstractBorder {
