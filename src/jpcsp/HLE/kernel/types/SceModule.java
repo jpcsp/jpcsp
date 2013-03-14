@@ -162,6 +162,9 @@ public class SceModule {
     /** For use when unloading modules. */
     public void free() {
     	for (SysMemInfo sysMemInfo : allocatedMemory) {
+    		// Overwrite the allocated memory so that its code can be invalidated
+    		Memory.getInstance().memset(sysMemInfo.addr, (byte) -1, sysMemInfo.size);
+
     		Modules.SysMemUserForUserModule.free(sysMemInfo);
     	}
     	allocatedMemory.clear();
