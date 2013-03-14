@@ -934,6 +934,366 @@ void __attribute__((noinline)) vexp2q(ScePspFVector4 *v0, ScePspFVector4 *v1)
    : "+m" (*v0) : "m" (*v1));
 }
 
+void __attribute__((noinline)) vmidtq1(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vmidt.q M000\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vmidtq2(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vmidt.q E000\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vmidtt1(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vmidt.t M000\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vmidtt2(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vmidt.t E000\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vmidtt3(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vmidt.t M001\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vmidtt4(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vmidt.t E001\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vmidtt5(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vmidt.t M010\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vmidtt6(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vmidt.t E010\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vmidtp1(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vmidt.p M000\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vmidtp2(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vmidt.p E000\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vmidtp3(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vmidt.p M002\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vmidtp4(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vmidt.p E002\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vmidtp5(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vmidt.p M020\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vmidtp6(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vmidt.p E020\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vidtp1(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vidt.p C000\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vidtp2(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vidt.p C002\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vidtp3(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vidt.p R000\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vidtp4(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vidt.p R001\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vidtp5(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vidt.p R020\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vidtp6(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vidt.p R021\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vidtq1(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vidt.q C000\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vidtq2(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vidt.q C010\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vidtq3(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vidt.q R000\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
+void __attribute__((noinline)) vidtq4(ScePspFMatrix4 *m0)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+   "vidt.q R001\n"
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0));
+}
+
 
 ScePspFVector4 v0;
 ScePspFVector4 v1;
@@ -941,6 +1301,7 @@ ScePspFVector4 v2;
 ScePspFMatrix4 m0;
 ScePspFMatrix4 m1;
 ScePspFMatrix4 m2;
+ScePspFMatrix4 m3;
 
 void initValues()
 {
@@ -1020,12 +1381,32 @@ void initValues()
 	m2.w.y = 4;
 	m2.w.z = -31;
 	m2.w.w = 18;
+
+	m3.x.x = 2;
+	m3.x.y = 2;
+	m3.x.z = 2;
+	m3.x.w = 2;
+
+	m3.y.x = 2;
+	m3.y.y = 2;
+	m3.y.z = 2;
+	m3.y.w = 2;
+
+	m3.z.x = 2;
+	m3.z.y = 2;
+	m3.z.z = 2;
+	m3.z.w = 2;
+
+	m3.w.x = 2;
+	m3.w.y = 2;
+	m3.w.z = 2;
+	m3.w.w = 2;
 }
 
 void startNewScreen()
 {
 	pspDebugScreenInit();
-	printf("Press Cross/Square/Circle/Left to start test group 1, 2, 3, 4\n");
+	printf("Press Cross/Square/Circle/Left/Right to start test group 1, 2, 3, 4, 5\n");
 	printf("Press Triangle to exit\n");
 }
 
@@ -1449,6 +1830,179 @@ int main(int argc, char *argv[])
 			}
 		}
 
+		if (buttonDown & PSP_CTRL_RIGHT)
+		{
+			startNewScreen();
+
+			initValues();
+			vmidtq1(&m3);
+			printf("vmidt.q M000: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vmidtq2(&m3);
+			printf("vmidt.q E000: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vmidtt1(&m3);
+			printf("vmidt.t M000: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vmidtt2(&m3);
+			printf("vmidt.t E000: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vmidtt3(&m3);
+			printf("vmidt.t M001: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vmidtt4(&m3);
+			printf("vmidt.t E001: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vmidtt5(&m3);
+			printf("vmidt.t M010: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vmidtt6(&m3);
+			printf("vmidt.t E010: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vmidtp1(&m3);
+			printf("vmidt.p M000: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vmidtp2(&m3);
+			printf("vmidt.p E000: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vmidtp3(&m3);
+			printf("vmidt.p M002: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vmidtp4(&m3);
+			printf("vmidt.p E002: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vmidtp5(&m3);
+			printf("vmidt.p M020: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vmidtp6(&m3);
+			printf("vmidt.p E020: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vidtp1(&m3);
+			printf("vidt.p  C000: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vidtp2(&m3);
+			printf("vidt.p  C002: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vidtp3(&m3);
+			printf("vidt.p  R000: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vidtp4(&m3);
+			printf("vidt.p  R001: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vidtp5(&m3);
+			printf("vidt.p  R020: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vidtp6(&m3);
+			printf("vidt.p  R021: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vidtq1(&m3);
+			printf("vidt.q  C000: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vidtq2(&m3);
+			printf("vidt.q  C010: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vidtq3(&m3);
+			printf("vidt.q  R000: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vidtq4(&m3);
+			printf("vidt.q  R001: %.0f %.0f %.0f %.0f", m3.x.x, m3.x.y, m3.x.z, m3.x.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
+			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
+			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+		}
+
 		if (buttonDown & PSP_CTRL_TRIANGLE)
 		{
 			done = 1;
@@ -1459,6 +2013,7 @@ int main(int argc, char *argv[])
 	}
 
 	sceKernelExitGame();
+
 	return 0;
 }
 
