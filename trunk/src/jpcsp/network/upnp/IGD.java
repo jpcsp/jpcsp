@@ -92,11 +92,15 @@ public class IGD {
 	}
 
 	public void addPortMapping(UPnP upnp, String remoteHost, int externalPort, String protocol, int internalPort, String internalClient, String description, int leaseDuration) {
-		upnp.addPortMapping(buildUrl(first.controlUrl), first.serviceType, remoteHost, externalPort, protocol, internalPort, internalClient, description, leaseDuration);
+		if (first != null) {
+			upnp.addPortMapping(buildUrl(first.controlUrl), first.serviceType, remoteHost, externalPort, protocol, internalPort, internalClient, description, leaseDuration);
+		}
 	}
 
 	public void deletePortMapping(UPnP upnp, String remoteHost, int externalPort, String protocol) {
-		upnp.deletePortMapping(buildUrl(first.controlUrl), first.serviceType, remoteHost, externalPort, protocol);
+		if (first != null) {
+			upnp.deletePortMapping(buildUrl(first.controlUrl), first.serviceType, remoteHost, externalPort, protocol);
+		}
 	}
 
 	private void parseIGDdata(Document description) {
