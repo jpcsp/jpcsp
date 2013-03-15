@@ -3175,6 +3175,28 @@
 089A44E4:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpy">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memcpy</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+08A7F504:[00803825]: or         $a3, $a0, $zr <=> move $a3, $a0
+08A7F508:[00801025]: or         $v0, $a0, $zr <=> move $v0, $a0
+08A7F50C:[00C04025]: or         $t0, $a2, $zr <=> move $t0, $a2
+08A7F510:[24C4FFFF]: addiu      $a0, $a2, -1
+08A7F514:[11000009]: beq        $t0, $zr, 0x08A7F53C
+08A7F518:[00803025]: or         $a2, $a0, $zr <=> move $a2, $a0
+08A7F51C:[80A80000]: lb         $t0, 0($a1)
+08A7F520:[24A50001]: addiu      $a1, $a1, 1
+08A7F524:[A0E80000]: sb         $t0, 0($a3)
+08A7F528:[00804025]: or         $t0, $a0, $zr <=> move $t0, $a0
+08A7F52C:[24C4FFFF]: addiu      $a0, $a2, -1
+08A7F530:[24E70001]: addiu      $a3, $a3, 1
+08A7F534:[1500FFF9]: bne        $t0, $zr, 0x08A7F51C
+08A7F538:[00803025]: or         $a2, $a0, $zr <=> move $a2, $a0
+08A7F53C:[03E00008]: jr         $ra
+ 08A7F540:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="memset">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
 		<IsReturning>true</IsReturning>
@@ -3810,6 +3832,25 @@
 08A50050:[486000FF]: Unimplemented MFVC imm7=127, rt=0
 08A50054:[03E00008]: jr         $ra
 08A50058:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memset">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+08A7F5D8:[00C04825]: or         $t1, $a2, $zr <=> move $t1, $a2
+08A7F5DC:[24C7FFFF]: addiu      $a3, $a2, -1
+08A7F5E0:[00804025]: or         $t0, $a0, $zr <=> move $t0, $a0
+08A7F5E4:[11200007]: beq        $t1, $zr, 0x08A7F604
+08A7F5E8:[00E03025]: or         $a2, $a3, $zr <=> move $a2, $a3
+08A7F5EC:[00E04825]: or         $t1, $a3, $zr <=> move $t1, $a3
+08A7F5F0:[A1050000]: sb         $a1, 0($t0)
+08A7F5F4:[24C7FFFF]: addiu      $a3, $a2, -1
+08A7F5F8:[25080001]: addiu      $t0, $t0, 1
+08A7F5FC:[1520FFFB]: bne        $t1, $zr, 0x08A7F5EC
+08A7F600:[00E03025]: or         $a2, $a3, $zr <=> move $a2, $a3
+08A7F604:[03E00008]: jr         $ra
+08A7F608:[00801025]: or         $v0, $a0, $zr <=> move $v0, $a0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
 	<NativeCodeSequence name="bzero">
@@ -9418,8 +9459,8 @@
 0898EF20:[00002821]: addu       $a1, $zr, $zr <=> li $a1, 0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
-	<NativeCodeSequence name="LongIntegerMult">
-		<Class>jpcsp.Allegrex.compiler.nativeCode.LongInteger</Class>
+	<NativeCodeSequence name="ULongIntegerMult">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.ULongInteger</Class>
 		<Method>mult</Method>
 		<IsReturning>true</IsReturning>
 		<CodeInstructions><![CDATA[
@@ -9435,8 +9476,8 @@
 089C1344:[00891821]: addu       $v1, $a0, $t1
 ]]></CodeInstructions>
 	</NativeCodeSequence>
-	<NativeCodeSequence name="LongIntegerDiv">
-		<Class>jpcsp.Allegrex.compiler.nativeCode.LongInteger</Class>
+	<NativeCodeSequence name="ULongIntegerDiv">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.ULongInteger</Class>
 		<Method>div</Method>
 		<IsReturning>true</IsReturning>
 		<CodeInstructions><![CDATA[
