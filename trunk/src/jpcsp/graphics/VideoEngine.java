@@ -1746,17 +1746,27 @@ public class VideoEngine {
     	int maxIndex = -1;
     	int minIndex = Integer.MAX_VALUE;
     	int indexBufferSize = numberOfVertex * bytesPerIndex;
+    	boolean sequence = true;
+    	int previousIndex = -1;
 		IMemoryReader memoryReader = MemoryReader.getMemoryReader(context.vinfo.ptr_index, indexBufferSize, bytesPerIndex);
 		for (int i = 0; i < numberOfVertex; i++) {
 			int index = memoryReader.readNext();
 			maxIndex = max(maxIndex, index);
 			minIndex = min(minIndex, index);
-		}
-		if (isLogDebugEnabled) {
-			log.debug(String.format("getIndexedNumberOfVertexInfo %d: [%d..%d]", numberOfVertex, minIndex, maxIndex));
+			if (i > 0) {
+				// Are the indices all in sequence?
+				if (index != previousIndex + 1) {
+					sequence = false;
+				}
+			}
+			previousIndex = index;
 		}
 
-		return new VertexIndexInfo(minIndex, maxIndex);
+		if (isLogDebugEnabled) {
+			log.debug(String.format("getIndexedNumberOfVertexInfo %d: [%d..%d], sequence %b", numberOfVertex, minIndex, maxIndex, sequence));
+		}
+
+		return new VertexIndexInfo(minIndex, maxIndex, sequence);
     }
 
     private void executeCommandPRIM() {
@@ -1966,15 +1976,22 @@ public class VideoEngine {
         		int bytesPerIndex = VertexInfo.size_mapping[context.vinfo.index];
         		long indicesBufferOffset = 0;
         		int firstVertexInfo = 0;
-	        	if (context.vinfo.index != 0) {
+        		boolean hasIndex = context.vinfo.index != 0;
+	        	if (hasIndex) {
 		        	int indexBufferSize = numberOfVertex * bytesPerIndex;
 		        	VertexIndexInfo vertexIndexInfo = getVertexIndexInfo(bytesPerIndex, numberOfVertex);
 	        		numberOfVertexInfo = vertexIndexInfo.getNumberOfVertex();
 	        		firstVertexInfo = vertexIndexInfo.getMinIndex();
 
-	        		Buffer indicesBuffer = mem.getBuffer(context.vinfo.ptr_index, indexBufferSize);
-	        		indicesBufferOffset = getBufferOffset(indicesBuffer, context.vinfo.ptr_index);
-	        		bufferManager.setBufferData(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId, indexBufferSize + (int) indicesBufferOffset, indicesBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
+	        		// No need to use indexed vertices when all the index are in sequence!
+	        		// Disable the index in such cases.
+	        		hasIndex = !vertexIndexInfo.isSequence();
+
+	        		if (hasIndex) {
+		        		Buffer indicesBuffer = mem.getBuffer(context.vinfo.ptr_index, indexBufferSize);
+		        		indicesBufferOffset = getBufferOffset(indicesBuffer, context.vinfo.ptr_index);
+		        		bufferManager.setBufferSubData(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId, 0, indexBufferSize + (int) indicesBufferOffset, indicesBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
+	        		}
 	        	}
 
 	        	vertexReadingStatistics.start();
@@ -2014,10 +2031,16 @@ public class VideoEngine {
 			        		numberOfVertexInfo = vertexIndexInfo.getNumberOfVertex();
 			        		firstVertexInfo = vertexIndexInfo.getMinIndex();
 
-				        	int indexBufferSize = multiDrawNumberOfVertex * bytesPerIndex;
-			        		Buffer indicesBuffer = mem.getBuffer(context.vinfo.ptr_index, indexBufferSize);
-			        		indicesBufferOffset = getBufferOffset(indicesBuffer, context.vinfo.ptr_index);
-			        		bufferManager.setBufferData(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId, indexBufferSize + (int) indicesBufferOffset, indicesBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
+			        		// No need to use indexed vertices when all the index are in sequence!
+			        		// Disable the index in such cases.
+			        		hasIndex = !vertexIndexInfo.isSequence();
+
+			        		if (hasIndex) {
+				        		int indexBufferSize = multiDrawNumberOfVertex * bytesPerIndex;
+				        		Buffer indicesBuffer = mem.getBuffer(context.vinfo.ptr_index, indexBufferSize);
+				        		indicesBufferOffset = getBufferOffset(indicesBuffer, context.vinfo.ptr_index);
+				        		bufferManager.setBufferSubData(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId, 0, indexBufferSize + (int) indicesBufferOffset, indicesBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
+			        		}
 
 			        		vertexAddress = context.vinfo.ptr_vertex + firstVertexInfo * context.vinfo.vertexSize;
 			        		size = context.vinfo.vertexSize * numberOfVertexInfo;
@@ -2039,11 +2062,7 @@ public class VideoEngine {
 	                useBufferManager = true;
 
 	                if (buffer != null) {
-	                	if (firstVertexInfo == 0) {
-	                		bufferManager.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, stride * numberOfVertexInfo, buffer, IRenderingEngine.RE_STREAM_DRAW);
-	                	} else {
-	                		bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, firstVertexInfo * stride, stride * numberOfVertexInfo, buffer, IRenderingEngine.RE_STREAM_DRAW);
-	                	}
+                		bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, firstVertexInfo * stride, stride * numberOfVertexInfo, buffer, IRenderingEngine.RE_STREAM_DRAW);
 		            }
 
 		            if (vertexInfoReader.hasNative()) {
@@ -2052,18 +2071,14 @@ public class VideoEngine {
 		            	int vertexAddr = context.vinfo.ptr_vertex + firstVertexInfo * context.vinfo.vertexSize;
 		        		Buffer vertexData = mem.getBuffer(vertexAddr, size);
 		        		size = fixNativeBufferOffset(vertexData, vertexAddr, size);
-		        		if (firstVertexInfo == 0) {
-		        			bufferManager.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, nativeBufferId, size, vertexData, IRenderingEngine.RE_STREAM_DRAW);
-		        		} else {
-		        			bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, nativeBufferId, firstVertexInfo * context.vinfo.vertexSize, size, vertexData, IRenderingEngine.RE_STREAM_DRAW);
-		        		}
+	        			bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, nativeBufferId, firstVertexInfo * context.vinfo.vertexSize, size, vertexData, IRenderingEngine.RE_STREAM_DRAW);
 		            }
 	        	}
 
 	        	re.setVertexInfo(context.vinfo, re.canAllNativeVertexInfo(), context.useVertexColor, useTexture, type);
 
 	            if (needSetDataPointers) {
-    				if (context.vinfo.index != 0) {
+    				if (hasIndex) {
     					bufferManager.bindBuffer(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId);
     				}
 		            if (useTexture) {
@@ -2099,8 +2114,14 @@ public class VideoEngine {
 		            setVertexPointer(nVertex, vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative(), useBufferManager);
 	        	}
 
-	        	drawArraysStatistics.start();
-	        	if (context.vinfo.index != 0) {
+	            if (isLogDebugEnabled) {
+	            	if (!hasIndex && context.vinfo.index != 0) {
+	            		log.debug("Indexed vertex has been disabled, all the indices were sequential");
+	            	}
+	            }
+
+	            drawArraysStatistics.start();
+	        	if (hasIndex) {
 	        		if (multiDrawArrays) {
 	        			re.multiDrawElements(type, multiDrawFirst, multiDrawCount, indexTypes[context.vinfo.index], indicesBufferOffset);
 	        		} else {
@@ -2201,7 +2222,7 @@ public class VideoEngine {
 	                            floatBuffer.rewind();
 	                            needSetDataPointers = cachedVertexInfo.loadVertex(re, floatBuffer, size);
 	                        } else {
-	                            bufferManager.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, floatBuffer.position() * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
+	                            bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, 0, floatBuffer.position() * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
 	                        }
 	                    } else {
 	                        if (isLogDebugEnabled) {
@@ -2362,7 +2383,7 @@ public class VideoEngine {
 	                            floatBuffer.rewind();
 	                            needSetDataPointers = cachedVertexInfo.loadVertex(re, floatBuffer, size);
 	                        } else {
-	                            bufferManager.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, floatBuffer.position() * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
+	                            bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, 0, floatBuffer.position() * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
 	                        }
 	                    } else {
 	                        if (isLogDebugEnabled) {
@@ -2714,7 +2735,7 @@ public class VideoEngine {
             re.enableClientState(IRenderingEngine.RE_VERTEX);
             bufferManager.setTexCoordPointer(bufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 0);
             bufferManager.setVertexPointer(bufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 2 * SIZEOF_FLOAT);
-            bufferManager.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
+            bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, 0, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
             re.drawArrays(IRenderingEngine.RE_QUADS, 0, 4);
 
             re.endDirectRendering();
@@ -6470,7 +6491,7 @@ public class VideoEngine {
 	        	drawFloatBuffer.rewind();
 	        	needSetDataPointers = cachedVertexInfo.loadVertex(re, drawFloatBuffer, size);
 	        } else {
-	        	bufferManager.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
+	        	bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, 0, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
 	        }
 		} else {
 			needSetDataPointers = cachedVertexInfo.bindVertex(re);
@@ -6885,10 +6906,12 @@ public class VideoEngine {
     protected static class VertexIndexInfo {
     	private int minIndex;
 		private int maxIndex;
+		private boolean sequence;
 
-    	public VertexIndexInfo(int minIndex, int maxIndex) {
+    	public VertexIndexInfo(int minIndex, int maxIndex, boolean sequence) {
 			this.minIndex = minIndex;
 			this.maxIndex = maxIndex;
+			this.sequence = sequence;
 		}
 
 		public int getMinIndex() {
@@ -6901,6 +6924,10 @@ public class VideoEngine {
  
 		public int getNumberOfVertex() {
 			return maxIndex - minIndex + 1;
+		}
+
+		public boolean isSequence() {
+			return sequence;
 		}
     }
 }

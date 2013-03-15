@@ -990,4 +990,15 @@ public class Utilities {
 	public static int round2(int n) {
 		return n + (n & 1);
 	}
+
+	public static int[] extendArray(int[] array, int extend) {
+		if (array == null) {
+			return new int[extend];
+		}
+
+		int[] newArray = new int[array.length + extend];
+		System.arraycopy(array, 0, newArray, 0, array.length);
+
+		return newArray;
+	}
 }
