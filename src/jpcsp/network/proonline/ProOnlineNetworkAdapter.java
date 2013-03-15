@@ -83,7 +83,7 @@ public class ProOnlineNetworkAdapter extends BaseNetworkAdapter {
 	public static void setEnabled(boolean enabled) {
 		ProOnlineNetworkAdapter.enabled = enabled;
 		if (enabled) {
-			log.info("Enabling ProLine network");
+			log.info("Enabling ProOnline network");
 		}
 	}
 
