@@ -24,13 +24,14 @@ import java.nio.ByteBuffer;
 
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.settings.Settings;
+import jpcsp.util.Utilities;
 
 /**
  * @author gid15
  *
  */
 public class BufferManagerVBO extends BaseBufferManager {
-	private int currentBufferDataSize;
+	private int[] bufferDataSize;
 
 	public static boolean useVBO(IRenderingEngine re) {
         return !Settings.getInstance().readBool("emu.disablevbo")
@@ -39,6 +40,10 @@ public class BufferManagerVBO extends BaseBufferManager {
 
 	@Override
 	protected void init() {
+		// Start with 100 possible buffer entries.
+		// The array will be dynamically extended if more entries are required.
+		bufferDataSize = new int[100];
+
 		super.init();
     	log.info("Using VBO");
 	}
@@ -54,6 +59,9 @@ public class BufferManagerVBO extends BaseBufferManager {
 		ByteBuffer byteBuffer = createByteBuffer(totalSize);
 
 		int buffer = re.genBuffer();
+		if (buffer >= bufferDataSize.length) {
+			bufferDataSize = Utilities.extendArray(bufferDataSize, buffer - bufferDataSize.length + 1);
+		}
 		setBufferData(target, buffer, totalSize, byteBuffer, usage);
 
 		buffers.put(buffer, new BufferInfo(buffer, byteBuffer, type, size));
@@ -112,7 +120,7 @@ public class BufferManagerVBO extends BaseBufferManager {
 	public void setBufferData(int target, int buffer, int size, Buffer data, int usage) {
 		bindBuffer(target, buffer);
 		re.setBufferData(target, size, data, usage);
-		currentBufferDataSize = size;
+		bufferDataSize[buffer] = size;
 	}
 
 	@Override
@@ -121,7 +129,7 @@ public class BufferManagerVBO extends BaseBufferManager {
 
 		// Some drivers seem to require an aligned buffer data size to handle correctly unaligned data.
 		int requiredBufferDataSize = round4(offset) + round4(size);
-		if (requiredBufferDataSize > currentBufferDataSize) {
+		if (requiredBufferDataSize > bufferDataSize[buffer]) {
 			setBufferData(target, buffer, requiredBufferDataSize, null, usage);
 		}
 
