@@ -32,6 +32,7 @@ import jpcsp.HLE.PspString;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.TPointer64;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.Modules;
@@ -58,7 +59,7 @@ public class sceHttp extends HLEModule {
     	private int id;
     	private String url;
     	private int method;
-    	private int contentLength;
+    	private long contentLength;
     	private HttpConnection httpConnection;
     	private URLConnection urlConnection;
     	private HttpURLConnection httpUrlConnection;
@@ -101,12 +102,12 @@ public class sceHttp extends HLEModule {
 			this.method = method;
 		}
 
-		public int getContentLength() {
+		public long getContentLength() {
 			readData();
 			return contentLength;
 		}
 
-		public void setContentLength(int contentLength) {
+		public void setContentLength(long contentLength) {
 			this.contentLength = contentLength;
 		}
 
@@ -423,7 +424,7 @@ public class sceHttp extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x0282A3BD, version = 150)
-    public int sceHttpGetContentLength(int requestId, TPointer32 contentLength){
+    public int sceHttpGetContentLength(int requestId, TPointer64 contentLength){
     	HttpRequest httpRequest = getHttpRequest(requestId);
     	contentLength.setValue(httpRequest.getContentLength());
 
@@ -535,8 +536,10 @@ public class sceHttp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x2255551E, version = 150)
-    public int sceHttpGetNetworkPspError() {
-        return 0;
+    public int sceHttpGetNetworkPspError(int connectionId, TPointer32 errorAddr) {
+    	errorAddr.setValue(0);
+
+    	return 0;
     }
 
     @HLEUnimplemented
@@ -653,7 +656,7 @@ public class sceHttp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x59E6D16F, version = 150)
-    public int sceHttpEnableCache() {
+    public int sceHttpEnableCache(int templateId) {
         return 0;
     }
 
@@ -793,13 +796,13 @@ public class sceHttp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x9FC5F10D, version = 150)
-    public int sceHttpEnableAuth() {
+    public int sceHttpEnableAuth(int templateId) {
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xA4496DE5, version = 150)
-    public int sceHttpSetRedirectCallback() {
+    public int sceHttpSetRedirectCallback(int templateId, TPointer callbackAddr, int callbackArg) {
         return 0;
     }
 
@@ -823,7 +826,7 @@ public class sceHttp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xAE948FEE, version = 150)
-    public int sceHttpDisableAuth() {
+    public int sceHttpDisableAuth(int templateId) {
         return 0;
     }
 
@@ -844,7 +847,7 @@ public class sceHttp extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0xB509B09E, version = 150)
-    public int sceHttpCreateRequestWithURL(int connectionId, int method, PspString url, int contentLength) {
+    public int sceHttpCreateRequestWithURL(int connectionId, int method, PspString url, long contentLength) {
     	HttpConnection httpConnection = getHttpConnection(connectionId);
     	HttpRequest httpRequest = new HttpRequest();
     	httpRequest.setUrl(url.getString());
@@ -909,7 +912,7 @@ public class sceHttp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xCCBD167A, version = 150)
-    public int sceHttpDisableCache() {
+    public int sceHttpDisableCache(int templateId) {
         return 0;
     }
 
@@ -954,8 +957,11 @@ public class sceHttp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xDB266CCF, version = 150)
-    public int sceHttpGetAllHeader() {
-        return 0;
+    public int sceHttpGetAllHeader(int requestId, TPointer32 unknownAddr1, TPointer32 unknownAddr2) {
+    	unknownAddr1.setValue(0);
+    	unknownAddr2.setValue(0);
+
+    	return 0;
     }
 
     @HLEUnimplemented
@@ -1009,7 +1015,7 @@ public class sceHttp extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xF49934F6, version = 150)
-    public int sceHttpSetMallocFunction() {
+    public int sceHttpSetMallocFunction(TPointer function1, TPointer function2, TPointer function3) {
         return 0;
     }
 
