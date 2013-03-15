@@ -1591,11 +1591,11 @@ public class VideoEngine {
         }
     }
 
-    private int fixNativeBufferOffset(Buffer vertexData, int size) {
+    private int fixNativeBufferOffset(Buffer vertexData, int addr, int size) {
     	// Handle buffer address not aligned with memory Buffer object.
     	// E.g. ptr_vertex = 0xNNNNNN2 and vertexData is an IntBuffer
     	// starting at 0xNNNNNN0
-    	int nativeBufferOffset = getBufferOffset(vertexData, context.vinfo.ptr_vertex);
+    	int nativeBufferOffset = getBufferOffset(vertexData, addr);
     	size += nativeBufferOffset;
     	vertexInfoReader.addNativeOffset(nativeBufferOffset);
 
@@ -2049,8 +2049,9 @@ public class VideoEngine {
 		            if (vertexInfoReader.hasNative()) {
 		                // Copy the VertexInfo from Memory to the nativeBuffer
 		                // (a direct buffer is required by glXXXPointer())
-		        		Buffer vertexData = mem.getBuffer(context.vinfo.ptr_vertex + firstVertexInfo * context.vinfo.vertexSize, size);
-		        		size = fixNativeBufferOffset(vertexData, size);
+		            	int vertexAddr = context.vinfo.ptr_vertex + firstVertexInfo * context.vinfo.vertexSize;
+		        		Buffer vertexData = mem.getBuffer(vertexAddr, size);
+		        		size = fixNativeBufferOffset(vertexData, vertexAddr, size);
 		        		if (firstVertexInfo == 0) {
 		        			bufferManager.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, nativeBufferId, size, vertexData, IRenderingEngine.RE_STREAM_DRAW);
 		        		} else {
