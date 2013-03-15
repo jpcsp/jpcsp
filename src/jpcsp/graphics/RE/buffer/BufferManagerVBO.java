@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE.buffer;
 
 import static jpcsp.graphics.RE.IRenderingEngine.RE_ARRAY_BUFFER;
+import static jpcsp.util.Utilities.round4;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -118,9 +119,10 @@ public class BufferManagerVBO extends BaseBufferManager {
 	public void setBufferSubData(int target, int buffer, int offset, int size, Buffer data, int usage) {
 		bindBuffer(target, buffer);
 
-		int requiredBufferDataSize = offset + size;
+		// Some drivers seem to require an aligned buffer data size to handle correctly unaligned data.
+		int requiredBufferDataSize = round4(offset) + round4(size);
 		if (requiredBufferDataSize > currentBufferDataSize) {
-			re.setBufferData(target, requiredBufferDataSize, null, usage);
+			setBufferData(target, buffer, requiredBufferDataSize, null, usage);
 		}
 
 		re.setBufferSubData(target, offset, size, data);
