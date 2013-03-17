@@ -2632,6 +2632,7 @@ public class sceUtility extends HLEModule {
 							lines.add(line);
 							currentLine.delete(0, splitLineIndex);
 							currentLineLength = getTextLength(fontInfo, currentLine.toString());
+							splitLineIndex = -1;
 						}
 
 						currentLine.append(c);
@@ -2643,6 +2644,7 @@ public class sceUtility extends HLEModule {
 					}
 				}
 				if (currentLine.length() > 0) {
+					longestLine = Math.max(longestLine, currentLineLength);
 					lines.add(currentLine.toString());
 				}
 	    		final int lineHeight = 19;
