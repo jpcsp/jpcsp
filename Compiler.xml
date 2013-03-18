@@ -3194,7 +3194,25 @@
 08A7F534:[1500FFF9]: bne        $t0, $zr, 0x08A7F51C
 08A7F538:[00803025]: or         $a2, $a0, $zr <=> move $a2, $a0
 08A7F53C:[03E00008]: jr         $ra
- 08A7F540:[00000000]: nop
+08A7F540:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpy">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memcpy</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+08863030:[00C01821]: addu       $v1, $a2, $zr <=> move $v1, $a2
+08863034:[18600008]: blez       $v1, 0x08863058
+08863038:[24C6FFFF]: addiu      $a2, $a2, -1
+0886303C:[90A30000]: lbu        $v1, 0($a1)
+08863040:[00C03821]: addu       $a3, $a2, $zr <=> move $a3, $a2
+08863044:[24A50001]: addiu      $a1, $a1, 1
+08863048:[A0830000]: sb         $v1, 0($a0)
+0886304C:[24C6FFFF]: addiu      $a2, $a2, -1
+08863050:[1CE0FFFA]: bgtz       $a3, 0x0886303C
+08863054:[24840001]: addiu      $a0, $a0, 1
+08863058:[03E00008]: jr         $ra
+0886305C:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
 	<NativeCodeSequence name="memset">
