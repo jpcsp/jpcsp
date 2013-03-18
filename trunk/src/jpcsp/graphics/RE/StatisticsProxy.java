@@ -873,7 +873,7 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setDepthRange(float zpos, float zscale, float near, float far) {
+	public void setDepthRange(float zpos, float zscale, int near, int far) {
 		DurationStatistics statistic = statistics[81];
 		statistic.start();
 		super.setDepthRange(zpos, zscale, near, far);

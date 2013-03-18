@@ -133,7 +133,7 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setDepthRange(float zpos, float zscale, float near, float far) {
+	public void setDepthRange(float zpos, float zscale, int near, int far) {
 		proxy.setDepthRange(zpos, zscale, near, far);
 	}
 

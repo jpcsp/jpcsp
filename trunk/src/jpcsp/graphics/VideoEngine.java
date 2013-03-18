@@ -3413,7 +3413,7 @@ public class VideoEngine {
     private void executeCommandZSCALE() {
         float old_zscale = context.zscale;
         float floatArgument = floatArgument(normalArgument);
-        context.zscale = floatArgument / 65535.f;
+        context.zscale = floatArgument;
         if (old_zscale != context.zscale) {
             depthChanged = true;
         }
@@ -3446,7 +3446,7 @@ public class VideoEngine {
     private void executeCommandZPOS() {
         float old_zpos = context.zpos;
         float floatArgument = floatArgument(normalArgument);
-        context.zpos = floatArgument / 65535.f;
+        context.zpos = floatArgument;
         if (old_zpos != context.zpos) {
             depthChanged = true;
         }
@@ -4218,7 +4218,7 @@ public class VideoEngine {
 
     private void executeCommandNEARZ() {
         float old_nearZ = context.nearZ;
-        context.nearZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
+        context.nearZ = normalArgument & 0xFFFF;
         if (old_nearZ != context.nearZ) {
             depthChanged = true;
         }
@@ -4226,14 +4226,10 @@ public class VideoEngine {
 
     private void executeCommandFARZ() {
         float old_farZ = context.farZ;
-        context.farZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
+        context.farZ = normalArgument & 0xFFFF;
         if (old_farZ != context.farZ) {
             // OpenGL requires the Depth parameters to be reloaded
             depthChanged = true;
-        }
-
-        if (depthChanged) {
-            re.setDepthRange(context.zpos, context.zscale, context.nearZ, context.farZ);
         }
 
         if (isLogDebugEnabled) {
@@ -5895,10 +5891,10 @@ public class VideoEngine {
         if (depthChanged) {
             if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
             	re.setDepthFunc(context.depthFunc);
-                re.setDepthRange(context.zpos, context.zscale, context.zpos - context.zscale, context.zpos + context.zscale);
+                re.setDepthRange(context.zpos, context.zscale, context.nearZ, context.farZ);
             } else {
             	re.setDepthFunc(context.depthFunc);
-                re.setDepthRange(0.5f, 0.5f, 0, 1);
+                re.setDepthRange(32767.5f, 32767.5f, 0x0000, 0xFFFF);
             }
             depthChanged = false;
         }

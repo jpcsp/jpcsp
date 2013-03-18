@@ -334,7 +334,7 @@ public interface IRenderingEngine {
 	public void setTextureMatrix(float[] values);
 	public void endModelViewMatrixUpdate();
 	public void setViewport(int x, int y, int width, int height);
-	public void setDepthRange(float zpos, float zscale, float near, float far);
+	public void setDepthRange(float zpos, float zscale, int near, int far);
 	public void setDepthFunc(int func);
 	public void setShadeModel(int model);
 	public void setMaterialEmissiveColor(float[] color);

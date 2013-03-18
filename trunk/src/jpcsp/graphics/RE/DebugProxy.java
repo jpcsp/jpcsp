@@ -279,9 +279,9 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setDepthRange(float zpos, float zscale, float near, float far) {
+	public void setDepthRange(float zpos, float zscale, int near, int far) {
 		if (isLogDebugEnabled) {
-			log.debug(String.format("setDepthRange zpos=%f, zscale=%f, near=%f, far=%f", zpos, zscale, near, far));
+			log.debug(String.format("setDepthRange zpos=%f, zscale=%f, near=0x%04X, far=0x%04X", zpos, zscale, near, far));
 		}
 		super.setDepthRange(zpos, zscale, near, far);
 	}
