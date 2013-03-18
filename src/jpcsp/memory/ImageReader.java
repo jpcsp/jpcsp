@@ -786,8 +786,9 @@ public class ImageReader {
 
 		public DXTDecoder(IMemoryReader memoryReader, int width, int height, int bufferWidth, int dxtLevel, int compressionRatio) {
 			super(memoryReader);
-			this.width = width;
 			this.bufferWidthSkip = Math.max(0, getBufferWidthSkip(width, bufferWidth));
+			width = Math.min(width, bufferWidth);
+			this.width = width;
 			this.dxtLevel = dxtLevel;
 
 			//compressedImageSize = round4(width) * round4(height) * 4 / compressionRatio;
