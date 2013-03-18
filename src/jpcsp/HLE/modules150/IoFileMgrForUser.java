@@ -2531,6 +2531,7 @@ public class IoFileMgrForUser extends HLEModule {
                         }
 
                         IVirtualFile decInput = null;
+                        result = 0;
                         // Try to decrypt this PGD file with the Crypto Engine.
                         try {
                             // Maximum 16-byte aligned block size to use during stream read/write.
@@ -2580,6 +2581,7 @@ public class IoFileMgrForUser extends HLEModule {
                                 	// The decrypted PGD header is incorrect...
                                 	// abort the decryption and leave the file unchanged
                                 	log.warn(String.format("Incorrect PGD header: dataSize=%d, chunkSize=%d, hashOffset=%d", dataSize, chunkSize, hashOffset));
+                                	result = SceKernelErrors.ERROR_PGD_INVALID_HEADER;
                                 } else {
                                     // Check for an already decrypted file with the correct size
                                 	decInput = vfsManager.getTmpVirtualFileSystem().ioOpen(info.filename, info.flags, 0, ITmpVirtualFileSystem.tmpPurposePGD);
@@ -2641,8 +2643,6 @@ public class IoFileMgrForUser extends HLEModule {
                         if (decInput != null) {
                             info.vFile = decInput;
                         }
-
-                        result = 0;
                     } else {
                         log.warn(String.format("hleIoIoctl cmd=0x04100001 indata=0x%08X inlen=%d unsupported parameters", indata_addr, inlen));
                         result = ERROR_INVALID_ARGUMENT;
