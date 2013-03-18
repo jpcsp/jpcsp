@@ -179,14 +179,16 @@ public class ThreadManForUser extends HLEModule {
 
     protected static final int CALLBACKID_REGISTER = _s0;
     protected CallbackManager callbackManager = new CallbackManager();
-    protected static final int IDLE_THREAD_ADDRESS = MemoryMap.START_RAM;
-    public static final int THREAD_EXIT_HANDLER_ADDRESS = MemoryMap.START_RAM + 0x20;
-    public static final int CALLBACK_EXIT_HANDLER_ADDRESS = MemoryMap.START_RAM + 0x30;
-    public static final int ASYNC_LOOP_ADDRESS = MemoryMap.START_RAM + 0x40;
-    public static final int NET_APCTL_LOOP_ADDRESS = MemoryMap.START_RAM + 0x60;
-    public static final int NET_ADHOC_MATCHING_EVENT_LOOP_ADDRESS = MemoryMap.START_RAM + 0x80;
-    public static final int NET_ADHOC_MATCHING_INPUT_LOOP_ADDRESS = MemoryMap.START_RAM + 0xA0;
-    public static final int NET_ADHOC_CTL_LOOP_ADDRESS = MemoryMap.START_RAM + 0xC0;
+    public static final int INTERNAL_THREAD_ADDRESS_START = MemoryMap.START_RAM;
+    protected static final int IDLE_THREAD_ADDRESS = INTERNAL_THREAD_ADDRESS_START;
+    public static final int THREAD_EXIT_HANDLER_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x20;
+    public static final int CALLBACK_EXIT_HANDLER_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x30;
+    public static final int ASYNC_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x40;
+    public static final int NET_APCTL_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x60;
+    public static final int NET_ADHOC_MATCHING_EVENT_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x80;
+    public static final int NET_ADHOC_MATCHING_INPUT_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xA0;
+    public static final int NET_ADHOC_CTL_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xC0;
+    public static final int INTERNAL_THREAD_ADDRESS_END = INTERNAL_THREAD_ADDRESS_START + 0x100;
     private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
     private boolean USE_THREAD_BANLIST = false;
     private static final boolean LOG_CONTEXT_SWITCHING = true;
