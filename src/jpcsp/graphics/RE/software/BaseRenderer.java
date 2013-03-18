@@ -18,7 +18,6 @@ package jpcsp.graphics.RE.software;
 
 import static jpcsp.graphics.RE.software.PixelColor.getColor;
 import static jpcsp.graphics.RE.software.PixelColor.getColorBGR;
-import static jpcsp.util.Utilities.round;
 
 import java.nio.Buffer;
 import java.util.Arrays;
@@ -198,8 +197,8 @@ public abstract class BaseRenderer implements IRenderer {
 		this.cachedTexture = texture;
 		this.useVertexTexture = useVertexTexture;
 		this.isTriangle = isTriangle;
-		nearZ = round(context.nearZ * 0xFFFF);
-		farZ = round(context.farZ * 0xFFFF);
+		nearZ = context.nearZ;
+		farZ = context.farZ;
 		scissorX1 = context.scissor_x1;
 		scissorY1 = context.scissor_y1;
 		scissorX2 = context.scissor_x2;
@@ -222,8 +221,8 @@ public abstract class BaseRenderer implements IRenderer {
 			viewportY = context.viewport_cy;
 			screenOffsetX = context.offset_x;
 			screenOffsetY = context.offset_y;
-			zscale = context.zscale * 65535.f;
-			zpos = context.zpos * 65535.f;
+			zscale = context.zscale;
+			zpos = context.zpos;
 			if (context.tex_map_mode == GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV) {
 				texTranslateX = context.tex_translate_x;
 				texTranslateY = context.tex_translate_y;

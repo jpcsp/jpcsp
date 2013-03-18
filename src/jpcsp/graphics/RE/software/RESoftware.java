@@ -164,9 +164,7 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setDepthRange(float zpos, float zscale, float near, float far) {
-		// TODO Auto-generated method stub
-		
+	public void setDepthRange(float zpos, float zscale, int near, int far) {
 	}
 
 	@Override
@@ -953,8 +951,9 @@ public class RESoftware extends BaseRenderingEngine {
 			cachedTextureStatistics.start();
 			// TODO Cache all the texture levels
 			if (level == 0) {
-				IMemoryReader imageReader = ImageReader.getImageReader(context.texture_base_pointer[level], width, height, context.texture_buffer_width[level], internalFormat, false, 0, 0, 0, 0, 0, 0, null, null);
-				CachedTexture cachedTexture = CachedTexture.getCachedTexture(width, height, internalFormat, imageReader);
+				int bufferWidth = context.texture_buffer_width[level];
+				IMemoryReader imageReader = ImageReader.getImageReader(context.texture_base_pointer[level], width, height, bufferWidth, internalFormat, false, 0, 0, 0, 0, 0, 0, null, null);
+				CachedTexture cachedTexture = CachedTexture.getCachedTexture(Math.min(width, bufferWidth), height, internalFormat, imageReader);
 				CachedTextureResampled cachedTextureResampled = new CachedTextureResampled(cachedTexture);
 				cachedTextures.put(bindTexture, cachedTextureResampled);
 			}

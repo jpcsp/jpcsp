@@ -97,7 +97,8 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
     public int lightMode;
     public float[] fog_color = new float[4];
     public float fog_far = 0.0f, fog_dist = 0.0f;
-    public float nearZ = 0.0f, farZ = 0.0f, zscale, zpos;
+    public int nearZ, farZ;
+    public float zscale, zpos;
     public int mat_flags = 0;
     public float[] mat_ambient = new float[4];
     public float[] mat_diffuse = new float[4];
@@ -360,8 +361,8 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
 		fog_far = readFloat();
 		fog_dist = readFloat();
 
-		nearZ = readFloat();
-		farZ = readFloat();
+		nearZ = read16();
+		farZ = read16();
 		zscale = readFloat();
 		zpos = readFloat();
 
@@ -530,8 +531,8 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
 		writeFloat(fog_far);
 		writeFloat(fog_dist);
 
-		writeFloat(nearZ);
-		writeFloat(farZ);
+		write16((short) nearZ);
+		write16((short) farZ);
 		writeFloat(zscale);
 		writeFloat(zpos);
 

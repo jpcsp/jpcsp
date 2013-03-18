@@ -537,8 +537,8 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setDepthRange(float zpos, float zscale, float near, float far) {
-        GL11.glDepthRange(near, far);
+	public void setDepthRange(float zpos, float zscale, int near, int far) {
+        GL11.glDepthRange((zpos - zscale) / 65535f, (zpos + zscale) / 65535f);
 	}
 
 	@Override

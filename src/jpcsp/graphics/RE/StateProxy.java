@@ -91,8 +91,8 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected int alphaFuncRef;
 	protected float depthRangeZpos;
 	protected float depthRangeZscale;
-	protected float depthRangeNear;
-	protected float depthRangeFar;
+	protected int depthRangeNear;
+	protected int depthRangeFar;
 	protected float[] vertexColor;
 	protected float[][] lightAmbientColor;
 	protected float[][] lightDiffuseColor;
@@ -294,8 +294,8 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		alphaFuncRef = -1;
 		depthRangeZpos = 0.f;
 		depthRangeZscale = 0.f;
-		depthRangeNear = 0.f;
-		depthRangeFar = 0.f;
+		depthRangeNear = -1;
+		depthRangeFar = -1;
 		vertexColor[0] = -1.f;
 		for (int i = 0; i < lightAmbientColor.length; i++) {
 			lightAmbientColor[i][0] = -1.f;
@@ -923,7 +923,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setDepthRange(float zpos, float zscale, float near, float far) {
+	public void setDepthRange(float zpos, float zscale, int near, int far) {
 		if (depthRangeZpos != zpos || depthRangeZscale != zscale || depthRangeNear != near || depthRangeFar != far) {
 			super.setDepthRange(zpos, zscale, near, far);
 			depthRangeZpos = zpos;

@@ -138,7 +138,7 @@ public class CheckErrorsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setDepthRange(float zpos, float zscale, float near, float far) {
+	public void setDepthRange(float zpos, float zscale, int near, int far) {
 		super.setDepthRange(zpos, zscale, near, far);
 		re.checkAndLogErrors("setDepthRange");
 	}
