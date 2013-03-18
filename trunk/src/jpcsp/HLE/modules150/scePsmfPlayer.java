@@ -17,8 +17,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_PSMFPLAYER_NOT_INITIALIZED;
+import static jpcsp.HLE.modules150.sceMpeg.PSMF_MAGIC;
+import static jpcsp.HLE.modules150.sceMpeg.PSMF_MAGIC_OFFSET;
+import static jpcsp.HLE.modules150.sceMpeg.PSMF_STREAM_OFFSET_OFFSET;
+import static jpcsp.HLE.modules150.sceMpeg.PSMF_STREAM_SIZE_OFFSET;
 import static jpcsp.HLE.modules150.sceMpeg.convertTimestampToDate;
 import static jpcsp.HLE.modules150.sceMpeg.mpegAudioChannels;
+import static jpcsp.HLE.modules150.sceMpeg.read32;
 import static jpcsp.HLE.modules150.sceMpeg.readUnaligned32;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551;
@@ -50,11 +55,13 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.filesystems.SeekableDataInput;
+import jpcsp.filesystems.umdiso.ISectorDevice;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.util.Debug;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -296,7 +303,24 @@ public class scePsmfPlayer extends HLEModule {
             }
 
             SeekableDataInput psmfFile = Modules.IoFileMgrForUserModule.getFile(pmfFilePath, 0);
-            pmfFileData = new byte[(int) psmfFile.length()];
+            psmfFile.seek(offset);
+
+            // Try to find the length of the PSMF file by reading the PSMF header
+            int length = (int) psmfFile.length() - offset;
+            byte[] header = new byte[ISectorDevice.sectorLength];
+            psmfFile.readFully(header);
+            int psmfMagic = read32(null, 0, header, PSMF_MAGIC_OFFSET);
+            if (psmfMagic == PSMF_MAGIC) {
+            	// Found the PSMF header, extract the file size from the stream size and offset.
+            	length = endianSwap32(read32(null, 0, header, PSMF_STREAM_SIZE_OFFSET));
+            	length += endianSwap32(read32(null, 0, header, PSMF_STREAM_OFFSET_OFFSET));
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("PSMF length=0x%X, header: %s", length, Utilities.getMemoryDump(header, 0, header.length)));
+            	}
+            }
+
+            psmfFile.seek(offset);
+            pmfFileData = new byte[length];
             psmfFile.readFully(pmfFileData);
 
             psmfLastTimestamp = endianSwap32(readUnaligned32(null, 0, pmfFileData, sceMpeg.PSMF_LAST_TIMESTAMP_OFFSET));
