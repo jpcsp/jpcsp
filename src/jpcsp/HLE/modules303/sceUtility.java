@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules303;
 
+import jpcsp.State;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 
@@ -126,11 +127,11 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
             log.info(String.format("IGNORING: sceUtilityLoadModule(module=0x%04X) %s", module, moduleName));
             result = 0;
 
-            if (module == UtilityModule.PSP_MODULE_NET_HTTPSTORAGE.id) {
+            if (module == UtilityModule.PSP_MODULE_NET_HTTPSTORAGE.id && "ULJS00331".equals(State.discId)) {
             	// The game "Kamen Rider Climax Heroes OOO - ULJS00331" is checking that the return value of
             	//     sceUtilityLoadModule(PSP_MODULE_NET_HTTPSTORAGE)
             	// has a defined value.
-            	// The return value must match: result * 100 / 6532 = 0x00B99F84
+            	// The return value must match: result * 100 / 6532 == 0x00B99F84
             	result = 0x2F5CE6C3;
             }
 
