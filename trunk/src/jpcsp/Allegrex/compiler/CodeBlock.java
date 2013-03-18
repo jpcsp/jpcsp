@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.Allegrex.compiler;
 
 import static jpcsp.Allegrex.compiler.CompilerContext.executableDescriptor;
+import static jpcsp.HLE.modules150.ThreadManForUser.INTERNAL_THREAD_ADDRESS_END;
+import static jpcsp.HLE.modules150.ThreadManForUser.INTERNAL_THREAD_ADDRESS_START;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -616,6 +618,11 @@ public class CodeBlock {
 
 	public boolean isOverlappingWithAddressRange(int address, int size) {
 		return memoryRanges.isOverlappingWithAddressRange(address, size);
+	}
+
+	public boolean isInternal() {
+    	int addr = getStartAddress();
+    	return addr < INTERNAL_THREAD_ADDRESS_END && addr >= INTERNAL_THREAD_ADDRESS_START;
 	}
 
 	@Override

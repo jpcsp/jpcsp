@@ -88,6 +88,8 @@ public class RuntimeContext {
 	private static final boolean invalidateAllCodeBlocks = false;
 	private static final int idleSleepMicros = 1000;
 	private static final Map<Integer, CodeBlock> codeBlocks = Collections.synchronizedMap(new HashMap<Integer, CodeBlock>());
+	private static int codeBlocksLowestAddress = Integer.MAX_VALUE;
+	private static int codeBlocksHighestAddress = Integer.MIN_VALUE;
 	// A fast lookup array for executables (to improve the performance of the Allegrex jalr instruction)
 	private static IExecutable[] fastExecutableLookup;
 	private static final Map<SceKernelThreadInfo, RuntimeThread> threads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
@@ -758,8 +760,30 @@ public class RuntimeContext {
 		}
     }
 
-    public static CodeBlock addCodeBlock(int address, CodeBlock codeBlock) {
-        return codeBlocks.put(address, codeBlock);
+    private static void computeCodeBlocksRange() {
+    	codeBlocksLowestAddress = Integer.MAX_VALUE;
+    	codeBlocksHighestAddress = Integer.MIN_VALUE;
+    	for (CodeBlock codeBlock : codeBlocks.values()) {
+    		if (!codeBlock.isInternal()) {
+	    		codeBlocksLowestAddress = Math.min(codeBlocksLowestAddress, codeBlock.getLowestAddress());
+	    		codeBlocksHighestAddress = Math.max(codeBlocksHighestAddress, codeBlock.getHighestAddress());
+    		}
+    	}
+    }
+
+    public static void addCodeBlock(int address, CodeBlock codeBlock) {
+    	CodeBlock previousCodeBlock = codeBlocks.put(address, codeBlock);
+
+    	if (!codeBlock.isInternal()) {
+	    	if (previousCodeBlock != null) {
+	    		// One code block has been deleted, recompute the whole code blocks range
+	    		computeCodeBlocksRange();
+	    	} else {
+	    		// One new code block has been added, update the code blocks range
+	    		codeBlocksLowestAddress = Math.min(codeBlocksLowestAddress, codeBlock.getLowestAddress());
+	    		codeBlocksHighestAddress = Math.max(codeBlocksHighestAddress, codeBlock.getHighestAddress());
+	    	}
+    	}
     }
 
     public static CodeBlock getCodeBlock(int address) {
@@ -1028,8 +1052,16 @@ public class RuntimeContext {
 
     public static void invalidateRange(int addr, int size) {
         if (compilerEnabled) {
+        	addr &= Memory.addressMask;
+
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("RuntimeContext.invalidateRange(addr=0x%08X, size=%d)", addr, size));
+        	}
+
+        	// Fast check: if the address range is outside the largest code blocks range,
+        	// there is noting to do.
+        	if (addr + size < codeBlocksLowestAddress || addr > codeBlocksHighestAddress) {
+        		return;
         	}
 
         	// Check if the code blocks located in the given range have to be invalidated
