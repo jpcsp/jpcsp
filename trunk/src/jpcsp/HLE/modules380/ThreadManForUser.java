@@ -31,14 +31,14 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 	}
 
 	@HLEUnimplemented
-	@HLEFunction(nid = 0x1AF94D03, version = 380)
+	@HLEFunction(nid = 0x1AF94D03, version = 380, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
 	public int sceKernelDonateWakeupThread() {
 		return 0;
 	}
 
 	@HLEUnimplemented
-	@HLEFunction(nid = 0x31327F19, version = 380)
-	public int ThreadManForUser_31327F19() {
+	@HLEFunction(nid = 0x31327F19, version = 380, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
+	public int ThreadManForUser_31327F19(int unkown1, int unknown2, int unknown3) {
 		return 0;
 	}
 

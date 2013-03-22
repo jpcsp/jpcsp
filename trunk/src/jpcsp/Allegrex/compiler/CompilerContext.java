@@ -72,6 +72,7 @@ import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.ThreadManForUser;
+import jpcsp.hardware.Interrupts;
 import jpcsp.memory.SafeFastMemory;
 import jpcsp.util.ClassAnalyzer;
 import jpcsp.util.DurationStatistics;
@@ -1321,6 +1322,9 @@ public class CompilerContext implements ICompilerContext {
 
     	if (func.checkInsideInterrupt()) {
     		// if (IntrManager.getInstance().isInsideInterrupt()) {
+    		//     if (Modules.log.isDebugEnabled()) {
+    		//         Modules.log.debug("<function name> return errorCode 0x80020064 (ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT)");
+    		//     }
     		//     cpu.gpr[_v0] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
     		//     goto afterSyscall
     		// }
@@ -1328,23 +1332,50 @@ public class CompilerContext implements ICompilerContext {
     		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(IntrManager.class), "isInsideInterrupt", "()Z");
     		Label notInsideInterrupt = new Label();
     		mv.visitJumpInsn(Opcodes.IFEQ, notInsideInterrupt);
-    		storeRegister(_v0, SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT);
+
+    		mv.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(Modules.class), "log", Type.getDescriptor(Logger.class));
+        	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), "isDebugEnabled", "()Z");
+        	Label notDebug = new Label();
+        	mv.visitJumpInsn(Opcodes.IFEQ, notDebug);
+        	mv.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(Modules.class), "log", Type.getDescriptor(Logger.class));
+        	mv.visitLdcInsn(String.format("%s returning errorCode 0x%08X (ERROR_KERNEL_WAIT_CAN_NOT_WAIT)", func.getFunctionName(), SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT));
+        	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), "debug", "(" + Type.getDescriptor(Object.class) + ")V");
+        	mv.visitLabel(notDebug);
+
+        	storeRegister(_v0, SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT);
     		mv.visitJumpInsn(Opcodes.GOTO, afterSyscallLabel);
     		mv.visitLabel(notInsideInterrupt);
     	}
 
     	if (func.checkDispatchThreadEnabled()) {
-    		// if (!Modules.ThreadManForUserModule.isDispatchThreadEnabled()) {
+    		// if (!Modules.ThreadManForUserModule.isDispatchThreadEnabled() || !Interrupts.isInterruptsEnabled()) {
+    		//     if (Modules.log.isDebugEnabled()) {
+    		//         Modules.log.debug("<function name> return errorCode 0x800201A7 (ERROR_KERNEL_WAIT_CAN_NOT_WAIT)");
+    		//     }
     		//     cpu.gpr[_v0] = SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
     		//     goto afterSyscall
     		// }
     		loadModule("ThreadManForUser");
     		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(ThreadManForUser.class), "isDispatchThreadEnabled", "()Z");
-    		Label dispatchThreadEnabled = new Label();
-    		mv.visitJumpInsn(Opcodes.IFNE, dispatchThreadEnabled);
-    		storeRegister(_v0, SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT);
+    		Label returnError = new Label();
+    		mv.visitJumpInsn(Opcodes.IFEQ, returnError);
+    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Interrupts.class), "isInterruptsEnabled", "()Z");
+    		Label noError = new Label();
+    		mv.visitJumpInsn(Opcodes.IFNE, noError);
+
+    		mv.visitLabel(returnError);
+        	mv.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(Modules.class), "log", Type.getDescriptor(Logger.class));
+        	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), "isDebugEnabled", "()Z");
+        	Label notDebug = new Label();
+        	mv.visitJumpInsn(Opcodes.IFEQ, notDebug);
+        	mv.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(Modules.class), "log", Type.getDescriptor(Logger.class));
+        	mv.visitLdcInsn(String.format("%s returning errorCode 0x%08X (ERROR_KERNEL_WAIT_CAN_NOT_WAIT)", func.getFunctionName(), SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT));
+        	mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(Logger.class), "debug", "(" + Type.getDescriptor(Object.class) + ")V");
+        	mv.visitLabel(notDebug);
+
+        	storeRegister(_v0, SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT);
     		mv.visitJumpInsn(Opcodes.GOTO, afterSyscallLabel);
-    		mv.visitLabel(dispatchThreadEnabled);
+    		mv.visitLabel(noError);
     	}
 
     	if (func.isUnimplemented()) {
