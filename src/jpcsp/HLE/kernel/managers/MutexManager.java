@@ -185,11 +185,6 @@ public class MutexManager {
         SceKernelMutexInfo info = new SceKernelMutexInfo(name.getString(), count, attr);
         mutexMap.put(info.uid, info);
 
-        // If the initial count is 0, the mutex is not acquired.
-        if (count > 0) {
-            info.threadid = Modules.ThreadManForUserModule.getCurrentThreadID();
-        }
-
         return info.uid;
     }
 
@@ -280,7 +275,7 @@ public class MutexManager {
 
         info.lockedCount -= count;
         if (info.lockedCount == 0) {
-        	info.threadid = 0;
+        	info.threadid = -1;
             onMutexModified(info);
         }
 
