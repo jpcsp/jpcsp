@@ -2225,7 +2225,7 @@ public class ThreadManForUser extends HLEModule {
         return callback.uid;
     }
 
-    @HLEFunction(nid = 0xEDBA5844, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0xEDBA5844, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public int sceKernelDeleteCallback(@CheckArgument("checkCallbackID") int uid) {
         hleKernelDeleteCallback(uid);
         
@@ -2280,7 +2280,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     /** Check callbacks, only on the current thread. */
-    @HLEFunction(nid = 0x349D6D6C, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x349D6D6C, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public int sceKernelCheckCallback() {
         // Remember the currentThread, as it might have changed after
         // the execution of a callback.
@@ -2463,12 +2463,12 @@ public class ThreadManForUser extends HLEModule {
         return Managers.semas.sceKernelSignalSema(semaid, signal);
     }
 
-    @HLEFunction(nid = 0x4E3A1105, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x4E3A1105, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public int sceKernelWaitSema(@CheckArgument("checkSemaID") int semaid, int signal, @CanBeNull TPointer32 timeoutAddr) {
         return Managers.semas.sceKernelWaitSema(semaid, signal, timeoutAddr);
     }
 
-    @HLEFunction(nid = 0x6D212BAC, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x6D212BAC, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public int sceKernelWaitSemaCB(@CheckArgument("checkSemaID") int semaid, int signal, @CanBeNull TPointer32 timeoutAddr) {
         return Managers.semas.sceKernelWaitSemaCB(semaid, signal, timeoutAddr);
     }
@@ -2508,12 +2508,12 @@ public class ThreadManForUser extends HLEModule {
         return Managers.eventFlags.sceKernelClearEventFlag(uid, bitsToKeep);
     }
 
-    @HLEFunction(nid = 0x402FCF22, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x402FCF22, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public int sceKernelWaitEventFlag(@CheckArgument("checkEventFlagID") int uid, int bits, int wait, @CanBeNull TPointer32 outBitsAddr, @CanBeNull TPointer32 timeoutAddr) {
         return Managers.eventFlags.sceKernelWaitEventFlag(uid, bits, wait, outBitsAddr, timeoutAddr);
     }
 
-    @HLEFunction(nid = 0x328C546A, version = 150, checkInsideInterrupt = true)
+    @HLEFunction(nid = 0x328C546A, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
     public int sceKernelWaitEventFlagCB(@CheckArgument("checkEventFlagID") int uid, int bits, int wait, @CanBeNull TPointer32 outBitsAddr, @CanBeNull TPointer32 timeoutAddr) {
         return Managers.eventFlags.sceKernelWaitEventFlagCB(uid, bits, wait, outBitsAddr, timeoutAddr);
     }
@@ -3121,7 +3121,12 @@ public class ThreadManForUser extends HLEModule {
     /** exit the current thread */
     @HLEFunction(nid = 0xAA73C935, version = 150, checkInsideInterrupt = true)
     public int sceKernelExitThread(int exitStatus) {
-        SceKernelThreadInfo thread = currentThread;
+    	// PSP is only returning an error for a SDK after 3.07
+    	if (!isDispatchThreadEnabled() && Modules.SysMemUserForUserModule.hleKernelGetCompiledSdkVersion() > 0x0307FFFF) {
+    		return SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+    	}
+
+    	SceKernelThreadInfo thread = currentThread;
 
         if (exitStatus < 0) {
         	thread.setExitStatus(ERROR_KERNEL_ILLEGAL_ARGUMENT);
@@ -3141,6 +3146,11 @@ public class ThreadManForUser extends HLEModule {
     /** exit the current thread, then delete it */
     @HLEFunction(nid = 0x809CE29B, version = 150, checkInsideInterrupt = true)
     public int sceKernelExitDeleteThread(int exitStatus) {
+    	// PSP is only returning an error for a SDK after 3.07
+    	if (!isDispatchThreadEnabled() && Modules.SysMemUserForUserModule.hleKernelGetCompiledSdkVersion() > 0x0307FFFF) {
+    		return SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+    	}
+
         SceKernelThreadInfo thread = currentThread;
         thread.setExitStatus(exitStatus);
 
@@ -3158,7 +3168,16 @@ public class ThreadManForUser extends HLEModule {
     /** terminate thread */
     @HLEFunction(nid = 0x616403BA, version = 150)
     public int sceKernelTerminateThread(@CheckArgument("checkThreadID") int uid) {
-        SceKernelThreadInfo thread = getThreadCurrentIsInvalid(uid);
+    	// PSP is only returning an error for a SDK after 3.07
+    	if (IntrManager.getInstance().isInsideInterrupt() && Modules.SysMemUserForUserModule.hleKernelGetCompiledSdkVersion() > 0x0307FFFF) {
+    		return SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+    	}
+    	// PSP is only returning an error for a SDK after 3.07
+    	if (!isDispatchThreadEnabled() && Modules.SysMemUserForUserModule.hleKernelGetCompiledSdkVersion() > 0x0307FFFF) {
+    		return SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+    	}
+
+    	SceKernelThreadInfo thread = getThreadCurrentIsInvalid(uid);
 
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
 
@@ -3176,7 +3195,12 @@ public class ThreadManForUser extends HLEModule {
     /** terminate thread, then mark it for deletion */
     @HLEFunction(nid = 0x383F7BCC, version = 150, checkInsideInterrupt = true)
     public int sceKernelTerminateDeleteThread(@CheckArgument("checkThreadID") int uid) {
-        SceKernelThreadInfo thread = getThreadCurrentIsInvalid(uid);
+    	// PSP is only returning an error for a SDK after 3.07
+    	if (!isDispatchThreadEnabled() && Modules.SysMemUserForUserModule.hleKernelGetCompiledSdkVersion() > 0x0307FFFF) {
+    		return SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+    	}
+
+    	SceKernelThreadInfo thread = getThreadCurrentIsInvalid(uid);
 
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
         triggerThreadEvent(thread, currentThread, THREAD_EVENT_DELETE);
