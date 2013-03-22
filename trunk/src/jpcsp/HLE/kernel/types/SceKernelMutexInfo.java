@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.MutexManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.managers.ThreadWaitingList;
@@ -37,6 +38,13 @@ public class SceKernelMutexInfo extends pspAbstractMemoryMappedStructureVariable
         initCount = count;
         lockedCount = count;
 
+        // If the initial count is 0, the mutex is not acquired.
+        if (count > 0) {
+        	threadid = Modules.ThreadManForUserModule.getCurrentThreadID();
+        } else {
+        	threadid = -1;
+        }
+
         uid = SceUidManager.getNewUid("ThreadMan-Mutex");
         threadWaitingList = ThreadWaitingList.createThreadWaitingList(SceKernelThreadInfo.PSP_WAIT_MUTEX, uid, attr, MutexManager.PSP_MUTEX_ATTR_PRIORITY);
     }
@@ -48,7 +56,7 @@ public class SceKernelMutexInfo extends pspAbstractMemoryMappedStructureVariable
 		write32(attr);
 		write32(initCount);
 		write32(lockedCount);
-		write32(getNumWaitingThreads());
+		write32(threadid); // Checked on PSP: this is the thread owning the mutex
 	}
 
     public int getNumWaitingThreads() {
