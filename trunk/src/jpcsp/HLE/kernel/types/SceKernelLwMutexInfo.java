@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.kernel.managers.LwMutexManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
@@ -42,6 +43,13 @@ public class SceKernelLwMutexInfo extends pspAbstractMemoryMappedStructureVariab
         initCount = count;
         lockedCount = count;
 
+        // If the initial count is 0, the lwmutex is not acquired.
+        if (count > 0) {
+        	threadid = Modules.ThreadManForUserModule.getCurrentThreadID();
+        } else {
+        	threadid = -1;
+        }
+
         uid = SceUidManager.getNewUid("ThreadMan-LwMutex");
         threadWaitingList = ThreadWaitingList.createThreadWaitingList(SceKernelThreadInfo.PSP_WAIT_LWMUTEX, uid, attr, LwMutexManager.PSP_LWMUTEX_ATTR_PRIORITY);
 
@@ -57,6 +65,7 @@ public class SceKernelLwMutexInfo extends pspAbstractMemoryMappedStructureVariab
 		write32(lwMutexOpaqueWorkAreaAddr.getAddress());
 		write32(initCount);
 		write32(lockedCount);
+		write32(threadid);
 		write32(getNumWaitThreads());
 	}
 

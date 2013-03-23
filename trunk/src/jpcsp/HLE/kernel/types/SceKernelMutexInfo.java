@@ -56,7 +56,8 @@ public class SceKernelMutexInfo extends pspAbstractMemoryMappedStructureVariable
 		write32(attr);
 		write32(initCount);
 		write32(lockedCount);
-		write32(threadid); // Checked on PSP: this is the thread owning the mutex
+		write32(threadid);
+		write32(getNumWaitingThreads());
 	}
 
     public int getNumWaitingThreads() {
