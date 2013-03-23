@@ -557,6 +557,7 @@ public class ModuleMgrForUser extends HLEModule {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelThreadInfo thread = null;
         statusAddr.setValue(0);
+        sceModule.stop();
         if (Memory.isAddressGood(sceModule.module_stop_func)) {
             // Start the module stop thread function.
             thread = threadMan.hleKernelCreateThread("SceModmgrStop",
@@ -565,9 +566,12 @@ public class ModuleMgrForUser extends HLEModule {
             thread.moduleid = sceModule.modid;
             // Store the thread exit status into statusAddr when the thread terminates
             thread.exitStatusAddr = statusAddr;
+            // Unload the module when the stop thread will be deleted
+            thread.unloadModuleAtDeletion = true;
+        } else {
+        	// Unload the module immediately
+        	sceModule.unload();
         }
-        sceModule.stop();
-        sceModule.unload();
 
         threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
         if (thread != null) {
@@ -583,6 +587,7 @@ public class ModuleMgrForUser extends HLEModule {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelThreadInfo thread = null;
         statusAddr.setValue(0);
+        sceModule.stop();
         if (Memory.isAddressGood(sceModule.module_stop_func)) {
             // Start the module stop thread function.
             statusAddr.setValue(0); // TODO set to return value of the thread (when it exits, of course)
@@ -594,9 +599,12 @@ public class ModuleMgrForUser extends HLEModule {
             // Store the thread exit status into statusAddr when the thread terminates
             thread.exitStatusAddr = statusAddr;
             threadMan.getCurrentThread().exitStatus = exitCode; // Set the current thread's exit status.
+            // Unload the module when the stop thread will be deleted
+            thread.unloadModuleAtDeletion = true;
+        } else {
+        	// Unload the module immediately
+        	sceModule.unload();
         }
-        sceModule.stop();
-        sceModule.unload();
 
         threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
         if (thread != null) {
@@ -612,6 +620,7 @@ public class ModuleMgrForUser extends HLEModule {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelThreadInfo thread = null;
         statusAddr.setValue(0);
+    	sceModule.stop();
         if (Memory.isAddressGood(sceModule.module_stop_func)) {
             // Start the module stop thread function.
             thread = threadMan.hleKernelCreateThread("SceModmgrStop",
@@ -620,9 +629,12 @@ public class ModuleMgrForUser extends HLEModule {
             thread.moduleid = sceModule.modid;
             // Store the thread exit status into statusAddr when the thread terminates
             thread.exitStatusAddr = statusAddr;
+            // Unload the module when the stop thread will be deleted
+            thread.unloadModuleAtDeletion = true;
+        } else {
+        	// Unload the module immediately
+        	sceModule.unload();
         }
-        sceModule.stop();
-        sceModule.unload();
 
         threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
         if (thread != null) {
