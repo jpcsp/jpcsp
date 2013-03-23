@@ -27,6 +27,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 #define DEBUG			0
 #define DEBUG_MUTEX		0
+#define LOG_BUFFER_SIZE	1024
 
 PSP_MODULE_INFO("JpcspTrace", PSP_MODULE_KERNEL, 1, 0);
 
@@ -50,6 +51,12 @@ int logKeepOpen = 0;
 char *hexDigits = "0123456789ABCDEF";
 int logTimestamp = 1;
 int logThreadName = 1;
+char *logBuffer;
+int logBufferLength;
+// Allocator Functions
+int (* alloc)(u32, char *, u32, u32, u32);
+void * (* gethead)(u32);
+
 
 typedef struct {
 	u64 (*originalEntry)(u32, u32, u32, u32, u32, u32, u32, u32);
@@ -79,6 +86,7 @@ typedef struct {
 	u32 initCount;
 	u32 lockedCount;
 	u32 threadid;
+	u32 numWaitThreads;
 } SceKernelMutexInfo;
 
 int (* referMutex)(SceUID, SceKernelMutexInfo *) = NULL;
@@ -153,7 +161,34 @@ void writeLog(const char *s, int length) {
 		openLogFile();
 	}
 
-	sceIoWrite(logFd, s, length);
+	if (logBufferLength > 0) {
+		// Try to write pending output.
+		// This will succeed as soon as the interrupts are enabled again.
+		if (sceIoWrite(logFd, logBuffer, logBufferLength) > 0) {
+			logBufferLength = 0;
+		}
+	}
+
+	if (sceIoWrite(logFd, s, length) < 0) {
+		// Can't write to the log file right now, probably because the interrupts are disabled.
+		// Save the log string for later output.
+
+		// Allocate a buffer if not yet allocated
+		if (logBuffer == NULL) {
+			int result = alloc(USER_PARTITION_ID, "LogBuffer", PSP_SMEM_High, LOG_BUFFER_SIZE, 0);
+			if (result >= 0) {
+				logBuffer = gethead(result);
+			}
+		}
+		if (logBuffer != NULL) {
+			int restLength = LOG_BUFFER_SIZE - logBufferLength;
+			if (length > restLength) {
+				length = restLength;
+			}
+			memcpy(logBuffer + logBufferLength, s, length);
+			logBufferLength += length;
+		}
+	}
 
 	if (!logKeepOpen) {
 		closeLogFile();
@@ -320,6 +355,8 @@ char *mutexLog(char *s, const SyscallInfo *syscallInfo, const u32 *parameters, u
 				s = appendInt(s, mutexInfo.lockedCount, 0);
 				s = append(s, ", before t=");
 				s = appendHex(s, mutexInfo.threadid);
+				s = append(s, ", before w=");
+				s = appendInt(s, mutexInfo.numWaitThreads, 0);
 				// The mutexId is the first parameter of sceKernelLockMutex, ...
 				mutexId = parameters[0];
 			}
@@ -331,6 +368,8 @@ char *mutexLog(char *s, const SyscallInfo *syscallInfo, const u32 *parameters, u
 				s = appendInt(s, mutexInfo.lockedCount, 0);
 				s = append(s, ", t=");
 				s = appendHex(s, mutexInfo.threadid);
+				s = append(s, ", w=");
+				s = appendInt(s, mutexInfo.numWaitThreads, 0);
 			}
 		}
 	}
@@ -475,14 +514,6 @@ void *getEntryByNID(int nid) {
 }
 
 void patchSyscall(char *module, char *library, const char *name, u32 nid, int numParams) {
-	// Find Allocator Functions in Memory
-	int (* alloc)(u32, char *, u32, u32, u32) = (void *) sctrlHENFindFunction("sceSystemMemoryManager", "SysMemUserForUser", 0x237DBD4F);
-	void * (* gethead)(u32) = (void *) sctrlHENFindFunction("sceSystemMemoryManager", "SysMemUserForUser", 0x9D9A5BA1);
-
-	if (alloc == NULL || gethead == NULL) {
-		return;
-	}
-
 	int asmBlocks = 9;
 	int memSize = asmBlocks * 4 + sizeof(SyscallInfo) + strlen(name) + 1;
 
@@ -697,6 +728,13 @@ void printAllModules() {
 
 // Module Start
 int module_start(SceSize args, void * argp) {
+	// Find Allocator Functions in Memory
+	alloc = (void *) sctrlHENFindFunction("sceSystemMemoryManager", "SysMemUserForUser", 0x237DBD4F);
+	gethead = (void *) sctrlHENFindFunction("sceSystemMemoryManager", "SysMemUserForUser", 0x9D9A5BA1);
+
+	logBufferLength = 0;
+	logBuffer = NULL;
+
 	logKeepOpen = 1;
 	openLogFile();
 
