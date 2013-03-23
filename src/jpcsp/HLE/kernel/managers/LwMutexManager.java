@@ -205,11 +205,6 @@ public class LwMutexManager {
         SceKernelLwMutexInfo info = new SceKernelLwMutexInfo(workAreaAddr, name, count, attr);
         lwMutexMap.put(info.uid, info);
 
-        // If the initial count is 0, the lwmutex is not acquired.
-        if (count > 0) {
-            info.threadid = Modules.ThreadManForUserModule.getCurrentThreadID();
-        }
-
         // Return 0 in case of no error, do not return the UID of the created mutex
         return 0;
     }
@@ -262,6 +257,7 @@ public class LwMutexManager {
 
         info.lockedCount -= count;
         if (info.lockedCount == 0) {
+        	info.threadid = -1;
             onLwMutexModified(info);
         }
 
