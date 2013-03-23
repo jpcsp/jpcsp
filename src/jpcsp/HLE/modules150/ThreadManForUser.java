@@ -78,6 +78,7 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
+import jpcsp.State;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.RuntimeContext;
@@ -342,9 +343,12 @@ public class ThreadManForUser extends HLEModule {
     }
 
     public void hleKernelSetThreadArguments(SceKernelThreadInfo thread, String argument) {
-    	// The PSP is passing an argumentSize 1 byte (0x00) larger than the real string...
-    	// but only on newer firmwares (not sure from which version, assume version 200).
-    	int extraBytes = Modules.SysMemUserForUserModule.getFirmwareVersion() > 200 ? 1 : 0;
+    	// The game "Kamen Rider Climax Heroes OOO - ULJS00331" is expecting to receive
+    	// an argumentSize 1 byte (0x00) larger than the real string...
+    	// But this is breaking several other games: "Burnout Legends - ULES00125",
+    	// "Assassin's Creed: Bloodlines - USA - ULUS10455"...
+    	// So, keep the change now specific to ULJS00331 until we find out what is going on...
+    	int extraBytes = "ULJS00331".equals(State.discId) ? 1 : 0;
     	int address = prepareThreadArguments(thread, argument.length() + 1 + extraBytes);
     	writeStringZ(Memory.getInstance(), address, argument);
     	if (extraBytes > 0) {
