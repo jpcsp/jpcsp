@@ -1077,6 +1077,12 @@ public class ThreadManForUser extends HLEModule {
 
         cancelThreadWait(thread);
         threadMap.remove(thread.uid);
+        if (thread.unloadModuleAtDeletion) {
+        	SceModule module = Managers.modules.getModuleByUID(thread.moduleid);
+        	if (module != null) {
+        		module.unload();
+        	}
+        }
         SceUidManager.releaseUid(thread.uid, "ThreadMan-thread");
 
         statistics.addThreadStatistics(thread);

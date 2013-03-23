@@ -115,6 +115,7 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
     public CpuState cpuContext;
     public boolean doDelete;
     public IAction doDeleteAction;
+    public boolean unloadModuleAtDeletion;
     public boolean doCallbacks;
     public final ThreadWaitInfo wait;
     public int displayLastWaitVcount;
