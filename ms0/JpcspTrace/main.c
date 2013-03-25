@@ -14,7 +14,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #include <pspsdk.h>
 #include <pspkernel.h>
 #include <pspinit.h>
@@ -24,19 +23,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 #include <psprtc.h>
 #include <string.h>
 #include "systemctrl.h"
-
-#define DEBUG			0
-#define DEBUG_MUTEX		0
-#define LOG_BUFFER_SIZE	1024
+#include "common.h"
 
 PSP_MODULE_INFO("JpcspTrace", PSP_MODULE_KERNEL, 1, 0);
 
-#define USER_PARTITION_ID	2
-
 #define MAKE_CALL(f) (0x0C000000 | (((u32)(f) >> 2) & 0x03ffffff))
 #define MAKE_JUMP(f) (0x08000000 | (((u32)(f) >> 2) & 0x03ffffff))
-#define MAKE_SYSCALL(n) ((n<<6)|12)
+#define MAKE_SYSCALL(n) ((((n) & 0xFFFFF) << 6) | 0x0C)
 #define NOP 0
+
+#define SYSCALL_PLUGIN_NID	0xADB83469
 
 // ASM Redirect Patch
 #define REDIRECT_FUNCTION(new_func, original) \
@@ -45,25 +41,14 @@ PSP_MODULE_INFO("JpcspTrace", PSP_MODULE_KERNEL, 1, 0);
 		_sw(NOP, ((u32)original)+4); \
 	} while ( 0 )
 
-
-SceUID logFd = -1;
-int logKeepOpen = 0;
-char *hexDigits = "0123456789ABCDEF";
-int logTimestamp = 1;
-int logThreadName = 1;
-char *logBuffer;
-int logBufferLength;
 // Allocator Functions
-int (* alloc)(u32, char *, u32, u32, u32);
-void * (* gethead)(u32);
+int (* allocFunc)(u32, char *, u32, u32, u32);
+void * (* getHeadFunc)(u32);
+STMOD_HANDLER nextStartModuleHandler = NULL;
+int syscallPluginUser;
+int callSyscallPluginOffset;
 
-
-typedef struct {
-	u64 (*originalEntry)(u32, u32, u32, u32, u32, u32, u32, u32);
-	u32 nid;
-	int numParams;
-	char *name;
-} SyscallInfo;
+SyscallInfo *moduleSyscalls = NULL;
 
 typedef struct {
         const char *name;
@@ -78,218 +63,18 @@ typedef struct {
         unsigned int *vars;
 } PspModuleImport;
 
-#if DEBUG_MUTEX
-typedef struct {
-	SceSize size;
-	char name[32];
-	u32 attr;
-	u32 initCount;
-	u32 lockedCount;
-	u32 threadid;
-	u32 numWaitThreads;
-} SceKernelMutexInfo;
-
-int (* referMutex)(SceUID, SceKernelMutexInfo *) = NULL;
-SceKernelMutexInfo mutexInfo;
-#endif
-
-char *append(char *dst, const char *src) {
-	while ((*dst = *src) != '\0') {
-		src++;
-		dst++;
-	}
-
-	return dst;
-}
-
-char *appendHex(char *dst, u32 hex) {
-	int i;
-	*dst++ = '0';
-	*dst++ = 'x';
-	for (i = 28; i >= 0; i -= 4) {
-		*dst++ = hexDigits[(hex >> i) & 0xF];
-	}
-	*dst = '\0';
-
-	return dst;
-}
-
-char *appendInt(char *dst, s32 n, int numDigits) {
-	if (n == 0) {
-		*dst++ = '0';
-		for (numDigits--; numDigits > 0; numDigits--) {
-			*dst++ = '0';
-		}
-	} else {
-		if (n < 0) {
-			*dst++ = '-';
-			n = -n;
-		}
-
-		int factor = 1000000000;
-		int leadingZero = 1;
-		int factorDigits = 10;
-		while (factor > 0) {
-			int digit = n / factor;
-			if (digit > 0 || !leadingZero || factorDigits <= numDigits) {
-				*dst++ = '0' + digit;
-				n -= digit * factor;
-				leadingZero = 0;
-			}
-			factor /= 10;
-			factorDigits--;
-		}
-	}
-	*dst = '\0';
-
-	return dst;
-}
-
-void openLogFile() {
-	if (logFd < 0) {
-		logFd = sceIoOpen("ms0:/log.txt", PSP_O_WRONLY | PSP_O_CREAT | PSP_O_APPEND, 0777);
-	}
-}
-
-void closeLogFile() {
-	sceIoClose(logFd);
-	logFd = -1;
-}
-
-void writeLog(const char *s, int length) {
-	if (!logKeepOpen) {
-		openLogFile();
-	}
-
-	if (logBufferLength > 0) {
-		// Try to write pending output.
-		// This will succeed as soon as the interrupts are enabled again.
-		if (sceIoWrite(logFd, logBuffer, logBufferLength) > 0) {
-			logBufferLength = 0;
-		}
-	}
-
-	if (sceIoWrite(logFd, s, length) < 0) {
-		// Can't write to the log file right now, probably because the interrupts are disabled.
-		// Save the log string for later output.
-
-		// Allocate a buffer if not yet allocated
-		if (logBuffer == NULL) {
-			int result = alloc(USER_PARTITION_ID, "LogBuffer", PSP_SMEM_High, LOG_BUFFER_SIZE, 0);
-			if (result >= 0) {
-				logBuffer = gethead(result);
-			}
-		}
-		if (logBuffer != NULL) {
-			int restLength = LOG_BUFFER_SIZE - logBufferLength;
-			if (length > restLength) {
-				length = restLength;
-			}
-			memcpy(logBuffer + logBufferLength, s, length);
-			logBufferLength += length;
-		}
-	}
-
-	if (!logKeepOpen) {
-		closeLogFile();
-	}
-}
-
-void printLog(const char *s) {
-	writeLog(s, strlen(s));
-}
-
-void printLogH(const char *s1, int hex, const char *s2) {
-	char buffer[200];
-	char *s = buffer;
-
-	s = append(s, s1);
-	s = appendHex(s, hex);
-	s = append(s, s2);
-	writeLog(buffer, s - buffer);
-}
-
-void printLogS(const char *s1, const char *s2, const char *s3) {
-	char buffer[200];
-	char *s = buffer;
-
-	s = append(s, s1);
-	s = append(s, s2);
-	s = append(s, s3);
-	writeLog(buffer, s - buffer);
-}
-
-void printLogHH(const char *s1, int hex1, const char *s2, int hex2, const char *s3) {
-	char buffer[200];
-	char *s = buffer;
-
-	s = append(s, s1);
-	s = appendHex(s, hex1);
-	s = append(s, s2);
-	s = appendHex(s, hex2);
-	s = append(s, s3);
-	writeLog(buffer, s - buffer);
-}
-
-void printLogSH(const char *s1, const char *s2, const char *s3, int hex, const char *s4) {
-	char buffer[200];
-	char *s = buffer;
-
-	s = append(s, s1);
-	s = append(s, s2);
-	s = append(s, s3);
-	s = appendHex(s, hex);
-	s = append(s, s4);
-	writeLog(buffer, s - buffer);
-}
-
-void printLogHS(const char *s1, int hex, const char *s2, const char *s3, const char *s4) {
-	char buffer[200];
-	char *s = buffer;
-
-	s = append(s, s1);
-	s = appendHex(s, hex);
-	s = append(s, s2);
-	s = append(s, s3);
-	s = append(s, s4);
-	writeLog(buffer, s - buffer);
-}
-
-void printLogMem(const char *s1, int addr, int length) {
-	int i;
-	char buffer[100];
-	char *s = buffer;
-
-	s = append(s, s1);
-	s = appendHex(s, addr);
-	s = append(s, ":\n");
-	for (i = 0; i < length; i += 4) {
-		if (i > 0) {
-			if ((i % 16) == 0) {
-				s = append(s, "\n");
-				writeLog(buffer, s - buffer);
-				s = buffer;
-			} else {
-				s = append(s, ", ");
-			}
-		}
-		s = appendHex(s, _lw(addr + i));
-	}
-	s = append(s, "\n");
-	writeLog(buffer, s - buffer);
-}
-
-void changeSyscallAddr(void *addr, void *newaddr) {
+int changeSyscallAddr(void *addr, void *newaddr) {
 	void *ptr;
 	u32 *syscalls;
 	int i;
 	u32 _addr = (u32)addr;
+	int found = 0;
 
 	// Retrieve the syscall arrays from the cop0
 	asm("cfc0 %0, $12\n" : "=r"(ptr));
 
 	if (ptr == NULL) {
-		return;
+		return 0;
 	}
 
 	syscalls = (u32*) (ptr + 0x10);
@@ -298,13 +83,15 @@ void changeSyscallAddr(void *addr, void *newaddr) {
 		if ((syscalls[i] & 0x0FFFFFFF) == (_addr & 0x0FFFFFFF)) {
 			printLogHH("Patching syscall from ", syscalls[i], " to ", (int) newaddr, "\n");
 			syscalls[i] = (u32)newaddr;
+			found = 1;
 		}
 	}
 
 	sceKernelDcacheWritebackAll();
 	sceKernelIcacheClearAll();
-}
 
+	return found;
+}
 
 int parseHexDigit(char hex) {
 	if (hex >= '0' && hex <= '9') {
@@ -334,6 +121,26 @@ u32 parseHex(const char *s) {
 	}
 
 	return hex;
+}
+
+u32 parseParamTypes(const char *s) {
+	u32 paramTypes = 0;
+	int paramType;
+	int i;
+
+	for (i = 0; *s != '\0' && i < 32; i += 4) {
+		paramType = TYPE_HEX32;
+		switch (*s++) {
+			case 'x': paramType = TYPE_HEX32; break;
+			case 'd': paramType = TYPE_INT32; break;
+			case 's': paramType = TYPE_STRING; break;
+			case 'p': paramType = TYPE_POINTER32; break;
+			case 'v': paramType = TYPE_VARSTRUCT; break;
+		}
+		paramTypes |= paramType << i;
+	}
+
+	return paramTypes;
 }
 
 #if DEBUG_MUTEX
@@ -393,56 +200,6 @@ void mutexPreLog(const SyscallInfo *syscallInfo, const u32 *parameters) {
 	}
 }
 #endif
-
-void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 result) {
-	char buffer[200];
-	char *s = buffer;
-	int i;
-
-	if (logTimestamp) {
-		pspTime time;
-		if (sceRtcGetCurrentClockLocalTime(&time) == 0) {
-			s = appendInt(s, time.hour, 2);
-			*s++ = ':';
-			s = appendInt(s, time.minutes, 2);
-			*s++ = ':';
-			s = appendInt(s, time.seconds, 2);
-			*s++ = ' ';
-		}
-	}
-
-	if (logThreadName) {
-		SceKernelThreadInfo currentThreadInfo;
-		currentThreadInfo.size = sizeof(currentThreadInfo);
-		currentThreadInfo.name[0] = '\0';
-		sceKernelReferThreadStatus(0, &currentThreadInfo);
-
-		s = append(s, currentThreadInfo.name);
-		*s++ = ' ';
-		*s++ = '-';
-		*s++ = ' ';
-	}
-
-	s = append(s, syscallInfo->name);
-	for (i = 0; i < syscallInfo->numParams; i++) {
-		if (i > 0) {
-			*s++ = ',';
-		}
-		*s++ = ' ';
-		s = appendHex(s, parameters[i]);
-	}
-	*s++ = ' ';
-	*s++ = '=';
-	*s++ = ' ';
-	s = appendHex(s, (int) result);
-
-	#if DEBUG_MUTEX
-	s = mutexLog(s, syscallInfo, parameters, result);
-	#endif
-
-	*s++ = '\n';
-	writeLog(buffer, s - buffer);
-}
 
 u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3, SyscallInfo *syscallInfo) {
 	u32 parameters[8];
@@ -513,37 +270,32 @@ void *getEntryByNID(int nid) {
 	return NULL;
 }
 
-void patchSyscall(char *module, char *library, const char *name, u32 nid, int numParams) {
+void patchSyscall(char *module, char *library, const char *name, u32 nid, int numParams, u32 paramTypes) {
 	int asmBlocks = 9;
+
+	// Allocate memory for the patch code and SyscallInfo
 	int memSize = asmBlocks * 4 + sizeof(SyscallInfo) + strlen(name) + 1;
-
-	// Allocate Memory
-	int result = alloc(USER_PARTITION_ID, "SyscallStub", PSP_SMEM_High, memSize, 0);
-
-	// Allocated Memory
-	if (result < 0) {
-		return;
-	}
-
-	// Get Memory Block
-	uint32_t *asmblock = gethead(result);
-
-	// Got Memory Block
+	uint32_t *asmblock = alloc(memSize);
 	if (asmblock == NULL) {
 		return;
 	}
 
 	// Link to Syscall
 	SyscallInfo *syscallInfo = (SyscallInfo *) (asmblock + asmBlocks);
-	int syscallInfoAddr = (int) syscallInfo;
 	char *nameCopy = (char *) (syscallInfo + 1);
 	append(nameCopy, name);
+
+	// Prepare loading of syscallInfo address using lui/ori
+	int syscallInfoAddr = (int) syscallInfo;
+	int syscallInfoAddrHi = (syscallInfoAddr >> 16) & 0xFFFF;
+	int syscallInfoAddrLo = syscallInfoAddr & 0xFFFF;
 
 	int i = 0;
 	asmblock[i++] = 0x27BDFFF0; // addiu $sp, $sp, -16
 	asmblock[i++] = 0xAFBF0004; // sw $ra, 4($sp)
-	asmblock[i++] = 0x3C0C0000 | ((syscallInfoAddr >> 16) & 0xFFFF); // lui $t4, syscallInfoAddr
-	asmblock[i++] = 0x358C0000 | (syscallInfoAddr & 0xFFFF); // ori $t4, $t4, syscallInfoAddr
+	asmblock[i++] = 0x3C0C0000 | syscallInfoAddrHi; // lui $t4, syscallInfoAddr
+	asmblock[i++] = 0x358C0000 | syscallInfoAddrLo; // ori $t4, $t4, syscallInfoAddr
+	callSyscallPluginOffset = i * 4;
 	asmblock[i++] = MAKE_CALL(syscallPlugin);
 	asmblock[i++] = 0xAFAC0000; // sw $t4, 0($sp)
 	asmblock[i++] = 0x8FBF0004; // lw $ra, 4($sp)
@@ -560,12 +312,19 @@ void patchSyscall(char *module, char *library, const char *name, u32 nid, int nu
 	}
 	syscallInfo->nid = nid;
 	syscallInfo->numParams = numParams;
+	syscallInfo->paramTypes = paramTypes;
 	syscallInfo->name = nameCopy;
+	syscallInfo->next = NULL;
+	syscallInfo->newEntry = (void *) asmblock;
+
+	if (!changeSyscallAddr(syscallInfo->originalEntry, asmblock)) {
+		// This function has to be patched when starting a new module
+		syscallInfo->next = moduleSyscalls;
+		moduleSyscalls = syscallInfo;
+	}
 
 	sceKernelDcacheWritebackAll();
 	sceKernelIcacheClearAll();
-
-	changeSyscallAddr(syscallInfo->originalEntry, asmblock);
 
 	#if DEBUG
 	printLogMem("Sycall stub ", (int) asmblock, memSize);
@@ -651,19 +410,123 @@ void patchSyscalls(char *filePath) {
 
 		char *name = nextWord(&line);
 		char *hexNid = nextWord(&line);
-		u32 nid = parseHex(hexNid);
 		char *hexNumParams = nextWord(&line);
+		char *strParamTypes = nextWord(&line);
+
+		u32 nid = parseHex(hexNid);
 		u32 numParams = parseHex(hexNumParams);
+		u32 paramTypes = parseParamTypes(strParamTypes);
+
 		// If no numParams specified, take maximum number of params
 		if (strlen(hexNumParams) == 0) {
 			numParams = 8;
 		}
 
-		patchSyscall(NULL, NULL, name, nid, numParams);
+		patchSyscall(NULL, NULL, name, nid, numParams, paramTypes);
 	}
 
 	sceIoClose(fd);
 }
+
+void patchModule(SceModule *module) {
+	SyscallInfo *syscallInfo;
+	int i, j;
+
+	for (syscallInfo = moduleSyscalls; syscallInfo != NULL; syscallInfo = syscallInfo->next) {
+		if (syscallInfo->originalEntry != NULL) {
+			PspModuleImport *entry;
+			for (i = 0; i < module->stub_size; i += entry->entLen * 4) {
+				entry = module->stub_top + i;
+				if (entry->name != NULL) {
+					for (j = 0; j < entry->funcCount; j++) {
+						if (entry->fnids[j] == syscallInfo->nid) {
+							printLogSS("Patching module ", module->modname, ": ", syscallInfo->name, "\n");
+							#if DEBUG
+							printLogHH("Patching from ", (int) syscallInfo->originalEntry, " to ", (int) syscallInfo->newEntry, "\n");
+							#endif
+							void *addr = &entry->funcs[j * 2];
+
+							#if DEBUG
+							printLogMem("Before patch ", (int) addr, 8);
+							#endif
+							REDIRECT_FUNCTION(syscallInfo->newEntry, addr);
+							#if DEBUG
+							printLogMem("After patch ", (int) addr, 8);
+							#endif
+
+							sceKernelDcacheWritebackInvalidateRange(addr, 8);
+							sceKernelIcacheInvalidateRange(addr, 8);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+int startModuleHandler(SceModule2 *startingModule) {
+	SyscallInfo *syscallInfo;
+	int i;
+	int id[100];
+	int idcount = 0;
+
+	logKeepOpen = 1;
+	openLogFile();
+	printLogS("Starting module ", startingModule->modname, "\n");
+
+	// Check if the starting module is providing still missing NIDs
+	int syscallInfoUpdated = 0;
+	for (syscallInfo = moduleSyscalls; syscallInfo != NULL; syscallInfo = syscallInfo->next) {
+		if (syscallInfo->originalEntry == NULL) {
+			syscallInfo->originalEntry = getEntryByModule((SceModule *) startingModule, syscallInfo->nid);
+			if (syscallInfo->originalEntry != NULL) {
+				sceKernelDcacheWritebackInvalidateRange(&(syscallInfo->originalEntry), 4);
+				sceKernelIcacheInvalidateRange(&(syscallInfo->originalEntry), 4);
+
+				if (syscallPluginUser != 0) {
+					int addr = ((int) syscallInfo->newEntry) + callSyscallPluginOffset;
+					#if DEBUG
+					printLogH("Changing syscallPluginUser call at ", addr, "\n");
+					#endif
+					_sw(MAKE_CALL(syscallPluginUser), addr);
+					sceKernelDcacheWritebackInvalidateRange((void *) addr, 4);
+					sceKernelIcacheInvalidateRange((void *) addr, 4);
+				}
+
+				#if DEBUG
+				printLogMem("Updated SyscallInfo ", (int) syscallInfo->newEntry, 36 + sizeof(SyscallInfo));
+				#endif
+
+				// Some NID has been resolved by the starting module
+				syscallInfoUpdated = 1;
+			}
+		}
+	}
+
+	if (syscallInfoUpdated) {
+		// At least one pending SyscallInfo has been updated,
+		// patch all the modules.
+		sceKernelGetModuleIdList(id, sizeof(id), &idcount);
+		for (i = 0; i < idcount; i++) {
+			SceModule *module = sceKernelFindModuleByUID(id[i]);
+			patchModule(module);
+		}
+	} else {
+		// No SyscallInfo has been updated,
+		// we just need to patch the starting module.
+		patchModule((SceModule *) startingModule);
+	}
+
+	logKeepOpen = 0;
+	closeLogFile();
+
+	if (nextStartModuleHandler == NULL) {
+		return 0;
+	}
+
+	return nextStartModuleHandler(startingModule);
+}
+
 
 #if DEBUG
 void printAllSyscalls() {
@@ -726,14 +589,67 @@ void printAllModules() {
 }
 #endif
 
+int loadUserModule(SceSize args, void * argp) {
+	int userModuleId = -1;
+
+	// Load the user module JpcspTraceUser.prx.
+	// Retry to load it several times if the module manager is currently busy.
+	while (1) {
+		if (userModuleId < 0) {
+			userModuleId = sceKernelLoadModule("ms0:/seplugins/JpcspTraceUser.prx", 0, NULL);
+			#if DEBUG
+			printLogH("JpcspTraceUser moduleId ", userModuleId, "\n");
+			#endif
+		}
+		int result = sceKernelStartModule(userModuleId, 0, NULL, NULL, NULL);
+		#if DEBUG
+		printLogH("JpcspTraceUser module start ", result, "\n");
+		#endif
+
+		if (userModuleId >= 0 && result >= 0) {
+			break;
+		}
+
+		sceKernelDelayThread(1000);
+	}
+
+	SceModule *module = sceKernelFindModuleByUID(userModuleId);
+	struct SceLibraryEntryTable *entry;
+	int i;
+	int j;
+
+	for (i = 0; i < module->ent_size; i += entry->len * 4) {
+		entry = (struct SceLibraryEntryTable *) (module->ent_top + i);
+		int numEntries = entry->stubcount + entry->vstubcount;
+		u32 *entries = (u32 *) entry->entrytable;
+		for (j = 0; j < entry->stubcount; j++) {
+			if (entries[j] == SYSCALL_PLUGIN_NID) {
+				syscallPluginUser = entries[numEntries + j];
+				#if DEBUG
+				printLogH("Found syscallPluginUser at ", syscallPluginUser, "\n");
+				#endif
+				break;
+			}
+		}
+	}
+
+	sceKernelExitDeleteThread(0);
+
+	return 0;
+}
+
 // Module Start
 int module_start(SceSize args, void * argp) {
 	// Find Allocator Functions in Memory
-	alloc = (void *) sctrlHENFindFunction("sceSystemMemoryManager", "SysMemUserForUser", 0x237DBD4F);
-	gethead = (void *) sctrlHENFindFunction("sceSystemMemoryManager", "SysMemUserForUser", 0x9D9A5BA1);
+	allocFunc = (void *) sctrlHENFindFunction("sceSystemMemoryManager", "SysMemUserForUser", 0x237DBD4F);
+	getHeadFunc = (void *) sctrlHENFindFunction("sceSystemMemoryManager", "SysMemUserForUser", 0x9D9A5BA1);
 
 	logBufferLength = 0;
 	logBuffer = NULL;
+	syscallPluginUser = 0;
+	callSyscallPluginOffset = -1;
+
+	sceIoRemove("ms0:/log.txt");
 
 	logKeepOpen = 1;
 	openLogFile();
@@ -744,12 +660,22 @@ int module_start(SceSize args, void * argp) {
 		return 1;
 	}
 
-	#if DEBUG
+	#if DEBUG >= 2
 	printAllModules();
 	printAllSyscalls();
 	#endif
 
 	patchSyscalls("ms0:/seplugins/JpcspTrace.config");
+
+	// Load only JpcspTraceUser.prx if it is required
+	if (moduleSyscalls != NULL) {
+		// Load JpcspTraceUser.prx in a separate thread as at this point,
+		// the module mgr is busy (sceKernelLoadModule would return ERROR_KERNEL_MODULE_MANAGER_BUSY).
+		int loadUserModuleThread = sceKernelCreateThread("LoadUserModule", loadUserModule, 0x10, 4096, 0, NULL);
+		sceKernelStartThread(loadUserModuleThread, 0, NULL);
+	}
+
+	nextStartModuleHandler = sctrlHENSetStartModuleHandler(startModuleHandler);
 
 	logKeepOpen = 0;
 	closeLogFile();
