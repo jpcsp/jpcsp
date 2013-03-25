@@ -26,6 +26,9 @@ The plugin has been tested with procfw 6.60 PRO-C2.
 Copy the file JpcspTrace.prx to your PSP
 	ms0:/seplugins/JpcspTrace.prx
 
+Copy the file JpcspTraceUser.prx to your PSP
+	ms0:/seplugins/JpcspTraceUser.prx
+
 Copy the file JpcspTrace.config to your PSP
 	ms0:/seplugins/JpcspTrace.config
 
@@ -44,7 +47,7 @@ The format of the file JpcspTrace.config is the following:
 - leading spaces or tabs in a line are ignored
 - an empty line or a line starting with a "#" is a comment
 - one syscall to be traced is described in a single line:
-	<syscall-name> <nid> <number-of-parameters>
+	<syscall-name> <nid> <number-of-parameters> <parameter-types>
 
   The <syscall-name> is just used for easier reading in the log file,
   it has no other function.
@@ -56,6 +59,21 @@ The format of the file JpcspTrace.config is the following:
   The <number-of-parameters> is the number of parameters that have to be
   logged for the syscall. This number is optional and will default to 8.
   Valid values for <number-of-parameters> are between 0 and 8.
+  The <parameter-types> gives the type of each syscall parameters, with
+  one letter per parameter. The <parameter-types> is optional and will
+  then default to "xxxxxxxx", i.e. will log all the parameters in hexadecimal format.
+  The following parameter types are available:
+  - x: log the parameter value as an hexadecimal number without leading zero's, e.g. 0x12345
+  - d: log the parameter value as a decimal number without leading zero's, e.g. 12345
+  - s: log the parameter value as a pointer to a zero-terminated string, e.g.
+       0x08812345('This is a string')
+  - p: log the parameter value as a pointer to a 32-bit value, e.g.
+       0x08812345(0x12345)    (when the 32-bit value at address 0x08812345 is 0x00012345)
+  - v: log the parameter value as a pointer to a variable-length structure.
+       The first 32-bit value is the total length of the structure. E.g.:
+       0x08812345(0x00000008 0x00012345)
+  All the parameter types are concatenated into one string, starting with
+  the type of the first parameter ($a0). Unspecified parameter types default to "x".
 
 The syscall's listed in JpcspTrace.config will be logged into the file
 	ms0:/log.txt
