@@ -38,6 +38,8 @@ u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3
 	parameters[6] = t2;
 	parameters[7] = t3;
 
+	commonInfo = syscallInfo->commonInfo;
+
 	#if DEBUG_MUTEX
 	mutexPreLog(syscallInfo, parameters);
 	#endif

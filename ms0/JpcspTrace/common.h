@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 #define DEBUG			0
 #define DEBUG_MUTEX		0
-#define LOG_BUFFER_SIZE	1024
+#define DEFAULT_LOG_BUFFER_SIZE		1024
 
 #define USER_PARTITION_ID	2
 
@@ -29,6 +29,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 #define TYPE_POINTER32	3
 #define TYPE_VARSTRUCT	4
 
+typedef struct {
+	SceUID logFd;
+	int logKeepOpen;
+	char *logBuffer;
+	int logBufferLength;
+	int maxLogBufferLength;
+	void *freeAddr;
+	int freeSize;
+	volatile int inWriteLog;
+} CommonInfo;
+
 typedef struct SyscallInfo {
 	u64 (*originalEntry)(u32, u32, u32, u32, u32, u32, u32, u32);
 	u32 nid;
@@ -37,11 +48,10 @@ typedef struct SyscallInfo {
 	char *name;
 	u64 (*newEntry)(u32, u32, u32, u32, u32, u32, u32, u32, struct SyscallInfo *);
 	struct SyscallInfo *next;
+	CommonInfo *commonInfo;
 } SyscallInfo;
 
-extern int logKeepOpen;
-extern char *logBuffer;
-extern int logBufferLength;
+extern CommonInfo *commonInfo;
 
 void *alloc(int size);
 char *append(char *dst, const char *src);
