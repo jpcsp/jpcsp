@@ -316,6 +316,7 @@ void patchSyscall(char *module, char *library, const char *name, u32 nid, int nu
 	syscallInfo->name = nameCopy;
 	syscallInfo->next = NULL;
 	syscallInfo->newEntry = (void *) asmblock;
+	syscallInfo->commonInfo = commonInfo;
 
 	if (!changeSyscallAddr(syscallInfo->originalEntry, asmblock)) {
 		// This function has to be patched when starting a new module
@@ -348,6 +349,9 @@ int readLine(SceUID fd, char *line) {
 	while ((c = readChar(fd)) >= 0) {
 		if (c == '\n') {
 			break;
+		}
+		if (c == '\r') {
+			continue;
 		}
 		*line++ = (char) c;
 	}
@@ -417,12 +421,16 @@ void patchSyscalls(char *filePath) {
 		u32 numParams = parseHex(hexNumParams);
 		u32 paramTypes = parseParamTypes(strParamTypes);
 
-		// If no numParams specified, take maximum number of params
-		if (strlen(hexNumParams) == 0) {
-			numParams = 8;
-		}
+		if (strcmp(name, "LogBufferLength") == 0) {
+			commonInfo->maxLogBufferLength = nid;
+		} else {
+			// If no numParams specified, take maximum number of params
+			if (strlen(hexNumParams) == 0) {
+				numParams = 8;
+			}
 
-		patchSyscall(NULL, NULL, name, nid, numParams, paramTypes);
+			patchSyscall(NULL, NULL, name, nid, numParams, paramTypes);
+		}
 	}
 
 	sceIoClose(fd);
@@ -470,7 +478,7 @@ int startModuleHandler(SceModule2 *startingModule) {
 	int id[100];
 	int idcount = 0;
 
-	logKeepOpen = 1;
+	commonInfo->logKeepOpen = 1;
 	openLogFile();
 	printLogS("Starting module ", startingModule->modname, "\n");
 
@@ -517,7 +525,7 @@ int startModuleHandler(SceModule2 *startingModule) {
 		patchModule((SceModule *) startingModule);
 	}
 
-	logKeepOpen = 0;
+	commonInfo->logKeepOpen = 0;
 	closeLogFile();
 
 	if (nextStartModuleHandler == NULL) {
@@ -644,14 +652,20 @@ int module_start(SceSize args, void * argp) {
 	allocFunc = (void *) sctrlHENFindFunction("sceSystemMemoryManager", "SysMemUserForUser", 0x237DBD4F);
 	getHeadFunc = (void *) sctrlHENFindFunction("sceSystemMemoryManager", "SysMemUserForUser", 0x9D9A5BA1);
 
-	logBufferLength = 0;
-	logBuffer = NULL;
 	syscallPluginUser = 0;
 	callSyscallPluginOffset = -1;
+	commonInfo = NULL;
+	commonInfo = alloc(sizeof(CommonInfo));
+	commonInfo->maxLogBufferLength = DEFAULT_LOG_BUFFER_SIZE;
+	commonInfo->logBufferLength = 0;
+	commonInfo->logBuffer = NULL;
+	commonInfo->freeAddr = NULL;
+	commonInfo->freeSize = 0;
+	commonInfo->inWriteLog = 0;
 
 	sceIoRemove("ms0:/log.txt");
 
-	logKeepOpen = 1;
+	commonInfo->logKeepOpen = 1;
 	openLogFile();
 
 	printLog("JpcspTrace - module_start\n");
@@ -677,7 +691,7 @@ int module_start(SceSize args, void * argp) {
 
 	nextStartModuleHandler = sctrlHENSetStartModuleHandler(startModuleHandler);
 
-	logKeepOpen = 0;
+	commonInfo->logKeepOpen = 0;
 	closeLogFile();
 
 	return 0;

@@ -24,15 +24,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 #include <string.h>
 #include "common.h"
 
-SceUID logFd = -1;
-int logKeepOpen = 0;
 char *hexDigits = "0123456789ABCDEF";
 int logTimestamp = 1;
 int logThreadName = 1;
-char *logBuffer;
-int logBufferLength;
-void *freeAddr;
-int freeSize;
+CommonInfo *commonInfo;
+void *freeAddr = NULL;
+int freeSize = 0;
 
 #if DEBUG_MUTEX
 typedef struct {
@@ -54,20 +51,34 @@ void *alloc(int size) {
 
 	size = ALIGN_UP(size, 4);
 
+	if (commonInfo != NULL && commonInfo->freeAddr != NULL) {
+		freeAddr = commonInfo->freeAddr;
+		freeSize = commonInfo->freeSize;
+	}
+
 	if (freeSize >= size) {
-		allocAddr = freeAddr;
-		freeAddr += size;
 		freeSize -= size;
+		allocAddr = freeAddr + freeSize;
 	} else {
 		int allocSize = ALIGN_UP(size, 256);
 		int result = sceKernelAllocPartitionMemory(USER_PARTITION_ID, "JpcspTrace", PSP_SMEM_High, allocSize, 0);
 		if (result >= 0) {
-			allocAddr = sceKernelGetBlockHeadAddr(result);
-			freeAddr = allocAddr + size;
-			freeSize = allocSize - size;
+			void *newFreeAddr = sceKernelGetBlockHeadAddr(result);
+			if (newFreeAddr + allocSize != freeAddr) {
+				// Can't merge new allocated memory to previously allocated memory
+				freeSize = 0;
+			}
+			freeAddr = newFreeAddr;
+			freeSize += allocSize - size;
+			allocAddr = freeAddr + freeSize;
 		} else {
 			allocAddr = NULL;
 		}
+	}
+
+	if (commonInfo != NULL) {
+		commonInfo->freeAddr = freeAddr;
+		commonInfo->freeSize = freeSize;
 	}
 
 	return allocAddr;
@@ -132,51 +143,90 @@ char *appendInt(char *dst, s32 n, int numDigits) {
 }
 
 void openLogFile() {
-	if (logFd < 0) {
-		logFd = sceIoOpen("ms0:/log.txt", PSP_O_WRONLY | PSP_O_CREAT | PSP_O_APPEND, 0777);
+	if (commonInfo->logFd < 0) {
+		commonInfo->logFd = sceIoOpen("ms0:/log.txt", PSP_O_WRONLY | PSP_O_CREAT | PSP_O_APPEND, 0777);
 	}
 }
 
 void closeLogFile() {
-	sceIoClose(logFd);
-	logFd = -1;
+	sceIoClose(commonInfo->logFd);
+	commonInfo->logFd = -1;
+}
+
+void appendToLogBuffer(const char *s, int length) {
+	// Allocate a buffer if not yet allocated
+	if (commonInfo->logBuffer == NULL) {
+		commonInfo->logBuffer = alloc(commonInfo->maxLogBufferLength);
+	}
+
+	if (commonInfo->logBuffer != NULL) {
+		int restLength = commonInfo->maxLogBufferLength - commonInfo->logBufferLength;
+		int truncated = 0;
+		if (length > restLength) {
+			length = restLength;
+			truncated = 1;
+		}
+
+		if (length > 0) {
+			memcpy(commonInfo->logBuffer + commonInfo->logBufferLength, s, length);
+			commonInfo->logBufferLength += length;
+
+			// If we have truncated the string to be logged,
+			// set "...\n" at the end of the log buffer.
+			if (truncated) {
+				char *addr = commonInfo->logBuffer + commonInfo->logBufferLength - 4;
+				*addr++ = '.';
+				*addr++ = '.';
+				*addr++ = '.';
+				*addr++ = '\n';
+			}
+		}
+	}
+}
+
+void flushLogBuffer() {
+	while (commonInfo->logBufferLength > 0) {
+		// Try to write pending output.
+		// This will succeed as soon as the interrupts are enabled again.
+		int length = sceIoWrite(commonInfo->logFd, commonInfo->logBuffer, commonInfo->logBufferLength);
+		if (length <= 0) {
+			break;
+		}
+
+		commonInfo->logBufferLength -= length;
+		if (commonInfo->logBufferLength > 0) {
+			memcpy(commonInfo->logBuffer, commonInfo->logBuffer + length, commonInfo->logBufferLength);
+		}
+	}
 }
 
 void writeLog(const char *s, int length) {
-	if (!logKeepOpen) {
+	if (commonInfo->inWriteLog) {
+		appendToLogBuffer(s, length);
+		return;
+	}
+
+	commonInfo->inWriteLog++;
+
+	if (!commonInfo->logKeepOpen) {
 		openLogFile();
 	}
 
-	if (logBufferLength > 0) {
-		// Try to write pending output.
-		// This will succeed as soon as the interrupts are enabled again.
-		if (sceIoWrite(logFd, logBuffer, logBufferLength) > 0) {
-			logBufferLength = 0;
-		}
-	}
+	flushLogBuffer();
 
-	if (sceIoWrite(logFd, s, length) < 0) {
+	if (sceIoWrite(commonInfo->logFd, s, length) < 0) {
 		// Can't write to the log file right now, probably because the interrupts are disabled.
 		// Save the log string for later output.
-
-		// Allocate a buffer if not yet allocated
-		if (logBuffer == NULL) {
-			logBuffer = alloc(LOG_BUFFER_SIZE);
-		}
-
-		if (logBuffer != NULL) {
-			int restLength = LOG_BUFFER_SIZE - logBufferLength;
-			if (length > restLength) {
-				length = restLength;
-			}
-			memcpy(logBuffer + logBufferLength, s, length);
-			logBufferLength += length;
-		}
+		appendToLogBuffer(s, length);
+	} else {
+		flushLogBuffer();
 	}
 
-	if (!logKeepOpen) {
+	if (!commonInfo->logKeepOpen) {
 		closeLogFile();
 	}
+
+	commonInfo->inWriteLog--;
 }
 
 void printLog(const char *s) {
