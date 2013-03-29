@@ -121,7 +121,7 @@ public class sceAtrac3plus extends HLEModule {
         // Sound data.
         protected int atracBitrate = 64;
         protected int atracChannels = 2;
-        protected int atracOutputChannels = 2;
+        protected int atracOutputChannels = 2; // Always default with 2 output channels
         protected int atracSampleRate = 0xAC44;
         protected int atracBytesPerFrame = 0x0230;
         protected int atracEndSample;
@@ -291,9 +291,6 @@ public class sceAtrac3plus extends HLEModule {
             			if (chunkSize >= 16) {
                             int compressionCode = mem.read16(currentAddr);
                             atracChannels = mem.read16(currentAddr + 2);
-                            // Atrac3 has always 2 output channels.
-                            // Atrac3+ has the same number of output channels as the number of channels in the input data.
-                            setAtracOutputChannels(codecType == PSP_MODE_AT_3_PLUS ? atracChannels : 2);
                             atracSampleRate = readUnaligned32(mem, currentAddr + 4);
                             atracBitrate = readUnaligned32(mem, currentAddr + 8);
                             atracBytesPerFrame = mem.read16(currentAddr + 12);
@@ -722,7 +719,7 @@ public class sceAtrac3plus extends HLEModule {
 
         @Override
 		public String toString() {
-			return String.format("AtracID[id=%d, inputBufferAddr=0x%08X, inputBufferSize=%d, inputBufferOffset=%d, inputBufferWritableBytes=%d, inputBufferNeededBytes=%d]", id, inputBufferAddr, inputBufferSize, inputBufferOffset, inputBufferWritableBytes, inputBufferNeededBytes);
+			return String.format("AtracID[id=%d, inputBufferAddr=0x%08X, inputBufferSize=%d, inputBufferOffset=%d, inputBufferWritableBytes=%d, inputBufferNeededBytes=%d, channels=%d, outputChannels=%d]", id, inputBufferAddr, inputBufferSize, inputBufferOffset, inputBufferWritableBytes, inputBufferNeededBytes, getAtracChannels(), getAtracOutputChannels());
 		}
 
 		public int getSourceBufferLength() {
@@ -815,6 +812,40 @@ public class sceAtrac3plus extends HLEModule {
         return SceKernelErrors.ERROR_ATRAC_NO_ID;
     }
 
+    protected int hleSetHalfwayBufferAndGetID(TPointer buffer, int readSize, int bufferSize, boolean isMonoOutput) {
+        if (readSize > bufferSize) {
+        	return SceKernelErrors.ERROR_ATRAC_INCORRECT_READ_SIZE;
+        }
+
+        if (readSize < 0 || bufferSize < 0) {
+        	// Unknown error
+        	return -1;
+        }
+
+        int codecType = getCodecType(buffer.getAddress());
+        int atID = hleCreateAtracID(codecType);
+        if (atracIDs.containsKey(atID)) {
+        	hleSetHalfwayBuffer(atID, buffer, readSize, bufferSize, isMonoOutput);
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("hleSetHalfwayBufferAndGetID returning atID=0x%X", atID));
+        }
+
+        return atID;
+    }
+
+    protected int hleSetHalfwayBuffer(int atID, TPointer buffer, int readSize, int bufferSize, boolean isMonoOutput) {
+        AtracID id = atracIDs.get(atID);
+        id.setData(buffer.getAddress(), readSize, bufferSize, false);
+        if (isMonoOutput && id.getAtracChannels() == 1) {
+        	// Set Mono output
+        	id.setAtracOutputChannels(1);
+        }
+
+        return 0;
+    }
+
     protected void hleReleaseAtracID(int atracID) {
     	AtracID id = atracIDs.remove(atracID);
     	SceUidManager.releaseId(atracID, idPurpose);
@@ -878,56 +909,22 @@ public class sceAtrac3plus extends HLEModule {
 
     @HLEFunction(nid = 0x0E2A73AB, version = 150, checkInsideInterrupt = true)
     public int sceAtracSetData(@CheckArgument("checkAtracID") int atID, TPointer buffer, int bufferSize) {
-        atracIDs.get(atID).setData(buffer.getAddress(), bufferSize, bufferSize, false);
-
-        return 0;
+    	return hleSetHalfwayBuffer(atID, buffer, bufferSize, bufferSize, false);
     }
 
     @HLEFunction(nid = 0x3F6E26B5, version = 150, checkInsideInterrupt = true)
     public int sceAtracSetHalfwayBuffer(@CheckArgument("checkAtracID") int atID, TPointer halfBuffer, int readSize, int halfBufferSize) {
-        atracIDs.get(atID).setData(halfBuffer.getAddress(), readSize, halfBufferSize, false);
-
-        return 0;
+    	return hleSetHalfwayBuffer(atID, halfBuffer, readSize, halfBufferSize, false);
     }
 
     @HLEFunction(nid = 0x7A20E7AF, version = 150, checkInsideInterrupt = true)
     public int sceAtracSetDataAndGetID(TPointer buffer, int bufferSize) {
-        if (bufferSize < 0) {
-        	// Unknown error
-        	return -1;
-        }
-
-        int codecType = getCodecType(buffer.getAddress());
-        int atID = hleCreateAtracID(codecType);
-        if (atracIDs.containsKey(atID)) {
-            atracIDs.get(atID).setData(buffer.getAddress(), bufferSize, bufferSize, false);
-        }
-
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceAtracSetDataAndGetID returning atracID=0x%08X", atID));
-        }
-
-        return atID;
+    	return hleSetHalfwayBufferAndGetID(buffer, bufferSize, bufferSize, false);
     }
 
     @HLEFunction(nid = 0x0FAE370E, version = 150, checkInsideInterrupt = true)
     public int sceAtracSetHalfwayBufferAndGetID(TPointer halfBuffer, int readSize, int halfBufferSize) {
-        if (readSize > halfBufferSize) {
-        	return SceKernelErrors.ERROR_ATRAC_INCORRECT_READ_SIZE;
-        }
-
-        if (readSize < 0 || halfBufferSize < 0) {
-        	// Unknown error
-        	return -1;
-        }
-
-        int codecType = getCodecType(halfBuffer.getAddress());
-        int atID = hleCreateAtracID(codecType);
-        if (atracIDs.containsKey(atID)) {
-            atracIDs.get(atID).setData(halfBuffer.getAddress(), readSize, halfBufferSize, false);
-        }
-
-        return atID;
+    	return hleSetHalfwayBufferAndGetID(halfBuffer, readSize, halfBufferSize, false);
     }
 
     @HLEFunction(nid = 0x6A8C3CD5, version = 150, checkInsideInterrupt = true)

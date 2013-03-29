@@ -65,14 +65,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
 
     @HLEFunction(nid = 0x5CF9D852, version = 250, checkInsideInterrupt = true)
     public int sceAtracSetMOutHalfwayBuffer(@CheckArgument("checkAtracID") int atID, TPointer MOutHalfBuffer, int readSize, int MOutHalfBufferSize) {
-        AtracID id = atracIDs.get(atID);
-        id.setData(MOutHalfBuffer.getAddress(), readSize, MOutHalfBufferSize, false);
-        if (id.getAtracChannels() == 1) {
-        	// Set Mono output
-        	id.setAtracOutputChannels(1);
-        }
-
-        return 0;
+    	return hleSetHalfwayBuffer(atID, MOutHalfBuffer, readSize, MOutHalfBufferSize, true);
     }
 
     @HLEUnimplemented
@@ -89,18 +82,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
 
     @HLEFunction(nid = 0x9CD7DE03, version = 250, checkInsideInterrupt = true)
     public int sceAtracSetMOutHalfwayBufferAndGetID(TPointer MOutHalfBuffer, int readSize, int MOutHalfBufferSize) {
-    	int codecType = getCodecType(MOutHalfBuffer.getAddress());
-        int atID = hleCreateAtracID(codecType);
-        if (atracIDs.containsKey(atID)) {
-        	AtracID id = atracIDs.get(atID);
-            id.setData(MOutHalfBuffer.getAddress(), readSize, MOutHalfBufferSize, false);
-            if (id.getAtracChannels() == 1) {
-            	// Set Mono output
-            	id.setAtracOutputChannels(1);
-            }
-        }
-
-        return atID;
+    	return hleSetHalfwayBufferAndGetID(MOutHalfBuffer, readSize, MOutHalfBufferSize, true);
     }
 
     @HLEFunction(nid = 0x5622B7C1, version = 250, checkInsideInterrupt = true)
