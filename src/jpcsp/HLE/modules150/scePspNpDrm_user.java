@@ -147,6 +147,9 @@ public class scePspNpDrm_user extends HLEModule {
     	}
 
     	IoInfo info = Modules.IoFileMgrForUserModule.getFileIoInfo(edataFd);    
+    	if (info == null) {
+    		return 0;
+    	}
         CryptoEngine crypto = new CryptoEngine();
         
         if (edatFileConnector == null) {
