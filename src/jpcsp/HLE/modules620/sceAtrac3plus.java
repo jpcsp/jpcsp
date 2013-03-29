@@ -65,8 +65,6 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
         		}
         		// Allow looping
         		id.setLoopNum(-1);
-        	} else {
-        		id.setAtracOutputChannels(id.getAtracChannels());
         	}
         } else {
         	// Estimate source bytes to be read based on current sample position
@@ -168,16 +166,19 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
     @HLEFunction(nid = 0x1575D64B, version = 620)
     public int sceAtracLowLevelInitDecoder(@CheckArgument("checkAtracID") int atID, TPointer32 paramsAddr) {
         int numberOfChannels = paramsAddr.getValue(0);
-		int unknown = paramsAddr.getValue(4);
+		int outputChannels = paramsAddr.getValue(4);
 		int sourceBufferLength = paramsAddr.getValue(8);
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceAtracLowLevelInitDecoder values at %s: numberOfChannels=%d, unknown=%d, sourceBufferLength=0x%08X", paramsAddr, numberOfChannels, unknown, sourceBufferLength));
+			log.debug(String.format("sceAtracLowLevelInitDecoder values at %s: numberOfChannels=%d, outputChannels=%d, sourceBufferLength=0x%08X", paramsAddr, numberOfChannels, outputChannels, sourceBufferLength));
 		}
 
         AtracID id = atracIDs.get(atID);
 
         id.setAtracChannels(numberOfChannels);
+        if (numberOfChannels == 1 && numberOfChannels == outputChannels) {
+        	id.setAtracOutputChannels(outputChannels);
+        }
         id.setSourceBufferLength(sourceBufferLength);
 
         return 0;
