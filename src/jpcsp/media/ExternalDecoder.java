@@ -51,7 +51,7 @@ public class ExternalDecoder {
     private static File extAudioDecoder;
     private static IoListener ioListener;
     private static boolean enabled = true;
-    private static boolean dumpEncodedFile = false;
+    private static boolean dumpAt3File = true;
     private static boolean dumpPmfFile = false;
     private static boolean dumpAudioStreamFile = false;
     private static boolean keepOmaFile = true;
@@ -115,12 +115,16 @@ public class ExternalDecoder {
     	return enabled;
     }
 
-    private boolean executeExternalDecoder(String inputFileName, String outputFileName, boolean keepInputFile) {
-    	boolean decoded = executeExternalDecoder(inputFileName, outputFileName);
+    private boolean executeExternalDecoder(String inputFileName, String outputFileName, String at3FileName, boolean keepInputFile) {
+    	boolean decoded = executeExternalDecoder(inputFileName, outputFileName, at3FileName);
 
     	if (!keepInputFile) {
     		File inputFile = new File(inputFileName);
     		inputFile.delete();
+    		if (at3FileName != null) {
+	    		File at3File = new File(at3FileName);
+	    		at3File.delete();
+    		}
     	}
 
     	File outputFile = new File(outputFileName);
@@ -133,20 +137,27 @@ public class ExternalDecoder {
     	return decoded;
     }
 
-    private boolean executeExternalDecoder(String inputFileName, String outputFileName) {
+    private boolean executeExternalDecoder(String inputFileName, String outputFileName, String at3FileName) {
 		String[] cmd;
+
+		if (at3FileName == null) {
+			at3FileName = "";
+		}
+
 		if (extAudioDecoder.toString().endsWith(".bat")) {
 			cmd = new String[] {
 					"cmd",
 					"/C",
 					extAudioDecoder.toString(),
 					inputFileName,
-					outputFileName };
+					outputFileName,
+					at3FileName };
 		} else {
 			cmd = new String[] {
 					extAudioDecoder.toString(),
 					inputFileName,
-					outputFileName };
+					outputFileName,
+					at3FileName };
 		}
 		try {
 			Process extAudioDecodeProcess = Runtime.getRuntime().exec(cmd);
@@ -222,7 +233,7 @@ public class ExternalDecoder {
 
 			String decodedFileName = MediaEngine.getExtAudioPath(mpegFileSize, audioChannel, "wav");
 
-			if (!executeExternalDecoder(encodedFileName, decodedFileName, keepOmaFile)) {
+			if (!executeExternalDecoder(encodedFileName, decodedFileName, null, keepOmaFile)) {
 				int channels = OMAFormat.getOMANumberAudioChannels(omaBuffer);
 				if (channels == 1) {
 					// It seems that SonicStage has problems decoding mono AT3+ data
@@ -268,10 +279,12 @@ public class ExternalDecoder {
     private String decodeAtrac(byte[] atracData, int address, int atracFileSize, String decodedFileName) {
     	try {
 	    	ByteBuffer riffBuffer = ByteBuffer.wrap(atracData);
-	    	if (dumpEncodedFile) {
+	    	String at3FileName = null;
+	    	if (dumpAt3File) {
 	    		// For debugging purpose, optionally dump the original atrac file in RIFF format
 				new File(AtracCodec.getBaseDirectory()).mkdirs();
-	    		FileOutputStream encodedOut = new FileOutputStream(getAtracAudioPath(address, atracFileSize, "encoded"));
+				at3FileName = getAtracAudioPath(address, atracFileSize, "at3");
+	    		FileOutputStream encodedOut = new FileOutputStream(at3FileName);
 	    		encodedOut.getChannel().write(riffBuffer);
 	    		encodedOut.close();
 	    		riffBuffer.rewind();
@@ -288,7 +301,7 @@ public class ExternalDecoder {
 			os.getChannel().write(omaBuffer);
 			os.close();
 
-			if (!executeExternalDecoder(encodedFileName, decodedFileName, keepOmaFile)) {
+			if (!executeExternalDecoder(encodedFileName, decodedFileName, at3FileName, keepOmaFile)) {
 				int channels = OMAFormat.getOMANumberAudioChannels(omaBuffer);
 				if (channels == 1) {
 					// It seems that SonicStage has problems decoding mono AT3+ data
