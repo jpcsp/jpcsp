@@ -63,14 +63,11 @@ public class SystemTimeManager {
     }
 
     public int sceKernelUSec2SysClock(int usec, TPointer64 sysClockAddr) {
-    	sysClockAddr.setValue(usec);
+    	sysClockAddr.setValue(usec & 0xFFFFFFFFL);
         return 0;
     }
 
     public long sceKernelUSec2SysClockWide(int usec) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelUSec2SysClockWide usec=%d", usec));
-        }
         return usec & 0xFFFFFFFFL;
     }
 
@@ -80,18 +77,25 @@ public class SystemTimeManager {
         	log.debug(String.format("sceKernelSysClock2USec sysClockAddr=%s(%d), secAddr=%s, microSecAddr=%s", sysClockAddr, sysClock, secAddr, microSecAddr));
         }
 
-    	secAddr.setValue((int) (sysClock / 1000000));
-    	microSecAddr.setValue((int) (sysClock % 1000000));
+        if (secAddr.isNull()) {
+        	// PSP is copying sysclock value directly to microSecAddr when secAddr is NULL
+        	microSecAddr.setValue((int) sysClock);
+        } else {
+	    	secAddr.setValue((int) (sysClock / 1000000));
+	    	microSecAddr.setValue((int) (sysClock % 1000000));
+        }
 
         return 0;
     }
 
     public int sceKernelSysClock2USecWide(long sysClock, TPointer32 secAddr, TPointer32 microSecAddr) {
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelSysClock2USecWide sysClock=%d, secAddr=%s, microSecAddr=%s", sysClock, secAddr, microSecAddr));
+        if (secAddr.isNull()) {
+        	// PSP is copying sysclock value directly to microSecAddr when secAddr is NULL
+        	microSecAddr.setValue((int) sysClock);
+        } else {
+	    	secAddr.setValue((int) (sysClock / 1000000));
+	    	microSecAddr.setValue((int) (sysClock % 1000000));
         }
-    	secAddr.setValue((int) (sysClock / 1000000));
-    	microSecAddr.setValue((int) (sysClock % 1000000));
 
         return 0;
     }
@@ -102,10 +106,6 @@ public class SystemTimeManager {
     }
 
     public int sceKernelGetSystemTime(TPointer64 time_addr) {
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelGetSystemTime pointer=%s", time_addr));
-        }
-
         long systemTime = getSystemTime();
         time_addr.setValue(systemTime);
 
@@ -115,7 +115,7 @@ public class SystemTimeManager {
     public long sceKernelGetSystemTimeWide() {
         long systemTime = getSystemTime();
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelGetSystemTimeWide ret:" + systemTime);
+            log.debug(String.format("sceKernelGetSystemTimeWide returning %d", systemTime));
         }
         return systemTime;
     }
@@ -123,7 +123,7 @@ public class SystemTimeManager {
     public int sceKernelGetSystemTimeLow() {
         int systemTimeLow = (int) (getSystemTime() & 0xFFFFFFFFL);
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelGetSystemTimeLow ret: %d", systemTimeLow));
+            log.debug(String.format("sceKernelGetSystemTimeLow returning %d", systemTimeLow));
         }
         return systemTimeLow;
     }
