@@ -265,12 +265,17 @@ public class sceAudio extends HLEModule {
             return -1;
         }
 
-        if (!pspSRCChannel.isReserved()) {
-        	pspSRCChannel.setSampleRate(freq);
-            pspSRCChannel.setReserved(true);
-            pspSRCChannel.setSampleLength(sampleCount);
-            pspSRCChannel.setFormat(format);
+        if (pspSRCChannel.isReserved()) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("hleAudioSRCChReserve returning ERROR_AUDIO_CHANNEL_ALREADY_RESERVED"));
+        	}
+        	return SceKernelErrors.ERROR_AUDIO_CHANNEL_ALREADY_RESERVED;
         }
+
+        pspSRCChannel.setSampleRate(freq);
+        pspSRCChannel.setReserved(true);
+        pspSRCChannel.setSampleLength(sampleCount);
+        pspSRCChannel.setFormat(format);
 
         return 0;
     }
@@ -636,12 +641,22 @@ public class sceAudio extends HLEModule {
 
     @HLEFunction(nid = 0x647CEF33, version = 150, checkInsideInterrupt = true)
     public int sceAudioOutput2GetRestSample() {
+    	if (!pspSRCChannel.isReserved()) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceAudioOutput2GetRestSample returning ERROR_AUDIO_CHANNEL_NOT_RESERVED"));
+        	}
+        	return SceKernelErrors.ERROR_AUDIO_CHANNEL_NOT_RESERVED;
+        }
+
         return hleAudioGetChannelRestLen(pspSRCChannel);
     }
 
     @HLEFunction(nid = 0x63F2889C, version = 150, checkInsideInterrupt = true)
     public int sceAudioOutput2ChangeLength(@CheckArgument("checkSmallSampleCount") int sampleCount) {
     	if (!pspSRCChannel.isReserved()) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceAudioOutput2ChangeLength returning ERROR_AUDIO_CHANNEL_NOT_RESERVED"));
+        	}
         	return SceKernelErrors.ERROR_AUDIO_CHANNEL_NOT_RESERVED;
         }
 
@@ -657,10 +672,15 @@ public class sceAudio extends HLEModule {
 
     @HLEFunction(nid = 0x5C37C0AE, version = 150, checkInsideInterrupt = true)
     public int sceAudioSRCChRelease() {
-    	if (pspSRCChannel.isReserved()) {
-            pspSRCChannel.release();
-            pspSRCChannel.setReserved(false);
+    	if (!pspSRCChannel.isReserved()) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceAudioSRCChRelease returning ERROR_AUDIO_CHANNEL_NOT_RESERVED"));
+        	}
+        	return SceKernelErrors.ERROR_AUDIO_CHANNEL_NOT_RESERVED;
         }
+
+        pspSRCChannel.release();
+        pspSRCChannel.setReserved(false);
 
         return 0;
     }

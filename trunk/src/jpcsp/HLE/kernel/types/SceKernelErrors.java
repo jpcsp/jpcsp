@@ -362,6 +362,7 @@ public class SceKernelErrors {
     public final static int ERROR_AUDIO_CHANNEL_NOT_RESERVED                    = 0x80260008;
     public final static int ERROR_AUDIO_NOT_OUTPUT                              = 0x80260009;
     public final static int ERROR_AUDIO_INVALID_FREQUENCY                       = 0x8026000A;
+    public final static int ERROR_AUDIO_CHANNEL_ALREADY_RESERVED                = 0x80268002;
 
     public final static int ERROR_POWER_VMEM_IN_USE                             = 0x802b0200;
 
