@@ -272,18 +272,18 @@ public class ExternalDecoder {
     	ioListener.setFileData(dataInput, vFile, address, startPosition, length);
     }
 
-    private static String getAtracAudioPath(int address, int atracFileSize, String suffix) {
-    	return String.format("%sAtrac-%08X-%08X.%s", AtracCodec.getBaseDirectory(), atracFileSize, address, suffix);
+    private static String getAtracAudioPath(int address, int atracFileSize, int atracHash, String suffix) {
+    	return String.format("%sAtrac-%08X-%08X-%08X.%s", AtracCodec.getBaseDirectory(), atracFileSize, address, atracHash, suffix);
     }
 
-    private String decodeAtrac(byte[] atracData, int address, int atracFileSize, String decodedFileName) {
+    private String decodeAtrac(byte[] atracData, int address, int atracFileSize, int atracHash, String decodedFileName) {
     	try {
 	    	ByteBuffer riffBuffer = ByteBuffer.wrap(atracData);
 	    	String at3FileName = null;
 	    	if (dumpAt3File) {
 	    		// For debugging purpose, optionally dump the original atrac file in RIFF format
 				new File(AtracCodec.getBaseDirectory()).mkdirs();
-				at3FileName = getAtracAudioPath(address, atracFileSize, "at3");
+				at3FileName = getAtracAudioPath(address, atracFileSize, atracHash, "at3");
 	    		FileOutputStream encodedOut = new FileOutputStream(at3FileName);
 	    		encodedOut.getChannel().write(riffBuffer);
 	    		encodedOut.close();
@@ -296,7 +296,7 @@ public class ExternalDecoder {
 	    	}
 
 			new File(AtracCodec.getBaseDirectory()).mkdirs();
-			String encodedFileName = getAtracAudioPath(address, atracFileSize, "oma");
+			String encodedFileName = getAtracAudioPath(address, atracFileSize, atracHash, "oma");
 			FileOutputStream os = new FileOutputStream(encodedFileName);
 			os.getChannel().write(omaBuffer);
 			os.close();
@@ -322,7 +322,7 @@ public class ExternalDecoder {
 		return decodedFileName;
     }
 
-    public String decodeAtrac(PacketChannel packetChannel, int address, int atracFileSize) {
+    public String decodeAtrac(PacketChannel packetChannel, int address, int atracFileSize, int atracHash) {
     	if (!isEnabled()) {
     		return null;
     	}
@@ -333,16 +333,16 @@ public class ExternalDecoder {
     		return null;
     	}
 
-		String decodedFileName = getAtracAudioPath(address, atracFileSize, "wav");
-    	return decodeAtrac(atracData, address, atracFileSize, decodedFileName);
+		String decodedFileName = getAtracAudioPath(address, atracFileSize, atracHash, "wav");
+    	return decodeAtrac(atracData, address, atracFileSize, atracHash, decodedFileName);
     }
 
-    public String decodeAtrac(int address, int length, int atracFileSize, AtracCodec atracCodec) {
+    public String decodeAtrac(int address, int length, int atracFileSize, int atracHash, AtracCodec atracCodec) {
     	if (!isEnabled()) {
     		return null;
     	}
 
-		String decodedFileName = getAtracAudioPath(address, atracFileSize, "wav");
+		String decodedFileName = getAtracAudioPath(address, atracFileSize, atracHash, "wav");
 		File decodedFile = new File(decodedFileName);
 		if (decodedFile.canRead() && decodedFile.length() > 0) {
 			// Already decoded
@@ -376,7 +376,7 @@ public class ExternalDecoder {
     		return null;
     	}
 
-    	return decodeAtrac(atracData, address, atracFileSize, decodedFileName);
+    	return decodeAtrac(atracData, address, atracFileSize, atracHash, decodedFileName);
     }
 
     private static class IoListener implements IIoListener {

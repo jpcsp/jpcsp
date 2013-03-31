@@ -38,6 +38,7 @@ import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.connector.AtracCodec;
 import jpcsp.settings.AbstractBoolSettingsListener;
+import jpcsp.util.Hash;
 
 import org.apache.log4j.Logger;
 
@@ -543,7 +544,8 @@ public class sceAtrac3plus extends HLEModule {
                     log.warn(String.format("hleAtracSetData atracID=%d is invalid", getAtracId()));
                     return;
                 }
-                getAtracCodec().atracSetData(getAtracId(), getAtracCodecType(), buffer, readSize, inputFileSize);
+                int atracHash = Hash.getHashCode(0, buffer, Math.min(readSize, 512));
+                getAtracCodec().atracSetData(getAtracId(), getAtracCodecType(), buffer, readSize, inputFileSize, atracHash);
             }
         	Emulator.getClock().resume();
         }

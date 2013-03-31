@@ -66,6 +66,7 @@ public class AtracCodec {
     protected int atracMaxSamples;
     protected int atracFileSize;
     protected int atracBufferAddress;
+    protected int atracHash;
     protected int bytesPerFrame;
     protected byte[] atracDecodeBuffer;
     protected static boolean instructionsDisplayed = false;
@@ -201,9 +202,10 @@ public class AtracCodec {
     	requireAllAtracData = true;
     }
 
-    public void atracSetData(int atracID, int codecType, int address, int length, int atracFileSize) {
+    public void atracSetData(int atracID, int codecType, int address, int length, int atracFileSize, int atracHash) {
     	this.atracFileSize = atracFileSize;
     	this.atracBufferAddress = address;
+    	this.atracHash = atracHash;
         id = generateID(address, length, atracFileSize);
         closeStreams();
         atracEndSample = -1;
@@ -230,7 +232,7 @@ public class AtracCodec {
             }
         } else if (codecType == 0x00001000) {
         	if (checkMediaEngineState() && ExternalDecoder.isEnabled()) {
-        		String decodedFile = externalDecoder.decodeAtrac(address, length, atracFileSize, this);
+        		String decodedFile = externalDecoder.decodeAtrac(address, length, atracFileSize, atracHash, this);
         		if (decodedFile != null) {
         			Modules.log.info("AT3+ data decoded by the external decoder.");
         			me.finish();
@@ -357,7 +359,7 @@ public class AtracCodec {
         			if (atracChannel.length() >= atracFileSize) {
         				requireAllAtracData = false;
         	        	if (checkMediaEngineState() && ExternalDecoder.isEnabled()) {
-        	        		String decodedFile = externalDecoder.decodeAtrac(atracChannel, atracBufferAddress, atracFileSize);
+        	        		String decodedFile = externalDecoder.decodeAtrac(atracChannel, atracBufferAddress, atracFileSize, atracHash);
         	        		if (decodedFile != null) {
         	        			Modules.log.info("AT3+ data decoded by the external decoder (all AT3+ data retrieved).");
         	        			me.finish();
