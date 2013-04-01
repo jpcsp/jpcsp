@@ -25,7 +25,6 @@ import static java.lang.Math.min;
 import java.math.BigInteger;
 import java.util.Arrays;
 
-import jpcsp.Emulator;
 import jpcsp.Memory;
 
 /**
@@ -515,19 +514,17 @@ public class VfpuState extends FpuState {
                 break;
 
             case 4:
-            	if ((vs & 64) != 0) {
-            		Emulator.log.error(String.format("Unsupported vs=%d", vs));
-            	}
+            	s = (vs & 64) >> 5;
                 if ((vs & 32) != 0) {
-                    v1[0] = getVprFloat(m, 0, i);
-                    v1[1] = getVprFloat(m, 1, i);
-                    v1[2] = getVprFloat(m, 2, i);
-                    v1[3] = getVprFloat(m, 3, i);
+                    v1[0] = getVprFloat(m, (0 + s) & 3, i);
+                    v1[1] = getVprFloat(m, (1 + s) & 3, i);
+                    v1[2] = getVprFloat(m, (2 + s) & 3, i);
+                    v1[3] = getVprFloat(m, (3 + s) & 3, i);
                 } else {
-                    v1[0] = getVprFloat(m, i, 0);
-                    v1[1] = getVprFloat(m, i, 1);
-                    v1[2] = getVprFloat(m, i, 2);
-                    v1[3] = getVprFloat(m, i, 3);
+                    v1[0] = getVprFloat(m, i, (0 + s) & 3);
+                    v1[1] = getVprFloat(m, i, (1 + s) & 3);
+                    v1[2] = getVprFloat(m, i, (2 + s) & 3);
+                    v1[3] = getVprFloat(m, i, (3 + s) & 3);
                 }
                 if (vcr.pfxs.enabled) {
                     v3[0] = applyPrefixVs(0, v1);
@@ -604,19 +601,17 @@ public class VfpuState extends FpuState {
                 break;
 
             case 4:
-            	if ((vs & 64) != 0) {
-            		Emulator.log.error(String.format("Unsupported vs=%d", vs));
-            	}
+            	s = (vs & 64) >> 5;
                 if ((vs & 32) != 0) {
-                	v1i[0] = getVprInt(m, 0, i);
-                	v1i[1] = getVprInt(m, 1, i);
-                	v1i[2] = getVprInt(m, 2, i);
-                	v1i[3] = getVprInt(m, 3, i);
+                	v1i[0] = getVprInt(m, (0 + s) & 3, i);
+                	v1i[1] = getVprInt(m, (1 + s) & 3, i);
+                	v1i[2] = getVprInt(m, (2 + s) & 3, i);
+                	v1i[3] = getVprInt(m, (3 + s) & 3, i);
                 } else {
-                	v1i[0] = getVprInt(m, i, 0);
-                	v1i[1] = getVprInt(m, i, 1);
-                	v1i[2] = getVprInt(m, i, 2);
-                	v1i[3] = getVprInt(m, i, 3);
+                	v1i[0] = getVprInt(m, i, (0 + s) & 3);
+                	v1i[1] = getVprInt(m, i, (1 + s) & 3);
+                	v1i[2] = getVprInt(m, i, (2 + s) & 3);
+                	v1i[3] = getVprInt(m, i, (3 + s) & 3);
                 }
                 if (vcr.pfxs.enabled) {
                     v3i[0] = applyPrefixVsInt(0, v1i);
@@ -693,19 +688,17 @@ public class VfpuState extends FpuState {
                 break;
 
             case 4:
-            	if ((vt & 64) != 0) {
-            		Emulator.log.error(String.format("Unsupported vt=%d", vt));
-            	}
+            	s = (vt & 64) >> 5;
                 if ((vt & 32) != 0) {
-                    v2[0] = getVprFloat(m, 0, i);
-                    v2[1] = getVprFloat(m, 1, i);
-                    v2[2] = getVprFloat(m, 2, i);
-                    v2[3] = getVprFloat(m, 3, i);
+                    v2[0] = getVprFloat(m, (0 + s) & 3, i);
+                    v2[1] = getVprFloat(m, (1 + s) & 3, i);
+                    v2[2] = getVprFloat(m, (2 + s) & 3, i);
+                    v2[3] = getVprFloat(m, (3 + s) & 3, i);
                 } else {
-                    v2[0] = getVprFloat(m, i, 0);
-                    v2[1] = getVprFloat(m, i, 1);
-                    v2[2] = getVprFloat(m, i, 2);
-                    v2[3] = getVprFloat(m, i, 3);
+                    v2[0] = getVprFloat(m, i, (0 + s) & 3);
+                    v2[1] = getVprFloat(m, i, (1 + s) & 3);
+                    v2[2] = getVprFloat(m, i, (2 + s) & 3);
+                    v2[3] = getVprFloat(m, i, (3 + s) & 3);
                 }
                 if (vcr.pfxt.enabled) {
                     v3[0] = applyPrefixVt(0, v2);
@@ -782,19 +775,17 @@ public class VfpuState extends FpuState {
                 break;
 
             case 4:
-            	if ((vt & 64) != 0) {
-            		Emulator.log.error(String.format("Unsupported vt=%d", vt));
-            	}
+            	s = (vt & 64) >> 5;
                 if ((vt & 32) != 0) {
-                    v2i[0] = getVprInt(m, 0, i);
-                    v2i[1] = getVprInt(m, 1, i);
-                    v2i[2] = getVprInt(m, 2, i);
-                    v2i[3] = getVprInt(m, 3, i);
+                    v2i[0] = getVprInt(m, (0 + s) & 3, i);
+                    v2i[1] = getVprInt(m, (1 + s) & 3, i);
+                    v2i[2] = getVprInt(m, (2 + s) & 3, i);
+                    v2i[3] = getVprInt(m, (3 + s) & 3, i);
                 } else {
-                    v2i[0] = getVprInt(m, i, 0);
-                    v2i[1] = getVprInt(m, i, 1);
-                    v2i[2] = getVprInt(m, i, 2);
-                    v2i[3] = getVprInt(m, i, 3);
+                    v2i[0] = getVprInt(m, i, (0 + s) & 3);
+                    v2i[1] = getVprInt(m, i, (1 + s) & 3);
+                    v2i[2] = getVprInt(m, i, (2 + s) & 3);
+                    v2i[3] = getVprInt(m, i, (3 + s) & 3);
                 }
                 if (vcr.pfxt.enabled) {
                     v3i[0] = applyPrefixVtInt(0, v2i);
@@ -851,19 +842,17 @@ public class VfpuState extends FpuState {
                 break;
 
             case 4:
-            	if ((vd & 64) != 0) {
-            		Emulator.log.error(String.format("Unsupported vd=%d", vd));
-            	}
+            	s = (vd & 64) >> 5;
                 if ((vd & 32) != 0) {
-                	v3[0] = getVprFloat(m, 0, i);
-                	v3[1] = getVprFloat(m, 1, i);
-                	v3[2] = getVprFloat(m, 2, i);
-                	v3[3] = getVprFloat(m, 3, i);
+                	v3[0] = getVprFloat(m, (0 + s) & 3, i);
+                	v3[1] = getVprFloat(m, (1 + s) & 3, i);
+                	v3[2] = getVprFloat(m, (2 + s) & 3, i);
+                	v3[3] = getVprFloat(m, (3 + s) & 3, i);
                 } else {
-                	v3[0] = getVprFloat(m, i, 0);
-                	v3[1] = getVprFloat(m, i, 1);
-                	v3[2] = getVprFloat(m, i, 2);
-                	v3[3] = getVprFloat(m, i, 3);
+                	v3[0] = getVprFloat(m, i, (0 + s) & 3);
+                	v3[1] = getVprFloat(m, i, (1 + s) & 3);
+                	v3[2] = getVprFloat(m, i, (2 + s) & 3);
+                	v3[3] = getVprFloat(m, i, (3 + s) & 3);
                 }
                 break;
 
@@ -909,19 +898,17 @@ public class VfpuState extends FpuState {
                 break;
 
             case 4:
-            	if ((vd & 64) != 0) {
-            		Emulator.log.error(String.format("Unsupported vd=%d", vd));
-            	}
+            	s = (vd & 64) >> 5;
                 if ((vd & 32) != 0) {
-                	v3i[0] = getVprInt(m, 0, i);
-                	v3i[1] = getVprInt(m, 1, i);
-                	v3i[2] = getVprInt(m, 2, i);
-                	v3i[3] = getVprInt(m, 3, i);
+                	v3i[0] = getVprInt(m, (0 + s) & 3, i);
+                	v3i[1] = getVprInt(m, (1 + s) & 3, i);
+                	v3i[2] = getVprInt(m, (2 + s) & 3, i);
+                	v3i[3] = getVprInt(m, (3 + s) & 3, i);
                 } else {
-                	v3i[0] = getVprInt(m, i, 0);
-                	v3i[1] = getVprInt(m, i, 1);
-                	v3i[2] = getVprInt(m, i, 2);
-                	v3i[3] = getVprInt(m, i, 3);
+                	v3i[0] = getVprInt(m, i, (0 + s) & 3);
+                	v3i[1] = getVprInt(m, i, (1 + s) & 3);
+                	v3i[2] = getVprInt(m, i, (2 + s) & 3);
+                	v3i[3] = getVprInt(m, i, (3 + s) & 3);
                 }
                 break;
 
@@ -1010,20 +997,18 @@ public class VfpuState extends FpuState {
                 break;
 
             case 4:
-            	if ((vd & 64) != 0) {
-            		Emulator.log.error(String.format("Unsupported vd=%d", vd));
-            	}
+            	s = (vd & 64) >> 5;
                 if (vcr.pfxd.enabled) {
                     if ((vd & 32) != 0) {
                         for (int j = 0; j < 4; ++j) {
                             if (!vcr.pfxd.msk[j]) {
-                                setVprFloat(m, j, i, applyPrefixVd(j, vr[j]));
+                                setVprFloat(m, (j + s) & 3, i, applyPrefixVd(j, vr[j]));
                             }
                         }
                     } else {
                         for (int j = 0; j < 4; ++j) {
                             if (!vcr.pfxd.msk[j]) {
-                                setVprFloat(m, i, j, applyPrefixVd(j, vr[j]));
+                                setVprFloat(m, i, (j + s) & 3, applyPrefixVd(j, vr[j]));
                             }
                         }
                     }
@@ -1031,11 +1016,11 @@ public class VfpuState extends FpuState {
                 } else {
                     if ((vd & 32) != 0) {
                         for (int j = 0; j < 4; ++j) {
-                            setVprFloat(m, j, i, vr[j]);
+                            setVprFloat(m, (j + s) & 3, i, vr[j]);
                         }
                     } else {
                         for (int j = 0; j < 4; ++j) {
-                            setVprFloat(m, i, j, vr[j]);
+                            setVprFloat(m, i, (j + s) & 3, vr[j]);
                         }
                     }
                 }
@@ -1126,20 +1111,18 @@ public class VfpuState extends FpuState {
                 break;
 
             case 4:
-            	if ((vd & 64) != 0) {
-            		Emulator.log.error(String.format("Unsupported vd=%d", vd));
-            	}
+            	s = (vd & 64) >> 5;
                 if (vcr.pfxd.enabled) {
                     if ((vd & 32) != 0) {
                         for (int j = 0; j < 4; ++j) {
                             if (!vcr.pfxd.msk[j]) {
-                            	setVprInt(m, j, i, applyPrefixVdInt(j, vr[j]));
+                            	setVprInt(m, (j + s) & 3, i, applyPrefixVdInt(j, vr[j]));
                             }
                         }
                     } else {
                         for (int j = 0; j < 4; ++j) {
                             if (!vcr.pfxd.msk[j]) {
-                            	setVprInt(m, i, j, applyPrefixVdInt(j, vr[j]));
+                            	setVprInt(m, i, (j + s) & 3, applyPrefixVdInt(j, vr[j]));
                             }
                         }
                     }
@@ -1147,11 +1130,11 @@ public class VfpuState extends FpuState {
                 } else {
                     if ((vd & 32) != 0) {
                         for (int j = 0; j < 4; ++j) {
-                        	setVprInt(m, j, i, vr[j]);
+                        	setVprInt(m, (j + s) & 3, i, vr[j]);
                         }
                     } else {
                         for (int j = 0; j < 4; ++j) {
-                        	setVprInt(m, i, j, vr[j]);
+                        	setVprInt(m, i, (j + s) & 3, vr[j]);
                         }
                     }
                 }
