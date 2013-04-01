@@ -1294,6 +1294,78 @@ void __attribute__((noinline)) vidtq4(ScePspFMatrix4 *m0)
    : "+m" (*m0));
 }
 
+void __attribute__((noinline)) vaddq_cvs64(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePspFVector4 *v2)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+   "lv.q   C100, %1\n"
+   "lv.q   C200, %2\n"
+//   "vadd.q C000, C100+64, C200\n"
+   ".word 0x60088480+0x4000\n"
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1), "m" (*v2));
+}
+
+void __attribute__((noinline)) vaddq_cvt64(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePspFVector4 *v2)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+   "lv.q   C100, %1\n"
+   "lv.q   C200, %2\n"
+//   "vadd.q C000, C100, C200+64\n"
+   ".word 0x60088480+0x400000\n"
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1), "m" (*v2));
+}
+
+void __attribute__((noinline)) vaddq_cvd64(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePspFVector4 *v2)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+   "lv.q   C100, %1\n"
+   "lv.q   C200, %2\n"
+//   "vadd.q C000+64, C100, C200\n"
+   ".word 0x60088480+0x40\n"
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1), "m" (*v2));
+}
+
+void __attribute__((noinline)) vaddq_rvs64(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePspFVector4 *v2)
+{
+	asm volatile (
+   "lv.q   R000, %0\n"
+   "lv.q   R100, %1\n"
+   "lv.q   R200, %2\n"
+//   "vadd.q R000, R100+64, R200\n"
+   ".word 0x6028A4A0+0x4000\n"
+   "sv.q   R000, %0\n"
+   : "+m" (*v0) : "m" (*v1), "m" (*v2));
+}
+
+void __attribute__((noinline)) vaddq_rvt64(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePspFVector4 *v2)
+{
+	asm volatile (
+   "lv.q   R000, %0\n"
+   "lv.q   R100, %1\n"
+   "lv.q   R200, %2\n"
+//   "vadd.q R000, R100, R200+64\n"
+   ".word 0x6028A4A0+0x400000\n"
+   "sv.q   R000, %0\n"
+   : "+m" (*v0) : "m" (*v1), "m" (*v2));
+}
+
+void __attribute__((noinline)) vaddq_rvd64(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePspFVector4 *v2)
+{
+	asm volatile (
+   "lv.q   R000, %0\n"
+   "lv.q   R100, %1\n"
+   "lv.q   R200, %2\n"
+//   "vadd.q R000+64, R100, R200\n"
+   ".word 0x6028A4A0+0x40\n"
+   "sv.q   R000, %0\n"
+   : "+m" (*v0) : "m" (*v1), "m" (*v2));
+}
+
 
 ScePspFVector4 v0;
 ScePspFVector4 v1;
@@ -2001,6 +2073,30 @@ int main(int argc, char *argv[])
 			printf(" | %.0f %.0f %.0f %.0f", m3.y.x, m3.y.y, m3.y.z, m3.y.w);
 			printf(" | %.0f %.0f %.0f %.0f", m3.z.x, m3.z.y, m3.z.z, m3.z.w);
 			printf(" | %.0f %.0f %.0f %.0f\n", m3.w.x, m3.w.y, m3.w.z, m3.w.w);
+
+			initValues();
+			vaddq_cvs64(&v0, &v1, &v2);
+			printf("vadd.q column vs64: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			vaddq_cvt64(&v0, &v1, &v2);
+			printf("vadd.q column vt64: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			vaddq_cvd64(&v0, &v1, &v2);
+			printf("vadd.q column vd64: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			vaddq_rvs64(&v0, &v1, &v2);
+			printf("vadd.q row vs64: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			vaddq_rvt64(&v0, &v1, &v2);
+			printf("vadd.q row vt64: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			vaddq_rvd64(&v0, &v1, &v2);
+			printf("vadd.q row vd64: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 		}
 
 		if (buttonDown & PSP_CTRL_TRIANGLE)
