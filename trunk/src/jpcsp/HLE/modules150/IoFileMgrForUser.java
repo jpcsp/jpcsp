@@ -1842,7 +1842,7 @@ public class IoFileMgrForUser extends HLEModule {
             result = size;
         } else {
             if (log.isDebugEnabled()) {
-                log.debug(String.format("hleIoWrite(id=0x%X, data=0x%08X, size=0x%X) async=%b", id, dataAddr, size, async));
+                log.debug(String.format("hleIoWrite(id=0x%X, data=%s, size=0x%X) async=%b", id, dataAddr, size, async));
                 if (log.isTraceEnabled()) {
                 	log.trace(String.format("hleIoWrite: %s", Utilities.getMemoryDump(dataAddr.getAddress(), Math.min(size, 32))));
                 }
