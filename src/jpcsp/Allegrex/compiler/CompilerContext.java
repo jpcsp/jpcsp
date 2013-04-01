@@ -417,14 +417,12 @@ public class CompilerContext implements ICompilerContext {
                 break;
     		}
             case 4: {
-            	if ((reg & 64) != 0) {
-            		Emulator.log.error(String.format("Unsupported Vreg=%d at %s", reg, getCodeInstruction()));
-            	}
+            	s = (reg & 64) >> 5;
                 Float cstValue = getPfxSrcCstValue(pfxSrcState, n);
                 if (cstValue != null) {
     				loadCstValue(cstValue, isFloat);
                 } else {
-                	int index = getPfxSrcIndex(pfxSrcState, n);
+                	int index = getPfxSrcIndex(pfxSrcState, (n + s) & 3);
 	                if ((reg & 32) != 0) {
 	                    loadVRegister(m, index, i, isFloat);
 	                } else {
@@ -581,13 +579,11 @@ public class CompilerContext implements ICompilerContext {
                         break;
             		}
                     case 4: {
-                    	if ((reg & 64) != 0) {
-                    		Emulator.log.error(String.format("Unsupported Vreg=%d at %s", reg, getCodeInstruction()));
-                    	}
+                    	s = (reg & 64) >> 5;
                         if ((reg & 32) != 0) {
-                            prepareVRegisterForStore(m, n, i, isFloat);
+                            prepareVRegisterForStore(m, (n + s) & 3, i, isFloat);
                         } else {
-                            prepareVRegisterForStore(m, i, n, isFloat);
+                            prepareVRegisterForStore(m, i, (n + s) & 3, isFloat);
                         }
                     	break;
                     }
