@@ -172,7 +172,7 @@ public class IoFileMgrForUser extends HLEModule {
     protected VirtualFileSystemManager vfsManager;
 
     protected static enum IoOperation {
-        open(5), close(1), seek(1), ioctl(2), remove, rename, mkdir, dread,
+        open(5), close(1), seek(1), ioctl(20), remove, rename, mkdir, dread, iodevctl(2),
         // Duration of read operation: approx. 4 ms per 0x10000 bytes (tested on real PSP)
         read(4, 0x10000),
         // Duration of write operation: approx. 5 ms per 0x10000 bytes
@@ -2203,6 +2203,7 @@ public class IoFileMgrForUser extends HLEModule {
         IoInfo info = null;
         int result;
         Memory mem = Memory.getInstance();
+        boolean needDelayIoOperation = true;
 
         if (log.isDebugEnabled()) {
             log.debug(String.format("hleIoIoctl(id=%x, cmd=0x%08X, indata=0x%08X, inlen=%d, outdata=0x%08X, outlen=%d, async=%b", id, cmd, indata_addr, inlen, outdata_addr, outlen, async));
@@ -2325,6 +2326,7 @@ public class IoFileMgrForUser extends HLEModule {
 	                    log.warn("hleIoIoctl cmd=0x01020003 " + String.format("0x%08X %d", outdata_addr, outlen) + " unsupported parameters");
 	                    result = SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
                     }
+                    needDelayIoOperation = false;
                     break;
                 }
                 // Get UMD file pointer.
@@ -2667,9 +2669,14 @@ public class IoFileMgrForUser extends HLEModule {
                 }
             }
         }
+
         result = (int) updateResult(info, result, async, false, IoOperation.ioctl);
         for (IIoListener ioListener : ioListeners) {
             ioListener.sceIoIoctl(result, id, cmd, indata_addr, inlen, outdata_addr, outlen);
+        }
+
+        if (needDelayIoOperation && !async) {
+        	delayIoOperation(IoOperation.ioctl);
         }
 
         return result;
@@ -3001,9 +3008,7 @@ public class IoFileMgrForUser extends HLEModule {
      */
     @HLEFunction(nid = 0x63632449, version = 150, checkInsideInterrupt = true)
     public int sceIoIoctl(int id, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen) {
-        int result = hleIoIoctl(id, cmd, indata_addr, inlen, outdata_addr, outlen, false);
-        delayIoOperation(IoOperation.ioctl);
-        return result;
+        return hleIoIoctl(id, cmd, indata_addr, inlen, outdata_addr, outlen, false);
     }
 
     /**
@@ -3584,7 +3589,7 @@ public class IoFileMgrForUser extends HLEModule {
         	for (IIoListener ioListener : ioListeners) {
                 ioListener.sceIoDevctl(result, devicename.getAddress(), devicename.getString(), cmd, indata_addr, inlen, outdata_addr, outlen);
             }
-            delayIoOperation(IoOperation.ioctl);
+            delayIoOperation(IoOperation.iodevctl);
 
             return result;
     	} else if (useVirtualFileSystem) {
@@ -3594,7 +3599,7 @@ public class IoFileMgrForUser extends HLEModule {
             for (IIoListener ioListener : ioListeners) {
                 ioListener.sceIoDevctl(result, devicename.getAddress(), devicename.getString(), cmd, indata_addr, inlen, outdata_addr, outlen);
             }
-            delayIoOperation(IoOperation.ioctl);
+            delayIoOperation(IoOperation.iodevctl);
 
             return result;
         }
@@ -3915,7 +3920,7 @@ public class IoFileMgrForUser extends HLEModule {
         }
 
         if (needDelayIoOperation) {
-        	delayIoOperation(IoOperation.ioctl);
+        	delayIoOperation(IoOperation.iodevctl);
         }
 
         return result;
