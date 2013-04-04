@@ -1366,6 +1366,18 @@ void __attribute__((noinline)) vaddq_rvd64(ScePspFVector4 *v0, ScePspFVector4 *v
    : "+m" (*v0) : "m" (*v1), "m" (*v2));
 }
 
+void __attribute__((noinline)) vc2i_vd64(ScePspFVector4 *v0, ScePspFVector4 *v1)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+   "lv.q   C100, %1\n"
+   "vpfxd  [x, y, M, M]\n"
+//   "vc2i.s C000+64, C100\n"
+   ".word 0xD0390400+0x40\n"
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1));
+}
+
 
 ScePspFVector4 v0;
 ScePspFVector4 v1;
@@ -1840,6 +1852,16 @@ int main(int argc, char *argv[])
 			initValues();
 			vexp2q(&v0, &v1);
 			printf("vexp2.q : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			pint = (int *) &v1;
+			pint[0] = 0x12345678;
+			pint[1] = 0x55667788;
+			pint[2] = 0x99aabbcc;
+			pint[3] = 0xddee00ff;
+			vc2i_vd64(&v0, &v1);
+			pint = (int *) &v0;
+			printf("vc2i.q : 0x%08X 0x%08X 0x%08X 0x%08X\n", pint[0], pint[1], pint[2], pint[3]);
 		}
 
 		if (buttonDown & PSP_CTRL_CIRCLE)
