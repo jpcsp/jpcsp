@@ -18,6 +18,9 @@ package jpcsp.sound;
 
 import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_PITCH_BASE;
 import static jpcsp.HLE.modules.sceSasCore.getSasADSRCurveTypeName;
+import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_LINEAR_DECREASE;
+import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_ADSR_CURVE_MODE_LINEAR_INCREASE;
+import static jpcsp.hardware.Audio.PSP_AUDIO_VOLUME_MAX;
 import jpcsp.HLE.modules150.sceAtrac3plus.AtracID;
 
 public class SoundVoice {
@@ -53,10 +56,15 @@ public class SoundVoice {
         public int height;
 
         public VoiceADSREnvelope() {
-            AttackRate = 0;
-            DecayRate = 0;
-            SustainRate = 0;
-            ReleaseRate = 0;
+        	// Default values (like on PSP)
+        	AttackRate = 0;
+        	DecayRate = 0;
+        	SustainRate = 0;
+        	ReleaseRate = 0;
+            AttackCurveType = PSP_SAS_ADSR_CURVE_MODE_LINEAR_INCREASE;
+            DecayCurveType = PSP_SAS_ADSR_CURVE_MODE_LINEAR_DECREASE;
+            SustainCurveType = PSP_SAS_ADSR_CURVE_MODE_LINEAR_DECREASE;
+            ReleaseCurveType = PSP_SAS_ADSR_CURVE_MODE_LINEAR_DECREASE;
             SustainLevel = 0;
             height = 0;
         }
@@ -70,8 +78,12 @@ public class SoundVoice {
 	public SoundVoice(int index) {
 		this.index = index;
 		changed = true;
+        leftVolume = PSP_AUDIO_VOLUME_MAX;
+        rightVolume = PSP_AUDIO_VOLUME_MAX;
 		vagAddress = 0;
 		vagSize = 0;
+		pcmAddress = 0;
+		pcmSize = 0;
         loopMode = 0;
         pitch = PSP_SAS_PITCH_BASE;
         noise = 0;
