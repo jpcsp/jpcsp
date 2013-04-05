@@ -241,8 +241,13 @@ public class sceAudio extends HLEModule {
         int ret = -1;
 
         if (channel.isReserved()) {
-            channel.setLeftVolume(leftvol);
-            channel.setRightVolume(rightvol);
+        	// Negative volume means no change
+        	if (leftvol >= 0) {
+        		channel.setLeftVolume(leftvol);
+        	}
+        	if (rightvol >= 0) {
+        		channel.setRightVolume(rightvol);
+        	}
             ret = 0;
         }
 
@@ -317,6 +322,23 @@ public class sceAudio extends HLEModule {
     	}
 
     	return sampleCount;
+    }
+
+    public int checkVolume(int volume) {
+    	// Negative volume is allowed
+    	if (volume > 0xFFFF) {
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_AUDIO_INVALID_VOLUME);
+    	}
+
+    	return volume;
+    }
+
+    public int checkVolume2(int volume) {
+    	if (volume < 0 || volume > 0xFFFFF) {
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_AUDIO_INVALID_VOLUME);
+    	}
+
+    	return volume;
     }
 
     protected void hleAudioBlockingInput(int threadId, int addr, int samples, int frequency) {
@@ -456,7 +478,7 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0x8C1009B2, version = 150, checkInsideInterrupt = true)
-    public int sceAudioOutput(@CheckArgument("checkReservedChannel") int channel, int vol, @CanBeNull TPointer pvoid_buf) {
+    public int sceAudioOutput(@CheckArgument("checkReservedChannel") int channel, @CheckArgument("checkVolume") int vol, @CanBeNull TPointer pvoid_buf) {
         if (pspPCMChannels[channel].isOutputBlocking()) {
         	return SceKernelErrors.ERROR_AUDIO_CHANNEL_BUSY;
         }
@@ -469,7 +491,7 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0x136CAF51, version = 150, checkInsideInterrupt = true)
-    public int sceAudioOutputBlocking(@CheckArgument("checkReservedChannel") int channel, int vol, @CanBeNull TPointer pvoid_buf) {
+    public int sceAudioOutputBlocking(@CheckArgument("checkReservedChannel") int channel, @CheckArgument("checkVolume") int vol, @CanBeNull TPointer pvoid_buf) {
         if (pvoid_buf.isNull()) {
             if (!pspPCMChannels[channel].isDrained()) {
                 if (log.isDebugEnabled()) {
@@ -502,7 +524,7 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0xE2D56B2D, version = 150, checkInsideInterrupt = true)
-    public int sceAudioOutputPanned(@CheckArgument("checkReservedChannel") int channel, int leftvol, int rightvol, @CanBeNull TPointer pvoid_buf) {
+    public int sceAudioOutputPanned(@CheckArgument("checkReservedChannel") int channel, @CheckArgument("checkVolume") int leftvol, @CheckArgument("checkVolume") int rightvol, @CanBeNull TPointer pvoid_buf) {
         if (pspPCMChannels[channel].isOutputBlocking()) {
         	return SceKernelErrors.ERROR_AUDIO_CHANNEL_BUSY;
         }
@@ -515,7 +537,7 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0x13F592BC, version = 150, checkInsideInterrupt = true)
-    public int sceAudioOutputPannedBlocking(@CheckArgument("checkReservedChannel") int channel, int leftvol, int rightvol, @CanBeNull TPointer pvoid_buf) {
+    public int sceAudioOutputPannedBlocking(@CheckArgument("checkReservedChannel") int channel, @CheckArgument("checkVolume") int leftvol, @CheckArgument("checkVolume") int rightvol, @CanBeNull TPointer pvoid_buf) {
         if (pvoid_buf.isNull()) {
             // Tested on PSP:
             // An output adress of 0 is actually a special code for the PSP.
@@ -620,7 +642,7 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0xB7E1D8E7, version = 150, checkInsideInterrupt = true)
-    public int sceAudioChangeChannelVolume(@CheckArgument("checkReservedChannel") int channel, int leftvol, int rightvol) {
+    public int sceAudioChangeChannelVolume(@CheckArgument("checkReservedChannel") int channel, @CheckArgument("checkVolume") int leftvol, @CheckArgument("checkVolume") int rightvol) {
     	return changeChannelVolume(pspPCMChannels[channel], leftvol, rightvol);
     }
 
@@ -635,7 +657,7 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0x2D53F36E, version = 150, checkInsideInterrupt = true)
-    public int sceAudioOutput2OutputBlocking(int vol, @CanBeNull TPointer buf) {
+    public int sceAudioOutput2OutputBlocking(@CheckArgument("checkVolume2") int vol, @CanBeNull TPointer buf) {
         return sceAudioSRCOutputBlocking(vol, buf);
     }
 
@@ -686,7 +708,19 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0xE0727056, version = 150, checkInsideInterrupt = true)
-    public int sceAudioSRCOutputBlocking(int vol, @CanBeNull TPointer buf) {
+    public int sceAudioSRCOutputBlocking(@CheckArgument("checkVolume2") int vol, @CanBeNull TPointer buf) {
+    	// PSP is only updating the SRCChannel volume when it has changed.
+    	// Strange, at initialization, a volume of 0x8000 is kept as a channel volume of 0x8000.
+    	// Afterwards, when the volume is set to a different value, the channel volume is set to a value shift by 5.
+    	// Resetting the volume back to 0x8000 would set the channel volume to 0x0400 this time.
+    	// Probably a bug in the PSP function, but we have to mimic it as well...
+    	int srcVol = vol >> 5;
+        if (srcVol != pspSRCChannel.getSrcVolume()) {
+        	pspSRCChannel.setSrcVolume(srcVol);
+        	pspSRCChannel.setLeftVolume(srcVol);
+        	pspSRCChannel.setRightVolume(srcVol);
+        }
+
         if (buf.isNull()) {
             // Tested on PSP:
             // SRC audio also delays when buf == 0, in order to drain all
@@ -695,7 +729,8 @@ public class sceAudio extends HLEModule {
                 if (log.isDebugEnabled()) {
                     log.debug("sceAudioSRCOutputBlocking[buf==0] blocking " + pspSRCChannel);
                 }
-                blockThreadOutput(pspSRCChannel, buf.getAddress(), vol, vol);
+                // Do not update volume, it has already been updated above
+                blockThreadOutput(pspSRCChannel, buf.getAddress(), -1, -1);
             }
         } else if (!pspSRCChannel.isReserved() && !disableChReserve) {
         	// Channel is automatically reserved. The audio data (buf) is not used in this case.
@@ -708,7 +743,6 @@ public class sceAudio extends HLEModule {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("sceAudioSRCOutputBlocking[not blocking] %s to %s", buf, pspSRCChannel.toString()));
                 }
-                changeChannelVolume(pspSRCChannel, vol, vol);
                 Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
                 return doAudioOutput(pspSRCChannel, buf.getAddress());
             }
@@ -716,7 +750,8 @@ public class sceAudio extends HLEModule {
             if (log.isDebugEnabled()) {
                 log.debug(String.format("sceAudioSRCOutputBlocking[blocking] %s to %s", buf, pspSRCChannel.toString()));
             }
-            blockThreadOutput(pspSRCChannel, buf.getAddress(), vol, vol);
+            // Do not update volume, it has already been updated above
+            blockThreadOutput(pspSRCChannel, buf.getAddress(), -1, -1);
         }
 
         return 0;

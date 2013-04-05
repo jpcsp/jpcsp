@@ -367,7 +367,7 @@ public class sceSasCore extends HLEModule {
      *                          ERROR_SAS_INVALID_VOICE if an invalid voice number is provided
      */
     @HLEFunction(nid = 0x440CA7D8, version = 150, checkInsideInterrupt = true)
-    public int __sceSasSetVolume(Processor processor, int sasCore, int voice, int leftVolume, int rightVolume, int effectLeftVolumne, int effectRightVolume) {
+    public int __sceSasSetVolume(int sasCore, int voice, int leftVolume, int rightVolume, int effectLeftVolumne, int effectRightVolume) {
         checkSasAndVoiceHandlesGood(sasCore, voice);
 
         voices[voice].setLeftVolume(leftVolume << 3);	// 0 - 0x8000
@@ -797,7 +797,7 @@ public class sceSasCore extends HLEModule {
      *                    ERROR_SAS_INVALID_ADSR_CURVE_MODE if an invalid sustain curve type is provided
      */
     @HLEFunction(nid = 0xCBCD4F79, version = 150, checkInsideInterrupt = true)
-    public int __sceSasSetSimpleADSR(Processor processor, int sasCore, int voice, int ADSREnv1, int ADSREnv2) {
+    public int __sceSasSetSimpleADSR(int sasCore, int voice, int ADSREnv1, int ADSREnv2) {
         checkSasAndVoiceHandlesGood(sasCore, voice);
 
         // Only the low-order 16 bits are valid for both parameters.
