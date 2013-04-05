@@ -74,7 +74,7 @@ public class ModuleMgrForUser extends HLEModule {
         memab
     }
 
-    public static final int loadHLEModuleDelay = 1000; // 1 ms delay
+    public static final int loadHLEModuleDelay = 50000; // 50 ms delay
 
     @Override
     public String getName() {

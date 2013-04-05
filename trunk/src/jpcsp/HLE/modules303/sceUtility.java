@@ -19,6 +19,7 @@ package jpcsp.HLE.modules303;
 import jpcsp.State;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.Modules;
 
 import java.util.HashMap;
 
@@ -26,6 +27,7 @@ import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.ModuleMgrForUser;
 
 @HLELogging
 public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
@@ -135,10 +137,16 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
             	result = 0x2F5CE6C3;
             }
 
-            return result;
+        	Modules.ThreadManForUserModule.hleKernelDelayThread(ModuleMgrForUser.loadHLEModuleDelay, false);
+
+        	return result;
         }
 
         log.info(String.format("sceUtilityLoadModule(module=0x%04X) %s loaded", module, moduleName));
+
+        if (result >= 0) {
+        	Modules.ThreadManForUserModule.hleKernelDelayThread(ModuleMgrForUser.loadHLEModuleDelay, false);
+        }
 
         return result;
     }
