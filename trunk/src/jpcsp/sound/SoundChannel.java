@@ -59,6 +59,7 @@ public class SoundChannel {
     private int sampleLength;
     private int format;
     private int numberBlockingBuffers;
+    private int srcVolume;
 
     public static void init() {
 		if (!AL.isCreated()) {
@@ -84,6 +85,7 @@ public class SoundChannel {
 		reserved = false;
 		leftVolume = DEFAULT_VOLUME;
 		rightVolume = DEFAULT_VOLUME;
+		srcVolume = 0x0400;
 		alSource = AL10.alGenSources();
 		sampleRate = DEFAULT_SAMPLE_RATE;
 		updateNumberBlockingBuffers();
@@ -293,6 +295,23 @@ public class SoundChannel {
 		return true;
     }
 
+    public static short adjustSample(short sample, int volume) {
+        return (short) ((((int) sample) * volume) >> 15);
+    }
+
+    public static void storeSample(short sample, byte[] data, int index) {
+    	data[index] = (byte) sample;
+    	data[index + 1] = (byte) (sample >> 8);
+    }
+
+	public int getSrcVolume() {
+		return srcVolume;
+	}
+
+	public void setSrcVolume(int srcVolume) {
+		this.srcVolume = srcVolume;
+	}
+
     @Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
@@ -312,13 +331,4 @@ public class SoundChannel {
 
 		return s.toString();
 	}
-
-    public static short adjustSample(short sample, int volume) {
-        return (short) ((((int) sample) * volume) >> 15);
-    }
-
-    public static void storeSample(short sample, byte[] data, int index) {
-    	data[index] = (byte) sample;
-    	data[index + 1] = (byte) (sample >> 8);
-    }
 }
