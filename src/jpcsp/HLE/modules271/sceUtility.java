@@ -18,6 +18,7 @@ package jpcsp.HLE.modules271;
 
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
+import jpcsp.HLE.Modules;
 
 import java.util.HashMap;
 
@@ -25,6 +26,7 @@ import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.ModuleMgrForUser;
 
 @HLELogging
 public class sceUtility extends jpcsp.HLE.modules260.sceUtility {
@@ -146,7 +148,12 @@ public class sceUtility extends jpcsp.HLE.modules260.sceUtility {
         int result = hleUtilityLoadAvModule(module, moduleName);
         if (result == SceKernelErrors.ERROR_AV_MODULE_BAD_ID) {
             log.info(String.format("IGNORING: sceUtilityLoadAvModule(module=0x%04X) %s", module, moduleName));
+        	Modules.ThreadManForUserModule.hleKernelDelayThread(ModuleMgrForUser.loadHLEModuleDelay, false);
             return 0;
+        }
+
+        if (result >= 0) {
+        	Modules.ThreadManForUserModule.hleKernelDelayThread(ModuleMgrForUser.loadHLEModuleDelay, false);
         }
 
         return result;
@@ -165,7 +172,12 @@ public class sceUtility extends jpcsp.HLE.modules260.sceUtility {
         int result = hleUtilityLoadUsbModule(module, moduleName);
         if (result == SceKernelErrors.ERROR_AV_MODULE_BAD_ID) {
             log.info(String.format("IGNORING: sceUtilityLoadUsbModule(module=0x%04X) %s", module, moduleName));
+        	Modules.ThreadManForUserModule.hleKernelDelayThread(ModuleMgrForUser.loadHLEModuleDelay, false);
             return 0;
+        }
+
+        if (result >= 0) {
+        	Modules.ThreadManForUserModule.hleKernelDelayThread(ModuleMgrForUser.loadHLEModuleDelay, false);
         }
 
         return result;

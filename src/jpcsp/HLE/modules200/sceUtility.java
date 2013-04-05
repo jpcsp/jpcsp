@@ -35,6 +35,7 @@ import jpcsp.HLE.kernel.types.SceUtilityInstallParams;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.IoFileMgrForUser;
+import jpcsp.HLE.modules.ModuleMgrForUser;
 import jpcsp.filesystems.SeekableDataInput;
 
 @HLELogging
@@ -175,10 +176,15 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
         int result = hleUtilityLoadNetModule(module, moduleName);
         if (result == SceKernelErrors.ERROR_NET_MODULE_BAD_ID) {
             log.info(String.format("IGNORING: sceUtilityLoadNetModule(module=0x%04X) %s", module, moduleName));
+        	Modules.ThreadManForUserModule.hleKernelDelayThread(ModuleMgrForUser.loadHLEModuleDelay, false);
             return 0;
         }
 
         log.info(String.format("sceUtilityLoadNetModule(module=0x%04X) %s loaded", module, moduleName));
+
+        if (result >= 0) {
+        	Modules.ThreadManForUserModule.hleKernelDelayThread(ModuleMgrForUser.loadHLEModuleDelay, false);
+        }
 
         return result;
     }
