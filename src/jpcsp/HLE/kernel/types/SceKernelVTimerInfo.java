@@ -18,6 +18,7 @@ package jpcsp.HLE.kernel.types;
 
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.kernel.types.interrupts.VTimerInterruptHandler;
 import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
@@ -79,9 +80,21 @@ public class SceKernelVTimerInfo extends pspAbstractMemoryMappedStructureVariabl
 		writeStringNZ(32, name);
 		write32(active);
 		write64(base);
-		write64(current);
+		write64(getCurrentTime());
 		write64(schedule);
 		write32(handlerAddress);
 		write32(handlerArgument);
+	}
+
+	public long getRunningTime() {
+        if (active != ACTIVE_RUNNING) {
+        	return 0;
+        }
+
+        return SystemTimeManager.getSystemTime() - base;
+    }
+
+	public long getCurrentTime() {
+		return current + getRunningTime();
 	}
 }

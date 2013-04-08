@@ -2060,24 +2060,16 @@ public class ThreadManForUser extends HLEModule {
         return SystemTimeManager.getSystemTime();
     }
 
-    protected long getVTimerRunningTime(SceKernelVTimerInfo sceKernelVTimerInfo) {
-        if (sceKernelVTimerInfo.active != SceKernelVTimerInfo.ACTIVE_RUNNING) {
-        	return 0;
-        }
-
-        return getSystemTime() - sceKernelVTimerInfo.base;
-    }
-
-    public long getVTimerTime(SceKernelVTimerInfo sceKernelVTimerInfo) {
-        return sceKernelVTimerInfo.current + getVTimerRunningTime(sceKernelVTimerInfo);
-    }
-
     protected long getVTimerScheduleForScheduler(SceKernelVTimerInfo sceKernelVTimerInfo) {
         return sceKernelVTimerInfo.base + sceKernelVTimerInfo.schedule;
     }
 
-    protected void setVTimer(SceKernelVTimerInfo sceKernelVTimerInfo, long time) {
-        sceKernelVTimerInfo.current = time - getVTimerRunningTime(sceKernelVTimerInfo);
+    protected long setVTimer(SceKernelVTimerInfo sceKernelVTimerInfo, long time) {
+    	long current = sceKernelVTimerInfo.getCurrentTime();
+    	sceKernelVTimerInfo.base = sceKernelVTimerInfo.base + sceKernelVTimerInfo.getCurrentTime() - time;
+        sceKernelVTimerInfo.current = 0;
+
+        return current;
     }
 
     protected void startVTimer(SceKernelVTimerInfo sceKernelVTimerInfo) {
@@ -2091,8 +2083,9 @@ public class ThreadManForUser extends HLEModule {
 
     protected void stopVTimer(SceKernelVTimerInfo sceKernelVTimerInfo) {
         // Sum the elapsed time (multiple Start/Stop sequences are added)
-        sceKernelVTimerInfo.current += getVTimerRunningTime(sceKernelVTimerInfo);
+        sceKernelVTimerInfo.current = sceKernelVTimerInfo.getCurrentTime();
         sceKernelVTimerInfo.active = SceKernelVTimerInfo.ACTIVE_STOPPED;
+        sceKernelVTimerInfo.base = 0;
     }
 
     protected void scheduleVTimer(SceKernelVTimerInfo sceKernelVTimerInfo, long schedule) {
@@ -2103,7 +2096,11 @@ public class ThreadManForUser extends HLEModule {
 
         if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_RUNNING && sceKernelVTimerInfo.handlerAddress != 0) {
             Scheduler scheduler = Scheduler.getInstance();
-            scheduler.addAction(getVTimerScheduleForScheduler(sceKernelVTimerInfo), sceKernelVTimerInfo.vtimerInterruptAction);
+            long schedulerSchedule = getVTimerScheduleForScheduler(sceKernelVTimerInfo);
+            scheduler.addAction(schedulerSchedule, sceKernelVTimerInfo.vtimerInterruptAction);
+            if (log.isDebugEnabled()) {
+            	log.debug(String.format("Scheduling VTimer %s at %d(now=%d)", sceKernelVTimerInfo, schedulerSchedule, Scheduler.getNow()));
+            }
         }
     }
 
@@ -2119,9 +2116,8 @@ public class ThreadManForUser extends HLEModule {
             delay = 100;
         }
 
-        sceKernelVTimerInfo.schedule += delay;
-
-        scheduleVTimer(sceKernelVTimerInfo, sceKernelVTimerInfo.schedule);
+        long schedule = sceKernelVTimerInfo.schedule + delay;
+        scheduleVTimer(sceKernelVTimerInfo, schedule);
 
         if (log.isDebugEnabled()) {
             log.debug(String.format("New Schedule for VTimer uid=%x: %d", sceKernelVTimerInfo.uid, sceKernelVTimerInfo.schedule));
@@ -2887,7 +2883,7 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = 0x034A921F, version = 150)
     public int sceKernelGetVTimerTime(@CheckArgument("checkVTimerID") int vtimerUid, TPointer64 timeAddr) {
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
-        long time = getVTimerTime(sceKernelVTimerInfo);
+        long time = sceKernelVTimerInfo.getCurrentTime();
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceKernelGetVTimerTime returning %d", time));
         }
@@ -2906,7 +2902,7 @@ public class ThreadManForUser extends HLEModule {
     @HLEFunction(nid = 0xC0B3FFD2, version = 150)
     public long sceKernelGetVTimerTimeWide(@CheckArgument("checkVTimerID") int vtimerUid) {
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
-        long time = getVTimerTime(sceKernelVTimerInfo);
+        long time = sceKernelVTimerInfo.getCurrentTime();
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceKernelGetVTimerTimeWide returning %d", time));
         }
@@ -2919,6 +2915,7 @@ public class ThreadManForUser extends HLEModule {
      *
      * @param vtimerUid - UID of the vtimer
      * @param timeAddr - Pointer to a ::SceKernelSysClock structure
+     *                   The previous value of the vtimer is returned back in this structure.
      *
      * @return 0 on success, < 0 on error
      */
@@ -2926,7 +2923,7 @@ public class ThreadManForUser extends HLEModule {
     public int sceKernelSetVTimerTime(@CheckArgument("checkVTimerID") int vtimerUid, TPointer64 timeAddr) {
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         long time = timeAddr.getValue();
-        setVTimer(sceKernelVTimerInfo, time);
+        timeAddr.setValue(setVTimer(sceKernelVTimerInfo, time));
 
         return 0;
     }
@@ -2937,14 +2934,18 @@ public class ThreadManForUser extends HLEModule {
      * @param vtimerUid - UID of the vtimer
      * @param time - a ::SceKernelSysClock structure
      *
-     * @return Possibly the last time
+     * @return the last time of the vtimer or -1 if the vtimerUid is invalid
      */
     @HLEFunction(nid = 0xFB6425C3, version = 150, checkInsideInterrupt = true)
-    public int sceKernelSetVTimerTimeWide(@CheckArgument("checkVTimerID") int vtimerUid, long time) {
+    public long sceKernelSetVTimerTimeWide(int vtimerUid, long time) {
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
-        setVTimer(sceKernelVTimerInfo, time);
+        if (sceKernelVTimerInfo == null) {
+        	// sceKernelSetVTimerTimeWide returns -1 instead of ERROR_KERNEL_NOT_FOUND_VTIMER
+        	// when the vtimerUid is invalid.
+        	return -1;
+        }
 
-        return 0;
+        return setVTimer(sceKernelVTimerInfo, time);
     }
 
     /**
