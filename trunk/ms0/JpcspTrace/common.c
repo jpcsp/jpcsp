@@ -27,6 +27,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 char *hexDigits = "0123456789ABCDEF";
 int logTimestamp = 1;
 int logThreadName = 1;
+int logRa = 0;
 CommonInfo *commonInfo;
 void *freeAddr = NULL;
 int freeSize = 0;
@@ -61,7 +62,7 @@ void *alloc(int size) {
 		allocAddr = freeAddr + freeSize;
 	} else {
 		int allocSize = ALIGN_UP(size, 256);
-		int result = sceKernelAllocPartitionMemory(USER_PARTITION_ID, "JpcspTrace", PSP_SMEM_High, allocSize, 0);
+		int result = sceKernelAllocPartitionMemory(PSP_MEMORY_PARTITION_USER, "JpcspTrace", PSP_SMEM_High, allocSize, 0);
 		if (result >= 0) {
 			void *newFreeAddr = sceKernelGetBlockHeadAddr(result);
 			if (newFreeAddr + allocSize != freeAddr) {
@@ -302,7 +303,8 @@ void printLogSS(const char *s1, const char *s2, const char *s3, const char *s4, 
 }
 
 void printLogMem(const char *s1, int addr, int length) {
-	int i;
+	int i, j;
+	int lineStart;
 	char buffer[100];
 	char *s = buffer;
 
@@ -310,12 +312,22 @@ void printLogMem(const char *s1, int addr, int length) {
 	s = appendHex(s, addr, 8);
 	s = append(s, ":\n");
 	if (addr != 0) {
+		lineStart = 0;
 		for (i = 0; i < length; i += 4) {
 			if (i > 0) {
 				if ((i % 16) == 0) {
-					s = append(s, "\n");
+					s = append(s, "  >");
+					for (j = lineStart; j < i; j++) {
+						char c = _lb(addr + j);
+						if (c < ' ' || c > '~') {
+							c = '.';
+						}
+						*s++ = c;
+					}
+					s = append(s, "<\n");
 					writeLog(buffer, s - buffer);
 					s = buffer;
+					lineStart = i;
 				} else {
 					s = append(s, ", ");
 				}
@@ -327,11 +339,45 @@ void printLogMem(const char *s1, int addr, int length) {
 	writeLog(buffer, s - buffer);
 }
 
-void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 result) {
+#ifdef DEBUG_UTILITY_SAVEDATA
+void *utilitySavedataParams = NULL;
+
+void utilitySavedataLog(char *buffer, const SyscallInfo *syscallInfo, u32 param) {
+	char *s = buffer;
+
+	if (syscallInfo->nid == 0x50C4CD57) {
+		utilitySavedataParams = (void *) param;
+	}
+
+	int mode = _lw((int) utilitySavedataParams + 48);
+	s = append(s, "mode=");
+	s = appendInt(s, mode, 0);
+	s = append(s, ", gameName=");
+	s = append(s, utilitySavedataParams + 60);
+	s = append(s, ", saveName=");
+	s = append(s, utilitySavedataParams + 76);
+	s = append(s, ", fileName=");
+	s = append(s, utilitySavedataParams + 100);
+	if (syscallInfo->nid == 0x9790B33C) {
+		s = append(s, ", result=");
+		s = appendHex(s, _lw((int) utilitySavedataParams + 28), 8);
+	}
+	s = append(s, "\n");
+	writeLog(buffer, s - buffer);
+	s = buffer;
+
+	printLogMem("Data ", _lw((int) utilitySavedataParams + 116), 16);
+
+	printLogMem("Params ", (int) utilitySavedataParams, _lw((int) utilitySavedataParams + 0));
+}
+#endif
+
+void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 result, u32 ra) {
 	char buffer[200];
 	char *s = buffer;
-	int i, j;
+	int i, j, k;
 	int length;
+	int lineStart;
 
 	if (logTimestamp) {
 		pspTime time;
@@ -357,6 +403,11 @@ void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 resul
 		*s++ = ' ';
 	}
 
+	if (logRa) {
+		s = appendHex(s, ra, 0);
+		*s++ = ' ';
+	}
+
 	s = append(s, syscallInfo->name);
 	int types = syscallInfo->paramTypes;
 	for (i = 0; i < syscallInfo->numParams; i++, types >>= 4) {
@@ -374,37 +425,63 @@ void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 resul
 				break;
 			case TYPE_STRING:
 				s = appendHex(s, parameter, 8);
-				*s++ = '(';
-				*s++ = '\'';
-				s = append(s, (char *) parameter);
-				*s++ = '\'';
-				*s++ = ')';
+				if (parameter != 0) {
+					*s++ = '(';
+					*s++ = '\'';
+					s = append(s, (char *) parameter);
+					*s++ = '\'';
+					*s++ = ')';
+				}
 				break;
 			case TYPE_POINTER32:
 				s = appendHex(s, parameter, 8);
-				*s++ = '(';
-				s = appendHex(s, _lw(parameter), 0);
-				*s++ = ')';
+				if (parameter != 0) {
+					*s++ = '(';
+					s = appendHex(s, _lw(parameter), 0);
+					*s++ = ')';
+				}
+				break;
+			case TYPE_POINTER64:
+				s = appendHex(s, parameter, 8);
+				if (parameter != 0) {
+					*s++ = '(';
+					s = appendHex(s, _lw(parameter), 8);
+					*s++ = ' ';
+					s = appendHex(s, _lw(parameter + 4), 8);
+					*s++ = ')';
+				}
 				break;
 			case TYPE_VARSTRUCT:
 				s = appendHex(s, parameter, 8);
-				*s++ = ':';
-				*s++ = '\n';
-				writeLog(buffer, s - buffer);
-				s = buffer;
-				length = _lw(parameter);
-				for (j = 0; j < length; j += 4) {
-					if (j > 0) {
-						if ((j % 16) == 0) {
-							*s++ = '\n';
-							writeLog(buffer, s - buffer);
-							s = buffer;
-						} else {
-							*s++ = ',';
-							*s++ = ' ';
+				if (parameter != 0) {
+					*s++ = ':';
+					*s++ = '\n';
+					writeLog(buffer, s - buffer);
+					s = buffer;
+					length = _lw(parameter);
+					lineStart = 0;
+					for (j = 0; j < length; j += 4) {
+						if (j > 0) {
+							if ((j % 16) == 0) {
+								s = append(s, "  >");
+								for (k = lineStart; k < j; k++) {
+									char c = _lb(parameter + k);
+									if (c < ' ' || c > '~') {
+										c = '.';
+									}
+									*s++ = c;
+								}
+								s = append(s, "<\n");
+								writeLog(buffer, s - buffer);
+								s = buffer;
+								lineStart = j;
+							} else {
+								*s++ = ',';
+								*s++ = ' ';
+							}
 						}
+						s = appendHex(s, _lw(parameter + j), 8);
 					}
-					s = appendHex(s, _lw(parameter + j), 8);
 				}
 				break;
 		}
@@ -420,4 +497,8 @@ void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 resul
 
 	*s++ = '\n';
 	writeLog(buffer, s - buffer);
+
+	#if DEBUG_UTILITY_SAVEDATA
+	utilitySavedataLog(buffer, syscallInfo, parameters[0]);
+	#endif
 }

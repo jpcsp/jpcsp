@@ -17,9 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 #define DEBUG			0
 #define DEBUG_MUTEX		0
+#define DEBUG_UTILITY_SAVEDATA		0
 #define DEFAULT_LOG_BUFFER_SIZE		1024
-
-#define USER_PARTITION_ID	2
 
 #define ALIGN_UP(n, alignment) (((n) + ((alignment) - 1)) & ~((alignment) - 1))
 
@@ -27,7 +26,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 #define TYPE_INT32		1
 #define TYPE_STRING		2
 #define TYPE_POINTER32	3
-#define TYPE_VARSTRUCT	4
+#define TYPE_POINTER64	4
+#define TYPE_VARSTRUCT	5
 
 typedef struct {
 	SceUID logFd;
@@ -40,11 +40,14 @@ typedef struct {
 	volatile int inWriteLog;
 } CommonInfo;
 
+#define FLAG_LOG_BEFORE_CALL	(1 << 0)
+
 typedef struct SyscallInfo {
 	u64 (*originalEntry)(u32, u32, u32, u32, u32, u32, u32, u32);
 	u32 nid;
 	int numParams;
 	u32 paramTypes;
+	u32 flags;
 	char *name;
 	u64 (*newEntry)(u32, u32, u32, u32, u32, u32, u32, u32, struct SyscallInfo *);
 	struct SyscallInfo *next;
@@ -68,4 +71,4 @@ void printLogSH(const char *s1, const char *s2, const char *s3, int hex, const c
 void printLogHS(const char *s1, int hex, const char *s2, const char *s3, const char *s4);
 void printLogSS(const char *s1, const char *s2, const char *s3, const char *s4, const char *s5);
 void printLogMem(const char *s1, int addr, int length);
-void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 result);
+void syscallLog(const SyscallInfo *syscallInfo, const u32 *parameters, u64 result, u32 ra);

@@ -26,8 +26,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 PSP_MODULE_INFO("JpcspTraceUser", PSP_MODULE_USER, 1, 0);
 
-u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3, SyscallInfo *syscallInfo) {
+u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3, SyscallInfo *syscallInfo, u32 ra) {
 	u32 parameters[8];
+	u64 result;
+	int log = 1;
 
 	parameters[0] = a0;
 	parameters[1] = a1;
@@ -44,9 +46,16 @@ u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3
 	mutexPreLog(syscallInfo, parameters);
 	#endif
 
-	u64 result = syscallInfo->originalEntry(a0, a1, a2, a3, t0, t1, t2, t3);
+	if (syscallInfo->flags & FLAG_LOG_BEFORE_CALL) {
+		syscallLog(syscallInfo, parameters, 0, ra);
+		log = 0;
+	}
 
-	syscallLog(syscallInfo, parameters, result);
+	result = syscallInfo->originalEntry(a0, a1, a2, a3, t0, t1, t2, t3);
+
+	if (log) {
+		syscallLog(syscallInfo, parameters, result, ra);
+	}
 
 	return result;
 }

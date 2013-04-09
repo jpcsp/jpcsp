@@ -80,7 +80,7 @@ int changeSyscallAddr(void *addr, void *newaddr) {
 	syscalls = (u32*) (ptr + 0x10);
 
 	for (i = 0; i < 0xFF4; ++i) {
-		if ((syscalls[i] & 0x0FFFFFFF) == (_addr & 0x0FFFFFFF)) {
+		if ((syscalls[i] & 0x3FFFFFFF) == (_addr & 0x3FFFFFFF)) {
 			printLogHH("Patching syscall from ", syscalls[i], " to ", (int) newaddr, "\n");
 			syscalls[i] = (u32)newaddr;
 			found = 1;
@@ -135,6 +135,7 @@ u32 parseParamTypes(const char *s) {
 			case 'd': paramType = TYPE_INT32; break;
 			case 's': paramType = TYPE_STRING; break;
 			case 'p': paramType = TYPE_POINTER32; break;
+			case 'P': paramType = TYPE_POINTER64; break;
 			case 'v': paramType = TYPE_VARSTRUCT; break;
 		}
 		paramTypes |= paramType << i;
@@ -201,9 +202,11 @@ void mutexPreLog(const SyscallInfo *syscallInfo, const u32 *parameters) {
 }
 #endif
 
-u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3, SyscallInfo *syscallInfo) {
+u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3, SyscallInfo *syscallInfo, u32 ra) {
 	u32 parameters[8];
 	int k1;
+	u64 result;
+	int log = 1;
 
 	parameters[0] = a0;
 	parameters[1] = a1;
@@ -218,11 +221,23 @@ u64 syscallPlugin(u32 a0, u32 a1, u32 a2, u32 a3, u32 t0, u32 t1, u32 t2, u32 t3
 	mutexPreLog(syscallInfo, parameters);
 	#endif
 
-	u64 result = syscallInfo->originalEntry(a0, a1, a2, a3, t0, t1, t2, t3);
+	if (syscallInfo->flags & FLAG_LOG_BEFORE_CALL) {
+		commonInfo->inWriteLog++;
+		k1 = pspSdkSetK1(0);
+		syscallLog(syscallInfo, parameters, 0, ra);
+		pspSdkSetK1(k1);
+		commonInfo->inWriteLog--;
 
-	k1 = pspSdkSetK1(0);
-	syscallLog(syscallInfo, parameters, result);
-	pspSdkSetK1(k1);
+		log = 0;
+	}
+
+	result = syscallInfo->originalEntry(a0, a1, a2, a3, t0, t1, t2, t3);
+
+	if (log) {
+		k1 = pspSdkSetK1(0);
+		syscallLog(syscallInfo, parameters, result, ra);
+		pspSdkSetK1(k1);
+	}
 
 	return result;
 }
@@ -312,6 +327,7 @@ void patchSyscall(char *module, char *library, const char *name, u32 nid, int nu
 	}
 	syscallInfo->nid = nid;
 	syscallInfo->numParams = numParams;
+	syscallInfo->flags = 0;
 	syscallInfo->paramTypes = paramTypes;
 	syscallInfo->name = nameCopy;
 	syscallInfo->next = NULL;
@@ -478,55 +494,76 @@ int startModuleHandler(SceModule2 *startingModule) {
 	int id[100];
 	int idcount = 0;
 
+	#if DEBUG
 	commonInfo->logKeepOpen = 1;
 	openLogFile();
 	printLogS("Starting module ", startingModule->modname, "\n");
+	#endif
 
-	// Check if the starting module is providing still missing NIDs
-	int syscallInfoUpdated = 0;
-	for (syscallInfo = moduleSyscalls; syscallInfo != NULL; syscallInfo = syscallInfo->next) {
-		if (syscallInfo->originalEntry == NULL) {
-			syscallInfo->originalEntry = getEntryByModule((SceModule *) startingModule, syscallInfo->nid);
-			if (syscallInfo->originalEntry != NULL) {
-				sceKernelDcacheWritebackInvalidateRange(&(syscallInfo->originalEntry), 4);
-				sceKernelIcacheInvalidateRange(&(syscallInfo->originalEntry), 4);
+	// Do not patch myself...
+	if (strcmp(startingModule->modname, "JpcspTraceUser") != 0) {
+		// Check if the starting module is providing still missing NIDs
+		int syscallInfoUpdated = 0;
+		SyscallInfo **pLastSyscallInfo = &moduleSyscalls;
+		for (syscallInfo = moduleSyscalls; syscallInfo != NULL; syscallInfo = syscallInfo->next) {
+			if (syscallInfo->originalEntry == NULL) {
+				syscallInfo->originalEntry = getEntryByModule((SceModule *) startingModule, syscallInfo->nid);
+				if (syscallInfo->originalEntry != NULL) {
+					sceKernelDcacheWritebackInvalidateRange(&(syscallInfo->originalEntry), 4);
+					sceKernelIcacheInvalidateRange(&(syscallInfo->originalEntry), 4);
 
-				if (syscallPluginUser != 0) {
-					int addr = ((int) syscallInfo->newEntry) + callSyscallPluginOffset;
+					if (changeSyscallAddr(syscallInfo->originalEntry, syscallInfo->newEntry)) {
+						// This syscallInfo is now implemented by a syscall, unlink the entry.
+						*pLastSyscallInfo = syscallInfo->next;
+					} else {
+						if (syscallPluginUser != 0) {
+							int addr = ((int) syscallInfo->newEntry) + callSyscallPluginOffset;
+							#if DEBUG
+							printLogH("Changing syscallPluginUser call at ", addr, "\n");
+							#endif
+							_sw(MAKE_CALL(syscallPluginUser), addr);
+							sceKernelDcacheWritebackInvalidateRange((void *) addr, 4);
+							sceKernelIcacheInvalidateRange((void *) addr, 4);
+						}
+
+						// Some NID has been resolved by the starting module
+						syscallInfoUpdated = 1;
+					}
+
 					#if DEBUG
-					printLogH("Changing syscallPluginUser call at ", addr, "\n");
+					printLogMem("Updated SyscallInfo ", (int) syscallInfo->newEntry, 36 + sizeof(SyscallInfo));
 					#endif
-					_sw(MAKE_CALL(syscallPluginUser), addr);
-					sceKernelDcacheWritebackInvalidateRange((void *) addr, 4);
-					sceKernelIcacheInvalidateRange((void *) addr, 4);
 				}
-
-				#if DEBUG
-				printLogMem("Updated SyscallInfo ", (int) syscallInfo->newEntry, 36 + sizeof(SyscallInfo));
-				#endif
-
-				// Some NID has been resolved by the starting module
-				syscallInfoUpdated = 1;
 			}
+
+			if (*pLastSyscallInfo == syscallInfo) {
+				pLastSyscallInfo = &syscallInfo->next;
+			}
+
+			#if DEBUG
+			printLogH("moduleSyscalls ", (int) moduleSyscalls, "\n");
+			#endif
+		}
+
+		if (syscallInfoUpdated) {
+			// At least one pending SyscallInfo has been updated,
+			// patch all the modules.
+			sceKernelGetModuleIdList(id, sizeof(id), &idcount);
+			for (i = 0; i < idcount; i++) {
+				SceModule *module = sceKernelFindModuleByUID(id[i]);
+				patchModule(module);
+			}
+		} else {
+			// No SyscallInfo has been updated,
+			// we just need to patch the starting module.
+			patchModule((SceModule *) startingModule);
 		}
 	}
 
-	if (syscallInfoUpdated) {
-		// At least one pending SyscallInfo has been updated,
-		// patch all the modules.
-		sceKernelGetModuleIdList(id, sizeof(id), &idcount);
-		for (i = 0; i < idcount; i++) {
-			SceModule *module = sceKernelFindModuleByUID(id[i]);
-			patchModule(module);
-		}
-	} else {
-		// No SyscallInfo has been updated,
-		// we just need to patch the starting module.
-		patchModule((SceModule *) startingModule);
-	}
-
+	#if DEBUG
 	commonInfo->logKeepOpen = 0;
 	closeLogFile();
+	#endif
 
 	if (nextStartModuleHandler == NULL) {
 		return 0;
@@ -604,7 +641,14 @@ int loadUserModule(SceSize args, void * argp) {
 	// Retry to load it several times if the module manager is currently busy.
 	while (1) {
 		if (userModuleId < 0) {
-			userModuleId = sceKernelLoadModule("ms0:/seplugins/JpcspTraceUser.prx", 0, NULL);
+			// Load the user module in high memory
+			SceKernelLMOption loadModuleOptions;
+			memset(&loadModuleOptions, 0, sizeof(loadModuleOptions));
+			loadModuleOptions.size = sizeof(loadModuleOptions);
+			loadModuleOptions.mpidtext = PSP_MEMORY_PARTITION_USER;
+			loadModuleOptions.position = PSP_SMEM_High;
+
+			userModuleId = sceKernelLoadModule("ms0:/seplugins/JpcspTraceUser.prx", 0, &loadModuleOptions);
 			#if DEBUG
 			printLogH("JpcspTraceUser moduleId ", userModuleId, "\n");
 			#endif
@@ -656,9 +700,11 @@ int module_start(SceSize args, void * argp) {
 	callSyscallPluginOffset = -1;
 	commonInfo = NULL;
 	commonInfo = alloc(sizeof(CommonInfo));
-	commonInfo->maxLogBufferLength = DEFAULT_LOG_BUFFER_SIZE;
+	commonInfo->logFd = -1;
+	commonInfo->logKeepOpen = 0;
 	commonInfo->logBufferLength = 0;
 	commonInfo->logBuffer = NULL;
+	commonInfo->maxLogBufferLength = DEFAULT_LOG_BUFFER_SIZE;
 	commonInfo->freeAddr = NULL;
 	commonInfo->freeSize = 0;
 	commonInfo->inWriteLog = 0;
