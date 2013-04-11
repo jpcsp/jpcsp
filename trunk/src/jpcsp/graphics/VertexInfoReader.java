@@ -382,7 +382,7 @@ public class VertexInfoReader {
 
 		// Display debug information on non-native elements
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("Reading %d Vertex at 0x%08X", numberOfVertex, address));
+			log.debug(String.format("Reading %d Vertex at 0x%08X", numberOfVertex, address + firstVertex * vertexInfo.vertexSize));
 			if (!textureNative) {
 				log.debug("Texture non-native " + vertexInfo.toString());
 			}

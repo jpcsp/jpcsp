@@ -1976,6 +1976,7 @@ public class VideoEngine {
         		int bytesPerIndex = VertexInfo.size_mapping[context.vinfo.index];
         		long indicesBufferOffset = 0;
         		int firstVertexInfo = 0;
+	        	int firstVertex = 0;
         		boolean hasIndex = context.vinfo.index != 0;
 	        	if (hasIndex) {
 		        	int indexBufferSize = numberOfVertex * bytesPerIndex;
@@ -1991,6 +1992,8 @@ public class VideoEngine {
 		        		Buffer indicesBuffer = mem.getBuffer(context.vinfo.ptr_index, indexBufferSize);
 		        		indicesBufferOffset = getBufferOffset(indicesBuffer, context.vinfo.ptr_index);
 		        		bufferManager.setBufferSubData(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId, 0, indexBufferSize + (int) indicesBufferOffset, indicesBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
+	        		} else {
+	        			firstVertex = firstVertexInfo;
 	        		}
 	        	}
 
@@ -2000,7 +2003,6 @@ public class VideoEngine {
 
 	        	int stride;
 	        	int size = context.vinfo.vertexSize * numberOfVertexInfo;
-	        	int firstVertex = 0;
 	        	boolean useBufferManager;
 	        	boolean multiDrawArrays = false;
 	        	if (useVertexCache && buffer == null) {
