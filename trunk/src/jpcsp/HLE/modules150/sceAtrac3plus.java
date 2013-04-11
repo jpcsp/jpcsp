@@ -257,7 +257,7 @@ public class sceAtrac3plus extends HLEModule {
             numLoops = 0;
             inputFileDataOffset = 0;
 
-            if (bufferSize < 12) {
+            if (bufferSize >= 0 && bufferSize < 12) {
             	log.error(String.format("Atrac buffer too small %d", bufferSize));
             	return;
             }
@@ -544,6 +544,14 @@ public class sceAtrac3plus extends HLEModule {
                     log.warn(String.format("hleAtracSetData atracID=%d is invalid", getAtracId()));
                     return;
                 }
+
+                // readSize can't be larger than the input file size.
+                // readSize is unsigned int, handle negative values as large values.
+                if (readSize < 0 || readSize > inputFileSize) {
+                	readSize = inputFileSize;
+                	inputFileOffset = inputFileSize;
+                }
+
                 int atracHash = Hash.getHashCode(0, buffer, Math.min(readSize, 512));
                 getAtracCodec().atracSetData(getAtracId(), getAtracCodecType(), buffer, readSize, inputFileSize, atracHash);
             }
@@ -819,11 +827,9 @@ public class sceAtrac3plus extends HLEModule {
         	return SceKernelErrors.ERROR_ATRAC_INCORRECT_READ_SIZE;
         }
 
-        if (readSize < 0 || bufferSize < 0) {
-        	// Unknown error
-        	return -1;
-        }
-
+        // readSize and bufferSize are unsigned int's.
+        // Allow negative values.
+        // "Tales of VS - ULJS00209" is even passing an uninitialized value bufferSize=0xDEADBEEF
         int codecType = getCodecType(buffer.getAddress());
         int atID = hleCreateAtracID(codecType);
         if (atracIDs.containsKey(atID)) {
