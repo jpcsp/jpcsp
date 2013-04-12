@@ -24,6 +24,7 @@ import java.util.Vector;
 import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.interrupts.AbstractAllegrexInterruptHandler;
 import jpcsp.HLE.kernel.types.interrupts.AbstractInterruptHandler;
 import jpcsp.HLE.kernel.types.interrupts.AfterSubIntrAction;
@@ -338,14 +339,16 @@ public class IntrManager {
 			log.debug(String.format("sceKernelRegisterSubIntrHandler(%d, %d, 0x%08X, 0x%08X)", intrNumber, subIntrNumber, handlerAddress, handlerArgument));
 		}
 
-		if (intrNumber < 0 || intrNumber >= IntrManager.PSP_NUMBER_INTERRUPTS) {
-			return -1;
+		if (intrNumber < 0 || intrNumber >= IntrManager.PSP_NUMBER_INTERRUPTS || subIntrNumber < 0) {
+			return SceKernelErrors.ERROR_KERNEL_INVALID_INTR_NUMBER;
 		}
 
 		if (intrHandlers[intrNumber] == null) {
 			IntrHandler intrHandler = new IntrHandler();
 			intrHandlers[intrNumber] = intrHandler;
 			addInterruptHandler(intrNumber, intrHandler);
+		} else if (intrHandlers[intrNumber].getSubIntrHandler(subIntrNumber) != null) {
+			return SceKernelErrors.ERROR_KERNEL_SUBINTR_ALREADY_REGISTERED;
 		}
 
 		SubIntrHandler subIntrHandler = new SubIntrHandler(handlerAddress, subIntrNumber, handlerArgument);
@@ -360,16 +363,16 @@ public class IntrManager {
 			log.debug(String.format("sceKernelReleaseSubIntrHandler(%d, %d)", intrNumber, subIntrNumber));
 		}
 
-		if (intrNumber < 0 || intrNumber >= IntrManager.PSP_NUMBER_INTERRUPTS) {
-			return -1;
+		if (intrNumber < 0 || intrNumber >= IntrManager.PSP_NUMBER_INTERRUPTS || subIntrNumber < 0) {
+			return SceKernelErrors.ERROR_KERNEL_INVALID_INTR_NUMBER;
 		}
 
 		if (intrHandlers[intrNumber] == null) {
-			return -1;
+			return SceKernelErrors.ERROR_KERNEL_SUBINTR_NOT_REGISTERED;
 		}
 
 		if (!intrHandlers[intrNumber].removeSubIntrHandler(subIntrNumber)) {
-			return -1;
+			return SceKernelErrors.ERROR_KERNEL_SUBINTR_NOT_REGISTERED;
 		}
 
 		return 0;
