@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules250;
 
-import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
@@ -24,6 +23,7 @@ import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.util.Utilities;
 
 @HLELogging
 public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
@@ -70,7 +70,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xF6837A1A, version = 250, checkInsideInterrupt = true)
-    public int sceAtracSetMOutData(int unknown1, int unknown2, int unknown3, int unknown4, int unknown5, int unknown6) {
+    public int sceAtracSetMOutData(@CheckArgument("checkAtracID") int atID, int unknown2, int unknown3, int unknown4, int unknown5, int unknown6) {
         return 0;
     }
 
@@ -85,21 +85,21 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
     	return hleSetHalfwayBufferAndGetID(MOutHalfBuffer, readSize, MOutHalfBufferSize, true);
     }
 
+    @HLEUnimplemented
     @HLEFunction(nid = 0x5622B7C1, version = 250, checkInsideInterrupt = true)
-    public int sceAtracSetAA3DataAndGetID(TPointer buffer, int bufferSize, int fileSize, @CanBeNull TPointer32 metadataSizeAddr) {
-    	int codecType = getCodecType(buffer.getAddress());
-        int atID = hleCreateAtracID(codecType);
-        if (atracIDs.containsKey(atID)) {
-            atracIDs.get(atID).setData(buffer.getAddress(), bufferSize, bufferSize, false);
-        }
-        metadataSizeAddr.setValue(0x400); // Dummy common value found in most .AA3 files.
-
-        return atID;
+    public int sceAtracSetAA3DataAndGetID(TPointer buffer, int bufferSize, int fileSize, int unused) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceAtracSetAA3DataAndGetID buffer:%s", Utilities.getMemoryDump(buffer.getAddress(), bufferSize)));
+    	}
+    	return hleSetHalfwayBufferAndGetID(buffer, bufferSize, bufferSize, false);
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x5DD66588, version = 250)
-    public int sceAtracSetAA3HalfwayBufferAndGetID(int unknown1, int unknown2, int unknown3, int unknown4, int unknown5, int unknown6) {
-        return 0;
+    public int sceAtracSetAA3HalfwayBufferAndGetID(TPointer buffer, int readSize, int bufferSize, int fileSize, int unused) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceAtracSetAA3HalfwayBufferAndGetID buffer:%s", Utilities.getMemoryDump(buffer.getAddress(), readSize)));
+    	}
+    	return hleSetHalfwayBufferAndGetID(buffer, readSize, bufferSize, false);
     }
 }

@@ -61,7 +61,7 @@ public class AtracCodec {
     protected static final String decodedAtracSuffix = atracSuffix + decodedSuffix;
     protected RandomAccessFile decodedStream;
     protected OutputStream atracStream;
-    protected int atracEnd;
+    protected boolean atracEnd;
     protected int atracEndSample;
     protected int atracMaxSamples;
     protected int atracFileSize;
@@ -351,7 +351,7 @@ public class AtracCodec {
 
     public int atracDecodeData(int atracID, int address, int channels) {
         int samples = 0;
-        boolean isEnded = false;
+        atracEnd = false;
 
         if (checkMediaEngineState()) {
         	if (me.getContainer() == null && atracChannel != null) {
@@ -397,7 +397,7 @@ public class AtracCodec {
             	samples = copySamplesToMem(address);
             }
         	if (samples == 0) {
-        		isEnded = true;
+        		atracEnd = true;
         	}
         } else if (decodedStream != null) {
             try {
@@ -407,23 +407,17 @@ public class AtracCodec {
                     Memory.getInstance().copyToMemory(address, ByteBuffer.wrap(atracDecodeBuffer, 0, length), length);
                     long restLength = decodedStream.length() - decodedStream.getFilePointer();
                     if (restLength <= 0) {
-                    	isEnded = true;
+                    	atracEnd = true;
                     }
                 } else {
-                	isEnded = true;
+                	atracEnd = true;
                 }
             } catch (IOException e) {
                 Modules.log.warn(e);
             }
         } else {
             samples = -1;
-            isEnded = true;
-        }
-
-        if (isEnded) {
-        	atracEnd = 1;
-        } else {
-        	atracEnd = 0;
+            atracEnd = true;
         }
 
         return samples;
@@ -465,7 +459,7 @@ public class AtracCodec {
     	atracChannel.reset();
     }
 
-    public int getAtracEnd() {
+    public boolean getAtracEnd() {
         return atracEnd;
     }
 

@@ -55,7 +55,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
         }
 
         int sourceBytesConsumed = 0;
-        if (id.getInputBufferAddr() == 0) {
+        if (id.getInputBuffer() == null) {
         	int headerAddr = findRIFFHeader(sourceAddr.getAddress());
         	if (headerAddr != 0) {
         		sourceBytesConsumed = id.getSourceBufferLength();
@@ -69,7 +69,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
         } else {
         	// Estimate source bytes to be read based on current sample position
         	int estimatedFileOffset = (int) (((long) id.getInputFileSize()) * id.getAtracCurrentSample() / id.getAtracEndSample());
-        	sourceBytesConsumed = Math.max(0, estimatedFileOffset - id.getInputFileOffset());
+        	sourceBytesConsumed = Math.max(0, estimatedFileOffset - id.getInputBuffer().getFilePosition());
         	sourceBytesConsumed = Math.min(sourceBytesConsumed, id.getSourceBufferLength());
         	id.addStreamData(sourceAddr.getAddress(), sourceBytesConsumed);
         }
@@ -108,7 +108,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
 	        sampleBytesAddr.setValue(sampleBytes);
 
 	        if (log.isDebugEnabled()) {
-	        	log.debug(String.format("sceAtracLowLevelDecode returning %d samples (0x%X bytes), 0x%X source bytes consumed, sample position %d/%d, file position %d/%d", samples, sampleBytes, sourceBytesConsumed, id.getAtracCurrentSample(), id.getAtracEndSample(), id.getInputFileOffset(), id.getInputFileSize()));
+	        	log.debug(String.format("sceAtracLowLevelDecode returning %d samples (0x%X bytes), 0x%X source bytes consumed, sample position %d/%d, file position %d/%d", samples, sampleBytes, sourceBytesConsumed, id.getAtracCurrentSample(), id.getAtracEndSample(), id.getInputBuffer().getFilePosition(), id.getInputFileSize()));
 	        	if (log.isTraceEnabled()) {
 	        		log.trace(Utilities.getMemoryDump(samplesAddr.getAddress(), sampleBytes));
 	        	}

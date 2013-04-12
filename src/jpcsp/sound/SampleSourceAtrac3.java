@@ -55,15 +55,15 @@ public class SampleSourceAtrac3 implements ISampleSource {
 	private void decode() {
 		bufferedSamples = codec.atracDecodeData(id.getAtracId(), buffer, id.getAtracOutputChannels());
 
-		if (id.getInputFileOffset() < id.getInputFileSize()) {
-			int requestedSize = min(id.getInputFileSize() - id.getInputFileOffset(), id.getInputBufferSize());
+		if (!id.getInputBuffer().isFileEnd()) {
+			int requestedSize = min(id.getInputFileSize() - id.getInputBuffer().getFilePosition(), id.getInputBuffer().getMaxSize());
 			id.setContextDecodeResult(-1, requestedSize);
 		} else {
 			id.setContextDecodeResult(0, 0);
 		}
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("SampleSourceAtrac3 decode: bufferedSamples=%d, currentSample=%d, endSample=%d, isEnd=%d", bufferedSamples, getSampleIndex(), id.getAtracEndSample(), codec.getAtracEnd()));
+			log.debug(String.format("SampleSourceAtrac3 decode: bufferedSamples=%d, currentSample=%d, endSample=%d, isEnd=%b", bufferedSamples, getSampleIndex(), id.getAtracEndSample(), codec.getAtracEnd()));
 		}
 
 		sampleIndex = 0;
