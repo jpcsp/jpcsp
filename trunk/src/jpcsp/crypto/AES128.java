@@ -1,20 +1,19 @@
 /*
-This file is part of jpcsp.
+ This file is part of jpcsp.
 
-Jpcsp is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+ Jpcsp is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-Jpcsp is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+ Jpcsp is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ You should have received a copy of the GNU General Public License
+ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.crypto;
 
 import java.io.ByteArrayInputStream;
@@ -39,23 +38,23 @@ public class AES128 {
     private ByteArrayOutputStream barros;
     private static Cipher cipher;
 
-    private static void init() {
-    	if (cipher == null) {
+    private static void init(String mode) {
+        if (cipher == null) {
             Security.addProvider(new BouncyCastleProvider());
-    		try {
-				cipher = Cipher.getInstance("AES/CBC/NoPadding", "BC");
-			} catch (Exception e) {
-				Modules.log.error("AES128 Cipher", e);
-			}
-    	}
+            try {
+                cipher = Cipher.getInstance(mode, "BC");
+            } catch (Exception e) {
+                Modules.log.error("AES128 Cipher", e);
+            }
+        }
     }
 
-    public AES128() {
-    	init();
+    public AES128(String mode) {
+        init(mode);
     }
-
+    
     // Private encrypting method for CMAC (IV == 0).
-    private static byte[] encrypt(byte[] in, byte[] encKey) {
+    private static byte[] encryptCMAC(byte[] in, byte[] encKey) {
         Key keySpec = new SecretKeySpec(encKey, "AES");
         byte[] iv = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
         IvParameterSpec ivec = new IvParameterSpec(iv);
@@ -78,7 +77,7 @@ public class AES128 {
     }
 
     // Public encrypting/decrypting methods (for CryptoEngine calls).
-    public byte[] encryptCBC(byte[] in, byte[] encKey, byte[] iv) {
+    public byte[] encrypt(byte[] in, byte[] encKey, byte[] iv) {
         Key keySpec = new SecretKeySpec(encKey, "AES");
         IvParameterSpec ivec = new IvParameterSpec(iv);
         try {
@@ -99,7 +98,7 @@ public class AES128 {
         }
     }
 
-    public byte[] decryptCBC(byte[] in, byte[] decKey, byte[] iv) {
+    public byte[] decrypt(byte[] in, byte[] decKey, byte[] iv) {
         Key keySpec = new SecretKeySpec(decKey, "AES");
         IvParameterSpec ivec = new IvParameterSpec(iv);
         try {
@@ -107,7 +106,7 @@ public class AES128 {
             c.init(Cipher.DECRYPT_MODE, keySpec, ivec);
             return c.doFinal(in);
         } catch (Exception e) {
-        	Modules.log.error("decryptCBC", e);
+            Modules.log.error("decrypt", e);
             return null;
         }
     }
@@ -171,11 +170,11 @@ public class AES128 {
             System.arraycopy(input, srcPos, partInput, 0, 16);
 
             Y = xor128(partInput, X); /* Y := Mi (+) X */
-            X = encrypt(Y, contentKey);
+            X = encryptCMAC(Y, contentKey);
         }
 
         Y = xor128(X, M_last);
-        X = encrypt(Y, contentKey);
+        X = encryptCMAC(Y, contentKey);
 
         return X;
     }
@@ -212,8 +211,8 @@ public class AES128 {
         return padded;
     }
 
-    public static Object[] generateSubKey(byte[] key) {
-        byte[] L = encrypt(const_Zero, key);
+    private static Object[] generateSubKey(byte[] key) {
+        byte[] L = encryptCMAC(const_Zero, key);
 
         byte[] K1 = null;
         if ((L[0] & 0x80) == 0) { /* If MSB(L) = 0, then K1 = L << 1 */

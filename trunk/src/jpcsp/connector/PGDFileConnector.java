@@ -1,18 +1,18 @@
 /*
-This file is part of jpcsp.
+ This file is part of jpcsp.
 
-Jpcsp is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+ Jpcsp is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-Jpcsp is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+ Jpcsp is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ You should have received a copy of the GNU General Public License
+ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.connector;
 
@@ -45,6 +45,10 @@ public class PGDFileConnector {
     public PGDFileConnector() {
     }
 
+    public String getBaseDLCDirectory() {
+        return String.format("%s%s%cDLC%c", Connector.baseDirectory, State.discId, File.separatorChar, File.separatorChar);
+    }
+    
     public String getBaseDirectory(String id) {
         return String.format("%s%s%cPGD%c%s%c", Connector.baseDirectory, State.discId, File.separatorChar, File.separatorChar, id, File.separatorChar);
     }
@@ -74,22 +78,22 @@ public class PGDFileConnector {
     public SeekableDataInput loadDecryptedPGDFile(String fileName, int fileSize) {
         SeekableDataInput fileInput = loadDecryptedPGDFile(fileName);
         if (fileInput != null) {
-	        try {
-	        	// Check that the file has minimum the given size
-				if (fileInput.length() < fileSize) {
-					Modules.log.warn(String.format("Existing PGD file not of required size (%d/%d), decrypting again", fileSize, fileInput.length()));
-					fileInput.close();
-					return null;
-				}
-			} catch (IOException e) {
-				Modules.log.error("loadDecryptedPGDFile", e);
-				try {
-					fileInput.close();
-				} catch (IOException e1) {
-					// Ignore error while closing
-				}
-				return null;
-			}
+            try {
+                // Check that the file has minimum the given size
+                if (fileInput.length() < fileSize) {
+                    Modules.log.warn(String.format("Existing PGD file not of required size (%d/%d), decrypting again", fileSize, fileInput.length()));
+                    fileInput.close();
+                    return null;
+                }
+            } catch (IOException e) {
+                Modules.log.error("loadDecryptedPGDFile", e);
+                try {
+                    fileInput.close();
+                } catch (IOException e1) {
+                    // Ignore error while closing
+                }
+                return null;
+            }
         }
 
         return fileInput;
@@ -104,13 +108,28 @@ public class PGDFileConnector {
             String decryptedCompleteFileName = getCompleteFileName(decryptedFileName);
             File decryptedFile = new File(decryptedCompleteFileName);
             if (decryptedFile.canRead() && decryptedFile.length() > 0) {
-	            try {
-	                fileInput = new SeekableRandomFile(decryptedFile, "r");
-	                Modules.log.info("Using decrypted file " + decryptedCompleteFileName);
-	            } catch (FileNotFoundException e) {
-	            }
+                try {
+                    fileInput = new SeekableRandomFile(decryptedFile, "r");
+                    Modules.log.info("Using decrypted file " + decryptedCompleteFileName);
+                } catch (FileNotFoundException e) {
+                }
             }
         }
+        return fileInput;
+    }
+
+    public SeekableDataInput loadDecryptedEDATPGDFile(String fileName) {
+        SeekableDataInput fileInput = null;
+        String decryptedFilename = getBaseDLCDirectory() + fileName;
+        File decryptedFile = new File(decryptedFilename);
+        if (decryptedFile.canRead() && decryptedFile.length() > 0) {
+            try {
+                fileInput = new SeekableRandomFile(decryptedFile, "r");
+                Modules.log.info("Using decrypted file " + decryptedFilename);
+            } catch (FileNotFoundException e) {
+            }
+        }
+
         return fileInput;
     }
 
