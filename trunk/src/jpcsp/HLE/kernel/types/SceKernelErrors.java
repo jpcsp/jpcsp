@@ -119,7 +119,10 @@ public class SceKernelErrors {
     public final static int ERROR_ERRNO_INVALID_FLAG                            = 0x8001B004;
 
     public final static int ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT        = 0x80020064;
+    public final static int ERROR_KERNEL_INVALID_INTR_NUMBER                    = 0x80020065;
     public final static int ERROR_KERNEL_INTERRUPTS_ALREADY_DISABLED            = 0x80020066;
+    public final static int ERROR_KERNEL_SUBINTR_ALREADY_REGISTERED             = 0x80020067;
+    public final static int ERROR_KERNEL_SUBINTR_NOT_REGISTERED                 = 0x80020068;
     public final static int ERROR_KERNEL_UNKNOWN_UID                            = 0x800200cb;
     public final static int ERROR_KERNEL_UNMATCH_TYPE_UID                       = 0x800200cc;
     public final static int ERROR_KERNEL_NOT_EXIST_ID                           = 0x800200cd;
