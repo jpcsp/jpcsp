@@ -45,9 +45,12 @@ public class SceKernelErrors {
      *      -> 0x043 - HTTP(0x0431)/HTTPS/SSL(0x0435).
      *      -> 0x044 - WAVE.
      *      -> 0x046 - Font.
+     *      -> 0x051 - PGD.
+     *      -> 0x055 - NP(0x05503)/NPDRM(0x05509).
      *      -> 0x061 - MPEG(0x0618)/PSMF(0x0615)/PSMF Player(0x0616).
      *      -> 0x062 - AVC.
      *      -> 0x063 - ATRAC.
+     *      -> 0x069 - AAC.
      *      -> 0x07f - Codec.
      *
      * Bits 15 to 0 (E): Represent the error code itself (different for each area).
@@ -58,7 +61,7 @@ public class SceKernelErrors {
     public static final int ERROR_BUSY                                          = 0x80000021;
     public static final int ERROR_OUT_OF_MEMORY                                 = 0x80000022;
 
-	public static final int ERROR_INVALID_ID                                    = 0x80000100;
+    public static final int ERROR_INVALID_ID                                    = 0x80000100;
     public static final int ERROR_INVALID_NAME                                  = 0x80000101;
     public static final int ERROR_INVALID_INDEX                                 = 0x80000102;
     public static final int ERROR_INVALID_POINTER                               = 0x80000103;
@@ -432,10 +435,18 @@ public class SceKernelErrors {
     public final static int ERROR_FONT_TOO_MANY_OPEN_FONTS                      = 0x80460009;
 
     public final static int ERROR_PGD_INVALID_HEADER                            = 0x80510204;
+    public final static int ERROR_PGD_INVALID_DATA                              = 0x80510207;
 
     public final static int ERROR_NPAUTH_NOT_INIT                               = 0x80550302;
-
     public final static int ERROR_NPSERVICE_NOT_INIT                            = 0x80550502;
+    
+    public final static int ERROR_NPDRM_INVALID_ACT_SIGN                        = 0x80550903;
+    public final static int ERROR_NPDRM_INVALID_RIF_SIGN                        = 0x80550904;
+    public final static int ERROR_NPDRM_DIFF_ACC_ID                             = 0x80550905;
+    public final static int ERROR_NPDRM_TIME_SERVICE_ENDED                      = 0x80550914;
+    public final static int ERROR_NPDRM_TIME_SERVICE_NOT_STARTED                = 0x80550915;
+    public final static int ERROR_NPDRM_NO_K_LICENSEE_SET                       = 0x80550916;
+    public final static int ERROR_NPDRM_NO_FILENAME_MATCH                       = 0x80550917;
 
     public final static int ERROR_MPEG_BAD_VERSION                              = 0x80610002;
     public final static int ERROR_MPEG_NO_MEMORY                                = 0x80610022;
