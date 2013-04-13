@@ -220,6 +220,9 @@ public class scePspNpDrm_user extends HLEModule {
                 byte[] fileBuf = new byte[(int) info.readOnlyFile.length()];
                 byte[] encHeaderBuf = new byte[pgdHeaderSize];
                 
+                // Read the encrypted file.
+                info.readOnlyFile.readFully(fileBuf);
+
                 // Check if the "PSPEDAT" header is present
                 if (fileBuf[0] != 0 || fileBuf[1] != 'P' || fileBuf[2] != 'S' || fileBuf[3] != 'P' 
                         || fileBuf[4] != 'E' || fileBuf[5] != 'D' || fileBuf[6] != 'A' || fileBuf[7] != 'T') {
@@ -228,10 +231,7 @@ public class scePspNpDrm_user extends HLEModule {
                     log.warn("PSPEDAT header not found!");
                     return 0;
                 }
-
-                // Read the encrypted file.
-                info.readOnlyFile.readFully(fileBuf);
-
+                
                 // Extract the encrypted PGD header.
                 System.arraycopy(fileBuf, edatPGDOffset, encHeaderBuf, 0, pgdHeaderSize);
 
