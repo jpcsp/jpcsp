@@ -120,12 +120,11 @@ public class PGDFileConnector {
 
     public SeekableDataInput loadDecryptedEDATPGDFile(String fileName) {
         SeekableDataInput fileInput = null;
-        String decryptedFilename = getBaseDLCDirectory() + fileName;
-        File decryptedFile = new File(decryptedFilename);
+        File decryptedFile = new File(fileName);
         if (decryptedFile.canRead() && decryptedFile.length() > 0) {
             try {
                 fileInput = new SeekableRandomFile(decryptedFile, "r");
-                Modules.log.info("Using decrypted file " + decryptedFilename);
+                Modules.log.info("Using decrypted file " + fileName);
             } catch (FileNotFoundException e) {
             }
         }
