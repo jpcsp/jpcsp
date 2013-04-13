@@ -41,6 +41,7 @@ import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules150.IoFileMgrForUser.IoInfo;
+import jpcsp.State;
 
 import org.apache.log4j.Logger;
 
@@ -66,7 +67,7 @@ public class scePspNpDrm_user extends HLEModule {
 
         return true;
     }
-
+    
     protected String getFileNameFromPath(String path) {
         String pcfilename = Modules.IoFileMgrForUserModule.getDeviceFilePath(path);
 
@@ -79,6 +80,26 @@ public class scePspNpDrm_user extends HLEModule {
         }
 
         return fName;
+    }
+    
+    protected String getDLCPathFromFilePath(String path) {
+        String pcfilename = Modules.IoFileMgrForUserModule.getDeviceFilePath(path);
+        
+        String[] name = pcfilename.split("/");
+        String fName = "";
+        for (int i = 0; i < name.length; i++) {
+            if (!name[i].contains("ms0") && !name[i].contains("PSP") 
+                    && !name[i].contains("GAME") && !name[i].contains(State.discId)
+                    && !name[i].contains("EDAT")) {
+                fName += ("\\" + name[i]);
+            }
+        }
+
+        if(fName.equals("")) {
+            return fName;
+        } else {
+            return fName.substring(1);
+        }
     }
 
     @HLEFunction(nid = 0xA1336091, version = 150, checkInsideInterrupt = true)
@@ -157,33 +178,35 @@ public class scePspNpDrm_user extends HLEModule {
         if (isEmptyDrmKey()) {
             return SceKernelErrors.ERROR_NPDRM_NO_K_LICENSEE_SET;
         }
-
+        
         IoInfo info = Modules.IoFileMgrForUserModule.getFileIoInfo(edataFd);
         if (info == null) {
             return 0;
         }
-
+        
         CryptoEngine crypto = new CryptoEngine();
         int result = 0;
 
         if (edatFileConnector == null) {
             edatFileConnector = new PGDFileConnector();
         }
+        
+        // Generate the necessary directories and file paths.
+        String dlcPath = edatFileConnector.getBaseDLCDirectory() + getDLCPathFromFilePath(info.filename);
+        new File(dlcPath).mkdirs();
+        String decFileName = dlcPath + "\\" + getFileNameFromPath(info.filename);
 
         // Check for an already decrypted file.
-        SeekableDataInput decInput = edatFileConnector.loadDecryptedEDATPGDFile(getFileNameFromPath(info.filename));
+        SeekableDataInput decInput = edatFileConnector.loadDecryptedEDATPGDFile(decFileName);
 
         if (decInput != null) {
             info.readOnlyFile = decInput;
         } else {
             // Try to decrypt the data with the Crypto Engine.
             try {
-                // Generate the necessary directories and files.
-                String edataPath = edatFileConnector.getBaseDLCDirectory();
-                new File(edataPath).mkdirs();
-                String decFileName = edataPath + getFileNameFromPath(info.filename);
+                // Create a new file for decryption.
                 SeekableRandomFile decFile = new SeekableRandomFile(decFileName, "rw");
-
+                
                 // PGD header size.
                 int pgdHeaderSize = 0x90;
 
@@ -196,6 +219,15 @@ public class scePspNpDrm_user extends HLEModule {
                 // Setup the buffers.
                 byte[] fileBuf = new byte[(int) info.readOnlyFile.length()];
                 byte[] encHeaderBuf = new byte[pgdHeaderSize];
+                
+                // Check if the "PSPEDAT" header is present
+                if (fileBuf[0] != 0 || fileBuf[1] != 'P' || fileBuf[2] != 'S' || fileBuf[3] != 'P' 
+                        || fileBuf[4] != 'E' || fileBuf[5] != 'D' || fileBuf[6] != 'A' || fileBuf[7] != 'T') {
+                    // No "EDAT" found in the header,
+                    // abort the decryption and leave the file unchanged
+                    log.warn("PSPEDAT header not found!");
+                    return 0;
+                }
 
                 // Read the encrypted file.
                 info.readOnlyFile.readFully(fileBuf);
@@ -224,7 +256,7 @@ public class scePspNpDrm_user extends HLEModule {
                 byte[] inBuf = new byte[fileBuf.length - edatPGDOffset];
                 System.arraycopy(fileBuf, edatPGDOffset, inBuf, 0, inBuf.length);
 
-                byte[] outBuf = crypto.DecryptPGD(inBuf, dataSize, hashOffset, chunkSize, decKey);
+                byte[] outBuf = crypto.DecryptEDATPGD(inBuf, dataSize, hashOffset, chunkSize, decKey);
 
                 if (hashOffset < 0 || dataSize < 0) {
                     log.warn(String.format("Incorrect PGD header: dataSize=%d, chunkSize=%d, hashOffset=%d", dataSize, chunkSize, hashOffset));
@@ -244,7 +276,7 @@ public class scePspNpDrm_user extends HLEModule {
             }
 
             // Load the manually decrypted file generated just now.
-            info.readOnlyFile = edatFileConnector.loadDecryptedEDATPGDFile(getFileNameFromPath(info.filename));
+            info.readOnlyFile = edatFileConnector.loadDecryptedEDATPGDFile(decFileName);
         }
 
         return result;

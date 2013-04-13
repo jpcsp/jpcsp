@@ -2536,25 +2536,23 @@ public class IoFileMgrForUser extends HLEModule {
                         result = 0;
                         // Try to decrypt this PGD file with the Crypto Engine.
                         try {
-                            // PGD header size.
+                            // Maximum 16-byte aligned block size to use during stream read/write.
+                            int maxAlignedChunkSize = 0x800;
+
+                            // PGD hash header size.
                             int pgdHeaderSize = 0x90;
 
-                            // PGD data header offset.
-                            int pgdHeaderDataOffset = 0x30;
-
                             // Setup the buffers.
-                            byte[] inBuf = new byte[(int) info.readOnlyFile.length()];
-                            byte[] encHeaderBuf = new byte[pgdHeaderSize];
+                            byte[] inBuf = new byte[maxAlignedChunkSize + pgdHeaderSize];
+                            byte[] outBuf = new byte[maxAlignedChunkSize + 0x10];
+                            byte[] headerBuf = new byte[0x30 + 0x10];
 
-                            // Read the encrypted PGD file.
+                            // Read the encrypted PGD header.
                             if (info.vFile != null) {
-                                info.vFile.ioRead(inBuf, 0, inBuf.length);
+                                info.vFile.ioRead(inBuf, 0, pgdHeaderSize);
                             } else {
-                                info.readOnlyFile.readFully(inBuf);
+                                info.readOnlyFile.readFully(inBuf, 0, pgdHeaderSize);
                             }
-
-                            // Extract the encrypted PGD header.
-                            System.arraycopy(inBuf, 0, encHeaderBuf, 0, pgdHeaderSize);
 
                             // Check if the "PGD" header is present
                             if (inBuf[0] != 0 || inBuf[1] != 'P' || inBuf[2] != 'G' || inBuf[3] != 'D') {
@@ -2562,14 +2560,13 @@ public class IoFileMgrForUser extends HLEModule {
                                 // abort the decryption and leave the file unchanged
                                 log.warn(String.format("No PGD header detected %02X %02X %02X %02X ('%c%c%c%c') detected in file '%s'", inBuf[0] & 0xFF, inBuf[1] & 0xFF, inBuf[2] & 0xFF, inBuf[3] & 0xFF, (char) inBuf[0], (char) inBuf[1], (char) inBuf[2], (char) inBuf[3], info.filename));
                             } else {
-                                // Decrypt the header with the given key.
-                                byte[] decHeader = crypto.DecryptEDATPGDHeader(encHeaderBuf, pgdHeaderSize, keyBuf);
-
-                                // Copy back the decrypted header.
-                                System.arraycopy(decHeader, 0, inBuf, pgdHeaderDataOffset, decHeader.length);
+                                // Decrypt 0x30 bytes at offset 0x30 to expose the first header.
+                                System.arraycopy(inBuf, 0x10, headerBuf, 0, 0x10);
+                                System.arraycopy(inBuf, 0x30, headerBuf, 0x10, 0x30);
+                                byte headerBufDec[] = crypto.DecryptPGD(headerBuf, 0x30 + 0x10, keyBuf);
 
                                 // Extract the decrypting parameters.
-                                IntBuffer decryptedHeader = ByteBuffer.wrap(decHeader).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer();
+                                IntBuffer decryptedHeader = ByteBuffer.wrap(headerBufDec).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer();
                                 int dataSize = decryptedHeader.get(5);
                                 int chunkSize = decryptedHeader.get(6);
                                 int hashOffset = decryptedHeader.get(7);
@@ -2577,17 +2574,14 @@ public class IoFileMgrForUser extends HLEModule {
                                     log.debug(String.format("PGD dataSize=%d, chunkSize=%d, hashOffset=%d", dataSize, chunkSize, hashOffset));
                                     if (log.isTraceEnabled()) {
                                         log.trace(String.format("PGD Header: %s", Utilities.getMemoryDump(inBuf, 0, pgdHeaderSize)));
-                                        log.trace(String.format("Decrypted PGD Header: %s", Utilities.getMemoryDump(decHeader, 0, decHeader.length)));
+                                        log.trace(String.format("Decrypted PGD Header: %s", Utilities.getMemoryDump(headerBufDec, 0, headerBufDec.length)));
                                     }
                                 }
 
-                                // Decrypt the file.
-                                byte[] outBuf = crypto.DecryptPGD(inBuf, dataSize, hashOffset, chunkSize, keyBuf);
-
                                 long fileLength = (info.vFile != null) ? info.vFile.length() : info.readOnlyFile.length();
                                 if (hashOffset < 0 || hashOffset > fileLength || dataSize < 0) {
-                                    // The decrypted PGD header is incorrect...
-                                    // abort the decryption and leave the file unchanged
+                                // The decrypted PGD header is incorrect...
+                                // abort the decryption and leave the file unchanged
                                     log.warn(String.format("Incorrect PGD header: dataSize=%d, chunkSize=%d, hashOffset=%d", dataSize, chunkSize, hashOffset));
                                     result = SceKernelErrors.ERROR_PGD_INVALID_HEADER;
                                 } else {
@@ -2596,7 +2590,38 @@ public class IoFileMgrForUser extends HLEModule {
                                     if (decInput == null || decInput.length() < dataSize) {
                                         // Create a new decrypted file
                                         decInput = vfsManager.getTmpVirtualFileSystem().ioOpen(info.filename, PSP_O_CREAT | PSP_O_WRONLY, 0777, ITmpVirtualFileSystem.tmpPurposePGD);
-                                        decInput.ioWrite(outBuf, 0, outBuf.length);
+
+                                        // Write the newly extracted hash at the top of the output buffer,
+                                        // locate the data hash at hashOffset and start decrypting until
+                                        // dataSize is reached.
+                                        if (info.vFile != null) {
+                                            info.vFile.ioLseek(hashOffset);
+                                        } else {
+                                            info.readOnlyFile.seek(hashOffset);
+                                        }
+                                        int readLength;
+                                        byte[] decryptedBytes;
+                                        for (int i = 0; i < dataSize; i += readLength) {
+                                            readLength = Math.min(dataSize - i, maxAlignedChunkSize);
+                                            if (info.vFile != null) {
+                                                info.vFile.ioRead(inBuf, pgdHeaderSize, readLength);
+                                            } else {
+                                                info.readOnlyFile.readFully(inBuf, pgdHeaderSize, readLength);
+                                            }
+
+                                            System.arraycopy(headerBufDec, 0, outBuf, 0, 0x10);
+                                            System.arraycopy(inBuf, pgdHeaderSize, outBuf, 0x10, readLength);
+                                            if (i == 0) {
+                                                decryptedBytes = crypto.DecryptPGD(outBuf, readLength + 0x10, keyBuf);
+                                            } else {
+                                                decryptedBytes = crypto.UpdatePGDCipher(outBuf, readLength + 0x10);
+                                            }
+                                            decInput.ioWrite(decryptedBytes, 0, decryptedBytes.length);
+                                        }
+
+                                        // Finish the PGD cipher operations
+                                        crypto.FinishPGDCipher();
+
                                         // Reuse the created file (re-open it in read-only mode)
                                         decInput.ioClose();
                                         decInput = vfsManager.getTmpVirtualFileSystem().ioOpen(info.filename, info.flags, 0, ITmpVirtualFileSystem.tmpPurposePGD);

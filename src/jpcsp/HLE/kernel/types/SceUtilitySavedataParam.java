@@ -396,25 +396,6 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         return null;
     }
 
-    public void singleRead(Memory mem) throws IOException {
-        String path = getBasePath();
-        if (CryptoEngine.getSavedataCryptoStatus()) {
-            dataSize = loadEncryptedFile(mem, path, fileName, dataBuf, dataBufSize, key, secureVersion);
-        } else {
-            dataSize = loadFile(mem, path, fileName, dataBuf, dataBufSize);
-        }
-    }
-
-    public void singleWrite(Memory mem) throws IOException {
-        String path = getBasePath();
-        Modules.IoFileMgrForUserModule.mkdirs(path);
-        if (CryptoEngine.getSavedataCryptoStatus()) {
-            writeEncryptedFile(mem, path, fileName, dataBuf, dataSize, key, secureVersion);
-        } else {
-            writeFile(mem, path, fileName, dataBuf, dataSize);
-        }
-    }
-
     public void load(Memory mem) throws IOException {
         String path = getBasePath();
 
