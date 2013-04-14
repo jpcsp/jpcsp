@@ -1083,8 +1083,7 @@ public class sceUtility extends HLEModule {
                             // Write system data files (encrypted or not).
                             try {
                                 savedataParams.save(mem);
-                                if ((savedataParams.multiStatus != SceUtilitySavedataParam.MULTI_STATUS_INIT)
-                                        || (savedataParams.multiStatus != SceUtilitySavedataParam.MULTI_STATUS_RELAY)) {
+                                if (savedataParams.multiStatus == SceUtilitySavedataParam.MULTI_STATUS_FINISH) {
                                     savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_BAD_STATUS;
                                 } else {
                                     savedataParams.base.result = 0;
@@ -1110,18 +1109,14 @@ public class sceUtility extends HLEModule {
 
                             try {
                                 savedataParams.load(mem);
-
                                 if (log.isTraceEnabled()) {
                                     log.trace(String.format("MODE_READ/MODE_READSECURE reading %s", Utilities.getMemoryDump(savedataParams.dataBuf, savedataParams.dataSize, 4, 16)));
                                 }
-
-                                if ((savedataParams.multiStatus != SceUtilitySavedataParam.MULTI_STATUS_INIT)
-                                        || (savedataParams.multiStatus != SceUtilitySavedataParam.MULTI_STATUS_RELAY)) {
+                                if (savedataParams.multiStatus == SceUtilitySavedataParam.MULTI_STATUS_FINISH) {
                                     savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_BAD_STATUS;
                                 } else {
                                     savedataParams.base.result = 0;
                                 }
-
                                 savedataParams.write(mem);
                             } catch (FileNotFoundException e) {
                                 if (savedataParams.isGameDirectoryPresent()) {
@@ -1146,8 +1141,7 @@ public class sceUtility extends HLEModule {
                             // Writes data and can be called multiple times for updating.
                             try {
                                 savedataParams.save(mem);
-                                if ((savedataParams.multiStatus != SceUtilitySavedataParam.MULTI_STATUS_INIT)
-                                        || (savedataParams.multiStatus != SceUtilitySavedataParam.MULTI_STATUS_RELAY)) {
+                                if (savedataParams.multiStatus == SceUtilitySavedataParam.MULTI_STATUS_FINISH) {
                                     savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_BAD_STATUS;
                                 } else {
                                     savedataParams.base.result = 0;
