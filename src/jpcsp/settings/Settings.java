@@ -83,7 +83,11 @@ public class Settings {
 			Emulator.log.error("Settings file not found:", e);
 		} catch (IOException e) {
 			Emulator.log.error("Problem loading settings:", e);
-		} finally{
+		} catch (NullPointerException e) {
+			// This except is thrown by java.util.Properties when the directory
+			// contains special characters or is too long.
+			Emulator.log.error("Could not initialize properly Jpcsp, try to install jpcsp directly under C:\\jpcsp", e);
+		} finally {
 			Utilities.close(defaultSettingsStream, loadedSettingsStream);
 		}
 	}
