@@ -19,6 +19,7 @@ package jpcsp.media;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
@@ -337,20 +338,10 @@ public class ExternalDecoder {
     	return decodeAtrac(atracData, address, atracFileSize, atracHash, decodedFileName);
     }
 
-    public String decodeAtrac(int address, int length, int atracFileSize, int atracHash, AtracCodec atracCodec) {
-    	if (!isEnabled()) {
-    		return null;
-    	}
+    byte[] getAtracData(int address, int length, int atracFileSize) {
+    	byte[] atracData;
 
-		String decodedFileName = getAtracAudioPath(address, atracFileSize, atracHash, "wav");
-		File decodedFile = new File(decodedFileName);
-		if (decodedFile.canRead() && decodedFile.length() > 0) {
-			// Already decoded
-			return decodedFileName;
-		}
-
-		byte[] atracData;
-		if (length >= atracFileSize) {
+    	if (length >= atracFileSize) {
 			// We have the complete atrac data available... in theory!
 			// Some games load a first part of the data and trigger an async read to read the rest of the data.
 			// At this point, the async read might not be completed.
@@ -369,6 +360,54 @@ public class ExternalDecoder {
 			// the complete data from the UMD.
 			atracData = ioListener.readFileData(address, length, atracFileSize, null);
 		}
+
+		return atracData;
+    }
+
+    public String extractAtrac(int address, int length, int atracFileSize, int atracHash) {
+    	if (!isEnabled()) {
+    		return null;
+    	}
+
+		String decodedFileName = getAtracAudioPath(address, atracFileSize, atracHash, "at3");
+		File decodedFile = new File(decodedFileName);
+		if (decodedFile.canRead() && decodedFile.length() > 0) {
+			// Already decoded
+			return decodedFileName;
+		}
+
+		byte[] atracData = getAtracData(address, length, atracFileSize);
+    	if (atracData == null) {
+    		// Atrac data cannot be retrieved...
+    		return null;
+    	}
+
+    	try {
+			new File(AtracCodec.getBaseDirectory()).mkdirs();
+			OutputStream os = new FileOutputStream(decodedFile);
+			os.write(atracData);
+			os.close();
+		} catch (IOException e) {
+			log.warn("extractAtrac", e);
+			return null;
+		}
+
+    	return decodedFileName;
+    }
+
+    public String decodeAtrac(int address, int length, int atracFileSize, int atracHash, AtracCodec atracCodec) {
+    	if (!isEnabled()) {
+    		return null;
+    	}
+
+		String decodedFileName = getAtracAudioPath(address, atracFileSize, atracHash, "wav");
+		File decodedFile = new File(decodedFileName);
+		if (decodedFile.canRead() && decodedFile.length() > 0) {
+			// Already decoded
+			return decodedFileName;
+		}
+
+		byte[] atracData = getAtracData(address, length, atracFileSize);
     	if (atracData == null) {
     		// Atrac data cannot be retrieved...
 			Modules.log.debug("AT3+ data could not be decoded by the external decoder (complete atrac data need to be retrieved)");

@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.connector;
 
+import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3;
+import static jpcsp.HLE.modules150.sceAudiocodec.PSP_CODEC_AT3PLUS;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -217,20 +220,28 @@ public class AtracCodec {
         	codecType = memoryCodecType;
         }
 
-        if (codecType == 0x00001001) {
+        if (codecType == PSP_CODEC_AT3) {
             Modules.log.info("Decodable AT3 data detected.");
             if (checkMediaEngineState()) {
                 me.finish();
-                atracChannel = new PacketChannel();
-                atracChannel.setTotalStreamSize(atracFileSize);
-                atracChannel.setFarRewindAllowed(true);
-                atracChannel.write(address, length);
-                // Defer the initialization of the MediaEngine until atracDecodeData()
-                // to ensure we have enough data into the channel.
-                atracEndSample = 0;
+                String extractedFile = externalDecoder.extractAtrac(address, length, atracFileSize, atracHash); 
+                if (extractedFile == null) {
+	                atracChannel = new PacketChannel();
+	                atracChannel.setTotalStreamSize(atracFileSize);
+	                atracChannel.setFarRewindAllowed(true);
+	                atracChannel.write(address, length);
+	                // Defer the initialization of the MediaEngine until atracDecodeData()
+	                // to ensure we have enough data into the channel.
+	                atracEndSample = 0;
+                } else {
+                	Modules.log.info(String.format("Playing AT3 file '%s'", extractedFile));
+        			atracChannel = null;
+        			me.init(new FileProtocolHandler(extractedFile), false, true, 0, 0);
+                    atracEndSample = -1;
+                }
                 return;
             }
-        } else if (codecType == 0x00001000) {
+        } else if (codecType == PSP_CODEC_AT3PLUS) {
         	if (checkMediaEngineState() && ExternalDecoder.isEnabled()) {
         		String decodedFile = externalDecoder.decodeAtrac(address, length, atracFileSize, atracHash, this);
         		if (decodedFile != null) {
