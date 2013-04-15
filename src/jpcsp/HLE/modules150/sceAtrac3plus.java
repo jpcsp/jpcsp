@@ -495,6 +495,9 @@ public class sceAtrac3plus extends HLEModule {
                 	inputBuffer = new pspFileBuffer(buffer, bufferSize, readSize);
                 }
 
+                // The atrac header has been read
+                inputBuffer.notifyRead(inputFileDataOffset);
+
                 int atracHash = Hash.getHashCode(0, buffer, Math.min(readSize, 512));
                 getAtracCodec().atracSetData(getAtracId(), getAtracCodecType(), buffer, readSize, inputFileSize, atracHash);
             }
@@ -516,8 +519,13 @@ public class sceAtrac3plus extends HLEModule {
         }
 
         public int getRemainFrames() {
-            if (inputBuffer.isFileEnd() || atracCurrentSample >= atracEndSample) {
+            if (atracCurrentSample >= atracEndSample) {
                 return PSP_ATRAC_ALLDATA_IS_ON_MEMORY;
+            }
+
+            // If we have reached the end of the file and are past any loop, then all data is on memory.
+            if (inputBuffer.isFileEnd() && atracCurrentSample > getLoopEndSample()) {
+            	return PSP_ATRAC_ALLDATA_IS_ON_MEMORY;
             }
 
             if (forceReloadOfData) {
@@ -1028,6 +1036,10 @@ public class sceAtrac3plus extends HLEModule {
         loopStartSampleAddr.setValue(loopStartSample);
         loopEndSampleAddr.setValue(loopEndSample);
 
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceAtracGetSoundSample returning endSample=0x%X, loopStartSample=0x%X, loopEndSample=0x%X", endSample, loopStartSample, loopEndSample));
+        }
+
         return 0;
     }
 
@@ -1043,6 +1055,10 @@ public class sceAtrac3plus extends HLEModule {
     public int sceAtracGetMaxSample(@CheckArgument("checkAtracID") int atID, TPointer32 maxSamplesAddr) {
     	AtracID id = atracIDs.get(atID);
         maxSamplesAddr.setValue(id.getMaxSamples());
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceAtracGetMaxSample returning maxSamples=0x%X", id.getMaxSamples()));
+        }
 
         return 0;
     }
@@ -1062,7 +1078,20 @@ public class sceAtrac3plus extends HLEModule {
     @HLEFunction(nid = 0xA554A158, version = 150, checkInsideInterrupt = true)
     public int sceAtracGetBitrate(@CheckArgument("checkAtracID") int atID, TPointer32 bitrateAddr) {
     	AtracID id = atracIDs.get(atID);
-        bitrateAddr.setValue(id.getAtracBitrate());
+
+    	// Bitrate based on https://github.com/uofw/uofw/blob/master/src/libatrac3plus/libatrac3plus.c
+    	int bitrate = (id.getAtracBytesPerFrame() * 352800) / 1000;
+    	if (id.getAtracCodecType() == PSP_MODE_AT_3_PLUS) {
+    		bitrate = ((bitrate >> 11) + 8) & 0xFFFFFFF0;
+    	} else {
+    		bitrate = (bitrate + 511) >> 10;
+    	}
+
+    	bitrateAddr.setValue(bitrate);
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceAtracGetBitrate returning bitRate=0x%X", bitrate));
+        }
 
         return 0;
     }
