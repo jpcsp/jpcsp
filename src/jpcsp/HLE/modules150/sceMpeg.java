@@ -1121,7 +1121,9 @@ public class sceMpeg extends HLEModule {
         avcFrameStatus = 0;
         if (mpegRingbuffer != null && !isCurrentMpegAnalyzed()) {
             mpegRingbuffer.reset();
-            mpegRingbuffer.write(mpegRingbufferAddr);
+            if (mpegRingbufferAddr != null) {
+            	mpegRingbuffer.write(mpegRingbufferAddr);
+            }
         }
         mpegAtracAu.dts = UNKNOWN_TIMESTAMP;
         mpegAtracAu.pts = 0;
@@ -1242,7 +1244,9 @@ public class sceMpeg extends HLEModule {
         }
         if (mpegRingbuffer != null) {
         	mpegRingbuffer.reset();
-        	mpegRingbuffer.write(mpegRingbufferAddr);
+        	if (mpegRingbufferAddr != null) {
+        		mpegRingbuffer.write(mpegRingbufferAddr);
+        	}
         }
         setCurrentMpegAnalyzed(false);
         unregisterRingbufferPutIoListener();
@@ -1701,7 +1705,7 @@ public class sceMpeg extends HLEModule {
      */
     @HLEFunction(nid = 0xFE246728, version = 150, checkInsideInterrupt = true)
     public int sceMpegGetAvcAu(@CheckArgument("checkMpegHandle") int mpeg, int streamUid, TPointer auAddr, @CanBeNull TPointer32 attrAddr) {
-        if (mpegRingbuffer != null) {
+        if (mpegRingbuffer != null && mpegRingbufferAddr != null) {
             mpegRingbuffer.read(mpegRingbufferAddr);
         }
 
@@ -1753,7 +1757,7 @@ public class sceMpeg extends HLEModule {
      */
     @HLEFunction(nid = 0x8C1E027D, version = 150, checkInsideInterrupt = true)
     public int sceMpegGetPcmAu(@CheckArgument("checkMpegHandle") int mpeg, int streamUid, TPointer auAddr, @CanBeNull TPointer32 attrAddr) {
-        if (mpegRingbuffer != null) {
+        if (mpegRingbuffer != null && mpegRingbufferAddr != null) {
             mpegRingbuffer.read(mpegRingbufferAddr);
         }
         
@@ -1816,7 +1820,7 @@ public class sceMpeg extends HLEModule {
      */
     @HLEFunction(nid = 0xE1CE83A7, version = 150, checkInsideInterrupt = true)
     public int sceMpegGetAtracAu(@CheckArgument("checkMpegHandle") int mpeg, int streamUid, TPointer auAddr, @CanBeNull TPointer32 attrAddr) {
-        if (mpegRingbuffer != null) {
+        if (mpegRingbuffer != null && mpegRingbufferAddr != null) {
             mpegRingbuffer.read( mpegRingbufferAddr);
         }
 
@@ -1844,7 +1848,9 @@ public class sceMpeg extends HLEModule {
     		// Consume all the remaining packets, if any.
     		if (!mpegRingbuffer.isEmpty()) {
     			mpegRingbuffer.consumeAllPackets();
-    			mpegRingbuffer.write(mpegRingbufferAddr);
+    			if (mpegRingbufferAddr != null) {
+    				mpegRingbuffer.write(mpegRingbufferAddr);
+    			}
     		}
 
     		return SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
@@ -2135,9 +2141,10 @@ public class sceMpeg extends HLEModule {
      */
     @HLEFunction(nid = 0x4571CC64, version = 150, checkInsideInterrupt = true)
     public int sceMpegAvcDecodeFlush(int mpeg) {
+    	// Finish the Mpeg if it had no audio.
         // Finish the Mpeg only if we are not at the start of a new video,
         // otherwise the analyzed video could be lost.
-        if (videoFrameCount > 0 || audioFrameCount > 0) {
+        if (videoFrameCount > 0 && audioFrameCount <= 0) {
         	finishMpeg();
         }
 
@@ -2198,7 +2205,7 @@ public class sceMpeg extends HLEModule {
      */
     @HLEFunction(nid = 0xF0EB1125, version = 150, checkInsideInterrupt = true)
     public int sceMpegAvcDecodeYCbCr(@CheckArgument("checkMpegHandle") int mpeg, TPointer auAddr, TPointer32 bufferAddr, TPointer32 initAddr) {
-        if (mpegRingbuffer != null) {
+        if (mpegRingbuffer != null && mpegRingbufferAddr != null) {
             mpegRingbuffer.read(mpegRingbufferAddr);
         }
 
@@ -2288,7 +2295,9 @@ public class sceMpeg extends HLEModule {
 
         if (!mpegRingbuffer.isEmpty() && packetsConsumed > 0) {
         	mpegRingbuffer.consumePackets(packetsConsumed);
-            mpegRingbuffer.write(mpegRingbufferAddr);
+        	if (mpegRingbufferAddr != null) {
+        		mpegRingbuffer.write(mpegRingbufferAddr);
+        	}
         }
 
         // Correct decoding.
@@ -2338,7 +2347,7 @@ public class sceMpeg extends HLEModule {
                 frameWidth = defaultFrameWidth;
             }
         }
-        if (mpegRingbuffer != null) {
+        if (mpegRingbuffer != null && mpegRingbufferAddr != null) {
             mpegRingbuffer.read(mpegRingbufferAddr);
         }
 
@@ -2435,7 +2444,9 @@ public class sceMpeg extends HLEModule {
 
             if (!mpegRingbuffer.isEmpty() && packetsConsumed > 0) {
                 mpegRingbuffer.consumePackets(packetsConsumed);
-                mpegRingbuffer.write(mpegRingbufferAddr);
+                if (mpegRingbufferAddr != null) {
+                	mpegRingbuffer.write(mpegRingbufferAddr);
+                }
             }
             delayThread(startTime, avcDecodeDelay);
         }
