@@ -72,8 +72,10 @@ uniform sampler2D fbTex; // The texture containing the current screen (FrameBuff
 
 #if __VERSION__ >= 140
     #define TEXTURE_2D_PROJ textureProj
+    #define TEXTURE_2D texture
 #else
     #define TEXTURE_2D_PROJ texture2DProj
+    #define TEXTURE_2D texture2D
 #endif
 
 
@@ -95,17 +97,23 @@ ivec2 getFragCoord()
 	return ivec2(gl_FragCoord.xy);
 }
 
+vec4 bilinearInterpolate(in vec4 topLeft, in vec4 topRight, in vec4 bottomLeft, in vec4 bottomRight, in vec2 mixFactor) {
+	vec4 top = mix(topLeft, topRight, mixFactor.x);
+	vec4 bottom = mix(bottomLeft, bottomRight, mixFactor.x);
+
+    return mix(top, bottom, mixFactor.y);
+}
+
 ///////////////////////////////////////////////////////////////
 // Decode Indexed Texture & Compute Fragment Color
 ///////////////////////////////////////////////////////////////
 
 #if USE_NATIVE_CLUT
 #if !USE_DYNAMIC_DEFINES || (TEX_PIXEL_FORMAT >= 4 && TEX_PIXEL_FORMAT <= 7)
-// Indexed texture (using a CLUT)
-// The index is stored in the RED component of the texture
-vec4 getIndexedTextureRED()
+
+vec4 getTexelColorIndexedTextureRED(in ivec2 coords)
 {
-    uint Ci = TEXTURE_2D_PROJ(utex, gl_TexCoord[0].xyz).r;
+	uint Ci = texelFetch(utex, coords, 0).r;
     #if !USE_DYNAMIC_DEFINES || CLUT_INDEX_HINT == 0
         int clutIndex = int((Ci >> uint(clutShift)) & uint(clutMask)) + clutOffset;
     #elif CLUT_INDEX_HINT == 1
@@ -117,8 +125,40 @@ vec4 getIndexedTextureRED()
         // RE_CLUT_INDEX_ALPHA_ONLY
         int clutIndex = int((Ci >> uint(clutShift)) & uint(clutMask));
     #endif
+
     // The CLUT is defined as a Nx1 texture
     return texelFetch(clut, ivec2(clutIndex, 0), 0);
+}
+
+
+// Indexed texture (using a CLUT)
+// The index is stored in the RED component of the texture.
+// Perform bilinear interpolation.
+vec4 getIndexedTextureRED()
+{
+	int clutIndex;
+	uint Ci;
+	ivec2 texSize = textureSize(utex, 0);
+	vec2 projCoords = gl_TexCoord[0].xy / gl_TexCoord[0].z * texSize;
+	ivec2 iprojCoords = ivec2(floor(projCoords));
+
+    vec4 topLeft = getTexelColorIndexedTextureRED(iprojCoords);
+    vec4 topRight = getTexelColorIndexedTextureRED(iprojCoords + ivec2(1, 0));
+    vec4 bottomLeft = getTexelColorIndexedTextureRED(iprojCoords + ivec2(0, 1));
+    vec4 bottomRight = getTexelColorIndexedTextureRED(iprojCoords + ivec2(1, 1));
+
+	vec2 mixFactor = fract(projCoords);
+	if (iprojCoords.x + 1 >= texSize.x)
+    {
+        mixFactor.x = 0.0;
+    }
+
+	if (iprojCoords.y + 1 >= texSize.y)
+    {
+        mixFactor.y = 0.0;
+    }
+
+	return bilinearInterpolate(topLeft, topRight, bottomLeft, bottomRight, mixFactor);
 }
 #endif
 

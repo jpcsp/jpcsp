@@ -184,7 +184,6 @@ public class VideoEngine {
     private int normalArgument;
     private int waitForSyncCount;
     private VertexInfoReader vertexInfoReader = new VertexInfoReader();
-    private static final char SPACE = ' ';
     private DurationStatistics statistics = new CpuDurationStatistics("VideoEngine Statistics");
     private DurationStatistics vertexStatistics = new CpuDurationStatistics("Vertex");
     private DurationStatistics vertexReadingStatistics = new CpuDurationStatistics("Vertex Reading");
@@ -3289,7 +3288,7 @@ public class VideoEngine {
     private void executeCommandBOFS() {
         boneMatrixIndex = normalArgument;
         if (isLogDebugEnabled) {
-            log("bone matrix offset", normalArgument);
+            log(String.format("bone matrix offset %d", normalArgument));
         }
     }
 
@@ -3299,7 +3298,7 @@ public class VideoEngine {
         context.morph_weight[index] = floatArgument;
         re.setMorphWeight(index, floatArgument);
         if (isLogDebugEnabled) {
-            log("morph weight " + index, floatArgument);
+            log(String.format("morph weight %d %f", index, floatArgument));
         }
     }
 
@@ -3454,7 +3453,7 @@ public class VideoEngine {
         }
 
         if (isLogDebugEnabled) {
-            log(helper.getCommandString(ZPOS), floatArgument);
+            log(String.format("%s %f", helper.getCommandString(ZPOS), floatArgument));
         }
     }
 
@@ -4823,22 +4822,10 @@ public class VideoEngine {
         }
     }
 
-    private void log(String commandString, float floatArgument) {
-        if (isLogDebugEnabled) {
-            log(commandString + SPACE + floatArgument);
-        }
-    }
-
-    private void log(String commandString, int value) {
-        if (isLogDebugEnabled) {
-            log(commandString + SPACE + value);
-        }
-    }
-
     private void log(String commandString, float[] matrix) {
         if (isLogDebugEnabled) {
             for (int y = 0; y < 4; y++) {
-                log(commandString + SPACE + String.format("%.4f %.4f %.4f %.4f", matrix[0 + y * 4], matrix[1 + y * 4], matrix[2 + y * 4], matrix[3 + y * 4]));
+                log(String.format("%s %.4f %.4f %.4f %.4f", commandString, matrix[0 + y * 4], matrix[1 + y * 4], matrix[2 + y * 4], matrix[3 + y * 4]));
             }
         }
     }
