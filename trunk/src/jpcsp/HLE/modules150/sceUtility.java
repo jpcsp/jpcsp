@@ -224,9 +224,10 @@ public class sceUtility extends HLEModule {
 
     protected static final int icon0Width = 144;
     protected static final int icon0Height = 80;
-	protected static final int icon0PixelFormat = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
-	// Round-up width to next valid buffer width
-	protected static final int icon0BufferWidth = alignBufferWidth(icon0Width + IRenderingEngine.alignementOfTextureBufferWidth[icon0PixelFormat] - 1, icon0PixelFormat);
+    protected static final int icon0PixelFormat = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+    
+    // Round-up width to next valid buffer width
+    protected static final int icon0BufferWidth = alignBufferWidth(icon0Width + IRenderingEngine.alignementOfTextureBufferWidth[icon0PixelFormat] - 1, icon0PixelFormat);
 
     protected GameSharingUtilityDialogState gameSharingState;
     protected UtilityDialogState netplayDialogState;
@@ -246,7 +247,7 @@ public class sceUtility extends HLEModule {
 
     private static final String dummyNetParamName = "NetConf #%d";
     private static final int numberNetConfigurations = 1;
-
+    
     protected abstract static class UtilityDialogState {
         protected String name;
         protected pspAbstractMemoryMappedStructure params;
@@ -629,6 +630,30 @@ public class sceUtility extends HLEModule {
 
 			return super.checkValidity();
 		}
+                
+                // All SAVEDATA modes after MODE_SINGLEDELETE can be called multiple times and keep track of that.
+                private int savedataMultiStatus;
+                
+                protected int checkMultipleCallStatus() {
+                    // Check the current multiple call status.
+                    if ((savedataParams.multiStatus == SceUtilitySavedataParam.MULTI_STATUS_SINGLE) 
+                            || (savedataParams.multiStatus == SceUtilitySavedataParam.MULTI_STATUS_INIT)) {
+                        // If the multiple call status is SINGLE or INIT, just save it.
+                        savedataMultiStatus = savedataParams.multiStatus;
+                        return 0;
+                    } else if ((savedataParams.multiStatus == SceUtilitySavedataParam.MULTI_STATUS_RELAY) 
+                            || (savedataParams.multiStatus == SceUtilitySavedataParam.MULTI_STATUS_FINISH)) {
+                        // If the multiple call status is RELAY or FINISH, check if INIT or another RELAY has been called.
+                        if (savedataMultiStatus <= savedataParams.multiStatus) {
+                            savedataMultiStatus = savedataParams.multiStatus;
+                            return 0;
+                        } else {
+                            return SceKernelErrors.ERROR_SAVEDATA_RW_BAD_STATUS;
+                        }
+                    } else {
+                        return SceKernelErrors.ERROR_SAVEDATA_RW_BAD_STATUS;
+                    }
+                }
 
 		@Override
 		protected boolean executeUpdateVisible() {
@@ -995,7 +1020,7 @@ public class sceUtility extends HLEModule {
                                     log.debug(String.format("MODE_LIST returning %d entries", numEntries));
                                 }
                             }
-                            savedataParams.base.result = 0;
+                            savedataParams.base.result = checkMultipleCallStatus();
                             break;
                         }
 
@@ -1071,7 +1096,7 @@ public class sceUtility extends HLEModule {
                                 if (entries == null) {
                                     savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
                                 } else {
-                                    savedataParams.base.result = 0;
+                                    savedataParams.base.result = checkMultipleCallStatus();
                                 }
                             }
                             break;
@@ -1083,11 +1108,7 @@ public class sceUtility extends HLEModule {
                             // Write system data files (encrypted or not).
                             try {
                                 savedataParams.save(mem);
-                                if (savedataParams.multiStatus == SceUtilitySavedataParam.MULTI_STATUS_FINISH) {
-                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_BAD_STATUS;
-                                } else {
-                                    savedataParams.base.result = 0;
-                                }
+                                savedataParams.base.result = checkMultipleCallStatus();
                             } catch (IOException e) {
                                 savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
                             } catch (Exception e) {
@@ -1112,11 +1133,7 @@ public class sceUtility extends HLEModule {
                                 if (log.isTraceEnabled()) {
                                     log.trace(String.format("MODE_READ/MODE_READSECURE reading %s", Utilities.getMemoryDump(savedataParams.dataBuf, savedataParams.dataSize, 4, 16)));
                                 }
-                                if (savedataParams.multiStatus == SceUtilitySavedataParam.MULTI_STATUS_FINISH) {
-                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_BAD_STATUS;
-                                } else {
-                                    savedataParams.base.result = 0;
-                                }
+                                savedataParams.base.result = checkMultipleCallStatus();
                                 savedataParams.write(mem);
                             } catch (FileNotFoundException e) {
                                 if (savedataParams.isGameDirectoryPresent()) {
@@ -1141,11 +1158,7 @@ public class sceUtility extends HLEModule {
                             // Writes data and can be called multiple times for updating.
                             try {
                                 savedataParams.save(mem);
-                                if (savedataParams.multiStatus == SceUtilitySavedataParam.MULTI_STATUS_FINISH) {
-                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_BAD_STATUS;
-                                } else {
-                                    savedataParams.base.result = 0;
-                                }
+                                savedataParams.base.result = checkMultipleCallStatus();
                             } catch (IOException e) {
                                 if (!savedataParams.isGameDirectoryPresent()) {
                                     savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
@@ -1171,7 +1184,7 @@ public class sceUtility extends HLEModule {
                                     f = new File(save);
                                     f.delete();
                                 }
-                                savedataParams.base.result = 0;
+                                savedataParams.base.result = checkMultipleCallStatus();
                             } else {
                                 log.warn("Savedata MODE_DELETEDATA no data found!");
                                 savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
@@ -1249,7 +1262,7 @@ public class sceUtility extends HLEModule {
                             } else if (!isPresent) {
                                 savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
                             } else {
-                                savedataParams.base.result = 0;
+                                savedataParams.base.result = checkMultipleCallStatus();
                             }
                             break;
 
@@ -1257,7 +1270,7 @@ public class sceUtility extends HLEModule {
                             if (savedataParams.fileName != null) {
                                 String save = savedataParams.getFileName(savedataParams.saveName, savedataParams.fileName);
                                 if (Modules.IoFileMgrForUserModule.deleteFile(save)) {
-                                    savedataParams.base.result = 0;
+                                    savedataParams.base.result = checkMultipleCallStatus();
                                 } else if (savedataParams.isGameDirectoryPresent()) {
                                     savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
                                 } else {
