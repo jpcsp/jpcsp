@@ -42,7 +42,8 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
     public final static String savedataPath = "ms0:/PSP/SAVEDATA/";
     public final static String savedataFilePath = "ms0/PSP/SAVEDATA/";
     public final static String icon0FileName = "ICON0.PNG";
-    public final static String icon1FileName = "ICON1.PNG";
+    public final static String icon1PNGFileName = "ICON1.PNG";
+    public final static String icon1PMFFileName = "ICON1.PMF";
     public final static String pic1FileName = "PIC1.PNG";
     public final static String snd0FileName = "SND0.AT3";
     public final static String paramSfoFileName = "PARAM.SFO";
@@ -399,16 +400,35 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
     public void load(Memory mem) throws IOException {
         String path = getBasePath();
 
+        // Read main data.
         if (CryptoEngine.getSavedataCryptoStatus()) {
             dataSize = loadEncryptedFile(mem, path, fileName, dataBuf, dataBufSize, key, secureVersion);
         } else {
             dataSize = loadFile(mem, path, fileName, dataBuf, dataBufSize);
         }
+        
+        // Read ICON0.PNG
         safeLoad(mem, icon0FileName, icon0FileData);
+        
+        // Check and read ICON1.PMF or ICON1.PNG
+        IMemoryReader memoryReader = MemoryReader.getMemoryReader(icon1FileData.buf, 1);
+        String icon1FileName;
+        if ((byte) memoryReader.readNext() != (byte) 0x89) {
+            icon1FileName = icon1PMFFileName;
+        } else {
+            icon1FileName = icon1PNGFileName; 
+        }
         safeLoad(mem, icon1FileName, icon1FileData);
+        
+        // Read PIC1.PNG
         safeLoad(mem, pic1FileName, pic1FileData);
+        
+        // Read SND0.AT3
         safeLoad(mem, snd0FileName, snd0FileData);
+        
+        // Read PARAM.SFO
         loadPsf(mem, path, paramSfoFileName, sfoParam);
+        
         bind = BIND_IS_OK;
         abortStatus = 0;
     }
@@ -427,15 +447,34 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         String path = getBasePath();
 
         Modules.IoFileMgrForUserModule.mkdirs(path);
+        
+        // Write main data.
         if (CryptoEngine.getSavedataCryptoStatus()) {
             writeEncryptedFile(mem, path, fileName, dataBuf, dataSize, key, secureVersion);
         } else {
             writeFile(mem, path, fileName, dataBuf, dataSize);
         }
+        
+        // Write ICON0.PNG
         writeFile(mem, path, icon0FileName, icon0FileData.buf, icon0FileData.size);
+        
+        // Check and write ICON1.PMF or ICON1.PNG
+        IMemoryReader memoryReader = MemoryReader.getMemoryReader(icon1FileData.buf, 1);
+        String icon1FileName;
+        if ((byte) memoryReader.readNext() != (byte) 0x89) {
+            icon1FileName = icon1PMFFileName;
+        } else {
+            icon1FileName = icon1PNGFileName; 
+        }
         writeFile(mem, path, icon1FileName, icon1FileData.buf, icon1FileData.size);
+        
+        // Write PIC1.PNG
         writeFile(mem, path, pic1FileName, pic1FileData.buf, pic1FileData.size);
+        
+        // Write SND0.AT3
         writeFile(mem, path, snd0FileName, snd0FileData.buf, snd0FileData.size);
+        
+        // Write PARAM.SFO
         if (CryptoEngine.getSavedataCryptoStatus()) {
             writeEncryptedPsf(mem, path, paramSfoFileName, sfoParam, fileName, dataSize, key, secureVersion);
         } else {
