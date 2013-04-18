@@ -58,6 +58,8 @@
     uniform int   blendDst;
     uniform vec3  blendSFix;
     uniform vec3  blendDFix;
+    uniform int   wrapModeS;
+    uniform int   wrapModeT;
     #if COPY_RED_TO_ALPHA
         uniform bool  copyRedToAlpha;
     #endif
@@ -142,21 +144,22 @@ vec4 getIndexedTextureRED()
 	vec2 projCoords = gl_TexCoord[0].xy / gl_TexCoord[0].z * texSize;
 	ivec2 iprojCoords = ivec2(floor(projCoords));
 
+    // Apply texture wrapping (texelFetch does not wrap)
+	if (wrapModeS == 0) // TWRAP_WRAP_MODE_REPEAT
+	{
+		iprojCoords.s %= texSize.s;
+	}
+	if (wrapModeT == 0) // TWRAP_WRAP_MODE_REPEAT
+	{
+		iprojCoords.t %= texSize.t;
+	}
+
     vec4 topLeft = getTexelColorIndexedTextureRED(iprojCoords);
     vec4 topRight = getTexelColorIndexedTextureRED(iprojCoords + ivec2(1, 0));
     vec4 bottomLeft = getTexelColorIndexedTextureRED(iprojCoords + ivec2(0, 1));
     vec4 bottomRight = getTexelColorIndexedTextureRED(iprojCoords + ivec2(1, 1));
 
 	vec2 mixFactor = fract(projCoords);
-	if (iprojCoords.x + 1 >= texSize.x)
-    {
-        mixFactor.x = 0.0;
-    }
-
-	if (iprojCoords.y + 1 >= texSize.y)
-    {
-        mixFactor.y = 0.0;
-    }
 
 	return bilinearInterpolate(topLeft, topRight, bottomLeft, bottomRight, mixFactor);
 }

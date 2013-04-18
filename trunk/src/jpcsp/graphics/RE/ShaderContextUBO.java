@@ -85,6 +85,8 @@ public class ShaderContextUBO extends ShaderContext {
 	private ShaderUniformInfo blendSFix;
 	private ShaderUniformInfo blendDFix;
 	private ShaderUniformInfo colorMaskEnable;
+	private ShaderUniformInfo wrapModeS;
+	private ShaderUniformInfo wrapModeT;
 	private ShaderUniformInfo copyRedToAlpha;
 	private ShaderUniformInfo numberBones;
 	private ShaderUniformInfo boneMatrix;
@@ -228,6 +230,8 @@ public class ShaderContextUBO extends ShaderContext {
 		blendSrc = addShaderUniform(Uniforms.blendSrc, "int");
 		blendDst = addShaderUniform(Uniforms.blendDst, "int");
 		colorMaskEnable = addShaderUniform(Uniforms.colorMaskEnable, "bool");
+		wrapModeS = addShaderUniform(Uniforms.wrapModeS, "int");
+		wrapModeT = addShaderUniform(Uniforms.wrapModeT, "int");
 		copyRedToAlpha = addShaderUniform(Uniforms.copyRedToAlpha, "bool");
 		numberBones = addShaderUniform(Uniforms.numberBones, "int");
 		boneMatrix = addShaderUniform(Uniforms.boneMatrix, "mat4", 8);
@@ -882,6 +886,22 @@ public class ShaderContextUBO extends ShaderContext {
 		if (copyRedToAlpha != getCopyRedToAlpha()) {
 			copy(copyRedToAlpha, this.copyRedToAlpha);
 			super.setCopyRedToAlpha(copyRedToAlpha);
+		}
+	}
+
+	@Override
+	public void setWrapModeS(int wrapModeS) {
+		if (wrapModeS != getWrapModeS()) {
+			copy(wrapModeS, this.wrapModeS);
+			super.setWrapModeS(wrapModeS);
+		}
+	}
+
+	@Override
+	public void setWrapModeT(int wrapModeT) {
+		if (wrapModeT != getWrapModeT()) {
+			copy(wrapModeT, this.wrapModeT);
+			super.setWrapModeT(wrapModeT);
 		}
 	}
 }

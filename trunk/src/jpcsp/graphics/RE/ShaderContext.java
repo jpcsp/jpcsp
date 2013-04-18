@@ -93,6 +93,8 @@ public class ShaderContext {
 	private float[] blendSFix = new float[3];
 	private float[] blendDFix = new float[3];
 	private int copyRedToAlpha;
+	private int wrapModeS;
+	private int wrapModeT;
 
 	public void setUniforms(IRenderingEngine re, int shaderProgram) {
 		re.setUniform(Uniforms.zPos.getId(shaderProgram), zPos);
@@ -153,6 +155,8 @@ public class ShaderContext {
 		re.setUniform3(Uniforms.blendSFix.getId(shaderProgram), blendSFix);
 		re.setUniform3(Uniforms.blendDFix.getId(shaderProgram), blendDFix);
 		re.setUniform(Uniforms.copyRedToAlpha.getId(shaderProgram), copyRedToAlpha);
+		re.setUniform(Uniforms.wrapModeS.getId(shaderProgram), wrapModeS);
+		re.setUniform(Uniforms.wrapModeT.getId(shaderProgram), wrapModeT);
 
 		setUniformsSamplers(re, shaderProgram);
 	}
@@ -689,5 +693,21 @@ public class ShaderContext {
 
 	public void setCopyRedToAlpha(int copyRedToAlpha) {
 		this.copyRedToAlpha = copyRedToAlpha;
+	}
+
+	public int getWrapModeS() {
+		return wrapModeS;
+	}
+
+	public void setWrapModeS(int wrapModeS) {
+		this.wrapModeS = wrapModeS;
+	}
+
+	public int getWrapModeT() {
+		return wrapModeT;
+	}
+
+	public void setWrapModeT(int wrapModeT) {
+		this.wrapModeT = wrapModeT;
 	}
 }
