@@ -1395,4 +1395,11 @@ public class REShader extends BaseRenderingEngineFunction {
 		shaderContext.setCopyRedToAlpha(copyRedToAlpha ? 1 : 0);
 		return super.setCopyRedToAlpha(copyRedToAlpha);
 	}
+
+	@Override
+	public void setTextureWrapMode(int s, int t) {
+		shaderContext.setWrapModeS(s);
+		shaderContext.setWrapModeT(t);
+		super.setTextureWrapMode(s, t);
+	}
 }
