@@ -104,7 +104,8 @@ public class Profiler {
         }
 
         int count = 0;
-        log.info(String.format("Compilation time %dms, %d calls, average %.1fms, longest %dms", compilationTimeMicros / 1000, compilationCount, compilationTimeMicros / (double) compilationCount / 1000, longestCompilationTimeMicros / 1000));
+        double avg = compilationCount == 0 ? 0.0 : compilationTimeMicros / (double) compilationCount / 1000;
+        log.info(String.format("Compilation time %dms, %d calls, average %.1fms, longest %dms", compilationTimeMicros / 1000, compilationCount, avg, longestCompilationTimeMicros / 1000));
         log.info(String.format("CodeBlocks profiling information (%,d total cycles):", allCycles));
         for (CodeBlock codeBlock : sortedCodeBlocks) {
             long callCount = getCallCount(codeBlock);

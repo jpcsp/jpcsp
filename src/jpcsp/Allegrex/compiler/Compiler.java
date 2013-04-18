@@ -67,8 +67,8 @@ import org.xml.sax.SAXException;
  *     - is loading $sp address to another register
  *     - is reading Rs
  *     - is reading Rt
- *     - is writing Rt
- *     - is writing Rd
+ *     - is writing Rt [DONE]
+ *     - is writing Rd [DONE]
  *
  * TODO Ideas to further enhance performance:
  * - store stack variables "nn(sp)" into local variables

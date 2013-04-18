@@ -40,6 +40,7 @@ public class CodeInstruction {
 	private int branchingTo;
 	private boolean isBranching;
 	private Label label;
+	private boolean isDelaySlot;
 
     protected CodeInstruction() {
     }
@@ -119,7 +120,15 @@ public class CodeInstruction {
 		this.branchingTo = branchingTo;
 	}
 
-    public Label getLabel(boolean isBranchTarget) {
+	public boolean isDelaySlot() {
+		return isDelaySlot;
+	}
+
+	public void setIsDelaySlot(boolean isDelaySlot) {
+		this.isDelaySlot = isDelaySlot;
+	}
+
+	public Label getLabel(boolean isBranchTarget) {
         if (label == null) {
             label = new Label();
             if (isBranchTarget) {
@@ -230,6 +239,7 @@ public class CodeInstruction {
         	Compiler.log.warn(String.format("Instruction in a delay slot having a delay slot: %s", toString()));
         }
 
+        delaySlotCodeInstruction.setIsDelaySlot(true);
         Label delaySlotLabel = null;
         if (delaySlotCodeInstruction.hasLabel()) {
         	delaySlotLabel = delaySlotCodeInstruction.getLabel();
