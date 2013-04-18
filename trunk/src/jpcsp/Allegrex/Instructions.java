@@ -1,4 +1,6 @@
-/* This file is part of jpcsp.
+/*
+This file is part of jpcsp.
+
 Jpcsp is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -35,7 +37,10 @@ import jpcsp.Allegrex.compiler.CodeInstruction;
 import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.ICompilerContext;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.Allegrex.compiler.SequenceLWCodeInstruction;
+import jpcsp.Allegrex.compiler.SequenceSWCodeInstruction;
 import jpcsp.HLE.SyscallHandler;
+import jpcsp.util.Utilities;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -3922,9 +3927,62 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRtRegister0()) {
-		context.prepareRtForStore();
-		context.memRead32(context.getRsRegisterIndex(), context.getImm16(true));
-		context.storeRt();
+		int rs = context.getRsRegisterIndex();
+		int simm16 = context.getImm16(true);
+
+		int countSequence = 1;
+	    int[] offsets = null;
+	    int[] registers = null;
+
+	    if (!context.getCodeInstruction().isDelaySlot() && context.getRtRegisterIndex() != rs) {
+	        int address = context.getCodeInstruction().getAddress() + 4;
+		    // Compare LW opcode and rs register
+		    final int opcodeMask = 0xFFE00000;
+		    for (int i = 1; true; i++, address += 4) {
+		    	CodeInstruction nextCodeInstruction = context.getCodeInstruction(address);
+		    	boolean isSequence = false;
+		    	if (nextCodeInstruction != null && !nextCodeInstruction.isBranchTarget()) {
+		    		if ((nextCodeInstruction.getOpcode() & opcodeMask) == (insn & opcodeMask)) {
+		    			if (nextCodeInstruction.getRtRegisterIndex() != rs) {
+			    			if (offsets == null) {
+			    				offsets = new int[2];
+			    				registers = new int[2];
+			    				offsets[0] = simm16;
+			    				registers[0] = context.getRtRegisterIndex();
+			    			} else {
+			    				offsets = Utilities.extendArray(offsets, 1);
+			    				registers = Utilities.extendArray(registers, 1);
+			    			}
+			    			offsets[i] = nextCodeInstruction.getImm16(true);
+			    			registers[i] = nextCodeInstruction.getRtRegisterIndex();
+			    			isSequence = true;
+		    			}
+		    		}
+		    	}
+
+		    	if (!isSequence) {
+		    		break;
+		    	}
+				countSequence++;
+		    }
+	    }
+
+		if (countSequence > 1 && context.compileLWsequence(rs, offsets, registers)) {
+			if (countSequence > 1) {
+		    	if (Compiler.log.isDebugEnabled()) {
+		            CodeInstruction sequence = new SequenceLWCodeInstruction(rs, offsets, registers);
+		            sequence.setAddress(context.getCodeInstruction().getAddress());
+		    		Compiler.log.debug(String.format("CodeInstruction.compile %s", sequence));
+		    	}
+
+		    	// Skip the next lw instructions
+		    	context.skipInstructions(countSequence - 1, false);
+			}
+		} else {
+			context.prepareRtForStore();
+			context.memRead32(rs, simm16);
+			context.storeRt();
+		}
 	}
 }
 @Override
@@ -4094,9 +4152,58 @@ public void interpret(Processor processor, int insn) {
 public void compile(ICompilerContext context, int insn) {
 	int rs = context.getRsRegisterIndex();
 	int simm16 = context.getImm16(true);
-	context.prepareMemWrite32(rs, simm16);
-	context.loadRt();
-	context.memWrite32(rs, simm16);
+
+    int countSequence = 1;
+    int[] offsets = null;
+    int[] registers = null;
+
+    if (!context.getCodeInstruction().isDelaySlot()) {
+        int address = context.getCodeInstruction().getAddress() + 4;
+	    // Compare SW opcode and rs register
+	    final int opcodeMask = 0xFFE00000;
+	    for (int i = 1; true; i++, address += 4) {
+	    	CodeInstruction nextCodeInstruction = context.getCodeInstruction(address);
+	    	boolean isSequence = false;
+	    	if (nextCodeInstruction != null && !nextCodeInstruction.isBranchTarget()) {
+	    		if ((nextCodeInstruction.getOpcode() & opcodeMask) == (insn & opcodeMask)) {
+	    			if (offsets == null) {
+	    				offsets = new int[2];
+	    				registers = new int[2];
+	    				offsets[0] = simm16;
+	    				registers[0] = context.getRtRegisterIndex();
+	    			} else {
+	    				offsets = Utilities.extendArray(offsets, 1);
+	    				registers = Utilities.extendArray(registers, 1);
+	    			}
+	    			offsets[i] = nextCodeInstruction.getImm16(true);
+	    			registers[i] = nextCodeInstruction.getRtRegisterIndex();
+	    			isSequence = true;
+	    		}
+	    	}
+
+	    	if (!isSequence) {
+	    		break;
+	    	}
+			countSequence++;
+	    }
+    }
+
+	if (countSequence > 1 && context.compileSWsequence(rs, offsets, registers)) {
+		if (countSequence > 1) {
+	    	if (Compiler.log.isDebugEnabled()) {
+	            CodeInstruction sequence = new SequenceSWCodeInstruction(rs, offsets, registers);
+	            sequence.setAddress(context.getCodeInstruction().getAddress());
+	    		Compiler.log.debug(String.format("CodeInstruction.compile %s", sequence));
+	    	}
+
+	    	// Skip the next sw instructions
+	    	context.skipInstructions(countSequence - 1, false);
+		}
+	} else {
+		context.prepareMemWrite32(rs, simm16);
+		context.loadRt();
+		context.memWrite32(rs, simm16);
+	}
 }
 @Override
 public String disasm(int address, int insn) {

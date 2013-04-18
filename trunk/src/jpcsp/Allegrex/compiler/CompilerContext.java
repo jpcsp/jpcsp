@@ -37,6 +37,7 @@ import java.util.TreeSet;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
+import jpcsp.State;
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.GprState;
@@ -73,6 +74,7 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.hardware.Interrupts;
+import jpcsp.memory.FastMemory;
 import jpcsp.memory.SafeFastMemory;
 import jpcsp.util.ClassAnalyzer;
 import jpcsp.util.DurationStatistics;
@@ -3503,6 +3505,10 @@ public class CompilerContext implements ICompilerContext {
 		if (Profiler.isProfilerEnabled()) {
 			return;
 		}
+		// Disable optimizations when the debugger is open
+		if (State.debugger != null) {
+			return;
+		}
 
 		int decreaseSpInstruction = -1;
 		int stackSize = 0;
@@ -3639,6 +3645,60 @@ public class CompilerContext implements ICompilerContext {
 		}
 	}
 
+	/**
+	 * Compile a sequence
+	 *     sw  $zr, n($reg)
+	 *     sw  $zr, n+4($reg)
+	 *     sw  $zr, n+8($reg)
+	 *     ...
+	 * into
+	 *     System.arraycopy(FastMemory.zero, 0, memoryInt, (n + $reg) >> 2, length)
+	 * 
+	 * @param baseRegister
+	 * @param offsets
+	 * @param registers
+	 * @return true  if the sequence could be compiled
+	 *         false if the sequence could not be compiled
+	 */
+	private boolean compileSWsequenceZR(int baseRegister, int[] offsets, int[] registers) {
+		for (int i = 0; i < registers.length; i++) {
+			if (registers[i] != _zr) {
+				return false;
+			}
+		}
+
+		for (int i = 1; i < offsets.length; i++) {
+			if (offsets[i] != offsets[i - 1] + 4) {
+				return false;
+			}
+		}
+
+		int offset = offsets[0];
+		int length = offsets.length;
+		do {
+	    	int copyLength = Math.min(length, FastMemory.zero.length);
+			// Build parameters for
+	    	//    System.arraycopy(Object src, int srcPos, Object dest, int destPos, int length)
+	    	// i.e.
+	    	//    System.arraycopy(FastMemory.zero,
+			//                     0,
+			//                     RuntimeContext.memoryInt,
+	    	//                     RuntimeContext.checkMemoryRead32(baseRegister + offset, pc) >>> 2,
+	    	//                     copyLength);
+    		mv.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(FastMemory.class), "zero", "[I");
+	    	loadImm(0);
+	    	loadMemoryInt();
+	    	prepareMemIndex(baseRegister, offset, false, 32);
+	    	loadImm(copyLength);
+	    	mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(System.class), "arraycopy", arraycopyDescriptor);
+
+	    	length -= copyLength;
+	    	offset += copyLength;
+		} while (length > 0);
+
+		return true;
+	}
+
 	private boolean compileSWLWsequence(int baseRegister, int[] offsets, int[] registers, boolean isLW) {
 		// Optimization only possible for memoryInt
 		if (RuntimeContext.memoryInt == null) {
@@ -3647,6 +3707,16 @@ public class CompilerContext implements ICompilerContext {
 		// Disable optimizations when the profiler is enabled.
 		if (Profiler.isProfilerEnabled()) {
 			return false;
+		}
+		// Disable optimizations when the debugger is open
+		if (State.debugger != null) {
+			return false;
+		}
+
+		if (!isLW) {
+			if (compileSWsequenceZR(baseRegister, offsets, registers)) {
+				return true;
+			}
 		}
 
 		int offset = offsets[0];
@@ -3662,11 +3732,13 @@ public class CompilerContext implements ICompilerContext {
     		}
 
     		if (isLW) {
-    			prepareRegisterForStore(rt);
-        		loadMemoryInt();
-        		loadTmp1();
-        		mv.visitInsn(Opcodes.IALOAD);
-        		storeRegister(rt);
+    			if (rt != _zr) {
+	    			prepareRegisterForStore(rt);
+	        		loadMemoryInt();
+	        		loadTmp1();
+	        		mv.visitInsn(Opcodes.IALOAD);
+	        		storeRegister(rt);
+    			}
     		} else {
     			loadMemoryInt();
     			loadTmp1();
