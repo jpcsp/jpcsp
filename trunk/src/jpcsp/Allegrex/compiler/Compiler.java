@@ -23,6 +23,8 @@ import static jpcsp.Allegrex.Common.Instruction.FLAG_STARTS_NEW_BLOCK;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Stack;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -371,6 +373,7 @@ public class Compiler implements ICompiler {
         Stack<Integer> pendingBlockAddresses = new Stack<Integer>();
         pendingBlockAddresses.clear();
         pendingBlockAddresses.push(startAddress);
+        Set<Integer> branchingToAddresses = new HashSet<Integer>();
         while (!pendingBlockAddresses.isEmpty()) {
             int pc = pendingBlockAddresses.pop();
             if (!Memory.isAddressGood(pc)) {
@@ -432,6 +435,8 @@ public class Compiler implements ICompiler {
 	                        	// reached code has not been changed (i.e. invalidated).
                         		if (!memorySections.canWrite(branchingTo, false)) {
 	                        		pendingBlockAddresses.push(branchingTo);
+	                        	} else {
+	                        		branchingToAddresses.add(branchingTo);
 	                        	}
                         	} else {
                         		pendingBlockAddresses.push(branchingTo);
@@ -444,6 +449,10 @@ public class Compiler implements ICompiler {
 
                     isBranchTarget = false;
                 }
+            }
+
+            for (int branchingTo : branchingToAddresses) {
+            	codeBlock.setIsBranchTarget(branchingTo);
             }
         }
 
