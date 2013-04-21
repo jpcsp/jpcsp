@@ -1831,7 +1831,11 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
             setTitle(MetaInformation.FULL_NAME + " - " + title);
             addRecentUMD(file, title);
 
-            emulator.setFirmwareVersion(psf.getString("PSP_SYSTEM_VER"));
+            if (psf.isLikelyHomebrew()) {
+                emulator.setFirmwareVersion(Loader.FIRMWAREVERSION_HOMEBREW);
+            } else {
+                emulator.setFirmwareVersion(psf.getString("PSP_SYSTEM_VER"));
+            }
             RuntimeContext.setIsHomebrew(psf.isLikelyHomebrew());
             Modules.SysMemUserForUserModule.setMemory64MB(psf.getNumeric("MEMSIZE") == 1);
 

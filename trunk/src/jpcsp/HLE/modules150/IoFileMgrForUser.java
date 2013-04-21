@@ -98,13 +98,6 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-/*
- * TODO list:
- * 1. Get std out/err/in from stdio module.
- *
- * 2. The PSP's filesystem supports permissions.
- * Implement PSP_O_CREAT based on Java File and it's setReadable/Writable/Executable.
- */
 @HLELogging
 public class IoFileMgrForUser extends HLEModule {
     public static Logger log = Modules.getLogger("IoFileMgrForUser");
@@ -674,6 +667,7 @@ public class IoFileMgrForUser extends HLEModule {
 	        vfsManager.register("ms0", new LocalVirtualFileSystem("ms0/"));
 	        vfsManager.register("fatms0", new LocalVirtualFileSystem("ms0/"));
 	        vfsManager.register("flash0", new LocalVirtualFileSystem("flash0/"));
+                vfsManager.register("exdata0", new LocalVirtualFileSystem("exdata0/"));
 	        vfsManager.register("mscmhc0", new MemoryStickVirtualFileSystem());
 	        registerUmdIso();
         }
@@ -771,6 +765,13 @@ public class IoFileMgrForUser extends HLEModule {
         		return pspfilename.replace("flash0:", "flash0");
         	}
         	return pspfilename.replace("flash0:", "flash0/");
+        }
+        
+        if (pspfilename.startsWith("exdata0:")) {
+        	if (pspfilename.startsWith("exdata0:/")) {
+        		return pspfilename.replace("exdata0:", "exdata0");
+        	}
+        	return pspfilename.replace("exdata0:", "exdata0/");
         }
 
         if (host0Path != null && pspfilename.startsWith("host0:") && !pspfilename.startsWith("host0:/")) {
@@ -1444,6 +1445,7 @@ public class IoFileMgrForUser extends HLEModule {
 			vfsManager.register("ms0", new LocalVirtualFileSystem("ms0/"));
 	        vfsManager.register("fatms0", new LocalVirtualFileSystem("ms0/"));
 	        vfsManager.register("flash0", new LocalVirtualFileSystem("flash0/"));
+                vfsManager.register("exdata0", new LocalVirtualFileSystem("exdata0/"));
 	        vfsManager.register("mscmhc0", new MemoryStickVirtualFileSystem());
 	        msRegistered = true;
     	}
@@ -1460,6 +1462,7 @@ public class IoFileMgrForUser extends HLEModule {
 			vfsManager.unregister("ms0");
 	        vfsManager.unregister("fatms0");
 	        vfsManager.unregister("flash0");
+                vfsManager.unregister("exdata0");
 	        vfsManager.unregister("mscmhc0");
         }
 
@@ -3698,6 +3701,70 @@ public class IoFileMgrForUser extends HLEModule {
                     result = 0;
                 } else {
                 	result = -1;
+                }
+                break;
+            }
+            // Wait for the UMD data cache thread.
+            case 0x01F300A7: {
+                if (log.isDebugEnabled()) {
+                    log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " wait for the UMD data cache thread");
+                }
+                if ((Memory.isAddressGood(indata_addr) && inlen >= 4)) {
+                    int index = mem.read32(indata_addr); // Index set by command 0x01F300A5.
+                    if (log.isDebugEnabled()) {
+                        log.debug(String.format("index=%d", index));
+                    }
+                    // Place the calling thread in wait state.
+                    ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+                    SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+                    threadMan.hleKernelThreadEnterWaitState(JPCSP_WAIT_IO, currentThread.wait.Io_id, ioWaitStateChecker, true);
+                    result = 0;
+                } else {
+                    result = -1;
+                }
+                break;
+            }
+            // Poll the UMD data cache thread.
+            case 0x01F300A8: {
+                if (log.isDebugEnabled()) {
+                    log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " poll the UMD data cache thread");
+                }
+                if ((Memory.isAddressGood(indata_addr) && inlen >= 4)) {
+                    int index = mem.read32(indata_addr); // Index set by command 0x01F300A5.
+                    if (log.isDebugEnabled()) {
+                        log.debug(String.format("index=%d", index));
+                    }
+                    // 0 - UMD data cache thread has finished.
+                    // 0x10 - UMD data cache thread is waiting.
+                    // 0x20 - UMD data cache thread is running.
+                    result = 0; // Return finished.
+                } else {
+                    result = -1;
+                }
+                break;
+            }
+            // Cancel the UMD data cache thread.
+            case 0x01F300A9: {
+                if (log.isDebugEnabled()) {
+                    log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " cancel the UMD data cache thread");
+                }
+                if ((Memory.isAddressGood(indata_addr) && inlen >= 4)) {
+                    int index = mem.read32(indata_addr); // Index set by command 0x01F300A5.
+                    if (log.isDebugEnabled()) {
+                        log.debug(String.format("index=%d", index));
+                    }
+                    // Wake up the thread waiting for the UMD data cache handling.
+                    ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+                    for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
+                        SceKernelThreadInfo thread = it.next();
+                        if (thread.isWaitingForType(JPCSP_WAIT_IO)) {
+                            thread.cpuContext._v0 = SceKernelErrors.ERROR_KERNEL_WAIT_CANCELLED;
+                            threadMan.hleKernelWakeupThread(thread);
+                        }
+                    }
+                    result = 0;
+                } else {
+                    result = -1;
                 }
                 break;
             }

@@ -249,60 +249,60 @@ public class sceMp4 extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x113E9E7B, version = 150)
-    public int sceMp4_113E9E7B(int unknown) {
+    public int sceMp4GetNumberOfMetaData(int unknown) {
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x7443AF1D, version = 150)
-    public int sceMp4_7443AF1D(int mp4, TPointer unknown2) {
+    public int sceMp4GetMovieInfo(int mp4, TPointer unknown2) {
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x5EB65F26, version = 150)
-    public int sceMp4_5EB65F26(int unknown1, int unknown2) {
+    public int sceMp4GetNumberOfSpecificTrack(int unknown1, int unknown2) {
         // Application expects return value > 0
         return 1;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x7ADFD01C, version = 150)
-    public int sceMp4_7ADFD01C(int mp4, int unknown2, int unknown3, TPointer32 callbacks, int unknown5) {
+    public int sceMp4RegistTrack(int mp4, int unknown2, int unknown3, TPointer32 callbacks, int unknown5) {
     	callbackParam = callbacks.getValue(0);
     	callbackGetCurrentPosition = callbacks.getValue(4);
     	callbackSeek = callbacks.getValue(8);
     	callbackRead = callbacks.getValue(12);
-    	log.warn(String.format("sceMp4_7ADFD01C callbacks: param=0x%08X, getCurrentPosition=0x%08X, seek=0x%08X, read=0x%08X", callbackParam, callbackGetCurrentPosition, callbackSeek, callbackRead));
+    	log.warn(String.format("sceMp4RegistTrack callbacks: param=0x%08X, getCurrentPosition=0x%08X, seek=0x%08X, read=0x%08X", callbackParam, callbackGetCurrentPosition, callbackSeek, callbackRead));
 
     	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xBCA9389C, version = 150)
-    public int sceMp4_BCA9389C(int unknown1, int unknown2, int unknown3, int unknown4, int unknown5) {
+    public int sceMp4TrackSampleBufQueryMemSize(int unknown1, int unknown2, int unknown3, int unknown4, int unknown5) {
         int value = Math.max(unknown2 * unknown3, unknown4 << 1) + (unknown2 << 6) + unknown5 + 256;
-        log.warn(String.format("sceMp4_BCA9389C returning 0x%X", value));
+        log.warn(String.format("sceMp4TrackSampleBufQueryMemSize returning 0x%X", value));
 
         return value;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x9C8F4FC1, version = 150)
-    public int sceMp4_9C8F4FC1(int mp4, int unknown2, int unknown3, int unknown4, int unknown5, int unknown6, int unknown7, int unknown8) {
+    public int sceMp4TrackSampleBufConstruct(int mp4, int unknown2, int unknown3, int unknown4, int unknown5, int unknown6, int unknown7, int unknown8) {
     	// unknown4 == value returned by sceMp4_BCA9389C
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x0F0187D2, version = 150)
-    public int sceMp4_0F0187D2(int unknown1, int unknown2, int unknown3) {
+    public int sceMp4GetAvcTrackInfoData(int unknown1, int unknown2, int unknown3) {
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x9CE6F5CF, version = 150)
-    public int sceMp4_9CE6F5CF(int unknown1, int unknown2, @CanBeNull TPointer32 resultAddr) {
+    public int sceMp4GetAacTrackInfoData(int unknown1, int unknown2, @CanBeNull TPointer32 resultAddr) {
     	// Returning 5 32-bit values in resultAddr
     	resultAddr.setValue(0, 0);
     	resultAddr.setValue(4, 0);
@@ -315,43 +315,43 @@ public class sceMp4 extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x4ED4AB1E, version = 150)
-    public int sceMp4_4ED4AB1E(int unknown) {
+    public int sceMp4AacDecodeInitResource(int unknown) {
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x10EE0D2C, version = 150)
-    public int sceMp4_10EE0D2C(int unknown) {
+    public int sceMp4AacDecodeInit(int unknown) {
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x496E8A65, version = 150)
-    public int sceMp4_496E8A65(int unknown1, int unknown2) {
+    public int sceMp4TrackSampleBufFlush(int unknown1, int unknown2) {
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xB4B400D1, version = 150)
-    public int sceMp4_B4B400D1(int unknown1, int unknown2) {
+    public int sceMp4GetSampleNumWithTimeStamp(int unknown1, int unknown2) {
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xF7C51EC1, version = 150)
-    public int sceMp4_F7C51EC1(int unknown1, int unknown2, int unknown3, TPointer unknown4) {
+    public int sceMp4GetSampleInfo(int unknown1, int unknown2, int unknown3, TPointer unknown4) {
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x74A1CA3E, version = 150)
-    public int sceMp4_74A1CA3E(int unknown1, int unknown2, int unknown3, int unknown4) {
+    public int sceMp4SearchSyncSampleNum(int unknown1, int unknown2, int unknown3, int unknown4) {
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xD8250B75, version = 150)
-    public int sceMp4_D8250B75(int unknown1, int unknown2, int unknown3) {
+    public int sceMp4PutSampleNum(int unknown1, int unknown2, int unknown3) {
         return 0;
     }
 
@@ -366,7 +366,7 @@ public class sceMp4 extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x8754ECB8, version = 150)
-    public int sceMp4_8754ECB8(int mp4, int unknown2, @CanBeNull TPointer32 writableBytesAddr, @CanBeNull TPointer32 unknown4) {
+    public int sceMp4TrackSampleBufAvailableSize(int mp4, int unknown2, @CanBeNull TPointer32 writableBytesAddr, @CanBeNull TPointer32 unknown4) {
     	if (fileReadingInProgress || fileReadingCompleted) {
     		// No need to read more if the complete file has been read (or is in reading).
     		writableBytesAddr.setValue(0);
@@ -377,7 +377,7 @@ public class sceMp4 extends HLEModule {
     	}
 
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceMp4_8754ECB8 returning writableBytes=0x%X, unknown4=0x%X", writableBytesAddr.getValue(), unknown4.getValue()));
+    		log.debug(String.format("sceMp4TrackSampleBufAvailableSize returning writableBytes=0x%X, unknown4=0x%X", writableBytesAddr.getValue(), unknown4.getValue()));
     	}
     	return 0;
     }
@@ -392,7 +392,7 @@ public class sceMp4 extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x31BCD7E0, version = 150)
-    public int sceMp4_31BCD7E0(int mp4, int unknown2, int writableBytes) {
+    public int sceMp4TrackSampleBufPut(int mp4, int unknown2, int writableBytes) {
     	writableBytes = Math.min(writableBytes, readBufferSize);
     	callReadCallback(afterReadAction, readBufferAddr, writableBytes);
 
@@ -410,7 +410,7 @@ public class sceMp4 extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x5601A6F0, version = 150)
-    public int sceMp4_5601A6F0(int mp4, int unknown2, TPointer auAddr, TPointer unknown4) {
+    public int sceMp4GetAacAu(int mp4, int unknown2, TPointer auAddr, TPointer unknown4) {
     	if (!fileReadingCompleted) {
     		return readFile();
     	}
@@ -431,7 +431,7 @@ public class sceMp4 extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x7663CB5C, version = 150)
-    public int sceMp4_7663CB5C(int unknown1, TPointer auAddr, TPointer bufferAddr, int init, int frequency) {
+    public int sceMp4AacDecode(int unknown1, TPointer auAddr, TPointer bufferAddr, int init, int frequency) {
     	// Decode audio:
     	// - init: 1 at first call, 0 afterwards
     	// - frequency: 44100
@@ -450,7 +450,7 @@ public class sceMp4 extends HLEModule {
      */
     @HLEUnimplemented
     @HLEFunction(nid = 0x503A3CBA, version = 150)
-    public int sceMp4_503A3CBA(int mp4, int unknown2, TPointer auAddr, TPointer unknown4) {
+    public int sceMp4GetAvcAu(int mp4, int unknown2, TPointer auAddr, TPointer unknown4) {
     	// unknown4: pointer to a 40-bytes structure
     	if (!fileReadingCompleted) {
     		return readFile();
@@ -461,32 +461,80 @@ public class sceMp4 extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x01C76489, version = 150)
-    public int sceMp4_01C76489(int unknown1, int unknown2) {
+    public int sceMp4TrackSampleBufDestruct(int unknown1, int unknown2) {
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x6710FE77, version = 150)
-    public int sceMp4_6710FE77(int unknown1, int unknown2) {
+    public int sceMp4UnregistTrack(int unknown1, int unknown2) {
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x5D72B333, version = 150)
-    public int sceMp4_5D72B333(int unknown) {
+    public int sceMp4AacDecodeExit(int unknown) {
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x7D332394, version = 150)
-    public int sceMp4_7D332394() {
+    public int sceMp4AacDecodeTermResource() {
         return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0x131BDE57, version = 150)
-    public int sceMp4_131BDE57(int mp4, int unknown2, TPointer auAddr) {
+    public int sceMp4InitAu(int mp4, int unknown2, TPointer auAddr) {
     	// unknown2 = return value of sceMpegAvcResourceGetAvcEsBuf()
+        return 0;
+    }
+    
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x17EAA97D, version = 150)
+    public int sceMp4GetAvcAuWithoutSampleBuf(int mp4) {
+        return 0;
+    }
+    
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x28CCB940, version = 150)
+    public int sceMp4GetTrackEditList(int mp4) {
+        return 0;
+    }
+    
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x3069C2B5, version = 150)
+    public int sceMp4GetAvcParamSet(int mp4) {
+        return 0;
+    }
+    
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xD2AC9A7E, version = 150)
+    public int sceMp4GetMetaData(int mp4) {
+        return 0;
+    }
+    
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x4FB5B756, version = 150)
+    public int sceMp4GetMetaDataInfo(int mp4) {
+        return 0;
+    }
+    
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x427BEF7F, version = 150)
+    public int sceMp4GetTrackNumOfEditList(int mp4) {
+        return 0;
+    }
+    
+    @HLEUnimplemented
+    @HLEFunction(nid = 0x532029B8, version = 150)
+    public int sceMp4GetAacAuWithoutSampleBuf(int mp4) {
+        return 0;
+    }
+    
+    @HLEUnimplemented
+    @HLEFunction(nid = 0xA6C724DC, version = 150)
+    public int sceMp4GetSampleNum(int mp4) {
         return 0;
     }
 

@@ -80,7 +80,7 @@ public class Loader {
     public final static int SCE_MAGIC = 0x4543537E;
     public final static int PSP_MAGIC = 0x50535000;
     public final static int EDAT_MAGIC = 0x54414445;
-    private final static int FIRMWAREVERSION_HOMEBREW = 999; // Simulate version 9.99 instead of 1.50
+    public final static int FIRMWAREVERSION_HOMEBREW = 999; // Simulate version 9.99 instead of 1.50
 
     // Format bits
     public final static int FORMAT_UNKNOWN  = 0x00;
