@@ -108,23 +108,27 @@ public class sceJpeg extends HLEModule {
 
         BufferedImage bufferedImage = readJpegImage(jpegBuffer, jpegBufferSize);
         if (bufferedImage != null) {
-            int uid = SceUidManager.getNewUid(uidPurpose);
-            bufferedImages.put(uid, bufferedImage);
+        	addImage(bufferedImage, yCbCrBuffer);
 
             int width = bufferedImage.getWidth();
             int height = bufferedImage.getHeight();
             result = getWidthHeight(width, height);
-
-            // Store the uid in the yCbCrBuffer so that we can retrieve it while decoding
-            yCbCrBuffer.setValue32(0, uid);
-            // Set the starting line for decoding
-            yCbCrBuffer.setValue32(4, 0);
         }
 
         return result;
     }
 
-    protected void deleteImage(TPointer yCbCrBuffer) {
+	public void addImage(BufferedImage bufferedImage, TPointer yCbCrBuffer) {
+		int uid = SceUidManager.getNewUid(uidPurpose);
+		bufferedImages.put(uid, bufferedImage);
+
+		// Store the uid in the yCbCrBuffer so that we can retrieve it while decoding
+		yCbCrBuffer.setValue32(0, uid);
+		// Set the starting line for decoding
+		yCbCrBuffer.setValue32(4, 0);
+	}
+
+	protected void deleteImage(TPointer yCbCrBuffer) {
         int uid = yCbCrBuffer.getValue32();
         yCbCrBuffer.setValue32(0);
 
