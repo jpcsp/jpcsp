@@ -173,10 +173,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 	        case UP:       fieldUp.setText(value); break;
 	        case LEFT:     fieldLeft.setText(value); break;
 	        case RIGHT:    fieldRight.setText(value); break;
-	        case ANDOWN:   fieldAnalogDown.setText(value); break;
-	        case ANUP:     fieldAnalogUp.setText(value); break;
-	        case ANLEFT:   fieldAnalogLeft.setText(value); break;
-	        case ANRIGHT:  fieldAnalogRight.setText(value); break;
+	        case LANDOWN:  fieldAnalogDown.setText(value); break;
+	        case LANUP:    fieldAnalogUp.setText(value); break;
+	        case LANLEFT:  fieldAnalogLeft.setText(value); break;
+	        case LANRIGHT: fieldAnalogRight.setText(value); break;
 
 	        case TRIANGLE: fieldTriangle.setText(value); break;
 	        case SQUARE:   fieldSquare.setText(value); break;
@@ -338,15 +338,15 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 					setControllerMapping(keyCode.LEFT, identifierName, fieldLeft);
 					setControllerMapping(keyCode.RIGHT, identifierName, fieldRight);
 					break;
-				case ANDOWN:
-				case ANUP:
-					setControllerMapping(keyCode.ANDOWN, identifierName, fieldAnalogDown);
-					setControllerMapping(keyCode.ANUP, identifierName, fieldAnalogUp);
+				case LANDOWN:
+				case LANUP:
+					setControllerMapping(keyCode.LANDOWN, identifierName, fieldAnalogDown);
+					setControllerMapping(keyCode.LANUP, identifierName, fieldAnalogUp);
 					break;
-				case ANLEFT:
-				case ANRIGHT:
-					setControllerMapping(keyCode.ANLEFT, identifierName, fieldAnalogLeft);
-					setControllerMapping(keyCode.ANRIGHT, identifierName, fieldAnalogRight);
+				case LANLEFT:
+				case LANRIGHT:
+					setControllerMapping(keyCode.LANLEFT, identifierName, fieldAnalogLeft);
+					setControllerMapping(keyCode.LANRIGHT, identifierName, fieldAnalogRight);
 					break;
 				default:
 					setControllerMapping(targetKey, identifierName, sender);
@@ -936,19 +936,19 @@ private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 }//GEN-LAST:event_jButtonCancelActionPerformed
 
 private void fieldAnalogRightMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldAnalogRightMouseClicked
-    setKey(fieldAnalogRight, keyCode.ANRIGHT);
+    setKey(fieldAnalogRight, keyCode.LANRIGHT);
 }//GEN-LAST:event_fieldAnalogRightMouseClicked
 
 private void fieldAnalogLeftMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldAnalogLeftMouseClicked
-    setKey(fieldAnalogLeft, keyCode.ANLEFT);
+    setKey(fieldAnalogLeft, keyCode.LANLEFT);
 }//GEN-LAST:event_fieldAnalogLeftMouseClicked
 
 private void fieldAnalogDownMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldAnalogDownMouseClicked
-    setKey(fieldAnalogDown, keyCode.ANDOWN);
+    setKey(fieldAnalogDown, keyCode.LANDOWN);
 }//GEN-LAST:event_fieldAnalogDownMouseClicked
 
 private void fieldAnalogUpMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldAnalogUpMouseClicked
-    setKey(fieldAnalogUp, keyCode.ANUP);
+    setKey(fieldAnalogUp, keyCode.LANUP);
 }//GEN-LAST:event_fieldAnalogUpMouseClicked
 
 private void fieldMusicMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldMusicMouseClicked

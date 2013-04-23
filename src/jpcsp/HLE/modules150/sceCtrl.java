@@ -51,6 +51,8 @@ public class sceCtrl extends HLEModule {
     private int TimeStamp; // microseconds
     private byte Lx;
     private byte Ly;
+    private byte Rx;
+    private byte Ry;
     private int Buttons;
 
     // IdleCancelThreshold
@@ -98,12 +100,14 @@ public class sceCtrl extends HLEModule {
         return false;
     }
 
-    private void setButtons(byte Lx, byte Ly, int Buttons) {
+    private void setButtons(byte Lx, byte Ly, byte Rx, byte Ry, int Buttons) {
         int oldButtons = this.Buttons;
 
         this.TimeStamp = ((int) SystemTimeManager.getSystemTime()) & 0x7FFFFFFF;
         this.Lx = Lx;
         this.Ly = Ly;
+        this.Rx = Rx;
+        this.Ry = Ry;
         this.Buttons = Buttons;
 
         if (isModeDigital()) {
@@ -111,6 +115,8 @@ public class sceCtrl extends HLEModule {
             // moving the analog stick has no effect and always returns 128,128
             this.Lx = Controller.analogCenter;
             this.Ly = Controller.analogCenter;
+            this.Rx = Controller.analogCenter;
+            this.Ry = Controller.analogCenter;
         }
 
         int changed = oldButtons ^ Buttons;
@@ -135,6 +141,8 @@ public class sceCtrl extends HLEModule {
 
         Lx = Controller.analogCenter;
         Ly = Controller.analogCenter;
+        Rx = Controller.analogCenter;
+        Ry = Controller.analogCenter;
         Buttons = 0;
 
         idlereset = -1;
@@ -186,10 +194,21 @@ public class sceCtrl extends HLEModule {
     }
 
     protected static class Sample {
-        public int TimeStamp; // microseconds
-        public byte Lx;
-        public byte Ly;
-        public int Buttons;
+        private int TimeStamp; // microseconds
+        private byte Lx;
+        private byte Ly;
+        private byte Rx;
+        private byte Ry;
+        private int Buttons;
+
+        public void setValues(int TimeStamp, byte Lx, byte Ly, byte Rx, byte Ry, int Buttons) {
+			this.TimeStamp = TimeStamp;
+			this.Lx = Lx;
+			this.Ly = Ly;
+			this.Rx = Rx;
+			this.Ry = Ry;
+			this.Buttons = Buttons;
+		}
 
         public int write(Memory mem, int addr, boolean positive) {
             mem.write32(addr, TimeStamp);
@@ -197,12 +216,23 @@ public class sceCtrl extends HLEModule {
             mem.write8(addr + 8, Lx);
             mem.write8(addr + 9, Ly);
 
+            // These 2 values are always set to 0 on a PSP,
+            // but are used for a second analog stick on the PS3 PSP emulator (for HD remaster)
+            mem.write8(addr + 10, Rx);
+            mem.write8(addr + 11, Ry);
+
+            // Always set to 0
+            mem.write8(addr + 12, (byte) 0);
+            mem.write8(addr + 13, (byte) 0);
+            mem.write8(addr + 14, (byte) 0);
+            mem.write8(addr + 15, (byte) 0);
+
             return addr + 16;
         }
 
         @Override
         public String toString() {
-            return String.format("TimeStamp=%d,Lx=%d,Ly=%d,Buttons=%08X", TimeStamp, Lx, Ly, Buttons);
+            return String.format("TimeStamp=%d,Lx=%d,Ly=%d,Rx=%d,Ry=%d,Buttons=%08X", TimeStamp, Lx, Ly, Rx, Ry, Buttons);
         }
     }
 
@@ -258,15 +288,12 @@ public class sceCtrl extends HLEModule {
         Controller controller = State.controller;
         controller.hleControllerPoll();
 
-        setButtons(controller.getLx(), controller.getLy(), controller.getButtons());
+        setButtons(controller.getLx(), controller.getLy(), controller.getRx(), controller.getRy(), controller.getButtons());
 
         latchSamplingCount++;
 
         Sample currentSampling = samples[currentSamplingIndex];
-        currentSampling.TimeStamp = TimeStamp;
-        currentSampling.Lx = Lx;
-        currentSampling.Ly = Ly;
-        currentSampling.Buttons = Buttons;
+        currentSampling.setValues(TimeStamp, Lx, Ly, Rx, Ry, Buttons);
 
         currentSamplingIndex = incrementSampleIndex(currentSamplingIndex);
         if (currentSamplingIndex == currentReadingIndex) {
