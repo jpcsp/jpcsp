@@ -354,13 +354,17 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
     }
 
     public String getFileName(String saveName, String fileName) {
-        return getBasePath(saveName) + fileName;
+    	return getFileName(gameName, saveName, fileName);
+    }
+
+    public String getFileName(String gameName, String saveName, String fileName) {
+        return getBasePath(gameName, saveName) + fileName;
     }
 
     public int getSizeKb(String gameName, String saveName) {
         int sizeKb = 0;
 
-        String path = getBasePath(saveName);
+        String path = getBasePath(gameName, saveName);
         StringBuilder localFileName = new StringBuilder();
         IVirtualFileSystem vfs = Modules.IoFileMgrForUserModule.getVirtualFileSystem(path, localFileName);
         if (vfs != null) {
@@ -651,7 +655,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
     }
 
     public boolean isDirectoryPresent(String gameName, String saveName) {
-    	String path = getBasePath(saveName);
+    	String path = getBasePath(gameName, saveName);
     	SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(path);
     	if (stat != null && (stat.attr & 0x20) == 0) {
     		return true;
@@ -686,7 +690,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
             return true;
         }
 
-        String path = getBasePath(saveName);
+        String path = getBasePath(gameName, saveName);
         try {
             SeekableDataInput fileInput = getDataInput(path, fileName);
             if (fileInput != null) {
@@ -711,7 +715,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
     }
 
     public long getTimestamp(String gameName, String saveName) {
-        String sfoFileName = getFileName(saveName, paramSfoFileName);
+        String sfoFileName = getFileName(gameName, saveName, paramSfoFileName);
         SceIoStat sfoStat = Modules.IoFileMgrForUserModule.statFile(sfoFileName);
         if (sfoStat != null) {
             Calendar cal = Calendar.getInstance();
