@@ -62,14 +62,20 @@ public class Controller {
     public static Logger log = Logger.getLogger("controller");
     private static Controller instance;
     public static final byte analogCenter = (byte) 128;
+    // Left analog stick
     private byte Lx = analogCenter;
 	private byte Ly = analogCenter;
+	// PSP emulator on PS3 can also provide the right analog stick
+	private byte Rx = analogCenter;
+	private byte Ry = analogCenter;
 	private int Buttons = 0;
     private keyCode lastKey = keyCode.RELEASED;
     private net.java.games.input.Controller inputController;
     private HashMap<Component.Identifier, Integer> buttonComponents;
-    private Component.Identifier analogXAxis = Component.Identifier.Axis.X;
-    private Component.Identifier analogYAxis = Component.Identifier.Axis.Y;
+    private Component.Identifier analogLXAxis = Component.Identifier.Axis.X;
+    private Component.Identifier analogLYAxis = Component.Identifier.Axis.Y;
+    private Component.Identifier analogRXAxis = null;
+    private Component.Identifier analogRYAxis = null;
     private Component.Identifier digitalXAxis = null;
     private Component.Identifier digitalYAxis = null;
     private Component.Identifier povArrows = Component.Identifier.Axis.POV;
@@ -79,7 +85,10 @@ public class Controller {
     private HashMap<Integer, keyCode> keys;
 
     public enum keyCode {
-        UP, DOWN, LEFT, RIGHT, ANUP, ANDOWN, ANLEFT, ANRIGHT, START, SELECT,
+        UP, DOWN, LEFT, RIGHT,
+        LANUP, LANDOWN, LANLEFT, LANRIGHT,
+        RANUP, RANDOWN, RANLEFT, RANRIGHT,
+        START, SELECT,
         TRIANGLE, SQUARE, CIRCLE, CROSS, L1, R1, HOME, HOLD, VOLMIN, VOLPLUS,
         SCREEN, MUSIC, RELEASED };
 
@@ -236,16 +245,28 @@ public class Controller {
 						//
 						// PSP analog controller can only be mapped to a controller Axis
 						//
-						case ANDOWN:
-						case ANUP:
+						case LANDOWN:
+						case LANUP:
 							if (isAxis) {
-								analogYAxis = identifier;
+								analogLYAxis = identifier;
 							}
 							break;
-						case ANLEFT:
-						case ANRIGHT:
+						case LANLEFT:
+						case LANRIGHT:
 							if (isAxis) {
-								analogXAxis = identifier;
+								analogLXAxis = identifier;
+							}
+							break;
+						case RANDOWN:
+						case RANUP:
+							if (isAxis) {
+								analogRYAxis = identifier;
+							}
+							break;
+						case RANLEFT:
+						case RANRIGHT:
+							if (isAxis) {
+								analogRXAxis = identifier;
 							}
 							break;
 						//
@@ -307,10 +328,14 @@ public class Controller {
             case UP:        Buttons |= PSP_CTRL_UP; break;
             case LEFT:      Buttons |= PSP_CTRL_LEFT; break;
             case RIGHT:     Buttons |= PSP_CTRL_RIGHT; break;
-            case ANDOWN:    Ly = (byte)255; break;
-            case ANUP:      Ly = 0; break;
-            case ANLEFT:    Lx = 0; break;
-            case ANRIGHT:   Lx = (byte)255; break;
+            case LANDOWN:   Ly = (byte)255; break;
+            case LANUP:     Ly = 0; break;
+            case LANLEFT:   Lx = 0; break;
+            case LANRIGHT:  Lx = (byte)255; break;
+            case RANDOWN:   Ry = (byte)255; break;
+            case RANUP:     Ry = 0; break;
+            case RANLEFT:   Rx = 0; break;
+            case RANRIGHT:  Rx = (byte)255; break;
 
             case TRIANGLE:  Buttons |= PSP_CTRL_TRIANGLE; break;
             case SQUARE:    Buttons |= PSP_CTRL_SQUARE; break;
@@ -343,10 +368,14 @@ public class Controller {
             case UP:        Buttons &= ~PSP_CTRL_UP; break;
             case LEFT:      Buttons &= ~PSP_CTRL_LEFT; break;
             case RIGHT:     Buttons &= ~PSP_CTRL_RIGHT; break;
-            case ANDOWN:    Ly = analogCenter; break;
-            case ANUP:      Ly = analogCenter; break;
-            case ANLEFT:    Lx = analogCenter; break;
-            case ANRIGHT:   Lx = analogCenter; break;
+            case LANDOWN:   Ly = analogCenter; break;
+            case LANUP:     Ly = analogCenter; break;
+            case LANLEFT:   Lx = analogCenter; break;
+            case LANRIGHT:  Lx = analogCenter; break;
+            case RANDOWN:   Ry = analogCenter; break;
+            case RANUP:     Ry = analogCenter; break;
+            case RANLEFT:   Rx = analogCenter; break;
+            case RANRIGHT:  Rx = analogCenter; break;
 
             case TRIANGLE:  Buttons &= ~PSP_CTRL_TRIANGLE; break;
             case SQUARE:    Buttons &= ~PSP_CTRL_SQUARE; break;
@@ -503,17 +532,29 @@ public class Controller {
 					log.warn(String.format("Unknown Controller Button Event on %s(%s): %f", component.getName(), id.getName(), value));
 				}
 			}
-		} else if (id == analogXAxis) {
+		} else if (id == analogLXAxis) {
 			if (isInDeadZone(component, value)) {
 				Lx = analogCenter;
 			} else {
 				Lx = convertAnalogValue(value);
 			}
-		} else if (id == analogYAxis) {
+		} else if (id == analogLYAxis) {
 			if (isInDeadZone(component, value)) {
 				Ly = analogCenter;
 			} else {
 				Ly = convertAnalogValue(value);
+			}
+		} else if (id == analogRXAxis) {
+			if (isInDeadZone(component, value)) {
+				Rx = analogCenter;
+			} else {
+				Rx = convertAnalogValue(value);
+			}
+		} else if (id == analogRYAxis) {
+			if (isInDeadZone(component, value)) {
+				Ry = analogCenter;
+			} else {
+				Ry = convertAnalogValue(value);
 			}
 		} else if (id == digitalXAxis) {
 			if (isInDeadZone(component, value)) {
@@ -578,6 +619,14 @@ public class Controller {
 
     public byte getLy() {
     	return Ly;
+    }
+
+    public byte getRx() {
+    	return Rx;
+    }
+
+    public byte getRy() {
+    	return Ry;
     }
 
     public int getButtons() {
