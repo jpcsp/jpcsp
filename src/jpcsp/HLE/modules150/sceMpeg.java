@@ -34,6 +34,7 @@ import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
@@ -2696,7 +2697,18 @@ public class sceMpeg extends HLEModule {
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xF5E7EA31, version = 150)
-    public int sceMpegAvcConvertToYuv420(int mpeg, TPointer bufferOutput, TPointer unknown1, int unknown2) {
+    public int sceMpegAvcConvertToYuv420(int mpeg, TPointer yCbCrBuffer, TPointer unknown1, int unknown2) {
+    	// The image will be decoded and saved to memory by sceJpegCsc
+        if (checkMediaEngineState()) {
+            if (me.getContainer() != null) {
+            	BufferedImage bufferedImage = me.getCurrentImg();
+            	if (bufferedImage != null) {
+            		// Store the current image so that sceJpegCsc can retrieve it
+            		Modules.sceJpegModule.addImage(bufferedImage, yCbCrBuffer);
+            	}
+            }
+        }
+
         return 0;
     }
 
