@@ -326,6 +326,10 @@ public class ShaderContextUBO extends ShaderContext {
 			re.bindBuffer(IRenderingEngine.RE_UNIFORM_BUFFER, buffer);
 
 			data = ByteBuffer.allocateDirect(bufferSize).order(ByteOrder.nativeOrder());
+			// Initialize the buffer to 0's
+			for (int i = 0; i < bufferSize; i++) {
+				data.put(i, (byte) 0);
+			}
 			re.setBufferData(IRenderingEngine.RE_UNIFORM_BUFFER, bufferSize, data, IRenderingEngine.RE_DYNAMIC_DRAW);
 
 			// On AMD hardware, the buffer data has to be set (setBufferData) before calling bindBufferBase

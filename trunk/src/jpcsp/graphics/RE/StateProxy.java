@@ -155,8 +155,8 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	}
 
 	protected static class TextureState {
-		public int textureWrapModeS = GeCommands.TWRAP_WRAP_MODE_REPEAT;
-		public int textureWrapModeT = GeCommands.TWRAP_WRAP_MODE_REPEAT;
+		public int textureWrapModeS = -1;
+		public int textureWrapModeT = -1;
 		public int textureMipmapMinFilter = GeCommands.TFLT_NEAREST_MIPMAP_LINEAR;
 		public int textureMipmapMagFilter = GeCommands.TFLT_LINEAR;
 		public int textureMipmapMinLevel = 0;
