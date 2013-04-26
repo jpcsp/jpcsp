@@ -33,8 +33,11 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.pspFileBuffer;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
+import jpcsp.util.Utilities;
 
 @HLELogging
 public class sceAac extends HLEModule {
@@ -44,17 +47,58 @@ public class sceAac extends HLEModule {
 
 	protected static class AacInfo {
 		private boolean init;
+		private pspFileBuffer inputBuffer;
+		private int outputAddr;
+		private int outputSize;
+		private int sumDecodedSamples;
 
 		public boolean isInit() {
 			return init;
 		}
 
-		public void init() {
+		public void init(int bufferAddr, int bufferSize, int outputAddr, int outputSize) {
 			init = true;
+			inputBuffer = new pspFileBuffer(bufferAddr, bufferSize);
+			inputBuffer.setFileMaxSize(Integer.MAX_VALUE);
+			this.outputAddr = outputAddr;
+			this.outputSize = outputSize;
 		}
 
 		public void exit() {
 			init = false;
+		}
+
+		public int notifyAddStream(int bytesToAdd) {
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("notifyAddStream: %s", Utilities.getMemoryDump(inputBuffer.getWriteAddr(), bytesToAdd)));
+			}
+			inputBuffer.notifyWrite(bytesToAdd);
+
+			return 0;
+		}
+
+		public pspFileBuffer getInputBuffer() {
+			return inputBuffer;
+		}
+
+		public boolean isStreamDataNeeded() {
+			return inputBuffer.getWriteSize() > 0;
+		}
+
+		public int getSumDecodedSamples() {
+			return sumDecodedSamples;
+		}
+
+		public int decode(TPointer32 bufferAddress) {
+			bufferAddress.setValue(outputAddr);
+
+			int samples = 0x400;
+			int outputBytes = samples * 4;
+			Memory.getInstance().memset(outputAddr, (byte) 0x7F, outputBytes);
+
+			sumDecodedSamples += samples;
+
+			return outputBytes;
 		}
 	}
 
@@ -90,6 +134,10 @@ public class sceAac extends HLEModule {
 		return id;
 	}
 
+	protected AacInfo getAacInfo(int id) {
+		return ids[id];
+	}
+
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xE0C89ACA, version = 395)
 	public int sceAacInit(@CanBeNull TPointer32 parameters, int unknown1, int unknown2, int unknown3) {
@@ -101,17 +149,17 @@ public class sceAac extends HLEModule {
 		int value4 = parameters.getValue(4);
 		int value8 = parameters.getValue(8);
 		int value12 = parameters.getValue(12);
-		int value16 = parameters.getValue(16);
-		int value20 = parameters.getValue(20);
-		int value24 = parameters.getValue(24);
-		int value28 = parameters.getValue(28);
+		int bufferAddr = parameters.getValue(16);
+		int bufferSize = parameters.getValue(20);
+		int outputAddr = parameters.getValue(24);
+		int outputSize = parameters.getValue(28);
 		int freq = parameters.getValue(32);
 		int value36 = parameters.getValue(36);
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceAacInit parameters: value0=0x%08X, value4=0x%08X, value8=0x%08X, value12=0x%08X, value16=0x%08X, value20=0x%08X, value24=0x%08X, value28=0x%08X, freq=%d, value36=0x%08X", value0, value4, value8, value12, value16, value20, value24, value28, freq, value36));
+			log.debug(String.format("sceAacInit parameters: value0=0x%08X, value4=0x%08X, value8=0x%08X, value12=0x%08X, bufferAddr=0x%08X, bufferSize=0x%X, outputAddr=0x%08X, outputSize=0x%X, freq=%d, value36=0x%08X", value0, value4, value8, value12, bufferAddr, bufferSize, outputAddr, outputSize, freq, value36));
 		}
 
-		if (value16 == 0 || value24 == 0) {
+		if (bufferAddr == 0 || outputAddr == 0) {
 			return ERROR_AAC_INVALID_ADDRESS;
 		}
 		if (value4 < 0 || value4 > value12) {
@@ -122,7 +170,7 @@ public class sceAac extends HLEModule {
 				return ERROR_AAC_INVALID_PARAMETER;
 			}
 		}
-		if (value20 < 8192 || value28 < 8192 || value36 != 0) {
+		if (bufferSize < 8192 || outputSize < 8192 || value36 != 0) {
 			return ERROR_AAC_INVALID_PARAMETER;
 		}
 		if (freq != 44100 && freq != 32000 && freq != 48000 && freq != 24000) {
@@ -140,7 +188,7 @@ public class sceAac extends HLEModule {
 			return SceKernelErrors.ERROR_AAC_NO_MORE_FREE_ID;
 		}
 
-		ids[id].init();
+		ids[id].init(bufferAddr, bufferSize, outputAddr, outputSize);
 
 		return id;
 	}
@@ -148,7 +196,7 @@ public class sceAac extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x33B8C009, version = 395)
 	public int sceAacExit(@CheckArgument("checkId") int id) {
-		ids[id].exit();
+		getAacInfo(id).exit();
 
 		return 0;
 	}
@@ -187,9 +235,17 @@ public class sceAac extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x7E4CFEE4, version = 395)
 	public int sceAacDecode(@CheckArgument("checkInitId") int id, @CanBeNull TPointer32 bufferAddress) {
-		bufferAddress.setValue(resourceMem.addr);
+		int result = getAacInfo(id).decode(bufferAddress);
 
-		return 0;
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceAacDecode bufferAddress=%s(0x%08X) returning 0x%X", bufferAddress, bufferAddress.getValue(), result));
+		}
+
+		if (result >= 0) {
+			Modules.ThreadManForUserModule.hleKernelDelayThread(sceAtrac3plus.atracDecodeDelay, false);
+		}
+
+		return result;
 	}
 
 	@HLEUnimplemented
@@ -206,19 +262,24 @@ public class sceAac extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xD7C51541, version = 395)
-	public int sceAacCheckStreamDataNeeded(@CheckArgument("checkInitId") int id) {
-		return 0;
+	public boolean sceAacCheckStreamDataNeeded(@CheckArgument("checkInitId") int id) {
+		return getAacInfo(id).isStreamDataNeeded();
 	}
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0xAC6DCBE3, version = 395)
-	public int sceAacNotifyAddStreamData(@CheckArgument("checkInitId") int id, int unknown) {
-		return 0;
+	public int sceAacNotifyAddStreamData(@CheckArgument("checkInitId") int id, int bytesToAdd) {
+		return getAacInfo(id).notifyAddStream(bytesToAdd);
 	}
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x02098C69, version = 395)
-	public int sceAacGetInfoToAddStreamData(@CheckArgument("checkInitId") int id, TPointer32 unknown1, TPointer32 unknown2, TPointer32 unknown3) {
+	public int sceAacGetInfoToAddStreamData(@CheckArgument("checkInitId") int id, @CanBeNull TPointer32 writeAddr, @CanBeNull TPointer32 writableBytesAddr, @CanBeNull TPointer32 readOffsetAddr) {
+		AacInfo info = getAacInfo(id);
+		writeAddr.setValue(info.getInputBuffer().getWriteAddr());
+		writableBytesAddr.setValue(info.getInputBuffer().getWriteSize());
+		readOffsetAddr.setValue(info.getInputBuffer().getFilePosition());
+
 		return 0;
 	}
 
@@ -230,8 +291,13 @@ public class sceAac extends HLEModule {
 
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x506BF66C, version = 395)
-	public int sceAacGetSumDecodedSample() {
-		return 0;
+	public int sceAacGetSumDecodedSample(@CheckArgument("checkInitId") int id) {
+		int sumDecodedSamples = getAacInfo(id).getSumDecodedSamples();
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceAacGetSumDecodedSample returning 0x%X", sumDecodedSamples));
+		}
+
+		return sumDecodedSamples;
 	}
 
 	@HLEUnimplemented
