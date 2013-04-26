@@ -400,13 +400,24 @@ public class SceKernelErrors {
 
     public final static int ERROR_WLAN_BAD_PARAMS                               = 0x80410d13;
 
-    public final static int ERROR_SAS_INVALID_VOICE                             = 0x80420010;
+    public final static int ERROR_SAS_INVALID_ADDRESS                           = 0x80420005;
+    public final static int ERROR_SAS_INVALID_VOICE_INDEX                       = 0x80420010;
+    public final static int ERROR_SAS_INVALID_NOISE_CLOCK                       = 0x80420011;
+    public final static int ERROR_SAS_INVALID_PITCH_VAL                         = 0x80420012;
     public final static int ERROR_SAS_INVALID_ADSR_CURVE_MODE                   = 0x80420013;
-    public final static int ERROR_SAS_INVALID_PARAMETER                         = 0x80420014;
+    public final static int ERROR_SAS_INVALID_ADPCM_SIZE                        = 0x80420014;
+    public final static int ERROR_SAS_INVALID_LOOP_MODE                         = 0x80420015;
     public final static int ERROR_SAS_VOICE_PAUSED                              = 0x80420016;
+    public final static int ERROR_SAS_INVALID_VOLUME_VAL                        = 0x80420018;
+    public final static int ERROR_SAS_INVALID_ADSR_VAL                          = 0x80420019;
     public final static int ERROR_SAS_INVALID_SIZE                              = 0x8042001A;
+    public final static int ERROR_SAS_INVALID_FX_TYPE                           = 0x80420020;
+    public final static int ERROR_SAS_INVALID_FX_FEEDBACK                       = 0x80420021;
+    public final static int ERROR_SAS_INVALID_FX_DELAY                          = 0x80420022;
+    public final static int ERROR_SAS_INVALID_FX_VOLUME_VAL                     = 0x80420023;
     public final static int ERROR_SAS_BUSY                                      = 0x80420030;
     public final static int ERROR_SAS_NOT_INIT                                  = 0x80420100;
+    public final static int ERROR_SAS_ALREADY_INIT                              = 0x80420101;
 
     public final static int ERROR_HTTP_NOT_INIT                                 = 0x80431001;
     public final static int ERROR_HTTP_ALREADY_INIT                             = 0x80431020;

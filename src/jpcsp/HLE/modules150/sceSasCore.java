@@ -16,7 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAS_INVALID_ADDRESS;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAS_INVALID_ADSR_CURVE_MODE;
+import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
@@ -60,24 +62,6 @@ public class sceSasCore extends HLEModule {
 
         super.start();
     }
-
-    public static final int PSP_SAS_ERROR_ADDRESS = 0x80420005;
-    public static final int PSP_SAS_ERROR_VOICE_INDEX = 0x80420010;
-    public static final int PSP_SAS_ERROR_NOISE_CLOCK = 0x80420011;
-    public static final int PSP_SAS_ERROR_PITCH_VAL = 0x80420012;
-    public static final int PSP_SAS_ERROR_ADSR_MODE = 0x80420013;
-    public static final int PSP_SAS_ERROR_ADPCM_SIZE = 0x80420014;
-    public static final int PSP_SAS_ERROR_LOOP_MODE = 0x80420015;
-    public static final int PSP_SAS_ERROR_INVALID_STATE = 0x80420016;
-    public static final int PSP_SAS_ERROR_VOLUME_VAL = 0x80420018;
-    public static final int PSP_SAS_ERROR_ADSR_VAL = 0x80420019;
-    public static final int PSP_SAS_ERROR_FX_TYPE = 0x80420020;
-    public static final int PSP_SAS_ERROR_FX_FEEDBACK = 0x80420021;
-    public static final int PSP_SAS_ERROR_FX_DELAY = 0x80420022;
-    public static final int PSP_SAS_ERROR_FX_VOLUME_VAL = 0x80420023;
-    public static final int PSP_SAS_ERROR_BUSY = 0x80420030;
-    public static final int PSP_SAS_ERROR_NOTINIT = 0x80420100;
-    public static final int PSP_SAS_ERROR_ALRDYINIT = 0x80420101;
 
     public static final int PSP_SAS_VOICES_MAX = 32;
     public static final int PSP_SAS_GRAIN_SAMPLES = 256;
@@ -148,12 +132,12 @@ public class sceSasCore extends HLEModule {
     protected void checkSasAddressGood(int sasCore) {
     	if (!Memory.isAddressGood(sasCore)) {
             log.warn(String.format("%s bad sasCore Address 0x%08X", getCallingFunctionName(3), sasCore));
-    		throw(new SceKernelErrorException(PSP_SAS_ERROR_ADDRESS));
+    		throw(new SceKernelErrorException(ERROR_SAS_INVALID_ADDRESS));
     	}
     	
     	if (!Memory.isAddressAlignedTo(sasCore, 64)) {
             log.warn(String.format("%s bad sasCore Address 0x%08X (not aligned to 64)", getCallingFunctionName(3), sasCore));
-    		throw(new SceKernelErrorException(PSP_SAS_ERROR_ADDRESS));
+    		throw(new SceKernelErrorException(ERROR_SAS_INVALID_ADDRESS));
     	}
     }
 
@@ -169,7 +153,7 @@ public class sceSasCore extends HLEModule {
     protected void checkVoiceNumberGood(int voice) {
         if (voice < 0 || voice >= voices.length) {
             log.warn(String.format("%s bad voice number %d", getCallingFunctionName(3), voice));
-    		throw(new SceKernelErrorException(SceKernelErrors.ERROR_SAS_INVALID_VOICE));
+    		throw(new SceKernelErrorException(SceKernelErrors.ERROR_SAS_INVALID_VOICE_INDEX));
         }
     }
 
@@ -332,7 +316,7 @@ public class sceSasCore extends HLEModule {
      * @return            0
      */
     @HLEFunction(nid = 0x42778A9F, version = 150)
-    public int __sceSasInit(TPointer sasCore, int grain, int maxVoices, int outputMode, int sampleRate) {
+    public int __sceSasInit(@CanBeNull TPointer sasCore, int grain, int maxVoices, int outputMode, int sampleRate) {
         checkSasAddressGood(sasCore.getAddress());
 
     	if (sasCoreUid != -1) {
@@ -529,7 +513,7 @@ public class sceSasCore extends HLEModule {
     public int __sceSasSetVoice(int sasCore, int voice, int vagAddr, int size, int loopmode) {
         if (size <= 0 || (size & 0xF) != 0) {
         	log.warn(String.format("__sceSasSetVoice invalid size 0x%08X", size));
-        	return SceKernelErrors.ERROR_SAS_INVALID_PARAMETER;
+        	return SceKernelErrors.ERROR_SAS_INVALID_ADPCM_SIZE;
         }
 
         checkSasAndVoiceHandlesGood(sasCore, voice);
