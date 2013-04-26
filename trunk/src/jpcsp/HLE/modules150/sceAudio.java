@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static java.lang.Math.min;
+
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
@@ -153,7 +155,7 @@ public class sceAudio extends HLEModule {
         log.info("Audio Blocking disabled: " + disableBlockingAudio);
     }
 
-    protected int doAudioOutput(SoundChannel channel, int pvoid_buf) {
+    protected static int doAudioOutput(SoundChannel channel, int pvoid_buf) {
         int ret = -1;
 
         if (channel.isReserved()) {
@@ -196,13 +198,13 @@ public class sceAudio extends HLEModule {
         return ret;
     }
 
-    protected void blockThreadOutput(SoundChannel channel, int addr, int leftVolume, int rightVolume) {
+    protected static void blockThreadOutput(SoundChannel channel, int addr, int leftVolume, int rightVolume) {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
     	blockThreadOutput(threadMan.getCurrentThreadID(), channel, addr, leftVolume, rightVolume);
     	threadMan.hleBlockCurrentThread();
     }
 
-    protected void blockThreadOutput(int threadId, SoundChannel channel, int addr, int leftVolume, int rightVolume) {
+    protected static void blockThreadOutput(int threadId, SoundChannel channel, int addr, int leftVolume, int rightVolume) {
     	IAction action = new AudioBlockingOutputAction(threadId, channel, addr, leftVolume, rightVolume);
     	int delayMicros = channel.getUnblockOutputDelayMicros(addr == 0);
     	long schedule = Emulator.getClock().microTime() + delayMicros;
@@ -237,7 +239,7 @@ public class sceAudio extends HLEModule {
         }
     }
 
-    protected int changeChannelVolume(SoundChannel channel, int leftvol, int rightvol) {
+    protected static int changeChannelVolume(SoundChannel channel, int leftvol, int rightvol) {
         int ret = -1;
 
         if (channel.isReserved()) {
@@ -709,17 +711,9 @@ public class sceAudio extends HLEModule {
 
     @HLEFunction(nid = 0xE0727056, version = 150, checkInsideInterrupt = true)
     public int sceAudioSRCOutputBlocking(@CheckArgument("checkVolume2") int vol, @CanBeNull TPointer buf) {
-    	// PSP is only updating the SRCChannel volume when it has changed.
-    	// Strange, at initialization, a volume of 0x8000 is kept as a channel volume of 0x8000.
-    	// Afterwards, when the volume is set to a different value, the channel volume is set to a value shift by 5.
-    	// Resetting the volume back to 0x8000 would set the channel volume to 0x0400 this time.
-    	// Probably a bug in the PSP function, but we have to mimic it as well...
-    	int srcVol = vol >> 5;
-        if (srcVol != pspSRCChannel.getSrcVolume()) {
-        	pspSRCChannel.setSrcVolume(srcVol);
-        	pspSRCChannel.setLeftVolume(srcVol);
-        	pspSRCChannel.setRightVolume(srcVol);
-        }
+    	// Tested on PSP: any sound volume above MAX_VOLUME has the same effect as MAX_VOLUME.
+    	int channelVolume = min(SoundChannel.MAX_VOLUME, vol);
+    	pspSRCChannel.setVolume(channelVolume);
 
         if (buf.isNull()) {
             // Tested on PSP:

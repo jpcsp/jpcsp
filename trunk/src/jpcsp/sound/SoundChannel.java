@@ -59,7 +59,6 @@ public class SoundChannel {
     private int sampleLength;
     private int format;
     private int numberBlockingBuffers;
-    private int srcVolume;
 
     public static void init() {
 		if (!AL.isCreated()) {
@@ -85,7 +84,6 @@ public class SoundChannel {
 		reserved = false;
 		leftVolume = DEFAULT_VOLUME;
 		rightVolume = DEFAULT_VOLUME;
-		srcVolume = 0x0400;
 		alSource = AL10.alGenSources();
 		sampleRate = DEFAULT_SAMPLE_RATE;
 		updateNumberBlockingBuffers();
@@ -99,10 +97,10 @@ public class SoundChannel {
 	    	// amount of audio time
 	    	float bufferSizeInSamples = getSampleRate() * BUFFER_SIZE_IN_MILLIS / 1000.f;
 	    	numberBlockingBuffers = Math.round(bufferSizeInSamples / getSampleLength());
-
-	    	// At least 1 blocking buffer
-	    	numberBlockingBuffers = Math.max(numberBlockingBuffers, 1);
     	}
+
+    	// At least 1 blocking buffer
+    	numberBlockingBuffers = Math.max(numberBlockingBuffers, 1);
     }
 
     public int getIndex() {
@@ -131,6 +129,11 @@ public class SoundChannel {
 
 	public void setRightVolume(int rightVolume) {
 		this.rightVolume = rightVolume;
+	}
+
+	public void setVolume(int volume) {
+		setLeftVolume(volume);
+		setRightVolume(volume);
 	}
 
 	public int getSampleLength() {
@@ -303,14 +306,6 @@ public class SoundChannel {
     	data[index] = (byte) sample;
     	data[index + 1] = (byte) (sample >> 8);
     }
-
-	public int getSrcVolume() {
-		return srcVolume;
-	}
-
-	public void setSrcVolume(int srcVolume) {
-		this.srcVolume = srcVolume;
-	}
 
     @Override
 	public String toString() {
