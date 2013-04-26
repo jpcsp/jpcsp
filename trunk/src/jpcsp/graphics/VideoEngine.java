@@ -54,6 +54,7 @@ import java.nio.ShortBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.ListIterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
@@ -529,7 +530,11 @@ public class VideoEngine {
 			}
     	}
 
-    	Settings.getInstance().removeSettingsListener(name);
+    	bufferManager.deleteBuffer(bufferId);
+        bufferManager.deleteBuffer(nativeBufferId);
+        bufferManager.deleteBuffer(indexBufferId);
+
+        Settings.getInstance().removeSettingsListener(name);
     }
 
     public void start() {
@@ -771,6 +776,16 @@ public class VideoEngine {
         }
 
         hasModdedTextureDirectory = new File(getModdedTextureDirectory()).isDirectory();
+
+        if (!videoTextures.isEmpty()) {
+	        // Check if some video textures are obsolete
+	        for (ListIterator<AddressRange> lit = videoTextures.listIterator(); lit.hasNext(); ) {
+	        	AddressRange videoTexture = lit.next();
+	        	if (videoTexture.isObsolete()) {
+	        		lit.remove();
+	        	}
+	        }
+        }
 
         if (State.exportGeNextFrame) {
         	startExport3D();
@@ -6780,6 +6795,7 @@ public class VideoEngine {
     	synchronized (videoTextures) {
         	for (AddressRange addressRange : videoTextures) {
         		if (addressRange.equals(startAddress, endAddress)) {
+        			addressRange.hit();
         			return;
         		}
         	}
@@ -6868,10 +6884,13 @@ public class VideoEngine {
     private static class AddressRange {
     	private int start;
     	private int end;
+    	private long timestamp;
+    	private static final long expirationTime = 1000; // 1 second
 
     	public AddressRange(int start, int end) {
     		this.start = start & Memory.addressMask;
     		this.end = end & Memory.addressMask;
+    		hit();
     	}
 
     	public boolean contains(int address) {
@@ -6885,6 +6904,19 @@ public class VideoEngine {
     		end &= Memory.addressMask;
 
     		return start == this.start && end == this.end;
+    	}
+
+    	private static long getCurrentTimestamp() {
+    		return Emulator.getClock().currentTimeMillis();
+    	}
+
+    	public void hit() {
+    		timestamp = getCurrentTimestamp();
+    	}
+
+    	public boolean isObsolete() {
+    		long now = getCurrentTimestamp();
+    		return now - timestamp >= expirationTime;
     	}
     }
 
