@@ -56,6 +56,15 @@ void audioOutput(char * buffer, int blocking)
 	gettimeofday(&previousAudioOutput, NULL);
 }
 
+void audioOutput2(char *buffer, int volume) {
+	int i;
+
+	printf("sceAudioOutput2OutputBlocking volume=0x%05X\n", volume);
+	for (i = 0; i < 10; i++) {
+		sceAudioOutput2OutputBlocking(volume, buffer);
+	}
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -86,6 +95,7 @@ int main(int argc, char *argv[])
     printf("Triangle - Exit\n");
     printf("Cross - Test Blocking Audio\n");
     printf("Square - Test non-Blocking Audio\n");
+    printf("Circle - Test Audio2\n");
 
     channel = sceAudioChReserve(PSP_AUDIO_NEXT_CHANNEL, SAMPLE_SIZE, PSP_AUDIO_FORMAT_STEREO);
     if (channel < 0)
@@ -167,8 +177,25 @@ int main(int argc, char *argv[])
 		printf(text);
         }
 
-        if (buttonDown & PSP_CTRL_LEFT)
+        if (buttonDown & PSP_CTRL_CIRCLE)
         {
+		sceAudioOutput2Reserve(SAMPLE_SIZE / 2);
+
+		audioOutput2(buffer1, 0xFFFFF);
+		sceKernelDelayThread(1 * 1000000);
+		audioOutput2(buffer1, 0x20000);
+		sceKernelDelayThread(1 * 1000000);
+		audioOutput2(buffer1, 0x10000);
+		sceKernelDelayThread(1 * 1000000);
+		audioOutput2(buffer1, 0x08000);
+		sceKernelDelayThread(1 * 1000000);
+		audioOutput2(buffer1, 0x04000);
+		sceKernelDelayThread(1 * 1000000);
+		audioOutput2(buffer1, 0x02000);
+		sceKernelDelayThread(1 * 1000000);
+		audioOutput2(buffer1, 0x01000);
+		sceKernelDelayThread(1 * 1000000);
+		audioOutput2(buffer1, 0x00800);
         }
 
         if (buttonDown & PSP_CTRL_RIGHT)
