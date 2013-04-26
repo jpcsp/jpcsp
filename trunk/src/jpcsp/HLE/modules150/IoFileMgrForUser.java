@@ -667,7 +667,7 @@ public class IoFileMgrForUser extends HLEModule {
 	        vfsManager.register("ms0", new LocalVirtualFileSystem("ms0/"));
 	        vfsManager.register("fatms0", new LocalVirtualFileSystem("ms0/"));
 	        vfsManager.register("flash0", new LocalVirtualFileSystem("flash0/"));
-                vfsManager.register("exdata0", new LocalVirtualFileSystem("exdata0/"));
+	        vfsManager.register("exdata0", new LocalVirtualFileSystem("exdata0/"));
 	        vfsManager.register("mscmhc0", new MemoryStickVirtualFileSystem());
 	        registerUmdIso();
         }
@@ -1427,6 +1427,14 @@ public class IoFileMgrForUser extends HLEModule {
     	}
     }
 
+    public VirtualFileSystemManager getVirtualFileSystemManager() {
+    	return vfsManager;
+    }
+
+    public ITmpVirtualFileSystem getTmpVirtualFileSystem() {
+    	return vfsManager.getTmpVirtualFileSystem();
+    }
+
     public IVirtualFileSystem getVirtualFileSystem(String pspfilename, StringBuilder localFileName) {
     	boolean umdRegistered = false;
     	boolean msRegistered = false;
@@ -1445,7 +1453,7 @@ public class IoFileMgrForUser extends HLEModule {
 			vfsManager.register("ms0", new LocalVirtualFileSystem("ms0/"));
 	        vfsManager.register("fatms0", new LocalVirtualFileSystem("ms0/"));
 	        vfsManager.register("flash0", new LocalVirtualFileSystem("flash0/"));
-                vfsManager.register("exdata0", new LocalVirtualFileSystem("exdata0/"));
+	        vfsManager.register("exdata0", new LocalVirtualFileSystem("exdata0/"));
 	        vfsManager.register("mscmhc0", new MemoryStickVirtualFileSystem());
 	        msRegistered = true;
     	}
@@ -1462,7 +1470,7 @@ public class IoFileMgrForUser extends HLEModule {
 			vfsManager.unregister("ms0");
 	        vfsManager.unregister("fatms0");
 	        vfsManager.unregister("flash0");
-                vfsManager.unregister("exdata0");
+	        vfsManager.unregister("exdata0");
 	        vfsManager.unregister("mscmhc0");
         }
 

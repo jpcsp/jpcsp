@@ -131,6 +131,11 @@ public class OMAFormat {
 		final int firstChunkOffset = 12;
 		riff.order(ByteOrder.LITTLE_ENDIAN);
 
+		if (riff.getInt(0) != sceAtrac3plus.RIFF_MAGIC) {
+			// Not a RIFF data
+			return null;
+		}
+
 		int fmtChunkOffset = getChunkOffset(riff, sceAtrac3plus.FMT_CHUNK_MAGIC, firstChunkOffset);
 		if (fmtChunkOffset < 0) {
 			return null;
