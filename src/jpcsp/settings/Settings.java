@@ -228,6 +228,12 @@ public class Settings {
 	}
 
 	public static boolean parseBool(String value) {
+		if ("true".equalsIgnoreCase(value)) {
+			return true;
+		}
+		if ("false".equalsIgnoreCase(value)) {
+			return false;
+		}
 		return Integer.parseInt(value) != 0;
 	}
 
