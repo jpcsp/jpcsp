@@ -20,15 +20,9 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.TPointer;
-import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.hardware.Audio;
-import jpcsp.memory.IMemoryReader;
-import jpcsp.memory.MemoryReader;
-import jpcsp.sound.AudioBlockingOutputAction;
 import jpcsp.sound.SoundChannel;
 
 import org.apache.log4j.Logger;
@@ -67,71 +61,16 @@ public class sceVaudio extends HLEModule {
 
     protected SoundChannel pspVaudioChannel;
 
-
     protected int doAudioOutput(SoundChannel channel, int pvoid_buf) {
-        int ret = -1;
-
-        if (channel.isReserved()) {
-        	if (log.isDebugEnabled()) {
-        		log.debug(String.format("doAudioOuput(%s, 0x%08X)", channel.toString(), pvoid_buf));
-        	}
-            int bytesPerSample = channel.isFormatStereo() ? 4 : 2;
-            int nbytes = bytesPerSample * channel.getSampleLength();
-            byte[] data = new byte[nbytes];
-
-            IMemoryReader memoryReader = MemoryReader.getMemoryReader(pvoid_buf, nbytes, 2);
-            if (channel.isFormatMono()) {
-                int volume = Audio.getVolume(channel.getLeftVolume());
-                for (int i = 0; i < nbytes; i += 2) {
-                    short sample = (short) memoryReader.readNext();
-
-                    sample = SoundChannel.adjustSample(sample, volume);
-
-                    SoundChannel.storeSample(sample, data, i);
-                }
-            } else {
-                int leftVolume = Audio.getVolume(channel.getLeftVolume());
-                int rightVolume = Audio.getVolume(channel.getRightVolume());
-                for (int i = 0; i < nbytes; i += 4) {
-                    short lsample = (short) memoryReader.readNext();
-                    short rsample = (short) memoryReader.readNext();
-
-                    lsample = SoundChannel.adjustSample(lsample, leftVolume);
-                    rsample = SoundChannel.adjustSample(rsample, rightVolume);
-
-                    SoundChannel.storeSample(lsample, data, i);
-                    SoundChannel.storeSample(rsample, data, i + 2);
-                }
-            }
-            channel.play(data);
-            ret = channel.getSampleLength();
-        } else {
-            log.warn("doAudioOutput: channel " + channel.getIndex() + " not reserved");
-        }
-        return ret;
+    	return sceAudio.doAudioOutput(channel, pvoid_buf);
     }
 
     protected void blockThreadOutput(SoundChannel channel, int addr, int leftVolume, int rightVolume) {
-        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-    	blockThreadOutput(threadMan.getCurrentThreadID(), channel, addr, leftVolume, rightVolume);
-    	threadMan.hleBlockCurrentThread();
-    }
-
-    protected void blockThreadOutput(int threadId, SoundChannel channel, int addr, int leftVolume, int rightVolume) {
-    	IAction action = new AudioBlockingOutputAction(threadId, channel, addr, leftVolume, rightVolume);
-    	int delayMicros = channel.getUnblockOutputDelayMicros(addr == 0);
-    	long schedule = Emulator.getClock().microTime() + delayMicros;
-    	Emulator.getScheduler().addAction(schedule, action);
+    	sceAudio.blockThreadOutput(channel, addr, leftVolume, rightVolume);
     }
 
     protected int changeChannelVolume(SoundChannel channel, int leftvol, int rightvol) {
-        int ret = -1;
-        if (channel.isReserved()) {
-            channel.setLeftVolume(leftvol);
-            channel.setRightVolume(rightvol);
-            ret = 0;
-        }
-        return ret;
+    	return sceAudio.changeChannelVolume(channel, leftvol, rightvol);
     }
 
     @HLEFunction(nid = 0x67585DFD, version = 150, checkInsideInterrupt = true)
@@ -155,7 +94,7 @@ public class sceVaudio extends HLEModule {
         pspVaudioChannel.setReserved(true);
         pspVaudioChannel.setSampleLength(sampleCount);
         pspVaudioChannel.setSampleRate(freq);
-        pspVaudioChannel.setFormat(format);
+        pspVaudioChannel.setFormat(format == PSP_VAUDIO_FORMAT_MONO ? sceAudio.PSP_AUDIO_FORMAT_MONO : sceAudio.PSP_AUDIO_FORMAT_STEREO);
 
         return 0;
     }
