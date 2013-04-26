@@ -14,9 +14,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.Debugger.DisassemblerModule;
 
+import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common.gprNames;
 
 import java.awt.Color;
@@ -26,6 +26,7 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.ClipboardOwner;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
+import java.awt.event.ActionEvent;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -35,12 +36,15 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
+import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
+import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
@@ -51,7 +55,9 @@ import jpcsp.Resource;
 import jpcsp.State;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
+import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
+import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Debugger.DumpDebugState;
 import jpcsp.settings.Settings;
 import jpcsp.util.JpcspDialogManager;
@@ -73,7 +79,9 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     private Emulator emu;
     private DefaultListModel listmodel = new DefaultListModel();
     private ArrayList<Integer> breakpoints = new ArrayList<Integer>();
-    private volatile boolean wantStep;
+    private int temporaryBreakpoint1;
+    private int temporaryBreakpoint2;
+    private boolean stepOut;
     protected int gpi, gpo;
 
     private int selectedRegCount;
@@ -89,6 +97,11 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         this.emu=emu;
         listmodel = new DefaultListModel();
         initComponents();
+
+        addKeyAction(StepInto, "F5");
+        addKeyAction(jButton2, "F6");
+        addKeyAction(jButton3, "F7");
+
         ViewTooltips.register(disasmList);
         disasmList.setCellRenderer(new StyledListCellRenderer() {
 			private static final long serialVersionUID = 3921020228217850610L;
@@ -126,7 +139,13 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         });
 
         RefreshDebugger(true);
-        wantStep = false;
+    }
+
+    private void addKeyAction(JButton button, String key) {
+    	final String actionName = "click";
+    	button.getInputMap(JButton.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(key), actionName);
+    	button.getActionMap().put(actionName, new ClickAction(button));
+    	button.setText(String.format("%s (%s)", button.getText(), key));
     }
 
     private void customizeStyledLabel(StyledLabel label, String text) {
@@ -520,16 +539,20 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         jButton2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StepOverIcon.png"))); // NOI18N
         jButton2.setText(Resource.get("stepover"));
-        jButton2.setEnabled(false);
         jButton2.setFocusable(false);
         jButton2.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         jButton2.setIconTextGap(2);
         jButton2.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                StepOverActionPerformed(evt);
+            }
+        });
         disasmToolbar.add(jButton2);
 
         jButton3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StepOutIcon.png"))); // NOI18N
         jButton3.setText(Resource.get("stepout"));
-        jButton3.setEnabled(false);
         jButton3.setFocusable(false);
         jButton3.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         jButton3.setIconTextGap(2);
@@ -537,7 +560,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         jButton3.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton3ActionPerformed(evt);
+                StepOutActionPerformed(evt);
             }
         });
         disasmToolbar.add(jButton3);
@@ -1198,6 +1221,9 @@ private int disasmListGetSelectedIndex() {
 /** replacement for disasmList.getSelectedValue() because there is no longer a selected index,
  * we don't want the blue highlight from the operating system/look and feel, we want our own. */
 private Object disasmListGetSelectedValue() {
+	if (disasmListGetSelectedIndex() < 0) {
+		return null;
+	}
     return disasmList.getModel().getElementAt(disasmListGetSelectedIndex());
 }
 
@@ -1381,37 +1407,120 @@ private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//
           }
 }//GEN-LAST:event_DeleteBreakpointActionPerformed
 
+private void removeTemporaryBreakpoints() {
+	if (temporaryBreakpoint1 != 0) {
+		breakpoints.remove(new Integer(temporaryBreakpoint1));
+		temporaryBreakpoint1 = 0;
+	}
+	if (temporaryBreakpoint2 != 0) {
+		breakpoints.remove(new Integer(temporaryBreakpoint2));
+		temporaryBreakpoint2 = 0;
+	}
+}
+
+private void addTemporaryBreakpoints() {
+	if (temporaryBreakpoint1 != 0) {
+		breakpoints.add(new Integer(temporaryBreakpoint1));
+	}
+	if (temporaryBreakpoint2 != 0) {
+		breakpoints.add(new Integer(temporaryBreakpoint2));
+	}
+}
+
+private void setTemporaryBreakpoints(boolean stepOver) {
+	removeTemporaryBreakpoints();
+
+	int pc = Emulator.getProcessor().cpu.pc;
+	int opcode = Emulator.getMemory().read32(pc);
+	Instruction insn = Decoder.instruction(opcode);
+	if (insn != null) {
+		int branchingTo = 0;
+		boolean isBranching = false;
+		int npc = pc + 4;
+		if (stepOver && insn.hasFlags(Instruction.FLAG_STARTS_NEW_BLOCK)) {
+			// Stepping over new blocks
+		} else if (insn.hasFlags(Instruction.FLAG_IS_JUMPING)) {
+			branchingTo = Compiler.jumpTarget(npc, opcode);
+			isBranching = true;
+		} else if (insn.hasFlags(Instruction.FLAG_IS_BRANCHING)) {
+			branchingTo = Compiler.branchTarget(npc, opcode);
+			isBranching = true;
+		} else if (insn == Instructions.JR) {
+			int rs = (opcode >> 21) & 31;
+			branchingTo = Emulator.getProcessor().cpu.getRegister(rs);
+			isBranching = true;
+			// End of stepOut when reaching "jr $ra"
+			if (stepOut && rs == _ra) {
+				stepOut = false;
+			}
+		} else if (insn == Instructions.JALR && !stepOver) {
+			int rs = (opcode >> 21) & 31;
+			branchingTo = Emulator.getProcessor().cpu.getRegister(rs);
+			isBranching = true;
+		}
+
+		if (!isBranching) {
+			temporaryBreakpoint1 = npc;
+		} else if (branchingTo != 0) {
+			temporaryBreakpoint1 = branchingTo;
+			if (insn.hasFlags(Instruction.FLAG_IS_CONDITIONAL)) {
+				temporaryBreakpoint2 = npc;
+				if (insn.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT)) {
+					// Also skip the delay slot instruction
+					temporaryBreakpoint2 += 4;
+				}
+			}
+		}
+	}
+
+	addTemporaryBreakpoints();
+
+	emu.RunEmu();
+}
+
 private void StepIntoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_StepIntoActionPerformed
-    wantStep = true;
-    emu.RunEmu();
+	setTemporaryBreakpoints(false);
 }//GEN-LAST:event_StepIntoActionPerformed
 
+private void StepOverActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_StepOverActionPerformed
+	stepOut = false;
+	setTemporaryBreakpoints(true);
+}//GEN-LAST:event_StepOverActionPerformed
+
+private void StepOutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_StepOutActionPerformed
+	stepOut = true;
+	setTemporaryBreakpoints(true);
+}//GEN-LAST:event_StepOutActionPerformed
+
 private void RunDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunDebuggerActionPerformed
+	stepOut = false;
+	removeTemporaryBreakpoints();
     emu.RunEmu();
 }//GEN-LAST:event_RunDebuggerActionPerformed
 
 // Called from Emulator
 public void step() {
-    //check if there is a breakpoint
-    if (wantStep || (!breakpoints.isEmpty() && breakpoints.indexOf(Emulator.getProcessor().cpu.pc) != -1)) {
-    	wantStep = false;
-        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_BREAKPOINT);
+	// Fast check (most common case): nothing to do if there are no breakpoints at all.
+	if (breakpoints.isEmpty()) {
+		return;
+	}
 
-        /* done by PauseEmu
-        RefreshDebugger(true);
-        RefreshButtons();
-        if (State.memoryViewer != null)
-            State.memoryViewer.RefreshMemory();
-        */
+	// Check if we have reached a breakpoint
+    if (breakpoints.contains(Emulator.getProcessor().cpu.pc)) {
+    	if (stepOut) {
+    		// When stepping out, step over all instructions
+    		// until we reach "jr $ra".
+    		setTemporaryBreakpoints(true);
+    	} else {
+        	removeTemporaryBreakpoints();
+
+    		Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_BREAKPOINT);
+    	}
     }
 }
 
 private void PauseDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseDebuggerActionPerformed
     Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_PAUSE);
-
-    /* done by PauseEmu
-    RefreshDebugger(true);
-    */
 }//GEN-LAST:event_PauseDebuggerActionPerformed
 
 // Called from Emulator
@@ -1425,6 +1534,7 @@ private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:
     if (Settings.getInstance().readBool("gui.saveWindowPos"))
         Settings.getInstance().writeWindowPos("disassembler", getLocation());
 }//GEN-LAST:event_formWindowDeactivated
+
 private boolean isCellChecked(JTable table)
 {
   for(int i=0; i<table.getRowCount(); i++)
@@ -1434,6 +1544,7 @@ private boolean isCellChecked(JTable table)
   }
   return false;
 }
+
 private void cop1TableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_cop1TableMouseClicked
    if (SwingUtilities.isRightMouseButton(evt) && cop1Table.isColumnSelected(1) && isCellChecked(cop1Table))
    {
@@ -1556,10 +1667,6 @@ private void SetPCToCursorActionPerformed(java.awt.event.ActionEvent evt) {//GEN
         System.out.println("npc: " + Integer.toHexString(DebuggerPC + index * 4));
     }
 }//GEN-LAST:event_SetPCToCursorActionPerformed
-
-private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-    // TODO add your handling code here:
-}//GEN-LAST:event_jButton3ActionPerformed
 
 private void captureButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_captureButtonActionPerformed
     State.captureGeNextFrame = true;
@@ -1735,4 +1842,17 @@ try {
     private javax.swing.JButton replayButton;
     // End of variables declaration//GEN-END:variables
 
+    private static class ClickAction extends AbstractAction {
+		private static final long serialVersionUID = -6595335927462915819L;
+		private JButton button;
+
+		public ClickAction(JButton button) {
+			this.button = button;
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			button.doClick();
+		}
+    }
 }
