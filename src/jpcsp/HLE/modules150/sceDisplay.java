@@ -72,6 +72,7 @@ import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.graphics.GEProfiler;
 import jpcsp.graphics.GeCommands;
+import jpcsp.graphics.VertexCache;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.graphics.RE.RenderingEngineFactory;
@@ -132,7 +133,11 @@ public class sceDisplay extends HLEModule {
 	    	if (resetDisplaySettings) {
 	    		// Some display settings have been updated,
 	    		// a new rendering engine has to be created.
+	    		if (isStarted) {
+	    			videoEngine.stop();
+	    		}
 	    		TextureCache.getInstance().reset(re);
+	    		VertexCache.getInstance().reset(re);
 	    		startModules = true;
 	    		re = null;
 	    		reDisplay = null;
