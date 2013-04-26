@@ -67,7 +67,7 @@ public class sceAtrac3plus extends HLEModule {
     protected static final int AT3_MAGIC      = 0x0270; // "AT3"
     protected static final int AT3_PLUS_MAGIC = 0xFFFE; // "AT3PLUS"
     public    static final int RIFF_MAGIC = 0x46464952; // "RIFF"
-    protected static final int WAVE_MAGIC = 0x45564157; // "WAVE"
+    public    static final int WAVE_MAGIC = 0x45564157; // "WAVE"
     public    static final int FMT_CHUNK_MAGIC = 0x20746D66; // "FMT "
     protected static final int FACT_CHUNK_MAGIC = 0x74636166; // "FACT"
     protected static final int SMPL_CHUNK_MAGIC = 0x6C706D73; // "SMPL"
@@ -87,6 +87,8 @@ public class sceAtrac3plus extends HLEModule {
     protected static final int PSP_MODE_AT_3_PLUS = sceAudiocodec.PSP_CODEC_AT3PLUS;
     protected static final int PSP_MODE_AT_3 = sceAudiocodec.PSP_CODEC_AT3;
 
+    public static final int ATRAC_HEADER_HASH_LENGTH = 512;
+
     // Tested on PSP:
     // Only 2 atracIDs per format can be registered at the same time.
     // Note: After firmware 2.50, these limits can be changed by sceAtracReinit.
@@ -94,7 +96,7 @@ public class sceAtrac3plus extends HLEModule {
     protected int atrac3plusMaxIDsCount = 2;
     protected int atrac3Num;
     protected int atrac3plusNum;
-    protected static final int atracDecodeDelay = 2300; // Microseconds, based on PSP tests
+    public static final int atracDecodeDelay = 2300; // Microseconds, based on PSP tests
 
     public static boolean useAtracCodec = false;
     protected HashMap<Integer, AtracID> atracIDs;
@@ -498,7 +500,7 @@ public class sceAtrac3plus extends HLEModule {
                 // The atrac header has been read
                 inputBuffer.notifyRead(inputFileDataOffset);
 
-                int atracHash = Hash.getHashCode(0, buffer, Math.min(readSize, 512));
+                int atracHash = Hash.getHashCode(0, buffer, Math.min(readSize, ATRAC_HEADER_HASH_LENGTH));
                 getAtracCodec().atracSetData(getAtracId(), getAtracCodecType(), buffer, readSize, inputFileSize, atracHash);
             }
         	Emulator.getClock().resume();
@@ -1069,6 +1071,9 @@ public class sceAtrac3plus extends HLEModule {
         int samples = id.getMaxSamples();
         if (id.getInputBuffer().isEmpty()) {
             samples = 0; // No more data available in input buffer
+        }
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceAtracGetNextSample returning %d samples", samples));
         }
         nbrSamplesAddr.setValue(samples);
 

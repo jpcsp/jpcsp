@@ -58,14 +58,16 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
         if (id.getInputBuffer() == null) {
         	int headerAddr = findRIFFHeader(sourceAddr.getAddress());
         	if (headerAddr != 0) {
-        		sourceBytesConsumed = id.getSourceBufferLength();
         		id.setData(headerAddr, id.getSourceBufferLength() + (sourceAddr.getAddress() - headerAddr), id.getSourceBufferLength(), false);
-        		if (atracCodec != null && id.getAtracCodecType() == PSP_MODE_AT_3) {
-        			atracCodec.setAtracChannelStartLength(0x8000); // Only 0x8000 bytes are required to start decoding AT3
-        		}
-        		// Allow looping
-        		id.setLoopNum(-1);
+        	} else {
+        		id.setData(sourceAddr.getAddress(), id.getSourceBufferLength(), id.getSourceBufferLength(), false);
         	}
+    		if (atracCodec != null && id.getAtracCodecType() == PSP_MODE_AT_3) {
+    			atracCodec.setAtracChannelStartLength(0x8000); // Only 0x8000 bytes are required to start decoding AT3
+    		}
+    		sourceBytesConsumed = id.getSourceBufferLength();
+    		// Allow looping
+    		id.setLoopNum(-1);
         } else {
         	// Estimate source bytes to be read based on current sample position
         	int estimatedFileOffset = (int) (((long) id.getInputFileSize()) * id.getAtracCurrentSample() / id.getAtracEndSample());

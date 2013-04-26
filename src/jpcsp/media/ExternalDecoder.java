@@ -19,7 +19,6 @@ package jpcsp.media;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
@@ -29,7 +28,9 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.VFS.ITmpVirtualFileSystem;
 import jpcsp.HLE.VFS.IVirtualFile;
+import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules150.IoFileMgrForUser.IIoListener;
@@ -239,11 +240,11 @@ public class ExternalDecoder {
 				if (channels == 1) {
 					// It seems that SonicStage has problems decoding mono AT3+ data
 					// or we might generate an incorrect OMA file for monaural audio.
-					Modules.log.info("Mono AT3+ audio stream could not be decoded by the external decoder");
+					log.info("Mono AT3+ audio stream could not be decoded by the external decoder");
 				} else if (channels == 2) {
-					Modules.log.info("Stereo AT3+ audio stream could not be decoded by the external decoder");
+					log.info("Stereo AT3+ audio stream could not be decoded by the external decoder");
 				} else {
-					Modules.log.info("AT3+ audio stream could not be decoded by the external decoder (channels=" + channels + ")");
+					log.info("AT3+ audio stream could not be decoded by the external decoder (channels=" + channels + ")");
 				}
 				return false;
 			}
@@ -274,7 +275,11 @@ public class ExternalDecoder {
     }
 
     private static String getAtracAudioPath(int address, int atracFileSize, int atracHash, String suffix) {
-    	return String.format("%sAtrac-%08X-%08X-%08X.%s", AtracCodec.getBaseDirectory(), atracFileSize, address, atracHash, suffix);
+    	return String.format("%s%s", AtracCodec.getBaseDirectory(), getAtracAudioFileName(address, atracFileSize, atracHash, suffix));
+    }
+
+    private static String getAtracAudioFileName(int address, int atracFileSize, int atracHash, String suffix) {
+    	return String.format("Atrac-%08X-%08X-%08X.%s", atracFileSize, address, atracHash, suffix);
     }
 
     private String decodeAtrac(byte[] atracData, int address, int atracFileSize, int atracHash, String decodedFileName) {
@@ -292,7 +297,7 @@ public class ExternalDecoder {
 	    	}
 	    	ByteBuffer omaBuffer = OMAFormat.convertRIFFtoOMA(riffBuffer);
 	    	if (omaBuffer == null) {
-				Modules.log.info("AT3+ data could not be decoded by the external decoder (error while converting to OMA)");
+				log.info("AT3+ data could not be decoded by the external decoder (error while converting to OMA)");
 	    		return null;
 	    	}
 
@@ -307,11 +312,11 @@ public class ExternalDecoder {
 				if (channels == 1) {
 					// It seems that SonicStage has problems decoding mono AT3+ data
 					// or we might generate an incorrect OMA file for monaural audio.
-					Modules.log.info("Mono AT3+ data could not be decoded by the external decoder");
+					log.info("Mono AT3+ data could not be decoded by the external decoder");
 				} else if (channels == 2) {
-					Modules.log.info("Stereo AT3+ data could not be decoded by the external decoder");
+					log.info("Stereo AT3+ data could not be decoded by the external decoder");
 				} else {
-					Modules.log.info("AT3+ data could not be decoded by the external decoder (channels=" + channels + ")");
+					log.info("AT3+ data could not be decoded by the external decoder (channels=" + channels + ")");
 				}
 				return null;
 			}
@@ -364,16 +369,16 @@ public class ExternalDecoder {
 		return atracData;
     }
 
-    public String extractAtrac(int address, int length, int atracFileSize, int atracHash) {
+    public IVirtualFile extractAtrac(int address, int length, int atracFileSize, int atracHash) {
     	if (!isEnabled()) {
     		return null;
     	}
 
-		String decodedFileName = getAtracAudioPath(address, atracFileSize, atracHash, "at3");
-		File decodedFile = new File(decodedFileName);
-		if (decodedFile.canRead() && decodedFile.length() > 0) {
+		String decodedFileName = getAtracAudioFileName(address, atracFileSize, atracHash, "at3");
+    	IVirtualFile decodedFile = Modules.IoFileMgrForUserModule.getTmpVirtualFileSystem().ioOpen(decodedFileName, IoFileMgrForUser.PSP_O_RDONLY, 0777, ITmpVirtualFileSystem.tmpPurposeAtrac);
+		if (decodedFile != null && decodedFile.length() > 0) {
 			// Already decoded
-			return decodedFileName;
+			return decodedFile;
 		}
 
 		byte[] atracData = getAtracData(address, length, atracFileSize);
@@ -382,17 +387,14 @@ public class ExternalDecoder {
     		return null;
     	}
 
-    	try {
-			new File(AtracCodec.getBaseDirectory()).mkdirs();
-			OutputStream os = new FileOutputStream(decodedFile);
-			os.write(atracData);
-			os.close();
-		} catch (IOException e) {
-			log.warn("extractAtrac", e);
-			return null;
+		decodedFile = Modules.IoFileMgrForUserModule.getTmpVirtualFileSystem().ioOpen(decodedFileName, IoFileMgrForUser.PSP_O_WRONLY | IoFileMgrForUser.PSP_O_CREAT, 0777, ITmpVirtualFileSystem.tmpPurposeAtrac);
+		if (decodedFile != null) {
+			decodedFile.ioWrite(atracData, 0, atracData.length);
+			decodedFile.ioClose();
+	    	decodedFile = Modules.IoFileMgrForUserModule.getTmpVirtualFileSystem().ioOpen(decodedFileName, IoFileMgrForUser.PSP_O_RDONLY, 0777, ITmpVirtualFileSystem.tmpPurposeAtrac);
 		}
 
-    	return decodedFileName;
+    	return decodedFile;
     }
 
     public String decodeAtrac(int address, int length, int atracFileSize, int atracHash, AtracCodec atracCodec) {
@@ -410,7 +412,7 @@ public class ExternalDecoder {
 		byte[] atracData = getAtracData(address, length, atracFileSize);
     	if (atracData == null) {
     		// Atrac data cannot be retrieved...
-			Modules.log.debug("AT3+ data could not be decoded by the external decoder (complete atrac data need to be retrieved)");
+			log.debug("AT3+ data could not be decoded by the external decoder (complete atrac data need to be retrieved)");
 			atracCodec.setRequireAllAtracData();
     		return null;
     	}
@@ -442,7 +444,7 @@ public class ExternalDecoder {
 
     	private HashMap<Integer, ReadInfo> readInfos;
     	private HashMap<Integer, ReadInfo> readMagics;
-    	private static final int MAGIC_HASH_LENGTH = 16;
+    	private static final int MAGIC_HASH_LENGTH = sceAtrac3plus.ATRAC_HEADER_HASH_LENGTH;
     	private static final int[] fileMagics = {
     		sceAtrac3plus.RIFF_MAGIC,
     		sceMpeg.PSMF_MAGIC
