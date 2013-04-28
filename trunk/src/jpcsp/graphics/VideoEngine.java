@@ -2807,6 +2807,9 @@ public class VideoEngine {
             int addr = context.vinfo.getAddress(mem, i);
 
             context.vinfo.readVertex(mem, addr, v, false);
+			if (context.vinfo.weight != 0 && context.vinfo.position != 0) {
+			    doSkinning(context.bone_uploaded_matrix, context.vinfo, v);
+			}
             if (isLogDebugEnabled) {
                 log.debug(String.format("%s (%f,%f,%f)", helper.getCommandString(BBOX), v.p[0], v.p[1], v.p[2]));
             }
