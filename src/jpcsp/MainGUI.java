@@ -1858,7 +1858,22 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
                 // As the last chance, try to load the BOOT.BIN
                 loadUMD(iso, "PSP_GAME/SYSDIR/BOOT.BIN")) {
 
-                State.title = title;
+            	State.umdId = null;
+            	UmdIsoFile umdDataBin = iso.getFile("UMD_DATA.BIN");
+            	if (umdDataBin != null) {
+            		byte[] buffer = new byte[(int) umdDataBin.length()];
+            		umdDataBin.readFully(buffer);
+            		umdDataBin.close();
+            		String umdDataBinContent = new String(buffer).replace((char) 0, ' ');
+            		Emulator.log.info(String.format("Content of UMD_DATA.BIN: '%s'", umdDataBinContent));
+
+            		String[] parts = umdDataBinContent.split("\\|");
+            		if (parts != null && parts.length >= 2) {
+            			State.umdId = parts[1];
+            		}
+            	}
+
+            	State.title = title;
 
                 logConfigurationSettings();
 
