@@ -269,6 +269,9 @@ public class VideoEngine {
     private long listStartMicroTime;
     private boolean wantClearTextureCache;
     private boolean wantClearVertexCache;
+    // The PSP can handle textures of maximum size 512x512.
+    // The PS3 PSP emulator can handle larger textures (for HD Remasters).
+    private int maxTextureSizeLog2 = 9;
 
     public static class MatrixUpload {
         private final float[] matrix;
@@ -555,7 +558,9 @@ public class VideoEngine {
     	Settings.getInstance().registerSettingsListener(name, "emu.graphics.filters.anisotropic", new UseTextureAnisotropicFilterSettingsListerner());
         Settings.getInstance().registerSettingsListener(name, "emu.disableoptimizedvertexinforeading", new DisableOptimizedVertexInfoReadingListener());
 
-    	display = Modules.sceDisplayModule;
+        setMaxTextureSize(Settings.getInstance().readInt("maxTextureSize", 512));
+
+        display = Modules.sceDisplayModule;
         re = display.getRenderingEngine();
         re.setGeContext(context);
         context.setRenderingEngine(re);
@@ -3993,9 +3998,10 @@ public class VideoEngine {
         // Astonishia Story is using normalArgument = 0x1804
         // -> use texture_height = 1 << 0x08 (and not 1 << 0x18)
         //        texture_width  = 1 << 0x04
-        // The maximum texture size is 512x512: the exponent value must be [0..9]
-        int height_exp2 = Math.min((normalArgument >> 8) & 0x0F, 9);
-        int width_exp2 = Math.min((normalArgument) & 0x0F, 9);
+        // On a PSP, the maximum texture size is 512x512: the exponent value must be [0..9].
+        // On the PS3 PSP emulator, the maximum texture size can be higher (e.g. 1024x1024 is valid).
+        int height_exp2 = Math.min((normalArgument >> 8) & 0x0F, maxTextureSizeLog2);
+        int width_exp2 = Math.min((normalArgument) & 0x0F, maxTextureSizeLog2);
         context.texture_height[level] = 1 << height_exp2;
         context.texture_width[level] = 1 << width_exp2;
 
@@ -6866,6 +6872,13 @@ public class VideoEngine {
 	public void clearVertexCache() {
 		// Clear the cache before starting the rendering
 		wantClearVertexCache = true;
+	}
+
+	public void setMaxTextureSize(int maxTextureSize) {
+		if ((1 << maxTextureSizeLog2) != maxTextureSize) {
+			maxTextureSizeLog2 = 31 - Integer.numberOfLeadingZeros(maxTextureSize);
+			log.info(String.format("Using maxTextureSize=%d(log2=%d)", maxTextureSize, maxTextureSizeLog2));
+		}
 	}
 
 	private class SaveContextAction implements IAction {
