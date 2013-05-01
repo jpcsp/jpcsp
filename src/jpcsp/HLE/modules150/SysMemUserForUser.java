@@ -61,7 +61,6 @@ public class SysMemUserForUser extends HLEModule {
     protected static MemoryChunkList[] freeMemoryChunks;
     protected int firmwareVersion = 150;
     public static final int defaultSizeAlignment = 256;
-    protected boolean memory64MB = false;
 
     // PspSysMemBlockTypes
     public static final int PSP_SMEM_Low = 0;
@@ -116,20 +115,22 @@ public class SysMemUserForUser extends HLEModule {
 	}
 
     public void setMemory64MB(boolean isMemory64MB) {
-    	if (memory64MB != isMemory64MB) {
-    		memory64MB = isMemory64MB;
+    	if (isMemory64MB) {
+    		setMemorySize(MemoryMap.END_RAM_64MB - MemoryMap.START_RAM + 1); // 60 MB
+    	} else {
+    		setMemorySize(MemoryMap.END_RAM_32MB - MemoryMap.START_RAM + 1); // 32 MB
+    	}
+    }
 
-	    	if (memory64MB) {
-	    		MemoryMap.END_RAM = MemoryMap.END_RAM_64MB;
-	    		MemoryMap.END_USERSPACE = MemoryMap.END_USERSPACE_64MB;
-	    	} else {
-	    		MemoryMap.END_RAM = MemoryMap.END_RAM_32MB;
-	    		MemoryMap.END_USERSPACE = MemoryMap.END_USERSPACE_32MB;
-	    	}
-			MemoryMap.SIZE_RAM = MemoryMap.END_RAM - MemoryMap.START_RAM + 1;
+    public void setMemorySize(int memorySize) {
+    	if (MemoryMap.SIZE_RAM != memorySize) {
+    		int previousMemorySize = MemoryMap.SIZE_RAM;
+    		MemoryMap.END_RAM = MemoryMap.START_RAM + memorySize - 1;
+    		MemoryMap.END_USERSPACE = MemoryMap.END_RAM;
+    		MemoryMap.SIZE_RAM = MemoryMap.END_RAM - MemoryMap.START_RAM + 1;
 
-			if (!Memory.getInstance().allocate()) {
-				log.error(String.format("Failed to resize the PSP memory from %s to %s", memory64MB ? "32MB" : "64MB", memory64MB ? "64MB" : "32MB"));
+    		if (!Memory.getInstance().allocate()) {
+				log.error(String.format("Failed to resize the PSP memory from 0x%X to 0x%X", previousMemorySize, memorySize));
 				Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_ANY);
 			}
 
