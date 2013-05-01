@@ -244,6 +244,10 @@ public class Settings {
 	}
 
 	public static int parseInt(String value) {
+		value = value.trim();
+		if (value.startsWith("0x")) {
+			return Integer.parseInt(value.substring(2), 16);
+		}
 		return Integer.parseInt(value);
 	}
 

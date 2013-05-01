@@ -1858,12 +1858,18 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
         	Settings.getInstance().loadPatchSettings();
 
             // Set the memory model 32MB/64MB before loading the EBOOT.BIN
-            boolean hasMemory64MB = psf.getNumeric("MEMSIZE") == 1;
-            if (Settings.getInstance().readBool("memory64MB")) {
-            	Emulator.log.info(String.format("Using 64MB memory from settings for %s", State.discId));
-            	hasMemory64MB = true;
-            }
-            Modules.SysMemUserForUserModule.setMemory64MB(hasMemory64MB);
+        	int memorySize = Settings.getInstance().readInt("memorySize", 0);
+        	if (memorySize > 0) {
+            	Emulator.log.info(String.format("Using memory size 0x%X from settings for %s", memorySize, State.discId));
+        		Modules.SysMemUserForUserModule.setMemorySize(memorySize);
+        	} else {
+	            boolean hasMemory64MB = psf.getNumeric("MEMSIZE") == 1;
+	            if (Settings.getInstance().readBool("memory64MB")) {
+	            	Emulator.log.info(String.format("Using 64MB memory from settings for %s", State.discId));
+	            	hasMemory64MB = true;
+	            }
+	            Modules.SysMemUserForUserModule.setMemory64MB(hasMemory64MB);
+        	}
 
             if ((!discId.equals(State.DISCID_UNKNOWN_UMD) && loadUnpackedUMD(discId + ".BIN")) ||
                 // Try to load a previously decrypted EBOOT.BIN (faster)
