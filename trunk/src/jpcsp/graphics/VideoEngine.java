@@ -54,6 +54,7 @@ import java.nio.ShortBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
@@ -234,6 +235,7 @@ public class VideoEngine {
     private int bufferId;
     private int nativeBufferId;
     private int indexBufferId;
+    private List<Integer> buffersToBeDeleted = new LinkedList<Integer>();
     float[][] bboxVertices;
     private ConcurrentLinkedQueue<PspGeList> drawListQueue;
     private boolean somethingDisplayed;
@@ -516,6 +518,13 @@ public class VideoEngine {
         return lastList;
     }
 
+    private void deletePendingBuffers() {
+    	while (!buffersToBeDeleted.isEmpty()) {
+    		int buffer = buffersToBeDeleted.remove(0);
+    		bufferManager.deleteBuffer(buffer);
+    	}
+    }
+
     public void stop() {
     	// If we are still drawing a list, stop the list processing
     	if (currentList != null) {
@@ -530,9 +539,13 @@ public class VideoEngine {
 			}
     	}
 
-    	bufferManager.deleteBuffer(bufferId);
-        bufferManager.deleteBuffer(nativeBufferId);
-        bufferManager.deleteBuffer(indexBufferId);
+    	// The buffers have to be deleted from the GUI thread
+    	buffersToBeDeleted.add(bufferId);
+    	buffersToBeDeleted.add(nativeBufferId);
+    	buffersToBeDeleted.add(indexBufferId);
+    	bufferId = -1;
+    	nativeBufferId = -1;
+    	indexBufferId = -1;
 
         Settings.getInstance().removeSettingsListener(name);
     }
@@ -552,6 +565,8 @@ public class VideoEngine {
             // VertexCache is relying on VBO
             useVertexCache = false;
         }
+
+        deletePendingBuffers();
 
         bufferId = bufferManager.genBuffer(IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_FLOAT, drawBufferSize / SIZEOF_FLOAT, IRenderingEngine.RE_STREAM_DRAW);
         nativeBufferId = bufferManager.genBuffer(IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_BYTE, drawBufferSize, IRenderingEngine.RE_STREAM_DRAW);
@@ -774,6 +789,8 @@ public class VideoEngine {
         	VertexBufferManager.getInstance().reset(re);
         	wantClearVertexCache = false;
         }
+
+        deletePendingBuffers();
 
         hasModdedTextureDirectory = new File(getModdedTextureDirectory()).isDirectory();
 
@@ -2807,9 +2824,9 @@ public class VideoEngine {
             int addr = context.vinfo.getAddress(mem, i);
 
             context.vinfo.readVertex(mem, addr, v, false);
-			if (context.vinfo.weight != 0 && context.vinfo.position != 0) {
-			    doSkinning(context.bone_uploaded_matrix, context.vinfo, v);
-			}
+            if (context.vinfo.weight != 0 && context.vinfo.position != 0) {
+                doSkinning(context.bone_uploaded_matrix, context.vinfo, v);
+            }
             if (isLogDebugEnabled) {
                 log.debug(String.format("%s (%f,%f,%f)", helper.getCommandString(BBOX), v.p[0], v.p[1], v.p[2]));
             }
