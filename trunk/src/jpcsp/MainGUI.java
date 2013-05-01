@@ -1839,7 +1839,23 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
             RuntimeContext.setIsHomebrew(psf.isLikelyHomebrew());
 
             State.discId = discId;
-            Settings.getInstance().loadPatchSettings();
+
+            State.umdId = null;
+        	UmdIsoFile umdDataBin = iso.getFile("UMD_DATA.BIN");
+        	if (umdDataBin != null) {
+        		byte[] buffer = new byte[(int) umdDataBin.length()];
+        		umdDataBin.readFully(buffer);
+        		umdDataBin.close();
+        		String umdDataBinContent = new String(buffer).replace((char) 0, ' ');
+        		Emulator.log.info(String.format("Content of UMD_DATA.BIN: '%s'", umdDataBinContent));
+
+        		String[] parts = umdDataBinContent.split("\\|");
+        		if (parts != null && parts.length >= 2) {
+        			State.umdId = parts[1];
+        		}
+        	}
+
+        	Settings.getInstance().loadPatchSettings();
 
             // Set the memory model 32MB/64MB before loading the EBOOT.BIN
             boolean hasMemory64MB = psf.getNumeric("MEMSIZE") == 1;
@@ -1857,21 +1873,6 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
                 loadUMD(iso, "PSP_GAME/SYSDIR/EBOOT.BIN") ||
                 // As the last chance, try to load the BOOT.BIN
                 loadUMD(iso, "PSP_GAME/SYSDIR/BOOT.BIN")) {
-
-            	State.umdId = null;
-            	UmdIsoFile umdDataBin = iso.getFile("UMD_DATA.BIN");
-            	if (umdDataBin != null) {
-            		byte[] buffer = new byte[(int) umdDataBin.length()];
-            		umdDataBin.readFully(buffer);
-            		umdDataBin.close();
-            		String umdDataBinContent = new String(buffer).replace((char) 0, ' ');
-            		Emulator.log.info(String.format("Content of UMD_DATA.BIN: '%s'", umdDataBinContent));
-
-            		String[] parts = umdDataBinContent.split("\\|");
-            		if (parts != null && parts.length >= 2) {
-            			State.umdId = parts[1];
-            		}
-            	}
 
             	State.title = title;
 
