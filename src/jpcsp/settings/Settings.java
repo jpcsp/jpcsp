@@ -98,8 +98,14 @@ public class Settings {
 
 		String discId = State.discId;
 		if (discId != State.DISCID_UNKNOWN_FILE && discId != State.DISCID_UNKNOWN_NOTHING_LOADED) {
-			String patchFileName = String.format("patches/%s.properties", discId);
+			// Try to read patch settings using the Disc ID and the UMD ID.
+			String patchFileName = String.format("patches/%s-%s.properties", discId, State.umdId);
 			File patchFile = new File(patchFileName);
+			if (!patchFile.exists()) {
+				// If no patch settings are found using the UMD ID, try with only the Disc ID
+				patchFileName = String.format("patches/%s.properties", discId);
+				patchFile = new File(patchFileName);
+			}
 			InputStream patchSettingsStream = null;
 			try {
 				patchSettingsStream = new BufferedInputStream(new FileInputStream(patchFile));
