@@ -3723,9 +3723,12 @@ public class IoFileMgrForUser extends HLEModule {
                         log.debug(String.format("index=%d", index));
                     }
                     // Place the calling thread in wait state.
-                    ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-                    SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-                    threadMan.hleKernelThreadEnterWaitState(JPCSP_WAIT_IO, currentThread.wait.Io_id, ioWaitStateChecker, true);
+
+                    // Disabled the following lines as long as the UMD data cache thread has not been implemented.
+                    // Otherwise nobody would wake-up the thread.
+                    //ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+                    //SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+                    //threadMan.hleKernelThreadEnterWaitState(JPCSP_WAIT_IO, currentThread.wait.Io_id, ioWaitStateChecker, true);
                     result = 0;
                 } else {
                     result = -1;
