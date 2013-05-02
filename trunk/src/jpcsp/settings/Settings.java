@@ -37,6 +37,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Properties;
 
+import jpcsp.Controller;
 import jpcsp.Emulator;
 import jpcsp.State;
 import jpcsp.Controller.keyCode;
@@ -332,10 +333,12 @@ public class Settings {
 		m.put(readKey("analogDown"), keyCode.LANDOWN);
 		m.put(readKey("analogLeft"), keyCode.LANLEFT);
 		m.put(readKey("analogRight"), keyCode.LANRIGHT);
-		m.put(readKey("rightAnalogUp"), keyCode.RANUP);
-		m.put(readKey("rightAnalogDown"), keyCode.RANDOWN);
-		m.put(readKey("rightAnalogLeft"), keyCode.RANLEFT);
-		m.put(readKey("rightAnalogRight"), keyCode.RANRIGHT);
+		if (Controller.getInstance().hasRightAnalogController()) {
+			m.put(readKey("rightAnalogUp"), keyCode.RANUP);
+			m.put(readKey("rightAnalogDown"), keyCode.RANDOWN);
+			m.put(readKey("rightAnalogLeft"), keyCode.RANLEFT);
+			m.put(readKey("rightAnalogRight"), keyCode.RANRIGHT);
+		}
 		m.put(readKey("start"), keyCode.START);
 		m.put(readKey("select"), keyCode.SELECT);
 		m.put(readKey("triangle"), keyCode.TRIANGLE);
@@ -365,10 +368,12 @@ public class Settings {
 		m.put(keyCode.LANDOWN, readController("analogDown"));
 		m.put(keyCode.LANLEFT, readController("analogLeft"));
 		m.put(keyCode.LANRIGHT, readController("analogRight"));
-		m.put(keyCode.RANUP, readController("rightAnalogUp"));
-		m.put(keyCode.RANDOWN, readController("rightAnalogDown"));
-		m.put(keyCode.RANLEFT, readController("rightAnalogLeft"));
-		m.put(keyCode.RANRIGHT, readController("rightAnalogRight"));
+		if (Controller.getInstance().hasRightAnalogController()) {
+			m.put(keyCode.RANUP, readController("rightAnalogUp"));
+			m.put(keyCode.RANDOWN, readController("rightAnalogDown"));
+			m.put(keyCode.RANLEFT, readController("rightAnalogLeft"));
+			m.put(keyCode.RANRIGHT, readController("rightAnalogRight"));
+		}
 		m.put(keyCode.START, readController("start"));
 		m.put(keyCode.SELECT, readController("select"));
 		m.put(keyCode.TRIANGLE, readController("triangle"));
