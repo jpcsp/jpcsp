@@ -37,6 +37,7 @@ import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_VOLDOWN;
 import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_VOLUP;
 
 import jpcsp.hardware.Audio;
+import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;
 import jpcsp.HLE.Modules;
 
@@ -80,6 +81,7 @@ public class Controller {
     private Component.Identifier digitalYAxis = null;
     private Component.Identifier povArrows = Component.Identifier.Axis.POV;
     private static final float minimumDeadZone = 0.1f;
+    private boolean hasRightAnalogController = false;
 
     private HashMap<keyCode, String> controllerComponents;
     private HashMap<Integer, keyCode> keys;
@@ -90,10 +92,22 @@ public class Controller {
         RANUP, RANDOWN, RANLEFT, RANRIGHT,
         START, SELECT,
         TRIANGLE, SQUARE, CIRCLE, CROSS, L1, R1, HOME, HOLD, VOLMIN, VOLPLUS,
-        SCREEN, MUSIC, RELEASED };
+        SCREEN, MUSIC, RELEASED
+    };
+
+    private class RightAnalogControllerSettingsListener extends AbstractBoolSettingsListener {
+		@Override
+		protected void settingsValueChanged(boolean value) {
+			setHasRightAnalogController(value);
+		}
+    }
 
     protected Controller(net.java.games.input.Controller inputController) {
     	this.inputController = inputController;
+        Settings.getInstance().registerSettingsListener("hasRightAnalogController", "hasRightAnalogController", new RightAnalogControllerSettingsListener());
+    }
+
+    private void init() {
         keys = new HashMap<Integer, keyCode>(22);
         controllerComponents = new HashMap<keyCode, String>(22);
         loadKeyConfig();
@@ -150,6 +164,7 @@ public class Controller {
             	log.info(String.format("Using default controller '%s'", inputController.getName()));
             }
     		instance = new Controller(inputController);
+    		instance.init();
     	}
 
     	return instance;
@@ -631,5 +646,16 @@ public class Controller {
 
     public int getButtons() {
     	return Buttons;
+    }
+
+    public boolean hasRightAnalogController() {
+    	return hasRightAnalogController;
+    }
+
+    public void setHasRightAnalogController(boolean hasRightAnalogController) {
+    	if (this.hasRightAnalogController != hasRightAnalogController) {
+    		this.hasRightAnalogController = hasRightAnalogController;
+    		init();
+    	}
     }
 }

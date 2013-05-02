@@ -100,14 +100,19 @@ public class sceCtrl extends HLEModule {
         return false;
     }
 
-    private void setButtons(byte Lx, byte Ly, byte Rx, byte Ry, int Buttons) {
+    private void setButtons(byte Lx, byte Ly, byte Rx, byte Ry, int Buttons, boolean hasRightAnalogController) {
         int oldButtons = this.Buttons;
 
         this.TimeStamp = ((int) SystemTimeManager.getSystemTime()) & 0x7FFFFFFF;
         this.Lx = Lx;
         this.Ly = Ly;
-        this.Rx = Rx;
-        this.Ry = Ry;
+        if (hasRightAnalogController) {
+        	this.Rx = Rx;
+        	this.Ry = Ry;
+        } else {
+        	this.Rx = 0;
+        	this.Ry = 0;
+        }
         this.Buttons = Buttons;
 
         if (isModeDigital()) {
@@ -115,8 +120,10 @@ public class sceCtrl extends HLEModule {
             // moving the analog stick has no effect and always returns 128,128
             this.Lx = Controller.analogCenter;
             this.Ly = Controller.analogCenter;
-            this.Rx = Controller.analogCenter;
-            this.Ry = Controller.analogCenter;
+            if (hasRightAnalogController) {
+            	this.Rx = Controller.analogCenter;
+            	this.Ry = Controller.analogCenter;
+            }
         }
 
         int changed = oldButtons ^ Buttons;
@@ -288,7 +295,7 @@ public class sceCtrl extends HLEModule {
         Controller controller = State.controller;
         controller.hleControllerPoll();
 
-        setButtons(controller.getLx(), controller.getLy(), controller.getRx(), controller.getRy(), controller.getButtons());
+        setButtons(controller.getLx(), controller.getLy(), controller.getRx(), controller.getRy(), controller.getButtons(), controller.hasRightAnalogController());
 
         latchSamplingCount++;
 
