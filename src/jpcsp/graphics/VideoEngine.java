@@ -2048,10 +2048,11 @@ public class VideoEngine {
 	        		VertexBuffer vertexBuffer = VertexBufferManager.getInstance().getVertexBuffer(re, vertexAddress, size, stride, re.isVertexArrayAvailable());
 	        		Buffer vertexData = mem.getBuffer(vertexAddress, size);
 	        		vertexBuffer.load(re, vertexData, vertexAddress, size);
+	        		int multiDrawFirstVertex = 0;
 	        		if (re.isVertexArrayAvailable()) {
 	        			VertexArray vertexArray = VertexArrayManager.getInstance().getVertexArray(re, context.vinfo.vtype, vertexBuffer, vertexAddress, stride);
 	    				needSetDataPointers = vertexArray.bind(re);
-	    				firstVertex = vertexArray.getVertexOffset(vertexAddress);
+	    				multiDrawFirstVertex = vertexArray.getVertexOffset(vertexAddress);
 	        		} else {
 	        			// add buffer offset relative to vinfo.ptr_vertex (and not relative to vertexAddress)
 	            		vertexInfoReader.addNativeOffset(vertexBuffer.getBufferOffset(context.vinfo.ptr_vertex));
@@ -2059,8 +2060,9 @@ public class VideoEngine {
 
 	        		// Check if multiple PRIM's are defined in sequence and
 	        		// try to merge them into a single multiDrawArrays call.
-	        		int multiDrawNumberOfVertex = checkMultiDraw(firstVertex, type, numberOfVertex, multiDrawFirst, multiDrawCount);
+	        		int multiDrawNumberOfVertex = checkMultiDraw(multiDrawFirstVertex, type, numberOfVertex, multiDrawFirst, multiDrawCount);
 					if (multiDrawNumberOfVertex > 0) {
+						firstVertex = multiDrawFirstVertex;
 						multiDrawArrays = true;
 						numberOfVertex = multiDrawNumberOfVertex;
 			        	if (context.vinfo.index != 0) {
