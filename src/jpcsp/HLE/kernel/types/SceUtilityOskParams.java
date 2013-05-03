@@ -116,7 +116,12 @@ public class SceUtilityOskParams extends pspAbstractMemoryMappedStructure {
 			writeStringUTF16Z(descAddr, desc);
 			write32(inTextAddr);
 			writeStringUTF16Z(inTextAddr, inText);
-			outTextLength = writeStringUTF16Z(outTextAddr, outText);
+			int length = Math.min(outText.length(), outTextLength - 1);
+			if (outTextLimit != 0) {
+				length = Math.min(length, outTextLimit);
+			}
+			int bytesLength = writeStringUTF16Z(outTextAddr, outText.substring(0, length));
+			mem.memset(outTextAddr + length, (byte) 0, outTextLength * 2 - bytesLength);
 			write32(outTextLength);
 			write32(outTextAddr);
 			write32(result);
@@ -168,6 +173,6 @@ public class SceUtilityOskParams extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public String toString() {
-		return String.format("desc=%s, inText=%s, outText=%s", oskData.desc, oskData.inText, oskData.outText);
+		return String.format("desc='%s', inText='%s', outText='%s', inputMode=%d, inputAttr=0x%X, outTextLength=%d, outTextLimit=%d", oskData.desc, oskData.inText, oskData.outText, oskData.inputMode, oskData.inputAttr, oskData.outTextLength, oskData.outTextLimit);
 	}
 }

@@ -21,7 +21,9 @@ import java.nio.charset.Charset;
 import jpcsp.Memory;
 import jpcsp.HLE.ITPointerBase;
 import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
+import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
 
 public abstract class pspAbstractMemoryMappedStructure {
@@ -258,7 +260,6 @@ public abstract class pspAbstractMemoryMappedStructure {
     	return s.toString();
     }
 
-    // Write a string in UTF16
     /**
      * Write a string in UTF16, including a trailing '\0\0'
      * @param addr address where to write the string
@@ -275,13 +276,15 @@ public abstract class pspAbstractMemoryMappedStructure {
     		return 0;
     	}
 
+    	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, bytes.length + 2, 1);
     	for (int i = 0; i < bytes.length; i++) {
-    		mem.write8(addr + i, bytes[i]);
+    		memoryWriter.writeNext(bytes[i] & 0xFF);
     	}
 
     	// Write trailing '\0\0'
-    	mem.write8(addr + bytes.length    , (byte) 0);
-    	mem.write8(addr + bytes.length + 1, (byte) 0);
+    	memoryWriter.writeNext(0);
+    	memoryWriter.writeNext(0);
+    	memoryWriter.flush();
 
     	return bytes.length;
     }
