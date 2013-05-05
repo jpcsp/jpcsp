@@ -121,7 +121,7 @@ public class SceUtilityOskParams extends pspAbstractMemoryMappedStructure {
 				length = Math.min(length, outTextLimit);
 			}
 			int bytesLength = writeStringUTF16Z(outTextAddr, outText.substring(0, length));
-			mem.memset(outTextAddr + length, (byte) 0, outTextLength * 2 - bytesLength);
+			mem.memset(outTextAddr + bytesLength, (byte) 0, outTextLength * 2 - bytesLength);
 			write32(outTextLength);
 			write32(outTextAddr);
 			write32(result);
