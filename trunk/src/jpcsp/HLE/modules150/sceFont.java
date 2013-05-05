@@ -386,12 +386,14 @@ public class sceFont extends HLEModule {
 
         try {
             SeekableDataInput fontFile = Modules.IoFileMgrForUserModule.getFile(fileName, IoFileMgrForUser.PSP_O_RDONLY);
-            byte[] pgfBytes = new byte[(int) fontFile.length()];
-            fontFile.readFully(pgfBytes);
-            fontFile.close();
-            ByteBuffer pgfBuffer = ByteBuffer.wrap(pgfBytes);
+            if (fontFile != null) {
+	            byte[] pgfBytes = new byte[(int) fontFile.length()];
+	            fontFile.readFully(pgfBytes);
+	            fontFile.close();
+	            ByteBuffer pgfBuffer = ByteBuffer.wrap(pgfBytes);
 
-            font = openFontFile(pgfBuffer, new File(fileName).getName());
+	            font = openFontFile(pgfBuffer, new File(fileName).getName());
+            }
         } catch (IOException e) {
             // Can't open file.
             log.warn(e);
@@ -773,7 +775,13 @@ public class sceFont extends HLEModule {
 
         // "open" callback is not called in this case. Tested on PSP.
 
-        return fontLib.openFont(openFontFile(fileName.getString())).getHandle();
+        Font font = openFontFile(fileName.getString());
+        if (font == null) {
+        	errorCodePtr.setValue(SceKernelErrors.ERROR_FONT_FILE_NOT_FOUND);
+        	return 0;
+        }
+
+        return fontLib.openFont(font).getHandle();
     }
 
     @HLEFunction(nid = 0xBB8E7FE6, version = 150, checkInsideInterrupt = true)
