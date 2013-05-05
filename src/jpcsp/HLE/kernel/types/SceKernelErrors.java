@@ -443,6 +443,7 @@ public class SceKernelErrors {
 
     public final static int ERROR_FONT_INVALID_LIBID                            = 0x80460002;
     public final static int ERROR_FONT_INVALID_PARAMETER                        = 0x80460003;
+    public final static int ERROR_FONT_FILE_NOT_FOUND                           = 0x80460005;
     public final static int ERROR_FONT_TOO_MANY_OPEN_FONTS                      = 0x80460009;
 
     public final static int ERROR_PGD_INVALID_HEADER                            = 0x80510204;
