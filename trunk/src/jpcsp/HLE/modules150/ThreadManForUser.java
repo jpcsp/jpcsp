@@ -1574,6 +1574,21 @@ public class ThreadManForUser extends HLEModule {
     }
 
     /**
+     * Check the validity of the thread UID.
+     * No special check on uid=0, i.e. return ERROR_KERNEL_NOT_FOUND_THREAD for uid=0.
+     * 
+     * @param uid   thread UID to be checked
+     * @return      valid thread UID
+     */
+    public int checkThreadIDNoCheck0(int uid) {
+        if (uid == 0) {
+    		log.warn(String.format("checkThreadID not found thread 0x%08X", uid));
+            throw new SceKernelErrorException(ERROR_KERNEL_NOT_FOUND_THREAD);
+        }
+        return checkThreadIDAllow0(uid);
+    }
+
+    /**
      * Check the validity of the VTimer UID.
      * 
      * @param uid   VTimer UID to be checked
@@ -3433,7 +3448,7 @@ public class ThreadManForUser extends HLEModule {
 
     /** @return ERROR_NOT_FOUND_THREAD on uid < 0, uid == 0 and thread not found */
     @HLEFunction(nid = 0x3B183E26, version = 150)
-    public int sceKernelGetThreadExitStatus(@CheckArgument("checkThreadID") int uid) {
+    public int sceKernelGetThreadExitStatus(@CheckArgument("checkThreadIDNoCheck0") int uid) {
         SceKernelThreadInfo thread = getThreadById(uid);
         if (!thread.isStopped()) {
             if (log.isDebugEnabled()) {
