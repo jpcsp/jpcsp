@@ -944,7 +944,12 @@ public class ThreadManForUser extends HLEModule {
             // The thread is no longer waiting...
         } else {
             onWaitTimeout(thread);
-            hleChangeThreadState(thread, PSP_THREAD_READY);
+
+            // Remove PSP_THREAD_WAITING from the thread state,
+            // i.e. change the thread state
+            // - from PSP_THREAD_WAITING_SUSPEND to PSP_THREAD_SUSPEND
+            // - from PSP_THREAD_WAITING to PSP_THREAD_READY
+            hleChangeThreadState(thread, thread.isSuspended() ? PSP_THREAD_SUSPEND : PSP_THREAD_READY);
         }
     }
 
@@ -1250,7 +1255,7 @@ public class ThreadManForUser extends HLEModule {
         } else if (thread.isRunning()) {
             // debug
             if (thread.waitType != PSP_WAIT_NONE && !isIdleThread(thread)) {
-                log.error("changeThreadState thread '" + thread.name + "' => PSP_THREAD_RUNNING. waitType should be PSP_WAIT_NONE. caller:" + getCallingFunction());
+                log.error(String.format("changeThreadState thread %s => PSP_THREAD_RUNNING. waitType should be PSP_WAIT_NONE. caller: %s", thread, getCallingFunction()));
             }
         }
     }
