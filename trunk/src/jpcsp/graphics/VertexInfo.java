@@ -204,14 +204,14 @@ public class VertexInfo {
         }
     }
 
-    public VertexState readVertex(Memory mem, int addr, boolean readTexture) {
+    public VertexState readVertex(Memory mem, int addr, boolean readTexture, boolean doubleTexture2DCoords) {
         VertexState v = new VertexState();
-        readVertex(mem, addr, v, readTexture);
+        readVertex(mem, addr, v, readTexture, doubleTexture2DCoords);
 
         return v;
     }
 
-    public void readVertex(Memory mem, int addr, VertexState v, boolean readTexture) {
+    public void readVertex(Memory mem, int addr, VertexState v, boolean readTexture, boolean doubleTexture2DCoords) {
     	if (texture == 0) {
     		readTexture = false;
     	}
@@ -219,6 +219,12 @@ public class VertexInfo {
     		updateVertexInfoReader(readTexture);
     	}
     	vertexInfoReader.readVertex(mem, addr, v, morph_weight);
+
+    	// HD Remaster can require to double the 2D texture coordinates
+    	if (doubleTexture2DCoords && transform2D && readTexture) {
+    		v.t[0] *= 2f;
+    		v.t[1] *= 2f;
+    	}
     }
 
     public void setDirty() {
