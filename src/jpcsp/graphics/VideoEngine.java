@@ -272,6 +272,7 @@ public class VideoEngine {
     // The PSP can handle textures of maximum size 512x512.
     // The PS3 PSP emulator can handle larger textures (for HD Remasters).
     private int maxTextureSizeLog2 = 9;
+    private boolean doubleTexture2DCoords = false;
 
     public static class MatrixUpload {
         private final float[] matrix;
@@ -559,6 +560,7 @@ public class VideoEngine {
         Settings.getInstance().registerSettingsListener(name, "emu.disableoptimizedvertexinforeading", new DisableOptimizedVertexInfoReadingListener());
 
         setMaxTextureSize(Settings.getInstance().readInt("maxTextureSize", 512));
+        setDoubleTexture2DCoords(Settings.getInstance().readBool("doubleTexture2DCoords"));
 
         display = Modules.sceDisplayModule;
         re = display.getRenderingEngine();
@@ -1976,7 +1978,7 @@ public class VideoEngine {
         		// Retrieve the alpha value of the 1st vertex
         		// (2nd vertex for a SPRITE as this is the vertex setting the rendered color for a SPRITE).
                 int addr = context.vinfo.getAddress(mem, type == PRIM_SPRITES ? 1 : 0);
-                context.vinfo.readVertex(mem, addr, v, false);
+                context.vinfo.readVertex(mem, addr, v, false, isDoubleTexture2DCoords());
                 float alpha = v.c[3];
         		int stencilValue = PixelColor.getColor(alpha);
         		re.setStencilFunc(GeCommands.STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST, stencilValue, 0xFF);
@@ -2214,7 +2216,7 @@ public class VideoEngine {
 	                        for (int i = 0; i < numberOfVertex; i++) {
 	                            int addr = context.vinfo.getAddress(mem, i);
 
-	                            context.vinfo.readVertex(mem, addr, v, readTexture);
+	                            context.vinfo.readVertex(mem, addr, v, readTexture, isDoubleTexture2DCoords());
 
 	                            // Do skinning first as it modifies v.p and v.n
 	                            if (mustComputeWeights && context.vinfo.position != 0) {
@@ -2299,8 +2301,8 @@ public class VideoEngine {
 	                        for (int i = 0; i < numberOfVertex; i += 2) {
 	                            int addr1 = context.vinfo.getAddress(mem, i);
 	                            int addr2 = context.vinfo.getAddress(mem, i + 1);
-	                            context.vinfo.readVertex(mem, addr1, v1, readTexture);
-	                            context.vinfo.readVertex(mem, addr2, v2, readTexture);
+	                            context.vinfo.readVertex(mem, addr1, v1, readTexture, isDoubleTexture2DCoords());
+	                            context.vinfo.readVertex(mem, addr2, v2, readTexture, isDoubleTexture2DCoords());
 
 	                            v1.p[2] = v2.p[2];
 
@@ -2487,7 +2489,7 @@ public class VideoEngine {
 
     	for (int i = 0; i < numberOfVertex; i++) {
             int addr = context.vinfo.getAddress(mem, i);
-            context.vinfo.readVertex(mem, addr, v, true);
+            context.vinfo.readVertex(mem, addr, v, true, isDoubleTexture2DCoords());
 
 			if (context.vinfo.weight != 0 && context.vinfo.position != 0) {
 			    doSkinning(context.bone_uploaded_matrix, context.vinfo, v);
@@ -2830,7 +2832,7 @@ public class VideoEngine {
         for (int i = 0; i < numberOfVertexBoundingBox; i++) {
             int addr = context.vinfo.getAddress(mem, i);
 
-            context.vinfo.readVertex(mem, addr, v, false);
+            context.vinfo.readVertex(mem, addr, v, false, isDoubleTexture2DCoords());
             if (context.vinfo.weight != 0 && context.vinfo.position != 0) {
                 doSkinning(context.bone_uploaded_matrix, context.vinfo, v);
             }
@@ -6562,7 +6564,7 @@ public class VideoEngine {
         for (int u = 0; u < ucount; u++) {
             for (int v = 0; v < vcount; v++) {
                 int addr = context.vinfo.getAddress(mem, v * ucount + u);
-                VertexState vs = context.vinfo.readVertex(mem, addr, readTexture);
+                VertexState vs = context.vinfo.readVertex(mem, addr, readTexture, isDoubleTexture2DCoords());
     			if (context.vinfo.weight != 0 && context.vinfo.position != 0) {
     			    doSkinning(context.bone_uploaded_matrix, context.vinfo, vs);
     			}
@@ -6881,6 +6883,17 @@ public class VideoEngine {
 			maxTextureSizeLog2 = 31 - Integer.numberOfLeadingZeros(maxTextureSize);
 			log.info(String.format("Using maxTextureSize=%d(log2=%d)", maxTextureSize, maxTextureSizeLog2));
 		}
+	}
+
+	public void setDoubleTexture2DCoords(boolean doubleTexture2DCoords) {
+		if (this.doubleTexture2DCoords != doubleTexture2DCoords) {
+			this.doubleTexture2DCoords = doubleTexture2DCoords;
+			log.info(String.format("Using DoubleTexture2DCoords %b", doubleTexture2DCoords));
+		}
+	}
+
+	public boolean isDoubleTexture2DCoords() {
+		return doubleTexture2DCoords;
 	}
 
 	private class SaveContextAction implements IAction {

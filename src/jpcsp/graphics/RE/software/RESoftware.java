@@ -574,8 +574,8 @@ public class RESoftware extends BaseRenderingEngine {
 		for (int i = first; i < count - 1; i += 2) {
 			int addr1 = context.vinfo.getAddress(mem, i);
 			int addr2 = context.vinfo.getAddress(mem, i + 1);
-			context.vinfo.readVertex(mem, addr1, v1, readTexture);
-			context.vinfo.readVertex(mem, addr2, v2, readTexture);
+			context.vinfo.readVertex(mem, addr1, v1, readTexture, VideoEngine.getInstance().isDoubleTexture2DCoords());
+			context.vinfo.readVertex(mem, addr2, v2, readTexture, VideoEngine.getInstance().isDoubleTexture2DCoords());
 
 			drawSprite(spriteRenderer, v1, v2);
 		}
@@ -662,7 +662,7 @@ public class RESoftware extends BaseRenderingEngine {
 	protected void readVertex(Memory mem, int index, VertexState v, boolean readTexture) {
 		if (bufferVertexReader == null) {
 			int addr = context.vinfo.getAddress(mem, index);
-			context.vinfo.readVertex(mem, addr, v, readTexture);
+			context.vinfo.readVertex(mem, addr, v, readTexture, VideoEngine.getInstance().isDoubleTexture2DCoords());
 		} else {
 			// This is used for spline and bezier curves:
 			// the VideoEngine is computing the vertices and is pushing them into a buffer.
