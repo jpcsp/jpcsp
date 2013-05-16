@@ -18,6 +18,9 @@ package jpcsp.sound;
 
 import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_OUTPUTMODE_STEREO;
 import static jpcsp.sound.SoundChannel.MAX_VOLUME;
+
+import java.util.Arrays;
+
 import jpcsp.HLE.Modules;
 import jpcsp.hardware.Audio;
 import jpcsp.memory.IMemoryReader;
@@ -152,32 +155,54 @@ public class SoundMixer {
     /**
      * Synthesizing audio function.
      * @param addr Output address for the PCM data (must be 64-byte aligned).
-     * @param length Size of the PCM buffer in use (matches the sound granularity).
+     * @param samples Number of samples returned.
      */
     public void synthesize(int addr, int samples) {
     	int[] mixedSamples = new int[samples * 2];
-    	for (int i = 0; i < mixedSamples.length; i++) {
-    		mixedSamples[i] = 0;
-    	}
+    	Arrays.fill(mixedSamples, 0);
 
     	mix(mixedSamples, addr, samples, MAX_VOLUME, MAX_VOLUME, true);
     }
 
     /**
      * Synthesizing audio function with mix.
-     * @param addr Output address for the PCM data (must be 64-byte aligned).
-     * @param length Size of the PCM buffer in use (matches the sound granularity).
-     * @param mix Array containing the PCM mix data.
+     * @param addr Input and output address for the PCM data (must be 64-byte aligned).
+     * @param samples Number of samples returned.
+     * @param leftVol the volume of the left channel for modulating the input PCM data.
+     *                This volume is not affecting the currently played samples.
+     * @param rightVol the volume of the right channel for modulating the input PCM data.
+     *                 This volume is not affecting the currently played samples.
      */
     public void synthesizeWithMix(int addr, int samples, int leftVol, int rightVol) {
     	int[] mixedSamples = new int[samples * 2];
-    	int lengthInBytes = mixedSamples.length * 2;
-    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(addr, lengthInBytes, 2);
-    	for (int i = 0; i < mixedSamples.length; i++) {
-    		mixedSamples[i] = (short) memoryReader.readNext();
+
+    	// Read the input buffer into mixedSamples.
+    	// Check first for simple cases...
+    	if (leftVol == 0 && rightVol == 0) {
+    		// Do not mix with the input buffer
+    		Arrays.fill(mixedSamples, 0);
+    	} else if (leftVol == MAX_VOLUME && rightVol == MAX_VOLUME) {
+    		// Mix with the input buffer with no volume change
+	    	int lengthInBytes = mixedSamples.length * 2;
+	    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(addr, lengthInBytes, 2);
+	    	for (int i = 0; i < mixedSamples.length; i++) {
+	    		mixedSamples[i] = (short) memoryReader.readNext();
+	    	}
+    	} else {
+    		// Mix with the input buffer with a volume adjustment
+	    	int lengthInBytes = mixedSamples.length * 2;
+	    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(addr, lengthInBytes, 2);
+	    	for (int i = 0; i < samples; i++) {
+	    		short sampleLeft = (short) memoryReader.readNext();
+	    		short sampleRight = (short) memoryReader.readNext();
+	    		sampleLeft = SoundChannel.adjustSample(sampleLeft, leftVol);
+	    		sampleRight = SoundChannel.adjustSample(sampleRight, rightVol);
+	    		mixedSamples[i * 2] = sampleLeft;
+	    		mixedSamples[i * 2 + 1] = sampleRight;
+	    	}
     	}
 
-    	mix(mixedSamples, addr, samples, leftVol, rightVol, false);
+    	mix(mixedSamples, addr, samples, MAX_VOLUME, MAX_VOLUME, false);
     }
 
     public static short getSampleLeft(int sample) {
