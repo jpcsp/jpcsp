@@ -604,6 +604,7 @@ public class sceUtility extends HLEModule {
     protected static class SavedataUtilityDialogState extends UtilityDialogState {
     	protected SceUtilitySavedataParam savedataParams;
         protected volatile String saveListSelection;
+        protected boolean saveListEmpty;
 
     	public SavedataUtilityDialogState(String name) {
 			super(name);
@@ -630,48 +631,99 @@ public class sceUtility extends HLEModule {
 
 			return super.checkValidity();
 		}
-                
-                // All SAVEDATA modes after MODE_SINGLEDELETE can be called multiple times and keep track of that.
-                private int savedataMultiStatus;
-                
-                protected int checkMultipleCallStatus() {
-                    // Check the current multiple call status.
-                    if ((savedataParams.multiStatus == SceUtilitySavedataParam.MULTI_STATUS_SINGLE) 
-                            || (savedataParams.multiStatus == SceUtilitySavedataParam.MULTI_STATUS_INIT)) {
-                        // If the multiple call status is SINGLE or INIT, just save it.
-                        savedataMultiStatus = savedataParams.multiStatus;
-                        return 0;
-                    } else if ((savedataParams.multiStatus == SceUtilitySavedataParam.MULTI_STATUS_RELAY) 
-                            || (savedataParams.multiStatus == SceUtilitySavedataParam.MULTI_STATUS_FINISH)) {
-                        // If the multiple call status is RELAY or FINISH, check if INIT or another RELAY has been called.
-                        if (savedataMultiStatus <= savedataParams.multiStatus) {
-                            savedataMultiStatus = savedataParams.multiStatus;
-                            return 0;
-                        } else {
-                            return SceKernelErrors.ERROR_SAVEDATA_RW_BAD_STATUS;
+
+        // All SAVEDATA modes after MODE_SINGLEDELETE can be called multiple times and keep track of that.
+        private int savedataMultiStatus;
+
+        protected int checkMultipleCallStatus() {
+            // Check the current multiple call status.
+            if (savedataParams.multiStatus == SceUtilitySavedataParam.MULTI_STATUS_SINGLE || 
+                savedataParams.multiStatus == SceUtilitySavedataParam.MULTI_STATUS_INIT) {
+                // If the multiple call status is SINGLE or INIT, just save it.
+                savedataMultiStatus = savedataParams.multiStatus;
+                return 0;
+            }
+            if (savedataParams.multiStatus == SceUtilitySavedataParam.MULTI_STATUS_RELAY || 
+                savedataParams.multiStatus == SceUtilitySavedataParam.MULTI_STATUS_FINISH) {
+                // If the multiple call status is RELAY or FINISH, check if INIT or another RELAY has been called.
+                if (savedataMultiStatus <= savedataParams.multiStatus) {
+                    savedataMultiStatus = savedataParams.multiStatus;
+                    return 0;
+                }
+            }
+
+            return SceKernelErrors.ERROR_SAVEDATA_RW_BAD_STATUS;
+        }
+
+        @Override
+        protected boolean executeUpdateVisible() {
+            Memory mem = Processor.memory;
+
+            switch (savedataParams.mode) {
+                case SceUtilitySavedataParam.MODE_AUTOLOAD:
+                case SceUtilitySavedataParam.MODE_LOAD: {
+                    if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
+                        if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
+                            savedataParams.saveName = savedataParams.saveNameList[0];
                         }
-                    } else {
-                        return SceKernelErrors.ERROR_SAVEDATA_RW_BAD_STATUS;
                     }
+
+                    try {
+                        savedataParams.load(mem);
+                        savedataParams.base.result = 0;
+                        savedataParams.write(mem);
+                    } catch (IOException e) {
+                        if (!savedataParams.isGameDirectoryPresent()) {
+                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
+                        } else if (savedataParams.base.totalSizeof() < 1536) {
+                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
+                        } else {
+                            // The PSP is returning a different return code based on the size of the savedataParams input structure.
+                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_UMD;
+                        }
+                    } catch (Exception e) {
+                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_ACCESS_ERROR;
+                        log.error(e);
+                    }
+                    break;
                 }
 
-		@Override
-		protected boolean executeUpdateVisible() {
-	        Memory mem = Processor.memory;
+                case SceUtilitySavedataParam.MODE_LISTLOAD: {
+                    if (!isDialogOpen()) {
+                        // Search for valid saves.
+                        ArrayList<String> validNames = new ArrayList<String>();
 
-	        switch (savedataParams.mode) {
-	            case SceUtilitySavedataParam.MODE_AUTOLOAD:
-	            case SceUtilitySavedataParam.MODE_LOAD: {
-	                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
-	                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
-	                        savedataParams.saveName = savedataParams.saveNameList[0];
-	                    }
-	                }
+                        for (int i = 0; i < savedataParams.saveNameList.length; i++) {
+                            savedataParams.saveName = savedataParams.saveNameList[i];
 
-	                try {
-	                    savedataParams.load(mem);
-	                    savedataParams.base.result = 0;
-	                               savedataParams.write(mem);
+                            if (savedataParams.isPresent()) {
+                                validNames.add(savedataParams.saveName);
+                            }
+                        }
+
+                        GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, validNames.toArray(new String[validNames.size()]));
+                        openDialog(gu);
+                    } else if (!isDialogActive()) {
+                        if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
+                            if (saveListEmpty) {
+                            	// No data available
+                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
+                            } else {
+                            	// Dialog cancelled
+                            	savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_BAD_PARAMS;
+                            }
+                        } else if (saveListSelection == null) {
+                            log.warn("Savedata MODE_LISTLOAD no save selected");
+                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_BAD_PARAMS;
+                        } else {
+                            savedataParams.saveName = saveListSelection;
+                            try {
+                                if (log.isDebugEnabled()) {
+                                    log.debug(String.format("Loading savedata %s", savedataParams.saveName));
+                                }
+                                savedataParams.load(mem);
+                                savedataParams.base.result = 0;
+                                savedataParams.write(mem);
                             } catch (IOException e) {
                                 if (!savedataParams.isGameDirectoryPresent()) {
                                     savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
@@ -685,70 +737,51 @@ public class sceUtility extends HLEModule {
                                 savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_ACCESS_ERROR;
                                 log.error(e);
                             }
-                            break;
                         }
+                        finishDialog();
+                    } else {
+                        updateDialog();
+                    }
+                    break;
+                }
 
-                        case SceUtilitySavedataParam.MODE_LISTLOAD: {
-                            if (!isDialogOpen()) {
-                                // Search for valid saves.
-                                ArrayList<String> validNames = new ArrayList<String>();
-
-                                for (int i = 0; i < savedataParams.saveNameList.length; i++) {
-                                    savedataParams.saveName = savedataParams.saveNameList[i];
-
-                                    if (savedataParams.isPresent()) {
-                                        validNames.add(savedataParams.saveName);
-                                    }
-                                }
-
-                                GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, validNames.toArray(new String[validNames.size()]));
-                                openDialog(gu);
-                            } else if (!isDialogActive()) {
-                                if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
-                                    // Dialog cancelled
-                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_BAD_PARAMS;
-                                } else if (saveListSelection == null) {
-                                    log.warn("Savedata MODE_LISTLOAD no save selected");
-                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_BAD_PARAMS;
-                                } else {
-                                    savedataParams.saveName = saveListSelection;
-                                    try {
-                                        if (log.isDebugEnabled()) {
-                                            log.debug(String.format("Loading savedata %s", savedataParams.saveName));
-                                        }
-                                        savedataParams.load(mem);
-                                        savedataParams.base.result = 0;
-                                        savedataParams.write(mem);
-                                    } catch (IOException e) {
-                                        if (!savedataParams.isGameDirectoryPresent()) {
-                                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
-                                        } else if (savedataParams.base.totalSizeof() < 1536) {
-                                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
-                                        } else {
-                                            // The PSP is returning a different return code based on the size of the savedataParams input structure.
-                                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_UMD;
-                                        }
-                                    } catch (Exception e) {
-                                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_ACCESS_ERROR;
-                                        log.error(e);
-                                    }
-                                }
-                                finishDialog();
-                            } else {
-                                updateDialog();
-                            }
-                            break;
+                case SceUtilitySavedataParam.MODE_AUTOSAVE:
+                case SceUtilitySavedataParam.MODE_SAVE: {
+                    if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
+                        if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
+                            savedataParams.saveName = savedataParams.saveNameList[0];
                         }
+                    }
 
-                        case SceUtilitySavedataParam.MODE_AUTOSAVE:
-                        case SceUtilitySavedataParam.MODE_SAVE: {
-                            if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
-                                if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
-                                    savedataParams.saveName = savedataParams.saveNameList[0];
-                                }
-                            }
+                    try {
+                        savedataParams.save(mem);
+                        savedataParams.base.result = 0;
+                    } catch (IOException e) {
+                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
+                    } catch (Exception e) {
+                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
+                        log.error(e);
+                    }
+                    break;
+                }
 
+                case SceUtilitySavedataParam.MODE_LISTSAVE: {
+                    if (!isDialogOpen()) {
+                        GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, savedataParams.saveNameList);
+                        openDialog(gu);
+                    } else if (!isDialogActive()) {
+                        if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
+                            // Dialog cancelled
+                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_BAD_PARAMS;
+                        } else if (saveListSelection == null) {
+                            log.warn("Savedata MODE_LISTSAVE no save selected");
+                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_BAD_PARAMS;
+                        } else {
+                            savedataParams.saveName = saveListSelection;
                             try {
+                                if (log.isDebugEnabled()) {
+                                    log.debug(String.format("Saving savedata %s", savedataParams.saveName));
+                                }
                                 savedataParams.save(mem);
                                 savedataParams.base.result = 0;
                             } catch (IOException e) {
@@ -757,544 +790,516 @@ public class sceUtility extends HLEModule {
                                 savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
                                 log.error(e);
                             }
-                            break;
                         }
+                        finishDialog();
+                    } else {
+                        updateDialog();
+                    }
+                    break;
+                }
 
-                        case SceUtilitySavedataParam.MODE_LISTSAVE: {
-                            if (!isDialogOpen()) {
-                                GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, savedataParams.saveNameList);
-                                openDialog(gu);
-                            } else if (!isDialogActive()) {
-                                if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
-                                    // Dialog cancelled
-                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_BAD_PARAMS;
-                                } else if (saveListSelection == null) {
-                                    log.warn("Savedata MODE_LISTSAVE no save selected");
-                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_BAD_PARAMS;
-                                } else {
-                                    savedataParams.saveName = saveListSelection;
-                                    try {
-                                        if (log.isDebugEnabled()) {
-                                            log.debug(String.format("Saving savedata %s", savedataParams.saveName));
-                                        }
-                                        savedataParams.save(mem);
-                                        savedataParams.base.result = 0;
-                                    } catch (IOException e) {
-                                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
-                                    } catch (Exception e) {
-                                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
-                                        log.error(e);
-                                    }
-                                }
-                                finishDialog();
-                            } else {
-                                updateDialog();
+                case SceUtilitySavedataParam.MODE_DELETE: {
+                    if (savedataParams.saveNameList != null) {
+                        for (int i = 0; i < savedataParams.saveNameList.length; i++) {
+                            String save = savedataParams.getBasePath(savedataParams.saveNameList[i]);
+                            if (Modules.IoFileMgrForUserModule.rmdir(save, true)) {
+                                log.debug("Savedata MODE_DELETE deleting " + save);
                             }
-                            break;
                         }
+                        savedataParams.base.result = 0;
+                    } else if (savedataParams.saveName.length() > 0) {
+                        String saveDir = savedataParams.getBasePath();
+                        if (Modules.IoFileMgrForUserModule.rmdir(saveDir, true)) {
+                            savedataParams.base.result = 0;
+                        } else {
+                            log.warn("Savedata MODE_DELETE directory not found!");
+                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_NO_DATA;
+                        }
+                    } else {
+                        if (!isDialogOpen()) {
+                            // Search for valid saves.
+                            String pattern = savedataParams.gameName + ".*";
 
-                        case SceUtilitySavedataParam.MODE_DELETE: {
-                            if (savedataParams.saveNameList != null) {
-                                for (int i = 0; i < savedataParams.saveNameList.length; i++) {
-                                    String save = savedataParams.getBasePath(savedataParams.saveNameList[i]);
-                                    if (Modules.IoFileMgrForUserModule.rmdir(save, true)) {
-                                        log.debug("Savedata MODE_DELETE deleting " + save);
-                                    }
+                            String[] entries = Modules.IoFileMgrForUserModule.listFiles(SceUtilitySavedataParam.savedataPath, pattern);
+                            ArrayList<String> validNames = new ArrayList<String>();
+                            for (int i = 0; entries != null && i < entries.length; i++) {
+                                String saveName = entries[i].substring(savedataParams.gameName.length());
+                                if (savedataParams.isPresent(savedataParams.gameName, saveName)) {
+                                    validNames.add(saveName);
                                 }
-                                savedataParams.base.result = 0;
-                            } else if (savedataParams.saveName.length() > 0) {
-                                String saveDir = savedataParams.getBasePath();
-                                if (Modules.IoFileMgrForUserModule.rmdir(saveDir, true)) {
+                            }
+
+                            GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, validNames.toArray(new String[validNames.size()]));
+                            openDialog(gu);
+                        } else if (!isDialogActive()) {
+                            if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
+                                // Dialog cancelled
+                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
+                            } else if (saveListSelection == null) {
+                                log.warn("Savedata MODE_DELETE no save selected");
+                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
+                            } else {
+                                String dirName = savedataParams.getBasePath(saveListSelection);
+                                if (Modules.IoFileMgrForUserModule.rmdir(dirName, true)) {
+                                    log.debug("Savedata MODE_DELETE deleting " + dirName);
                                     savedataParams.base.result = 0;
                                 } else {
-                                    log.warn("Savedata MODE_DELETE directory not found!");
-                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_NO_DATA;
-                                }
-                            } else {
-                                if (!isDialogOpen()) {
-                                    // Search for valid saves.
-                                    String pattern = savedataParams.gameName + ".*";
-
-                                    String[] entries = Modules.IoFileMgrForUserModule.listFiles(SceUtilitySavedataParam.savedataPath, pattern);
-                                    ArrayList<String> validNames = new ArrayList<String>();
-                                    for (int i = 0; entries != null && i < entries.length; i++) {
-                                        String saveName = entries[i].substring(savedataParams.gameName.length());
-                                        if (savedataParams.isPresent(savedataParams.gameName, saveName)) {
-                                            validNames.add(saveName);
-                                        }
-                                    }
-
-                                    GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, validNames.toArray(new String[validNames.size()]));
-                                    openDialog(gu);
-                                } else if (!isDialogActive()) {
-                                    if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
-                                        // Dialog cancelled
-                                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
-                                    } else if (saveListSelection == null) {
-                                        log.warn("Savedata MODE_DELETE no save selected");
-                                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
-                                    } else {
-                                        String dirName = savedataParams.getBasePath(saveListSelection);
-                                        if (Modules.IoFileMgrForUserModule.rmdir(dirName, true)) {
-                                            log.debug("Savedata MODE_DELETE deleting " + dirName);
-                                            savedataParams.base.result = 0;
-                                        } else {
-                                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_ACCESS_ERROR;
-                                        }
-                                    }
-                                    finishDialog();
-                                } else {
-                                    updateDialog();
+                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_ACCESS_ERROR;
                                 }
                             }
-                            break;
+                            finishDialog();
+                        } else {
+                            updateDialog();
                         }
+                    }
+                    break;
+                }
 
-                        case SceUtilitySavedataParam.MODE_SIZES: {
-                            // "METAL SLUG XX" outputs the following on stdout after calling mode 8:
-                            //
-                            // ------ SIZES ------
-                            // ---------- savedata result ----------
-                            // result = 0x801103c7
-                            //
-                            // bind : un used(0x0).
-                            //
-                            // -- dir name --
-                            // title id : ULUS10495
-                            // user  id : METALSLUGXX
-                            //
-                            // ms free size
-                            //   cluster size(byte) : 32768 byte
-                            //   free cluster num   : 32768
-                            //   free size(KB)      : 1048576 KB
-                            //   free size(string)  : "1 GB"
-                            //
-                            // ms data size(titleId=ULUS10495, userId=METALSLUGXX)
-                            //   cluster num        : 0
-                            //   size (KB)          : 0 KB
-                            //   size (string)      : "0 KB"
-                            //   size (32KB)        : 0 KB
-                            //   size (32KB string) : "0 KB"
-                            //
-                            // utility data size
-                            //   cluster num        : 13
-                            //   size (KB)          : 416 KB
-                            //   size (string)      : "416 KB"
-                            //   size (32KB)        : 416 KB
-                            //   size (32KB string) : "416 KB"
-                            // error: SCE_UTILITY_SAVEDATA_TYPE_SIZES return 801103c7
-                            //
-                            int result = 0;
+                case SceUtilitySavedataParam.MODE_SIZES: {
+                    // "METAL SLUG XX" outputs the following on stdout after calling mode 8:
+                    //
+                    // ------ SIZES ------
+                    // ---------- savedata result ----------
+                    // result = 0x801103c7
+                    //
+                    // bind : un used(0x0).
+                    //
+                    // -- dir name --
+                    // title id : ULUS10495
+                    // user  id : METALSLUGXX
+                    //
+                    // ms free size
+                    //   cluster size(byte) : 32768 byte
+                    //   free cluster num   : 32768
+                    //   free size(KB)      : 1048576 KB
+                    //   free size(string)  : "1 GB"
+                    //
+                    // ms data size(titleId=ULUS10495, userId=METALSLUGXX)
+                    //   cluster num        : 0
+                    //   size (KB)          : 0 KB
+                    //   size (string)      : "0 KB"
+                    //   size (32KB)        : 0 KB
+                    //   size (32KB string) : "0 KB"
+                    //
+                    // utility data size
+                    //   cluster num        : 13
+                    //   size (KB)          : 416 KB
+                    //   size (string)      : "416 KB"
+                    //   size (32KB)        : 416 KB
+                    //   size (32KB string) : "416 KB"
+                    // error: SCE_UTILITY_SAVEDATA_TYPE_SIZES return 801103c7
+                    //
+                    int result = 0;
+
+                    if (log.isDebugEnabled()) {
+                        log.debug(String.format("MODE_SIZES: msFreeAddr=0x%08X-0x%08X, msDataAddr=0x%08X-0x%08X, utilityDataAddr=0x%08X-0x%08X", savedataParams.msFreeAddr, savedataParams.msFreeAddr + 20, savedataParams.msDataAddr, savedataParams.msDataAddr + 64, savedataParams.utilityDataAddr, savedataParams.utilityDataAddr + 28));
+                    }
+
+                    // Gets the amount of free space on the Memory Stick.
+                    int msFreeAddr = savedataParams.msFreeAddr;
+                    if (msFreeAddr != 0) {
+                        String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(MemoryStick.getFreeSizeKb());
+
+                        mem.write32(msFreeAddr + 0, MemoryStick.getSectorSize());
+                        mem.write32(msFreeAddr + 4, MemoryStick.getFreeSizeKb() / MemoryStick.getSectorSizeKb());
+                        mem.write32(msFreeAddr + 8, MemoryStick.getFreeSizeKb());
+                        Utilities.writeStringNZ(mem, msFreeAddr + 12, 8, memoryStickFreeSpaceString);
+
+                        log.debug("Memory Stick Free Space = " + memoryStickFreeSpaceString);
+                    }
+
+                    // Gets the size of the data already saved on the Memory Stick.
+                    int msDataAddr = savedataParams.msDataAddr;
+                    if (msDataAddr != 0) {
+                        String gameName = Utilities.readStringNZ(mem, msDataAddr, 13);
+                        String saveName = Utilities.readStringNZ(mem, msDataAddr + 16, 20);
+
+                        if (savedataParams.isDirectoryPresent(gameName, saveName)) {
+                            int savedataSizeKb = savedataParams.getSizeKb(gameName, saveName);
+                            int savedataSize32Kb = MemoryStick.getSize32Kb(savedataSizeKb);
+
+                            mem.write32(msDataAddr + 36, savedataSizeKb / MemoryStick.getSectorSizeKb()); // Number of sectors.
+                            mem.write32(msDataAddr + 40, savedataSizeKb); // Size in Kb.
+                            Utilities.writeStringNZ(mem, msDataAddr + 44, 8, MemoryStick.getSizeKbString(savedataSizeKb));
+                            mem.write32(msDataAddr + 52, savedataSize32Kb);
+                            Utilities.writeStringNZ(mem, msDataAddr + 56, 8, MemoryStick.getSizeKbString(savedataSize32Kb));
+
+                            log.debug("Memory Stick Used Space = " + MemoryStick.getSizeKbString(savedataSizeKb));
+                        } else {
+                            log.debug(String.format("Savedata MODE_SIZES directory not found, gameName='%s', saveName='%s'", gameName, saveName));
+                            result = SceKernelErrors.ERROR_SAVEDATA_SIZES_NO_DATA;
+                        }
+                    }
+
+                    // Gets the size of the data to be saved on the Memory Stick.
+                    int utilityDataAddr = savedataParams.utilityDataAddr;
+                    if (utilityDataAddr != 0) {
+                        int memoryStickRequiredSpaceKb = 0;
+                        memoryStickRequiredSpaceKb += MemoryStick.getSectorSizeKb(); // Assume 1 sector for SFO-Params
+                        // Add the dataSize only if a fileName has been provided
+                        if (savedataParams.fileName != null && savedataParams.fileName.length() > 0) {
+                            memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.dataSize + 15);
+                        }
+                        memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.icon0FileData.size);
+                        memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.icon1FileData.size);
+                        memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.pic1FileData.size);
+                        memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.snd0FileData.size);
+
+                        String memoryStickRequiredSpaceString = MemoryStick.getSizeKbString(memoryStickRequiredSpaceKb);
+                        int memoryStickRequiredSpace32Kb = MemoryStick.getSize32Kb(memoryStickRequiredSpaceKb);
+                        String memoryStickRequiredSpace32KbString = MemoryStick.getSizeKbString(memoryStickRequiredSpace32Kb);
+
+                        mem.write32(utilityDataAddr + 0, memoryStickRequiredSpaceKb / MemoryStick.getSectorSizeKb());
+                        mem.write32(utilityDataAddr + 4, memoryStickRequiredSpaceKb);
+                        Utilities.writeStringNZ(mem, utilityDataAddr + 8, 8, memoryStickRequiredSpaceString);
+                        mem.write32(utilityDataAddr + 16, memoryStickRequiredSpace32Kb);
+                        Utilities.writeStringNZ(mem, utilityDataAddr + 20, 8, memoryStickRequiredSpace32KbString);
+
+                        log.debug("Memory Stick Required Space = " + memoryStickRequiredSpaceString);
+                    }
+                    savedataParams.base.result = result;
+                    break;
+                }
+
+                case SceUtilitySavedataParam.MODE_AUTODELETE: {
+                    String saveDir = savedataParams.getBasePath();
+                    if (Modules.IoFileMgrForUserModule.rmdir(saveDir, true)) {
+                        savedataParams.base.result = 0;
+                    } else {
+                        log.warn("Savedata MODE_AUTODELETE directory not found!");
+                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_NO_DATA;
+                    }
+                    break;
+                }
+
+                case SceUtilitySavedataParam.MODE_SINGLEDELETE: {
+                    String saveDir = savedataParams.getBasePath();
+                    if (Modules.IoFileMgrForUserModule.rmdir(saveDir, true)) {
+                        savedataParams.base.result = 0;
+                    } else {
+                        log.warn("Savedata MODE_SINGLEDELETE directory not found!");
+                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_NO_DATA;
+                    }
+                    break;
+                }
+
+                case SceUtilitySavedataParam.MODE_LIST: {
+                    int buffer4Addr = savedataParams.idListAddr;
+                    if (Memory.isAddressGood(buffer4Addr)) {
+                        int maxEntries = mem.read32(buffer4Addr + 0);
+                        int entriesAddr = mem.read32(buffer4Addr + 8);
+                        String saveName = savedataParams.saveName;
+                        // PSP file name pattern:
+                        //   '?' matches one character
+                        //   '*' matches any character sequence
+                        // To convert to regular expressions:
+                        //   replace '?' with '.'
+                        //   replace '*' with '.*'
+                        String pattern = saveName.replace('?', '.');
+                        pattern = pattern.replace("*", ".*");
+                        pattern = savedataParams.gameName + pattern;
+
+                        String[] entries = Modules.IoFileMgrForUserModule.listFiles(SceUtilitySavedataParam.savedataPath, pattern);
+                        int numEntries = entries == null ? 0 : entries.length;
+                        numEntries = Math.min(numEntries, maxEntries);
+                        for (int i = 0; i < numEntries; i++) {
+                            String filePath = SceUtilitySavedataParam.savedataPath + "/" + entries[i];
+                            SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(filePath);
+                            int entryAddr = entriesAddr + i * 72;
+                            if (stat != null) {
+                                mem.write32(entryAddr + 0, stat.mode);
+                                stat.ctime.write(mem, entryAddr + 4);
+                                stat.atime.write(mem, entryAddr + 20);
+                                stat.mtime.write(mem, entryAddr + 36);
+                            }
+                            String entryName = entries[i].substring(savedataParams.gameName.length());
+                            Utilities.writeStringNZ(mem, entryAddr + 52, 20, entryName);
 
                             if (log.isDebugEnabled()) {
-                                log.debug(String.format("MODE_SIZES: msFreeAddr=0x%08X-0x%08X, msDataAddr=0x%08X-0x%08X, utilityDataAddr=0x%08X-0x%08X", savedataParams.msFreeAddr, savedataParams.msFreeAddr + 20, savedataParams.msDataAddr, savedataParams.msDataAddr + 64, savedataParams.utilityDataAddr, savedataParams.utilityDataAddr + 28));
+                                log.debug(String.format("MODE_LIST returning filePath=%s, stat=%s, entryName=%s at 0x%08X", filePath, stat, entryName, entryAddr));
                             }
-
-                            // Gets the amount of free space on the Memory Stick.
-                            int msFreeAddr = savedataParams.msFreeAddr;
-                            if (msFreeAddr != 0) {
-                                String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(MemoryStick.getFreeSizeKb());
-
-                                mem.write32(msFreeAddr + 0, MemoryStick.getSectorSize());
-                                mem.write32(msFreeAddr + 4, MemoryStick.getFreeSizeKb() / MemoryStick.getSectorSizeKb());
-                                mem.write32(msFreeAddr + 8, MemoryStick.getFreeSizeKb());
-                                Utilities.writeStringNZ(mem, msFreeAddr + 12, 8, memoryStickFreeSpaceString);
-
-                                log.debug("Memory Stick Free Space = " + memoryStickFreeSpaceString);
-                            }
-
-                            // Gets the size of the data already saved on the Memory Stick.
-                            int msDataAddr = savedataParams.msDataAddr;
-                            if (msDataAddr != 0) {
-                                String gameName = Utilities.readStringNZ(mem, msDataAddr, 13);
-                                String saveName = Utilities.readStringNZ(mem, msDataAddr + 16, 20);
-
-                                if (savedataParams.isDirectoryPresent(gameName, saveName)) {
-                                    int savedataSizeKb = savedataParams.getSizeKb(gameName, saveName);
-                                    int savedataSize32Kb = MemoryStick.getSize32Kb(savedataSizeKb);
-
-                                    mem.write32(msDataAddr + 36, savedataSizeKb / MemoryStick.getSectorSizeKb()); // Number of sectors.
-                                    mem.write32(msDataAddr + 40, savedataSizeKb); // Size in Kb.
-                                    Utilities.writeStringNZ(mem, msDataAddr + 44, 8, MemoryStick.getSizeKbString(savedataSizeKb));
-                                    mem.write32(msDataAddr + 52, savedataSize32Kb);
-                                    Utilities.writeStringNZ(mem, msDataAddr + 56, 8, MemoryStick.getSizeKbString(savedataSize32Kb));
-
-                                    log.debug("Memory Stick Used Space = " + MemoryStick.getSizeKbString(savedataSizeKb));
-                                } else {
-                                    log.debug(String.format("Savedata MODE_SIZES directory not found, gameName='%s', saveName='%s'", gameName, saveName));
-                                    result = SceKernelErrors.ERROR_SAVEDATA_SIZES_NO_DATA;
-                                }
-                            }
-
-                            // Gets the size of the data to be saved on the Memory Stick.
-                            int utilityDataAddr = savedataParams.utilityDataAddr;
-                            if (utilityDataAddr != 0) {
-                                int memoryStickRequiredSpaceKb = 0;
-                                memoryStickRequiredSpaceKb += MemoryStick.getSectorSizeKb(); // Assume 1 sector for SFO-Params
-                                // Add the dataSize only if a fileName has been provided
-                                if (savedataParams.fileName != null && savedataParams.fileName.length() > 0) {
-                                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.dataSize + 15);
-                                }
-                                memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.icon0FileData.size);
-                                memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.icon1FileData.size);
-                                memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.pic1FileData.size);
-                                memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.snd0FileData.size);
-
-                                String memoryStickRequiredSpaceString = MemoryStick.getSizeKbString(memoryStickRequiredSpaceKb);
-                                int memoryStickRequiredSpace32Kb = MemoryStick.getSize32Kb(memoryStickRequiredSpaceKb);
-                                String memoryStickRequiredSpace32KbString = MemoryStick.getSizeKbString(memoryStickRequiredSpace32Kb);
-
-                                mem.write32(utilityDataAddr + 0, memoryStickRequiredSpaceKb / MemoryStick.getSectorSizeKb());
-                                mem.write32(utilityDataAddr + 4, memoryStickRequiredSpaceKb);
-                                Utilities.writeStringNZ(mem, utilityDataAddr + 8, 8, memoryStickRequiredSpaceString);
-                                mem.write32(utilityDataAddr + 16, memoryStickRequiredSpace32Kb);
-                                Utilities.writeStringNZ(mem, utilityDataAddr + 20, 8, memoryStickRequiredSpace32KbString);
-
-                                log.debug("Memory Stick Required Space = " + memoryStickRequiredSpaceString);
-                            }
-                            savedataParams.base.result = result;
-                            break;
                         }
+                        mem.write32(buffer4Addr + 4, numEntries);
 
-                        case SceUtilitySavedataParam.MODE_AUTODELETE: {
-                            String saveDir = savedataParams.getBasePath();
-                            if (Modules.IoFileMgrForUserModule.rmdir(saveDir, true)) {
-                                savedataParams.base.result = 0;
-                            } else {
-                                log.warn("Savedata MODE_AUTODELETE directory not found!");
-                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_NO_DATA;
-                            }
-                            break;
+                        if (log.isDebugEnabled()) {
+                            log.debug(String.format("MODE_LIST returning %d entries", numEntries));
                         }
+                    }
+                    savedataParams.base.result = checkMultipleCallStatus();
+                    break;
+                }
 
-                        case SceUtilitySavedataParam.MODE_SINGLEDELETE: {
-                            String saveDir = savedataParams.getBasePath();
-                            if (Modules.IoFileMgrForUserModule.rmdir(saveDir, true)) {
-                                savedataParams.base.result = 0;
-                            } else {
-                                log.warn("Savedata MODE_SINGLEDELETE directory not found!");
-                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_NO_DATA;
-                            }
-                            break;
-                        }
+                case SceUtilitySavedataParam.MODE_FILES: {
+                    int buffer5Addr = savedataParams.fileListAddr;
+                    if (Memory.isAddressGood(buffer5Addr)) {
+                        int saveFileSecureEntriesAddr = mem.read32(buffer5Addr + 24);
+                        int saveFileEntriesAddr = mem.read32(buffer5Addr + 28);
+                        int systemEntriesAddr = mem.read32(buffer5Addr + 32);
 
-                        case SceUtilitySavedataParam.MODE_LIST: {
-                            int buffer4Addr = savedataParams.idListAddr;
-                            if (Memory.isAddressGood(buffer4Addr)) {
-                                int maxEntries = mem.read32(buffer4Addr + 0);
-                                int entriesAddr = mem.read32(buffer4Addr + 8);
-                                String saveName = savedataParams.saveName;
-                                // PSP file name pattern:
-                                //   '?' matches one character
-                                //   '*' matches any character sequence
-                                // To convert to regular expressions:
-                                //   replace '?' with '.'
-                                //   replace '*' with '.*'
-                                String pattern = saveName.replace('?', '.');
-                                pattern = pattern.replace("*", ".*");
-                                pattern = savedataParams.gameName + pattern;
+                        String path = savedataParams.getBasePath(savedataParams.saveName);
+                        String[] entries = Modules.IoFileMgrForUserModule.listFiles(path, null);
 
-                                String[] entries = Modules.IoFileMgrForUserModule.listFiles(SceUtilitySavedataParam.savedataPath, pattern);
-                                int numEntries = entries == null ? 0 : entries.length;
-                                numEntries = Math.min(numEntries, maxEntries);
-                                for (int i = 0; i < numEntries; i++) {
-                                    String filePath = SceUtilitySavedataParam.savedataPath + "/" + entries[i];
-                                    SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(filePath);
-                                    int entryAddr = entriesAddr + i * 72;
+                        int maxNumEntries = (entries == null) ? 0 : entries.length;
+                        int saveFileSecureNumEntries = 0;
+                        int saveFileNumEntries = 0;
+                        int systemFileNumEntries = 0;
+
+                        // List all files in the savedata (normal and/or encrypted).
+                        for (int i = 0; i < maxNumEntries; i++) {
+                            String filePath = path + "/" + entries[i];
+                            SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(filePath);
+
+                            // System files.
+                            if (filePath.contains(".SFO") || filePath.contains("ICON") || filePath.contains("PIC") || filePath.contains("SND")) {
+                                if (Memory.isAddressGood(systemEntriesAddr)) {
+                                    int entryAddr = systemEntriesAddr + systemFileNumEntries * 80;
                                     if (stat != null) {
                                         mem.write32(entryAddr + 0, stat.mode);
-                                        stat.ctime.write(mem, entryAddr + 4);
-                                        stat.atime.write(mem, entryAddr + 20);
-                                        stat.mtime.write(mem, entryAddr + 36);
+                                        mem.write64(entryAddr + 8, stat.size);
+                                        stat.ctime.write(mem, entryAddr + 16);
+                                        stat.atime.write(mem, entryAddr + 32);
+                                        stat.mtime.write(mem, entryAddr + 48);
                                     }
-                                    String entryName = entries[i].substring(savedataParams.gameName.length());
-                                    Utilities.writeStringNZ(mem, entryAddr + 52, 20, entryName);
-
-                                    if (log.isDebugEnabled()) {
-                                        log.debug(String.format("MODE_LIST returning filePath=%s, stat=%s, entryName=%s at 0x%08X", filePath, stat, entryName, entryAddr));
+                                    String entryName = entries[i];
+                                    Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
+                                }
+                                systemFileNumEntries++;
+                            } else { // Write to secure and normal.
+                                if (Memory.isAddressGood(saveFileSecureEntriesAddr)) {
+                                    int entryAddr = saveFileSecureEntriesAddr + saveFileSecureNumEntries * 80;
+                                    if (stat != null) {
+                                        mem.write32(entryAddr + 0, stat.mode);
+                                        mem.write64(entryAddr + 8, stat.size);
+                                        stat.ctime.write(mem, entryAddr + 16);
+                                        stat.atime.write(mem, entryAddr + 32);
+                                        stat.mtime.write(mem, entryAddr + 48);
                                     }
+                                    String entryName = entries[i];
+                                    Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
                                 }
-                                mem.write32(buffer4Addr + 4, numEntries);
+                                saveFileSecureNumEntries++;
 
-                                if (log.isDebugEnabled()) {
-                                    log.debug(String.format("MODE_LIST returning %d entries", numEntries));
+                                if (Memory.isAddressGood(saveFileEntriesAddr)) {
+                                    int entryAddr = saveFileEntriesAddr + saveFileNumEntries * 80;
+                                    if (stat != null) {
+                                        mem.write32(entryAddr + 0, stat.mode);
+                                        mem.write64(entryAddr + 8, stat.size);
+                                        stat.ctime.write(mem, entryAddr + 16);
+                                        stat.atime.write(mem, entryAddr + 32);
+                                        stat.mtime.write(mem, entryAddr + 48);
+                                    }
+                                    String entryName = entries[i];
+                                    Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
                                 }
+                                saveFileNumEntries++;
                             }
+                        }
+                        mem.write32(buffer5Addr + 12, saveFileSecureNumEntries);
+                        mem.write32(buffer5Addr + 16, saveFileNumEntries);
+                        mem.write32(buffer5Addr + 20, systemFileNumEntries);
+
+                        if (entries == null) {
+                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
+                        } else {
                             savedataParams.base.result = checkMultipleCallStatus();
-                            break;
                         }
+                    }
+                    break;
+                }
 
-                        case SceUtilitySavedataParam.MODE_FILES: {
-                            int buffer5Addr = savedataParams.fileListAddr;
-                            if (Memory.isAddressGood(buffer5Addr)) {
-                                int saveFileSecureEntriesAddr = mem.read32(buffer5Addr + 24);
-                                int saveFileEntriesAddr = mem.read32(buffer5Addr + 28);
-                                int systemEntriesAddr = mem.read32(buffer5Addr + 32);
+                case SceUtilitySavedataParam.MODE_MAKEDATA:
+                case SceUtilitySavedataParam.MODE_MAKEDATASECURE: {
+                    // Split saving version.
+                    // Write system data files (encrypted or not).
+                    try {
+                        savedataParams.save(mem);
+                        savedataParams.base.result = checkMultipleCallStatus();
+                    } catch (IOException e) {
+                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
+                    } catch (Exception e) {
+                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
+                        log.error(e);
+                    }
+                    break;
+                }
 
-                                String path = savedataParams.getBasePath(savedataParams.saveName);
-                                String[] entries = Modules.IoFileMgrForUserModule.listFiles(path, null);
-
-                                int maxNumEntries = (entries == null) ? 0 : entries.length;
-                                int saveFileSecureNumEntries = 0;
-                                int saveFileNumEntries = 0;
-                                int systemFileNumEntries = 0;
-
-                                // List all files in the savedata (normal and/or encrypted).
-                                for (int i = 0; i < maxNumEntries; i++) {
-                                    String filePath = path + "/" + entries[i];
-                                    SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(filePath);
-
-                                    // System files.
-                                    if (filePath.contains(".SFO") || filePath.contains("ICON") || filePath.contains("PIC") || filePath.contains("SND")) {
-                                        if (Memory.isAddressGood(systemEntriesAddr)) {
-                                            int entryAddr = systemEntriesAddr + systemFileNumEntries * 80;
-                                            if (stat != null) {
-                                                mem.write32(entryAddr + 0, stat.mode);
-                                                mem.write64(entryAddr + 8, stat.size);
-                                                stat.ctime.write(mem, entryAddr + 16);
-                                                stat.atime.write(mem, entryAddr + 32);
-                                                stat.mtime.write(mem, entryAddr + 48);
-                                            }
-                                            String entryName = entries[i];
-                                            Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
-                                        }
-                                        systemFileNumEntries++;
-                                    } else { // Write to secure and normal.
-                                        if (Memory.isAddressGood(saveFileSecureEntriesAddr)) {
-                                            int entryAddr = saveFileSecureEntriesAddr + saveFileSecureNumEntries * 80;
-                                            if (stat != null) {
-                                                mem.write32(entryAddr + 0, stat.mode);
-                                                mem.write64(entryAddr + 8, stat.size);
-                                                stat.ctime.write(mem, entryAddr + 16);
-                                                stat.atime.write(mem, entryAddr + 32);
-                                                stat.mtime.write(mem, entryAddr + 48);
-                                            }
-                                            String entryName = entries[i];
-                                            Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
-                                        }
-                                        saveFileSecureNumEntries++;
-
-                                        if (Memory.isAddressGood(saveFileEntriesAddr)) {
-                                            int entryAddr = saveFileEntriesAddr + saveFileNumEntries * 80;
-                                            if (stat != null) {
-                                                mem.write32(entryAddr + 0, stat.mode);
-                                                mem.write64(entryAddr + 8, stat.size);
-                                                stat.ctime.write(mem, entryAddr + 16);
-                                                stat.atime.write(mem, entryAddr + 32);
-                                                stat.mtime.write(mem, entryAddr + 48);
-                                            }
-                                            String entryName = entries[i];
-                                            Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
-                                        }
-                                        saveFileNumEntries++;
-                                    }
-                                }
-                                mem.write32(buffer5Addr + 12, saveFileSecureNumEntries);
-                                mem.write32(buffer5Addr + 16, saveFileNumEntries);
-                                mem.write32(buffer5Addr + 20, systemFileNumEntries);
-
-                                if (entries == null) {
-                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
-                                } else {
-                                    savedataParams.base.result = checkMultipleCallStatus();
-                                }
-                            }
-                            break;
+                case SceUtilitySavedataParam.MODE_READ:
+                case SceUtilitySavedataParam.MODE_READSECURE: {
+                    // Sub-types of mode LOAD.
+                    // Loads data and can be called multiple times for updating.
+                    if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
+                        if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
+                            savedataParams.saveName = savedataParams.saveNameList[0];
                         }
-
-                        case SceUtilitySavedataParam.MODE_MAKEDATA:
-                        case SceUtilitySavedataParam.MODE_MAKEDATASECURE: {
-                            // Split saving version.
-                            // Write system data files (encrypted or not).
-                            try {
-                                savedataParams.save(mem);
-                                savedataParams.base.result = checkMultipleCallStatus();
-                            } catch (IOException e) {
-                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
-                            } catch (Exception e) {
-                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
-                                log.error(e);
-                            }
-                            break;
-                        }
-
-                        case SceUtilitySavedataParam.MODE_READ:
-                        case SceUtilitySavedataParam.MODE_READSECURE: {
-                            // Sub-types of mode LOAD.
-                            // Loads data and can be called multiple times for updating.
-                            if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
-                                if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
-                                    savedataParams.saveName = savedataParams.saveNameList[0];
-                                }
-                            }
-
-                            try {
-                                savedataParams.load(mem);
-                                if (log.isTraceEnabled()) {
-                                    log.trace(String.format("MODE_READ/MODE_READSECURE reading %s", Utilities.getMemoryDump(savedataParams.dataBuf, savedataParams.dataSize, 4, 16)));
-                                }
-                                savedataParams.base.result = checkMultipleCallStatus();
-                                savedataParams.write(mem);
-                            } catch (FileNotFoundException e) {
-                                if (savedataParams.isGameDirectoryPresent()) {
-                                    // Directory exists but file does not exist
-                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_FILE_NOT_FOUND;
-                                } else {
-                                    // Directory does not exist
-                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
-                                }
-                            } catch (IOException e) {
-                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
-                            } catch (Exception e) {
-                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
-                                log.error(e);
-                            }
-                            break;
-                        }
-
-                        case SceUtilitySavedataParam.MODE_WRITE:
-                        case SceUtilitySavedataParam.MODE_WRITESECURE: {
-                            // Sub-types of mode SAVE.
-                            // Writes data and can be called multiple times for updating.
-                            try {
-                                savedataParams.save(mem);
-                                savedataParams.base.result = checkMultipleCallStatus();
-                            } catch (IOException e) {
-                                if (!savedataParams.isGameDirectoryPresent()) {
-                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
-                                } else {
-                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
-                                }
-                            } catch (Exception e) {
-                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
-                                log.error(e);
-                            }
-                            break;
-                        }
-
-                        case SceUtilitySavedataParam.MODE_DELETEDATA:
-                            // Sub-type of mode DELETE.
-                            // Deletes the contents of only one specified file.
-                            if (savedataParams.fileName != null) {
-                                String save = "ms0/PSP/SAVEDATA/" + State.discId + savedataParams.saveName + "/" + savedataParams.fileName;
-                                File f = new File(save);
-
-                                if (f != null) {
-                                    log.debug("Savedata MODE_DELETEDATA deleting " + save);
-                                    f = new File(save);
-                                    f.delete();
-                                }
-                                savedataParams.base.result = checkMultipleCallStatus();
-                            } else {
-                                log.warn("Savedata MODE_DELETEDATA no data found!");
-                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
-                            }
-                            break;
-
-                        case SceUtilitySavedataParam.MODE_GETSIZE:
-                            int buffer6Addr = savedataParams.sizeAddr;
-                            boolean isPresent = savedataParams.isPresent();
-
-                            if (Memory.isAddressGood(buffer6Addr)) {
-                                int saveFileSecureNumEntries = mem.read32(buffer6Addr + 0);
-                                int saveFileNumEntries = mem.read32(buffer6Addr + 4);
-                                int saveFileSecureEntriesAddr = mem.read32(buffer6Addr + 8);
-                                int saveFileEntriesAddr = mem.read32(buffer6Addr + 12);
-
-                                int totalSizeKb = 0;
-
-                                for (int i = 0; i < saveFileSecureNumEntries; i++) {
-                                    int entryAddr = saveFileSecureEntriesAddr + i * 24;
-                                    long size = mem.read64(entryAddr);
-                                    String fileName = Utilities.readStringNZ(entryAddr + 8, 16);
-                                    int sizeKb = Utilities.getSizeKb(size);
-                                    if (log.isDebugEnabled()) {
-                                        log.debug(String.format("   Secure File '%s', size %d (%d KB)", fileName, size, sizeKb));
-                                    }
-
-                                    totalSizeKb += sizeKb;
-                                }
-                                for (int i = 0; i < saveFileNumEntries; i++) {
-                                    int entryAddr = saveFileEntriesAddr + i * 24;
-                                    long size = mem.read64(entryAddr);
-                                    String fileName = Utilities.readStringNZ(entryAddr + 8, 16);
-                                    int sizeKb = Utilities.getSizeKb(size);
-                                    if (log.isDebugEnabled()) {
-                                        log.debug(String.format("   File '%s', size %d (%d KB)", fileName, size, sizeKb));
-                                    }
-
-                                    totalSizeKb += sizeKb;
-                                }
-
-                                // Free MS size.
-                                int freeSizeKb = MemoryStick.getFreeSizeKb();
-                                String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(freeSizeKb);
-                                mem.write32(buffer6Addr + 16, MemoryStick.getSectorSize());
-                                mem.write32(buffer6Addr + 20, freeSizeKb / MemoryStick.getSectorSizeKb());
-                                mem.write32(buffer6Addr + 24, freeSizeKb);
-                                Utilities.writeStringNZ(mem, buffer6Addr + 28, 8, memoryStickFreeSpaceString);
-
-                                // If there's not enough size, we have to write how much size we need.
-                                // With enough size, our needed size is always 0.
-                                if (totalSizeKb > freeSizeKb) {
-                                    int neededSizeKb = totalSizeKb - freeSizeKb;
-
-                                    // Additional size needed to write savedata.
-                                    mem.write32(buffer6Addr + 36, neededSizeKb);
-                                    Utilities.writeStringNZ(mem, buffer6Addr + 40, 8, MemoryStick.getSizeKbString(neededSizeKb));
-
-                                    if (isPresent) {
-                                        // Additional size needed to overwrite savedata.
-                                        mem.write32(buffer6Addr + 48, neededSizeKb);
-                                        Utilities.writeStringNZ(mem, buffer6Addr + 52, 8, MemoryStick.getSizeKbString(neededSizeKb));
-                                    }
-                                } else {
-                                    mem.write32(buffer6Addr + 36, 0);
-                                    if (isPresent) {
-                                        mem.write32(buffer6Addr + 48, 0);
-                                    }
-                                }
-                            }
-
-                            // MODE_GETSIZE also checks if a MemoryStick is inserted and if there're no previous data.
-                            if (MemoryStick.getStateMs() != MemoryStick.PSP_MEMORYSTICK_STATE_DRIVER_READY) {
-                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_MEMSTICK;
-                            } else if (!isPresent) {
-                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
-                            } else {
-                                savedataParams.base.result = checkMultipleCallStatus();
-                            }
-                            break;
-
-                        case SceUtilitySavedataParam.MODE_ERASESECURE:
-                            if (savedataParams.fileName != null) {
-                                String save = savedataParams.getFileName(savedataParams.saveName, savedataParams.fileName);
-                                if (Modules.IoFileMgrForUserModule.deleteFile(save)) {
-                                    savedataParams.base.result = checkMultipleCallStatus();
-                                } else if (savedataParams.isGameDirectoryPresent()) {
-                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
-                                } else {
-                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_FILE_NOT_FOUND;
-                                }
-                            } else {
-                                log.warn("Savedata MODE_ERASESECURE no fileName specified!");
-                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
-                            }
-                            break;
-
-                        default:
-                            log.warn("Savedata - Unsupported mode " + savedataParams.mode);
-                            savedataParams.base.result = -1;
-                            break;
                     }
 
-                    savedataParams.base.writeResult(mem);
-                    if (log.isDebugEnabled()) {
-                        log.debug(String.format("hleUtilitySavedataDisplay result: 0x%08X", savedataParams.base.result));
+                    try {
+                        savedataParams.load(mem);
+                        if (log.isTraceEnabled()) {
+                            log.trace(String.format("MODE_READ/MODE_READSECURE reading %s", Utilities.getMemoryDump(savedataParams.dataBuf, savedataParams.dataSize, 4, 16)));
+                        }
+                        savedataParams.base.result = checkMultipleCallStatus();
+                        savedataParams.write(mem);
+                    } catch (FileNotFoundException e) {
+                        if (savedataParams.isGameDirectoryPresent()) {
+                            // Directory exists but file does not exist
+                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_FILE_NOT_FOUND;
+                        } else {
+                            // Directory does not exist
+                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
+                        }
+                    } catch (IOException e) {
+                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
+                    } catch (Exception e) {
+                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
+                        log.error(e);
+                    }
+                    break;
+                }
+
+                case SceUtilitySavedataParam.MODE_WRITE:
+                case SceUtilitySavedataParam.MODE_WRITESECURE: {
+                    // Sub-types of mode SAVE.
+                    // Writes data and can be called multiple times for updating.
+                    try {
+                        savedataParams.save(mem);
+                        savedataParams.base.result = checkMultipleCallStatus();
+                    } catch (IOException e) {
+                        if (!savedataParams.isGameDirectoryPresent()) {
+                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
+                        } else {
+                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
+                        }
+                    } catch (Exception e) {
+                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
+                        log.error(e);
+                    }
+                    break;
+                }
+
+                case SceUtilitySavedataParam.MODE_DELETEDATA:
+                    // Sub-type of mode DELETE.
+                    // Deletes the contents of only one specified file.
+                    if (savedataParams.fileName != null) {
+                        String save = "ms0/PSP/SAVEDATA/" + State.discId + savedataParams.saveName + "/" + savedataParams.fileName;
+                        File f = new File(save);
+
+                        if (f != null) {
+                            log.debug("Savedata MODE_DELETEDATA deleting " + save);
+                            f = new File(save);
+                            f.delete();
+                        }
+                        savedataParams.base.result = checkMultipleCallStatus();
+                    } else {
+                        log.warn("Savedata MODE_DELETEDATA no data found!");
+                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
+                    }
+                    break;
+
+                case SceUtilitySavedataParam.MODE_GETSIZE:
+                    int buffer6Addr = savedataParams.sizeAddr;
+                    boolean isPresent = savedataParams.isPresent();
+
+                    if (Memory.isAddressGood(buffer6Addr)) {
+                        int saveFileSecureNumEntries = mem.read32(buffer6Addr + 0);
+                        int saveFileNumEntries = mem.read32(buffer6Addr + 4);
+                        int saveFileSecureEntriesAddr = mem.read32(buffer6Addr + 8);
+                        int saveFileEntriesAddr = mem.read32(buffer6Addr + 12);
+
+                        int totalSizeKb = 0;
+
+                        for (int i = 0; i < saveFileSecureNumEntries; i++) {
+                            int entryAddr = saveFileSecureEntriesAddr + i * 24;
+                            long size = mem.read64(entryAddr);
+                            String fileName = Utilities.readStringNZ(entryAddr + 8, 16);
+                            int sizeKb = Utilities.getSizeKb(size);
+                            if (log.isDebugEnabled()) {
+                                log.debug(String.format("   Secure File '%s', size %d (%d KB)", fileName, size, sizeKb));
+                            }
+
+                            totalSizeKb += sizeKb;
+                        }
+                        for (int i = 0; i < saveFileNumEntries; i++) {
+                            int entryAddr = saveFileEntriesAddr + i * 24;
+                            long size = mem.read64(entryAddr);
+                            String fileName = Utilities.readStringNZ(entryAddr + 8, 16);
+                            int sizeKb = Utilities.getSizeKb(size);
+                            if (log.isDebugEnabled()) {
+                                log.debug(String.format("   File '%s', size %d (%d KB)", fileName, size, sizeKb));
+                            }
+
+                            totalSizeKb += sizeKb;
+                        }
+
+                        // Free MS size.
+                        int freeSizeKb = MemoryStick.getFreeSizeKb();
+                        String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(freeSizeKb);
+                        mem.write32(buffer6Addr + 16, MemoryStick.getSectorSize());
+                        mem.write32(buffer6Addr + 20, freeSizeKb / MemoryStick.getSectorSizeKb());
+                        mem.write32(buffer6Addr + 24, freeSizeKb);
+                        Utilities.writeStringNZ(mem, buffer6Addr + 28, 8, memoryStickFreeSpaceString);
+
+                        // If there's not enough size, we have to write how much size we need.
+                        // With enough size, our needed size is always 0.
+                        if (totalSizeKb > freeSizeKb) {
+                            int neededSizeKb = totalSizeKb - freeSizeKb;
+
+                            // Additional size needed to write savedata.
+                            mem.write32(buffer6Addr + 36, neededSizeKb);
+                            Utilities.writeStringNZ(mem, buffer6Addr + 40, 8, MemoryStick.getSizeKbString(neededSizeKb));
+
+                            if (isPresent) {
+                                // Additional size needed to overwrite savedata.
+                                mem.write32(buffer6Addr + 48, neededSizeKb);
+                                Utilities.writeStringNZ(mem, buffer6Addr + 52, 8, MemoryStick.getSizeKbString(neededSizeKb));
+                            }
+                        } else {
+                            mem.write32(buffer6Addr + 36, 0);
+                            if (isPresent) {
+                                mem.write32(buffer6Addr + 48, 0);
+                            }
+                        }
                     }
 
-	        return false;
-		}
+                    // MODE_GETSIZE also checks if a MemoryStick is inserted and if there're no previous data.
+                    if (MemoryStick.getStateMs() != MemoryStick.PSP_MEMORYSTICK_STATE_DRIVER_READY) {
+                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_MEMSTICK;
+                    } else if (!isPresent) {
+                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
+                    } else {
+                        savedataParams.base.result = checkMultipleCallStatus();
+                    }
+                    break;
+
+                case SceUtilitySavedataParam.MODE_ERASESECURE:
+                    if (savedataParams.fileName != null) {
+                        String save = savedataParams.getFileName(savedataParams.saveName, savedataParams.fileName);
+                        if (Modules.IoFileMgrForUserModule.deleteFile(save)) {
+                            savedataParams.base.result = checkMultipleCallStatus();
+                        } else if (savedataParams.isGameDirectoryPresent()) {
+                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
+                        } else {
+                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_FILE_NOT_FOUND;
+                        }
+                    } else {
+                        log.warn("Savedata MODE_ERASESECURE no fileName specified!");
+                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
+                    }
+                    break;
+
+                default:
+                    log.warn("Savedata - Unsupported mode " + savedataParams.mode);
+                    savedataParams.base.result = -1;
+                    break;
+            }
+
+            savedataParams.base.writeResult(mem);
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("hleUtilitySavedataDisplay result: 0x%08X", savedataParams.base.result));
+            }
+
+            return false;
+        }
 
 		@Override
 		protected boolean hasDialog() {
@@ -2322,6 +2327,7 @@ public class sceUtility extends HLEModule {
 			createDialog(savedataDialogState);
 
 			numberRows = saveNames == null ? 0 : saveNames.length;
+			savedataDialogState.saveListEmpty = (numberRows <= 0);
 
 			// Define the selected row according to the focus field
             selectedRow = 0;
