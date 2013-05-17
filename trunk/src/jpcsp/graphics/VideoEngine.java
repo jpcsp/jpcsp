@@ -235,6 +235,7 @@ public class VideoEngine {
     private int bufferId;
     private int nativeBufferId;
     private int indexBufferId;
+    private float[] floatBufferArray;
     private List<Integer> buffersToBeDeleted = new LinkedList<Integer>();
     float[][] bboxVertices;
     private ConcurrentLinkedQueue<PspGeList> drawListQueue;
@@ -550,6 +551,7 @@ public class VideoEngine {
     	bufferId = -1;
     	nativeBufferId = -1;
     	indexBufferId = -1;
+    	floatBufferArray = null;
 
         Settings.getInstance().removeSettingsListener(name);
     }
@@ -578,6 +580,7 @@ public class VideoEngine {
         bufferId = bufferManager.genBuffer(IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_FLOAT, drawBufferSize / SIZEOF_FLOAT, IRenderingEngine.RE_STREAM_DRAW);
         nativeBufferId = bufferManager.genBuffer(IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_BYTE, drawBufferSize, IRenderingEngine.RE_STREAM_DRAW);
         indexBufferId = bufferManager.genBuffer(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, IRenderingEngine.RE_UNSIGNED_BYTE, drawBufferSize, IRenderingEngine.RE_STREAM_DRAW);
+        floatBufferArray = new float[drawBufferSize / SIZEOF_FLOAT];
 
         if (useAsyncVertexCache) {
         	AsyncVertexCache.getInstance().setUseVertexArray(re.isVertexArrayAvailable());
@@ -2184,11 +2187,6 @@ public class VideoEngine {
 	            	vertexCacheLookupStatistics.end();
 	            }
 
-	            ByteBuffer byteBuffer = bufferManager.getBuffer(bufferId);
-	            byteBuffer.clear();
-	            FloatBuffer floatBuffer = byteBuffer.asFloatBuffer();
-	            floatBuffer.clear();
-
 	    		if (!useVertexCache && re.isVertexArrayAvailable()) {
 					re.bindVertexArray(0);
 	    		}
@@ -2210,9 +2208,9 @@ public class VideoEngine {
 	                case PRIM_TRIANGLE_FANS:
 	                    re.setVertexInfo(context.vinfo, false, context.useVertexColor, useTexture, type);
 
-	                    float[] normalizedNormal = new float[3];
 	                    if (cachedVertexInfo == null) {
 	                		vertexReadingStatistics.start();
+	                		int ii = 0;
 	                        for (int i = 0; i < numberOfVertex; i++) {
 	                            int addr = context.vinfo.getAddress(mem, i);
 
@@ -2224,29 +2222,42 @@ public class VideoEngine {
 	                            }
 
 	                            if (useTextureFromNormal) {
-	                                floatBuffer.put(v.n, 0, 3);
+	                            	floatBufferArray[ii++] = v.n[0];
+	                            	floatBufferArray[ii++] = v.n[1];
+	                            	floatBufferArray[ii++] = v.n[2];
 	                            } else if (useTextureFromNormalizedNormal) {
 	                            	float normalLength = (float) Math.sqrt(v.n[0] * v.n[0] + v.n[1] * v.n[1] + v.n[2] * v.n[2]);
-	                            	normalizedNormal[0] = v.n[0] / normalLength;
-	                            	normalizedNormal[1] = v.n[1] / normalLength;
-	                            	normalizedNormal[2] = v.n[2] / normalLength;
-	                                floatBuffer.put(normalizedNormal, 0, 3);
+	                            	floatBufferArray[ii++] = v.n[0] / normalLength;
+	                            	floatBufferArray[ii++] = v.n[1] / normalLength;
+	                            	floatBufferArray[ii++] = v.n[2] / normalLength;
 	                            } else if (useTextureFromPosition) {
-	                                floatBuffer.put(v.p, 0, 3);
+	                            	floatBufferArray[ii++] = v.p[0];
+	                            	floatBufferArray[ii++] = v.p[1];
+	                            	floatBufferArray[ii++] = v.p[2];
 	                            } else if (useTexture || context.vinfo.texture != 0) {
-	                                floatBuffer.put(v.t);
+	                            	floatBufferArray[ii++] = v.t[0];
+	                            	floatBufferArray[ii++] = v.t[1];
 	                            }
 	                            if (context.useVertexColor) {
-	                                floatBuffer.put(v.c);
+	                            	floatBufferArray[ii++] = v.c[0];
+	                            	floatBufferArray[ii++] = v.c[1];
+	                            	floatBufferArray[ii++] = v.c[2];
+	                            	floatBufferArray[ii++] = v.c[3];
 	                            }
 	                            if (context.vinfo.normal != 0) {
-	                                floatBuffer.put(v.n);
+	                            	floatBufferArray[ii++] = v.n[0];
+	                            	floatBufferArray[ii++] = v.n[1];
+	                            	floatBufferArray[ii++] = v.n[2];
 	                            }
 	                            if (context.vinfo.position != 0) {
-	                                floatBuffer.put(v.p);
+	                            	floatBufferArray[ii++] = v.p[0];
+	                            	floatBufferArray[ii++] = v.p[1];
+	                            	floatBufferArray[ii++] = v.p[2];
 	                            }
 	                            if (numberOfWeightsForBuffer > 0) {
-	                                floatBuffer.put(v.boneWeights, 0, numberOfWeightsForBuffer);
+	                            	for (int j = 0; j < numberOfWeightsForBuffer; j++) {
+	                            		floatBufferArray[ii++] = v.boneWeights[j];
+	                            	}
 	                            }
 
 	                            if (isLogTraceEnabled) {
@@ -2255,16 +2266,18 @@ public class VideoEngine {
 	                                }
 	                            }
 	                        }
+	                        int bufferSizeInFloats = ii;
 	                    	vertexReadingStatistics.end();
 
 	                        if (useVertexCache) {
 	                            cachedVertexInfo = new VertexInfo(context.vinfo);
 	                            VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
-	                            int size = floatBuffer.position();
-	                            floatBuffer.rewind();
-	                            needSetDataPointers = cachedVertexInfo.loadVertex(re, floatBuffer, size);
+	                            needSetDataPointers = cachedVertexInfo.loadVertex(re, floatBufferArray, bufferSizeInFloats);
 	                        } else {
-	                            bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, 0, floatBuffer.position() * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
+	            	            ByteBuffer byteBuffer = bufferManager.getBuffer(bufferId);
+	            	            byteBuffer.clear();
+		                    	byteBuffer.asFloatBuffer().put(floatBufferArray, 0, bufferSizeInFloats);
+	                            bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, 0, bufferSizeInFloats * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
 	                        }
 	                    } else {
 	                        if (isLogDebugEnabled) {
@@ -2298,6 +2311,7 @@ public class VideoEngine {
 
 	                	if (cachedVertexInfo == null) {
 	            			vertexReadingStatistics.start();
+	                		int ii = 0;
 	                        for (int i = 0; i < numberOfVertex; i += 2) {
 	                            int addr1 = context.vinfo.getAddress(mem, i);
 	                            int addr2 = context.vinfo.getAddress(mem, i + 1);
@@ -2356,76 +2370,112 @@ public class VideoEngine {
 
 	                            // V1
 	                            if (context.vinfo.texture != 0) {
-	                                floatBuffer.put(v1.t);
+	                            	floatBufferArray[ii++] = v1.t[0];
+	                            	floatBufferArray[ii++] = v1.t[1];
 	                            }
 	                            if (context.useVertexColor) {
-	                                floatBuffer.put(v2.c);
+	                            	floatBufferArray[ii++] = v2.c[0];
+	                            	floatBufferArray[ii++] = v2.c[1];
+	                            	floatBufferArray[ii++] = v2.c[2];
+	                            	floatBufferArray[ii++] = v2.c[3];
 	                            }
 	                            if (context.vinfo.normal != 0) {
-	                                floatBuffer.put(v2.n);
+	                            	floatBufferArray[ii++] = v2.n[0];
+	                            	floatBufferArray[ii++] = v2.n[1];
+	                            	floatBufferArray[ii++] = v2.n[2];
 	                            }
 	                            if (context.vinfo.position != 0) {
-	                                floatBuffer.put(v1.p);
+	                            	floatBufferArray[ii++] = v1.p[0];
+	                            	floatBufferArray[ii++] = v1.p[1];
+	                            	floatBufferArray[ii++] = v1.p[2];
 	                            }
 
 	                            if (context.vinfo.texture != 0) {
 	                                if (flippedTexture) {
-	                                    floatBuffer.put(v2.t[0]).put(v1.t[1]);
+		                            	floatBufferArray[ii++] = v2.t[0];
+		                            	floatBufferArray[ii++] = v1.t[1];
 	                                } else {
-	                                    floatBuffer.put(v1.t[0]).put(v2.t[1]);
+		                            	floatBufferArray[ii++] = v1.t[0];
+		                            	floatBufferArray[ii++] = v2.t[1];
 	                                }
 	                            }
 	                            if (context.useVertexColor) {
-	                                floatBuffer.put(v2.c);
+	                            	floatBufferArray[ii++] = v2.c[0];
+	                            	floatBufferArray[ii++] = v2.c[1];
+	                            	floatBufferArray[ii++] = v2.c[2];
+	                            	floatBufferArray[ii++] = v2.c[3];
 	                            }
 	                            if (context.vinfo.normal != 0) {
-	                                floatBuffer.put(v2.n);
+	                            	floatBufferArray[ii++] = v2.n[0];
+	                            	floatBufferArray[ii++] = v2.n[1];
+	                            	floatBufferArray[ii++] = v2.n[2];
 	                            }
 	                            if (context.vinfo.position != 0) {
-	                                floatBuffer.put(v1.p[0]).put(v2.p[1]).put(v2.p[2]);
+	                            	floatBufferArray[ii++] = v1.p[0];
+	                            	floatBufferArray[ii++] = v2.p[1];
+	                            	floatBufferArray[ii++] = v2.p[2];
 	                            }
 
 	                            // V2
 	                            if (context.vinfo.texture != 0) {
-	                                floatBuffer.put(v2.t);
+	                            	floatBufferArray[ii++] = v2.t[0];
+	                            	floatBufferArray[ii++] = v2.t[1];
 	                            }
 	                            if (context.useVertexColor) {
-	                                floatBuffer.put(v2.c);
+	                            	floatBufferArray[ii++] = v2.c[0];
+	                            	floatBufferArray[ii++] = v2.c[1];
+	                            	floatBufferArray[ii++] = v2.c[2];
+	                            	floatBufferArray[ii++] = v2.c[3];
 	                            }
 	                            if (context.vinfo.normal != 0) {
-	                                floatBuffer.put(v2.n);
+	                            	floatBufferArray[ii++] = v2.n[0];
+	                            	floatBufferArray[ii++] = v2.n[1];
+	                            	floatBufferArray[ii++] = v2.n[2];
 	                            }
 	                            if (context.vinfo.position != 0) {
-	                                floatBuffer.put(v2.p);
+	                            	floatBufferArray[ii++] = v2.p[0];
+	                            	floatBufferArray[ii++] = v2.p[1];
+	                            	floatBufferArray[ii++] = v2.p[2];
 	                            }
 
 	                            if (context.vinfo.texture != 0) {
 	                                if (flippedTexture) {
-	                                    floatBuffer.put(v1.t[0]).put(v2.t[1]);
+		                            	floatBufferArray[ii++] = v1.t[0];
+		                            	floatBufferArray[ii++] = v2.t[1];
 	                                } else {
-	                                    floatBuffer.put(v2.t[0]).put(v1.t[1]);
+		                            	floatBufferArray[ii++] = v2.t[0];
+		                            	floatBufferArray[ii++] = v1.t[1];
 	                                }
 	                            }
 	                            if (context.useVertexColor) {
-	                                floatBuffer.put(v2.c);
+	                            	floatBufferArray[ii++] = v2.c[0];
+	                            	floatBufferArray[ii++] = v2.c[1];
+	                            	floatBufferArray[ii++] = v2.c[2];
+	                            	floatBufferArray[ii++] = v2.c[3];
 	                            }
 	                            if (context.vinfo.normal != 0) {
-	                                floatBuffer.put(v2.n);
+	                            	floatBufferArray[ii++] = v2.n[0];
+	                            	floatBufferArray[ii++] = v2.n[1];
+	                            	floatBufferArray[ii++] = v2.n[2];
 	                            }
 	                            if (context.vinfo.position != 0) {
-	                                floatBuffer.put(v2.p[0]).put(v1.p[1]).put(v2.p[2]);
+	                            	floatBufferArray[ii++] = v2.p[0];
+	                            	floatBufferArray[ii++] = v1.p[1];
+	                            	floatBufferArray[ii++] = v2.p[2];
 	                            }
 	                        }
+	                        int bufferSizeInFloats = ii;
 	                    	vertexReadingStatistics.end();
 
 	                        if (useVertexCache) {
 	                            cachedVertexInfo = new VertexInfo(context.vinfo);
 	                            VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
-	                            int size = floatBuffer.position();
-	                            floatBuffer.rewind();
-	                            needSetDataPointers = cachedVertexInfo.loadVertex(re, floatBuffer, size);
+	                            needSetDataPointers = cachedVertexInfo.loadVertex(re, floatBufferArray, bufferSizeInFloats);
 	                        } else {
-	                            bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, 0, floatBuffer.position() * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
+	            	            ByteBuffer byteBuffer = bufferManager.getBuffer(bufferId);
+	            	            byteBuffer.clear();
+		                    	byteBuffer.asFloatBuffer().put(floatBufferArray, 0, bufferSizeInFloats);
+	                            bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, 0, bufferSizeInFloats * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
 	                        }
 	                    } else {
 	                        if (isLogDebugEnabled) {
@@ -2745,30 +2795,32 @@ public class VideoEngine {
             float texCoordX = width / (float) lineWidth;
             float texCoordY = height / (float) bufferHeight;
 
+            int i = 0;
+            floatBufferArray[i++] = texCoordX;
+            floatBufferArray[i++] = texCoordY;
+            floatBufferArray[i++] = width;
+            floatBufferArray[i++] = height;
+
+            floatBufferArray[i++] = 0;
+            floatBufferArray[i++] = texCoordY;
+            floatBufferArray[i++] = 0;
+            floatBufferArray[i++] = height;
+
+            floatBufferArray[i++] = 0;
+            floatBufferArray[i++] = 0;
+            floatBufferArray[i++] = 0;
+            floatBufferArray[i++] = 0;
+
+            floatBufferArray[i++] = texCoordX;
+            floatBufferArray[i++] = 0;
+            floatBufferArray[i++] = width;
+            floatBufferArray[i++] = 0;
+
             IREBufferManager bufferManager = re.getBufferManager();
-            ByteBuffer drawByteBuffer = bufferManager.getBuffer(bufferId);
-            drawByteBuffer.clear();
-            FloatBuffer drawFloatBuffer = drawByteBuffer.asFloatBuffer();
-            drawFloatBuffer.clear();
-            drawFloatBuffer.put(texCoordX);
-            drawFloatBuffer.put(texCoordY);
-            drawFloatBuffer.put(width);
-            drawFloatBuffer.put(height);
-
-            drawFloatBuffer.put(0);
-            drawFloatBuffer.put(texCoordY);
-            drawFloatBuffer.put(0);
-            drawFloatBuffer.put(height);
-
-            drawFloatBuffer.put(0);
-            drawFloatBuffer.put(0);
-            drawFloatBuffer.put(0);
-            drawFloatBuffer.put(0);
-
-            drawFloatBuffer.put(texCoordX);
-            drawFloatBuffer.put(0);
-            drawFloatBuffer.put(width);
-            drawFloatBuffer.put(0);
+            ByteBuffer byteBuffer = bufferManager.getBuffer(bufferId);
+            byteBuffer.clear();
+            int bufferSizeInFloats = i;
+            byteBuffer.asFloatBuffer().put(floatBufferArray, 0, bufferSizeInFloats);
 
             re.setVertexInfo(null, false, false, true, IRenderingEngine.RE_QUADS);
             re.enableClientState(IRenderingEngine.RE_TEXTURE);
@@ -2777,7 +2829,7 @@ public class VideoEngine {
             re.enableClientState(IRenderingEngine.RE_VERTEX);
             bufferManager.setTexCoordPointer(bufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 0);
             bufferManager.setVertexPointer(bufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 2 * SIZEOF_FLOAT);
-            bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, 0, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
+            bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, 0, bufferSizeInFloats * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
             re.drawArrays(IRenderingEngine.RE_QUADS, 0, 4);
 
             re.endDirectRendering();
@@ -5015,7 +5067,7 @@ public class VideoEngine {
 		return true;
     }
 
-    private int getValidNumberMipmaps() {
+    private int getValidNumberMipmaps(boolean silent) {
     	for (int level = 0; level <= context.texture_num_mip_maps; level++) {
     		int texaddr = context.texture_base_pointer[level] & Memory.addressMask;
     		if (!Memory.isAddressGood(texaddr)) {
@@ -5037,7 +5089,7 @@ public class VideoEngine {
             	int previousHeight = context.texture_height[level - 1];
             	int currentHeight = context.texture_height[level];
             	if (currentWidth * 2 != previousWidth || currentHeight * 2 != previousHeight) {
-            		if (isLogWarnEnabled) {
+            		if (!silent && isLogWarnEnabled) {
             			log.warn(String.format("Texture mipmap with invalid dimension at level %d: (%dx%d)@0x%08X -> (%dx%d)@0x%08X", level, previousWidth, previousHeight, context.texture_base_pointer[level - 1] & Memory.addressMask, currentWidth, currentHeight, texaddr));
             			if (context.tex_mipmap_mode == TBIAS_MODE_CONST && context.tex_mipmap_bias_int >= level) {
                 			log.warn(String.format("... and this invalid Texture mipmap will be used with mipmap_mode=%d, mipmap_bias=%d", context.tex_mipmap_mode, context.tex_mipmap_bias_int));
@@ -5239,10 +5291,10 @@ public class VideoEngine {
             int texclut = context.tex_clut_addr;
             int texaddr;
 
-            int textureByteAlignment = 4;   // 32 bits
+            int textureByteAlignment = 4; // 32 bits
             boolean compressedTexture = false;
 
-            int numberMipmaps = getValidNumberMipmaps();
+            int numberMipmaps = getValidNumberMipmaps(false);
 
             // Set the texture min/mag filters before uploading the texture
             // (some drivers have problems changing the parameters afterwards)
@@ -6166,7 +6218,7 @@ public class VideoEngine {
         if (context.textureFlag.isEnabled() && !context.clearMode && !isBoundingBox) {
         	re.setTextureWrapMode(context.tex_wrap_s, context.tex_wrap_t);
 
-        	int validNumberMipmaps = getValidNumberMipmaps();
+        	int validNumberMipmaps = getValidNumberMipmaps(true);
 	        int mipmapBaseLevel = 0;
 	        int mipmapMaxLevel = validNumberMipmaps;
 	        if (context.tex_mipmap_mode == TBIAS_MODE_CONST) {
@@ -6476,52 +6528,107 @@ public class VideoEngine {
 		boolean needSetDataPointers = true;
 		int numberOfVertexPerRow = (context.patch_div_s + 1) * 2;
 		if (cachedVertexInfo == null) {
-			ByteBuffer drawByteBuffer = bufferManager.getBuffer(bufferId);
-			drawByteBuffer.clear();
-			FloatBuffer drawFloatBuffer = drawByteBuffer.asFloatBuffer();
-        	drawFloatBuffer.clear();
+        	int ii = 0;
 	        for (int j = 0; j < context.patch_div_t; j++) {
 	        	for (int i = 0; i <= context.patch_div_s; i++) {
 	        		VertexState v1 = patch[i][j];
 	                VertexState v2 = patch[i][j + 1];
 
-	        		if (useTexture)     drawFloatBuffer.put(v1.t);
-	        		if (useVertexColor) drawFloatBuffer.put(v1.c);
-	        		if (useNormal)      drawFloatBuffer.put(v1.n);
-	        		drawFloatBuffer.put(v1.p);
+	        		if (useTexture) {
+	        			floatBufferArray[ii++] = v1.t[0];
+	        			floatBufferArray[ii++] = v1.t[1];
+	        		}
+	        		if (useVertexColor) {
+	        			floatBufferArray[ii++] = v1.c[0];
+	        			floatBufferArray[ii++] = v1.c[1];
+	        			floatBufferArray[ii++] = v1.c[2];
+	        			floatBufferArray[ii++] = v1.c[3];
+	        		}
+	        		if (useNormal) {
+	        			floatBufferArray[ii++] = v1.n[0];
+	        			floatBufferArray[ii++] = v1.n[1];
+	        			floatBufferArray[ii++] = v1.n[2];
+	        		}
+        			floatBufferArray[ii++] = v1.p[0];
+        			floatBufferArray[ii++] = v1.p[1];
+        			floatBufferArray[ii++] = v1.p[2];
 
 	        		if (combineRowPrimitives && i == 0 && j > 0) {
 	        			// First dummy vertex: add v1 again
-		        		if (useTexture)     drawFloatBuffer.put(v1.t);
-		        		if (useVertexColor) drawFloatBuffer.put(v1.c);
-		        		if (useNormal)      drawFloatBuffer.put(v1.n);
-	        			drawFloatBuffer.put(v1.p);
+		        		if (useTexture) {
+		        			floatBufferArray[ii++] = v1.t[0];
+		        			floatBufferArray[ii++] = v1.t[1];
+		        		}
+		        		if (useVertexColor) {
+		        			floatBufferArray[ii++] = v1.c[0];
+		        			floatBufferArray[ii++] = v1.c[1];
+		        			floatBufferArray[ii++] = v1.c[2];
+		        			floatBufferArray[ii++] = v1.c[3];
+		        		}
+		        		if (useNormal) {
+		        			floatBufferArray[ii++] = v1.n[0];
+		        			floatBufferArray[ii++] = v1.n[1];
+		        			floatBufferArray[ii++] = v1.n[2];
+		        		}
+	        			floatBufferArray[ii++] = v1.p[0];
+	        			floatBufferArray[ii++] = v1.p[1];
+	        			floatBufferArray[ii++] = v1.p[2];
 	        		}
 
-        			if (useTexture)     drawFloatBuffer.put(v2.t);
-	        		if (useVertexColor) drawFloatBuffer.put(v2.c);
-	        		if (useNormal)      drawFloatBuffer.put(v2.n);
-	        		drawFloatBuffer.put(v2.p);
+        			if (useTexture) {
+	        			floatBufferArray[ii++] = v2.t[0];
+	        			floatBufferArray[ii++] = v2.t[1];
+        			}
+	        		if (useVertexColor) {
+	        			floatBufferArray[ii++] = v2.c[0];
+	        			floatBufferArray[ii++] = v2.c[1];
+	        			floatBufferArray[ii++] = v2.c[2];
+	        			floatBufferArray[ii++] = v2.c[3];
+	        		}
+	        		if (useNormal) {
+	        			floatBufferArray[ii++] = v2.n[0];
+	        			floatBufferArray[ii++] = v2.n[1];
+	        			floatBufferArray[ii++] = v2.n[2];
+	        		}
+        			floatBufferArray[ii++] = v2.p[0];
+        			floatBufferArray[ii++] = v2.p[1];
+        			floatBufferArray[ii++] = v2.p[2];
 
 	        		if (combineRowPrimitives && i == context.patch_div_s && j < context.patch_div_t - 1) {
 	        			// Second dummy vertex: add v2 again
-	        			if (useTexture)     drawFloatBuffer.put(v2.t);
-		        		if (useVertexColor) drawFloatBuffer.put(v2.c);
-		        		if (useNormal)      drawFloatBuffer.put(v2.n);
-	        			drawFloatBuffer.put(v2.p);
+	        			if (useTexture) {
+		        			floatBufferArray[ii++] = v2.t[0];
+		        			floatBufferArray[ii++] = v2.t[1];
+	        			}
+		        		if (useVertexColor) {
+		        			floatBufferArray[ii++] = v2.c[0];
+		        			floatBufferArray[ii++] = v2.c[1];
+		        			floatBufferArray[ii++] = v2.c[2];
+		        			floatBufferArray[ii++] = v2.c[3];
+		        		}
+		        		if (useNormal) {
+		        			floatBufferArray[ii++] = v2.n[0];
+		        			floatBufferArray[ii++] = v2.n[1];
+		        			floatBufferArray[ii++] = v2.n[2];
+		        		}
+	        			floatBufferArray[ii++] = v2.p[0];
+	        			floatBufferArray[ii++] = v2.p[1];
+	        			floatBufferArray[ii++] = v2.p[2];
 	        		}
 	        	}
 	        }
+            int bufferSizeInFloats = ii;
 
-	        if (useVertexCache) {
+            if (useVertexCache) {
 	        	cachedVertexInfo = new VertexInfo(context.vinfo);
 	        	int numberOfVertex = numberOfVertexPerRow * context.patch_div_t;
 	        	VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, 0);
-	        	int size = drawFloatBuffer.position();
-	        	drawFloatBuffer.rewind();
-	        	needSetDataPointers = cachedVertexInfo.loadVertex(re, drawFloatBuffer, size);
+	        	needSetDataPointers = cachedVertexInfo.loadVertex(re, floatBufferArray, bufferSizeInFloats);
 	        } else {
-	        	bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, 0, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
+				ByteBuffer byteBuffer = bufferManager.getBuffer(bufferId);
+				byteBuffer.clear();
+            	byteBuffer.asFloatBuffer().put(floatBufferArray, 0, bufferSizeInFloats);
+	        	bufferManager.setBufferSubData(IRenderingEngine.RE_ARRAY_BUFFER, bufferId, 0, bufferSizeInFloats * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
 	        }
 		} else {
 			needSetDataPointers = cachedVertexInfo.bindVertex(re);

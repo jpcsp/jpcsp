@@ -18,7 +18,6 @@ package jpcsp.graphics;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
 
 import jpcsp.Memory;
 import jpcsp.graphics.RE.IRenderingEngine;
@@ -339,7 +338,7 @@ public class VertexInfo {
         return needSetDataPointers;
     }
 
-    public boolean loadVertex(IRenderingEngine re, FloatBuffer buffer, int size) {
+    public boolean loadVertex(IRenderingEngine re, float[] buffer, int size) {
         boolean needSetDataPointers = false;
 
         if (vertexArrayId == -1 && re.isVertexArrayAvailable()) {
@@ -362,11 +361,7 @@ public class VertexInfo {
             cachedBuffer.clear();
         }
 
-        int oldLimit = buffer.limit();
-        buffer.limit(size);
-        cachedBuffer.asFloatBuffer().put(buffer);
-        buffer.limit(oldLimit);
-        buffer.rewind();
+        cachedBuffer.asFloatBuffer().put(buffer, 0, size);
         cachedBuffer.rewind();
 
         re.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, size * VideoEngine.SIZEOF_FLOAT, cachedBuffer, IRenderingEngine.RE_STATIC_DRAW);
