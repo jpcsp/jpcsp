@@ -43,7 +43,6 @@ import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.LinkedList;
 import java.util.List;
@@ -171,6 +170,7 @@ public class sceDisplay extends HLEModule {
 	    		}
 	    		videoEngine.start();
 	        	drawBuffer = reDisplay.getBufferManager().genBuffer(IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_FLOAT, 16, IRenderingEngine.RE_DYNAMIC_DRAW);
+	        	drawBufferArray = new float[16];
 		    	startModules = false;
 		    	if (saveGEToTexture && !re.isFramebufferObjectAvailable()) {
 		    		saveGEToTexture = false;
@@ -362,6 +362,7 @@ public class sceDisplay extends HLEModule {
     private boolean startModules;
     private boolean isStarted;
     private int drawBuffer;
+    private float[] drawBufferArray;
     private boolean resetDisplaySettings;
 
     // current display mode
@@ -1518,30 +1519,32 @@ public class sceDisplay extends HLEModule {
 
         reDisplay.setTextureFormat(pixelformat, false);
 
+        int i = 0;
+        drawBufferArray[i++] = texS1;
+        drawBufferArray[i++] = texT1;
+        drawBufferArray[i++] = width;
+        drawBufferArray[i++] = height;
+
+        drawBufferArray[i++] = texS2;
+        drawBufferArray[i++] = texT2;
+        drawBufferArray[i++] = 0;
+        drawBufferArray[i++] = height;
+
+        drawBufferArray[i++] = texS3;
+        drawBufferArray[i++] = texT3;
+        drawBufferArray[i++] = 0;
+        drawBufferArray[i++] = 0;
+
+        drawBufferArray[i++] = texS4;
+        drawBufferArray[i++] = texT4;
+        drawBufferArray[i++] = width;
+        drawBufferArray[i++] = 0;
+
+        int bufferSizeInFloats = i;
         IREBufferManager bufferManager = reDisplay.getBufferManager();
-        ByteBuffer drawByteBuffer = bufferManager.getBuffer(drawBuffer);
-        drawByteBuffer.clear();
-        FloatBuffer drawFloatBuffer = drawByteBuffer.asFloatBuffer();
-        drawFloatBuffer.clear();
-        drawFloatBuffer.put(texS1);
-        drawFloatBuffer.put(texT1);
-        drawFloatBuffer.put(width);
-        drawFloatBuffer.put(height);
-
-        drawFloatBuffer.put(texS2);
-        drawFloatBuffer.put(texT2);
-        drawFloatBuffer.put(0);
-        drawFloatBuffer.put(height);
-
-        drawFloatBuffer.put(texS3);
-        drawFloatBuffer.put(texT3);
-        drawFloatBuffer.put(0);
-        drawFloatBuffer.put(0);
-
-        drawFloatBuffer.put(texS4);
-        drawFloatBuffer.put(texT4);
-        drawFloatBuffer.put(width);
-        drawFloatBuffer.put(0);
+        ByteBuffer byteBuffer = bufferManager.getBuffer(drawBuffer);
+        byteBuffer.clear();
+        byteBuffer.asFloatBuffer().put(drawBufferArray, 0, bufferSizeInFloats);
 
         if (reDisplay.isVertexArrayAvailable()) {
         	reDisplay.bindVertexArray(0);
@@ -1553,7 +1556,7 @@ public class sceDisplay extends HLEModule {
         reDisplay.enableClientState(IRenderingEngine.RE_VERTEX);
         bufferManager.setTexCoordPointer(drawBuffer, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 0);
         bufferManager.setVertexPointer(drawBuffer, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 2 * SIZEOF_FLOAT);
-        bufferManager.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, drawBuffer, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_DYNAMIC_DRAW);
+        bufferManager.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, drawBuffer, bufferSizeInFloats * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
         reDisplay.drawArrays(IRenderingEngine.RE_QUADS, 0, 4);
 
         reDisplay.endDirectRendering();
