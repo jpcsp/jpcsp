@@ -526,7 +526,12 @@ public final String category() { return "MIPS I"; }
 public void interpret(Processor processor, int insn) {
 	int imm20 = (insn>>6)&1048575;
 	Emulator.log.error(String.format("Allegrex break 0x%05X", imm20));
-	Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_BREAK);
+
+	// Pause the emulator only if not ignoring invalid memory accesses
+	// (I'm too lazy to introduce a new configuration flag to ignore "break" instructions).
+	if (!Processor.memory.isIgnoreInvalidMemoryAccess()) {
+		Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_BREAK);
+	}
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
