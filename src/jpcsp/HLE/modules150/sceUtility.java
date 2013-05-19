@@ -375,6 +375,9 @@ public class sceUtility extends HLEModule {
         private boolean isReadyForVisible() {
         	// Wait for all the buttons to be released
         	if (State.controller.getButtons() != 0) {
+        		if (log.isDebugEnabled()) {
+        			log.debug(String.format("Not ready for visible, button pressed 0x%X", State.controller.getButtons()));
+        		}
         		return false;
         	}
 
