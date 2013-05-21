@@ -97,4 +97,9 @@ public class SceKernelVTimerInfo extends pspAbstractMemoryMappedStructureVariabl
 	public long getCurrentTime() {
 		return current + getRunningTime();
 	}
+
+	@Override
+	public String toString() {
+		return String.format("VTimer uid=0x%X, name='%s', handler=0x%08X(arg=0x%X)", uid, name, handlerAddress, handlerArgument);
+	}
 }
