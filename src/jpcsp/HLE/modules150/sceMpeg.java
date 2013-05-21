@@ -609,7 +609,7 @@ public class sceMpeg extends HLEModule {
         if (checkMediaEngineState()) {
         	me.setFirstTimestamp(firstTimestamp);
             if (me.getContainer() == null) {
-                me.init(meChannel, true, true, getRegisteredVideoChannel(), getRegisteredAudioChannel());
+                me.init(meChannel, hasPsmfVideoStream(), hasPsmfAudioStream(), getRegisteredVideoChannel(), getRegisteredAudioChannel());
             }
         	if (!me.readVideoAu(mpegAvcAu, mpegAudioChannels)) {
         		// end of video reached only when last timestamp has been reached
@@ -654,7 +654,7 @@ public class sceMpeg extends HLEModule {
         if (checkMediaEngineState()) {
         	me.setFirstTimestamp(firstTimestamp);
         	if (me.getContainer() == null) {
-        		me.init(meChannel, true, true, getRegisteredVideoChannel(), getRegisteredAudioChannel());
+        		me.init(meChannel, hasPsmfVideoStream(), hasPsmfAudioStream(), getRegisteredVideoChannel(), getRegisteredAudioChannel());
         	}
         	if (!me.readAudioAu(mpegAtracAu, mpegAudioChannels)) {
         		endOfAudioReached = true;
@@ -1170,6 +1170,14 @@ public class sceMpeg extends HLEModule {
     	}
 
     	return false;
+    }
+
+    protected boolean hasPsmfVideoStream() {
+    	return hasPsmfStream(PSMF_AVC_STREAM);
+    }
+
+    protected boolean hasPsmfAudioStream() {
+    	return hasPsmfStream(PSMF_AUDIO_STREAM);
     }
 
     public static int getMaxAheadTimestamp(int packets) {
@@ -1726,7 +1734,7 @@ public class sceMpeg extends HLEModule {
             return -1;
         }
 
-        if ((mpegAvcAu.pts > mpegAtracAu.pts + maxAheadTimestamp) && isAtracRegistered && hasPsmfStream(PSMF_AUDIO_STREAM)) {
+        if ((mpegAvcAu.pts > mpegAtracAu.pts + maxAheadTimestamp) && isAtracRegistered && hasPsmfAudioStream()) {
             // Video is ahead of audio, deliver no video data to wait for audio.
             if (log.isDebugEnabled()) {
                 log.debug(String.format("sceMpegGetAvcAu video ahead of audio: %d - %d", mpegAvcAu.pts, mpegAtracAu.pts));
@@ -1784,7 +1792,7 @@ public class sceMpeg extends HLEModule {
             if (checkMediaEngineState()) {
             	me.setFirstTimestamp(audioFirstTimestamp);
             	if (me.getContainer() == null) {
-            		me.init(meChannel, true, true, getRegisteredVideoChannel(), getRegisteredAudioChannel());
+            		me.init(meChannel, hasPsmfVideoStream(), hasPsmfAudioStream(), getRegisteredVideoChannel(), getRegisteredAudioChannel());
             	}
             	if (!me.readAudioAu(mpegAtracAu, mpegAudioChannels)) {
             		result = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
@@ -1857,7 +1865,7 @@ public class sceMpeg extends HLEModule {
     		return SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
     	}
 
-    	if ((mpegAtracAu.pts > mpegAvcAu.pts + maxAheadTimestamp) && isAvcRegistered && hasPsmfStream(PSMF_AVC_STREAM) && !endOfAudioReached) {
+    	if ((mpegAtracAu.pts > mpegAvcAu.pts + maxAheadTimestamp) && isAvcRegistered && hasPsmfVideoStream() && !endOfAudioReached) {
             // Audio is ahead of video, deliver no audio data to wait for video.
         	// This error is not returned when the end of audio has been reached (Patapon 3).
             if (log.isDebugEnabled()) {
