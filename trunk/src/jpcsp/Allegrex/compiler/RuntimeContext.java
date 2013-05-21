@@ -393,7 +393,7 @@ public class RuntimeContext {
         updateStaticVariables();
 
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        if (!IntrManager.getInstance().isInsideInterrupt()) {
+        if (IntrManager.getInstance().canExecuteInterruptNow()) {
             SceKernelThreadInfo newThread = threadMan.getCurrentThread();
             if (newThread != null && newThread != currentThread) {
                 switchThread(newThread);
@@ -605,7 +605,7 @@ public class RuntimeContext {
     	do {
     		wantSync = false;
 
-	    	if (IntrManager.getInstance().isInsideInterrupt()) {
+	    	if (!IntrManager.getInstance().canExecuteInterruptNow()) {
 	    		syncFast();
 	    	} else {
 		    	syncPause();
@@ -624,7 +624,7 @@ public class RuntimeContext {
     }
 
     public static void preSyscall() throws StopThreadException {
-    	if (!IntrManager.getInstance().isInsideInterrupt()) {
+    	if (IntrManager.getInstance().canExecuteInterruptNow()) {
 	    	syscallRuntimeThread = getRuntimeThread();
 	    	if (syscallRuntimeThread != null) {
 	    		syscallRuntimeThread.setInSyscall(true);
@@ -635,7 +635,7 @@ public class RuntimeContext {
     }
 
     public static void postSyscall() throws StopThreadException {
-    	if (IntrManager.getInstance().isInsideInterrupt()) {
+    	if (!IntrManager.getInstance().canExecuteInterruptNow()) {
     		postSyscallFast();
     	} else {
 	    	checkStoppedThread();
