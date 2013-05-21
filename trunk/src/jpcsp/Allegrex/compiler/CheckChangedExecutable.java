@@ -20,8 +20,23 @@ package jpcsp.Allegrex.compiler;
  * @author gid15
  *
  */
-public interface IExecutable {
-	public int exec() throws Exception;
-	public void setExecutable(IExecutable e);
-	public IExecutable getExecutable();
+public class CheckChangedExecutable extends InvalidatedExecutable {
+	private CodeBlock codeBlock;
+
+	public CheckChangedExecutable(CodeBlock codeBlock) {
+		super(codeBlock);
+		this.codeBlock = codeBlock;
+	}
+
+	@Override
+	public int exec() throws Exception {
+		// Restore the previous executable
+		codeBlock.getExecutable().setExecutable(getExecutable());
+
+		if (codeBlock.areOpcodesChanged()) {
+			Compiler.getInstance().invalidateCodeBlock(codeBlock);
+		}
+
+		return codeBlock.getExecutable().exec();
+	}
 }

@@ -20,10 +20,11 @@ package jpcsp.Allegrex.compiler;
  * @author gid15
  *
  */
-public class RecompileExecutable implements IExecutable {
+public class RecompileExecutable extends InvalidatedExecutable {
 	private CodeBlock codeBlock;
 
 	public RecompileExecutable(CodeBlock codeBlock) {
+		super(codeBlock);
 		this.codeBlock = codeBlock;
 	}
 
@@ -44,10 +45,5 @@ public class RecompileExecutable implements IExecutable {
 
 		// Execute the recompiled executable
 		return executable.exec();
-	}
-
-	@Override
-	public void setExecutable(IExecutable e) {
-		// Nothing to do
 	}
 }

@@ -23,6 +23,7 @@ import static jpcsp.Allegrex.Common.Instruction.FLAG_COMPILED_PFX;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_ENDS_BLOCK;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_HAS_DELAY_SLOT;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_JUMPING;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_SYSCALL;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_USE_VFPU_PFXD;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_USE_VFPU_PFXS;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_USE_VFPU_PFXT;
@@ -464,7 +465,7 @@ public String disasm(int address, int insn) {
 return Common.disasmCODEIMMRS("cache", 0x1F, (short)imm16, rs);
 }
 };
-public static final Instruction SYSCALL = new Instruction(15) {
+public static final Instruction SYSCALL = new Instruction(15, FLAG_SYSCALL) {
 
 @Override
 public final String name() { return "SYSCALL"; }

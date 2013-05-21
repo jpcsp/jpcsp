@@ -20,6 +20,7 @@ import static jpcsp.Allegrex.Common.Instruction.FLAG_ENDS_BLOCK;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_BRANCHING;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_JUMPING;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_STARTS_NEW_BLOCK;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_SYSCALL;
 
 import java.io.File;
 import java.io.IOException;
@@ -262,6 +263,7 @@ public class Compiler implements ICompiler {
         	codeBlock.setInterpretedOpcodes(opcodes);
     	} else {
     		codeBlock.setInterpretedInstructions(null);
+    		codeBlock.setInterpretedOpcodes(null);
     	}
 
     	return isSimple;
@@ -273,16 +275,27 @@ public class Compiler implements ICompiler {
     		// If the application is invalidating the same code block too many times,
     		// do no longer try to recompile it each time, interpret it.
     		if (codeBlock.getInstanceIndex() > maxRecompileExecutable) {
-    			if (!codeBlock.isInterpreted()) {
-	    			codeBlock.setInterpreted(true);
-	    			executable.setExecutable(new InterpretExecutable(codeBlock));
-    			}
+    			executable.setExecutable(new InterpretExecutable(codeBlock));
     		} else {
 	    		// Force a recompilation of the codeBlock at the next execution
-	        	RecompileExecutable recompileExecutable = new RecompileExecutable(codeBlock);
-	        	executable.setExecutable(recompileExecutable);
+	        	executable.setExecutable(new RecompileExecutable(codeBlock));
     		}
     	}
+    }
+
+    public void checkCodeBlockValidity(CodeBlock codeBlock) {
+    	if (codeBlock.getExecutable().getExecutable() instanceof InvalidatedExecutable) {
+    		// This code block has already been invalidated (will be checked for changes or recompiled)
+    		return;
+    	}
+
+    	if (codeBlock.areOpcodesChanged()) {
+			invalidateCodeBlock(codeBlock);
+		} else {
+			// The opcodes of the code block could get updated by the application "after" calling an icache instruction.
+			// Check if the opcodes have been updated the next time the code block is executed.
+			codeBlock.getExecutable().setExecutable(new CheckChangedExecutable(codeBlock));
+		}
     }
 
     private void Initialise() {
@@ -456,7 +469,12 @@ public class Compiler implements ICompiler {
             }
         }
 
-        IExecutable executable = codeBlock.getExecutable(context);
+        IExecutable executable;
+        if (RuntimeContext.isCompilerEnabled() || codeBlock.hasFlags(FLAG_SYSCALL)) {
+        	executable = codeBlock.getExecutable(context);
+        } else {
+        	executable = null;
+        }
         if (log.isTraceEnabled()) {
             log.trace("Executable: " + executable);
         }
