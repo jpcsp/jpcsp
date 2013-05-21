@@ -168,8 +168,7 @@ public class IntrManager {
 	}
 
 	public boolean canExecuteInterruptNow() {
-		return (!isInsideInterrupt() &&
-				Interrupts.isInterruptsEnabled());
+		return !isInsideInterrupt() && Interrupts.isInterruptsEnabled();
 	}
 
 	public void onInterruptsEnabled() {
