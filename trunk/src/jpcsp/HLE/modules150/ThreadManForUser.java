@@ -2102,6 +2102,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     protected void stopVTimer(SceKernelVTimerInfo sceKernelVTimerInfo) {
+        Scheduler.getInstance().removeAction(getVTimerScheduleForScheduler(sceKernelVTimerInfo), sceKernelVTimerInfo.vtimerInterruptAction);
         // Sum the elapsed time (multiple Start/Stop sequences are added)
         sceKernelVTimerInfo.current = sceKernelVTimerInfo.getCurrentTime();
         sceKernelVTimerInfo.active = SceKernelVTimerInfo.ACTIVE_STOPPED;
