@@ -59,10 +59,10 @@ public class CodeBlock {
 	private final static String[] interfacesForExecutable = new String[] { Type.getInternalName(IExecutable.class) };
 	private final static String[] exceptions = new String[] { Type.getInternalName(Exception.class) };
 	private int instanceIndex;
-	private boolean interpreted = false;
 	private Instruction[] interpretedInstructions;
 	private int[] interpretedOpcodes;
 	private MemoryRanges memoryRanges = new MemoryRanges();
+	private int flags;
 
 	public CodeBlock(int startAddress, int instanceCount) {
 		this.startAddress = startAddress;
@@ -104,6 +104,8 @@ public class CodeBlock {
 		}
 
 		memoryRanges.addAddress(address);
+
+		flags |= insn.getFlags();
 	}
 
 	public void setIsBranchTarget(int address) {
@@ -210,6 +212,14 @@ public class CodeBlock {
         mv.visitFieldInsn(Opcodes.PUTSTATIC, getClassName(), context.getReplaceFieldName(), executableDescriptor);
         mv.visitInsn(Opcodes.RETURN);
         mv.visitMaxs(1, 2);
+        mv.visitEnd();
+
+        // public IExecutable getExecutable();
+        mv = cv.visitMethod(Opcodes.ACC_PUBLIC, context.getGetMethodName(), context.getGetMethodDesc(), null, exceptions);
+        mv.visitCode();
+        mv.visitFieldInsn(Opcodes.GETSTATIC, getClassName(), context.getReplaceFieldName(), executableDescriptor);
+        mv.visitInsn(Opcodes.ARETURN);
+        mv.visitMaxs(1, 1);
         mv.visitEnd();
     }
 
@@ -584,14 +594,6 @@ public class CodeBlock {
     	return instanceIndex;
     }
 
-	public boolean isInterpreted() {
-		return interpreted;
-	}
-
-	public void setInterpreted(boolean interpreted) {
-		this.interpreted = interpreted;
-	}
-
 	public Instruction[] getInterpretedInstructions() {
 		return interpretedInstructions;
 	}
@@ -609,10 +611,6 @@ public class CodeBlock {
 	}
 
 	public boolean areOpcodesChanged() {
-		if (isInterpreted()) {
-			return false;
-		}
-
 		return memoryRanges.areValuesChanged();
 	}
 
@@ -625,7 +623,15 @@ public class CodeBlock {
     	return addr < INTERNAL_THREAD_ADDRESS_END && addr >= INTERNAL_THREAD_ADDRESS_START;
 	}
 
-	@Override
+    public int getFlags() {
+        return flags;
+    }
+
+    public boolean hasFlags(int testFlags) {
+        return (flags & testFlags) == testFlags;
+    }
+
+    @Override
 	public String toString() {
 		return String.format("CodeBlock 0x%08X[0x%08X-0x%08X]", getStartAddress(), getLowestAddress(), getHighestAddress());
 	}

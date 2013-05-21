@@ -1839,6 +1839,14 @@ public class CompilerContext implements ICompilerContext {
     	return "(" + executableDescriptor + ")V";
     }
 
+    public String getGetMethodName() {
+    	return "getExecutable";
+    }
+
+    public String getGetMethodDesc() {
+    	return "()" + executableDescriptor;
+    }
+
     public String getStaticExecMethodName() {
         return "s";
     }

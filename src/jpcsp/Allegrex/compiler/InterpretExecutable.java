@@ -29,7 +29,6 @@ public class InterpretExecutable implements IExecutable {
 
 	public InterpretExecutable(CodeBlock codeBlock) {
 		this.codeBlock = codeBlock;
-		isAnalyzed = false;
 	}
 
 	@Override
@@ -58,5 +57,10 @@ public class InterpretExecutable implements IExecutable {
 	@Override
 	public void setExecutable(IExecutable e) {
 		// Nothing to do
+	}
+
+	@Override
+	public IExecutable getExecutable() {
+		return null;
 	}
 }

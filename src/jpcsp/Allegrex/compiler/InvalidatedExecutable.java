@@ -16,12 +16,30 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
+import org.apache.log4j.Logger;
+
 /**
  * @author gid15
  *
  */
-public interface IExecutable {
-	public int exec() throws Exception;
-	public void setExecutable(IExecutable e);
-	public IExecutable getExecutable();
+public abstract class InvalidatedExecutable implements IExecutable {
+	protected static Logger log = Compiler.log;
+	private IExecutable executable;
+
+	protected InvalidatedExecutable(CodeBlock codeBlock) {
+		executable = codeBlock.getExecutable().getExecutable();
+		while (executable != null && executable instanceof InvalidatedExecutable) {
+			executable = executable.getExecutable();
+		}
+	}
+
+	@Override
+	public void setExecutable(IExecutable e) {
+		// Nothing to do
+	}
+
+	@Override
+	public IExecutable getExecutable() {
+		return executable;
+	}
 }

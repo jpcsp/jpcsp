@@ -48,6 +48,7 @@ public class Common {
         public final static int FLAG_COMPILED_PFX = (1 << 11);
         public final static int FLAG_WRITES_RT = (1 << 12);
         public final static int FLAG_WRITES_RD = (1 << 13);
+        public final static int FLAG_SYSCALL = (1 << 14);
         public final static int FLAGS_BRANCH_INSTRUCTION = FLAG_CANNOT_BE_SPLIT | FLAG_HAS_DELAY_SLOT | FLAG_IS_BRANCHING | FLAG_IS_CONDITIONAL;
         public final static int FLAGS_LINK_INSTRUCTION = FLAG_HAS_DELAY_SLOT | FLAG_STARTS_NEW_BLOCK;
 

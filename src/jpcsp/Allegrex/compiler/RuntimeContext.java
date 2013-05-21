@@ -778,6 +778,9 @@ public class RuntimeContext {
 	    	if (previousCodeBlock != null) {
 	    		// One code block has been deleted, recompute the whole code blocks range
 	    		computeCodeBlocksRange();
+
+	    		int fastExecutableLoopukIndex = (address - MemoryMap.START_USERSPACE) >> 2;
+	    		fastExecutableLookup[fastExecutableLoopukIndex] = null;
 	    	} else {
 	    		// One new code block has been added, update the code blocks range
 	    		codeBlocksLowestAddress = Math.min(codeBlocksLowestAddress, codeBlock.getLowestAddress());
@@ -1070,13 +1073,9 @@ public class RuntimeContext {
     			if (size == 0x4000 && codeBlock.getHighestAddress() >= addr) {
 	    			// Some applications do not clear more than 16KB as this is the size of the complete Instruction Cache.
 	    			// Be conservative in this case and check any code block above the given address.
-	    			if (codeBlock.areOpcodesChanged()) {
-	    				compiler.invalidateCodeBlock(codeBlock);
-	    			}
+    				compiler.checkCodeBlockValidity(codeBlock);
     			} else if (codeBlock.isOverlappingWithAddressRange(addr, size)) {
-        			if (codeBlock.areOpcodesChanged()) {
-        				compiler.invalidateCodeBlock(codeBlock);
-        			}
+    				compiler.checkCodeBlockValidity(codeBlock);
         		}
         	}
     	}
