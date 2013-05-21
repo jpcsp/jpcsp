@@ -375,6 +375,10 @@ public class scePsmf extends HLEModule {
             return currentStreamNumber;
         }
 
+        public boolean isValidCurrentStreamNumber() {
+        	return getCurrentStreamNumber() >= 0;
+        }
+
         public int getCurrentStreamType() {
             if (currentStreamNumber >= 0 && currentStreamNumber < streams.size()) {
                 return streams.get(currentStreamNumber).getStreamType();
@@ -417,16 +421,18 @@ public class scePsmf extends HLEModule {
         public void setStreamNum(int id) {
             currentStreamNumber = id;
 
-            int type = getCurrentStreamType();
-            int channel = getCurrentStreamChannel();
-            switch (type) {
-            	case PSMF_AVC_STREAM:
-            		setVideoStreamNum(id, channel);
-            		break;
-            	case PSMF_PCM_STREAM:
-            	case PSMF_ATRAC_STREAM:
-            		setAudioStreamNum(id, channel);
-            		break;
+            if (isValidCurrentStreamNumber()) {
+	            int type = getCurrentStreamType();
+	            int channel = getCurrentStreamChannel();
+	            switch (type) {
+	            	case PSMF_AVC_STREAM:
+	            		setVideoStreamNum(id, channel);
+	            		break;
+	            	case PSMF_PCM_STREAM:
+	            	case PSMF_ATRAC_STREAM:
+	            		setAudioStreamNum(id, channel);
+	            		break;
+	            }
             }
         }
 
@@ -558,7 +564,8 @@ public class scePsmf extends HLEModule {
     public int scePsmfSpecifyStreamWithStreamType(@CheckArgument("checkPsmf") TPointer32 psmf, int type, int ch) {
         PSMFHeader header = getPsmfHeader(psmf);
         if (!header.setStreamWithType(type, ch)) {
-        	return SceKernelErrors.ERROR_PSMF_INVALID_ID;
+        	// Do not return SceKernelErrors.ERROR_PSMF_INVALID_ID, but set an invalid stream number.
+        	header.setStreamNum(-1);
         }
 
         return 0;
@@ -613,6 +620,9 @@ public class scePsmf extends HLEModule {
     @HLEFunction(nid = 0x0BA514E5, version = 150, checkInsideInterrupt = true)
     public int scePsmfGetVideoInfo(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 videoInfoAddr) {
         PSMFHeader header = getPsmfHeader(psmf);
+        if (!header.isValidCurrentStreamNumber()) {
+        	return SceKernelErrors.ERROR_PSMF_INVALID_ID;
+        }
         videoInfoAddr.setValue(0, header.getVideoWidth());
         videoInfoAddr.setValue(4, header.getvideoHeigth());
 
@@ -622,6 +632,9 @@ public class scePsmf extends HLEModule {
     @HLEFunction(nid = 0xA83F7113, version = 150, checkInsideInterrupt = true)
     public int scePsmfGetAudioInfo(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 audioInfoAddr) {
         PSMFHeader header = getPsmfHeader(psmf);
+        if (!header.isValidCurrentStreamNumber()) {
+        	return SceKernelErrors.ERROR_PSMF_INVALID_ID;
+        }
         audioInfoAddr.setValue(0, header.getAudioChannelConfig());
         audioInfoAddr.setValue(4, header.getAudioSampleFrequency());
 
