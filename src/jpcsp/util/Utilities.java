@@ -743,18 +743,18 @@ public class Utilities {
         }
     }
 
-    public static void matrixMult(float[] result, final float[] m1, final float[] m2) {
+    public static void matrixMult(final float[] result, float[] m1, float[] m2) {
     	// If the result has to be stored into one of the input matrix,
-    	// store the result in a temp array first.
-    	float[] origResult = null;
-    	if (result == m1 || result == m2) {
-    		origResult = result;
-    		result = new float[16];
+    	// duplicate the input matrix.
+    	if (result == m1) {
+    		m1 = m1.clone();
+    	}
+    	if (result == m2) {
+    		m2 = m2.clone();
     	}
 
     	int i = 0;
-    	int j = 0;
-    	for (int y = 0; y < 4; y++) {
+    	for (int j = 0; j < 16; j += 4) {
     		for (int x = 0; x < 4; x++) {
     			result[i] = m1[x] * m2[j]
     			          + m1[x + 4] * m2[j + 1]
@@ -762,11 +762,6 @@ public class Utilities {
     			          + m1[x + 12] * m2[j + 3];
     			i++;
     		}
-    		j += 4;
-    	}
-
-    	if (origResult != null) {
-    		arraycopy(result, 0, origResult, 0, result.length);
     	}
     }
 
