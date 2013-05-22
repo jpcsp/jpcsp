@@ -154,10 +154,13 @@ vec4 getIndexedTextureRED()
 		iprojCoords.t %= texSize.t;
 	}
 
+	// Do not extend past the right/bottom side of the texture
+	ivec2 delta = ivec2(lessThan(iprojCoords + ivec2(1, 1), texSize));
+
     vec4 topLeft = getTexelColorIndexedTextureRED(iprojCoords);
-    vec4 topRight = getTexelColorIndexedTextureRED(iprojCoords + ivec2(1, 0));
-    vec4 bottomLeft = getTexelColorIndexedTextureRED(iprojCoords + ivec2(0, 1));
-    vec4 bottomRight = getTexelColorIndexedTextureRED(iprojCoords + ivec2(1, 1));
+    vec4 topRight = getTexelColorIndexedTextureRED(iprojCoords + ivec2(delta.s, 0));
+    vec4 bottomLeft = getTexelColorIndexedTextureRED(iprojCoords + ivec2(0, delta.t));
+    vec4 bottomRight = getTexelColorIndexedTextureRED(iprojCoords + delta);
 
 	vec2 mixFactor = fract(projCoords);
 
