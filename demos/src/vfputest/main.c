@@ -1378,6 +1378,19 @@ void __attribute__((noinline)) vc2i_vd64(ScePspFVector4 *v0, ScePspFVector4 *v1)
    : "+m" (*v0) : "m" (*v1));
 }
 
+void __attribute__((noinline)) vdiv(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePspFVector4 *v2)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+   "lv.q   C100, %1\n"
+   "lv.q   C200, %2\n"
+
+   "vdiv.q C000, C100, C200\n"
+
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1) ,"m" (*v2) );
+}
+
 
 ScePspFVector4 v0;
 ScePspFVector4 v1;
@@ -1889,6 +1902,31 @@ int main(int argc, char *argv[])
 				vcmovfq(&v0, &v1, &v2, i);
 				printf("vcmovf.q %d: %f %f %f %f\n", i, v0.x, v0.y, v0.z, v0.w);
 			}
+
+			initValues();
+			v1.x = 0;
+			v1.y = 1;
+			v1.z = -1;
+			v1.w = 1;
+			v2.x = 0;
+			v2.y = 0;
+			v2.z = 0;
+			v2.w = -0.0;
+			vdiv(&v0, &v1, &v2);
+			int *p = (int *) &v0;
+			printf("vdiv.q: 0/0=%f(0x%X) 1/0=%f(0x%X) -1/0=%f(0x%X) 1/-0=%f(0x%X)\n", v0.x, p[0], v0.y, p[1], v0.z, p[2], v0.w, p[3]);
+
+			initValues();
+			v1.x = 0;
+			v1.y = 0;
+			v1.z = -0.0;
+			v1.w = -0.0;
+			v2.x = 0;
+			v2.y = -0.0;
+			v2.z = 0;
+			v2.w = -0.0;
+			vdiv(&v0, &v1, &v2);
+			printf("vdiv.q: 0/0=%f(0x%X) 0/-0=%f(0x%X) -0/0=%f(0x%X) -0/-0=%f(0x%X)\n", v0.x, p[0], v0.y, p[1], v0.z, p[2], v0.w, p[3]);
 		}
 
 		if (buttonDown & PSP_CTRL_LEFT)
