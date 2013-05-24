@@ -41,6 +41,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Random;
 import java.util.TimeZone;
 
@@ -557,36 +558,31 @@ public class sceMpeg extends HLEModule {
     	}
     }
 
-    public int getRegisteredAudioChannel() {
-    	if (registeredAudioChannel >= 0) {
-    		return registeredAudioChannel;
-    	}
-
-    	// Return the lowest registered ATRAC stream
-    	int audioChannel = -1;
-    	for (Integer streamNumber : atracStreamsMap.values()) {
-    		if (audioChannel < 0 || streamNumber < audioChannel) {
-    			audioChannel = streamNumber;
+    private int getRegisteredChannel(Map<Integer, Integer> registeredStreams, int registeredChannel) {
+    	int channel = -1;
+    	for (Integer streamNumber : registeredStreams.values()) {
+    		if (channel < 0 || streamNumber.intValue() < channel) {
+    			channel = streamNumber.intValue();
+    			if (channel == registeredChannel) {
+    				// We have found the registered channel
+    				break;
+    			}
     		}
     	}
 
-    	return audioChannel;
+    	if (channel < 0) {
+    		channel = registeredChannel;
+    	}
+
+    	return channel;
+    }
+
+    public int getRegisteredAudioChannel() {
+    	return getRegisteredChannel(atracStreamsMap, registeredAudioChannel);
     }
 
     public int getRegisteredVideoChannel() {
-    	if (registeredVideoChannel >= 0) {
-    		return registeredVideoChannel;
-    	}
-
-    	// Return the lowest registered AVC stream
-    	int videoChannel = -1;
-    	for (Integer streamNumber : avcStreamsMap.values()) {
-    		if (videoChannel < 0 || streamNumber < videoChannel) {
-    			videoChannel = streamNumber;
-    		}
-    	}
-
-    	return videoChannel;
+    	return getRegisteredChannel(avcStreamsMap, registeredVideoChannel);
     }
 
     public void setRegisteredVideoChannel(int registeredVideoChannel) {
