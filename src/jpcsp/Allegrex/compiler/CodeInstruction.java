@@ -33,6 +33,7 @@ import org.objectweb.asm.Opcodes;
  *
  */
 public class CodeInstruction {
+	private static final boolean interpretAllVfpuInstructions = false;
 	protected int address;
 	private int opcode;
 	private Instruction insn;
@@ -180,6 +181,8 @@ public class CodeInstruction {
 	        compileJr(context, mv);
         } else if (insn == Instructions.JALR) {
             compileJalr(context, mv);
+        } else if (interpretAllVfpuInstructions && insn.category().startsWith("VFPU")) {
+        	context.visitIntepreterCall(opcode, insn);
 	    } else {
 		    insn.compile(context, getOpcode());
 	    }
