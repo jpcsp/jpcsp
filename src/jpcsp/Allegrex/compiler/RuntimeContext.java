@@ -226,7 +226,7 @@ public class RuntimeContext {
 			insn.interpret(processor, opcode);
 			if (insn.hasFlags(Instruction.FLAG_STARTS_NEW_BLOCK)) {
 				cpu.pc = jumpCall(cpu.pc);
-			} else if (insn.hasFlags(Instruction.FLAG_ENDS_BLOCK)) {
+			} else if (insn.hasFlags(Instruction.FLAG_ENDS_BLOCK) && !insn.hasFlags(Instruction.FLAG_IS_CONDITIONAL)) {
 				interpret = false;
 				returnValue = cpu.pc;
 			}
