@@ -1538,7 +1538,7 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public boolean canNativeClut(int textureAddress) {
+	public boolean canNativeClut(int textureAddress, boolean textureSwizzle) {
 		// Requires at least OpenGL 3.0
 		return GLContext.getCapabilities().OpenGL30;
 	}

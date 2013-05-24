@@ -2938,9 +2938,10 @@ public class VideoEngine {
         // without having to issue a BOFS for each matrix.
         int matrixIndex = boneMatrixIndex / 12;
         int elementIndex = boneMatrixIndex % 12;
-        if (matrixIndex >= 8) {
-        	if(isLogDebugEnabled)
-        		log("Ignoring BONE matrix element: boneMatrixIndex=" + boneMatrixIndex);
+        if (matrixIndex >= context.bone_uploaded_matrix.length) {
+        	if (isLogDebugEnabled) {
+        		log.debug(String.format("Ignoring BONE matrix element: boneMatrixIndex=%d", boneMatrixIndex));
+        	}
         } else {
             float floatArgument = floatArgument(normalArgument);
         	context.bone_uploaded_matrix[matrixIndex][elementIndex] = floatArgument;
@@ -5021,7 +5022,7 @@ public class VideoEngine {
 					geTexture.copyScreenToTexture(re);
 				}
 
-				if (!re.canNativeClut(tex_addr) || context.texture_swizzle) {
+				if (!re.canNativeClut(tex_addr, context.texture_swizzle) || context.texture_swizzle) {
 					// Save the texture to memory, it will be reloaded using the CLUT
 					geTexture.copyTextureToMemory(re);
 					return false;
@@ -5224,7 +5225,7 @@ public class VideoEngine {
         } else {
             TextureCache textureCache = TextureCache.getInstance();
             boolean textureRequiresClut = IRenderingEngine.isTextureTypeIndexed[context.texture_storage];
-        	if (textureRequiresClut && re.canNativeClut(tex_addr)) {
+        	if (textureRequiresClut && re.canNativeClut(tex_addr, context.texture_swizzle)) {
         		if (context.texture_storage >= TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED && context.texture_storage <= TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED) {
         			// The Clut will be resolved by the shader
         			textureRequiresClut = false;
@@ -5492,7 +5493,7 @@ public class VideoEngine {
 	                        break;
 	                    }
 	                    case TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED: {
-	                        if (re.canNativeClut(texaddr)) {
+	                        if (re.canNativeClut(texaddr, context.texture_swizzle)) {
 	                            final_buffer = getTextureBuffer(texaddr, 1, level, textureBufferWidthInPixels);
 	                            textureByteAlignment = 1; // 8 bits
 	                    	} else {
@@ -5503,7 +5504,7 @@ public class VideoEngine {
 	                        break;
 	                    }
 	                    case TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED: {
-	                        if (re.canNativeClut(texaddr)) {
+	                        if (re.canNativeClut(texaddr, context.texture_swizzle)) {
 	                    		final_buffer = getTextureBuffer(texaddr, 2, level, textureBufferWidthInPixels);
 	                    		textureByteAlignment = 2; // 16 bits
 	                    	} else {
@@ -5514,7 +5515,7 @@ public class VideoEngine {
 	                        break;
 	                    }
 	                    case TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED: {
-	                        if (re.canNativeClut(texaddr)) {
+	                        if (re.canNativeClut(texaddr, context.texture_swizzle)) {
 	                    		final_buffer = getTextureBuffer(texaddr, 4, level, textureBufferWidthInPixels);
 	                    		textureByteAlignment = 4; // 32 bits
 	                    	} else {
