@@ -432,10 +432,6 @@ public class sceUtility extends HLEModule {
             	return SceKernelErrors.ERROR_UTILITY_INVALID_STATUS;
             }
 
-            if (log.isDebugEnabled()) {
-                log.debug(name + "ShutdownStart");
-            }
-
             status = PSP_UTILITY_DIALOG_STATUS_FINISHED;
 
             return 0;

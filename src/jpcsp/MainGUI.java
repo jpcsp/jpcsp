@@ -1122,6 +1122,15 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             getContentPane().add(fillerBottom, BorderLayout.SOUTH);
 
             makeFullScreenMenu();
+        } else {
+            float viewportResizeScaleFactor = Modules.sceDisplayModule.getViewportResizeScaleFactor();
+            if (viewportResizeScaleFactor <= 1.5f) {
+            	oneTimeResize.setSelected(true);
+            } else if (viewportResizeScaleFactor <= 2.5f) {
+            	twoTimesResize.setSelected(true);
+            } else {
+            	threeTimesResize.setSelected(true);
+            }
         }
 
         populateRecentMenu();

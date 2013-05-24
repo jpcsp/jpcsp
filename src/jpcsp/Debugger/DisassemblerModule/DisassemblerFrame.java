@@ -55,6 +55,7 @@ import jpcsp.Resource;
 import jpcsp.State;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
+import jpcsp.Allegrex.GprState;
 import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.Compiler;
@@ -290,15 +291,15 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         // refresh registers
         // gpr
-        gprTable.setValueAt(Integer.toHexString(cpu.pc), 0, 1);
-        gprTable.setValueAt(Integer.toHexString(cpu.getHi()), 1, 1);
-        gprTable.setValueAt(Integer.toHexString(cpu.getLo()), 2, 1);
-        for (int i = 0; i < 32; i++) {
-            gprTable.setValueAt(Integer.toHexString(cpu.getRegister(i)), 3 + i, 1);
+        gprTable.setValueAt(String.format("0x%08X", cpu.pc), 0, 1);
+        gprTable.setValueAt(String.format("0x%08X", cpu.getHi()), 1, 1);
+        gprTable.setValueAt(String.format("0x%08X", cpu.getLo()), 2, 1);
+        for (int i = 0; i < GprState.NUMBER_REGISTERS; i++) {
+            gprTable.setValueAt(String.format("0x%08X", cpu.getRegister(i)), 3 + i, 1);
         }
 
         // fpr
-        for (int i = 0; i < 32; i++) {
+        for (int i = 0; i < cpu.fpr.length; i++) {
             cop1Table.setValueAt(cpu.fpr[i], i, 1);
         }
 
