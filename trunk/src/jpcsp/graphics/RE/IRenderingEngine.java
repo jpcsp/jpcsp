@@ -491,7 +491,7 @@ public interface IRenderingEngine {
 	public void setPixelTransfer(int parameter, float value);
 	public void setPixelTransfer(int parameter, boolean value);
 	public void setPixelMap(int map, int mapSize, Buffer buffer);
-	public boolean canNativeClut(int textureAddress);
+	public boolean canNativeClut(int textureAddress, boolean textureSwizzle);
 	public void setActiveTexture(int index);
 	public void setTextureFormat(int pixelFormat, boolean swizzle);
 	public void bindActiveTexture(int index, int texture);

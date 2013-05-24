@@ -1124,8 +1124,8 @@ public class CheckErrorsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public boolean canNativeClut(int textureAddress) {
-		boolean value = super.canNativeClut(textureAddress);
+	public boolean canNativeClut(int textureAddress, boolean textureSwizzle) {
+		boolean value = super.canNativeClut(textureAddress, textureSwizzle);
 		re.checkAndLogErrors("canNativeClut");
 		return value;
 	}

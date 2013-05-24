@@ -132,7 +132,7 @@ public class REShader extends BaseRenderingEngineFunction {
 
         useNativeClut = Settings.getInstance().readBool("emu.enablenativeclut");
         if (useNativeClut) {
-        	if (!super.canNativeClut(0)) {
+        	if (!super.canNativeClut(0, false)) {
     			log.warn("Disabling Native Color Lookup Tables (CLUT)");
         		useNativeClut = false;
         	} else {
@@ -1082,10 +1082,11 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	@Override
-	public boolean canNativeClut(int textureAddress) {
+	public boolean canNativeClut(int textureAddress, boolean textureSwizzle) {
 		// The clut processing is implemented into the fragment shader
-		// and the clut values are passed as a sampler2D
-		return useNativeClut;
+		// and the clut values are passed as a sampler2D.
+		// Do not process clut's for swizzled texture, there is no performance gain.
+		return useNativeClut && !textureSwizzle;
 	}
 
 	private int getClutIndexHint(int pixelFormat, int numEntries) {
@@ -1259,7 +1260,7 @@ public class REShader extends BaseRenderingEngineFunction {
 			if (pixelFormat == GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED) {
 				// 4bit index has been decoded in the VideoEngine
 				pixelFormat = context.tex_clut_mode;
-			} else if (!useNativeClut) {
+			} else if (!canNativeClut(context.texture_base_pointer[0], swizzle)) {
 				// Textures are decoded in the VideoEngine when not using native CLUTs
 				pixelFormat = context.tex_clut_mode;
 			} else {
