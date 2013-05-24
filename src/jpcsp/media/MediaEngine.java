@@ -29,6 +29,7 @@ import java.util.List;
 
 import jpcsp.Memory;
 import jpcsp.State;
+import jpcsp.HLE.VFS.ByteArrayVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.kernel.types.SceMpegAu;
 import jpcsp.HLE.modules.sceMpeg;
@@ -41,6 +42,7 @@ import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Debug;
 import jpcsp.util.FIFOByteBuffer;
+import jpcsp.util.FileLocator;
 import jpcsp.util.Utilities;
 
 import com.xuggle.ferry.Logger;
@@ -742,10 +744,10 @@ public class MediaEngine {
     		// Try to decode the audio using the external decoder
     		if (bufferAddress == 0) {
     			if (bufferData != null) {
-    				externalDecoder.decodeExtAudio(bufferData, bufferSize, bufferMpegOffset, audioChannel);
+    				externalDecoder.decodeExtAudio(new ByteArrayVirtualFile(bufferData), bufferSize, bufferMpegOffset, audioChannel);
     			}
     		} else {
-    			externalDecoder.decodeExtAudio(bufferAddress, bufferSize, bufferMpegOffset, bufferData, audioChannel);
+    			externalDecoder.decodeExtAudio(FileLocator.getInstance().getVirtualFile(bufferAddress, sceMpeg.MPEG_HEADER_BUFFER_MINIMUM_SIZE, bufferSize, bufferData), bufferSize, bufferMpegOffset, audioChannel);
     		}
 			extAudioFile = getExtAudioFile(audioChannel);
     	}

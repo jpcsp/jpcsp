@@ -325,6 +325,17 @@ public class UmdIsoFile extends SeekableInputStream {
     	return currentSectorNumber;
     }
 
+    public UmdIsoReader getUmdIsoReader() {
+    	return internalReader;
+    }
+
+    public UmdIsoFile duplicate() throws IOException {
+    	UmdIsoFile umdIsoFile = new UmdIsoFile(internalReader, startSectorNumber, maxOffset, timestamp, name);
+    	umdIsoFile.seek(currentOffset);
+
+    	return umdIsoFile;
+    }
+
     @Override
 	public String toString() {
 		return String.format("UmdIsoFile(name='%s', length=0x%X, startSector=0x%X)", getName(), length(), startSectorNumber);

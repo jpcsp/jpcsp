@@ -246,12 +246,12 @@ public class AtracCodec {
             }
         } else if (codecType == PSP_CODEC_AT3PLUS) {
         	if (checkMediaEngineState() && ExternalDecoder.isEnabled()) {
-        		String decodedFile = externalDecoder.decodeAtrac(address, length, atracFileSize, atracHash, this);
+        		IVirtualFile decodedFile = externalDecoder.decodeAtrac(address, length, atracFileSize, atracHash, this);
         		if (decodedFile != null) {
         			log.info(String.format("AT3+ data decoded by the external decoder, using '%s'.", decodedFile));
         			me.finish();
         			atracChannel = null;
-        			me.init(new FileProtocolHandler(decodedFile), false, true, 0, 0);
+        			me.init(new VirtualFileProtocolHandler(decodedFile), false, true, 0, 0);
                     atracEndSample = -1;
         			return;
         		} else if (requireAllAtracData) {

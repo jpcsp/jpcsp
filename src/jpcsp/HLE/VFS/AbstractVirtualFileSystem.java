@@ -28,7 +28,7 @@ import jpcsp.util.Utilities;
 
 public abstract class AbstractVirtualFileSystem implements IVirtualFileSystem {
 	protected static Logger log = Logger.getLogger("vfs");
-	protected static final int IO_ERROR = -1;
+	public static final int IO_ERROR = -1;
 
 	protected static boolean hasFlag(int mode, int flag) {
 		return (mode & flag) == flag;

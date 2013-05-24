@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.AbstractVirtualFile;
+import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.memory.IMemoryWriter;
@@ -262,5 +263,26 @@ public class UmdIsoVirtualFile extends AbstractVirtualFile {
 		}
 
 		return result;
+	}
+
+	@Override
+	public IVirtualFile duplicate() {
+		IVirtualFile duplicate = null;
+
+		try {
+			UmdIsoFile umdIsoFile = file.duplicate();
+			if (umdIsoFile != null) {
+				duplicate = new UmdIsoVirtualFile(umdIsoFile, isSectorBlockMode(), iso);
+			}
+		} catch (IOException e) {
+			log.warn("UmdIsoVirtualFile.duplicate", e);
+		}
+
+		return duplicate;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("UmdIsoVirtualFile[%s, sectorBlockMode=%b]", file, sectorBlockMode);
 	}
 }
