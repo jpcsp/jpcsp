@@ -72,4 +72,9 @@ public class LocalVirtualFile extends AbstractVirtualFile {
 	public void setTruncateAtNextWrite(boolean truncateAtNextWrite) {
 		this.truncateAtNextWrite = truncateAtNextWrite;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("LocalVirtualFile %s", file);
+	}
 }

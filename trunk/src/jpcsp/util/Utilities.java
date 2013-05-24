@@ -37,6 +37,7 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
@@ -970,6 +971,13 @@ public class Utilities {
 		return pixelToTexel(value) & valueMask;
 	}
 
+	public static void readBytes(int address, int length, byte[] bytes, int offset) {
+		IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 1);
+		for (int i = 0; i < length; i++) {
+			bytes[offset + i] = (byte) memoryReader.readNext();
+		}
+	}
+
 	public static void writeBytes(int address, int length, byte[] bytes, int offset) {
 		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, length, 1);
 		for (int i = 0; i < length; i++) {
@@ -995,5 +1003,42 @@ public class Utilities {
 		System.arraycopy(array, 0, newArray, 0, array.length);
 
 		return newArray;
+	}
+
+	public static byte[] readCompleteFile(IVirtualFile vFile) {
+		if (vFile == null) {
+			return null;
+		}
+
+		byte[] buffer;
+		try {
+			buffer = new byte[(int) (vFile.length() - vFile.getPosition())];
+		} catch (OutOfMemoryError e) {
+			Emulator.log.error("Error while reading a complete vFile", e);
+			return null;
+		}
+
+		int length = 0;
+		while (length < buffer.length) {
+			int readLength = vFile.ioRead(buffer, length, buffer.length - length);
+			if (readLength < 0) {
+				break;
+			}
+			length += readLength;
+		}
+
+		if (length < buffer.length) {
+			byte[] resizedBuffer;
+			try {
+				resizedBuffer = new byte[length];
+			} catch (OutOfMemoryError e) {
+				Emulator.log.error("Error while reading a complete vFile", e);
+				return null;
+			}
+			System.arraycopy(buffer, 0, resizedBuffer, 0, length);
+			buffer = resizedBuffer;
+		}
+
+		return buffer;
 	}
 }

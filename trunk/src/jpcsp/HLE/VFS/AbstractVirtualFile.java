@@ -152,4 +152,9 @@ public abstract class AbstractVirtualFile implements IVirtualFile {
 	public boolean isSectorBlockMode() {
 		return false;
 	}
+
+	@Override
+	public IVirtualFile duplicate() {
+		return null;
+	}
 }

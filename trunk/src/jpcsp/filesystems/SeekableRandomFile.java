@@ -25,14 +25,20 @@ import java.io.RandomAccessFile;
  * @author gigaherz
  */
 public class SeekableRandomFile extends RandomAccessFile implements SeekableDataInput {
+	private String fileName;
 
-    public SeekableRandomFile(String fileName, String mode) throws FileNotFoundException
-    {
+    public SeekableRandomFile(String fileName, String mode) throws FileNotFoundException {
         super(fileName, mode);
+        this.fileName = fileName;
     }
 
-    public SeekableRandomFile(File name, String mode) throws FileNotFoundException
-    {
+    public SeekableRandomFile(File name, String mode) throws FileNotFoundException {
         super(name, mode);
+        this.fileName = name.toString();
     }
+
+	@Override
+	public String toString() {
+		return String.format("SeekableRandomFile '%s'", fileName);
+	}
 }

@@ -29,4 +29,5 @@ public interface IVirtualFile {
 	public long length();
 	public boolean isSectorBlockMode();
 	public long getPosition();
+	public IVirtualFile duplicate();
 }
