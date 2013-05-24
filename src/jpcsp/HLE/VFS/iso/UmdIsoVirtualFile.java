@@ -281,7 +281,11 @@ public class UmdIsoVirtualFile extends AbstractVirtualFile {
 		return duplicate;
 	}
 
-	@Override
+    public void setLength(long lengthInBytes) {
+    	file.setLength(lengthInBytes);
+    }
+
+    @Override
 	public String toString() {
 		return String.format("UmdIsoVirtualFile[%s, sectorBlockMode=%b]", file, sectorBlockMode);
 	}

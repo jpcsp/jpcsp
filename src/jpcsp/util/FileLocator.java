@@ -294,6 +294,15 @@ public class FileLocator {
 				if (vFile == null) {
 					vFile = readInfo.vFile;
 				}
+
+				if (fileSize > vFile.length()) {
+					if (vFile instanceof UmdIsoVirtualFile) {
+						// Extend the UMD file to at least the requested file size
+						UmdIsoVirtualFile umdIsoVirtualFile = (UmdIsoVirtualFile) vFile;
+						umdIsoVirtualFile.setLength(fileSize);
+					}
+				}
+
 				return new PartialVirtualFile(vFile, readInfo.position + positionOffset, fileSize);
 			}
 			if (readInfo.dataInput != null) {
@@ -307,6 +316,12 @@ public class FileLocator {
 					} catch (IOException e) {
 						log.warn("Cannot duplicate UmdIsoFile", e);
 					}
+
+					if (fileSize > umdIsoFile.length()) {
+						// Extend the UMD file to at least the requested file size
+						umdIsoFile.setLength(fileSize);
+					}
+
 					IVirtualFile vFile = new UmdIsoVirtualFile(umdIsoFile, false, umdIsoFile.getUmdIsoReader());
 					return new PartialVirtualFile(vFile, readInfo.position + positionOffset, fileSize);
 				}
