@@ -21,6 +21,7 @@ import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_AUDIO_STREAM;
 import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_AVC_STREAM;
 import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_DATA_STREAM;
 import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_PCM_STREAM;
+import static jpcsp.format.psmf.PsmfAudioDemuxVirtualFile.PACK_START_CODE;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.util.Utilities.endianSwap32;
@@ -65,7 +66,6 @@ import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.media.MediaEngine;
-import jpcsp.media.MpegDemux;
 import jpcsp.media.PacketChannel;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
@@ -766,7 +766,7 @@ public class sceMpeg extends HLEModule {
     }
 
     private static boolean isMpegData(int startCode) {
-    	return startCode == MpegDemux.PACK_START_CODE;
+    	return startCode == PACK_START_CODE;
     }
 
     private static boolean isMpegData(Memory mem, int addr) {
