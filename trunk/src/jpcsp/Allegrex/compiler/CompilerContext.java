@@ -2001,6 +2001,10 @@ public class CompilerContext implements ICompilerContext {
 		mv.visitInsn(imm ? Opcodes.ICONST_1 : Opcodes.ICONST_0);
 	}
 
+	public void loadPspNaNInt() {
+		mv.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(VfpuState.class), "pspNaNint", "I");
+	}
+
 	@Override
 	public void compileInterpreterInstruction() {
 		visitIntepreterCall(codeInstruction.getOpcode(), codeInstruction.getInsn());
@@ -3347,10 +3351,66 @@ public class CompilerContext implements ICompilerContext {
 						mv.visitInsn(Opcodes.D2F);
 					}
 				}
+
+				Label doneStore = null;
 				if (opcode != Opcodes.NOP) {
+					Label doneOpcode = null;
+
+					if (opcode == Opcodes.FDIV && cstBefore == null) {
+						// if (value1 == 0f && value2 == 0f) {
+						//     result = PSP-NaN | (sign(value1) ^ sign(value2));
+						// } else {
+						//     result = value1 / value2;
+						// }
+						doneOpcode = new Label();
+						doneStore = new Label();
+						Label notZeroByZero = new Label();
+						Label notZeroByZeroPop = new Label();
+						mv.visitInsn(Opcodes.DUP2);
+						mv.visitInsn(Opcodes.FCONST_0);
+						mv.visitInsn(Opcodes.FCMPG);
+						mv.visitJumpInsn(Opcodes.IFNE, notZeroByZeroPop);
+						mv.visitInsn(Opcodes.FCONST_0);
+						mv.visitInsn(Opcodes.FCMPG);
+						mv.visitJumpInsn(Opcodes.IFNE, notZeroByZero);
+						convertVFloatToInt();
+						loadImm(0x80000000);
+						mv.visitInsn(Opcodes.IAND);
+						mv.visitInsn(Opcodes.SWAP);
+						convertVFloatToInt();
+						loadImm(0x80000000);
+						mv.visitInsn(Opcodes.IAND);
+						mv.visitInsn(Opcodes.IXOR);
+						storeTmp1();
+						// Store the NaN value as an "int" to not loose any bit.
+						// Storing as float results in 0x7FC00001 instead of 0x7F800001.
+						mv.visitInsn(Opcodes.DUP2_X2);
+						mv.visitInsn(Opcodes.POP2);
+						loadPspNaNInt();
+						loadTmp1();
+						mv.visitInsn(Opcodes.IOR);
+						int preparedRegister = preparedRegisterForStore;
+						storeVdInt(n);
+						preparedRegisterForStore = preparedRegister;
+						mv.visitJumpInsn(Opcodes.GOTO, doneStore);
+
+						mv.visitLabel(notZeroByZeroPop);
+						mv.visitInsn(Opcodes.POP);
+						mv.visitLabel(notZeroByZero);
+					}
+
 					mv.visitInsn(opcode);
+
+					if (doneOpcode != null) {
+						mv.visitLabel(doneOpcode);
+					}
 				}
+
 				storeVd(n);
+
+				if (doneStore != null) {
+					mv.visitLabel(doneStore);
+				}
 			}
 
 			endPfxCompiled(vsize, true);

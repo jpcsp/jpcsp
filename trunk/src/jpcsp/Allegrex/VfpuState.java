@@ -93,6 +93,9 @@ public class VfpuState extends FpuState {
         (float) (Math.log(10.0) / Math.log(2.0)), // log2(10) = log(10) / log(2)
         (float) Math.sqrt(3.0) / 2.0f
     };
+    public static final int pspNaNint = 0x7F800001;
+    public static final int pspNaNintBad = 0x7FC00001;
+    public static final float pspNaNfloat = Float.intBitsToFloat(pspNaNint);
 
     private static class Random {
         private long seed;
@@ -335,6 +338,12 @@ public class VfpuState extends FpuState {
     	int index = getVprIndex(m, c, r);
     	vprFloat[index] = value;
     	vprInt[index] = Float.floatToRawIntBits(value);
+
+    	// Copying the pspNaNfloat value can change its internal representation.
+    	// Fix such a case here.
+    	if ((vprInt[index] & 0x7FFFFFFF) == pspNaNintBad) {
+    		vprInt[index] = pspNaNint | (vprInt[index] & 0x80000000);
+    	}
     }
 
     /**
@@ -1256,7 +1265,18 @@ public class VfpuState extends FpuState {
         loadVt(vsize, vt);
 
         for (int i = 0; i < vsize; ++i) {
-            v1[i] /= v2[i];
+        	if (v1[i] == 0f && v2[i] == 0f) {
+        		// Return the PSP NaN value 0x7F800001
+        		// (which is different from the NaN value generated in Java).
+        		// Be careful to use the sign of the zero's (+0 / -0):
+        		// - +0/+0 and -0/-0 return NaN 0x7F800001
+        		// - +0/-0 and -0/+0 return NaN 0xFF800001
+        		int sign1 = Float.floatToRawIntBits(v1[i]) & 0x80000000;
+        		int sign2 = Float.floatToRawIntBits(v2[i]) & 0x80000000;
+        		v1[i] = Float.intBitsToFloat(pspNaNint | (sign1 ^ sign2));
+        	} else {
+        		v1[i] /= v2[i];
+        	}
         }
 
         saveVd(vsize, vd, v1);
