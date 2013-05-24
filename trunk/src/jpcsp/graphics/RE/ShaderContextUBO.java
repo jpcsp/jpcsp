@@ -402,7 +402,11 @@ public class ShaderContextUBO extends ShaderContext {
 		if (shaderUniformInfo.isUsed()) {
 			prepareCopy(shaderUniformInfo.getOffset() + start * 4, (end - start) * 4);
 			for (int i = start; i < end; i++) {
-				data.putFloat(values[i]);
+				float value = values[i];
+				if (Float.isNaN(value)) {
+					value = 0f;
+				}
+				data.putFloat(value);
 			}
 		}
 	}
