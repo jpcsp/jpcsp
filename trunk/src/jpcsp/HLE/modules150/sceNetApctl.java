@@ -299,10 +299,16 @@ public class sceNetApctl extends HLEModule {
 				InetAddress localHostAddress = InetAddress.getLocalHost();
 				InetAddress[] allLocalIPs = InetAddress.getAllByName(localHostAddress.getHostName());
 				for (int i = 0; allLocalIPs != null && i < allLocalIPs.length; i++) {
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("IP address of local host: %s", allLocalIPs[i].getHostAddress()));
+					}
 					byte[] bytes = allLocalIPs[i].getAddress();
 					if (bytes != null && bytes.length == 4 && bytes[3] != 1) {
 						localHostIP = allLocalIPs[i].getHostAddress();
 					}
+				}
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Using IP address of local host: %s, Subnet Mask %s", localHostIP, getSubnetMask()));
 				}
 			} catch (UnknownHostException e) {
 				log.error(e);
