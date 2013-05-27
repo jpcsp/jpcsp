@@ -9850,6 +9850,25 @@
 089C1E8C:[2484FFFF]: addiu      $a0, $a0, -1
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="Poll">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Poll</Class>
+		<Method>poll1</Method>
+		<IsReturning>true</IsReturning>
+		<Parameters>@08876618,@0887661C</Parameters>
+		<CodeInstructions><![CDATA[
+08876618:[3C0308AB/FFFF0000]: lui        $v1, 0x08AB <=> li $v1, 0x08AB0000
+0887661C:[90623664/FFFF0000]: lbu        $v0, 13924($v1)
+08876620:[14400006]: bne        $v0, $zr, 0x0887663C
+08876624:[00000000]: nop
+08876628:[00000000]: nop
+0887662C:[00000000]: nop
+08876630:[90623664/FFFF0000]: lbu        $v0, 13924($v1)
+08876634:[1040FFFC]: beq        $v0, $zr, 0x08876628
+08876638:[00000000]: nop
+0887663C:[03E00008]: jr         $ra
+08876640:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
 <!--
 	<NativeCodeSequence name="XXX">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.XXX</Class>
