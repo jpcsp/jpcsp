@@ -409,7 +409,7 @@ public class Loader {
 	            LoadELFExports(module);
 	            // Try to fixup imports for ALL modules
 	            Managers.modules.addModule(module);
-	            ProcessUnresolvedImports();
+	            ProcessUnresolvedImports(module);
 
 	            // Debug
 	            LoadELFDebuggerInfo(f, module, baseAddress, elf, elfOffset);
@@ -939,7 +939,7 @@ public class Loader {
         }
     }
 
-    private void ProcessUnresolvedImports() {
+    private void ProcessUnresolvedImports(SceModule sourceModule) {
         Memory mem = Memory.getInstance();
         NIDMapper nidMapper = NIDMapper.getInstance();
         int numberoffailedNIDS = 0;
@@ -958,6 +958,7 @@ public class Loader {
                 if (exportAddress != -1) {
                 	deferredStub.resolve(mem, exportAddress);
                     it.remove();
+                    sourceModule.resolvedImports.add(deferredStub);
                     numberofmappedNIDS++;
 
                     if (log.isDebugEnabled()) {
@@ -1111,10 +1112,7 @@ public class Loader {
 	                    module.unresolvedImports.add(deferredStub);
 
 	                    // Add a 0xfffff syscall so we can detect if an unresolved import is called
-	                    int instruction = // syscall <code>
-	                            ((jpcsp.AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (jpcsp.AllegrexOpcodes.SYSCALL & 0x3f) | ((0xfffff & 0x000fffff) << 6);
-
-	                    mem.write32(importAddress + 4, instruction);
+	                    deferredStub.unresolve(mem);
 	                }
                 }
             }

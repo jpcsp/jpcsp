@@ -584,6 +584,11 @@ public class ModuleMgrForUser extends HLEModule {
     @HLEFunction(nid = 0x8f2df740, version = 150, checkInsideInterrupt = true)
     public int sceKernelStopUnloadSelfModuleWithStatus(int exitCode, int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
         SceModule sceModule = Managers.modules.getModuleByUID(getSelfModuleId());
+
+        if (log.isInfoEnabled()) {
+        	log.info(String.format("sceKernelStopUnloadSelfModuleWithStatus %s, exitCode=0x%X", sceModule, exitCode));
+        }
+
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelThreadInfo thread = null;
         statusAddr.setValue(0);
@@ -617,6 +622,11 @@ public class ModuleMgrForUser extends HLEModule {
     @HLEFunction(nid = 0xCC1D3699, version = 150, checkInsideInterrupt = true)
     public int sceKernelStopUnloadSelfModule(int argSize, @CanBeNull TPointer argp, @CanBeNull TPointer32 statusAddr, @CanBeNull TPointer optionAddr) {
         SceModule sceModule = Managers.modules.getModuleByUID(getSelfModuleId());
+
+        if (log.isInfoEnabled()) {
+        	log.info(String.format("sceKernelStopUnloadSelfModule %s", sceModule));
+        }
+
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelThreadInfo thread = null;
         statusAddr.setValue(0);
