@@ -24,7 +24,6 @@ import static jpcsp.HLE.modules150.sceMpeg.PSMF_STREAM_SIZE_OFFSET;
 import static jpcsp.HLE.modules150.sceMpeg.convertTimestampToDate;
 import static jpcsp.HLE.modules150.sceMpeg.mpegAudioChannels;
 import static jpcsp.HLE.modules150.sceMpeg.read32;
-import static jpcsp.HLE.modules150.sceMpeg.readUnaligned32;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;
@@ -323,8 +322,9 @@ public class scePsmfPlayer extends HLEModule {
             pmfFileData = new byte[length];
             psmfFile.readFully(pmfFileData);
 
-            psmfLastTimestamp = endianSwap32(readUnaligned32(null, 0, pmfFileData, sceMpeg.PSMF_LAST_TIMESTAMP_OFFSET));
-            psmfLastDate = convertTimestampToDate(psmfLastTimestamp);
+            Modules.sceMpegModule.analyseMpeg(0, pmfFileData);
+            psmfLastTimestamp = Modules.sceMpegModule.mpegLastTimestamp;
+            psmfLastDate = Modules.sceMpegModule.mpegLastDate;
 
             if (checkMediaEngineState()) {
                 pmfFileChannel = new PacketChannel(pmfFileData);

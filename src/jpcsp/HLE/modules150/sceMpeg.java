@@ -1075,9 +1075,8 @@ public class sceMpeg extends HLEModule {
     	return mem.read16(bufferAddr + offset);
     }
 
-    protected void analyseMpeg(int bufferAddr) {
+    protected void analyseMpeg(int bufferAddr, byte[] mpegHeader) {
         Memory mem = Memory.getInstance();
-        byte[] mpegHeader = null;
 
         mpegStreamAddr = bufferAddr;
         mpegMagic = read32(mem, bufferAddr, mpegHeader, PSMF_MAGIC_OFFSET);
@@ -1096,7 +1095,7 @@ public class sceMpeg extends HLEModule {
         	// An IoListener is trying to recognize such read operations and reading instead
         	// the complete MPEG header.
         	// Check if the IoListener was able to read the complete MPEG header...
-        	if (memcmp(bufferAddr, completeMpegHeader, partialMpegHeaderLength)) {
+        	if (mpegHeader == null && memcmp(bufferAddr, completeMpegHeader, partialMpegHeaderLength)) {
         		if (log.isDebugEnabled()) {
         			log.debug("Using complete MPEG header from IoListener");
         			if (log.isTraceEnabled()) {
@@ -1104,10 +1103,8 @@ public class sceMpeg extends HLEModule {
         			}
         		}
         		mpegHeader = completeMpegHeader;
-                mpegFirstTimestamp = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, PSMF_FIRST_TIMESTAMP_OFFSET));
-                mpegLastTimestamp = endianSwap32(readUnaligned32(mem, bufferAddr, mpegHeader, PSMF_LAST_TIMESTAMP_OFFSET));
-                avcDetailFrameWidth = read8(mem, bufferAddr, mpegHeader, PSMF_FRAME_WIDTH_OFFSET) * 0x10;
-                avcDetailFrameHeight = read8(mem, bufferAddr, mpegHeader, PSMF_FRAME_HEIGHT_OFFSET) * 0x10;
+        		analyseMpeg(bufferAddr, mpegHeader);
+        		return;
         	}
         }
 
@@ -1130,6 +1127,11 @@ public class sceMpeg extends HLEModule {
         audioFrameCount = 0;
         endOfAudioReached = false;
         endOfVideoReached = false;
+    }
+
+    protected void analyseMpeg(int bufferAddr) {
+        analyseMpeg(bufferAddr, null);
+
         if (!isCurrentMpegAnalyzed() && mpegStreamSize > 0 && mpegOffset > 0 && mpegOffset <= mpegStreamSize) {
             if (checkMediaEngineState()) {
             	me.init(bufferAddr, mpegStreamSize, mpegOffset);
@@ -1174,6 +1176,10 @@ public class sceMpeg extends HLEModule {
 
     protected boolean hasPsmfAudioStream() {
     	return hasPsmfStream(PSMF_AUDIO_STREAM);
+    }
+
+    protected boolean hasPsmfUserdataStream() {
+    	return hasPsmfStream(PSMF_DATA_STREAM);
     }
 
     public static int getMaxAheadTimestamp(int packets) {
@@ -2647,6 +2653,10 @@ public class sceMpeg extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x01977054, version = 150)
     public int sceMpegGetUserdataAu(@CheckArgument("checkMpegHandle") int mpeg, int streamUid, TPointer auAddr, @CanBeNull TPointer32 resultAddr) {
+    	if (!hasPsmfUserdataStream()) {
+    		return SceKernelErrors.ERROR_MPEG_NO_DATA;
+    	}
+
     	// 2 Unknown result values
     	resultAddr.setValue(0, 0);
     	resultAddr.setValue(4, 0);
