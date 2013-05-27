@@ -2054,7 +2054,8 @@ public class VideoEngine {
 	        		Buffer vertexData = mem.getBuffer(vertexAddress, size);
 	        		vertexBuffer.load(re, vertexData, vertexAddress, size);
 	        		int multiDrawFirstVertex = 0;
-	        		if (re.isVertexArrayAvailable()) {
+	        		// Don't try to mix VAO's with indexed vertices...
+	        		if (re.isVertexArrayAvailable() && firstVertex == 0) {
 	        			VertexArray vertexArray = VertexArrayManager.getInstance().getVertexArray(re, context.vinfo.vtype, vertexBuffer, vertexAddress, stride);
 	    				needSetDataPointers = vertexArray.bind(re);
 	    				multiDrawFirstVertex = vertexArray.getVertexOffset(vertexAddress);
@@ -2094,6 +2095,9 @@ public class VideoEngine {
 			        	}
 		        		vertexData = mem.getBuffer(vertexAddress, size);
 						vertexBuffer.load(re, vertexData, vertexAddress, size);
+					} else if (multiDrawFirstVertex > 0) {
+						// The VAO requires an updated first vertex
+						firstVertex = multiDrawFirstVertex;
 					}
 
 					if (needSetDataPointers) {
