@@ -124,10 +124,6 @@ public class scePsmf extends HLEModule {
 				// Atrac or PCM
 				return streamType == PSMF_ATRAC_STREAM || streamType == PSMF_PCM_STREAM;
 			}
-			if (type == PSMF_DATA_STREAM) {
-				// Any type
-				return true;
-			}
 
 			return false;
 		}
@@ -176,6 +172,11 @@ public class scePsmf extends HLEModule {
 
             streamType = ((privateStreamID & 0xF0) == 0 ? PSMF_ATRAC_STREAM : PSMF_PCM_STREAM);
             streamChannel = privateStreamID & 0x0F;
+        }
+
+        public void readUserDataStreamParams(Memory mem, int addr, byte[] mpegHeader, int offset, PSMFHeader psmfHeader) {
+        	log.warn(String.format("Unknwon User Data stream format"));
+        	streamType = PSMF_DATA_STREAM;
         }
     }
 
@@ -496,9 +497,8 @@ public class scePsmf extends HLEModule {
                 stream = new PSMFStream(numberOfStreams);
                 stream.readPrivateAudioStreamParams(mem, addr, mpegHeader, currentStreamOffset, psmfHeader);
             } else {
-            	if (log.isDebugEnabled()) {
-            		log.debug(String.format("Unknown stream found in header: 0x%02X", streamID));
-            	}
+            	stream = new PSMFStream(numberOfStreams);
+            	stream.readUserDataStreamParams(mem, addr, mpegHeader, currentStreamOffset, psmfHeader);
             }
 
             if (stream != null) {
