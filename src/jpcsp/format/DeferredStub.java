@@ -18,11 +18,15 @@ package jpcsp.format;
 
 import jpcsp.AllegrexOpcodes;
 import jpcsp.Memory;
+import jpcsp.HLE.SyscallHandler;
 
 public class DeferredStub {
     private String moduleName;
     private int importAddress;
     private int nid;
+    private boolean savedImport;
+    private int savedImport1;
+    private int savedImport2;
 
     public DeferredStub(String moduleName, int importAddress, int nid) {
         this.moduleName = moduleName;
@@ -43,12 +47,28 @@ public class DeferredStub {
     }
 
     public void resolve(Memory mem, int address) {
-        int instruction = // j <jumpAddress>
-                ((AllegrexOpcodes.J & 0x3f) << 26)
-                | ((address >>> 2) & 0x03ffffff);
+    	if (!savedImport) {
+			savedImport1 = mem.read32(importAddress);
+			savedImport2 = mem.read32(importAddress + 4);
+	    	savedImport = true;
+    	}
+
+		// j <address>
+    	int instruction = (AllegrexOpcodes.J << 26) | ((address >> 2) & 0x03FFFFFF);
 
         mem.write32(importAddress, instruction);
         mem.write32(importAddress + 4, 0); // write a nop over our "unmapped import detection special syscall"
+    }
+
+    public void unresolve(Memory mem) {
+    	if (savedImport) {
+    		mem.write32(importAddress, savedImport1);
+    		mem.write32(importAddress + 4, savedImport2);
+    	} else {
+        	// syscall <syscallUnmappedImport>
+        	int instruction = (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.SYSCALL | (SyscallHandler.syscallUnmappedImport << 6);
+            mem.write32(importAddress + 4, instruction);
+    	}
     }
 
     @Override

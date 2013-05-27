@@ -99,6 +99,7 @@ public class SceModule {
     // deferred import resolving
     public List<DeferredStub> unresolvedImports;
     public int importFixupAttempts;
+    public List<DeferredStub> resolvedImports;
 
     private static int sceModuleAddressOffset = 0x08400000; // reset this when we reset the emu
     public static void ResetAllocator() {
@@ -126,6 +127,7 @@ public class SceModule {
         stubtextsection = new int[2];
         unresolvedImports = new LinkedList<DeferredStub>();
         importFixupAttempts = 0;
+        resolvedImports = new LinkedList<DeferredStub>();
         allocatedMemory = new LinkedList<SysMemInfo>();
     }
 
@@ -135,7 +137,15 @@ public class SceModule {
     }
 
     public void unload() {
-        isLoaded = false;
+    	if (!resolvedImports.isEmpty()) {
+	    	Memory mem = Memory.getInstance();
+	    	for (DeferredStub deferredStub : resolvedImports) {
+	    		deferredStub.unresolve(mem);
+	    	}
+	    	resolvedImports.clear();
+    	}
+
+    	isLoaded = false;
         free();
     }
 
@@ -285,4 +295,9 @@ public class SceModule {
         stub_top = (int)moduleInfo.getM_imports();
         stub_size = (int)moduleInfo.getM_imp_end() - stub_top;
     }
+
+	@Override
+	public String toString() {
+		return String.format("SceModule '%s'", modname);
+	}
 }
