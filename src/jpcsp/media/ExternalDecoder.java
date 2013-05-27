@@ -237,7 +237,7 @@ public class ExternalDecoder {
 
     	IVirtualFile vFileDemuxedAudio = new PsmfAudioDemuxVirtualFile(vFilePsmf, mpegOffset, audioChannel);
     	byte[] audioStreamData = Utilities.readCompleteFile(vFileDemuxedAudio);
-    	if (audioStreamData == null) {
+    	if (audioStreamData == null || audioStreamData.length == 0) {
     		return;
     	}
 
@@ -376,7 +376,7 @@ public class ExternalDecoder {
     	}
 
     	byte[] atracData = Utilities.readCompleteFile(vFile);
-    	if (atracData == null) {
+    	if (atracData == null || atracData.length == 0) {
     		return null;
     	}
 

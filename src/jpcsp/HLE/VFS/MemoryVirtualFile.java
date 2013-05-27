@@ -115,4 +115,9 @@ public class MemoryVirtualFile implements IVirtualFile {
 
 		return vFile;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("MemoryVirtualFile 0x%08X-0x%08X (length=0x%X)", startAddress, startAddress + length, length);
+	}
 }

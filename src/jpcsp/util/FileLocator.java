@@ -58,11 +58,6 @@ public class FileLocator {
 		Modules.IoFileMgrForUserModule.registerIoListener(ioListener);
 	}
 
-	public byte[] readFileData(int address, int length, int fileSize, byte[] checkData) {
-		IVirtualFile vFile = getVirtualFile(address, length, fileSize, checkData);
-		return Utilities.readCompleteFile(vFile);
-	}
-
     public void setFileData(SeekableDataInput dataInput, IVirtualFile vFile, int address, long startPosition, int length) {
     	ioListener.setFileData(dataInput, vFile, address, startPosition, length);
     }
