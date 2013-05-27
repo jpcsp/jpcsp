@@ -134,6 +134,7 @@ public class sceMp3 extends HLEModule {
         protected MediaEngine me;
         protected PacketChannel mp3Channel;
         private byte[] mp3PcmBuffer;
+        private int decodeCount;
 
         //
         // The Buffer layout is the following:
@@ -205,8 +206,12 @@ public class sceMp3 extends HLEModule {
             mp3InputBufWritePos = mp3InputFileReadPos;
             mp3InputBufSize = 0;
 
+            // In the JpcspTrace log of "Downstream Panic! - ULUS10322",
+            // the PSP is returning 0x1200 bytes at each sceMp3Decode call.
+            // Is this maybe depending on the MP3 file itself?
+            mp3MaxSamples = Math.min(mp3PcmBufSize, 0x1200) / 4;
+
             // Set default properties.
-            mp3MaxSamples = mp3PcmBufSize / 4;
             mp3LoopNum = PSP_MP3_LOOP_NUM_INFINITE;
             mp3DecodedBytes = 0;
 
@@ -276,6 +281,15 @@ public class sceMp3 extends HLEModule {
         }
 
         /**
+         * The PSP is always adding data to the MP3 stream with this size.
+         * 
+         * @return the size used by the PSP to add data to the MP3 stream.
+         */
+        private int getMaxAddStreamDataSize() {
+        	return (mp3BufSize - 0x5C0) >> 1;
+        }
+
+        /**
          * @return number of bytes that can be read from the buffer
          */
         public int getMp3AvailableReadSize() {
@@ -287,13 +301,6 @@ public class sceMp3 extends HLEModule {
          */
         public int getMp3AvailableWriteSize() {
             return mp3BufSize - getMp3AvailableReadSize();
-        }
-
-        /**
-         * @return number of bytes that can be written sequentially into the buffer
-         */
-        public int getMp3AvailableSequentialWriteSize() {
-            return (mp3BufSize - mp3InputBufWritePos);
         }
 
         /**
@@ -336,9 +343,7 @@ public class sceMp3 extends HLEModule {
         	if (checkMediaEngineState()) {
             	if (mp3Channel.length() < ME_READ_AHEAD) {
             		int neededLength = ME_READ_AHEAD - mp3Channel.length();
-            		if (getMp3AvailableWriteSize() < neededLength) {
-            			consumeRead(neededLength - getMp3AvailableWriteSize());
-            		}
+            		consumeRead(neededLength);
             		return false;
             	}
         	}
@@ -346,8 +351,31 @@ public class sceMp3 extends HLEModule {
         	return true;
         }
 
-        public int decode() {
-            if (checkMediaEngineState()) {
+        /**
+         * The PSP is using the PCM buffer to perform some double-buffering.
+         * The first half of the buffer is used at the first sceMp3Decode call,
+         * the second halt of the buffer is used at the second sceMp3Decode call.
+         * The third call is reusing the first halt of the buffer and so on.
+         * 
+         * @return the address where to store the PCM data returned by sceMp3Decode.
+         */
+        public int getDecodeBuffer() {
+    		int decodeBuffer = mp3PcmBuf;
+    		if ((decodeCount & 1) != 0) {
+    			decodeBuffer += getDecodeBufferSize();
+    		}
+
+    		return decodeBuffer;
+        }
+
+        public int getDecodeBufferSize() {
+        	return mp3PcmBufSize >> 1;
+        }
+
+        public int decode(int decodeBuffer, int decodeBufferSize) {
+    		decodeCount++;
+
+        	if (checkMediaEngineState()) {
             	// Wait to fill the ME Channel with enough data before opening the
             	// audio channel, otherwise the decoding might stop and assume
             	// an "End Of File" condition.
@@ -356,9 +384,9 @@ public class sceMp3 extends HLEModule {
 	            		me.init(mp3Channel, false, true, 0, 0);
 	            	}
             		me.stepAudio(getMp3MaxSamples() * getBytesPerSample(), getMp3ChannelNum());
-	                mp3DecodedBytes = copySamplesToMem(mp3PcmBuf, mp3PcmBufSize, mp3PcmBuffer);
+	                mp3DecodedBytes = copySamplesToMem(decodeBuffer, decodeBufferSize, mp3PcmBuffer);
 	                if (log.isTraceEnabled()) {
-	                	log.trace(String.format("decoded %d samples: %s", mp3DecodedBytes, Utilities.getMemoryDump(mp3PcmBuf, mp3DecodedBytes)));
+	                	log.trace(String.format("decoded %d samples: %s", mp3DecodedBytes, Utilities.getMemoryDump(decodeBuffer, mp3DecodedBytes)));
 	                }
             	} else {
             		// sceMp3Decode is not expected to return 0 samples at the start.
@@ -367,12 +395,12 @@ public class sceMp3 extends HLEModule {
             		mp3DecodedBytes = fakeSamples * getBytesPerSample();
                     // Clear the whole PCM buffer, just in case the application is expecting
             		// mp3MaxSamples and not just 1 sample.
-                    Memory.getInstance().memset(mp3PcmBuf, (byte) 0, mp3PcmBufSize);
+                    Memory.getInstance().memset(decodeBuffer, (byte) 0, mp3PcmBufSize);
             	}
             } else {
             	// Return mp3MaxSamples samples (all set to 0).
                 mp3DecodedBytes = getMp3MaxSamples() * getBytesPerSample();
-                Memory.getInstance().memset(mp3PcmBuf, (byte) 0, mp3DecodedBytes);
+                Memory.getInstance().memset(decodeBuffer, (byte) 0, mp3DecodedBytes);
 
                 int mp3BufReadConsumed = Math.min(mp3DecodedBytes / compressionFactor, getMp3AvailableReadSize());
                 consumeRead(mp3BufReadConsumed);
@@ -399,8 +427,9 @@ public class sceMp3 extends HLEModule {
         		}
         	}
 
-        	// We have not enough data into the channel, accept as much as we can...
-        	return getMp3AvailableWriteSize() > 0;
+        	// We have not enough data into the channel,
+        	// accept only in packets of maxAddStreamDataSize (like the PSP)
+        	return getMp3AvailableWriteSize() >= getMaxAddStreamDataSize();
         }
 
         public boolean isStreamDataEnd() {
@@ -574,7 +603,7 @@ public class sceMp3 extends HLEModule {
         // Address where to write
         mp3BufPtr.setValue(mp3Stream.isStreamDataEnd() ? 0 : mp3Stream.getMp3BufWriteAddr());
         // Length that can be written from bufAddr
-        mp3BufToWritePtr.setValue(mp3Stream.isStreamDataEnd() ? 0: mp3Stream.getMp3AvailableSequentialWriteSize());
+        mp3BufToWritePtr.setValue(mp3Stream.isStreamDataEnd() ? 0: Math.min(mp3Stream.getMaxAddStreamDataSize(), mp3Stream.getMp3AvailableWriteSize()));
         // Position in the source stream file to start reading from (seek position)
         mp3PosPtr.setValue((int) mp3Stream.getMp3InputFileSize());
 
@@ -589,17 +618,17 @@ public class sceMp3 extends HLEModule {
     public int sceMp3Decode(Mp3Stream mp3Stream, TPointer32 outPcmPtr) {
         long startTime = Emulator.getClock().microTime();
 
-        int pcmBytes = mp3Stream.decode();
-        int pcmSamples = mp3Stream.getMp3DecodedSamples();
-        outPcmPtr.setValue(mp3Stream.getMp3PcmBufAddr());
+        int decodeBuffer = mp3Stream.getDecodeBuffer();
+        int pcmBytes = mp3Stream.decode(decodeBuffer, mp3Stream.getDecodeBufferSize());
+        outPcmPtr.setValue(decodeBuffer);
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceMp3Decode returning %d samples (%d bytes) at 0x%08X", pcmSamples, pcmBytes, outPcmPtr.getValue()));
+        	log.debug(String.format("sceMp3Decode returning 0x%X bytes (%d samples) at 0x%08X", pcmBytes, mp3Stream.getMp3DecodedSamples(), outPcmPtr.getValue()));
         }
 
         delayThread(startTime, mp3DecodeDelay);
 
-        return pcmSamples;
+        return pcmBytes;
     }
 
     @HLEFunction(nid = 0xD0A56296, version = 150, checkInsideInterrupt = true)
