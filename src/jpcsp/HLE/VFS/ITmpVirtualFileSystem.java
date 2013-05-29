@@ -19,9 +19,9 @@ package jpcsp.HLE.VFS;
 import static java.io.File.separatorChar;
 import static java.lang.Math.abs;
 
-import jpcsp.State;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceIoStat;
+import jpcsp.settings.Settings;
 
 public interface ITmpVirtualFileSystem extends IVirtualFileSystem {
 	public static final IPurpose tmpPurposePGD = new PurposePGD();
@@ -32,9 +32,16 @@ public interface ITmpVirtualFileSystem extends IVirtualFileSystem {
 		public String getFileName(String fileName);
 	}
 
-	public static class PurposePGD implements IPurpose {
-		@Override
-		public String getFileName(String fileName) {
+	public static abstract class AbstractPurpose implements IPurpose {
+		protected String getFileName(String dir, String fileName) {
+			return String.format("%s%s%c%s", Settings.getInstance().getDiscDirectory(), dir, separatorChar, fileName);
+		}
+
+		protected String getFileName(String dir1, String dir2, String fileName) {
+			return String.format("%s%s%c%s%c%s", Settings.getInstance().getDiscDirectory(), dir1, separatorChar, dir2, separatorChar, fileName);
+		}
+
+		protected String getFileNameById(String fileName) {
 			int fileId = 0;
 
 			SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(fileName);
@@ -49,14 +56,21 @@ public interface ITmpVirtualFileSystem extends IVirtualFileSystem {
 				fileId = abs(VirtualFileSystemManager.getFileNameLastPart(fileName).hashCode());
 			}
 
-			return String.format("%s%cPGD%cFile-%d%cPGDfile.raw.decrypted", State.discId, separatorChar, separatorChar, fileId, separatorChar);
+			return String.format("File-%d", fileId);
 		}
 	}
 
-	public static class PurposeAtrac implements IPurpose {
+	public static class PurposePGD extends AbstractPurpose {
 		@Override
 		public String getFileName(String fileName) {
-			return String.format("%s%cAtrac%c%s", State.discId, separatorChar, separatorChar, fileName);
+			return getFileName("PGD", getFileNameById(fileName), "PGDfile.raw.decrypted");
+		}
+	}
+
+	public static class PurposeAtrac extends AbstractPurpose {
+		@Override
+		public String getFileName(String fileName) {
+			return getFileName("Atrac", fileName);
 		}
 	}
 }

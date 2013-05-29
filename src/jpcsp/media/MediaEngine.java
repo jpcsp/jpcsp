@@ -28,18 +28,18 @@ import java.util.LinkedList;
 import java.util.List;
 
 import jpcsp.Memory;
-import jpcsp.State;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.VFS.ByteArrayVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.kernel.types.SceMpegAu;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules.sceDisplay;
-import jpcsp.connector.Connector;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
+import jpcsp.settings.Settings;
 import jpcsp.util.Debug;
 import jpcsp.util.FIFOByteBuffer;
 import jpcsp.util.FileLocator;
@@ -681,7 +681,7 @@ public class MediaEngine {
     }
 
     public static String getExtAudioBasePath(int mpegStreamSize) {
-    	return String.format("%s%s%cMpeg-%d%c", Connector.baseDirectory, State.discId, File.separatorChar, mpegStreamSize, File.separatorChar);
+    	return String.format("%sMpeg-%d%c", Settings.getInstance().getDiscTmpDirectory(), mpegStreamSize, File.separatorChar);
     }
 
     public static String getExtAudioPath(int mpegStreamSize, String suffix) {
@@ -968,6 +968,10 @@ public class MediaEngine {
     // sceMpeg.avcDecodeDelay to match the PSP and allow a fluid video rendering
     public void writeVideoImage(int dest_addr, int frameWidth, int videoPixelMode) {
         final int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
+
+        // Tell the display that we are updating the given address
+        Modules.sceDisplayModule.write(dest_addr);
+
         // Get the current generated image, convert it to pixels and write it
         // to memory.
         if (getCurrentImg() != null) {

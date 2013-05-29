@@ -120,10 +120,18 @@ public abstract class Memory {
     }
 
     public void invalidMemoryAddress(int address, String prefix, int status) {
-	    String message = String.format("%s - Invalid memory address : 0x%X PC=%08X",
-	                                   prefix,
-	                                   address,
-	                                   Emulator.getProcessor().cpu.pc);
+	    String message = String.format("%s - Invalid memory address: 0x%08X PC=0x%08X", prefix, address, Emulator.getProcessor().cpu.pc);
+
+	    if (ignoreInvalidMemoryAccess) {
+	        Memory.log.warn("IGNORED: " + message);
+	    } else {
+	        Memory.log.error(message);
+	        Emulator.PauseEmuWithStatus(status);
+	    }
+	}
+
+    public void invalidMemoryAddress(int address, int length, String prefix, int status) {
+	    String message = String.format("%s - Invalid memory address: 0x%08X-0x%08X(length=0x%X) PC=0x%08X", prefix, address, address + length, length, Emulator.getProcessor().cpu.pc);
 
 	    if (ignoreInvalidMemoryAccess) {
 	        Memory.log.warn("IGNORED: " + message);

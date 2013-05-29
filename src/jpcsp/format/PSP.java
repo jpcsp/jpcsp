@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import jpcsp.State;
 import jpcsp.connector.Connector;
 import jpcsp.crypto.CryptoEngine;
+import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
 /**
@@ -158,7 +159,7 @@ public class PSP {
 
         if (CryptoEngine.getExtractEbootStatus()) {
             try {
-                String ebootPath = Connector.baseDirectory + State.discId + File.separatorChar;
+                String ebootPath = Settings.getInstance().getDiscTmpDirectory();
                 new File(ebootPath).mkdirs();
                 RandomAccessFile raf = new RandomAccessFile(ebootPath + "EBOOT.BIN", "rw");
                 raf.write(outBuf, 0, retsize);

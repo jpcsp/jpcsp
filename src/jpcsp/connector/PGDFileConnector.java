@@ -25,11 +25,11 @@ import java.io.PrintWriter;
 
 import javax.swing.JOptionPane;
 
-import jpcsp.State;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
+import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
 /**
@@ -37,7 +37,6 @@ import jpcsp.util.Utilities;
  *
  */
 public class PGDFileConnector {
-
     public static final String encryptedFileName = "PGDfile.raw";
     public static final String decryptedFileName = encryptedFileName + ".decrypted";
     public String id;
@@ -46,11 +45,11 @@ public class PGDFileConnector {
     }
 
     public String getBaseDLCDirectory() {
-        return String.format("%s%s%cDLC%c", Connector.baseDirectory, State.discId, File.separatorChar, File.separatorChar);
+        return String.format("%sDLC%c", Settings.getInstance().getDiscTmpDirectory(), File.separatorChar);
     }
     
     public String getBaseDirectory(String id) {
-        return String.format("%s%s%cPGD%c%s%c", Connector.baseDirectory, State.discId, File.separatorChar, File.separatorChar, id, File.separatorChar);
+        return String.format("%sPGD%c%s%c", Settings.getInstance().getDiscTmpDirectory(), File.separatorChar, id, File.separatorChar);
     }
 
     public String generateID(int startSector) {

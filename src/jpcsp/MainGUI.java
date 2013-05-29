@@ -61,7 +61,6 @@ import javax.swing.UIManager;
 import jpcsp.Allegrex.compiler.Profiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.autotests.AutoTestsRunner;
-import jpcsp.connector.Connector;
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.Debugger.ImageViewer;
 import jpcsp.Debugger.InstructionCounter;
@@ -1882,7 +1881,7 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
 
             if ((!discId.equals(State.DISCID_UNKNOWN_UMD) && loadUnpackedUMD(discId + ".BIN")) ||
                 // Try to load a previously decrypted EBOOT.BIN (faster)
-                (!discId.equals(State.DISCID_UNKNOWN_UMD) && loadUnpackedUMD(Connector.baseDirectory + discId + File.separatorChar + "EBOOT.BIN")) ||
+                (!discId.equals(State.DISCID_UNKNOWN_UMD) && loadUnpackedUMD(Settings.getInstance().getDiscTmpDirectory() + "EBOOT.BIN")) ||
                 // Try to load the EBOOT.BIN (before the BOOT.BIN, same games have an invalid BOOT.BIN but a valid EBOOT.BIN)
                 loadUMD(iso, "PSP_GAME/SYSDIR/EBOOT.OLD") ||
                 loadUMD(iso, "PSP_GAME/SYSDIR/EBOOT.BIN") ||
