@@ -82,7 +82,7 @@ int changeSyscallAddr(void *addr, void *newaddr) {
 	for (i = 0; i < 0xFF4; ++i) {
 		if ((syscalls[i] & 0x3FFFFFFF) == (_addr & 0x3FFFFFFF)) {
 			printLogHH("Patching syscall from ", syscalls[i], " to ", (int) newaddr, "\n");
-			syscalls[i] = (u32)newaddr;
+			syscalls[i] = (u32)newaddr | (syscalls[i] & 0xC0000000);
 			found = 1;
 		}
 	}
