@@ -33,6 +33,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModule;
 
@@ -100,10 +101,14 @@ public class sceCtrl extends HLEModule {
         return false;
     }
 
+    private static int getTimestamp() {
+    	return ((int) SystemTimeManager.getSystemTime()) & 0x7FFFFFFF;
+    }
+
     private void setButtons(byte Lx, byte Ly, byte Rx, byte Ry, int Buttons, boolean hasRightAnalogController) {
         int oldButtons = this.Buttons;
 
-        this.TimeStamp = ((int) SystemTimeManager.getSystemTime()) & 0x7FFFFFFF;
+        this.TimeStamp = getTimestamp();
         this.Lx = Lx;
         this.Ly = Ly;
         if (hasRightAnalogController) {
@@ -239,7 +244,7 @@ public class sceCtrl extends HLEModule {
 
         @Override
         public String toString() {
-            return String.format("TimeStamp=%d,Lx=%d,Ly=%d,Rx=%d,Ry=%d,Buttons=%08X", TimeStamp, Lx, Ly, Rx, Ry, Buttons);
+            return String.format("TimeStamp=%d,Lx=%d,Ly=%d,Rx=%d,Ry=%d,Buttons=%07X", TimeStamp, Lx, Ly, Rx, Ry, Buttons);
         }
     }
 
@@ -325,6 +330,10 @@ public class sceCtrl extends HLEModule {
     }
 
     protected int hleCtrlReadBufferImmediately(int addr, int count, boolean positive, boolean peek) {
+    	if (count < 0 || count >= SAMPLE_BUFFER_SIZE) {
+    		return SceKernelErrors.ERROR_INVALID_SIZE;
+    	}
+
         Memory mem = Memory.getInstance();
 
         // If more samples are available than requested, read the more recent ones
@@ -343,6 +352,9 @@ public class sceCtrl extends HLEModule {
         }
 
         for (int ctrlCount = 0; ctrlCount < count; ctrlCount++) {
+        	if (log.isTraceEnabled()) {
+        		log.trace(String.format("now=%d, samples[%d]=%s", getTimestamp(), readIndex, samples[readIndex]));
+        	}
             addr = samples[readIndex].write(mem, addr, positive);
             readIndex = incrementSampleIndex(readIndex);
         }
@@ -355,7 +367,11 @@ public class sceCtrl extends HLEModule {
     }
 
     protected int hleCtrlReadBuffer(int addr, int count, boolean positive) {
-        // Some data available in sample buffer?
+    	if (count < 0 || count >= SAMPLE_BUFFER_SIZE) {
+    		return SceKernelErrors.ERROR_INVALID_SIZE;
+    	}
+
+    	// Some data available in sample buffer?
         if (getNumberOfAvailableSamples() > 0) {
             // Yes, read immediately
             return hleCtrlReadBufferImmediately(addr, count, positive, false);
