@@ -203,11 +203,11 @@ public class SafeFastMemory extends FastMemory {
 		}
 
 		if (!isAddressGood(destination, length)) {
-			invalidMemoryAddress(destination, "memcpy", Emulator.EMU_STATUS_MEM_WRITE);
+			invalidMemoryAddress(destination, length, "memcpy", Emulator.EMU_STATUS_MEM_WRITE);
 			return;
 		}
 		if (!isAddressGood(source, length)) {
-			invalidMemoryAddress(source, "memcpy", Emulator.EMU_STATUS_MEM_READ);
+			invalidMemoryAddress(source, length, "memcpy", Emulator.EMU_STATUS_MEM_READ);
 			return;
 		}
 
