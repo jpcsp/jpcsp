@@ -408,8 +408,8 @@ public class ModuleMgrForUser extends HLEModule {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         int attribute = sceModule.attribute;
         int entryAddr = sceModule.entry_addr;
-        if (entryAddr == -1) {
-            log.info("sceKernelStartModule - module has no entry point, trying to use module_start_func");
+        if (Memory.isAddressGood(sceModule.module_start_func)) {
+        	// Always take the module start function if one is defined.
             entryAddr = sceModule.module_start_func;
             attribute = sceModule.module_start_thread_attr;
         }
@@ -450,7 +450,7 @@ public class ModuleMgrForUser extends HLEModule {
             // Do no return the thread exit status as the result of this call,
             // return the module ID.
             threadMan.hleKernelWaitThreadEnd(currentThread, thread.uid, TPointer32.NULL, false, false);
-        } else if (entryAddr == 0) {
+        } else if (entryAddr == 0 || entryAddr == -1) {
             Modules.log.info("sceKernelStartModule - no entry address");
             sceModule.start();
         } else {
