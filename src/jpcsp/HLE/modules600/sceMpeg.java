@@ -16,13 +16,21 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules600;
 
+import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High;
+import static jpcsp.HLE.modules150.SysMemUserForUser.USER_PARTITION_ID;
+
+import jpcsp.Processor;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 
 @HLELogging
 public class sceMpeg extends jpcsp.HLE.modules250.sceMpeg {
+	// Not sure about the real size.
+	public static final int AVC_ES_BUF_SIZE = 0x2000;
+
 	@HLEUnimplemented
     @HLEFunction(nid = 0x63B9536A, version = 600)
     public int sceMpegAvcResourceGetAvcDecTopAddr(int unknown) {
@@ -32,14 +40,27 @@ public class sceMpeg extends jpcsp.HLE.modules250.sceMpeg {
 
     @HLEFunction(nid = 0x8160A2FE, version = 600)
     public int sceMpegAvcResourceFinish() {
-        return 0;
+    	if (avcEsBuf != null) {
+    		Modules.SysMemUserForUserModule.free(avcEsBuf);
+    		avcEsBuf = null;
+    	}
+
+    	return 0;
     }
 
     @HLEUnimplemented
     @HLEFunction(nid = 0xAF26BB01, version = 600)
     public int sceMpegAvcResourceGetAvcEsBuf() {
-        // Unknown value
-        return 0;
+    	if (avcEsBuf == null) {
+    		log.warn(String.format("sceMpegAvcResourceGetAvcEsBuf avcEsBuf not allocated"));
+    		return -1;
+    	}
+
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceMpegAvcResourceGetAvcEsBuf returning 0x%08X", avcEsBuf.addr));
+    	}
+
+    	return avcEsBuf.addr;
     }
 
     @HLELogging(level="warn")
@@ -49,6 +70,11 @@ public class sceMpeg extends jpcsp.HLE.modules250.sceMpeg {
         	return SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
         }
 
-        return 0;
+    	avcEsBuf = Modules.SysMemUserForUserModule.malloc(USER_PARTITION_ID, "sceMpegAvcEsBuf", PSP_SMEM_High, AVC_ES_BUF_SIZE, 0);
+    	if (avcEsBuf != null) {
+    		Processor.memory.memset(avcEsBuf.addr, (byte) 0, avcEsBuf.size);
+    	}
+
+    	return 0;
     }
 }
