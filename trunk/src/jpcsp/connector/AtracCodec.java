@@ -30,7 +30,6 @@ import java.nio.ByteBuffer;
 import java.util.HashSet;
 
 import jpcsp.Memory;
-import jpcsp.State;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.media.ExternalDecoder;
@@ -148,7 +147,7 @@ public class AtracCodec {
     }
 
     public static String getBaseDirectory() {
-        return String.format("%s%s%cAtrac%c", Connector.baseDirectory, State.discId, File.separatorChar, File.separatorChar);
+        return String.format("%sAtrac%c", Settings.getInstance().getDiscTmpDirectory(), File.separatorChar);
     }
 
     protected String getCompleteFileName(String suffix) {

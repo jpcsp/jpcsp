@@ -957,6 +957,13 @@ public class sceDisplay extends HLEModule {
         }
     }
 
+    public final void write(int address) {
+    	address &= Memory.addressMask;
+    	if (address < bottomaddrFb && address >= topaddrFb) {
+    		displayDirty = true;
+    	}
+    }
+
     public IRenderingEngine getRenderingEngine() {
     	return re;
     }
@@ -1667,7 +1674,11 @@ public class sceDisplay extends HLEModule {
     }
 
     public int hleDisplayWaitVblankStart(int cycles, boolean doCallbacks) {
-        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+    	if (cycles <= 0) {
+    		return SceKernelErrors.ERROR_INVALID_VALUE;
+    	}
+
+    	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelThreadInfo thread = threadMan.getCurrentThread();
         int threadId = threadMan.getCurrentThreadID();
 

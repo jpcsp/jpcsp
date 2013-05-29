@@ -27,13 +27,13 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import jpcsp.Memory;
-import jpcsp.State;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceMpegAu;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules150.sceDisplay;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
+import jpcsp.settings.Settings;
 import jpcsp.util.Debug;
 import jpcsp.util.Utilities;
 
@@ -64,7 +64,7 @@ public class MpegCodec {
 	}
 
 	public static String getMpegBaseDirectory(String id) {
-		return String.format("%s%s%c%s%c", Connector.baseDirectory, State.discId, File.separatorChar, id, File.separatorChar);
+		return String.format("%s%s%c", Settings.getInstance().getDiscTmpDirectory(), id, File.separatorChar);
 	}
 
 	public void init(int mpegVersion, int streamSize, long lastTimestamp) {

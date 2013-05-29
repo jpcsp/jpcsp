@@ -57,6 +57,7 @@ public class Settings {
 	private Properties patchSettings;
 	private HashMap<String, List<ISettingsListener>> listenersByKey;
 	private List<SettingsListenerInfo> allListeners;
+	private boolean useUmdIdForDiscDirectory;
 
 	public static Settings getInstance() {
 		if (instance == null) {
@@ -93,6 +94,21 @@ public class Settings {
 		}
 	}
 
+	public String getTmpDirectory() {
+		return readString("emu.tmppath") + File.separatorChar;
+	}
+
+	public String getDiscTmpDirectory() {
+		return getTmpDirectory() + getDiscDirectory();
+	}
+
+	public String getDiscDirectory() {
+		if (useUmdIdForDiscDirectory) {
+			return String.format("%s-%s%c", State.discId, State.umdId, File.separatorChar);
+		}
+		return String.format("%s%c", State.discId, File.separatorChar);
+	}
+
 	public void loadPatchSettings() {
 		Properties previousPatchSettings = new Properties(patchSettings);
 		patchSettings.clear();
@@ -106,7 +122,11 @@ public class Settings {
 				// If no patch settings are found using the UMD ID, try with only the Disc ID
 				patchFileName = String.format("patches/%s.properties", discId);
 				patchFile = new File(patchFileName);
+				useUmdIdForDiscDirectory = false;
+			} else {
+				useUmdIdForDiscDirectory = true;
 			}
+
 			InputStream patchSettingsStream = null;
 			try {
 				patchSettingsStream = new BufferedInputStream(new FileInputStream(patchFile));
