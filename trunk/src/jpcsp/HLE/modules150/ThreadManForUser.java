@@ -1329,17 +1329,11 @@ public class ThreadManForUser extends HLEModule {
     private void callAddress(SceKernelThreadInfo thread, int address, IAction afterAction, boolean returnVoid, boolean preserveCpuState, int[] parameters) {
         if (thread != null) {
             // Save the wait state of the thread to restore it after the call
-            int status = thread.status;
-            int waitType = thread.waitType;
-            int waitId = thread.waitId;
-            ThreadWaitInfo threadWaitInfo = new ThreadWaitInfo();
-            threadWaitInfo.copy(thread.wait);
-            boolean doCallbacks = thread.doCallbacks;
+            afterAction = new AfterCallAction(thread);
 
             // Terminate the thread wait state
             thread.waitType = PSP_WAIT_NONE;
 
-            afterAction = new AfterCallAction(thread, status, waitType, waitId, threadWaitInfo, doCallbacks, afterAction);
             hleChangeThreadState(thread, PSP_THREAD_READY);
         }
 
@@ -3800,6 +3794,10 @@ public class ThreadManForUser extends HLEModule {
 			}
 		}
 
+		public void setAfterAction(IAction afterAction) {
+			this.afterAction = afterAction;
+		}
+
 		@Override
         public String toString() {
             return String.format("Callback address=0x%08X,id=%d,returnVoid=%b", address, getId(), returnVoid);
@@ -3807,22 +3805,21 @@ public class ThreadManForUser extends HLEModule {
     }
 
     private class AfterCallAction implements IAction {
-        SceKernelThreadInfo thread;
-        int status;
-        int waitType;
-        int waitId;
-        ThreadWaitInfo threadWaitInfo;
-        boolean doCallback;
-        IAction afterAction;
+        private SceKernelThreadInfo thread;
+        private int status;
+        private int waitType;
+        private int waitId;
+        private ThreadWaitInfo threadWaitInfo;
+        private boolean doCallbacks;
+        private IAction afterAction;
 
-        public AfterCallAction(SceKernelThreadInfo thread, int status, int waitType, int waitId, ThreadWaitInfo threadWaitInfo, boolean doCallback, IAction afterAction) {
-            this.thread = thread;
-            this.status = status;
-            this.waitType = waitType;
-            this.waitId = waitId;
-            this.threadWaitInfo = threadWaitInfo;
-            this.doCallback = doCallback;
-            this.afterAction = afterAction;
+        public AfterCallAction(SceKernelThreadInfo thread) {
+        	this.thread = thread;
+            status = thread.status;
+            waitType = thread.waitType;
+            waitId = thread.waitId;
+            threadWaitInfo = new ThreadWaitInfo(thread.wait);
+            doCallbacks = thread.doCallbacks;
         }
 
         @Override
@@ -3840,10 +3837,10 @@ public class ThreadManForUser extends HLEModule {
 
             if (restoreWaitState) {
             	if (status == PSP_THREAD_RUNNING) {
-            		doCallback = false;
+            		doCallbacks = false;
             	}
                 if (log.isDebugEnabled()) {
-                    log.debug(String.format("AfterCallAction: restoring wait state for thread '%s' to %s, %s, doCallbacks %b", thread.toString(), SceKernelThreadInfo.getStatusName(status), SceKernelThreadInfo.getWaitName(waitType, threadWaitInfo, status), doCallback));
+                    log.debug(String.format("AfterCallAction: restoring wait state for thread '%s' to %s, %s, doCallbacks %b", thread.toString(), SceKernelThreadInfo.getStatusName(status), SceKernelThreadInfo.getWaitName(waitType, threadWaitInfo, status), doCallbacks));
                 }
 
                 // Restore the wait state of the thread
@@ -3858,15 +3855,15 @@ public class ThreadManForUser extends HLEModule {
                 }
 
                 hleChangeThreadState(thread, PSP_THREAD_READY);
-                doCallback = false;
+                doCallbacks = false;
             } else {
                 if (log.isDebugEnabled()) {
                     log.debug("AfterCallAction: leaving thread in READY state: " + thread.toString());
                 }
-                doCallback = false;
+                doCallbacks = false;
             }
 
-        	thread.doCallbacks = doCallback;
+        	thread.doCallbacks = doCallbacks;
             hleRescheduleCurrentThread();
 
             if (afterAction != null) {
