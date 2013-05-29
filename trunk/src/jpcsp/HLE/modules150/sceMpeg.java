@@ -21,6 +21,7 @@ import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_AUDIO_STREAM;
 import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_AVC_STREAM;
 import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_DATA_STREAM;
 import static jpcsp.HLE.modules150.scePsmf.PSMFStream.PSMF_PCM_STREAM;
+import static jpcsp.HLE.modules600.sceMpeg.AVC_ES_BUF_SIZE;
 import static jpcsp.format.psmf.PsmfAudioDemuxVirtualFile.PACK_START_CODE;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650;
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
@@ -59,6 +60,7 @@ import jpcsp.HLE.kernel.types.SceMpegAu;
 import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules150.IoFileMgrForUser.IIoListener;
+import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.HLE.modules150.scePsmf.PSMFStream;
 import jpcsp.connector.MpegCodec;
 import jpcsp.filesystems.SeekableDataInput;
@@ -263,6 +265,7 @@ public class sceMpeg extends HLEModule {
     private MpegRingbufferPutIoListener ringbufferPutIoListener;
     private boolean insideRingbufferPut;
     protected static final int mpegAudioChannels = 2;
+    protected SysMemInfo avcEsBuf;
 
     private class StreamInfo {
     	private int uid;
@@ -1934,7 +1937,30 @@ public class sceMpeg extends HLEModule {
      */
     @HLEFunction(nid = 0x0E3C2E9D, version = 150, checkInsideInterrupt = true)
     public int sceMpegAvcDecode(@CheckArgument("checkMpegHandle") int mpeg, TPointer32 auAddr, int frameWidth, TPointer32 bufferAddr, TPointer32 initAddr) {
-        // When frameWidth is 0, take the frameWidth specified at sceMpegCreate.
+        int au = auAddr.getValue();
+        int buffer = bufferAddr.getValue();
+        int init = initAddr.getValue();
+
+        if (avcEsBuf != null && au == -1 && mpegRingbuffer == null) {
+        	final int height = 272; // How to retrieve the real video height?
+        	final int width = frameWidth;
+
+        	// The application seems to stream the MPEG data into the avcEsBuf.addr buffer,
+        	// probably only one frame at a time.
+        	log.debug(String.format("sceMpegAvcDecode buffer=0x%08X, avcEsBuf: %s", buffer, Utilities.getMemoryDump(avcEsBuf.addr, AVC_ES_BUF_SIZE)));
+
+        	// Generate a faked image. We cannot use the MediaEngine at this point
+        	// as we have not enough MPEG data buffered in advance.
+        	VideoEngine.getInstance().addVideoTexture(buffer, buffer + height * frameWidth * sceDisplay.getPixelFormatBytes(videoPixelMode));
+			generateFakeImage(buffer, frameWidth, width, height, videoPixelMode);
+
+			// Clear the avcEsBuf buffer to better recognize the new MPEG data sent next time
+			Processor.memory.memset(avcEsBuf.addr, (byte) 0, AVC_ES_BUF_SIZE);
+
+    		return 0;
+		}
+
+		// When frameWidth is 0, take the frameWidth specified at sceMpegCreate.
         if (frameWidth == 0) {
             if (defaultFrameWidth == 0) {
                 frameWidth = avcDetailFrameWidth;
@@ -1956,9 +1982,6 @@ public class sceMpeg extends HLEModule {
             return SceKernelErrors.ERROR_AVC_VIDEO_FATAL;
         }
 
-        int au = auAddr.getValue();
-        int buffer = bufferAddr.getValue();
-        int init = initAddr.getValue();
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceMpegAvcDecode *au=0x%08X, *buffer=0x%08X, init=%d", au, buffer, init));
         }
