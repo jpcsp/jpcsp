@@ -1317,18 +1317,20 @@ public class IoFileMgrForUser extends HLEModule {
     private boolean doStepAsync(IoInfo info) {
         boolean done = true;
 
-        // Execute any pending async action and remove it
-        if (info.asyncAction != null) {
-        	IAction asyncAction = info.asyncAction;
-        	info.asyncAction = null;
-        	asyncAction.execute();
-        }
-
         if (info.asyncPending) {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             if (info.getAsyncRestMillis() > 0) {
                 done = false;
             } else {
+                // Execute any pending async action and remove it.
+            	// Execute the action only when the async operation can be completed
+            	// as its execution can be time consuming (e.g. code block cache invalidation).
+                if (info.asyncAction != null) {
+                	IAction asyncAction = info.asyncAction;
+                	info.asyncAction = null;
+                	asyncAction.execute();
+                }
+
                 info.asyncPending = false;
                 info.asyncResultPending = true;
                 if (info.cbid >= 0) {
