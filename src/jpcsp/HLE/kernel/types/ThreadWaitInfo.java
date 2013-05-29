@@ -79,6 +79,13 @@ public class ThreadWaitInfo {
     // Thread blocked (used internally)
     public IAction onUnblockAction;
 
+    public ThreadWaitInfo() {
+    }
+
+    public ThreadWaitInfo(ThreadWaitInfo that) {
+    	copy(that);
+    }
+
     public void copy(ThreadWaitInfo that) {
     	forever = that.forever;
     	microTimeTimeout = that.microTimeTimeout;
