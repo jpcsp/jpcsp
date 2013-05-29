@@ -2546,12 +2546,12 @@ public class sceUtility extends HLEModule {
 
 	                textY += 24;
 	                drawTextWithShadow(textX, textY, 0.7f, detail);
-
-	                drawEnter();
-	                drawBack();
 				}
 
-				if (selectedRow > 0) {
+                drawEnter();
+                drawBack();
+
+                if (selectedRow > 0) {
 					drawIcon(selectedRow - 1, 58, 38, 80, 44);
 					if (selectedRow > 1) {
 						drawIcon(selectedRow - 2, 58, -5, 80, 44);
