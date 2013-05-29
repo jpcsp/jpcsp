@@ -69,6 +69,7 @@ import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.network.RawChannel;
 import jpcsp.network.RawSelector;
+import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
 import jpcsp.Emulator;
@@ -162,23 +163,44 @@ public class sceNetInet extends HLEModule {
     public static final int MSG_BCAST = 0x100;   // Message received by link-level broadcast.
     public static final int MSG_MCAST = 0x200;   // Message received by link-level multicast.
 
+    private static InetAddress localBroadcastAddress;
+
     @Override
 	public String getName() { return "sceNetInet"; }
 
     public static InetSocketAddress getBroadcastInetSocketAddress(int port) throws UnknownHostException {
-		// When SO_ONESBCAST is not enabled, map the broadcast address
-		// to the broadcast address from the network of the local IP address.
-		// E.g.
-		//  - localHostIP: A.B.C.D
-		//  - subnetMask: 255.255.255.0
-		// -> localBroadcastIP: A.B.C.255
-		InetAddress localInetAddress = InetAddress.getByName(sceNetApctl.getLocalHostIP());
-		int localAddress = bytesToInternetAddress(localInetAddress.getAddress());
-		int subnetMask = Integer.reverseBytes(sceNetApctl.getSubnetMaskInt());
-		int localBroadcastAddress = localAddress & subnetMask;
-		localBroadcastAddress |= INADDR_BROADCAST & ~subnetMask;
+    	if (localBroadcastAddress == null) {
+        	String broadcastAddressName = Settings.getInstance().readString("network.broadcastAddress");
+        	if (broadcastAddressName != null && broadcastAddressName.length() > 0) {
+        		try {
+        			localBroadcastAddress = InetAddress.getByName(broadcastAddressName);
+        		} catch (Exception e) {
+        			log.error("Error resolving the broadcast address from the Settings file", e);
+        		}
+        	}
 
-		return new InetSocketAddress(InetAddress.getByAddress(internetAddressToBytes(localBroadcastAddress)), port);
+        	if (localBroadcastAddress == null) {
+        		// When SO_ONESBCAST is not enabled, map the broadcast address
+        		// to the broadcast address from the network of the local IP address.
+        		// E.g.
+        		//  - localHostIP: A.B.C.D
+        		//  - subnetMask: 255.255.255.0
+        		// -> localBroadcastIP: A.B.C.255
+        		InetAddress localInetAddress = InetAddress.getByName(sceNetApctl.getLocalHostIP());
+        		int localAddress = bytesToInternetAddress(localInetAddress.getAddress());
+        		int subnetMask = Integer.reverseBytes(sceNetApctl.getSubnetMaskInt());
+        		int localBroadcastAddressInt = localAddress & subnetMask;
+        		localBroadcastAddressInt |= INADDR_BROADCAST & ~subnetMask;
+
+        		localBroadcastAddress = InetAddress.getByAddress(internetAddressToBytes(localBroadcastAddressInt));
+        	}
+
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("Using the following broadcast address: %s", localBroadcastAddress.getHostAddress()));
+        	}
+    	}
+
+		return new InetSocketAddress(localBroadcastAddress, port);
     }
 
     protected static abstract class BlockingState implements IAction {
