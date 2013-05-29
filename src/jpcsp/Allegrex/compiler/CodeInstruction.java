@@ -214,6 +214,29 @@ public class CodeInstruction {
         if (branchingOpcode != Opcodes.NOP) {
             CodeInstruction branchingToCodeInstruction = context.getCodeBlock().getCodeInstruction(getBranchingTo());
             if (branchingToCodeInstruction != null) {
+            	// Some applications do have branches to delay slot instructions
+            	// (probably from programmers that didn't know/care about delay slots).
+            	//
+            	// Handle a branch to a NOP in a delay slot: just skip the NOP and assume the branch
+            	// is to the instruction following the NOP.
+            	// E.g.:
+            	//    0x00000000    b 0x00000014 -> branching to a NOP in a delay slot, assume a branch to 0x00000018
+            	//    0x00000004    nop
+            	//    ...
+            	//    0x00000010    b 0x00000020
+            	//    0x00000014    nop
+            	//    0x00000018    something
+            	//
+                if (branchingToCodeInstruction.getInsn() == Instructions.NOP) {
+                	CodeInstruction beforeBranchingToCodeInstruction = context.getCodeBlock().getCodeInstruction(getBranchingTo() - 4);
+                	if (beforeBranchingToCodeInstruction != null && beforeBranchingToCodeInstruction.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT)) {
+    	            	if (Compiler.log.isDebugEnabled()) {
+    	            		Compiler.log.debug(String.format("0x%08X: branching to a NOP in a delay slot, correcting to the next instruction", getAddress()));
+    	            	}
+    	            	branchingToCodeInstruction = context.getCodeBlock().getCodeInstruction(getBranchingTo() + 4);
+                	}
+                }
+
                 context.visitJump(branchingOpcode, branchingToCodeInstruction);
             } else {
                 context.visitJump(branchingOpcode, getBranchingTo());
