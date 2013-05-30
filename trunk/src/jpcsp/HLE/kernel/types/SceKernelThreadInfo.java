@@ -86,7 +86,12 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
     public static final int JPCSP_FIRST_INTERNAL_WAIT_TYPE = 0x100;
     public static final int JPCSP_WAIT_IO = JPCSP_FIRST_INTERNAL_WAIT_TYPE; // Wait on IO.
     public static final int JPCSP_WAIT_UMD = JPCSP_WAIT_IO + 1; // Wait on UMD.
-    public static final int JPCSP_WAIT_BLOCKED = JPCSP_WAIT_UMD + 1; // Thread blocked.
+    public static final int JPCSP_WAIT_GE_LIST = JPCSP_WAIT_UMD + 1; // Wait on GE list.
+    public static final int JPCSP_WAIT_NET = JPCSP_WAIT_GE_LIST + 1; // Wait on Network.
+    public static final int JPCSP_WAIT_AUDIO = JPCSP_WAIT_NET + 1; // Wait on Audio.
+    public static final int JPCSP_WAIT_DISPLAY_VBLANK = JPCSP_WAIT_AUDIO + 1; // Wait on Display Vblank.
+    public static final int JPCSP_WAIT_CTRL = JPCSP_WAIT_DISPLAY_VBLANK + 1; // Wait on Control
+    public static final int JPCSP_WAIT_USB = JPCSP_WAIT_CTRL + 1; // Wait on USB
     // SceKernelThreadInfo.
     public final String name;
     public int attr;
@@ -505,7 +510,7 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
         return getStatusName(status);
     }
 
-    public static String getWaitName(int waitType, ThreadWaitInfo wait, int status) {
+    public static String getWaitName(int waitType, int waitId, ThreadWaitInfo wait, int status) {
         StringBuilder s = new StringBuilder();
 
         switch (waitType) {
@@ -557,8 +562,23 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
         	case JPCSP_WAIT_UMD:
         		s.append(String.format("Umd (0x%02X)", wait.wantedUmdStat));
         		break;
-        	case JPCSP_WAIT_BLOCKED:
-        		s.append(String.format("Blocked"));
+        	case JPCSP_WAIT_GE_LIST:
+        		s.append(String.format("Ge List (0x%X)", waitId));
+        		break;
+        	case JPCSP_WAIT_NET:
+        		s.append(String.format("Network"));
+        		break;
+        	case JPCSP_WAIT_AUDIO:
+        		s.append(String.format("Audio"));
+        		break;
+        	case JPCSP_WAIT_DISPLAY_VBLANK:
+        		s.append(String.format("Display Vblank (vcount=%d, current=%d)", waitId, Modules.sceDisplayModule.getVcount()));
+        		break;
+        	case JPCSP_WAIT_CTRL:
+        		s.append(String.format("Ctrl"));
+        		break;
+        	case JPCSP_WAIT_USB:
+        		s.append(String.format("Usb"));
         		break;
         	default:
         		s.append(String.format("Unknown waitType=%d", waitType));
@@ -581,7 +601,7 @@ public class SceKernelThreadInfo extends pspAbstractMemoryMappedStructureVariabl
     }
 
     public String getWaitName() {
-        return getWaitName(waitType, wait, status);
+        return getWaitName(waitType, waitId, wait, status);
     }
 
     public boolean isSuspended() {

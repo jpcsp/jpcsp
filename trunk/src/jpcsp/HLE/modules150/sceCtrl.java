@@ -314,7 +314,7 @@ public class sceCtrl extends HLEModule {
 
         while (!threadsWaitingForSampling.isEmpty()) {
             ThreadWaitingForSampling wait = threadsWaitingForSampling.remove(0);
-            if (Modules.ThreadManForUserModule.isThreadBlocked(wait.thread)) {
+            if (wait.thread.isWaitingForType(SceKernelThreadInfo.JPCSP_WAIT_CTRL)) {
 	            if (log.isDebugEnabled()) {
 	                log.debug("hleExecuteSampling waiting up thread " + wait.thread);
 	            }
@@ -382,7 +382,7 @@ public class sceCtrl extends HLEModule {
         SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
         ThreadWaitingForSampling threadWaitingForSampling = new ThreadWaitingForSampling(currentThread, addr, count, positive);
         threadsWaitingForSampling.add(threadWaitingForSampling);
-        threadMan.hleBlockCurrentThread();
+        threadMan.hleBlockCurrentThread(SceKernelThreadInfo.JPCSP_WAIT_CTRL);
 
         if (log.isDebugEnabled()) {
             log.debug("hleCtrlReadBuffer waiting for sample");

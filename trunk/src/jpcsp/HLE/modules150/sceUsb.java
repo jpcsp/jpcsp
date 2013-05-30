@@ -30,6 +30,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -205,7 +206,7 @@ public class sceUsb extends HLEModule {
 	public int sceUsbWaitState(int state, int waitMode, @CanBeNull TPointer32 timeoutAddr) {
 		if (!matchState(state, waitMode)) {
 			log.warn(String.format("Unimplemented sceUsbWaitState state=0x%X, waitMode=0x%X, timeoutAddr=%s - non-matching state not implemented", state, waitMode, timeoutAddr));
-			Modules.ThreadManForUserModule.hleBlockCurrentThread();
+			Modules.ThreadManForUserModule.hleBlockCurrentThread(SceKernelThreadInfo.JPCSP_WAIT_USB);
 			return 0;
 		}
 
@@ -220,7 +221,7 @@ public class sceUsb extends HLEModule {
 	public int sceUsbWaitStateCB(int state, int waitMode, @CanBeNull TPointer32 timeoutAddr) {
 		if (!matchState(state, waitMode)) {
 			log.warn(String.format("Unimplemented sceUsbWaitStateCB state=0x%X, waitMode=0x%X, timeoutAddr=%s - non-matching state not implemented", state, waitMode, timeoutAddr));
-			Modules.ThreadManForUserModule.hleBlockCurrentThread();
+			Modules.ThreadManForUserModule.hleBlockCurrentThread(SceKernelThreadInfo.JPCSP_WAIT_USB);
 			return 0;
 		}
 

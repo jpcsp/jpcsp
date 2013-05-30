@@ -137,6 +137,6 @@ public class ThreadWaitInfo {
 
 	@Override
 	public String toString() {
-		return SceKernelThreadInfo.getWaitName(0, this, SceKernelThreadInfo.PSP_THREAD_WAITING);
+		return SceKernelThreadInfo.getWaitName(0, 0, this, SceKernelThreadInfo.PSP_THREAD_WAITING);
 	}
 }

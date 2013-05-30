@@ -72,7 +72,7 @@ public abstract class PdpObject extends AdhocObject {
     	public void blockCurrentThread() {
 			long schedule = Emulator.getClock().microTime() + BLOCKED_OPERATION_POLLING_MICROS;
 			Emulator.getScheduler().addAction(schedule, this);
-			Modules.ThreadManForUserModule.hleBlockCurrentThread();
+			Modules.ThreadManForUserModule.hleBlockCurrentThread(SceKernelThreadInfo.JPCSP_WAIT_NET);
     	}
 
     	@Override
