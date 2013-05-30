@@ -1697,11 +1697,7 @@ public class sceDisplay extends HLEModule {
         }
 
         // Block the current thread.
-        if (doCallbacks) {
-        	threadMan.hleBlockCurrentThreadCB(null, new VblankWaitStateChecker(vcount + cycles));
-        } else {
-        	threadMan.hleBlockCurrentThread();
-        }
+    	threadMan.hleBlockCurrentThread(SceKernelThreadInfo.JPCSP_WAIT_DISPLAY_VBLANK, unblockVcount, doCallbacks, null, new VblankWaitStateChecker(unblockVcount));
 
         return 0;
     }

@@ -201,7 +201,7 @@ public class sceAudio extends HLEModule {
     protected static void blockThreadOutput(SoundChannel channel, int addr, int leftVolume, int rightVolume) {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
     	blockThreadOutput(threadMan.getCurrentThreadID(), channel, addr, leftVolume, rightVolume);
-    	threadMan.hleBlockCurrentThread();
+    	threadMan.hleBlockCurrentThread(SceKernelThreadInfo.JPCSP_WAIT_AUDIO);
     }
 
     protected static void blockThreadOutput(int threadId, SoundChannel channel, int addr, int leftVolume, int rightVolume) {
@@ -407,7 +407,7 @@ public class sceAudio extends HLEModule {
 	protected void blockThreadInput(int addr, int samples, int frequency) {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         int threadId = threadMan.getCurrentThreadID();
-		threadMan.hleBlockCurrentThread();
+		threadMan.hleBlockCurrentThread(SceKernelThreadInfo.JPCSP_WAIT_AUDIO);
 		blockThreadInput(threadId, addr, samples, frequency, hleAudioGetInputLength());
 	}
 

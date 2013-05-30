@@ -37,8 +37,13 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadEventHandlerInfo.THREAD_EVEN
 import static jpcsp.HLE.kernel.types.SceKernelThreadEventHandlerInfo.THREAD_EVENT_DELETE;
 import static jpcsp.HLE.kernel.types.SceKernelThreadEventHandlerInfo.THREAD_EVENT_EXIT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadEventHandlerInfo.THREAD_EVENT_START;
-import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_BLOCKED;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_AUDIO;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_CTRL;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_DISPLAY_VBLANK;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_GE_LIST;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_NET;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_UMD;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_USB;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_ATTR_KERNEL;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_ATTR_USER;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
@@ -749,16 +754,8 @@ public class ThreadManForUser extends HLEModule {
         return thread.name;
     }
 
-    public boolean isThreadBlocked(SceKernelThreadInfo thread) {
-    	return thread.isWaitingForType(JPCSP_WAIT_BLOCKED);
-    }
-
     public boolean isDispatchThreadEnabled() {
     	return dispatchThreadEnabled;
-    }
-
-    public void hleBlockCurrentThread() {
-        hleBlockCurrentThread(null);
     }
 
     public SceKernelCallbackInfo getCallbackInfo(int uid) {
@@ -861,36 +858,33 @@ public class ThreadManForUser extends HLEModule {
         hleRescheduleCurrentThread(callbacks);
     }
 
-    private void hleBlockThread(SceKernelThreadInfo thread, boolean doCallbacks, IAction onUnblockAction, IWaitStateChecker waitStateChecker) {
+    private void hleBlockThread(SceKernelThreadInfo thread, int waitType, int waitId, boolean doCallbacks, IAction onUnblockAction, IWaitStateChecker waitStateChecker) {
         if (!thread.isWaiting()) {
 	    	thread.doCallbacks = doCallbacks;
 	    	thread.wait.onUnblockAction = onUnblockAction;
-	    	thread.waitType = JPCSP_WAIT_BLOCKED;
-	    	thread.waitId = 0;
+	    	thread.waitType = waitType;
+	    	thread.waitId = waitId;
 	    	thread.wait.waitStateChecker = waitStateChecker;
+	    	thread.wait.forever = true;
 	        hleChangeThreadState(thread, thread.isSuspended() ? PSP_THREAD_WAITING_SUSPEND : PSP_THREAD_WAITING);
         }
     }
 
-    public void hleBlockCurrentThread(boolean doCallbacks, IAction onUnblockAction, IWaitStateChecker waitStateChecker) {
+    public void hleBlockCurrentThread(int waitType, int waitId, boolean doCallbacks, IAction onUnblockAction, IWaitStateChecker waitStateChecker) {
         if (LOG_CONTEXT_SWITCHING && Modules.log.isDebugEnabled()) {
             log.debug("-------------------- block SceUID=" + Integer.toHexString(currentThread.uid) + " name:'" + currentThread.name + "' caller:" + getCallingFunction());
         }
 
-    	hleBlockThread(currentThread, doCallbacks, onUnblockAction, waitStateChecker);
+    	hleBlockThread(currentThread, waitType, waitId, doCallbacks, onUnblockAction, waitStateChecker);
         hleRescheduleCurrentThread(doCallbacks);
     }
 
-    public void hleBlockCurrentThread(IAction onUnblockAction) {
-    	hleBlockCurrentThread(false, onUnblockAction, null);
+    public void hleBlockCurrentThread(int waitType) {
+        hleBlockCurrentThread(waitType, 0, false, null, null);
     }
 
-    public void hleBlockCurrentThread(IAction onUnblockAction, IWaitStateChecker waitStateChecker) {
-    	hleBlockCurrentThread(false, onUnblockAction, waitStateChecker);
-    }
-
-    public void hleBlockCurrentThreadCB(IAction onUnblockAction, IWaitStateChecker waitStateChecker) {
-    	hleBlockCurrentThread(true, onUnblockAction, waitStateChecker);
+    public void hleBlockCurrentThread(int waitType, IAction onUnblockAction) {
+    	hleBlockCurrentThread(waitType, 0, false, onUnblockAction, null);
     }
 
     public SceKernelThreadInfo getThreadById(int uid) {
@@ -1040,7 +1034,12 @@ public class ThreadManForUser extends HLEModule {
 			case PSP_WAIT_VPL:
 	            Managers.vpl.onThreadWaitReleased(thread);
 				break;
-			case JPCSP_WAIT_BLOCKED:
+        	case JPCSP_WAIT_GE_LIST:
+        	case JPCSP_WAIT_NET:
+        	case JPCSP_WAIT_AUDIO:
+        	case JPCSP_WAIT_DISPLAY_VBLANK:
+        	case JPCSP_WAIT_CTRL:
+        	case JPCSP_WAIT_USB:
 	        	thread.cpuContext._v0 = ERROR_KERNEL_WAIT_STATUS_RELEASED;
 				break;
     	}
@@ -1194,12 +1193,10 @@ public class ThreadManForUser extends HLEModule {
                 Scheduler.getInstance().removeAction(thread.wait.microTimeTimeout, thread.wait.waitTimeoutAction);
                 thread.wait.waitTimeoutAction = null;
             }
-            if (thread.waitType == JPCSP_WAIT_BLOCKED) {
-            	if (thread.wait.onUnblockAction != null) {
-            		thread.wait.onUnblockAction.execute();
-            		thread.wait.onUnblockAction = null;
-            	}
-            }
+        	if (thread.wait.onUnblockAction != null) {
+        		thread.wait.onUnblockAction.execute();
+        		thread.wait.onUnblockAction = null;
+        	}
             thread.doCallbacks = false;
         } else if (thread.isStopped()) {
             if (thread.doDeleteAction != null) {
@@ -1251,6 +1248,7 @@ public class ThreadManForUser extends HLEModule {
             thread.waitType = PSP_WAIT_NONE;
             thread.wait.waitTimeoutAction = null;
             thread.wait.waitStateChecker = null;
+            thread.wait.onUnblockAction = null;
             thread.doCallbacks = false;
         } else if (thread.isRunning()) {
             // debug
@@ -3840,7 +3838,7 @@ public class ThreadManForUser extends HLEModule {
             		doCallbacks = false;
             	}
                 if (log.isDebugEnabled()) {
-                    log.debug(String.format("AfterCallAction: restoring wait state for thread '%s' to %s, %s, doCallbacks %b", thread.toString(), SceKernelThreadInfo.getStatusName(status), SceKernelThreadInfo.getWaitName(waitType, threadWaitInfo, status), doCallbacks));
+                    log.debug(String.format("AfterCallAction: restoring wait state for thread '%s' to %s, %s, doCallbacks %b", thread.toString(), SceKernelThreadInfo.getStatusName(status), SceKernelThreadInfo.getWaitName(waitType, waitId, threadWaitInfo, status), doCallbacks));
                 }
 
                 // Restore the wait state of the thread

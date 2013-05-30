@@ -2118,7 +2118,7 @@ public class sceNetInet extends HLEModule {
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("Blocking the current thread %s", Modules.ThreadManForUserModule.getCurrentThread().toString()));
 			}
-			Modules.ThreadManForUserModule.hleBlockCurrentThread(blockingState);
+			Modules.ThreadManForUserModule.hleBlockCurrentThread(SceKernelThreadInfo.JPCSP_WAIT_NET, blockingState);
 			blockingState.threadBlocked = true;
 		}
 		long schedule = Emulator.getClock().microTime() + BLOCKED_OPERATION_POLLING_MICROS;
