@@ -269,6 +269,10 @@ public class FileLocator {
 
 			int checkLength = Math.min(length, MAGIC_HASH_LENGTH);
     		byte[] fileData = readData(readInfo, positionOffset, checkLength);
+    		if (fileData == null) {
+    			// Could not read the file data...
+    			return null;
+    		}
 
 			// Check if the file data is really matching the data in memory
 			boolean match;
