@@ -805,13 +805,15 @@ public class VideoEngine {
         hasModdedTextureDirectory = new File(getModdedTextureDirectory()).isDirectory();
 
         if (!videoTextures.isEmpty()) {
-	        // Check if some video textures are obsolete
-	        for (ListIterator<AddressRange> lit = videoTextures.listIterator(); lit.hasNext(); ) {
-	        	AddressRange videoTexture = lit.next();
-	        	if (videoTexture.isObsolete()) {
-	        		lit.remove();
-	        	}
-	        }
+        	synchronized (videoTextures) {
+		        // Check if some video textures are obsolete
+		        for (ListIterator<AddressRange> lit = videoTextures.listIterator(); lit.hasNext(); ) {
+		        	AddressRange videoTexture = lit.next();
+		        	if (videoTexture.isObsolete()) {
+		        		lit.remove();
+		        	}
+		        }
+        	}
         }
 
         if (State.exportGeNextFrame) {
