@@ -104,7 +104,7 @@ public class sceMp3 extends HLEModule {
 
     @HLEUidClass(moduleMethodUidGenerator = "makeFakeMp3StreamHandle", errorValueOnNotFound = ERROR_MP3_NOT_FOUND)
     protected class Mp3Stream {
-    	private final static int ME_READ_AHEAD = 7 * 32 * 1024; // 224K
+    	private final static int ME_READ_AHEAD = 32 * 1024; // 32K
     	
     	// SceMp3InitArg struct.
         private final long mp3StreamStart;
@@ -113,6 +113,8 @@ public class sceMp3 extends HLEModule {
         private final int mp3BufSize;
         private final int mp3PcmBuf;
         private final int mp3PcmBufSize;
+        private final int mp3CompleteBuf;
+        private final int mp3CompleteBufSize;
 
         // MP3 internal file buffer vars.
         private long mp3InputFileSize;
@@ -188,14 +190,19 @@ public class sceMp3 extends HLEModule {
             // SceMp3InitArg struct.
             mp3StreamStart = mem.read64(args);
             mp3StreamEnd = mem.read64(args + 8);
-            mp3Buf = mem.read32(args + 16);
-            mp3BufSize = mem.read32(args + 20);
+            mp3CompleteBuf = mem.read32(args + 16);
+            mp3CompleteBufSize = mem.read32(args + 20);
             mp3PcmBuf = mem.read32(args + 24);
             mp3PcmBufSize = mem.read32(args + 28);
 
+            // 0x5C0 bytes seem to be reserved at the beginning of the buffer
+            final int reservedSize = 0x5C0;
+            mp3Buf = mp3CompleteBuf + reservedSize;
+            mp3BufSize = mp3CompleteBufSize - reservedSize;
+
             if (log.isDebugEnabled()) {
             	log.debug(String.format("sceMp3ReserveMp3Handle Stream start=0x%X, end=0x%X", mp3StreamStart, mp3StreamEnd));
-            	log.debug(String.format("sceMp3ReserveMp3Handle Mp3Buf 0x%08X, size=0x%X", mp3Buf, mp3BufSize));
+            	log.debug(String.format("sceMp3ReserveMp3Handle Mp3Buf 0x%08X, size=0x%X", mp3CompleteBuf, mp3CompleteBufSize));
             	log.debug(String.format("sceMp3ReserveMp3Handle PcmBuf 0x%08X, size=0x%X", mp3PcmBuf, mp3PcmBufSize));
             }
 
@@ -209,7 +216,8 @@ public class sceMp3 extends HLEModule {
             // In the JpcspTrace log of "Downstream Panic! - ULUS10322",
             // the PSP is returning 0x1200 bytes at each sceMp3Decode call.
             // Is this maybe depending on the MP3 file itself?
-            mp3MaxSamples = Math.min(mp3PcmBufSize, 0x1200) / 4;
+            final int maxSampleBytes = 0x1200;
+            mp3MaxSamples = Math.min(mp3PcmBufSize, maxSampleBytes) / 4;
 
             // Set default properties.
             mp3LoopNum = PSP_MP3_LOOP_NUM_INFINITE;
@@ -286,7 +294,14 @@ public class sceMp3 extends HLEModule {
          * @return the size used by the PSP to add data to the MP3 stream.
          */
         private int getMaxAddStreamDataSize() {
-        	return (mp3BufSize - 0x5C0) >> 1;
+        	return mp3BufSize >> 1;
+        }
+
+        /**
+         * @return number of bytes that can be written sequentially into the buffer
+         */
+        public int getMp3AvailableSequentialWriteSize() {
+        	return Math.min(getMp3AvailableWriteSize(), mp3BufSize - mp3InputBufWritePos);
         }
 
         /**
@@ -429,7 +444,7 @@ public class sceMp3 extends HLEModule {
 
         	// We have not enough data into the channel,
         	// accept only in packets of maxAddStreamDataSize (like the PSP)
-        	return getMp3AvailableWriteSize() >= getMaxAddStreamDataSize();
+        	return getMp3AvailableSequentialWriteSize() >= getMaxAddStreamDataSize();
         }
 
         public boolean isStreamDataEnd() {
@@ -602,8 +617,19 @@ public class sceMp3 extends HLEModule {
     public int sceMp3GetInfoToAddStreamData(Mp3Stream mp3Stream, @CanBeNull TPointer32 mp3BufPtr, @CanBeNull TPointer32 mp3BufToWritePtr, @CanBeNull TPointer32 mp3PosPtr) {
         // Address where to write
         mp3BufPtr.setValue(mp3Stream.isStreamDataEnd() ? 0 : mp3Stream.getMp3BufWriteAddr());
+
         // Length that can be written from bufAddr
-        mp3BufToWritePtr.setValue(mp3Stream.isStreamDataEnd() ? 0: Math.min(mp3Stream.getMaxAddStreamDataSize(), mp3Stream.getMp3AvailableWriteSize()));
+        int mp3BufToWrite;
+        if (mp3Stream.isStreamDataEnd()) {
+        	mp3BufToWrite = 0;
+        } else if (mp3Stream.getMp3InputFileSize() == 0) {
+        	mp3BufToWrite = mp3Stream.getMaxAddStreamDataSize() * 2;
+        } else {
+        	mp3BufToWrite = mp3Stream.getMaxAddStreamDataSize();
+        }
+        mp3BufToWrite = Math.min(mp3BufToWrite, mp3Stream.getMp3AvailableSequentialWriteSize());
+        mp3BufToWritePtr.setValue(mp3BufToWrite);
+
         // Position in the source stream file to start reading from (seek position)
         mp3PosPtr.setValue((int) mp3Stream.getMp3InputFileSize());
 
