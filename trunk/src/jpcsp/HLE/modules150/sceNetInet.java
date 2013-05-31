@@ -46,6 +46,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -163,23 +164,34 @@ public class sceNetInet extends HLEModule {
     public static final int MSG_BCAST = 0x100;   // Message received by link-level broadcast.
     public static final int MSG_MCAST = 0x200;   // Message received by link-level multicast.
 
-    private static InetAddress localBroadcastAddress;
+    private static InetAddress[] broadcastAddresses;
 
     @Override
-	public String getName() { return "sceNetInet"; }
+	public String getName() {
+    	return "sceNetInet";
+	}
 
-    public static InetSocketAddress getBroadcastInetSocketAddress(int port) throws UnknownHostException {
-    	if (localBroadcastAddress == null) {
-        	String broadcastAddressName = Settings.getInstance().readString("network.broadcastAddress");
-        	if (broadcastAddressName != null && broadcastAddressName.length() > 0) {
-        		try {
-        			localBroadcastAddress = InetAddress.getByName(broadcastAddressName);
-        		} catch (Exception e) {
-        			log.error("Error resolving the broadcast address from the Settings file", e);
+    public static InetSocketAddress[] getBroadcastInetSocketAddress(int port) throws UnknownHostException {
+    	if (broadcastAddresses == null) {
+        	String broadcastAddressNames = Settings.getInstance().readString("network.broadcastAddress");
+        	if (broadcastAddressNames != null && broadcastAddressNames.length() > 0) {
+        		String [] addressNames = broadcastAddressNames.split(" *[,;] *");
+        		ArrayList<InetAddress> addresses = new ArrayList<InetAddress>();
+        		for (int i = 0; i < addressNames.length; i++) {
+	        		try {
+	        			InetAddress address = InetAddress.getByName(addressNames[i]);
+	        			addresses.add(address);
+	        		} catch (Exception e) {
+	        			log.error(String.format("Error resolving the broadcast address '%s' from the Settings file", addressNames[i]), e);
+	        		}
+        		}
+
+        		if (addresses.size() > 0) {
+        			broadcastAddresses = addresses.toArray(new InetAddress[addresses.size()]);
         		}
         	}
 
-        	if (localBroadcastAddress == null) {
+        	if (broadcastAddresses == null) {
         		// When SO_ONESBCAST is not enabled, map the broadcast address
         		// to the broadcast address from the network of the local IP address.
         		// E.g.
@@ -192,15 +204,23 @@ public class sceNetInet extends HLEModule {
         		int localBroadcastAddressInt = localAddress & subnetMask;
         		localBroadcastAddressInt |= INADDR_BROADCAST & ~subnetMask;
 
-        		localBroadcastAddress = InetAddress.getByAddress(internetAddressToBytes(localBroadcastAddressInt));
+        		broadcastAddresses = new InetAddress[1];
+        		broadcastAddresses[0] = InetAddress.getByAddress(internetAddressToBytes(localBroadcastAddressInt));
         	}
 
         	if (log.isDebugEnabled()) {
-        		log.debug(String.format("Using the following broadcast address: %s", localBroadcastAddress.getHostAddress()));
+        		for (int i = 0; i < broadcastAddresses.length; i++) {
+        			log.debug(String.format("Using the following broadcast address#%d: %s", i + 1, broadcastAddresses[i].getHostAddress()));
+        		}
         	}
     	}
 
-		return new InetSocketAddress(localBroadcastAddress, port);
+    	InetSocketAddress[] socketAddresses = new InetSocketAddress[broadcastAddresses.length];
+    	for (int i = 0; i < socketAddresses.length; i++) {
+    		socketAddresses[i] = new InetSocketAddress(broadcastAddresses[i], port);
+    	}
+
+    	return socketAddresses;
     }
 
     protected static abstract class BlockingState implements IAction {
@@ -447,7 +467,7 @@ public class sceNetInet extends HLEModule {
 			if (address == INADDR_ANY) {
 				socketAddress = new InetSocketAddress(port);
 			} else if (address == INADDR_BROADCAST && !isOnesBroadcast()) {
-				socketAddress = getBroadcastInetSocketAddress(port);
+				socketAddress = getBroadcastInetSocketAddress(port)[0];
 			} else {
 				socketAddress = new InetSocketAddress(InetAddress.getByAddress(internetAddressToBytes(address)), port);
 			}
@@ -455,8 +475,27 @@ public class sceNetInet extends HLEModule {
 			return socketAddress;
 		}
 
+		protected SocketAddress[] getMultiSocketAddress(int address, int port) throws UnknownHostException {
+			SocketAddress[] socketAddress;
+			if (address == INADDR_ANY) {
+				socketAddress = new SocketAddress[1];
+				socketAddress[0] = new InetSocketAddress(port);
+			} else if (address == INADDR_BROADCAST && !isOnesBroadcast()) {
+				socketAddress = getBroadcastInetSocketAddress(port);
+			} else {
+				socketAddress = new SocketAddress[1];
+				socketAddress[0] = new InetSocketAddress(InetAddress.getByAddress(internetAddressToBytes(address)), port);
+			}
+
+			return socketAddress;
+		}
+
 		protected SocketAddress getSocketAddress(pspNetSockAddrInternet addr) throws UnknownHostException {
 			return getSocketAddress(addr.sin_addr, addr.sin_port);
+		}
+
+		protected SocketAddress[] getMultiSocketAddress(pspNetSockAddrInternet addr) throws UnknownHostException {
+			return getMultiSocketAddress(addr.sin_addr, addr.sin_port);
 		}
 
 		protected InetAddress getInetAddress(int address) throws UnknownHostException {

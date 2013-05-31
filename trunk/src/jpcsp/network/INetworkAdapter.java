@@ -110,6 +110,15 @@ public interface INetworkAdapter {
 	public SocketAddress getSocketAddress(byte[] macAddress, int realPort) throws UnknownHostException;
 
 	/**
+	 * Get the SocketAddress(es) for the given MAC address and port.
+	 * Multiple Socket addresses can be returned.
+	 * @param macAddress  the MAC address
+	 * @param port        the real port number (i.e. the shifted port if port shifting is active)
+	 * @return            the corresponding SocketAddress(es)
+	 */
+	public SocketAddress[] getMultiSocketAddress(byte[] macAddress, int realPort) throws UnknownHostException;
+
+	/**
 	 * Create a new Matching object
 	 * @return a new Matching object
 	 */
