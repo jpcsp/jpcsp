@@ -330,7 +330,7 @@ public class sceCtrl extends HLEModule {
     }
 
     protected int hleCtrlReadBufferImmediately(int addr, int count, boolean positive, boolean peek) {
-    	if (count < 0 || count >= SAMPLE_BUFFER_SIZE) {
+    	if (count < 0 || count > SAMPLE_BUFFER_SIZE) {
     		return SceKernelErrors.ERROR_INVALID_SIZE;
     	}
 
@@ -367,7 +367,7 @@ public class sceCtrl extends HLEModule {
     }
 
     protected int hleCtrlReadBuffer(int addr, int count, boolean positive) {
-    	if (count < 0 || count >= SAMPLE_BUFFER_SIZE) {
+    	if (count < 0 || count > SAMPLE_BUFFER_SIZE) {
     		return SceKernelErrors.ERROR_INVALID_SIZE;
     	}
 
