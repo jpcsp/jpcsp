@@ -126,6 +126,14 @@ public class JpcspNetworkAdapter extends BaseNetworkAdapter {
 		if (sceNetAdhocModule.hasNetPortShiftActive()) {
 			return new InetSocketAddress(InetAddress.getLocalHost(), realPort);
 		}
+		return sceNetInet.getBroadcastInetSocketAddress(realPort)[0];
+	}
+
+	@Override
+	public SocketAddress[] getMultiSocketAddress(byte[] macAddress, int realPort) throws UnknownHostException {
+		if (sceNetAdhocModule.hasNetPortShiftActive()) {
+			return super.getMultiSocketAddress(macAddress, realPort);
+		}
 		return sceNetInet.getBroadcastInetSocketAddress(realPort);
 	}
 
@@ -183,12 +191,14 @@ public class JpcspNetworkAdapter extends BaseNetworkAdapter {
 				boolean gameModeComplete = sceNetAdhocctlModule.isGameModeComplete();
 				adhocctlMessage.setGameModeComplete(gameModeComplete, sceNetAdhocctlModule.hleNetAdhocctlGetRequiredGameModeMacs());
 			}
-	    	SocketAddress socketAddress = sceNetAdhocModule.getSocketAddress(sceNetAdhoc.ANY_MAC_ADDRESS, sceNetAdhocModule.getRealPortFromClientPort(sceNetAdhoc.ANY_MAC_ADDRESS, adhocctlBroadcastPort));
-	    	DatagramPacket packet = new DatagramPacket(adhocctlMessage.getMessage(), JpcspAdhocctlMessage.getMessageLength(), socketAddress);
-	    	adhocctlSocket.send(packet);
+	    	SocketAddress[] socketAddress = sceNetAdhocModule.getMultiSocketAddress(sceNetAdhoc.ANY_MAC_ADDRESS, sceNetAdhocModule.getRealPortFromClientPort(sceNetAdhoc.ANY_MAC_ADDRESS, adhocctlBroadcastPort));
+	    	for (int i = 0; i < socketAddress.length; i++) {
+		    	DatagramPacket packet = new DatagramPacket(adhocctlMessage.getMessage(), JpcspAdhocctlMessage.getMessageLength(), socketAddress[i]);
+		    	adhocctlSocket.send(packet);
 
-	    	if (log.isDebugEnabled()) {
-	    		log.debug(String.format("broadcast sent to peers: %s", adhocctlMessage));
+		    	if (log.isDebugEnabled()) {
+		    		log.debug(String.format("broadcast sent to peer[%s]: %s", socketAddress[i], adhocctlMessage));
+		    	}
 	    	}
 		} catch (SocketException e) {
 			log.error("broadcastPeers", e);

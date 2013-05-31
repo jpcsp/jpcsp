@@ -328,12 +328,14 @@ public class sceNetAdhoc extends HLEModule {
 			if (masterGameModeArea != null && masterGameModeArea.hasNewData()) {
 				try {
 					AdhocMessage adhocGameModeMessage = getNetworkAdapter().createAdhocGameModeMessage(masterGameModeArea);
-			    	SocketAddress socketAddress = Modules.sceNetAdhocModule.getSocketAddress(sceNetAdhoc.ANY_MAC_ADDRESS, Modules.sceNetAdhocModule.getRealPortFromClientPort(sceNetAdhoc.ANY_MAC_ADDRESS, adhocGameModePort));
-			    	DatagramPacket packet = new DatagramPacket(adhocGameModeMessage.getMessage(), adhocGameModeMessage.getMessageLength(), socketAddress);
-			    	gameModeSocket.send(packet);
+			    	SocketAddress socketAddress[] = Modules.sceNetAdhocModule.getMultiSocketAddress(sceNetAdhoc.ANY_MAC_ADDRESS, Modules.sceNetAdhocModule.getRealPortFromClientPort(sceNetAdhoc.ANY_MAC_ADDRESS, adhocGameModePort));
+			    	for (int i = 0; i < socketAddress.length; i++) {
+			    		DatagramPacket packet = new DatagramPacket(adhocGameModeMessage.getMessage(), adhocGameModeMessage.getMessageLength(), socketAddress[i]);
+			    		gameModeSocket.send(packet);
 
-			    	if (log.isDebugEnabled()) {
-			    		log.debug(String.format("GameMode message sent to all: %s", adhocGameModeMessage));
+				    	if (log.isDebugEnabled()) {
+				    		log.debug(String.format("GameMode message sent to %s: %s", socketAddress[i], adhocGameModeMessage));
+				    	}
 			    	}
 				} catch (SocketTimeoutException e) {
 					// Ignore exception
@@ -398,6 +400,10 @@ public class sceNetAdhoc extends HLEModule {
 
     public SocketAddress getSocketAddress(byte[] macAddress, int realPort) throws UnknownHostException {
     	return getNetworkAdapter().getSocketAddress(macAddress, realPort);
+	}
+
+    public SocketAddress[] getMultiSocketAddress(byte[] macAddress, int realPort) throws UnknownHostException {
+    	return getNetworkAdapter().getMultiSocketAddress(macAddress, realPort);
 	}
 
 	public static boolean isSameMacAddress(byte[] macAddress1, byte[] macAddress2) {

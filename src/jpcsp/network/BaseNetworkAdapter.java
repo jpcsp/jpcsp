@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.network;
 
+import java.net.SocketAddress;
+import java.net.UnknownHostException;
+
 import org.apache.log4j.Logger;
 
 /**
@@ -31,5 +34,13 @@ public abstract class BaseNetworkAdapter implements INetworkAdapter {
 
 	@Override
 	public void stop() {
+	}
+
+	@Override
+	public SocketAddress[] getMultiSocketAddress(byte[] macAddress, int realPort) throws UnknownHostException {
+		SocketAddress[] socketAddresses = new SocketAddress[1];
+		socketAddresses[0] = getSocketAddress(macAddress, realPort);
+
+		return socketAddresses;
 	}
 }
