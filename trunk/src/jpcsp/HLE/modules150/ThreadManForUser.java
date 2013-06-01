@@ -2618,12 +2618,12 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x74829B76, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public int sceKernelReceiveMsgPipe(@CheckArgument("checkMsgPipeID") int uid, TPointer msgAddr, int size, int waitMode, TPointer32 resultSizeAddr, @CanBeNull TPointer32 timeoutAddr) {
+    public int sceKernelReceiveMsgPipe(@CheckArgument("checkMsgPipeID") int uid, TPointer msgAddr, int size, int waitMode, @CanBeNull TPointer32 resultSizeAddr, @CanBeNull TPointer32 timeoutAddr) {
         return Managers.msgPipes.sceKernelReceiveMsgPipe(uid, msgAddr, size, waitMode, resultSizeAddr, timeoutAddr);
     }
 
     @HLEFunction(nid = 0xFBFA697D, version = 150, checkInsideInterrupt = true, checkDispatchThreadEnabled = true)
-    public int sceKernelReceiveMsgPipeCB(@CheckArgument("checkMsgPipeID") int uid, TPointer msgAddr, int size, int waitMode, TPointer32 resultSizeAddr, @CanBeNull TPointer32 timeoutAddr) {
+    public int sceKernelReceiveMsgPipeCB(@CheckArgument("checkMsgPipeID") int uid, TPointer msgAddr, int size, int waitMode, @CanBeNull TPointer32 resultSizeAddr, @CanBeNull TPointer32 timeoutAddr) {
         return Managers.msgPipes.sceKernelReceiveMsgPipeCB(uid, msgAddr, size, waitMode, resultSizeAddr, timeoutAddr);
     }
 
