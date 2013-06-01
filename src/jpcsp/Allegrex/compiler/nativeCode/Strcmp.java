@@ -30,7 +30,16 @@ public class Strcmp extends AbstractNativeCodeSequence {
 
 	static public void call(int valueEqual, int valueLower, int valueHigher) {
 		int src1Addr = getGprA0();
+		if (src1Addr == 0) {
+			setGprV0(valueLower);
+			return;
+		}
+
 		int src2Addr = getGprA1();
+		if (src2Addr == 0) {
+			setGprV0(valueHigher);
+			return;
+		}
 
 		IMemoryReader memoryReader1 = MemoryReader.getMemoryReader(src1Addr, 1);
 		IMemoryReader memoryReader2 = MemoryReader.getMemoryReader(src2Addr, 1);
