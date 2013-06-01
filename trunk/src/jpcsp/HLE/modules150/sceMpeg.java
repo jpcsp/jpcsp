@@ -2741,7 +2741,8 @@ public class sceMpeg extends HLEModule {
             	BufferedImage bufferedImage = me.getCurrentImg();
             	if (bufferedImage != null) {
             		// Store the current image so that sceJpegCsc can retrieve it
-            		Modules.sceJpegModule.addImage(bufferedImage, yCbCrBuffer);
+            		int yCbCrBufferSize = Modules.sceJpegModule.hleGetYCbCrBufferSize(bufferedImage);
+            		Modules.sceJpegModule.hleJpegDecodeYCbCr(bufferedImage, yCbCrBuffer, yCbCrBufferSize, 0);
             	}
             }
         }

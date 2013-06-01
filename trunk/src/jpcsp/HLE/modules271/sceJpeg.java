@@ -18,6 +18,8 @@ package jpcsp.HLE.modules271;
 
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.graphics.RE.IRenderingEngine.sizeOfTextureType;
+import static jpcsp.graphics.RE.software.ImageWriter.color8888to4444;
+import static jpcsp.memory.ImageReader.color4444to8888;
 import static jpcsp.memory.ImageReader.colorARGBtoABGR;
 
 import java.awt.image.BufferedImage;
@@ -41,7 +43,6 @@ import jpcsp.HLE.TPointer32;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.HLE.modules.sceMpeg;
@@ -58,14 +59,85 @@ import jpcsp.util.Utilities;
 public class sceJpeg extends HLEModule {
     public static Logger log = Modules.getLogger("sceJpeg");
 
+    private static class MemoryWriter2Bits implements IMemoryWriter {
+    	private final IMemoryWriter memoryWriter;
+    	private int index;
+    	private int byteValue;
+
+    	public MemoryWriter2Bits(int address) {
+    		memoryWriter = MemoryWriter.getMemoryWriter(address, 1);
+    	}
+
+    	@Override
+		public void writeNext(int value) {
+    		byteValue |= (value & 0x03) << index;
+    		index += 2;
+
+    		if (index == 8) {
+    			memoryWriter.writeNext(byteValue);
+    			byteValue = 0;
+    			index = 0;
+    		}
+		}
+
+		@Override
+		public void skip(int n) {
+			memoryWriter.skip(n);
+		}
+
+		@Override
+		public void flush() {
+			memoryWriter.flush();
+			index = 0;
+			byteValue = 0;
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return memoryWriter.getCurrentAddress();
+		}
+    }
+
+    private static class MemoryReader2Bits implements IMemoryReader {
+    	private final IMemoryReader memoryReader;
+    	private int index;
+    	private int byteValue;
+
+    	public MemoryReader2Bits(int address) {
+    		memoryReader = MemoryReader.getMemoryReader(address, 1);
+    	}
+
+		@Override
+		public int readNext() {
+			if (index == 0) {
+				byteValue = memoryReader.readNext();
+			}
+			int value = (byteValue >> index) & 0x03;
+			index = (index + 2) & 7;
+
+			return value;
+		}
+
+		@Override
+		public void skip(int n) {
+			memoryReader.skip(n);
+			index = 0;
+		}
+
+		@Override
+		public int getCurrentAddress() {
+			return memoryReader.getCurrentAddress();
+		}
+    }
+
     @Override
     public String getName() {
         return "sceJpeg";
     }
-    
+
     protected static final int PSP_JPEG_MJPEG_DHT_MODE = 0;
     protected static final int PSP_JPEG_MJPEG_NO_DHT_MODE = 1;
-    
+
     protected int jpegWidth = Screen.width;
     protected int jpegHeight = Screen.height;
     protected HashMap<Integer, BufferedImage> bufferedImages;
@@ -84,7 +156,15 @@ public class sceJpeg extends HLEModule {
         super.stop();
     }
 
-    protected BufferedImage readJpegImage(TPointer jpegBuffer, int jpegBufferSize) {
+    private static int colorYCbCrToABGR(int yCbCr) {
+    	return color4444to8888(yCbCr) | 0xFF000000;
+    }
+
+    private static int colorARGBToYCbCr(int argb) {
+    	return color8888to4444(colorARGBtoABGR(argb & 0x00FFFFFF));
+    }
+
+    protected static BufferedImage readJpegImage(TPointer jpegBuffer, int jpegBufferSize) {
         BufferedImage bufferedImage = null;
         byte[] buffer = readJpegImageBytes(jpegBuffer, jpegBufferSize);
 
@@ -103,40 +183,6 @@ public class sceJpeg extends HLEModule {
         return bufferedImage;
     }
 
-    protected int addImage(TPointer jpegBuffer, int jpegBufferSize, TPointer yCbCrBuffer) {
-        int result = getWidthHeight(jpegWidth, jpegHeight);
-
-        BufferedImage bufferedImage = readJpegImage(jpegBuffer, jpegBufferSize);
-        if (bufferedImage != null) {
-        	addImage(bufferedImage, yCbCrBuffer);
-
-            int width = bufferedImage.getWidth();
-            int height = bufferedImage.getHeight();
-            result = getWidthHeight(width, height);
-        }
-
-        return result;
-    }
-
-	public void addImage(BufferedImage bufferedImage, TPointer yCbCrBuffer) {
-		int uid = SceUidManager.getNewUid(uidPurpose);
-		bufferedImages.put(uid, bufferedImage);
-
-		// Store the uid in the yCbCrBuffer so that we can retrieve it while decoding
-		yCbCrBuffer.setValue32(0, uid);
-		// Set the starting line for decoding
-		yCbCrBuffer.setValue32(4, 0);
-	}
-
-	protected void deleteImage(TPointer yCbCrBuffer) {
-        int uid = yCbCrBuffer.getValue32();
-        yCbCrBuffer.setValue32(0);
-
-        bufferedImages.remove(uid);
-
-        SceUidManager.releaseUid(uid, uidPurpose);
-    }
-
     protected static int getWidthHeight(int width, int height) {
         return (width << 16) | height;
     }
@@ -149,7 +195,7 @@ public class sceJpeg extends HLEModule {
         return widthHeight & 0xFFF;
     }
 
-    protected byte[] readJpegImageBytes(TPointer jpegBuffer, int jpegBufferSize) {
+    protected static byte[] readJpegImageBytes(TPointer jpegBuffer, int jpegBufferSize) {
         byte[] buffer = new byte[jpegBufferSize];
         IMemoryReader memoryReader = MemoryReader.getMemoryReader(jpegBuffer.getAddress(), jpegBufferSize, 1);
         for (int i = 0; i < buffer.length; i++) {
@@ -159,7 +205,7 @@ public class sceJpeg extends HLEModule {
         return buffer;
     }
 
-    protected void dumpJpegFile(TPointer jpegBuffer, int jpegBufferSize) {
+    protected static void dumpJpegFile(TPointer jpegBuffer, int jpegBufferSize) {
         byte[] buffer = readJpegImageBytes(jpegBuffer, jpegBufferSize);
         try {
             OutputStream os = new FileOutputStream(String.format("%s%cImage%08X.jpeg", Settings.getInstance().readString("emu.tmppath"), File.separatorChar, jpegBuffer.getAddress()));
@@ -197,32 +243,92 @@ public class sceJpeg extends HLEModule {
         VideoEngine.getInstance().addVideoTexture(imageBuffer.getAddress(), imageBuffer.getAddress() + bufferWidth * height * sceDisplay.getPixelFormatBytes(pixelFormat));
     }
 
-    protected void decodeImage(TPointer imageBuffer, TPointer yCbCrBuffer, int width, int height, int bufferWidth, int pixelFormat) {
-        int uid = yCbCrBuffer.getValue32(0);
-        if (!bufferedImages.containsKey(uid)) {
-            // Return a fake image
-            generateFakeImage(imageBuffer, width, height, bufferWidth, pixelFormat);
-        } else {
-            BufferedImage bufferedImage = bufferedImages.get(uid);
-            int startLine = yCbCrBuffer.getValue32(4);
-            decodeImage(imageBuffer, bufferedImage, width, height, bufferWidth, pixelFormat, startLine);
+    public int hleGetYCbCrBufferSize(BufferedImage bufferedImage) {
+        // Return necessary buffer size for conversion: 12 bits per pixel
+        return ((bufferedImage.getWidth() * bufferedImage.getHeight()) >> 1) * 3;
+    }
 
-            int nextStartLine = startLine + height;
-            yCbCrBuffer.setValue32(4, nextStartLine);
-            if (nextStartLine >= bufferedImage.getHeight()) {
-                deleteImage(yCbCrBuffer);
-            }
+    public int hleJpegDecodeYCbCr(BufferedImage bufferedImage, TPointer yCbCrBuffer, int yCbCrBufferSize, int dhtMode) {
+        int width = bufferedImage.getWidth();
+        int height = bufferedImage.getHeight();
+
+        int address1 = yCbCrBuffer.getAddress();
+        int address2 = address1 + width * height;
+        int address3 = address2 + ((width * height) >> 2);
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceJpegDecodeMJpegYCbCr 0x%08X, 0x%08X, 0x%08X", address1, address2, address3));
         }
+        IMemoryWriter imageWriter1 = MemoryWriter.getMemoryWriter(address1, yCbCrBufferSize, 1);
+        IMemoryWriter imageWriter2 = new MemoryWriter2Bits(address2);
+        IMemoryWriter imageWriter3 = new MemoryWriter2Bits(address3);
+    	for (int y = 0; y < height; y++) {
+    		for (int x = 0; x < width; x++) {
+                int argb = bufferedImage.getRGB(x, y);
+                int yCbCr = colorARGBToYCbCr(argb);
+                imageWriter1.writeNext(yCbCr & 0xFF);
+                imageWriter2.writeNext(yCbCr >> 8);
+                imageWriter3.writeNext(yCbCr >> 10);
+    		}
+    	}
+    	imageWriter1.flush();
+    	imageWriter2.flush();
+    	imageWriter3.flush();
+    	
+        return getWidthHeight(width, height);
+    }
+
+    protected int hleJpegDecodeMJpegYCbCr(TPointer jpegBuffer, int jpegBufferSize, TPointer yCbCrBuffer, int yCbCrBufferSize, int dhtMode) {
+        BufferedImage bufferedImage = readJpegImage(jpegBuffer, jpegBufferSize);
+        if (bufferedImage == null) {
+        	yCbCrBuffer.clear(yCbCrBufferSize);
+        	return getWidthHeight(0, 0);
+        }
+
+        return hleJpegDecodeYCbCr(bufferedImage, yCbCrBuffer, yCbCrBufferSize, dhtMode);
+    }
+
+    protected int hleJpegCsc(TPointer imageBuffer, TPointer yCbCrBuffer, int widthHeight, int bufferWidth) {
+        int height = getHeight(widthHeight);
+        int width = getWidth(widthHeight);
+
+        int pixelFormat = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+        int bytesPerPixel = sizeOfTextureType[pixelFormat];
+        int lineWidth = Math.min(width, bufferWidth);
+        int skipEndOfLine = Math.max(0, bufferWidth - lineWidth);
+        int imageSizeInBytes = height * bufferWidth * bytesPerPixel;
+        IMemoryWriter imageWriter = MemoryWriter.getMemoryWriter(imageBuffer.getAddress(), imageSizeInBytes, bytesPerPixel);
+
+        int address1 = yCbCrBuffer.getAddress();
+        int address2 = address1 + width * height;
+        int address3 = address2 + ((width * height) >> 2);
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceJpegMJpegCsc 0x%08X, 0x%08X, 0x%08X", address1, address2, address3));
+        }
+        IMemoryReader imageReader1 = MemoryReader.getMemoryReader(address1, 1);
+        IMemoryReader imageReader2 = new MemoryReader2Bits(address2);
+        IMemoryReader imageReader3 = new MemoryReader2Bits(address3);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+            	int yCbCr = imageReader1.readNext() | (imageReader2.readNext() << 8) | (imageReader3.readNext() << 10);
+
+            	// Convert yCbCr to ABGR
+            	int abgr = colorYCbCrToABGR(yCbCr);
+
+            	// Write ABGR
+                imageWriter.writeNext(abgr);
+            }
+            imageWriter.skip(skipEndOfLine);
+        }
+        imageWriter.flush();
+
+        VideoEngine.getInstance().addVideoTexture(imageBuffer.getAddress(), imageBuffer.getAddress() + imageSizeInBytes);
+
+        return 0;
     }
 
     @HLEFunction(nid = 0x04B5AE02, version = 271)
     public int sceJpegMJpegCsc(TPointer imageBuffer, TPointer yCbCrBuffer, int widthHeight, int bufferWidth) {
-        int height = getHeight(widthHeight);
-        int width = getWidth(widthHeight);
-
-        decodeImage(imageBuffer, yCbCrBuffer, width, height, bufferWidth, TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888);
-
-        return 0;
+    	return hleJpegCsc(imageBuffer, yCbCrBuffer, widthHeight, bufferWidth);
     }
 
     /**
@@ -251,8 +357,7 @@ public class sceJpeg extends HLEModule {
             log.trace(String.format("sceJpegDecodeMJpegYCbCr jpegBuffer: %s", Utilities.getMemoryDump(jpegBuffer.getAddress(), jpegBufferSize)));
         }
 
-        // Return size of image
-        return addImage(jpegBuffer, jpegBufferSize, yCbCrBuffer);
+        return hleJpegDecodeMJpegYCbCr(jpegBuffer, jpegBufferSize, yCbCrBuffer, yCbCrBufferSize, dhtMode);
     }
 
     /**
@@ -328,11 +433,16 @@ public class sceJpeg extends HLEModule {
         // - Bits 16 to 24 (Color mode): 0x00 (Unknown), 0x01 (Greyscale) or 0x02 (YCbCr) 
         // - Bits 8 to 16 (Vertical chroma subsampling value): 0x00, 0x01 or 0x02
         // - Bits 0 to 8 (Horizontal chroma subsampling value): 0x00, 0x01 or 0x02
-        if(colorInfoBuffer.isNotNull()) {
+        if (colorInfoBuffer.isNotNull()) {
             colorInfoBuffer.setValue(0x00020202);
         }
 
-        return 0xC000; // Return necessary buffer size for conversion.
+        BufferedImage bufferedImage = readJpegImage(jpegBuffer, jpegBufferSize);
+        if (bufferedImage == null) {
+        	return 0xC000;
+        }
+
+        return hleGetYCbCrBufferSize(bufferedImage);
     }
 
     /**
@@ -349,12 +459,7 @@ public class sceJpeg extends HLEModule {
     @HLEUnimplemented
     @HLEFunction(nid = 0x67F0ED84, version = 271)
     public int sceJpegCsc(TPointer imageBuffer, TPointer yCbCrBuffer, int widthHeight, int bufferWidth, int colorInfo) {
-        int height = getHeight(widthHeight);
-        int width = getWidth(widthHeight);
-
-        decodeImage(imageBuffer, yCbCrBuffer, width, height, bufferWidth, TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888);
-
-        return 0;
+    	return hleJpegCsc(imageBuffer, yCbCrBuffer, widthHeight, bufferWidth);
     }
 
     @HLEFunction(nid = 0x64B6F978, version = 271)
@@ -386,7 +491,6 @@ public class sceJpeg extends HLEModule {
             log.trace(String.format("sceJpegDecodeMJpegYCbCrSuccessively jpegBuffer: %s", Utilities.getMemoryDump(jpegBuffer.getAddress(), jpegBufferSize)));
         }
 
-        // Return size of image
-        return addImage(jpegBuffer, jpegBufferSize, yCbCrBuffer);
+        return hleJpegDecodeMJpegYCbCr(jpegBuffer, jpegBufferSize, yCbCrBuffer, yCbCrBufferSize, dhtMode);
     }
 }
