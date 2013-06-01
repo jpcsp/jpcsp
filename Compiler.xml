@@ -4624,6 +4624,44 @@
 0880B0B8:[00621023]: subu       $v0, $v1, $v0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="strcmp">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Strcmp</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+08928FB8:[10800007]: beq        $a0, $zr, 0x08928FD8
+08928FBC:[00000000]: nop
+08928FC0:[10A00003]: beq        $a1, $zr, 0x08928FD0
+08928FC4:[00000000]: nop
+08928FC8:[10000005]: b          0x08928FE0
+08928FCC:[00000000]: nop
+08928FD0:[10000017]: b          0x08929030
+08928FD4:[34020001]: ori        $v0, $zr, 1 <=> li $v0, 1
+08928FD8:[10000015]: b          0x08929030
+08928FDC:[2402FFFF]: addiu      $v0, $zr, -1 <=> li $v0, -1
+08928FE0:[80870000]: lb         $a3, 0($a0)
+08928FE4:[80A60000]: lb         $a2, 0($a1)
+08928FE8:[00C7402A]: slt        $t0, $a2, $a3
+08928FEC:[1500000B]: bne        $t0, $zr, 0x0892901C
+08928FF0:[00000000]: nop
+08928FF4:[00E6402A]: slt        $t0, $a3, $a2
+08928FF8:[15000006]: bne        $t0, $zr, 0x08929014
+08928FFC:[00000000]: nop
+08929000:[24840001]: addiu      $a0, $a0, 1
+08929004:[14E00007]: bne        $a3, $zr, 0x08929024
+08929008:[24A50001]: addiu      $a1, $a1, 1
+0892900C:[10000007]: b          0x0892902C
+08929010:[00000000]: nop
+08929014:[10000006]: b          0x08929030
+08929018:[2402FFFF]: addiu      $v0, $zr, -1 <=> li $v0, -1
+0892901C:[10000004]: b          0x08929030
+08929020:[34020001]: ori        $v0, $zr, 1 <=> li $v0, 1
+08929024:[14C0FFEE]: bne        $a2, $zr, 0x08928FE0
+08929028:[00000000]: nop
+0892902C:[00001025]: or         $v0, $zr, $zr <=> li $v0, 0
+08929030:[03E00008]: jr         $ra
+08929034:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="strncmp">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Strncmp</Class>
 		<IsReturning>true</IsReturning>
@@ -4849,6 +4887,21 @@
 0886E5C0:[24840001]: addiu      $a0, $a0, 1
 0886E5C4:[03E00008]: jr         $ra
 0886E5C8:[00851023]: subu       $v0, $a0, $a1
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="strlen">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Strlen</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+08928D74:[80850000]: lb         $a1, 0($a0)
+08928D78:[10A00005]: beq        $a1, $zr, 0x08928D90
+08928D7C:[34020000]: ori        $v0, $zr, 0 <=> li $v0, 0
+08928D80:[24840001]: addiu      $a0, $a0, 1
+08928D84:[80850000]: lb         $a1, 0($a0)
+08928D88:[14A0FFFD]: bne        $a1, $zr, 0x08928D80
+08928D8C:[24420001]: addiu      $v0, $v0, 1
+08928D90:[03E00008]: jr         $ra
+08928D94:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
 	<NativeCodeSequence name="strlen">
