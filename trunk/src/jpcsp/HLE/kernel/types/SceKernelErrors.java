@@ -451,7 +451,8 @@ public class SceKernelErrors {
 
     public final static int ERROR_NPAUTH_NOT_INIT                               = 0x80550302;
     public final static int ERROR_NPSERVICE_NOT_INIT                            = 0x80550502;
-    
+
+    public final static int ERROR_NPDRM_INVALID_FILE                            = 0x80550901;
     public final static int ERROR_NPDRM_INVALID_ACT_SIGN                        = 0x80550903;
     public final static int ERROR_NPDRM_INVALID_RIF_SIGN                        = 0x80550904;
     public final static int ERROR_NPDRM_DIFF_ACC_ID                             = 0x80550905;

@@ -133,7 +133,7 @@ public class scePspNpDrm_user extends HLEModule {
         } else {
             try {
                 String pcfilename = Modules.IoFileMgrForUserModule.getDeviceFilePath(fileName.getString());
-                SeekableRandomFile file = new SeekableRandomFile(pcfilename, "rw");
+                SeekableRandomFile file = new SeekableRandomFile(pcfilename, "r");
 
                 String[] name = pcfilename.split("/");
                 String fName = "";
@@ -160,7 +160,7 @@ public class scePspNpDrm_user extends HLEModule {
                     result = 0; // Fake for now.
                 }
             } catch (FileNotFoundException e) {
-                result = SceKernelErrors.ERROR_ERRNO_FILE_NOT_FOUND;
+                result = SceKernelErrors.ERROR_NPDRM_INVALID_FILE;
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("sceNpDrmRenameCheck: file '%s' not found: %s", fileName.getString(), e.toString()));
                 }
