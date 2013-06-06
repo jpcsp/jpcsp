@@ -1177,10 +1177,10 @@ public class ImageReader {
 			case TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED:
 				return height * bufferWidth / 2;
 			case TPSM_PIXEL_STORAGE_MODE_DXT1:
-				return round4(height) * round4(width) / 2;
+				return round4(height) * round4(bufferWidth) / 2;
 			case TPSM_PIXEL_STORAGE_MODE_DXT3:
 			case TPSM_PIXEL_STORAGE_MODE_DXT5:
-				return round4(height) * round4(width);
+				return round4(height) * round4(bufferWidth);
 		}
 
 		// Common case:
