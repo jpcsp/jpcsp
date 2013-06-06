@@ -138,11 +138,19 @@ public class FileLocator {
         		fileData = new byte[length];
         		if (readInfo.vFile != null) {
 					long currentPosition = readInfo.vFile.getPosition();
+					if (currentPosition < 0) {
+						// File is already closed
+						return null;
+					}
 					readInfo.vFile.ioLseek(readInfo.position + positionOffset);
 		    		readInfo.vFile.ioRead(fileData, 0, fileData.length);
 					readInfo.vFile.ioLseek(currentPosition);
         		} else if (readInfo.dataInput != null) {
 					long currentPosition = readInfo.dataInput.getFilePointer();
+					if (currentPosition < 0) {
+						// File is already closed
+						return null;
+					}
 					readInfo.dataInput.seek(readInfo.position + positionOffset);
 		    		readInfo.dataInput.readFully(fileData);
 					readInfo.dataInput.seek(currentPosition);

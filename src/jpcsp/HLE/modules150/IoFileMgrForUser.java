@@ -3402,6 +3402,10 @@ public class IoFileMgrForUser extends HLEModule {
     		result = (stat != null) ? 0 : ERROR_ERRNO_FILE_NOT_FOUND;
     	}
 
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceIoGetstat returning 0x%08X, %s", result, stat));
+    	}
+
     	if (stat != null && result == 0) {
             stat.write(statAddr);
         }
