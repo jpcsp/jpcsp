@@ -32,6 +32,7 @@ import jpcsp.graphics.VideoEngine;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.Memory;
+import jpcsp.MemoryMap;
 
 public class PspGeList {
 	private VideoEngine videoEngine;
@@ -296,11 +297,18 @@ public class PspGeList {
 		return reset;
 	}
 
+	private void resetMemoryReader() {
+		memoryReader = MemoryReader.getMemoryReader(pc, 4);
+	}
+
 	private void resetMemoryReader(int oldPc) {
-		if (memoryReader != null && pc >= oldPc) {
-			memoryReader.skip((pc - oldPc) >> 2);
+		if (memoryReader == null || pc < oldPc) {
+			resetMemoryReader();
+		} else if (oldPc < MemoryMap.START_RAM && pc >= MemoryMap.START_RAM) {
+			// Jumping from VRAM to RAM
+			resetMemoryReader();
 		} else {
-			memoryReader = MemoryReader.getMemoryReader(pc, 4);
+			memoryReader.skip((pc - oldPc) >> 2);
 		}
 	}
 
