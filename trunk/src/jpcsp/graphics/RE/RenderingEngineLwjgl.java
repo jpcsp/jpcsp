@@ -31,9 +31,9 @@ import java.nio.ShortBuffer;
 
 import org.lwjgl.opengl.ARBBufferObject;
 import org.lwjgl.opengl.ARBFramebufferObject;
+import org.lwjgl.opengl.ARBGeometryShader4;
 import org.lwjgl.opengl.ARBUniformBufferObject;
 import org.lwjgl.opengl.ARBVertexArrayObject;
-import org.lwjgl.opengl.EXTGeometryShader4;
 import org.lwjgl.opengl.EXTMultiDrawArrays;
 import org.lwjgl.opengl.EXTTextureCompressionS3TC;
 import org.lwjgl.opengl.EXTTextureFilterAnisotropic;
@@ -1223,7 +1223,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 		if (parameter == RE_GEOMETRY_INPUT_TYPE || parameter == RE_GEOMETRY_OUTPUT_TYPE) {
 			value = primitiveToGL[value];
 		}
-		EXTGeometryShader4.glProgramParameteriEXT(program, programParameterToGL[parameter], value);
+		ARBGeometryShader4.glProgramParameteriARB(program, programParameterToGL[parameter], value);
 	}
 
 	@Override
