@@ -47,15 +47,13 @@ import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GLContext;
 
-import jpcsp.graphics.VertexInfo;
-
 /**
  * @author gid15
  *
  * An abstract RenderingEngine implementing calls to OpenGL using LWJGL.
  * The class contains no rendering logic, it just implements the interface to LWJGL.
  */
-public class RenderingEngineLwjgl extends BaseRenderingEngine {
+public class RenderingEngineLwjgl extends NullRenderingEngine {
 	protected static final int[] flagToGL = {
 		GL11.GL_ALPHA_TEST,     // GU_ALPHA_TEST
 		GL11.GL_DEPTH_TEST,     // GU_DEPTH_TEST
@@ -481,31 +479,6 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void exit() {
-		// Nothing to do
-	}
-
-	@Override
-	public void endDirectRendering() {
-		// Nothing to do
-	}
-
-	@Override
-	public void startDirectRendering(boolean textureEnabled, boolean depthWriteEnabled, boolean colorWriteEnabled, boolean setOrthoMatrix, boolean orthoInverted, int width, int height) {
-		// Nothing to do
-	}
-
-	@Override
-	public void startDisplay() {
-		// Nothing to do
-	}
-
-	@Override
-	public void endDisplay() {
-		// Nothing to do
-	}
-
-	@Override
 	public void disableFlag(int flag) {
 		int glFlag = flagToGL[flag];
 		if (glFlag != 0) {
@@ -519,21 +492,6 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 		if (glFlag != 0) {
 			GL11.glEnable(glFlag);
 		}
-	}
-
-	@Override
-	public void setMorphWeight(int index, float value) {
-		// Nothing to do
-	}
-
-	@Override
-	public void setPatchDiv(int s, int t) {
-		// Nothing to do
-	}
-
-	@Override
-	public void setPatchPrim(int prim) {
-		// Nothing to do
 	}
 
 	@Override
@@ -574,11 +532,6 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	@Override
 	public void setMaterialSpecularColor(float[] color) {
         GL11.glMaterial(GL11.GL_FRONT, GL11.GL_SPECULAR, getDirectBuffer(color));
-	}
-
-	@Override
-	public void endModelViewMatrixUpdate() {
-		// Nothing to do
 	}
 
 	@Override
@@ -642,11 +595,6 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setLightType(int light, int type, int kind) {
-		// Nothing to do
-	}
-
-	@Override
 	public void setBlendColor(float[] color) {
 		try {
 			GL14.glBlendColor(color[0], color[1], color[2], color[3]);
@@ -673,11 +621,6 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	public void setColorMask(boolean redWriteEnabled, boolean greenWriteEnabled, boolean blueWriteEnabled, boolean alphaWriteEnabled) {
         GL11.glColorMask(redWriteEnabled, greenWriteEnabled, blueWriteEnabled, alphaWriteEnabled);
 	}
-
-	@Override
-	public void setColorMask(int redMask, int greenMask, int blueMask, int alphaMask) {
-    	// Not supported, nothing to do
-    }
 
 	@Override
 	public void setDepthMask(boolean depthWriteEnabled) {
@@ -773,36 +716,6 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setColorTestFunc(int func) {
-		// Not supported
-	}
-
-	@Override
-	public void setColorTestMask(int[] values) {
-		// Not supported
-	}
-
-	@Override
-	public void setColorTestReference(int[] values) {
-		// Not supported
-	}
-
-	@Override
-	public void setTextureFunc(int func, boolean alphaUsed, boolean colorDoubled) {
-		// Nothing to do
-	}
-
-	@Override
-	public int setBones(int count, float[] values) {
-		return 0; // Bones are not supported
-	}
-
-	@Override
-	public void setTextureMapMode(int mode, int proj) {
-		// Nothing to do
-	}
-
-	@Override
 	public void setTexEnv(int name, int param) {
 		GL11.glTexEnvi(GL11.GL_TEXTURE_ENV, texEnvNameToGL[name], texEnvParamToGL[param]);
 	}
@@ -810,16 +723,6 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	@Override
 	public void setTexEnv(int name, float param) {
 		GL11.glTexEnvf(GL11.GL_TEXTURE_ENV, texEnvNameToGL[name], param);
-	}
-
-	@Override
-	public void endClearMode() {
-		// Nothing to do
-	}
-
-	@Override
-	public void startClearMode(boolean color, boolean stencil, boolean depth) {
-		// Nothing to do
 	}
 
 	@Override
@@ -1251,21 +1154,6 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void drawBoundingBox(float[][] values) {
-		// Nothing to do
-	}
-
-	@Override
-	public void endBoundingBox(VertexInfo vinfo) {
-		// Nothing to do
-	}
-
-	@Override
-	public void beginBoundingBox(int numberOfVertexBoundingBox) {
-		// Nothing to do
-	}
-
-	@Override
 	public boolean hasBoundingBox() {
 		return true;
 	}
@@ -1321,16 +1209,6 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setWeightPointer(int size, int type, int stride, long offset) {
-		// Nothing to do
-	}
-
-	@Override
-	public void setWeightPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
-		// Nothing to do
-	}
-
-	@Override
 	public boolean canAllNativeVertexInfo() {
 		return false;
 	}
@@ -1338,11 +1216,6 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	@Override
 	public boolean canNativeSpritesPrimitive() {
 		return false;
-	}
-
-	@Override
-	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, int type) {
-		// Nothing to do
 	}
 
 	@Override
@@ -1404,6 +1277,38 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	@Override
 	public int getActiveUniformOffset(int program, int uniformIndex) {
 		return ARBUniformBufferObject.glGetActiveUniforms(program, uniformIndex, ARBUniformBufferObject.GL_UNIFORM_OFFSET);
+	}
+
+	@Override
+	public void setProjectionMatrix(float[] values) {
+		re.setMatrixMode(GU_PROJECTION);
+		re.setMatrix(values);
+	}
+
+	@Override
+	public void setViewMatrix(float[] values) {
+		// The View matrix has always to be set BEFORE the Model matrix
+		re.setMatrixMode(RE_MODELVIEW);
+		setMatrix(values);
+	}
+
+	@Override
+	public void setModelMatrix(float[] values) {
+		// The Model matrix has always to be set AFTER the View matrix
+		re.setMatrixMode(RE_MODELVIEW);
+		re.multMatrix(values);
+	}
+
+	@Override
+	public void setTextureMatrix(float[] values) {
+		re.setMatrixMode(GU_TEXTURE);
+		re.setMatrix(values);
+	}
+
+	@Override
+	public void setModelViewMatrix(float[] values) {
+		re.setMatrixMode(RE_MODELVIEW);
+		setMatrix(values);
 	}
 
 	@Override
@@ -1549,16 +1454,6 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setTextureFormat(int pixelFormat, boolean swizzle) {
-		// Nothing to do here
-	}
-
-	@Override
-	public void bindActiveTexture(int index, int texture) {
-		// Nothing to do here
-	}
-
-	@Override
 	public float getMaxTextureAnisotropy() {
 		return GL11.glGetFloat(EXTTextureFilterAnisotropic.GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT);
 	}
@@ -1575,21 +1470,6 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
         }
 
         return null;
-	}
-
-	@Override
-	public void setBlendSFix(int sfix, float[] color) {
-		// Nothing to do here
-	}
-
-	@Override
-	public void setBlendDFix(int dfix, float[] color) {
-		// Nothing to do here
-	}
-
-	@Override
-	public void waitForRenderingCompletion() {
-		// Nothing to do here
 	}
 
 	@Override
@@ -1698,11 +1578,6 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	@Override
 	public void drawElements(int primitive, int count, int indexType, long indicesOffset) {
 		GL11.glDrawElements(primitiveToGL[primitive], count, pointerTypeToGL[indexType], indicesOffset);
-	}
-
-	@Override
-	public void multiDrawElements(int primitive, IntBuffer first, IntBuffer count, int indexType, long indicesOffset) {
-		// Not implemented here
 	}
 
 	@Override
