@@ -16,10 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS.local;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.AbstractVirtualFile;
+import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.util.Utilities;
 
@@ -71,6 +73,16 @@ public class LocalVirtualFile extends AbstractVirtualFile {
 
 	public void setTruncateAtNextWrite(boolean truncateAtNextWrite) {
 		this.truncateAtNextWrite = truncateAtNextWrite;
+	}
+
+	@Override
+	public IVirtualFile duplicate() {
+		try {
+			return new LocalVirtualFile(new SeekableRandomFile(file.getFileName(), file.getMode()));
+		} catch (FileNotFoundException e) {
+		}
+
+		return super.duplicate();
 	}
 
 	@Override

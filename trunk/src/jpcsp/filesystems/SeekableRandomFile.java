@@ -26,18 +26,29 @@ import java.io.RandomAccessFile;
  */
 public class SeekableRandomFile extends RandomAccessFile implements SeekableDataInput {
 	private String fileName;
+	private String mode;
 
     public SeekableRandomFile(String fileName, String mode) throws FileNotFoundException {
         super(fileName, mode);
         this.fileName = fileName;
+        this.mode = mode;
     }
 
     public SeekableRandomFile(File name, String mode) throws FileNotFoundException {
         super(name, mode);
         this.fileName = name.toString();
+        this.mode = mode;
     }
 
-	@Override
+    public String getFileName() {
+    	return fileName;
+    }
+
+    public String getMode() {
+    	return mode;
+    }
+
+    @Override
 	public String toString() {
 		return String.format("SeekableRandomFile '%s'", fileName);
 	}
