@@ -1002,7 +1002,7 @@ public class RendererTemplate {
             				if (texMagFilter == GeCommands.TFLT_LINEAR) {
 		            			if (needResample) {
 		            				// Perform the resampling as late as possible.
-		            				// We might be lucky that all the pixel are eliminated
+		            				// We might be lucky that all the pixels were eliminated
 		            				// by the depth or stencil tests. In which case,
 		            				// we don't need to resample.
 									textureAccess = renderer.cachedTexture.resample(prim.resampleFactorWidth, prim.resampleFactorHeight);

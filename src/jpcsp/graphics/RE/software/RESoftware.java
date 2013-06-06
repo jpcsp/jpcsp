@@ -25,8 +25,8 @@ import jpcsp.Memory;
 import jpcsp.graphics.VertexInfo;
 import jpcsp.graphics.VertexState;
 import jpcsp.graphics.VideoEngine;
-import jpcsp.graphics.RE.BaseRenderingEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
+import jpcsp.graphics.RE.NullRenderingEngine;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.ImageReader;
 import jpcsp.util.DurationStatistics;
@@ -39,7 +39,7 @@ import jpcsp.util.Utilities;
  * not using OpenGL or any GPU.
  * This is probably the most accurate implementation but also the slowest one.
  */
-public class RESoftware extends BaseRenderingEngine {
+public class RESoftware extends NullRenderingEngine {
 	private static final boolean useTextureCache = true;
     protected int genTextureId;
     protected int bindTexture;
@@ -80,470 +80,14 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void startDirectRendering(boolean textureEnabled,
-			boolean depthWriteEnabled, boolean colorWriteEnabled,
-			boolean setOrthoMatrix, boolean orthoInverted, int width, int height) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void endDirectRendering() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
 	public void startDisplay() {
 		context = VideoEngine.getInstance().getContext();
 		rendererExecutor = RendererExecutor.getInstance();
 	}
 
 	@Override
-	public void endDisplay() {
-	}
-
-	@Override
-	public void enableFlag(int flag) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void disableFlag(int flag) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setMorphWeight(int index, float value) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setPatchDiv(int s, int t) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setPatchPrim(int prim) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setMatrixMode(int type) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setMatrix(float[] values) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void multMatrix(float[] values) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void endModelViewMatrixUpdate() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setViewport(int x, int y, int width, int height) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setDepthRange(float zpos, float zscale, int near, int far) {
-	}
-
-	@Override
-	public void setDepthFunc(int func) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setShadeModel(int model) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setMaterialEmissiveColor(float[] color) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setMaterialAmbientColor(float[] color) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setMaterialDiffuseColor(float[] color) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setMaterialSpecularColor(float[] color) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setMaterialShininess(float shininess) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setLightModelAmbientColor(float[] color) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setLightMode(int mode) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setLightPosition(int light, float[] position) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setLightDirection(int light, float[] direction) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setLightSpotExponent(int light, float exponent) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setLightSpotCutoff(int light, float cutoff) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setLightConstantAttenuation(int light, float constant) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setLightLinearAttenuation(int light, float linear) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setLightQuadraticAttenuation(int light, float quadratic) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setLightAmbientColor(int light, float[] color) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setLightDiffuseColor(int light, float[] color) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setLightSpecularColor(int light, float[] color) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setLightType(int light, int type, int kind) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setBlendFunc(int src, int dst) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setBlendColor(float[] color) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setLogicOp(int logicOp) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setDepthMask(boolean depthWriteEnabled) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setColorMask(int redMask, int greenMask, int blueMask,
-			int alphaMask) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setColorMask(boolean redWriteEnabled,
-			boolean greenWriteEnabled, boolean blueWriteEnabled,
-			boolean alphaWriteEnabled) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setTextureWrapMode(int s, int t) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setTextureMipmapMinLevel(int level) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setTextureMipmapMaxLevel(int level) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setTextureMipmapMinFilter(int filter) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setTextureMipmapMagFilter(int filter) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setColorMaterial(boolean ambient, boolean diffuse,
-			boolean specular) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setTextureMapMode(int mode, int proj) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setTextureEnvironmentMapping(int u, int v) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setUniform(int id, int value) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setUniform(int id, int value1, int value2) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setUniform(int id, float value) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setUniform2(int id, int[] values) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setUniform3(int id, int[] values) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setUniform3(int id, float[] values) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setUniform4(int id, int[] values) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setUniform4(int id, float[] values) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setUniformMatrix4(int id, int count, float[] values) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setColorTestFunc(int func) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setColorTestReference(int[] values) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setColorTestMask(int[] values) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setTextureFunc(int func, boolean alphaUsed, boolean colorDoubled) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
 	public int setBones(int count, float[] values) {
 		return count;
-	}
-
-	@Override
-	public void setTexEnv(int name, int param) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setTexEnv(int name, float param) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public int createShader(int type) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public boolean compilerShader(int shader, String source) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public int createProgram() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public void useProgram(int program) {
-	}
-
-	@Override
-	public void attachShader(int program, int shader) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public boolean linkProgram(int program) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean validateProgram(int program) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public int getUniformLocation(int program, String name) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int getAttribLocation(int program, String name) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public void bindAttribLocation(int program, int index, String name) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public String getShaderInfoLog(int shader) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public String getProgramInfoLog(int program) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public boolean isExtensionAvailable(String name) {
-		// TODO Auto-generated method stub
-		return false;
 	}
 
 	protected void render(IRenderer renderer) {
@@ -788,77 +332,11 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	@Override
-	public int genBuffer() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public void deleteBuffer(int buffer) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setBufferData(int target, int size, Buffer buffer, int usage) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setBufferSubData(int target, int offset, int size, Buffer buffer) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void bindBuffer(int target, int buffer) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void enableClientState(int type) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void disableClientState(int type) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void enableVertexAttribArray(int id) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void disableVertexAttribArray(int id) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setTexCoordPointer(int size, int type, int stride, long offset) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
 	public void setTexCoordPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
 		if (bufferVertexReader == null) {
 			bufferVertexReader = new BufferVertexReader();
 		}
 		bufferVertexReader.setTextureComponentInfo(size, type, stride, bufferSize, buffer);
-	}
-
-	@Override
-	public void setColorPointer(int size, int type, int stride, long offset) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
@@ -870,23 +348,11 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setVertexPointer(int size, int type, int stride, long offset) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
 	public void setVertexPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
 		if (bufferVertexReader == null) {
 			bufferVertexReader = new BufferVertexReader();
 		}
 		bufferVertexReader.setVertexComponentInfo(size, type, stride, bufferSize, buffer);
-	}
-
-	@Override
-	public void setNormalPointer(int type, int stride, long offset) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
@@ -898,31 +364,11 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setWeightPointer(int size, int type, int stride, long offset) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
 	public void setWeightPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
 		if (bufferVertexReader == null) {
 			bufferVertexReader = new BufferVertexReader();
 		}
 		bufferVertexReader.setWeightComponentInfo(size, type, stride, bufferSize, buffer);
-	}
-
-	@Override
-	public void setVertexAttribPointer(int id, int size, int type,
-			boolean normalized, int stride, long offset) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setVertexAttribPointer(int id, int size, int type,
-			boolean normalized, int stride, int bufferSize, Buffer buffer) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
@@ -981,92 +427,6 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setTexSubImage(int level, int xOffset, int yOffset, int width,
-			int height, int format, int type, int textureSize, Buffer buffer) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void getTexImage(int level, int format, int type, Buffer buffer) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void copyTexSubImage(int level, int xOffset, int yOffset, int x,
-			int y, int width, int height) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setStencilOp(int fail, int zfail, int zpass) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setStencilFunc(int func, int ref, int mask) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setAlphaFunc(int func, int ref) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setFogHint() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setFogColor(float[] color) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setFogDist(float start, float end) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setTextureEnvColor(float[] color) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setFrontFace(boolean cw) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setScissor(int x, int y, int width, int height) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setBlendEquation(int mode) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setLineSmoothHint() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
 	public boolean hasBoundingBox() {
 		return true;
 	}
@@ -1097,42 +457,6 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	@Override
-	public int genQuery() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public void beginQuery(int id) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void endQuery() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public boolean getQueryResultAvailable(int id) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public int getQueryResult(int id) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public void clear(float red, float green, float blue, float alpha) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
 	public boolean canAllNativeVertexInfo() {
 		return true;
 	}
@@ -1149,239 +473,11 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setProgramParameter(int program, int parameter, int value) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public boolean isQueryAvailable() {
-		return false;
-	}
-
-	@Override
-	public boolean isShaderAvailable() {
-		return false;
-	}
-
-	@Override
-	public int getUniformBlockIndex(int program, String name) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public void bindBufferBase(int target, int bindingPoint, int buffer) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setUniformBlockBinding(int program, int blockIndex,
-			int bindingPoint) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public int getUniformIndex(int program, String name) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int[] getUniformIndices(int program, String[] names) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public int getActiveUniformOffset(int program, int uniformIndex) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public boolean isFramebufferObjectAvailable() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public int genFramebuffer() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int genRenderbuffer() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public void deleteFramebuffer(int framebuffer) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void deleteRenderbuffer(int renderbuffer) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void bindFramebuffer(int target, int framebuffer) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void bindRenderbuffer(int renderbuffer) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setRenderbufferStorage(int internalFormat, int width, int height) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setFramebufferRenderbuffer(int target, int attachment,
-			int renderbuffer) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setFramebufferTexture(int target, int attachment, int texture,
-			int level) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public int genVertexArray() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public void bindVertexArray(int id) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void deleteVertexArray(int id) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public boolean isVertexArrayAvailable() {
-		return false;
-	}
-
-	@Override
-	public void multiDrawArrays(int primitive, IntBuffer first, IntBuffer count) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void drawArraysBurstMode(int primitive, int first, int count) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setPixelTransfer(int parameter, int value) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setPixelTransfer(int parameter, float value) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setPixelTransfer(int parameter, boolean value) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setPixelMap(int map, int mapSize, Buffer buffer) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
 	public boolean canNativeClut(int textureAddress, boolean textureSwizzle) {
 		if (Memory.isVRAM(textureAddress) && !textureSwizzle) {
 			return true;
 		}
 		return !useTextureCache;
-	}
-
-	@Override
-	public void setActiveTexture(int index) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setTextureFormat(int pixelFormat, boolean swizzle) {
-	}
-
-	@Override
-	public void bindActiveTexture(int index, int texture) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setTextureAnisotropy(float value) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public float getMaxTextureAnisotropy() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public String getShadingLanguageVersion() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void setBlendSFix(int sfix, float[] color) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setBlendDFix(int dfix, float[] color) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void startClearMode(boolean color, boolean stencil, boolean depth) {
-	}
-
-	@Override
-	public void endClearMode() {
 	}
 
 	@Override
@@ -1396,37 +492,14 @@ public class RESoftware extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void readStencil(int x, int y, int width, int height, int bufferSize, Buffer buffer) {
-	}
-
-	@Override
-	public void blitFramebuffer(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, int mask, int filter) {
-	}
-
-	@Override
-	public boolean checkAndLogErrors(String logComment) {
-		// No error
-		return false;
-	}
-
-	@Override
 	public boolean setCopyRedToAlpha(boolean copyRedToAlpha) {
 		return true;
 	}
 
 	@Override
-	public void drawElements(int primitive, int count, int indexType, Buffer indices, int indicesOffset) {
-	}
-
-	@Override
-	public void drawElements(int primitive, int count, int indexType, long indicesOffset) {
-	}
-
-	@Override
-	public void multiDrawElements(int primitive, IntBuffer first, IntBuffer count, int indexType, long indicesOffset) {
-	}
-
-	@Override
-	public void drawElementsBurstMode(int primitive, int count, int indexType, long indicesOffset) {
+	public void setVertexColor(float[] color) {
+		for (int i = 0; i < context.vertexColor.length; i++) {
+			context.vertexColor[i] = color[i];
+		}
 	}
 }
