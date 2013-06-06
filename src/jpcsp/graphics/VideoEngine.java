@@ -225,13 +225,14 @@ public class VideoEngine {
     private int textureId = -1;
     private boolean textureFlipped;
     private float textureFlipTranslateY;
-    private int[] tmp_texture_buffer32 = new int[1024 * 1024];
-    private short[] tmp_texture_buffer16 = new short[1024 * 1024];
+    private int[] tmp_texture_buffer32;
+    private short[] tmp_texture_buffer16;
     private int[] clut_buffer32 = new int[4096];
     private short[] clut_buffer16 = new short[4096];
     private boolean listHasEnded;
     private PspGeList currentList; // The currently executing list
-    private static final int drawBufferSize = 2 * 1024 * 1024 * SIZEOF_FLOAT;
+    private static final int drawBufferSize = 1 * 1024 * 1024;
+    private static final int indexDrawBufferSize = 512 * 1024;
     private int bufferId;
     private int nativeBufferId;
     private int indexBufferId;
@@ -579,7 +580,7 @@ public class VideoEngine {
 
         bufferId = bufferManager.genBuffer(IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_FLOAT, drawBufferSize / SIZEOF_FLOAT, IRenderingEngine.RE_STREAM_DRAW);
         nativeBufferId = bufferManager.genBuffer(IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_BYTE, drawBufferSize, IRenderingEngine.RE_STREAM_DRAW);
-        indexBufferId = bufferManager.genBuffer(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, IRenderingEngine.RE_UNSIGNED_BYTE, drawBufferSize, IRenderingEngine.RE_STREAM_DRAW);
+        indexBufferId = bufferManager.genBuffer(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, IRenderingEngine.RE_UNSIGNED_BYTE, indexDrawBufferSize, IRenderingEngine.RE_STREAM_DRAW);
         floatBufferArray = new float[drawBufferSize / SIZEOF_FLOAT];
 
         if (useAsyncVertexCache) {
@@ -6992,11 +6993,26 @@ public class VideoEngine {
 		wantClearVertexCache = true;
 	}
 
+	private void initTextureBuffers() {
+		int maxTextureSize = 1 << maxTextureSizeLog2;
+		int tmpBufferSize = maxTextureSize * maxTextureSize;
+		if (tmp_texture_buffer32 == null || tmp_texture_buffer32.length != tmpBufferSize) {
+			// Tell the garbage collector that the old arrays are no longer in use.
+			tmp_texture_buffer32 = null;
+			tmp_texture_buffer16 = null;
+
+			// Create the new arrays
+			tmp_texture_buffer32 = new int[tmpBufferSize];
+		    tmp_texture_buffer16 = new short[tmpBufferSize];
+		}
+	}
+
 	public void setMaxTextureSize(int maxTextureSize) {
 		if ((1 << maxTextureSizeLog2) != maxTextureSize) {
 			maxTextureSizeLog2 = 31 - Integer.numberOfLeadingZeros(maxTextureSize);
 			log.info(String.format("Using maxTextureSize=%d(log2=%d)", maxTextureSize, maxTextureSizeLog2));
 		}
+		initTextureBuffers();
 	}
 
 	public void setDoubleTexture2DCoords(boolean doubleTexture2DCoords) {
