@@ -415,14 +415,17 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         safeLoad(mem, icon0FileName, icon0FileData);
         
         // Check and read ICON1.PMF or ICON1.PNG
-        IMemoryReader memoryReader = MemoryReader.getMemoryReader(icon1FileData.buf, 1);
-        String icon1FileName;
-        if ((byte) memoryReader.readNext() != (byte) 0x89) {
-            icon1FileName = icon1PMFFileName;
+        if (icon1FileData.buf == 0) {
+        	icon1FileData.size = 0;
         } else {
-            icon1FileName = icon1PNGFileName; 
+	        String icon1FileName;
+	        if (mem.read8(icon1FileData.buf) != 0x89) {
+	            icon1FileName = icon1PMFFileName;
+	        } else {
+	            icon1FileName = icon1PNGFileName; 
+	        }
+	        safeLoad(mem, icon1FileName, icon1FileData);
         }
-        safeLoad(mem, icon1FileName, icon1FileData);
         
         // Read PIC1.PNG
         safeLoad(mem, pic1FileName, pic1FileData);
