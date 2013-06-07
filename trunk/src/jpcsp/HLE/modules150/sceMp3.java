@@ -410,7 +410,7 @@ public class sceMp3 extends HLEModule {
             		mp3DecodedBytes = fakeSamples * getBytesPerSample();
                     // Clear the whole PCM buffer, just in case the application is expecting
             		// mp3MaxSamples and not just 1 sample.
-                    Memory.getInstance().memset(decodeBuffer, (byte) 0, mp3PcmBufSize);
+                    Memory.getInstance().memset(decodeBuffer, (byte) 0, decodeBufferSize);
             	}
             } else {
             	// Return mp3MaxSamples samples (all set to 0).
