@@ -48,6 +48,7 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
     private final int COL_ACTIVE = 3;
     private final int COL_LAST = 4;
     private static final Font tableFont = new Font("Courier new", Font.PLAIN, 12);
+    private final FileNameExtensionFilter fltMemoryBreakpointsFile = new FileNameExtensionFilter("Memory breakpoint files", "mbrk");
 
     public MemoryBreakpointsDialog(java.awt.Frame parent) {
         super(parent);
@@ -542,12 +543,11 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
 
     private void btnExportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExportActionPerformed
         final JFileChooser fc = new JFileChooser();
-        final FileNameExtensionFilter flt = new FileNameExtensionFilter("Breakpoint files", "mbrk");
         fc.setDialogTitle("Export memory breakpoints to file...");
         fc.setSelectedFile(new File(State.discId + ".mbrk"));
         fc.setCurrentDirectory(new java.io.File("."));
-        fc.addChoosableFileFilter(flt);
-        fc.setFileFilter(flt);
+        fc.addChoosableFileFilter(fltMemoryBreakpointsFile);
+        fc.setFileFilter(fltMemoryBreakpointsFile);
 
         if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             File f = fc.getSelectedFile();
@@ -569,12 +569,11 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
 
     private void btnImportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnImportActionPerformed
         final JFileChooser fc = new JFileChooser();
-        final FileNameExtensionFilter flt = new FileNameExtensionFilter("Breakpoint files", "mbrk");
         fc.setDialogTitle("Import memory breakpoints from file...");
         fc.setSelectedFile(new File(State.discId + ".mbrk"));
         fc.setCurrentDirectory(new java.io.File("."));
-        fc.addChoosableFileFilter(flt);
-        fc.setFileFilter(flt);
+        fc.addChoosableFileFilter(fltMemoryBreakpointsFile);
+        fc.setFileFilter(fltMemoryBreakpointsFile);
 
         if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             ((DebuggerMemory) Memory.getInstance()).importBreakpoints(fc.getSelectedFile());
