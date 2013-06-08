@@ -68,9 +68,6 @@ import jpcsp.util.Utilities;
 import com.jidesoft.list.StyledListCellRenderer;
 import com.jidesoft.swing.StyleRange;
 import com.jidesoft.swing.StyledLabel;
-import com.sun.org.apache.bcel.internal.generic.TABLESWITCH;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import jpcsp.Debugger.MemoryBreakpoints.MemoryBreakpointsDialog;
@@ -98,6 +95,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     private final Color selectedAddressColor = new Color(255, 128, 255);
     private String selectedAddress;
     private int srcounter;
+    private MemoryBreakpointsDialog mbpDialog;
     private RegisterTable gprTable;
     private final String[] regnames = {
         "PC",
@@ -231,7 +229,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         });
 
-        RefreshDebuggerDisassembly(true);
+        RefreshDebugger(true);
     }
 
     private void addKeyAction(JButton button, String key) {
@@ -1783,12 +1781,17 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 }//GEN-LAST:event_ImportBreaksActionPerformed
 
     private void ManageMemBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ManageMemBreaksActionPerformed
-        MemoryBreakpointsDialog dlg = new MemoryBreakpointsDialog(this);
-        dlg.setVisible(true);
+        if(mbpDialog == null) {
+            mbpDialog = new MemoryBreakpointsDialog(this);
+        }
+        mbpDialog.setVisible(true);
     }//GEN-LAST:event_ManageMemBreaksActionPerformed
 
     @Override
     public void dispose() {
+        if(mbpDialog != null) {
+            mbpDialog.dispose();
+        }
         Emulator.getMainGUI().endWindowDialog();
         super.dispose();
     }
