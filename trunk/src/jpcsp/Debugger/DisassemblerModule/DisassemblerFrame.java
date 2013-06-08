@@ -70,6 +70,7 @@ import com.jidesoft.swing.StyleRange;
 import com.jidesoft.swing.StyledLabel;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import jpcsp.Debugger.MemoryBreakpoints.MemoryBreakpointsDialog;
 import jpcsp.memory.DebuggerMemory;
 
@@ -134,6 +135,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         "fp",
         "ra"
     };
+    private final FileNameExtensionFilter fltBreakpointFile = new FileNameExtensionFilter("Breakpoint files", "brk");
 
     /**
      * Creates new form DisassemblerFrame
@@ -141,12 +143,16 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     public DisassemblerFrame(Emulator emu) {
         this.emu = emu;
         listmodel = new DefaultListModel();
+        
         initComponents();
 
         // create and add the custom widget at the beginning
         gprTable = new RegisterTable(regnames);
         disasmTabs.insertTab("GPR", null, gprTable, null, 0);
         disasmTabs.setSelectedIndex(0);
+
+        // calculate the fixed cell height and width based on a dummy string
+        disasmList.setPrototypeCellValue("PROTOTYPE");
 
         gprTable.addPropertyChangeListener(new PropertyChangeListener() {
             @Override
@@ -176,7 +182,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                                 break;
                         }
 
-                        if(changedPC) {
+                        if (changedPC) {
                             SwingUtilities.invokeLater(new Runnable() {
                                 @Override
                                 public void run() {
@@ -236,7 +242,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         final String actionName = "click";
         button.getInputMap(JButton.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(key), actionName);
         button.getActionMap().put(actionName, new ClickAction(button));
-        button.setText(String.format("%s (%s)", button.getText(), key));
     }
 
     private void customizeStyledLabel(StyledLabel label, String text) {
@@ -344,7 +349,9 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         synchronized (listmodel) {
             listmodel.clear();
 
-            for (pc = DebuggerPC; pc < (DebuggerPC + 0x00000094); pc += 0x00000004) {
+            // compute the number of visible rows, based on the widget's size
+            int numVisibleRows = disasmList.getHeight() / disasmList.getFixedCellHeight();
+            for (pc = DebuggerPC; pc < (DebuggerPC + numVisibleRows * 0x00000004); pc += 0x00000004) {
                 if (Memory.isAddressGood(pc)) {
                     int opcode = Memory.getInstance().read32(pc);
 
@@ -456,8 +463,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         SetPCToCursor = new javax.swing.JMenuItem();
         RegMenu = new javax.swing.JPopupMenu();
         CopyValue = new javax.swing.JMenuItem();
-        disasmList = new javax.swing.JList(listmodel);
-        disasmToolbar = new javax.swing.JToolBar();
+        tbDisasm = new javax.swing.JToolBar();
         RunDebugger = new javax.swing.JToggleButton();
         PauseDebugger = new javax.swing.JButton();
         jSeparator1 = new javax.swing.JToolBar.Separator();
@@ -469,6 +475,16 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         JumpToAddress = new javax.swing.JButton();
         jSeparator4 = new javax.swing.JToolBar.Separator();
         DumpCodeToText = new javax.swing.JButton();
+        tbBreakpoints = new javax.swing.JToolBar();
+        AddBreakpoint = new javax.swing.JButton();
+        DeleteBreakpoint = new javax.swing.JButton();
+        DeleteAllBreakpoints = new javax.swing.JButton();
+        jSeparator3 = new javax.swing.JToolBar.Separator();
+        ManageMemBreaks = new javax.swing.JButton();
+        jSeparator7 = new javax.swing.JToolBar.Separator();
+        ImportBreaks = new javax.swing.JButton();
+        ExportBreaks = new javax.swing.JButton();
+        disasmList = new javax.swing.JList(listmodel);
         disasmTabs = new javax.swing.JTabbedPane();
         cop0Table = new javax.swing.JTable();
         cop1Table = new javax.swing.JTable();
@@ -497,17 +513,29 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         dumpDebugStateButton = new javax.swing.JButton();
         SearchField = new javax.swing.JTextField();
         jLabel3 = new javax.swing.JLabel();
-        disasmToolbar2 = new javax.swing.JToolBar();
-        AddBreakpoint = new javax.swing.JButton();
-        DeleteBreakpoint = new javax.swing.JButton();
-        DeleteAllBreakpoints = new javax.swing.JButton();
-        jSeparator3 = new javax.swing.JToolBar.Separator();
-        ManageMemBreaks = new javax.swing.JButton();
-        jSeparator7 = new javax.swing.JToolBar.Separator();
-        ExportBreaks = new javax.swing.JButton();
-        ImportBreaks = new javax.swing.JButton();
-        jSeparator5 = new javax.swing.JSeparator();
-        jSeparator6 = new javax.swing.JSeparator();
+        mbMain = new javax.swing.JMenuBar();
+        mFile = new javax.swing.JMenu();
+        miClose = new javax.swing.JMenuItem();
+        mDebug = new javax.swing.JMenu();
+        miRun = new javax.swing.JMenuItem();
+        miPause = new javax.swing.JMenuItem();
+        jSeparator9 = new javax.swing.JPopupMenu.Separator();
+        miStepInto = new javax.swing.JMenuItem();
+        miStepOver = new javax.swing.JMenuItem();
+        miStepOut = new javax.swing.JMenuItem();
+        jSeparator10 = new javax.swing.JPopupMenu.Separator();
+        miResetToPC = new javax.swing.JMenuItem();
+        miJumpTo = new javax.swing.JMenuItem();
+        mBreakpoints = new javax.swing.JMenu();
+        miNewBreakpoint = new javax.swing.JMenuItem();
+        miDeletebreakpoint = new javax.swing.JMenuItem();
+        miDeleteAllBreakpoints = new javax.swing.JMenuItem();
+        miImportBreakpoints = new javax.swing.JMenuItem();
+        miExportBreakpoints = new javax.swing.JMenuItem();
+        jSeparator11 = new javax.swing.JPopupMenu.Separator();
+        miManageMemoryBreakpoints = new javax.swing.JMenuItem();
+        mDisassembler = new javax.swing.JMenu();
+        miDumpCode = new javax.swing.JMenuItem();
 
         CopyAddress.setText("Copy Address");
         CopyAddress.addActionListener(new java.awt.event.ActionListener() {
@@ -551,6 +579,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         RegMenu.add(CopyValue);
 
         setTitle("Debugger");
+        setName("frmDebugger"); // NOI18N
         setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowDeactivated(java.awt.event.WindowEvent evt) {
@@ -558,9 +587,212 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         });
 
+        tbDisasm.setFloatable(false);
+        tbDisasm.setRollover(true);
+        tbDisasm.setOpaque(false);
+
+        RunDebugger.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png"))); // NOI18N
+        RunDebugger.setMnemonic('R');
+        RunDebugger.setToolTipText(Resource.get("run"));
+        RunDebugger.setFocusable(false);
+        RunDebugger.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        RunDebugger.setIconTextGap(2);
+        RunDebugger.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        RunDebugger.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                RunDebuggerActionPerformed(evt);
+            }
+        });
+        tbDisasm.add(RunDebugger);
+
+        PauseDebugger.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PauseIcon.png"))); // NOI18N
+        PauseDebugger.setMnemonic('P');
+        PauseDebugger.setToolTipText(Resource.get("pause"));
+        PauseDebugger.setFocusable(false);
+        PauseDebugger.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        PauseDebugger.setIconTextGap(2);
+        PauseDebugger.setInheritsPopupMenu(true);
+        PauseDebugger.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        PauseDebugger.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                PauseDebuggerActionPerformed(evt);
+            }
+        });
+        tbDisasm.add(PauseDebugger);
+        tbDisasm.add(jSeparator1);
+
+        btnStepInto.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StepIntoIcon.png"))); // NOI18N
+        btnStepInto.setToolTipText(Resource.get("stepinto"));
+        btnStepInto.setFocusable(false);
+        btnStepInto.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        btnStepInto.setIconTextGap(2);
+        btnStepInto.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        btnStepInto.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                StepIntoActionPerformed(evt);
+            }
+        });
+        tbDisasm.add(btnStepInto);
+
+        btnStepOver.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StepOverIcon.png"))); // NOI18N
+        btnStepOver.setToolTipText(Resource.get("stepover"));
+        btnStepOver.setFocusable(false);
+        btnStepOver.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        btnStepOver.setIconTextGap(2);
+        btnStepOver.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        btnStepOver.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                StepOverActionPerformed(evt);
+            }
+        });
+        tbDisasm.add(btnStepOver);
+
+        btnStepOut.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StepOutIcon.png"))); // NOI18N
+        btnStepOut.setToolTipText(Resource.get("stepout"));
+        btnStepOut.setFocusable(false);
+        btnStepOut.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        btnStepOut.setIconTextGap(2);
+        btnStepOut.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        btnStepOut.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                StepOutActionPerformed(evt);
+            }
+        });
+        tbDisasm.add(btnStepOut);
+        tbDisasm.add(jSeparator2);
+
+        ResetToPCbutton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/ResetToPc.png"))); // NOI18N
+        ResetToPCbutton.setMnemonic('P');
+        ResetToPCbutton.setToolTipText(Resource.get("resettopc"));
+        ResetToPCbutton.setFocusable(false);
+        ResetToPCbutton.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        ResetToPCbutton.setIconTextGap(2);
+        ResetToPCbutton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        ResetToPCbutton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ResetToPCActionPerformed(evt);
+            }
+        });
+        tbDisasm.add(ResetToPCbutton);
+
+        JumpToAddress.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/JumpTo.png"))); // NOI18N
+        JumpToAddress.setMnemonic('J');
+        JumpToAddress.setToolTipText(Resource.get("jumpto"));
+        JumpToAddress.setFocusable(false);
+        JumpToAddress.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        JumpToAddress.setIconTextGap(2);
+        JumpToAddress.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        JumpToAddress.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                JumpToAddressActionPerformed(evt);
+            }
+        });
+        tbDisasm.add(JumpToAddress);
+        tbDisasm.add(jSeparator4);
+
+        DumpCodeToText.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/Dump.png"))); // NOI18N
+        DumpCodeToText.setMnemonic('W');
+        DumpCodeToText.setToolTipText(Resource.get("dumpcode"));
+        DumpCodeToText.setFocusable(false);
+        DumpCodeToText.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        DumpCodeToText.setIconTextGap(2);
+        DumpCodeToText.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        DumpCodeToText.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                DumpCodeToTextActionPerformed(evt);
+            }
+        });
+        tbDisasm.add(DumpCodeToText);
+
+        tbBreakpoints.setFloatable(false);
+        tbBreakpoints.setRollover(true);
+        tbBreakpoints.setOpaque(false);
+
+        AddBreakpoint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/NewBreakpointIcon.png"))); // NOI18N
+        AddBreakpoint.setMnemonic('A');
+        AddBreakpoint.setToolTipText(Resource.get("addbreak"));
+        AddBreakpoint.setFocusable(false);
+        AddBreakpoint.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        AddBreakpoint.setIconTextGap(2);
+        AddBreakpoint.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        AddBreakpoint.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                AddBreakpointActionPerformed(evt);
+            }
+        });
+        tbBreakpoints.add(AddBreakpoint);
+
+        DeleteBreakpoint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/DeleteBreakpointIcon.png"))); // NOI18N
+        DeleteBreakpoint.setMnemonic('D');
+        DeleteBreakpoint.setToolTipText(Resource.get("deletebreak"));
+        DeleteBreakpoint.setFocusable(false);
+        DeleteBreakpoint.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        DeleteBreakpoint.setIconTextGap(2);
+        DeleteBreakpoint.setInheritsPopupMenu(true);
+        DeleteBreakpoint.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        DeleteBreakpoint.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                DeleteBreakpointActionPerformed(evt);
+            }
+        });
+        tbBreakpoints.add(DeleteBreakpoint);
+
+        DeleteAllBreakpoints.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/DeleteAllBreakpointsIcon.png"))); // NOI18N
+        DeleteAllBreakpoints.setMnemonic('E');
+        DeleteAllBreakpoints.setToolTipText(Resource.get("deleteall"));
+        DeleteAllBreakpoints.setFocusable(false);
+        DeleteAllBreakpoints.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        DeleteAllBreakpoints.setIconTextGap(2);
+        DeleteAllBreakpoints.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        DeleteAllBreakpoints.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                DeleteAllBreakpointsActionPerformed(evt);
+            }
+        });
+        tbBreakpoints.add(DeleteAllBreakpoints);
+        tbBreakpoints.add(jSeparator3);
+
+        ManageMemBreaks.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/MemoryBreakpointsIcon.png"))); // NOI18N
+        ManageMemBreaks.setToolTipText("Manage memory breakpoints...");
+        ManageMemBreaks.setFocusable(false);
+        ManageMemBreaks.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        ManageMemBreaks.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        ManageMemBreaks.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ManageMemBreaksActionPerformed(evt);
+            }
+        });
+        tbBreakpoints.add(ManageMemBreaks);
+        tbBreakpoints.add(jSeparator7);
+
+        ImportBreaks.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadStateIcon.png"))); // NOI18N
+        ImportBreaks.setToolTipText("Import breakpoints...");
+        ImportBreaks.setFocusable(false);
+        ImportBreaks.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        ImportBreaks.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        ImportBreaks.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ImportBreaksActionPerformed(evt);
+            }
+        });
+        tbBreakpoints.add(ImportBreaks);
+
+        ExportBreaks.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/SaveStateIcon.png"))); // NOI18N
+        ExportBreaks.setToolTipText("Export breakpoints...");
+        ExportBreaks.setFocusable(false);
+        ExportBreaks.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        ExportBreaks.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        ExportBreaks.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ExportBreaksActionPerformed(evt);
+            }
+        });
+        tbBreakpoints.add(ExportBreaks);
+
         disasmList.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
         disasmList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         disasmList.setToolTipText("");
+        disasmList.setMinimumSize(new java.awt.Dimension(500, 50));
         disasmList.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
             public void mouseWheelMoved(java.awt.event.MouseWheelEvent evt) {
                 disasmListMouseWheelMoved(evt);
@@ -577,121 +809,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         });
 
-        disasmToolbar.setFloatable(false);
-        disasmToolbar.setRollover(true);
-
-        RunDebugger.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png"))); // NOI18N
-        RunDebugger.setMnemonic('R');
-        RunDebugger.setText(Resource.get("run"));
-        RunDebugger.setFocusable(false);
-        RunDebugger.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        RunDebugger.setIconTextGap(2);
-        RunDebugger.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        RunDebugger.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                RunDebuggerActionPerformed(evt);
-            }
-        });
-        disasmToolbar.add(RunDebugger);
-
-        PauseDebugger.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PauseIcon.png"))); // NOI18N
-        PauseDebugger.setMnemonic('P');
-        PauseDebugger.setText(Resource.get("pause"));
-        PauseDebugger.setFocusable(false);
-        PauseDebugger.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        PauseDebugger.setIconTextGap(2);
-        PauseDebugger.setInheritsPopupMenu(true);
-        PauseDebugger.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        PauseDebugger.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                PauseDebuggerActionPerformed(evt);
-            }
-        });
-        disasmToolbar.add(PauseDebugger);
-        disasmToolbar.add(jSeparator1);
-
-        btnStepInto.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StepIntoIcon.png"))); // NOI18N
-        btnStepInto.setText(Resource.get("stepinto"));
-        btnStepInto.setFocusable(false);
-        btnStepInto.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        btnStepInto.setIconTextGap(2);
-        btnStepInto.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        btnStepInto.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnStepIntoActionPerformed(evt);
-            }
-        });
-        disasmToolbar.add(btnStepInto);
-
-        btnStepOver.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StepOverIcon.png"))); // NOI18N
-        btnStepOver.setText(Resource.get("stepover"));
-        btnStepOver.setFocusable(false);
-        btnStepOver.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        btnStepOver.setIconTextGap(2);
-        btnStepOver.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        btnStepOver.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnStepOverActionPerformed(evt);
-            }
-        });
-        disasmToolbar.add(btnStepOver);
-
-        btnStepOut.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StepOutIcon.png"))); // NOI18N
-        btnStepOut.setText(Resource.get("stepout"));
-        btnStepOut.setFocusable(false);
-        btnStepOut.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        btnStepOut.setIconTextGap(2);
-        btnStepOut.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        btnStepOut.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                StepOutActionPerformed(evt);
-            }
-        });
-        disasmToolbar.add(btnStepOut);
-        disasmToolbar.add(jSeparator2);
-
-        ResetToPCbutton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/ResetToPc.png"))); // NOI18N
-        ResetToPCbutton.setMnemonic('P');
-        ResetToPCbutton.setText(Resource.get("resettopc"));
-        ResetToPCbutton.setFocusable(false);
-        ResetToPCbutton.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        ResetToPCbutton.setIconTextGap(2);
-        ResetToPCbutton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        ResetToPCbutton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ResetToPCbuttonActionPerformed(evt);
-            }
-        });
-        disasmToolbar.add(ResetToPCbutton);
-
-        JumpToAddress.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/JumpTo.png"))); // NOI18N
-        JumpToAddress.setMnemonic('J');
-        JumpToAddress.setText(Resource.get("jumpto"));
-        JumpToAddress.setFocusable(false);
-        JumpToAddress.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        JumpToAddress.setIconTextGap(2);
-        JumpToAddress.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        JumpToAddress.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                JumpToAddressActionPerformed(evt);
-            }
-        });
-        disasmToolbar.add(JumpToAddress);
-        disasmToolbar.add(jSeparator4);
-
-        DumpCodeToText.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/Dump.png"))); // NOI18N
-        DumpCodeToText.setMnemonic('W');
-        DumpCodeToText.setText(Resource.get("dumpcode"));
-        DumpCodeToText.setFocusable(false);
-        DumpCodeToText.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        DumpCodeToText.setIconTextGap(2);
-        DumpCodeToText.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        DumpCodeToText.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                DumpCodeToTextActionPerformed(evt);
-            }
-        });
-        disasmToolbar.add(DumpCodeToText);
+        disasmTabs.setMinimumSize(new java.awt.Dimension(280, 540));
+        disasmTabs.setPreferredSize(new java.awt.Dimension(280, 540));
 
         cop0Table.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -1011,130 +1130,194 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 11, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(SearchField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(300, Short.MAX_VALUE))
+                .addContainerGap(241, Short.MAX_VALUE))
         );
 
         disasmTabs.addTab("Misc", miscPanel);
 
-        disasmToolbar2.setFloatable(false);
-        disasmToolbar2.setRollover(true);
+        mFile.setText("File");
 
-        AddBreakpoint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/NewBreakpointIcon.png"))); // NOI18N
-        AddBreakpoint.setMnemonic('A');
-        AddBreakpoint.setText(Resource.get("addbreak"));
-        AddBreakpoint.setFocusable(false);
-        AddBreakpoint.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        AddBreakpoint.setIconTextGap(2);
-        AddBreakpoint.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        AddBreakpoint.addActionListener(new java.awt.event.ActionListener() {
+        miClose.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/CloseIcon.png"))); // NOI18N
+        miClose.setText("Close");
+        miClose.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                CloseActionPerformed(evt);
+            }
+        });
+        mFile.add(miClose);
+
+        mbMain.add(mFile);
+
+        mDebug.setText("Debug");
+        mDebug.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                RunDebuggerActionPerformed(evt);
+            }
+        });
+
+        miRun.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png"))); // NOI18N
+        miRun.setText(Resource.get("run"));
+        mDebug.add(miRun);
+
+        miPause.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PauseIcon.png"))); // NOI18N
+        miPause.setText(Resource.get("pause"));
+        miPause.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                PauseDebuggerActionPerformed(evt);
+            }
+        });
+        mDebug.add(miPause);
+        mDebug.add(jSeparator9);
+
+        miStepInto.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F5, 0));
+        miStepInto.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StepIntoIcon.png"))); // NOI18N
+        miStepInto.setText(Resource.get("stepinto"));
+        miStepInto.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                StepIntoActionPerformed(evt);
+            }
+        });
+        mDebug.add(miStepInto);
+
+        miStepOver.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F6, 0));
+        miStepOver.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StepOverIcon.png"))); // NOI18N
+        miStepOver.setText(Resource.get("stepover"));
+        miStepOver.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                StepOverActionPerformed(evt);
+            }
+        });
+        mDebug.add(miStepOver);
+
+        miStepOut.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F7, 0));
+        miStepOut.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StepOutIcon.png"))); // NOI18N
+        miStepOut.setText(Resource.get("stepout"));
+        mDebug.add(miStepOut);
+        mDebug.add(jSeparator10);
+
+        miResetToPC.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/ResetToPc.png"))); // NOI18N
+        miResetToPC.setText(Resource.get("resettopc"));
+        miResetToPC.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ResetToPCActionPerformed(evt);
+            }
+        });
+        mDebug.add(miResetToPC);
+
+        miJumpTo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/JumpTo.png"))); // NOI18N
+        miJumpTo.setText(Resource.get("jumpto"));
+        miJumpTo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                JumpToAddressActionPerformed(evt);
+            }
+        });
+        mDebug.add(miJumpTo);
+
+        mbMain.add(mDebug);
+
+        mBreakpoints.setText("Breakpoints");
+
+        miNewBreakpoint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/NewBreakpointIcon.png"))); // NOI18N
+        miNewBreakpoint.setText(Resource.get("addbreak"));
+        miNewBreakpoint.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 AddBreakpointActionPerformed(evt);
             }
         });
-        disasmToolbar2.add(AddBreakpoint);
+        mBreakpoints.add(miNewBreakpoint);
 
-        DeleteBreakpoint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/DeleteBreakpointIcon.png"))); // NOI18N
-        DeleteBreakpoint.setMnemonic('D');
-        DeleteBreakpoint.setText(Resource.get("deletebreak"));
-        DeleteBreakpoint.setFocusable(false);
-        DeleteBreakpoint.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        DeleteBreakpoint.setIconTextGap(2);
-        DeleteBreakpoint.setInheritsPopupMenu(true);
-        DeleteBreakpoint.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        DeleteBreakpoint.addActionListener(new java.awt.event.ActionListener() {
+        miDeletebreakpoint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/DeleteBreakpointIcon.png"))); // NOI18N
+        miDeletebreakpoint.setText(Resource.get("deletebreak"));
+        miDeletebreakpoint.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 DeleteBreakpointActionPerformed(evt);
             }
         });
-        disasmToolbar2.add(DeleteBreakpoint);
+        mBreakpoints.add(miDeletebreakpoint);
 
-        DeleteAllBreakpoints.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/DeleteAllBreakpointsIcon.png"))); // NOI18N
-        DeleteAllBreakpoints.setMnemonic('E');
-        DeleteAllBreakpoints.setText(Resource.get("deleteall"));
-        DeleteAllBreakpoints.setFocusable(false);
-        DeleteAllBreakpoints.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        DeleteAllBreakpoints.setIconTextGap(2);
-        DeleteAllBreakpoints.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        DeleteAllBreakpoints.addActionListener(new java.awt.event.ActionListener() {
+        miDeleteAllBreakpoints.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/DeleteAllBreakpointsIcon.png"))); // NOI18N
+        miDeleteAllBreakpoints.setText(Resource.get("deleteall"));
+        miDeleteAllBreakpoints.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 DeleteAllBreakpointsActionPerformed(evt);
             }
         });
-        disasmToolbar2.add(DeleteAllBreakpoints);
-        disasmToolbar2.add(jSeparator3);
+        mBreakpoints.add(miDeleteAllBreakpoints);
 
-        ManageMemBreaks.setText("Manage MemBreaks");
-        ManageMemBreaks.setFocusable(false);
-        ManageMemBreaks.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-        ManageMemBreaks.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        ManageMemBreaks.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ManageMemBreaksActionPerformed(evt);
-            }
-        });
-        disasmToolbar2.add(ManageMemBreaks);
-        disasmToolbar2.add(jSeparator7);
-
-        ExportBreaks.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/SaveStateIcon.png"))); // NOI18N
-        ExportBreaks.setText("Export Breaks");
-        ExportBreaks.setFocusable(false);
-        ExportBreaks.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        ExportBreaks.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        ExportBreaks.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ExportBreaksActionPerformed(evt);
-            }
-        });
-        disasmToolbar2.add(ExportBreaks);
-
-        ImportBreaks.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadStateIcon.png"))); // NOI18N
-        ImportBreaks.setText("Import Breaks");
-        ImportBreaks.setFocusable(false);
-        ImportBreaks.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        ImportBreaks.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        ImportBreaks.addActionListener(new java.awt.event.ActionListener() {
+        miImportBreakpoints.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadStateIcon.png"))); // NOI18N
+        miImportBreakpoints.setText("Import breakpoints");
+        miImportBreakpoints.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ImportBreaksActionPerformed(evt);
             }
         });
-        disasmToolbar2.add(ImportBreaks);
+        mBreakpoints.add(miImportBreakpoints);
 
-        jSeparator5.setForeground(new java.awt.Color(0, 0, 0));
+        miExportBreakpoints.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/SaveStateIcon.png"))); // NOI18N
+        miExportBreakpoints.setText("Export breakpoints...");
+        miExportBreakpoints.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ExportBreaksActionPerformed(evt);
+            }
+        });
+        mBreakpoints.add(miExportBreakpoints);
+        mBreakpoints.add(jSeparator11);
 
-        jSeparator6.setForeground(new java.awt.Color(0, 0, 0));
+        miManageMemoryBreakpoints.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/SettingsIcon.png"))); // NOI18N
+        miManageMemoryBreakpoints.setText("Manage memory breakpoints...");
+        miManageMemoryBreakpoints.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ManageMemBreaksActionPerformed(evt);
+            }
+        });
+        mBreakpoints.add(miManageMemoryBreakpoints);
+
+        mbMain.add(mBreakpoints);
+
+        mDisassembler.setText("Disassembler");
+
+        miDumpCode.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/Dump.png"))); // NOI18N
+        miDumpCode.setText(Resource.get("dumpcode"));
+        miDumpCode.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                DumpCodeToTextActionPerformed(evt);
+            }
+        });
+        mDisassembler.add(miDumpCode);
+
+        mbMain.add(mDisassembler);
+
+        setJMenuBar(mbMain);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jSeparator5)
-            .addComponent(jSeparator6)
             .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(disasmToolbar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(layout.createSequentialGroup()
                         .addContainerGap()
-                        .addComponent(disasmList, javax.swing.GroupLayout.PREFERRED_SIZE, 503, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(disasmTabs, javax.swing.GroupLayout.PREFERRED_SIZE, 254, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(disasmToolbar2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addComponent(disasmList, javax.swing.GroupLayout.PREFERRED_SIZE, 500, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(disasmTabs, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(tbDisasm, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(tbBreakpoints, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(disasmToolbar, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(disasmToolbar2, javax.swing.GroupLayout.PREFERRED_SIZE, 18, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jSeparator6, javax.swing.GroupLayout.PREFERRED_SIZE, 1, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jSeparator5, javax.swing.GroupLayout.PREFERRED_SIZE, 2, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(13, 13, 13)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(disasmTabs, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(tbDisasm, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(tbBreakpoints, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(disasmTabs, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(disasmList, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap())
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         pack();
@@ -1215,25 +1398,24 @@ private void disasmListMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GE
         return disasmList.getModel().getElementAt(disasmListGetSelectedIndex());
     }
 
-private void ResetToPCbuttonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetToPCbuttonActionPerformed
-    RefreshDebugger(true);
-}//GEN-LAST:event_ResetToPCbuttonActionPerformed
+private void ResetToPCActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetToPCActionPerformed
+    RefreshDebuggerDisassembly(true);
+}//GEN-LAST:event_ResetToPCActionPerformed
 
 private void JumpToAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_JumpToAddressActionPerformed
     String input = (String) JOptionPane.showInputDialog(this, Resource.get("entertojump"), "Jpcsp", JOptionPane.QUESTION_MESSAGE, null, null, String.format("%08x", Emulator.getProcessor().cpu.pc));
     if (input == null) {
         return;
     }
-    int value;
     try {
-        value = Utilities.parseAddress(input);
+        int value = Utilities.parseAddress(input);
+        DebuggerPC = value;
     } catch (Exception e) {
         JOptionPane.showMessageDialog(this, Resource.get("numbernotcorrect"));
         return;
     }
-    DebuggerPC = value;
-    RefreshDebugger(false);
 
+    RefreshDebuggerDisassembly(false);
 }//GEN-LAST:event_JumpToAddressActionPerformed
 
 private void DumpCodeToTextActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DumpCodeToTextActionPerformed
@@ -1350,7 +1532,7 @@ private void AddBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN
             if (!breakpoints.contains(addr)) {
                 breakpoints.add(addr);
             }
-            RefreshDebugger(false);
+            RefreshDebuggerDisassembly(false);
         } catch (NumberFormatException e) {
             // Ignore it, probably already a breakpoint there
         }
@@ -1361,14 +1543,12 @@ private void AddBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 
 private void DeleteAllBreakpointsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DeleteAllBreakpointsActionPerformed
     DeleteAllBreakpoints();
-
-    // Move this call to DeleteAllBreakpoints()?
-    RefreshDebugger(false);
 }//GEN-LAST:event_DeleteAllBreakpointsActionPerformed
 
     public void DeleteAllBreakpoints() {
         if (!breakpoints.isEmpty()) {
             breakpoints.clear();
+            RefreshDebuggerDisassembly(false);
         }
     }
 
@@ -1381,7 +1561,7 @@ private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//
             int addr = Utilities.parseAddress(address);
             int b = breakpoints.indexOf(addr);
             breakpoints.remove(b);
-            RefreshDebugger(false);
+            RefreshDebuggerDisassembly(false);
         }
     } else {
         JpcspDialogManager.showInformation(this, "Breakpoint Help : " + "Select the line to remove a breakpoint from.");
@@ -1455,18 +1635,17 @@ private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//
         }
 
         addTemporaryBreakpoints();
-
         emu.RunEmu();
     }
 
-private void btnStepIntoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnStepIntoActionPerformed
+private void StepIntoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_StepIntoActionPerformed
     setTemporaryBreakpoints(false);
-}//GEN-LAST:event_btnStepIntoActionPerformed
+}//GEN-LAST:event_StepIntoActionPerformed
 
-private void btnStepOverActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnStepOverActionPerformed
+private void StepOverActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_StepOverActionPerformed
     stepOut = false;
     setTemporaryBreakpoints(true);
-}//GEN-LAST:event_btnStepOverActionPerformed
+}//GEN-LAST:event_StepOverActionPerformed
 
 private void StepOutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_StepOutActionPerformed
     stepOut = true;
@@ -1661,7 +1840,7 @@ private void SetPCToCursorActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     int index = disasmListGetSelectedIndex();
     if (index != -1) {
         Emulator.getProcessor().cpu.pc = DebuggerPC + index * 4;
-        RefreshDebugger(true);
+        RefreshDebuggerDisassembly(true);
     } else {
         System.out.println("dpc: " + Integer.toHexString(DebuggerPC));
         System.out.println("idx: " + Integer.toHexString(index));
@@ -1708,6 +1887,9 @@ private void ExportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     fc.setSelectedFile(new File(State.discId + ".brk"));
     fc.setDialogTitle("Export breakpoints");
     fc.setCurrentDirectory(new java.io.File("."));
+    fc.addChoosableFileFilter(fltBreakpointFile);
+    fc.setFileFilter(fltBreakpointFile);
+    
     int returnVal = fc.showSaveDialog(this);
     if (returnVal != JFileChooser.APPROVE_OPTION) {
         return;
@@ -1746,6 +1928,9 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     JFileChooser fc = new JFileChooser();
     fc.setDialogTitle("Import breakpoints");
     fc.setCurrentDirectory(new java.io.File("."));
+    fc.addChoosableFileFilter(fltBreakpointFile);
+    fc.setFileFilter(fltBreakpointFile);
+    
     int returnVal = fc.showOpenDialog(this);
     if (returnVal != JFileChooser.APPROVE_OPTION) {
         return;
@@ -1754,6 +1939,7 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     File f = fc.getSelectedFile();
     BufferedReader in = null;
     try {
+        // TODO check content instead of ending
         if (!f.getName().contains(".brk")) {
             JOptionPane.showMessageDialog(this,
                     "File '" + f.getName() + "' is not a valid .brk file!",
@@ -1771,7 +1957,7 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
             nextBrk = in.readLine();
         }
 
-        RefreshDebugger(true);
+        RefreshDebuggerDisassembly(true);
 
     } catch (Exception ex) {
         ex.printStackTrace();
@@ -1781,15 +1967,19 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 }//GEN-LAST:event_ImportBreaksActionPerformed
 
     private void ManageMemBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ManageMemBreaksActionPerformed
-        if(mbpDialog == null) {
+        if (mbpDialog == null) {
             mbpDialog = new MemoryBreakpointsDialog(this);
         }
         mbpDialog.setVisible(true);
     }//GEN-LAST:event_ManageMemBreaksActionPerformed
 
+    private void CloseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CloseActionPerformed
+        setVisible(false);
+    }//GEN-LAST:event_CloseActionPerformed
+
     @Override
     public void dispose() {
-        if(mbpDialog != null) {
+        if (mbpDialog != null) {
             mbpDialog.dispose();
         }
         Emulator.getMainGUI().endWindowDialog();
@@ -1823,8 +2013,6 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     private javax.swing.JTable cop1Table;
     private javax.swing.JList disasmList;
     private javax.swing.JTabbedPane disasmTabs;
-    private javax.swing.JToolBar disasmToolbar;
-    private javax.swing.JToolBar disasmToolbar2;
     private javax.swing.JButton dumpDebugStateButton;
     private javax.swing.JToggleButton gpiButton1;
     private javax.swing.JToggleButton gpiButton2;
@@ -1847,14 +2035,37 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JToolBar.Separator jSeparator1;
+    private javax.swing.JPopupMenu.Separator jSeparator10;
+    private javax.swing.JPopupMenu.Separator jSeparator11;
     private javax.swing.JToolBar.Separator jSeparator2;
     private javax.swing.JToolBar.Separator jSeparator3;
     private javax.swing.JToolBar.Separator jSeparator4;
-    private javax.swing.JSeparator jSeparator5;
-    private javax.swing.JSeparator jSeparator6;
     private javax.swing.JToolBar.Separator jSeparator7;
+    private javax.swing.JPopupMenu.Separator jSeparator9;
+    private javax.swing.JMenu mBreakpoints;
+    private javax.swing.JMenu mDebug;
+    private javax.swing.JMenu mDisassembler;
+    private javax.swing.JMenu mFile;
+    private javax.swing.JMenuBar mbMain;
+    private javax.swing.JMenuItem miClose;
+    private javax.swing.JMenuItem miDeleteAllBreakpoints;
+    private javax.swing.JMenuItem miDeletebreakpoint;
+    private javax.swing.JMenuItem miDumpCode;
+    private javax.swing.JMenuItem miExportBreakpoints;
+    private javax.swing.JMenuItem miImportBreakpoints;
+    private javax.swing.JMenuItem miJumpTo;
+    private javax.swing.JMenuItem miManageMemoryBreakpoints;
+    private javax.swing.JMenuItem miNewBreakpoint;
+    private javax.swing.JMenuItem miPause;
+    private javax.swing.JMenuItem miResetToPC;
+    private javax.swing.JMenuItem miRun;
+    private javax.swing.JMenuItem miStepInto;
+    private javax.swing.JMenuItem miStepOut;
+    private javax.swing.JMenuItem miStepOver;
     private javax.swing.JPanel miscPanel;
     private javax.swing.JButton replayButton;
+    private javax.swing.JToolBar tbBreakpoints;
+    private javax.swing.JToolBar tbDisasm;
     // End of variables declaration//GEN-END:variables
 
     private static class ClickAction extends AbstractAction {
