@@ -16,21 +16,27 @@
  */
 package jpcsp.Debugger.MemoryBreakpoints;
 
+import java.awt.Component;
+import java.awt.Font;
 import java.io.File;
 import java.util.List;
 import javax.swing.DefaultCellEditor;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableColumn;
-import jpcsp.Debugger.MemoryBreakpoints.MemoryBreakpoint.AccessType;
+
 import jpcsp.Memory;
 import jpcsp.State;
 import jpcsp.memory.DebuggerMemory;
+import jpcsp.Debugger.MemoryBreakpoints.MemoryBreakpoint.AccessType;
 
 public class MemoryBreakpointsDialog extends javax.swing.JDialog {
 
@@ -41,9 +47,10 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
     private final int COL_ACCESSTYPE = 2;
     private final int COL_ACTIVE = 3;
     private final int COL_LAST = 4;
+    private static final Font tableFont = new Font("Courier new", Font.PLAIN, 12);
 
     public MemoryBreakpointsDialog(java.awt.Frame parent) {
-        super(parent, true);
+        super(parent);
 
         memoryBreakpoints = ((DebuggerMemory) Memory.getInstance()).getMemoryBreakpoints();
         memoryBreakpointsModel = new MemoryBreakpointsModel();
@@ -56,6 +63,9 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
         combo.addItem("WRITE");
         combo.addItem("READWRITE");
         accessType.setCellEditor(new DefaultCellEditor(combo));
+        
+        tblBreakpoints.getColumnModel().getColumn(COL_STARTADDRESS).setCellEditor(new AddressCellEditor());
+        tblBreakpoints.getColumnModel().getColumn(COL_ENDADDRESS).setCellEditor(new AddressCellEditor());
 
         tblBreakpoints.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
@@ -63,7 +73,7 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
                 btnRemove.setEnabled(true);
             }
         });
-
+    
         // copy trace settings to UI
         updateTraceSettings();
     }
@@ -80,6 +90,40 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
         cbTraceWrite8.setSelected(dbgmem.traceMemoryWrite8);
         cbTraceWrite16.setSelected(dbgmem.traceMemoryWrite16);
         cbTraceWrite32.setSelected(dbgmem.traceMemoryWrite32);
+    }
+    
+    private class AddressCellEditor extends DefaultCellEditor {
+        private static final long serialVersionUID = 1L;
+
+        public AddressCellEditor() {
+            super(new JTextField());
+            final JTextField tf = ((JTextField) getComponent());
+            tf.setFont(tableFont);
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return ((JTextField) getComponent()).getText();
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(
+                final JTable table, final Object value,
+                final boolean isSelected, final int row, final int column) {
+            final JTextField tf = ((JTextField) getComponent());
+            tf.setText(String.format("0x%X", Integer.decode((String)table.getModel().getValueAt(row, column))));
+
+            // needed for double-click to work, otherwise the second click
+            // is interpreted to position the caret
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    // automatically select text after '0x'
+                    tf.select(2, tf.getText().length());
+                }
+            });
+            return tf;
+        }
     }
 
     private class MemoryBreakpointsModel extends AbstractTableModel {
@@ -227,10 +271,8 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
         jScrollPane2 = new javax.swing.JScrollPane();
         tblBreakpoints = new javax.swing.JTable();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Memory breakpoints");
         setLocationByPlatform(true);
-        setModal(true);
         setName("dialog"); // NOI18N
         setResizable(false);
 
@@ -363,15 +405,15 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
                             .addComponent(cbTraceWrite32, javax.swing.GroupLayout.DEFAULT_SIZE, 205, Short.MAX_VALUE)))
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addComponent(chkPauseOnHit)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                        .addGap(0, 0, Short.MAX_VALUE)
-                        .addComponent(btnImport)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnExport)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnClose)))
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addGap(0, 0, Short.MAX_VALUE)
+                .addComponent(btnImport)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(btnExport)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(btnClose))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -404,6 +446,7 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
                 .addGap(31, 31, 31))
         );
 
+        tblBreakpoints.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
         tblBreakpoints.setModel(memoryBreakpointsModel);
         tblBreakpoints.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         jScrollPane2.setViewportView(tblBreakpoints);
@@ -421,7 +464,7 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(btnRemove, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap(22, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -440,7 +483,7 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnCloseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCloseActionPerformed
-        dispose();
+        setVisible(false);
     }//GEN-LAST:event_btnCloseActionPerformed
 
     private void chkPauseOnHitItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_chkPauseOnHitItemStateChanged
