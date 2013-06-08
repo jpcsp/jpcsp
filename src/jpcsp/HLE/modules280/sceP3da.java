@@ -27,8 +27,9 @@ import org.apache.log4j.Logger;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.IMemoryReaderWriter;
 import jpcsp.memory.MemoryReader;
-import jpcsp.util.Utilities;
+import jpcsp.memory.MemoryReaderWriter;
 
 // Positional 3D Audio Library
 @HLELogging
@@ -76,21 +77,23 @@ public class sceP3da extends HLEModule {
 			}
 		}
 
-		int[] channelBuffers = new int[channelsNum];
+		outputAddr.clear(samplesNum * 4);
 		for (int i = 0; i < channelsNum; i++) {
-			channelBuffers[i] = inputAddr.getValue(i << 2);
+			int inputChannelAddr = inputAddr.getValue(i << 2);
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("sceP3daBridgeCore channelBuffer[%d]=0x%08X", i, channelBuffers[i]));
-
-				// Dump the memory if the channel buffer does not contain only 0's.
-				IMemoryReader memoryReader = MemoryReader.getMemoryReader(channelBuffers[i], samplesNum << 1, 2);
-				for (int j = 0; j < samplesNum; j++) {
-					if (memoryReader.readNext() != 0) {
-						log.debug(String.format("sceP3daBridgeCore non-empty channelBuffer[%d]: %s", i, Utilities.getMemoryDump(channelBuffers[i], samplesNum << 1)));
-						log.debug(String.format("sceP3daBridgeCore outputAddr: %s", Utilities.getMemoryDump(outputAddr.getAddress(), samplesNum << 2)));
-						break;
-					}
+				log.debug(String.format("sceP3daBridgeCore channel=%d, inputChannelAddr=0x%08X", i, inputChannelAddr));
+			}
+			if (inputChannelAddr != 0) {
+				IMemoryReaderWriter outputReaderWriter = MemoryReaderWriter.getMemoryReaderWriter(outputAddr.getAddress(), samplesNum << 2, 2);
+				IMemoryReader inputChannelReader = MemoryReader.getMemoryReader(inputChannelAddr, samplesNum << 1, 2);
+				for (int sample = 0; sample < samplesNum; sample++) {
+					int inputSample = inputChannelReader.readNext();
+					int outputSampleLeft = outputReaderWriter.readCurrent();
+					outputReaderWriter.writeNext(inputSample + outputSampleLeft);
+					int outputSampleRight = outputReaderWriter.readCurrent();
+					outputReaderWriter.writeNext(inputSample + outputSampleRight);
 				}
+				outputReaderWriter.flush();
 			}
 		}
 
