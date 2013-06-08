@@ -300,6 +300,8 @@ public class FileLocator {
 				IVirtualFile vFile = readInfo.vFile.duplicate();
 				if (vFile == null) {
 					vFile = readInfo.vFile;
+				} else {
+					vFile.ioLseek(readInfo.position);
 				}
 
 				if (fileSize > vFile.length()) {
@@ -310,7 +312,10 @@ public class FileLocator {
 					}
 				}
 
-				return new PartialVirtualFile(vFile, readInfo.position + positionOffset, fileSize);
+				if (readInfo.position + positionOffset != 0 || vFile.length() != fileSize) {
+					vFile = new PartialVirtualFile(vFile, readInfo.position + positionOffset, fileSize);
+				}
+				return vFile;
 			}
 			if (readInfo.dataInput != null) {
 				if (readInfo.dataInput instanceof UmdIsoFile) {
@@ -318,6 +323,7 @@ public class FileLocator {
 					try {
 						UmdIsoFile duplicate = umdIsoFile.duplicate();
 						if (duplicate != null) {
+							duplicate.seek(readInfo.position);
 							umdIsoFile = duplicate;
 						}
 					} catch (IOException e) {
@@ -330,7 +336,10 @@ public class FileLocator {
 					}
 
 					IVirtualFile vFile = new UmdIsoVirtualFile(umdIsoFile, false, umdIsoFile.getUmdIsoReader());
-					return new PartialVirtualFile(vFile, readInfo.position + positionOffset, fileSize);
+					if (readInfo.position + positionOffset != 0 || vFile.length() != fileSize) {
+						vFile = new PartialVirtualFile(vFile, readInfo.position + positionOffset, fileSize);
+					}
+					return vFile;
 				}
 			}
 
