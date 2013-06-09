@@ -39,8 +39,8 @@ import java.awt.Toolkit;
 import java.io.StringWriter;
 import java.net.URL;
 import java.util.Enumeration;
-import java.util.Hashtable;
 import java.util.StringTokenizer;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.swing.ImageIcon;
 import javax.swing.JTextPane;
@@ -72,8 +72,8 @@ public class TextPaneAppender extends AppenderSkeleton {
     JTextPane textpane;
     StyledDocument doc;
     StringWriter sw;
-    Hashtable<Level, MutableAttributeSet> attributes;
-    Hashtable<Level, ImageIcon> icons;
+    ConcurrentHashMap<Level, MutableAttributeSet> attributes;
+    ConcurrentHashMap<Level, ImageIcon> icons;
     private String label;
     private boolean fancy;
     final String LABEL_OPTION = "Label";
@@ -123,7 +123,7 @@ public class TextPaneAppender extends AppenderSkeleton {
     }
 
     private void createAttributes() {
-        attributes = new Hashtable<Level, MutableAttributeSet>();
+        attributes = new ConcurrentHashMap<Level, MutableAttributeSet>();
         for (int i = 0; i < levels.length; i++) {
             MutableAttributeSet att = new SimpleAttributeSet();
             attributes.put(levels[i], att);
@@ -139,7 +139,7 @@ public class TextPaneAppender extends AppenderSkeleton {
     }
 
     private void createIcons() {
-        icons = new Hashtable<Level, ImageIcon>();
+        icons = new ConcurrentHashMap<Level, ImageIcon>();
     }
 
     @Override
@@ -301,7 +301,6 @@ public class TextPaneAppender extends AppenderSkeleton {
         while (e.hasMoreElements()) {
             StyleConstants.setFontSize(e.nextElement(), size);
         }
-        return;
     }
 
     public int getFontSize() {
@@ -314,7 +313,6 @@ public class TextPaneAppender extends AppenderSkeleton {
         while (e.hasMoreElements()) {
             StyleConstants.setFontFamily(e.nextElement(), name);
         }
-        return;
     }
 
     public String getFontName() {
