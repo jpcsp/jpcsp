@@ -1,18 +1,18 @@
 /*
-This file is part of jpcsp.
+ This file is part of jpcsp.
 
-Jpcsp is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+ Jpcsp is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-Jpcsp is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+ Jpcsp is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ You should have received a copy of the GNU General Public License
+ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -31,165 +31,206 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package jpcsp.log;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-import java.awt.event.MouseWheelEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.io.PrintStream;
-
-import javax.swing.GroupLayout;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextPane;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.UIManager;
-
 import jpcsp.settings.Settings;
-
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.xml.DOMConfigurator;
 
-public class LogWindow extends JFrame {
+public class LogWindow extends javax.swing.JFrame {
 
-	private static final long serialVersionUID = 1L;
-	private static String confFile = "LogSettings.xml";
-	private String[] loglevels = {"ALL","TRACE","DEBUG","INFO","WARN","ERROR","FATAL","OFF" };
-	private JTextPane textPane;
+    private static String confFile = "LogSettings.xml";
+    private final String[] loglevels = {"ALL", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "OFF"};
 
-	public LogWindow() {
-		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-		setTitle("Logger");
+    public LogWindow() {
+        initComponents();
 
-		addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowDeactivated(WindowEvent e) {
-				if (Settings.getInstance().readBool("gui.saveWindowPos")) {
-                    // Save window's size and position.
-					Settings.getInstance().writeWindowPos("logwindow", getLocation());
-					Settings.getInstance().writeWindowSize("logwindow", getSize());
-				}
-			}});
+        TextPaneAppender textPaneAppender = (TextPaneAppender) Logger.getRootLogger().getAppender("JpcspAppender");
+        if (textPaneAppender != null) {
+            textPaneAppender.setTextPane(tpLog);
+        }
 
-		textPane = new JTextPane();
-		JScrollPane scrollPane = new JScrollPane(textPane);
-
-		TextPaneAppender textPaneAppender = (TextPaneAppender)Logger.getRootLogger().getAppender("JpcspAppender");
-		if (textPaneAppender != null) {
-			textPaneAppender.setTextPane(textPane);
-		}
-
-		JButton clearButton = new JButton("Clear");
-		clearButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				clearScreenMessages();
-			}});
-        JLabel loglevellabel = new JLabel("Choose Log Level");
-        final JComboBox loglevelcombo = new JComboBox(loglevels);
-        final Logger rootLogger = Logger.getRootLogger();
-        Level getlevelfromconfig = rootLogger.getLevel();
-
-        if(getlevelfromconfig.equals(Level.ALL))   loglevelcombo.setSelectedIndex(0);
-        if(getlevelfromconfig.equals(Level.TRACE)) loglevelcombo.setSelectedIndex(1);
-        if(getlevelfromconfig.equals(Level.DEBUG)) loglevelcombo.setSelectedIndex(2);
-        if(getlevelfromconfig.equals(Level.INFO))  loglevelcombo.setSelectedIndex(3);
-        if(getlevelfromconfig.equals(Level.WARN))  loglevelcombo.setSelectedIndex(4);
-        if(getlevelfromconfig.equals(Level.ERROR)) loglevelcombo.setSelectedIndex(5);
-        if(getlevelfromconfig.equals(Level.FATAL)) loglevelcombo.setSelectedIndex(6);
-        if(getlevelfromconfig.equals(Level.OFF))   loglevelcombo.setSelectedIndex(7);
-
-        loglevelcombo.addItemListener(new ItemListener(){
-            @Override
-            public void itemStateChanged(ItemEvent itemEvent){
-               if (itemEvent.getStateChange() == ItemEvent.SELECTED)
-               {
-                   if(itemEvent.getItem().equals("ALL"))   rootLogger.setLevel(Level.ALL);
-                   if(itemEvent.getItem().equals("TRACE")) rootLogger.setLevel(Level.TRACE);
-                   if(itemEvent.getItem().equals("DEBUG")) rootLogger.setLevel(Level.DEBUG);
-                   if(itemEvent.getItem().equals("WARN"))  rootLogger.setLevel(Level.WARN);
-                   if(itemEvent.getItem().equals("INFO"))  rootLogger.setLevel(Level.INFO);
-                   if(itemEvent.getItem().equals("ERROR")) rootLogger.setLevel(Level.ERROR);
-                   if(itemEvent.getItem().equals("FATAL")) rootLogger.setLevel(Level.FATAL);
-                   if(itemEvent.getItem().equals("OFF"))   rootLogger.setLevel(Level.OFF);
-               }}});
-
-
-         loglevelcombo.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
-
-            @Override
-            public void mouseWheelMoved(MouseWheelEvent wheelEvent) {
-                switch(wheelEvent.getWheelRotation()){
-                    case 1:
-                        if(loglevelcombo.getSelectedIndex() != 7)
-                                loglevelcombo.setSelectedIndex(loglevelcombo.getSelectedIndex()+1);
-
-                        break;
-
-                    case -1:
-                        if(loglevelcombo.getSelectedIndex() != 0)
-                                loglevelcombo.setSelectedIndex(loglevelcombo.getSelectedIndex()-1);
-
-                        break;
-
-                    default: break;
-                }
-            }
-        });
-
-		GroupLayout layout = new GroupLayout(getRootPane());
-		layout.setAutoCreateGaps(true);
-
-		layout.setHorizontalGroup(layout.createParallelGroup(GroupLayout.Alignment.TRAILING)
-				.addComponent(scrollPane)
-				.addGroup(layout.createSequentialGroup()
-                        .addComponent(loglevellabel)
-                        .addComponent(loglevelcombo)
-						.addComponent(clearButton)));
-
-		layout.setVerticalGroup(layout.createSequentialGroup()
-				.addComponent(scrollPane)
-				.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                        .addComponent(loglevellabel)
-                        .addComponent(loglevelcombo)
-						.addComponent(clearButton)));
-
-		setSize(Settings.getInstance().readWindowSize("logwindow", 500, 300));
-		getRootPane().setLayout(layout);
-	}
-
+        getLogLevelFromConfig();
+        setSize(Settings.getInstance().readWindowSize("logwindow", 500, 300));
+    }
 
     public static void setConfXMLFile(String path) {
         confFile = path;
     }
 
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		try {
-			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		System.setProperty("log4j.properties", confFile);
-		DOMConfigurator.configure(confFile);
+    public void clearScreenMessages() {
+        synchronized (tpLog) {
+            tpLog.setText("");
+        }
+    }
 
-		System.setOut(new PrintStream(new LoggingOutputStream(Logger.getLogger("sysout"), Level.INFO)));
-		new LogWindow().setVisible(true);
-	}
+    private void getLogLevelFromConfig() {
+        final Logger rootLogger = Logger.getRootLogger();
+        Level lvlConfig = rootLogger.getLevel();
 
-	public void clearScreenMessages() {
-		synchronized (textPane) {
-			textPane.setText("");
-		}
-	}
+        if (lvlConfig.equals(Level.ALL)) {
+            cmbLogLevel.setSelectedIndex(0);
+        }
+        if (lvlConfig.equals(Level.TRACE)) {
+            cmbLogLevel.setSelectedIndex(1);
+        }
+        if (lvlConfig.equals(Level.DEBUG)) {
+            cmbLogLevel.setSelectedIndex(2);
+        }
+        if (lvlConfig.equals(Level.INFO)) {
+            cmbLogLevel.setSelectedIndex(3);
+        }
+        if (lvlConfig.equals(Level.WARN)) {
+            cmbLogLevel.setSelectedIndex(4);
+        }
+        if (lvlConfig.equals(Level.ERROR)) {
+            cmbLogLevel.setSelectedIndex(5);
+        }
+        if (lvlConfig.equals(Level.FATAL)) {
+            cmbLogLevel.setSelectedIndex(6);
+        }
+        if (lvlConfig.equals(Level.OFF)) {
+            cmbLogLevel.setSelectedIndex(7);
+        }
+    }
+
+    public static void main(String[] args) {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        System.setProperty("log4j.properties", confFile);
+        DOMConfigurator.configure(confFile);
+
+        System.setOut(new PrintStream(new LoggingOutputStream(Logger.getLogger("sysout"), Level.INFO)));
+        new LogWindow().setVisible(true);
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        scrollPane = new javax.swing.JScrollPane();
+        lblLevel = new javax.swing.JLabel();
+        cmbLogLevel = new javax.swing.JComboBox();
+        btnClear = new javax.swing.JButton();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setTitle("Logger");
+        setMinimumSize(new java.awt.Dimension(400, 300));
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowDeactivated(java.awt.event.WindowEvent evt) {
+                formWindowDeactivated(evt);
+            }
+        });
+
+        scrollPane.setViewportView(tpLog);
+
+        lblLevel.setText("Log Level:");
+
+        cmbLogLevel.setModel(new DefaultComboBoxModel(loglevels));
+        cmbLogLevel.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                cmbLogLevelItemStateChanged(evt);
+            }
+        });
+
+        btnClear.setText("Clear");
+        btnClear.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnClearActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(scrollPane)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(lblLevel)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(cmbLogLevel, 0, 209, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(btnClear)))
+                .addContainerGap())
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(scrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 245, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(lblLevel)
+                        .addComponent(cmbLogLevel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(btnClear, javax.swing.GroupLayout.Alignment.TRAILING))
+                .addContainerGap())
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
+        if (Settings.getInstance().readBool("gui.saveWindowPos")) {
+            Settings.getInstance().writeWindowPos("logwindow", getLocation());
+            Settings.getInstance().writeWindowSize("logwindow", getSize());
+        }
+    }//GEN-LAST:event_formWindowDeactivated
+
+    private void btnClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClearActionPerformed
+        clearScreenMessages();
+    }//GEN-LAST:event_btnClearActionPerformed
+
+    private void cmbLogLevelItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_cmbLogLevelItemStateChanged
+        final Logger rootLogger = Logger.getRootLogger();
+        if (evt.getStateChange() == ItemEvent.SELECTED) {
+            if (evt.getItem().equals(loglevels[0])) {
+                rootLogger.setLevel(Level.ALL);
+            }
+            if (evt.getItem().equals(loglevels[1])) {
+                rootLogger.setLevel(Level.TRACE);
+            }
+            if (evt.getItem().equals(loglevels[2])) {
+                rootLogger.setLevel(Level.DEBUG);
+            }
+            if (evt.getItem().equals(loglevels[3])) {
+                rootLogger.setLevel(Level.INFO);
+            }
+            if (evt.getItem().equals(loglevels[4])) {
+                rootLogger.setLevel(Level.WARN);
+            }
+            if (evt.getItem().equals(loglevels[5])) {
+                rootLogger.setLevel(Level.ERROR);
+            }
+            if (evt.getItem().equals(loglevels[6])) {
+                rootLogger.setLevel(Level.FATAL);
+            }
+            if (evt.getItem().equals(loglevels[7])) {
+                rootLogger.setLevel(Level.OFF);
+            }
+        }
+    }//GEN-LAST:event_cmbLogLevelItemStateChanged
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnClear;
+    private javax.swing.JComboBox cmbLogLevel;
+    private javax.swing.JLabel lblLevel;
+    private javax.swing.JScrollPane scrollPane;
+    private final javax.swing.JTextPane tpLog = new javax.swing.JTextPane();
+    // End of variables declaration//GEN-END:variables
 }
