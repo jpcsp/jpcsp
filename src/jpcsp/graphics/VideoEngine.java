@@ -1658,7 +1658,6 @@ public class VideoEngine {
     }
 
     private int checkMultiDraw(int currentFirst, int currentType, int currentNumberOfVertex, IntBuffer bufferFirst, IntBuffer bufferCount) {
-    	if (true) { return -1; } // Temporary disabling Multi Draw
     	if (isLogDebugEnabled) {
     		log(String.format("checkMultiDraw at 0x%08X", currentList.getPc()));
     	}
