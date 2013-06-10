@@ -1441,7 +1441,13 @@ private void DumpCodeToTextActionPerformed(java.awt.event.ActionEvent evt) {//GE
                 if (Memory.isAddressGood(i)) {
                     int opcode = Memory.getInstance().read32(i);
                     Instruction insn = Decoder.instruction(opcode);
-                    bufferedWriter.write(String.format("%08X:[%08X]: %s", i, opcode, insn.disasm(i, opcode)));
+                    String disasm;
+                    try {
+                    	disasm = insn.disasm(i, opcode);
+                    } catch (Exception e) {
+                    	disasm = "???";
+                    }
+                    bufferedWriter.write(String.format("%08X:[%08X]: %s", i, opcode, disasm));
                 } else {
                     // Should we even both printing these?
                     bufferedWriter.write(String.format("%08X: invalid address", i));

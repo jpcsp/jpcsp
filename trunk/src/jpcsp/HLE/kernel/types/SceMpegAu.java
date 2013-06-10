@@ -71,6 +71,6 @@ public class SceMpegAu extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public String toString() {
-		return String.format("pts=%d, dts=%d", pts, dts);
+		return String.format("pts=%d, dts=%d, esBuffer=0x%X, esSize=0x%X", pts, dts, esBuffer, esSize);
 	}
 }

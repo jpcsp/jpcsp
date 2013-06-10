@@ -89,10 +89,15 @@ public abstract class AbstractVirtualFile implements IVirtualFile {
 	@Override
 	public int ioRead(byte[] outputBuffer, int outputOffset, int outputLength) {
 		int readLength = getReadLength(outputLength);
-		try {
-			file.readFully(outputBuffer, outputOffset, readLength);
-		} catch (IOException e) {
-			log.error("ioRead", e);
+		if (readLength > 0) {
+			try {
+				file.readFully(outputBuffer, outputOffset, readLength);
+			} catch (IOException e) {
+				log.error("ioRead", e);
+				return SceKernelErrors.ERROR_KERNEL_FILE_READ_ERROR;
+			}
+		} else if (outputLength > 0) {
+			// End of file
 			return SceKernelErrors.ERROR_KERNEL_FILE_READ_ERROR;
 		}
 
