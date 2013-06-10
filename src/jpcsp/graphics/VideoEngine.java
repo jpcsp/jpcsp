@@ -181,7 +181,7 @@ public class VideoEngine {
     public boolean useOptimisticVertexCache = false;
     private boolean useTextureAnisotropicFilter = false;
     private boolean disableOptimizedVertexInfoReading = false;
-    private boolean avoidDrawElementsWithNonZeroIndexOffset = true;
+    private boolean avoidDrawElementsWithNonZeroIndexOffset = false;
     private boolean enableTextureModding = true;
     private static GeCommands helper;
     private int command;
