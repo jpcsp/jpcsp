@@ -181,6 +181,7 @@ public class VideoEngine {
     public boolean useOptimisticVertexCache = false;
     private boolean useTextureAnisotropicFilter = false;
     private boolean disableOptimizedVertexInfoReading = false;
+    private boolean avoidDrawElementsWithNonZeroIndexOffset = true;
     private boolean enableTextureModding = true;
     private static GeCommands helper;
     private int command;
@@ -237,6 +238,7 @@ public class VideoEngine {
     private int bufferId;
     private int nativeBufferId;
     private int indexBufferId;
+    private ByteBuffer indexByteBuffer;
     private float[] floatBufferArray;
     private List<Integer> buffersToBeDeleted = new LinkedList<Integer>();
     float[][] bboxVertices;
@@ -390,7 +392,9 @@ public class VideoEngine {
 
         multiDrawFirst = ByteBuffer.allocateDirect(maxMultiDrawElements * 4).order(ByteOrder.nativeOrder()).asIntBuffer();
         multiDrawCount = ByteBuffer.allocateDirect(maxMultiDrawElements * 4).order(ByteOrder.nativeOrder()).asIntBuffer();
-
+        if (avoidDrawElementsWithNonZeroIndexOffset) {
+        	indexByteBuffer = ByteBuffer.allocateDirect(indexDrawBufferSize).order(ByteOrder.nativeOrder());
+        }
     }
 
     /** Called from pspge module */
@@ -1657,10 +1661,19 @@ public class VideoEngine {
     	return 0;
     }
 
-    private int checkMultiDraw(int currentFirst, int currentType, int currentNumberOfVertex, IntBuffer bufferFirst, IntBuffer bufferCount) {
+    private int checkMultiDraw(int currentFirst, int currentType, int currentNumberOfVertex, IntBuffer bufferFirst, IntBuffer bufferCount, boolean hasIndex) {
+    	if (avoidDrawElementsWithNonZeroIndexOffset && hasIndex) {
+    		// Multiple drawElements can only mixed into a multi-draw when non-zero index offsets are allowed.
+    		if (isLogDebugEnabled) {
+    			log(String.format("checkMultiDraw hasIndex=%b disabled to avoid non-zero index offsets", hasIndex));
+    		}
+    		return -1;
+    	}
+
     	if (isLogDebugEnabled) {
     		log(String.format("checkMultiDraw at 0x%08X", currentList.getPc()));
     	}
+
     	Memory mem = Memory.getInstance();
     	int pc = currentList.getPc();
     	int afterMultiPc = pc;
@@ -2036,6 +2049,21 @@ public class VideoEngine {
 	        		if (hasIndex) {
 		        		Buffer indicesBuffer = mem.getBuffer(context.vinfo.ptr_index, indexBufferSize);
 		        		indicesBufferOffset = getBufferOffset(indicesBuffer, context.vinfo.ptr_index);
+
+		        		//
+		        		// The AMD/ATI driver seems to have problems using glDrawElements with a non-zero index offset.
+		        		// Provide a work-around by copying the indices buffer into a byte buffer where the correct
+		        		// index offset can be set. The index offset passed to glDrawElements can then be set to 0.
+		        		//
+		        		if (avoidDrawElementsWithNonZeroIndexOffset && indicesBufferOffset != 0) {
+		        			indexByteBuffer.clear();
+		        			Utilities.putBuffer(indexByteBuffer, indicesBuffer, ByteOrder.LITTLE_ENDIAN);
+		        			indexByteBuffer.limit(indexBufferSize + (int) indicesBufferOffset);
+		        			indexByteBuffer.position((int) indicesBufferOffset);
+		        			indicesBuffer = indexByteBuffer;
+		        			indicesBufferOffset = 0;
+		        		}
+
 		        		bufferManager.setBufferSubData(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, indexBufferId, 0, indexBufferSize + (int) indicesBufferOffset, indicesBuffer, IRenderingEngine.RE_DYNAMIC_DRAW);
 	        		} else {
 	        			firstVertex = firstVertexInfo;
@@ -2070,7 +2098,7 @@ public class VideoEngine {
 
 	        		// Check if multiple PRIM's are defined in sequence and
 	        		// try to merge them into a single multiDrawArrays call.
-	        		int multiDrawNumberOfVertex = checkMultiDraw(multiDrawFirstVertex, type, numberOfVertex, multiDrawFirst, multiDrawCount);
+	        		int multiDrawNumberOfVertex = checkMultiDraw(multiDrawFirstVertex, type, numberOfVertex, multiDrawFirst, multiDrawCount, context.vinfo.index != 0);
 					if (multiDrawNumberOfVertex > 0) {
 						firstVertex = multiDrawFirstVertex;
 						multiDrawArrays = true;
