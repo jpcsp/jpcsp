@@ -400,6 +400,10 @@ public class SceKernelErrors {
 
     public final static int ERROR_WLAN_BAD_PARAMS                               = 0x80410d13;
 
+    public final static int ERROR_SAS_INVALID_GRAIN                             = 0x80420001;
+    public final static int ERROR_SAS_INVALID_MAX_VOICES                        = 0x80420002;
+    public final static int ERROR_SAS_INVALID_OUTPUT_MODE                       = 0x80420003;
+    public final static int ERROR_SAS_INVALID_SAMPLE_RATE                       = 0x80420004;
     public final static int ERROR_SAS_INVALID_ADDRESS                           = 0x80420005;
     public final static int ERROR_SAS_INVALID_VOICE_INDEX                       = 0x80420010;
     public final static int ERROR_SAS_INVALID_NOISE_CLOCK                       = 0x80420011;

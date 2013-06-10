@@ -177,8 +177,8 @@ public class sceSasCore extends HLEModule {
         }
     }
 
-    protected void checkVoiceNotPaused(int voice) {
-        if (voices[voice].isPaused()) {
+    protected void checkVoiceNotPaused(int voice, boolean requiredOnState) {
+        if (voices[voice].isPaused() || voices[voice].isOn() != requiredOnState) {
         	throw new SceKernelErrorException(SceKernelErrors.ERROR_SAS_VOICE_PAUSED);
         }
     }
@@ -199,7 +199,7 @@ public class sceSasCore extends HLEModule {
     	// 600 microseconds, independently of the number of samples generated
     	// and of the number of voices currently playing.
     	int delayMicros = 600;
-    	delayThread(startMicros, delayMicros, 0);
+    	delayThread(startMicros, delayMicros, delayMicros);
     }
 
     public int getOutputMode() {
@@ -319,7 +319,20 @@ public class sceSasCore extends HLEModule {
     public int __sceSasInit(@CanBeNull TPointer sasCore, int grain, int maxVoices, int outputMode, int sampleRate) {
         checkSasAddressGood(sasCore.getAddress());
 
-    	if (sasCoreUid != -1) {
+        if (grain < 0x40 || grain > 0x800 || (grain & 0x1F) != 0) {
+        	return SceKernelErrors.ERROR_SAS_INVALID_GRAIN;
+        }
+        if (sampleRate != 44100) {
+        	return SceKernelErrors.ERROR_SAS_INVALID_SAMPLE_RATE;
+        }
+        if (maxVoices <= 0 || maxVoices > PSP_SAS_VOICES_MAX) {
+        	return SceKernelErrors.ERROR_SAS_INVALID_MAX_VOICES;
+        }
+        if (outputMode != PSP_SAS_OUTPUTMODE_STEREO && outputMode != PSP_SAS_OUTPUTMODE_MONO) {
+        	return SceKernelErrors.ERROR_SAS_INVALID_OUTPUT_MODE;
+        }
+
+        if (sasCoreUid != -1) {
     		// Only one Sas core can be active at a time.
     		// If a previous Uid was allocated, release it.
     		SceUidManager.releaseUid(sasCoreUid, sasCodeUidPurpose);
@@ -454,12 +467,12 @@ public class sceSasCore extends HLEModule {
      * @return 0                if OK
      *                          ERROR_SAS_NOT_INIT if an invalid sasCore handle is provided
      *                          ERROR_SAS_INVALID_VOICE if an invalid voice number is provided
-     *                          ERROR_SAS_VOICE_PAUSED if the voice was paused
+     *                          ERROR_SAS_VOICE_PAUSED if the voice was paused or already on
      */
     @HLEFunction(nid = 0x76F01ACA, version = 150, checkInsideInterrupt = true)
     public int __sceSasSetKeyOn(int sasCore, int voice) {
         checkSasAndVoiceHandlesGood(sasCore, voice);
-        checkVoiceNotPaused(voice);
+        checkVoiceNotPaused(voice, false);
 
         voices[voice].on();
     	
@@ -574,12 +587,12 @@ public class sceSasCore extends HLEModule {
      * @return 0                if OK
      *                          ERROR_SAS_NOT_INIT if an invalid sasCore handle is provided
      *                          ERROR_SAS_INVALID_VOICE if an invalid voice number is provided
-     *                          ERROR_SAS_VOICE_PAUSED if the voice was paused
+     *                          ERROR_SAS_VOICE_PAUSED if the voice was paused or already off
      */
     @HLEFunction(nid = 0xA0CF2FA4, version = 150, checkInsideInterrupt = true)
     public int __sceSasSetKeyOff(int sasCore, int voice) {
         checkSasAndVoiceHandlesGood(sasCore, voice);
-        checkVoiceNotPaused(voice);
+        checkVoiceNotPaused(voice, true);
 
     	voices[voice].off();
 
