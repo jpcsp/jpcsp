@@ -16,11 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.media;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.HLE.VFS.IVirtualFile;
 
 import com.xuggle.xuggler.io.IURLProtocolHandler;
 
 public class VirtualFileProtocolHandler implements IURLProtocolHandler {
+	private static Logger log = Logger.getLogger("VirtualFileProtocolHandler");
 	private IVirtualFile vFile;
 
 	public VirtualFileProtocolHandler(IVirtualFile vFile) {
@@ -29,6 +32,8 @@ public class VirtualFileProtocolHandler implements IURLProtocolHandler {
 
 	@Override
 	public int close() {
+		log.debug("close");
+
 		if (vFile != null) {
 			vFile.ioClose();
 			vFile = null;
@@ -59,6 +64,10 @@ public class VirtualFileProtocolHandler implements IURLProtocolHandler {
 			return -1;
 		}
 
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("read size=0x%X", size));
+		}
+
 		int result = vFile.ioRead(buf, 0, size);
 		if (result < 0) {
 			return -1;
@@ -85,12 +94,19 @@ public class VirtualFileProtocolHandler implements IURLProtocolHandler {
 				seek = vFile.length() + offset;
 				break;
 			case SEEK_SIZE:
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("seek SEEK_SIZE returning 0x%X", vFile.length()));
+				}
 				return vFile.length();
 			default:
 				return -1;
 		}
 
 		long result = vFile.ioLseek(seek);
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("seek offset=0x%X, whence=%d, returning 0x%X, seek position 0x%X", offset, whence, result, seek));
+		}
+
 		if (result < 0) {
 			return -1;
 		}
@@ -102,6 +118,10 @@ public class VirtualFileProtocolHandler implements IURLProtocolHandler {
 	public int write(byte[] buf, int size) {
 		if (vFile == null) {
 			return -1;
+		}
+
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("write size=0x%X", size));
 		}
 
 		int result = vFile.ioWrite(buf, 0, size);

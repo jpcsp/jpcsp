@@ -177,6 +177,6 @@ public class SceKernelVplInfo extends pspAbstractMemoryMappedStructureVariableLe
 
 	@Override
 	public String toString() {
-		return String.format("SceKernelVplInfo[uid=0x%X, name='%s', attr=0x%X]", uid, name, attr);
+		return String.format("SceKernelVplInfo[uid=0x%X, name='%s', attr=0x%X, poolSize=0x%X, freeSize=0x%X]", uid, name, attr, poolSize, freeSize);
 	}
 }

@@ -78,6 +78,9 @@ public class scePsmf extends HLEModule {
     	psmf = checkPsmf(psmf);
     	PSMFHeader header = getPsmfHeader(psmf);
     	if (!header.hasEPMap()) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("checkPsmfWithEPMap returning 0x%08X(ERROR_PSMF_NOT_FOUND)", SceKernelErrors.ERROR_PSMF_NOT_FOUND));
+        	}
     		throw new SceKernelErrorException(SceKernelErrors.ERROR_PSMF_NOT_FOUND);
     	}
 
@@ -621,6 +624,9 @@ public class scePsmf extends HLEModule {
     public int scePsmfGetVideoInfo(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 videoInfoAddr) {
         PSMFHeader header = getPsmfHeader(psmf);
         if (!header.isValidCurrentStreamNumber()) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("scePsmfGetVideoInfo returning 0x%08X(ERROR_PSMF_INVALID_ID)", SceKernelErrors.ERROR_PSMF_INVALID_ID));
+        	}
         	return SceKernelErrors.ERROR_PSMF_INVALID_ID;
         }
         videoInfoAddr.setValue(0, header.getVideoWidth());
@@ -633,6 +639,9 @@ public class scePsmf extends HLEModule {
     public int scePsmfGetAudioInfo(@CheckArgument("checkPsmf") TPointer32 psmf, TPointer32 audioInfoAddr) {
         PSMFHeader header = getPsmfHeader(psmf);
         if (!header.isValidCurrentStreamNumber()) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("scePsmfGetAudioInfo returning 0x%08X(ERROR_PSMF_INVALID_ID)", SceKernelErrors.ERROR_PSMF_INVALID_ID));
+        	}
         	return SceKernelErrors.ERROR_PSMF_INVALID_ID;
         }
         audioInfoAddr.setValue(0, header.getAudioChannelConfig());
@@ -642,10 +651,9 @@ public class scePsmf extends HLEModule {
     }
 
     @HLEFunction(nid = 0x971A3A90, version = 150, checkInsideInterrupt = true)
-    public int scePsmfCheckEPmap(@CheckArgument("checkPsmf") TPointer32 psmf) {
-        PSMFHeader header = getPsmfHeader(psmf);
-
-        return header.hasEPMap() ? 0 : SceKernelErrors.ERROR_PSMF_NOT_FOUND;
+    public int scePsmfCheckEPmap(@CheckArgument("checkPsmfWithEPMap") TPointer32 psmf) {
+    	// checkPsmfWithEPMap is already returning the correct error code if no EPmap is present
+        return 0;
     }
 
     @HLEFunction(nid = 0x4E624A34, version = 150, checkInsideInterrupt = true)
@@ -653,6 +661,9 @@ public class scePsmf extends HLEModule {
         PSMFHeader header = getPsmfHeader(psmf);
         PSMFEntry entry = header.getEPMapEntry(id);
     	if (entry == null) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("scePsmfGetEPWithId returning 0x%08X(ERROR_PSMF_INVALID_ID)", SceKernelErrors.ERROR_PSMF_INVALID_ID));
+    		}
     		return SceKernelErrors.ERROR_PSMF_INVALID_ID;
     	}
 
@@ -668,12 +679,18 @@ public class scePsmf extends HLEModule {
     public int scePsmfGetEPWithTimestamp(@CheckArgument("checkPsmfWithEPMap") TPointer32 psmf, int ts, TPointer32 entryAddr) {
         PSMFHeader header = getPsmfHeader(psmf);
     	if (ts < header.getPresentationStartTime()) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("scePsmfGetEPWithTimestamp returning 0x%08X(ERROR_PSMF_INVALID_TIMESTAMP)", SceKernelErrors.ERROR_PSMF_INVALID_TIMESTAMP));
+    		}
             return SceKernelErrors.ERROR_PSMF_INVALID_TIMESTAMP;
     	}
 
     	PSMFEntry entry = header.getEPMapEntryWithTimestamp(ts);
         if (entry == null) {
         	// Unknown error code
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("scePsmfGetEPWithTimestamp returning -1"));
+    		}
         	return -1;
         }
 
@@ -689,12 +706,18 @@ public class scePsmf extends HLEModule {
     public int scePsmfGetEPidWithTimestamp(@CheckArgument("checkPsmfWithEPMap") TPointer32 psmf, int ts) {
         PSMFHeader header = getPsmfHeader(psmf);
     	if (ts < header.getPresentationStartTime()) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("scePsmfGetEPidWithTimestamp returning 0x%08X(ERROR_PSMF_INVALID_TIMESTAMP)", SceKernelErrors.ERROR_PSMF_INVALID_TIMESTAMP));
+    		}
             return SceKernelErrors.ERROR_PSMF_INVALID_TIMESTAMP;
     	}
 
-    	PSMFEntry entry = header.getEPMapEntryWithTimestamp(ts);
+        PSMFEntry entry = header.getEPMapEntryWithTimestamp(ts);
         if (entry == null) {
         	// Unknown error code
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("scePsmfGetEPidWithTimestamp returning -1"));
+    		}
             return -1;
         }
 
@@ -743,6 +766,9 @@ public class scePsmf extends HLEModule {
     public int scePsmfSpecifyStreamWithStreamTypeNumber(@CheckArgument("checkPsmf") TPointer32 psmf, int type, int typeNum) {
         PSMFHeader header = getPsmfHeader(psmf);
         if (!header.setStreamWithTypeNum(type, typeNum)) {
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("scePsmfSpecifyStreamWithStreamTypeNumber returning 0x%08X(ERROR_PSMF_INVALID_ID)", SceKernelErrors.ERROR_PSMF_INVALID_ID));
+            }
         	return SceKernelErrors.ERROR_PSMF_INVALID_ID;
         }
 
@@ -757,12 +783,18 @@ public class scePsmf extends HLEModule {
 
         int magic = bufferAddr.getValue32(sceMpeg.PSMF_MAGIC_OFFSET);
         if (magic != sceMpeg.PSMF_MAGIC) {
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("scePsmfVerifyPsmf returning 0x%08X(ERROR_PSMF_INVALID_PSMF)", SceKernelErrors.ERROR_PSMF_INVALID_PSMF));
+            }
         	return SceKernelErrors.ERROR_PSMF_INVALID_PSMF;
         }
 
         int rawVersion = bufferAddr.getValue32(sceMpeg.PSMF_STREAM_VERSION_OFFSET);
         int version = sceMpeg.getMpegVersion(rawVersion);
         if (version < 0) {
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("scePsmfVerifyPsmf returning 0x%08X(ERROR_PSMF_INVALID_PSMF)", SceKernelErrors.ERROR_PSMF_INVALID_PSMF));
+            }
         	return SceKernelErrors.ERROR_PSMF_INVALID_PSMF;
         }
 
