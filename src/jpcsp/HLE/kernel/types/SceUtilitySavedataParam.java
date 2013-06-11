@@ -657,8 +657,29 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         return true;
     }
 
+    public String getAnySaveName(String gameName, String saveName) {
+        // NULL can also be sent in saveName (seen in MODE_SIZES).
+        // It means any save from the current game, since all saves share a common
+        // save data file.
+        if (saveName == null || saveName.length() <= 0 || anyFileName.equals(saveName)) {
+            File f = new File(savedataFilePath);
+            String[] entries = f.list();
+            if (entries != null) {
+	            for (int i = 0; i < f.list().length; i++) {
+	                if (entries[i].startsWith(gameName)) {
+	                    saveName = entries[i].replace(gameName, "");
+	                    break;
+	                }
+	            }
+            }
+        }
+
+        return saveName;
+    }
+
     public boolean isDirectoryPresent(String gameName, String saveName) {
-    	String path = getBasePath(gameName, saveName);
+    	saveName = getAnySaveName(gameName, saveName);
+        String path = getBasePath(gameName, saveName);
     	SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(path);
     	if (stat != null && (stat.attr & 0x20) == 0) {
     		return true;
@@ -668,32 +689,18 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
     }
 
     public boolean isPresent(String gameName, String saveName) {
-        // NULL can also be sent in saveName (seen in MODE_SIZES).
-        // It means any save from the current game, since all saves share a common
-        // save data file.
-        if (saveName == null || saveName.length() <= 0 || anyFileName.equals(saveName)) {
-            File f = new File(savedataFilePath);
-            String[] entries = f.list();
-            if (entries == null) {
-                return false;
-            }
-            for (int i = 0; i < f.list().length; i++) {
-                if (entries[i].startsWith(gameName)) {
-                    saveName = entries[i].replace(gameName, "");
-                    break;
-                }
-            }
-        }
+    	saveName = getAnySaveName(gameName, saveName);
+        String path = getBasePath(gameName, saveName);
+
         // When NULL is sent in fileName, it means any file inside the savedata folder.
         if (fileName == null || fileName.length() <= 0) {
-            File f = new File(savedataFilePath + gameName + saveName);
+            File f = new File(path);
             if (f.list() == null) {
                 return false;
             }
             return true;
         }
 
-        String path = getBasePath(gameName, saveName);
         try {
             SeekableDataInput fileInput = getDataInput(path, fileName);
             if (fileInput != null) {

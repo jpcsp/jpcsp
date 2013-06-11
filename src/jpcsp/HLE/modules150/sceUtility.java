@@ -913,6 +913,7 @@ public class sceUtility extends HLEModule {
                         String gameName = Utilities.readStringNZ(mem, msDataAddr, 13);
                         String saveName = Utilities.readStringNZ(mem, msDataAddr + 16, 20);
 
+                        saveName = savedataParams.getAnySaveName(gameName, saveName);
                         if (savedataParams.isDirectoryPresent(gameName, saveName)) {
                             int savedataSizeKb = savedataParams.getSizeKb(gameName, saveName);
                             int savedataSize32Kb = MemoryStick.getSize32Kb(savedataSizeKb);
