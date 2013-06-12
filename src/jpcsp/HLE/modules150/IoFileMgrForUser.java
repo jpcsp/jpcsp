@@ -52,6 +52,7 @@ import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import jpcsp.Emulator;
@@ -163,6 +164,7 @@ public class IoFileMgrForUser extends HLEModule {
 
     private final static boolean useVirtualFileSystem = false;
     protected VirtualFileSystemManager vfsManager;
+    protected Map<String, String> assignedDevices;
 
     protected static enum IoOperation {
         open(5), close(1), seek(1), ioctl(20), remove, rename, mkdir, dread, iodevctl(2),
@@ -672,6 +674,8 @@ public class IoFileMgrForUser extends HLEModule {
 	        registerUmdIso();
         }
 
+        assignedDevices = new HashMap<String, String>();
+
         setSettingsListener("emu.extractPGD", new ExtractPGDSettingsListerner());
 
         super.start();
@@ -766,7 +770,7 @@ public class IoFileMgrForUser extends HLEModule {
         	}
         	return pspfilename.replace("flash0:", "flash0/");
         }
-        
+
         if (pspfilename.startsWith("exdata0:")) {
         	if (pspfilename.startsWith("exdata0:/")) {
         		return pspfilename.replace("exdata0:", "exdata0");
@@ -804,6 +808,14 @@ public class IoFileMgrForUser extends HLEModule {
             }
         }
 
+        // Map assigned devices, e.g.
+        // Fire Up:
+        //     sceIoAssign alias=0x0898EFC0('pfat0:'), physicalDev=0x0898F000('msstor0p1:/'), filesystemDev=0x0898F00C('fatms0:'), mode=0x0, arg_addr=0x0, argSize=0x0
+        //     sceIoOpen filename='pfat0:PSP/SAVEDATA/PPCD00001DLS001/DATA2.BIN'
+        if (assignedDevices.containsKey(device)) {
+        	device = assignedDevices.get(device);
+        }
+
         // remap host0
         // - Bliss Island - ULES00616
         if (device.equals("host0")) {
@@ -813,6 +825,7 @@ public class IoFileMgrForUser extends HLEModule {
                 device = "ms0";
             }
         }
+
         // remap fatms0
         // - Wipeout Pure - UCUS98612
         if (device.equals("fatms0")) {
@@ -4050,6 +4063,8 @@ public class IoFileMgrForUser extends HLEModule {
     public int sceIoAssign(PspString alias, PspString physicalDev, PspString filesystemDev, int mode, int arg_addr, int argSize) {
         int result = 0;
 
+        assignedDevices.put(alias.getString().replace(":", ""), filesystemDev.getString().replace(":", ""));
+
         for (IIoListener ioListener : ioListeners) {
             ioListener.sceIoAssign(result, alias.getAddress(), alias.getString(), physicalDev.getAddress(), physicalDev.getString(), filesystemDev.getAddress(), filesystemDev.getString(), mode, arg_addr, argSize);
         }
@@ -4067,7 +4082,9 @@ public class IoFileMgrForUser extends HLEModule {
     @HLELogging(level="warn")
     @HLEFunction(nid = 0x6D08A871, version = 150, checkInsideInterrupt = true)
     public int sceIoUnassign(PspString alias) {
-        return 0;
+    	assignedDevices.remove(alias.getString().replace(":", ""));
+
+    	return 0;
     }
 
     /**
