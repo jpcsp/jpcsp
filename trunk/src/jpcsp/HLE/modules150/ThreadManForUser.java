@@ -19,6 +19,8 @@ package jpcsp.HLE.modules150;
 import static jpcsp.Allegrex.Common._a0;
 import static jpcsp.Allegrex.Common._ra;
 import static jpcsp.Allegrex.Common._s0;
+import static jpcsp.Allegrex.Common._v0;
+import static jpcsp.Allegrex.Common._zr;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_ARGUMENT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_PRIORITY;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_THREAD;
@@ -187,14 +189,14 @@ public class ThreadManForUser extends HLEModule {
     protected CallbackManager callbackManager = new CallbackManager();
     public static final int INTERNAL_THREAD_ADDRESS_START = MemoryMap.START_RAM;
     protected static final int IDLE_THREAD_ADDRESS = INTERNAL_THREAD_ADDRESS_START;
-    public static final int THREAD_EXIT_HANDLER_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x20;
-    public static final int CALLBACK_EXIT_HANDLER_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x30;
-    public static final int ASYNC_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x40;
-    public static final int NET_APCTL_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x60;
-    public static final int NET_ADHOC_MATCHING_EVENT_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x80;
-    public static final int NET_ADHOC_MATCHING_INPUT_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xA0;
-    public static final int NET_ADHOC_CTL_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0xC0;
-    public static final int INTERNAL_THREAD_ADDRESS_END = INTERNAL_THREAD_ADDRESS_START + 0x100;
+    public static final int THREAD_EXIT_HANDLER_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x10;
+    public static final int CALLBACK_EXIT_HANDLER_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x20;
+    public static final int ASYNC_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x30;
+    public static final int NET_APCTL_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x40;
+    public static final int NET_ADHOC_MATCHING_EVENT_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x50;
+    public static final int NET_ADHOC_MATCHING_INPUT_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x60;
+    public static final int NET_ADHOC_CTL_LOOP_ADDRESS = INTERNAL_THREAD_ADDRESS_START + 0x70;
+    public static final int INTERNAL_THREAD_ADDRESS_END = INTERNAL_THREAD_ADDRESS_START + 0x80;
     private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
     private boolean USE_THREAD_BANLIST = false;
     private static final boolean LOG_CONTEXT_SWITCHING = true;
@@ -394,28 +396,45 @@ public class ThreadManForUser extends HLEModule {
         return address;
     }
 
+    private static int NOP() {
+    	// sll $zr, $zr, 0 <=> nop
+    	return (AllegrexOpcodes.SLL << 26) | (_zr << 16) | (_zr << 11) | (0 << 6);
+    }
+
+    private static int MOVE(int rd, int rs) {
+    	// addu rd, rs, $zr <=> move rd, rs
+    	return AllegrexOpcodes.ADDU | (rd << 11) | (_zr << 16) | (rs << 21);
+    }
+
+    private int SYSCALL(String functionName) {
+    	// syscall [functionName]
+    	return (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.SYSCALL | (getHleFunctionByName(functionName).getSyscallCode() << 6);
+    }
+
+    private static int JR() {
+    	// jr $ra
+    	return (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.JR | (_ra << 21);
+    }
+
+    private static int B(int destination) {
+    	// beq $zr, $zr, destination <=> b destination
+    	return (AllegrexOpcodes.BEQ << 26) | (_zr << 21) | (_zr << 16) | (destination & 0x0000FFFF);
+    }
+
+    /**
+     * Generate 2 idle threads which can toggle between each other when there are no ready threads
+     */
     private void installIdleThreads() {
-        Memory mem = Memory.getInstance();
-
-        // Generate 2 idle threads which can toggle between each other when there are no ready threads
-        int instruction_addiu = // addiu a0, zr, 0
-                ((AllegrexOpcodes.ADDIU & 0x3f) << 26) | ((0 & 0x1f) << 21) | ((4 & 0x1f) << 16);
-        int instruction_lui = // lui ra, 0x08000000
-                ((AllegrexOpcodes.LUI & 0x3f) << 26) | ((31 & 0x1f) << 16) | (0x0800 & 0x0000ffff);
-        int instruction_jr = // jr ra
-                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.JR & 0x3f) | ((31 & 0x1f) << 21);
-        int instruction_syscall = // syscall 0x0201c [sceKernelDelayThread]
-                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((this.getHleFunctionByName("sceKernelDelayThread").getSyscallCode() & 0x000fffff) << 6);
-        
-
         // This memory is always reserved on a real PSP
         SysMemInfo info = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, "ThreadMan-RootMem", SysMemUserForUser.PSP_SMEM_Addr, 0x4000, MemoryMap.START_USERSPACE);
         int reservedMem = info.addr;
 
-        mem.write32(IDLE_THREAD_ADDRESS + 0, instruction_addiu);
-        mem.write32(IDLE_THREAD_ADDRESS + 4, instruction_lui);
-        mem.write32(IDLE_THREAD_ADDRESS + 8, instruction_jr);
-        mem.write32(IDLE_THREAD_ADDRESS + 12, instruction_syscall);
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(IDLE_THREAD_ADDRESS, 0x20, 4);
+        memoryWriter.writeNext(MOVE(_a0, _zr));
+        memoryWriter.writeNext(SYSCALL("sceKernelDelayThread"));
+        memoryWriter.writeNext(B(-3));
+        memoryWriter.writeNext(NOP());
+        memoryWriter.flush();
 
         // lowest allowed priority is 0x77, so we are ok at 0x7f
         // Allocate a stack because interrupts can be processed by the
@@ -437,48 +456,28 @@ public class ThreadManForUser extends HLEModule {
     }
 
     private void installThreadExitHandler() {
-        Memory mem = Memory.getInstance();
-
-        int instruction_syscall = // syscall 0x6f000 [hleKernelExitThread]
-                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((this.getHleFunctionByName("hleKernelExitThread").getSyscallCode() & 0x000fffff) << 6);
-
-        // Add a "jr $ra" instruction to indicate the end of the CodeBlock to the compiler
-        int instruction_jr = AllegrexOpcodes.JR | (31 << 21);
-
-        mem.write32(THREAD_EXIT_HANDLER_ADDRESS + 0, instruction_syscall);
-        mem.write32(THREAD_EXIT_HANDLER_ADDRESS + 4, instruction_jr);
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(THREAD_EXIT_HANDLER_ADDRESS, 0x10, 4);
+        memoryWriter.writeNext(MOVE(_a0, _v0));
+        memoryWriter.writeNext(SYSCALL("hleKernelExitThread"));
+        memoryWriter.writeNext(JR());
+        memoryWriter.writeNext(NOP());
+        memoryWriter.flush();
     }
 
     private void installCallbackExitHandler() {
-        Memory mem = Memory.getInstance();
-
-        int instruction_syscall = // syscall 0x6f001 [hleKernelExitCallback]
-                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((this.getHleFunctionByName("hleKernelExitCallback").getSyscallCode() & 0x000fffff) << 6);
-
-        // Add a "jr $ra" instruction to indicate the end of the CodeBlock to the compiler
-        int instruction_jr = AllegrexOpcodes.JR | (31 << 21);
-
-        mem.write32(CALLBACK_EXIT_HANDLER_ADDRESS + 0, instruction_syscall);
-        mem.write32(CALLBACK_EXIT_HANDLER_ADDRESS + 4, instruction_jr);
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(CALLBACK_EXIT_HANDLER_ADDRESS, 0x10, 4);
+        memoryWriter.writeNext(SYSCALL("hleKernelExitCallback"));
+        memoryWriter.writeNext(JR());
+        memoryWriter.writeNext(NOP());
+        memoryWriter.flush();
     }
 
     private void installLoopHandler(String hleFunctionName, int address) {
-        Memory mem = Memory.getInstance();
-
-        int instruction_syscall = // syscall 0x6f002 [hleKernelAsyncLoop]
-                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((this.getHleFunctionByName(hleFunctionName).getSyscallCode() & 0x000fffff) << 6);
-
-        int instruction_b = (AllegrexOpcodes.BEQ << 26) | 0xFFFE; // branch back to syscall
-        int instruction_nop = (AllegrexOpcodes.SLL << 26); // nop
-
-        // Add a "jr $ra" instruction to indicate the end of the CodeBlock to the compiler
-        int instruction_jr = AllegrexOpcodes.JR | (_ra << 21);
-
-        mem.write32(address + 0, instruction_syscall);
-        mem.write32(address + 4, instruction_b);
-        mem.write32(address + 8, instruction_nop);
-        mem.write32(address + 12, instruction_jr);
-        mem.write32(address + 16, instruction_nop);
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 0x20, 4);
+        memoryWriter.writeNext(SYSCALL(hleFunctionName));
+        memoryWriter.writeNext(B(-2));
+        memoryWriter.writeNext(NOP());
+        memoryWriter.flush();
     }
 
     private void installAsyncLoopHandler() {
