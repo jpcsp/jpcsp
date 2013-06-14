@@ -564,6 +564,9 @@ public class Compiler implements ICompiler {
             } catch (NullPointerException e) {
             	log.error(String.format("Catched exception '%s' while compiling 0x%08X (0x%08X-0x%08X)", e.toString(), address, context.getCodeBlock().getLowestAddress(), context.getCodeBlock().getHighestAddress()));
             	break;
+            } catch (VerifyError e) {
+            	log.error(String.format("Catched exception '%s' while compiling 0x%08X (0x%08X-0x%08X)", e.toString(), address, context.getCodeBlock().getLowestAddress(), context.getCodeBlock().getHighestAddress()));
+            	break;
             } catch (RuntimeException e) {
             	// Catch exception
             	//     java.lang.RuntimeException: Method code too large!
