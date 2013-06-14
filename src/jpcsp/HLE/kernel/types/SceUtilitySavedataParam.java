@@ -35,6 +35,7 @@ import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.format.PSF;
+import jpcsp.hardware.MemoryStick;
 import jpcsp.util.Utilities;
 
 public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
@@ -359,6 +360,29 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 
     public String getFileName(String gameName, String saveName, String fileName) {
         return getBasePath(gameName, saveName) + fileName;
+    }
+
+    private static int computeMemoryStickRequiredSpaceKb(int sizeByte) {
+        int sizeKb = Utilities.getSizeKb(sizeByte);
+        int sectorSizeKb = MemoryStick.getSectorSizeKb();
+        int numberSectors = (sizeKb + sectorSizeKb - 1) / sectorSizeKb;
+
+        return numberSectors * sectorSizeKb;
+    }
+
+    public int getRequiredSizeKb() {
+        int requiredSpaceKb = 0;
+        requiredSpaceKb += MemoryStick.getSectorSizeKb(); // Assume 1 sector for SFO-Params
+        // Add the dataSize only if a fileName has been provided
+        if (fileName != null && fileName.length() > 0) {
+            requiredSpaceKb += computeMemoryStickRequiredSpaceKb(dataSize + 15);
+        }
+        requiredSpaceKb += computeMemoryStickRequiredSpaceKb(icon0FileData.size);
+        requiredSpaceKb += computeMemoryStickRequiredSpaceKb(icon1FileData.size);
+        requiredSpaceKb += computeMemoryStickRequiredSpaceKb(pic1FileData.size);
+        requiredSpaceKb += computeMemoryStickRequiredSpaceKb(snd0FileData.size);
+
+        return requiredSpaceKb;
     }
 
     public int getSizeKb(String gameName, String saveName) {
