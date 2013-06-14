@@ -36,18 +36,20 @@ public class MemoryBreakpoint {
         installed = false;
     }
 
-    public MemoryBreakpoint(int start_address, int end_address, AccessType access) {
+    public MemoryBreakpoint(DebuggerMemory debuggerMemory, int start_address, int end_address, AccessType access) {
         setStartAddress(start_address);
         setEndAddress(end_address);
         this.access = access;
-        installed = false;
+
+        install(debuggerMemory);
     }
 
-    public MemoryBreakpoint(int address, AccessType access) {
+    public MemoryBreakpoint(DebuggerMemory debuggerMemory, int address, AccessType access) {
         setStartAddress(address);
         setEndAddress(address);
         this.access = access;
-        installed = false;
+
+        install(debuggerMemory);
     }
 
     final public int getStartAddress() {
@@ -66,11 +68,20 @@ public class MemoryBreakpoint {
         this.end_address = Memory.normalizeAddress(end_address);
     }
 
+    private static DebuggerMemory getDebuggerMemory() {
+    	Memory mem = Memory.getInstance();
+    	if (mem instanceof DebuggerMemory) {
+    		return (DebuggerMemory) mem;
+    	}
+
+    	return null;
+    }
+
     final public void setEnabled(boolean enabled) {
         if (installed & !enabled) {
-            uninstall();
+            uninstall(getDebuggerMemory());
         } else if (!installed & enabled) {
-            install();
+            install(getDebuggerMemory());
         }
     }
 
@@ -86,35 +97,37 @@ public class MemoryBreakpoint {
         this.access = access;
     }
 
-    private void install() {
-        DebuggerMemory dbgmem = ((DebuggerMemory) Memory.getInstance());
-        switch (access) {
-            case READ:
-                dbgmem.addRangeReadBreakpoint(start_address, end_address);
-                break;
-            case WRITE:
-                dbgmem.addRangeWriteBreakpoint(start_address, end_address);
-                break;
-            case READWRITE:
-                dbgmem.addRangeReadWriteBreakpoint(start_address, end_address);
-                break;
-        }
-        installed = true;
+    private void install(DebuggerMemory debuggerMemory) {
+    	if (debuggerMemory != null) {
+	        switch (access) {
+	            case READ:
+	            	debuggerMemory.addRangeReadBreakpoint(start_address, end_address);
+	                break;
+	            case WRITE:
+	            	debuggerMemory.addRangeWriteBreakpoint(start_address, end_address);
+	                break;
+	            case READWRITE:
+	            	debuggerMemory.addRangeReadWriteBreakpoint(start_address, end_address);
+	                break;
+	        }
+	        installed = true;
+    	}
     }
 
-    private void uninstall() {
-        DebuggerMemory dbgmem = ((DebuggerMemory) Memory.getInstance());
-        switch (access) {
-            case READ:
-                dbgmem.removeRangeReadBreakpoint(start_address, end_address);
-                break;
-            case WRITE:
-                dbgmem.removeRangeWriteBreakpoint(start_address, end_address);
-                break;
-            case READWRITE:
-                dbgmem.removeRangeReadWriteBreakpoint(start_address, end_address);
-                break;
-        }
-        installed = false;
+    private void uninstall(DebuggerMemory debuggerMemory) {
+    	if (debuggerMemory != null) {
+	        switch (access) {
+	            case READ:
+	            	debuggerMemory.removeRangeReadBreakpoint(start_address, end_address);
+	                break;
+	            case WRITE:
+	            	debuggerMemory.removeRangeWriteBreakpoint(start_address, end_address);
+	                break;
+	            case READWRITE:
+	            	debuggerMemory.removeRangeReadWriteBreakpoint(start_address, end_address);
+	                break;
+	        }
+	        installed = false;
+    	}
     }
 }

@@ -203,25 +203,25 @@ public class DebuggerMemory extends Memory {
                     if (line.startsWith("RW ")) {
                         int start = Utilities.parseAddress(line.substring(2, rangeIndex));
                         int end = Utilities.parseAddress(line.substring(rangeIndex + 1));
-                        memoryBreakpoints.add(new MemoryBreakpoint(start, end, MemoryBreakpoint.AccessType.READWRITE));
+                        memoryBreakpoints.add(new MemoryBreakpoint(this, start, end, MemoryBreakpoint.AccessType.READWRITE));
                     } else if (line.startsWith("R ")) {
                         int start = Utilities.parseAddress(line.substring(1, rangeIndex));
                         int end = Utilities.parseAddress(line.substring(rangeIndex + 1));
-                        memoryBreakpoints.add(new MemoryBreakpoint(start, end, MemoryBreakpoint.AccessType.READ));
+                        memoryBreakpoints.add(new MemoryBreakpoint(this, start, end, MemoryBreakpoint.AccessType.READ));
                     } else if (line.startsWith("W ")) {
                         int start = Utilities.parseAddress(line.substring(1, rangeIndex));
                         int end = Utilities.parseAddress(line.substring(rangeIndex + 1));
-                        memoryBreakpoints.add(new MemoryBreakpoint(start, end, MemoryBreakpoint.AccessType.WRITE));
+                        memoryBreakpoints.add(new MemoryBreakpoint(this, start, end, MemoryBreakpoint.AccessType.WRITE));
                     }
                 } else if (line.startsWith("RW ")) {
                     int address = Utilities.parseAddress(line.substring(2));
-                    memoryBreakpoints.add(new MemoryBreakpoint(address, MemoryBreakpoint.AccessType.READWRITE));
+                    memoryBreakpoints.add(new MemoryBreakpoint(this, address, MemoryBreakpoint.AccessType.READWRITE));
                 } else if (line.startsWith("R ")) {
                     int address = Utilities.parseAddress(line.substring(1));
-                    memoryBreakpoints.add(new MemoryBreakpoint(address, MemoryBreakpoint.AccessType.READ));
+                    memoryBreakpoints.add(new MemoryBreakpoint(this, address, MemoryBreakpoint.AccessType.READ));
                 } else if (line.startsWith("W ")) {
                     int address = Utilities.parseAddress(line.substring(1));
-                    memoryBreakpoints.add(new MemoryBreakpoint(address, MemoryBreakpoint.AccessType.WRITE));
+                    memoryBreakpoints.add(new MemoryBreakpoint(this, address, MemoryBreakpoint.AccessType.WRITE));
                 } else if (!line.startsWith("#")) {
                     String[] tokens = line.split("\\|");
                     for (int i = 0; tokens != null && i < tokens.length; i++) {
