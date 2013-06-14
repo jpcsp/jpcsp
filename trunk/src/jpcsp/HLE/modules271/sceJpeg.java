@@ -256,7 +256,7 @@ public class sceJpeg extends HLEModule {
         int address2 = address1 + width * height;
         int address3 = address2 + ((width * height) >> 2);
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceJpegDecodeMJpegYCbCr 0x%08X, 0x%08X, 0x%08X", address1, address2, address3));
+        	log.debug(String.format("hleJpegDecodeYCbCr 0x%08X, 0x%08X, 0x%08X", address1, address2, address3));
         }
         IMemoryWriter imageWriter1 = MemoryWriter.getMemoryWriter(address1, yCbCrBufferSize, 1);
         IMemoryWriter imageWriter2 = new MemoryWriter2Bits(address2);
@@ -302,7 +302,7 @@ public class sceJpeg extends HLEModule {
         int address2 = address1 + width * height;
         int address3 = address2 + ((width * height) >> 2);
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceJpegMJpegCsc 0x%08X, 0x%08X, 0x%08X", address1, address2, address3));
+        	log.debug(String.format("hleJpegCsc 0x%08X, 0x%08X, 0x%08X", address1, address2, address3));
         }
         IMemoryReader imageReader1 = MemoryReader.getMemoryReader(address1, 1);
         IMemoryReader imageReader2 = new MemoryReader2Bits(address2);
