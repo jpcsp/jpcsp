@@ -52,6 +52,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -110,6 +111,7 @@ import jpcsp.hardware.Screen;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.settings.Settings;
+import jpcsp.util.MemoryInputStream;
 import jpcsp.util.Utilities;
 import jpcsp.util.sceGu;
 
@@ -261,6 +263,7 @@ public class sceUtility extends HLEModule {
         protected int buttonPressed;
         protected GuUtilityDialog guDialog;
         protected boolean isOnlyGeGraphics;
+        protected boolean isYesSelected;
 
         public UtilityDialogState(String name) {
             this.name = name;
@@ -559,6 +562,18 @@ public class sceUtility extends HLEModule {
 
 			return title;
 		}
+
+		public boolean isYesSelected() {
+			return isYesSelected;
+		}
+
+		public boolean isNoSelected() {
+			return !isYesSelected;
+		}
+
+		public void setYesSelected(boolean isYesSelected) {
+			this.isYesSelected = isYesSelected;
+		}
     }
 
     protected static class NotImplementedUtilityDialogState extends UtilityDialogState {
@@ -744,8 +759,7 @@ public class sceUtility extends HLEModule {
                     break;
                 }
 
-                case SceUtilitySavedataParam.MODE_AUTOSAVE:
-                case SceUtilitySavedataParam.MODE_SAVE: {
+                case SceUtilitySavedataParam.MODE_AUTOSAVE: {
                     if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
                         if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
                             savedataParams.saveName = savedataParams.saveNameList[0];
@@ -763,6 +777,40 @@ public class sceUtility extends HLEModule {
                     }
                     break;
                 }
+
+        		case SceUtilitySavedataParam.MODE_SAVE: {
+                    if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
+                        if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
+                            savedataParams.saveName = savedataParams.saveNameList[0];
+                        }
+                    }
+        			if (!isDialogOpen()) {
+        				// Yes is selected by default
+        				setYesSelected(true);
+        				GuSavedataDialogSave gu = new GuSavedataDialogSave(savedataParams, this);
+        				openDialog(gu);
+        			} else if (!isDialogActive()) {
+        				if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK || isNoSelected()) {
+                            // The dialog has been cancelled or the user did not want to save.
+        					// The PSP is not returning an error code in these cases, but the value 1.
+                            savedataParams.base.result = 1;
+        				} else {
+    	                    try {
+    	                        savedataParams.save(mem);
+    	                        savedataParams.base.result = 0;
+    	                    } catch (IOException e) {
+    	                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
+    	                    } catch (Exception e) {
+    	                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
+    	                        log.error(e);
+    	                    }
+        				}
+	                    finishDialog();
+        			} else {
+        				updateDialog();
+        			}
+                    break;
+        		}
 
                 case SceUtilitySavedataParam.MODE_LISTSAVE: {
                     if (!isDialogOpen()) {
@@ -934,17 +982,7 @@ public class sceUtility extends HLEModule {
                     // Gets the size of the data to be saved on the Memory Stick.
                     int utilityDataAddr = savedataParams.utilityDataAddr;
                     if (utilityDataAddr != 0) {
-                        int memoryStickRequiredSpaceKb = 0;
-                        memoryStickRequiredSpaceKb += MemoryStick.getSectorSizeKb(); // Assume 1 sector for SFO-Params
-                        // Add the dataSize only if a fileName has been provided
-                        if (savedataParams.fileName != null && savedataParams.fileName.length() > 0) {
-                            memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.dataSize + 15);
-                        }
-                        memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.icon0FileData.size);
-                        memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.icon1FileData.size);
-                        memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.pic1FileData.size);
-                        memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.snd0FileData.size);
-
+                        int memoryStickRequiredSpaceKb = savedataParams.getRequiredSizeKb();
                         String memoryStickRequiredSpaceString = MemoryStick.getSizeKbString(memoryStickRequiredSpaceKb);
                         int memoryStickRequiredSpace32Kb = MemoryStick.getSize32Kb(memoryStickRequiredSpaceKb);
                         String memoryStickRequiredSpace32KbString = MemoryStick.getSizeKbString(memoryStickRequiredSpace32Kb);
@@ -2080,6 +2118,14 @@ public class sceUtility extends HLEModule {
 			gu.sceGuDrawArray(PRIM_SPRITES, (VTYPE_TRANSFORM_PIPELINE_RAW_COORD << 23) | (VTYPE_TEXTURE_FORMAT_16_BIT << 0) | (VTYPE_POSITION_FORMAT_16_BIT << 7), numberOfVertex, 0, textVertexAddr);
 		}
 
+		protected void drawButton(int x, int y, String text, boolean selected) {
+			if (selected) {
+				int alpha = getAnimationIndex(0xFF);
+				gu.sceGuDrawRectangle(x, y, x + text.length() * 17, y + 16, (alpha << 24) | 0xC5C8CF);
+			}
+			drawTextWithShadow(x + 5, y + 2, 0.8f, text);
+		}
+
 		protected abstract void updateDialog();
 
         public void checkController() {
@@ -2089,6 +2135,14 @@ public class sceUtility extends HLEModule {
 			} else if (canCancel() && isCancelButtonPressed()) {
 				utilityDialogState.setButtonPressed(SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_ESC);
 				dispose();
+			}
+
+			if (hasYesNo()) {
+				if (isLeftPressed()) {
+					utilityDialogState.setYesSelected(true);
+				} else if (isRightPressed()) {
+					utilityDialogState.setYesSelected(false);
+				}
 			}
 		}
 
@@ -2127,6 +2181,10 @@ public class sceUtility extends HLEModule {
 
         protected boolean canCancel() {
         	return true;
+        }
+
+        protected boolean hasYesNo() {
+        	return false;
         }
 
         protected int getButtonPressedOK() {
@@ -2293,7 +2351,118 @@ public class sceUtility extends HLEModule {
             drawTextWithShadow(260, 254, 0.75f, String.format("%s Back", cancel));
         }
 
-        protected int getAnimationIndex(int maxIndex) {
+        protected void drawHeader(String title) {
+			// Draw rectangle on the top of the screen
+			gu.sceGuDrawRectangle(0, 0, Screen.width, 22, 0x80605C54);
+
+			// Draw dialog title in top rectangle
+			drawText(30, 4, 128, 32, 20, getDefaultFontInfo(), 15, 0.82f, 0xFFFFFF, title, SceFontInfo.FONT_PGF_CHARGLYPH);
+			// Draw filled circle just before dialog title
+			drawText(9, 5, 32, 32, 20, getDefaultFontInfo(), 15, 0.65f, 0xFFFFFF, new String(Character.toChars(0x25CF)), SceFontInfo.FONT_PGF_CHARGLYPH);
+        }
+
+        protected void drawYesNo(int xYes, int xNo, int y) {
+			drawButton(xYes, y, "Yes", utilityDialogState.isYesSelected());
+			drawButton(xNo, y, "No", utilityDialogState.isNoSelected());
+        }
+
+		protected void drawIcon(int textureAddr, int iconX, int iconY, int iconWidth, int iconHeight) {
+			if (textureAddr == 0) {
+				return;
+			}
+
+			int numberOfVertex = 2;
+			int iconVertexAddr = gu.sceGuGetMemory(10 * numberOfVertex);
+			if (iconVertexAddr == 0) {
+				return;
+			}
+			IMemoryWriter vertexWriter = MemoryWriter.getMemoryWriter(iconVertexAddr, 2);
+			// Texture
+			vertexWriter.writeNext(0);
+			vertexWriter.writeNext(0);
+			// Position
+			vertexWriter.writeNext(iconX);
+			vertexWriter.writeNext(iconY);
+			vertexWriter.writeNext(0);
+			// Texture
+			vertexWriter.writeNext(icon0Width);
+			vertexWriter.writeNext(icon0Height);
+			// Position
+			vertexWriter.writeNext(iconX + iconWidth);
+			vertexWriter.writeNext(iconY + iconHeight);
+			vertexWriter.writeNext(0);
+			vertexWriter.flush();
+
+			gu.sceGuTexEnvColor(0x000000);
+			gu.sceGuTexMode(icon0PixelFormat, 0, false);
+			gu.sceGuTexImage(0, 256, 128, icon0BufferWidth, textureAddr);
+			gu.sceGuTexFunc(TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_REPLACE, true, false);
+			gu.sceGuTexFilter(TFLT_LINEAR, TFLT_LINEAR);
+			gu.sceGuTexWrap(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
+			gu.sceGuEnable(GU_TEXTURE_2D);
+			gu.sceGuDrawArray(PRIM_SPRITES, (VTYPE_TRANSFORM_PIPELINE_RAW_COORD << 23) | (VTYPE_TEXTURE_FORMAT_16_BIT << 0) | (VTYPE_POSITION_FORMAT_16_BIT << 7), numberOfVertex, 0, iconVertexAddr);
+		}
+
+		protected int readIcon(InputStream is) {
+			BufferedImage image = null;
+
+        	// Get icon image
+            if (is != null) {
+                try {
+                    image = ImageIO.read(is);
+                } catch (IOException e) {
+                	log.debug("getIcon0", e);
+                }
+            }
+
+            // Default icon
+            if (image == null) {
+            	try {
+					image = ImageIO.read(getClass().getResource("/jpcsp/images/icon0.png"));
+				} catch (IOException e) {
+					log.error("Cannot read default icon0.png", e);
+				}
+            }
+
+            if (image == null) {
+            	return 0;
+            }
+
+            int bytesPerPixel = IRenderingEngine.sizeOfTextureType[icon0PixelFormat];
+            int textureAddr = gu.sceGuGetMemory(icon0BufferWidth * icon0Height * bytesPerPixel);
+            if (textureAddr == 0) {
+            	return 0;
+            }
+
+            IMemoryWriter textureWriter = MemoryWriter.getMemoryWriter(textureAddr, bytesPerPixel);
+            int width = Math.min(image.getWidth(), icon0Width);
+            int height = Math.min(image.getHeight(), icon0Height);
+            for (int y = 0; y < height; y++) {
+            	for (int x = 0; x < width; x++) {
+            		int colorARGB = image.getRGB(x, y);
+            		int colorABGR = colorARGBtoABGR(colorARGB);
+            		textureWriter.writeNext(colorABGR);
+            	}
+            	for (int x = width; x < icon0BufferWidth; x++) {
+            		textureWriter.writeNext(0);
+            	}
+            }
+            textureWriter.flush();
+
+            return textureAddr;
+		}
+
+		protected int readIcon(int address) {
+			InputStream iconStream = null;
+
+			if (address != 0) {
+				iconStream = new MemoryInputStream(address);
+			}
+
+			return readIcon(iconStream);
+		}
+
+		protected int getAnimationIndex(int maxIndex) {
         	if (drawSpeed <= 0) {
         		return maxIndex;
         	}
@@ -2309,6 +2478,44 @@ public class sceUtility extends HLEModule {
 
     		return animationIndex;
         }
+    }
+
+    protected static class GuSavedataDialogSave extends GuUtilityDialog {
+		private final SavedataUtilityDialogState savedataDialogState;
+		private final SceUtilitySavedataParam savedataParams;
+		protected boolean isYesSelected;
+
+		protected GuSavedataDialogSave(final SceUtilitySavedataParam savedataParams, final SavedataUtilityDialogState savedataDialogState) {
+			super(savedataParams.base);
+			this.savedataDialogState = savedataDialogState;
+			this.savedataParams = savedataParams;
+
+			createDialog(savedataDialogState);
+		}
+
+		@Override
+		protected void updateDialog() {
+			drawIcon(readIcon(savedataParams.icon0FileData.buf), 26, 96, icon0Width, icon0Height);
+
+			gu.sceGuDrawHorizontalLine(201, 464, 87, 0xFF000000 | textColor);
+            drawTextWithShadow(236, 105, 0.75f, "Do you want to save this\ndata?");
+            drawYesNo(278, 349, 154);
+            gu.sceGuDrawHorizontalLine(201, 464, 184, 0xFF000000 | textColor);
+
+            drawTextWithShadow(6, 202, 0.75f, savedataParams.sfoParam.title);
+            drawTextWithShadow(6, 237, 0.75f, MemoryStick.getSizeKbString(savedataParams.getRequiredSizeKb()));
+
+            drawEnter();
+            drawBack();
+
+            String dialogTitle = savedataDialogState.getDialogTitle(savedataParams.getModeName(), "Save");
+            drawHeader(dialogTitle);
+		}
+
+		@Override
+		protected boolean hasYesNo() {
+			return true;
+		}
     }
 
     protected static class GuSavedataDialog extends GuUtilityDialog {
@@ -2396,7 +2603,7 @@ public class sceUtility extends HLEModule {
 				return 0;
 			}
 
-			BufferedImage image = null;
+			InputStream iconStream = null;
 
         	// Get icon0 file
             String iconFileName = savedataParams.getFileName(saveNames[index], SceUtilitySavedataParam.icon0FileName);
@@ -2407,47 +2614,13 @@ public class sceUtility extends HLEModule {
                     byte[] iconBuffer = new byte[length];
                     iconDataInput.readFully(iconBuffer);
                     iconDataInput.close();
-                    image = ImageIO.read(new ByteArrayInputStream(iconBuffer));
+                    iconStream = new ByteArrayInputStream(iconBuffer);
                 } catch (IOException e) {
                 	log.debug("getIcon0", e);
                 }
             }
 
-            // Default icon
-            if (image == null) {
-            	try {
-					image = ImageIO.read(getClass().getResource("/jpcsp/images/icon0.png"));
-				} catch (IOException e) {
-					log.error("Cannot read default icon0.png", e);
-				}
-            }
-
-            if (image == null) {
-            	return 0;
-            }
-
-            int bytesPerPixel = IRenderingEngine.sizeOfTextureType[icon0PixelFormat];
-            int textureAddr = gu.sceGuGetMemory(icon0BufferWidth * icon0Height * bytesPerPixel);
-            if (textureAddr == 0) {
-            	return 0;
-            }
-
-            IMemoryWriter textureWriter = MemoryWriter.getMemoryWriter(textureAddr, bytesPerPixel);
-            int width = Math.min(image.getWidth(), icon0Width);
-            int height = Math.min(image.getHeight(), icon0Height);
-            for (int y = 0; y < height; y++) {
-            	for (int x = 0; x < width; x++) {
-            		int colorARGB = image.getRGB(x, y);
-            		int colorABGR = colorARGBtoABGR(colorARGB);
-            		textureWriter.writeNext(colorABGR);
-            	}
-            	for (int x = width; x < icon0BufferWidth; x++) {
-            		textureWriter.writeNext(0);
-            	}
-            }
-            textureWriter.flush();
-
-            return textureAddr;
+            return readIcon(iconStream);
 		}
 
 		private PSF getPsf(int index, Calendar savedTime) {
@@ -2479,48 +2652,14 @@ public class sceUtility extends HLEModule {
             return psf;
 		}
 
-		private void drawIcon(int iconIndex, int iconX, int iconY, int iconWidth, int iconHeight) {
-			int textureAddr = getIcon0(iconIndex);
-			if (textureAddr == 0) {
-				return;
-			}
-
-			int numberOfVertex = 2;
-			int iconVertexAddr = gu.sceGuGetMemory(10 * numberOfVertex);
-			if (iconVertexAddr == 0) {
-				return;
-			}
-			IMemoryWriter vertexWriter = MemoryWriter.getMemoryWriter(iconVertexAddr, 2);
-			// Texture
-			vertexWriter.writeNext(0);
-			vertexWriter.writeNext(0);
-			// Position
-			vertexWriter.writeNext(iconX);
-			vertexWriter.writeNext(iconY);
-			vertexWriter.writeNext(0);
-			// Texture
-			vertexWriter.writeNext(icon0Width);
-			vertexWriter.writeNext(icon0Height);
-			// Position
-			vertexWriter.writeNext(iconX + iconWidth);
-			vertexWriter.writeNext(iconY + iconHeight);
-			vertexWriter.writeNext(0);
-			vertexWriter.flush();
-
-			gu.sceGuTexEnvColor(0x000000);
-			gu.sceGuTexMode(icon0PixelFormat, 0, false);
-			gu.sceGuTexImage(0, 256, 128, icon0BufferWidth, textureAddr);
-			gu.sceGuTexFunc(TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_REPLACE, true, false);
-			gu.sceGuTexFilter(TFLT_LINEAR, TFLT_LINEAR);
-			gu.sceGuTexWrap(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
-			gu.sceGuEnable(GU_TEXTURE_2D);
-			gu.sceGuDrawArray(PRIM_SPRITES, (VTYPE_TRANSFORM_PIPELINE_RAW_COORD << 23) | (VTYPE_TEXTURE_FORMAT_16_BIT << 0) | (VTYPE_POSITION_FORMAT_16_BIT << 7), numberOfVertex, 0, iconVertexAddr);
+		private void drawIconByRow(int row, int iconX, int iconY, int iconWidth, int iconHeight) {
+			drawIcon(getIcon0(row), iconX, iconY, iconWidth, iconHeight);
 		}
 
 		@Override
 		protected void updateDialog() {
             if (numberRows > 0) {
-				drawIcon(selectedRow, 26, 96, icon0Width, icon0Height);
+            	drawIconByRow(selectedRow, 26, 96, icon0Width, icon0Height);
 
 				// Get values (title, detail...) from SFO file
 				Calendar savedTime = Calendar.getInstance();
@@ -2553,15 +2692,15 @@ public class sceUtility extends HLEModule {
                 drawBack();
 
                 if (selectedRow > 0) {
-					drawIcon(selectedRow - 1, 58, 38, 80, 44);
+                	drawIconByRow(selectedRow - 1, 58, 38, 80, 44);
 					if (selectedRow > 1) {
-						drawIcon(selectedRow - 2, 58, -5, 80, 44);
+						drawIconByRow(selectedRow - 2, 58, -5, 80, 44);
 					}
 				}
 				if (selectedRow < numberRows - 1) {
-					drawIcon(selectedRow + 1, 58, 190, 80, 44);
+					drawIconByRow(selectedRow + 1, 58, 190, 80, 44);
 					if (selectedRow < numberRows - 2) {
-						drawIcon(selectedRow + 2, 58, 233, 80, 44);
+						drawIconByRow(selectedRow + 2, 58, 233, 80, 44);
 					}
 				}
 			} else {
@@ -2569,14 +2708,8 @@ public class sceUtility extends HLEModule {
                 drawBack();
 			}
 
-			// Draw rectangle on the top of the screen
-			gu.sceGuDrawRectangle(0, 0, Screen.width, 22, 0x80605C54);
-
-			// Draw dialog title in top rectangle
 			String dialogTitle = savedataDialogState.getDialogTitle(savedataParams.getModeName(), "Savedata List");
-			drawText(30, 4, 128, 32, 20, getDefaultFontInfo(), 15, 0.82f, 0xFFFFFF, dialogTitle, SceFontInfo.FONT_PGF_CHARGLYPH);
-			// Draw filled circle just before dialog title
-			drawText(9, 5, 32, 32, 20, getDefaultFontInfo(), 15, 0.65f, 0xFFFFFF, new String(Character.toChars(0x25CF)), SceFontInfo.FONT_PGF_CHARGLYPH);
+            drawHeader(dialogTitle);
 		}
 
 		@Override
@@ -2706,8 +2839,7 @@ public class sceUtility extends HLEModule {
 			}
 
 			if (msgDialogParams.isOptionYesNo()) {
-				drawButton(185, buttonY, "Yes", isYesSelected);
-				drawButton(255, buttonY, "No", !isYesSelected);
+				drawYesNo(185, 255, buttonY);
 			} else if (msgDialogParams.isOptionOk()) {
 				drawButton(223, buttonY, "OK", true);
 			}
@@ -2720,14 +2852,6 @@ public class sceUtility extends HLEModule {
 					drawBack();
 				}
 			}
-		}
-
-		protected void drawButton(int x, int y, String text, boolean selected) {
-			if (selected) {
-				int alpha = getAnimationIndex(0xFF);
-				gu.sceGuDrawRectangle(x, y, x + text.length() * 17, y + 16, (alpha << 24) | 0xC5C8CF);
-			}
-			drawTextWithShadow(x + 5, y + 2, 0.8f, text);
 		}
 
 		protected String getMessage() {
@@ -2743,25 +2867,17 @@ public class sceUtility extends HLEModule {
 		}
 
 		@Override
-		public void checkController() {
-			if (msgDialogParams.isOptionYesNo()) {
-				if (isLeftPressed()) {
-					isYesSelected = true;
-				} else if (isRightPressed()) {
-					isYesSelected = false;
-				}
-			}
-
-			super.checkController();
-		}
-
-		@Override
 		protected int getButtonPressedOK() {
 			if (msgDialogParams.isOptionYesNo()) {
 				return isYesSelected ? SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_YES : SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_NO;
 			}
 
 			return super.getButtonPressedOK();
+		}
+
+		@Override
+		protected boolean hasYesNo() {
+			return msgDialogParams.isOptionYesNo();
 		}
     }
 
@@ -2854,14 +2970,6 @@ public class sceUtility extends HLEModule {
         }
 
         return formattedMessage.toString();
-    }
-
-    private static int computeMemoryStickRequiredSpaceKb(int sizeByte) {
-        int sizeKb = Utilities.getSizeKb(sizeByte);
-        int sectorSizeKb = MemoryStick.getSectorSizeKb();
-        int numberSectors = (sizeKb + sectorSizeKb - 1) / sectorSizeKb;
-
-        return numberSectors * sectorSizeKb;
     }
 
     @HLEFunction(nid = 0xC492F751, version = 150)
