@@ -6775,7 +6775,9 @@ public class VideoEngine {
     }
 
     private int getCompressedTextureSize(int level, int compressionRatio) {
-        return getCompressedTextureSize(context.texture_buffer_width[level], context.texture_height[level], compressionRatio);
+    	// We load the texture with the size (texture_width, texture_height) using OpenGL.
+    	// Do not use the texture_buffer_width here.
+        return getCompressedTextureSize(context.texture_width[level], context.texture_height[level], compressionRatio);
     }
 
     public static int getCompressedTextureSize(int width, int height, int compressionRatio) {
