@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.GUI;
 
+import static jpcsp.GUI.UmdBrowser.icon0Height;
+import static jpcsp.GUI.UmdBrowser.icon0Width;
 import static jpcsp.media.MediaEngine.streamCoderOpen;
 
 import java.awt.Image;
@@ -187,11 +189,10 @@ public class UmdBrowserPmf {
 	    if (videoCoder != null) {
 	    	converter = ConverterFactory.createConverter(ConverterFactory.XUGGLER_BGR_24, IPixelFormat.Type.BGR24, videoCoder.getWidth(), videoCoder.getHeight());
 
-	    	if (videoCoder.getPixelType() != IPixelFormat.Type.BGR24) {
+	    	if (videoCoder.getPixelType() != IPixelFormat.Type.BGR24 || videoCoder.getWidth() != icon0Width || videoCoder.getHeight() != icon0Height) {
 		    	// if this stream is not in BGR24, we're going to need to
 		    	// convert it.  The VideoResampler does that for us.
-		    	resampler = IVideoResampler.make(videoCoder.getWidth(), 
-		    			videoCoder.getHeight(), IPixelFormat.Type.BGR24,
+		    	resampler = IVideoResampler.make(icon0Width, icon0Height, IPixelFormat.Type.BGR24,
 		    			videoCoder.getWidth(), videoCoder.getHeight(), videoCoder.getPixelType());
 	
 		    	if (resampler == null) {
@@ -305,8 +306,7 @@ public class UmdBrowserPmf {
 		                 */
 		                if (resampler != null) {
 		            	    // we must resample
-		            	    newPic = IVideoPicture.make(resampler.getOutputPixelFormat(),
-		            			    picture.getWidth(), picture.getHeight());
+		            	    newPic = IVideoPicture.make(resampler.getOutputPixelFormat(), resampler.getOutputWidth(), resampler.getOutputHeight());
 		            	    if (resampler.resample(newPic, picture) < 0) {
 		            		    throw new RuntimeException("could not resample video from: " + fileName);
 		            	    }
