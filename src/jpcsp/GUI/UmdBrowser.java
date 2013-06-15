@@ -82,6 +82,8 @@ import jpcsp.settings.Settings;
  */
 public class UmdBrowser extends JDialog {
 	private static final String windowNameForSettings = "umdbrowser";
+	public static final int icon0Width = 144;
+	public static final int icon0Height = 80;
 
 	private static final class MemStickTableColumnModel extends DefaultTableColumnModel {
 		private static final long serialVersionUID = -6321946514015824875L;
@@ -307,7 +309,7 @@ public class UmdBrowser extends JDialog {
 		setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		table = new JTable(new MemStickTableModel(paths), new MemStickTableColumnModel());
 		table.setFillsViewportHeight(true);
-		table.setRowHeight(80);
+		table.setRowHeight(icon0Height);
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_NEXT_COLUMN);
 		table.setTableHeader(new JTableHeader(table.getColumnModel()));
 		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
