@@ -408,6 +408,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         // enable memory breakpoint manager if debugger memory is available
         ManageMemBreaks.setEnabled(Memory.getInstance() instanceof DebuggerMemory);
+        miManageMemoryBreakpoints.setEnabled(Memory.getInstance() instanceof DebuggerMemory);
     }
 
     private void updateSelectedRegisters(String text) {
