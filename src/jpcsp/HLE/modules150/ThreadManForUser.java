@@ -3106,6 +3106,7 @@ public class ThreadManForUser extends HLEModule {
     public int sceKernelDeleteThread(@CheckArgument("checkThreadIDAllow0") int uid) {
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (!thread.isStopped()) {
+        	// This error is also returned for the current thread or thread id 0 (the current thread isn't stopped).
             return ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
         }
 

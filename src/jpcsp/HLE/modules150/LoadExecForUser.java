@@ -33,6 +33,7 @@ import jpcsp.GeneralJpcspException;
 import jpcsp.Loader;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModule;
@@ -61,6 +62,15 @@ public class LoadExecForUser extends HLEModule {
     @HLEFunction(nid = 0xBD2F1094, version = 150, checkInsideInterrupt = true)
     public int sceKernelLoadExec(PspString filename, @CanBeNull TPointer32 optionAddr) {
         String name = filename.getString();
+
+        if (name.toUpperCase().endsWith("SYSDIR/BOOT.BIN")) {
+        	String newName = name.substring(0, name.length() - 8) + "EBOOT.BIN";
+        	SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(newName);
+        	if (stat != null) {
+        		log.info(String.format("sceKernelLoadExec '%s' replaced by '%s'", name, newName));
+        		name = newName;
+        	}
+        }
 
         // Flush system memory to mimic a real PSP reset.
         Modules.SysMemUserForUserModule.reset();
@@ -124,11 +134,11 @@ public class LoadExecForUser extends HLEModule {
             	Modules.ThreadManForUserModule.hleKernelSetThreadArguments(rootThread, arguments, argSize);
             }
         } catch (GeneralJpcspException e) {
-            log.error("General Error : " + e.getMessage());
+            log.error("General Error", e);
             Emulator.PauseEmu();
         } catch (IOException e) {
-            log.error("sceKernelLoadExec - Error while loading module " + name + ": " + e.getMessage());
-            throw new SceKernelErrorException(ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE);
+            log.error(String.format("sceKernelLoadExec - Error while loading module '%s'", name), e);
+            return ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
         }
 
         return 0;
