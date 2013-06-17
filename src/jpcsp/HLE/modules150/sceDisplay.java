@@ -1492,6 +1492,7 @@ public class sceDisplay extends HLEModule {
 
 		    if (preserveScreen) {
 		    	// Redraw the screen
+		    	re.bindTexture(resizedTexFb);
 		    	drawFrameBuffer(true, false, bufferwidthGe, pixelformatGe, widthGe, heightGe);
 		    }
 		}
