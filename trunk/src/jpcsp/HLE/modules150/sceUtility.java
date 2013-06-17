@@ -222,12 +222,13 @@ public class sceUtility extends HLEModule {
     public static final int PSP_NETPARAM_UNKNOWN2     = 17; // int
 
     protected static final int maxLineLengthForDialog = 40;
-    protected static final int[] fontHeightSavedataList = new int[]{12, 12, 12, 12, 12, 12, 9, 8, 7, 6};
 
     protected static final int icon0Width = 144;
     protected static final int icon0Height = 80;
     protected static final int icon0PixelFormat = TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
-    
+    protected static final int smallIcon0Width = 80;
+    protected static final int smallIcon0Height = 44;
+
     // Round-up width to next valid buffer width
     protected static final int icon0BufferWidth = alignBufferWidth(icon0Width + IRenderingEngine.alignementOfTextureBufferWidth[icon0PixelFormat] - 1, icon0PixelFormat);
 
@@ -2502,7 +2503,7 @@ public class sceUtility extends HLEModule {
             drawYesNo(278, 349, 154);
             gu.sceGuDrawHorizontalLine(201, 464, 184, 0xFF000000 | textColor);
 
-            drawTextWithShadow(6, 202, 0.75f, savedataParams.sfoParam.title);
+            drawTextWithShadow(6, 202, 0.75f, savedataParams.sfoParam.savedataTitle);
             drawTextWithShadow(6, 237, 0.75f, MemoryStick.getSizeKbString(savedataParams.getRequiredSizeKb()));
 
             drawEnter();
@@ -2686,21 +2687,23 @@ public class sceUtility extends HLEModule {
 
 	                textY += 24;
 	                drawTextWithShadow(textX, textY, 0.7f, detail);
+				} else {
+					drawTextWithShadow(180, 130, 0.75f, "New Data");
 				}
 
                 drawEnter();
                 drawBack();
 
                 if (selectedRow > 0) {
-                	drawIconByRow(selectedRow - 1, 58, 38, 80, 44);
+                	drawIconByRow(selectedRow - 1, 58, 38, smallIcon0Width, smallIcon0Height);
 					if (selectedRow > 1) {
-						drawIconByRow(selectedRow - 2, 58, -5, 80, 44);
+						drawIconByRow(selectedRow - 2, 58, -5, smallIcon0Width, smallIcon0Height);
 					}
 				}
 				if (selectedRow < numberRows - 1) {
-					drawIconByRow(selectedRow + 1, 58, 190, 80, 44);
+					drawIconByRow(selectedRow + 1, 58, 190, smallIcon0Width, smallIcon0Height);
 					if (selectedRow < numberRows - 2) {
-						drawIconByRow(selectedRow + 2, 58, 233, 80, 44);
+						drawIconByRow(selectedRow + 2, 58, 233, smallIcon0Width, smallIcon0Height);
 					}
 				}
 			} else {
@@ -2749,12 +2752,11 @@ public class sceUtility extends HLEModule {
 
     protected static class GuMsgDialog extends GuUtilityDialog {
 		protected SceUtilityMsgDialogParams msgDialogParams;
-		protected boolean isYesSelected;
 
 		public GuMsgDialog(final SceUtilityMsgDialogParams msgDialogParams, MsgDialogUtilityDialogState msgDialogState) {
 			super(msgDialogParams.base);
 			this.msgDialogParams = msgDialogParams;
-			isYesSelected = msgDialogParams.isOptionYesNoDefaultYes();
+			msgDialogState.setYesSelected(msgDialogParams.isOptionYesNoDefaultYes());
 
 			createDialog(msgDialogState);
 		}
@@ -2847,9 +2849,14 @@ public class sceUtility extends HLEModule {
 			if ((msgDialogParams.options & SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_NORMAL) != 0 && !msgDialogParams.isOptionOk() && !msgDialogParams.isOptionYesNo()) {
 				drawBack();
 			} else {
-				drawEnter();
 				if ((msgDialogParams.options & SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_DISABLE_CANCEL) == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_ENABLE_CANCEL) {
+					// Enter is not displayed when all options are 0
+					if (msgDialogParams.options != 0) {
+						drawEnter();
+					}
 					drawBack();
+				} else {
+					drawEnter();
 				}
 			}
 		}
@@ -2869,7 +2876,7 @@ public class sceUtility extends HLEModule {
 		@Override
 		protected int getButtonPressedOK() {
 			if (msgDialogParams.isOptionYesNo()) {
-				return isYesSelected ? SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_YES : SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_NO;
+				return utilityDialogState.isYesSelected() ? SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_YES : SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_NO;
 			}
 
 			return super.getButtonPressedOK();
