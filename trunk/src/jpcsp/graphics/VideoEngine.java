@@ -2725,6 +2725,11 @@ public class VideoEngine {
 
         memoryForGEUpdated();
 
+        if (display.isGeAddress(context.textureTx_sourceAddress)) {
+        	re.waitForRenderingCompletion();
+        	display.copyGeToMemory(true);
+        }
+
         if (!display.isGeAddress(context.textureTx_destinationAddress) || bpp != bppGe || display.isUsingSoftwareRenderer()) {
             if (isLogDebugEnabled) {
                 if (bpp != bppGe) {
@@ -3915,7 +3920,9 @@ public class VideoEngine {
         context.lightAmbientColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
         context.lightAmbientColor[lnum][3] = 1.f;
         re.setLightAmbientColor(lnum, context.lightAmbientColor[lnum]);
-        log("sceGuLightColor (GU_LIGHT0, GU_AMBIENT)");
+        if (isLogDebugEnabled) {
+        	log(String.format("sceGuLightColor GU_LIGHT%d, GU_AMBIENT r=%.3f, b=%.3f, g=%.3f, a=%.3f", lnum, context.lightAmbientColor[lnum][0], context.lightAmbientColor[lnum][1], context.lightAmbientColor[lnum][2], context.lightAmbientColor[lnum][3]));
+        }
     }
 
     private void executeCommandDLCn() {
@@ -3925,7 +3932,9 @@ public class VideoEngine {
         context.lightDiffuseColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
         context.lightDiffuseColor[lnum][3] = 1.f;
         re.setLightDiffuseColor(lnum, context.lightDiffuseColor[lnum]);
-        log("sceGuLightColor (GU_LIGHT0, GU_DIFFUSE)");
+        if (isLogDebugEnabled) {
+        	log(String.format("sceGuLightColor GU_LIGHT%d, GU_DIFFUSE r=%.3f, b=%.3f, g=%.3f, a=%.3f", lnum, context.lightDiffuseColor[lnum][0], context.lightDiffuseColor[lnum][1], context.lightDiffuseColor[lnum][2], context.lightDiffuseColor[lnum][3]));
+        }
     }
 
     private void executeCommandSLCn() {
@@ -3942,7 +3951,9 @@ public class VideoEngine {
             lightingChanged = true;
         }
         re.setLightSpecularColor(lnum, context.lightDiffuseColor[lnum]);
-        log("sceGuLightColor (GU_LIGHT0, GU_SPECULAR)");
+        if (isLogDebugEnabled) {
+        	log(String.format("sceGuLightColor GU_LIGHT%d, GU_SPECULAR r=%.3f, b=%.3f, g=%.3f, a=%.3f", lnum, context.lightSpecularColor[lnum][0], context.lightSpecularColor[lnum][1], context.lightSpecularColor[lnum][2], context.lightSpecularColor[lnum][3]));
+        }
     }
 
     private void executeCommandFFACE() {
