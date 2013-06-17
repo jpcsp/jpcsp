@@ -33,7 +33,6 @@ import jpcsp.GeneralJpcspException;
 import jpcsp.Loader;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModule;
@@ -48,6 +47,8 @@ import org.apache.log4j.Logger;
 public class LoadExecForUser extends HLEModule {
     public static Logger log = Modules.getLogger("LoadExecForUser");
     protected int registeredExitCallbackUid;
+    protected static final String encryptedBootPath = "disc0:/PSP_GAME/SYSDIR/EBOOT.BIN";
+    protected static final String unencryptedBootPath = "disc0:/PSP_GAME/SYSDIR/BOOT.BIN";
 
     @Override
     public String getName() {
@@ -63,13 +64,10 @@ public class LoadExecForUser extends HLEModule {
     public int sceKernelLoadExec(PspString filename, @CanBeNull TPointer32 optionAddr) {
         String name = filename.getString();
 
-        if (name.toUpperCase().endsWith("SYSDIR/BOOT.BIN")) {
-        	String newName = name.substring(0, name.length() - 8) + "EBOOT.BIN";
-        	SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(newName);
-        	if (stat != null) {
-        		log.info(String.format("sceKernelLoadExec '%s' replaced by '%s'", name, newName));
-        		name = newName;
-        	}
+        // The PSP is replacing a loadexec of disc0:/PSP_GAME/SYSDIR/BOOT.BIN with EBOOT.BIN
+        if (name.equals(unencryptedBootPath)) {
+    		log.info(String.format("sceKernelLoadExec '%s' replaced by '%s'", name, encryptedBootPath));
+    		name = encryptedBootPath;
         }
 
         // Flush system memory to mimic a real PSP reset.
