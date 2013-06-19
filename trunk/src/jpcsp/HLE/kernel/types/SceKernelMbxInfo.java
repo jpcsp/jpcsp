@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import static jpcsp.HLE.kernel.types.SceKernelMsgPacket.readNext;
+import static jpcsp.HLE.kernel.types.SceKernelMsgPacket.writeNext;
 import jpcsp.Memory;
 import jpcsp.HLE.kernel.managers.MbxManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
@@ -55,54 +57,51 @@ public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructureVariableLe
 		write32(firstMessageAddr);
 	}
 
-    public int removeMsg(Memory mem) {
+	private void setFirstMessageAddr(Memory mem, int firstMessageAddr) {
+		this.firstMessageAddr = firstMessageAddr;
+		if (firstMessageAddr == 0) {
+			lastMessageAddr = 0;
+		} else {
+			if (lastMessageAddr == 0) {
+				lastMessageAddr = firstMessageAddr;
+			}
+			// The last packet is always pointing to the first one (circular list).
+			writeNext(mem, lastMessageAddr, firstMessageAddr);
+		}
+	}
+
+	public int removeMsg(Memory mem) {
     	int msgAddr = firstMessageAddr;
     	if (msgAddr != 0) {
-    		SceKernelMsgPacket packet = new SceKernelMsgPacket();
-    		packet.read(mem, msgAddr);
-    		firstMessageAddr = packet.nextMsgPacketAddr;
-    		if (firstMessageAddr == 0) {
-    			lastMessageAddr = 0;
+    		int nextMessageAddr = readNext(mem, msgAddr);
+    		if (nextMessageAddr == msgAddr) {
+    			setFirstMessageAddr(mem, 0);
+    		} else {
+    			setFirstMessageAddr(mem, nextMessageAddr);
     		}
-    		packet.nextMsgPacketAddr = 0;
-    		packet.write(mem);
     		numMessages--;
     	}
     	return msgAddr;
     }
 
     private void insertMsgAfter(Memory mem, int msgAddr, int refMsgAddr) {
-		SceKernelMsgPacket msgPacket = new SceKernelMsgPacket();
-		msgPacket.read(mem, msgAddr);
-
 		if (lastMessageAddr == 0) {
-			// Insert into an empty queue
-			msgPacket.nextMsgPacketAddr = 0;
-
-			firstMessageAddr = msgAddr;
-    		lastMessageAddr = msgAddr;
+			// Insert into an empty queue.
+			setFirstMessageAddr(mem, msgAddr);
 		} else if (refMsgAddr == 0) {
 			// Insert in front of the queue
-			msgPacket.nextMsgPacketAddr = firstMessageAddr;
-
-			firstMessageAddr = msgAddr;
+			writeNext(mem, msgAddr, firstMessageAddr);
+			setFirstMessageAddr(mem, msgAddr);
     	} else {
     		// Insert in the middle of the queue
-			SceKernelMsgPacket refMsgPacket = new SceKernelMsgPacket();
-			refMsgPacket.read(mem, refMsgAddr);
-
-			msgPacket.nextMsgPacketAddr = refMsgPacket.nextMsgPacketAddr;
-
-			refMsgPacket.nextMsgPacketAddr = msgAddr;
-			refMsgPacket.write(mem);
+			writeNext(mem, msgAddr, readNext(mem, refMsgAddr));
+			writeNext(mem, refMsgAddr, msgAddr);
 
 			if (lastMessageAddr == refMsgAddr) {
-				// Inset at the end of the queue
+				// Insert at the end of the queue
 				lastMessageAddr = msgAddr;
 			}
     	}
-
-		msgPacket.write(mem);
 
 		numMessages++;
     }
@@ -115,17 +114,14 @@ public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructureVariableLe
 
     public void addMsgByPriority(Memory mem, int msgAddr) {
     	if (msgAddr != 0) {
-    		SceKernelMsgPacket msgPacket = new SceKernelMsgPacket();
-    		msgPacket.read(mem, msgAddr);
-    		SceKernelMsgPacket currentMsgPacket = new SceKernelMsgPacket();
     		int currentMsgAddr = firstMessageAddr;
     		int previousMsgAddr = 0;
     		for (int i = 0; i < numMessages; i++) {
-    			currentMsgPacket.read(mem, currentMsgAddr);
-    			if (msgPacket.compare(msgPacket, currentMsgPacket) < 0) {
+    			if (SceKernelMsgPacket.compare(mem, msgAddr, currentMsgAddr) < 0) {
     				break;
     			}
     			previousMsgAddr = currentMsgAddr;
+    			currentMsgAddr = readNext(mem, currentMsgAddr);
     		}
 			insertMsgAfter(mem, msgAddr, previousMsgAddr);
     	}
