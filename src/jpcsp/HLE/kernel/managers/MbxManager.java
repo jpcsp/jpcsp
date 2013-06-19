@@ -121,38 +121,6 @@ public class MbxManager {
         onMbxDeletedCancelled(mbxid, ERROR_KERNEL_WAIT_CANCELLED);
     }
 
-    private void onMbxModified(SceKernelMbxInfo info) {
-        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        boolean reschedule = false;
-
-        SceKernelThreadInfo checkedThread = null;
-        while (info.hasMessage()) {
-            SceKernelThreadInfo thread = info.threadWaitingList.getNextWaitingThread(checkedThread);
-            if (thread == null) {
-            	break;
-            }
-            if (info.hasMessage()) {
-                if (log.isDebugEnabled()) {
-                    log.debug(String.format("onMbxModified waking thread %s", thread));
-                }
-                Memory mem = Memory.getInstance();
-                int msgAddr = info.removeMsg(mem);
-                thread.wait.Mbx_resultAddr.setValue(msgAddr);
-                info.threadWaitingList.removeWaitingThread(thread);
-                thread.cpuContext._v0 = 0;
-                threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
-                reschedule = true;
-            } else {
-            	checkedThread = thread;
-            }
-        }
-
-        // Reschedule only if threads waked up.
-        if (reschedule) {
-            threadMan.hleRescheduleCurrentThread();
-        }
-    }
-
     public int checkMbxID(int uid) {
         if (!mbxMap.containsKey(uid)) {
         	log.warn(String.format("checkMbxID unknown uid=0x%X", uid));
@@ -186,12 +154,37 @@ public class MbxManager {
 
     public int sceKernelSendMbx(int uid, TPointer msgAddr) {
         SceKernelMbxInfo info = mbxMap.get(uid);
-        if ((info.attr & PSP_MBX_ATTR_MSG_PRIORITY) == PSP_MBX_ATTR_MSG_FIFO) {
-            info.addMsg(msgAddr.getMemory(), msgAddr.getAddress());
-        } else if ((info.attr & PSP_MBX_ATTR_MSG_PRIORITY) == PSP_MBX_ATTR_MSG_PRIORITY) {
-            info.addMsgByPriority(msgAddr.getMemory(), msgAddr.getAddress());
+
+        boolean msgConsumed = false;
+
+        // If the Mbx is empty, check if some thread is already waiting.
+        // If a thread is already waiting, do not update the msg "nextMsgPacketAddr" field.
+        if (!info.hasMessage()) {
+            SceKernelThreadInfo thread = info.threadWaitingList.getFirstWaitingThread();
+            if (thread != null) {
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("sceKernelSendMbx waking thread %s", thread));
+                }
+                thread.wait.Mbx_resultAddr.setValue(msgAddr.getAddress());
+                info.threadWaitingList.removeWaitingThread(thread);
+                thread.cpuContext._v0 = 0;
+
+                ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+                threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                threadMan.hleRescheduleCurrentThread();
+
+                msgConsumed = true;
+            }
         }
-        onMbxModified(info);
+
+        // Add the message if it has not yet been consumed by a waiting thread
+        if (!msgConsumed) {
+	        if ((info.attr & PSP_MBX_ATTR_MSG_PRIORITY) == PSP_MBX_ATTR_MSG_FIFO) {
+	            info.addMsg(msgAddr.getMemory(), msgAddr.getAddress());
+	        } else if ((info.attr & PSP_MBX_ATTR_MSG_PRIORITY) == PSP_MBX_ATTR_MSG_PRIORITY) {
+	            info.addMsgByPriority(msgAddr.getMemory(), msgAddr.getAddress());
+	        }
+        }
 
         return 0;
     }
