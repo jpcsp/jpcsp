@@ -312,7 +312,10 @@ public class sceAudio extends HLEModule {
 
     public int checkSampleCount(int sampleCount) {
         if (sampleCount <= 0 || sampleCount > 0xFFC0 || (sampleCount & 0x3F) != 0) {
-        	return SceKernelErrors.ERROR_AUDIO_OUTPUT_SAMPLE_DATA_SIZE_NOT_ALIGNED;
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Invalid sampleCount 0x%X", sampleCount));
+    		}
+        	throw new SceKernelErrorException(SceKernelErrors.ERROR_AUDIO_OUTPUT_SAMPLE_DATA_SIZE_NOT_ALIGNED);
         }
 
     	return sampleCount;
@@ -320,6 +323,9 @@ public class sceAudio extends HLEModule {
 
     public int checkSmallSampleCount(int sampleCount) {
     	if (sampleCount < 17 || sampleCount >= 4095 + 17) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Invalid small sampleCount 0x%X", sampleCount));
+    		}
     		throw new SceKernelErrorException(SceKernelErrors.ERROR_AUDIO_OUTPUT_SAMPLE_DATA_SIZE_NOT_ALIGNED);
     	}
 
@@ -329,6 +335,9 @@ public class sceAudio extends HLEModule {
     public int checkVolume(int volume) {
     	// Negative volume is allowed
     	if (volume > 0xFFFF) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Invalid volume 0x%X", volume));
+    		}
     		throw new SceKernelErrorException(SceKernelErrors.ERROR_AUDIO_INVALID_VOLUME);
     	}
 
@@ -337,10 +346,24 @@ public class sceAudio extends HLEModule {
 
     public int checkVolume2(int volume) {
     	if (volume < 0 || volume > 0xFFFFF) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Invalid volume 0x%X", volume));
+    		}
     		throw new SceKernelErrorException(SceKernelErrors.ERROR_AUDIO_INVALID_VOLUME);
     	}
 
     	return volume;
+    }
+
+    public int checkFormat(int format) {
+    	if (format != PSP_AUDIO_FORMAT_STEREO && format != PSP_AUDIO_FORMAT_MONO) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Invalid format 0x%X", format));
+    		}
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_AUDIO_INVALID_FORMAT);
+    	}
+
+    	return format;
     }
 
     protected void hleAudioBlockingInput(int threadId, int addr, int samples, int frequency) {
@@ -573,35 +596,42 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0x5EC81C55, version = 150, checkInsideInterrupt = true)
-    public int sceAudioChReserve(int channel, @CheckArgument("checkSampleCount") int sampleCount, int format) {
+    public int sceAudioChReserve(int channel, int sampleCount, int format) {
         if (disableChReserve) {
             log.warn(String.format("IGNORED sceAudioChReserve channel=%d, sampleCount=%d, format=%d", channel, sampleCount, format));
-            return -1;
+            return SceKernelErrors.ERROR_AUDIO_NO_CHANNELS_AVAILABLE;
         }
 
-        if (channel != -1) {
+        if (channel >= 0) {
         	channel = checkChannel(channel);
             if (pspPCMChannels[channel].isReserved()) {
-                log.warn(String.format("sceAudioChReserve failed - channel %d already in use", channel));
-                channel = -1;
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("sceAudioChReserve failed - channel %d already in use", channel));
+            	}
+                return SceKernelErrors.ERROR_AUDIO_INVALID_CHANNEL;
             }
         } else {
-            for (int i = 0; i < pspPCMChannels.length; i++) {
+        	// The PSP is searching for a free channel, starting with the highest channel number.
+            for (int i = pspPCMChannels.length - 1; i >= 0; i--) {
                 if (!pspPCMChannels[i].isReserved()) {
                     channel = i;
                     break;
                 }
             }
-            if (channel == -1) {
-                log.warn("sceAudioChReserve failed - no free channels available");
+
+            if (channel < 0) {
+                log.debug("sceAudioChReserve failed - no free channels available");
+                return SceKernelErrors.ERROR_AUDIO_NO_CHANNELS_AVAILABLE;
             }
         }
 
-        if (channel != -1) {
-            pspPCMChannels[channel].setReserved(true);
-            pspPCMChannels[channel].setSampleLength(sampleCount);
-            pspPCMChannels[channel].setFormat(format);
-        }
+        // The validity of the sampleCount and format parameters is only checked after the channel check
+        sampleCount = checkSampleCount(sampleCount);
+        format = checkFormat(format);
+
+        pspPCMChannels[channel].setReserved(true);
+        pspPCMChannels[channel].setSampleLength(sampleCount);
+        pspPCMChannels[channel].setFormat(format);
 
         return channel;
     }
@@ -637,7 +667,7 @@ public class sceAudio extends HLEModule {
     }
 
     @HLEFunction(nid = 0x95FD0C2D, version = 150, checkInsideInterrupt = true)
-    public int sceAudioChangeChannelConfig(@CheckArgument("checkReservedChannel") int channel, int format) {
+    public int sceAudioChangeChannelConfig(@CheckArgument("checkReservedChannel") int channel, @CheckArgument("checkFormat") int format) {
     	pspPCMChannels[channel].setFormat(format);
 
         return 0;
