@@ -661,10 +661,10 @@
     <Container class="javax.swing.JTabbedPane" name="disasmTabs">
       <Properties>
         <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-          <Dimension value="[280, 540]"/>
+          <Dimension value="[280, 587]"/>
         </Property>
         <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-          <Dimension value="[280, 540]"/>
+          <Dimension value="[280, 587]"/>
         </Property>
       </Properties>
 
