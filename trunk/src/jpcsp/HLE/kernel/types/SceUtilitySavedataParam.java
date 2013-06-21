@@ -714,17 +714,17 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 
     public boolean isPresent(String gameName, String saveName) {
     	saveName = getAnySaveName(gameName, saveName);
-        String path = getBasePath(gameName, saveName);
 
         // When NULL is sent in fileName, it means any file inside the savedata folder.
         if (fileName == null || fileName.length() <= 0) {
-            File f = new File(path);
+            File f = new File(savedataFilePath + gameName + saveName);
             if (f.list() == null) {
                 return false;
             }
             return true;
         }
 
+        String path = getBasePath(gameName, saveName);
         try {
             SeekableDataInput fileInput = getDataInput(path, fileName);
             if (fileInput != null) {
@@ -759,6 +759,22 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         }
 
         return 0;
+    }
+
+    public Calendar getSavedTime() {
+    	return getSavedTime(saveName);
+    }
+
+    public Calendar getSavedTime(String saveName) {
+		String sfoFileName = getFileName(saveName, SceUtilitySavedataParam.paramSfoFileName);
+        SceIoStat sfoStat = Modules.IoFileMgrForUserModule.statFile(sfoFileName);
+        ScePspDateTime pspTime = sfoStat.mtime;
+
+		Calendar savedTime = Calendar.getInstance();
+        // pspTime.month has a value in range [1..12], Calendar requires a value in range [0..11]
+        savedTime.set(pspTime.year, pspTime.month - 1, pspTime.day, pspTime.hour, pspTime.minute, pspTime.second);
+
+        return savedTime;
     }
 
     @Override
