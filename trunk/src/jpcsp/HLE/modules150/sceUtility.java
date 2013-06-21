@@ -86,7 +86,6 @@ import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.kernel.types.SceFontInfo;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
-import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.kernel.types.SceUtilityGamedataInstallParams;
 import jpcsp.HLE.kernel.types.SceUtilityGameSharingParams;
 import jpcsp.HLE.kernel.types.SceUtilityHtmlViewerParams;
@@ -265,21 +264,39 @@ public class sceUtility extends HLEModule {
         protected GuUtilityDialog guDialog;
         protected boolean isOnlyGeGraphics;
         protected boolean isYesSelected;
+        protected static enum DialogState {
+        	init,
+        	display,
+        	confirmation,
+        	inProgress,
+        	completed,
+        	quit
+        };
+        protected DialogState dialogState;
 
         public UtilityDialogState(String name) {
             this.name = name;
             status = PSP_UTILITY_DIALOG_STATUS_NONE;
             result = PSP_UTILITY_DIALOG_RESULT_OK;
+            dialogState = DialogState.init;
             setButtonPressed(SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_INVALID);
         }
 
         protected void openDialog(UtilityDialog dialog) {
-    		status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
+        	if (dialogState == DialogState.init) {
+        		dialogState = DialogState.display;
+        	}
+
+        	status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
         	this.dialog = dialog;
         	dialog.setVisible(true);
         }
 
         protected void openDialog(GuUtilityDialog guDialog) {
+        	if (dialogState == DialogState.init) {
+        		dialogState = DialogState.display;
+        	}
+
     		status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
     		this.guDialog = guDialog;
 
@@ -318,7 +335,7 @@ public class sceUtility extends HLEModule {
         	return false;
         }
 
-        protected void finishDialog() {
+        protected void closeDialog() {
         	if (dialog != null) {
 	        	Settings.getInstance().writeWindowPos(name, dialog.getLocation());
 	            Settings.getInstance().writeWindowSize(name, dialog.getSize());
@@ -332,7 +349,12 @@ public class sceUtility extends HLEModule {
 
         		guDialog = null;
         	}
+        }
+
+        protected void quitDialog() {
+        	closeDialog();
             status = PSP_UTILITY_DIALOG_STATUS_QUIT;
+            dialogState = DialogState.quit;
         }
 
         public int getButtonPressed() {
@@ -364,11 +386,13 @@ public class sceUtility extends HLEModule {
             if (validityResult == 0) {
             	// Start with INIT
             	status = PSP_UTILITY_DIALOG_STATUS_INIT;
+            	dialogState = DialogState.init;
             	Modules.sceUtilityModule.startedDialogState = this;
 
             	// Move directly to status VISIBLE when there is no dialog needed.
             	if (!hasDialog()) {
             		status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
+            		dialogState = DialogState.quit;
             		startVisibleTimeMillis = Emulator.getClock().currentTimeMillis();
             	}
             }
@@ -376,7 +400,7 @@ public class sceUtility extends HLEModule {
             return validityResult;
         }
 
-        private boolean isReadyForVisible() {
+        protected boolean isReadyForVisible() {
         	// Wait for all the buttons to be released
         	if (State.controller.getButtons() != 0) {
         		if (log.isDebugEnabled()) {
@@ -482,7 +506,7 @@ public class sceUtility extends HLEModule {
                 	}
                 }
 
-                if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE && !isDialogOpen() && !keepVisible) {
+                if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE && !isDialogOpen() && !keepVisible && dialogState == DialogState.quit) {
                 	// Check if we stayed long enough in the VISIBLE state
                 	long now = Emulator.getClock().currentTimeMillis();
                 	if (now - startVisibleTimeMillis >= getMinimumVisibleDurationMillis()) {
@@ -704,35 +728,50 @@ public class sceUtility extends HLEModule {
                 }
 
                 case SceUtilitySavedataParam.MODE_LISTLOAD: {
-                    if (!isDialogOpen()) {
-                        // Search for valid saves.
-                        ArrayList<String> validNames = new ArrayList<String>();
+                	switch (dialogState) {
+                		case init: {
+                            // Search for valid saves.
+                            ArrayList<String> validNames = new ArrayList<String>();
 
-                        for (int i = 0; i < savedataParams.saveNameList.length; i++) {
-                            savedataParams.saveName = savedataParams.saveNameList[i];
+                            for (int i = 0; i < savedataParams.saveNameList.length; i++) {
+                                savedataParams.saveName = savedataParams.saveNameList[i];
 
-                            if (savedataParams.isPresent()) {
-                                validNames.add(savedataParams.saveName);
+                                if (savedataParams.isPresent()) {
+                                    validNames.add(savedataParams.saveName);
+                                }
                             }
-                        }
 
-                        GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, validNames.toArray(new String[validNames.size()]));
-                        openDialog(gu);
-                    } else if (!isDialogActive()) {
-                        if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
-                            if (saveListEmpty) {
-                            	// No data available
-                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
+                            GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, validNames.toArray(new String[validNames.size()]));
+                            openDialog(gu);
+                            break;
+                		}
+                		case display: {
+                            if (!isDialogActive()) {
+                                if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
+                                    if (saveListEmpty) {
+                                    	// No data available
+                                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
+                                    } else {
+                                    	// Dialog cancelled
+                                    	savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_BAD_PARAMS;
+                                    }
+                                    quitDialog();
+                                } else if (saveListSelection == null) {
+                                    log.warn("Savedata MODE_LISTLOAD no save selected");
+                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_BAD_PARAMS;
+                                    quitDialog();
+                                } else {
+                                	closeDialog();
+                                	dialogState = DialogState.inProgress;
+                                }
                             } else {
-                            	// Dialog cancelled
-                            	savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_BAD_PARAMS;
+                                updateDialog();
                             }
-                        } else if (saveListSelection == null) {
-                            log.warn("Savedata MODE_LISTLOAD no save selected");
-                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_BAD_PARAMS;
-                        } else {
-                            savedataParams.saveName = saveListSelection;
+                			break;
+                		}
+                		case inProgress: {
                             try {
+                                savedataParams.saveName = saveListSelection;
                                 if (log.isDebugEnabled()) {
                                     log.debug(String.format("Loading savedata %s", savedataParams.saveName));
                                 }
@@ -752,11 +791,23 @@ public class sceUtility extends HLEModule {
                                 savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_ACCESS_ERROR;
                                 log.error(e);
                             }
-                        }
-                        finishDialog();
-                    } else {
-                        updateDialog();
-                    }
+
+                            if (isReadyForVisible()) {
+	    	                    GuSavedataDialogCompleted gu = new GuSavedataDialogCompleted(savedataParams, this);
+	    	                    openDialog(gu);
+	    	                    dialogState = DialogState.completed;
+    	                    }
+                			break;
+                		}
+                		case completed: {
+        					if (!isDialogActive()) {
+        						quitDialog();
+        					} else {
+        						updateDialog();
+        					}
+        					break;
+                		}
+                	}
                     break;
                 }
 
@@ -780,22 +831,39 @@ public class sceUtility extends HLEModule {
                 }
 
         		case SceUtilitySavedataParam.MODE_SAVE: {
-                    if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
-                        if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
-                            savedataParams.saveName = savedataParams.saveNameList[0];
-                        }
-                    }
-        			if (!isDialogOpen()) {
-        				// Yes is selected by default
-        				setYesSelected(true);
-        				GuSavedataDialogSave gu = new GuSavedataDialogSave(savedataParams, this);
-        				openDialog(gu);
-        			} else if (!isDialogActive()) {
-        				if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK || isNoSelected()) {
-                            // The dialog has been cancelled or the user did not want to save.
-        					// The PSP is not returning an error code in these cases, but the value 1.
-                            savedataParams.base.result = 1;
-        				} else {
+        			switch (dialogState) {
+        				case init: {
+                            if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
+                                if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
+                                    savedataParams.saveName = savedataParams.saveNameList[0];
+                                }
+                            }
+
+                        	// Yes is selected by default if the save does not exist.
+                        	// No is selected by default if the save does exist (overwrite).
+                        	setYesSelected(!savedataParams.isPresent());
+                        	GuSavedataDialogSave gu = new GuSavedataDialogSave(savedataParams, this);
+                        	openDialog(gu);
+                        	dialogState = DialogState.confirmation;
+                            break;
+        				}
+        				case confirmation: {
+        					if (!isDialogActive()) {
+                				if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK || isNoSelected()) {
+                                    // The dialog has been cancelled or the user did not want to save.
+                					// The PSP is not returning an error code in these cases, but the value 1.
+                                    savedataParams.base.result = 1;
+                                    quitDialog();
+                				} else {
+                					closeDialog();
+                					dialogState = DialogState.inProgress;
+                				}
+        					} else {
+        						updateDialog();
+        					}
+        					break;
+        				}
+        				case inProgress: {
     	                    try {
     	                        savedataParams.save(mem);
     	                        savedataParams.base.result = 0;
@@ -805,27 +873,79 @@ public class sceUtility extends HLEModule {
     	                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
     	                        log.error(e);
     	                    }
+
+    	                    if (isReadyForVisible()) {
+	    	                    GuSavedataDialogCompleted gu = new GuSavedataDialogCompleted(savedataParams, this);
+	    	                    openDialog(gu);
+	    	                    dialogState = DialogState.completed;
+    	                    }
+                            break;
         				}
-	                    finishDialog();
-        			} else {
-        				updateDialog();
+        				case completed: {
+        					if (!isDialogActive()) {
+        						quitDialog();
+        					} else {
+        						updateDialog();
+        					}
+        					break;
+        				}
         			}
-                    break;
+        			break;
         		}
 
                 case SceUtilitySavedataParam.MODE_LISTSAVE: {
-                    if (!isDialogOpen()) {
-                        GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, savedataParams.saveNameList);
-                        openDialog(gu);
-                    } else if (!isDialogActive()) {
-                        if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
-                            // Dialog cancelled
-                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_BAD_PARAMS;
-                        } else if (saveListSelection == null) {
-                            log.warn("Savedata MODE_LISTSAVE no save selected");
-                            savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_BAD_PARAMS;
-                        } else {
-                            savedataParams.saveName = saveListSelection;
+        			switch (dialogState) {
+	    				case init: {
+	                        GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, savedataParams.saveNameList);
+	                        openDialog(gu);
+	                        break;
+	    				}
+	    				case display: {
+	                        if (!isDialogActive()) {
+                            	closeDialog();
+	                            if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
+	                                // Dialog cancelled
+	                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_BAD_PARAMS;
+	                            	quitDialog();
+	                            } else if (saveListSelection == null) {
+	                                log.warn("Savedata MODE_LISTSAVE no save selected");
+	                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_BAD_PARAMS;
+	                            	quitDialog();
+	                            } else {
+	                                savedataParams.saveName = saveListSelection;
+	                                savedataParams.write(mem);
+	                                if (savedataParams.isPresent(savedataParams.gameName, saveListSelection)) {
+	                                	if (isReadyForVisible()) {
+		                                	GuSavedataDialogSave gu = new GuSavedataDialogSave(savedataParams, this);
+		                                	openDialog(gu);
+		                                	dialogState = DialogState.confirmation;
+	                                	}
+	                                } else {
+	                                	dialogState = DialogState.inProgress;
+	                                }
+	                            }
+	                        } else {
+	                            updateDialog();
+	                        }
+	    					break;
+	    				}
+	    				case confirmation: {
+	    					if (!isDialogActive()) {
+	            				if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK || isNoSelected()) {
+	                                // The dialog has been cancelled or the user did not want to save.
+	            					// The PSP is not returning an error code in these cases, but the value 1.
+	                                savedataParams.base.result = 1;
+	                                quitDialog();
+	            				} else {
+	            					closeDialog();
+	            					dialogState = DialogState.inProgress;
+	            				}
+	    					} else {
+	    						updateDialog();
+	    					}
+	    					break;
+	    				}
+	    				case inProgress: {
                             try {
                                 if (log.isDebugEnabled()) {
                                     log.debug(String.format("Saving savedata %s", savedataParams.saveName));
@@ -838,12 +958,24 @@ public class sceUtility extends HLEModule {
                                 savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
                                 log.error(e);
                             }
-                        }
-                        finishDialog();
-                    } else {
-                        updateDialog();
-                    }
-                    break;
+	
+		                    if (isReadyForVisible()) {
+	    	                    GuSavedataDialogCompleted gu = new GuSavedataDialogCompleted(savedataParams, this);
+	    	                    openDialog(gu);
+	    	                    dialogState = DialogState.completed;
+		                    }
+	                        break;
+	    				}
+	    				case completed: {
+	    					if (!isDialogActive()) {
+	    						quitDialog();
+	    					} else {
+	    						updateDialog();
+	    					}
+	    					break;
+	    				}
+	    			}
+	    			break;
                 }
 
                 case SceUtilitySavedataParam.MODE_DELETE: {
@@ -895,7 +1027,7 @@ public class sceUtility extends HLEModule {
                                     savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_ACCESS_ERROR;
                                 }
                             }
-                            finishDialog();
+                            quitDialog();
                         } else {
                             updateDialog();
                         }
@@ -1386,7 +1518,7 @@ public class sceUtility extends HLEModule {
 	        	}
 	            msgDialogParams.base.result = 0;
 	            msgDialogParams.write(mem);
-	        	finishDialog();
+	        	quitDialog();
 	        } else {
 	        	updateDialog();
 	        }
@@ -1428,7 +1560,7 @@ public class sceUtility extends HLEModule {
 	        	}
 	        	oskParams.base.result = 0;
 	        	oskParams.write(mem);
-	            finishDialog();
+	            quitDialog();
 	        } else {
 	        	oskDialog.checkController();
 	        	updateDialog();
@@ -1955,8 +2087,10 @@ public class sceUtility extends HLEModule {
 		}
 
 		protected void dispose() {
-			gu.free();
-			gu = null;
+			if (gu != null) {
+				gu.free();
+				gu = null;
+			}
 		}
 
 		public boolean isVisible() {
@@ -1967,7 +2101,7 @@ public class sceUtility extends HLEModule {
 			this.drawSpeed = drawSpeed;
 
 			// Do not overwrite a sceGu list still in drawing state
-			if (!gu.isListDrawing()) {
+			if (gu != null && !gu.isListDrawing()) {
 				gu.sceGuStart();
 
 				// Disable all common flags
@@ -2482,8 +2616,8 @@ public class sceUtility extends HLEModule {
     }
 
     protected static class GuSavedataDialogSave extends GuUtilityDialog {
-		private final SavedataUtilityDialogState savedataDialogState;
-		private final SceUtilitySavedataParam savedataParams;
+    	protected final SavedataUtilityDialogState savedataDialogState;
+    	protected final SceUtilitySavedataParam savedataParams;
 		protected boolean isYesSelected;
 
 		protected GuSavedataDialogSave(final SceUtilitySavedataParam savedataParams, final SavedataUtilityDialogState savedataDialogState) {
@@ -2496,26 +2630,71 @@ public class sceUtility extends HLEModule {
 
 		@Override
 		protected void updateDialog() {
+            String dialogTitle = savedataDialogState.getDialogTitle(savedataParams.getModeName(), "Save");
+            Calendar savedTime = savedataParams.getSavedTime();
+
 			drawIcon(readIcon(savedataParams.icon0FileData.buf), 26, 96, icon0Width, icon0Height);
 
-			gu.sceGuDrawHorizontalLine(201, 464, 87, 0xFF000000 | textColor);
-            drawTextWithShadow(236, 105, 0.75f, "Do you want to save this\ndata?");
-            drawYesNo(278, 349, 154);
-            gu.sceGuDrawHorizontalLine(201, 464, 184, 0xFF000000 | textColor);
+            if (hasYesNo()) {
+    			gu.sceGuDrawHorizontalLine(201, 464, 87, 0xFF000000 | textColor);
+                drawTextWithShadow(236, 105, 0.75f, getText(dialogTitle));
+            	drawYesNo(278, 349, 154);
+                gu.sceGuDrawHorizontalLine(201, 464, 184, 0xFF000000 | textColor);
+            } else {
+    			gu.sceGuDrawHorizontalLine(201, 464, 114, 0xFF000000 | textColor);
+                drawTextWithShadow(270, 131, 0.75f, getText(dialogTitle));
+                gu.sceGuDrawHorizontalLine(201, 464, 157, 0xFF000000 | textColor);
+            }
 
             drawTextWithShadow(6, 202, 0.75f, savedataParams.sfoParam.savedataTitle);
+            drawTextWithShadow(6, 219, 0.7f, String.format("%tF %tR", savedTime, savedTime));
             drawTextWithShadow(6, 237, 0.75f, MemoryStick.getSizeKbString(savedataParams.getRequiredSizeKb()));
 
-            drawEnter();
+            if (hasEnter()) {
+            	drawEnter();
+            }
             drawBack();
 
-            String dialogTitle = savedataDialogState.getDialogTitle(savedataParams.getModeName(), "Save");
             drawHeader(dialogTitle);
+		}
+
+		protected String getText(String dialogTitle) {
+			String text = "Do you want to save this\ndata?";
+			if (savedataParams.isPresent()) {
+				text = "Do you want to overwrite the\ndata?";
+			}
+
+			return text;
+		}
+
+		protected boolean hasEnter() {
+			return true;
 		}
 
 		@Override
 		protected boolean hasYesNo() {
 			return true;
+		}
+    }
+
+    protected static class GuSavedataDialogCompleted extends GuSavedataDialogSave {
+		protected GuSavedataDialogCompleted(final SceUtilitySavedataParam savedataParams, final SavedataUtilityDialogState savedataDialogState) {
+			super(savedataParams, savedataDialogState);
+		}
+
+		@Override
+		protected String getText(String dialogTitle) {
+			return String.format("%s completed.", dialogTitle);
+		}
+
+		@Override
+		protected boolean hasYesNo() {
+			return false;
+		}
+
+		@Override
+		protected boolean hasEnter() {
+			return false;
 		}
     }
 
@@ -2624,13 +2803,13 @@ public class sceUtility extends HLEModule {
             return readIcon(iconStream);
 		}
 
-		private PSF getPsf(int index, Calendar savedTime) {
+		private PSF getPsf(int index) {
 			PSF psf = null;
 			if (index < 0 || index >= saveNames.length) {
 				return psf;
 			}
 
-			String sfoFileName = savedataParams.getFileName(saveNames[selectedRow], SceUtilitySavedataParam.paramSfoFileName);
+			String sfoFileName = savedataParams.getFileName(saveNames[index], SceUtilitySavedataParam.paramSfoFileName);
             SeekableDataInput sfoDataInput = Modules.IoFileMgrForUserModule.getFile(sfoFileName, IoFileMgrForUser.PSP_O_RDONLY);
             if (sfoDataInput != null) {
                 try {
@@ -2641,11 +2820,6 @@ public class sceUtility extends HLEModule {
 
                     psf = new PSF();
                     psf.read(ByteBuffer.wrap(sfoBuffer));
-
-                    SceIoStat sfoStat = Modules.IoFileMgrForUserModule.statFile(sfoFileName);
-                    ScePspDateTime pspTime = sfoStat.mtime;
-                    // pspTime.month has a value in range [1..12], Calendar requires a value in range [0..11]
-                    savedTime.set(pspTime.year, pspTime.month - 1, pspTime.day, pspTime.hour, pspTime.minute, pspTime.second);
                 } catch (IOException e) {
                 }
             }
@@ -2663,12 +2837,12 @@ public class sceUtility extends HLEModule {
             	drawIconByRow(selectedRow, 26, 96, icon0Width, icon0Height);
 
 				// Get values (title, detail...) from SFO file
-				Calendar savedTime = Calendar.getInstance();
-				PSF psf = getPsf(selectedRow, savedTime);
+				PSF psf = getPsf(selectedRow);
 				if (psf != null) {
 					String title = psf.getString("TITLE");
 	                String detail = psf.getString("SAVEDATA_DETAIL");
 	                String savedataTitle = psf.getString("SAVEDATA_TITLE");
+	                Calendar savedTime = savedataParams.getSavedTime(saveNames[selectedRow]);
 
 	                int textX = 180;
 	                int textY = 119;
