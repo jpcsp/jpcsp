@@ -810,8 +810,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         });
 
-        disasmTabs.setMinimumSize(new java.awt.Dimension(280, 540));
-        disasmTabs.setPreferredSize(new java.awt.Dimension(280, 540));
+        disasmTabs.setMinimumSize(new java.awt.Dimension(280, 587));
+        disasmTabs.setPreferredSize(new java.awt.Dimension(280, 587));
 
         cop0Table.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
