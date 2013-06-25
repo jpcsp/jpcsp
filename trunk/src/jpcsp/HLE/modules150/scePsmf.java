@@ -280,6 +280,11 @@ public class scePsmf extends HLEModule {
 
             streams = readPsmfStreams(mem, addr, null, this);
 
+            // PSP seems to default to stream 0.
+            if (streams.size() > 0) {
+            	setStreamNum(0);
+            }
+
             // EPMap info:
             // - Located at EPMapOffset (set by the AVC stream);
             // - Each entry is composed by a total of 10 bytes:
@@ -485,7 +490,7 @@ public class scePsmf extends HLEModule {
 
     	// Stream area:
         // At offset 0x82, each 16 bytes represent one stream.
-        LinkedList<PSMFStream>streams = new LinkedList<PSMFStream>();
+        LinkedList<PSMFStream> streams = new LinkedList<PSMFStream>();
 
         // Parse the stream field and assign each one to it's type.
         int numberOfStreams = 0;
