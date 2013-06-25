@@ -768,6 +768,10 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
     public Calendar getSavedTime(String saveName) {
 		String sfoFileName = getFileName(saveName, SceUtilitySavedataParam.paramSfoFileName);
         SceIoStat sfoStat = Modules.IoFileMgrForUserModule.statFile(sfoFileName);
+        if (sfoStat == null) {
+        	return null;
+        }
+
         ScePspDateTime pspTime = sfoStat.mtime;
 
 		Calendar savedTime = Calendar.getInstance();

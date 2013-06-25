@@ -2647,7 +2647,9 @@ public class sceUtility extends HLEModule {
             }
 
             drawTextWithShadow(6, 202, 0.75f, savedataParams.sfoParam.savedataTitle);
-            drawTextWithShadow(6, 219, 0.7f, String.format("%tF %tR", savedTime, savedTime));
+            if (savedTime != null) {
+            	drawTextWithShadow(6, 219, 0.7f, String.format("%tF %tR", savedTime, savedTime));
+            }
             drawTextWithShadow(6, 237, 0.75f, MemoryStick.getSizeKbString(savedataParams.getRequiredSizeKb()));
 
             if (hasEnter()) {
@@ -2850,7 +2852,9 @@ public class sceUtility extends HLEModule {
 	                drawTextWithShadow(textX, textY, 0xD1C6BA, 0.85f, title);
 
 	                textY += 22;
-	                drawTextWithShadow(textX, textY, 0.7f, String.format("%tF %tR", savedTime, savedTime));
+	                if (savedTime != null) {
+	                	drawTextWithShadow(textX, textY, 0.7f, String.format("%tF %tR", savedTime, savedTime));
+	                }
 
 	                // Draw horizontal line below title
 	                gu.sceGuDrawHorizontalLine(textX, Screen.width, textY - 6, 0xFF000000 | textColor);
