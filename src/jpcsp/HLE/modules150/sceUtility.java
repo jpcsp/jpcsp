@@ -1649,6 +1649,11 @@ public class sceUtility extends HLEModule {
 			netconfParams = new SceUtilityNetconfParams();
 			return netconfParams;
 		}
+
+		@Override
+		protected boolean hasDialog() {
+			return false;
+		}
     }
 
     protected static class ScreenshotUtilityDialogState extends UtilityDialogState {
