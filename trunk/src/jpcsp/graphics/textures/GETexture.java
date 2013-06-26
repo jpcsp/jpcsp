@@ -48,6 +48,7 @@ public class GETexture {
 	protected int bufferWidth;
 	protected int width;
 	protected int height;
+	protected int widthPow2;
 	protected int heightPow2;
 	protected int pixelFormat;
 	protected int bytesPerPixel;
@@ -73,6 +74,7 @@ public class GETexture {
 		this.pixelFormat = pixelFormat;
 		bytesPerPixel = sceDisplay.getPixelFormatBytes(pixelFormat);
 		length = bufferWidth * height * bytesPerPixel;
+		widthPow2 = Utilities.makePow2(width);
 		heightPow2 = Utilities.makePow2(height);
 		this.useViewportResize = useViewportResize;
 		changed = true;
@@ -166,6 +168,14 @@ public class GETexture {
 
 	public int getResizedHeight() {
 		return useViewportResize ? sceDisplay.getResizedHeight(height) : height;
+	}
+
+	public int getWidthPow2() {
+		return widthPow2;
+	}
+
+	public int getHeightPow2() {
+		return heightPow2;
 	}
 
 	public int getPixelFormat() {
@@ -440,6 +450,6 @@ public class GETexture {
 
 	@Override
 	public String toString() {
-		return String.format("GETexture[0x%08X-0x%08X, %dx%d, bufferWidth=%d, pixelFormat=%d(%s)]", address, address + length, width, height, bufferWidth, pixelFormat, VideoEngine.getPsmName(pixelFormat));
+		return String.format("GETexture[0x%08X-0x%08X, %dx%d (texture %dx%d), bufferWidth=%d, pixelFormat=%d(%s)]", address, address + length, width, height, getTexImageWidth(), getTexImageHeight(), bufferWidth, pixelFormat, VideoEngine.getPsmName(pixelFormat));
 	}
 }
