@@ -40,6 +40,13 @@ public class UmdIsoVirtualFile extends AbstractVirtualFile {
 	protected final boolean sectorBlockMode;
 	protected final UmdIsoReader iso;
 
+	public UmdIsoVirtualFile(UmdIsoFile file) {
+		super(file);
+		this.file = file;
+		this.sectorBlockMode = false;
+		this.iso = file.getUmdIsoReader();
+	}
+
 	public UmdIsoVirtualFile(UmdIsoFile file, boolean sectorBlockMode, UmdIsoReader iso) {
 		super(file);
 		this.file = file;
