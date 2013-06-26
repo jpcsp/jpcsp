@@ -546,6 +546,7 @@ public class ModuleMgrForUser extends HLEModule {
             return SceKernelErrors.ERROR_KERNEL_MODULE_CANNOT_REMOVE;
         }
 
+        sceModule.unload();
         HLEModuleManager.getInstance().UnloadFlash0Module(sceModule);
 
         return sceModule.modid;

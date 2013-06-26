@@ -19,8 +19,10 @@ package jpcsp.format;
 import jpcsp.AllegrexOpcodes;
 import jpcsp.Memory;
 import jpcsp.HLE.SyscallHandler;
+import jpcsp.HLE.kernel.types.SceModule;
 
 public class DeferredStub {
+    private SceModule sourceModule;
     private String moduleName;
     private int importAddress;
     private int nid;
@@ -28,7 +30,8 @@ public class DeferredStub {
     private int savedImport1;
     private int savedImport2;
 
-    public DeferredStub(String moduleName, int importAddress, int nid) {
+    public DeferredStub(SceModule sourceModule, String moduleName, int importAddress, int nid) {
+    	this.sourceModule = sourceModule;
         this.moduleName = moduleName;
         this.importAddress = importAddress;
         this.nid = nid;
@@ -68,6 +71,11 @@ public class DeferredStub {
         	// syscall <syscallUnmappedImport>
         	int instruction = (AllegrexOpcodes.SPECIAL << 26) | AllegrexOpcodes.SYSCALL | (SyscallHandler.syscallUnmappedImport << 6);
             mem.write32(importAddress + 4, instruction);
+    	}
+
+    	if (sourceModule != null) {
+    		// Add this stub back to the list of unresolved imports from the source module
+    		sourceModule.unresolvedImports.add(this);
     	}
     }
 

@@ -1075,13 +1075,13 @@ public class Loader {
             					DeferredStub deferredStub = null;
                     			switch (opcode) {
                     				case AllegrexOpcodes.BNE:
-                    					deferredStub = new DeferredVStubHI16(stubHeader.getModuleNamez(), address, nid);
+                    					deferredStub = new DeferredVStubHI16(module, stubHeader.getModuleNamez(), address, nid);
                     					break;
                     				case AllegrexOpcodes.BLEZ:
-                    					deferredStub = new DeferredVstubLO16(stubHeader.getModuleNamez(), address, nid);
+                    					deferredStub = new DeferredVstubLO16(module, stubHeader.getModuleNamez(), address, nid);
                     					break;
                     				case AllegrexOpcodes.J:
-                    					deferredStub = new DeferredVStub32(stubHeader.getModuleNamez(), address, nid);
+                    					deferredStub = new DeferredVStub32(module, stubHeader.getModuleNamez(), address, nid);
                     					break;
                     				default:
         	                    		log.warn(String.format("Unknown Vstub relocation nid 0x%08X, reloc=0x%08X", nid, reloc));
@@ -1108,7 +1108,7 @@ public class Loader {
 	                for (int j = 0; j < stubHeader.getImports(); j++) {
 	                	int nid = nidReader.readNext();
 	                	int importAddress = (int) (stubHeader.getOffsetText() + j * 8);
-	                    DeferredStub deferredStub = new DeferredStub(stubHeader.getModuleNamez(), importAddress, nid);
+	                    DeferredStub deferredStub = new DeferredStub(module, stubHeader.getModuleNamez(), importAddress, nid);
 	                    module.unresolvedImports.add(deferredStub);
 
 	                    // Add a 0xfffff syscall so we can detect if an unresolved import is called
