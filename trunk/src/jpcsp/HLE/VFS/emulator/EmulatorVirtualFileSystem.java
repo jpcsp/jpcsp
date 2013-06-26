@@ -16,10 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS.emulator;
 
-import jpcsp.Memory;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.AbstractVirtualFileSystem;
 import jpcsp.autotests.AutoTestsOutput;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
 
 public class EmulatorVirtualFileSystem extends AbstractVirtualFileSystem {
 	public static final int EMULATOR_DEVCTL_GET_HAS_DISPLAY = 1;
@@ -36,7 +37,12 @@ public class EmulatorVirtualFileSystem extends AbstractVirtualFileSystem {
 				outputPointer.setValue32(1);
 				break;
 			case EMULATOR_DEVCTL_SEND_OUTPUT:
-				AutoTestsOutput.appendString(new String(Memory.getInstance().readChunk(inputPointer.getAddress(), inputLength).array()));
+				byte[] input = new byte[inputLength];
+				IMemoryReader memoryReader = MemoryReader.getMemoryReader(inputPointer.getAddress(), inputLength, 1);
+				for (int i = 0; i < inputLength; i++) {
+					input[i] = (byte) memoryReader.readNext();
+				}
+				AutoTestsOutput.appendString(new String(input));
 				break;
 			case EMULATOR_DEVCTL_IS_EMULATOR:
 				break;

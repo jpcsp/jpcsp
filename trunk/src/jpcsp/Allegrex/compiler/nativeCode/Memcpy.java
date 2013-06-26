@@ -26,7 +26,7 @@ public class Memcpy extends AbstractNativeCodeSequence {
 		int srcAddr = getGprA1();
 		int n = getGprA2();
 
-		getMemory().memcpy(dstAddr, srcAddr, n);
+		getMemory().memcpyWithVideoCheck(dstAddr, srcAddr, n);
 
 		setGprV0(dstAddr);
 	}
