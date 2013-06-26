@@ -20,11 +20,18 @@ import java.io.File;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
+import jpcsp.HLE.Modules;
+import jpcsp.graphics.VideoEngine;
+import jpcsp.hardware.Screen;
 import jpcsp.memory.DebuggerMemory;
 import jpcsp.memory.DirectBufferMemory;
 import jpcsp.memory.FastMemory;
+import jpcsp.memory.NativeMemory;
 import jpcsp.memory.SafeDirectBufferMemory;
 import jpcsp.memory.SafeFastMemory;
+import jpcsp.memory.SafeNativeMemory;
+import jpcsp.memory.SafeSparseNativeMemory;
+import jpcsp.memory.SparseNativeMemory;
 import jpcsp.memory.StandardMemory;
 import jpcsp.settings.AbstractBoolSettingsListener;
 import jpcsp.settings.Settings;
@@ -32,15 +39,18 @@ import jpcsp.settings.Settings;
 import org.apache.log4j.Logger;
 
 public abstract class Memory {
-
     public static Logger log = Logger.getLogger("memory");
     private static Memory instance = null;
+    public static boolean useNativeMemory = false;
     public static boolean useDirectBufferMemory = false;
     public static boolean useSafeMemory = true;
     public static final int addressMask = 0x3FFFFFFF;
     private boolean ignoreInvalidMemoryAccess = false;
     protected static final int MEMORY_PAGE_SHIFT = 12;
     protected static boolean[] validMemoryPage = new boolean[0x00100000];
+    // Assume that a video check during a memcpy is only necessary
+    // when copying at least one screen row (at 2 bytes per pixel).
+    private static final int MINIMUM_LENGTH_FOR_VIDEO_CHECK = Screen.width * 2;
 
     public static Memory getInstance() {
         if (instance == null) {
@@ -63,25 +73,54 @@ public abstract class Memory {
                 useSafeMemory = false;
             }
 
-            if (useDirectBufferMemory) {
-                if (useSafeMemory) {
-                    instance = new SafeDirectBufferMemory();
-                } else {
-                    instance = new DirectBufferMemory();
-                }
-            } else {
-                if (useSafeMemory) {
-                    instance = new SafeFastMemory();
-                } else {
-                    instance = new FastMemory();
-                }
-            }
+        	if (useNativeMemory) {
+        		try {
+        			System.loadLibrary("memory");
+        		} catch (UnsatisfiedLinkError e) {
+        			log.error("Cannot load memory library", e);
+        			useNativeMemory = false;
+        		}
+        	}
 
-            if (instance != null) {
-                if (!instance.allocate()) {
-                    instance = null;
-                }
-            }
+        	if (useNativeMemory) {
+        		if (useSafeMemory) {
+        			instance = new SafeNativeMemory();
+        		} else {
+        			instance = new NativeMemory();
+        		}
+        	} else if (useDirectBufferMemory) {
+        		if (useSafeMemory) {
+        			instance = new SafeDirectBufferMemory();
+        		} else {
+        			instance = new DirectBufferMemory();
+        		}
+        	} else {
+        		if (useSafeMemory) {
+	        		instance = new SafeFastMemory();
+	        	} else {
+	        		instance = new FastMemory();
+	        	}
+        	}
+
+        	if (instance != null) {
+        		if (!instance.allocate()) {
+        			instance = null;
+
+        			// Second chance for a native memory...
+        			if (useNativeMemory) {
+        				if (useSafeMemory) {
+            				instance = new SafeSparseNativeMemory();
+        				} else {
+            				instance = new SparseNativeMemory();
+        				}
+
+        				if (!instance.allocate()) {
+        					log.warn(String.format("Cannot allocate native memory"));
+        					instance = null;
+        				}
+        			}
+        		}
+        	}
 
             if (instance == null) {
                 instance = new StandardMemory();
@@ -124,9 +163,9 @@ public abstract class Memory {
         String message = String.format("%s - Invalid memory address: 0x%08X PC=0x%08X", prefix, address, Emulator.getProcessor().cpu.pc);
 
         if (ignoreInvalidMemoryAccess) {
-            Memory.log.warn("IGNORED: " + message);
+            log.warn("IGNORED: " + message);
         } else {
-            Memory.log.error(message);
+            log.error(message);
             Emulator.PauseEmuWithStatus(status);
         }
     }
@@ -135,9 +174,9 @@ public abstract class Memory {
         String message = String.format("%s - Invalid memory address: 0x%08X-0x%08X(length=0x%X) PC=0x%08X", prefix, address, address + length, length, Emulator.getProcessor().cpu.pc);
 
         if (ignoreInvalidMemoryAccess) {
-            Memory.log.warn("IGNORED: " + message);
+            log.warn("IGNORED: " + message);
         } else {
-            Memory.log.error(message);
+            log.error(message);
             Emulator.PauseEmuWithStatus(status);
         }
     }
@@ -202,7 +241,7 @@ public abstract class Memory {
         //
         if ((address >= 0x8f800020 && address <= 0x8f8001ac)
                 || (address >= 0x0f800020 && address <= 0x0f8001ac)) { // Accept also masked address
-            Memory.log.debug("read32 - ignoring pspSdkInstallNoPlainModuleCheckPatch");
+            log.debug("read32 - ignoring pspSdkInstallNoPlainModuleCheckPatch");
             return true;
         }
 
@@ -232,15 +271,6 @@ public abstract class Memory {
     public abstract void copyToMemory(int address, ByteBuffer source, int length);
 
     protected abstract void memcpy(int destination, int source, int length, boolean checkOverlap);
-
-    public int strlen(int address) {
-        int len = 0;
-        while (read8(address) != 0) {
-            len++;
-            address++;
-        }
-        return len;
-    }
 
     public static boolean isAddressGood(int address) {
         return validMemoryPage[address >>> MEMORY_PAGE_SHIFT];
@@ -284,21 +314,36 @@ public abstract class Memory {
         write32(address + 4, (int) (data >> 32));
     }
 
-    public ByteBuffer readChunkZ(int address) {
-        return readChunk(address, strlen(address));
-    }
-
-    public ByteBuffer readChunk(int address, int size) {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(size);
-        for (int n = 0; n < size; n++) {
-            byteBuffer.put((byte) read8(address + n));
-        }
-        return byteBuffer;
-    }
-
     // memcpy does not check overlapping source and destination areas
     public void memcpy(int destination, int source, int length) {
         memcpy(destination, source, length, false);
+    }
+
+    /**
+     * Same as memcpy but checking if the source/destination are not used as video textures.
+     * 
+     * @param destination   destination address
+     * @param source        source address
+     * @param length        length in bytes to be copied
+     */
+    public void memcpyWithVideoCheck(int destination, int source, int length) {
+    	// As an optimization, do not perform the video check if we are copying only a small memory area.
+    	if (length >= MINIMUM_LENGTH_FOR_VIDEO_CHECK) {
+	        // If copying to the VRAM or the frame buffer, do not cache the texture
+	        if (isVRAM(destination) || Modules.sceDisplayModule.isFbAddress(destination)) {
+	        	// If the display is rendering to the destination address, wait for its completion
+	        	// before performing the memcpy.
+	        	Modules.sceDisplayModule.waitForRenderingCompletion(destination);
+	
+	        	VideoEngine.getInstance().addVideoTexture(destination, destination + length);
+	        }
+	        // If copying from the VRAM, force the saving of the GE to memory
+	        if (isVRAM(source) && Modules.sceDisplayModule.getSaveGEToTexture()) {
+	        	VideoEngine.getInstance().addVideoTexture(source, source + length);
+	        }
+    	}
+
+    	memcpy(destination, source, length);
     }
 
     // memmove reproduces the bytes correctly at destination even if the two areas overlap
@@ -325,19 +370,13 @@ public abstract class Memory {
         return true;
     }
 
-    public void load(ByteBuffer buffer) {
-    }
-
-    public void save(ByteBuffer buffer) {
-    }
-
     public boolean isIgnoreInvalidMemoryAccess() {
         return ignoreInvalidMemoryAccess;
     }
 
     private void setIgnoreInvalidMemoryAccess(boolean ignoreInvalidMemoryAccess) {
         this.ignoreInvalidMemoryAccess = ignoreInvalidMemoryAccess;
-        Memory.log.info("Ignore invalid memory access: " + ignoreInvalidMemoryAccess);
+        log.info(String.format("Ignore invalid memory access: %b", ignoreInvalidMemoryAccess));
     }
 
     public static boolean isRAM(int address) {

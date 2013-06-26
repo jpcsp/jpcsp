@@ -23,7 +23,6 @@ import jpcsp.HLE.TPointer;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
-import jpcsp.graphics.VideoEngine;
 
 import org.apache.log4j.Logger;
 
@@ -38,16 +37,7 @@ public class sceDmac extends HLEModule {
 
     @HLEFunction(nid = 0x617F3FE6, version = 150)
     public int sceDmacMemcpy(TPointer dest, TPointer source, int size) {
-        // If copying to the VRAM or the frame buffer, do not cache the texture
-        if (Memory.isVRAM(dest.getAddress()) || Modules.sceDisplayModule.isFbAddress(dest.getAddress())) {
-        	VideoEngine.getInstance().addVideoTexture(dest.getAddress(), dest.getAddress() + size);
-        }
-        // If copying from the VRAM, force the saving of the GE to memory
-        if (Memory.isVRAM(source.getAddress()) && Modules.sceDisplayModule.getSaveGEToTexture()) {
-        	VideoEngine.getInstance().addVideoTexture(source.getAddress(), source.getAddress() + size);
-        }
-
-        Memory.getInstance().memcpy(dest.getAddress(), source.getAddress(), size);
+        Memory.getInstance().memcpyWithVideoCheck(dest.getAddress(), source.getAddress(), size);
 
         return 0;
     }
