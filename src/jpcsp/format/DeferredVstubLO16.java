@@ -17,11 +17,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format;
 
 import jpcsp.Memory;
+import jpcsp.HLE.kernel.types.SceModule;
 
 public class DeferredVstubLO16 extends DeferredStub {
 
-	public DeferredVstubLO16(String moduleName, int importAddress, int nid) {
-		super(moduleName, importAddress, nid);
+	public DeferredVstubLO16(SceModule sourceModule, String moduleName, int importAddress, int nid) {
+		super(sourceModule, moduleName, importAddress, nid);
 	}
 
 	@Override
