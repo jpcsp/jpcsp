@@ -335,7 +335,7 @@ public class FileLocator {
 						umdIsoFile.setLength(fileSize);
 					}
 
-					IVirtualFile vFile = new UmdIsoVirtualFile(umdIsoFile, false, umdIsoFile.getUmdIsoReader());
+					IVirtualFile vFile = new UmdIsoVirtualFile(umdIsoFile);
 					if (readInfo.position + positionOffset != 0 || vFile.length() != fileSize) {
 						vFile = new PartialVirtualFile(vFile, readInfo.position + positionOffset, fileSize);
 					}

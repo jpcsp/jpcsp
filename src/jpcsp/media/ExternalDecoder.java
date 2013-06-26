@@ -174,15 +174,15 @@ public class ExternalDecoder {
 		return true;
     }
 
-    private boolean decodeExtAudio(byte[] audioStreamData, int mpegFileSize, int mpegOffset, int audioChannel) {
+    private boolean decodeExtAudio(byte[] audioStreamData, int mpegFileSize, int mpegOffset, int audioChannel, long lastTimestamp) {
     	if (audioStreamData == null) {
     		return false;
     	}
 
 		if (dumpAudioStreamFile) {
 			try {
-				new File(MediaEngine.getExtAudioBasePath(mpegFileSize)).mkdirs();
-				FileOutputStream pmfOut = new FileOutputStream(MediaEngine.getExtAudioPath(mpegFileSize, audioChannel, "audio"));
+				new File(MediaEngine.getExtAudioBasePath(mpegFileSize, lastTimestamp)).mkdirs();
+				FileOutputStream pmfOut = new FileOutputStream(MediaEngine.getExtAudioPath(mpegFileSize, audioChannel, lastTimestamp, "audio"));
 				pmfOut.write(audioStreamData);
 				pmfOut.close();
 			} catch (IOException e) {
@@ -197,13 +197,13 @@ public class ExternalDecoder {
 		}
 
 		try {
-			new File(MediaEngine.getExtAudioBasePath(mpegFileSize)).mkdirs();
-			String encodedFileName = MediaEngine.getExtAudioPath(mpegFileSize, audioChannel, "oma");
+			new File(MediaEngine.getExtAudioBasePath(mpegFileSize, lastTimestamp)).mkdirs();
+			String encodedFileName = MediaEngine.getExtAudioPath(mpegFileSize, audioChannel, lastTimestamp, "oma");
 			FileOutputStream os = new FileOutputStream(encodedFileName);
 			os.getChannel().write(omaBuffer);
 			os.close();
 
-			String decodedFileName = MediaEngine.getExtAudioPath(mpegFileSize, audioChannel, "wav");
+			String decodedFileName = MediaEngine.getExtAudioPath(mpegFileSize, audioChannel, lastTimestamp, "wav");
 
 			if (!executeExternalDecoder(encodedFileName, decodedFileName, null, keepOmaFile)) {
 				int channels = OMAFormat.getOMANumberAudioChannels(omaBuffer);
@@ -226,7 +226,7 @@ public class ExternalDecoder {
 		return true;
     }
 
-    public void decodeExtAudio(IVirtualFile vFilePsmf, int mpegFileSize, int mpegOffset, int audioChannel) {
+    public void decodeExtAudio(IVirtualFile vFilePsmf, int mpegFileSize, int mpegOffset, int audioChannel, long lastTimestamp) {
     	if (!isEnabled()) {
     		return;
     	}
@@ -241,7 +241,7 @@ public class ExternalDecoder {
     		return;
     	}
 
-    	decodeExtAudio(audioStreamData, mpegFileSize, mpegOffset, audioChannel);
+    	decodeExtAudio(audioStreamData, mpegFileSize, mpegOffset, audioChannel, lastTimestamp);
     }
 
     public void setStreamFile(SeekableDataInput dataInput, IVirtualFile vFile, int address, long startPosition, int length) {

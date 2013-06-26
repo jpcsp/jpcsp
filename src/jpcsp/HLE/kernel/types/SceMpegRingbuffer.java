@@ -33,24 +33,25 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
     private int dataUpperBound;
     private int semaID; // unused?
     private int mpeg; // pointer to mpeg struct, fixed up in sceMpegCreate
+    private pspFileBuffer buffer;
 
     public SceMpegRingbuffer(int packets, int data, int size, int callbackAddr, int callbackArgs) {
         this.packets = packets;
-        this.packetsRead = 0;
-        this.packetsWritten = 0;
-        this.packetsInRingbuffer = 0;
-        this.packetSize = ringbufferPacketSize;
+        packetSize = ringbufferPacketSize;
         this.data = data;
         this.callbackAddr = callbackAddr;
         this.callbackArgs = callbackArgs;
-        this.dataUpperBound = data + packets * ringbufferPacketSize;
-        this.semaID = -1;
-        this.mpeg = 0;
+        dataUpperBound = data + packets * ringbufferPacketSize;
+        semaID = -1;
+        mpeg = 0;
+        buffer = new pspFileBuffer(data, dataUpperBound - data);
 
         if (dataUpperBound > data + size) {
             dataUpperBound = data + size;
             Modules.log.warn("SceMpegRingbuffer clamping dataUpperBound to " + dataUpperBound);
         }
+
+        reset();
     }
 
     private SceMpegRingbuffer() {
@@ -59,6 +60,7 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
     public static SceMpegRingbuffer fromMem(TPointer address) {
         SceMpegRingbuffer ringbuffer = new SceMpegRingbuffer();
         ringbuffer.read(address);
+        ringbuffer.buffer = new pspFileBuffer(ringbuffer.data, ringbuffer.dataUpperBound - ringbuffer.data);
 
         return ringbuffer;
     }
@@ -67,6 +69,7 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
     	packetsRead = 0;
     	packetsWritten = 0;
     	packetsInRingbuffer = 0;
+		buffer.reset(0, 0);
     }
 
 	@Override
@@ -104,12 +107,14 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
 	}
 
 	public void addPackets(int packetsAdded) {
+		buffer.notifyWrite(packetsAdded * packetSize);
 		packetsRead += packetsAdded;
 		packetsWritten += packetsAdded;
 		packetsInRingbuffer += packetsAdded;
 	}
 
 	public void consumeAllPackets() {
+		buffer.notifyReadAll();
 		packetsInRingbuffer = 0;
 	}
 
@@ -123,6 +128,7 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
 
 	public void consumePackets(int consumedPackets) {
 		if (consumedPackets > 0) {
+			buffer.notifyRead(consumedPackets * packetSize);
 			packetsInRingbuffer -= consumedPackets;
 			if (packetsInRingbuffer < 0) {
 				packetsInRingbuffer = 0;
@@ -132,6 +138,10 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
 
 	public int getReadPackets() {
 		return packetsRead;
+	}
+
+	public boolean hasReadPackets() {
+		return packetsRead != 0;
 	}
 
 	public void setReadPackets(int packetsRead) {
@@ -152,6 +162,26 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
 
 	public int getBaseDataAddr() {
 		return data;
+	}
+
+	public int getReadDataAddr() {
+		return buffer.getReadAddr();
+	}
+
+	public int getReadSequentialPackets() {
+		return buffer.getReadSize() / packetSize;
+	}
+
+	public int getPutDataAddr() {
+		return buffer.getWriteAddr();
+	}
+
+	public int getPutSequentialPackets() {
+		return buffer.getWriteSize() / packetSize;
+	}
+
+	public void setFileMaxSize(int fileMaxSize) {
+		buffer.setFileMaxSize(fileMaxSize);
 	}
 
 	public int getTmpAddress(int length) {

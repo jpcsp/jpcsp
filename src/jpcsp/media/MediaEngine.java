@@ -18,6 +18,7 @@ package jpcsp.media;
 
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.util.Utilities.endianSwap32;
+import static jpcsp.util.Utilities.readUnaligned32;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.ComponentColorModel;
@@ -83,6 +84,7 @@ public class MediaEngine {
     private int bufferAddress;
     private int bufferSize;
     private int bufferMpegOffset;
+    private long lastTimestamp;
     private byte[] bufferData;
     private StreamState videoStreamState;
     private StreamState audioStreamState;
@@ -277,15 +279,6 @@ public class MediaEngine {
     	}
     }
 
-    private int read32(byte[] data, int offset) {
-    	int n1 = data[offset] & 0xFF;
-    	int n2 = data[offset + 1] & 0xFF;
-    	int n3 = data[offset + 2] & 0xFF;
-    	int n4 = data[offset + 3] & 0xFF;
-
-    	return (n4 << 24) | (n3 << 16) | (n2 << 8) | n1;
-    }
-
     public void setStreamFile(SeekableDataInput dataInput, IVirtualFile vFile, int address, long startPosition, int length) {
     	if (ExternalDecoder.isEnabled()) {
     		externalDecoder.setStreamFile(dataInput, vFile, address, startPosition, length);
@@ -294,16 +287,18 @@ public class MediaEngine {
 
     public void init(byte[] bufferData) {
     	this.bufferData = bufferData;
-    	this.bufferAddress = 0;
-    	this.bufferSize = endianSwap32(read32(bufferData, sceMpeg.PSMF_STREAM_SIZE_OFFSET));
-    	this.bufferMpegOffset = endianSwap32(read32(bufferData, sceMpeg.PSMF_STREAM_OFFSET_OFFSET));
+    	bufferAddress = 0;
+    	bufferSize = endianSwap32(readUnaligned32(bufferData, sceMpeg.PSMF_STREAM_SIZE_OFFSET));
+    	bufferMpegOffset = endianSwap32(readUnaligned32(bufferData, sceMpeg.PSMF_STREAM_OFFSET_OFFSET));
+    	lastTimestamp = endianSwap32(readUnaligned32(bufferData, sceMpeg.PSMF_LAST_TIMESTAMP_OFFSET));
     	init();
     }
 
-    public void init(int bufferAddress, int bufferSize, int bufferMpegOffset) {
+    public void init(int bufferAddress, int bufferSize, int bufferMpegOffset, long lastTimestamp) {
     	this.bufferAddress = bufferAddress;
     	this.bufferSize = bufferSize;
     	this.bufferMpegOffset = bufferMpegOffset;
+    	this.lastTimestamp = lastTimestamp;
 
     	// Save the content of the MPEG header as it might be already overwritten
     	// when we need it (at sceMpegGetAtracAu or sceMpegGetAvcAu)
@@ -680,19 +675,19 @@ public class MediaEngine {
         return complete;
     }
 
-    public static String getExtAudioBasePath(int mpegStreamSize) {
-    	return String.format("%sMpeg-%d%c", Settings.getInstance().getDiscTmpDirectory(), mpegStreamSize, File.separatorChar);
+    public static String getExtAudioBasePath(int mpegStreamSize, long lastTimestamp) {
+    	return String.format("%sMpeg-%d-%d%c", Settings.getInstance().getDiscTmpDirectory(), mpegStreamSize, lastTimestamp, File.separatorChar);
     }
 
-    public static String getExtAudioPath(int mpegStreamSize, String suffix) {
-        return String.format("%sExtAudio.%s", getExtAudioBasePath(mpegStreamSize), suffix);
+    public static String getExtAudioPath(int mpegStreamSize, long lastTimestamp, String suffix) {
+        return String.format("%sExtAudio.%s", getExtAudioBasePath(mpegStreamSize, lastTimestamp), suffix);
     }
 
-    public static String getExtAudioPath(int mpegStreamSize, int audioChannel, String suffix) {
+    public static String getExtAudioPath(int mpegStreamSize, int audioChannel, long lastTimestamp, String suffix) {
     	if (audioChannel < 0) {
-    		return getExtAudioPath(mpegStreamSize, suffix);
+    		return getExtAudioPath(mpegStreamSize, lastTimestamp, suffix);
     	}
-        return String.format("%sExtAudio-%d.%s", getExtAudioBasePath(mpegStreamSize), audioChannel, suffix);
+        return String.format("%sExtAudio-%d.%s", getExtAudioBasePath(mpegStreamSize, lastTimestamp), audioChannel, suffix);
     }
 
     public boolean stepVideo(int requiredAudioChannels) {
@@ -727,7 +722,7 @@ public class MediaEngine {
     private File getExtAudioFile(int audioChannel) {
         String supportedFormats[] = {"wav", "mp3", "at3", "raw", "wma", "flac", "m4a"};
         for (int i = 0; i < supportedFormats.length; i++) {
-            File f = new File(getExtAudioPath(bufferSize, audioChannel, supportedFormats[i]));
+            File f = new File(getExtAudioPath(bufferSize, audioChannel, lastTimestamp, supportedFormats[i]));
             if (f.canRead() && f.length() > 0) {
             	return f;
             }
@@ -744,10 +739,10 @@ public class MediaEngine {
     		// Try to decode the audio using the external decoder
     		if (bufferAddress == 0) {
     			if (bufferData != null) {
-    				externalDecoder.decodeExtAudio(new ByteArrayVirtualFile(bufferData), bufferSize, bufferMpegOffset, audioChannel);
+    				externalDecoder.decodeExtAudio(new ByteArrayVirtualFile(bufferData), bufferSize, bufferMpegOffset, audioChannel, lastTimestamp);
     			}
     		} else {
-    			externalDecoder.decodeExtAudio(FileLocator.getInstance().getVirtualFile(bufferAddress, sceMpeg.MPEG_HEADER_BUFFER_MINIMUM_SIZE, bufferSize, bufferData), bufferSize, bufferMpegOffset, audioChannel);
+    			externalDecoder.decodeExtAudio(FileLocator.getInstance().getVirtualFile(bufferAddress, sceMpeg.MPEG_HEADER_BUFFER_MINIMUM_SIZE, bufferSize, bufferData), bufferSize, bufferMpegOffset, audioChannel, lastTimestamp);
     		}
 			extAudioFile = getExtAudioFile(audioChannel);
     	}
