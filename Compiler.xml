@@ -3215,6 +3215,29 @@
 0886305C:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpy">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memcpy</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+08BE4150:[3C074000]: lui        $a3, 0x4000 <=> li $a3, 0x40000000
+08BE4154:[00A63021]: addu       $a2, $a1, $a2
+08BE4158:[10A6000C]: beq        $a1, $a2, 0x08BE418C
+08BE415C:[00872025]: or         $a0, $a0, $a3
+08BE4160:[D8A00000]: lv.q       C000.q, 0($a1)
+08BE4164:[D8A10010]: lv.q       C010.q, 16($a1)
+08BE4168:[D8A20020]: lv.q       C020.q, 32($a1)
+08BE416C:[D8A30030]: lv.q       C030.q, 48($a1)
+08BE4170:[24A50040]: addiu      $a1, $a1, 64
+08BE4174:[F8800002]: vwb.q      C000.q, 0($a0)
+08BE4178:[F8810012]: vwb.q      C010.q, 16($a0)
+08BE417C:[F8820022]: vwb.q      C020.q, 32($a0)
+08BE4180:[F8830032]: vwb.q      C030.q, 48($a0)
+08BE4184:[14A6FFF6]: bne        $a1, $a2, 0x08BE4160
+08BE4188:[24840040]: addiu      $a0, $a0, 64
+08BE418C:[03E00008]: jr         $ra
+08BE4190:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="memset">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
 		<IsReturning>true</IsReturning>
