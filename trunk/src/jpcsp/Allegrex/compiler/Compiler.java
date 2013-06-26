@@ -339,7 +339,7 @@ public class Compiler implements ICompiler {
 
 	private IExecutable interpret(CompilerContext context, int startAddress, int instanceIndex) {
         if (log.isDebugEnabled()) {
-            log.debug("Compiler.interpret Block 0x" + Integer.toHexString(startAddress));
+            log.debug(String.format("Compiler.interpret Block 0x%08X", startAddress));
         }
         startAddress = startAddress & Memory.addressMask;
         CodeBlock codeBlock = new CodeBlock(startAddress, instanceIndex);
