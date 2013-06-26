@@ -500,7 +500,7 @@ public class CompilerContext implements ICompilerContext {
     	return pfxDstState.pfxDst.msk[n];
     }
 
-    private void applyPfxDstPostfix(VfpuPfxDstState pfxDstState, int n) {
+    private void applyPfxDstPostfix(VfpuPfxDstState pfxDstState, int n, boolean isFloat) {
     	if (pfxDstState == null ||
     		pfxDstState.isUnknown() ||
     	    !pfxDstState.pfxDst.enabled) {
@@ -512,19 +512,31 @@ public class CompilerContext implements ICompilerContext {
 				if (Compiler.log.isTraceEnabled() && pfxDstState != null && pfxDstState.isKnown() && pfxDstState.pfxDst.enabled) {
 					Compiler.log.trace(String.format("PFX    %08X - applyPfxDstPostfix %d [0:1]", getCodeInstruction().getAddress(), n));
 				}
+				if (!isFloat) {
+					convertVIntToFloat();
+				}
     			mv.visitLdcInsn(1.0f);
         		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "min", "(FF)F");
     			mv.visitLdcInsn(0.0f);
         		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "max", "(FF)F");
+        		if (!isFloat) {
+        			convertVFloatToInt();
+        		}
         		break;
     		case 3:
 				if (Compiler.log.isTraceEnabled() && pfxDstState != null && pfxDstState.isKnown() && pfxDstState.pfxDst.enabled) {
 					Compiler.log.trace(String.format("PFX    %08X - applyPfxDstPostfix %d [-1:1]", getCodeInstruction().getAddress(), n));
 				}
+				if (!isFloat) {
+					convertVIntToFloat();
+				}
     			mv.visitLdcInsn(1.0f);
         		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "min", "(FF)F");
     			mv.visitLdcInsn(-1.0f);
         		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "max", "(FF)F");
+        		if (!isFloat) {
+        			convertVFloatToInt();
+        		}
         		break;
     	}
     }
@@ -608,7 +620,7 @@ public class CompilerContext implements ICompilerContext {
 
                 mv.visitInsn(Opcodes.POP);
             } else {
-                applyPfxDstPostfix(pfxDstState, n);
+                applyPfxDstPostfix(pfxDstState, n, isFloat);
                 if (isFloat) {
                 	// Keep a copy of the value for the int value
                 	mv.visitInsn(Opcodes.DUP_X2);
