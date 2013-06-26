@@ -16,6 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules271;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
+
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
@@ -23,6 +29,20 @@ import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 
 import org.apache.log4j.Logger;
+
+import com.xuggle.mediatool.IMediaReader;
+import com.xuggle.mediatool.MediaListenerAdapter;
+import com.xuggle.mediatool.ToolFactory;
+import com.xuggle.mediatool.event.IVideoPictureEvent;
+import com.xuggle.xuggler.ICodec;
+import com.xuggle.xuggler.IContainer;
+import com.xuggle.xuggler.IContainerFormat;
+import com.xuggle.xuggler.IStream;
+import com.xuggle.xuggler.IStreamCoder;
+import com.xuggle.xuggler.IVideoPicture;
+import com.xuggle.xuggler.IVideoResampler;
+import com.xuggle.xuggler.video.ConverterFactory;
+import com.xuggle.xuggler.video.IConverter;
 
 import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
@@ -32,6 +52,8 @@ import jpcsp.HLE.kernel.types.pspUsbCamSetupStillParam;
 import jpcsp.HLE.kernel.types.pspUsbCamSetupVideoExParam;
 import jpcsp.HLE.kernel.types.pspUsbCamSetupVideoParam;
 import jpcsp.HLE.modules.HLEModule;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryWriter;
 
 @HLELogging
 public class sceUsbCam extends HLEModule {
@@ -57,6 +79,28 @@ public class sceUsbCam extends HLEModule {
 	public static final int PSP_USBCAM_RESOLUTION_1280_960 = 6;
 	public static final int PSP_USBCAM_RESOLUTION_480_272  = 7;
 	public static final int PSP_USBCAM_RESOLUTION_360_272  = 8;
+	protected static final int[] resolutionWidth = new int[] {
+		160,
+		176,
+		320,
+		352,
+		640,
+		1024,
+		1280,
+		480,
+		360
+	};
+	protected static final int[] resolutionHeight = new int[] {
+		120,
+		144,
+		240,
+		288,
+		480,
+		768,
+		960,
+		272,
+		272
+	};
 
 	/** Resolutions for sceUsbCamSetupStillEx & sceUsbCamSetupVideoEx
      ** DO NOT use on sceUsbCamSetupStill & sceUsbCamSetupVideo */
@@ -128,6 +172,10 @@ public class sceUsbCam extends HLEModule {
 	protected int workAreaSize;
 	protected TPointer jpegBuffer;
 	protected int jpegBufferSize;
+	protected BufferedImage currentVideoImage;
+	protected int currentVideoFrameCount;
+	protected int lastVideoFrameCount;
+	protected VideoListener videoListener;
 
 	// Camera settings
 	protected int resolution; // One of PSP_USBCAM_RESOLUTION_* (not PSP_USBCAM_RESOLUTION_EX_*)
@@ -150,6 +198,84 @@ public class sceUsbCam extends HLEModule {
 
 	protected TPointer readMicBuffer;
 	protected int readMicBufferSize;
+
+	protected class VideoListener extends MediaListenerAdapter {
+		IMediaReader reader;
+		int videoStream;
+		IStreamCoder videoCoder;
+		IConverter videoConverter;
+		IVideoResampler videoResampler;
+		IVideoPicture videoPicture;
+		VideoReaderThread videoReaderThread;
+
+		public VideoListener(IMediaReader reader, int width, int height) {
+			this.reader = reader;
+			IContainer container = reader.getContainer();
+			int numStreams = container.getNumStreams();
+			for (int i = 0; i < numStreams; i++) {
+				IStream stream = container.getStream(i);
+				IStreamCoder coder = stream.getStreamCoder();
+
+				if (coder.getCodecType() == ICodec.Type.CODEC_TYPE_VIDEO) {
+					videoStream = i;
+					videoCoder = coder;
+				}
+			}
+
+			if (videoCoder != null) {
+				videoConverter = ConverterFactory.createConverter(ConverterFactory.XUGGLER_BGR_24, videoCoder.getPixelType(), videoCoder.getWidth(), videoCoder.getHeight());
+				videoPicture = IVideoPicture.make(videoCoder.getPixelType(), width, height);
+				videoResampler = IVideoResampler.make(width, height, videoCoder.getPixelType(), videoCoder.getWidth(), videoCoder.getHeight(), videoCoder.getPixelType());
+			}
+
+			videoReaderThread = new VideoReaderThread(reader);
+			videoReaderThread.setName("Video Reader Thread");
+			videoReaderThread.setDaemon(true);
+			videoReaderThread.start();
+		}
+
+		public void stop() {
+			videoReaderThread.end();
+		}
+
+		@Override
+		public void onVideoPicture(IVideoPictureEvent event) {
+			BufferedImage image = event.getImage();
+			if (image == null && videoConverter != null) {
+				IVideoPicture eventPicture = event.getPicture();
+				videoResampler.resample(videoPicture, eventPicture);
+				image = videoConverter.toImage(videoPicture);
+			}
+
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("onVideoPicture event=%s, image=%s", event, image));
+			}
+			if (image != null) {
+				setCurrentVideoImage(image);
+			}
+		}
+	}
+
+	protected class VideoReaderThread extends Thread {
+		private IMediaReader reader;
+		private volatile boolean end;
+
+		public VideoReaderThread(IMediaReader reader) {
+			this.reader = reader;
+		}
+
+		public void end() {
+			end = true;
+		}
+
+		@Override
+		public void run() {
+			while (!end) {
+				reader.readPacket();
+			}
+			reader.close();
+		}
+	}
 
 	// Faked video reading
 	protected long lastVideoFrameMillis;
@@ -205,6 +331,94 @@ public class sceUsbCam extends HLEModule {
 		return jpegBufferSize;
 	}
 
+	@Override
+	public void stop() {
+		if (videoListener != null) {
+			videoListener.stop();
+			videoListener = null;
+		}
+
+		super.stop();
+	}
+
+	protected static int getResolutionWidth(int resolution) {
+		if (resolution < 0 || resolution >= resolutionWidth.length) {
+			return 0;
+		}
+		return resolutionWidth[resolution];
+	}
+
+	protected static int getResolutionHeight(int resolution) {
+		if (resolution < 0 || resolution >= resolutionHeight.length) {
+			return 0;
+		}
+		return resolutionHeight[resolution];
+	}
+
+	protected boolean setupVideo() {
+		if (videoListener != null) {
+			return true;
+		}
+
+		IContainer container = IContainer.make();
+		IContainerFormat format = IContainerFormat.make();
+		int ret = format.setInputFormat("vfwcap");
+		if (ret < 0) {
+			log.error(String.format("USB Cam: cannot open WebCam ('vfwcap' device)"));
+			return false;
+		}
+		ret = container.open("0", IContainer.Type.READ, format);
+		if (ret < 0) {
+			log.error(String.format("USB Cam: cannot open WebCam ('0')"));
+			return false;
+		}
+		IMediaReader reader = ToolFactory.makeReader(container);
+		videoListener = new VideoListener(reader, getResolutionWidth(resolution), getResolutionHeight(resolution));
+		reader.addListener(videoListener);
+
+		return true;
+	}
+
+	protected void setCurrentVideoImage(BufferedImage image) {
+		currentVideoImage = image;
+		currentVideoFrameCount++;
+	}
+
+	public BufferedImage getCurrentVideoImage() {
+		return currentVideoImage;
+	}
+
+	public int writeCurrentVideoImage(TPointer jpegBuffer, int jpegBufferSize) {
+		lastVideoFrameCount = currentVideoFrameCount;
+
+		if (getCurrentVideoImage() == null) {
+			return readFakeVideoFrame();
+		}
+
+		int length = -1;
+		try {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream(jpegBufferSize);
+			if (ImageIO.write(getCurrentVideoImage(), "jpeg", outputStream)) {
+				outputStream.close();
+				IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(jpegBuffer.getAddress(), jpegBufferSize, 1);
+				byte[] bytes = outputStream.toByteArray();
+				length = Math.min(bytes.length, jpegBufferSize);
+				for (int i = 0; i < length; i++) {
+					memoryWriter.writeNext(bytes[i] & 0xFF);
+				}
+				memoryWriter.flush();
+			}
+		} catch (IOException e) {
+			log.error("writeCurrentVideoImage", e);
+		}
+
+		if (length < 0) {
+			return readFakeVideoFrame();
+		}
+
+		return length;
+	}
+
 	/**
 	 * Set ups the parameters for video capture.
 	 *
@@ -257,7 +471,10 @@ public class sceUsbCam extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x574A8C3F, version = 271)
 	public int sceUsbCamStartVideo() {
-		// No parameters
+		if (!setupVideo()) {
+			log.warn(String.format("Cannot find webcam"));
+		}
+
 		return 0;
 	}
 
@@ -313,11 +530,11 @@ public class sceUsbCam extends HLEModule {
 			lastVideoFrameMillis = now;
 		}
 
-		return readFakeVideoFrame();
+		return writeCurrentVideoImage(jpegBuffer, jpegBufferSize);
 	}
 
 	/**
-	 * Reads a video frame. The function returns inmediately, and
+	 * Reads a video frame. The function returns immediately, and
 	 * the completion has to be handled by calling sceUsbCamWaitReadVideoFrameEnd
 	 * or sceUsbCamPollReadVideoFrameEnd.
 	 *
@@ -344,7 +561,14 @@ public class sceUsbCam extends HLEModule {
 	@HLEUnimplemented
 	@HLEFunction(nid = 0x41E73E95, version = 271)
 	public int sceUsbCamPollReadVideoFrameEnd() {
-		return readFakeVideoFrame();
+		if (currentVideoFrameCount <= lastVideoFrameCount) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("sceUsbCamPollReadVideoFrameEnd not frame end (%d - %d)", currentVideoFrameCount, lastVideoFrameCount));
+			}
+			return 0;
+		}
+
+		return writeCurrentVideoImage(jpegBuffer, jpegBufferSize);
 	}
 
 	/**
