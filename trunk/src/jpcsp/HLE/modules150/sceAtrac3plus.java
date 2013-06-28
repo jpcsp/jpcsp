@@ -959,7 +959,14 @@ public class sceAtrac3plus extends HLEModule {
     @HLEFunction(nid = 0x9AE849A7, version = 150, checkInsideInterrupt = true)
     public int sceAtracGetRemainFrame(@CheckArgument("checkAtracID") int atID, TPointer32 remainFramesAddr) {
         AtracID id = atracIDs.get(atID);
-    	int remainFrames = getRemainFrames(id, id.getLastDecodedSamples());
+        if (id.getInputBuffer() == null) {
+    		if (log.isDebugEnabled()) {
+                log.debug(String.format("sceAtracGetRemainFrame returning 0x%08X (ERROR_ATRAC_NO_DATA)", SceKernelErrors.ERROR_ATRAC_NO_DATA));
+            }
+        	return SceKernelErrors.ERROR_ATRAC_NO_DATA;
+        }
+
+        int remainFrames = getRemainFrames(id, id.getLastDecodedSamples());
 		remainFramesAddr.setValue(remainFrames);
 
 		if (log.isDebugEnabled()) {
