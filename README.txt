@@ -13,7 +13,7 @@
 *******************************************************************************
 [VERSION HISTORY]:
 v.07:
-release date open
+June 28, 2013 - Updated for v0.7
 v0.6:
 September 18, 2010 - Added new emulation changes and improved the FAQ.
 v0.5:
@@ -50,12 +50,12 @@ NVIDIA graphic cards are fully supported and Jpcsp can take advantage of powerfu
 Problems have been reported with ATI/AMD graphic cards: keep you Catalyst driver
 up-to-date as new releases might fix issues.
 
-The project is still a beta release, but currently more than 300 games are already
+The project is still a beta release, but currently more than 600 games are already
 playable. See the list on the official Forum.
 
-Video and Atrac3 sound are supported, but only on Windows 32bit systems.
+Video and Atrac3 sound are supported.
 Atrac3+ sound is not directly supported as there is currently no free codec available
-for this format. However, Atrac3+ can be decoded automatically on Windows 32bit
+for this format. However, Atrac3+ can be decoded automatically on Windows
 when installing SonicStage.
 
 This emulator is an open source project. If you want to contribute, check the
@@ -75,7 +75,7 @@ Please keep in mind that JPCSP does not support or endorse piracy.
 ...............................................................................
 ...............................................................................
 
-JPCSP v0.7 (????????):
+JPCSP v0.7 (June 28, 2013):
 
 -> Added support for rendering in software mode, not using the GPU;
 
@@ -95,7 +95,7 @@ JPCSP v0.7 (????????):
    under "Options" > "Configuration" > "Region";
 
 -> Configuration settings can be changed "on the fly",
-   i.e. the changes are effective immediately.
+   i.e. the changes are effective immediately;
 
 -> Draft implementation for the support of Video UMDs;
 
@@ -103,28 +103,30 @@ JPCSP v0.7 (????????):
    Infrastructure network is almost complete.
    Adhoc network is only working between two Jpcsp, not with a real PSP.
    Port shifting is available to support running two Jpcsp instances on the same computer.
-   Signin to the PlayStation Network is not supported at all.
+   Signin to the PlayStation Network is not supported at all;
 
--> A lot of compatibility improvements in almost all of the PSP modules.
+-> A lot of compatibility improvements in almost all of the PSP modules;
 
--> Major code cleanup in the module architecture (now using Java reflection).
+-> Major code cleanup in the module architecture (now using Java reflection);
 
 -> New method used for computing FPS. The FPS value is now more reliable but usually lower
    than on previous releases. It doesn't mean that the Jpcsp performance is now worse,
-   but just that the previous FPS counter was over-optimistic.
+   but just that the previous FPS counter was over-optimistic;
 
 -> Added Frame skipping option;
 
--> Added cheat import from cheat.db
+-> Added cheat import from cheat.db;
 
 -> Added export function for the current 3D scene in Wavefront .obj/.mtl format,
-   including the textures
+   including the textures;
 
--> Added texture modding
+-> Added texture modding;
 
--> Added functions to clear the texture and vertex caches
+-> Added functions to clear the texture and vertex caches;
 
--> Added option to change the PSP clock speed
+-> Added option to change the PSP clock speed;
+
+-> Improved integrated Debugger;
 
 
 
@@ -815,9 +817,9 @@ The average per GE list is probably the most relevant information.
 JPCSP Team (active):
 - gid15
 - Hykem
-- soywiz
 - Orphis
 - shadow
+- tempura.san
 
 Past members and contributors (inactive):
 - hlide
@@ -836,6 +838,7 @@ Past members and contributors (inactive):
 - i30817
 - theball
 - J_BYYX
+- soywiz
 
 Beta-testers:
 - BlackDaemon
@@ -905,4 +908,6 @@ JPCSP's Official Forum (hosted at Emunewz.net):
 
 Official recent SVN builds can be found at:
 - http://buildbot.orphis.net/jpcsp/
+or at the Emunews.net Live Downloads:
+- http://www.emunewz.net/forum/builds.php?filter=last
 ...............................................................................
