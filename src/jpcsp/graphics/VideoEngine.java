@@ -233,7 +233,7 @@ public class VideoEngine {
     private short[] clut_buffer16 = new short[4096];
     private boolean listHasEnded;
     private PspGeList currentList; // The currently executing list
-    private static final int drawBufferSize = 1 * 1024 * 1024;
+    private static final int drawBufferSize = 1536 * 1024;
     private static final int indexDrawBufferSize = 512 * 1024;
     private int bufferId;
     private int nativeBufferId;
