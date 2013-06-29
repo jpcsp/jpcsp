@@ -1,26 +1,23 @@
 /*
-This file is part of jpcsp.
+ This file is part of jpcsp.
 
-Jpcsp is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+ Jpcsp is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-Jpcsp is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+ Jpcsp is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ You should have received a copy of the GNU General Public License
+ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.GUI;
 
 import java.awt.Component;
 import java.awt.Image;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.FileFilter;
@@ -29,91 +26,144 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-
-import javax.swing.GroupLayout;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
-import javax.swing.WindowConstants;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableColumnModel;
-import javax.swing.table.JTableHeader;
-import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableColumn;
-
 import jpcsp.Emulator;
 import jpcsp.MainGUI;
-import jpcsp.Resource;
 import jpcsp.format.PBP;
 import jpcsp.format.PSF;
-import jpcsp.settings.Settings;
+import jpcsp.util.Constants;
 
-/**
- * @author Orphis
- *
- */
-public class MemStickBrowser extends JDialog {
+public class MemStickBrowser extends javax.swing.JDialog {
 
-    private static final class MemStickTableColumnModel extends DefaultTableColumnModel {
-        private static final long serialVersionUID = -6321946514015824875L;
+    private static final long serialVersionUID = 7788144302296106541L;
+    private MainGUI main;
+    private File path;
 
-        private static final class CellRenderer extends DefaultTableCellRenderer {
-            private static final long serialVersionUID = 6767267483048658105L;
+    public MemStickBrowser(MainGUI main, File path) {
+        super(main, true);
 
+        this.main = main;
+        this.path = path;
+
+        initComponents();
+
+        // restrict icon column width manually
+        tblPrograms.getColumnModel().getColumn(0).setMinWidth(Constants.ICON0_WIDTH);
+        tblPrograms.getColumnModel().getColumn(0).setMaxWidth(Constants.ICON0_WIDTH);
+
+        // set custom renderers
+        tblPrograms.setDefaultRenderer(Icon.class, new DefaultTableCellRenderer() {
             @Override
-            public Component getTableCellRendererComponent(JTable table,
-                    Object obj, boolean isSelected, boolean hasFocus,
-                    int row, int column) {
-                if(obj instanceof Icon) {
-                    setText("");
-                    setIcon((Icon) obj);
-                    return this;
-                }
-                setIcon(null);
-                return super.getTableCellRendererComponent(table, obj, isSelected, hasFocus, row, column);
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                setText(""); // NOI18N
+                setIcon((Icon) value);
+                return this;
             }
-        }
+        });
+        tblPrograms.setDefaultRenderer(File.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                try {
+                    String prgPath = ((File) value).getCanonicalPath();
+                    File cwd = new File(".");
+                    if (prgPath.startsWith(cwd.getCanonicalPath())) {
+                        prgPath = prgPath.substring(cwd.getCanonicalPath().length() + 1);
+                    }
+                    setText(prgPath);
+                } catch (IOException ioe) {
+                    setText(ioe.getLocalizedMessage());
+                    ioe.printStackTrace();
+                }
+                if (isSelected) {
+                    setForeground(table.getSelectionForeground());
+                    setBackground(table.getSelectionBackground());
+                } else {
+                    setForeground(table.getForeground());
+                    setBackground(table.getBackground());
+                }
+                return this;
+            }
+        });
 
-        public MemStickTableColumnModel() {
-            setColumnMargin(0);
-            CellRenderer cellRenderer = new CellRenderer();
-            TableColumn tableColumn = new TableColumn(0, 144, cellRenderer, null);
-            tableColumn.setHeaderValue(Resource.get("icon"));
-            tableColumn.setMaxWidth(144);
-            tableColumn.setMinWidth(144);
-            TableColumn tableColumn2 = new TableColumn(1, 100, cellRenderer, null);
-            tableColumn2.setHeaderValue(Resource.get("title"));
-            TableColumn tableColumn3 = new TableColumn(2, 200, cellRenderer, null);
-            tableColumn3.setHeaderValue(Resource.get("path"));
-            addColumn(tableColumn);
-            addColumn(tableColumn2);
-            addColumn(tableColumn3);
-        }
+        // enable 'load' button on valid selection
+        tblPrograms.getSelectionModel()
+                .addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                btnLoad.setEnabled(!((ListSelectionModel) e.getSource()).isSelectionEmpty());
+            }
+        });
+
+        refreshFiles();
     }
 
     private final class MemStickTableModel extends AbstractTableModel {
+
         private static final long serialVersionUID = -1675488447176776560L;
-
-
+        private ImageIcon[] icons;
+        private File[] programs;
+        private PBP[] pbps;
+        private PSF[] psfs;
+        private File path;
 
         public MemStickTableModel(File path) {
-            if(!path.isDirectory()) {
-                Emulator.log.error(path + Resource.get("nodirectory"));
+            if (!path.isDirectory()) {
+                Emulator.log.error("'" + path + "' is not a directory");
+                this.path = null;
+            } else {
+                this.path = path;
+            }
+        }
+
+        @Override
+        public Class<?> getColumnClass(int columnIndex) {
+            switch (columnIndex) {
+                case 0:
+                    return Icon.class;
+                case 1:
+                    return String.class;
+                case 2:
+                    return File.class;
+                default:
+                    throw new IndexOutOfBoundsException("column index out of range");
+            }
+        }
+
+        @Override
+        public String getColumnName(int column) {
+            java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
+            switch (column) {
+                case 0:
+                    return bundle.getString("MemStickBrowser.column.icon.text");
+                case 1:
+                    return bundle.getString("MemStickBrowser.column.title.text");
+                case 2:
+                    return bundle.getString("MemStickBrowser.column.path.text");
+                default:
+                    throw new IndexOutOfBoundsException("column index out of range");
+            }
+        }
+
+        public void refresh() {
+            // nothing to refresh on invalid path
+            if (path == null) {
                 return;
             }
+
             programs = path.listFiles(new FileFilter() {
                 @Override
                 public boolean accept(File file) {
                     String lower = file.getName().toLowerCase();
-                    if (lower.endsWith(".pbp"))
+                    if (lower.endsWith(".pbp")) {
                         return true;
+                    }
                     if (file.isDirectory()
                             && !file.getName().startsWith("%")
                             && !file.getName().endsWith("%")) {
@@ -136,7 +186,7 @@ public class MemStickBrowser extends JDialog {
             for (int i = 0; i < programs.length; ++i) {
                 try {
                     File metapbp = programs[i];
-                    if(programs[i].isDirectory()) {
+                    if (programs[i].isDirectory()) {
                         File eboot[] = programs[i].listFiles(new FileFilter() {
                             @Override
                             public boolean accept(File arg0) {
@@ -149,29 +199,31 @@ public class MemStickBrowser extends JDialog {
                         // %__SCE__kxploit
                         File metadir = new File(programs[i].getParentFile().getParentFile().getPath()
                                 + File.separatorChar + "%" + programs[i].getParentFile().getName());
-                        if(metadir.exists()) {
+                        if (metadir.exists()) {
                             eboot = metadir.listFiles(new FileFilter() {
                                 @Override
                                 public boolean accept(File arg0) {
                                     return arg0.getName().equalsIgnoreCase("eboot.pbp");
                                 }
                             });
-                            if(eboot.length > 0)
+                            if (eboot.length > 0) {
                                 metapbp = eboot[0];
+                            }
                         }
 
                         // kxploit%
                         metadir = new File(programs[i].getParentFile().getParentFile().getPath()
                                 + File.separatorChar + programs[i].getParentFile().getName() + "%");
-                        if(metadir.exists()) {
+                        if (metadir.exists()) {
                             eboot = metadir.listFiles(new FileFilter() {
                                 @Override
                                 public boolean accept(File arg0) {
                                     return arg0.getName().equalsIgnoreCase("eboot.pbp");
                                 }
                             });
-                            if(eboot.length > 0)
+                            if (eboot.length > 0) {
                                 metapbp = eboot[0];
+                            }
                         }
 
                         // Load unpacked icon
@@ -181,7 +233,7 @@ public class MemStickBrowser extends JDialog {
                                 return arg0.getName().equalsIgnoreCase("icon0.png");
                             }
                         });
-                        if(icon0file.length > 0) {
+                        if (icon0file.length > 0) {
                             icons[i] = new ImageIcon(icon0file[0].getPath());
                         }
 
@@ -192,8 +244,8 @@ public class MemStickBrowser extends JDialog {
                                 return arg0.getName().equalsIgnoreCase("param.sfo");
                             }
                         });
-                        if(psffile.length > 0) {
-                        	RandomAccessFile raf = new RandomAccessFile(psffile[0], "r");
+                        if (psffile.length > 0) {
+                            RandomAccessFile raf = new RandomAccessFile(psffile[0], "r");
                             FileChannel roChannel = raf.getChannel();
                             ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int) roChannel.size());
                             psfs[i] = new PSF();
@@ -201,14 +253,14 @@ public class MemStickBrowser extends JDialog {
                             raf.close();
                         }
                     }
-                    if(programs[i].getName().toLowerCase().endsWith(".pbp")) {
+                    if (programs[i].getName().toLowerCase().endsWith(".pbp")) {
                         // Load packed icon
-                    	RandomAccessFile raf = new RandomAccessFile(metapbp, "r");
+                        RandomAccessFile raf = new RandomAccessFile(metapbp, "r");
                         FileChannel roChannel = raf.getChannel();
                         // Limit the size of the data read from the file to 100Kb.
                         // Some PBP files for demos can be very large (over 200GB)
                         // and raise an OutOfMemory exception.
-                        int size = Math.min((int)roChannel.size(), 100 * 1024);
+                        int size = Math.min((int) roChannel.size(), 100 * 1024);
                         ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, size);
                         pbps[i] = new PBP(readbuffer);
                         PSF psf = pbps[i].readPSF(readbuffer);
@@ -225,14 +277,15 @@ public class MemStickBrowser extends JDialog {
                     }
 
                     // default icon
-                    if (icons[i] == null)
+                    if (icons[i] == null) {
                         icons[i] = new ImageIcon(getClass().getResource("/jpcsp/images/icon0.png"));
+                    }
 
                     // Rescale over sized icons
                     if (icons[i] != null) {
                         Image image = icons[i].getImage();
-                        if (image.getWidth(null) > 144 || image.getHeight(null) > 80) {
-                            image = image.getScaledInstance(144, 80, Image.SCALE_SMOOTH);
+                        if (image.getWidth(null) > Constants.ICON0_WIDTH || image.getHeight(null) > Constants.ICON0_HEIGHT) {
+                            image = image.getScaledInstance(Constants.ICON0_WIDTH, Constants.ICON0_HEIGHT, Image.SCALE_SMOOTH);
                             icons[i].setImage(image);
                         }
                     }
@@ -242,6 +295,7 @@ public class MemStickBrowser extends JDialog {
                     e.printStackTrace();
                 }
             }
+            fireTableDataChanged();
         }
 
         @Override
@@ -251,149 +305,139 @@ public class MemStickBrowser extends JDialog {
 
         @Override
         public int getRowCount() {
-            return programs.length;
+            return (programs != null) ? programs.length : 0;
         }
 
         @Override
         public Object getValueAt(int rowIndex, int columnIndex) {
-            try {
-                switch (columnIndex) {
+            switch (columnIndex) {
                 case 0:
                     return icons[rowIndex];
                 case 1:
                     String title;
-                    if(psfs[rowIndex] == null || (title = psfs[rowIndex].getPrintableString("TITLE")) == null) {
+                    if (psfs[rowIndex] == null || (title = psfs[rowIndex].getPrintableString("TITLE")) == null) {
                         // No PSF TITLE, get the parent directory name
-                        title =  programs[rowIndex].getParentFile().getName();
+                        title = programs[rowIndex].getParentFile().getName();
                     }
                     return title;
                 case 2:
-                    String prgPath = programs[rowIndex].getCanonicalPath();
-                    File cwd = new File(".");
-                    if(prgPath.startsWith(cwd.getCanonicalPath()))
-                        prgPath = prgPath.substring(cwd.getCanonicalPath().length() + 1);
-                    return prgPath;
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+                    return programs[rowIndex];
+                default:
+                    return null;
             }
-            return null;
         }
     }
 
-    /**
-     *
-     */
-    private static final long serialVersionUID = 7788144302296106541L;
-    private JButton loadButton;
-    private JTable table;
-    private File[] programs;
-    private ImageIcon[] icons;
-    private PBP[] pbps;
-    private PSF[] psfs;
-    private File path;
-    /**
-     * @param arg0
-     */
-    public MemStickBrowser(MainGUI arg0, File path) {
-        super(arg0);
-
-        this.path = path;
-        setModal(true);
-
-        setTitle(Resource.get("memstick"));
-        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        table = new JTable(new MemStickTableModel(path), new MemStickTableColumnModel());
-        table.setFillsViewportHeight(true);
-        table.setRowHeight(80);
-        table.setAutoResizeMode(JTable.AUTO_RESIZE_NEXT_COLUMN);
-        table.setTableHeader(new JTableHeader(table.getColumnModel()));
-        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        table.setRowSelectionAllowed(true);
-        table.setColumnSelectionAllowed(false);
-        table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-            @Override
-            public void valueChanged(ListSelectionEvent e) {
-                loadButton.setEnabled(!((ListSelectionModel)e.getSource()).isSelectionEmpty());
-            }});
-        table.addMouseListener(new MouseAdapter() {
-
-            @Override
-            public void mouseClicked(MouseEvent arg0) {
-                if(arg0.getClickCount() == 2 && arg0.getButton() == MouseEvent.BUTTON1)
-                    loadSelectedfile();
-            }
-        });
-
-        table.setFont(Settings.getInstance().getFont());
-
-        DefaultTableColumnModel colModel = (DefaultTableColumnModel)table.getColumnModel();
-        for (int c = 0; c < table.getColumnCount() - 1; c++) {
-            TableColumn col = colModel.getColumn(c);
-            int width = 0;
-
-            // Get width of column header
-            TableCellRenderer renderer = col.getHeaderRenderer();
-            if (renderer == null) {
-                renderer = table.getTableHeader().getDefaultRenderer();
-            }
-            Component comp = renderer.getTableCellRendererComponent(table, col
-                    .getHeaderValue(), false, false, 0, 0);
-            width = comp.getPreferredSize().width;
-
-            // Get maximum width of column data
-            for (int r = 0; r < table.getRowCount(); r++) {
-                renderer = table.getCellRenderer(r, c);
-                comp = renderer.getTableCellRendererComponent(table, table
-                        .getValueAt(r, c), false, false, r, c);
-                width = Math.max(width, comp.getPreferredSize().width);
-            }
-
-            width += 2 * colModel.getColumnMargin();
-            col.setPreferredWidth(width);
-        }
-
-        JScrollPane scrollPane = new JScrollPane(table);
-
-        GroupLayout layout = new GroupLayout(getRootPane());
-        layout.setAutoCreateGaps(true);
-        layout.setAutoCreateContainerGaps(true);
-
-        JButton cancelButton = new CancelButton(this);
-
-        loadButton = new JButton(Resource.get("load"));
-        loadButton.setEnabled(false);
-        loadButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                loadSelectedfile();
-            }
-        });
-
-        layout.setHorizontalGroup(layout.createParallelGroup(
-                GroupLayout.Alignment.TRAILING).addComponent(scrollPane)
-                .addGroup(
-                        layout.createSequentialGroup().addComponent(loadButton)
-                                .addComponent(cancelButton)));
-
-        layout.setVerticalGroup(layout.createSequentialGroup().addComponent(
-                scrollPane).addGroup(
-                layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                        .addComponent(loadButton).addComponent(cancelButton)));
-
-        getRootPane().setLayout(layout);
-        setSize(600, 400);
+    final public void refreshFiles() {
+        ((MemStickTableModel) tblPrograms.getModel()).refresh();
     }
 
-    public void refreshFiles() {
-        table.setModel(new MemStickTableModel(path));
-    }
-
-    private void loadSelectedfile() {
-        File selectedFile = programs[table.getSelectedRow()];
-            ((MainGUI) getParent()).loadFile(selectedFile);
-
-        setVisible(false);
+    private void loadSelectedFile() {
+        main.loadFile((File) tblPrograms.getValueAt(tblPrograms.getSelectedRow(), 2));
         dispose();
     }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        jScrollPane1 = new javax.swing.JScrollPane();
+        tblPrograms = new javax.swing.JTable();
+        btnLoad = new javax.swing.JButton();
+        btnRefresh = new javax.swing.JButton();
+        btnCancel = new jpcsp.GUI.CancelButton();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
+        setTitle(bundle.getString("MemStickBrowser.title")); // NOI18N
+        setMinimumSize(new java.awt.Dimension(600, 350));
+
+        tblPrograms.setModel(new MemStickTableModel(path));
+        tblPrograms.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_NEXT_COLUMN);
+        tblPrograms.setRowHeight(80);
+        tblPrograms.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        tblPrograms.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tblProgramsMouseClicked(evt);
+            }
+        });
+        jScrollPane1.setViewportView(tblPrograms);
+
+        btnLoad.setText(bundle.getString("LoadButton.text")); // NOI18N
+        btnLoad.setEnabled(false);
+        btnLoad.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnLoadActionPerformed(evt);
+            }
+        });
+
+        btnRefresh.setText(bundle.getString("MemStickBrowser.btnRefresh.text")); // NOI18N
+        btnRefresh.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnRefreshActionPerformed(evt);
+            }
+        });
+
+        btnCancel.setText(bundle.getString("CancelButton.text")); // NOI18N
+        btnCancel.setParent(this);
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addComponent(btnRefresh)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnLoad)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnCancel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 576, Short.MAX_VALUE))
+                .addContainerGap())
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 295, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnLoad)
+                    .addComponent(btnRefresh)
+                    .addComponent(btnCancel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap())
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void btnLoadActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLoadActionPerformed
+        loadSelectedFile();
+    }//GEN-LAST:event_btnLoadActionPerformed
+
+    private void tblProgramsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tblProgramsMouseClicked
+        // load selected file on double click
+        if (evt.getClickCount() == 2 && evt.getButton() == MouseEvent.BUTTON1) {
+            loadSelectedFile();
+        }
+    }//GEN-LAST:event_tblProgramsMouseClicked
+
+    private void btnRefreshActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRefreshActionPerformed
+        refreshFiles();
+    }//GEN-LAST:event_btnRefreshActionPerformed
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private jpcsp.GUI.CancelButton btnCancel;
+    private javax.swing.JButton btnLoad;
+    private javax.swing.JButton btnRefresh;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JTable tblPrograms;
+    // End of variables declaration//GEN-END:variables
 }

@@ -29,8 +29,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
-
-import jpcsp.util.Utilities;
+import jpcsp.util.Constants;
 
 public class PSF {
     private int psfOffset;
@@ -115,7 +114,7 @@ public class PSF {
                     byte[] s = new byte[pair.dataSize];
                     f.get(s);
                     // Strip trailing null character
-                    pair.data = new String(s, 0, s[s.length - 1] == '\0' ? s.length - 1 : s.length, Utilities.charset);
+                    pair.data = new String(s, 0, s[s.length - 1] == '\0' ? s.length - 1 : s.length, Constants.charset);
 
                     //System.out.println(String.format("offset=%08X key='%s' string '%s' [len=%d]",
                     //    keyTableOffset + pair.keyOffset, pair.key, pair.data, pair.dataSize));
@@ -188,7 +187,7 @@ public class PSF {
 
                 case PSF_DATA_TYPE_STRING:
                     String s = (String)pair.data;
-                    f.put(s.getBytes(Utilities.charset));
+                    f.put(s.getBytes(Constants.charset));
                     writeByte(f, (byte)0);
                     break;
 
@@ -253,7 +252,7 @@ public class PSF {
     }
 
     public void put(String key, String data, int rawlen) {
-        byte[] b = (data.getBytes(Utilities.charset));
+        byte[] b = (data.getBytes(Constants.charset));
 
         //if (b.length != data.length())
         //    System.out.println("put string '" + data + "' size mismatch. UTF-8=" + b.length + " regular=" + (data.length() + 1));
@@ -268,7 +267,7 @@ public class PSF {
     }
 
     public void put(String key, String data) {
-        byte[] b = (data.getBytes(Utilities.charset));
+        byte[] b = (data.getBytes(Constants.charset));
         //int rawlen = data.length() + 1;
         int rawlen = b.length + 1;
 

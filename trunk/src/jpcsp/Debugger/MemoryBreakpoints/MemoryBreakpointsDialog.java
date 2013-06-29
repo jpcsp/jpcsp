@@ -26,17 +26,21 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableModel;
 
 import jpcsp.Memory;
 import jpcsp.State;
 import jpcsp.memory.DebuggerMemory;
 import jpcsp.Debugger.MemoryBreakpoints.MemoryBreakpoint.AccessType;
+import jpcsp.util.Constants;
 
 public class MemoryBreakpointsDialog extends javax.swing.JDialog {
 
@@ -48,7 +52,6 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
     private final int COL_ACTIVE = 3;
     private final int COL_LAST = 4;
     private static final Font tableFont = new Font("Courier new", Font.PLAIN, 12);
-    private final FileNameExtensionFilter fltMemoryBreakpointsFile = new FileNameExtensionFilter("Memory breakpoint files", "mbrk");
 
     public MemoryBreakpointsDialog(java.awt.Frame parent) {
         super(parent);
@@ -64,17 +67,24 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
         combo.addItem("WRITE");
         combo.addItem("READWRITE");
         accessType.setCellEditor(new DefaultCellEditor(combo));
-        
+
         tblBreakpoints.getColumnModel().getColumn(COL_STARTADDRESS).setCellEditor(new AddressCellEditor());
         tblBreakpoints.getColumnModel().getColumn(COL_ENDADDRESS).setCellEditor(new AddressCellEditor());
 
         tblBreakpoints.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
-                btnRemove.setEnabled(true);
+                btnRemove.setEnabled(!((ListSelectionModel) e.getSource()).isSelectionEmpty());
             }
         });
-    
+
+        tblBreakpoints.getModel().addTableModelListener(new TableModelListener() {
+            @Override
+            public void tableChanged(TableModelEvent tme) {
+                btnExport.setEnabled(((TableModel) tme.getSource()).getRowCount() > 0);
+            }
+        });
+
         // copy trace settings to UI
         updateTraceSettings();
     }
@@ -92,8 +102,9 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
         cbTraceWrite16.setSelected(dbgmem.traceMemoryWrite16);
         cbTraceWrite32.setSelected(dbgmem.traceMemoryWrite32);
     }
-    
+
     private class AddressCellEditor extends DefaultCellEditor {
+
         private static final long serialVersionUID = 1L;
 
         public AddressCellEditor() {
@@ -112,7 +123,7 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
                 final JTable table, final Object value,
                 final boolean isSelected, final int row, final int column) {
             final JTextField tf = ((JTextField) getComponent());
-            tf.setText(String.format("0x%X", Integer.decode((String)table.getModel().getValueAt(row, column))));
+            tf.setText(String.format("0x%X", Integer.decode((String) table.getModel().getValueAt(row, column))));
 
             // needed for double-click to work, otherwise the second click
             // is interpreted to position the caret
@@ -256,28 +267,29 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
         btnAdd = new javax.swing.JButton();
         btnRemove = new javax.swing.JButton();
         jPanel2 = new javax.swing.JPanel();
-        chkPauseOnHit = new javax.swing.JCheckBox();
         jSeparator1 = new javax.swing.JSeparator();
-        btnClose = new javax.swing.JButton();
+        jPanel1 = new javax.swing.JPanel();
         cbTraceRead = new javax.swing.JCheckBox();
-        cbTraceRead8 = new javax.swing.JCheckBox();
-        cbTraceRead16 = new javax.swing.JCheckBox();
-        cbTraceRead32 = new javax.swing.JCheckBox();
         cbTraceWrite = new javax.swing.JCheckBox();
+        cbTraceRead8 = new javax.swing.JCheckBox();
         cbTraceWrite8 = new javax.swing.JCheckBox();
+        cbTraceRead16 = new javax.swing.JCheckBox();
         cbTraceWrite16 = new javax.swing.JCheckBox();
+        cbTraceRead32 = new javax.swing.JCheckBox();
         cbTraceWrite32 = new javax.swing.JCheckBox();
+        chkPauseOnHit = new javax.swing.JCheckBox();
+        btnClose = new javax.swing.JButton();
         btnExport = new javax.swing.JButton();
         btnImport = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         tblBreakpoints = new javax.swing.JTable();
 
-        setTitle("Memory breakpoints");
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
+        setTitle(bundle.getString("MemoryBreakpointsDialog.title")); // NOI18N
         setLocationByPlatform(true);
         setName("dialog"); // NOI18N
-        setResizable(false);
 
-        btnAdd.setText("Add");
+        btnAdd.setText(bundle.getString("MemoryBreakpointsDialog.btnAdd.text")); // NOI18N
         btnAdd.setMaximumSize(new java.awt.Dimension(140, 25));
         btnAdd.setMinimumSize(new java.awt.Dimension(140, 25));
         btnAdd.setPreferredSize(new java.awt.Dimension(140, 25));
@@ -287,7 +299,7 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
             }
         });
 
-        btnRemove.setText("Remove");
+        btnRemove.setText(bundle.getString("MemoryBreakpointsDialog.btnRemove.text")); // NOI18N
         btnRemove.setEnabled(false);
         btnRemove.setMaximumSize(new java.awt.Dimension(140, 25));
         btnRemove.setMinimumSize(new java.awt.Dimension(140, 25));
@@ -298,85 +310,97 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
             }
         });
 
+        jPanel1.setLayout(new java.awt.GridLayout(5, 2));
+
+        cbTraceRead.setText(bundle.getString("MemoryBreakpointsDialog.cbTraceRead.text")); // NOI18N
+        cbTraceRead.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                cbTraceReadItemStateChanged(evt);
+            }
+        });
+        jPanel1.add(cbTraceRead);
+
+        cbTraceWrite.setText(bundle.getString("MemoryBreakpointsDialog.cbTraceWrite.text")); // NOI18N
+        cbTraceWrite.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                cbTraceWriteItemStateChanged(evt);
+            }
+        });
+        jPanel1.add(cbTraceWrite);
+
+        cbTraceRead8.setText(bundle.getString("MemoryBreakpointsDialog.cbTraceRead8.text")); // NOI18N
+        cbTraceRead8.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                cbTraceRead8ItemStateChanged(evt);
+            }
+        });
+        jPanel1.add(cbTraceRead8);
+
+        cbTraceWrite8.setText(bundle.getString("MemoryBreakpointsDialog.cbTraceWrite8.text")); // NOI18N
+        cbTraceWrite8.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                cbTraceWrite8ItemStateChanged(evt);
+            }
+        });
+        jPanel1.add(cbTraceWrite8);
+
+        cbTraceRead16.setText(bundle.getString("MemoryBreakpointsDialog.cbTraceRead16.text")); // NOI18N
+        cbTraceRead16.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                cbTraceRead16ItemStateChanged(evt);
+            }
+        });
+        jPanel1.add(cbTraceRead16);
+
+        cbTraceWrite16.setText(bundle.getString("MemoryBreakpointsDialog.cbTraceWrite16.text")); // NOI18N
+        cbTraceWrite16.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                cbTraceWrite16ItemStateChanged(evt);
+            }
+        });
+        jPanel1.add(cbTraceWrite16);
+
+        cbTraceRead32.setText(bundle.getString("MemoryBreakpointsDialog.cbTraceRead32.text")); // NOI18N
+        cbTraceRead32.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                cbTraceRead32ItemStateChanged(evt);
+            }
+        });
+        jPanel1.add(cbTraceRead32);
+
+        cbTraceWrite32.setText(bundle.getString("MemoryBreakpointsDialog.cbTraceWrite32.text")); // NOI18N
+        cbTraceWrite32.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                cbTraceWrite32ItemStateChanged(evt);
+            }
+        });
+        jPanel1.add(cbTraceWrite32);
+
         chkPauseOnHit.setSelected(((DebuggerMemory)Memory.getInstance()).pauseEmulatorOnMemoryBreakpoint);
-        chkPauseOnHit.setText("pause emulator on hit");
+        chkPauseOnHit.setText(bundle.getString("MemoryBreakpointsDialog.chkPauseOnHit.text")); // NOI18N
         chkPauseOnHit.addItemListener(new java.awt.event.ItemListener() {
             public void itemStateChanged(java.awt.event.ItemEvent evt) {
                 chkPauseOnHitItemStateChanged(evt);
             }
         });
+        jPanel1.add(chkPauseOnHit);
 
-        btnClose.setText("Close");
+        btnClose.setText(bundle.getString("CloseButton.text")); // NOI18N
         btnClose.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnCloseActionPerformed(evt);
             }
         });
 
-        cbTraceRead.setText("trace all reads");
-        cbTraceRead.addItemListener(new java.awt.event.ItemListener() {
-            public void itemStateChanged(java.awt.event.ItemEvent evt) {
-                cbTraceReadItemStateChanged(evt);
-            }
-        });
-
-        cbTraceRead8.setText("trace on BYTE read");
-        cbTraceRead8.addItemListener(new java.awt.event.ItemListener() {
-            public void itemStateChanged(java.awt.event.ItemEvent evt) {
-                cbTraceRead8ItemStateChanged(evt);
-            }
-        });
-
-        cbTraceRead16.setText("trace on WORD read");
-        cbTraceRead16.addItemListener(new java.awt.event.ItemListener() {
-            public void itemStateChanged(java.awt.event.ItemEvent evt) {
-                cbTraceRead16ItemStateChanged(evt);
-            }
-        });
-
-        cbTraceRead32.setText("trace on DWORD read");
-        cbTraceRead32.addItemListener(new java.awt.event.ItemListener() {
-            public void itemStateChanged(java.awt.event.ItemEvent evt) {
-                cbTraceRead32ItemStateChanged(evt);
-            }
-        });
-
-        cbTraceWrite.setText("trace all writes");
-        cbTraceWrite.addItemListener(new java.awt.event.ItemListener() {
-            public void itemStateChanged(java.awt.event.ItemEvent evt) {
-                cbTraceWriteItemStateChanged(evt);
-            }
-        });
-
-        cbTraceWrite8.setText("trace on BYTE write");
-        cbTraceWrite8.addItemListener(new java.awt.event.ItemListener() {
-            public void itemStateChanged(java.awt.event.ItemEvent evt) {
-                cbTraceWrite8ItemStateChanged(evt);
-            }
-        });
-
-        cbTraceWrite16.setText("trace on WORD write");
-        cbTraceWrite16.addItemListener(new java.awt.event.ItemListener() {
-            public void itemStateChanged(java.awt.event.ItemEvent evt) {
-                cbTraceWrite16ItemStateChanged(evt);
-            }
-        });
-
-        cbTraceWrite32.setText("trace on DWORD write");
-        cbTraceWrite32.addItemListener(new java.awt.event.ItemListener() {
-            public void itemStateChanged(java.awt.event.ItemEvent evt) {
-                cbTraceWrite32ItemStateChanged(evt);
-            }
-        });
-
-        btnExport.setText("Export");
+        btnExport.setText(bundle.getString("MemoryBreakpointsDialog.btnExport.text")); // NOI18N
+        btnExport.setEnabled(false);
         btnExport.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnExportActionPerformed(evt);
             }
         });
 
-        btnImport.setText("Import");
+        btnImport.setText(bundle.getString("MemoryBreakpointsDialog.btnImport.text")); // NOI18N
         btnImport.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnImportActionPerformed(evt);
@@ -389,56 +413,21 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(jSeparator1)
             .addGroup(jPanel2Layout.createSequentialGroup()
-                .addComponent(cbTraceRead, javax.swing.GroupLayout.PREFERRED_SIZE, 215, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(cbTraceWrite, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(cbTraceRead8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(cbTraceRead16, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(cbTraceRead32, javax.swing.GroupLayout.DEFAULT_SIZE, 215, Short.MAX_VALUE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(cbTraceWrite8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(cbTraceWrite16, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(cbTraceWrite32, javax.swing.GroupLayout.DEFAULT_SIZE, 205, Short.MAX_VALUE)))
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addComponent(chkPauseOnHit)
-                        .addGap(0, 0, Short.MAX_VALUE)))
-                .addContainerGap())
-            .addGroup(jPanel2Layout.createSequentialGroup()
                 .addGap(0, 0, Short.MAX_VALUE)
                 .addComponent(btnImport)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnExport)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnClose))
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 576, Short.MAX_VALUE)
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(cbTraceRead)
-                    .addComponent(cbTraceWrite))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(cbTraceRead8)
-                    .addComponent(cbTraceWrite8))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(cbTraceWrite16)
-                    .addComponent(cbTraceRead16))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(cbTraceWrite32)
-                    .addComponent(cbTraceRead32))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(chkPauseOnHit)
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 127, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnExport)
@@ -458,26 +447,28 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
                     .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
                         .addComponent(btnAdd, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnRemove, javax.swing.GroupLayout.PREFERRED_SIZE, 140, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 104, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap()
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 104, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnAdd, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(btnRemove, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, 178, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, 178, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
         );
 
         pack();
@@ -542,20 +533,21 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
     }//GEN-LAST:event_cbTraceWrite32ItemStateChanged
 
     private void btnExportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExportActionPerformed
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp");
         final JFileChooser fc = new JFileChooser();
-        fc.setDialogTitle("Export memory breakpoints to file...");
+        fc.setDialogTitle(bundle.getString("MemoryBreakpointsDialog.dlgExport.title"));
         fc.setSelectedFile(new File(State.discId + ".mbrk"));
         fc.setCurrentDirectory(new java.io.File("."));
-        fc.addChoosableFileFilter(fltMemoryBreakpointsFile);
-        fc.setFileFilter(fltMemoryBreakpointsFile);
+        fc.addChoosableFileFilter(Constants.fltMemoryBreakpointFiles);
+        fc.setFileFilter(Constants.fltMemoryBreakpointFiles);
 
         if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             File f = fc.getSelectedFile();
             if (f.exists()) {
                 int rc = JOptionPane.showConfirmDialog(
                         this,
-                        "File '" + f + "' already exists. Do you want to overwrite?",
-                        "File exists",
+                        bundle.getString("ConsoleWindow.strFileExists.text"),
+                        bundle.getString("ConsoleWindow.strFileExistsTitle.text"),
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.WARNING_MESSAGE);
 
@@ -569,11 +561,11 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
 
     private void btnImportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnImportActionPerformed
         final JFileChooser fc = new JFileChooser();
-        fc.setDialogTitle("Import memory breakpoints from file...");
+        fc.setDialogTitle(java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("MemoryBreakpointsDialog.dlgImport.title"));
         fc.setSelectedFile(new File(State.discId + ".mbrk"));
         fc.setCurrentDirectory(new java.io.File("."));
-        fc.addChoosableFileFilter(fltMemoryBreakpointsFile);
-        fc.setFileFilter(fltMemoryBreakpointsFile);
+        fc.addChoosableFileFilter(Constants.fltMemoryBreakpointFiles);
+        fc.setFileFilter(Constants.fltMemoryBreakpointFiles);
 
         if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             ((DebuggerMemory) Memory.getInstance()).importBreakpoints(fc.getSelectedFile());
@@ -596,6 +588,7 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
     private javax.swing.JCheckBox cbTraceWrite32;
     private javax.swing.JCheckBox cbTraceWrite8;
     private javax.swing.JCheckBox chkPauseOnHit;
+    private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JSeparator jSeparator1;

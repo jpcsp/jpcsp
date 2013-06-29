@@ -1,20 +1,19 @@
 /*
-This file is part of jpcsp.
+ This file is part of jpcsp.
 
-Jpcsp is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+ Jpcsp is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-Jpcsp is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+ Jpcsp is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ You should have received a copy of the GNU General Public License
+ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.GUI;
 
 import java.awt.DisplayMode;
@@ -34,7 +33,6 @@ import javax.swing.MutableComboBoxModel;
 
 import jpcsp.Emulator;
 import jpcsp.MainGUI;
-import jpcsp.Resource;
 import jpcsp.HLE.modules.sceUtility;
 import jpcsp.settings.Settings;
 
@@ -42,13 +40,16 @@ import com.jidesoft.swing.FolderChooser;
 
 /**
  *
- * @author  shadow
+ * @author shadow
  */
 public class SettingsGUI extends javax.swing.JFrame {
-	private static final long serialVersionUID = -732715495873159718L;
-	private Settings settings;
-    
-    /** Creates new form SettingsGUI */
+
+    private static final long serialVersionUID = -732715495873159718L;
+    private Settings settings;
+
+    /**
+     * Creates new form SettingsGUI
+     */
     public SettingsGUI() {
         settings = Settings.getInstance();
 
@@ -90,6 +91,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolFromSettings(onlyGEGraphicsCheck, "emu.onlyGEGraphics");
         setBoolFromSettings(useConnector, "emu.useConnector");
         setBoolFromSettings(useDebugFont, "emu.useDebugFont");
+        setBoolFromSettings(useDebugMemory, "emu.useDebuggerMemory");
         setBoolFromSettings(useExternalDecoder, "emu.useExternalDecoder");
         setBoolFromSettings(useMediaEngine, "emu.useMediaEngine");
         setBoolFromSettings(useVertexCache, "emu.useVertexCache");
@@ -106,49 +108,49 @@ public class SettingsGUI extends javax.swing.JFrame {
         setStringFromSettings(resolutionBox, "emu.graphics.resolution");
         setStringFromSettings(umdpath, "emu.umdpath");
         setStringFromSettings(tmppath, "emu.tmppath");
-        setBoolFromSettings(umdBrowser, ClassicOpenDialogumd, "emu.umdbrowser");
+        setBoolFromSettings(umdBrowser, classicUmdDialog, "emu.umdbrowser");
     }
 
     private boolean isEnabledSettings(String settingsOption) {
-    	return !settings.isOptionFromPatch(settingsOption);
+        return !settings.isOptionFromPatch(settingsOption);
     }
 
     private void setBoolFromSettings(JRadioButton trueButton, JRadioButton falseButton, String settingsOption) {
-    	boolean value = settings.readBool(settingsOption);
-    	trueButton.setSelected(value);
-    	falseButton.setSelected(!value);
-		trueButton.setEnabled(isEnabledSettings(settingsOption));
-		falseButton.setEnabled(isEnabledSettings(settingsOption));
+        boolean value = settings.readBool(settingsOption);
+        trueButton.setSelected(value);
+        falseButton.setSelected(!value);
+        trueButton.setEnabled(isEnabledSettings(settingsOption));
+        falseButton.setEnabled(isEnabledSettings(settingsOption));
     }
 
     private void setBoolFromSettings(JCheckBox checkBox, String settingsOption) {
-		checkBox.setSelected(settings.readBool(settingsOption));
-		checkBox.setEnabled(isEnabledSettings(settingsOption));
+        checkBox.setSelected(settings.readBool(settingsOption));
+        checkBox.setEnabled(isEnabledSettings(settingsOption));
     }
 
     private void setIntFromSettings(JComboBox comboBox, String settingsOption) {
-    	comboBox.setSelectedIndex(settings.readInt(settingsOption));
-    	comboBox.setEnabled(isEnabledSettings(settingsOption));
+        comboBox.setSelectedIndex(settings.readInt(settingsOption));
+        comboBox.setEnabled(isEnabledSettings(settingsOption));
     }
 
     private void setIntAsStringFromSettings(JComboBox comboBox, String settingsOption, int defaultValue) {
-    	comboBox.setSelectedItem(Integer.toString(settings.readInt(settingsOption, defaultValue)));
-    	comboBox.setEnabled(isEnabledSettings(settingsOption));
+        comboBox.setSelectedItem(Integer.toString(settings.readInt(settingsOption, defaultValue)));
+        comboBox.setEnabled(isEnabledSettings(settingsOption));
     }
 
     private void setIntFromSettings(JSpinner spinner, String settingsOption) {
-    	spinner.setValue(settings.readInt(settingsOption));
-    	spinner.setEnabled(isEnabledSettings(settingsOption));
+        spinner.setValue(settings.readInt(settingsOption));
+        spinner.setEnabled(isEnabledSettings(settingsOption));
     }
 
     private void setStringFromSettings(JComboBox comboBox, String settingsOption) {
-    	comboBox.setSelectedItem(settings.readString(settingsOption));
-    	comboBox.setEnabled(isEnabledSettings(settingsOption));
+        comboBox.setSelectedItem(settings.readString(settingsOption));
+        comboBox.setEnabled(isEnabledSettings(settingsOption));
     }
 
     private void setStringFromSettings(JTextField textField, String settingsOption) {
-    	textField.setText(settings.readString(settingsOption));
-    	textField.setEnabled(isEnabledSettings(settingsOption));
+        textField.setText(settings.readString(settingsOption));
+        textField.setEnabled(isEnabledSettings(settingsOption));
     }
 
     private void setAllComponentsToSettings() {
@@ -184,6 +186,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolToSettings(onlyGEGraphicsCheck, "emu.onlyGEGraphics");
         setBoolToSettings(useConnector, "emu.useConnector");
         setBoolToSettings(useDebugFont, "emu.useDebugFont");
+        setBoolToSettings(useDebugMemory, "emu.useDebuggerMemory");
         setBoolToSettings(useExternalDecoder, "emu.useExternalDecoder");
         setBoolToSettings(useMediaEngine, "emu.useMediaEngine");
         setBoolToSettings(useVertexCache, "emu.useVertexCache");
@@ -204,104 +207,115 @@ public class SettingsGUI extends javax.swing.JFrame {
     }
 
     private void setBoolToSettings(JRadioButton radioButton, String settingsOption) {
-    	if (isEnabledSettings(settingsOption)) {
-    		settings.writeBool(settingsOption, radioButton.isSelected());
-    	}
+        if (isEnabledSettings(settingsOption)) {
+            settings.writeBool(settingsOption, radioButton.isSelected());
+        }
     }
 
     private void setBoolToSettings(JCheckBox checkBox, String settingsOption) {
-    	if (isEnabledSettings(settingsOption)) {
-    		settings.writeBool(settingsOption, checkBox.isSelected());
-    	}
+        if (isEnabledSettings(settingsOption)) {
+            settings.writeBool(settingsOption, checkBox.isSelected());
+        }
     }
 
     private void setIntToSettings(JComboBox comboBox, String settingsOption) {
-    	if (isEnabledSettings(settingsOption)) {
-    		settings.writeInt(settingsOption, comboBox.getSelectedIndex());
-    	}
+        if (isEnabledSettings(settingsOption)) {
+            settings.writeInt(settingsOption, comboBox.getSelectedIndex());
+        }
     }
 
     private void setIntAsStringToSettings(JComboBox comboBox, String settingsOption, int defaultValue) {
-    	if (isEnabledSettings(settingsOption)) {
-    		settings.writeInt(settingsOption, Integer.parseInt(comboBox.getSelectedItem().toString()));
-    	}
+        if (isEnabledSettings(settingsOption)) {
+            settings.writeInt(settingsOption, Integer.parseInt(comboBox.getSelectedItem().toString()));
+        }
     }
 
     private void setIntToSettings(JSpinner spinner, String settingsOption) {
-    	if (isEnabledSettings(settingsOption)) {
-    		settings.writeInt(settingsOption, Integer.parseInt(spinner.getValue().toString()));
-    	}
+        if (isEnabledSettings(settingsOption)) {
+            settings.writeInt(settingsOption, Integer.parseInt(spinner.getValue().toString()));
+        }
     }
 
     private void setStringToSettings(JComboBox comboBox, String settingsOption) {
-    	if (isEnabledSettings(settingsOption)) {
-    		settings.writeString(settingsOption, comboBox.getSelectedItem().toString());
-    	}
+        if (isEnabledSettings(settingsOption)) {
+            settings.writeString(settingsOption, comboBox.getSelectedItem().toString());
+        }
     }
 
     private void setStringToSettings(JTextField textField, String settingsOption) {
-    	if (isEnabledSettings(settingsOption)) {
-    		settings.writeString(settingsOption, textField.getText());
-    	}
+        if (isEnabledSettings(settingsOption)) {
+            settings.writeString(settingsOption, textField.getText());
+        }
     }
 
-    private ComboBoxModel makeLanguageComboBoxModel() {
+    private ComboBoxModel makeComboBoxModel(String[] items) {
         MutableComboBoxModel comboBox = new DefaultComboBoxModel();
-        for (String language : getImposeLanguages()) {
-        	comboBox.addElement(language);
+        for (String item : items) {
+            comboBox.addElement(item);
         }
-
         return comboBox;
     }
 
     public static String[] getImposeLanguages() {
-    	return new String[] { Resource.getEnglish("japanese"),
-    	                      Resource.getEnglish("english"),
-    	                      Resource.getEnglish("french"),
-    	                      Resource.getEnglish("spanish"),
-    	                      Resource.getEnglish("german"),
-    	                      Resource.getEnglish("italian"),
-    	                      Resource.getEnglish("dutch"),
-    	                      Resource.getEnglish("portuguese"),
-    	                      Resource.getEnglish("russian"),
-    	                      Resource.getEnglish("korean"),
-    	                      Resource.getEnglish("traditionalChinese"),
-    	                      Resource.getEnglish("simplifiedChinese") };
+        return new String[]{
+            "Japanese",
+            "English",
+            "French",
+            "Spanish",
+            "German",
+            "Italian",
+            "Dutch",
+            "Portuguese",
+            "Russian",
+            "Korean",
+            "Traditional Chinese",
+            "Simplfied Chinese"
+        };
     }
 
     public static String[] getImposeButtons() {
-    	return new String[] { "\"O\" for \"Enter\"", "\"X\" for \"Enter\"" };
+        return new String[]{
+            "\"O\" for \"Enter\"",
+            "\"X\" for \"Enter\""
+        };
     }
 
     public static String[] getSysparamDaylightSavings() {
-    	return new String[] { "Off", "On" };
+        return new String[]{
+            "Off",
+            "On"
+        };
     }
 
     public static String[] getSysparamTimeFormats() {
-    	return new String[] { "24H", "12H" };
+        return new String[]{
+            "24H",
+            "12H"
+        };
     }
 
     public static String[] getSysparamDateFormats() {
-    	return new String[] { "YYYY-MM-DD", "MM-DD-YYYY", "DD-MM-YYYY" };
+        return new String[]{
+            "YYYY-MM-DD",
+            "MM-DD-YYYY",
+            "DD-MM-YYYY"
+        };
     }
 
     public static String[] getSysparamWlanPowerSaves() {
-    	return new String[] { "Off", "On" };
+        return new String[]{
+            "Off",
+            "On"
+        };
     }
 
     public static String[] getSysparamAdhocChannels() {
-    	return new String[] { "Auto", "1", "6", "11" };
-    }
-
-    private ComboBoxModel makeMethodMaxInstructions() {
-        MutableComboBoxModel comboBox = new DefaultComboBoxModel();
-        comboBox.addElement("50");
-        comboBox.addElement("100");
-        comboBox.addElement("500");
-        comboBox.addElement("1000");
-        comboBox.addElement("3000");
-
-        return comboBox;
+        return new String[]{
+            "Auto",
+            "1",
+            "6",
+            "11"
+        };
     }
 
     private ComboBoxModel makeResolutions() {
@@ -312,50 +326,56 @@ public class SettingsGUI extends javax.swing.JFrame {
         GraphicsDevice localDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
         DisplayMode[] displayModes = localDevice.getDisplayModes();
         for (int i = 0; displayModes != null && i < displayModes.length; i++) {
-        	DisplayMode displayMode = displayModes[i];
-        	if (displayMode.getBitDepth() == MainGUI.displayModeBitDepth) {
-        		String resolution = String.format("%dx%d", displayMode.getWidth(), displayMode.getHeight());
-        		if (!resolutions.contains(resolution)) {
-        			comboBox.addElement(resolution);
-        			resolutions.add(resolution);
-        		}
-        	}
+            DisplayMode displayMode = displayModes[i];
+            if (displayMode.getBitDepth() == MainGUI.displayModeBitDepth) {
+                String resolution = String.format("%dx%d", displayMode.getWidth(), displayMode.getHeight());
+                if (!resolutions.contains(resolution)) {
+                    comboBox.addElement(resolution);
+                    resolutions.add(resolution);
+                }
+            }
         }
-        
+
         return comboBox;
     }
 
-    /** This method is called from within the constructor to
-     * initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is
-     * always regenerated by the Form Editor.
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
      */
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
         buttonGroup1 = new javax.swing.ButtonGroup();
         jButtonOK = new javax.swing.JButton();
-        jButtonCancel = new javax.swing.JButton();
         jButtonApply = new javax.swing.JButton();
         jTabbedPane1 = new javax.swing.JTabbedPane();
-        generalPanel = new javax.swing.JPanel();
+        GeneralPanel = new javax.swing.JPanel();
         pbpunpackcheck = new javax.swing.JCheckBox();
         saveWindowPosCheck = new javax.swing.JCheckBox();
-        umdBrowser = new javax.swing.JRadioButton();
-        ClassicOpenDialogumd = new javax.swing.JRadioButton();
-        umdpath = new javax.swing.JTextField();
-        jLabel1 = new javax.swing.JLabel();
-        jButton1 = new javax.swing.JButton();
         filelogCheck = new javax.swing.JCheckBox();
         loadAndRunCheck = new javax.swing.JCheckBox();
-        jLabel2 = new javax.swing.JLabel();
+        umdBrowser = new javax.swing.JRadioButton();
+        classicUmdDialog = new javax.swing.JRadioButton();
+        umdPathLabel = new javax.swing.JLabel();
+        umdpath = new javax.swing.JTextField();
+        umdPathBrowseButton = new javax.swing.JButton();
+        tmpPathLabel = new javax.swing.JLabel();
         tmppath = new javax.swing.JTextField();
-        jButton2 = new javax.swing.JButton();
+        tmpPathBrowseButton = new javax.swing.JButton();
         RegionPanel = new javax.swing.JPanel();
+        jPanel1 = new javax.swing.JPanel();
+        imposeLabel = new javax.swing.JLabel();
+        jPanel2 = new javax.swing.JPanel();
         languageLabel = new javax.swing.JLabel();
         languageBox = new javax.swing.JComboBox();
         buttonLabel = new javax.swing.JLabel();
         buttonBox = new javax.swing.JComboBox();
+        jPanel4 = new javax.swing.JPanel();
+        jPanel5 = new javax.swing.JPanel();
+        sysParmLabel = new javax.swing.JLabel();
+        jPanel3 = new javax.swing.JPanel();
         daylightLabel = new javax.swing.JLabel();
         daylightBox = new javax.swing.JComboBox();
         timeFormatLabel = new javax.swing.JLabel();
@@ -370,11 +390,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         timezoneSpinner = new javax.swing.JSpinner();
         nicknamelLabel = new javax.swing.JLabel();
         nicknameTextField = new javax.swing.JTextField();
-        imposeLabel = new javax.swing.JLabel();
-        imposeLabel1 = new javax.swing.JLabel();
-        jSeparator1 = new javax.swing.JSeparator();
         VideoPanel = new javax.swing.JPanel();
-        jPanel1 = new javax.swing.JPanel();
         disableVBOCheck = new javax.swing.JCheckBox();
         onlyGEGraphicsCheck = new javax.swing.JCheckBox();
         useVertexCache = new javax.swing.JCheckBox();
@@ -391,131 +407,133 @@ public class SettingsGUI extends javax.swing.JFrame {
         saveStencilToMemory = new javax.swing.JCheckBox();
         useSoftwareRenderer = new javax.swing.JCheckBox();
         AudioPanel = new javax.swing.JPanel();
-        jPanel2 = new javax.swing.JPanel();
         IgnoreAudioThreadsCheck = new javax.swing.JCheckBox();
         disableBlockingAudioCheck = new javax.swing.JCheckBox();
         DisableSceAudioCheck = new javax.swing.JCheckBox();
         MemoryPanel = new javax.swing.JPanel();
-        jPanel3 = new javax.swing.JPanel();
         invalidMemoryCheck = new javax.swing.JCheckBox();
         ignoreUnmappedImports = new javax.swing.JCheckBox();
         MiscPanel = new javax.swing.JPanel();
-        jPanel4 = new javax.swing.JPanel();
         useMediaEngine = new javax.swing.JCheckBox();
         useConnector = new javax.swing.JCheckBox();
         useExternalDecoder = new javax.swing.JCheckBox();
         useDebugFont = new javax.swing.JCheckBox();
+        useDebugMemory = new javax.swing.JCheckBox();
         CompilerPanel = new javax.swing.JPanel();
-        jPanel5 = new javax.swing.JPanel();
         useCompiler = new javax.swing.JCheckBox();
         methodMaxInstructionsBox = new javax.swing.JComboBox();
         profilerCheck = new javax.swing.JCheckBox();
         methodMaxInstructionsLabel = new javax.swing.JLabel();
         CryptoPanel = new javax.swing.JPanel();
-        jPanel6 = new javax.swing.JPanel();
         extractEboot = new javax.swing.JCheckBox();
         cryptoSavedata = new javax.swing.JCheckBox();
         extractPGD = new javax.swing.JCheckBox();
         DisplayPanel = new javax.swing.JPanel();
-        fullscreenCheck = new javax.swing.JCheckBox();
         antiAliasLabel = new javax.swing.JLabel();
         antiAliasingBox = new javax.swing.JComboBox();
         resolutionLabel = new javax.swing.JLabel();
         resolutionBox = new javax.swing.JComboBox();
+        fullscreenCheck = new javax.swing.JCheckBox();
+        cancelButton = new jpcsp.GUI.CancelButton();
 
-        setTitle("Configuration");
-        setResizable(true);
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
+        setTitle(bundle.getString("SettingsGUI.title")); // NOI18N
 
-        jButtonOK.setText(Resource.get("ok"));
+        jButtonOK.setText(bundle.getString("OkButton.text")); // NOI18N
         jButtonOK.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonOKActionPerformed(evt);
             }
         });
 
-        jButtonCancel.setText(Resource.get("cancel"));
-        jButtonCancel.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonCancelActionPerformed(evt);
-            }
-        });
-
-        jButtonApply.setText(Resource.get("apply"));
+        jButtonApply.setText(bundle.getString("SettingsGUI.jButtonApply.text")); // NOI18N
         jButtonApply.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonApplyActionPerformed(evt);
             }
         });
 
-        pbpunpackcheck.setText(Resource.get("unpackpbp"));
+        pbpunpackcheck.setText(bundle.getString("SettingsGUI.pbpunpackcheck.text")); // NOI18N
 
-        saveWindowPosCheck.setText(Resource.get("saveposition"));
+        saveWindowPosCheck.setText(bundle.getString("SettingsGUI.saveWindowPosCheck.text")); // NOI18N
+
+        filelogCheck.setText(bundle.getString("SettingsGUI.filelogCheck.text")); // NOI18N
+
+        loadAndRunCheck.setText(bundle.getString("SettingsGUI.loadAndRunCheck.text")); // NOI18N
 
         buttonGroup1.add(umdBrowser);
-        umdBrowser.setText(Resource.get("useUMDBrowser"));
+        umdBrowser.setText(bundle.getString("SettingsGUI.umdBrowser.text")); // NOI18N
 
-        buttonGroup1.add(ClassicOpenDialogumd);
-        ClassicOpenDialogumd.setText(Resource.get("useclassicUMD"));
+        buttonGroup1.add(classicUmdDialog);
+        classicUmdDialog.setText(bundle.getString("SettingsGUI.classicUmdDialog.text")); // NOI18N
+
+        umdPathLabel.setText(bundle.getString("SettingsGUI.umdPathLabel.text")); // NOI18N
 
         umdpath.setEditable(false);
+        umdpath.setText("umdimages"); // NOI18N
 
-        jLabel1.setText(Resource.get("UMDpath"));
-
-        jButton1.setText("...");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        umdPathBrowseButton.setText("..."); // NOI18N
+        umdPathBrowseButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                umdPathBrowseButtonActionPerformed(evt);
             }
         });
 
-        filelogCheck.setText(Resource.get("enablefileIO"));
-
-        loadAndRunCheck.setText(Resource.get("loadAndRun"));
-
-        jLabel2.setText(Resource.get("TMPpath"));
+        tmpPathLabel.setText(bundle.getString("SettingsGUI.tmpPathLabel.text")); // NOI18N
 
         tmppath.setEditable(false);
+        tmppath.setText("tmp"); // NOI18N
 
-        jButton2.setText("...");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
+        tmpPathBrowseButton.setText("..."); // NOI18N
+        tmpPathBrowseButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+                tmpPathBrowseButtonActionPerformed(evt);
             }
         });
 
-        javax.swing.GroupLayout generalPanelLayout = new javax.swing.GroupLayout(generalPanel);
-        generalPanel.setLayout(generalPanelLayout);
-        generalPanelLayout.setHorizontalGroup(
-            generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(generalPanelLayout.createSequentialGroup()
+        javax.swing.GroupLayout GeneralPanelLayout = new javax.swing.GroupLayout(GeneralPanel);
+        GeneralPanel.setLayout(GeneralPanelLayout);
+        GeneralPanelLayout.setHorizontalGroup(
+            GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(GeneralPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(generalPanelLayout.createSequentialGroup()
-                        .addComponent(jLabel1)
+                .addGroup(GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(GeneralPanelLayout.createSequentialGroup()
+                        .addGroup(GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(umdPathLabel)
+                            .addComponent(tmpPathLabel))
+                        .addGap(21, 21, 21)
+                        .addGroup(GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(umdpath, javax.swing.GroupLayout.DEFAULT_SIZE, 244, Short.MAX_VALUE)
+                            .addComponent(tmppath))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(umdpath, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(generalPanelLayout.createSequentialGroup()
-                        .addComponent(jLabel2)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(tmppath, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                        .addComponent(umdBrowser, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(ClassicOpenDialogumd, javax.swing.GroupLayout.Alignment.LEADING))
-                    .addComponent(filelogCheck)
-                    .addComponent(loadAndRunCheck)
-                    .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                        .addComponent(pbpunpackcheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                .addContainerGap())
+                        .addGroup(GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(umdPathBrowseButton)
+                            .addComponent(tmpPathBrowseButton)))
+                    .addGroup(GeneralPanelLayout.createSequentialGroup()
+                        .addComponent(pbpunpackcheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(138, 138, 138))
+                    .addGroup(GeneralPanelLayout.createSequentialGroup()
+                        .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 258, Short.MAX_VALUE)
+                        .addGap(200, 200, 200))
+                    .addGroup(GeneralPanelLayout.createSequentialGroup()
+                        .addComponent(filelogCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(261, 261, 261))
+                    .addGroup(GeneralPanelLayout.createSequentialGroup()
+                        .addComponent(loadAndRunCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(196, 196, 196))
+                    .addGroup(GeneralPanelLayout.createSequentialGroup()
+                        .addComponent(umdBrowser, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(289, 289, 289))
+                    .addGroup(GeneralPanelLayout.createSequentialGroup()
+                        .addComponent(classicUmdDialog, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(189, 189, 189)))
+                .addGap(293, 293, 293))
         );
-        generalPanelLayout.setVerticalGroup(
-            generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(generalPanelLayout.createSequentialGroup()
-                .addGap(18, 18, 18)
+        GeneralPanelLayout.setVerticalGroup(
+            GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(GeneralPanelLayout.createSequentialGroup()
+                .addContainerGap()
                 .addComponent(pbpunpackcheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(saveWindowPosCheck)
@@ -523,65 +541,139 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(filelogCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(loadAndRunCheck)
-                .addGap(41, 41, 41)
+                .addGap(18, 18, 18)
                 .addComponent(umdBrowser)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(ClassicOpenDialogumd)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(classicUmdDialog)
                 .addGap(18, 18, 18)
-                .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel1)
+                .addGroup(GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(umdPathLabel)
                     .addComponent(umdpath, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jButton1))
-                .addGap(18, 18, 18)
-                .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel2)
+                    .addComponent(umdPathBrowseButton))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(tmpPathLabel)
                     .addComponent(tmppath, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jButton2))
-                .addContainerGap(74, Short.MAX_VALUE))
+                    .addComponent(tmpPathBrowseButton))
+                .addContainerGap(254, Short.MAX_VALUE))
         );
 
-        jTabbedPane1.addTab(Resource.get("general"), generalPanel);
+        jTabbedPane1.addTab(bundle.getString("SettingsGUI.GeneralPanel.title"), GeneralPanel); // NOI18N
 
-        languageLabel.setText(Resource.get("language"));
+        jPanel1.setLayout(new java.awt.GridLayout(20, 2, 10, 0));
 
-        languageBox.setModel(makeLanguageComboBoxModel());
+        imposeLabel.setText(bundle.getString("SettingsGUI.imposeLabel.text")); // NOI18N
+        jPanel1.add(imposeLabel);
 
-        buttonLabel.setText(Resource.get("buttonpref"));
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 364, Short.MAX_VALUE)
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 23, Short.MAX_VALUE)
+        );
 
-        buttonBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "\"O\" for \"Enter\"", "\"X\" for \"Enter\"" }));
+        jPanel1.add(jPanel2);
 
-        daylightLabel.setText(Resource.get("daylightSavings"));
+        languageLabel.setText(bundle.getString("SettingsGUI.languageLabel.text")); // NOI18N
+        jPanel1.add(languageLabel);
 
-        daylightBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Off", "On" }));
+        languageBox.setModel(makeComboBoxModel(getImposeLanguages()));
+        jPanel1.add(languageBox);
 
-        timeFormatLabel.setText(Resource.get("timeformat"));
+        buttonLabel.setText(bundle.getString("SettingsGUI.buttonLabel.text")); // NOI18N
+        jPanel1.add(buttonLabel);
 
-        timeFormatBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "24H", "12H" }));
+        buttonBox.setModel(makeComboBoxModel(getImposeButtons()));
+        jPanel1.add(buttonBox);
 
-        dateFormatLabel.setText(Resource.get("dateformat"));
+        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
+        jPanel4.setLayout(jPanel4Layout);
+        jPanel4Layout.setHorizontalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 364, Short.MAX_VALUE)
+        );
+        jPanel4Layout.setVerticalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 23, Short.MAX_VALUE)
+        );
 
-        dateFormatBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "YYYY-MM-DD", "MM-DD-YYYY", "DD-MM-YYYY" }));
+        jPanel1.add(jPanel4);
 
-        wlanPowerLabel.setText(Resource.get("wlanpowersaving"));
+        javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
+        jPanel5.setLayout(jPanel5Layout);
+        jPanel5Layout.setHorizontalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 364, Short.MAX_VALUE)
+        );
+        jPanel5Layout.setVerticalGroup(
+            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 23, Short.MAX_VALUE)
+        );
 
-        wlanPowerBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Off", "On" }));
+        jPanel1.add(jPanel5);
 
-        adhocChannelLabel.setText(Resource.get("adhocChannel"));
+        sysParmLabel.setText(bundle.getString("SettingsGUI.sysParmLabel.text")); // NOI18N
+        jPanel1.add(sysParmLabel);
 
-        adhocChannelBox.setModel(new javax.swing.DefaultComboBoxModel(getSysparamAdhocChannels()));
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 364, Short.MAX_VALUE)
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 23, Short.MAX_VALUE)
+        );
 
-        timezoneLabel.setText(Resource.get("timezone"));
+        jPanel1.add(jPanel3);
+
+        daylightLabel.setText(bundle.getString("SettingsGUI.daylightLabel.text")); // NOI18N
+        jPanel1.add(daylightLabel);
+
+        daylightBox.setModel(makeComboBoxModel(getSysparamDaylightSavings()));
+        jPanel1.add(daylightBox);
+
+        timeFormatLabel.setText(bundle.getString("SettingsGUI.timeFormatLabel.text")); // NOI18N
+        jPanel1.add(timeFormatLabel);
+
+        timeFormatBox.setModel(makeComboBoxModel(getSysparamTimeFormats()));
+        jPanel1.add(timeFormatBox);
+
+        dateFormatLabel.setText(bundle.getString("SettingsGUI.dateFormatLabel.text")); // NOI18N
+        jPanel1.add(dateFormatLabel);
+
+        dateFormatBox.setModel(makeComboBoxModel(getSysparamDateFormats()));
+        jPanel1.add(dateFormatBox);
+
+        wlanPowerLabel.setText(bundle.getString("SettingsGUI.wlanPowerLabel.text")); // NOI18N
+        jPanel1.add(wlanPowerLabel);
+
+        wlanPowerBox.setModel(makeComboBoxModel(getSysparamWlanPowerSaves()));
+        jPanel1.add(wlanPowerBox);
+
+        adhocChannelLabel.setText(bundle.getString("SettingsGUI.adhocChannel.text")); // NOI18N
+        jPanel1.add(adhocChannelLabel);
+
+        adhocChannelBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Auto", "1", "6", "11" }));
+        jPanel1.add(adhocChannelBox);
+
+        timezoneLabel.setText(bundle.getString("SettingsGUI.timezoneLabel.text")); // NOI18N
+        jPanel1.add(timezoneLabel);
 
         timezoneSpinner.setModel(new javax.swing.SpinnerNumberModel(0, -720, 720, 1));
+        jPanel1.add(timezoneSpinner);
 
-        nicknamelLabel.setText(Resource.get("nickname"));
+        nicknamelLabel.setText(bundle.getString("SettingsGUI.nicknameLabel.text")); // NOI18N
+        jPanel1.add(nicknamelLabel);
 
         nicknameTextField.setHorizontalAlignment(javax.swing.JTextField.RIGHT);
-        nicknameTextField.setText("JPCSP");
-
-        imposeLabel.setText("Impose:");
-
-        imposeLabel1.setText("System param:");
+        nicknameTextField.setText("JPCSP"); // NOI18N
+        jPanel1.add(nicknameTextField);
 
         javax.swing.GroupLayout RegionPanelLayout = new javax.swing.GroupLayout(RegionPanel);
         RegionPanel.setLayout(RegionPanelLayout);
@@ -589,144 +681,108 @@ public class SettingsGUI extends javax.swing.JFrame {
             RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(RegionPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(imposeLabel)
-                    .addGroup(RegionPanelLayout.createSequentialGroup()
-                        .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(imposeLabel1)
-                            .addComponent(daylightLabel)
-                            .addComponent(timezoneLabel)
-                            .addComponent(timeFormatLabel)
-                            .addComponent(dateFormatLabel)
-                            .addComponent(wlanPowerLabel)
-                            .addComponent(adhocChannelLabel)
-                            .addComponent(nicknamelLabel))
-                        .addGap(29, 29, 29)
-                        .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(timezoneSpinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(daylightBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(timeFormatBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(dateFormatBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(wlanPowerBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(adhocChannelBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(nicknameTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 134, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addGroup(RegionPanelLayout.createSequentialGroup()
-                        .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(languageLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(buttonLabel))
-                        .addGap(117, 117, 117)
-                        .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(languageBox, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(buttonBox, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                    .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 419, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 739, Short.MAX_VALUE)
                 .addContainerGap())
         );
         RegionPanelLayout.setVerticalGroup(
             RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(RegionPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(imposeLabel)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(languageLabel)
-                    .addComponent(languageBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(buttonLabel)
-                    .addComponent(buttonBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(24, 24, 24)
-                .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(imposeLabel1)
-                .addGap(18, 18, 18)
-                .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(daylightLabel)
-                    .addComponent(daylightBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(timezoneLabel)
-                    .addComponent(timezoneSpinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(timeFormatLabel)
-                    .addComponent(timeFormatBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(dateFormatLabel)
-                    .addComponent(dateFormatBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(wlanPowerLabel)
-                    .addComponent(wlanPowerBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(adhocChannelLabel)
-                    .addComponent(adhocChannelBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(nicknamelLabel)
-                    .addComponent(nicknameTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(31, 31, 31))
-        );
-
-        jTabbedPane1.addTab(Resource.get("region"), RegionPanel);
-
-        disableVBOCheck.setText(Resource.get("disablevbo"));
-
-        onlyGEGraphicsCheck.setText(Resource.get("onlyGeGraphics"));
-
-        useVertexCache.setText(Resource.get("usevertex"));
-
-        shadersCheck.setText(Resource.get("useshader"));
-
-        geometryShaderCheck.setText(Resource.get("useGeometryShader"));
-
-        disableUBOCheck.setText(Resource.get("disableubo"));
-
-        enableVAOCheck.setText(Resource.get("enablevao"));
-
-        enableGETextureCheck.setText(Resource.get("enablegetexture"));
-
-        enableNativeCLUTCheck.setText(Resource.get("enablenativeclut"));
-
-        enableDynamicShadersCheck.setText(Resource.get("enabledynamicshaders"));
-
-        enableShaderStencilTestCheck.setText(Resource.get("enableshaderstenciltest"));
-
-        enableShaderColorMaskCheck.setText(Resource.get("enableshadercolormask"));
-
-        disableOptimizedVertexInfoReading.setText(Resource.get("disableoptimizedvertexinforeading"));
-
-        saveStencilToMemory.setText(Resource.get("saveStencilToMemory"));
-
-        useSoftwareRenderer.setText(Resource.get("useSoftwareRenderer"));
-
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(disableVBOCheck)
-                    .addComponent(onlyGEGraphicsCheck)
-                    .addComponent(useVertexCache)
-                    .addComponent(shadersCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(geometryShaderCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(disableUBOCheck)
-                    .addComponent(enableVAOCheck)
-                    .addComponent(enableGETextureCheck)
-                    .addComponent(enableNativeCLUTCheck)
-                    .addComponent(enableDynamicShadersCheck)
-                    .addComponent(enableShaderStencilTestCheck)
-                    .addComponent(enableShaderColorMaskCheck)
-                    .addComponent(disableOptimizedVertexInfoReading)
-                    .addComponent(saveStencilToMemory)
-                    .addComponent(useSoftwareRenderer))
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 468, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
+
+        jTabbedPane1.addTab(bundle.getString("SettingsGUI.RegionPanel.title"), RegionPanel); // NOI18N
+
+        disableVBOCheck.setText(bundle.getString("SettingsGUI.disableVBOCheck.text")); // NOI18N
+
+        onlyGEGraphicsCheck.setText(bundle.getString("SettingsGUI.onlyGEGraphicsCheck.text")); // NOI18N
+
+        useVertexCache.setText(bundle.getString("SettingsGUI.useVertexCache.text")); // NOI18N
+
+        shadersCheck.setText(bundle.getString("SettingsGUI.shaderCheck.text")); // NOI18N
+
+        geometryShaderCheck.setText(bundle.getString("SettingsGUI.geometryShaderCheck.text")); // NOI18N
+
+        disableUBOCheck.setText(bundle.getString("SettingsGUI.disableUBOCheck.text")); // NOI18N
+
+        enableVAOCheck.setText(bundle.getString("SettingsGUI.enableVAOCheck.text")); // NOI18N
+
+        enableGETextureCheck.setText(bundle.getString("SettingsGUI.enableGETextureCheck.text")); // NOI18N
+
+        enableNativeCLUTCheck.setText(bundle.getString("SettingsGUI.enableNativeCLUTCheck.text")); // NOI18N
+
+        enableDynamicShadersCheck.setText(bundle.getString("SettingsGUI.enableDynamicShadersCheck.text")); // NOI18N
+
+        enableShaderStencilTestCheck.setText(bundle.getString("SettingsGUI.enableShaderStencilTestCheck.text")); // NOI18N
+
+        enableShaderColorMaskCheck.setText(bundle.getString("SettingsGUI.enableShaderColorMaskCheck.text")); // NOI18N
+
+        disableOptimizedVertexInfoReading.setText(bundle.getString("SettingsGUI.disableOptimizedVertexInfoReading.text")); // NOI18N
+
+        saveStencilToMemory.setText(bundle.getString("SettingsGUI.saveStencilToMemory.text")); // NOI18N
+
+        useSoftwareRenderer.setText(bundle.getString("SettingsGUI.useSoftwareRenderer.text")); // NOI18N
+        useSoftwareRenderer.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                useSoftwareRendererActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout VideoPanelLayout = new javax.swing.GroupLayout(VideoPanel);
+        VideoPanel.setLayout(VideoPanelLayout);
+        VideoPanelLayout.setHorizontalGroup(
+            VideoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(VideoPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(VideoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(VideoPanelLayout.createSequentialGroup()
+                        .addComponent(disableVBOCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 423, Short.MAX_VALUE)
+                        .addGap(315, 315, 315))
+                    .addGroup(VideoPanelLayout.createSequentialGroup()
+                        .addComponent(onlyGEGraphicsCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(331, 331, 331))
+                    .addGroup(VideoPanelLayout.createSequentialGroup()
+                        .addComponent(useVertexCache, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(575, 575, 575))
+                    .addGroup(VideoPanelLayout.createSequentialGroup()
+                        .addComponent(shadersCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(606, 606, 606))
+                    .addComponent(geometryShaderCheck, javax.swing.GroupLayout.PREFERRED_SIZE, 720, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(VideoPanelLayout.createSequentialGroup()
+                        .addComponent(disableUBOCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(64, 64, 64))
+                    .addGroup(VideoPanelLayout.createSequentialGroup()
+                        .addComponent(enableVAOCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(235, 235, 235))
+                    .addGroup(VideoPanelLayout.createSequentialGroup()
+                        .addComponent(enableGETextureCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(304, 304, 304))
+                    .addGroup(VideoPanelLayout.createSequentialGroup()
+                        .addComponent(enableNativeCLUTCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(18, 18, 18))
+                    .addComponent(enableDynamicShadersCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(VideoPanelLayout.createSequentialGroup()
+                        .addComponent(enableShaderStencilTestCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(103, 103, 103))
+                    .addGroup(VideoPanelLayout.createSequentialGroup()
+                        .addComponent(enableShaderColorMaskCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(108, 108, 108))
+                    .addGroup(VideoPanelLayout.createSequentialGroup()
+                        .addComponent(disableOptimizedVertexInfoReading, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(234, 234, 234))
+                    .addGroup(VideoPanelLayout.createSequentialGroup()
+                        .addComponent(saveStencilToMemory, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(334, 334, 334))
+                    .addGroup(VideoPanelLayout.createSequentialGroup()
+                        .addComponent(useSoftwareRenderer, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(210, 210, 210)))
+                .addGap(17, 17, 17))
+        );
+        VideoPanelLayout.setVerticalGroup(
+            VideoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(VideoPanelLayout.createSequentialGroup()
+                .addContainerGap()
                 .addComponent(disableVBOCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(onlyGEGraphicsCheck)
@@ -756,52 +812,16 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(saveStencilToMemory)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(useSoftwareRenderer)
-                .addContainerGap(30, Short.MAX_VALUE))
+                .addContainerGap(139, Short.MAX_VALUE))
         );
 
-        javax.swing.GroupLayout VideoPanelLayout = new javax.swing.GroupLayout(VideoPanel);
-        VideoPanel.setLayout(VideoPanelLayout);
-        VideoPanelLayout.setHorizontalGroup(
-            VideoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(VideoPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
-        );
-        VideoPanelLayout.setVerticalGroup(
-            VideoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(VideoPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
+        jTabbedPane1.addTab(bundle.getString("SettingsGUI.VideoPanel.title"), VideoPanel); // NOI18N
 
-        jTabbedPane1.addTab(Resource.get("video"), VideoPanel);
+        IgnoreAudioThreadsCheck.setText(bundle.getString("SettingsGUI.IgnoreAudioThreadsCheck.text")); // NOI18N
 
-        IgnoreAudioThreadsCheck.setText(Resource.get("disableaudiothreads"));
+        disableBlockingAudioCheck.setText(bundle.getString("SettingsGUI.disableBlockingAudioCheck.text")); // NOI18N
 
-        disableBlockingAudioCheck.setText(Resource.get("disableaudiotblocking"));
-
-        DisableSceAudioCheck.setText(Resource.get("disableaudiotchannels"));
-
-        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-        jPanel2.setLayout(jPanel2Layout);
-        jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(IgnoreAudioThreadsCheck)
-            .addComponent(DisableSceAudioCheck)
-            .addComponent(disableBlockingAudioCheck)
-        );
-        jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(IgnoreAudioThreadsCheck)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(DisableSceAudioCheck)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(disableBlockingAudioCheck))
-        );
+        DisableSceAudioCheck.setText(bundle.getString("SettingsGUI.DisableSceAudioCheck.text")); // NOI18N
 
         javax.swing.GroupLayout AudioPanelLayout = new javax.swing.GroupLayout(AudioPanel);
         AudioPanel.setLayout(AudioPanelLayout);
@@ -809,40 +829,33 @@ public class SettingsGUI extends javax.swing.JFrame {
             AudioPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(AudioPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
+                .addGroup(AudioPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(AudioPanelLayout.createSequentialGroup()
+                        .addComponent(IgnoreAudioThreadsCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 200, Short.MAX_VALUE)
+                        .addGap(150, 150, 150))
+                    .addComponent(DisableSceAudioCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(AudioPanelLayout.createSequentialGroup()
+                        .addComponent(disableBlockingAudioCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(147, 147, 147)))
+                .addGap(405, 405, 405))
         );
         AudioPanelLayout.setVerticalGroup(
             AudioPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(AudioPanelLayout.createSequentialGroup()
-                .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(257, Short.MAX_VALUE))
-        );
-
-        jTabbedPane1.addTab(Resource.get("audio"), AudioPanel);
-
-        invalidMemoryCheck.setText(Resource.get("ignoreinvalidmemory"));
-
-        ignoreUnmappedImports.setText(Resource.get("ignoreUnmaped"));
-
-        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
-        jPanel3.setLayout(jPanel3Layout);
-        jPanel3Layout.setHorizontalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel3Layout.createSequentialGroup()
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(ignoreUnmappedImports)
-                    .addComponent(invalidMemoryCheck))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
-        jPanel3Layout.setVerticalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel3Layout.createSequentialGroup()
-                .addComponent(invalidMemoryCheck)
+                .addContainerGap()
+                .addComponent(IgnoreAudioThreadsCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(ignoreUnmappedImports)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(DisableSceAudioCheck)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(disableBlockingAudioCheck)
+                .addContainerGap(415, Short.MAX_VALUE))
         );
+
+        jTabbedPane1.addTab(bundle.getString("SettingsGUI.AudioPanel.title"), AudioPanel); // NOI18N
+
+        invalidMemoryCheck.setText(bundle.getString("SettingsGUI.invalidMemoryCheck.text")); // NOI18N
+
+        ignoreUnmappedImports.setText(bundle.getString("SettingsGUI.ignoreUnmappedImports.text")); // NOI18N
 
         javax.swing.GroupLayout MemoryPanelLayout = new javax.swing.GroupLayout(MemoryPanel);
         MemoryPanel.setLayout(MemoryPanelLayout);
@@ -850,51 +863,32 @@ public class SettingsGUI extends javax.swing.JFrame {
             MemoryPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(MemoryPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(MemoryPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(invalidMemoryCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 747, Short.MAX_VALUE)
+                    .addComponent(ignoreUnmappedImports, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
         MemoryPanelLayout.setVerticalGroup(
             MemoryPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(MemoryPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(269, Short.MAX_VALUE))
+                .addComponent(invalidMemoryCheck)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(ignoreUnmappedImports)
+                .addContainerGap(438, Short.MAX_VALUE))
         );
 
-        jTabbedPane1.addTab(Resource.get("memory"), MemoryPanel);
+        jTabbedPane1.addTab(bundle.getString("SettingsGUI.MemoryPanel.title"), MemoryPanel); // NOI18N
 
-        useMediaEngine.setText(Resource.get("useMediaEngine"));
+        useMediaEngine.setText(bundle.getString("SettingsGUI.useMediaEngine.text")); // NOI18N
 
-        useConnector.setText(Resource.get("useConnector"));
+        useConnector.setText(bundle.getString("SettingsGUI.useConnector.text")); // NOI18N
 
-        useExternalDecoder.setText(Resource.get("useExternalDecoder"));
+        useExternalDecoder.setText(bundle.getString("SettingsGUI.useExternalDecoder.text")); // NOI18N
 
-        useDebugFont.setText(Resource.get("useDebugFont"));
+        useDebugFont.setText(bundle.getString("SettingsGUI.useDebugFont.text")); // NOI18N
 
-        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
-        jPanel4.setLayout(jPanel4Layout);
-        jPanel4Layout.setHorizontalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addComponent(useMediaEngine, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(useConnector, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(useExternalDecoder, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(useDebugFont, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
-        jPanel4Layout.setVerticalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addComponent(useMediaEngine)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(useConnector)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(useExternalDecoder)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(useDebugFont)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
+        useDebugMemory.setText(bundle.getString("SettingsGUI.useDebugMemory.text")); // NOI18N
 
         javax.swing.GroupLayout MiscPanelLayout = new javax.swing.GroupLayout(MiscPanel);
         MiscPanel.setLayout(MiscPanelLayout);
@@ -902,53 +896,39 @@ public class SettingsGUI extends javax.swing.JFrame {
             MiscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(MiscPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(MiscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(useExternalDecoder, javax.swing.GroupLayout.DEFAULT_SIZE, 747, Short.MAX_VALUE)
+                    .addComponent(useConnector, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(useMediaEngine, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(useDebugFont, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(useDebugMemory, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
         MiscPanelLayout.setVerticalGroup(
             MiscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(MiscPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(223, Short.MAX_VALUE))
-        );
-
-        jTabbedPane1.addTab(Resource.get("misc"), MiscPanel);
-
-        useCompiler.setText(Resource.get("useCompiler"));
-
-        methodMaxInstructionsBox.setModel(makeMethodMaxInstructions());
-
-        profilerCheck.setText(Resource.get("outputprofiler"));
-
-        methodMaxInstructionsLabel.setText(Resource.get("methodMaxInstructions"));
-
-        javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
-        jPanel5.setLayout(jPanel5Layout);
-        jPanel5Layout.setHorizontalGroup(
-            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel5Layout.createSequentialGroup()
-                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addComponent(useCompiler, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(profilerCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel5Layout.createSequentialGroup()
-                        .addComponent(methodMaxInstructionsBox, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 10, javax.swing.GroupLayout.DEFAULT_SIZE)
-                        .addComponent(methodMaxInstructionsLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
-        jPanel5Layout.setVerticalGroup(
-            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel5Layout.createSequentialGroup()
-                .addComponent(useCompiler)
+                .addComponent(useMediaEngine)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(profilerCheck)
+                .addComponent(useConnector)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(methodMaxInstructionsBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(methodMaxInstructionsLabel))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(useExternalDecoder)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(useDebugFont)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(useDebugMemory)
+                .addContainerGap(369, Short.MAX_VALUE))
         );
+
+        jTabbedPane1.addTab(bundle.getString("SettingsGUI.MiscPanel.title"), MiscPanel); // NOI18N
+
+        useCompiler.setText(bundle.getString("SettingsGUI.useCompiler.text")); // NOI18N
+
+        methodMaxInstructionsBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "50", "100", "500", "1000", "3000" }));
+
+        profilerCheck.setText(bundle.getString("SettingsGUI.profileCheck.text")); // NOI18N
+
+        methodMaxInstructionsLabel.setText(bundle.getString("SettingsGUI.methodMaxInstructionsLabel.text")); // NOI18N
 
         javax.swing.GroupLayout CompilerPanelLayout = new javax.swing.GroupLayout(CompilerPanel);
         CompilerPanel.setLayout(CompilerPanelLayout);
@@ -956,46 +936,36 @@ public class SettingsGUI extends javax.swing.JFrame {
             CompilerPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(CompilerPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
+                .addGroup(CompilerPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                    .addComponent(useCompiler, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(profilerCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, CompilerPanelLayout.createSequentialGroup()
+                        .addComponent(methodMaxInstructionsBox, javax.swing.GroupLayout.PREFERRED_SIZE, 143, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(methodMaxInstructionsLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 238, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(358, Short.MAX_VALUE))
         );
         CompilerPanelLayout.setVerticalGroup(
             CompilerPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(CompilerPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(243, Short.MAX_VALUE))
-        );
-
-        jTabbedPane1.addTab(Resource.get("compiler"), CompilerPanel);
-
-        extractEboot.setText(Resource.get("extractEboot"));
-
-        cryptoSavedata.setText(Resource.get("cryptoSavedata"));
-
-        extractPGD.setText(Resource.get("extractPGD"));
-
-        javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
-        jPanel6.setLayout(jPanel6Layout);
-        jPanel6Layout.setHorizontalGroup(
-            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel6Layout.createSequentialGroup()
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addComponent(extractEboot, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(cryptoSavedata, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(extractPGD, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
-        jPanel6Layout.setVerticalGroup(
-            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel6Layout.createSequentialGroup()
-                .addComponent(extractEboot)
+                .addComponent(useCompiler)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(cryptoSavedata)
+                .addComponent(profilerCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(extractPGD)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGroup(CompilerPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(methodMaxInstructionsBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(methodMaxInstructionsLabel))
+                .addContainerGap(412, Short.MAX_VALUE))
         );
+
+        jTabbedPane1.addTab(bundle.getString("SettingsGUI.CompilerPanel.title"), CompilerPanel); // NOI18N
+
+        extractEboot.setText(bundle.getString("SettingsGUI.extractEboot.text")); // NOI18N
+
+        cryptoSavedata.setText(bundle.getString("SettingsGUI.cryptoSavedata.text")); // NOI18N
+
+        extractPGD.setText(bundle.getString("SettingsGUI.extractPGD.text")); // NOI18N
 
         javax.swing.GroupLayout CryptoPanelLayout = new javax.swing.GroupLayout(CryptoPanel);
         CryptoPanel.setLayout(CryptoPanelLayout);
@@ -1003,28 +973,35 @@ public class SettingsGUI extends javax.swing.JFrame {
             CryptoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(CryptoPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
+                .addGroup(CryptoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                    .addComponent(extractEboot, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(cryptoSavedata, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(extractPGD, javax.swing.GroupLayout.Alignment.LEADING))
+                .addContainerGap(394, Short.MAX_VALUE))
         );
         CryptoPanelLayout.setVerticalGroup(
             CryptoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(CryptoPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(246, Short.MAX_VALUE))
+                .addComponent(extractEboot)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(cryptoSavedata)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(extractPGD)
+                .addContainerGap(415, Short.MAX_VALUE))
         );
 
-        jTabbedPane1.addTab(Resource.get("crypto"), CryptoPanel);
+        jTabbedPane1.addTab(bundle.getString("SettingsGUI.CryptoPanel.title"), CryptoPanel); // NOI18N
 
-        fullscreenCheck.setText(Resource.get("fullscreenMode"));
-
-        antiAliasLabel.setText(Resource.get("antiAliasing"));
+        antiAliasLabel.setText(bundle.getString("SettingsGUI.antiAliasLabel.text")); // NOI18N
 
         antiAliasingBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "OFF", "x4", "x8", "x16" }));
 
-        resolutionLabel.setText(Resource.get("resolution"));
+        resolutionLabel.setText(bundle.getString("SettingsGUI.resolutionLabel.text")); // NOI18N
 
         resolutionBox.setModel(makeResolutions());
+
+        fullscreenCheck.setText(bundle.getString("SettingsGUI.fullscreenCheck.text")); // NOI18N
 
         javax.swing.GroupLayout DisplayPanelLayout = new javax.swing.GroupLayout(DisplayPanel);
         DisplayPanel.setLayout(DisplayPanelLayout);
@@ -1036,59 +1013,62 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addComponent(fullscreenCheck)
                     .addGroup(DisplayPanelLayout.createSequentialGroup()
                         .addGroup(DisplayPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(antiAliasLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 65, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(DisplayPanelLayout.createSequentialGroup()
+                                .addComponent(antiAliasLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 1, Short.MAX_VALUE)
+                                .addGap(28, 28, 28))
                             .addComponent(resolutionLabel))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(DisplayPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(resolutionBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(antiAliasingBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addContainerGap())
+                        .addGroup(DisplayPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(antiAliasingBox, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(resolutionBox, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                .addGap(1318, 1318, 1318))
         );
         DisplayPanelLayout.setVerticalGroup(
             DisplayPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(DisplayPanelLayout.createSequentialGroup()
-                .addGap(12, 12, 12)
+                .addContainerGap()
                 .addGroup(DisplayPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(antiAliasLabel)
                     .addComponent(antiAliasingBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(12, 12, 12)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(DisplayPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(resolutionLabel)
-                    .addComponent(resolutionBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(resolutionBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(resolutionLabel))
                 .addGap(18, 18, 18)
                 .addComponent(fullscreenCheck)
-                .addContainerGap(228, Short.MAX_VALUE))
+                .addContainerGap(385, Short.MAX_VALUE))
         );
 
-        jTabbedPane1.addTab(Resource.get("display"), DisplayPanel);
+        jTabbedPane1.addTab(bundle.getString("SettingsGUI.DisplayPanel.title"), DisplayPanel); // NOI18N
+
+        cancelButton.setText(bundle.getString("CancelButton.text")); // NOI18N
+        cancelButton.setParent(this);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(jButtonOK, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap(257, Short.MAX_VALUE)
+                        .addComponent(jButtonOK, javax.swing.GroupLayout.DEFAULT_SIZE, 151, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButtonCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jButtonApply, javax.swing.GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButtonApply, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(jTabbedPane1)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addComponent(cancelButton, javax.swing.GroupLayout.DEFAULT_SIZE, 178, Short.MAX_VALUE))
+                    .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jTabbedPane1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButtonApply)
-                    .addComponent(jButtonCancel)
-                    .addComponent(jButtonOK))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(cancelButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(jButtonApply)
+                        .addComponent(jButtonOK)))
                 .addContainerGap())
         );
 
@@ -1096,53 +1076,52 @@ public class SettingsGUI extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     public void RefreshWindow() {
-    	setAllComponentsFromSettings();
+        setAllComponentsFromSettings();
     }
 
     private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
-		setAllComponentsToSettings();
-		dispose();
+        setAllComponentsToSettings();
+        dispose();
 	}//GEN-LAST:event_jButtonOKActionPerformed
 
     private void jButtonApplyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonApplyActionPerformed
-		setAllComponentsToSettings();
+        setAllComponentsToSettings();
 	}//GEN-LAST:event_jButtonApplyActionPerformed
 
-	private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-		FolderChooser folderChooser = new FolderChooser("Select UMD folder");
-		int result = folderChooser.showSaveDialog(jButton1.getTopLevelAncestor());
-		if (result == FolderChooser.APPROVE_OPTION) {
-			umdpath.setText(folderChooser.getSelectedFile().getPath());
-		}
-	}//GEN-LAST:event_jButton1ActionPerformed
+    private void umdPathBrowseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_umdPathBrowseButtonActionPerformed
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
+        FolderChooser folderChooser = new FolderChooser(bundle.getString("SettingsGUI.strSelectUMDPath.text"));
+        int result = folderChooser.showSaveDialog(umdPathBrowseButton.getTopLevelAncestor());
+        if (result == FolderChooser.APPROVE_OPTION) {
+            umdpath.setText(folderChooser.getSelectedFile().getPath());
+        }
+    }//GEN-LAST:event_umdPathBrowseButtonActionPerformed
 
-	private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
-		RefreshWindow();
-		dispose();
-	}//GEN-LAST:event_jButtonCancelActionPerformed
+    private void tmpPathBrowseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_tmpPathBrowseButtonActionPerformed
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
+        FolderChooser folderChooser = new FolderChooser(bundle.getString("SettingsGUI.strSelectTMPPath.text"));
+        int result = folderChooser.showSaveDialog(tmpPathBrowseButton.getTopLevelAncestor());
+        if (result == FolderChooser.APPROVE_OPTION) {
+            tmppath.setText(folderChooser.getSelectedFile().getPath());
+        }
+    }//GEN-LAST:event_tmpPathBrowseButtonActionPerformed
 
-	private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-		FolderChooser folderChooser = new FolderChooser("Select TMP folder");
-		int result = folderChooser.showSaveDialog(jButton2.getTopLevelAncestor());
-		if (result == FolderChooser.APPROVE_OPTION) {
-			tmppath.setText(folderChooser.getSelectedFile().getPath());
-		}
-	}//GEN-LAST:event_jButton2ActionPerformed
+    private void useSoftwareRendererActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_useSoftwareRendererActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_useSoftwareRendererActionPerformed
 
-
-	@Override
-	public void dispose() {
-		Emulator.getMainGUI().endWindowDialog();
-		super.dispose();
-	}
-
+    @Override
+    public void dispose() {
+        Emulator.getMainGUI().endWindowDialog();
+        super.dispose();
+    }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel AudioPanel;
-    private javax.swing.JRadioButton ClassicOpenDialogumd;
     private javax.swing.JPanel CompilerPanel;
     private javax.swing.JPanel CryptoPanel;
     private javax.swing.JCheckBox DisableSceAudioCheck;
     private javax.swing.JPanel DisplayPanel;
+    private javax.swing.JPanel GeneralPanel;
     private javax.swing.JCheckBox IgnoreAudioThreadsCheck;
     private javax.swing.JPanel MemoryPanel;
     private javax.swing.JPanel MiscPanel;
@@ -1155,6 +1134,8 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JComboBox buttonBox;
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JLabel buttonLabel;
+    private jpcsp.GUI.CancelButton cancelButton;
+    private javax.swing.JRadioButton classicUmdDialog;
     private javax.swing.JCheckBox cryptoSavedata;
     private javax.swing.JComboBox dateFormatBox;
     private javax.swing.JLabel dateFormatLabel;
@@ -1162,8 +1143,6 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JLabel daylightLabel;
     private javax.swing.JCheckBox disableBlockingAudioCheck;
     private javax.swing.JCheckBox disableOptimizedVertexInfoReading;
-    private javax.swing.JCheckBox saveStencilToMemory;
-    private javax.swing.JCheckBox useSoftwareRenderer;
     private javax.swing.JCheckBox disableUBOCheck;
     private javax.swing.JCheckBox disableVBOCheck;
     private javax.swing.JCheckBox enableDynamicShadersCheck;
@@ -1175,31 +1154,22 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JCheckBox extractEboot;
     private javax.swing.JCheckBox extractPGD;
     private javax.swing.JCheckBox filelogCheck;
-    private javax.swing.JCheckBox loadAndRunCheck;
     private javax.swing.JCheckBox fullscreenCheck;
-    private javax.swing.JPanel generalPanel;
     private javax.swing.JCheckBox geometryShaderCheck;
     private javax.swing.JCheckBox ignoreUnmappedImports;
     private javax.swing.JLabel imposeLabel;
-    private javax.swing.JLabel imposeLabel1;
     private javax.swing.JCheckBox invalidMemoryCheck;
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
     private javax.swing.JButton jButtonApply;
-    private javax.swing.JButton jButtonCancel;
     private javax.swing.JButton jButtonOK;
-    private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel2;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
-    private javax.swing.JPanel jPanel6;
-    private javax.swing.JSeparator jSeparator1;
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JComboBox languageBox;
     private javax.swing.JLabel languageLabel;
+    private javax.swing.JCheckBox loadAndRunCheck;
     private javax.swing.JComboBox methodMaxInstructionsBox;
     private javax.swing.JLabel methodMaxInstructionsLabel;
     private javax.swing.JTextField nicknameTextField;
@@ -1209,20 +1179,28 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JCheckBox profilerCheck;
     private javax.swing.JComboBox resolutionBox;
     private javax.swing.JLabel resolutionLabel;
+    private javax.swing.JCheckBox saveStencilToMemory;
     private javax.swing.JCheckBox saveWindowPosCheck;
     private javax.swing.JCheckBox shadersCheck;
+    private javax.swing.JLabel sysParmLabel;
     private javax.swing.JComboBox timeFormatBox;
     private javax.swing.JLabel timeFormatLabel;
     private javax.swing.JLabel timezoneLabel;
     private javax.swing.JSpinner timezoneSpinner;
+    private javax.swing.JButton tmpPathBrowseButton;
+    private javax.swing.JLabel tmpPathLabel;
     private javax.swing.JTextField tmppath;
     private javax.swing.JRadioButton umdBrowser;
+    private javax.swing.JButton umdPathBrowseButton;
+    private javax.swing.JLabel umdPathLabel;
     private javax.swing.JTextField umdpath;
     private javax.swing.JCheckBox useCompiler;
     private javax.swing.JCheckBox useConnector;
     private javax.swing.JCheckBox useDebugFont;
+    private javax.swing.JCheckBox useDebugMemory;
     private javax.swing.JCheckBox useExternalDecoder;
     private javax.swing.JCheckBox useMediaEngine;
+    private javax.swing.JCheckBox useSoftwareRenderer;
     private javax.swing.JCheckBox useVertexCache;
     private javax.swing.JComboBox wlanPowerBox;
     private javax.swing.JLabel wlanPowerLabel;

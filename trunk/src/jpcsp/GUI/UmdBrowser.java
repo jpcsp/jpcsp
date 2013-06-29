@@ -1,33 +1,13 @@
 /*
-This file is part of jpcsp.
-
-Jpcsp is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-Jpcsp is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
  */
 package jpcsp.GUI;
 
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Dimension;
 import java.awt.Graphics;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -44,472 +24,356 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
-import javax.swing.BorderFactory;
-import javax.swing.GroupLayout;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.ListSelectionModel;
-import javax.swing.WindowConstants;
 import javax.swing.border.AbstractBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableColumnModel;
-import javax.swing.table.JTableHeader;
-import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableColumn;
-
 import jpcsp.Emulator;
 import jpcsp.MainGUI;
-import jpcsp.Resource;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
 import jpcsp.settings.Settings;
+import jpcsp.util.Constants;
 
 /**
  * @author Orphis, gid15
- *
  */
-public class UmdBrowser extends JDialog {
-	private static final String windowNameForSettings = "umdbrowser";
-	public static final int icon0Width = 144;
-	public static final int icon0Height = 80;
+public class UmdBrowser extends javax.swing.JDialog {
 
-	private static final class MemStickTableColumnModel extends DefaultTableColumnModel {
-		private static final long serialVersionUID = -6321946514015824875L;
+    private static final long serialVersionUID = 7788144302296106541L;
 
-		private static final class CellRenderer extends DefaultTableCellRenderer {
-			private static final long serialVersionUID = 6767267483048658105L;
+    private final class MemStickTableModel extends AbstractTableModel {
 
-			@Override
-			public Component getTableCellRendererComponent(JTable table,
-                                Object obj, boolean isSelected, boolean hasFocus,
-                                int row, int column)
-            {
-				if (obj instanceof Icon) {
-					setIcon((Icon) obj);
-					return this;
-				} else if (obj instanceof String) {
-                	JTextArea textArea = new JTextArea((String) obj);
-                	textArea.setFont(getFont());
-                	if (isSelected) {
-                		textArea.setForeground(table.getSelectionForeground());
-                		textArea.setBackground(table.getSelectionBackground());
-                	} else {
-                		textArea.setForeground(table.getForeground());
-                		textArea.setBackground(table.getBackground());
-                	}
-                	return textArea;
-				} else {
-					setIcon(null);
-				}
+        private static final long serialVersionUID = -1675488447176776560L;
+        private UmdInfoLoader umdInfoLoader;
+        private String pathPrefix;
 
-				return super.getTableCellRendererComponent(table, obj, isSelected, hasFocus, row, column);
-			}
-		}
+        public MemStickTableModel(File[] paths) {
+            // Default values in case we return an error
+            umdInfoLoaded = new boolean[0];
 
-		public MemStickTableColumnModel() {
-			setColumnMargin(0);
-			CellRenderer cellRenderer = new CellRenderer();
-			TableColumn tableColumn = new TableColumn(0, 144, cellRenderer, null);
-			tableColumn.setHeaderValue(Resource.get("icon"));
-			tableColumn.setMaxWidth(154);
-			tableColumn.setMinWidth(144);
-			TableColumn tableColumn2 = new TableColumn(1, 100, cellRenderer, null);
-			tableColumn2.setHeaderValue(Resource.get("title"));
-			addColumn(tableColumn);
-			addColumn(tableColumn2);
-		}
-	}
+            // Collect all the programs for all the given paths
+            List<File> programList = new ArrayList<File>();
+            for (File path : paths) {
+                if (!path.isDirectory()) {
+                    Emulator.log.error("'" + path + "' is not a directory.");
+                    return;
+                }
 
-	private final class MemStickTableModel extends AbstractTableModel {
-		private static final long serialVersionUID = -1675488447176776560L;
-		private UmdInfoLoader umdInfoLoader;
-		private String pathPrefix;
+                try {
+                    this.pathPrefix = path.getCanonicalPath();
+                } catch (IOException e) {
+                    this.pathPrefix = path.getPath();
+                }
 
-		public MemStickTableModel(File[] paths) {
-			// Default values in case we return an error
-			umdInfoLoaded = new boolean[0];
+                File[] pathPrograms = path.listFiles(new FileFilter() {
+                    @Override
+                    public boolean accept(File file) {
+                        String lower = file.getName().toLowerCase();
+                        if (lower.endsWith(".cso") || lower.endsWith(".iso")) {
+                            return true;
+                        }
+                        if (file.isDirectory()) {
+                            File eboot[] = file.listFiles(new FileFilter() {
+                                @Override
+                                public boolean accept(File file) {
+                                    return file.getName().equalsIgnoreCase("eboot.pbp");
+                                }
+                            });
+                            return eboot.length != 0;
+                        }
+                        return false;
+                    }
+                });
 
-			// Collect all the programs for all the given paths
-			List<File> programList = new ArrayList<File>();
-			for (File path : paths) {
-				if (!path.isDirectory()) {
-					Emulator.log.error(path + Resource.get("nodirectory"));
-					return;
-				}
+                programList.addAll(Arrays.asList(pathPrograms));
+            }
 
-				try {
-					this.pathPrefix = path.getCanonicalPath();
-				} catch (IOException e) {
-					this.pathPrefix = path.getPath();
-				}
+            // Sort the programs based on their file name
+            Collections.sort(programList, new Comparator<File>() {
+                @Override
+                public int compare(File file1, File file2) {
+                    if (file1 == null) {
+                        return (file2 == null ? 0 : 1);
+                    } else if (file2 == null) {
+                        return -1;
+                    }
 
-				File[] pathPrograms = path.listFiles(new FileFilter() {
-					@Override
-					public boolean accept(File file) {
-						String lower = file.getName().toLowerCase();
-						if (lower.endsWith(".cso") || lower.endsWith(".iso")) {
-							return true;
-						}
-						if (file.isDirectory()) {
-							File eboot[] = file.listFiles(new FileFilter() {
-								@Override
-								public boolean accept(File file) {
-									return file.getName().equalsIgnoreCase("eboot.pbp");
-								}
-							});
-							return eboot.length != 0;
-						}
-						return false;
-					}
-				});
+                    String name1 = file1.getName().toLowerCase();
+                    String name2 = file2.getName().toLowerCase();
+                    if (name1.equals(name2)) {
+                        return compare(file1.getParentFile(), file2.getParentFile());
+                    }
+                    return name1.compareTo(name2);
+                }
+            });
 
-				programList.addAll(Arrays.asList(pathPrograms));
-			}
+            programs = programList.toArray(new File[programList.size()]);
 
-			// Sort the programs based on their file name
-			Collections.sort(programList, new Comparator<File>() {
-				@Override
-				public int compare(File file1, File file2) {
-					if (file1 == null) {
-						return (file2 == null ? 0 : 1);
-					} else if (file2 == null) {
-						return -1;
-					}
+            // The UMD informations are loaded asynchronously
+            // to provide a faster loading time for the UmdBrowser.
+            // Prepare the containers for the information and
+            // start the async loader thread as a daemon running at low priority.
+            icons = new ImageIcon[programs.length];
+            psfs = new PSF[programs.length];
+            umdInfoLoaded = new boolean[programs.length];
 
-					String name1 = file1.getName().toLowerCase();
-					String name2 = file2.getName().toLowerCase();
-					if (name1.equals(name2)) {
-						return compare(file1.getParentFile(), file2.getParentFile());
-					}
-					return name1.compareTo(name2);
-				}
-			});
+            for (int i = 0; i < programs.length; ++i) {
+                umdInfoLoaded[i] = false;
+            }
+            // load the first row: its size is used to compute the table size
+            loadUmdInfo(0);
 
-			programs = programList.toArray(new File[programList.size()]);
+            umdInfoLoader = new UmdInfoLoader();
+            umdInfoLoader.setName("Umd Browser - Umd Info Loader");
+            umdInfoLoader.setPriority(Thread.MIN_PRIORITY);
+            umdInfoLoader.setDaemon(true);
+            umdInfoLoader.start();
+        }
 
-			// The UMD informations are loaded asynchronously
-			// to provide a faster loading time for the UmdBrowser.
-			// Prepare the containers for the information and
-			// start the async loader thread as a daemon running at low priority.
-			icons = new ImageIcon[programs.length];
-			psfs = new PSF[programs.length];
-			umdInfoLoaded = new boolean[programs.length];
+        @Override
+        public Class<?> getColumnClass(int columnIndex) {
+            switch (columnIndex) {
+                case 0:
+                    return Icon.class;
+                case 1:
+                    return String.class;
+                default:
+                    throw new IndexOutOfBoundsException("column index out of range");
+            }
+        }
 
-			for (int i = 0; i < programs.length; ++i) {
-				umdInfoLoaded[i] = false;
-			}
-			// load the first row: its size is used to compute the table size
-			loadUmdInfo(0);
+        @Override
+        public String getColumnName(int column) {
+            java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
+            switch (column) {
+                case 0:
+                    return bundle.getString("MemStickBrowser.column.icon.text");
+                case 1:
+                    return bundle.getString("MemStickBrowser.column.title.text");
+                default:
+                    throw new IndexOutOfBoundsException("column index out of range");
+            }
+        }
 
-			umdInfoLoader = new UmdInfoLoader();
-			umdInfoLoader.setName("Umd Browser - Umd Info Loader");
-			umdInfoLoader.setPriority(Thread.MIN_PRIORITY);
-			umdInfoLoader.setDaemon(true);
-			umdInfoLoader.start();
-		}
+        @Override
+        public int getColumnCount() {
+            return 2;
+        }
 
-		@Override
-		public int getColumnCount() {
-			return 3;
-		}
+        @Override
+        public int getRowCount() {
+            return (programs != null) ? programs.length : 0;
+        }
 
-		@Override
-		public int getRowCount() {
-			if (programs == null) {
-				return 0;
-			}
+        @Override
+        public Object getValueAt(int rowIndex, int columnIndex) {
+            if (rowIndex >= umdInfoLoaded.length) {
+                return null;
+            }
 
-			return programs.length;
-		}
+            try {
+                // The UMD info is loaded asynchronously.
+                // Wait for the information to be loaded.
+                while (!umdInfoLoaded[rowIndex]) {
+                    sleep(1);
+                }
 
-		@Override
-		public Object getValueAt(int rowIndex, int columnIndex) {
-			if (rowIndex >= umdInfoLoaded.length) {
-				return null;
-			}
+                switch (columnIndex) {
+                    case 0:
+                        return icons[rowIndex];
+                    case 1:
+                        String title = getTitle(rowIndex);
 
-			try {
-				// The UMD info is loaded asynchronously.
-				// Wait for the information to be loaded.
-				while (!umdInfoLoaded[rowIndex]) {
-					sleep(1);
-				}
+                        String discid;
+                        if (psfs[rowIndex] == null || (discid = psfs[rowIndex].getString("DISC_ID")) == null) {
+                            discid = "No ID";
+                        }
 
-				switch (columnIndex) {
-				case 0:
-					return icons[rowIndex];
-				case 1:
-					String title = getTitle(rowIndex);
+                        String firmware;
+                        if (psfs[rowIndex] == null || (firmware = psfs[rowIndex].getString("PSP_SYSTEM_VER")) == null) {
+                            firmware = "Not found";
+                        }
 
-					String discid;
-					if (psfs[rowIndex] == null || (discid = psfs[rowIndex].getString("DISC_ID")) == null) {
-						discid =  "No ID";
-					}
-
-					String firmware;
-					if (psfs[rowIndex] == null || (firmware = psfs[rowIndex].getString("PSP_SYSTEM_VER")) == null) {
-						firmware =  "Not found";
-					}
-
-					String prgPath = programs[rowIndex].getCanonicalPath();
-					if (prgPath.startsWith(pathPrefix)) {
-						prgPath = prgPath.substring(pathPrefix.length() + 1);
-					} else {
-						String cwdPath = new File(".").getCanonicalPath();
-						if (prgPath.startsWith(cwdPath)) {
-							prgPath = prgPath.substring(cwdPath.length() + 1);
-						}
-					}
-
-					String text = String.format("%s\n%s\n%s\n%s", title, discid, firmware, prgPath);
-					return text;
-				}
-			} catch (IOException e) {
-				Emulator.log.error(e);
-			}
-			return null;
-		}
-	}
-
-	private static final long serialVersionUID = 7788144302296106541L;
-	private JButton loadButton;
-	private JLabel pic1Label;
-	private JLabel pic0Label;
-	private JLabel icon0Label;
-	private JTable table;
-	private File[] programs;
-	private ImageIcon[] icons;
-	private PSF[] psfs;
-	private volatile boolean[] umdInfoLoaded;
-	private MainGUI gui;
-	private UmdBrowserPmf umdBrowserPmf;
-	private UmdBrowserSound umdBrowserSound;
-	private int lastRowIndex = -1;
-	private boolean isSwitchingUmd;
-
-	public UmdBrowser(MainGUI gui, File[] paths) {
-		super(gui);
-
-		this.gui = gui;
-		setModal(true);
-
-		setTitle(Resource.get("umdIsoCsobrowser"));
-		setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-		table = new JTable(new MemStickTableModel(paths), new MemStickTableColumnModel());
-		table.setFillsViewportHeight(true);
-		table.setRowHeight(icon0Height);
-		table.setAutoResizeMode(JTable.AUTO_RESIZE_NEXT_COLUMN);
-		table.setTableHeader(new JTableHeader(table.getColumnModel()));
-		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		table.setRowSelectionAllowed(true);
-		table.setColumnSelectionAllowed(false);
-		table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-			@Override
-			public void valueChanged(ListSelectionEvent event) {
-				onSelectionChanged(event);
-			}});
-		table.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent arg0) {
-				if(arg0.getClickCount() == 2 && arg0.getButton() == MouseEvent.BUTTON1)
-					loadSelectedfile();
-			}
-		});
-		table.addKeyListener(new KeyListener() {
-			@Override
-			public void keyPressed(KeyEvent e) {
-				// Nothing to do
-			}
-
-			@Override
-			public void keyReleased(KeyEvent e) {
-				// Nothing to do
-			}
-
-			@Override
-			public void keyTyped(KeyEvent e) {
-				scrollTo(e.getKeyChar());
-			}
-		});
-
-		for (int c = 0; c < table.getColumnCount() - 1; c++) {
-			DefaultTableColumnModel colModel = (DefaultTableColumnModel) table.getColumnModel();
-			TableColumn col = colModel.getColumn(c);
-			int width = 0;
-
-			// Get width of column header
-			TableCellRenderer renderer = col.getHeaderRenderer();
-			if (renderer == null) {
-				renderer = table.getTableHeader().getDefaultRenderer();
-			}
-			Component comp = renderer.getTableCellRendererComponent(table, col
-					.getHeaderValue(), false, false, 0, 0);
-			width = comp.getPreferredSize().width;
-
-			// Get maximum width of column data
-			for (int r = 0; r < 1; r++) {
-				renderer = table.getCellRenderer(r, c);
-				comp = renderer.getTableCellRendererComponent(table, table
-						.getValueAt(r, c), false, false, r, c);
-				width = Math.max(width, comp.getPreferredSize().width);
-			}
-
-			width += 2 * colModel.getColumnMargin();
-			col.setPreferredWidth(width);
-		}
-
-		JScrollPane scrollPane = new JScrollPane(table);
-
-		GroupLayout layout = new GroupLayout(getRootPane());
-		layout.setAutoCreateGaps(true);
-		layout.setAutoCreateContainerGaps(true);
-
-		JButton cancelButton = new CancelButton(this);
-
-		loadButton = new JButton(Resource.get("load"));
-		loadButton.setEnabled(false);
-		loadButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				loadSelectedfile();
-			}
-		});
-
-		GridBagConstraints constraints = new GridBagConstraints();
-		constraints.gridx = 0;
-		constraints.gridy = 0;
-		JPanel imagePanel = new JPanel(new GridBagLayout());
-
-		icon0Label = new JLabel();
-		icon0Label.setBorder(BorderFactory.createEmptyBorder(0, 22, 0, 0));
-		icon0Label.setBorder(new PmfBorder());
-		constraints.anchor = GridBagConstraints.WEST;
-		imagePanel.add(icon0Label, constraints);
-
-		pic0Label = new JLabel();
-		Dimension pic0Size = new Dimension(310, 180);
-		pic0Label.setMinimumSize(pic0Size);
-		pic0Label.setMaximumSize(pic0Size);
-		constraints.anchor = GridBagConstraints.EAST;
-		imagePanel.add(pic0Label, constraints);
-
-		// Add the background image as the last component
-		// so that it is displayed behind all the others components.
-		pic1Label = new JLabel();
-		Dimension pic1Size = new Dimension(480, 272);
-		pic1Label.setMinimumSize(pic1Size);
-		pic1Label.setMaximumSize(pic1Size);
-		constraints.anchor = GridBagConstraints.CENTER;
-		imagePanel.add(pic1Label, constraints);
-
-		layout.setHorizontalGroup(layout.createParallelGroup(
-				GroupLayout.Alignment.TRAILING).addGroup(
-						layout.createSequentialGroup().addComponent(imagePanel).addComponent(scrollPane))
-				.addGroup(
-						layout.createSequentialGroup().addComponent(loadButton)
-								.addComponent(cancelButton)));
-
-		layout.setVerticalGroup(layout.createSequentialGroup().addGroup(
-				layout.createParallelGroup(GroupLayout.Alignment.CENTER).addComponent(
-						imagePanel).addComponent(scrollPane)).addGroup(
-				layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-						.addComponent(loadButton).addComponent(cancelButton)));
-
-		getRootPane().setLayout(layout);
-        setLocation(Settings.getInstance().readWindowPos(windowNameForSettings));
-		setSize(Settings.getInstance().readWindowSize(windowNameForSettings, 1000, 350));
-	}
-
-	private String getUmdBrowseCacheDirectory(String name) {
-		// Return "tmp/UmdBrowserCache/<name>/"
-		return String.format("%1$s%2$cUmdBrowserCache%2$c%3$s%2$c", Settings.getInstance().readString("emu.tmppath"), File.separatorChar, name);
-	}
-
-	private void writeUmdBrowseCacheFile(String cacheDirectory, String name, byte[] content) {
-		try {
-			OutputStream os = new FileOutputStream(cacheDirectory + name);
-			os.write(content);
-			os.close();
-		} catch (FileNotFoundException e) {
-			Emulator.log.error(e);
-		} catch (IOException e) {
-			Emulator.log.error(e);
-		}
-	}
-
-	private void loadUmdInfo(int rowIndex) {
-		if (rowIndex >= umdInfoLoaded.length || umdInfoLoaded[rowIndex]) {
-			return;
-		}
-
-		try {
-            if (programs[rowIndex].isDirectory()) {
-                    File eboot[] = programs[rowIndex].listFiles(new FileFilter() {
-                            @Override
-                            public boolean accept(File arg0) {
-                                    return arg0.getName().equalsIgnoreCase("eboot.pbp");
+                        String prgPath = programs[rowIndex].getCanonicalPath();
+                        if (prgPath.startsWith(pathPrefix)) {
+                            prgPath = prgPath.substring(pathPrefix.length() + 1);
+                        } else {
+                            String cwdPath = new File(".").getCanonicalPath();
+                            if (prgPath.startsWith(cwdPath)) {
+                                prgPath = prgPath.substring(cwdPath.length() + 1);
                             }
-                    });
-                    programs[rowIndex] = eboot[0];
+                        }
+
+                        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
+                        String text = String.format(
+                                "%s\n%s: %s\n%s: %s\n%s",
+                                title,
+                                bundle.getString("UmdBrowser.strDiscID.text"),
+                                discid,
+                                bundle.getString("UmdBrowser.strFirmware.text"),
+                                firmware,
+                                prgPath);
+                        return text;
+                }
+            } catch (IOException e) {
+                Emulator.log.error(e);
+            }
+            return null;
+        }
+    }
+    private File[] programs;
+    private ImageIcon[] icons;
+    private PSF[] psfs;
+    private volatile boolean[] umdInfoLoaded;
+    private UmdBrowserPmf umdBrowserPmf;
+    private UmdBrowserSound umdBrowserSound;
+    private int lastRowIndex = -1;
+    private boolean isSwitchingUmd;
+    private MainGUI gui;
+    private File[] paths;
+    private static final String windowNameForSettings = "umdbrowser";
+
+    /**
+     * Creates new form UmdBrowser
+     */
+    public UmdBrowser(MainGUI gui, File[] paths) {
+        super(gui);
+
+        this.gui = gui;
+        this.paths = paths;
+
+        initComponents();
+
+        // set blinking border for ICON0
+        icon0Label.setBorder(new PmfBorder());
+
+        // restrict icon column width manually
+        table.getColumnModel().getColumn(0).setMinWidth(Constants.ICON0_WIDTH);
+        table.getColumnModel().getColumn(0).setMaxWidth(Constants.ICON0_WIDTH);
+
+        // set custom renderers
+        table.setDefaultRenderer(Icon.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                setText(""); // NOI18N
+                setIcon((Icon) value);
+                return this;
+            }
+        });
+        table.setDefaultRenderer(String.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                JTextArea textArea = new JTextArea((String) value);
+                textArea.setFont(getFont());
+                if (isSelected) {
+                    textArea.setForeground(table.getSelectionForeground());
+                    textArea.setBackground(table.getSelectionBackground());
+                } else {
+                    textArea.setForeground(table.getForeground());
+                    textArea.setBackground(table.getBackground());
+                }
+                return textArea;
+            }
+        });
+
+        // update icons on selection change
+        table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent event) {
+                onSelectionChanged(event);
+            }
+        });
+
+        setLocation(Settings.getInstance().readWindowPos(windowNameForSettings));
+        setSize(Settings.getInstance().readWindowSize(windowNameForSettings, 1000, 350));
+    }
+
+    private String getUmdBrowseCacheDirectory(String name) {
+        // Return "tmp/UmdBrowserCache/<name>/"
+        return String.format("%1$s%2$cUmdBrowserCache%2$c%3$s%2$c", Settings.getInstance().readString("emu.tmppath"), File.separatorChar, name);
+    }
+
+    private void writeUmdBrowseCacheFile(String cacheDirectory, String name, byte[] content) {
+        try {
+            OutputStream os = new FileOutputStream(cacheDirectory + name);
+            os.write(content);
+            os.close();
+        } catch (FileNotFoundException e) {
+            Emulator.log.error(e);
+        } catch (IOException e) {
+            Emulator.log.error(e);
+        }
+    }
+
+    private void loadUmdInfo(int rowIndex) {
+        if (rowIndex >= umdInfoLoaded.length || umdInfoLoaded[rowIndex]) {
+            return;
+        }
+
+        try {
+            if (programs[rowIndex].isDirectory()) {
+                File eboot[] = programs[rowIndex].listFiles(new FileFilter() {
+                    @Override
+                    public boolean accept(File arg0) {
+                        return arg0.getName().equalsIgnoreCase("eboot.pbp");
+                    }
+                });
+                programs[rowIndex] = eboot[0];
             }
 
             if (!programs[rowIndex].isDirectory()) {
-            	String cacheDirectory = getUmdBrowseCacheDirectory(programs[rowIndex].getName());
-            	File sfoFile = new File(cacheDirectory + "param.sfo");
-            	if (sfoFile.canRead()) {
-            		// Read the param.sfo and ICON0.PNG from the UmdBrowserCache
-            		byte[] sfo = new byte[(int) sfoFile.length()];
-            		InputStream is = new FileInputStream(sfoFile);
-            		is.read(sfo);
-            		is.close();
-            		psfs[rowIndex] = new PSF();
-            		psfs[rowIndex].read(ByteBuffer.wrap(sfo));
+                String cacheDirectory = getUmdBrowseCacheDirectory(programs[rowIndex].getName());
+                File sfoFile = new File(cacheDirectory + "param.sfo");
+                if (sfoFile.canRead()) {
+                    // Read the param.sfo and ICON0.PNG from the UmdBrowserCache
+                    byte[] sfo = new byte[(int) sfoFile.length()];
+                    InputStream is = new FileInputStream(sfoFile);
+                    is.read(sfo);
+                    is.close();
+                    psfs[rowIndex] = new PSF();
+                    psfs[rowIndex].read(ByteBuffer.wrap(sfo));
 
-            		File icon0File = new File(cacheDirectory + "ICON0.PNG");
-            		if (icon0File.canRead()) {
-            			icons[rowIndex] = new ImageIcon(icon0File.getPath());
-            		} else {
+                    File icon0File = new File(cacheDirectory + "ICON0.PNG");
+                    if (icon0File.canRead()) {
+                        icons[rowIndex] = new ImageIcon(icon0File.getPath());
+                    } else {
                         icons[rowIndex] = new ImageIcon(getClass().getResource("/jpcsp/images/icon0.png"));
-            		}
-            	} else {
-            		// Read the param.sfo and ICON0.PNG from the ISO and
-            		// store them in the UmdBrowserCache.
+                    }
+                } else {
+                    // Read the param.sfo and ICON0.PNG from the ISO and
+                    // store them in the UmdBrowserCache.
 
-            		// Create the UmdBrowse Cache directories
-            		new File(cacheDirectory).mkdirs();
+                    // Create the UmdBrowse Cache directories
+                    new File(cacheDirectory).mkdirs();
 
-            		UmdIsoReader iso = new UmdIsoReader(programs[rowIndex].getPath());
+                    UmdIsoReader iso = new UmdIsoReader(programs[rowIndex].getPath());
 
-	                UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
-	                byte[] sfo = new byte[(int)paramSfo.length()];
-	                paramSfo.read(sfo);
-	                paramSfo.close();
-	                writeUmdBrowseCacheFile(cacheDirectory, "param.sfo", sfo);
-	                ByteBuffer buf = ByteBuffer.wrap(sfo);
-	                psfs[rowIndex] = new PSF();
-	                psfs[rowIndex].read(buf);
+                    UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
+                    byte[] sfo = new byte[(int) paramSfo.length()];
+                    paramSfo.read(sfo);
+                    paramSfo.close();
+                    writeUmdBrowseCacheFile(cacheDirectory, "param.sfo", sfo);
+                    ByteBuffer buf = ByteBuffer.wrap(sfo);
+                    psfs[rowIndex] = new PSF();
+                    psfs[rowIndex].read(buf);
 
-	                UmdIsoFile icon0umd = iso.getFile("PSP_GAME/ICON0.PNG");
-	                byte[] icon0 = new byte[(int) icon0umd.length()];
-	                icon0umd.read(icon0);
-	                icon0umd.close();
-	                writeUmdBrowseCacheFile(cacheDirectory, "ICON0.PNG", icon0);
-	                icons[rowIndex] = new ImageIcon(icon0);
-            	}
+                    UmdIsoFile icon0umd = iso.getFile("PSP_GAME/ICON0.PNG");
+                    byte[] icon0 = new byte[(int) icon0umd.length()];
+                    icon0umd.read(icon0);
+                    icon0umd.close();
+                    writeUmdBrowseCacheFile(cacheDirectory, "ICON0.PNG", icon0);
+                    icons[rowIndex] = new ImageIcon(icon0);
+                }
             }
-		} catch (FileNotFoundException e) {
+        } catch (FileNotFoundException e) {
             // Check if we're dealing with a UMD_VIDEO.
             try {
                 UmdIsoReader iso = new UmdIsoReader(programs[rowIndex].getPath());
@@ -520,11 +384,10 @@ public class UmdBrowser extends JDialog {
                 // Manually fetch the DISC ID from the UMD_DATA.BIN (video ISO files lack
                 // this param in their param.sfo).
                 byte[] umdDataId = new byte[10];
-                String umdDataIdString = "";
                 umdDataFile.readFully(umdDataId, 0, 9);
-                umdDataIdString = new String(umdDataId);
+                String umdDataIdString = new String(umdDataId);
 
-                byte[] sfo = new byte[(int)paramSfo.length()];
+                byte[] sfo = new byte[(int) paramSfo.length()];
                 paramSfo.read(sfo);
                 paramSfo.close();
                 ByteBuffer buf = ByteBuffer.wrap(sfo);
@@ -543,35 +406,35 @@ public class UmdBrowser extends JDialog {
             } catch (IOException ve) {
                 Emulator.log.error(ve);
             }
-		} catch (IOException e) {
-			Emulator.log.error(e);
-		}
+        } catch (IOException e) {
+            Emulator.log.error(e);
+        }
 
-		umdInfoLoaded[rowIndex] = true;
-	}
+        umdInfoLoaded[rowIndex] = true;
+    }
 
-	private void onSelectionChanged(ListSelectionEvent event) {
-		loadButton.setEnabled(!((ListSelectionModel)event.getSource()).isSelectionEmpty());
+    private void onSelectionChanged(ListSelectionEvent event) {
+        loadButton.setEnabled(!((ListSelectionModel) event.getSource()).isSelectionEmpty());
 
-		ImageIcon pic0Icon = null;
-		ImageIcon pic1Icon = null;
-		ImageIcon icon0Icon = null;
-		try {
-			int rowIndex = table.getSelectedRow();
-			UmdIsoReader iso = new UmdIsoReader(programs[rowIndex].getPath());
+        ImageIcon pic0Icon = null;
+        ImageIcon pic1Icon = null;
+        ImageIcon icon0Icon = null;
+        try {
+            int rowIndex = table.getSelectedRow();
+            UmdIsoReader iso = new UmdIsoReader(programs[rowIndex].getPath());
 
-			// Read PIC0.PNG
-			try {
+            // Read PIC0.PNG
+            try {
                 UmdIsoFile pic0umd = iso.getFile("PSP_GAME/PIC0.PNG");
                 byte[] pic0 = new byte[(int) pic0umd.length()];
                 pic0umd.read(pic0);
                 pic0umd.close();
                 pic0Icon = new ImageIcon(pic0);
-			} catch (FileNotFoundException e) {
-				// Ignore exception
-			} catch (IOException e) {
-				Emulator.log.error(e);
-			}
+            } catch (FileNotFoundException e) {
+                // Ignore exception
+            } catch (IOException e) {
+                Emulator.log.error(e);
+            }
 
             // Read PIC1.PNG
             try {
@@ -591,7 +454,7 @@ public class UmdBrowser extends JDialog {
                 } catch (FileNotFoundException ve) {
                     // Generate an empty image
                     pic1Icon = new ImageIcon();
-                    BufferedImage image = new BufferedImage(480, 272, BufferedImage.TYPE_INT_ARGB);
+                    BufferedImage image = new BufferedImage(Constants.PSPSCREEN_WIDTH, Constants.PSPSCREEN_HEIGHT, BufferedImage.TYPE_INT_ARGB);
                     pic1Icon.setImage(image);
                 } catch (IOException ve) {
                     Emulator.log.error(ve);
@@ -600,240 +463,391 @@ public class UmdBrowser extends JDialog {
                 Emulator.log.error(e);
             }
 
-			icon0Icon = icons[rowIndex];
+            icon0Icon = icons[rowIndex];
 
-			if (lastRowIndex != rowIndex) {
-				stopVideo();
-				umdBrowserPmf = new UmdBrowserPmf(iso, "PSP_GAME/ICON1.PMF", icon0Label);
-				umdBrowserSound = new UmdBrowserSound(iso, "PSP_GAME/SND0.AT3");
-			}
+            if (lastRowIndex != rowIndex) {
+                stopVideo();
+                umdBrowserPmf = new UmdBrowserPmf(iso, "PSP_GAME/ICON1.PMF", icon0Label);
+                umdBrowserSound = new UmdBrowserSound(iso, "PSP_GAME/SND0.AT3");
+            }
 
-			lastRowIndex = rowIndex;
-		} catch (FileNotFoundException e) {
-			// Ignore exception
-		} catch (IOException e) {
-			Emulator.log.error(e);
-		}
-		pic0Label.setIcon(pic0Icon);
-		pic1Label.setIcon(pic1Icon);
-		icon0Label.setIcon(icon0Icon);
-	}
+            lastRowIndex = rowIndex;
+        } catch (FileNotFoundException e) {
+            // Ignore exception
+        } catch (IOException e) {
+            Emulator.log.error(e);
+        }
+        pic0Label.setIcon(pic0Icon);
+        pic1Label.setIcon(pic1Icon);
+        icon0Label.setIcon(icon0Icon);
+    }
 
-	private String getTitle(int rowIndex) {
-		String title;
-		if (psfs[rowIndex] == null || (title = psfs[rowIndex].getString("TITLE")) == null) {
-			// No PSF TITLE, get the parent directory name
-			title =  programs[rowIndex].getParentFile().getName();
-		}
+    private String getTitle(int rowIndex) {
+        String title;
+        if (psfs[rowIndex] == null || (title = psfs[rowIndex].getString("TITLE")) == null) {
+            // No PSF TITLE, get the parent directory name
+            title = programs[rowIndex].getParentFile().getName();
+        }
 
-		return title;
-	}
+        return title;
+    }
 
-	private void scrollTo(char c) {
-		c = Character.toLowerCase(c);
-		int scrollToRow = -1;
-		for (int rowIndex = 0; rowIndex < programs.length; rowIndex++) {
-			String title = getTitle(rowIndex);
-			if (title != null && title.length() > 0) {
-				char firstChar = Character.toLowerCase(title.charAt(0));
-				if (firstChar == c) {
-					scrollToRow = rowIndex;
-					break;
-				}
-			}
-		}
+    private void scrollTo(char c) {
+        c = Character.toLowerCase(c);
+        int scrollToRow = -1;
+        for (int rowIndex = 0; rowIndex < programs.length; rowIndex++) {
+            String title = getTitle(rowIndex);
+            if (title != null && title.length() > 0) {
+                char firstChar = Character.toLowerCase(title.charAt(0));
+                if (firstChar == c) {
+                    scrollToRow = rowIndex;
+                    break;
+                }
+            }
+        }
 
-		if (scrollToRow >= 0) {
-			table.scrollRectToVisible(table.getCellRect(scrollToRow, 0, true));
-		}
-	}
+        if (scrollToRow >= 0) {
+            table.scrollRectToVisible(table.getCellRect(scrollToRow, 0, true));
+        }
+    }
 
-	private void stopVideo() {
-		if (umdBrowserPmf != null) {
-			umdBrowserPmf.stopVideo();
-			umdBrowserPmf = null;
-		}
+    private void stopVideo() {
+        if (umdBrowserPmf != null) {
+            umdBrowserPmf.stopVideo();
+            umdBrowserPmf = null;
+        }
 
-		if (umdBrowserSound != null) {
-			umdBrowserSound.stopVideo();
-			umdBrowserSound = null;
-		}
-	}
+        if (umdBrowserSound != null) {
+            umdBrowserSound.stopVideo();
+            umdBrowserSound = null;
+        }
+    }
 
-	private void loadSelectedfile() {
-		stopVideo();
+    private void loadSelectedfile() {
+        stopVideo();
 
-		Settings.getInstance().writeWindowPos(windowNameForSettings, getLocation());
-		Settings.getInstance().writeWindowSize(windowNameForSettings, getSize());
+        Settings.getInstance().writeWindowPos(windowNameForSettings, getLocation());
+        Settings.getInstance().writeWindowSize(windowNameForSettings, getSize());
 
-		File selectedFile = programs[table.getSelectedRow()];
-		if (isSwitchingUmd()) {
-			gui.switchUMD(selectedFile);
+        File selectedFile = programs[table.getSelectedRow()];
+        if (isSwitchingUmd()) {
+            gui.switchUMD(selectedFile);
+            setVisible(false);
+            dispose();
+        } else {
+            gui.loadUMD(selectedFile);
+            dispose();
+            gui.loadAndRun();
+        }
+    }
 
-			setVisible(false);
-			dispose();
-		} else {
-			gui.loadUMD(selectedFile);
+    @Override
+    public void dispose() {
+        // Stop the PMF video and sound before closing the UMD Browser
+        stopVideo();
+        super.dispose();
+    }
 
-			setVisible(false);
-			dispose();
+    private static void sleep(long millis) {
+        if (millis > 0) {
+            try {
+                Thread.sleep(millis);
+            } catch (InterruptedException e) {
+                // Ignore exception
+            }
+        }
+    }
 
-			gui.loadAndRun();
-		}
-	}
+    /**
+     * Load asynchronously all the UMD information (icon, PSF).
+     */
+    private class UmdInfoLoader extends Thread {
 
-	@Override
-	public void dispose() {
-		// Stop the PMF video and sound before closing the UMD Browser
-		stopVideo();
+        @Override
+        public void run() {
+            for (int i = 0; i < umdInfoLoaded.length; i++) {
+                loadUmdInfo(i);
+            }
+        }
+    }
 
-		super.dispose();
-	}
+    public boolean isSwitchingUmd() {
+        return isSwitchingUmd;
+    }
 
-	private static void sleep(long millis) {
-	    if (millis > 0) {
-		    try {
-			  Thread.sleep(millis);
-		    } catch (InterruptedException e) {
-		    	// Ignore exception
-		    }
-	    }
-	}
+    public void setSwitchingUmd(boolean isSwitchingUmd) {
+        this.isSwitchingUmd = isSwitchingUmd;
+        loadButton.setText(java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString(isSwitchingUmd() ? "UmdBrowser.loadButtonSwitch.text" : "UmdBrowser.loadButton.text"));
+    }
 
-	/**
-	 * Load asynchronously all the UMD information (icon, PSF).
-	 */
-	private class UmdInfoLoader extends Thread {
-		@Override
-		public void run() {
-			for (int i = 0; i < umdInfoLoaded.length; i++) {
-				loadUmdInfo(i);
-			}
-		}
-	}
+    private class PmfBorder extends AbstractBorder {
 
-	public boolean isSwitchingUmd() {
-		return isSwitchingUmd;
-	}
+        private static final long serialVersionUID = -700510222853542503L;
+        private static final int leftSpace = 20;
+        private static final int topSpace = 8;
+        private static final int borderWidth = 8;
+        private static final int millisPerBeat = 1500;
 
-	public void setSwitchingUmd(boolean isSwitchingUmd) {
-		this.isSwitchingUmd = isSwitchingUmd;
-		loadButton.setText(Resource.get(isSwitchingUmd() ? "switch" : "load"));
-	}
+        @Override
+        public Insets getBorderInsets(Component c, Insets insets) {
+            insets.set(topSpace, leftSpace, borderWidth, borderWidth);
 
-	private class PmfBorder extends AbstractBorder {
-		private static final long serialVersionUID = -700510222853542503L;
-		private static final int leftSpace = 20;
-		private static final int topSpace = 8;
-		private static final int borderWidth = 8;
-		private static final int millisPerBeat = 1500;
+            return insets;
+        }
 
-		@Override
-		public Insets getBorderInsets(Component c, Insets insets) {
-			insets.set(topSpace, leftSpace, borderWidth, borderWidth);
+        @Override
+        public Insets getBorderInsets(Component c) {
+            return getBorderInsets(c, new Insets(0, 0, 0, 0));
+        }
 
-			return insets;
-		}
+        @Override
+        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+            if (icon0Label.getIcon() == null) {
+                return;
+            }
 
-		@Override
-		public Insets getBorderInsets(Component c) {
-			return getBorderInsets(c, new Insets(0, 0, 0, 0));
-		}
+            long now = System.currentTimeMillis();
+            float beat = (now % millisPerBeat) / (float) millisPerBeat;
+            float noBeat = 0.5f;
 
-		@Override
-		public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
-			if (icon0Label.getIcon() == null) {
-				return;
-			}
+            // Draw border lines
+            for (int i = 0; i < borderWidth; i++) {
+                int alpha = getAlpha(noBeat, i);
+                setColor(g, beat, alpha);
 
-			long now = System.currentTimeMillis();
-			float beat = (now % millisPerBeat) / (float) millisPerBeat;
-			float noBeat = 0.5f;
+                // Vertical line on the right side
+                g.drawLine(x + width - borderWidth + i, y + topSpace, x + width - borderWidth + i, y + height - borderWidth);
 
-			// Draw border lines
-			for (int i = 0; i < borderWidth; i++) {
-				int alpha = getAlpha(noBeat, i);
-				setColor(g, beat, alpha);
+                // Horizontal line at the bottom
+                g.drawLine(x + leftSpace, y + height - borderWidth + i, x + width - borderWidth, y + height - borderWidth + i);
 
-				// Vertical line on the right side
-				g.drawLine(x + width - borderWidth + i, y + topSpace, x + width - borderWidth + i, y + height - borderWidth);
+                alpha = getAlpha(beat, i);
+                setColor(g, noBeat, alpha);
 
-				// Horizontal line at the bottom
-				g.drawLine(x + leftSpace, y + height - borderWidth + i, x + width - borderWidth, y + height - borderWidth + i);
+                // Vertical line on the left side
+                g.drawLine(x + leftSpace - i, y + topSpace, x + leftSpace - i, y + height - borderWidth);
 
-				alpha = getAlpha(beat, i);
-				setColor(g, noBeat, alpha);
+                // Horizontal line at the top
+                g.drawLine(x + leftSpace, y + topSpace - i, x + width - borderWidth, y + topSpace - i);
+            }
 
-				// Vertical line on the left side
-				g.drawLine(x + leftSpace - i, y + topSpace, x + leftSpace - i, y + height - borderWidth);
+            // Top left corner
+            drawCorner(g, beat, noBeat, x + leftSpace - borderWidth, y + topSpace - borderWidth, borderWidth, borderWidth);
 
-				// Horizontal line at the top
-				g.drawLine(x + leftSpace, y + topSpace - i, x + width - borderWidth, y + topSpace - i);
-			}
+            // Top right corner
+            drawCorner(g, beat, noBeat, x + width - borderWidth, y + topSpace - borderWidth, 0, borderWidth);
 
-			// Top left corner
-			drawCorner(g, beat, noBeat, x + leftSpace - borderWidth, y + topSpace - borderWidth, borderWidth, borderWidth);
+            // Bottom left corner
+            drawCorner(g, beat, noBeat, x + leftSpace - borderWidth, y + height - borderWidth, borderWidth, 0);
 
-			// Top right corner
-			drawCorner(g, beat, noBeat, x + width - borderWidth, y + topSpace - borderWidth, 0, borderWidth);
+            // Bottom right corner
+            drawCorner(g, noBeat, beat, x + width - borderWidth, y + height - borderWidth, 0, 0);
+        }
 
-			// Bottom left corner
-			drawCorner(g, beat, noBeat, x + leftSpace - borderWidth, y + height - borderWidth, borderWidth, 0);
+        private void drawCorner(Graphics g, float alphaBeat, float colorBeat, int x, int y, int centerX, int centerY) {
+            for (int ix = 1; ix < borderWidth; ix++) {
+                for (int iy = 1; iy < borderWidth; iy++) {
+                    int alpha = getAlpha(alphaBeat, ix - centerX, iy - centerY);
+                    setColor(g, colorBeat, alpha);
+                    drawPoint(g, x + ix, y + iy);
+                }
+            }
+        }
 
-			// Bottom right corner
-			drawCorner(g, noBeat, beat, x + width - borderWidth, y + height - borderWidth, 0, 0);
-		}
+        private int getAlpha(float beat, int distanceX, int distanceY) {
+            float distance = (float) Math.sqrt(distanceX * distanceX + distanceY * distanceY);
 
-		private void drawCorner(Graphics g, float alphaBeat, float colorBeat, int x, int y, int centerX, int centerY) {
-			for (int ix = 1; ix < borderWidth; ix++) {
-				for (int iy = 1; iy < borderWidth; iy++) {
-					int alpha = getAlpha(alphaBeat, ix - centerX, iy - centerY);
-					setColor(g, colorBeat, alpha);
-					drawPoint(g, x + ix, y + iy);
-				}
-			}
-		}
+            return getAlpha(beat, distance);
+        }
 
-		private int getAlpha(float beat, int distanceX, int distanceY) {
-			float distance = (float) Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+        private int getAlpha(float beat, float distance) {
+            final float maxDistance = borderWidth;
 
-			return getAlpha(beat, distance);
-		}
+            int maxAlpha = 0xF0;
+            if (beat < 0.5f) {
+                // beat 0.0 -> 0.5: increase alpha from 0 to max
+                maxAlpha = (int) (maxAlpha * beat * 2);
+            } else {
+                // beat 0.5 -> 1.0: decrease alpha from max to 0
+                maxAlpha = (int) (maxAlpha * (1 - beat) * 2);
+            }
 
-		private int getAlpha(float beat, float distance) {
-			final float maxDistance = borderWidth;
+            distance = Math.abs(distance);
+            distance = Math.min(distance, maxDistance);
 
-			int maxAlpha = 0xF0;
-			if (beat < 0.5f) {
-				// beat 0.0 -> 0.5: increase alpha from 0 to max
-				maxAlpha = (int) (maxAlpha * beat * 2);
-			} else {
-				// beat 0.5 -> 1.0: decrease alpha from max to 0
-				maxAlpha = (int) (maxAlpha * (1 - beat) * 2);
-			}
+            return maxAlpha - (int) ((distance * maxAlpha) / maxDistance);
+        }
 
-			distance = Math.abs(distance);
-			distance = Math.min(distance, maxDistance);
+        private void setColor(Graphics g, float beat, int alpha) {
+            int color = 0xA0;
 
-			return maxAlpha - (int) ((distance * maxAlpha) / maxDistance);
-		}
+            if (beat < 0.5f) {
+                // beat 0.0 -> 0.5: increase color from 0 to max
+                color = (int) (color * beat * 2);
+            } else {
+                // beat 0.5 -> 1.0: decrease alpha from max to 0
+                color = (int) (color * (1 - beat) * 2);
+            }
 
-		private void setColor(Graphics g, float beat, int alpha) {
-			int color = 0xA0;
+            g.setColor(new Color(color, color, color, alpha));
+        }
 
-			if (beat < 0.5f) {
-				// beat 0.0 -> 0.5: increase color from 0 to max
-				color = (int) (color * beat * 2);
-			} else {
-				// beat 0.5 -> 1.0: decrease alpha from max to 0
-				color = (int) (color * (1 - beat) * 2);
-			}
+        private void drawPoint(Graphics g, int x, int y) {
+            g.drawLine(x, y, x, y);
+        }
+    }
 
-			g.setColor(new Color(color, color, color, alpha));
-		}
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
 
-		private void drawPoint(Graphics g, int x, int y) {
-			g.drawLine(x, y, x, y);
-		}
-	}
+        loadButton = new javax.swing.JButton();
+        cancelButton = new jpcsp.GUI.CancelButton();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        table = new javax.swing.JTable();
+        imagePanel = new javax.swing.JPanel();
+        icon0Label = new javax.swing.JLabel();
+        pic0Label = new javax.swing.JLabel();
+        pic1Label = new javax.swing.JLabel();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
+        setTitle(bundle.getString("UmdBrowser.title")); // NOI18N
+
+        loadButton.setText(bundle.getString("LoadButton.text")); // NOI18N
+        loadButton.setEnabled(false);
+        loadButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                loadButtonActionPerformed(evt);
+            }
+        });
+
+        cancelButton.setText(bundle.getString("CancelButton.text")); // NOI18N
+        cancelButton.setParent(this);
+
+        table.setModel(new MemStickTableModel(paths));
+        table.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_NEXT_COLUMN);
+        table.setRowHeight(Constants.ICON0_HEIGHT);
+        table.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tableMouseClicked(evt);
+            }
+        });
+        table.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                tableKeyTyped(evt);
+            }
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                tableKeyPressed(evt);
+            }
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                tableKeyReleased(evt);
+            }
+        });
+        jScrollPane1.setViewportView(table);
+
+        imagePanel.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+        imagePanel.setPreferredSize(new java.awt.Dimension(480, 272));
+        imagePanel.setLayout(new java.awt.GridBagLayout());
+
+        icon0Label.setBackground(new java.awt.Color(255, 255, 255));
+        icon0Label.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 22, 0, 0));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        imagePanel.add(icon0Label, gridBagConstraints);
+
+        pic0Label.setBackground(new java.awt.Color(204, 204, 204));
+        pic0Label.setMaximumSize(new java.awt.Dimension(310, 180));
+        pic0Label.setMinimumSize(new java.awt.Dimension(310, 180));
+        pic0Label.setPreferredSize(new java.awt.Dimension(310, 180));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.EAST;
+        imagePanel.add(pic0Label, gridBagConstraints);
+
+        pic1Label.setBackground(new java.awt.Color(153, 153, 153));
+        pic1Label.setMaximumSize(new java.awt.Dimension(480, 272));
+        pic1Label.setMinimumSize(new java.awt.Dimension(480, 272));
+        pic1Label.setPreferredSize(new java.awt.Dimension(480, 272));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        imagePanel.add(pic1Label, gridBagConstraints);
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addComponent(loadButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(cancelButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(imagePanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 375, Short.MAX_VALUE)))
+                .addContainerGap())
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(imagePanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(loadButton)
+                    .addComponent(cancelButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap())
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void tableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tableMouseClicked
+        if (evt.getClickCount() == 2 && evt.getButton() == MouseEvent.BUTTON1) {
+            loadSelectedfile();
+        }
+    }//GEN-LAST:event_tableMouseClicked
+
+    private void tableKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_tableKeyPressed
+        // do nothing
+    }//GEN-LAST:event_tableKeyPressed
+
+    private void tableKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_tableKeyReleased
+        // do nothing
+    }//GEN-LAST:event_tableKeyReleased
+
+    private void tableKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_tableKeyTyped
+        scrollTo(evt.getKeyChar());
+    }//GEN-LAST:event_tableKeyTyped
+
+    private void loadButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_loadButtonActionPerformed
+        loadSelectedfile();
+    }//GEN-LAST:event_loadButtonActionPerformed
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private jpcsp.GUI.CancelButton cancelButton;
+    private javax.swing.JLabel icon0Label;
+    private javax.swing.JPanel imagePanel;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JButton loadButton;
+    private javax.swing.JLabel pic0Label;
+    private javax.swing.JLabel pic1Label;
+    private javax.swing.JTable table;
+    // End of variables declaration//GEN-END:variables
 }

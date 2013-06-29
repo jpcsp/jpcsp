@@ -45,7 +45,7 @@ public class VfpuFrame extends JFrame {
 
 	private VfpuFrame() {
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-		setTitle("VFPU registers");
+		setTitle(java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("VfpuFrame.title")); // NOI18N
 
 		addWindowListener(new WindowAdapter() {
 			@Override

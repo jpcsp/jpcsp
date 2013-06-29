@@ -30,6 +30,7 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableModel;
 
 public class RegisterTable extends JTable {
 
@@ -55,18 +56,38 @@ public class RegisterTable extends JTable {
 
     public RegisterTable(String[] regnames) {
         super();
-        setModel(new RegisterTableModel(regnames));
+        setFont(tableFont);
+        setDefaultRenderer(Register.class, new RegisterValueRenderer());
+        setDefaultEditor(Register.class, new RegisterValueEditor());
+
+        setRegisters(regnames);
+    }
+
+    public RegisterTable() {
+        super();
         setFont(tableFont);
         setDefaultRenderer(Register.class, new RegisterValueRenderer());
         setDefaultEditor(Register.class, new RegisterValueEditor());
     }
 
+    final public void setRegisters(String[] regnames) {
+        setModel(new RegisterTableModel(regnames));
+    }
+
+    @Override
+    public void setModel(TableModel dataModel) {
+        // needed to allow setting model property in NetBeans to null
+        if (dataModel != null) {
+            super.setModel(dataModel);
+        }
+    }
+
     public void resetChanges() {
         ((RegisterTableModel) getModel()).resetChanges();
     }
-    
+
     public int getAddressAt(int rowIndex) {
-        return ((Register)((RegisterTableModel)getModel()).getValueAt(rowIndex, 1)).value;
+        return ((Register) ((RegisterTableModel) getModel()).getValueAt(rowIndex, 1)).value;
     }
 
     class RegisterValueEditor extends DefaultCellEditor {

@@ -131,7 +131,8 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
         commandLogTable.setModel(fileCommandModel);
         commandLogTable.setInheritsPopupMenu(true);
         commandLogTable.setMinimumSize(new java.awt.Dimension(200, 100));
-        commandLogTable.setName("FileCommandLog"); // NOI18N
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
+        commandLogTable.setName(bundle.getString("FileLoggerFrame.commandLogTable.name")); // NOI18N
         commandLogTable.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mousePressed(java.awt.event.MouseEvent evt) {
                 tableMousePressed(evt);
@@ -147,7 +148,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
         fileHandleTable.setModel(fileHandleModel);
         fileHandleTable.setInheritsPopupMenu(true);
         fileHandleTable.setMinimumSize(new java.awt.Dimension(200, 100));
-        fileHandleTable.setName("FileHandleLog"); // NOI18N
+        fileHandleTable.setName(bundle.getString("FileLoggerFrame.fileHandleTable.name")); // NOI18N
         fileHandleTable.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mousePressed(java.awt.event.MouseEvent evt) {
                 tableMousePressed(evt);

@@ -1,18 +1,18 @@
 /*
-This file is part of jpcsp.
+ This file is part of jpcsp.
 
-Jpcsp is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+ Jpcsp is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-Jpcsp is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+ Jpcsp is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ You should have received a copy of the GNU General Public License
+ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.GUI;
 
@@ -29,7 +29,6 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.MutableComboBoxModel;
 
 import jpcsp.Emulator;
-import jpcsp.Resource;
 import jpcsp.State;
 import jpcsp.Controller.keyCode;
 import jpcsp.settings.Settings;
@@ -44,8 +43,9 @@ import net.java.games.input.Component.Identifier.Axis;
 import net.java.games.input.Component.Identifier.Button;
 
 public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
-	private static final long serialVersionUID = -732715495873159718L;
-	private boolean getKey = false;
+
+    private static final long serialVersionUID = -732715495873159718L;
+    private boolean getKey = false;
     private JTextField sender;
     private keyCode targetKey;
     private HashMap<Integer, keyCode> currentKeys;
@@ -55,28 +55,29 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
     private static final int maxControllerFieldValueLength = 9;
 
     private class ControllerPollThread extends Thread {
-    	volatile protected boolean exit = false;
 
-		@Override
-		public void run() {
-			while (!exit) {
-				Controller controller = getSelectedController();
-				if (controller != null && controller.poll()) {
-					EventQueue eventQueue = controller.getEventQueue();
-					Event event = new Event();
-					while (eventQueue.getNextEvent(event)) {
-						onControllerEvent(event);
-					}
-				}
+        volatile protected boolean exit = false;
 
-				// Wait a little bit before polling again...
-				try {
-					Thread.sleep(10);
-				} catch (InterruptedException e) {
-					// Ignore exception
-				}
-			}
-		}
+        @Override
+        public void run() {
+            while (!exit) {
+                Controller controller = getSelectedController();
+                if (controller != null && controller.poll()) {
+                    EventQueue eventQueue = controller.getEventQueue();
+                    Event event = new Event();
+                    while (eventQueue.getNextEvent(event)) {
+                        onControllerEvent(event);
+                    }
+                }
+
+                // Wait a little bit before polling again...
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    // Ignore exception
+                }
+            }
+        }
     }
 
     public ControlsGUI() {
@@ -85,12 +86,12 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         Controller controller = jpcsp.Controller.getInstance().getInputController();
         if (controller != null) {
-        	for (int i = 0; i < controllerBox.getItemCount(); i++) {
-        		if (controller == controllerBox.getItemAt(i)) {
-        			controllerBox.setSelectedIndex(i);
-        			break;
-        		}
-        	}
+            for (int i = 0; i < controllerBox.getItemCount(); i++) {
+                if (controller == controllerBox.getItemAt(i)) {
+                    controllerBox.setSelectedIndex(i);
+                    break;
+                }
+            }
         }
         setFields();
 
@@ -118,45 +119,45 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         fieldAnalogRight.addKeyListener(this);
 
         controllerBox.addItemListener(new ItemListener() {
-			@Override
-			public void itemStateChanged(ItemEvent e) {
-				onControllerChange();
-			}
-		});
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                onControllerChange();
+            }
+        });
 
         controllerPollThread = new ControllerPollThread();
         controllerPollThread.setName("Controller Poll Thread");
         controllerPollThread.setDaemon(true);
         controllerPollThread.start();
     }
-    
-	@Override
-	public void dispose() {
-		if (controllerPollThread != null) {
-			controllerPollThread.exit = true;
-		}
-		Emulator.getMainGUI().endWindowDialog();
-		super.dispose();
-	}
 
-	private void onControllerChange() {
-		setFields();
-	}
+    @Override
+    public void dispose() {
+        if (controllerPollThread != null) {
+            controllerPollThread.exit = true;
+        }
+        Emulator.getMainGUI().endWindowDialog();
+        super.dispose();
+    }
 
-	private Controller getSelectedController() {
-		if (controllerBox != null) {
-			int controllerIndex = controllerBox.getSelectedIndex();
-			ControllerEnvironment ce = ControllerEnvironment.getDefaultEnvironment();
-			Controller[] controllers = ce.getControllers();
-			if (controllers != null && controllerIndex >= 0 && controllerIndex < controllers.length) {
-				return controllers[controllerIndex];
-			}
-		}
+    private void onControllerChange() {
+        setFields();
+    }
 
-		return null;
-	}
+    private Controller getSelectedController() {
+        if (controllerBox != null) {
+            int controllerIndex = controllerBox.getSelectedIndex();
+            ControllerEnvironment ce = ControllerEnvironment.getDefaultEnvironment();
+            Controller[] controllers = ce.getControllers();
+            if (controllers != null && controllerIndex >= 0 && controllerIndex < controllers.length) {
+                return controllers[controllerIndex];
+            }
+        }
 
-	private void loadKeys() {
+        return null;
+    }
+
+    private void loadKeys() {
         currentKeys = Settings.getInstance().loadKeys();
         revertKeys = new HashMap<keyCode, Integer>(22);
 
@@ -165,59 +166,106 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         }
 
         currentController = Settings.getInstance().loadController();
-	}
+    }
 
-	private void setFieldValue(keyCode key, String value) {
+    private void setFieldValue(keyCode key, String value) {
         switch (key) {
-	        case DOWN:     fieldDown.setText(value); break;
-	        case UP:       fieldUp.setText(value); break;
-	        case LEFT:     fieldLeft.setText(value); break;
-	        case RIGHT:    fieldRight.setText(value); break;
-	        case LANDOWN:  fieldAnalogDown.setText(value); break;
-	        case LANUP:    fieldAnalogUp.setText(value); break;
-	        case LANLEFT:  fieldAnalogLeft.setText(value); break;
-	        case LANRIGHT: fieldAnalogRight.setText(value); break;
+            case DOWN:
+                fieldDown.setText(value);
+                break;
+            case UP:
+                fieldUp.setText(value);
+                break;
+            case LEFT:
+                fieldLeft.setText(value);
+                break;
+            case RIGHT:
+                fieldRight.setText(value);
+                break;
+            case LANDOWN:
+                fieldAnalogDown.setText(value);
+                break;
+            case LANUP:
+                fieldAnalogUp.setText(value);
+                break;
+            case LANLEFT:
+                fieldAnalogLeft.setText(value);
+                break;
+            case LANRIGHT:
+                fieldAnalogRight.setText(value);
+                break;
 
-	        case TRIANGLE: fieldTriangle.setText(value); break;
-	        case SQUARE:   fieldSquare.setText(value); break;
-	        case CIRCLE:   fieldCircle.setText(value); break;
-	        case CROSS:    fieldCross.setText(value); break;
-	        case L1:       fieldLTrigger.setText(value); break;
-	        case R1:       fieldRTrigger.setText(value); break;
-	        case START:    fieldStart.setText(value); break;
-	        case SELECT:   fieldSelect.setText(value); break;
+            case TRIANGLE:
+                fieldTriangle.setText(value);
+                break;
+            case SQUARE:
+                fieldSquare.setText(value);
+                break;
+            case CIRCLE:
+                fieldCircle.setText(value);
+                break;
+            case CROSS:
+                fieldCross.setText(value);
+                break;
+            case L1:
+                fieldLTrigger.setText(value);
+                break;
+            case R1:
+                fieldRTrigger.setText(value);
+                break;
+            case START:
+                fieldStart.setText(value);
+                break;
+            case SELECT:
+                fieldSelect.setText(value);
+                break;
 
-	        case HOME:     fieldHome.setText(value); break;
-	        case HOLD:     fieldHold.setText(value); break;
-	        case VOLMIN:   fieldVolMin.setText(value); break;
-	        case VOLPLUS:  fieldVolPlus.setText(value); break;
-	        case SCREEN:   fieldScreen.setText(value); break;
-	        case MUSIC:    fieldMusic.setText(value); break;
-	        case RELEASED: break;
+            case HOME:
+                fieldHome.setText(value);
+                break;
+            case HOLD:
+                fieldHold.setText(value);
+                break;
+            case VOLMIN:
+                fieldVolMin.setText(value);
+                break;
+            case VOLPLUS:
+                fieldVolPlus.setText(value);
+                break;
+            case SCREEN:
+                fieldScreen.setText(value);
+                break;
+            case MUSIC:
+                fieldMusic.setText(value);
+                break;
+            case RELEASED:
+                break;
         }
-	}
+    }
 
-	private void setFields() {
-		if (jpcsp.Controller.isKeyboardController(getSelectedController())) {
-			for (Map.Entry<Integer, keyCode> entry : currentKeys.entrySet()) {
-	            setFieldValue(entry.getValue(), KeyEvent.getKeyText(entry.getKey()));
-	        }
-		} else {
-	        for (Map.Entry<keyCode, String> entry : currentController.entrySet()) {
-	        	String identifierName = entry.getValue();
-	        	setFieldValue(entry.getKey(), getControllerFieldText(identifierName));
-	        }
-		}
-	}
-
-	@Override
-    public void keyTyped(KeyEvent arg0) { }
-    
-    @Override
-    public void keyReleased(KeyEvent arg0) { }
+    private void setFields() {
+        if (jpcsp.Controller.isKeyboardController(getSelectedController())) {
+            for (Map.Entry<Integer, keyCode> entry : currentKeys.entrySet()) {
+                setFieldValue(entry.getValue(), KeyEvent.getKeyText(entry.getKey()));
+            }
+        } else {
+            for (Map.Entry<keyCode, String> entry : currentController.entrySet()) {
+                String identifierName = entry.getValue();
+                setFieldValue(entry.getKey(), getControllerFieldText(identifierName));
+            }
+        }
+    }
 
     @Override
-    public void keyPressed(KeyEvent arg0) { 
+    public void keyTyped(KeyEvent arg0) {
+    }
+
+    @Override
+    public void keyReleased(KeyEvent arg0) {
+    }
+
+    @Override
+    public void keyPressed(KeyEvent arg0) {
         if (!getKey) {
             return;
         }
@@ -249,116 +297,116 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         }
         sender.setText("PressKey");
         getKey = true;
-        
+
         this.sender = sender;
         this.targetKey = targetKey;
     }
 
     private void setControllerMapping(keyCode targetKey, String identifierName, JTextField field) {
-    	currentController.put(targetKey, identifierName);
+        currentController.put(targetKey, identifierName);
         field.setText(getControllerFieldText(identifierName));
         getKey = false;
     }
 
     private Component getControllerComponent(String identifierName) {
-    	Controller controller = getSelectedController();
-    	if (controller == null) {
-    		return null;
-    	}
+        Controller controller = getSelectedController();
+        if (controller == null) {
+            return null;
+        }
 
-    	Component[] components = controller.getComponents();
-    	if (components == null) {
-    		return null;
-    	}
+        Component[] components = controller.getComponents();
+        if (components == null) {
+            return null;
+        }
 
-    	for (int i = 0; i < components.length; i++) {
-    		if (identifierName.equals(components[i].getIdentifier().getName())) {
-    			return components[i];
-    		}
-    	}
+        for (int i = 0; i < components.length; i++) {
+            if (identifierName.equals(components[i].getIdentifier().getName())) {
+                return components[i];
+            }
+        }
 
-    	return null;
+        return null;
     }
 
     private String getControllerFieldText(String identifierName) {
-    	Component component = getControllerComponent(identifierName);
-    	if (component == null) {
-    		return identifierName;
-    	}
+        Component component = getControllerComponent(identifierName);
+        if (component == null) {
+            return identifierName;
+        }
 
-    	String name = component.getName();
-    	if (name == null) {
-    		// Use the Identifier name if the component has no name
-    		name = identifierName;
-    	} else if (name.length() > maxControllerFieldValueLength && identifierName.length() < name.length()) {
-    		// Use the Identifier name if the component name is too long to fit
-    		// into the display field
-    		name = identifierName;
-    	}
+        String name = component.getName();
+        if (name == null) {
+            // Use the Identifier name if the component has no name
+            name = identifierName;
+        } else if (name.length() > maxControllerFieldValueLength && identifierName.length() < name.length()) {
+            // Use the Identifier name if the component name is too long to fit
+            // into the display field
+            name = identifierName;
+        }
 
-    	return name;
+        return name;
     }
 
     private void onControllerEvent(Event event) {
-    	if (!getKey) {
-    		return;
-    	}
+        if (!getKey) {
+            return;
+        }
 
-    	Component component = event.getComponent();
-		float value = event.getValue();
-		Identifier identifier = component.getIdentifier();
-		String identifierName = identifier.getName();
+        Component component = event.getComponent();
+        float value = event.getValue();
+        Identifier identifier = component.getIdentifier();
+        String identifierName = identifier.getName();
 
-		if (identifier instanceof Button && value == 1.f) {
-			setControllerMapping(targetKey, identifierName, sender);
-		} else if (identifier == Axis.POV) {
-			switch (targetKey) {
-				case DOWN:
-				case UP:
-				case LEFT:
-				case RIGHT:
-					setControllerMapping(keyCode.DOWN, identifierName, fieldDown);
-					setControllerMapping(keyCode.UP, identifierName, fieldUp);
-					setControllerMapping(keyCode.LEFT, identifierName, fieldLeft);
-					setControllerMapping(keyCode.RIGHT, identifierName, fieldRight);
-					break;
-				default:
-					jpcsp.Controller.log.warn(String.format("Unknown Controller POV Event on %s(%s): %f for %s", component.getName(), identifier.getName(), value, targetKey.toString()));
-					break;
-			}
-		} else if (identifier instanceof Axis && !jpcsp.Controller.isInDeadZone(component, value)) {
-			switch (targetKey) {
-				case DOWN:
-				case UP:
-					setControllerMapping(keyCode.DOWN, identifierName, fieldDown);
-					setControllerMapping(keyCode.UP, identifierName, fieldUp);
-					break;
-				case LEFT:
-				case RIGHT:
-					setControllerMapping(keyCode.LEFT, identifierName, fieldLeft);
-					setControllerMapping(keyCode.RIGHT, identifierName, fieldRight);
-					break;
-				case LANDOWN:
-				case LANUP:
-					setControllerMapping(keyCode.LANDOWN, identifierName, fieldAnalogDown);
-					setControllerMapping(keyCode.LANUP, identifierName, fieldAnalogUp);
-					break;
-				case LANLEFT:
-				case LANRIGHT:
-					setControllerMapping(keyCode.LANLEFT, identifierName, fieldAnalogLeft);
-					setControllerMapping(keyCode.LANRIGHT, identifierName, fieldAnalogRight);
-					break;
-				default:
-					setControllerMapping(targetKey, identifierName, sender);
-					break;
-			}
-		} else {
-			if (identifier instanceof Axis && jpcsp.Controller.isInDeadZone(component, value)) {
-				jpcsp.Controller.log.debug(String.format("Unknown Controller Event in DeadZone on %s(%s): %f for %s", component.getName(), identifier.getName(), value, targetKey.toString()));
-			} else {
-				jpcsp.Controller.log.warn(String.format("Unknown Controller Event on %s(%s): %f for %s", component.getName(), identifier.getName(), value, targetKey.toString()));
-			}
-		}
+        if (identifier instanceof Button && value == 1.f) {
+            setControllerMapping(targetKey, identifierName, sender);
+        } else if (identifier == Axis.POV) {
+            switch (targetKey) {
+                case DOWN:
+                case UP:
+                case LEFT:
+                case RIGHT:
+                    setControllerMapping(keyCode.DOWN, identifierName, fieldDown);
+                    setControllerMapping(keyCode.UP, identifierName, fieldUp);
+                    setControllerMapping(keyCode.LEFT, identifierName, fieldLeft);
+                    setControllerMapping(keyCode.RIGHT, identifierName, fieldRight);
+                    break;
+                default:
+                    jpcsp.Controller.log.warn(String.format("Unknown Controller POV Event on %s(%s): %f for %s", component.getName(), identifier.getName(), value, targetKey.toString()));
+                    break;
+            }
+        } else if (identifier instanceof Axis && !jpcsp.Controller.isInDeadZone(component, value)) {
+            switch (targetKey) {
+                case DOWN:
+                case UP:
+                    setControllerMapping(keyCode.DOWN, identifierName, fieldDown);
+                    setControllerMapping(keyCode.UP, identifierName, fieldUp);
+                    break;
+                case LEFT:
+                case RIGHT:
+                    setControllerMapping(keyCode.LEFT, identifierName, fieldLeft);
+                    setControllerMapping(keyCode.RIGHT, identifierName, fieldRight);
+                    break;
+                case LANDOWN:
+                case LANUP:
+                    setControllerMapping(keyCode.LANDOWN, identifierName, fieldAnalogDown);
+                    setControllerMapping(keyCode.LANUP, identifierName, fieldAnalogUp);
+                    break;
+                case LANLEFT:
+                case LANRIGHT:
+                    setControllerMapping(keyCode.LANLEFT, identifierName, fieldAnalogLeft);
+                    setControllerMapping(keyCode.LANRIGHT, identifierName, fieldAnalogRight);
+                    break;
+                default:
+                    setControllerMapping(targetKey, identifierName, sender);
+                    break;
+            }
+        } else {
+            if (identifier instanceof Axis && jpcsp.Controller.isInDeadZone(component, value)) {
+                jpcsp.Controller.log.debug(String.format("Unknown Controller Event in DeadZone on %s(%s): %f for %s", component.getName(), identifier.getName(), value, targetKey.toString()));
+            } else {
+                jpcsp.Controller.log.warn(String.format("Unknown Controller Event on %s(%s): %f for %s", component.getName(), identifier.getName(), value, targetKey.toString()));
+            }
+        }
     }
 
     public ComboBoxModel makeControllerComboBoxModel() {
@@ -366,22 +414,22 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         ControllerEnvironment ce = ControllerEnvironment.getDefaultEnvironment();
         Controller[] controllers = ce.getControllers();
         for (Controller c : controllers) {
-        	comboBox.addElement(c);
+            comboBox.addElement(c);
         }
         return comboBox;
     }
 
-    /** This method is called from within the constructor to
-     * initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is
-     * always regenerated by the Form Editor.
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
      */
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
+        buttonGroup1 = new javax.swing.ButtonGroup();
         jButtonOK = new javax.swing.JButton();
-        jButtonCancel = new javax.swing.JButton();
         keyPanel = new javax.swing.JPanel();
         fgPanel = new javax.swing.JPanel();
         fieldStart = new javax.swing.JTextField();
@@ -409,23 +457,16 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         bgLabel1 = new javax.swing.JLabel();
         controllerBox = new javax.swing.JComboBox();
         controllerLabel = new javax.swing.JLabel();
+        cancelButton = new jpcsp.GUI.CancelButton();
 
-        setTitle("Controls");
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
+        setTitle(bundle.getString("ControlsGUI.title")); // NOI18N
         setResizable(false);
 
-        jButtonOK.setText(Resource.get("ok"));
+        jButtonOK.setText(bundle.getString("OkButton.text")); // NOI18N
         jButtonOK.addActionListener(new java.awt.event.ActionListener() {
-            @Override
-			public void actionPerformed(java.awt.event.ActionEvent evt) {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonOKActionPerformed(evt);
-            }
-        });
-
-        jButtonCancel.setText(Resource.get("cancel"));
-        jButtonCancel.addActionListener(new java.awt.event.ActionListener() {
-            @Override
-			public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonCancelActionPerformed(evt);
             }
         });
 
@@ -438,23 +479,21 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldStart.setEditable(false);
         fieldStart.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldStart.setText("Enter");
-        fieldStart.setToolTipText(Resource.get("putkey"));
+        fieldStart.setText("Enter"); // NOI18N
+        fieldStart.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldStart.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldStart.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-			public void mouseClicked(java.awt.event.MouseEvent evt) {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldStartMouseClicked(evt);
             }
         });
 
         fieldSelect.setEditable(false);
         fieldSelect.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldSelect.setText("Space");
-        fieldSelect.setToolTipText(Resource.get("putkey"));
+        fieldSelect.setText("Space"); // NOI18N
+        fieldSelect.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldSelect.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldSelect.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldSelectMouseClicked(evt);
             }
@@ -462,11 +501,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldCross.setEditable(false);
         fieldCross.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldCross.setText("S");
-        fieldCross.setToolTipText(Resource.get("putkey"));
+        fieldCross.setText("S"); // NOI18N
+        fieldCross.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldCross.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldCross.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldCrossMouseClicked(evt);
             }
@@ -474,11 +512,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldCircle.setEditable(false);
         fieldCircle.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldCircle.setText("D");
-        fieldCircle.setToolTipText(Resource.get("putkey"));
+        fieldCircle.setText("D"); // NOI18N
+        fieldCircle.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldCircle.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldCircle.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldCircleMouseClicked(evt);
             }
@@ -486,11 +523,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldTriangle.setEditable(false);
         fieldTriangle.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldTriangle.setText("W");
-        fieldTriangle.setToolTipText(Resource.get("putkey"));
+        fieldTriangle.setText("W"); // NOI18N
+        fieldTriangle.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldTriangle.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldTriangle.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldTriangleMouseClicked(evt);
             }
@@ -498,11 +534,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldSquare.setEditable(false);
         fieldSquare.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldSquare.setText("A");
-        fieldSquare.setToolTipText(Resource.get("putkey"));
+        fieldSquare.setText("A"); // NOI18N
+        fieldSquare.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldSquare.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldSquare.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldSquareMouseClicked(evt);
             }
@@ -510,11 +545,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldRight.setEditable(false);
         fieldRight.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldRight.setText("Right");
-        fieldRight.setToolTipText(Resource.get("putkey"));
+        fieldRight.setText("Right"); // NOI18N
+        fieldRight.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldRight.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldRight.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldRightMouseClicked(evt);
             }
@@ -522,11 +556,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldUp.setEditable(false);
         fieldUp.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldUp.setText("Up");
-        fieldUp.setToolTipText(Resource.get("putkey"));
+        fieldUp.setText("Up"); // NOI18N
+        fieldUp.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldUp.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldUp.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldUpMouseClicked(evt);
             }
@@ -534,11 +567,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldLeft.setEditable(false);
         fieldLeft.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldLeft.setText("Left");
-        fieldLeft.setToolTipText(Resource.get("putkey"));
+        fieldLeft.setText("Left"); // NOI18N
+        fieldLeft.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldLeft.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldLeft.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldLeftMouseClicked(evt);
             }
@@ -546,11 +578,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldDown.setEditable(false);
         fieldDown.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldDown.setText("Down");
-        fieldDown.setToolTipText(Resource.get("putkey"));
+        fieldDown.setText("Down"); // NOI18N
+        fieldDown.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldDown.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldDown.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldDownMouseClicked(evt);
             }
@@ -558,11 +589,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldHold.setEditable(false);
         fieldHold.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldHold.setText("O");
-        fieldHold.setToolTipText(Resource.get("putkey"));
+        fieldHold.setText("O"); // NOI18N
+        fieldHold.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldHold.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldHold.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldHoldMouseClicked(evt);
             }
@@ -570,11 +600,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldHome.setEditable(false);
         fieldHome.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldHome.setText("H");
-        fieldHome.setToolTipText(Resource.get("putkey"));
+        fieldHome.setText("H"); // NOI18N
+        fieldHome.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldHome.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldHome.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldHomeMouseClicked(evt);
             }
@@ -582,11 +611,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldVolMin.setEditable(false);
         fieldVolMin.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldVolMin.setText("-");
-        fieldVolMin.setToolTipText(Resource.get("putkey"));
+        fieldVolMin.setText("-"); // NOI18N
+        fieldVolMin.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldVolMin.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldVolMin.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldVolMinMouseClicked(evt);
             }
@@ -594,11 +622,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldVolPlus.setEditable(false);
         fieldVolPlus.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldVolPlus.setText("+");
-        fieldVolPlus.setToolTipText(Resource.get("putkey"));
+        fieldVolPlus.setText("+"); // NOI18N
+        fieldVolPlus.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldVolPlus.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldVolPlus.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldVolPlusMouseClicked(evt);
             }
@@ -606,11 +633,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldLTrigger.setEditable(false);
         fieldLTrigger.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldLTrigger.setText("Q");
-        fieldLTrigger.setToolTipText(Resource.get("putkey"));
+        fieldLTrigger.setText("Q"); // NOI18N
+        fieldLTrigger.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldLTrigger.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldLTrigger.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldLTriggerMouseClicked(evt);
             }
@@ -618,11 +644,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldRTrigger.setEditable(false);
         fieldRTrigger.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldRTrigger.setText("E");
-        fieldRTrigger.setToolTipText(Resource.get("putkey"));
+        fieldRTrigger.setText("E"); // NOI18N
+        fieldRTrigger.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldRTrigger.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldRTrigger.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldRTriggerMouseClicked(evt);
             }
@@ -630,11 +655,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldScreen.setEditable(false);
         fieldScreen.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldScreen.setText("S");
-        fieldScreen.setToolTipText(Resource.get("putkey"));
+        fieldScreen.setText("S"); // NOI18N
+        fieldScreen.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldScreen.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldScreen.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldScreenMouseClicked(evt);
             }
@@ -642,11 +666,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldMusic.setEditable(false);
         fieldMusic.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldMusic.setText("N");
-        fieldMusic.setToolTipText(Resource.get("putkey"));
+        fieldMusic.setText("N"); // NOI18N
+        fieldMusic.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldMusic.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldMusic.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldMusicMouseClicked(evt);
             }
@@ -654,11 +677,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldAnalogUp.setEditable(false);
         fieldAnalogUp.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldAnalogUp.setText("I");
-        fieldAnalogUp.setToolTipText(Resource.get("putkey"));
+        fieldAnalogUp.setText("I"); // NOI18N
+        fieldAnalogUp.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldAnalogUp.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldAnalogUp.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldAnalogUpMouseClicked(evt);
             }
@@ -666,11 +688,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldAnalogDown.setEditable(false);
         fieldAnalogDown.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldAnalogDown.setText("K");
-        fieldAnalogDown.setToolTipText(Resource.get("putkey"));
+        fieldAnalogDown.setText("K"); // NOI18N
+        fieldAnalogDown.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldAnalogDown.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldAnalogDown.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldAnalogDownMouseClicked(evt);
             }
@@ -678,11 +699,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldAnalogLeft.setEditable(false);
         fieldAnalogLeft.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldAnalogLeft.setText("J");
-        fieldAnalogLeft.setToolTipText(Resource.get("putkey"));
+        fieldAnalogLeft.setText("J"); // NOI18N
+        fieldAnalogLeft.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldAnalogLeft.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldAnalogLeft.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldAnalogLeftMouseClicked(evt);
             }
@@ -690,11 +710,10 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         fieldAnalogRight.setEditable(false);
         fieldAnalogRight.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldAnalogRight.setText("L");
-        fieldAnalogRight.setToolTipText(Resource.get("putkey"));
+        fieldAnalogRight.setText("L"); // NOI18N
+        fieldAnalogRight.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
         fieldAnalogRight.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldAnalogRight.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldAnalogRightMouseClicked(evt);
             }
@@ -753,8 +772,7 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(fieldAnalogRight, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(76, 76, 76)
-                        .addComponent(fieldVolMin, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)))
+                        .addComponent(fieldVolMin, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(fgPanelLayout.createSequentialGroup()
                         .addGap(44, 44, 44)
@@ -783,58 +801,58 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
                 .addComponent(fieldTriangle, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(41, 41, 41)
                 .addComponent(fieldCross, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 91, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(fieldMusic, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(fieldScreen, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(37, 37, 37))
             .addGroup(fgPanelLayout.createSequentialGroup()
-                .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(fgPanelLayout.createSequentialGroup()
-                        .addGap(41, 41, 41)
-                        .addComponent(fieldRight, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(fgPanelLayout.createSequentialGroup()
-                        .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(fieldLTrigger, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(fieldRTrigger, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(fieldSquare, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)))
-                .addGap(9, 9, 9)
-                .addComponent(fieldUp, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(11, 11, 11)
-                .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(fieldCircle, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(fieldLeft, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(24, 24, 24)
                 .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(fgPanelLayout.createSequentialGroup()
-                        .addGap(95, 95, 95)
+                        .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addGroup(fgPanelLayout.createSequentialGroup()
+                                .addGap(41, 41, 41)
+                                .addComponent(fieldRight, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(fgPanelLayout.createSequentialGroup()
+                                .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                    .addComponent(fieldLTrigger, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(fieldRTrigger, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(fieldSquare, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(9, 9, 9)
+                        .addComponent(fieldUp, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(11, 11, 11)
                         .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(fieldAnalogUp, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(fieldVolPlus, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(fieldHome, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addGroup(fgPanelLayout.createSequentialGroup()
-                        .addGap(29, 29, 29)
-                        .addComponent(fieldHold, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(fieldStart, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(fieldSelect, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(fgPanelLayout.createSequentialGroup()
+                            .addComponent(fieldCircle, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(fieldLeft, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(24, 24, 24)
                         .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(fieldAnalogRight, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(fieldAnalogLeft, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(fgPanelLayout.createSequentialGroup()
+                                .addGap(95, 95, 95)
+                                .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                    .addComponent(fieldAnalogUp, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(fieldVolPlus, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(fieldHome, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addGroup(fgPanelLayout.createSequentialGroup()
+                                .addGap(29, 29, 29)
+                                .addComponent(fieldHold, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(18, 18, 18)
+                                .addComponent(fieldStart, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(fieldSelect, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(fieldAnalogDown, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(fieldVolMin, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(13, Short.MAX_VALUE))
-            .addGroup(fgPanelLayout.createSequentialGroup()
-                .addGap(126, 126, 126)
-                .addComponent(fieldDown, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(169, Short.MAX_VALUE))
+                        .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(fgPanelLayout.createSequentialGroup()
+                                .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(fieldAnalogRight, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(fieldAnalogLeft, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(fieldAnalogDown, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(fieldVolMin, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addGroup(fgPanelLayout.createSequentialGroup()
+                        .addGap(126, 126, 126)
+                        .addComponent(fieldDown, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -858,14 +876,17 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 
         controllerBox.setModel(makeControllerComboBoxModel());
 
-        controllerLabel.setText("Controller:");
+        controllerLabel.setText(bundle.getString("ControlsGUI.controllerLabel.text")); // NOI18N
+
+        cancelButton.setText(bundle.getString("CancelButton.text")); // NOI18N
+        cancelButton.setParent(this);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap(202, Short.MAX_VALUE)
+                .addContainerGap(221, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                         .addComponent(controllerLabel)
@@ -873,14 +894,14 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
                         .addComponent(controllerBox, javax.swing.GroupLayout.PREFERRED_SIZE, 209, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(98, 98, 98))
                     .addComponent(jButtonOK, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jButtonCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(cancelButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
             .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(layout.createSequentialGroup()
-                    .addGap(0, 35, Short.MAX_VALUE)
+                    .addGap(0, 49, Short.MAX_VALUE)
                     .addComponent(keyPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 614, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGap(0, 35, Short.MAX_VALUE)))
+                    .addGap(0, 50, Short.MAX_VALUE)))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -891,140 +912,137 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
                     .addComponent(controllerLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 343, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButtonCancel)
-                    .addComponent(jButtonOK))
+                    .addComponent(jButtonOK)
+                    .addComponent(cancelButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap())
             .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(layout.createSequentialGroup()
-                    .addGap(0, 45, Short.MAX_VALUE)
+                    .addGap(0, 49, Short.MAX_VALUE)
                     .addComponent(keyPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGap(0, 46, Short.MAX_VALUE)))
+                    .addGap(0, 50, Short.MAX_VALUE)))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
 private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
-    Settings.getInstance().writeKeys(currentKeys);
-    Settings.getInstance().writeController(currentController);
-    String controllerName = controllerBox.getSelectedItem().toString();
-    Settings.getInstance().writeString("controller.controllerName", controllerName);
+        Settings.getInstance().writeKeys(currentKeys);
+        Settings.getInstance().writeController(currentController);
+        String controllerName = controllerBox.getSelectedItem().toString();
+        Settings.getInstance().writeString("controller.controllerName", controllerName);
 
-    // Index when several controllers have the same name:
-    // 0 refers to the first controller with the given name, 1, to the second...
-    int controllerNameIndex = 0;
-    int selectedIndex = controllerBox.getSelectedIndex();
-    for (int i = 0; i < controllerBox.getItemCount(); i++) {
-    	if (controllerName.equals(controllerBox.getItemAt(i).toString())) {
-    		if (i < selectedIndex) {
-    			controllerNameIndex++;
-    		} else {
-    			break;
-    		}
-    	}
-    }
-    Settings.getInstance().writeString("controller.controllerNameIndex", String.valueOf(controllerNameIndex));
+        // Index when several controllers have the same name:
+        // 0 refers to the first controller with the given name, 1, to the second...
+        int controllerNameIndex = 0;
+        int selectedIndex = controllerBox.getSelectedIndex();
+        for (int i = 0; i < controllerBox.getItemCount(); i++) {
+            if (controllerName.equals(controllerBox.getItemAt(i).toString())) {
+                if (i < selectedIndex) {
+                    controllerNameIndex++;
+                } else {
+                    break;
+                }
+            }
+        }
+        Settings.getInstance().writeString("controller.controllerNameIndex", String.valueOf(controllerNameIndex));
 
-    State.controller.setInputControllerIndex(controllerBox.getSelectedIndex());
-    State.controller.loadKeyConfig(currentKeys);
-    State.controller.loadControllerConfig(currentController);
-    dispose();
+        State.controller.setInputControllerIndex(controllerBox.getSelectedIndex());
+        State.controller.loadKeyConfig(currentKeys);
+        State.controller.loadControllerConfig(currentController);
+        dispose();
 }//GEN-LAST:event_jButtonOKActionPerformed
 
-private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
-    dispose();
-}//GEN-LAST:event_jButtonCancelActionPerformed
-
 private void fieldAnalogRightMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldAnalogRightMouseClicked
-    setKey(fieldAnalogRight, keyCode.LANRIGHT);
+        setKey(fieldAnalogRight, keyCode.LANRIGHT);
 }//GEN-LAST:event_fieldAnalogRightMouseClicked
 
 private void fieldAnalogLeftMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldAnalogLeftMouseClicked
-    setKey(fieldAnalogLeft, keyCode.LANLEFT);
+        setKey(fieldAnalogLeft, keyCode.LANLEFT);
 }//GEN-LAST:event_fieldAnalogLeftMouseClicked
 
 private void fieldAnalogDownMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldAnalogDownMouseClicked
-    setKey(fieldAnalogDown, keyCode.LANDOWN);
+        setKey(fieldAnalogDown, keyCode.LANDOWN);
 }//GEN-LAST:event_fieldAnalogDownMouseClicked
 
 private void fieldAnalogUpMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldAnalogUpMouseClicked
-    setKey(fieldAnalogUp, keyCode.LANUP);
+        setKey(fieldAnalogUp, keyCode.LANUP);
 }//GEN-LAST:event_fieldAnalogUpMouseClicked
 
 private void fieldMusicMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldMusicMouseClicked
-    setKey(fieldMusic, keyCode.MUSIC);
+        setKey(fieldMusic, keyCode.MUSIC);
 }//GEN-LAST:event_fieldMusicMouseClicked
 
 private void fieldScreenMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldScreenMouseClicked
-    setKey(fieldScreen, keyCode.SCREEN);
+        setKey(fieldScreen, keyCode.SCREEN);
 }//GEN-LAST:event_fieldScreenMouseClicked
 
 private void fieldRTriggerMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldRTriggerMouseClicked
-    setKey(fieldRTrigger, keyCode.R1);
+        setKey(fieldRTrigger, keyCode.R1);
 }//GEN-LAST:event_fieldRTriggerMouseClicked
 
 private void fieldLTriggerMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldLTriggerMouseClicked
-    setKey(fieldLTrigger, keyCode.L1);
+        setKey(fieldLTrigger, keyCode.L1);
 }//GEN-LAST:event_fieldLTriggerMouseClicked
 
 private void fieldVolPlusMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldVolPlusMouseClicked
-    setKey(fieldVolPlus, keyCode.VOLPLUS);
+        setKey(fieldVolPlus, keyCode.VOLPLUS);
 }//GEN-LAST:event_fieldVolPlusMouseClicked
 
 private void fieldVolMinMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldVolMinMouseClicked
-    setKey(fieldVolMin, keyCode.VOLMIN);
+        setKey(fieldVolMin, keyCode.VOLMIN);
 }//GEN-LAST:event_fieldVolMinMouseClicked
 
 private void fieldHomeMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldHomeMouseClicked
-    setKey(fieldHome, keyCode.HOME);
+        setKey(fieldHome, keyCode.HOME);
 }//GEN-LAST:event_fieldHomeMouseClicked
 
 private void fieldHoldMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldHoldMouseClicked
-    setKey(fieldHold, keyCode.HOLD);
+        setKey(fieldHold, keyCode.HOLD);
 }//GEN-LAST:event_fieldHoldMouseClicked
 
 private void fieldDownMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldDownMouseClicked
-    setKey(fieldDown, keyCode.DOWN);
+        setKey(fieldDown, keyCode.DOWN);
 }//GEN-LAST:event_fieldDownMouseClicked
 
 private void fieldLeftMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldLeftMouseClicked
-    setKey(fieldLeft, keyCode.LEFT);
+        setKey(fieldLeft, keyCode.LEFT);
 }//GEN-LAST:event_fieldLeftMouseClicked
 
 private void fieldUpMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldUpMouseClicked
-    setKey(fieldUp, keyCode.UP);
+        setKey(fieldUp, keyCode.UP);
 }//GEN-LAST:event_fieldUpMouseClicked
 
 private void fieldRightMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldRightMouseClicked
-    setKey(fieldRight, keyCode.RIGHT);
+        setKey(fieldRight, keyCode.RIGHT);
 }//GEN-LAST:event_fieldRightMouseClicked
 
 private void fieldSquareMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldSquareMouseClicked
-    setKey(fieldSquare, keyCode.SQUARE);
+        setKey(fieldSquare, keyCode.SQUARE);
 }//GEN-LAST:event_fieldSquareMouseClicked
 
 private void fieldTriangleMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldTriangleMouseClicked
-    setKey(fieldTriangle, keyCode.TRIANGLE);
+        setKey(fieldTriangle, keyCode.TRIANGLE);
 }//GEN-LAST:event_fieldTriangleMouseClicked
 
 private void fieldCircleMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldCircleMouseClicked
-    setKey(fieldCircle, keyCode.CIRCLE);
+        setKey(fieldCircle, keyCode.CIRCLE);
 }//GEN-LAST:event_fieldCircleMouseClicked
 
 private void fieldCrossMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldCrossMouseClicked
-    setKey(fieldCross, keyCode.CROSS);
+        setKey(fieldCross, keyCode.CROSS);
 }//GEN-LAST:event_fieldCrossMouseClicked
 
 private void fieldSelectMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldSelectMouseClicked
-    setKey(fieldSelect, keyCode.SELECT);
+        setKey(fieldSelect, keyCode.SELECT);
 }//GEN-LAST:event_fieldSelectMouseClicked
 
 private void fieldStartMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldStartMouseClicked
-    setKey(fieldStart, keyCode.START);
+        setKey(fieldStart, keyCode.START);
 }//GEN-LAST:event_fieldStartMouseClicked
-
-// Variables declaration - do not modify//GEN-BEGIN:variables
+    // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel bgLabel1;
+    private javax.swing.ButtonGroup buttonGroup1;
+    private jpcsp.GUI.CancelButton cancelButton;
     private javax.swing.JComboBox controllerBox;
     private javax.swing.JLabel controllerLabel;
     private javax.swing.JPanel fgPanel;
@@ -1050,7 +1068,6 @@ private void fieldStartMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:
     private javax.swing.JTextField fieldUp;
     private javax.swing.JTextField fieldVolMin;
     private javax.swing.JTextField fieldVolPlus;
-    private javax.swing.JButton jButtonCancel;
     private javax.swing.JButton jButtonOK;
     private javax.swing.JPanel keyPanel;
     // End of variables declaration//GEN-END:variables
