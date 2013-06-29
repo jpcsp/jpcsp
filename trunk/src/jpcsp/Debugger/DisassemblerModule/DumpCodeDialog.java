@@ -29,15 +29,10 @@ public class DumpCodeDialog extends javax.swing.JDialog {
     public final static int DUMPCODE_APPROVE = 1;
     int retVal = 0;
 
-    public DumpCodeDialog(java.awt.Frame parent) {
-        super(parent, true);
-        initComponents();
-    }
-
     public DumpCodeDialog(java.awt.Frame parent, int start) {
         super(parent, true);
         initComponents();
-
+        setLocationRelativeTo(parent);
         txtStartAddress.setText(String.format("0x%08X", start));
         txtEndAddress.setText(String.format("0x%08X", start));
     }
@@ -138,6 +133,7 @@ public class DumpCodeDialog extends javax.swing.JDialog {
         });
 
         btnCancel.setText(bundle.getString("CancelButton.text")); // NOI18N
+        btnCancel.setParent(this);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
