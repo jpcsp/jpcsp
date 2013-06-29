@@ -1,18 +1,18 @@
 /*
-This file is part of jpcsp.
+ This file is part of jpcsp.
 
-Jpcsp is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+ Jpcsp is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-Jpcsp is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+ Jpcsp is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ You should have received a copy of the GNU General Public License
+ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Debugger;
 
@@ -20,406 +20,515 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.WindowEvent;
-
-import javax.swing.BorderFactory;
-import javax.swing.GroupLayout;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
-import javax.swing.WindowConstants;
-
 import jpcsp.Emulator;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules150.sceDisplay;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
-import jpcsp.Resource;
-import jpcsp.GUI.CancelButton;
-import jpcsp.HLE.Modules;
-import jpcsp.HLE.modules150.sceDisplay.BufferInfo;
 import jpcsp.graphics.GeCommands;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.ImageReader;
 import jpcsp.settings.Settings;
-import jpcsp.util.Utilities;
 
-public class ImageViewer extends JFrame {
-	private static final long serialVersionUID = 8837780642045065242L;
+public class ImageViewer extends javax.swing.JFrame {
 
-	private static final String windowNameForSettings = "imageviewer";
-	private static final Color imageBorderColor = Color.RED;
-	private static final int imageBorderSize = 2;
+    private static final long serialVersionUID = 8837780642045065242L;
+    private int startAddress = MemoryMap.START_VRAM;
+    private int bufferWidth = 512;
+    private int imageWidth = 480;
+    private int imageHeight = 272;
+    private boolean imageSwizzle = false;
+    private boolean useAlpha = false;
+    private int backgroundColor = 0;
+    private int pixelFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+    private int clutAddress = 0;
+    private int clutNumberBlocks = 32;
+    private int clutFormat = GeCommands.CMODE_FORMAT_32BIT_ABGR8888;
+    private int clutStart = 0;
+    private int clutShift = 0;
+    private int clutMask = 0xFF;
+    private static final Color[] backgroundColors = new Color[]{
+        Color.WHITE,
+        Color.BLACK,
+        Color.RED,
+        Color.GREEN,
+        Color.BLUE,
+        Color.GRAY
+    };
 
-	private int startAddress = MemoryMap.START_VRAM;
-	private int bufferWidth = 512;
-	private int imageWidth = 480;
-	private int imageHeight = 272;
-	private boolean imageSwizzle = false;
-	private boolean useAlpha = false;
-	private int backgroundColor = 0;
-	private int pixelFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
-	private int clutAddress = 0;
-	private int clutNumberBlocks = 32;
-	private int clutFormat = GeCommands.CMODE_FORMAT_32BIT_ABGR8888;
-	private int clutStart = 0;
-	private int clutShift = 0;
-	private int clutMask = 0xFF;
+    public ImageViewer() {
+        // memoryImage construction overriden for MemoryImage
+        initComponents();
+        copyValuesToFields();
+    }
 
-	private MemoryImage memoryImage;
-	private JTextField addressField;
-	private JTextField widthField;
-	private JTextField heightField;
-	private JTextField bufferWidthField;
-	private JComboBox pixelFormatField;
-	private JTextField clutAddressField;
-	private JTextField clutNumberBlocksField;
-	private JComboBox clutFormatField;
-	private JCheckBox swizzleField;
-	private JCheckBox useAlphaField;
-	private JComboBox backgroundColorField;
+    public void refreshImage() {
+        goToAddress();
+    }
 
-	private static final Color[] backgroundColors = new Color[] {
-		Color.WHITE,
-		Color.BLACK,
-		Color.RED,
-		Color.GREEN,
-		Color.BLUE,
-		Color.GRAY
-	};
+    private void valuesUpdated() {
+        memoryImage.setSize(memoryImage.getPreferredSize());
+        repaint();
+    }
 
-	public ImageViewer() {
-		init();
-	}
+    private void goToAddress() {
+        try {
+            startAddress = Integer.decode(addressField.getText());
+            imageWidth = Integer.decode(widthField.getText());
+            imageHeight = Integer.decode(heightField.getText());
+            bufferWidth = Integer.decode(bufferWidthField.getText());
+            clutAddress = Integer.decode(clutAddressField.getText());
+            clutNumberBlocks = Integer.decode(clutNumberBlocksField.getText());
+        } catch (NumberFormatException nfe) {
+            java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp");
+            JOptionPane.showMessageDialog(this, bundle.getString("ImageViewer.strInvalidNumber.text") + " " + nfe.getLocalizedMessage());
+            return;
+        }
 
-	private void init() {
-		initComponents();
-	}
+        pixelFormat = pixelFormatField.getSelectedIndex();
+        imageSwizzle = swizzleField.isSelected();
+        useAlpha = useAlphaField.isSelected();
+        backgroundColor = backgroundColorField.getSelectedIndex();
+        clutFormat = clutFormatField.getSelectedIndex();
 
-	private void initComponents() {
-		setTitle(Resource.get("imageviewer"));
+        // clean UI strings before updating
+        copyValuesToFields();
+        valuesUpdated();
+    }
+
+    private void copyValuesToFields() {
+        addressField.setText(String.format("0x%08X", startAddress));
+        widthField.setText(String.format("%d", imageWidth));
+        heightField.setText(String.format("%d", imageHeight));
+        bufferWidthField.setText(String.format("%d", bufferWidth));
+        pixelFormatField.setSelectedIndex(pixelFormat);
+        swizzleField.setSelected(imageSwizzle);
+        useAlphaField.setSelected(useAlpha);
+        backgroundColorField.setSelectedIndex(backgroundColor);
+        clutAddressField.setText(String.format("0x%08X", clutAddress));
+        clutNumberBlocksField.setText(String.format("%d", clutNumberBlocks));
+        clutFormatField.setSelectedIndex(clutFormat);
+    }
+
+    private void goToBufferInfo(sceDisplay.BufferInfo bufferInfo) {
+        startAddress = bufferInfo.topAddr;
+        imageWidth = bufferInfo.width;
+        imageHeight = bufferInfo.height;
+        bufferWidth = bufferInfo.bufferWidth;
+        pixelFormat = bufferInfo.pixelFormat;
+        imageSwizzle = false;
+        useAlpha = false;
+
+        copyValuesToFields();
+        valuesUpdated();
+    }
+
+    @Override
+    public void dispose() {
+        Emulator.getMainGUI().endWindowDialog();
+        super.dispose();
+    }
+    private class MemoryImage extends JPanel {
+
+        private static final long serialVersionUID = 1372183323503668615L;
+
+        public MemoryImage() {
+        }
+
+        @Override
+        public void paintComponent(Graphics g) {
+            if (Memory.isAddressGood(startAddress)) {
+                Insets insets = getInsets();
+                int minWidth = Math.min(imageWidth, bufferWidth);
+
+                g.setColor(backgroundColors[backgroundColor]);
+                g.fillRect(insets.left, insets.top, minWidth, imageHeight);
+
+                IMemoryReader imageReader = ImageReader.getImageReader(startAddress, imageWidth, imageHeight, bufferWidth, pixelFormat, imageSwizzle, clutAddress, clutFormat, clutNumberBlocks, clutStart, clutShift, clutMask, null, null);
+
+                for (int y = 0; y < imageHeight; y++) {
+                    for (int x = 0; x < minWidth; x++) {
+                        int colorABGR = imageReader.readNext();
+                        int colorARGB = ImageReader.colorABGRtoARGB(colorABGR);
+                        g.setColor(new Color(colorARGB, useAlpha));
+
+                        drawPixel(g, x + insets.left, y + insets.top);
+                    }
+                }
+            }
+        }
+
+        private void drawPixel(Graphics g, int x, int y) {
+            g.drawLine(x, y, x, y);
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            Insets insets = getInsets();
+            return new Dimension(imageWidth + insets.left + insets.right, imageHeight + insets.top + insets.bottom);
+        }
+
+        @Override
+        public Dimension getMaximumSize() {
+            return getPreferredSize();
+        }
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        addressField = new javax.swing.JTextField();
+        lblWidth = new javax.swing.JLabel();
+        widthField = new javax.swing.JTextField();
+        lblHeight = new javax.swing.JLabel();
+        heightField = new javax.swing.JTextField();
+        lblBufferWidth = new javax.swing.JLabel();
+        bufferWidthField = new javax.swing.JTextField();
+        lblAddress = new javax.swing.JLabel();
+        lblPixelFormat = new javax.swing.JLabel();
+        pixelFormatField = new javax.swing.JComboBox();
+        swizzleField = new javax.swing.JCheckBox();
+        lblCLUT = new javax.swing.JLabel();
+        clutAddressField = new javax.swing.JTextField();
+        lblCLUTNumberBlocks = new javax.swing.JLabel();
+        clutNumberBlocksField = new javax.swing.JTextField();
+        lblCLUTFormat = new javax.swing.JLabel();
+        clutFormatField = new javax.swing.JComboBox();
+        lblBackgroundColor = new javax.swing.JLabel();
+        backgroundColorField = new javax.swing.JComboBox();
+        btnGoToAddress = new javax.swing.JButton();
+        btnGoToGE = new javax.swing.JButton();
+        btnGoToFB = new javax.swing.JButton();
+        useAlphaField = new javax.swing.JCheckBox();
+        memoryImage = new MemoryImage();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
+        setTitle(bundle.getString("ImageViewer.title")); // NOI18N
         addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-			public void windowDeactivated(java.awt.event.WindowEvent evt) {
+            public void windowDeactivated(java.awt.event.WindowEvent evt) {
                 formWindowDeactivated(evt);
             }
         });
-    	setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
-    	addressField = new JTextField();
-    	addressField.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent evt) {
-                onKeyPressed(evt);
+        addressField.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
+        addressField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        addressField.setText("0x00000000"); // NOI18N
+        addressField.setToolTipText(bundle.getString("ImageViewer.addressField.toolTipText")); // NOI18N
+        addressField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                ImageViewer.this.keyPressed(evt);
             }
-    	});
+        });
 
-    	widthField = new JTextField();
-    	widthField.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent evt) {
-                onKeyPressed(evt);
+        lblWidth.setText(bundle.getString("ImageViewer.lblWidth.text")); // NOI18N
+
+        widthField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        widthField.setText("480"); // NOI18N
+        widthField.setToolTipText(bundle.getString("ImageViewer.widthField.toolTipText")); // NOI18N
+        widthField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                ImageViewer.this.keyPressed(evt);
             }
-    	});
+        });
 
-    	heightField = new JTextField();
-    	heightField.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent evt) {
-                onKeyPressed(evt);
+        lblHeight.setText(bundle.getString("ImageViewer.lblHeight.text")); // NOI18N
+
+        heightField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        heightField.setText("272"); // NOI18N
+        heightField.setToolTipText(bundle.getString("ImageViewer.heightField.toolTipText")); // NOI18N
+        heightField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                ImageViewer.this.keyPressed(evt);
             }
-    	});
+        });
 
-    	bufferWidthField = new JTextField();
-    	bufferWidthField.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent evt) {
-                onKeyPressed(evt);
+        lblBufferWidth.setText(bundle.getString("ImageViewer.lblBufferWidth.text")); // NOI18N
+
+        bufferWidthField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        bufferWidthField.setText("512"); // NOI18N
+        bufferWidthField.setToolTipText(bundle.getString("ImageViewer.bufferWidthField.toolTipText")); // NOI18N
+        bufferWidthField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                ImageViewer.this.keyPressed(evt);
             }
-    	});
+        });
 
-    	pixelFormatField = new JComboBox(new String[] { "565", "5551", "4444", "8888", "Indexed 4", "Indexed 8", "Indexed 16", "Indexed 32", "DXT1", "DXT3", "DXT5" });
+        lblAddress.setText(bundle.getString("ImageViewer.lblAddress.text")); // NOI18N
 
-    	swizzleField = new JCheckBox(Resource.get("swizzle"));
+        lblPixelFormat.setText(bundle.getString("ImageViewer.lblPixelFormat.text")); // NOI18N
 
-    	useAlphaField = new JCheckBox(Resource.get("usealpha"));
+        pixelFormatField.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "565", "5551", "4444", "8888", "Indexed 4", "Indexed 8", "Indexed 16", "Indexed 32", "DXT1", "DXT3", "DXT5" }));
+        pixelFormatField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                changeImageActionPerformed(evt);
+            }
+        });
 
-    	backgroundColorField = new JComboBox(new String[] { "White", "Black", "Red", "Green", "Blue", "Gray" });
+        swizzleField.setText(bundle.getString("ImageViewer.swizzleField.text")); // NOI18N
+        swizzleField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                changeImageActionPerformed(evt);
+            }
+        });
 
-    	JLabel clutLabel = new JLabel(Resource.get("clut"));
-    	clutAddressField = new JTextField();
+        lblCLUT.setText(bundle.getString("ImageViewer.lblCLUT.text")); // NOI18N
 
-    	clutNumberBlocksField = new JTextField();
+        clutAddressField.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
+        clutAddressField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        clutAddressField.setText("0x00000000"); // NOI18N
+        clutAddressField.setToolTipText(bundle.getString("ImageViewer.clutAddressField.toolTipText")); // NOI18N
+        clutAddressField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                ImageViewer.this.keyPressed(evt);
+            }
+        });
 
-    	clutFormatField = new JComboBox(new String[] { "565", "5551", "4444", "8888" });
+        lblCLUTNumberBlocks.setText(bundle.getString("ImageViewer.lblCLUTNumberBlocks.text")); // NOI18N
 
-    	JButton goToAddress = new JButton(Resource.get("gotoaddress"));
-		goToAddress.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent evt) {
-				goToAddress();
-			}
-		});
+        clutNumberBlocksField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
+        clutNumberBlocksField.setText("32"); // NOI18N
+        clutNumberBlocksField.setToolTipText(bundle.getString("ImageViewer.clutNumberBlocksField.toolTipText")); // NOI18N
+        clutNumberBlocksField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                ImageViewer.this.keyPressed(evt);
+            }
+        });
 
-		JButton goToGeButton = new JButton(Resource.get("gotoge"));
-		goToGeButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent evt) {
-				goToGe();
-			}
-		});
+        lblCLUTFormat.setText(bundle.getString("ImageViewer.lblCLUTFormat.text")); // NOI18N
 
-		JButton goToFbButton = new JButton(Resource.get("gotofb"));
-		goToFbButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent evt) {
-				goToFb();
-			}
-		});
+        clutFormatField.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "565", "5551", "4444", "8888" }));
+        clutFormatField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                changeImageActionPerformed(evt);
+            }
+        });
 
-		CancelButton cancel = new CancelButton(this);
+        lblBackgroundColor.setText(bundle.getString("ImageViewer.lblBackgroundColor.text")); // NOI18N
 
-		memoryImage = new MemoryImage();
-		if (imageBorderSize > 0) {
-			memoryImage.setBorder(BorderFactory.createLineBorder(imageBorderColor, imageBorderSize));
-		}
+        backgroundColorField.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "White", "Black", "Red", "Green", "Blue", "Gray" }));
+        backgroundColorField.setSelectedItem("Black");
+        backgroundColorField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                changeImageActionPerformed(evt);
+            }
+        });
 
-		GroupLayout layout = new GroupLayout(getContentPane());
-		getContentPane().setLayout(layout);
-		layout.setAutoCreateGaps(true);
-		layout.setAutoCreateContainerGaps(true);
+        btnGoToAddress.setText(bundle.getString("ImageViewer.btnGoToAddress.text")); // NOI18N
+        btnGoToAddress.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnGoToAddressActionPerformed(evt);
+            }
+        });
 
-		JLabel labelWidth = new JLabel(Resource.get("imagewidth"));
-		JLabel labelHeight = new JLabel(Resource.get("imageheight"));
-		JLabel labelBufferWidth = new JLabel(Resource.get("bufferwidth"));
+        btnGoToGE.setText(bundle.getString("ImageViewer.btnGoToGE.text")); // NOI18N
+        btnGoToGE.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnGoToGEActionPerformed(evt);
+            }
+        });
 
-		layout.setHorizontalGroup(layout.createParallelGroup()
-				.addGroup(layout.createSequentialGroup()
-						.addComponent(addressField, GroupLayout.PREFERRED_SIZE, 70, GroupLayout.PREFERRED_SIZE)
-						.addComponent(labelWidth)
-						.addComponent(widthField, GroupLayout.PREFERRED_SIZE, 32, GroupLayout.PREFERRED_SIZE)
-						.addComponent(labelHeight)
-						.addComponent(heightField, GroupLayout.PREFERRED_SIZE, 32, GroupLayout.PREFERRED_SIZE)
-						.addComponent(labelBufferWidth)
-						.addComponent(bufferWidthField, GroupLayout.PREFERRED_SIZE, 32, GroupLayout.PREFERRED_SIZE)
-						.addComponent(pixelFormatField, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
-						.addComponent(swizzleField)
-						.addComponent(useAlphaField)
-						)
-				.addGroup(layout.createSequentialGroup()
-						.addComponent(clutLabel)
-						.addComponent(clutAddressField, GroupLayout.PREFERRED_SIZE, 70, GroupLayout.PREFERRED_SIZE)
-						.addComponent(clutNumberBlocksField, GroupLayout.PREFERRED_SIZE, 32, GroupLayout.PREFERRED_SIZE)
-						.addComponent(clutFormatField, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
-						.addComponent(backgroundColorField, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
-						)
-				.addGroup(layout.createSequentialGroup()
-						.addComponent(goToAddress)
-						.addComponent(goToGeButton)
-						.addComponent(goToFbButton)
-						.addComponent(cancel)
-						)
-				.addComponent(memoryImage));
-		layout.setVerticalGroup(layout.createSequentialGroup()
-				.addGroup(layout.createParallelGroup()
-						.addComponent(addressField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-						.addComponent(labelWidth)
-						.addComponent(widthField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-						.addComponent(labelHeight)
-						.addComponent(heightField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-						.addComponent(labelBufferWidth)
-						.addComponent(bufferWidthField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-						.addComponent(pixelFormatField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-						.addComponent(swizzleField)
-						.addComponent(useAlphaField)
-						)
-				.addGroup(layout.createParallelGroup()
-						.addComponent(clutLabel)
-						.addComponent(clutAddressField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-						.addComponent(clutNumberBlocksField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-						.addComponent(clutFormatField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-						.addComponent(backgroundColorField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-						)
-				.addGroup(layout.createParallelGroup()
-						.addComponent(goToAddress)
-						.addComponent(goToGeButton)
-						.addComponent(goToFbButton)
-						.addComponent(cancel)
-						)
-				.addComponent(memoryImage));
+        btnGoToFB.setText(bundle.getString("ImageViewer.btnGoToFB.text")); // NOI18N
+        btnGoToFB.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnGoToFBActionPerformed(evt);
+            }
+        });
 
-        setLocation(Settings.getInstance().readWindowPos(windowNameForSettings));
-        setSize(Settings.getInstance().readWindowSize(windowNameForSettings, Math.max(imageWidth + 30, 440), imageHeight + 110));
+        useAlphaField.setText(bundle.getString("ImageViewer.useAlphaField.text")); // NOI18N
+        useAlphaField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                changeImageActionPerformed(evt);
+            }
+        });
 
-        copyValuesToFields();
-	}
+        memoryImage.setBackground(new java.awt.Color(0, 0, 0));
+        memoryImage.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(255, 0, 0), 10));
 
-	public void refreshImage() {
-		goToAddress();
-	}
+        javax.swing.GroupLayout memoryImageLayout = new javax.swing.GroupLayout(memoryImage);
+        memoryImage.setLayout(memoryImageLayout);
+        memoryImageLayout.setHorizontalGroup(
+            memoryImageLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 480, Short.MAX_VALUE)
+        );
+        memoryImageLayout.setVerticalGroup(
+            memoryImageLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 272, Short.MAX_VALUE)
+        );
 
-	private void formWindowDeactivated(WindowEvent evt) {
-	    //Called when the window is closed
-	    if (Settings.getInstance().readBool("gui.saveWindowPos")) {
-            Settings.getInstance().writeWindowPos(windowNameForSettings, getLocation());
-	    }
-	}
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addComponent(lblPixelFormat)
+                                            .addComponent(lblAddress)
+                                            .addComponent(lblCLUT))
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                            .addComponent(addressField, javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addComponent(clutAddressField)
+                                            .addComponent(pixelFormatField, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addComponent(lblBackgroundColor)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(backgroundColorField, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addGap(26, 26, 26)
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addGroup(layout.createSequentialGroup()
+                                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                    .addGroup(layout.createSequentialGroup()
+                                                        .addComponent(swizzleField)
+                                                        .addGap(18, 18, 18))
+                                                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                                        .addComponent(widthField, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                        .addGap(35, 35, 35)))
+                                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                    .addComponent(useAlphaField)
+                                                    .addGroup(layout.createSequentialGroup()
+                                                        .addGap(10, 10, 10)
+                                                        .addComponent(heightField, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                        .addComponent(lblBufferWidth)
+                                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                        .addComponent(bufferWidthField, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                                            .addGroup(layout.createSequentialGroup()
+                                                .addComponent(lblCLUTNumberBlocks)
+                                                .addGap(15, 15, 15)
+                                                .addComponent(clutNumberBlocksField, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                .addComponent(lblCLUTFormat)
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                .addComponent(clutFormatField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(lblWidth)
+                                        .addGap(74, 74, 74)
+                                        .addComponent(lblHeight))))
+                            .addComponent(memoryImage, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(20, 20, 20))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(btnGoToAddress, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(btnGoToGE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(btnGoToFB, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addContainerGap())))
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(addressField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblWidth)
+                    .addComponent(widthField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblHeight)
+                    .addComponent(heightField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblBufferWidth)
+                    .addComponent(bufferWidthField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblAddress))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblPixelFormat)
+                    .addComponent(pixelFormatField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(swizzleField)
+                    .addComponent(useAlphaField))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(clutAddressField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblCLUTNumberBlocks)
+                    .addComponent(clutNumberBlocksField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblCLUTFormat)
+                    .addComponent(clutFormatField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblCLUT))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(lblBackgroundColor)
+                    .addComponent(backgroundColorField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnGoToAddress)
+                    .addComponent(btnGoToGE)
+                    .addComponent(btnGoToFB))
+                .addGap(18, 18, 18)
+                .addComponent(memoryImage, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
+        );
 
-	private void valuesUpdated() {
-		memoryImage.setSize(memoryImage.getPreferredSize());
-		repaint();
-	}
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
 
-	private void goToAddress() {
-		try {
-			startAddress = Utilities.parseAddress(addressField.getText());
-		} catch (NumberFormatException e) {
-	        JOptionPane.showMessageDialog(this, Resource.get("numbernotcorrect"));
-	        return;
-		}
+    private void btnGoToAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGoToAddressActionPerformed
+        goToAddress();
+    }//GEN-LAST:event_btnGoToAddressActionPerformed
 
-		try {
-			imageWidth = (int) Utilities.parseLong(widthField.getText());
-		} catch (NumberFormatException e) {
-	        JOptionPane.showMessageDialog(this, Resource.get("numbernotcorrect"));
-	        return;
-		}
+    private void btnGoToGEActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGoToGEActionPerformed
+        goToBufferInfo(Modules.sceDisplayModule.getBufferInfoGe());
+    }//GEN-LAST:event_btnGoToGEActionPerformed
 
-		try {
-			imageHeight = (int) Utilities.parseLong(heightField.getText());
-		} catch (NumberFormatException e) {
-	        JOptionPane.showMessageDialog(this, Resource.get("numbernotcorrect"));
-	        return;
-		}
+    private void btnGoToFBActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGoToFBActionPerformed
+        goToBufferInfo(Modules.sceDisplayModule.getBufferInfoFb());
+    }//GEN-LAST:event_btnGoToFBActionPerformed
 
-		try {
-			bufferWidth = (int) Utilities.parseLong(bufferWidthField.getText());
-		} catch (NumberFormatException e) {
-	        JOptionPane.showMessageDialog(this, Resource.get("numbernotcorrect"));
-	        return;
-		}
+    private void keyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_keyPressed
+        if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
+            refreshImage();
+        }
+    }//GEN-LAST:event_keyPressed
 
-		pixelFormat = pixelFormatField.getSelectedIndex();
-		imageSwizzle = swizzleField.isSelected();
-		useAlpha = useAlphaField.isSelected();
-		backgroundColor = backgroundColorField.getSelectedIndex();
+    private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
+        if (Settings.getInstance().readBool("gui.saveWindowPos")) {
+            Settings.getInstance().writeWindowPos("imageViewer", getLocation());
+        }
+    }//GEN-LAST:event_formWindowDeactivated
 
-		try {
-			clutAddress = (int) Utilities.parseAddress(clutAddressField.getText());
-		} catch (NumberFormatException e) {
-	        JOptionPane.showMessageDialog(this, Resource.get("numbernotcorrect"));
-	        return;
-		}
-
-		try {
-			clutNumberBlocks = (int) Utilities.parseLong(clutNumberBlocksField.getText());
-		} catch (NumberFormatException e) {
-	        JOptionPane.showMessageDialog(this, Resource.get("numbernotcorrect"));
-	        return;
-		}
-
-		clutFormat = clutFormatField.getSelectedIndex();
-
-		valuesUpdated();
-	}
-
-	private void copyValuesToFields() {
-		addressField.setText(String.format("0x%X", startAddress));
-		widthField.setText(String.format("%d", imageWidth));
-		heightField.setText(String.format("%d", imageHeight));
-		bufferWidthField.setText(String.format("%d", bufferWidth));
-		pixelFormatField.setSelectedIndex(pixelFormat);
-		swizzleField.setSelected(imageSwizzle);
-		useAlphaField.setSelected(useAlpha);
-		backgroundColorField.setSelectedIndex(backgroundColor);
-		clutAddressField.setText(String.format("0x%X", clutAddress));
-		clutNumberBlocksField.setText(String.format("%d", clutNumberBlocks));
-		clutFormatField.setSelectedIndex(clutFormat);
-	}
-
-	private void goToBufferInfo(BufferInfo bufferInfo) {
-		startAddress = bufferInfo.topAddr;
-		imageWidth = bufferInfo.width;
-		imageHeight = bufferInfo.height;
-		bufferWidth = bufferInfo.bufferWidth;
-		pixelFormat = bufferInfo.pixelFormat;
-		imageSwizzle = false;
-		useAlpha = false;
-
-		copyValuesToFields();
-
-		valuesUpdated();
-	}
-
-	private void goToGe() {
-		goToBufferInfo(Modules.sceDisplayModule.getBufferInfoGe());
-	}
-
-	private void goToFb() {
-		goToBufferInfo(Modules.sceDisplayModule.getBufferInfoFb());
-	}
-
-	private void onKeyPressed(KeyEvent evt) {
-		if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
-			goToAddress();
-		}
-	}
-
-	@Override
-	public void dispose() {
-		Emulator.getMainGUI().endWindowDialog();
-		super.dispose();
-	}
-
-	private class MemoryImage extends JPanel {
-		private static final long serialVersionUID = 1372183323503668615L;
-
-		public MemoryImage() {
-		}
-
-		@Override
-		public void paintComponent(Graphics g) {
-			if (Memory.isAddressGood(startAddress)) {
-				Insets insets = getInsets();
-				int minWidth = Math.min(imageWidth, bufferWidth);
-
-				g.setColor(backgroundColors[backgroundColor]);
-				g.fillRect(insets.left, insets.top, minWidth, imageHeight);
-
-				IMemoryReader imageReader = ImageReader.getImageReader(startAddress, imageWidth, imageHeight, bufferWidth, pixelFormat, imageSwizzle, clutAddress, clutFormat, clutNumberBlocks, clutStart, clutShift, clutMask, null, null);
-
-				for (int y = 0; y < imageHeight; y++) {
-					for (int x = 0; x < minWidth; x++) {
-						int colorABGR = imageReader.readNext();
-						int colorARGB = ImageReader.colorABGRtoARGB(colorABGR);
-						g.setColor(new Color(colorARGB, useAlpha));
-
-						drawPixel(g, x + insets.left, y + insets.top);
-					}
-				}
-			}
-		}
-
-		private void drawPixel(Graphics g, int x, int y) {
-			g.drawLine(x, y, x, y);
-		}
-
-		@Override
-		public Dimension getPreferredSize() {
-			Insets insets = getInsets();
-			return new Dimension(imageWidth + insets.left + insets.right, imageHeight + insets.top + insets.bottom);
-		}
-
-		@Override
-		public Dimension getMaximumSize() {
-			return getPreferredSize();
-		}
-	}
+    private void changeImageActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_changeImageActionPerformed
+        refreshImage();
+    }//GEN-LAST:event_changeImageActionPerformed
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JTextField addressField;
+    private javax.swing.JComboBox backgroundColorField;
+    private javax.swing.JButton btnGoToAddress;
+    private javax.swing.JButton btnGoToFB;
+    private javax.swing.JButton btnGoToGE;
+    private javax.swing.JTextField bufferWidthField;
+    private javax.swing.JTextField clutAddressField;
+    private javax.swing.JComboBox clutFormatField;
+    private javax.swing.JTextField clutNumberBlocksField;
+    private javax.swing.JTextField heightField;
+    private javax.swing.JLabel lblAddress;
+    private javax.swing.JLabel lblBackgroundColor;
+    private javax.swing.JLabel lblBufferWidth;
+    private javax.swing.JLabel lblCLUT;
+    private javax.swing.JLabel lblCLUTFormat;
+    private javax.swing.JLabel lblCLUTNumberBlocks;
+    private javax.swing.JLabel lblHeight;
+    private javax.swing.JLabel lblPixelFormat;
+    private javax.swing.JLabel lblWidth;
+    private javax.swing.JPanel memoryImage;
+    private javax.swing.JComboBox pixelFormatField;
+    private javax.swing.JCheckBox swizzleField;
+    private javax.swing.JCheckBox useAlphaField;
+    private javax.swing.JTextField widthField;
+    // End of variables declaration//GEN-END:variables
 }

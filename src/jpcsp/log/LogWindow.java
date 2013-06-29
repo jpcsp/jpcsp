@@ -127,7 +127,8 @@ public class LogWindow extends javax.swing.JFrame {
         btnClear = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        setTitle("Logger");
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
+        setTitle(bundle.getString("LogWindow.title")); // NOI18N
         setMinimumSize(new java.awt.Dimension(220, 110));
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowDeactivated(java.awt.event.WindowEvent evt) {
@@ -137,7 +138,7 @@ public class LogWindow extends javax.swing.JFrame {
 
         scrollPane.setViewportView(tpLog);
 
-        lblLevel.setText("Log Level:");
+        lblLevel.setText(bundle.getString("LogWindow.lblLevel.text")); // NOI18N
 
         cmbLogLevel.setModel(new DefaultComboBoxModel(loglevels));
         cmbLogLevel.addItemListener(new java.awt.event.ItemListener() {
@@ -146,7 +147,7 @@ public class LogWindow extends javax.swing.JFrame {
             }
         });
 
-        btnClear.setText("Clear");
+        btnClear.setText(bundle.getString("ClearButton.text")); // NOI18N
         btnClear.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnClearActionPerformed(evt);
@@ -164,7 +165,7 @@ public class LogWindow extends javax.swing.JFrame {
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(lblLevel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(cmbLogLevel, 0, 209, Short.MAX_VALUE)
+                        .addComponent(cmbLogLevel, 0, 180, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(btnClear)))
                 .addContainerGap())
