@@ -1402,6 +1402,7 @@ private void DumpCodeToTextActionPerformed(java.awt.event.ActionEvent evt) {//GE
                     } catch (Exception e) {
                         disasm = "???";
                     }
+                    bufferedWriter.write(String.format("%08X:[%08X]: %s", i, opcode, disasm));
                 } else {
                     // should we even both printing these?
                     bufferedWriter.write(String.format("%08X: invalid address", i));
