@@ -46,6 +46,7 @@ import jpcsp.HLE.modules150.IoFileMgrForUser.IIoListener;
 import jpcsp.State;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.settings.Settings;
+import jpcsp.util.Constants;
 
 /**
  *
@@ -59,7 +60,6 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
     private Thread refreshThread;
     private volatile boolean dirty;
     private volatile boolean sortRequired;
-    private Object table;
 
     /**
      * Creates new form FileLoggerFrame
@@ -105,7 +105,8 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
         fileHandleTable = new javax.swing.JTable();
 
         copyItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_C, java.awt.event.InputEvent.CTRL_MASK));
-        copyItem.setText("Copy");
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
+        copyItem.setText(bundle.getString("FileLoggerFrame.copyItem.text")); // NOI18N
         copyItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 copyItemActionPerformed(evt);
@@ -113,7 +114,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
         });
         jPopupMenu1.add(copyItem);
 
-        saveAsItem.setText("Save as...");
+        saveAsItem.setText(bundle.getString("FileLoggerFrame.saveAsItem.text")); // NOI18N
         saveAsItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 saveAsItemActionPerformed(evt);
@@ -121,7 +122,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
         });
         jPopupMenu1.add(saveAsItem);
 
-        setTitle("File IO");
+        setTitle(bundle.getString("FileLoggerFrame.title")); // NOI18N
         setMinimumSize(new java.awt.Dimension(400, 200));
 
         jSplitPane1.setDividerLocation(135);
@@ -131,7 +132,6 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
         commandLogTable.setModel(fileCommandModel);
         commandLogTable.setInheritsPopupMenu(true);
         commandLogTable.setMinimumSize(new java.awt.Dimension(200, 100));
-        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
         commandLogTable.setName(bundle.getString("FileLoggerFrame.commandLogTable.name")); // NOI18N
         commandLogTable.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mousePressed(java.awt.event.MouseEvent evt) {
@@ -201,21 +201,22 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
     }//GEN-LAST:event_copyItemActionPerformed
 
     private void saveAsItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveAsItemActionPerformed
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp");
         final JFileChooser fc = new JFileChooser();
-        final FileNameExtensionFilter txt = new FileNameExtensionFilter("Text files", "txt");
-        fc.setDialogTitle("Save table content to file...");
+        fc.setDialogTitle(bundle.getString("FileLoggerFrame.strSaveTable.text"));
         fc.setSelectedFile(new File(State.discId + "_fileio.txt"));
         fc.setCurrentDirectory(new java.io.File("."));
-        fc.addChoosableFileFilter(txt);
-        fc.setFileFilter(txt);
+        fc.addChoosableFileFilter(Constants.fltTextFiles);
+        fc.setFileFilter(Constants.fltTextFiles);
 
         if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             File f = fc.getSelectedFile();
             if (f.exists()) {
+
                 int rc = JOptionPane.showConfirmDialog(
                         this,
-                        "File '" + f + "' already exists. Do you want to overwrite?",
-                        "File exists",
+                        bundle.getString("ConsoleWindow.strFileExists.text"),
+                        bundle.getString("ConsoleWindow.strFileExistsTitle.text"),
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.WARNING_MESSAGE);
 
@@ -249,7 +250,9 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
                 os.write(data);
                 os.close();
             } catch (IOException ioe) {
-                JOptionPane.showMessageDialog(this, "Failed to open file for writing.\nReason: " + ioe.getLocalizedMessage());
+                JOptionPane.showMessageDialog(
+                        this,
+                        bundle.getString("FileLoggerFrame.strSaveFailed.text") + ioe.getLocalizedMessage());
             }
         }
     }//GEN-LAST:event_saveAsItemActionPerformed
@@ -349,17 +352,18 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
 
         @Override
         public String getColumnName(int columnIndex) {
+            java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp");
             switch (columnIndex) {
                 case 0:
-                    return "File ID";
+                    return bundle.getString("FileLoggerFrame.strFileID.text");
                 case 1:
-                    return "File name";
+                    return bundle.getString("FileLoggerFrame.strFileName.text");
                 case 2:
-                    return "Read";
+                    return bundle.getString("FileLoggerFrame.strRead.text");
                 case 3:
-                    return "Write";
+                    return bundle.getString("FileLoggerFrame.strWrite.text");
                 default:
-                    return "(null)";
+                    throw new IllegalArgumentException("invalid column index");
             }
         }
 
@@ -401,21 +405,22 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
 
         @Override
         public String getColumnName(int columnIndex) {
+            java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp");
             switch (columnIndex) {
                 case 0:
-                    return "Thread ID";
+                    return bundle.getString("FileLoggerFrame.strThreadID.text");
                 case 1:
-                    return "Thread name";
+                    return bundle.getString("FileLoggerFrame.strThreadName.text");
                 case 2:
-                    return "File ID";
+                    return bundle.getString("FileLoggerFrame.strFileID.text");
                 case 3:
-                    return "Command";
+                    return bundle.getString("FileLoggerFrame.strCommand.text");
                 case 4:
-                    return "Result";
+                    return bundle.getString("FileLoggerFrame.strResult.text");
                 case 5:
-                    return "Parameters";
+                    return bundle.getString("FileLoggerFrame.strParameters.text");
                 default:
-                    return "(null)";
+                    throw new IllegalArgumentException("invalid column index");
             }
         }
 
@@ -442,7 +447,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
         }
     };
 
-    public void postInit() {
+    final public void postInit() {
         TableColumnModel columns;
 
         // We want the middle column to be the widest
@@ -463,7 +468,8 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
 
         resetLogging();
 
-        //test();
+        // uncomment this for testing purposes
+        // test();
     }
 
     public void test() {
@@ -589,12 +595,15 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
     }
 
     private boolean isLoggingDisabled() {
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp");
         if (!Settings.getInstance().readBool("emu.debug.enablefilelogger")) {
-            setTitle("File IO - LOGGING DISABLED");
+            setTitle(bundle.getString("FileLoggerFrame.title") + " - " + bundle.getString("FileLoggerFrame.strLoggingDisabled.text"));
             return true;
+        } else {
+            setTitle(bundle.getString("FileLoggerFrame.title"));
+            return false;
         }
-        setTitle("File IO");
-        return false;
+
     }
     /**
      * Handles repeated commands
@@ -672,9 +681,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
         }
 
         // File Command list
-        logFileCommand(new FileCommandInfo(
-                uid, "close", result,
-                ""));
+        logFileCommand(new FileCommandInfo(uid, "close", result, ""));
     }
 
     @Override
