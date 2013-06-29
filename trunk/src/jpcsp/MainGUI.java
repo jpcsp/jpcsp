@@ -871,7 +871,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         LanguageMenu.add(SystemLocale);
 
         English.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/en_EN.png"))); // NOI18N
-        English.setText("English"); // NOI18N
+        java.util.ResourceBundle bundle1 = java.util.ResourceBundle.getBundle("jpcsp/languages/common"); // NOI18N
+        English.setText(bundle1.getString("english")); // NOI18N
         English.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 EnglishActionPerformed(evt);
@@ -880,7 +881,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         LanguageMenu.add(English);
 
         French.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/fr_FR.png"))); // NOI18N
-        French.setText("Français"); // NOI18N
+        French.setText(bundle1.getString("french")); // NOI18N
         French.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 FrenchActionPerformed(evt);
@@ -889,7 +890,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         LanguageMenu.add(French);
 
         German.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/de_DE.png"))); // NOI18N
-        German.setText("Deutsch"); // NOI18N
+        German.setText(bundle1.getString("german")); // NOI18N
         German.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 GermanActionPerformed(evt);
@@ -898,7 +899,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         LanguageMenu.add(German);
 
         Lithuanian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/lt_LT.png"))); // NOI18N
-        Lithuanian.setText("Lietuvių"); // NOI18N
+        Lithuanian.setText(bundle1.getString("lithuanian")); // NOI18N
         Lithuanian.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 LithuanianActionPerformed(evt);
@@ -907,7 +908,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         LanguageMenu.add(Lithuanian);
 
         Spanish.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/es_ES.png"))); // NOI18N
-        Spanish.setText("Español"); // NOI18N
+        Spanish.setText(bundle1.getString("spanish")); // NOI18N
         Spanish.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 SpanishActionPerformed(evt);
@@ -916,7 +917,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         LanguageMenu.add(Spanish);
 
         Catalan.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/es_CA.png"))); // NOI18N
-        Catalan.setText("Català"); // NOI18N
+        Catalan.setText(bundle1.getString("catalan")); // NOI18N
         Catalan.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 CatalanActionPerformed(evt);
@@ -925,7 +926,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         LanguageMenu.add(Catalan);
 
         Portuguese.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pt_PT.png"))); // NOI18N
-        Portuguese.setText("Português"); // NOI18N
+        Portuguese.setText(bundle1.getString("portuguese")); // NOI18N
         Portuguese.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 PortugueseActionPerformed(evt);
@@ -934,7 +935,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         LanguageMenu.add(Portuguese);
 
         PortugueseBR.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pt_BR.png"))); // NOI18N
-        PortugueseBR.setText("Português Brasileiro"); // NOI18N
+        PortugueseBR.setText(bundle1.getString("portuguesebr")); // NOI18N
         PortugueseBR.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 PortugueseBRActionPerformed(evt);
@@ -943,7 +944,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         LanguageMenu.add(PortugueseBR);
 
         Japanese.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/jp_JP.png"))); // NOI18N
-        Japanese.setText("日本語"); // NOI18N
+        Japanese.setText(bundle1.getString("japanese")); // NOI18N
         Japanese.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 JapaneseActionPerformed(evt);
@@ -952,7 +953,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         LanguageMenu.add(Japanese);
 
         Russian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/ru_RU.png"))); // NOI18N
-        Russian.setText("Русский"); // NOI18N
+        Russian.setText(bundle1.getString("russian")); // NOI18N
         Russian.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 RussianActionPerformed(evt);
@@ -961,7 +962,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         LanguageMenu.add(Russian);
 
         Polish.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pl_PL.png"))); // NOI18N
-        Polish.setText("Polski"); // NOI18N
+        Polish.setText(bundle1.getString("polish")); // NOI18N
         Polish.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 PolishActionPerformed(evt);
@@ -970,7 +971,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         LanguageMenu.add(Polish);
 
         ChinesePRC.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/cn_CN.png"))); // NOI18N
-        ChinesePRC.setText("简体中文"); // NOI18N
+        ChinesePRC.setText(bundle1.getString("simplifiedChinese")); // NOI18N
         ChinesePRC.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ChinesePRCActionPerformed(evt);
@@ -979,7 +980,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         LanguageMenu.add(ChinesePRC);
 
         ChineseTW.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/tw_TW.png"))); // NOI18N
-        ChineseTW.setText("正體中文"); // NOI18N
+        ChineseTW.setText(bundle1.getString("traditionalChinese")); // NOI18N
         ChineseTW.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ChineseTWActionPerformed(evt);
@@ -988,7 +989,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         LanguageMenu.add(ChineseTW);
 
         Italian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/it_IT.png"))); // NOI18N
-        Italian.setText("Italiano"); // NOI18N
+        Italian.setText(bundle1.getString("italian")); // NOI18N
         Italian.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ItalianActionPerformed(evt);
@@ -997,7 +998,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         LanguageMenu.add(Italian);
 
         Greek.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/gr_EL.png"))); // NOI18N
-        Greek.setText("Ελληνικά"); // NOI18N
+        Greek.setText(bundle1.getString("greek")); // NOI18N
         Greek.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 GreekActionPerformed(evt);
