@@ -9945,6 +9945,30 @@
 08876640:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="Poll">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Poll</Class>
+		<Method>poll1</Method>
+		<IsReturning>true</IsReturning>
+		<Parameters>@0884A1DC,@0884A1E0</Parameters>
+		<CodeInstructions><![CDATA[
+0884A1DC:[3C030898/FFFF0000]: lui        $v1, 0x0898 <=> li $v1, 0x08980000
+0884A1E0:[9063AFC5/FFFF0000]: lbu        $v1, -20539($v1)
+0884A1E4:[0003182B]: sltu       $v1, $zr, $v1 <=> move $v1, $v1
+0884A1E8:[38630001]: xori       $v1, $v1, 1
+0884A1EC:[10600009]: beq        $v1, $zr, 0x0884A214
+0884A1F0:[00000000]: nop
+0884A1F4:[3C030898/FFFF0000]: lui        $v1, 0x0898 <=> li $v1, 0x08980000
+0884A1F8:[00000000]: nop
+0884A1FC:[00000000]: nop
+0884A200:[9064AFC5/FFFF0000]: lbu        $a0, -20539($v1)
+0884A204:[0004202B]: sltu       $a0, $zr, $a0 <=> move $a0, $a0
+0884A208:[38840001]: xori       $a0, $a0, 1
+0884A20C:[1480FFFA]: bne        $a0, $zr, 0x0884A1F8
+0884A210:[00000000]: nop
+0884A214:[03E00008]: jr         $ra
+0884A218:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
 <!--
 	<NativeCodeSequence name="XXX">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.XXX</Class>
