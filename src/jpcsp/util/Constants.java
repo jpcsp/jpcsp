@@ -24,6 +24,7 @@ public class Constants {
     public static final FileNameExtensionFilter fltTextFiles = new FileNameExtensionFilter("Text files", "txt");
     public static final FileNameExtensionFilter fltMemoryBreakpointFiles = new FileNameExtensionFilter("Memory breakpoint files", "mbrk");
     public static final FileNameExtensionFilter fltBreakpointFiles = new FileNameExtensionFilter("Breakpoint files", "brk");
+    public static final FileNameExtensionFilter fltXMLFiles = new FileNameExtensionFilter("XML files", "xml");
     public static final int ICON0_WIDTH = 144;
     public static final int ICON0_HEIGHT = 80;
     public static final int PSPSCREEN_WIDTH = 480;

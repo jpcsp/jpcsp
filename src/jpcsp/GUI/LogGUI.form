@@ -41,7 +41,7 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="jButtonCancel" min="-2" max="-2" attributes="0"/>
                   </Group>
-                  <Component id="jTabbedPane1" alignment="0" max="32767" attributes="0"/>
+                  <Component id="jTabbedPane1" alignment="0" pref="1014" max="32767" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
           </Group>
@@ -91,19 +91,14 @@
           <Layout>
             <DimensionLayout dim="0">
               <Group type="103" groupAlignment="0" attributes="0">
-                  <Group type="102" attributes="0">
+                  <Group type="102" alignment="0" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
-                          <Group type="102" alignment="0" attributes="0">
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="logKeywordLabel" alignment="0" max="32767" attributes="0"/>
-                                  <Group type="102" alignment="0" attributes="0">
-                                      <Component id="logKeywordField" min="-2" pref="119" max="-2" attributes="0"/>
-                                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
-                                      <Component id="clearKeywordButton" pref="95" max="32767" attributes="0"/>
-                                  </Group>
-                              </Group>
-                              <EmptySpace min="-2" pref="656" max="-2" attributes="0"/>
+                          <Group type="102" attributes="0">
+                              <Component id="logByKeywordCheck" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Component id="logKeywordField" min="-2" pref="200" max="-2" attributes="0"/>
+                              <EmptySpace min="0" pref="486" max="32767" attributes="0"/>
                           </Group>
                           <Component id="openLogWindowCheck" alignment="0" max="32767" attributes="1"/>
                           <Component id="snapConsoleCheck" alignment="1" max="32767" attributes="1"/>
@@ -119,14 +114,12 @@
                       <Component id="openLogWindowCheck" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="snapConsoleCheck" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace type="separate" max="-2" attributes="0"/>
-                      <Component id="logKeywordLabel" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="3" attributes="0">
+                          <Component id="logByKeywordCheck" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="logKeywordField" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="clearKeywordButton" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
-                      <EmptySpace pref="207" max="32767" attributes="0"/>
+                      <EmptySpace pref="248" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -146,30 +139,20 @@
                 </Property>
               </Properties>
             </Component>
-            <Component class="javax.swing.JLabel" name="logKeywordLabel">
-              <Properties>
-                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
-                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="LogGUI.logKeywordLabel.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
-                </Property>
-              </Properties>
-            </Component>
             <Component class="javax.swing.JTextField" name="logKeywordField">
               <Properties>
                 <Property name="editable" type="boolean" value="false"/>
                 <Property name="text" type="java.lang.String" value="LOG_ALL" noResource="true"/>
               </Properties>
-              <Events>
-                <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="logKeywordFieldMouseClicked"/>
-              </Events>
             </Component>
-            <Component class="javax.swing.JButton" name="clearKeywordButton">
+            <Component class="javax.swing.JCheckBox" name="logByKeywordCheck">
               <Properties>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
-                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="ClearButton.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="LogGUI.logByKeywordCheck.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
                 </Property>
               </Properties>
               <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="clearKeywordButtonActionPerformed"/>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="logByKeywordCheckActionPerformed"/>
               </Events>
             </Component>
           </SubComponents>
@@ -193,8 +176,8 @@
                       <Component id="jScrollPane1" min="-2" pref="418" max="-2" attributes="0"/>
                       <EmptySpace type="separate" max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
-                          <Component id="outputToText" alignment="0" pref="442" max="32767" attributes="1"/>
-                          <Component id="outputToHTML" alignment="0" pref="442" max="32767" attributes="1"/>
+                          <Component id="outputToText" alignment="0" pref="549" max="32767" attributes="1"/>
+                          <Component id="outputToHTML" alignment="0" pref="549" max="32767" attributes="1"/>
                           <Group type="102" alignment="0" attributes="0">
                               <Group type="103" groupAlignment="0" attributes="0">
                                   <Component id="lblOutputFile" min="-2" max="-2" attributes="0"/>
@@ -377,7 +360,7 @@
                           <Component id="rbGPUDebug" alignment="0" max="32767" attributes="0"/>
                           <Component id="lblLogMethod" alignment="0" max="32767" attributes="0"/>
                           <Component id="rbCPUDebug" max="32767" attributes="0"/>
-                          <Component id="rbGeneralDebug" pref="136" max="32767" attributes="0"/>
+                          <Component id="rbGeneralDebug" pref="190" max="32767" attributes="0"/>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
@@ -397,7 +380,7 @@
                                           <Component id="audioBox" alignment="0" max="32767" attributes="0"/>
                                           <Component id="imposeBox" alignment="0" max="32767" attributes="0"/>
                                           <Component id="psmfBox" alignment="0" max="32767" attributes="0"/>
-                                          <Component id="suspendBox" pref="172" max="32767" attributes="0"/>
+                                          <Component id="suspendBox" pref="189" max="32767" attributes="0"/>
                                       </Group>
                                       <EmptySpace min="-2" pref="53" max="-2" attributes="0"/>
                                   </Group>
@@ -409,7 +392,7 @@
                               <Group type="103" groupAlignment="0" attributes="0">
                                   <Component id="ioFileMgrBox" alignment="0" max="32767" attributes="0"/>
                                   <Component id="moduleMgrBox" alignment="0" max="32767" attributes="0"/>
-                                  <Component id="sysMemUserBox" alignment="0" pref="177" max="32767" attributes="0"/>
+                                  <Component id="sysMemUserBox" alignment="0" pref="196" max="32767" attributes="0"/>
                                   <Component id="ctrlBox" alignment="0" max="32767" attributes="0"/>
                                   <Component id="fontBox" alignment="0" max="32767" attributes="0"/>
                                   <Component id="mp3Box" alignment="0" max="32767" attributes="0"/>
@@ -422,7 +405,7 @@
                                       <Group type="103" groupAlignment="0" attributes="0">
                                           <Component id="geUserBox" alignment="0" max="32767" attributes="0"/>
                                           <Component id="defltBox" alignment="0" max="32767" attributes="0"/>
-                                          <Component id="threadManBox" alignment="0" pref="164" max="32767" attributes="0"/>
+                                          <Component id="threadManBox" alignment="0" pref="172" max="32767" attributes="0"/>
                                           <Component id="kernelLibBox" alignment="0" max="32767" attributes="0"/>
                                           <Component id="utilsBox" alignment="0" max="32767" attributes="0"/>
                                           <Component id="mpegBox" alignment="0" max="32767" attributes="0"/>
@@ -435,7 +418,7 @@
                                           <Component id="hprmBox" max="32767" attributes="0"/>
                                           <Component id="displayBox" max="32767" attributes="0"/>
                                           <Component id="atracBox" alignment="0" max="32767" attributes="0"/>
-                                          <Component id="loadCoreBox" alignment="0" pref="164" max="32767" attributes="0"/>
+                                          <Component id="loadCoreBox" alignment="0" pref="173" max="32767" attributes="0"/>
                                           <Component id="stdioBox" alignment="0" max="32767" attributes="0"/>
                                       </Group>
                                   </Group>
