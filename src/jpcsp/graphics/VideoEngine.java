@@ -250,6 +250,7 @@ public class VideoEngine {
     private IAction hleAction;
     private int[] currentCMDValues;
     private int[] currentListCMDValues;
+    private int previousPrim;
     private boolean bboxWarningDisplayed = false;
     private LinkedList<AddressRange> videoTextures;
     private IntBuffer multiDrawFirst;
@@ -603,6 +604,7 @@ public class VideoEngine {
         viewportChanged = true;
         depthChanged = true;
         materialChanged = true;
+        previousPrim = PRIM_SPRITES;
 
         cachedInstructions = new HashMap<Integer, int[]>();
     }
@@ -1829,7 +1831,7 @@ public class VideoEngine {
 
     private void executeCommandPRIM() {
         int numberOfVertex = normalArgument & 0xFFFF;
-        int type = ((normalArgument >> 16) & 0x7);
+        int type = (normalArgument >> 16) & 0x7;
 
         if (numberOfVertex == 0) {
         	return;
@@ -1841,10 +1843,23 @@ public class VideoEngine {
             return;
         }
 
-        if (type > PRIM_SPRITES) {
-            error(String.format("%s: Type %d unhandled at 0x%08X", helper.getCommandString(PRIM), type, currentList.getPc() - 4));
-            return;
+        if (type == GeCommands.PRIM_CONTINUE_PREVIOUS_PRIM) {
+        	// The PSP is continuing the previous PRIM command.
+        	// If the previous PRIM was a strip or a fan, the strip/fan is
+        	// continued as it was part of the previous PRIM command.
+        	switch (previousPrim) {
+        		case PRIM_LINES_STRIPS:
+        		case PRIM_TRIANGLE_STRIPS:
+        		case PRIM_TRIANGLE_FANS:
+        			// Continuing the previous strip/fan is not implemented.
+        			if (isLogWarnEnabled) {
+        				log.warn(String.format("PRIM type=7 cannot continue previous strip/fan (%d)", previousPrim));
+        			}
+        			break;
+        	}
+        	type = previousPrim;
         }
+        previousPrim = type;
 
         if (numberOfVertex < minimumNumberOfVertex[type]) {
         	if (isLogDebugEnabled) {
