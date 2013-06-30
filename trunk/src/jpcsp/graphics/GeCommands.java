@@ -33,6 +33,7 @@ public class GeCommands {
         public final static int PRIM_TRIANGLE_STRIPS = 0x04;
         public final static int PRIM_TRIANGLE_FANS = 0x05;
         public final static int PRIM_SPRITES = 0x06;
+        public final static int PRIM_CONTINUE_PREVIOUS_PRIM = 0x07;
     public final static int BEZIER = 0x05; //Bezier Patch Kick
     public final static int SPLINE = 0x06; //Spline Surface Kick
         public final static int SPLINE_EDGE_CLOSE_CLOSE = 0x0; //V OR U IS THE SAME
