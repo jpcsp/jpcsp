@@ -568,7 +568,7 @@ int stencilMask = 0xFF;
 
 int rectangle1PrimType = GU_TRIANGLE_STRIP;
 int rectangle2PrimType = GU_TRIANGLE_STRIP;
-char *primTypeNames[] = { "GU_POINTS", "GU_LINES", "GU_LINE_STRIP", "GU_TRIANGLES", "GU_TRIANGLE_STRIP", "GU_TRIANGLE_FAN", "GU_SPRITES" };
+char *primTypeNames[] = { "GU_POINTS", "GU_LINES", "GU_LINE_STRIP", "GU_TRIANGLES", "GU_TRIANGLE_STRIP", "GU_TRIANGLE_FAN", "GU_SPRITES", "GU_CONTINUE_PREVIOUS_PRIM" };
 
 int frontFace1 = GU_CW + 1;
 int frontFace2 = GU_CW + 1;
@@ -1238,13 +1238,13 @@ void drawRectangles()
 	{
 		rectangle1point.x = 0;
 		rectangle1point.y = 0;
-		rectangle1point.z = rectangle1PrimType != GU_SPRITES ? 0 : (int) (  0 + rectangle1translation.z * 10 + 0.5);
-		int width = rectangle1PrimType != GU_SPRITES ? rectangle1width : rectangle1width * 10;
-		int height = rectangle1PrimType != GU_SPRITES ? rectangle1height : rectangle1height * 10;
+		rectangle1point.z = rectangle1PrimType < GU_SPRITES ? 0 : (int) (  0 + rectangle1translation.z * 10 + 0.5);
+		int width = rectangle1PrimType < GU_SPRITES ? rectangle1width : rectangle1width * 10;
+		int height = rectangle1PrimType < GU_SPRITES ? rectangle1height : rectangle1height * 10;
 		if (vertexColorFlag)
 		{
 			setRectanglePoint(&rectangle1point, &rectangle1normal, vertices1, width, height, textureScale, textureScale);
-			if (rectangle1PrimType == GU_SPRITES)
+			if (rectangle1PrimType >= GU_SPRITES)
 			{
 				numberVertex1 /= 2;
 				int i;
@@ -1258,7 +1258,7 @@ void drawRectangles()
 		else
 		{
 			setNoColorRectanglePoint(&rectangle1point, &rectangle1normal, (struct VertexNoColor *) vertices1, width, height, textureScale, textureScale);
-			if (rectangle1PrimType == GU_SPRITES)
+			if (rectangle1PrimType >= GU_SPRITES)
 			{
 				numberVertex1 /= 2;
 				int i;
@@ -1279,7 +1279,7 @@ void drawRectangles()
 		if (vertexColorFlag)
 		{
 			setRectanglePoint(&rectangle1point, &rectangle1normal, vertices1, rectangle1width * 50, rectangle1height * 50, TEXTURE_WIDTH, TEXTURE_HEIGHT);
-			if (rectangle1PrimType == GU_SPRITES)
+			if (rectangle1PrimType >= GU_SPRITES)
 			{
 				numberVertex1 /= 2;
 				int i;
@@ -1741,7 +1741,7 @@ void init()
 	y++;
 	addColorAttribute("Texture R", &rectangle1TextureColor, x + 6, y, 1, 0x10);
 	y++;
-	addAttribute("Type", &rectangle1PrimType, NULL, x + 6, y, 0, 6, 1, NULL);
+	addAttribute("Type", &rectangle1PrimType, NULL, x + 6, y, 0, 7, 1, NULL);
 	setAttributeValueNames(&primTypeNames[0]);
 	y++;
 
@@ -1832,7 +1832,7 @@ void init()
 	y++;
 	addColorAttribute("Texture R", &rectangle2TextureColor, x + 6, y, 1, 0x10);
 	y++;
-	addAttribute("Type", &rectangle2PrimType, NULL, x + 6, y, 0, 6, 1, NULL);
+	addAttribute("Type", &rectangle2PrimType, NULL, x + 6, y, 0, 7, 1, NULL);
 	setAttributeValueNames(&primTypeNames[0]);
 	y++;
 
