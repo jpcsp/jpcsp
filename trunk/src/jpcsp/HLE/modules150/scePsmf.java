@@ -226,11 +226,6 @@ public class scePsmf extends HLEModule {
         public static final int PSMF_AUDIO_STREAM_ID = 0xBD;
 
         // Header vars.
-        private int streamOffset;
-        private int streamSize;
-        private int version;
-        private int presentationStartTime;
-        private int presentationEndTime;
         private int streamNum;
         private int audioSampleFrequency;
         private int audioChannelConfig;
@@ -262,23 +257,19 @@ public class scePsmf extends HLEModule {
 
             headerOffset = addr;
 
-            version = mem.read32(addr + sceMpeg.PSMF_STREAM_VERSION_OFFSET);
-            streamOffset = endianSwap32(mem.read32(addr + sceMpeg.PSMF_STREAM_OFFSET_OFFSET));
-            streamSize = endianSwap32(mem.read32(addr + sceMpeg.PSMF_STREAM_SIZE_OFFSET));
+            Modules.sceMpegModule.analyseMpeg(addr);
 
             int streamDataTotalSize = endianSwap32(readUnaligned32(mem, addr + 0x50));
-            presentationStartTime = endianSwap32(readUnaligned32(mem, addr + sceMpeg.PSMF_FIRST_TIMESTAMP_OFFSET));  // First PTS in EPMap (90000).
-            presentationEndTime = endianSwap32(readUnaligned32(mem, addr + sceMpeg.PSMF_LAST_TIMESTAMP_OFFSET));     // Last PTS in EPMap.
             int unk = endianSwap32(readUnaligned32(mem, addr + 0x60));
             int streamDataNextBlockSize = endianSwap32(readUnaligned32(mem, addr + 0x6A));                           // General stream information block size.
             int streamDataNextInnerBlockSize = endianSwap32(readUnaligned32(mem, addr + 0x7C));                      // Inner stream information block size.
             streamNum = endianSwap16(mem.read16(addr + sceMpeg.PSMF_NUMBER_STREAMS));                                // Number of total registered streams.
 
             if (log.isDebugEnabled()) {
-            	log.debug(String.format("PSMFHeader: version=0x%08X, streamDataTotalSize=%d, unk=0x%08X, streamDataNextBlockSize=%d, streamDataNextInnerBlockSize=%d, streamNum=%d", version, streamDataTotalSize, unk, streamDataNextBlockSize, streamDataNextInnerBlockSize, streamNum));
+            	log.debug(String.format("PSMFHeader: version=0x%08X, streamDataTotalSize=%d, unk=0x%08X, streamDataNextBlockSize=%d, streamDataNextInnerBlockSize=%d, streamNum=%d", getVersion(), streamDataTotalSize, unk, streamDataNextBlockSize, streamDataNextInnerBlockSize, streamNum));
             }
 
-            streams = readPsmfStreams(mem, addr, null, this);
+            streams = Modules.sceMpegModule.psmfStreams;
 
             // PSP seems to default to stream 0.
             if (streams.size() > 0) {
@@ -305,7 +296,7 @@ public class scePsmf extends HLEModule {
         }
 
         public int getVersion() {
-            return version;
+            return Modules.sceMpegModule.mpegRawVersion;
         }
 
         public int getHeaderSize() {
@@ -317,19 +308,19 @@ public class scePsmf extends HLEModule {
         }
 
         public int getStreamOffset() {
-            return streamOffset;
+            return Modules.sceMpegModule.mpegOffset;
         }
 
         public int getStreamSize() {
-            return streamSize;
+            return Modules.sceMpegModule.mpegStreamSize;
         }
 
         public int getPresentationStartTime() {
-            return presentationStartTime;
+            return (int) Modules.sceMpegModule.mpegFirstTimestamp;
         }
 
         public int getPresentationEndTime() {
-            return presentationEndTime;
+            return (int) Modules.sceMpegModule.mpegLastTimestamp;
         }
 
         public int getVideoWidth() {
