@@ -723,11 +723,6 @@ public class SettingsGUI extends javax.swing.JFrame {
         saveStencilToMemory.setText(bundle.getString("SettingsGUI.saveStencilToMemory.text")); // NOI18N
 
         useSoftwareRenderer.setText(bundle.getString("SettingsGUI.useSoftwareRenderer.text")); // NOI18N
-        useSoftwareRenderer.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                useSoftwareRendererActionPerformed(evt);
-            }
-        });
 
         javax.swing.GroupLayout VideoPanelLayout = new javax.swing.GroupLayout(VideoPanel);
         VideoPanel.setLayout(VideoPanelLayout);
@@ -1105,10 +1100,6 @@ public class SettingsGUI extends javax.swing.JFrame {
             tmppath.setText(folderChooser.getSelectedFile().getPath());
         }
     }//GEN-LAST:event_tmpPathBrowseButtonActionPerformed
-
-    private void useSoftwareRendererActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_useSoftwareRendererActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_useSoftwareRendererActionPerformed
 
     @Override
     public void dispose() {
