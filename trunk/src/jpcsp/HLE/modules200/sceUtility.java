@@ -92,6 +92,11 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
 			installParams = new SceUtilityInstallParams();
 			return installParams;
 		}
+
+        @Override
+        protected boolean hasDialog() {
+            return false;
+        }
     }
 
     public static final String[] utilityNetModuleNames = new String[] {

@@ -273,8 +273,35 @@ public class SceUtilityScreenshotParams extends pspAbstractMemoryMappedStructure
 
     @Override
     public String toString() {
-        // TODO
         StringBuilder sb = new StringBuilder();
+
+        sb.append(String.format("startupType=%d", startupType));
+        sb.append(String.format(", status=%d", status));
+        sb.append(String.format(", imgFormat=%d", imgFormat));
+        sb.append(String.format(", imgQuality=%d", imgQuality));
+        sb.append(String.format(", imgFrameBufAddr=0x%08X", imgFrameBufAddr));
+        sb.append(String.format(", imgFrameBufWidth=%d", imgFrameBufWidth));
+        sb.append(String.format(", imgPixelFormat=%d", imgPixelFormat));
+        sb.append(String.format(", screenshotOffsetX=%d", screenshotOffsetX));
+        sb.append(String.format(", screenshotOffsetY=%d", screenshotOffsetY));
+        sb.append(String.format(", displayWidth=%d", displayWidth));
+        sb.append(String.format(", displayHeigth=%d", displayHeigth));
+        sb.append(String.format(", screenshotID='%s'", screenshotID));
+        sb.append(String.format(", fileName='%s'", fileName));
+        sb.append(String.format(", nameRule=%d", nameRule));
+        sb.append(String.format(", title='%s'", title));
+        sb.append(String.format(", parentalLevel=%d", parentalLevel));
+        sb.append(String.format(", pscmFileFlag=%d", pscmFileFlag));
+        sb.append(String.format(", iconPath='%s'", iconPath));
+        sb.append(String.format(", iconPathSize=%d", iconPathSize));
+        sb.append(String.format(", iconFileSize=%d", iconFileSize));
+        sb.append(String.format(", backgroundPath='%s'", backgroundPath));
+        sb.append(String.format(", backgroundPathSize=%d", backgroundPathSize));
+        sb.append(String.format(", backgroundFileSize=%d", backgroundFileSize));
+        sb.append(String.format(", commentFlag=%d", commentFlag));
+        sb.append(String.format(", commentShapeAddr=0x%08X", commentShapeAddr));
+        sb.append(String.format(", commentTextAddr=0x%08X", commentTextAddr));
+
         return sb.toString();
     }
 }
