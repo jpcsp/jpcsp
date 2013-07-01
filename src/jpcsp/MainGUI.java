@@ -106,6 +106,7 @@ import java.util.ArrayList;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
+import javax.swing.SwingUtilities;
 
 /**
  *
@@ -129,8 +130,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     boolean umdLoaded;
     boolean useFullscreen;
     JPopupMenu fullScreenMenu;
-    private Point mainwindowPos; // stores the last known window position
-    private boolean snapConsole = true;
     private List<RecentElement> recentUMD = new LinkedList<RecentElement>();
     private List<RecentElement> recentFile = new LinkedList<RecentElement>();
     public final static String windowNameForSettings = "mainwindow";
@@ -221,10 +220,15 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         setMinimumSize(minSize);
 
         //logging console window stuff
-        snapConsole = Settings.getInstance().readBool("gui.snapLogwindow");
-        if (snapConsole) {
-            mainwindowPos = getLocation();
-            consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + getHeight());
+        if (Settings.getInstance().readBool("gui.snapLogwindow")) {
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    // if this update is not done later an initial gap is found
+                    // between the main window and the logger
+                    updateConsoleWinPosition();
+                }
+            });
         } else {
             consolewin.setLocation(Settings.getInstance().readWindowPos("logwindow"));
         }
@@ -2346,9 +2350,8 @@ private void ClockSpeed300ActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 }//GEN-LAST:event_ClockSpeed300ActionPerformed
 
 private void ToggleLoggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ToggleLoggerActionPerformed
-        if (!consolewin.isVisible() && snapConsole) {
-            mainwindowPos = this.getLocation();
-            consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + getHeight());
+        if (!consolewin.isVisible()) {
+            updateConsoleWinPosition();
         }
         consolewin.setVisible(!consolewin.isVisible());
         ToggleLogger.setSelected(consolewin.isVisible());
@@ -2458,9 +2461,14 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     }
 
     public void snaptoMainwindow() {
-        snapConsole = true;
-        mainwindowPos = getLocation();
-        consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + getHeight());
+        updateConsoleWinPosition();
+    }
+
+    private void updateConsoleWinPosition() {
+        if (Settings.getInstance().readBool("gui.snapLogwindow")) {
+            Point mainwindowPos = getLocation();
+            consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + getHeight());
+        }
     }
 
     private void RunEmu() {
@@ -2786,19 +2794,8 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 
     @Override
     public void componentMoved(ComponentEvent e) {
-        if (snapConsole && consolewin.isVisible()) {
-            Point newPos = this.getLocation();
-            Point consolePos = consolewin.getLocation();
-            Dimension mainwindowSize = this.getSize();
-
-            if (consolePos.x == mainwindowPos.x
-                    && consolePos.y == mainwindowPos.y + mainwindowSize.height) {
-                consolewin.setLocation(newPos.x, newPos.y + mainwindowSize.height);
-            } else {
-                snapConsole = false;
-            }
-
-            mainwindowPos = newPos;
+        if (consolewin.isVisible()) {
+            updateConsoleWinPosition();
         }
     }
 
