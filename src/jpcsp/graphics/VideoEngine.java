@@ -2819,7 +2819,8 @@ public class VideoEngine {
 
             int bufferHeight = Utilities.makePow2(height);
             int textureSize = lineWidth * bufferHeight * bpp;
-            Buffer buffer = Memory.getInstance().getBuffer(context.textureTx_sourceAddress, textureSize);
+            int sourceAddr = context.textureTx_sourceAddress + (context.textureTx_sy * lineWidth + context.textureTx_sx) * bpp;
+            Buffer buffer = Memory.getInstance().getBuffer(sourceAddr, textureSize);
 
             if (State.captureGeNextFrame) {
                 log.info("Capture TRXKICK");
@@ -2843,7 +2844,7 @@ public class VideoEngine {
             re.setTextureMipmapMaxLevel(0);
             re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
             re.setPixelStore(lineWidth, bpp);
-            re.setTexSubImage(0, context.textureTx_sx, context.textureTx_sy, width, height, pixelFormatGe, pixelFormatGe, textureSize, buffer);
+            re.setTexSubImage(0, 0, 0, width, height, pixelFormatGe, pixelFormatGe, textureSize, buffer);
 
             re.startDirectRendering(true, false, true, true, false, 480, 272);
             re.setTextureFormat(pixelFormatGe, false);
@@ -2854,23 +2855,23 @@ public class VideoEngine {
             int i = 0;
             floatBufferArray[i++] = texCoordX;
             floatBufferArray[i++] = texCoordY;
-            floatBufferArray[i++] = width;
-            floatBufferArray[i++] = height;
+            floatBufferArray[i++] = dx + width;
+            floatBufferArray[i++] = dy + height;
 
             floatBufferArray[i++] = 0;
             floatBufferArray[i++] = texCoordY;
-            floatBufferArray[i++] = 0;
-            floatBufferArray[i++] = height;
+            floatBufferArray[i++] = dx;
+            floatBufferArray[i++] = dy + height;
 
             floatBufferArray[i++] = 0;
             floatBufferArray[i++] = 0;
-            floatBufferArray[i++] = 0;
-            floatBufferArray[i++] = 0;
+            floatBufferArray[i++] = dx;
+            floatBufferArray[i++] = dy;
 
             floatBufferArray[i++] = texCoordX;
             floatBufferArray[i++] = 0;
-            floatBufferArray[i++] = width;
-            floatBufferArray[i++] = 0;
+            floatBufferArray[i++] = dx + width;
+            floatBufferArray[i++] = dy;
 
             IREBufferManager bufferManager = re.getBufferManager();
             ByteBuffer byteBuffer = bufferManager.getBuffer(bufferId);
