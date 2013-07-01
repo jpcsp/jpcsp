@@ -78,7 +78,7 @@ import org.apache.log4j.Logger;
  * @author shadow
  */
 public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOwner {
-
+    
     private static final long serialVersionUID = -8481807175706172292L;
     private int DebuggerPC;
     private int SelectedPC;
@@ -103,12 +103,12 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     public DisassemblerFrame(Emulator emu) {
         this.emu = emu;
         listmodel = new DefaultListModel();
-
+        
         initComponents();
 
         // calculate the fixed cell height and width based on a dummy string
         disasmList.setPrototypeCellValue("PROTOTYPE");
-
+        
         gprTable.addPropertyChangeListener(new PropertyChangeListener() {
             @Override
             public void propertyChange(PropertyChangeEvent evt) {
@@ -118,7 +118,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                         int row = gprTable.getEditingRow();
                         int value = gprTable.getAddressAt(row);
                         boolean changedPC = false;
-
+                        
                         CpuState cpu = Emulator.getProcessor().cpu;
                         switch (row) {
                             case 0:
@@ -136,7 +136,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                                 cpu.setRegister(row - 3, value);
                                 break;
                         }
-
+                        
                         if (changedPC) {
                             SwingUtilities.invokeLater(new Runnable() {
                                 @Override
@@ -149,15 +149,15 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 }
             }
         });
-
+        
         addKeyAction(btnStepInto, "F5");
         addKeyAction(btnStepOver, "F6");
         addKeyAction(btnStepOut, "F7");
-
+        
         ViewTooltips.register(disasmList);
         disasmList.setCellRenderer(new StyledListCellRenderer() {
             private static final long serialVersionUID = 3921020228217850610L;
-
+            
             @Override
             protected void customizeStyledLabel(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 super.customizeStyledLabel(list, value, index, isSelected, cellHasFocus);
@@ -189,16 +189,16 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 }
             }
         });
-
+        
         RefreshDebugger(true);
     }
-
+    
     private void addKeyAction(JButton button, String key) {
         final String actionName = "click";
         button.getInputMap(JButton.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(key), actionName);
         button.getActionMap().put(actionName, new ClickAction(button));
     }
-
+    
     private void customizeStyledLabel(StyledLabel label, String text) {
         // breakpoint
         if (text.startsWith("<*>")) {
@@ -217,7 +217,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             if (length > text.length() - 3) {
                 length = text.length() - 3;
             }
-
+            
             label.addStyleRange(new StyleRange(3, length, Font.BOLD, Color.BLACK));
             // testing label.addStyleRange(new StyleRange(3, length, Font.PLAIN, Color.RED, Color.GREEN, 0));
 
@@ -255,7 +255,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         int lastfind = 0;
         // find register in disassembly
         while ((lastfind = text.indexOf("$", lastfind)) != -1) {
-
+            
             String regName = text.substring(lastfind);
             for (int i = 0; i < gprNames.length; i++) {
                 // we still need to check every possible register because a tracked register may not be the first operand
@@ -282,7 +282,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         DeleteAllBreakpoints();
         RefreshDebugger(true);
     }
-
+    
     public void SafeRefreshDebugger(final boolean moveToPC) {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
@@ -291,15 +291,15 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         });
     }
-
+    
     private void RefreshDebuggerDisassembly(boolean moveToPC) {
         CpuState cpu = Emulator.getProcessor().cpu;
         int pc;
-
+        
         if (moveToPC) {
             DebuggerPC = cpu.pc;
         }
-
+        
         ViewTooltips.unregister(disasmList);
         synchronized (listmodel) {
             listmodel.clear();
@@ -309,9 +309,9 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             for (pc = DebuggerPC; pc < (DebuggerPC + numVisibleRows * 0x00000004); pc += 0x00000004) {
                 if (Memory.isAddressGood(pc)) {
                     int opcode = Memory.getInstance().read32(pc);
-
+                    
                     Instruction insn = Decoder.instruction(opcode);
-
+                    
                     String line;
                     if (breakpoints.indexOf(pc) != -1) {
                         line = String.format("<*>%08X:[%08X]: %s", pc, opcode, insn.disasm(pc, opcode));
@@ -326,7 +326,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                     if (pc == SelectedPC) {
                         updateSelectedRegisters(line);
                     }
-
+                    
                 } else {
                     listmodel.addElement(String.format("   %08x: invalid address", pc));
                 }
@@ -334,7 +334,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         }
         ViewTooltips.register(disasmList);
     }
-
+    
     private void RefreshDebuggerRegisters() {
         CpuState cpu = Emulator.getProcessor().cpu;
 
@@ -356,7 +356,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         // vfpu
         VfpuFrame.getInstance().updateRegisters(cpu);
     }
-
+    
     final public void RefreshDebugger(boolean moveToPC) {
         RefreshDebuggerDisassembly(moveToPC);
         RefreshDebuggerRegisters();
@@ -365,7 +365,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         ManageMemBreaks.setEnabled(Memory.getInstance() instanceof DebuggerMemory);
         miManageMemoryBreakpoints.setEnabled(Memory.getInstance() instanceof DebuggerMemory);
     }
-
+    
     private void updateSelectedRegisters(String text) {
 
         // selected address (highlight constant branch/jump addresses)
@@ -374,7 +374,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         if (find != -1 && (find + 11) <= text.length() && text.charAt(find + 7) != ' ') {
             selectedAddress = text.substring(find + 3, find + 3 + 8);
         }
-
+        
         selectedRegCount = 0; // clear tracked registers
         int lastFind = 0;
         while ((lastFind = text.indexOf("$", lastFind)) != -1 && selectedRegCount < selectedRegColors.length) {
@@ -464,8 +464,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         gpoLabel8 = new javax.swing.JLabel();
         gpioLabel = new javax.swing.JLabel();
         lblCaptureReplay = new javax.swing.JLabel();
-        btnCapture = new javax.swing.JButton();
-        btnReplay = new javax.swing.JButton();
+        btnCapture = new javax.swing.JToggleButton();
+        btnReplay = new javax.swing.JToggleButton();
         lblDumpState = new javax.swing.JLabel();
         btnDumpDebugState = new javax.swing.JButton();
         txtSearch = new javax.swing.JTextField();
@@ -1002,7 +1002,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(miscPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(miscPanelLayout.createSequentialGroup()
                         .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(gpoLabel1)
@@ -1035,15 +1035,14 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                         .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(gpoLabel8)
                             .addComponent(gpiButton8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                        .addComponent(txtSearch, javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(lblSearch, javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(gpioLabel, javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(lblCaptureReplay, javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(lblDumpState, javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(btnReplay, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(btnCapture, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(btnDumpDebugState, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                    .addComponent(txtSearch)
+                    .addComponent(lblSearch)
+                    .addComponent(gpioLabel)
+                    .addComponent(lblCaptureReplay)
+                    .addComponent(lblDumpState)
+                    .addComponent(btnDumpDebugState, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnCapture, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnReplay, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
         miscPanelLayout.setVerticalGroup(
@@ -1281,7 +1280,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
 private void disasmListKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_disasmListKeyPressed
         int keyCode = evt.getKeyCode();
-
+        
         switch (keyCode) {
             case java.awt.event.KeyEvent.VK_DOWN:
                 DebuggerPC += 4;
@@ -1289,21 +1288,21 @@ private void disasmListKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:even
                 updateSelectedIndex();
                 evt.consume();
                 break;
-
+            
             case java.awt.event.KeyEvent.VK_UP:
                 DebuggerPC -= 4;
                 RefreshDebuggerDisassembly(false);
                 updateSelectedIndex();
                 evt.consume();
                 break;
-
+            
             case java.awt.event.KeyEvent.VK_PAGE_UP:
                 DebuggerPC -= 0x00000094;
                 RefreshDebuggerDisassembly(false);
                 updateSelectedIndex();
                 evt.consume();
                 break;
-
+            
             case java.awt.event.KeyEvent.VK_PAGE_DOWN:
                 DebuggerPC += 0x00000094;
                 RefreshDebuggerDisassembly(false);
@@ -1312,7 +1311,7 @@ private void disasmListKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:even
                 break;
         }
 }//GEN-LAST:event_disasmListKeyPressed
-
+    
 private void disasmListMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FIRST:event_disasmListMouseWheelMoved
         if (evt.getWheelRotation() < 0) {
             DebuggerPC -= 4;
@@ -1326,7 +1325,7 @@ private void disasmListMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GE
             evt.consume();
         }
 }//GEN-LAST:event_disasmListMouseWheelMoved
-
+    
     private void updateSelectedIndex() {
         if (SelectedPC >= DebuggerPC && SelectedPC < DebuggerPC + 0x00000094) {
             disasmList.setSelectedIndex((SelectedPC - DebuggerPC) / 4);
@@ -1353,11 +1352,11 @@ private void disasmListMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GE
         }
         return disasmList.getModel().getElementAt(disasmListGetSelectedIndex());
     }
-
+    
 private void ResetToPCActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetToPCActionPerformed
         RefreshDebuggerDisassembly(true);
 }//GEN-LAST:event_ResetToPCActionPerformed
-
+    
 private void JumpToAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_JumpToAddressActionPerformed
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
         String input = (String) JOptionPane.showInputDialog(this, bundle.getString("DisassemblerFrame.strEnterToJump.text"), "Jpcsp", JOptionPane.QUESTION_MESSAGE, null, null, String.format("%08x", Emulator.getProcessor().cpu.pc)); // NOI18N
@@ -1371,22 +1370,22 @@ private void JumpToAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN
             JOptionPane.showMessageDialog(this, bundle.getString("MemoryViewer.strInvalidAddress.text"));
             return;
         }
-
+        
         RefreshDebuggerDisassembly(false);
 }//GEN-LAST:event_JumpToAddressActionPerformed
-
+    
 private void DumpCodeToTextActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DumpCodeToTextActionPerformed
         DumpCodeDialog dlgDC = new DumpCodeDialog(this, DebuggerPC);
         dlgDC.setVisible(true);
-
+        
         if (dlgDC.getReturnValue() != DumpCodeDialog.DUMPCODE_APPROVE) {
             return;
         }
-
+        
         Logger.getRootLogger().debug("Start address: " + dlgDC.getStartAddress());
         Logger.getRootLogger().debug("End address: " + dlgDC.getEndAddress());
         Logger.getRootLogger().debug("File name: " + dlgDC.getFilename());
-
+        
         BufferedWriter bufferedWriter = null;
         try {
             bufferedWriter = new BufferedWriter(new FileWriter(dlgDC.getFilename()));
@@ -1407,7 +1406,7 @@ private void DumpCodeToTextActionPerformed(java.awt.event.ActionEvent evt) {//GE
                     // should we even both printing these?
                     bufferedWriter.write(String.format("%08X: invalid address", i));
                 }
-
+                
                 bufferedWriter.newLine();
             }
         } catch (FileNotFoundException ex) {
@@ -1427,14 +1426,14 @@ private void CopyAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
         Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
         clipboard.setContents(stringSelection, this);
 }//GEN-LAST:event_CopyAddressActionPerformed
-
+    
 private void CopyAllActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CopyAllActionPerformed
         String value = (String) disasmListGetSelectedValue();
         StringSelection stringSelection = new StringSelection(value);
         Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
         clipboard.setContents(stringSelection, this);
 }//GEN-LAST:event_CopyAllActionPerformed
-
+    
 private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BranchOrJumpActionPerformed
         String value = (String) disasmListGetSelectedValue();
         int address = value.indexOf("0x");
@@ -1449,22 +1448,22 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         if (addressend != -1) {
             add = add.substring(0, addressend);
         }
-
+        
         StringSelection stringSelection = new StringSelection(add);
         Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
         clipboard.setContents(stringSelection, this);
 }//GEN-LAST:event_BranchOrJumpActionPerformed
-
+    
     @Override
     public void lostOwnership(Clipboard aClipboard, Transferable aContents) {
         //do nothing
     }
-
+    
 private void disasmListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_disasmListMouseClicked
-
+        
         BranchOrJump.setEnabled(false);
         SetPCToCursor.setEnabled(false);
-
+        
         if (SwingUtilities.isRightMouseButton(evt) && disasmList.locationToIndex(evt.getPoint()) == disasmListGetSelectedIndex()) {
             //check if we can enable branch or jump address copy
             String line = (String) disasmListGetSelectedValue();
@@ -1480,11 +1479,11 @@ private void disasmListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:
             if (Memory.isAddressGood(addr)) {
                 SetPCToCursor.setEnabled(true);
             }
-
+            
             DisMenu.show(disasmList, evt.getX(), evt.getY());
         }
 }//GEN-LAST:event_disasmListMouseClicked
-
+    
 private void AddBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddBreakpointActionPerformed
         String value = (String) disasmListGetSelectedValue();
         if (value != null) {
@@ -1502,18 +1501,18 @@ private void AddBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN
             JpcspDialogManager.showInformation(this, "Breakpoint Help : " + "Select the line to add a breakpoint to.");
         }
 }//GEN-LAST:event_AddBreakpointActionPerformed
-
+    
 private void DeleteAllBreakpointsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DeleteAllBreakpointsActionPerformed
         DeleteAllBreakpoints();
 }//GEN-LAST:event_DeleteAllBreakpointsActionPerformed
-
+    
     public void DeleteAllBreakpoints() {
         if (!breakpoints.isEmpty()) {
             breakpoints.clear();
             RefreshDebuggerDisassembly(false);
         }
     }
-
+    
 private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DeleteBreakpointActionPerformed
         String value = (String) disasmListGetSelectedValue();
         if (value != null) {
@@ -1529,7 +1528,7 @@ private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//
             JpcspDialogManager.showInformation(this, "Breakpoint Help : " + "Select the line to remove a breakpoint from.");
         }
 }//GEN-LAST:event_DeleteBreakpointActionPerformed
-
+    
     private void removeTemporaryBreakpoints() {
         if (temporaryBreakpoint1 != 0) {
             breakpoints.remove(new Integer(temporaryBreakpoint1));
@@ -1540,7 +1539,7 @@ private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//
             temporaryBreakpoint2 = 0;
         }
     }
-
+    
     private void addTemporaryBreakpoints() {
         if (temporaryBreakpoint1 != 0) {
             breakpoints.add(new Integer(temporaryBreakpoint1));
@@ -1549,10 +1548,10 @@ private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//
             breakpoints.add(new Integer(temporaryBreakpoint2));
         }
     }
-
+    
     private void setTemporaryBreakpoints(boolean stepOver) {
         removeTemporaryBreakpoints();
-
+        
         int pc = Emulator.getProcessor().cpu.pc;
         int opcode = Emulator.getMemory().read32(pc);
         Instruction insn = Decoder.instruction(opcode);
@@ -1581,7 +1580,7 @@ private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//
                 branchingTo = Emulator.getProcessor().cpu.getRegister(rs);
                 isBranching = true;
             }
-
+            
             if (!isBranching) {
                 temporaryBreakpoint1 = npc;
             } else if (branchingTo != 0) {
@@ -1595,25 +1594,25 @@ private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//
                 }
             }
         }
-
+        
         addTemporaryBreakpoints();
         emu.RunEmu();
     }
-
+    
 private void StepIntoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_StepIntoActionPerformed
         setTemporaryBreakpoints(false);
 }//GEN-LAST:event_StepIntoActionPerformed
-
+    
 private void StepOverActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_StepOverActionPerformed
         stepOut = false;
         setTemporaryBreakpoints(true);
 }//GEN-LAST:event_StepOverActionPerformed
-
+    
 private void StepOutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_StepOutActionPerformed
         stepOut = true;
         setTemporaryBreakpoints(true);
 }//GEN-LAST:event_StepOutActionPerformed
-
+    
 private void RunDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunDebuggerActionPerformed
         stepOut = false;
         removeTemporaryBreakpoints();
@@ -1635,39 +1634,42 @@ private void RunDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
                 setTemporaryBreakpoints(true);
             } else {
                 removeTemporaryBreakpoints();
-
+                
                 Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_BREAKPOINT);
             }
         }
     }
-
+    
 private void PauseDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseDebuggerActionPerformed
         Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_PAUSE);
 }//GEN-LAST:event_PauseDebuggerActionPerformed
-
-// Called from Emulator
+    
     public void RefreshButtons() {
+        // Called from Emulator
         RunDebugger.setSelected(Emulator.run && !Emulator.pause);
         PauseDebugger.setSelected(Emulator.run && Emulator.pause);
+        
+        btnCapture.setSelected(State.captureGeNextFrame);
+        btnReplay.setSelected(State.replayGeNextFrame);
     }
-
+    
 private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
         //Called when the mainWindow is closed
         if (Settings.getInstance().readBool("gui.saveWindowPos")) {
             Settings.getInstance().writeWindowPos("disassembler", getLocation());
         }
 }//GEN-LAST:event_formWindowDeactivated
-
+    
     private boolean isCellChecked(JTable table) {
         for (int i = 0; i < table.getRowCount(); i++) {
             if (table.isCellSelected(i, 1)) {
                 return true;
             }
-
+            
         }
         return false;
     }
-
+    
 private void CopyValueActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CopyValueActionPerformed
         if (cop1Table.isShowing()) {
             float value = (Float) cop1Table.getValueAt(cop1Table.getSelectedRow(), 1);
@@ -1676,11 +1678,11 @@ private void CopyValueActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
             clipboard.setContents(stringSelection, this);
         }
 }//GEN-LAST:event_CopyValueActionPerformed
-
+    
     public int GetGPI() {
         return gpi;
     }
-
+    
     public void SetGPO(int gpo) {
         this.gpo = gpo;
         // TODO if we want to use a visibility check here, then we need to refresh
@@ -1692,7 +1694,7 @@ private void CopyValueActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
         }
         //}
     }
-
+    
     private void ToggleGPI(int index) {
         gpi ^= 1 << index;
 
@@ -1701,7 +1703,7 @@ private void CopyValueActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
             SetGPI(i, (gpi & (1 << i)) != 0);
         }
     }
-
+    
     private void SetGPO(int index, boolean on) {
         switch (index) {
             case 0:
@@ -1730,7 +1732,7 @@ private void CopyValueActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
                 break;
         }
     }
-
+    
     private void SetGPI(int index, boolean on) {
         switch (index) {
             case 0:
@@ -1759,7 +1761,7 @@ private void CopyValueActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
                 break;
         }
     }
-
+    
 private void SetPCToCursorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SetPCToCursorActionPerformed
         int index = disasmListGetSelectedIndex();
         if (index != -1) {
@@ -1771,7 +1773,7 @@ private void SetPCToCursorActionPerformed(java.awt.event.ActionEvent evt) {//GEN
             System.out.println("npc: " + Integer.toHexString(DebuggerPC + index * 4));
         }
 }//GEN-LAST:event_SetPCToCursorActionPerformed
-
+    
 private void ExportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExportBreaksActionPerformed
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp");
         JFileChooser fc = new JFileChooser();
@@ -1780,12 +1782,12 @@ private void ExportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         fc.setCurrentDirectory(new java.io.File("."));
         fc.addChoosableFileFilter(Constants.fltBreakpointFiles);
         fc.setFileFilter(Constants.fltBreakpointFiles);
-
+        
         int returnVal = fc.showSaveDialog(this);
         if (returnVal != JFileChooser.APPROVE_OPTION) {
             return;
         }
-
+        
         File f = fc.getSelectedFile();
         BufferedWriter out = null;
         try {
@@ -1796,25 +1798,25 @@ private void ExportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
                         bundle.getString("DisassemblerFrame.dlgExportBP.title"),
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.WARNING_MESSAGE);
-
+                
                 if (res != JOptionPane.YES_OPTION) {
                     return;
                 }
             }
-
+            
             out = new BufferedWriter(new FileWriter(f));
-
+            
             for (int i = 0; i < breakpoints.size(); i++) {
                 out.write(Integer.toHexString(breakpoints.get(i)) + System.getProperty("line.separator"));
             }
-
+            
         } catch (Exception ex) {
             ex.printStackTrace();
         } finally {
             Utilities.close(out);
         }
 }//GEN-LAST:event_ExportBreaksActionPerformed
-
+    
 private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ImportBreaksActionPerformed
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp");
         JFileChooser fc = new JFileChooser();
@@ -1822,12 +1824,12 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         fc.setCurrentDirectory(new java.io.File("."));
         fc.addChoosableFileFilter(Constants.fltBreakpointFiles);
         fc.setFileFilter(Constants.fltBreakpointFiles);
-
+        
         int returnVal = fc.showOpenDialog(this);
         if (returnVal != JFileChooser.APPROVE_OPTION) {
             return;
         }
-
+        
         File f = fc.getSelectedFile();
         BufferedReader in = null;
         try {
@@ -1838,38 +1840,38 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
                         bundle.getString("DisassemblerFrame.strInvalidBRKFile.text"),
                         bundle.getString("DisassemblerFrame.dlgImportBP.title"),
                         JOptionPane.ERROR_MESSAGE);
-
+                
                 return;
             }
-
+            
             in = new BufferedReader(new FileReader(f));
             String nextBrk = in.readLine();
-
+            
             while (nextBrk != null) {
                 breakpoints.add(Integer.parseInt(nextBrk, 16));
                 nextBrk = in.readLine();
             }
-
+            
             RefreshDebuggerDisassembly(false);
-
+            
         } catch (Exception ex) {
             ex.printStackTrace();
         } finally {
             Utilities.close(in);
         }
 }//GEN-LAST:event_ImportBreaksActionPerformed
-
+    
     private void ManageMemBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ManageMemBreaksActionPerformed
         if (mbpDialog == null) {
             mbpDialog = new MemoryBreakpointsDialog(this);
         }
         mbpDialog.setVisible(true);
     }//GEN-LAST:event_ManageMemBreaksActionPerformed
-
+    
     private void CloseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CloseActionPerformed
         setVisible(false);
     }//GEN-LAST:event_CloseActionPerformed
-
+    
     private void txtSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtSearchActionPerformed
 
         //Basic text-based search function
@@ -1878,74 +1880,74 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 
         String text = txtSearch.getText();
         String current = "";
-
+        
         disasmList.setSelectedIndex(srcounter);
-
+        
         while (!current.contains(text)) {
             DebuggerPC += 4;
             SelectedPC = DebuggerPC;
             RefreshDebugger(false);
             updateSelectedIndex();
-
+            
             current = (String) disasmListGetSelectedValue();
             srcounter++;
         }
     }//GEN-LAST:event_txtSearchActionPerformed
-
+    
     private void btnDumpDebugStateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDumpDebugStateActionPerformed
         DumpDebugState.dumpDebugState();
     }//GEN-LAST:event_btnDumpDebugStateActionPerformed
-
-    private void btnReplayActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnReplayActionPerformed
-        State.replayGeNextFrame = true;
-    }//GEN-LAST:event_btnReplayActionPerformed
-
-    private void btnCaptureActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCaptureActionPerformed
-        State.captureGeNextFrame = true;
-    }//GEN-LAST:event_btnCaptureActionPerformed
-
+    
     private void gpiButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gpiButton8ActionPerformed
         ToggleGPI(7);
     }//GEN-LAST:event_gpiButton8ActionPerformed
-
+    
     private void gpiButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gpiButton7ActionPerformed
         ToggleGPI(6);
     }//GEN-LAST:event_gpiButton7ActionPerformed
-
+    
     private void gpiButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gpiButton6ActionPerformed
         ToggleGPI(5);
     }//GEN-LAST:event_gpiButton6ActionPerformed
-
+    
     private void gpiButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gpiButton5ActionPerformed
         ToggleGPI(4);
     }//GEN-LAST:event_gpiButton5ActionPerformed
-
+    
     private void gpiButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gpiButton4ActionPerformed
         ToggleGPI(3);
     }//GEN-LAST:event_gpiButton4ActionPerformed
-
+    
     private void gpiButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gpiButton3ActionPerformed
         ToggleGPI(2);
     }//GEN-LAST:event_gpiButton3ActionPerformed
-
+    
     private void gpiButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gpiButton2ActionPerformed
         ToggleGPI(1);
     }//GEN-LAST:event_gpiButton2ActionPerformed
-
+    
     private void gpiButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gpiButton1ActionPerformed
         ToggleGPI(0);
     }//GEN-LAST:event_gpiButton1ActionPerformed
-
+    
     private void cop1TableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_cop1TableMouseClicked
         if (SwingUtilities.isRightMouseButton(evt) && cop1Table.isColumnSelected(1) && isCellChecked(cop1Table)) {
             RegMenu.show(cop1Table, evt.getX(), evt.getY());
         }
     }//GEN-LAST:event_cop1TableMouseClicked
-
+    
     private void disasmListComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_disasmListComponentResized
         RefreshDebuggerDisassembly(false);
     }//GEN-LAST:event_disasmListComponentResized
-
+    
+    private void btnCaptureActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCaptureActionPerformed
+        State.captureGeNextFrame = btnCapture.isSelected();
+    }//GEN-LAST:event_btnCaptureActionPerformed
+    
+    private void btnReplayActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnReplayActionPerformed
+        State.replayGeNextFrame = btnReplay.isSelected();
+    }//GEN-LAST:event_btnReplayActionPerformed
+    
     @Override
     public void dispose() {
         if (mbpDialog != null) {
@@ -1973,9 +1975,9 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     private javax.swing.JButton ResetToPCbutton;
     private javax.swing.JToggleButton RunDebugger;
     private javax.swing.JMenuItem SetPCToCursor;
-    private javax.swing.JButton btnCapture;
+    private javax.swing.JToggleButton btnCapture;
     private javax.swing.JButton btnDumpDebugState;
-    private javax.swing.JButton btnReplay;
+    private javax.swing.JToggleButton btnReplay;
     private javax.swing.JButton btnStepInto;
     private javax.swing.JButton btnStepOut;
     private javax.swing.JButton btnStepOver;
@@ -2039,14 +2041,14 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     // End of variables declaration//GEN-END:variables
 
     private static class ClickAction extends AbstractAction {
-
+        
         private static final long serialVersionUID = -6595335927462915819L;
         private JButton button;
-
+        
         public ClickAction(JButton button) {
             this.button = button;
         }
-
+        
         @Override
         public void actionPerformed(ActionEvent e) {
             button.doClick();

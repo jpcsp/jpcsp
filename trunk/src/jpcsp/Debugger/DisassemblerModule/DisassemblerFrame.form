@@ -883,9 +883,9 @@
           <Layout>
             <DimensionLayout dim="0">
               <Group type="103" groupAlignment="0" attributes="0">
-                  <Group type="102" alignment="0" attributes="0">
+                  <Group type="102" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="0" attributes="0">
+                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
                           <Group type="102" alignment="0" attributes="0">
                               <Group type="103" groupAlignment="0" attributes="0">
                                   <Component id="gpoLabel1" alignment="0" min="-2" max="-2" attributes="0"/>
@@ -927,16 +927,14 @@
                                   <Component id="gpiButton8" alignment="0" min="-2" max="-2" attributes="0"/>
                               </Group>
                           </Group>
-                          <Group type="103" alignment="0" groupAlignment="1" max="-2" attributes="0">
-                              <Component id="txtSearch" alignment="0" max="32767" attributes="1"/>
-                              <Component id="lblSearch" alignment="0" min="-2" max="-2" attributes="0"/>
-                              <Component id="gpioLabel" alignment="0" min="-2" max="-2" attributes="0"/>
-                              <Component id="lblCaptureReplay" alignment="0" min="-2" max="-2" attributes="0"/>
-                              <Component id="lblDumpState" alignment="0" min="-2" max="-2" attributes="0"/>
-                              <Component id="btnReplay" alignment="0" max="32767" attributes="1"/>
-                              <Component id="btnCapture" alignment="0" max="32767" attributes="0"/>
-                              <Component id="btnDumpDebugState" alignment="0" max="32767" attributes="0"/>
-                          </Group>
+                          <Component id="txtSearch" alignment="0" max="32767" attributes="1"/>
+                          <Component id="lblSearch" alignment="0" min="-2" max="-2" attributes="0"/>
+                          <Component id="gpioLabel" alignment="0" min="-2" max="-2" attributes="0"/>
+                          <Component id="lblCaptureReplay" alignment="0" min="-2" max="-2" attributes="0"/>
+                          <Component id="lblDumpState" alignment="0" min="-2" max="-2" attributes="0"/>
+                          <Component id="btnDumpDebugState" alignment="0" max="32767" attributes="0"/>
+                          <Component id="btnCapture" alignment="0" max="32767" attributes="0"/>
+                          <Component id="btnReplay" max="32767" attributes="0"/>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
                   </Group>
@@ -1183,7 +1181,7 @@
                 </Property>
               </Properties>
             </Component>
-            <Component class="javax.swing.JButton" name="btnCapture">
+            <Component class="javax.swing.JToggleButton" name="btnCapture">
               <Properties>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
                   <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="DisassemblerFrame.btnCapture.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
@@ -1193,7 +1191,7 @@
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnCaptureActionPerformed"/>
               </Events>
             </Component>
-            <Component class="javax.swing.JButton" name="btnReplay">
+            <Component class="javax.swing.JToggleButton" name="btnReplay">
               <Properties>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
                   <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="DisassemblerFrame.btnReplay.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
