@@ -7058,7 +7058,8 @@ public class VideoEngine {
 
 	private void initTextureBuffers() {
 		int maxTextureSize = 1 << maxTextureSizeLog2;
-		int tmpBufferSize = maxTextureSize * maxTextureSize;
+		// We might need more space for a texture of size 512x512 and bufferWidth=1024
+		int tmpBufferSize = Math.max(maxTextureSize, 1024) * maxTextureSize;
 		if (tmp_texture_buffer32 == null || tmp_texture_buffer32.length != tmpBufferSize) {
 			// Tell the garbage collector that the old arrays are no longer in use.
 			tmp_texture_buffer32 = null;
