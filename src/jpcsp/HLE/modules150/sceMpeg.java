@@ -63,6 +63,7 @@ import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules150.IoFileMgrForUser.IIoListener;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
+import jpcsp.HLE.modules150.scePsmf.PSMFHeader;
 import jpcsp.HLE.modules150.scePsmf.PSMFStream;
 import jpcsp.connector.MpegCodec;
 import jpcsp.filesystems.SeekableDataInput;
@@ -676,6 +677,7 @@ public class sceMpeg extends HLEModule {
     private IURLProtocolHandler getProtocolHandler() {
 		IURLProtocolHandler protocolHandler;
 		if (hasCompleteProtocolHandler()) {
+			log.info(String.format("Reading MPEG video from %s", meFile));
 			protocolHandler = new VirtualFileProtocolHandler(meFile);
 		} else {
 			protocolHandler = meChannel;
@@ -897,7 +899,7 @@ public class sceMpeg extends HLEModule {
 					}
 					memoryWriter.flush();
 					if (mem.read32(tmpAddress + PSMF_MAGIC_OFFSET) == PSMF_MAGIC) {
-						analyseMpeg(tmpAddress);
+						analyseMpeg(tmpAddress, null);
 				        if (isCurrentMpegAnalyzed() && meFile == null && mpegStreamSize > 0 && mpegOffset > 0 && mpegOffset <= mpegStreamSize) {
 							meFile = new PartialVirtualFile(vFile, vFile.getPosition() - MPEG_HEADER_BUFFER_MINIMUM_SIZE, mpegStreamSize + mpegOffset);
 		            		log.info(String.format("Using MPEG file for streaming: %s", meFile));
@@ -932,7 +934,7 @@ public class sceMpeg extends HLEModule {
 					}
 					memoryWriter.flush();
 					if (mem.read32(tmpAddress + PSMF_MAGIC_OFFSET) == PSMF_MAGIC) {
-						analyseMpeg(tmpAddress);
+						analyseMpeg(tmpAddress, null);
 				        if (isCurrentMpegAnalyzed() && meFile == null && mpegStreamSize > 0 && mpegOffset > 0 && mpegOffset <= mpegStreamSize) {
 							UmdIsoFile mpegFile = new UmdIsoFile(umdIsoReader, headerSectorNumber, mpegStreamSize + mpegOffset, null, umdIsoFile.getName());
 							meFile = new UmdIsoVirtualFile(mpegFile);
@@ -1063,7 +1065,7 @@ public class sceMpeg extends HLEModule {
     		return;
     	}
 
-    	analyseMpeg(readAddress);
+    	analyseMpeg(readAddress, null);
         if (isCurrentMpegAnalyzed() && meFile == null && mpegStreamSize > 0 && mpegOffset > 0 && mpegOffset <= mpegStreamSize) {
         	if (vFile != null) {
         		meFile = vFile.duplicate();
@@ -1170,7 +1172,7 @@ public class sceMpeg extends HLEModule {
     	return mem.read16(bufferAddr + offset);
     }
 
-    protected void analyseMpeg(int bufferAddr, byte[] mpegHeader) {
+    protected void analyseMpeg(int bufferAddr, byte[] mpegHeader, PSMFHeader psmfHeader) {
         Memory mem = Memory.getInstance();
 
         mpegStreamAddr = bufferAddr;
@@ -1198,12 +1200,12 @@ public class sceMpeg extends HLEModule {
         			}
         		}
         		mpegHeader = completeMpegHeader;
-        		analyseMpeg(bufferAddr, mpegHeader);
+        		analyseMpeg(bufferAddr, mpegHeader, psmfHeader);
         		return;
         	}
         }
 
-        psmfStreams = scePsmf.readPsmfStreams(mem, bufferAddr, mpegHeader, null);
+        psmfStreams = scePsmf.readPsmfStreams(mem, bufferAddr, mpegHeader, psmfHeader);
         mpegFirstDate = convertTimestampToDate(mpegFirstTimestamp);
         mpegLastDate = convertTimestampToDate(mpegLastTimestamp);
         avcDecodeResult = MPEG_AVC_DECODE_SUCCESS;
@@ -1224,8 +1226,8 @@ public class sceMpeg extends HLEModule {
         endOfVideoReached = false;
     }
 
-    protected void analyseMpeg(int bufferAddr) {
-        analyseMpeg(bufferAddr, null);
+    protected void analyseMpeg(int bufferAddr, PSMFHeader psmfHeader) {
+        analyseMpeg(bufferAddr, null, psmfHeader);
 
         if (!isCurrentMpegAnalyzed() && mpegStreamSize > 0 && mpegOffset > 0 && mpegOffset <= mpegStreamSize) {
             if (checkMediaEngineState()) {
@@ -1394,7 +1396,7 @@ public class sceMpeg extends HLEModule {
      */
     @HLEFunction(nid = 0x21FF80E4, version = 150, checkInsideInterrupt = true)
     public int sceMpegQueryStreamOffset(@CheckArgument("checkMpegHandle") int mpeg, TPointer bufferAddr, TPointer32 offsetAddr) {
-        analyseMpeg(bufferAddr.getAddress());
+        analyseMpeg(bufferAddr.getAddress(), null);
 
         // Check magic.
         if (mpegMagic != PSMF_MAGIC) {
@@ -1431,7 +1433,7 @@ public class sceMpeg extends HLEModule {
      */
     @HLEFunction(nid = 0x611E9E11, version = 150, checkInsideInterrupt = true)
     public int sceMpegQueryStreamSize(TPointer bufferAddr, TPointer32 sizeAddr) {
-        analyseMpeg(bufferAddr.getAddress());
+        analyseMpeg(bufferAddr.getAddress(), null);
         
         // Check magic.
         if (mpegMagic != PSMF_MAGIC) {

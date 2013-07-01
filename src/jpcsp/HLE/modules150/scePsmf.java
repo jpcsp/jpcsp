@@ -257,7 +257,7 @@ public class scePsmf extends HLEModule {
 
             headerOffset = addr;
 
-            Modules.sceMpegModule.analyseMpeg(addr);
+            Modules.sceMpegModule.analyseMpeg(addr, this);
 
             int streamDataTotalSize = endianSwap32(readUnaligned32(mem, addr + 0x50));
             int unk = endianSwap32(readUnaligned32(mem, addr + 0x60));
@@ -730,7 +730,7 @@ public class scePsmf extends HLEModule {
         offsetAddr.setValue(offset);
 
         // Always let sceMpeg handle the PSMF analysis.
-        Modules.sceMpegModule.analyseMpeg(bufferAddr.getAddress());
+        Modules.sceMpegModule.analyseMpeg(bufferAddr.getAddress(), null);
 
         return 0;
     }
@@ -741,7 +741,7 @@ public class scePsmf extends HLEModule {
         sizeAddr.setValue(size);
 
         // Always let sceMpeg handle the PSMF analysis.
-        Modules.sceMpegModule.analyseMpeg(bufferAddr.getAddress());
+        Modules.sceMpegModule.analyseMpeg(bufferAddr.getAddress(), null);
 
         return 0;
     }

@@ -322,7 +322,7 @@ public class scePsmfPlayer extends HLEModule {
             pmfFileData = new byte[length];
             psmfFile.readFully(pmfFileData);
 
-            Modules.sceMpegModule.analyseMpeg(0, pmfFileData);
+            Modules.sceMpegModule.analyseMpeg(0, pmfFileData, null);
             psmfLastTimestamp = Modules.sceMpegModule.mpegLastTimestamp;
             psmfLastDate = Modules.sceMpegModule.mpegLastDate;
 
