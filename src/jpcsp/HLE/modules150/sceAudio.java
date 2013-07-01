@@ -256,11 +256,18 @@ public class sceAudio extends HLEModule {
         return ret;
     }
 
-    protected int hleAudioGetChannelRestLen(SoundChannel channel) {
+    protected int hleAudioGetChannelRestLength(SoundChannel channel) {
         int len = channel.getRestLength();
 
+        // To avoid small "clicks" in the sound, simulate a rest length of 0
+        // when approaching the end of the buffered samples.
+        // 2048 is an empirical value.
+        if (len <= 2048) {
+        	len = 0;
+        }
+
         if (log.isDebugEnabled()) {
-            log.debug(String.format("hleAudioGetChannelRestLen(%d) = %d", channel.getIndex(), len));
+            log.debug(String.format("hleAudioGetChannelRestLength(%d) = %d", channel.getIndex(), len));
         }
 
         return len;
@@ -656,7 +663,7 @@ public class sceAudio extends HLEModule {
 
     @HLEFunction(nid = 0xB011922F, version = 150, checkInsideInterrupt = true)
     public int sceAudioGetChannelRestLength(@CheckArgument("checkChannel") int channel) {
-    	return hleAudioGetChannelRestLen(pspPCMChannels[channel]);
+    	return hleAudioGetChannelRestLength(pspPCMChannels[channel]);
     }
 
     @HLEFunction(nid = 0xCB2E439E, version = 150, checkInsideInterrupt = true)
@@ -702,7 +709,7 @@ public class sceAudio extends HLEModule {
         	return SceKernelErrors.ERROR_AUDIO_CHANNEL_NOT_RESERVED;
         }
 
-        return hleAudioGetChannelRestLen(pspSRCChannel);
+        return hleAudioGetChannelRestLength(pspSRCChannel);
     }
 
     @HLEFunction(nid = 0x63F2889C, version = 150, checkInsideInterrupt = true)
@@ -829,6 +836,6 @@ public class sceAudio extends HLEModule {
 
     @HLEFunction(nid = 0xE9D97901, version = 150, checkInsideInterrupt = true)
     public int sceAudioGetChannelRestLen(@CheckArgument("checkChannel") int channel) {
-    	return hleAudioGetChannelRestLen(pspPCMChannels[channel]);
+    	return hleAudioGetChannelRestLength(pspPCMChannels[channel]);
     }
 }
