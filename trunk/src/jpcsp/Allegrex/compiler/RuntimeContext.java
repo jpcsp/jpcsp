@@ -90,7 +90,7 @@ public class RuntimeContext {
 	private static final Map<Integer, CodeBlock> codeBlocks = Collections.synchronizedMap(new HashMap<Integer, CodeBlock>());
 	private static int codeBlocksLowestAddress = Integer.MAX_VALUE;
 	private static int codeBlocksHighestAddress = Integer.MIN_VALUE;
-	// A fast lookup array for executables (to improve the performance of the Allegrex jalr instruction)
+	// A fast lookup array for executables (to improve the performance of the Allegrex instruction jalr)
 	private static IExecutable[] fastExecutableLookup;
 	private static final Map<SceKernelThreadInfo, RuntimeThread> threads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
 	private static final Map<SceKernelThreadInfo, RuntimeThread> toBeStoppedThreads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
