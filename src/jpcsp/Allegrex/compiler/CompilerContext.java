@@ -92,6 +92,7 @@ import org.objectweb.asm.Type;
  *
  */
 public class CompilerContext implements ICompilerContext {
+	protected static Logger log = Compiler.log;
 	private CompilerClassLoader classLoader;
 	private CodeBlock codeBlock;
 	private int numberInstructionsToBeSkipped;
@@ -285,8 +286,8 @@ public class CompilerContext implements ICompilerContext {
 			value = 0.0f - value;
 		}
 
-		if (Compiler.log.isTraceEnabled() && pfxSrcState.isKnown() && pfxSrcState.pfxSrc.enabled) {
-			Compiler.log.trace(String.format("PFX    %08X - getPfxSrcCstValue %d -> %f", getCodeInstruction().getAddress(), n, value));
+		if (log.isTraceEnabled() && pfxSrcState.isKnown() && pfxSrcState.pfxSrc.enabled) {
+			log.trace(String.format("PFX    %08X - getPfxSrcCstValue %d -> %f", getCodeInstruction().getAddress(), n, value));
 		}
 
 		return new Float(value);
@@ -313,14 +314,14 @@ public class CompilerContext implements ICompilerContext {
     	}
 
     	if (pfxSrcState.pfxSrc.abs[n]) {
-			if (Compiler.log.isTraceEnabled() && pfxSrcState.isKnown() && pfxSrcState.pfxSrc.enabled) {
-				Compiler.log.trace(String.format("PFX    %08X - applyPfxSrcPostfix abs(%d)", getCodeInstruction().getAddress(), n));
+			if (log.isTraceEnabled() && pfxSrcState.isKnown() && pfxSrcState.pfxSrc.enabled) {
+				log.trace(String.format("PFX    %08X - applyPfxSrcPostfix abs(%d)", getCodeInstruction().getAddress(), n));
 			}
     		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "abs", "(F)F");
     	}
     	if (pfxSrcState.pfxSrc.neg[n]) {
-			if (Compiler.log.isTraceEnabled() && pfxSrcState.isKnown() && pfxSrcState.pfxSrc.enabled) {
-				Compiler.log.trace(String.format("PFX    %08X - applyPfxSrcPostfix neg(%d)", getCodeInstruction().getAddress(), n));
+			if (log.isTraceEnabled() && pfxSrcState.isKnown() && pfxSrcState.pfxSrc.enabled) {
+				log.trace(String.format("PFX    %08X - applyPfxSrcPostfix neg(%d)", getCodeInstruction().getAddress(), n));
 			}
     		mv.visitInsn(Opcodes.FNEG);
     	}
@@ -339,8 +340,8 @@ public class CompilerContext implements ICompilerContext {
     		return n;
     	}
 
-		if (Compiler.log.isTraceEnabled() && pfxSrcState.isKnown() && pfxSrcState.pfxSrc.enabled) {
-			Compiler.log.trace(String.format("PFX    %08X - getPfxSrcIndex %d -> %d", getCodeInstruction().getAddress(), n, pfxSrcState.pfxSrc.swz[n]));
+		if (log.isTraceEnabled() && pfxSrcState.isKnown() && pfxSrcState.pfxSrc.enabled) {
+			log.trace(String.format("PFX    %08X - getPfxSrcIndex %d -> %d", getCodeInstruction().getAddress(), n, pfxSrcState.pfxSrc.swz[n]));
 		}
     	return pfxSrcState.pfxSrc.swz[n];
     }
@@ -367,8 +368,8 @@ public class CompilerContext implements ICompilerContext {
     }
 
     private void loadVRegister(int vsize, int reg, int n, VfpuPfxSrcState pfxSrcState, boolean isFloat) {
-		if (Compiler.log.isTraceEnabled() && pfxSrcState != null && pfxSrcState.isKnown() && pfxSrcState.pfxSrc.enabled) {
-			Compiler.log.trace(String.format("PFX    %08X - loadVRegister %d, %d, %d", getCodeInstruction().getAddress(), vsize, reg, n));
+		if (log.isTraceEnabled() && pfxSrcState != null && pfxSrcState.isKnown() && pfxSrcState.pfxSrc.enabled) {
+			log.trace(String.format("PFX    %08X - loadVRegister %d, %d, %d", getCodeInstruction().getAddress(), vsize, reg, n));
 		}
 
 		int m = (reg >> 2) & 7;
@@ -509,8 +510,8 @@ public class CompilerContext implements ICompilerContext {
 
     	switch (pfxDstState.pfxDst.sat[n]) {
     		case 1:
-				if (Compiler.log.isTraceEnabled() && pfxDstState != null && pfxDstState.isKnown() && pfxDstState.pfxDst.enabled) {
-					Compiler.log.trace(String.format("PFX    %08X - applyPfxDstPostfix %d [0:1]", getCodeInstruction().getAddress(), n));
+				if (log.isTraceEnabled() && pfxDstState != null && pfxDstState.isKnown() && pfxDstState.pfxDst.enabled) {
+					log.trace(String.format("PFX    %08X - applyPfxDstPostfix %d [0:1]", getCodeInstruction().getAddress(), n));
 				}
 				if (!isFloat) {
 					convertVIntToFloat();
@@ -524,8 +525,8 @@ public class CompilerContext implements ICompilerContext {
         		}
         		break;
     		case 3:
-				if (Compiler.log.isTraceEnabled() && pfxDstState != null && pfxDstState.isKnown() && pfxDstState.pfxDst.enabled) {
-					Compiler.log.trace(String.format("PFX    %08X - applyPfxDstPostfix %d [-1:1]", getCodeInstruction().getAddress(), n));
+				if (log.isTraceEnabled() && pfxDstState != null && pfxDstState.isKnown() && pfxDstState.pfxDst.enabled) {
+					log.trace(String.format("PFX    %08X - applyPfxDstPostfix %d [-1:1]", getCodeInstruction().getAddress(), n));
 				}
 				if (!isFloat) {
 					convertVIntToFloat();
@@ -608,14 +609,14 @@ public class CompilerContext implements ICompilerContext {
     }
 
     private void storeVRegister(int vsize, int reg, int n, VfpuPfxDstState pfxDstState, boolean isFloat) {
-		if (Compiler.log.isTraceEnabled() && pfxDstState != null && pfxDstState.isKnown() && pfxDstState.pfxDst.enabled) {
-			Compiler.log.trace(String.format("PFX    %08X - storeVRegister %d, %d, %d", getCodeInstruction().getAddress(), vsize, reg, n));
+		if (log.isTraceEnabled() && pfxDstState != null && pfxDstState.isKnown() && pfxDstState.pfxDst.enabled) {
+			log.trace(String.format("PFX    %08X - storeVRegister %d, %d, %d", getCodeInstruction().getAddress(), vsize, reg, n));
 		}
 
     	if (preparedRegisterForStore == reg) {
             if (isPfxDstMasked(pfxDstState, n)) {
-				if (Compiler.log.isTraceEnabled() && pfxDstState != null && pfxDstState.isKnown() && pfxDstState.pfxDst.enabled) {
-					Compiler.log.trace(String.format("PFX    %08X - storeVRegister %d masked", getCodeInstruction().getAddress(), n));
+				if (log.isTraceEnabled() && pfxDstState != null && pfxDstState.isKnown() && pfxDstState.pfxDst.enabled) {
+					log.trace(String.format("PFX    %08X - storeVRegister %d masked", getCodeInstruction().getAddress(), n));
 				}
 
                 mv.visitInsn(Opcodes.POP);
@@ -637,7 +638,7 @@ public class CompilerContext implements ICompilerContext {
             }
 	        preparedRegisterForStore = -1;
     	} else {
-    		Compiler.log.error("storeVRegister with non-prepared register is not supported");
+    		log.error("storeVRegister with non-prepared register is not supported");
     	}
     }
 
@@ -788,8 +789,8 @@ public class CompilerContext implements ICompilerContext {
         		// NativeCodeSequence Nop means nothing to do!
     		} else {
     			// Call NativeCodeSequence
-    			if (Compiler.log.isDebugEnabled()) {
-    				Compiler.log.debug(String.format("Inlining call at 0x%08X to %s", getCodeInstruction().getAddress(), preparedCallNativeCodeBlock));
+    			if (log.isDebugEnabled()) {
+    				log.debug(String.format("Inlining call at 0x%08X to %s", getCodeInstruction().getAddress(), preparedCallNativeCodeBlock));
     			}
 
     			visitNativeCodeSequence(preparedCallNativeCodeBlock, address, null);
@@ -1063,7 +1064,7 @@ public class CompilerContext implements ICompilerContext {
 				mv.visitTypeInsn(Opcodes.CHECKCAST, Type.getInternalName(parameterType));
 	    		parameterReader.incrementCurrentStackSize();
 			} else {
-				Compiler.log.error(String.format("Unsupported sycall parameter type '%s'", parameterType.getName()));
+				log.error(String.format("Unsupported sycall parameter type '%s'", parameterType.getName()));
 				Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
 			}
     	}
@@ -1076,7 +1077,7 @@ public class CompilerContext implements ICompilerContext {
 					try {
 						methodToCheck = func.getHLEModule().getClass().getMethod(checkArgument.value(), parameterType);
 					} catch (Exception e) {
-						Compiler.log.error(String.format("CheckArgument method '%s' not found in %s", checkArgument.value(), func.getModuleName()), e);
+						log.error(String.format("CheckArgument method '%s' not found in %s", checkArgument.value(), func.getModuleName()), e);
 					}
 					break;
 				}
@@ -1174,7 +1175,7 @@ public class CompilerContext implements ICompilerContext {
 					storeRegister(_v0);
 				}
 			} else {
-				Compiler.log.error(String.format("Unsupported sycall return value type '%s'", returnType.getName()));
+				log.error(String.format("Unsupported sycall return value type '%s'", returnType.getName()));
 			}
     	}
     }
@@ -1795,7 +1796,7 @@ public class CompilerContext implements ICompilerContext {
             loadImm(address);
             visitJump();
         } else {
-            Compiler.log.error("Not implemented: branching to an unknown address");
+            log.error("Not implemented: branching to an unknown address");
             if (opcode == Opcodes.IF_ACMPEQ ||
                 opcode == Opcodes.IF_ACMPNE ||
                 opcode == Opcodes.IF_ICMPEQ ||
@@ -2647,19 +2648,22 @@ public class CompilerContext implements ICompilerContext {
 	    if (getCodeBlock().getLength() == nativeCodeSequence.getNumOpcodes() && !nativeCodeSequence.hasBranchInstruction()) {
         	nativeCodeManager.setCompiledNativeCodeBlock(getCodeBlock().getStartAddress(), nativeCodeSequence);
 
-        	// Be more verbose when Debug enabled
-	        if (Compiler.log.isDebugEnabled()) {
-	        	Compiler.log.debug(String.format("Replacing CodeBlock at 0x%08X (%08X-0x%08X, length %d) by %s", getCodeBlock().getStartAddress(), getCodeBlock().getLowestAddress(), codeBlock.getHighestAddress(), codeBlock.getLength(), nativeCodeSequence));
-	        } else if (Compiler.log.isInfoEnabled()) {
-	        	Compiler.log.info(String.format("Replacing CodeBlock at 0x%08X by Native Code '%s'", getCodeBlock().getStartAddress(), nativeCodeSequence.getName()));
+        	// Be more verbose when Debug enabled.
+        	// Only log "Nop" native code sequence in debug.
+        	if (log.isDebugEnabled() || nativeCodeSequence.getNativeCodeSequenceClass().equals(Nop.class)) {
+        		if (log.isDebugEnabled()) {
+        			log.debug(String.format("Replacing CodeBlock at 0x%08X (%08X-0x%08X, length %d) by %s", getCodeBlock().getStartAddress(), getCodeBlock().getLowestAddress(), codeBlock.getHighestAddress(), codeBlock.getLength(), nativeCodeSequence));
+        		}
+	        } else if (log.isInfoEnabled()) {
+	        	log.info(String.format("Replacing CodeBlock at 0x%08X by Native Code '%s'", getCodeBlock().getStartAddress(), nativeCodeSequence.getName()));
 	        }
 	    } else {
         	// Be more verbose when Debug enabled
 	    	int endAddress = getCodeInstruction().getAddress() + (nativeCodeSequence.getNumOpcodes() - 1) * 4;
-	    	if (Compiler.log.isDebugEnabled()) {
-		    	Compiler.log.debug(String.format("Replacing CodeSequence at 0x%08X-0x%08X by Native Code %s", getCodeInstruction().getAddress(), endAddress, nativeCodeSequence));
-	        } else if (Compiler.log.isInfoEnabled()) {
-		    	Compiler.log.info(String.format("Replacing CodeSequence at 0x%08X-0x%08X by Native Code '%s'", getCodeInstruction().getAddress(), endAddress, nativeCodeSequence.getName()));
+	    	if (log.isDebugEnabled()) {
+		    	log.debug(String.format("Replacing CodeSequence at 0x%08X-0x%08X by Native Code %s", getCodeInstruction().getAddress(), endAddress, nativeCodeSequence));
+	        } else if (log.isInfoEnabled()) {
+		    	log.info(String.format("Replacing CodeSequence at 0x%08X-0x%08X by Native Code '%s'", getCodeInstruction().getAddress(), endAddress, nativeCodeSequence.getName()));
 	    	}
 	    }
 	}
@@ -3252,8 +3256,8 @@ public class CompilerContext implements ICompilerContext {
 
     @Override
     public boolean isPfxConsumed(int flag) {
-        if (Compiler.log.isTraceEnabled()) {
-        	Compiler.log.trace(String.format("PFX -> %08X: %s", getCodeInstruction().getAddress(), getCodeInstruction().getInsn().disasm(getCodeInstruction().getAddress(), getCodeInstruction().getOpcode())));
+        if (log.isTraceEnabled()) {
+        	log.trace(String.format("PFX -> %08X: %s", getCodeInstruction().getAddress(), getCodeInstruction().getInsn().disasm(getCodeInstruction().getAddress(), getCodeInstruction().getOpcode())));
         }
 
         int address = getCodeInstruction().getAddress();
@@ -3261,8 +3265,8 @@ public class CompilerContext implements ICompilerContext {
             address += 4;
             CodeInstruction codeInstruction = getCodeBlock().getCodeInstruction(address);
 
-            if (Compiler.log.isTraceEnabled()) {
-            	Compiler.log.trace(String.format("PFX    %08X: %s", codeInstruction.getAddress(), codeInstruction.getInsn().disasm(codeInstruction.getAddress(), codeInstruction.getOpcode())));
+            if (log.isTraceEnabled()) {
+            	log.trace(String.format("PFX    %08X: %s", codeInstruction.getAddress(), codeInstruction.getInsn().disasm(codeInstruction.getAddress(), codeInstruction.getOpcode())));
             }
 
             if (codeInstruction == null || !isNonBranchingCodeSequence(codeInstruction)) {
