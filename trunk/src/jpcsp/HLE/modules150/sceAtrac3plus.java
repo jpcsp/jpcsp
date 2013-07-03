@@ -245,7 +245,7 @@ public class sceAtrac3plus extends HLEModule {
             Memory mem = Memory.getInstance();
 
             int currentAddr = inputBuffer.getReadAddr();
-            int bufferSize = inputBuffer.getReadSize();
+            int bufferSize = inputBuffer.getCurrentSize();
             atracEndSample = -1;
             atracCurrentSample = 0;
             isSecondBufferNeeded = false;
@@ -548,7 +548,7 @@ public class sceAtrac3plus extends HLEModule {
                 return inputBuffer.getMaxSize() / atracBytesPerFrame;
             }
 
-            int remainFrames = inputBuffer.getReadSize() / atracBytesPerFrame;
+            int remainFrames = inputBuffer.getCurrentSize() / atracBytesPerFrame;
 
             return remainFrames;
         }
