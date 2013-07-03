@@ -1525,6 +1525,7 @@ public class sceUtility extends HLEModule {
                 default:
                     log.warn("Savedata - Unsupported mode " + savedataParams.mode);
                     savedataParams.base.result = -1;
+                    quitDialog();
                     break;
             }
 
@@ -3061,7 +3062,7 @@ public class sceUtility extends HLEModule {
                     }
                 }
             } else {
-                drawTextWithShadow(180, 230, 0.75f, "No data available");
+                drawTextWithShadow(180, 230, 0.75f, "There is no data.");
                 drawBack();
             }
 
