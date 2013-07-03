@@ -77,6 +77,10 @@ public class pspFileBuffer {
 		return min(currentSize, maxSize - readPosition);
 	}
 
+	public int getCurrentSize() {
+		return currentSize;
+	}
+
 	public void reset(int readSize, int filePosition) {
 		currentSize = 0;
 		readPosition = 0;
