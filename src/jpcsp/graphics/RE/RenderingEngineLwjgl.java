@@ -1526,7 +1526,7 @@ public class RenderingEngineLwjgl extends NullRenderingEngine {
 					case GL11.GL_INVALID_ENUM: errorComment = "GL_INVALID_ENUM"; break;
 					case GL11.GL_INVALID_OPERATION: errorComment = "GL_INVALID_OPERATION"; break;
 					case GL11.GL_INVALID_VALUE: errorComment = "GL_INVALID_VALUE"; break;
-					default: errorComment = String.format("0x%X"); break;
+					default: errorComment = String.format("0x%X", error); break;
 				}
 
 				// Build a stack trace and exclude uninteresting RE stack elements:

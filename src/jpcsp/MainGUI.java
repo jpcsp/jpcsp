@@ -42,10 +42,12 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.text.MessageFormat;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -80,8 +82,10 @@ import jpcsp.GUI.UmdVideoPlayer;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.HLE.modules.sceUtility;
+import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
@@ -213,11 +217,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         addComponentListener(this);
         pack();
 
-        Insets insets = getInsets();
-        Dimension minSize = new Dimension(
-                Screen.width + insets.left + insets.right,
-                Screen.height + insets.top + insets.bottom);
-        setMinimumSize(minSize);
+        Modules.sceDisplayModule.setDisplayMinimumSize();
 
         //logging console window stuff
         if (Settings.getInstance().readBool("gui.snapLogwindow")) {
@@ -232,6 +232,24 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         } else {
             consolewin.setLocation(Settings.getInstance().readWindowPos("logwindow"));
         }
+    }
+
+    private Dimension getDimensionFromDisplay(int width, int height) {
+        Insets insets = getInsets();
+        Dimension dimension = new Dimension(
+                width + insets.left + insets.right,
+                height + insets.top + insets.bottom);
+        return dimension;
+    }
+
+    @Override
+    public void setDisplayMinimumSize(int width, int height) {
+        setMinimumSize(getDimensionFromDisplay(width, height));
+    }
+
+    @Override
+    public void setDisplaySize(int width, int height) {
+        setSize(getDimensionFromDisplay(width, height));
     }
 
     private void initJide() {
@@ -318,6 +336,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ResetProfiler = new javax.swing.JMenuItem();
         ClearTextureCache = new javax.swing.JMenuItem();
         ClearVertexCache = new javax.swing.JMenuItem();
+        ExportISOFile = new javax.swing.JMenuItem();
         CheatsMenu = new javax.swing.JMenu();
         cwcheat = new javax.swing.JMenuItem();
         LanguageMenu = new javax.swing.JMenu();
@@ -849,6 +868,14 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         DebugMenu.add(ClearVertexCache);
+
+        ExportISOFile.setText(bundle.getString("MainGUI.ExportISOFile.text")); // NOI18N
+        ExportISOFile.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	ExportISOFileActionPerformed(evt);
+            }
+        });
+        DebugMenu.add(ExportISOFile);
 
         MenuBar.add(DebugMenu);
 
@@ -1795,18 +1822,22 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
             State.discId = discId;
 
             State.umdId = null;
-            UmdIsoFile umdDataBin = iso.getFile("UMD_DATA.BIN");
-            if (umdDataBin != null) {
-                byte[] buffer = new byte[(int) umdDataBin.length()];
-                umdDataBin.readFully(buffer);
-                umdDataBin.close();
-                String umdDataBinContent = new String(buffer).replace((char) 0, ' ');
-                Emulator.log.info(String.format("Content of UMD_DATA.BIN: '%s'", umdDataBinContent));
-
-                String[] parts = umdDataBinContent.split("\\|");
-                if (parts != null && parts.length >= 2) {
-                    State.umdId = parts[1];
-                }
+            try {
+	            UmdIsoFile umdDataBin = iso.getFile("UMD_DATA.BIN");
+	            if (umdDataBin != null) {
+	                byte[] buffer = new byte[(int) umdDataBin.length()];
+	                umdDataBin.readFully(buffer);
+	                umdDataBin.close();
+	                String umdDataBinContent = new String(buffer).replace((char) 0, ' ');
+	                Emulator.log.info(String.format("Content of UMD_DATA.BIN: '%s'", umdDataBinContent));
+	
+	                String[] parts = umdDataBinContent.split("\\|");
+	                if (parts != null && parts.length >= 2) {
+	                    State.umdId = parts[1];
+	                }
+	            }
+            } catch (FileNotFoundException e) {
+            	// Ignore exception
             }
 
             Settings.getInstance().loadPatchSettings();
@@ -2035,62 +2066,62 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
 
         // Log the configuration settings
         logConfigurationPanel("SettingsGUI.RegionPanel.title");
-        logConfigurationSettingList("language", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_LANGUAGE, SettingsGUI.getImposeLanguages(), true);
-        logConfigurationSettingList("buttonpref", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_BUTTON_PREFERENCE, SettingsGUI.getImposeButtons(), true);
-        logConfigurationSettingList("daylightSavings", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_DAYLIGHT_SAVING_TIME, SettingsGUI.getSysparamDaylightSavings(), true);
-        logConfigurationSettingInt("timezone", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_TIME_ZONE, true);
-        logConfigurationSettingList("timeformat", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_TIME_FORMAT, SettingsGUI.getSysparamTimeFormats(), true);
-        logConfigurationSettingList("dateformat", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_DATE_FORMAT, SettingsGUI.getSysparamDateFormats(), true);
-        logConfigurationSettingList("wlanpowersaving", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_WLAN_POWER_SAVE, SettingsGUI.getSysparamWlanPowerSaves(), true);
-        logConfigurationSettingList("adhocChannel", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_ADHOC_CHANNEL, SettingsGUI.getSysparamAdhocChannels(), true);
-        logConfigurationSettingString("nickname", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_NICKNAME, true);
+        logConfigurationSettingList("SettingsGUI.languageLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_LANGUAGE, SettingsGUI.getImposeLanguages(), true);
+        logConfigurationSettingList("SettingsGUI.buttonLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_BUTTON_PREFERENCE, SettingsGUI.getImposeButtons(), true);
+        logConfigurationSettingList("SettingsGUI.daylightLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_DAYLIGHT_SAVING_TIME, SettingsGUI.getSysparamDaylightSavings(), true);
+        logConfigurationSettingInt("SettingsGUI.timezoneLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_TIME_ZONE, true);
+        logConfigurationSettingList("SettingsGUI.timeFormatLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_TIME_FORMAT, SettingsGUI.getSysparamTimeFormats(), true);
+        logConfigurationSettingList("SettingsGUI.dateFormatLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_DATE_FORMAT, SettingsGUI.getSysparamDateFormats(), true);
+        logConfigurationSettingList("SettingsGUI.wlanPowerLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_WLAN_POWER_SAVE, SettingsGUI.getSysparamWlanPowerSaves(), true);
+        logConfigurationSettingList("SettingsGUI.adhocChannel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_ADHOC_CHANNEL, SettingsGUI.getSysparamAdhocChannels(), true);
+        logConfigurationSettingString("SettingsGUI.nicknameLabel.text", sceUtility.SYSTEMPARAM_SETTINGS_OPTION_NICKNAME, true);
 
         logConfigurationPanel("SettingsGUI.VideoPanel.title");
-        logConfigurationSettingBool("disablevbo", "emu.disablevbo", false);
-        logConfigurationSettingBool("onlyGeGraphics", "emu.onlyGEGraphics", false);
-        logConfigurationSettingBool("usevertex", "emu.useVertexCache", false);
-        logConfigurationSettingBool("useshader", "emu.useshaders", false);
-        logConfigurationSettingBool("useGeometryShader", "emu.useGeometryShader", false);
-        logConfigurationSettingBool("disableubo", "emu.disableubo", false);
-        logConfigurationSettingBool("enablevao", "emu.enablevao", false);
-        logConfigurationSettingBool("enablegetexture", "emu.enablegetexture", false);
-        logConfigurationSettingBool("enablenativeclut", "emu.enablenativeclut", false);
-        logConfigurationSettingBool("enabledynamicshaders", "emu.enabledynamicshaders", false);
-        logConfigurationSettingBool("enableshaderstenciltest", "emu.enableshaderstenciltest", false);
-        logConfigurationSettingBool("enableshadercolormask", "emu.enableshadercolormask", false);
-        logConfigurationSettingBool("disableoptimizedvertexinforeading", "emu.disableoptimizedvertexinforeading", false);
-        logConfigurationSettingBool("saveStencilToMemory", "emu.saveStencilToMemory", false);
-        logConfigurationSettingBool("useSoftwareRenderer", "emu.useSoftwareRenderer", false);
+        logConfigurationSettingBool("SettingsGUI.disableVBOCheck.text", "emu.disablevbo", false);
+        logConfigurationSettingBool("SettingsGUI.onlyGEGraphicsCheck.text", "emu.onlyGEGraphics", false);
+        logConfigurationSettingBool("SettingsGUI.useVertexCache.text", "emu.useVertexCache", false);
+        logConfigurationSettingBool("SettingsGUI.shaderCheck.text", "emu.useshaders", false);
+        logConfigurationSettingBool("SettingsGUI.geometryShaderCheck.text", "emu.useGeometryShader", false);
+        logConfigurationSettingBool("SettingsGUI.disableUBOCheck.text", "emu.disableubo", false);
+        logConfigurationSettingBool("SettingsGUI.enableVAOCheck.text", "emu.enablevao", false);
+        logConfigurationSettingBool("SettingsGUI.enableGETextureCheck.text", "emu.enablegetexture", false);
+        logConfigurationSettingBool("SettingsGUI.enableNativeCLUTCheck.text", "emu.enablenativeclut", false);
+        logConfigurationSettingBool("SettingsGUI.enableDynamicShadersCheck.text", "emu.enabledynamicshaders", false);
+        logConfigurationSettingBool("SettingsGUI.enableShaderStencilTestCheck.text", "emu.enableshaderstenciltest", false);
+        logConfigurationSettingBool("SettingsGUI.enableShaderColorMaskCheck.text", "emu.enableshadercolormask", false);
+        logConfigurationSettingBool("SettingsGUI.disableOptimizedVertexInfoReading.text", "emu.disableoptimizedvertexinforeading", false);
+        logConfigurationSettingBool("SettingsGUI.saveStencilToMemory.text", "emu.saveStencilToMemory", false);
+        logConfigurationSettingBool("SettingsGUI.useSoftwareRenderer.text", "emu.useSoftwareRenderer", false);
 
         logConfigurationPanel("SettingsGUI.AudioPanel.title");
-        logConfigurationSettingBool("disableaudiothreads", "emu.ignoreaudiothreads", false);
-        logConfigurationSettingBool("disableaudiotchannels", "emu.disablesceAudio", false);
-        logConfigurationSettingBool("disableaudiotblocking", "emu.disableblockingaudio", false);
+        logConfigurationSettingBool("SettingsGUI.IgnoreAudioThreadsCheck.text", "emu.ignoreaudiothreads", false);
+        logConfigurationSettingBool("SettingsGUI.DisableSceAudioCheck.text", "emu.disablesceAudio", false);
+        logConfigurationSettingBool("SettingsGUI.disableBlockingAudioCheck.text", "emu.disableblockingaudio", false);
 
         logConfigurationPanel("SettingsGUI.MemoryPanel.title");
-        logConfigurationSettingBool("ignoreinvalidmemory", "emu.ignoreInvalidMemoryAccess", false);
-        logConfigurationSettingBool("ignoreUnmaped", "emu.ignoreUnmappedImports", false);
+        logConfigurationSettingBool("SettingsGUI.invalidMemoryCheck.text", "emu.ignoreInvalidMemoryAccess", false);
+        logConfigurationSettingBool("SettingsGUI.ignoreUnmappedImports.text", "emu.ignoreUnmappedImports", false);
 
         logConfigurationPanel("SettingsGUI.MiscPanel.title");
-        logConfigurationSettingBool("useMediaEngine", "emu.useMediaEngine", false);
-        logConfigurationSettingBool("useConnector", "emu.useConnector", false);
-        logConfigurationSettingBool("useExternalDecoder", "emu.useExternalDecoder", false);
-        logConfigurationSettingBool("useDebugFont", "emu.useDebugFont", false);
+        logConfigurationSettingBool("SettingsGUI.useMediaEngine.text", "emu.useMediaEngine", false);
+        logConfigurationSettingBool("SettingsGUI.useConnector.text", "emu.useConnector", false);
+        logConfigurationSettingBool("SettingsGUI.useExternalDecoder.text", "emu.useExternalDecoder", false);
+        logConfigurationSettingBool("SettingsGUI.useDebugFont.text", "emu.useDebugFont", false);
 
         logConfigurationPanel("SettingsGUI.CompilerPanel.title");
-        logConfigurationSettingBool("useCompiler", "emu.compiler", false);
-        logConfigurationSettingBool("outputprofiler", "emu.profiler", false);
-        logConfigurationSettingInt("methodMaxInstructions", "emu.compiler.methodMaxInstructions", false);
+        logConfigurationSettingBool("SettingsGUI.useCompiler.text", "emu.compiler", false);
+        logConfigurationSettingBool("SettingsGUI.profileCheck.text", "emu.profiler", false);
+        logConfigurationSettingInt("SettingsGUI.methodMaxInstructionsLabel.text", "emu.compiler.methodMaxInstructions", false);
 
         logConfigurationPanel("SettingsGUI.CryptoPanel.title");
-        logConfigurationSettingBool("extractEboot", "emu.extractEboot", false);
-        logConfigurationSettingBool("cryptoSavedata", "emu.cryptoSavedata", false);
-        logConfigurationSettingBool("extractPGD", "emu.extractPGD", false);
+        logConfigurationSettingBool("SettingsGUI.extractEboot.text", "emu.extractEboot", false);
+        logConfigurationSettingBool("SettingsGUI.cryptoSavedata.text", "emu.cryptoSavedata", false);
+        logConfigurationSettingBool("SettingsGUI.extractPGD.text", "emu.extractPGD", false);
 
         logConfigurationPanel("SettingsGUI.DisplayPanel.title");
-        logConfigurationSettingString("antiAliasing", "emu.graphics.antialias", true);
-        logConfigurationSettingString("resolution", "emu.graphics.resolution", true);
-        logConfigurationSettingBool("fullscreenMode", "gui.fullscreen", false);
+        logConfigurationSettingString("SettingsGUI.antiAliasLabel.text", "emu.graphics.antialias", true);
+        logConfigurationSettingString("SettingsGUI.resolutionLabel.text", "emu.graphics.resolution", true);
+        logConfigurationSettingBool("SettingsGUI.fullscreenCheck.text", "gui.fullscreen", false);
     }
 
     public void loadAndRun() {
@@ -2161,6 +2192,53 @@ private void ClearTextureCacheActionPerformed(java.awt.event.ActionEvent evt) {/
 private void ClearVertexCacheActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClearVertexCacheActionPerformed
         VideoEngine.getInstance().clearVertexCache();
 }//GEN-LAST:event_ClearVertexCacheActionPerformed
+
+private void ExportISOFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExportISOFileActionPerformed
+	ResourceBundle bundle = ResourceBundle.getBundle("jpcsp/languages/jpcsp");
+	String fileName = JOptionPane.showInputDialog(null, bundle.getString("MainGUI.ExportISOFileQuestion.text"), "disc0:/");
+	if (fileName == null) {
+		// Input cancelled
+		return;
+	}
+
+	SeekableDataInput input = Modules.IoFileMgrForUserModule.getFile(fileName, IoFileMgrForUser.PSP_O_RDONLY);
+	if (input == null) {
+		// File does not exit
+		JOptionPane.showMessageDialog(null, bundle.getString("MainGUI.FileDoesNotExist.text"), null, JOptionPane.ERROR_MESSAGE);
+		return;
+	}
+
+	String exportFileName = fileName;
+	if (exportFileName.contains("/")) {
+		exportFileName = exportFileName.substring(exportFileName.lastIndexOf('/') + 1);
+	}
+	if (exportFileName.contains(":")) {
+		exportFileName = exportFileName.substring(exportFileName.lastIndexOf(':') + 1);
+	}
+
+	try {
+		OutputStream output = new FileOutputStream(exportFileName);
+		byte[] buffer = new byte[10 * 1024];
+		long readLength = 0;
+		long totalLength = input.length();
+		while (readLength < totalLength) {
+			int length = (int) Math.min(totalLength - readLength, buffer.length);
+			input.readFully(buffer, 0, length);
+			output.write(buffer, 0, length);
+			readLength += length;
+		}
+		output.close();
+		input.close();
+
+		Emulator.log.info(String.format("Exported file '%s' to '%s'", fileName, exportFileName));
+		String messageFormat = bundle.getString("MainGUI.FileExported.text");
+		String message = MessageFormat.format(messageFormat, fileName, exportFileName);
+		JOptionPane.showMessageDialog(null, message, null, JOptionPane.INFORMATION_MESSAGE);
+	} catch (IOException e) {
+		Emulator.log.error(e);
+	}
+
+}//GEN-LAST:event_ExportISOFileActionPerformed
 
 private void ShotItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShotItemActionPerformed
         if (umdvideoplayer != null) {
@@ -2660,6 +2738,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JMenuItem ChineseTW;
     private javax.swing.JMenuItem ClearTextureCache;
     private javax.swing.JMenuItem ClearVertexCache;
+    private javax.swing.JMenuItem ExportISOFile;
     private javax.swing.JCheckBoxMenuItem ClockSpeed150;
     private javax.swing.JCheckBoxMenuItem ClockSpeed200;
     private javax.swing.JCheckBoxMenuItem ClockSpeed300;

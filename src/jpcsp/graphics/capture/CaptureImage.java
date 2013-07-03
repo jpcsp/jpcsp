@@ -277,12 +277,14 @@ public class CaptureImage {
 						if (im != null) {
 							lineARGB[x] = getARGB(pixelBytes);
 						}
-						getPixelBytes((short) (twoPixels >>> 16), bufferStorage, pixelBytes);
-						if (outBmp != null) {
-							outBmp.write(pixelBytes);
-						}
-						if (im != null) {
-							lineARGB[x + 1] = getARGB(pixelBytes);
+						if (x + 1 < readWidth) {
+							getPixelBytes((short) (twoPixels >>> 16), bufferStorage, pixelBytes);
+							if (outBmp != null) {
+								outBmp.write(pixelBytes);
+							}
+							if (im != null) {
+								lineARGB[x + 1] = getARGB(pixelBytes);
+							}
 						}
 					} catch (BufferUnderflowException e) {
 						if (outBmp != null) {

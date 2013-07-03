@@ -196,6 +196,13 @@ public class sceDisplay extends HLEModule {
                 createTex = false;
             }
 
+	    	if (resetGeTextures) {
+	    		if (saveGEToTexture) {
+	    			GETextureManager.getInstance().reset(reDisplay);
+	    		}
+	    		resetGeTextures = false;
+	    	}
+
             // If we are not rendering this frame, skip the next sceDisplaySetFrameBuf call,
             // assuming the application is doing double buffering.
             skipNextFrameBufferSwitch = videoEngine.isSkipThisFrame();
@@ -459,6 +466,8 @@ public class sceDisplay extends HLEModule {
     private int drawBuffer;
     private float[] drawBufferArray;
     private boolean resetDisplaySettings;
+    private boolean resetGeTextures;
+
     // current display mode
     private int mode;
     // Resizing options
@@ -473,6 +482,8 @@ public class sceDisplay extends HLEModule {
     public boolean gotBadGeBufParams;
     public boolean gotBadFbBufParams;
     protected boolean isFbShowing;
+    private DisplayScreen displayScreen;
+
     // additional variables
     private boolean detailsDirty;
     private boolean displayDirty;
@@ -494,11 +505,6 @@ public class sceDisplay extends HLEModule {
     private float texT;
     private Robot captureRobot;
     private boolean wantScreenshot;
-    //Rotation vars
-    private float texS1, texS2, texS3, texS4;
-    private float texT1, texT2, texT3, texT4;
-    private int ang = 4;
-    public boolean isrotating = false;
     // fps counter variables
     private long prevStatsTime;
     private long frameCount;
@@ -710,8 +716,10 @@ public class sceDisplay extends HLEModule {
         setSettingsListener("emu.enableshaderstenciltest", displaySettingsListener);
         setSettingsListener("emu.enableshadercolormask", displaySettingsListener);
 
+    	displayScreen = new DisplayScreen();
+
         canvas = new AWTGLCanvas_sceDisplay();
-        setScreenResolution(Screen.width, Screen.height);
+        setScreenResolution(displayScreen.getWidth(), displayScreen.getHeight());
 
         // Remember the last window size only if not running in full screen
         if (!Emulator.getMainGUI().isFullScreen()) {
@@ -749,8 +757,8 @@ public class sceDisplay extends HLEModule {
 
     public void setViewportResizeScaleFactor(int width, int height) {
         // Compute the scale factor in the horizontal and vertical directions
-        float scaleWidth = ((float) width) / Screen.width;
-        float scaleHeight = ((float) height) / Screen.height;
+        float scaleWidth = ((float) width) / displayScreen.getWidth();
+        float scaleHeight = ((float) height) / displayScreen.getHeight();
 
         // We are currently using only one scale factor to keep the PSP aspect ratio
         float scaleAspectRatio;
@@ -777,40 +785,58 @@ public class sceDisplay extends HLEModule {
         resizePending = true;
     }
 
-    public final void setViewportResizeScaleFactor(float viewportResizeFilterScaleFactor) {
-        if (viewportResizeFilterScaleFactor < 1) {
-            // Invalid value
-            return;
-        }
+    private void forceSetViewportResizeScaleFactor(float viewportResizeFilterScaleFactor) {
+		// Save the current window size only if not in full screen
+		if (!Emulator.getMainGUI().isFullScreen()) {
+			Settings.getInstance().writeFloat(resizeScaleFactorSettings, viewportResizeFilterScaleFactor);
+		}
 
-        if (viewportResizeFilterScaleFactor != sceDisplay.viewportResizeFilterScaleFactor) {
-            // Save the current window size only if not in full screen
-            if (!Emulator.getMainGUI().isFullScreen()) {
-                Settings.getInstance().writeFloat(resizeScaleFactorSettings, viewportResizeFilterScaleFactor);
-            }
+		// The GE has been resized, reset the GETextureManager at next paintGL
+		resetGeTextures = true;
 
-            sceDisplay.viewportResizeFilterScaleFactor = viewportResizeFilterScaleFactor;
-            sceDisplay.viewportResizeFilterScaleFactorInt = Math.round((float) Math.ceil(viewportResizeFilterScaleFactor));
+		sceDisplay.viewportResizeFilterScaleFactor = viewportResizeFilterScaleFactor;
+		sceDisplay.viewportResizeFilterScaleFactorInt = Math.round((float) Math.ceil(viewportResizeFilterScaleFactor));
 
-            Dimension size = new Dimension(getResizedWidth(Screen.width), getResizedHeight(Screen.height));
+		Dimension size = new Dimension(getResizedWidth(displayScreen.getWidth()), getResizedHeight(displayScreen.getHeight()));
 
-            // Resize the component while keeping the PSP aspect ratio
-            canvas.setSize(size);
+		// Resize the component while keeping the PSP aspect ratio
+		canvas.setSize(size);
 
-            // The preferred size is used when resizing the MainGUI
-            canvas.setPreferredSize(size);
+		// The preferred size is used when resizing the MainGUI
+		canvas.setPreferredSize(size);
 
-            if (Emulator.getMainGUI().isFullScreen()) {
-                Emulator.getMainGUI().setFullScreenDisplaySize();
-            }
+		if (Emulator.getMainGUI().isFullScreen()) {
+			Emulator.getMainGUI().setFullScreenDisplaySize();
+		}
 
-            // Recreate the texture if the scaling factor has changed
-            createTex = true;
+		// Recreate the texture if the scaling factor has changed
+		createTex = true;
 
-            if (log.isDebugEnabled()) {
-                log.debug(String.format("setViewportResizeScaleFactor resize=%f, size(%dx%d), canvas(%dx%d), location(%d,%d)", viewportResizeFilterScaleFactor, size.width, size.height, canvasWidth, canvasHeight, canvas.getLocation().x, canvas.getLocation().y));
-            }
-        }
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setViewportResizeScaleFactor resize=%f, size(%dx%d), canvas(%dx%d), location(%d,%d)", viewportResizeFilterScaleFactor, size.width, size.height, canvasWidth, canvasHeight, canvas.getLocation().x, canvas.getLocation().y));
+		}
+    }
+
+    public void setViewportResizeScaleFactor(float viewportResizeFilterScaleFactor) {
+    	if (viewportResizeFilterScaleFactor < 1) {
+    		// Invalid value
+    		return;
+    	}
+
+    	if (viewportResizeFilterScaleFactor != sceDisplay.viewportResizeFilterScaleFactor) {
+    		forceSetViewportResizeScaleFactor(viewportResizeFilterScaleFactor);
+    	}
+    }
+
+    public void updateDisplaySize() {
+    	float scaleFactor = viewportResizeFilterScaleFactor;
+    	setDisplayMinimumSize();
+    	Emulator.getMainGUI().setDisplaySize(getResizedWidth(displayScreen.getWidth()), getResizedHeight(displayScreen.getHeight()));
+		forceSetViewportResizeScaleFactor(scaleFactor);
+    }
+
+    public void setDisplayMinimumSize() {
+		Emulator.getMainGUI().setDisplayMinimumSize(displayScreen.getWidth(), displayScreen.getHeight());
     }
 
     /**
@@ -822,6 +848,10 @@ public class sceDisplay extends HLEModule {
      */
     public static int getResizedWidth(int width) {
         return Math.round(width * viewportResizeFilterScaleFactor);
+    }
+
+    public boolean isDisplaySwappedXY() {
+    	return displayScreen.isSwappedXY();
     }
 
     /**
@@ -1207,55 +1237,24 @@ public class sceDisplay extends HLEModule {
     }
 
     public void rotate(int angleId) {
-        ang = angleId;
-
-        switch (angleId) {
-            case 0: //Rotate screen - 90º CW
-                texS1 = texS2 = texS;
-                texT2 = texT3 = texT;
-
-                texS3 = texS4 = texT1 = texT4 = 0.0f;
-
-                isrotating = true;
-
-                break;
-
-            case 1: //Rotate screen - 90º CCW
-                texS3 = texS4 = texS;
-                texT1 = texT4 = texT;
-
-                texS1 = texS2 = texT2 = texT3 = 0.0f;
-
-                isrotating = true;
-
-                break;
-
-            case 2: //Rotate screen - 180º (inverted, y axis)
-                texS1 = texS4 = texS;
-                texT3 = texT4 = texT;
-
-                texS2 = texS3 = texT1 = texT2 = 0.0f;
-
-                isrotating = true;
-
-                break;
-
-            case 3: //Rotate screen - Mirror (inverted, x axis)
-                texS2 = texS3 = texS;
-                texT1 = texT2 = texT;
-
-                texS1 = texS4 = texT3 = texT4 = 0.0f;
-
-                isrotating = true;
-
-                break;
-
-            case 4: //Normal display (reset)
-            default:
-                isrotating = false;
-
-                break;
-        }
+    	switch (angleId) {
+    		case 0:
+    			displayScreen = new DisplayScreenRotation90();
+    			break;
+    		case 1:
+    			displayScreen = new DisplayScreenRotation270();
+    			break;
+    		case 2:
+    			displayScreen = new DisplayScreenRotation180();
+    			break;
+    		case 3:
+    			displayScreen = new DisplayScreenMirrorX(new DisplayScreen());
+    			break;
+    		case 4:
+    			displayScreen = new DisplayScreen();
+    			break;
+    	}
+    	updateDisplaySize();
     }
 
     public void saveScreen() {
@@ -1560,11 +1559,8 @@ public class sceDisplay extends HLEModule {
      *
      */
     private void drawFrameBuffer(FrameBufferSettings fb, boolean keepOriginalSize, boolean invert, int bufferwidth, int pixelformat, int width, int height) {
-        if (!isrotating) {
-            texS1 = texS4 = texS;
-            texT1 = texT2 = texT;
-
-            texS2 = texS3 = texT3 = texT4 = 0.0f;
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("drawFrameBuffer fb=%s, keepOriginalSize=%b, invert=%b, bufferWidth=%d, pixelFormat=%d, width=%d, height=%d, %s", fb, keepOriginalSize, invert, bufferwidth, pixelformat, width, height, displayScreen));
         }
 
         reDisplay.startDirectRendering(true, false, true, true, !invert, width, height);
@@ -1576,26 +1572,41 @@ public class sceDisplay extends HLEModule {
 
         reDisplay.setTextureFormat(pixelformat, false);
 
+        float scale = 1f;
+        if (keepOriginalSize) {
+        	// When keeping the original size, we still have to adjust the size of the texture mapping.
+        	// E.g. when the screen has been resized to 576x326 (resizeScaleFactor=1.2),
+        	// the texture has been created with a size 1024x1024 and the following texture
+        	// coordinates have to used:
+        	//     (576/1024, 326/1024),
+        	// while texS==480/512 and texT==272/512
+        	scale = (float) getResizedHeight(height) / (float) getResizedHeightPow2(makePow2(height));
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("drawFrameBuffer scale = %f / %f = %f", scale, texT, scale / texT));
+        	}
+        	scale /= texT;
+        }
+
         int i = 0;
-        drawBufferArray[i++] = texS1;
-        drawBufferArray[i++] = texT1;
-        drawBufferArray[i++] = width;
-        drawBufferArray[i++] = height;
+        drawBufferArray[i++] = displayScreen.getTextureLowerRightS() * scale;
+        drawBufferArray[i++] = displayScreen.getTextureLowerRightT() * scale;
+        drawBufferArray[i++] = (float) width;
+        drawBufferArray[i++] = (float) height;
 
-        drawBufferArray[i++] = texS2;
-        drawBufferArray[i++] = texT2;
-        drawBufferArray[i++] = 0;
-        drawBufferArray[i++] = height;
+        drawBufferArray[i++] = displayScreen.getTextureLowerLeftS() * scale;
+        drawBufferArray[i++] = displayScreen.getTextureLowerLeftT() * scale;
+        drawBufferArray[i++] = 0f;
+        drawBufferArray[i++] = (float) height;
 
-        drawBufferArray[i++] = texS3;
-        drawBufferArray[i++] = texT3;
-        drawBufferArray[i++] = 0;
-        drawBufferArray[i++] = 0;
+        drawBufferArray[i++] = displayScreen.getTextureUpperLeftS() * scale;
+        drawBufferArray[i++] = displayScreen.getTextureUpperLeftT() * scale;
+        drawBufferArray[i++] = 0f;
+        drawBufferArray[i++] = 0f;
 
-        drawBufferArray[i++] = texS4;
-        drawBufferArray[i++] = texT4;
-        drawBufferArray[i++] = width;
-        drawBufferArray[i++] = 0;
+        drawBufferArray[i++] = displayScreen.getTextureUpperRightS() * scale;
+        drawBufferArray[i++] = displayScreen.getTextureUpperRightT() * scale;
+        drawBufferArray[i++] = (float) width;
+        drawBufferArray[i++] = 0f;
 
         int bufferSizeInFloats = i;
         IREBufferManager bufferManager = reDisplay.getBufferManager();
@@ -1617,8 +1628,6 @@ public class sceDisplay extends HLEModule {
         reDisplay.drawArrays(IRenderingEngine.RE_QUADS, 0, 4);
 
         reDisplay.endDirectRendering();
-
-        isrotating = false;
     }
 
     private void drawFrameBufferFromMemory(FrameBufferSettings fb) {
@@ -1633,12 +1642,7 @@ public class sceDisplay extends HLEModule {
                 fb.getPixelFormat(),
                 textureSize, fb.getPixels());
 
-        // Call the rotating function (if needed)
-        if (ang != 4) {
-            rotate(ang);
-        }
-
-        drawFrameBuffer(fb, false, true, fb.getBufferWidth(), fb.getPixelFormat(), fb.getWidth(), fb.getHeight());
+        drawFrameBuffer(fb, false, true, fb.getBufferWidth(), fb.getPixelFormat(), displayScreen.getWidth(fb), displayScreen.getHeight(fb));
     }
 
     private void copyBufferByLines(IntBuffer dstBuffer, IntBuffer srcBuffer, int dstBufferWidth, int srcBufferWidth, int pixelFormat, int width, int height) {
@@ -2039,6 +2043,7 @@ public class sceDisplay extends HLEModule {
 
         texS = (float) fb.getWidth() / (float) bufferwidth;
         texT = (float) fb.getHeight() / (float) makePow2(fb.getHeight());
+        displayScreen.update();
 
         detailsDirty = true;
         isFbShowing = true;
@@ -2172,5 +2177,167 @@ public class sceDisplay extends HLEModule {
             this.bufferWidth = bufferWidth;
             this.pixelFormat = pixelFormat;
         }
+    }
+
+    protected class DisplayScreen {
+    	private float[] values;
+
+    	public DisplayScreen() {
+    		update();
+    	}
+
+    	public void update() {
+    		int[] indices = getIndices();
+    		if (indices == null) {
+    			return;
+    		}
+    		float[] baseValues = new float[] { 0f, 0f, texS, 0f, 0f, texT, texS, texT };
+    		values = new float[baseValues.length];
+    		for (int i = 0; i < values.length; i++) {
+    			values[i] = baseValues[indices[i]];
+    		}
+    	}
+
+    	protected int[] getIndices() {
+    		return new int[] { 0, 1, 2, 3, 4, 5, 6, 7 };
+    	}
+
+    	protected boolean isSwappedXY() {
+    		return false;
+    	}
+
+    	protected int getWidth(int width, int height) {
+    		return isSwappedXY() ? height : width;
+    	}
+
+    	protected int getHeight(int width, int height) {
+    		return isSwappedXY() ? width : height;
+    	}
+
+    	public int getWidth() {
+    		return getWidth(Screen.width, Screen.height);
+    	}
+
+    	public int getHeight() {
+    		return getHeight(Screen.width, Screen.height);
+    	}
+
+    	public int getWidth(FrameBufferSettings fb) {
+    		return getWidth(fb.getWidth(), fb.getHeight());
+    	}
+
+    	public int getHeight(FrameBufferSettings fb) {
+    		return getHeight(fb.getWidth(), fb.getHeight());
+    	}
+
+    	public float getTextureUpperLeftS() {
+    		return values[0];
+    	}
+
+    	public float getTextureUpperLeftT() {
+    		return values[1];
+    	}
+
+    	public float getTextureUpperRightS() {
+    		return values[2];
+    	}
+
+    	public float getTextureUpperRightT() {
+    		return values[3];
+    	}
+
+    	public float getTextureLowerLeftS() {
+    		return values[4];
+    	}
+
+    	public float getTextureLowerLeftT() {
+    		return values[5];
+    	}
+
+    	public float getTextureLowerRightS() {
+    		return values[6];
+    	}
+
+    	public float getTextureLowerRightT() {
+    		return values[7];
+    	}
+
+		@Override
+		public String toString() {
+			return String.format("DisplayScreen [%f, %f, %f, %f, %f, %f, %f, %f, %b]", values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], isSwappedXY());
+		}
+    }
+
+    protected class DisplayScreenRotation90 extends DisplayScreen {
+		@Override
+		protected int[] getIndices() {
+			return new int[] { 4, 5, 0, 1, 6, 7, 2, 3 };
+		}
+
+		@Override
+		protected boolean isSwappedXY() {
+			return true;
+		}
+    }
+
+    protected class DisplayScreenRotation180 extends DisplayScreen {
+		@Override
+		protected int[] getIndices() {
+			return new int[] { 6, 7, 4, 5, 2, 3, 0, 1 };
+		}
+    }
+
+    protected class DisplayScreenRotation270 extends DisplayScreen {
+		@Override
+		protected int[] getIndices() {
+			return new int[] { 2, 3, 6, 7, 0, 1, 4, 5 };
+		}
+
+		@Override
+		protected boolean isSwappedXY() {
+			return true;
+		}
+    }
+
+    protected class DisplayScreenMirrorX extends DisplayScreen {
+    	private DisplayScreen displayScreen;
+
+    	public DisplayScreenMirrorX(DisplayScreen displayScreen) {
+    		this.displayScreen = displayScreen;
+    		update();
+    	}
+
+    	@Override
+		protected int[] getIndices() {
+    		if (displayScreen == null) {
+    			return null;
+    		}
+    		int[] i = displayScreen.getIndices();
+			return new int[] { i[2], i[3], i[0], i[1], i[6], i[7], i[4], i[5] };
+		}
+
+		@Override
+		protected boolean isSwappedXY() {
+			return displayScreen.isSwappedXY();
+		}
+    }
+
+    protected class DisplayScreenMirrorY extends DisplayScreen {
+    	private DisplayScreen displayScreen;
+
+    	public DisplayScreenMirrorY(DisplayScreen displayScreen) {
+    		this.displayScreen = displayScreen;
+    	}
+
+		@Override
+		protected int[] getIndices() {
+    		int[] i = displayScreen.getIndices();
+			return new int[] { i[4], i[5], i[6], i[7], i[0], i[1], i[2], i[3] };
+		}
+
+		@Override
+		protected boolean isSwappedXY() {
+			return displayScreen.isSwappedXY();
+		}
     }
 }
