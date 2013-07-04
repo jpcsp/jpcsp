@@ -1265,11 +1265,11 @@ public class sceUtility extends HLEModule {
                 }
 
                 case SceUtilitySavedataParam.MODE_FILES: {
-                    int buffer5Addr = savedataParams.fileListAddr;
-                    if (Memory.isAddressGood(buffer5Addr)) {
-                        int saveFileSecureEntriesAddr = mem.read32(buffer5Addr + 24);
-                        int saveFileEntriesAddr = mem.read32(buffer5Addr + 28);
-                        int systemEntriesAddr = mem.read32(buffer5Addr + 32);
+                    int fileListAddr = savedataParams.fileListAddr;
+                    if (Memory.isAddressGood(fileListAddr)) {
+                        int saveFileSecureEntriesAddr = mem.read32(fileListAddr + 24);
+                        int saveFileEntriesAddr = mem.read32(fileListAddr + 28);
+                        int systemEntriesAddr = mem.read32(fileListAddr + 32);
 
                         String path = savedataParams.getBasePath(savedataParams.saveName);
                         String[] entries = Modules.IoFileMgrForUserModule.listFiles(path, null);
@@ -1281,12 +1281,13 @@ public class sceUtility extends HLEModule {
 
                         // List all files in the savedata (normal and/or encrypted).
                         for (int i = 0; i < maxNumEntries; i++) {
-                            String filePath = path + "/" + entries[i];
+                        	String entry = entries[i];
+                            String filePath = path + "/" + entry;
                             SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(filePath);
 
                             // System files.
-                            if (filePath.contains(".SFO") || filePath.contains("ICON") || filePath.contains("PIC") || filePath.contains("SND")) {
-                                if (Memory.isAddressGood(systemEntriesAddr)) {
+                            if (SceUtilitySavedataParam.isSystemFile(entry)) {
+                                if (systemEntriesAddr != 0) {
                                     int entryAddr = systemEntriesAddr + systemFileNumEntries * 80;
                                     if (stat != null) {
                                         mem.write32(entryAddr + 0, stat.mode);
@@ -1297,10 +1298,12 @@ public class sceUtility extends HLEModule {
                                     }
                                     String entryName = entries[i];
                                     Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
+                                    systemFileNumEntries++;
                                 }
-                                systemFileNumEntries++;
-                            } else { // Write to secure and normal.
-                                if (Memory.isAddressGood(saveFileSecureEntriesAddr)) {
+                            } else {
+                            	// Write to secure or normal.
+                            	// How to find out if this entry is a secure or a normal file?
+                                if (saveFileSecureEntriesAddr != 0) {
                                     int entryAddr = saveFileSecureEntriesAddr + saveFileSecureNumEntries * 80;
                                     if (stat != null) {
                                         mem.write32(entryAddr + 0, stat.mode);
@@ -1311,10 +1314,8 @@ public class sceUtility extends HLEModule {
                                     }
                                     String entryName = entries[i];
                                     Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
-                                }
-                                saveFileSecureNumEntries++;
-
-                                if (Memory.isAddressGood(saveFileEntriesAddr)) {
+                                    saveFileSecureNumEntries++;
+                                } else if (saveFileEntriesAddr != 0) {
                                     int entryAddr = saveFileEntriesAddr + saveFileNumEntries * 80;
                                     if (stat != null) {
                                         mem.write32(entryAddr + 0, stat.mode);
@@ -1325,18 +1326,35 @@ public class sceUtility extends HLEModule {
                                     }
                                     String entryName = entries[i];
                                     Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
+                                    saveFileNumEntries++;
                                 }
-                                saveFileNumEntries++;
                             }
                         }
-                        mem.write32(buffer5Addr + 12, saveFileSecureNumEntries);
-                        mem.write32(buffer5Addr + 16, saveFileNumEntries);
-                        mem.write32(buffer5Addr + 20, systemFileNumEntries);
 
                         if (entries == null) {
                             savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
                         } else {
                             savedataParams.base.result = checkMultipleCallStatus();
+                        }
+
+                        if (savedataParams.base.result == 0) {
+	                    	// These values are only written when no error is returned
+	                        mem.write32(fileListAddr + 12, saveFileSecureNumEntries);
+	                        mem.write32(fileListAddr + 16, saveFileNumEntries);
+	                        mem.write32(fileListAddr + 20, systemFileNumEntries);
+                        }
+
+                        if (log.isDebugEnabled()) {
+                        	log.debug(String.format("FileList: %s", Utilities.getMemoryDump(fileListAddr, 36)));
+                        	if (saveFileSecureEntriesAddr != 0 && saveFileSecureNumEntries > 0) {
+                        		log.debug(String.format("SecureEntries: %s", Utilities.getMemoryDump(saveFileSecureEntriesAddr, saveFileSecureNumEntries * 80)));
+                        	}
+                        	if (saveFileEntriesAddr != 0 && saveFileNumEntries > 0) {
+                        		log.debug(String.format("NormalEntries: %s", Utilities.getMemoryDump(saveFileEntriesAddr, saveFileNumEntries * 80)));
+                        	}
+                        	if (systemEntriesAddr != 0 && systemFileNumEntries > 0) {
+                        		log.debug(String.format("SystemEntries: %s", Utilities.getMemoryDump(systemEntriesAddr, systemFileNumEntries * 80)));
+                        	}
                         }
                     }
                     break;
@@ -1575,6 +1593,8 @@ public class sceUtility extends HLEModule {
                 // buttonPressed is only set for mode TEXT, not for mode ERROR
                 if (msgDialogParams.mode == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_MODE_TEXT) {
                     msgDialogParams.buttonPressed = getButtonPressed();
+                } else if (msgDialogParams.mode == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_MODE_ERROR) {
+                	msgDialogParams.buttonPressed = SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_ESC;
                 } else {
                     msgDialogParams.buttonPressed = SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_INVALID;
                 }
@@ -1705,8 +1725,10 @@ public class sceUtility extends HLEModule {
                 // The Netconf dialog stays visible until the network reaches
                 // the state PSP_ADHOCCTL_STATE_CONNECTED.
                 if (state == sceNetAdhocctl.PSP_ADHOCCTL_STATE_CONNECTED) {
+                	quitDialog();
                     keepVisible = false;
                 } else {
+                	updateDialog();
                     keepVisible = true;
                     if (state == sceNetAdhocctl.PSP_ADHOCCTL_STATE_DISCONNECTED && netconfParams.netconfData != null) {
                         // Connect to the given group name
