@@ -48,6 +48,14 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
     public final static String pic1FileName = "PIC1.PNG";
     public final static String snd0FileName = "SND0.AT3";
     public final static String paramSfoFileName = "PARAM.SFO";
+    private final static String[] systemFileNames = {
+    	paramSfoFileName,
+    	icon0FileName,
+    	icon1PNGFileName,
+    	icon1PMFFileName,
+    	pic1FileName,
+    	snd0FileName
+    };
     public final static String anyFileName = "<>";
     public pspUtilityDialogCommon base;
     public int mode;
@@ -791,6 +799,16 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
             return String.format("UNKNOWN_MODE%d", mode);
         }
         return modeNames[mode];
+    }
+
+    public static boolean isSystemFile(String fileName) {
+    	for (int i = 0; i < systemFileNames.length; i++) {
+    		if (systemFileNames[i].equalsIgnoreCase(fileName)) {
+    			return true;
+    		}
+    	}
+
+    	return false;
     }
 
     @Override
