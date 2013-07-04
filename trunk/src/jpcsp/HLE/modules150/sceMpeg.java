@@ -277,10 +277,12 @@ public class sceMpeg extends HLEModule {
     private class StreamInfo {
     	private int uid;
     	private int type;
+    	private int auMode;
 
     	public StreamInfo(int type) {
     		this.type = type;
     		uid = SceUidManager.getNewUid(streamPurpose);
+    		setAuMode(MPEG_AU_MODE_DECODE);
     		streamMap.put(uid, this);
     	}
 
@@ -298,6 +300,19 @@ public class sceMpeg extends HLEModule {
     		uid = -1;
     		type = -1;
     	}
+
+		public int getAuMode() {
+			return auMode;
+		}
+
+		public void setAuMode(int auMode) {
+			this.auMode = auMode;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("StreamInfo(uid=0x%X, type=%d, auMode=%d", getUid(), getType(), getAuMode());
+		}
     }
 
     private static class MpegRingbufferPutIoListener implements IIoListener {
@@ -1434,7 +1449,7 @@ public class sceMpeg extends HLEModule {
     @HLEFunction(nid = 0x611E9E11, version = 150, checkInsideInterrupt = true)
     public int sceMpegQueryStreamSize(TPointer bufferAddr, TPointer32 sizeAddr) {
         analyseMpeg(bufferAddr.getAddress(), null);
-        
+
         // Check magic.
         if (mpegMagic != PSMF_MAGIC) {
             log.warn(String.format("sceMpegQueryStreamSize bad magic 0x%08X", mpegMagic));
@@ -1446,7 +1461,7 @@ public class sceMpeg extends HLEModule {
         	sizeAddr.setValue(0);
             return SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
         }
-        
+
     	sizeAddr.setValue(mpegStreamSize);
         return 0;
     }
@@ -1459,11 +1474,9 @@ public class sceMpeg extends HLEModule {
     @HLELogging(level="info")
     @HLEFunction(nid = 0x682A619B, version = 150, checkInsideInterrupt = true)
     public int sceMpegInit() {
-        if (checkMediaEngineState()) {
-            meChannel = null;
-            meFile = null;
-        }
-        return 0;
+    	finishMpeg();
+
+    	return 0;
     }
 
     /**
@@ -1776,37 +1789,40 @@ public class sceMpeg extends HLEModule {
     @HLEFunction(nid = 0x9DCFB7EA, version = 150, checkInsideInterrupt = true)
     public int sceMpegChangeGetAuMode(int mpeg, int streamUid, int mode) {
         StreamInfo info = getStreamInfo(streamUid);
-        if (info != null) {
-	        switch (info.getType()) {
-	            case PSMF_AVC_STREAM:
-	                if (mode == MPEG_AU_MODE_DECODE) {
-	                    ignoreAvc = false;
-	                } else if (mode == MPEG_AU_MODE_SKIP) {
-	                    ignoreAvc = true;
-	                }
-	                break;
-	            case PSMF_AUDIO_STREAM:
-	            case PSMF_ATRAC_STREAM:
-	                if (mode == MPEG_AU_MODE_DECODE) {
-	                    ignoreAtrac = false;
-	                } else if (mode == MPEG_AU_MODE_SKIP) {
-	                    ignoreAtrac = true;
-	                }
-	                break;
-	            case PSMF_PCM_STREAM:
-	                if (mode == MPEG_AU_MODE_DECODE) {
-	                    ignorePcm = false;
-	                } else if (mode == MPEG_AU_MODE_SKIP) {
-	                    ignorePcm = true;
-	                }
-	                break;
-	            default:
-	                log.warn("sceMpegChangeGetAuMode unknown stream=0x" + Integer.toHexString(streamUid));
-	                break;
-	        }
-        } else {
-            log.warn("sceMpegChangeGetAuMode unknown stream=0x" + Integer.toHexString(streamUid));
+        if (info == null) {
+            log.warn(String.format("sceMpegChangeGetAuMode unknown stream=0x%X", streamUid));
+            return -1;
         }
+
+    	info.setAuMode(mode);
+        switch (info.getType()) {
+            case PSMF_AVC_STREAM:
+                if (mode == MPEG_AU_MODE_DECODE) {
+                    ignoreAvc = false;
+                } else if (mode == MPEG_AU_MODE_SKIP) {
+                    ignoreAvc = true;
+                }
+                break;
+            case PSMF_AUDIO_STREAM:
+            case PSMF_ATRAC_STREAM:
+                if (mode == MPEG_AU_MODE_DECODE) {
+                    ignoreAtrac = false;
+                } else if (mode == MPEG_AU_MODE_SKIP) {
+                    ignoreAtrac = true;
+                }
+                break;
+            case PSMF_PCM_STREAM:
+                if (mode == MPEG_AU_MODE_DECODE) {
+                    ignorePcm = false;
+                } else if (mode == MPEG_AU_MODE_SKIP) {
+                    ignorePcm = true;
+                }
+                break;
+            default:
+                log.warn(String.format("sceMpegChangeGetAuMode unknown stream type %s", info));
+                break;
+        }
+
         return 0;
     }
 
