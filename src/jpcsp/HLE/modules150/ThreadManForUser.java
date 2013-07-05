@@ -593,7 +593,7 @@ public class ThreadManForUser extends HLEModule {
             newThread.restoreContext();
 
             if (LOG_CONTEXT_SWITCHING && log.isDebugEnabled() && !isIdleThread(newThread)) {
-                log.debug("---------------------------------------- SceUID=" + Integer.toHexString(newThread.uid) + " name:'" + newThread.name + "'");
+                log.debug(String.format("----- %s, now=%d", newThread, Emulator.getClock().microTime()));
             }
         } else {
             // When running under compiler mode this gets triggered by exit()
@@ -2087,7 +2087,7 @@ public class ThreadManForUser extends HLEModule {
         sceKernelVTimerInfo.active = SceKernelVTimerInfo.ACTIVE_RUNNING;
         sceKernelVTimerInfo.base = getSystemTime();
 
-        if (sceKernelVTimerInfo.schedule != 0 && sceKernelVTimerInfo.handlerAddress != 0) {
+        if (sceKernelVTimerInfo.handlerAddress != 0) {
             scheduleVTimer(sceKernelVTimerInfo, sceKernelVTimerInfo.schedule);
         }
     }
