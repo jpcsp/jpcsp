@@ -21,7 +21,6 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NOT_FOUND_SEMA
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_SEMA_OVERFLOW;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_SEMA_ZERO;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CANCELLED;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_DELETE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
@@ -221,17 +220,15 @@ public class SemaManager {
 
     private int hleKernelWaitSema(int semaid, int signal, TPointer32 timeoutAddr, boolean doCallbacks) {
         if (signal <= 0) {
-            log.warn("hleKernelWaitSema - bad signal " + signal);
+            log.warn(String.format("hleKernelWaitSema - bad signal %d", signal));
             return ERROR_KERNEL_ILLEGAL_COUNT;
         }
-        if (!Modules.ThreadManForUserModule.isDispatchThreadEnabled()) {
-            if (log.isDebugEnabled()) {
-                log.debug("hleKernelWaitSema called when dispatch thread disabled");
-            }
-        	return ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
-        }
+
         SceKernelSemaInfo sema = semaMap.get(semaid);
         if (signal > sema.maxCount) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("hleKernelWaitSema returning 0x%08X(ERROR_KERNEL_ILLEGAL_COUNT)", ERROR_KERNEL_ILLEGAL_COUNT));
+        	}
         	return ERROR_KERNEL_ILLEGAL_COUNT;
         }
 
@@ -239,17 +236,17 @@ public class SemaManager {
     }
 
     public int hleKernelPollSema(SceKernelSemaInfo sema, int signal) {
-        if (sema.currentCount - signal < 0) {
+        if (signal > sema.currentCount) {
             if (log.isDebugEnabled()) {
-                log.debug(String.format("sceKernelPollSema id=0x%X('%s'), signal=%d", sema.uid, sema.name, signal));
+                log.debug(String.format("hleKernelPollSema returning 0x%08X(ERROR_KERNEL_SEMA_ZERO)", ERROR_KERNEL_SEMA_ZERO));
             }
             return ERROR_KERNEL_SEMA_ZERO;
         }
 
-        if (log.isDebugEnabled()) {
-            log.debug(String.format("sceKernelPollSema id=0x%X('%s'), signal=%d", sema.uid, sema.name, signal));
-        }
         sema.currentCount -= signal;
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("hleKernelPollSema returning 0, %s", sema));
+        }
 
         return 0;
     }
@@ -266,6 +263,9 @@ public class SemaManager {
 	            }
 	        }
 	        if (newCount > sema.maxCount) {
+	        	if (log.isDebugEnabled()) {
+	        		log.debug(String.format("hleKernelSignalSema returning 0x%08X(ERROR_KERNEL_SEMA_OVERFLOW)", ERROR_KERNEL_SEMA_OVERFLOW));
+	        	}
 	        	return ERROR_KERNEL_SEMA_OVERFLOW;
 	        }
     	}
@@ -281,7 +281,11 @@ public class SemaManager {
         	log.error(String.format("hleKernelSignalSema currentCount %d exceeding maxCount %d", sema.currentCount, sema.maxCount));
         }
 
-        return 0;
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("hleKernelSignalSema returning 0, %s", sema));
+    	}
+
+    	return 0;
     }
 
     public int sceKernelCreateSema(String name, int attr, int initVal, int maxVal, TPointer option) {

@@ -208,6 +208,9 @@ public class sceAudio extends HLEModule {
     	IAction action = new AudioBlockingOutputAction(threadId, channel, addr, leftVolume, rightVolume);
     	int delayMicros = channel.getUnblockOutputDelayMicros(addr == 0);
     	long schedule = Emulator.getClock().microTime() + delayMicros;
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("blockThreadOutput micros=%d, schedule=%d", delayMicros, schedule));
+    	}
     	Emulator.getScheduler().addAction(schedule, action);
     }
 
