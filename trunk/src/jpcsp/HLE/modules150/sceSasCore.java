@@ -179,6 +179,9 @@ public class sceSasCore extends HLEModule {
 
     protected void checkVoiceNotPaused(int voice, boolean requiredOnState) {
         if (voices[voice].isPaused() || voices[voice].isOn() != requiredOnState) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("checkVoiceNotPaused returning 0x%08X(ERROR_SAS_VOICE_PAUSED)", SceKernelErrors.ERROR_SAS_VOICE_PAUSED));
+        	}
         	throw new SceKernelErrorException(SceKernelErrors.ERROR_SAS_VOICE_PAUSED);
         }
     }
@@ -338,7 +341,10 @@ public class sceSasCore extends HLEModule {
     		SceUidManager.releaseUid(sasCoreUid, sasCodeUidPurpose);
     	}
 
-    	sasCoreUid = SceUidManager.getNewUid(sasCodeUidPurpose);
+        // Size of SasCore structure is 0xE20 bytes
+        sasCore.clear(0xE20);
+
+        sasCoreUid = SceUidManager.getNewUid(sasCodeUidPurpose);
     	sasCore.setValue32(0, sasCoreUid);
 
         grainSamples = grain;
@@ -651,9 +657,9 @@ public class sceSasCore extends HLEModule {
     @HLEFunction(nid = 0xAD84D37F, version = 150, checkInsideInterrupt = true)
     public int __sceSasSetPitch(int sasCore, int voice, int pitch) {
         checkSasAndVoiceHandlesGood(sasCore, voice);
-        
+
         voices[voice].setPitch(pitch);
-        
+
         return 0;
     }
 
