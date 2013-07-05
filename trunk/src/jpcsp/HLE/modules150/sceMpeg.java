@@ -2406,7 +2406,9 @@ public class sceMpeg extends HLEModule {
             	if (hasCompleteProtocolHandler()) {
             		avcFrameStatus = mpegAvcAu.pts <= mpegFirstTimestamp ? 0 : 1;
             		packetsConsumed = avcFrameStatus == 0 ? 0 : 2;
-            		log.debug(String.format("Ringbuffer packet: %s", Utilities.getMemoryDump(mpegRingbuffer.getReadDataAddr(), mpegRingbuffer.getPacketSize() * packetsConsumed)));
+            		if (log.isDebugEnabled()) {
+            			log.debug(String.format("Ringbuffer packet: %s", Utilities.getMemoryDump(mpegRingbuffer.getReadDataAddr(), mpegRingbuffer.getPacketSize() * packetsConsumed)));
+            		}
             	} else {
             		packetsConsumed = meChannel.getReadLength() / mpegRingbuffer.getPacketSize();
 
