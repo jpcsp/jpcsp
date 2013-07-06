@@ -217,21 +217,21 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         addComponentListener(this);
         pack();
 
-        Modules.sceDisplayModule.setDisplayMinimumSize();
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                // let the layout manager settle before setting the minimum size
+                Modules.sceDisplayModule.setDisplayMinimumSize();
 
-        //logging console window stuff
-        if (Settings.getInstance().readBool("gui.snapLogwindow")) {
-            SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    // if this update is not done later an initial gap is found
-                    // between the main window and the logger
+                // as the console log window position depends on the main
+                // window's size run this here
+                if (Settings.getInstance().readBool("gui.snapLogwindow")) {
                     updateConsoleWinPosition();
+                } else {
+                    consolewin.setLocation(Settings.getInstance().readWindowPos("logwindow"));
                 }
-            });
-        } else {
-            consolewin.setLocation(Settings.getInstance().readWindowPos("logwindow"));
-        }
+            }
+        });
     }
 
     private Dimension getDimensionFromDisplay(int width, int height) {
@@ -244,7 +244,10 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
     @Override
     public void setDisplayMinimumSize(int width, int height) {
-        setMinimumSize(getDimensionFromDisplay(width, height));
+        Dimension dim = getDimensionFromDisplay(width, height);
+        dim.height += mainToolBar.getHeight();
+        dim.height += MenuBar.getHeight();
+        setMinimumSize(dim);
     }
 
     @Override
@@ -365,6 +368,11 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
+            }
+        });
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            public void componentResized(java.awt.event.ComponentEvent evt) {
+                formComponentResized(evt);
             }
         });
 
@@ -2529,6 +2537,10 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private void SystemLocaleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SystemLocaleActionPerformed
         changeLanguage("systemLocale");
     }//GEN-LAST:event_SystemLocaleActionPerformed
+
+    private void formComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentResized
+        updateConsoleWinPosition();
+    }//GEN-LAST:event_formComponentResized
 
     private void exitEmu() {
         // Save the current window location only if selected and not in full screen
