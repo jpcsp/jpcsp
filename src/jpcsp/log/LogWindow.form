@@ -7,7 +7,7 @@
       <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="LogWindow.title" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
     </Property>
     <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-      <Dimension value="[220, 110]"/>
+      <Dimension value="[400, 120]"/>
     </Property>
   </Properties>
   <SyntheticProperties>
@@ -40,7 +40,7 @@
                   <Group type="102" alignment="0" attributes="0">
                       <Component id="lblLevel" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="cmbLogLevel" pref="180" max="32767" attributes="0"/>
+                      <Component id="cmbLogLevel" pref="209" max="32767" attributes="0"/>
                       <EmptySpace type="unrelated" max="-2" attributes="0"/>
                       <Component id="btnClear" min="-2" max="-2" attributes="0"/>
                   </Group>
@@ -53,7 +53,7 @@
       <Group type="103" groupAlignment="0" attributes="0">
           <Group type="102" alignment="0" attributes="0">
               <EmptySpace max="-2" attributes="0"/>
-              <Component id="scrollPane" pref="245" max="32767" attributes="0"/>
+              <Component id="scrollPane" pref="25" max="32767" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="103" alignment="1" groupAlignment="3" attributes="0">

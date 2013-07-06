@@ -324,7 +324,7 @@
       <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="DisassemblerFrame.title" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
     </Property>
     <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-      <Dimension value="[795, 611]"/>
+      <Dimension value="[800, 700]"/>
     </Property>
     <Property name="name" type="java.lang.String" value="frmDebugger" noResource="true"/>
   </Properties>
@@ -356,7 +356,7 @@
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="0" attributes="0">
                       <EmptySpace min="-2" max="-2" attributes="0"/>
-                      <Component id="disasmList" pref="500" max="32767" attributes="0"/>
+                      <Component id="disasmList" pref="505" max="32767" attributes="0"/>
                   </Group>
                   <Group type="102" attributes="0">
                       <Component id="tbDisasm" min="-2" max="-2" attributes="0"/>
