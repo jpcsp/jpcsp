@@ -6,7 +6,10 @@
       <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="MemoryViewer.title" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
     </Property>
     <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
-      <Dimension value="[720, 350]"/>
+      <Dimension value="[800, 380]"/>
+    </Property>
+    <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+      <Dimension value="[800, 380]"/>
     </Property>
   </Properties>
   <SyntheticProperties>

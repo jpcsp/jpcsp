@@ -131,6 +131,7 @@ public class ImageViewer extends javax.swing.JFrame {
         Emulator.getMainGUI().endWindowDialog();
         super.dispose();
     }
+
     private class MemoryImage extends JPanel {
 
         private static final long serialVersionUID = 1372183323503668615L;
@@ -214,6 +215,7 @@ public class ImageViewer extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
         setTitle(bundle.getString("ImageViewer.title")); // NOI18N
+        setMinimumSize(new java.awt.Dimension(532, 500));
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowDeactivated(java.awt.event.WindowEvent evt) {
                 formWindowDeactivated(evt);
@@ -425,7 +427,7 @@ public class ImageViewer extends javax.swing.JFrame {
                                         .addGap(74, 74, 74)
                                         .addComponent(lblHeight))))
                             .addComponent(memoryImage, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(20, 20, 20))
+                        .addContainerGap(20, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(btnGoToAddress, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -472,7 +474,7 @@ public class ImageViewer extends javax.swing.JFrame {
                     .addComponent(btnGoToFB))
                 .addGap(18, 18, 18)
                 .addComponent(memoryImage, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         pack();

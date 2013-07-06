@@ -118,7 +118,8 @@ public class MemoryViewer extends javax.swing.JFrame {
 
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
         setTitle(bundle.getString("MemoryViewer.title")); // NOI18N
-        setMinimumSize(new java.awt.Dimension(720, 350));
+        setMinimumSize(new java.awt.Dimension(800, 380));
+        setPreferredSize(new java.awt.Dimension(800, 380));
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowDeactivated(java.awt.event.WindowEvent evt) {
                 formWindowDeactivated(evt);
