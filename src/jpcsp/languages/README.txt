@@ -1,3 +1,4 @@
+* untranslated strings shall always be copied to all other locale files to ease translation
 * all language files should be named jpcsp_<language>.properties or jpcsp_<language>_<country>.properties where:
   language is the lower-case two letter code for the language (e.g. pt for Portuguese)
   country is the upper case two letter code for the country (e.g. BR for Brazil)
