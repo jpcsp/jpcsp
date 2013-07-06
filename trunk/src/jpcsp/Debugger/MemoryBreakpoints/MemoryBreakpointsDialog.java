@@ -34,7 +34,6 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableColumn;
-import javax.swing.table.TableModel;
 
 import jpcsp.Memory;
 import jpcsp.State;
@@ -81,7 +80,23 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
         tblBreakpoints.getModel().addTableModelListener(new TableModelListener() {
             @Override
             public void tableChanged(TableModelEvent tme) {
-                btnExport.setEnabled(((TableModel) tme.getSource()).getRowCount() > 0);
+                MemoryBreakpointsModel mbpm = (MemoryBreakpointsModel) tme.getSource();
+                btnExport.setEnabled(mbpm.getRowCount() > 0);
+
+                // validate entered addresses
+                if (tme.getColumn() == COL_STARTADDRESS || tme.getColumn() == COL_ENDADDRESS) {
+                    for (int i = tme.getFirstRow(); i <= tme.getLastRow(); i++) {
+                        int start = Integer.decode(mbpm.getValueAt(i, COL_STARTADDRESS).toString());
+                        int end = Integer.decode(mbpm.getValueAt(i, COL_ENDADDRESS).toString());
+
+                        if (tme.getColumn() == COL_STARTADDRESS && start > end) {
+                            mbpm.setValueAt(new Integer(start), i, COL_ENDADDRESS);
+                        }
+                        if (tme.getColumn() == COL_ENDADDRESS && end < start) {
+                            mbpm.setValueAt(new Integer(end), i, COL_STARTADDRESS);
+                        }
+                    }
+                }
             }
         });
 
@@ -145,19 +160,25 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
             MemoryBreakpoint mbp = memoryBreakpoints.get(rowIndex);
             switch (columnIndex) {
                 case COL_STARTADDRESS:
-                    try {
-                        mbp.setStartAddress(Integer.decode((String) aValue));
-                    } catch (NumberFormatException nfe) {
-                        // do nothing - cell will revert to previous value
-                        return;
-                    }
-                    break;
                 case COL_ENDADDRESS:
-                    try {
-                        mbp.setEndAddress(Integer.decode((String) aValue));
-                    } catch (NumberFormatException nfe) {
-                        // do nothing - cell will revert to previous value
-                        return;
+                    int address = 0;
+                    if (aValue instanceof String) {
+                        try {
+                            address = Integer.decode((String) aValue);
+                        } catch (NumberFormatException nfe) {
+                            // do nothing - cell will revert to previous value
+                            return;
+                        }
+                    } else if (aValue instanceof Integer) {
+                        address = ((Integer) aValue).intValue();
+                    } else {
+                        throw new IllegalArgumentException("only String or Integer values allowed");
+                    }
+
+                    if (columnIndex == COL_STARTADDRESS) {
+                        mbp.setStartAddress(address);
+                    } else if (columnIndex == COL_ENDADDRESS) {
+                        mbp.setEndAddress(address);
                     }
                     break;
                 case COL_ACCESSTYPE:
@@ -190,9 +211,7 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
         public Class<?> getColumnClass(int columnIndex) {
             switch (columnIndex) {
                 case COL_STARTADDRESS:
-                    return String.class;
                 case COL_ENDADDRESS:
-                    return String.class;
                 case COL_ACCESSTYPE:
                     return String.class;
                 case COL_ACTIVE:
@@ -204,15 +223,16 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
 
         @Override
         public String getColumnName(int column) {
+            java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
             switch (column) {
                 case COL_STARTADDRESS:
-                    return "Start";
+                    return bundle.getString("MemoryBreakpointsDialog.strStartAddress.text");
                 case COL_ENDADDRESS:
-                    return "End";
+                    return bundle.getString("MemoryBreakpointsDialog.strEndAddress.text");
                 case COL_ACCESSTYPE:
-                    return "Access";
+                    return bundle.getString("MemoryBreakpointsDialog.strAccess.text");
                 case COL_ACTIVE:
-                    return "Active";
+                    return bundle.getString("MemoryBreakpointsDialog.strActive.text");
                 default:
                     throw new IllegalArgumentException("column out of range: " + column);
             }
