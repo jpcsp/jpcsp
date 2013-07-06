@@ -37,6 +37,12 @@ import jpcsp.HLE.modules.sceUtility;
 import jpcsp.settings.Settings;
 
 import com.jidesoft.swing.FolderChooser;
+import java.io.File;
+import javax.swing.DefaultListModel;
+import javax.swing.ListSelectionModel;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import jpcsp.util.JpcspDialogManager;
 
 /**
  *
@@ -56,6 +62,15 @@ public class SettingsGUI extends javax.swing.JFrame {
         initComponents();
 
         setAllComponentsFromSettings();
+
+        lbUMDPaths.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                // make sure that at least one UMD path is always in the list
+                btnUMDPathRemove.setEnabled(!((ListSelectionModel) e.getSource()).isSelectionEmpty()
+                        && lbUMDPaths.getModel().getSize() > 1);
+            }
+        });
     }
 
     private void setAllComponentsFromSettings() {
@@ -106,9 +121,20 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolFromSettings(extractPGD, "emu.extractPGD");
         setStringFromSettings(antiAliasingBox, "emu.graphics.antialias");
         setStringFromSettings(resolutionBox, "emu.graphics.resolution");
-        setStringFromSettings(umdpath, "emu.umdpath");
         setStringFromSettings(tmppath, "emu.tmppath");
         setBoolFromSettings(umdBrowser, classicUmdDialog, "emu.umdbrowser");
+
+        // special handling for UMD paths
+        DefaultListModel dlm = (DefaultListModel) lbUMDPaths.getModel();
+        dlm.clear();
+        dlm.addElement(Settings.getInstance().readString("emu.umdpath"));
+        for (int i = 1; true; i++) {
+            String umdPath = Settings.getInstance().readString(String.format("emu.umdpath.%d", i), null);
+            if (umdPath == null) {
+                break;
+            }
+            dlm.addElement(umdPath);
+        }
     }
 
     private boolean isEnabledSettings(String settingsOption) {
@@ -201,9 +227,16 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolToSettings(extractPGD, "emu.extractPGD");
         setStringToSettings(antiAliasingBox, "emu.graphics.antialias");
         setStringToSettings(resolutionBox, "emu.graphics.resolution");
-        setStringToSettings(umdpath, "emu.umdpath");
         setStringToSettings(tmppath, "emu.tmppath");
         setBoolToSettings(umdBrowser, "emu.umdbrowser");
+
+        // special handling for UMD paths
+        DefaultListModel dlm = (DefaultListModel) lbUMDPaths.getModel();
+        Settings.getInstance().writeString("emu.umdpath", (String) dlm.getElementAt(0));
+        for (int i = 1; i < dlm.getSize(); i++) {
+            Settings.getInstance().writeString(String.format("emu.umdpath.%d", i), (String) dlm.getElementAt(i));
+        }
+
     }
 
     private void setBoolToSettings(JRadioButton radioButton, String settingsOption) {
@@ -359,11 +392,13 @@ public class SettingsGUI extends javax.swing.JFrame {
         umdBrowser = new javax.swing.JRadioButton();
         classicUmdDialog = new javax.swing.JRadioButton();
         umdPathLabel = new javax.swing.JLabel();
-        umdpath = new javax.swing.JTextField();
-        umdPathBrowseButton = new javax.swing.JButton();
         tmpPathLabel = new javax.swing.JLabel();
         tmppath = new javax.swing.JTextField();
         tmpPathBrowseButton = new javax.swing.JButton();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        lbUMDPaths = new javax.swing.JList();
+        btnUMDPathRemove = new javax.swing.JButton();
+        btnUMDPathAdd = new javax.swing.JButton();
         RegionPanel = new javax.swing.JPanel();
         jPanel1 = new javax.swing.JPanel();
         imposeLabel = new javax.swing.JLabel();
@@ -469,25 +504,38 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         umdPathLabel.setText(bundle.getString("SettingsGUI.umdPathLabel.text")); // NOI18N
 
-        umdpath.setEditable(false);
-        umdpath.setText("umdimages"); // NOI18N
-
-        umdPathBrowseButton.setText("..."); // NOI18N
-        umdPathBrowseButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                umdPathBrowseButtonActionPerformed(evt);
-            }
-        });
-
         tmpPathLabel.setText(bundle.getString("SettingsGUI.tmpPathLabel.text")); // NOI18N
 
         tmppath.setEditable(false);
         tmppath.setText("tmp"); // NOI18N
 
-        tmpPathBrowseButton.setText("..."); // NOI18N
+        tmpPathBrowseButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/AddFolderIcon.png"))); // NOI18N
+        tmpPathBrowseButton.setPreferredSize(new java.awt.Dimension(26, 26));
         tmpPathBrowseButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 tmpPathBrowseButtonActionPerformed(evt);
+            }
+        });
+
+        lbUMDPaths.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
+        lbUMDPaths.setModel(new DefaultListModel());
+        lbUMDPaths.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        jScrollPane1.setViewportView(lbUMDPaths);
+
+        btnUMDPathRemove.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/DeleteIcon.png"))); // NOI18N
+        btnUMDPathRemove.setEnabled(false);
+        btnUMDPathRemove.setPreferredSize(new java.awt.Dimension(26, 26));
+        btnUMDPathRemove.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnUMDPathRemoveActionPerformed(evt);
+            }
+        });
+
+        btnUMDPathAdd.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/AddFolderIcon.png"))); // NOI18N
+        btnUMDPathAdd.setPreferredSize(new java.awt.Dimension(26, 26));
+        btnUMDPathAdd.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnUMDPathAddActionPerformed(evt);
             }
         });
 
@@ -499,63 +547,70 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addContainerGap()
                 .addGroup(GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(GeneralPanelLayout.createSequentialGroup()
+                        .addComponent(pbpunpackcheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(431, 431, 431))
+                    .addGroup(GeneralPanelLayout.createSequentialGroup()
+                        .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 258, Short.MAX_VALUE)
+                        .addGap(493, 493, 493))
+                    .addGroup(GeneralPanelLayout.createSequentialGroup()
+                        .addComponent(filelogCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(554, 554, 554))
+                    .addGroup(GeneralPanelLayout.createSequentialGroup()
+                        .addComponent(loadAndRunCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(489, 489, 489))
+                    .addGroup(GeneralPanelLayout.createSequentialGroup()
+                        .addComponent(umdBrowser, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(582, 582, 582))
+                    .addGroup(GeneralPanelLayout.createSequentialGroup()
+                        .addComponent(classicUmdDialog, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(482, 482, 482))
+                    .addGroup(GeneralPanelLayout.createSequentialGroup()
                         .addGroup(GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(umdPathLabel)
                             .addComponent(tmpPathLabel))
                         .addGap(21, 21, 21)
                         .addGroup(GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(umdpath, javax.swing.GroupLayout.DEFAULT_SIZE, 244, Short.MAX_VALUE)
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 385, Short.MAX_VALUE)
                             .addComponent(tmppath))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(umdPathBrowseButton)
-                            .addComponent(tmpPathBrowseButton)))
-                    .addGroup(GeneralPanelLayout.createSequentialGroup()
-                        .addComponent(pbpunpackcheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGap(138, 138, 138))
-                    .addGroup(GeneralPanelLayout.createSequentialGroup()
-                        .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 258, Short.MAX_VALUE)
-                        .addGap(200, 200, 200))
-                    .addGroup(GeneralPanelLayout.createSequentialGroup()
-                        .addComponent(filelogCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGap(261, 261, 261))
-                    .addGroup(GeneralPanelLayout.createSequentialGroup()
-                        .addComponent(loadAndRunCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGap(196, 196, 196))
-                    .addGroup(GeneralPanelLayout.createSequentialGroup()
-                        .addComponent(umdBrowser, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGap(289, 289, 289))
-                    .addGroup(GeneralPanelLayout.createSequentialGroup()
-                        .addComponent(classicUmdDialog, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGap(189, 189, 189)))
-                .addGap(293, 293, 293))
+                            .addComponent(tmpPathBrowseButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(btnUMDPathRemove, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(btnUMDPathAdd, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
         );
         GeneralPanelLayout.setVerticalGroup(
             GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(GeneralPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(pbpunpackcheck)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(saveWindowPosCheck)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(filelogCheck)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(loadAndRunCheck)
-                .addGap(18, 18, 18)
-                .addComponent(umdBrowser)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(classicUmdDialog)
-                .addGap(18, 18, 18)
-                .addGroup(GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(umdPathLabel)
-                    .addComponent(umdpath, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(umdPathBrowseButton))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(tmpPathLabel)
-                    .addComponent(tmppath, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(tmpPathBrowseButton))
-                .addContainerGap(254, Short.MAX_VALUE))
+                .addGroup(GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(tmpPathBrowseButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(GeneralPanelLayout.createSequentialGroup()
+                        .addComponent(pbpunpackcheck)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(saveWindowPosCheck)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(filelogCheck)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(loadAndRunCheck)
+                        .addGap(18, 18, 18)
+                        .addComponent(umdBrowser)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(classicUmdDialog)
+                        .addGap(18, 18, 18)
+                        .addGroup(GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addGroup(GeneralPanelLayout.createSequentialGroup()
+                                .addComponent(umdPathLabel)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(btnUMDPathAdd, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(btnUMDPathRemove, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(18, 18, 18)
+                        .addGroup(GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(tmppath, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(tmpPathLabel))))
+                .addContainerGap(142, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab(bundle.getString("SettingsGUI.GeneralPanel.title"), GeneralPanel); // NOI18N
@@ -1083,15 +1138,6 @@ public class SettingsGUI extends javax.swing.JFrame {
         setAllComponentsToSettings();
 	}//GEN-LAST:event_jButtonApplyActionPerformed
 
-    private void umdPathBrowseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_umdPathBrowseButtonActionPerformed
-        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
-        FolderChooser folderChooser = new FolderChooser(bundle.getString("SettingsGUI.strSelectUMDPath.text"));
-        int result = folderChooser.showSaveDialog(umdPathBrowseButton.getTopLevelAncestor());
-        if (result == FolderChooser.APPROVE_OPTION) {
-            umdpath.setText(folderChooser.getSelectedFile().getPath());
-        }
-    }//GEN-LAST:event_umdPathBrowseButtonActionPerformed
-
     private void tmpPathBrowseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_tmpPathBrowseButtonActionPerformed
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
         FolderChooser folderChooser = new FolderChooser(bundle.getString("SettingsGUI.strSelectTMPPath.text"));
@@ -1100,6 +1146,32 @@ public class SettingsGUI extends javax.swing.JFrame {
             tmppath.setText(folderChooser.getSelectedFile().getPath());
         }
     }//GEN-LAST:event_tmpPathBrowseButtonActionPerformed
+
+    private void btnUMDPathAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUMDPathAddActionPerformed
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
+        FolderChooser folderChooser = new FolderChooser(bundle.getString("SettingsGUI.strSelectUMDPath.text"));
+        int result = folderChooser.showSaveDialog(lbUMDPaths.getTopLevelAncestor());
+        if (result == FolderChooser.APPROVE_OPTION) {
+            DefaultListModel dlm = (DefaultListModel) lbUMDPaths.getModel();
+            File pathtoadd = folderChooser.getSelectedFile();
+
+            // avoid double entries
+            for (int i = 0; i < lbUMDPaths.getModel().getSize(); i++) {
+                File check = new File((String) lbUMDPaths.getModel().getElementAt(i));
+                if (check.equals(pathtoadd)) {
+                    JpcspDialogManager.showInformation(this,
+                            java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("SettingsGUI.strPathInList.text")); //NOI18N
+                    return;
+                }
+            }
+            dlm.addElement(pathtoadd.getPath());
+        }
+    }//GEN-LAST:event_btnUMDPathAddActionPerformed
+
+    private void btnUMDPathRemoveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUMDPathRemoveActionPerformed
+        DefaultListModel dlm = (DefaultListModel) lbUMDPaths.getModel();
+        dlm.remove(lbUMDPaths.getSelectedIndex());
+    }//GEN-LAST:event_btnUMDPathRemoveActionPerformed
 
     @Override
     public void dispose() {
@@ -1122,6 +1194,8 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JLabel adhocChannelLabel;
     private javax.swing.JLabel antiAliasLabel;
     private javax.swing.JComboBox antiAliasingBox;
+    private javax.swing.JButton btnUMDPathAdd;
+    private javax.swing.JButton btnUMDPathRemove;
     private javax.swing.JComboBox buttonBox;
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JLabel buttonLabel;
@@ -1157,9 +1231,11 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
+    private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JComboBox languageBox;
     private javax.swing.JLabel languageLabel;
+    private javax.swing.JList lbUMDPaths;
     private javax.swing.JCheckBox loadAndRunCheck;
     private javax.swing.JComboBox methodMaxInstructionsBox;
     private javax.swing.JLabel methodMaxInstructionsLabel;
@@ -1182,9 +1258,7 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JLabel tmpPathLabel;
     private javax.swing.JTextField tmppath;
     private javax.swing.JRadioButton umdBrowser;
-    private javax.swing.JButton umdPathBrowseButton;
     private javax.swing.JLabel umdPathLabel;
-    private javax.swing.JTextField umdpath;
     private javax.swing.JCheckBox useCompiler;
     private javax.swing.JCheckBox useConnector;
     private javax.swing.JCheckBox useDebugFont;
