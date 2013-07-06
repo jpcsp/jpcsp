@@ -838,6 +838,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         DebugMenu.add(ToolsSubMenu);
 
         DumpIso.setText(bundle.getString("MainGUI.DumpIso.text")); // NOI18N
+        DumpIso.setEnabled(false);
         DumpIso.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 DumpIsoActionPerformed(evt);
@@ -870,9 +871,10 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         DebugMenu.add(ClearVertexCache);
 
         ExportISOFile.setText(bundle.getString("MainGUI.ExportISOFile.text")); // NOI18N
+        ExportISOFile.setEnabled(false);
         ExportISOFile.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-            	ExportISOFileActionPerformed(evt);
+                ExportISOFileActionPerformed(evt);
             }
         });
         DebugMenu.add(ExportISOFile);
@@ -1514,6 +1516,7 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
                 JpcspDialogManager.showError(this, bundle.getString("MainGUI.strCriticalError.text") + ": " + bundle.getString("MainGUI.strCheckConsole.text"));
             }
         }
+        RefreshUI();
     }
 
     private void addRecentFile(File file, String title) {
@@ -1689,6 +1692,11 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
         }
 }//GEN-LAST:event_switchUmdActionPerformed
 
+    public void RefreshUI() {
+        ExportISOFile.setEnabled(umdLoaded);
+        DumpIso.setEnabled(umdLoaded);
+    }
+
     /**
      * Don't call this directly, see loadUMD(File file)
      */
@@ -1758,6 +1766,7 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
         } catch (IOException ioe) {
             // Ignore.
         }
+        RefreshUI();
     }
 
     public void switchUMD(File file) {
@@ -1823,21 +1832,21 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
 
             State.umdId = null;
             try {
-	            UmdIsoFile umdDataBin = iso.getFile("UMD_DATA.BIN");
-	            if (umdDataBin != null) {
-	                byte[] buffer = new byte[(int) umdDataBin.length()];
-	                umdDataBin.readFully(buffer);
-	                umdDataBin.close();
-	                String umdDataBinContent = new String(buffer).replace((char) 0, ' ');
-	                Emulator.log.info(String.format("Content of UMD_DATA.BIN: '%s'", umdDataBinContent));
-	
-	                String[] parts = umdDataBinContent.split("\\|");
-	                if (parts != null && parts.length >= 2) {
-	                    State.umdId = parts[1];
-	                }
-	            }
+                UmdIsoFile umdDataBin = iso.getFile("UMD_DATA.BIN");
+                if (umdDataBin != null) {
+                    byte[] buffer = new byte[(int) umdDataBin.length()];
+                    umdDataBin.readFully(buffer);
+                    umdDataBin.close();
+                    String umdDataBinContent = new String(buffer).replace((char) 0, ' ');
+                    Emulator.log.info(String.format("Content of UMD_DATA.BIN: '%s'", umdDataBinContent));
+
+                    String[] parts = umdDataBinContent.split("\\|");
+                    if (parts != null && parts.length >= 2) {
+                        State.umdId = parts[1];
+                    }
+                }
             } catch (FileNotFoundException e) {
-            	// Ignore exception
+                // Ignore exception
             }
 
             Settings.getInstance().loadPatchSettings();
@@ -2194,49 +2203,49 @@ private void ClearVertexCacheActionPerformed(java.awt.event.ActionEvent evt) {//
 }//GEN-LAST:event_ClearVertexCacheActionPerformed
 
 private void ExportISOFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExportISOFileActionPerformed
-	ResourceBundle bundle = ResourceBundle.getBundle("jpcsp/languages/jpcsp");
-	String fileName = JOptionPane.showInputDialog(null, bundle.getString("MainGUI.ExportISOFileQuestion.text"), "disc0:/");
-	if (fileName == null) {
-		// Input cancelled
-		return;
-	}
+        ResourceBundle bundle = ResourceBundle.getBundle("jpcsp/languages/jpcsp");
+        String fileName = JOptionPane.showInputDialog(null, bundle.getString("MainGUI.ExportISOFileQuestion.text"), "disc0:/");
+        if (fileName == null) {
+            // Input cancelled
+            return;
+        }
 
-	SeekableDataInput input = Modules.IoFileMgrForUserModule.getFile(fileName, IoFileMgrForUser.PSP_O_RDONLY);
-	if (input == null) {
-		// File does not exit
-		JOptionPane.showMessageDialog(null, bundle.getString("MainGUI.FileDoesNotExist.text"), null, JOptionPane.ERROR_MESSAGE);
-		return;
-	}
+        SeekableDataInput input = Modules.IoFileMgrForUserModule.getFile(fileName, IoFileMgrForUser.PSP_O_RDONLY);
+        if (input == null) {
+            // File does not exit
+            JOptionPane.showMessageDialog(null, bundle.getString("MainGUI.FileDoesNotExist.text"), null, JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-	String exportFileName = fileName;
-	if (exportFileName.contains("/")) {
-		exportFileName = exportFileName.substring(exportFileName.lastIndexOf('/') + 1);
-	}
-	if (exportFileName.contains(":")) {
-		exportFileName = exportFileName.substring(exportFileName.lastIndexOf(':') + 1);
-	}
+        String exportFileName = fileName;
+        if (exportFileName.contains("/")) {
+            exportFileName = exportFileName.substring(exportFileName.lastIndexOf('/') + 1);
+        }
+        if (exportFileName.contains(":")) {
+            exportFileName = exportFileName.substring(exportFileName.lastIndexOf(':') + 1);
+        }
 
-	try {
-		OutputStream output = new FileOutputStream(exportFileName);
-		byte[] buffer = new byte[10 * 1024];
-		long readLength = 0;
-		long totalLength = input.length();
-		while (readLength < totalLength) {
-			int length = (int) Math.min(totalLength - readLength, buffer.length);
-			input.readFully(buffer, 0, length);
-			output.write(buffer, 0, length);
-			readLength += length;
-		}
-		output.close();
-		input.close();
+        try {
+            OutputStream output = new FileOutputStream(exportFileName);
+            byte[] buffer = new byte[10 * 1024];
+            long readLength = 0;
+            long totalLength = input.length();
+            while (readLength < totalLength) {
+                int length = (int) Math.min(totalLength - readLength, buffer.length);
+                input.readFully(buffer, 0, length);
+                output.write(buffer, 0, length);
+                readLength += length;
+            }
+            output.close();
+            input.close();
 
-		Emulator.log.info(String.format("Exported file '%s' to '%s'", fileName, exportFileName));
-		String messageFormat = bundle.getString("MainGUI.FileExported.text");
-		String message = MessageFormat.format(messageFormat, fileName, exportFileName);
-		JOptionPane.showMessageDialog(null, message, null, JOptionPane.INFORMATION_MESSAGE);
-	} catch (IOException e) {
-		Emulator.log.error(e);
-	}
+            Emulator.log.info(String.format("Exported file '%s' to '%s'", fileName, exportFileName));
+            String messageFormat = bundle.getString("MainGUI.FileExported.text");
+            String message = MessageFormat.format(messageFormat, fileName, exportFileName);
+            JOptionPane.showMessageDialog(null, message, null, JOptionPane.INFORMATION_MESSAGE);
+        } catch (IOException e) {
+            Emulator.log.error(e);
+        }
 
 }//GEN-LAST:event_ExportISOFileActionPerformed
 
@@ -2738,7 +2747,6 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JMenuItem ChineseTW;
     private javax.swing.JMenuItem ClearTextureCache;
     private javax.swing.JMenuItem ClearVertexCache;
-    private javax.swing.JMenuItem ExportISOFile;
     private javax.swing.JCheckBoxMenuItem ClockSpeed150;
     private javax.swing.JCheckBoxMenuItem ClockSpeed200;
     private javax.swing.JCheckBoxMenuItem ClockSpeed300;
@@ -2758,6 +2766,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JMenuItem EnterMemoryViewer;
     private javax.swing.JMenuItem ExitEmu;
     private javax.swing.JMenuItem ExportAllElements;
+    private javax.swing.JMenuItem ExportISOFile;
     private javax.swing.JMenu ExportMenu;
     private javax.swing.JMenuItem ExportVisibleElements;
     private javax.swing.JCheckBoxMenuItem FPS10;
