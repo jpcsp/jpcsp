@@ -2373,7 +2373,7 @@ private void PortugueseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
 }//GEN-LAST:event_PortugueseActionPerformed
 
 private void JapaneseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_JapaneseActionPerformed
-        changeLanguage("jp_JP");
+        changeLanguage("ja_JP");
 }//GEN-LAST:event_JapaneseActionPerformed
 
 private void PortugueseBRActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PortugueseBRActionPerformed
@@ -2398,7 +2398,7 @@ private void ItalianActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 }//GEN-LAST:event_ItalianActionPerformed
 
 private void GreekActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_GreekActionPerformed
-        changeLanguage("gr_EL");
+        changeLanguage("el_GR");
 }//GEN-LAST:event_GreekActionPerformed
 
 private void ControlsConfActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ControlsConfActionPerformed
@@ -2460,11 +2460,11 @@ private void CustomLoggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 }//GEN-LAST:event_CustomLoggerActionPerformed
 
     private void ChinesePRCActionPerformed(java.awt.event.ActionEvent evt) {
-        changeLanguage("cn_CN");
+        changeLanguage("zh_CN");
     }
 
 private void ChineseTWActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ChinesePRCActionPerformed
-        changeLanguage("tw_TW");
+        changeLanguage("zh_TW");
 }//GEN-LAST:event_ChinesePRCActionPerformed
 
 private void noneCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_noneCheckActionPerformed
