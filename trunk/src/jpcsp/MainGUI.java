@@ -344,7 +344,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         cwcheat = new javax.swing.JMenuItem();
         LanguageMenu = new javax.swing.JMenu();
         SystemLocale = new javax.swing.JMenuItem();
-        English = new javax.swing.JMenuItem();
+        EnglishGB = new javax.swing.JMenuItem();
+        EnglishUS = new javax.swing.JMenuItem();
         French = new javax.swing.JMenuItem();
         German = new javax.swing.JMenuItem();
         Lithuanian = new javax.swing.JMenuItem();
@@ -911,15 +912,24 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(SystemLocale);
 
-        English.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/en_EN.png"))); // NOI18N
+        EnglishGB.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/en_UK.png"))); // NOI18N
         java.util.ResourceBundle bundle1 = java.util.ResourceBundle.getBundle("jpcsp/languages/common"); // NOI18N
-        English.setText(bundle1.getString("english")); // NOI18N
-        English.addActionListener(new java.awt.event.ActionListener() {
+        EnglishGB.setText(bundle1.getString("englishUK")); // NOI18N
+        EnglishGB.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                EnglishActionPerformed(evt);
+                EnglishGBActionPerformed(evt);
             }
         });
-        LanguageMenu.add(English);
+        LanguageMenu.add(EnglishGB);
+
+        EnglishUS.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/en_US.png"))); // NOI18N
+        EnglishUS.setText(bundle1.getString("englishUS")); // NOI18N
+        EnglishUS.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                EnglishUSActionPerformed(evt);
+            }
+        });
+        LanguageMenu.add(EnglishUS);
 
         French.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/fr_FR.png"))); // NOI18N
         French.setText(bundle1.getString("french")); // NOI18N
@@ -2344,9 +2354,9 @@ private void LoadSnapActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         Emulator.getProcessor().load(cpuBuf);
 }//GEN-LAST:event_LoadSnapActionPerformed
 
-private void EnglishActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnglishActionPerformed
-        changeLanguage("en_EN");
-}//GEN-LAST:event_EnglishActionPerformed
+private void EnglishUSActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnglishUSActionPerformed
+        changeLanguage("en_US");
+}//GEN-LAST:event_EnglishUSActionPerformed
 
 private void FrenchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FrenchActionPerformed
         changeLanguage("fr_FR");
@@ -2541,6 +2551,10 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private void formComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentResized
         updateConsoleWinPosition();
     }//GEN-LAST:event_formComponentResized
+
+    private void EnglishGBActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnglishGBActionPerformed
+        changeLanguage("en_GB");
+    }//GEN-LAST:event_EnglishGBActionPerformed
 
     private void exitEmu() {
         // Save the current window location only if selected and not in full screen
@@ -2772,7 +2786,8 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JMenu DebugMenu;
     private javax.swing.JMenuItem DumpIso;
     private javax.swing.JMenuItem ElfHeaderViewer;
-    private javax.swing.JMenuItem English;
+    private javax.swing.JMenuItem EnglishGB;
+    private javax.swing.JMenuItem EnglishUS;
     private javax.swing.JMenuItem EnterDebugger;
     private javax.swing.JMenuItem EnterImageViewer;
     private javax.swing.JMenuItem EnterMemoryViewer;
