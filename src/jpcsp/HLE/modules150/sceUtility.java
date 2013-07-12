@@ -1271,7 +1271,7 @@ public class sceUtility extends HLEModule {
                         int saveFileEntriesAddr = mem.read32(fileListAddr + 28);
                         int systemEntriesAddr = mem.read32(fileListAddr + 32);
 
-                        String path = savedataParams.getBasePath(savedataParams.saveName);
+                        String path = savedataParams.getBasePath();
                         String[] entries = Modules.IoFileMgrForUserModule.listFiles(path, null);
 
                         int maxNumEntries = (entries == null) ? 0 : entries.length;
@@ -1300,14 +1300,14 @@ public class sceUtility extends HLEModule {
                                     Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
                                     systemFileNumEntries++;
                                 }
-                            } else {
-                            	// Write to secure or normal.
-                            	// How to find out if this entry is a secure or a normal file?
+                            } else if (savedataParams.isSecureFile(entry)) {
+                            	// Write to secure.
                                 if (saveFileSecureEntriesAddr != 0) {
                                     int entryAddr = saveFileSecureEntriesAddr + saveFileSecureNumEntries * 80;
                                     if (stat != null) {
                                         mem.write32(entryAddr + 0, stat.mode);
-                                        mem.write64(entryAddr + 8, stat.size);
+                                        // Write size of decrypted file
+                                        mem.write64(entryAddr + 8, ((stat.size + 0xF) & ~0xF) - 0x10);
                                         stat.ctime.write(mem, entryAddr + 16);
                                         stat.atime.write(mem, entryAddr + 32);
                                         stat.mtime.write(mem, entryAddr + 48);
@@ -1315,7 +1315,10 @@ public class sceUtility extends HLEModule {
                                     String entryName = entries[i];
                                     Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
                                     saveFileSecureNumEntries++;
-                                } else if (saveFileEntriesAddr != 0) {
+                                }
+                            } else {
+                            	// Write to normal.
+                                if (saveFileEntriesAddr != 0) {
                                     int entryAddr = saveFileEntriesAddr + saveFileNumEntries * 80;
                                     if (stat != null) {
                                         mem.write32(entryAddr + 0, stat.mode);
