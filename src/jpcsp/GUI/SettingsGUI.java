@@ -81,7 +81,6 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolFromSettings(profilerCheck, "emu.profiler");
         setBoolFromSettings(shadersCheck, "emu.useshaders");
         setBoolFromSettings(geometryShaderCheck, "emu.useGeometryShader");
-        setBoolFromSettings(filelogCheck, "emu.debug.enablefilelogger");
         setBoolFromSettings(loadAndRunCheck, "emu.loadAndRun");
         setIntFromSettings(languageBox, sceUtility.SYSTEMPARAM_SETTINGS_OPTION_LANGUAGE);
         setIntFromSettings(buttonBox, sceUtility.SYSTEMPARAM_SETTINGS_OPTION_BUTTON_PREFERENCE);
@@ -187,7 +186,6 @@ public class SettingsGUI extends javax.swing.JFrame {
         setBoolToSettings(profilerCheck, "emu.profiler");
         setBoolToSettings(shadersCheck, "emu.useshaders");
         setBoolToSettings(geometryShaderCheck, "emu.useGeometryShader");
-        setBoolToSettings(filelogCheck, "emu.debug.enablefilelogger");
         setBoolToSettings(loadAndRunCheck, "emu.loadAndRun");
         setIntToSettings(languageBox, sceUtility.SYSTEMPARAM_SETTINGS_OPTION_LANGUAGE);
         setIntToSettings(buttonBox, sceUtility.SYSTEMPARAM_SETTINGS_OPTION_BUTTON_PREFERENCE);
@@ -387,7 +385,6 @@ public class SettingsGUI extends javax.swing.JFrame {
         GeneralPanel = new javax.swing.JPanel();
         pbpunpackcheck = new javax.swing.JCheckBox();
         saveWindowPosCheck = new javax.swing.JCheckBox();
-        filelogCheck = new javax.swing.JCheckBox();
         loadAndRunCheck = new javax.swing.JCheckBox();
         umdBrowser = new javax.swing.JRadioButton();
         classicUmdDialog = new javax.swing.JRadioButton();
@@ -492,8 +489,6 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         saveWindowPosCheck.setText(bundle.getString("SettingsGUI.saveWindowPosCheck.text")); // NOI18N
 
-        filelogCheck.setText(bundle.getString("SettingsGUI.filelogCheck.text")); // NOI18N
-
         loadAndRunCheck.setText(bundle.getString("SettingsGUI.loadAndRunCheck.text")); // NOI18N
 
         buttonGroup1.add(umdBrowser);
@@ -553,9 +548,6 @@ public class SettingsGUI extends javax.swing.JFrame {
                         .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 258, Short.MAX_VALUE)
                         .addGap(493, 493, 493))
                     .addGroup(GeneralPanelLayout.createSequentialGroup()
-                        .addComponent(filelogCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGap(554, 554, 554))
-                    .addGroup(GeneralPanelLayout.createSequentialGroup()
                         .addComponent(loadAndRunCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGap(489, 489, 489))
                     .addGroup(GeneralPanelLayout.createSequentialGroup()
@@ -590,8 +582,6 @@ public class SettingsGUI extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(saveWindowPosCheck)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(filelogCheck)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(loadAndRunCheck)
                         .addGap(18, 18, 18)
                         .addComponent(umdBrowser)
@@ -610,7 +600,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                         .addGroup(GeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(tmppath, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(tmpPathLabel))))
-                .addContainerGap(142, Short.MAX_VALUE))
+                .addContainerGap(165, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab(bundle.getString("SettingsGUI.GeneralPanel.title"), GeneralPanel); // NOI18N
@@ -1217,7 +1207,6 @@ public class SettingsGUI extends javax.swing.JFrame {
     private javax.swing.JCheckBox enableVAOCheck;
     private javax.swing.JCheckBox extractEboot;
     private javax.swing.JCheckBox extractPGD;
-    private javax.swing.JCheckBox filelogCheck;
     private javax.swing.JCheckBox fullscreenCheck;
     private javax.swing.JCheckBox geometryShaderCheck;
     private javax.swing.JCheckBox ignoreUnmappedImports;

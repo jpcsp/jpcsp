@@ -111,6 +111,7 @@ import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import javax.swing.SwingUtilities;
+import jpcsp.Debugger.FileLogger.FileLoggerFrame;
 
 /**
  *
@@ -207,7 +208,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         onUmdChange();
 
-        State.fileLogger.setLocation(getLocation().x + 488, getLocation().y + 18);
         setTitle(MetaInformation.FULL_NAME);
 
         /*add glcanvas to frame and pack frame to get the canvas size*/
@@ -2187,6 +2187,12 @@ private void InstructionCounterActionPerformed(java.awt.event.ActionEvent evt) {
 }//GEN-LAST:event_InstructionCounterActionPerformed
 
 private void FileLogActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FileLogActionPerformed
+        if (State.fileLogger == null) {
+            State.fileLogger = new FileLoggerFrame();
+            if (Settings.getInstance().readBool("gui.saveWindowPos")) {
+                State.fileLogger.setLocation(Settings.getInstance().readWindowPos(FileLoggerFrame.identifierForConfig));
+            }
+        }
         startWindowDialog(State.fileLogger);
 }//GEN-LAST:event_FileLogActionPerformed
 
