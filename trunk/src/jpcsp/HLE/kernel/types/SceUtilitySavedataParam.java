@@ -514,11 +514,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         writeFile(mem, path, snd0FileName, snd0FileData.buf, snd0FileData.size);
         
         // Write PARAM.SFO
-        if (CryptoEngine.getSavedataCryptoStatus()) {
-            writeEncryptedPsf(mem, path, paramSfoFileName, sfoParam, fileName, dataSize, key, secureVersion);
-        } else {
-            writePsf(mem, path, paramSfoFileName, sfoParam);
-        }
+        writePsf(mem, path, paramSfoFileName, sfoParam, CryptoEngine.getSavedataCryptoStatus(), fileName, dataSize, key, secureVersion);
     }
 
     private int loadFile(Memory mem, String path, String name, int address, int maxLength) throws IOException {
@@ -609,16 +605,24 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         fileOutput.close();
     }
 
-    private void loadPsf(Memory mem, String path, String name, PspUtilitySavedataSFOParam sfoParam) throws IOException {
+    private PSF readPsf(String path, String name) throws IOException {
+    	PSF psf = null;
         SeekableDataInput fileInput = getDataInput(path, name);
         if (fileInput != null) {
             byte[] buffer = new byte[(int) fileInput.length()];
             fileInput.readFully(buffer);
             fileInput.close();
 
-            PSF psf = new PSF();
+            psf = new PSF();
             psf.read(ByteBuffer.wrap(buffer));
+        }
 
+        return psf;
+    }
+
+    private void loadPsf(Memory mem, String path, String name, PspUtilitySavedataSFOParam sfoParam) throws IOException {
+    	PSF psf = readPsf(path, name);
+        if (psf != null) {
             sfoParam.parentalLevel = psf.getNumeric("PARENTAL_LEVEL");
             sfoParam.title = psf.getString("TITLE");
             sfoParam.detail = psf.getString("SAVEDATA_DETAIL");
@@ -626,39 +630,38 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         }
     }
 
-    private void writePsf(Memory mem, String path, String name, PspUtilitySavedataSFOParam sfoParam) throws IOException {
-        SeekableRandomFile fileOutput = getDataOutput(path, name);
-        if (fileOutput == null) {
-            return;
-        }
-
-        PSF psf = new PSF();
-        psf.put("PARENTAL_LEVEL", sfoParam.parentalLevel);
-        psf.put("TITLE", sfoParam.title, 128);
-        psf.put("SAVEDATA_DETAIL", sfoParam.detail, 1024);
-        psf.put("SAVEDATA_TITLE", sfoParam.savedataTitle, 128);
-
-        psf.write(fileOutput);
-        fileOutput.close();
-    }
-
-    private void writeEncryptedPsf(Memory mem, String path, String psfName, PspUtilitySavedataSFOParam sfoParam, String dataName, int dataLength, byte[] key, int mode) throws IOException {
+    private void writePsf(Memory mem, String path, String psfName, PspUtilitySavedataSFOParam sfoParam, boolean cryptoMode, String dataName, int dataLength, byte[] key, int mode) throws IOException {
         SeekableRandomFile psfOutput = getDataOutput(path, psfName);
-        SeekableRandomFile dataOutput = getDataOutput(path, dataName);
-        if ((psfOutput == null) || (dataOutput == null)) {
+        if (psfOutput == null) {
             return;
         }
-
-        CryptoEngine crypto = new CryptoEngine();
-        byte[] dataBuffer = new byte[dataLength];
-        dataOutput.readFully(dataBuffer);
 
         PSF psf = new PSF();
         psf.put("CATEGORY", "MS", 4);
-        psf.put("PARENTAL_LEVEL", sfoParam.parentalLevel);     
+        psf.put("PARENTAL_LEVEL", sfoParam.parentalLevel);
         psf.put("SAVEDATA_DETAIL", sfoParam.detail, 1024);
         psf.put("SAVEDATA_DIRECTORY", gameName + saveName, 64);
-        crypto.UpdateSavedataHashes(psf, dataBuffer, dataLength, key, dataName, mode);
+
+        if (cryptoMode) {
+            SeekableRandomFile dataOutput = getDataOutput(path, dataName);
+            if (dataOutput == null) {
+                return;
+            }
+
+            CryptoEngine crypto = new CryptoEngine();
+            byte[] dataBuffer = new byte[dataLength];
+            dataOutput.readFully(dataBuffer);
+
+            crypto.UpdateSavedataHashes(psf, dataBuffer, dataLength, key, dataName, mode);
+        }
+
+        byte[] savedataFileList = new byte[32 * 99];
+        // Copy the fileName + fileHash to the savedataFileList buffer.
+        byte[] dataNameBytes = dataName.getBytes();
+        System.arraycopy(dataNameBytes, 0, savedataFileList, 0, dataNameBytes.length);
+        System.arraycopy(key, 0, savedataFileList, 0xD, 0x10);
+        psf.put("SAVEDATA_FILE_LIST", savedataFileList);
+
         psf.put("SAVEDATA_TITLE", sfoParam.savedataTitle, 128);
         psf.put("TITLE", sfoParam.title, 128);
 
@@ -804,6 +807,41 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
     public static boolean isSystemFile(String fileName) {
     	for (int i = 0; i < systemFileNames.length; i++) {
     		if (systemFileNames[i].equalsIgnoreCase(fileName)) {
+    			return true;
+    		}
+    	}
+
+    	return false;
+    }
+
+    public boolean isSecureFile(String fileName) {
+    	PSF psf = null;
+    	try {
+			psf = readPsf(getBasePath(), paramSfoFileName);
+		} catch (IOException e) {
+		}
+
+    	if (psf == null) {
+    		return false;
+    	}
+
+    	Object savedataFileList = psf.get("SAVEDATA_FILE_LIST");
+    	if (savedataFileList == null || !(savedataFileList instanceof byte[])) {
+    		return false;
+    	}
+
+    	byte[] fileList = (byte[]) savedataFileList;
+    	for (int i = 0; i < fileList.length; i += 32) {
+    		int length = 13;
+    		for (int j = 0; j < 13; j++) {
+    			if (fileList[i + j] == (byte) 0) {
+    				length = j;
+    				break;
+    			}
+    		}
+
+    		String file = new String(fileList, i, length);
+    		if (file.equals(fileName)) {
     			return true;
     		}
     	}

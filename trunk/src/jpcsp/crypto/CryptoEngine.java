@@ -2881,17 +2881,12 @@ public class CryptoEngine {
     public void UpdateSavedataHashes(PSF psf, byte[] data, int dataSize, byte[] key, String fileName, int mode) {
         SD_Ctx1 ctx1 = new SD_Ctx1();
         byte[] savedataParams = new byte[0x80];
-        byte[] savedataFileList = new byte[0xC60];
         int alignedSize = (((dataSize + 0xF) >> 4) << 4) - 0x10;
         int encMode = 4;
 
         if (((mode & 0x1) == 0x1) || ((mode & 0x2) == 0x2)) { // Old crypto mode (up to firmware 2.5.2).
             encMode = 2;
         }
-
-        // Copy the fileName + fileHash to the savedataFileList buffer.
-        System.arraycopy(fileName.getBytes(), 0, savedataFileList, 0, fileName.getBytes().length);
-        System.arraycopy(key, 0, savedataFileList, 0xD, 0x10);
 
         // Generate a new hash using a blank key and encMode (2 or 4).
         hleSdSetIndex(ctx1, encMode);
@@ -2934,7 +2929,6 @@ public class CryptoEngine {
 
         // Output the final PSF file containing the SAVEDATA param and file hashes.
         try {
-            psf.put("SAVEDATA_FILE_LIST", savedataFileList);
             psf.put("SAVEDATA_PARAMS", savedataParams);
         } catch (Exception e) {
             // Ignore...
