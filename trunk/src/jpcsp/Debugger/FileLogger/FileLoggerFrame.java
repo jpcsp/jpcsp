@@ -34,7 +34,6 @@ import javax.swing.JPopupMenu;
 
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumnModel;
@@ -45,6 +44,7 @@ import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.modules150.IoFileMgrForUser.IIoListener;
 import jpcsp.State;
 import jpcsp.filesystems.SeekableDataInput;
+import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.settings.Settings;
 import jpcsp.util.Constants;
 
@@ -55,6 +55,7 @@ import jpcsp.util.Constants;
 public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIoListener {
 
     private static final long serialVersionUID = 8455039521164613143L;
+    public static final String identifierForConfig = "fileLogger";
     private FileHandleModel fileHandleModel;
     private FileCommandModel fileCommandModel;
     private Thread refreshThread;
@@ -73,6 +74,17 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
 
         refreshThread = new Thread(this, "FileLogger");
         refreshThread.start();
+
+        if (Settings.getInstance().readBool("gui.saveWindowPos")) {
+            setLocation(Settings.getInstance().readWindowPos(identifierForConfig));
+            setSize(Settings.getInstance().readWindowSize(identifierForConfig,
+                    getWidth(), getHeight()));
+        }
+
+        if (Settings.getInstance().readBool("emu.debug.enablefilelogger")) {
+            cbFileTrace.setSelected(true);
+            Modules.IoFileMgrForUserModule.registerIoListener(this);
+        }
     }
 
     @Override
@@ -103,6 +115,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
         commandLogTable = new javax.swing.JTable();
         jScrollPane2 = new javax.swing.JScrollPane();
         fileHandleTable = new javax.swing.JTable();
+        cbFileTrace = new javax.swing.JCheckBox();
 
         copyItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_C, java.awt.event.InputEvent.CTRL_MASK));
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
@@ -122,10 +135,16 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
         });
         jPopupMenu1.add(saveAsItem);
 
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle(bundle.getString("FileLoggerFrame.title")); // NOI18N
         setMinimumSize(new java.awt.Dimension(400, 200));
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowDeactivated(java.awt.event.WindowEvent evt) {
+                formWindowDeactivated(evt);
+            }
+        });
 
-        jSplitPane1.setDividerLocation(135);
+        jSplitPane1.setDividerLocation(100);
         jSplitPane1.setOrientation(javax.swing.JSplitPane.VERTICAL_SPLIT);
         jSplitPane1.setMinimumSize(new java.awt.Dimension(179, 100));
 
@@ -161,20 +180,33 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
 
         jSplitPane1.setTopComponent(jScrollPane2);
 
+        cbFileTrace.setText(bundle.getString("FileLoggerFrame.cbFileTrace.text")); // NOI18N
+        cbFileTrace.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cbFileTraceActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jSplitPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 628, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(cbFileTrace)
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addComponent(jSplitPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 628, Short.MAX_VALUE))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jSplitPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 278, Short.MAX_VALUE)
+                .addComponent(cbFileTrace)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jSplitPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 257, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -260,6 +292,23 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
     private FileLoggerFrame getInstance() {
         return this;
     }
+
+    private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
+        if (Settings.getInstance().readBool("gui.saveWindowPos")) {
+            Settings.getInstance().writeWindowPos(identifierForConfig, getLocation());
+            Settings.getInstance().writeWindowSize(identifierForConfig, getSize());
+        }
+    }//GEN-LAST:event_formWindowDeactivated
+
+    private void cbFileTraceActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbFileTraceActionPerformed
+        if (cbFileTrace.isSelected()) {
+            Modules.IoFileMgrForUserModule.registerIoListener(this);
+            Settings.getInstance().writeBool("emu.debug.enablefilelogger", true);
+        } else {
+            Modules.IoFileMgrForUserModule.unregisterIoListener(this);
+            Settings.getInstance().writeBool("emu.debug.enablefilelogger", false);
+        }
+    }//GEN-LAST:event_cbFileTraceActionPerformed
 
     // TODO does fireTableDataChanged need to be in the swing thread?
     // if not we could just call fireTableDataChanged(); from the logging functions
@@ -572,18 +621,9 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
 
         fileCommandList = new LinkedList<FileCommandInfo>();
 
-        // calling this will update the title based on whether logging is enabled
-        isLoggingDisabled();
-
         if (!dirty) {
             dirty = true;
             getInstance().notify();
-        }
-
-        if (isLoggingDisabled()) {
-            Modules.IoFileMgrForUserModule.unregisterIoListener(this);
-        } else {
-            Modules.IoFileMgrForUserModule.registerIoListener(this);
         }
     }
 
@@ -593,28 +633,12 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
         fileHandleList = new LinkedList<FileHandleInfo>(c);
         Collections.sort(fileHandleList);
     }
-
-    private boolean isLoggingDisabled() {
-        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp");
-        if (!Settings.getInstance().readBool("emu.debug.enablefilelogger")) {
-            setTitle(bundle.getString("FileLoggerFrame.title") + " - " + bundle.getString("FileLoggerFrame.strLoggingDisabled.text"));
-            return true;
-        } else {
-            setTitle(bundle.getString("FileLoggerFrame.title"));
-            return false;
-        }
-
-    }
     /**
      * Handles repeated commands
      */
     private FileCommandInfo lastFileCommand;
 
     private void logFileCommand(FileCommandInfo info) {
-        if (isLoggingDisabled()) {
-            return;
-        }
-
         if (lastFileCommand != null
                 && info.equals(lastFileCommand)) {
             lastFileCommand.occurences++;
@@ -648,10 +672,6 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
 
     @Override
     public void sceIoOpen(int result, int filename_addr, String filename, int flags, int permissions, String mode) {
-        if (isLoggingDisabled()) {
-            return;
-        }
-
         // File handle list
         if (result >= 0) {
             FileHandleInfo info = new FileHandleInfo(result, filename);
@@ -659,19 +679,32 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
             sortRequired = true;
         }
 
+        String filelog = String.format("path=0x%08X('%s')",
+                filename_addr, filename);
+        if (filename.startsWith("disc0:/sce_lbn")) {
+            // try to resolve LBA addressing if possible
+            UmdIsoReader iso = Modules.IoFileMgrForUserModule.getIsoReader();
+            if (iso != null) {
+                String filePath = filename;
+                filePath = filePath.substring(14); // length of "disc0:/sce_lba"
+                int sep = filePath.indexOf("_size");
+                int fileStart = Integer.decode(filePath.substring(0, sep));
+                String resolved = iso.getFileName(fileStart);
+                if (resolved != null) {
+                    filelog = String.format("path=0x%08X('%s', '%s')",
+                            filename_addr, filename, resolved);
+                }
+            }
+        }
+        filelog += String.format(" flags=0x%04X, permissions=0x%04X(%s)",
+                flags, permissions, mode);
+
         // File Command list
-        logFileCommand(new FileCommandInfo(
-                "open", result,
-                String.format("path=0x%08X('%s') flags=0x%04X, permissions=0x%04X(%s)",
-                filename_addr, filename, flags, permissions, mode)));
+        logFileCommand(new FileCommandInfo("open", result, filelog));
     }
 
     @Override
     public void sceIoClose(int result, int uid) {
-        if (isLoggingDisabled()) {
-            return;
-        }
-
         // File handle list
         if (result >= 0) {
             FileHandleInfo info = fileHandleIdMap.get(uid);
@@ -712,9 +745,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
 
     @Override
     public void sceIoCancel(int result, int uid) {
-        logFileCommand(new FileCommandInfo(
-                uid, "cancel", result,
-                ""));
+        logFileCommand(new FileCommandInfo(uid, "cancel", result, ""));
     }
 
     private String getWhenceName(int whence) {
@@ -847,6 +878,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
         super.dispose();
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JCheckBox cbFileTrace;
     private javax.swing.JTable commandLogTable;
     private javax.swing.JMenuItem copyItem;
     private javax.swing.JTable fileHandleTable;
