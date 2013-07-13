@@ -238,7 +238,9 @@ public class Emulator implements Runnable {
 
         NIDMapper.getInstance().Initialise();
         Loader.getInstance().reset();
-        State.fileLogger.resetLogging();
+        if (State.fileLogger != null) {
+            State.fileLogger.resetLogging();
+        }
         MemorySections.getInstance().reset();
 
         HLEModuleManager.getInstance().Initialise(firmwareVersion);
