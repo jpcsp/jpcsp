@@ -2397,8 +2397,10 @@ private void PortugueseBRActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 }//GEN-LAST:event_PortugueseBRActionPerformed
 
 private void cwcheatActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cwcheatActionPerformed
-        CheatsGUI cwCheats = new CheatsGUI();
-        startWindowDialog(cwCheats);
+        if (State.cheatsGUI == null) {
+            State.cheatsGUI = new CheatsGUI();
+        }
+        startWindowDialog(State.cheatsGUI);
 }//GEN-LAST:event_cwcheatActionPerformed
 
 private void RussianActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RussianActionPerformed
