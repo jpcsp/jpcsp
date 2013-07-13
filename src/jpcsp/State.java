@@ -20,6 +20,7 @@ import jpcsp.Debugger.MemoryViewer;
 import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
 import jpcsp.Debugger.FileLogger.FileLoggerFrame;
 import jpcsp.Debugger.ImageViewer;
+import jpcsp.GUI.CheatsGUI;
 
 /**
  *
@@ -33,6 +34,7 @@ public class State extends jpcsp.HLE.Modules {
     public static MemoryViewer memoryViewer;
     public static ImageViewer imageViewer;
     public static FileLoggerFrame fileLogger;
+    public static CheatsGUI cheatsGUI;
     public static String discId;
     public static String title;
     // The UMD ID extracted from the UMD_DATA.BIN file
