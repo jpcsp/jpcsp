@@ -35,62 +35,62 @@ import jpcsp.util.Utilities;
 import static jpcsp.util.Utilities.parseHexLong;
 
 public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
-
+    
     public static final String identifierForConfig = "cheatsGUI";
     private static final int cheatsThreadSleepMillis = 5;
     private CheatsThread cheatsThread = null;
-
+    
     public CheatsGUI() {
         initComponents();
-
+        
         if (Settings.getInstance().readBool("gui.saveWindowPos")) {
             setLocation(Settings.getInstance().readWindowPos(identifierForConfig));
             setSize(Settings.getInstance().readWindowSize(identifierForConfig,
                     getWidth(), getHeight()));
         }
     }
-
+    
     @Override
     public void keyTyped(KeyEvent e) {
         // do nothing
     }
-
+    
     @Override
     public void keyPressed(KeyEvent e) {
         // do nothing
     }
-
+    
     @Override
     public void keyReleased(KeyEvent e) {
         // do nothing
     }
-
+    
     private static class CheatsThread extends Thread {
-
+        
         private String[] codes;
         private int currentCode;
         private final CheatsGUI cheats;
         private volatile boolean exit;
-
+        
         public CheatsThread(CheatsGUI cheats) {
             this.cheats = cheats;
         }
-
+        
         public void exit() {
             exit = true;
         }
-
+        
         private String getNextCode() {
             String code;
-
+            
             while (true) {
                 if (currentCode >= codes.length) {
                     code = null;
                     break;
                 }
-
+                
                 code = codes[currentCode++].trim();
-
+                
                 if (code.startsWith("_L")) {
                     code = code.substring(2).trim();
                     break;
@@ -98,10 +98,10 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                     break;
                 }
             }
-
+            
             return code;
         }
-
+        
         private void skipCodes(int count) {
             for (int i = 0; i < count; i++) {
                 if (getNextCode() == null) {
@@ -109,44 +109,44 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                 }
             }
         }
-
+        
         private void skipAllCodes() {
             currentCode = codes.length;
         }
-
+        
         private static int getAddress(int value) {
             // The User space base address has to be added to given value
             return (value + MemoryMap.START_USERSPACE) & Memory.addressMask;
         }
-
+        
         @Override
         public void run() {
             Memory mem = Memory.getInstance();
 
             // only read here, as the text area is disabled on thread enabling
             codes = cheats.getCodesList();
-
+            
             while (!exit) {
                 // Sleep a little bit to not use the CPU at 100%
                 Utilities.sleep(cheatsThreadSleepMillis, 0);
-
+                
                 currentCode = 0;
                 while (true) {
                     String code = getNextCode();
                     if (code == null) {
                         break;
                     }
-
+                    
                     String[] parts = code.split(" ");
                     if (parts == null || parts.length < 2) {
                         continue;
                     }
-
+                    
                     int value;
                     int comm = (int) parseHexLong(parts[0].trim());
                     int arg = (int) parseHexLong(parts[1].trim());
                     int addr = getAddress(comm & 0x0FFFFFFF);
-
+                    
                     switch (comm >>> 28) {
                         case 0: // 8-bit write.
                             if (Memory.isAddressGood(addr)) {
@@ -224,7 +224,7 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                             if (parts != null && parts.length >= 1) {
                                 int data = (int) parseHexLong(parts[0].trim());
                                 int dataAdd = (int) parseHexLong(parts[1].trim());
-
+                                
                                 int maxAddr = (arg >> 16) & 0xFFFF;
                                 int stepAddr = (arg & 0xFFFF) * 4;
                                 for (int a = 0; a < maxAddr; a++) {
@@ -298,7 +298,7 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                                         }
                                     }
                                 }
-
+                                
                                 switch (type) {
                                     case 0: // 8-bit write
                                         mem.write8(base + offset, (byte) arg);
@@ -375,7 +375,7 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                             if (parts != null && parts.length >= 1) {
                                 int data = (int) parseHexLong(parts[0].trim());
                                 int dataAdd = (int) parseHexLong(parts[1].trim());
-
+                                
                                 boolean is8Bit = (data >> 16) == 0x0000;
                                 int maxAddr = (arg >> 16) & 0xFFFF;
                                 int stepAddr = (arg & 0xFFFF) * (is8Bit ? 1 : 2);
@@ -532,11 +532,11 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
             cheats.onCheatsThreadEnded();
         }
     }
-
+    
     public String[] getCodesList() {
         return taCheats.getText().split("\n");
     }
-
+    
     private void addCheatLine(String line) {
         String cheatCodes = taCheats.getText();
         if (cheatCodes == null || cheatCodes.length() <= 0) {
@@ -546,17 +546,17 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
         }
         taCheats.setText(cheatCodes);
     }
-
+    
     public void onCheatsThreadEnded() {
         cheatsThread = null;
     }
-
+    
     @Override
     public void dispose() {
         if (cheatsThread != null) {
             cheatsThread.exit();
         }
-
+        
         Emulator.getMainGUI().endWindowDialog();
         super.dispose();
     }
@@ -648,7 +648,7 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
     private void btnClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClearActionPerformed
         taCheats.setText("");
     }//GEN-LAST:event_btnClearActionPerformed
-
+    
     private void btnImportCheatDBActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnImportCheatDBActionPerformed
         File cheatDBFile = new File("cheat.db");
         if (cheatDBFile.canRead()) {
@@ -680,14 +680,14 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                     java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("CheatsGUI.strReadFromDB.text"));
         }
     }//GEN-LAST:event_btnImportCheatDBActionPerformed
-
+    
     private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
         if (Settings.getInstance().readBool("gui.saveWindowPos")) {
             Settings.getInstance().writeWindowPos(identifierForConfig, getLocation());
             Settings.getInstance().writeWindowSize(identifierForConfig, getSize());
         }
     }//GEN-LAST:event_formWindowDeactivated
-
+    
     private void btnOnOffActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnOnOffActionPerformed
         if (btnOnOff.isSelected()) {
             if (taCheats.getText().isEmpty()) {
@@ -696,11 +696,13 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                 btnOnOff.setSelected(false);
                 return;
             }
-
+            
             if (cheatsThread == null) {
                 taCheats.setEditable(false);
                 taCheats.setBackground(UIManager.getColor("Panel.background"));
-
+                btnClear.setEnabled(false);
+                btnImportCheatDB.setEnabled(false);
+                
                 cheatsThread = new CheatsThread(this);
                 cheatsThread.setPriority(Thread.MIN_PRIORITY);
                 cheatsThread.setName("HLECheatThread");
@@ -711,7 +713,9 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
             if (cheatsThread != null) {
                 taCheats.setEditable(true);
                 taCheats.setBackground(UIManager.getColor("TextArea.background"));
-
+                btnClear.setEnabled(true);
+                btnImportCheatDB.setEnabled(true);
+                
                 cheatsThread.exit();
             }
         }
