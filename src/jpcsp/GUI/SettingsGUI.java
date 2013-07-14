@@ -126,13 +126,17 @@ public class SettingsGUI extends javax.swing.JFrame {
         // special handling for UMD paths
         DefaultListModel dlm = (DefaultListModel) lbUMDPaths.getModel();
         dlm.clear();
-        dlm.addElement(Settings.getInstance().readString("emu.umdpath"));
+        dlm.addElement(settings.readString("emu.umdpath"));
         for (int i = 1; true; i++) {
-            String umdPath = Settings.getInstance().readString(String.format("emu.umdpath.%d", i), null);
+            String umdPath = settings.readString(String.format("emu.umdpath.%d", i), null);
             if (umdPath == null) {
                 break;
             }
-            dlm.addElement(umdPath);
+
+            // elements should only be added once
+            if (!dlm.contains(umdPath)) {
+                dlm.addElement(umdPath);
+            }
         }
     }
 
@@ -230,11 +234,19 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         // special handling for UMD paths
         DefaultListModel dlm = (DefaultListModel) lbUMDPaths.getModel();
-        Settings.getInstance().writeString("emu.umdpath", (String) dlm.getElementAt(0));
+        settings.writeString("emu.umdpath", (String) dlm.getElementAt(0));
         for (int i = 1; i < dlm.getSize(); i++) {
-            Settings.getInstance().writeString(String.format("emu.umdpath.%d", i), (String) dlm.getElementAt(i));
+            settings.writeString(String.format("emu.umdpath.%d", i), (String) dlm.getElementAt(i));
         }
 
+        // clean excess elements
+        for (int i = dlm.getSize(); true; i++) {
+            if (settings.hasProperty(String.format("emu.umdpath.%d", i))) {
+                settings.clearProperty(String.format("emu.umdpath.%d", i));
+            } else {
+                break;
+            }
+        }
     }
 
     private void setBoolToSettings(JRadioButton radioButton, String settingsOption) {
