@@ -22,11 +22,14 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import javax.swing.JTextArea;
+import javax.swing.UIManager;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.State;
 import jpcsp.settings.Settings;
+import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.Utilities;
 
 import static jpcsp.util.Utilities.parseHexLong;
@@ -35,7 +38,6 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
 
     public static final String identifierForConfig = "cheatsGUI";
     private static final int cheatsThreadSleepMillis = 5;
-    private boolean cheatsOn = false;
     private CheatsThread cheatsThread = null;
 
     public CheatsGUI() {
@@ -121,11 +123,12 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
         public void run() {
             Memory mem = Memory.getInstance();
 
+            // only read here, as the text area is disabled on thread enabling
+            codes = cheats.getCodesList();
+
             while (!exit) {
                 // Sleep a little bit to not use the CPU at 100%
                 Utilities.sleep(cheatsThreadSleepMillis, 0);
-
-                codes = cheats.getCodesList();
 
                 currentCode = 0;
                 while (true) {
@@ -569,9 +572,9 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
 
         jScrollPane1 = new javax.swing.JScrollPane();
         taCheats = new javax.swing.JTextArea();
-        btnOnOff = new javax.swing.JCheckBox();
         btnImportCheatDB = new javax.swing.JButton();
         btnClear = new javax.swing.JButton();
+        btnOnOff = new javax.swing.JToggleButton();
 
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
         setTitle(bundle.getString("CheatsGUI.title")); // NOI18N
@@ -589,13 +592,6 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
         taCheats.setTabSize(2);
         jScrollPane1.setViewportView(taCheats);
 
-        btnOnOff.setText(bundle.getString("CheatsGUI.btnOnOff.text")); // NOI18N
-        btnOnOff.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnOnOffActionPerformed(evt);
-            }
-        });
-
         btnImportCheatDB.setText(bundle.getString("CheatsGUI.btnImportCheatDB.text")); // NOI18N
         btnImportCheatDB.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -610,6 +606,13 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
             }
         });
 
+        btnOnOff.setText(bundle.getString("CheatsGUI.btnOnOff.text")); // NOI18N
+        btnOnOff.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnOnOffActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -619,11 +622,11 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane1)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(btnOnOff, javax.swing.GroupLayout.DEFAULT_SIZE, 84, Short.MAX_VALUE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 19, Short.MAX_VALUE)
-                        .addComponent(btnImportCheatDB, javax.swing.GroupLayout.DEFAULT_SIZE, 197, Short.MAX_VALUE)
+                        .addComponent(btnOnOff, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(btnClear, javax.swing.GroupLayout.DEFAULT_SIZE, 85, Short.MAX_VALUE)))
+                        .addComponent(btnImportCheatDB, javax.swing.GroupLayout.DEFAULT_SIZE, 211, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(btnClear, javax.swing.GroupLayout.DEFAULT_SIZE, 100, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -634,8 +637,8 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnImportCheatDB)
-                    .addComponent(btnOnOff)
-                    .addComponent(btnClear))
+                    .addComponent(btnClear)
+                    .addComponent(btnOnOff))
                 .addContainerGap())
         );
 
@@ -643,24 +646,8 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClearActionPerformed
-        taCheats.setText(""); // NOI18N
+        taCheats.setText("");
     }//GEN-LAST:event_btnClearActionPerformed
-
-    private void btnOnOffActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnOnOffActionPerformed
-        cheatsOn = !cheatsOn;
-        taCheats.setEditable(!cheatsOn);
-
-        if (cheatsOn && cheatsThread == null && !taCheats.getText().equals("")) { // NOI18N
-            taCheats.setEditable(false);
-            cheatsThread = new CheatsThread(this);
-            cheatsThread.setPriority(Thread.MIN_PRIORITY);
-            cheatsThread.setName("HLECheatThread"); // NOI18N
-            cheatsThread.setDaemon(true);
-            cheatsThread.start();
-        } else if (!cheatsOn && cheatsThread != null) {
-            cheatsThread.exit();
-        }
-    }//GEN-LAST:event_btnOnOffActionPerformed
 
     private void btnImportCheatDBActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnImportCheatDBActionPerformed
         File cheatDBFile = new File("cheat.db");
@@ -688,6 +675,9 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
             } catch (IOException e) {
                 Emulator.log.error("Import from cheat.db", e);
             }
+        } else {
+            JpcspDialogManager.showInformation(this,
+                    java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("CheatsGUI.strReadFromDB.text"));
         }
     }//GEN-LAST:event_btnImportCheatDBActionPerformed
 
@@ -697,10 +687,39 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
             Settings.getInstance().writeWindowSize(identifierForConfig, getSize());
         }
     }//GEN-LAST:event_formWindowDeactivated
+
+    private void btnOnOffActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnOnOffActionPerformed
+        if (btnOnOff.isSelected()) {
+            if (taCheats.getText().isEmpty()) {
+                JpcspDialogManager.showInformation(this,
+                        java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("CheatsGUI.strNoCheatsEntered.text"));
+                btnOnOff.setSelected(false);
+                return;
+            }
+
+            if (cheatsThread == null) {
+                taCheats.setEditable(false);
+                taCheats.setBackground(UIManager.getColor("Panel.background"));
+
+                cheatsThread = new CheatsThread(this);
+                cheatsThread.setPriority(Thread.MIN_PRIORITY);
+                cheatsThread.setName("HLECheatThread");
+                cheatsThread.setDaemon(true);
+                cheatsThread.start();
+            }
+        } else {
+            if (cheatsThread != null) {
+                taCheats.setEditable(true);
+                taCheats.setBackground(UIManager.getColor("TextArea.background"));
+
+                cheatsThread.exit();
+            }
+        }
+    }//GEN-LAST:event_btnOnOffActionPerformed
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnClear;
     private javax.swing.JButton btnImportCheatDB;
-    private javax.swing.JCheckBox btnOnOff;
+    private javax.swing.JToggleButton btnOnOff;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTextArea taCheats;
     // End of variables declaration//GEN-END:variables
