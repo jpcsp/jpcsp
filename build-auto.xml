@@ -7,7 +7,7 @@
 	<property name="source.encoding" value="UTF-8" />
 
 	<property name="jpcsp.mainclass" value="jpcsp.MainGUI" />
-	<property name="jpcsp.version" value="0.6" />
+	<property name="jpcsp.version" value="0.7" />
 
 	<path id="Jpcsp.classpath">
 		<pathelement location="lib/jinput.jar" />
