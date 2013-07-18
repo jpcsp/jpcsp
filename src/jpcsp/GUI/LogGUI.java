@@ -27,31 +27,31 @@ import javax.swing.JFileChooser;
 import jpcsp.util.Constants;
 
 public class LogGUI extends javax.swing.JFrame {
-    
+
     private static final long serialVersionUID = -732715495873159718L;
     private static final String LB = System.getProperty("line.separator");
     private MainGUI mainWindow = null;
     private String LogSettingsPath;
-    
+
     public LogGUI(MainGUI main) {
         this.mainWindow = main;
         setLocationRelativeTo(main);
-        
+
         initComponents();
         setLogSettingsFile();
         RefreshWindow();
     }
-    
+
     public void setMainGUI(MainGUI mainWindow) {
         this.mainWindow = mainWindow;
     }
-    
+
     private void setLogSettingsFile() {
         LogSettingsPath = xmlpath.getText();
         LogWindow.setConfXMLFile(LogSettingsPath);
         printLogSettingsFile();
     }
-    
+
     private void printLogSettingsFile() {
         try {
             RandomAccessFile raf = new RandomAccessFile(LogSettingsPath, "r");
@@ -183,7 +183,7 @@ public class LogGUI extends javax.swing.JFrame {
                         .addComponent(logByKeywordCheck)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(logKeywordField, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 486, Short.MAX_VALUE))
+                        .addGap(0, 306, Short.MAX_VALUE))
                     .addComponent(openLogWindowCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(snapConsoleCheck, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
@@ -251,8 +251,8 @@ public class LogGUI extends javax.swing.JFrame {
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 418, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addGroup(LoggerSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(outputToText, javax.swing.GroupLayout.DEFAULT_SIZE, 549, Short.MAX_VALUE)
-                    .addComponent(outputToHTML, javax.swing.GroupLayout.DEFAULT_SIZE, 549, Short.MAX_VALUE)
+                    .addComponent(outputToText, javax.swing.GroupLayout.DEFAULT_SIZE, 369, Short.MAX_VALUE)
+                    .addComponent(outputToHTML, javax.swing.GroupLayout.DEFAULT_SIZE, 369, Short.MAX_VALUE)
                     .addGroup(LoggerSettingsPanelLayout.createSequentialGroup()
                         .addGroup(LoggerSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(lblOutputFile)
@@ -488,7 +488,7 @@ public class LogGUI extends javax.swing.JFrame {
                     .addComponent(rbGPUDebug, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(lblLogMethod, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(rbCPUDebug, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(rbGeneralDebug, javax.swing.GroupLayout.DEFAULT_SIZE, 190, Short.MAX_VALUE))
+                    .addComponent(rbGeneralDebug, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(LoggerAdvancedPanelLayout.createSequentialGroup()
@@ -506,15 +506,15 @@ public class LogGUI extends javax.swing.JFrame {
                                     .addComponent(audioBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(imposeBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(psmfBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(suspendBox, javax.swing.GroupLayout.DEFAULT_SIZE, 189, Short.MAX_VALUE))
-                                .addGap(53, 53, 53))
+                                    .addComponent(suspendBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED))
                             .addGroup(LoggerAdvancedPanelLayout.createSequentialGroup()
                                 .addComponent(interruptMgrBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)))
                         .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(ioFileMgrBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(moduleMgrBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(sysMemUserBox, javax.swing.GroupLayout.DEFAULT_SIZE, 196, Short.MAX_VALUE)
+                            .addComponent(sysMemUserBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(ctrlBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(fontBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(mp3Box, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -526,7 +526,7 @@ public class LogGUI extends javax.swing.JFrame {
                                 .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(geUserBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(defltBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(threadManBox, javax.swing.GroupLayout.DEFAULT_SIZE, 172, Short.MAX_VALUE)
+                                    .addComponent(threadManBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(kernelLibBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(utilsBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(mpegBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -538,7 +538,7 @@ public class LogGUI extends javax.swing.JFrame {
                                     .addComponent(hprmBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(displayBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(atracBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(loadCoreBox, javax.swing.GroupLayout.DEFAULT_SIZE, 173, Short.MAX_VALUE)
+                                    .addComponent(loadCoreBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(stdioBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                             .addComponent(utilityBox, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                     .addGroup(LoggerAdvancedPanelLayout.createSequentialGroup()
@@ -671,13 +671,13 @@ public class LogGUI extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addComponent(saveButton)
+                    .addComponent(jTabbedPane1)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(saveButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jButtonOK)
+                        .addComponent(jButtonOK, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButtonCancel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jTabbedPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 1014, Short.MAX_VALUE))
+                        .addComponent(jButtonCancel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -698,7 +698,7 @@ public class LogGUI extends javax.swing.JFrame {
     final public void RefreshWindow() {
         openLogWindowCheck.setSelected(Settings.getInstance().readBool("gui.openLogwindow"));
         snapConsoleCheck.setSelected(Settings.getInstance().readBool("gui.snapLogwindow"));
-        
+
         String keyword = Settings.getInstance().readString("log.keyword");
         if (!keyword.equals("LOG_ALL")) {
             logKeywordField.setText(keyword);
@@ -708,7 +708,7 @@ public class LogGUI extends javax.swing.JFrame {
             logByKeywordCheck.setSelected(false);
         }
     }
-    
+
     private void setCustom(boolean useCustom) {
         interruptMgrBox.setEnabled(useCustom);
         ioFileMgrBox.setEnabled(useCustom);
@@ -751,7 +751,7 @@ public class LogGUI extends javax.swing.JFrame {
         stdoutBox.setEnabled(useCustom);
         stderrBox.setEnabled(useCustom);
     }
-    
+
     private String selectLoggers() {
         String loggers = "";
         if (rbGeneralDebug.isSelected()) {
@@ -1035,14 +1035,14 @@ public class LogGUI extends javax.swing.JFrame {
             } else {
                 loggers += "<logger name='stderr' > <level value='off' /> </logger>" + LB;
             }
-            
+
             loggers += "<!-- Output profiler info to 'profiler.txt' -->" + LB
                     + "<logger name='profiler' additivity='false'>" + LB
                     + "<level value='info' />" + LB
                     + "<appender-ref ref='ProfilerTxtAppender' />" + LB
                     + "</logger>" + LB;
         }
-        
+
         return loggers;
     }
 private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
@@ -1053,30 +1053,30 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
         } else {
             Settings.getInstance().writeString("log.keyword", "LOG_ALL");
         }
-        
+
         if (snapConsoleCheck.isSelected() && mainWindow != null) {
             mainWindow.snaptoMainwindow();
         }
-        
+
         dispose();
 }//GEN-LAST:event_jButtonOKActionPerformed
-    
+
 private void fileButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fileButtonActionPerformed
         JFileChooser fc = new JFileChooser();
-        
+
         fc.setCurrentDirectory(new java.io.File("."));
         fc.setSelectedFile(new File(xmlpath.getText()));
-        
+
         fc.addChoosableFileFilter(Constants.fltXMLFiles);
         fc.setFileFilter(Constants.fltXMLFiles);
-        
+
         int result = fc.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             xmlpath.setText(fc.getSelectedFile().getPath());
             setLogSettingsFile();
         }
 }//GEN-LAST:event_fileButtonActionPerformed
-    
+
 private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveButtonActionPerformed
         try {
             File f = new File(LogSettingsPath);
@@ -1087,19 +1087,19 @@ private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
             if (!logoutpath.getText().equals("")) {
                 outName = logoutpath.getText();
             }
-            
+
             RandomAccessFile raf = new RandomAccessFile(LogSettingsPath, "rw");
-            
+
             String header = "<?xml version='1.0' encoding='UTF-8' ?>" + LB
                     + "<!DOCTYPE log4j:configuration SYSTEM 'log4j.dtd'>" + LB + LB
                     + "<log4j:configuration>" + LB + LB;
-            
+
             String windowAppender = "<appender name='JpcspAppender' class='jpcsp.log.TextPaneAppender'>" + LB
                     + "<layout class='org.apache.log4j.PatternLayout'>" + LB
                     + "<param name='ConversionPattern' value='%r [%t] %-5p %c - %m%n' />" + LB
                     + "</layout>" + LB
                     + "</appender>" + LB;
-            
+
             String htmlAppender;
             if (splitFilesBox.isSelected()) {
                 htmlAppender = "<appender name='HTMLAppender' class='org.apache.log4j.RollingFileAppender'>" + LB
@@ -1120,7 +1120,7 @@ private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
                         + "</layout>" + LB
                         + "</appender>" + LB;
             }
-            
+
             String textAppender;
             if (splitFilesBox.isSelected()) {
                 textAppender = "<appender name='TxtAppender' class='org.apache.log4j.RollingFileAppender'>" + LB
@@ -1141,7 +1141,7 @@ private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
                         + "</layout>" + LB
                         + "</appender>" + LB;
             }
-            
+
             String profilerAppender = "<appender name='ProfilerTxtAppender' class='org.apache.log4j.FileAppender'>" + LB
                     + "<param name='File' value='profiler.txt' />" + LB
                     + "<param name='Append' value='false' />" + LB
@@ -1149,18 +1149,18 @@ private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
                     + "<param name='ConversionPattern' value='%m%n' />" + LB
                     + "</layout>" + LB
                     + "</appender>" + LB;
-            
+
             String loggers = selectLoggers();
-            
+
             String rootStart = LB + "<root>" + LB
                     + "<level value ='off' />" + LB;
             String rootWindowAppender = "<appender-ref ref='JpcspAppender' />" + LB;
             String rootHtmlAppender = "<appender-ref ref='HTMLAppender' />" + LB;
             String rootTextAppender = "<appender-ref ref='TxtAppender' />" + LB;
-            
+
             String rootEnd = "</root>" + LB + LB
                     + "</log4j:configuration>" + LB;
-            
+
             String contents = header + windowAppender;
             if (outputToHTML.isSelected()) {
                 contents += htmlAppender;
@@ -1179,7 +1179,7 @@ private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
                 contents += rootTextAppender;
             }
             contents += rootEnd;
-            
+
             raf.writeBytes(contents);
             raf.close();
         } catch (Exception e) {
@@ -1188,35 +1188,35 @@ private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
         settingsArea.setText("");
         setLogSettingsFile();
 }//GEN-LAST:event_saveButtonActionPerformed
-    
+
 private void splitFilesBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_splitFilesBoxActionPerformed
         maxSizeSpinner.setEnabled(splitFilesBox.isSelected());
 }//GEN-LAST:event_splitFilesBoxActionPerformed
-    
+
     private void rbCustomActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rbCustomActionPerformed
         setCustom(true);
     }//GEN-LAST:event_rbCustomActionPerformed
-    
+
     private void rbFullDebugActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rbFullDebugActionPerformed
         setCustom(false);
     }//GEN-LAST:event_rbFullDebugActionPerformed
-    
+
     private void rbCoreDebugActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rbCoreDebugActionPerformed
         setCustom(false);
     }//GEN-LAST:event_rbCoreDebugActionPerformed
-    
+
     private void rbGPUDebugActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rbGPUDebugActionPerformed
         setCustom(false);
     }//GEN-LAST:event_rbGPUDebugActionPerformed
-    
+
     private void rbCPUDebugActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rbCPUDebugActionPerformed
         setCustom(false);
     }//GEN-LAST:event_rbCPUDebugActionPerformed
-    
+
     private void rbGeneralDebugActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rbGeneralDebugActionPerformed
         setCustom(false);
     }//GEN-LAST:event_rbGeneralDebugActionPerformed
-    
+
     private void logByKeywordCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logByKeywordCheckActionPerformed
         if (logByKeywordCheck.isSelected()) {
             logKeywordField.setEditable(true);
@@ -1225,7 +1225,7 @@ private void splitFilesBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN
             logKeywordField.setEditable(false);
         }
     }//GEN-LAST:event_logByKeywordCheckActionPerformed
-    
+
     @Override
     public void dispose() {
         Emulator.getMainGUI().endWindowDialog();
