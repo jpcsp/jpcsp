@@ -37,7 +37,7 @@ import java.awt.event.ItemEvent;
 import java.io.PrintStream;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.UIManager;
-import jpcsp.settings.Settings;
+import jpcsp.WindowPropSaver;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.xml.DOMConfigurator;
@@ -56,7 +56,8 @@ public class LogWindow extends javax.swing.JFrame {
         }
 
         getLogLevelFromConfig();
-        setSize(Settings.getInstance().readWindowSize("logwindow", 500, 300));
+
+        WindowPropSaver.loadWindowProperties(this);
     }
 
     public static void setConfXMLFile(String path) {
@@ -130,11 +131,6 @@ public class LogWindow extends javax.swing.JFrame {
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
         setTitle(bundle.getString("LogWindow.title")); // NOI18N
         setMinimumSize(new java.awt.Dimension(400, 120));
-        addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowDeactivated(java.awt.event.WindowEvent evt) {
-                formWindowDeactivated(evt);
-            }
-        });
 
         scrollPane.setViewportView(tpLog);
 
@@ -165,7 +161,7 @@ public class LogWindow extends javax.swing.JFrame {
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(lblLevel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(cmbLogLevel, 0, 209, Short.MAX_VALUE)
+                        .addComponent(cmbLogLevel, 0, 309, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(btnClear)))
                 .addContainerGap())
@@ -174,7 +170,7 @@ public class LogWindow extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(scrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 25, Short.MAX_VALUE)
+                .addComponent(scrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 145, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -186,13 +182,6 @@ public class LogWindow extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
-    private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
-        if (Settings.getInstance().readBool("gui.saveWindowPos")) {
-            Settings.getInstance().writeWindowPos("logwindow", getLocation());
-            Settings.getInstance().writeWindowSize("logwindow", getSize());
-        }
-    }//GEN-LAST:event_formWindowDeactivated
 
     private void btnClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClearActionPerformed
         clearScreenMessages();

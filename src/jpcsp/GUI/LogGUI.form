@@ -372,23 +372,16 @@
                           <Component id="jSeparator2" alignment="0" max="32767" attributes="1"/>
                           <Group type="102" alignment="0" attributes="0">
                               <Group type="103" groupAlignment="0" attributes="0">
-                                  <Group type="102" attributes="0">
-                                      <Group type="103" groupAlignment="0" attributes="0">
-                                          <Component id="loadExecBox" max="32767" attributes="0"/>
-                                          <Component id="sysMemKernelBox" alignment="0" max="32767" attributes="0"/>
-                                          <Component id="dmacBox" alignment="0" max="32767" attributes="0"/>
-                                          <Component id="audioBox" alignment="0" max="32767" attributes="0"/>
-                                          <Component id="imposeBox" alignment="0" max="32767" attributes="0"/>
-                                          <Component id="psmfBox" alignment="0" max="32767" attributes="0"/>
-                                          <Component id="suspendBox" max="32767" attributes="0"/>
-                                      </Group>
-                                      <EmptySpace max="-2" attributes="0"/>
-                                  </Group>
-                                  <Group type="102" attributes="0">
-                                      <Component id="interruptMgrBox" max="32767" attributes="0"/>
-                                      <EmptySpace max="-2" attributes="0"/>
-                                  </Group>
+                                  <Component id="loadExecBox" max="32767" attributes="0"/>
+                                  <Component id="sysMemKernelBox" alignment="0" max="32767" attributes="0"/>
+                                  <Component id="dmacBox" alignment="0" max="32767" attributes="0"/>
+                                  <Component id="audioBox" alignment="0" max="32767" attributes="0"/>
+                                  <Component id="imposeBox" alignment="0" max="32767" attributes="0"/>
+                                  <Component id="psmfBox" alignment="0" max="32767" attributes="0"/>
+                                  <Component id="suspendBox" max="32767" attributes="0"/>
+                                  <Component id="interruptMgrBox" max="32767" attributes="0"/>
                               </Group>
+                              <EmptySpace max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="0" attributes="0">
                                   <Component id="ioFileMgrBox" alignment="0" max="32767" attributes="0"/>
                                   <Component id="moduleMgrBox" alignment="0" max="32767" attributes="0"/>

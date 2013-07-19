@@ -42,6 +42,7 @@ import javax.swing.DefaultListModel;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import jpcsp.WindowPropSaver;
 import jpcsp.util.JpcspDialogManager;
 
 /**
@@ -71,6 +72,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                         && lbUMDPaths.getModel().getSize() > 1);
             }
         });
+
+        WindowPropSaver.loadWindowProperties(this);
     }
 
     private void setAllComponentsFromSettings() {

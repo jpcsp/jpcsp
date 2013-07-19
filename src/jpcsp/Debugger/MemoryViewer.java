@@ -27,7 +27,7 @@ import javax.swing.JOptionPane;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.settings.Settings;
+import jpcsp.WindowPropSaver;
 import jpcsp.util.Utilities;
 
 /**
@@ -35,26 +35,27 @@ import jpcsp.util.Utilities;
  * @author George
  */
 public class MemoryViewer extends javax.swing.JFrame {
-
+    
     private static final long serialVersionUID = 1L;
     private int visiblelines = 0;
     private int startaddress;
-    private Point lastLocation = null;
-
+    
     public MemoryViewer() {
         //this.cpu = c;
         startaddress = Emulator.getProcessor().cpu.pc;
         initComponents();
         RefreshMemory();
+        
+        WindowPropSaver.loadWindowProperties(this);
     }
-
+    
     public static char converttochar(int character) {
         if (character < 0x020 || character >= 0x07f && character <= 0x0a0 || character == 0x0ad) {
             return '.';
         }
         return (char) (character & 0x0ff);
     }
-
+    
     private static byte safeRead8(Memory mem, int address) {
         byte value = 0;
         if (Memory.isAddressGood(address)) {
@@ -62,15 +63,15 @@ public class MemoryViewer extends javax.swing.JFrame {
         }
         return value;
     }
-
+    
     public static String getMemoryView(int addr) {
         byte[] line = new byte[16];
         Memory mem = Memory.getInstance();
-
+        
         for (int i = 0; i < line.length; i++) {
             line[i] = safeRead8(mem, addr + i);
         }
-
+        
         return String.format("%08x : %02x %02x %02x %02x %02x %02x "
                 + "%02x %02x %02x %02x %02x %02x %02x %02x "
                 + "%02x %02x %c %c %c %c %c %c %c %c %c %c %c %c %c %c %c %c", addr,
@@ -85,7 +86,7 @@ public class MemoryViewer extends javax.swing.JFrame {
                 converttochar(line[12]), converttochar(line[13]),
                 converttochar(line[14]), converttochar(line[15]));
     }
-
+    
     public void RefreshMemory() {
         int addr = startaddress;
         taMemoryView.setText(""); // NOI18N
@@ -120,11 +121,6 @@ public class MemoryViewer extends javax.swing.JFrame {
         setTitle(bundle.getString("MemoryViewer.title")); // NOI18N
         setMinimumSize(new java.awt.Dimension(800, 380));
         setPreferredSize(new java.awt.Dimension(800, 380));
-        addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowDeactivated(java.awt.event.WindowEvent evt) {
-                formWindowDeactivated(evt);
-            }
-        });
 
         AddressField.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
         AddressField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
@@ -251,11 +247,11 @@ private void taMemoryViewKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:ev
             RefreshMemory();
         }
 }//GEN-LAST:event_taMemoryViewKeyPressed
-
+    
 private void btnGoToAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGoToAddressActionPerformed
         GoToAddress();
 }//GEN-LAST:event_btnGoToAddressActionPerformed
-
+    
     private void GoToAddress() {
         String gettext = AddressField.getText();
         int value;
@@ -269,7 +265,7 @@ private void btnGoToAddressActionPerformed(java.awt.event.ActionEvent evt) {//GE
         AddressField.setText(String.format("0x%08x", value));
         RefreshMemory();
     }
-
+    
 private void taMemoryViewMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FIRST:event_taMemoryViewMouseWheelMoved
         if (evt.getWheelRotation() > 0) {
             startaddress += 16;
@@ -281,23 +277,12 @@ private void taMemoryViewMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//
             RefreshMemory();
         }
 }//GEN-LAST:event_taMemoryViewMouseWheelMoved
-
-private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
-        // called when the mainWindow is closed
-        if (Settings.getInstance().readBool("gui.saveWindowPos")) {
-            Point location = getLocation();
-            if (lastLocation == null || location.x != lastLocation.x || location.y != lastLocation.y) {
-                Settings.getInstance().writeWindowPos("memoryview", location);
-                lastLocation = location;
-            }
-        }
-}//GEN-LAST:event_formWindowDeactivated
-
+    
 private void btnGoToSPActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGoToSPActionPerformed
         startaddress = Emulator.getProcessor().cpu._sp;
         RefreshMemory();
 }//GEN-LAST:event_btnGoToSPActionPerformed
-
+    
 private void btnDumpRawRamActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDumpRawRamActionPerformed
         File f = new File("ramdump.bin"); // NOI18N
         BufferedWriter out = null;
@@ -313,25 +298,25 @@ private void btnDumpRawRamActionPerformed(java.awt.event.ActionEvent evt) {//GEN
             Utilities.close(out);
         }
 }//GEN-LAST:event_btnDumpRawRamActionPerformed
-
+    
 private void onKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_onKeyPressed
         if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
             GoToAddress();
         }
 }//GEN-LAST:event_onKeyPressed
-
+    
 private void btnGoToVRAMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGoToVRAMActionPerformed
         startaddress = 0x04000000;
         RefreshMemory();
 }//GEN-LAST:event_btnGoToVRAMActionPerformed
-
+    
     private void jPanel1ComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_jPanel1ComponentResized
         // this is needed to override the size of the TextArea with text already present
         taMemoryView.setMinimumSize(jPanel1.getMinimumSize());
         taMemoryView.setMaximumSize(jPanel1.getMaximumSize());
         RefreshMemory();
     }//GEN-LAST:event_jPanel1ComponentResized
-
+    
     @Override
     public void dispose() {
         Emulator.getMainGUI().endWindowDialog();

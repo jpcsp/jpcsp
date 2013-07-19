@@ -24,6 +24,7 @@ import jpcsp.MainGUI;
 import java.io.File;
 import java.io.RandomAccessFile;
 import javax.swing.JFileChooser;
+import jpcsp.WindowPropSaver;
 import jpcsp.util.Constants;
 
 public class LogGUI extends javax.swing.JFrame {
@@ -40,6 +41,8 @@ public class LogGUI extends javax.swing.JFrame {
         initComponents();
         setLogSettingsFile();
         RefreshWindow();
+
+        WindowPropSaver.loadWindowProperties(this);
     }
 
     public void setMainGUI(MainGUI mainWindow) {
@@ -1055,7 +1058,7 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
         }
 
         if (snapConsoleCheck.isSelected() && mainWindow != null) {
-            mainWindow.snaptoMainwindow();
+            mainWindow.updateConsoleWinPosition();
         }
 
         dispose();

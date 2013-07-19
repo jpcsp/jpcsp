@@ -28,13 +28,13 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules150.sceDisplay;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.WindowPropSaver;
 import jpcsp.graphics.GeCommands;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.ImageReader;
-import jpcsp.settings.Settings;
 
 public class ImageViewer extends javax.swing.JFrame {
-
+    
     private static final long serialVersionUID = 8837780642045065242L;
     private int startAddress = MemoryMap.START_VRAM;
     private int bufferWidth = 512;
@@ -58,22 +58,24 @@ public class ImageViewer extends javax.swing.JFrame {
         Color.BLUE,
         Color.GRAY
     };
-
+    
     public ImageViewer() {
         // memoryImage construction overriden for MemoryImage
         initComponents();
         copyValuesToFields();
+        
+        WindowPropSaver.loadWindowProperties(this);
     }
-
+    
     public void refreshImage() {
         goToAddress();
     }
-
+    
     private void valuesUpdated() {
         memoryImage.setSize(memoryImage.getPreferredSize());
         repaint();
     }
-
+    
     private void goToAddress() {
         try {
             startAddress = Integer.decode(addressField.getText());
@@ -87,7 +89,7 @@ public class ImageViewer extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, bundle.getString("ImageViewer.strInvalidNumber.text") + " " + nfe.getLocalizedMessage());
             return;
         }
-
+        
         pixelFormat = pixelFormatField.getSelectedIndex();
         imageSwizzle = swizzleField.isSelected();
         useAlpha = useAlphaField.isSelected();
@@ -98,7 +100,7 @@ public class ImageViewer extends javax.swing.JFrame {
         copyValuesToFields();
         valuesUpdated();
     }
-
+    
     private void copyValuesToFields() {
         addressField.setText(String.format("0x%08X", startAddress));
         widthField.setText(String.format("%d", imageWidth));
@@ -112,7 +114,7 @@ public class ImageViewer extends javax.swing.JFrame {
         clutNumberBlocksField.setText(String.format("%d", clutNumberBlocks));
         clutFormatField.setSelectedIndex(clutFormat);
     }
-
+    
     private void goToBufferInfo(sceDisplay.BufferInfo bufferInfo) {
         startAddress = bufferInfo.topAddr;
         imageWidth = bufferInfo.width;
@@ -121,57 +123,57 @@ public class ImageViewer extends javax.swing.JFrame {
         pixelFormat = bufferInfo.pixelFormat;
         imageSwizzle = false;
         useAlpha = false;
-
+        
         copyValuesToFields();
         valuesUpdated();
     }
-
+    
     @Override
     public void dispose() {
         Emulator.getMainGUI().endWindowDialog();
         super.dispose();
     }
-
+    
     private class MemoryImage extends JPanel {
-
+        
         private static final long serialVersionUID = 1372183323503668615L;
-
+        
         public MemoryImage() {
         }
-
+        
         @Override
         public void paintComponent(Graphics g) {
             if (Memory.isAddressGood(startAddress)) {
                 Insets insets = getInsets();
                 int minWidth = Math.min(imageWidth, bufferWidth);
-
+                
                 g.setColor(backgroundColors[backgroundColor]);
                 g.fillRect(insets.left, insets.top, minWidth, imageHeight);
-
+                
                 IMemoryReader imageReader = ImageReader.getImageReader(startAddress, imageWidth, imageHeight, bufferWidth, pixelFormat, imageSwizzle, clutAddress, clutFormat, clutNumberBlocks, clutStart, clutShift, clutMask, null, null);
-
+                
                 for (int y = 0; y < imageHeight; y++) {
                     for (int x = 0; x < minWidth; x++) {
                         int colorABGR = imageReader.readNext();
                         int colorARGB = ImageReader.colorABGRtoARGB(colorABGR);
                         g.setColor(new Color(colorARGB, useAlpha));
-
+                        
                         drawPixel(g, x + insets.left, y + insets.top);
                     }
                 }
             }
         }
-
+        
         private void drawPixel(Graphics g, int x, int y) {
             g.drawLine(x, y, x, y);
         }
-
+        
         @Override
         public Dimension getPreferredSize() {
             Insets insets = getInsets();
             return new Dimension(imageWidth + insets.left + insets.right, imageHeight + insets.top + insets.bottom);
         }
-
+        
         @Override
         public Dimension getMaximumSize() {
             return getPreferredSize();
@@ -216,11 +218,6 @@ public class ImageViewer extends javax.swing.JFrame {
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
         setTitle(bundle.getString("ImageViewer.title")); // NOI18N
         setMinimumSize(new java.awt.Dimension(532, 500));
-        addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowDeactivated(java.awt.event.WindowEvent evt) {
-                formWindowDeactivated(evt);
-            }
-        });
 
         addressField.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
         addressField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
@@ -427,14 +424,14 @@ public class ImageViewer extends javax.swing.JFrame {
                                         .addGap(74, 74, 74)
                                         .addComponent(lblHeight))))
                             .addComponent(memoryImage, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addContainerGap(20, Short.MAX_VALUE))
+                        .addGap(0, 8, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(btnGoToAddress, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(btnGoToGE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(btnGoToFB, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addContainerGap())))
+                        .addComponent(btnGoToFB, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -483,27 +480,21 @@ public class ImageViewer extends javax.swing.JFrame {
     private void btnGoToAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGoToAddressActionPerformed
         goToAddress();
     }//GEN-LAST:event_btnGoToAddressActionPerformed
-
+    
     private void btnGoToGEActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGoToGEActionPerformed
         goToBufferInfo(Modules.sceDisplayModule.getBufferInfoGe());
     }//GEN-LAST:event_btnGoToGEActionPerformed
-
+    
     private void btnGoToFBActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGoToFBActionPerformed
         goToBufferInfo(Modules.sceDisplayModule.getBufferInfoFb());
     }//GEN-LAST:event_btnGoToFBActionPerformed
-
+    
     private void keyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_keyPressed
         if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
             refreshImage();
         }
     }//GEN-LAST:event_keyPressed
-
-    private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
-        if (Settings.getInstance().readBool("gui.saveWindowPos")) {
-            Settings.getInstance().writeWindowPos("imageViewer", getLocation());
-        }
-    }//GEN-LAST:event_formWindowDeactivated
-
+    
     private void changeImageActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_changeImageActionPerformed
         refreshImage();
     }//GEN-LAST:event_changeImageActionPerformed

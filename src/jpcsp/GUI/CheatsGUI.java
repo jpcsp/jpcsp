@@ -22,13 +22,12 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import javax.swing.JTextArea;
 import javax.swing.UIManager;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.State;
-import jpcsp.settings.Settings;
+import jpcsp.WindowPropSaver;
 import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.Utilities;
 
@@ -43,11 +42,7 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
     public CheatsGUI() {
         initComponents();
         
-        if (Settings.getInstance().readBool("gui.saveWindowPos")) {
-            setLocation(Settings.getInstance().readWindowPos(identifierForConfig));
-            setSize(Settings.getInstance().readWindowSize(identifierForConfig,
-                    getWidth(), getHeight()));
-        }
+        WindowPropSaver.loadWindowProperties(this);
     }
     
     @Override
@@ -580,11 +575,6 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
         setTitle(bundle.getString("CheatsGUI.title")); // NOI18N
         setMinimumSize(new java.awt.Dimension(360, 360));
         setName("frmCheatsGUI"); // NOI18N
-        addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowDeactivated(java.awt.event.WindowEvent evt) {
-                formWindowDeactivated(evt);
-            }
-        });
 
         taCheats.setColumns(30);
         taCheats.setFont(new java.awt.Font("Monospaced", 0, 12)); // NOI18N
@@ -680,13 +670,6 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
                     java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("CheatsGUI.strReadFromDB.text"));
         }
     }//GEN-LAST:event_btnImportCheatDBActionPerformed
-    
-    private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
-        if (Settings.getInstance().readBool("gui.saveWindowPos")) {
-            Settings.getInstance().writeWindowPos(identifierForConfig, getLocation());
-            Settings.getInstance().writeWindowSize(identifierForConfig, getSize());
-        }
-    }//GEN-LAST:event_formWindowDeactivated
     
     private void btnOnOffActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnOnOffActionPerformed
         if (btnOnOff.isSelected()) {

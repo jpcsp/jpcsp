@@ -69,6 +69,7 @@ import com.jidesoft.swing.StyledLabel;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import jpcsp.Debugger.MemoryBreakpoints.MemoryBreakpointsDialog;
+import jpcsp.WindowPropSaver;
 import jpcsp.memory.DebuggerMemory;
 import jpcsp.util.Constants;
 import org.apache.log4j.Logger;
@@ -191,6 +192,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         });
 
         RefreshDebugger(true);
+
+        WindowPropSaver.loadWindowProperties(this);
     }
 
     private void addKeyAction(JButton button, String key) {
@@ -539,11 +542,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         setTitle(bundle.getString("DisassemblerFrame.title")); // NOI18N
         setMinimumSize(new java.awt.Dimension(800, 700));
         setName("frmDebugger"); // NOI18N
-        addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowDeactivated(java.awt.event.WindowEvent evt) {
-                formWindowDeactivated(evt);
-            }
-        });
 
         tbDisasm.setFloatable(false);
         tbDisasm.setRollover(true);
@@ -1652,13 +1650,6 @@ private void PauseDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
         btnCapture.setSelected(State.captureGeNextFrame);
         btnReplay.setSelected(State.replayGeNextFrame);
     }
-
-private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
-        //Called when the mainWindow is closed
-        if (Settings.getInstance().readBool("gui.saveWindowPos")) {
-            Settings.getInstance().writeWindowPos("disassembler", getLocation());
-        }
-}//GEN-LAST:event_formWindowDeactivated
 
     private boolean isCellChecked(JTable table) {
         for (int i = 0; i < table.getRowCount(); i++) {

@@ -34,6 +34,7 @@ import jpcsp.util.Utilities;
 
 import com.jidesoft.utils.SwingWorker;
 import javax.swing.table.DefaultTableModel;
+import jpcsp.WindowPropSaver;
 
 /**
  *
@@ -50,6 +51,8 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
      */
     public InstructionCounter() {
         initComponents();
+
+        WindowPropSaver.loadWindowProperties(this);
     }
 
     public void setModule(SceModule module) {

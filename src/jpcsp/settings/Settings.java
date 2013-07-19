@@ -232,20 +232,30 @@ public class Settings {
         String x = getProperty("gui.windows." + windowname + ".x");
         String y = getProperty("gui.windows." + windowname + ".y");
 
+        // check if the read position is valid - i.e. already exists
+        if (x == null || y == null) {
+            return null;
+        }
+
         Point position = new Point();
-        position.x = x != null ? Integer.parseInt(x) : 0;
-        position.y = y != null ? Integer.parseInt(y) : 0;
+        position.x = Integer.parseInt(x);
+        position.y = Integer.parseInt(y);
 
         return position;
     }
 
-    public Dimension readWindowSize(String windowname, int defaultWidth, int defaultHeight) {
+    public Dimension readWindowSize(String windowname) {
         String w = getProperty("gui.windows." + windowname + ".w");
         String h = getProperty("gui.windows." + windowname + ".h");
 
+        // check if the read size is valid - i.e. already exists
+        if (w == null || h == null) {
+            return null;
+        }
+
         Dimension dimension = new Dimension();
-        dimension.width = w != null ? Integer.parseInt(w) : defaultWidth;
-        dimension.height = h != null ? Integer.parseInt(h) : defaultHeight;
+        dimension.width = Integer.parseInt(w);
+        dimension.height = Integer.parseInt(h);
 
         return dimension;
     }

@@ -106,6 +106,8 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.xml.DOMConfigurator;
 
 import com.jidesoft.plaf.LookAndFeelFactory;
+import java.awt.AWTEvent;
+import java.awt.Toolkit;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.MissingResourceException;
@@ -121,12 +123,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
     private static final long serialVersionUID = -3647025845406693230L;
     public static final int MAX_RECENT = 10;
-    LogWindow consolewin;
-    ElfHeaderInfo elfheader;
-    SettingsGUI setgui;
-    ControlsGUI ctrlgui;
-    LogGUI loggui;
-    MemStickBrowser memstick;
     Emulator emulator;
     UmdBrowser umdbrowser;
     UmdVideoPlayer umdvideoplayer;
@@ -137,7 +133,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     JPopupMenu fullScreenMenu;
     private List<RecentElement> recentUMD = new LinkedList<RecentElement>();
     private List<RecentElement> recentFile = new LinkedList<RecentElement>();
-    public final static String windowNameForSettings = "mainwindow";
     private final static String[] userDir = {
         "ms0/PSP/SAVEDATA",
         "ms0/PSP/GAME",
@@ -168,9 +163,11 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     public MainGUI() {
         DOMConfigurator.configure("LogSettings.xml");
         System.setOut(new PrintStream(new LoggingOutputStream(Logger.getLogger("emu"), Level.INFO)));
-        consolewin = new LogWindow();
 
-        // Create needed user directories
+        // create log window in a local variable - see explanation further down
+        LogWindow logwin = new LogWindow();
+
+        // create needed user directories
         for (String dirName : userDir) {
             File dir = new File(dirName);
             if (!dir.exists()) {
@@ -181,10 +178,14 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         emulator = new Emulator(this);
         Screen.start();
 
-        /*next two lines are for overlay menus over joglcanvas*/
+        // must be done after initialising the Emulator class as State initialises
+        // its elements indirectly via getting the pointer to MainGUI by means
+        // of the Emulator class...
+        State.logWindow = logwin;
+
+        // next two lines are for overlay menus over joglcanvas
         JPopupMenu.setDefaultLightWeightPopupEnabled(false);
         ToolTipManager.sharedInstance().setLightWeightPopupEnabled(false);
-        //end of
 
         useFullscreen = Settings.getInstance().readBool("gui.fullscreen");
         if (useFullscreen && !isDisplayable()) {
@@ -192,8 +193,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             setLocation(0, 0);
             setSize(getFullScreenDimension());
             setPreferredSize(getFullScreenDimension());
-        } else {
-            setLocation(Settings.getInstance().readWindowPos(windowNameForSettings));
         }
 
         String resolution = Settings.getInstance().readString("emu.graphics.resolution");
@@ -210,7 +209,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         setTitle(MetaInformation.FULL_NAME);
 
-        /*add glcanvas to frame and pack frame to get the canvas size*/
+        // add glcanvas to frame and pack frame to get the canvas size
         getContentPane().add(Modules.sceDisplayModule.getCanvas(), java.awt.BorderLayout.CENTER);
         Modules.sceDisplayModule.getCanvas().addKeyListener(this);
         Modules.sceDisplayModule.getCanvas().addMouseListener(this);
@@ -227,11 +226,11 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
                 // window's size run this here
                 if (Settings.getInstance().readBool("gui.snapLogwindow")) {
                     updateConsoleWinPosition();
-                } else {
-                    consolewin.setLocation(Settings.getInstance().readWindowPos("logwindow"));
                 }
             }
         });
+
+        WindowPropSaver.loadWindowProperties(this);
     }
 
     private Dimension getDimensionFromDisplay(int width, int height) {
@@ -1232,10 +1231,10 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         DisplayMode[] displayModes = localDevice.getDisplayModes();
         DisplayMode bestDisplayMode = null;
         for (int i = 0; displayModes != null && i < displayModes.length; i++) {
-            DisplayMode displayMode = displayModes[i];
-            if (displayMode.getWidth() == width && displayMode.getHeight() == height && displayMode.getBitDepth() == displayModeBitDepth) {
-                if (bestDisplayMode == null || (bestDisplayMode.getRefreshRate() < displayMode.getRefreshRate() && bestDisplayMode.getRefreshRate() != preferredDisplayModeRefreshRate)) {
-                    bestDisplayMode = displayMode;
+            DisplayMode dispMode = displayModes[i];
+            if (dispMode.getWidth() == width && dispMode.getHeight() == height && dispMode.getBitDepth() == displayModeBitDepth) {
+                if (bestDisplayMode == null || (bestDisplayMode.getRefreshRate() < dispMode.getRefreshRate() && bestDisplayMode.getRefreshRate() != preferredDisplayModeRefreshRate)) {
+                    bestDisplayMode = dispMode;
                 }
             }
         }
@@ -1338,7 +1337,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     }
 
     public LogWindow getConsoleWindow() {
-        return consolewin;
+        return State.logWindow;
     }
 
     private void populateRecentMenu() {
@@ -1369,7 +1368,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterDebuggerActionPerformed
         if (State.debugger == null) {
             State.debugger = new DisassemblerFrame(emulator);
-            State.debugger.setLocation(Settings.getInstance().readWindowPos("disassembler"));
         } else {
             State.debugger.RefreshDebugger(false);
         }
@@ -1403,8 +1401,6 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
             Settings.getInstance().writeString("gui.lastOpenedFileFolder", fc.getSelectedFile().getParent());
             File file = fc.getSelectedFile();
             loadFile(file);
-        } else {
-            return; //user cancel the action
         }
 }//GEN-LAST:event_OpenFileActionPerformed
 
@@ -1436,8 +1432,8 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 
         //This is where a real application would open the file.
         try {
-            if (consolewin != null) {
-                consolewin.clearScreenMessages();
+            if (State.logWindow != null) {
+                State.logWindow.clearScreenMessages();
             }
             Emulator.log.info(MetaInformation.FULL_NAME);
 
@@ -1579,19 +1575,17 @@ private void PauseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
 }//GEN-LAST:event_PauseButtonActionPerformed
 
 private void ElfHeaderViewerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ElfHeaderViewerActionPerformed
-        if (elfheader == null) {
-            elfheader = new ElfHeaderInfo();
-            elfheader.setLocation(Settings.getInstance().readWindowPos("elfheader"));
+        if (State.elfHeader == null) {
+            State.elfHeader = new ElfHeaderInfo();
         } else {
-            elfheader.RefreshWindow();
+            State.elfHeader.RefreshWindow();
         }
-        startWindowDialog(elfheader);
+        startWindowDialog(State.elfHeader);
 }//GEN-LAST:event_ElfHeaderViewerActionPerformed
 
 private void EnterMemoryViewerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterMemoryViewerActionPerformed
         if (State.memoryViewer == null) {
             State.memoryViewer = new MemoryViewer();
-            State.memoryViewer.setLocation(Settings.getInstance().readWindowPos("memoryview"));
         } else {
             State.memoryViewer.RefreshMemory();
         }
@@ -1609,19 +1603,42 @@ private void EnterImageViewerActionPerformed(java.awt.event.ActionEvent evt) {//
 
 private void AboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AboutActionPerformed
         StringBuilder message = new StringBuilder();
-        message.append("<html>").append("<h2>" + MetaInformation.FULL_NAME + "</h2>").append("<hr/>").append("Official site      : <a href='" + MetaInformation.OFFICIAL_SITE + "'>" + MetaInformation.OFFICIAL_SITE + "</a><br/>").append("Official forum     : <a href='" + MetaInformation.OFFICIAL_FORUM + "'>" + MetaInformation.OFFICIAL_FORUM + "</a><br/>").append("Official repository: <a href='" + MetaInformation.OFFICIAL_REPOSITORY + "'>" + MetaInformation.OFFICIAL_REPOSITORY + "</a><br/>").append("<hr/>").append("<i>Team:</i> <font color='gray'>" + MetaInformation.TEAM + "</font>").append("</html>");
+        message
+                .append("<html>")
+                .append("<h2>")
+                .append(MetaInformation.FULL_NAME)
+                .append("</h2>")
+                .append("<hr/>")
+                .append("Official site      : <a href='")
+                .append(MetaInformation.OFFICIAL_SITE)
+                .append("'>")
+                .append(MetaInformation.OFFICIAL_SITE)
+                .append("</a><br/>")
+                .append("Official forum     : <a href='")
+                .append(MetaInformation.OFFICIAL_FORUM)
+                .append("'>")
+                .append(MetaInformation.OFFICIAL_FORUM)
+                .append("</a><br/>")
+                .append("Official repository: <a href='")
+                .append(MetaInformation.OFFICIAL_REPOSITORY)
+                .append("'>")
+                .append(MetaInformation.OFFICIAL_REPOSITORY)
+                .append("</a><br/>")
+                .append("<hr/>")
+                .append("<i>Team:</i> <font color='gray'>")
+                .append(MetaInformation.TEAM)
+                .append("</font>")
+                .append("</html>");
         JOptionPane.showMessageDialog(this, message.toString(), MetaInformation.FULL_NAME, JOptionPane.INFORMATION_MESSAGE);
 }//GEN-LAST:event_AboutActionPerformed
 
 private void ConfigMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ConfigMenuActionPerformed
-        if (setgui == null) {
-            setgui = new SettingsGUI();
-            Point mainwindow = this.getLocation();
-            setgui.setLocation(mainwindow.x + 100, mainwindow.y + 50);
+        if (State.settingsGUI == null) {
+            State.settingsGUI = new SettingsGUI();
         } else {
-            setgui.RefreshWindow();
+            State.settingsGUI.RefreshWindow();
         }
-        startWindowDialog(setgui);
+        startWindowDialog(State.settingsGUI);
 }//GEN-LAST:event_ConfigMenuActionPerformed
 
 private void ExitEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExitEmuActionPerformed
@@ -1630,17 +1647,18 @@ private void ExitEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
 private void OpenMemStickActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenMemStickActionPerformed
         PauseEmu();
-        if (memstick == null) {
-            memstick = new MemStickBrowser(this, new File("ms0/PSP/GAME"));
-            Point mainwindow = this.getLocation();
-            memstick.setLocation(mainwindow.x + 100, mainwindow.y + 50);
+        if (State.memStickBrowser == null) {
+            State.memStickBrowser = new MemStickBrowser(this, new File("ms0/PSP/GAME"));
         } else {
-            memstick.refreshFiles();
+            State.memStickBrowser.refreshFiles();
         }
-        memstick.setVisible(true);
+        State.memStickBrowser.setVisible(true);
 }//GEN-LAST:event_OpenMemStickActionPerformed
 
 private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+        // this is only needed for the main screen, as it can be closed without
+        // being deactivated first    
+        WindowPropSaver.saveWindowProperties(this);
         exitEmu();
 }//GEN-LAST:event_formWindowClosing
 
@@ -1673,8 +1691,6 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
                 File file = fc.getSelectedFile();
                 loadUMD(file);
                 loadAndRun();
-            } else {
-                return;
             }
         }
 }//GEN-LAST:event_openUmdActionPerformed
@@ -1809,8 +1825,8 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
     public void loadUMDGame(File file) {
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
         try {
-            if (consolewin != null) {
-                consolewin.clearScreenMessages();
+            if (State.logWindow != null) {
+                State.logWindow.clearScreenMessages();
             }
             Emulator.log.info(String.format("Java version: %s (%s)", System.getProperty("java.version"), System.getProperty("java.runtime.version")));
             Emulator.log.info(String.format("Java library path: %s", System.getProperty("java.library.path")));
@@ -1928,8 +1944,8 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
     public void loadUMDVideo(File file) {
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
         try {
-            if (consolewin != null) {
-                consolewin.clearScreenMessages();
+            if (State.logWindow != null) {
+                State.logWindow.clearScreenMessages();
             }
             Modules.SysMemUserForUserModule.reset();
             Emulator.log.info(MetaInformation.FULL_NAME);
@@ -1951,7 +1967,7 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
             String discId = psf.getString("DISC_ID");
             if (discId == null) {
                 byte[] umdDataId = new byte[10];
-                String umdDataIdString = "";
+                String umdDataIdString;
                 umdDataFile.readFully(umdDataId, 0, 9);
                 umdDataIdString = new String(umdDataId);
                 if (umdDataIdString.equals("")) {
@@ -1988,8 +2004,8 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
     public void loadUMDAudio(File file) {
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
         try {
-            if (consolewin != null) {
-                consolewin.clearScreenMessages();
+            if (State.logWindow != null) {
+                State.logWindow.clearScreenMessages();
             }
             Modules.SysMemUserForUserModule.reset();
             Emulator.log.info(MetaInformation.FULL_NAME);
@@ -2175,23 +2191,18 @@ private void switchUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
     }
 private void InstructionCounterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_InstructionCounterActionPerformed
         PauseEmu();
-        if (instructioncounter == null) {
-            instructioncounter = new InstructionCounter();
-            emulator.setInstructionCounter(instructioncounter);
-            Point mainwindow = this.getLocation();
-            instructioncounter.setLocation(mainwindow.x + 100, mainwindow.y + 50);
+        if (State.instructionCounter == null) {
+            State.instructionCounter = new InstructionCounter();
+            emulator.setInstructionCounter(State.instructionCounter);
         } else {
-            instructioncounter.RefreshWindow();
+            State.instructionCounter.RefreshWindow();
         }
-        startWindowDialog(instructioncounter);
+        startWindowDialog(State.instructionCounter);
 }//GEN-LAST:event_InstructionCounterActionPerformed
 
 private void FileLogActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FileLogActionPerformed
         if (State.fileLogger == null) {
             State.fileLogger = new FileLoggerFrame();
-            if (Settings.getInstance().readBool("gui.saveWindowPos")) {
-                State.fileLogger.setLocation(Settings.getInstance().readWindowPos(FileLoggerFrame.identifierForConfig));
-            }
         }
         startWindowDialog(State.fileLogger);
 }//GEN-LAST:event_FileLogActionPerformed
@@ -2420,12 +2431,10 @@ private void GreekActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:e
 }//GEN-LAST:event_GreekActionPerformed
 
 private void ControlsConfActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ControlsConfActionPerformed
-        if (ctrlgui == null) {
-            ctrlgui = new ControlsGUI();
-            Point mainwindow = this.getLocation();
-            ctrlgui.setLocation(mainwindow.x + 100, mainwindow.y + 50);
+        if (State.controlsGUI == null) {
+            State.controlsGUI = new ControlsGUI();
         }
-        startWindowDialog(ctrlgui);
+        startWindowDialog(State.controlsGUI);
 }//GEN-LAST:event_ControlsConfActionPerformed
 
 private void MuteOptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MuteOptActionPerformed
@@ -2463,18 +2472,18 @@ private void ClockSpeed300ActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 }//GEN-LAST:event_ClockSpeed300ActionPerformed
 
 private void ToggleLoggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ToggleLoggerActionPerformed
-        if (!consolewin.isVisible()) {
+        if (!State.logWindow.isVisible()) {
             updateConsoleWinPosition();
         }
-        consolewin.setVisible(!consolewin.isVisible());
-        ToggleLogger.setSelected(consolewin.isVisible());
+        State.logWindow.setVisible(!State.logWindow.isVisible());
+        ToggleLogger.setSelected(State.logWindow.isVisible());
 }//GEN-LAST:event_ToggleLoggerActionPerformed
 
 private void CustomLoggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CustomLoggerActionPerformed
-        if (loggui == null) {
-            loggui = new LogGUI(this);
+        if (State.logGUI == null) {
+            State.logGUI = new LogGUI(this);
         }
-        startWindowDialog(loggui);
+        startWindowDialog(State.logGUI);
 }//GEN-LAST:event_CustomLoggerActionPerformed
 
     private void ChinesePRCActionPerformed(java.awt.event.ActionEvent evt) {
@@ -2565,11 +2574,6 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     }//GEN-LAST:event_EnglishGBActionPerformed
 
     private void exitEmu() {
-        // Save the current window location only if selected and not in full screen
-        if (Settings.getInstance().readBool("gui.saveWindowPos") && !isFullScreen()) {
-            Settings.getInstance().writeWindowPos("mainwindow", getLocation());
-        }
-
         ProOnlineNetworkAdapter.exit();
         Modules.ThreadManForUserModule.exit();
         Modules.sceDisplayModule.exit();
@@ -2581,14 +2585,10 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
         System.exit(0);
     }
 
-    public void snaptoMainwindow() {
-        updateConsoleWinPosition();
-    }
-
-    private void updateConsoleWinPosition() {
+    public void updateConsoleWinPosition() {
         if (Settings.getInstance().readBool("gui.snapLogwindow")) {
             Point mainwindowPos = getLocation();
-            consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + getHeight());
+            State.logWindow.setLocation(mainwindowPos.x, mainwindowPos.y + getHeight());
         }
     }
 
@@ -2622,7 +2622,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     }
 
     @Override
-    public void onUmdChange() {
+    final public void onUmdChange() {
         // Only enable the menu entry "Switch UMD" when sceUmdReplacePermit has been called by the application.
         switchUmd.setEnabled(Modules.sceUmdUserModule.isUmdAllowReplace());
     }
@@ -2748,6 +2748,11 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
             e.printStackTrace();
         }
 
+        // add the window property saver class to the event listeners for
+        // automatic persistent saving of the window positions if needed
+        Toolkit.getDefaultToolkit().addAWTEventListener(
+                new WindowPropSaver(), AWTEvent.WINDOW_EVENT_MASK);
+
         // final copy of args for use in inner class
         final String[] fargs = args;
 
@@ -2759,7 +2764,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 maingui.setVisible(true);
 
                 if (Settings.getInstance().readBool("gui.openLogwindow")) {
-                    maingui.consolewin.setVisible(true);
+                    State.logWindow.setVisible(true);
                     maingui.ToggleLogger.setSelected(true);
                 }
 
@@ -2917,7 +2922,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 
     @Override
     public void componentMoved(ComponentEvent e) {
-        if (consolewin.isVisible()) {
+        if (State.logWindow.isVisible()) {
             updateConsoleWinPosition();
         }
     }

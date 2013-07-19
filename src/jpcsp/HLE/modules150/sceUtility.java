@@ -327,8 +327,6 @@ public class sceUtility extends HLEModule {
 
         protected void closeDialog() {
             if (dialog != null) {
-                Settings.getInstance().writeWindowPos(name, dialog.getLocation());
-                Settings.getInstance().writeWindowSize(name, dialog.getSize());
                 dialog = null;
             }
             if (guDialog != null) {
@@ -1954,9 +1952,6 @@ public class sceUtility extends HLEModule {
 
             String title = String.format("Message from %s", State.title);
             dialog = new JDialog((Frame) null, title, false);
-
-            dialog.setSize(Settings.getInstance().readWindowSize(utilityDialogState.name, 200, 100));
-            dialog.setLocation(Settings.getInstance().readWindowPos(utilityDialogState.name));
             dialog.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
             messagePane = new JPanel();
