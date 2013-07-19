@@ -43,6 +43,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.modules150.IoFileMgrForUser.IIoListener;
 import jpcsp.State;
+import jpcsp.WindowPropSaver;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.settings.Settings;
@@ -53,9 +54,8 @@ import jpcsp.util.Constants;
  * @author fiveofhearts
  */
 public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIoListener {
-
+    
     private static final long serialVersionUID = 8455039521164613143L;
-    public static final String identifierForConfig = "fileLogger";
     private FileHandleModel fileHandleModel;
     private FileCommandModel fileCommandModel;
     private Thread refreshThread;
@@ -68,29 +68,25 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
     public FileLoggerFrame() {
         fileHandleModel = new FileHandleModel();
         fileCommandModel = new FileCommandModel();
-
+        
         initComponents();
         postInit();
-
+        
         refreshThread = new Thread(this, "FileLogger");
         refreshThread.start();
-
-        if (Settings.getInstance().readBool("gui.saveWindowPos")) {
-            setLocation(Settings.getInstance().readWindowPos(identifierForConfig));
-            setSize(Settings.getInstance().readWindowSize(identifierForConfig,
-                    getWidth(), getHeight()));
-        }
-
+        
         if (Settings.getInstance().readBool("emu.debug.enablefilelogger")) {
             cbFileTrace.setSelected(true);
             Modules.IoFileMgrForUserModule.registerIoListener(this);
         }
+        
+        WindowPropSaver.loadWindowProperties(this);
     }
-
+    
     @Override
     public void setVisible(boolean visible) {
         super.setVisible(visible);
-
+        
         synchronized (getInstance()) {
             if (!dirty) {
                 dirty = true;
@@ -138,11 +134,6 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle(bundle.getString("FileLoggerFrame.title")); // NOI18N
         setMinimumSize(new java.awt.Dimension(400, 200));
-        addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowDeactivated(java.awt.event.WindowEvent evt) {
-                formWindowDeactivated(evt);
-            }
-        });
 
         jSplitPane1.setDividerLocation(100);
         jSplitPane1.setOrientation(javax.swing.JSplitPane.VERTICAL_SPLIT);
@@ -218,20 +209,20 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
             jPopupMenu1.show(evt.getComponent(), evt.getX(), evt.getY());
         }
     }//GEN-LAST:event_tableMousePressed
-
+    
     private void tableMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tableMouseReleased
         if (evt.isPopupTrigger()) {
             jPopupMenu1.show(evt.getComponent(), evt.getX(), evt.getY());
         }
     }//GEN-LAST:event_tableMouseReleased
-
+    
     private void copyItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_copyItemActionPerformed
         JTable source = (JTable) ((JPopupMenu) ((JMenuItem) evt.getSource()).getParent()).getInvoker();
-
+        
         ActionEvent ae = new ActionEvent(source, ActionEvent.ACTION_PERFORMED, "");
         source.getActionMap().get("copy").actionPerformed(ae);
     }//GEN-LAST:event_copyItemActionPerformed
-
+    
     private void saveAsItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveAsItemActionPerformed
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp");
         final JFileChooser fc = new JFileChooser();
@@ -240,23 +231,23 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
         fc.setCurrentDirectory(new java.io.File("."));
         fc.addChoosableFileFilter(Constants.fltTextFiles);
         fc.setFileFilter(Constants.fltTextFiles);
-
+        
         if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             File f = fc.getSelectedFile();
             if (f.exists()) {
-
+                
                 int rc = JOptionPane.showConfirmDialog(
                         this,
                         bundle.getString("ConsoleWindow.strFileExists.text"),
                         bundle.getString("ConsoleWindow.strFileExistsTitle.text"),
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.WARNING_MESSAGE);
-
+                
                 if (rc != JOptionPane.YES_OPTION) {
                     return;
                 }
             }
-
+            
             try {
                 JTable source = (JTable) ((JPopupMenu) ((JMenuItem) evt.getSource()).getParent()).getInvoker();
                 String data = "";
@@ -271,13 +262,13 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
                 // list table content
                 for (int i = 0; i < source.getRowCount(); i++) {
                     for (int j = 0; j < source.getColumnCount(); j++) {
-
+                        
                         data += source.getModel().getValueAt(i, j) + ";";
                     }
                     // strip last semicolon and put a newline there instead
                     data = data.substring(0, data.length() - 1) + System.getProperty("line.separator");
                 }
-
+                
                 FileWriter os = new FileWriter(f);
                 os.write(data);
                 os.close();
@@ -288,18 +279,11 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
             }
         }
     }//GEN-LAST:event_saveAsItemActionPerformed
-
+    
     private FileLoggerFrame getInstance() {
         return this;
     }
-
-    private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
-        if (Settings.getInstance().readBool("gui.saveWindowPos")) {
-            Settings.getInstance().writeWindowPos(identifierForConfig, getLocation());
-            Settings.getInstance().writeWindowSize(identifierForConfig, getSize());
-        }
-    }//GEN-LAST:event_formWindowDeactivated
-
+    
     private void cbFileTraceActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbFileTraceActionPerformed
         if (cbFileTrace.isSelected()) {
             Modules.IoFileMgrForUserModule.registerIoListener(this);
@@ -325,7 +309,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
                 // Scroll to bottom of the tables
                 int max = jScrollPane1.getVerticalScrollBar().getMaximum();
                 jScrollPane1.getVerticalScrollBar().setValue(max);
-
+                
                 max = jScrollPane2.getVerticalScrollBar().getMaximum();
                 jScrollPane2.getVerticalScrollBar().setValue(max);
 
@@ -334,7 +318,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
                 fileCommandModel.fireTableDataChanged();
             }
         };
-
+        
         while (true) {
             try {
                 synchronized (this) {
@@ -343,7 +327,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
                     }
                     dirty = false;
                 }
-
+                
                 if (getInstance().isVisible()) {
                     SwingUtilities.invokeAndWait(refresher);
                 }
@@ -360,37 +344,37 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
      * Renders closed files in gray.
      */
     public class FileHandleRenderer extends DefaultTableCellRenderer {
-
+        
         private static final long serialVersionUID = -792377736132676194L;
-
+        
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,
                 boolean isSelected, boolean hasFocus, int row, int column) {
-
+            
             Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-
+            
             c.setForeground(Color.black);
-
+            
             if (fileHandleList != null) {
                 FileHandleInfo info = fileHandleList.get(row);
                 if (!info.isOpen()) {
                     c.setForeground(Color.gray);
                 }
             }
-
+            
             return c;
         }
     }
-
+    
     private class FileHandleModel extends AbstractTableModel {
-
+        
         private static final long serialVersionUID = -109193689444035593L;
-
+        
         @Override
         public int getColumnCount() {
             return 4;
         }
-
+        
         @Override
         public int getRowCount() {
             if (fileHandleList != null) {
@@ -398,7 +382,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
             }
             return 0;
         }
-
+        
         @Override
         public String getColumnName(int columnIndex) {
             java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp");
@@ -415,7 +399,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
                     throw new IllegalArgumentException("invalid column index");
             }
         }
-
+        
         @Override
         public Object getValueAt(int row, int col) {
             FileHandleInfo info = fileHandleList.get(row);
@@ -434,16 +418,16 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
             return null;
         }
     };
-
+    
     private class FileCommandModel extends AbstractTableModel {
-
+        
         private static final long serialVersionUID = -5088674695489235024L;
-
+        
         @Override
         public int getColumnCount() {
             return 6;
         }
-
+        
         @Override
         public int getRowCount() {
             if (fileCommandList != null) {
@@ -451,7 +435,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
             }
             return 0;
         }
-
+        
         @Override
         public String getColumnName(int columnIndex) {
             java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp");
@@ -472,7 +456,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
                     throw new IllegalArgumentException("invalid column index");
             }
         }
-
+        
         @Override
         public Object getValueAt(int row, int col) {
             FileCommandInfo info = fileCommandList.get(row);
@@ -495,7 +479,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
             return null;
         }
     };
-
+    
     final public void postInit() {
         TableColumnModel columns;
 
@@ -505,25 +489,25 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
         columns.getColumn(1).setPreferredWidth(500);
         columns.getColumn(2).setPreferredWidth(75);
         columns.getColumn(3).setPreferredWidth(75);
-
+        
         fileHandleTable.setDefaultRenderer(Object.class, new FileHandleRenderer());
-
+        
         columns = commandLogTable.getColumnModel();
         columns.getColumn(0).setPreferredWidth(75);
         columns.getColumn(1).setPreferredWidth(90);
         columns.getColumn(2).setPreferredWidth(50);
         columns.getColumn(4).setPreferredWidth(75);
         columns.getColumn(5).setPreferredWidth(275);
-
+        
         resetLogging();
 
         // uncomment this for testing purposes
         // test();
     }
-
+    
     public void test() {
         System.err.println("test start");
-
+        
         resetLogging();
 
         // file handle table
@@ -536,12 +520,12 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
 
         // file command table
         sceIoRead(0x0, 1, 0x08800000, 0x400, 0x0, 0, null, null);
-
+        
         System.err.println("test done");
     }
-
+    
     private class FileCommandInfo {
-
+        
         public final boolean hasFd;
         public final int threadId;
         public final String threadName;
@@ -550,11 +534,11 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
         public final int result;
         public final String parameters;
         public int occurences;
-
+        
         private FileCommandInfo(boolean hasFd, int fd, String command,
                 int result, String parameters) {
             this.hasFd = hasFd;
-
+            
             threadId = Modules.ThreadManForUserModule.getCurrentThreadID();
             threadName = Modules.ThreadManForUserModule.getThreadName(threadId);
             this.fd = fd;
@@ -562,7 +546,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
             this.result = result;
             this.parameters = parameters;
             occurences = 1;
-
+            
             synchronized (getInstance()) {
                 if (!dirty) {
                     dirty = true;
@@ -585,7 +569,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
         public FileCommandInfo(String command, int result, String parameters) {
             this(false, -2, command, result, parameters);
         }
-
+        
         @Override
         public boolean equals(Object _obj) {
             if (_obj instanceof FileCommandInfo) {
@@ -598,7 +582,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
             }
             return false;
         }
-
+        
         @Override
         public int hashCode() {
             int hash = 7;
@@ -614,19 +598,19 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
     private HashMap<Integer, FileHandleInfo> fileHandleIdMap;
     private List<FileHandleInfo> fileHandleList; // Cached sorted version of fileHandleIdMap
     private List<FileCommandInfo> fileCommandList;
-
+    
     public synchronized void resetLogging() {
         fileHandleIdMap = new HashMap<Integer, FileHandleInfo>();
         fileHandleList = new LinkedList<FileHandleInfo>();
-
+        
         fileCommandList = new LinkedList<FileCommandInfo>();
-
+        
         if (!dirty) {
             dirty = true;
             getInstance().notify();
         }
     }
-
+    
     private void sortLists() {
         // File handles
         Collection<FileHandleInfo> c = fileHandleIdMap.values();
@@ -637,7 +621,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
      * Handles repeated commands
      */
     private FileCommandInfo lastFileCommand;
-
+    
     private void logFileCommand(FileCommandInfo info) {
         if (lastFileCommand != null
                 && info.equals(lastFileCommand)) {
@@ -647,7 +631,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
             lastFileCommand = info;
         }
     }
-
+    
     @Override
     public void sceIoSync(int result, int device_addr, String device, int unknown) {
         logFileCommand(new FileCommandInfo(
@@ -655,21 +639,21 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
                 String.format("device=0x%08X('%s') unknown=0x%08X",
                 device_addr, device, unknown)));
     }
-
+    
     @Override
     public void sceIoPollAsync(int result, int uid, int res_addr) {
         logFileCommand(new FileCommandInfo(
                 uid, "poll async", result,
                 String.format("result=0x%08X", res_addr)));
     }
-
+    
     @Override
     public void sceIoWaitAsync(int result, int uid, int res_addr) {
         logFileCommand(new FileCommandInfo(
                 uid, "wait async", result,
                 String.format("result=0x%08X", res_addr)));
     }
-
+    
     @Override
     public void sceIoOpen(int result, int filename_addr, String filename, int flags, int permissions, String mode) {
         // File handle list
@@ -678,7 +662,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
             fileHandleIdMap.put(result, info);
             sortRequired = true;
         }
-
+        
         String filelog = String.format("path=0x%08X('%s')",
                 filename_addr, filename);
         if (filename.startsWith("disc0:/sce_lbn")) {
@@ -702,7 +686,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
         // File Command list
         logFileCommand(new FileCommandInfo("open", result, filelog));
     }
-
+    
     @Override
     public void sceIoClose(int result, int uid) {
         // File handle list
@@ -716,38 +700,38 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
         // File Command list
         logFileCommand(new FileCommandInfo(uid, "close", result, ""));
     }
-
+    
     @Override
     public void sceIoWrite(int result, int uid, int data_addr, int size, int bytesWritten) {
         FileHandleInfo info = fileHandleIdMap.get(uid);
         if (result >= 0 && info != null) {
             info.bytesWritten += bytesWritten;
         }
-
+        
         logFileCommand(new FileCommandInfo(
                 uid, "write", result,
                 String.format("data=0x%08X size=0x%08X",
                 data_addr, size)));
     }
-
+    
     @Override
     public void sceIoRead(int result, int uid, int data_addr, int size, int bytesRead, long position, SeekableDataInput dataInput, IVirtualFile vFile) {
         FileHandleInfo info = fileHandleIdMap.get(uid);
         if (result >= 0 && info != null) {
             info.bytesRead += bytesRead;
         }
-
+        
         logFileCommand(new FileCommandInfo(
                 uid, "read", result,
                 String.format("data=0x%08X size=0x%08X",
                 data_addr, size)));
     }
-
+    
     @Override
     public void sceIoCancel(int result, int uid) {
         logFileCommand(new FileCommandInfo(uid, "cancel", result, ""));
     }
-
+    
     private String getWhenceName(int whence) {
         switch (whence) {
             case jpcsp.HLE.modules150.IoFileMgrForUser.PSP_SEEK_SET:
@@ -760,7 +744,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
                 return "" + whence;
         }
     }
-
+    
     @Override
     public void sceIoSeek32(int result, int uid, int offset, int whence) {
         logFileCommand(new FileCommandInfo(
@@ -768,52 +752,52 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
                 String.format("offset=0x%08X whence=%s",
                 offset, getWhenceName(whence))));
     }
-
+    
     @Override
     public void sceIoSeek64(long result, int uid, long offset, int whence) {
         logFileCommand(new FileCommandInfo(
                 uid, "seek64", (int) result, // HACK back to 32bit result
                 String.format("offset=0x%08X whence=%s", offset, getWhenceName(whence))));
     }
-
+    
     @Override
     public void sceIoMkdir(int result, int path_addr, String path, int permissions) {
         logFileCommand(new FileCommandInfo(
                 "mkdir", result,
                 String.format("path=0x%08X('%s') permissions=%04X", path_addr, path, permissions)));
     }
-
+    
     @Override
     public void sceIoRmdir(int result, int path_addr, String path) {
         logFileCommand(new FileCommandInfo(
                 "rmdir", result,
                 String.format("path=0x%08X('%s')", path_addr, path)));
     }
-
+    
     @Override
     public void sceIoChdir(int result, int path_addr, String path) {
         logFileCommand(new FileCommandInfo(
                 "chdir", result,
                 String.format("path=0x%08X('%s')", path_addr, path)));
     }
-
+    
     @Override
     public void sceIoDopen(int result, int path_addr, String path) {
         logFileCommand(new FileCommandInfo(
                 "dopen", result,
                 String.format("path=0x%08X('%s')", path_addr, path)));
     }
-
+    
     @Override
     public void sceIoDread(int result, int uid, int dirent_addr) {
         logFileCommand(new FileCommandInfo(uid, "dread", result, String.format("dirent=0x%08X", dirent_addr)));
     }
-
+    
     @Override
     public void sceIoDclose(int result, int uid) {
         logFileCommand(new FileCommandInfo(uid, "dclose", result, ""));
     }
-
+    
     @Override
     public void sceIoDevctl(int result, int device_addr, String device, int cmd,
             int indata_addr, int inlen, int outdata_addr, int outlen) {
@@ -822,7 +806,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
                 String.format("device=0x%08X('%s') cmd=0x%08X indata=0x%08X inlen=0x%08X outdata=0x%08X outlen=0x%08X",
                 device_addr, device, cmd, indata_addr, inlen, outdata_addr, outlen)));
     }
-
+    
     @Override
     public void sceIoIoctl(int result, int uid, int cmd,
             int indata_addr, int inlen, int outdata_addr, int outlen) {
@@ -831,7 +815,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
                 String.format("cmd=0x%08X indata=0x%08X inlen=0x%08X outdata=0x%08X outlen=0x%08X",
                 cmd, indata_addr, inlen, outdata_addr, outlen)));
     }
-
+    
     @Override
     public void sceIoAssign(int result, int dev1_addr, String dev1,
             int dev2_addr, String dev2, int dev3_addr, String dev3,
@@ -841,21 +825,21 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
                 String.format("dev1=0x%08X('%s') dev2=0x%08X('%s') dev3=0x%08X('%s') mode=0x%08X unk1=0x%08X unk2=0x%08X",
                 dev1_addr, dev1, dev2_addr, dev2, dev3_addr, dev3, mode, unk1, unk2)));
     }
-
+    
     @Override
     public void sceIoGetStat(int result, int path_addr, String path, int stat_addr) {
         logFileCommand(new FileCommandInfo(
                 "stat", result,
                 String.format("path=0x%08X('%s') stat=0x%08X", path_addr, path, stat_addr)));
     }
-
+    
     @Override
     public void sceIoRemove(int result, int path_addr, String path) {
         logFileCommand(new FileCommandInfo(
                 "remove", result,
                 String.format("path=0x%08X('%s')", path_addr, path)));
     }
-
+    
     @Override
     public void sceIoChstat(int result, int path_addr, String path, int stat_addr, int bits) {
         logFileCommand(new FileCommandInfo(
@@ -863,7 +847,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
                 String.format("path=0x%08X('%s') stat=0x%08X bits=0x%08X",
                 path_addr, path, stat_addr, bits)));
     }
-
+    
     @Override
     public void sceIoRename(int result, int path_addr, String path, int new_path_addr, String newpath) {
         logFileCommand(new FileCommandInfo(
@@ -871,7 +855,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
                 String.format("path=0x%08X('%s') newpath=0x%08X('%s')",
                 path_addr, path, new_path_addr, newpath)));
     }
-
+    
     @Override
     public void dispose() {
         Emulator.getMainGUI().endWindowDialog();

@@ -36,6 +36,7 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import jpcsp.Emulator;
 import jpcsp.MainGUI;
+import jpcsp.WindowPropSaver;
 import jpcsp.format.PBP;
 import jpcsp.format.PSF;
 import jpcsp.util.Constants;
@@ -102,6 +103,8 @@ public class MemStickBrowser extends javax.swing.JDialog {
         });
 
         refreshFiles();
+
+        WindowPropSaver.loadWindowProperties(this);
     }
 
     private final class MemStickTableModel extends AbstractTableModel {

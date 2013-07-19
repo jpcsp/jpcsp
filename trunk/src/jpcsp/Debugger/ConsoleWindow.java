@@ -24,11 +24,8 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
-
-import jpcsp.settings.Settings;
 import jpcsp.util.Utilities;
 
 /**
@@ -73,11 +70,6 @@ public class ConsoleWindow extends javax.swing.JFrame {
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
         setTitle(bundle.getString("ConsoleWindow.title")); // NOI18N
         setResizable(false);
-        addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowDeactivated(java.awt.event.WindowEvent evt) {
-                formWindowDeactivated(evt);
-            }
-        });
 
         talogging.setColumns(20);
         talogging.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
@@ -162,13 +154,6 @@ private void SaveMessageToFileButtonActionPerformed(java.awt.event.ActionEvent e
             Utilities.close(out);
         }
 }//GEN-LAST:event_SaveMessageToFileButtonActionPerformed
-
-private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
-        //Called when the mainWindow is closed
-        if (Settings.getInstance().readBool("gui.saveWindowPos")) {
-            Settings.getInstance().writeWindowPos("logwindow", getLocation());
-        }
-}//GEN-LAST:event_formWindowDeactivated
 
     /**
      * Clears only the messages that are displayed in the textarea.

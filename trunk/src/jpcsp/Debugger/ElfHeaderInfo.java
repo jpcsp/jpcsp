@@ -17,7 +17,7 @@
 package jpcsp.Debugger;
 
 import jpcsp.Emulator;
-import jpcsp.settings.Settings;
+import jpcsp.WindowPropSaver;
 
 public class ElfHeaderInfo extends javax.swing.JFrame {
 
@@ -37,6 +37,7 @@ public class ElfHeaderInfo extends javax.swing.JFrame {
         ELFInfoArea.append(ProgInfo);
         ELFInfoArea.append(SectInfo);
 
+        WindowPropSaver.loadWindowProperties(this);
     }
 
     public void RefreshWindow() {
@@ -61,14 +62,9 @@ public class ElfHeaderInfo extends javax.swing.JFrame {
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
         setTitle(bundle.getString("ElfHeaderInfo.title")); // NOI18N
         setResizable(false);
-        addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowDeactivated(java.awt.event.WindowEvent evt) {
-                formWindowDeactivated(evt);
-            }
-        });
 
-        ELFInfoArea.setColumns(20);
         ELFInfoArea.setEditable(false);
+        ELFInfoArea.setColumns(20);
         ELFInfoArea.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
         ELFInfoArea.setLineWrap(true);
         ELFInfoArea.setRows(5);
@@ -87,13 +83,6 @@ public class ElfHeaderInfo extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
-private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
-        //Called when the mainWindow is closed
-        if (Settings.getInstance().readBool("gui.saveWindowPos")) {
-            Settings.getInstance().writeWindowPos("elfheader", getLocation());
-        }
-}//GEN-LAST:event_formWindowDeactivated
 
     @Override
     public void dispose() {

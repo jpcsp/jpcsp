@@ -18,9 +18,16 @@ package jpcsp;
 
 import jpcsp.Debugger.MemoryViewer;
 import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
+import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.Debugger.FileLogger.FileLoggerFrame;
 import jpcsp.Debugger.ImageViewer;
+import jpcsp.Debugger.InstructionCounter;
 import jpcsp.GUI.CheatsGUI;
+import jpcsp.GUI.ControlsGUI;
+import jpcsp.GUI.LogGUI;
+import jpcsp.GUI.MemStickBrowser;
+import jpcsp.GUI.SettingsGUI;
+import jpcsp.log.LogWindow;
 
 /**
  *
@@ -30,11 +37,20 @@ public class State extends jpcsp.HLE.Modules {
 
     public static final Memory memory;
     public static final Controller controller;
+    // additional frames
     public static DisassemblerFrame debugger;
     public static MemoryViewer memoryViewer;
     public static ImageViewer imageViewer;
     public static FileLoggerFrame fileLogger;
     public static CheatsGUI cheatsGUI;
+    public static ControlsGUI controlsGUI;
+    public static LogGUI logGUI;
+    public static ElfHeaderInfo elfHeader;
+    public static SettingsGUI settingsGUI;
+    public static MemStickBrowser memStickBrowser;
+    public static LogWindow logWindow;
+    public static InstructionCounter instructionCounter;
+    // disc related
     public static String discId;
     public static String title;
     // The UMD ID extracted from the UMD_DATA.BIN file
