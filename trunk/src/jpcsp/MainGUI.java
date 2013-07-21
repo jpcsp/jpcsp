@@ -1621,7 +1621,7 @@ private void EnterImageViewerActionPerformed(java.awt.event.ActionEvent evt) {//
         if (State.imageViewer == null) {
             State.imageViewer = new ImageViewer();
         } else {
-            State.imageViewer.refreshImage();
+            State.imageViewer.RefreshImage();
         }
         startWindowDialog(State.imageViewer);
 }//GEN-LAST:event_EnterImageViewerActionPerformed
