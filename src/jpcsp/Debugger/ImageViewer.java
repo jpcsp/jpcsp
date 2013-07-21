@@ -23,6 +23,7 @@ import java.awt.Insets;
 import java.awt.event.KeyEvent;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules150.sceDisplay;
@@ -34,7 +35,7 @@ import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.ImageReader;
 
 public class ImageViewer extends javax.swing.JFrame {
-    
+
     private static final long serialVersionUID = 8837780642045065242L;
     private int startAddress = MemoryMap.START_VRAM;
     private int bufferWidth = 512;
@@ -58,24 +59,33 @@ public class ImageViewer extends javax.swing.JFrame {
         Color.BLUE,
         Color.GRAY
     };
-    
+
     public ImageViewer() {
         // memoryImage construction overriden for MemoryImage
         initComponents();
         copyValuesToFields();
-        
+
         WindowPropSaver.loadWindowProperties(this);
     }
-    
-    public void refreshImage() {
+
+    public void SafeRefreshImage() {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                RefreshImage();
+            }
+        });
+    }
+
+    public void RefreshImage() {
         goToAddress();
     }
-    
+
     private void valuesUpdated() {
         memoryImage.setSize(memoryImage.getPreferredSize());
         repaint();
     }
-    
+
     private void goToAddress() {
         try {
             startAddress = Integer.decode(addressField.getText());
@@ -89,7 +99,7 @@ public class ImageViewer extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, bundle.getString("ImageViewer.strInvalidNumber.text") + " " + nfe.getLocalizedMessage());
             return;
         }
-        
+
         pixelFormat = pixelFormatField.getSelectedIndex();
         imageSwizzle = swizzleField.isSelected();
         useAlpha = useAlphaField.isSelected();
@@ -100,7 +110,7 @@ public class ImageViewer extends javax.swing.JFrame {
         copyValuesToFields();
         valuesUpdated();
     }
-    
+
     private void copyValuesToFields() {
         addressField.setText(String.format("0x%08X", startAddress));
         widthField.setText(String.format("%d", imageWidth));
@@ -114,7 +124,7 @@ public class ImageViewer extends javax.swing.JFrame {
         clutNumberBlocksField.setText(String.format("%d", clutNumberBlocks));
         clutFormatField.setSelectedIndex(clutFormat);
     }
-    
+
     private void goToBufferInfo(sceDisplay.BufferInfo bufferInfo) {
         startAddress = bufferInfo.topAddr;
         imageWidth = bufferInfo.width;
@@ -123,57 +133,57 @@ public class ImageViewer extends javax.swing.JFrame {
         pixelFormat = bufferInfo.pixelFormat;
         imageSwizzle = false;
         useAlpha = false;
-        
+
         copyValuesToFields();
         valuesUpdated();
     }
-    
+
     @Override
     public void dispose() {
         Emulator.getMainGUI().endWindowDialog();
         super.dispose();
     }
-    
+
     private class MemoryImage extends JPanel {
-        
+
         private static final long serialVersionUID = 1372183323503668615L;
-        
+
         public MemoryImage() {
         }
-        
+
         @Override
         public void paintComponent(Graphics g) {
             if (Memory.isAddressGood(startAddress)) {
                 Insets insets = getInsets();
                 int minWidth = Math.min(imageWidth, bufferWidth);
-                
+
                 g.setColor(backgroundColors[backgroundColor]);
                 g.fillRect(insets.left, insets.top, minWidth, imageHeight);
-                
+
                 IMemoryReader imageReader = ImageReader.getImageReader(startAddress, imageWidth, imageHeight, bufferWidth, pixelFormat, imageSwizzle, clutAddress, clutFormat, clutNumberBlocks, clutStart, clutShift, clutMask, null, null);
-                
+
                 for (int y = 0; y < imageHeight; y++) {
                     for (int x = 0; x < minWidth; x++) {
                         int colorABGR = imageReader.readNext();
                         int colorARGB = ImageReader.colorABGRtoARGB(colorABGR);
                         g.setColor(new Color(colorARGB, useAlpha));
-                        
+
                         drawPixel(g, x + insets.left, y + insets.top);
                     }
                 }
             }
         }
-        
+
         private void drawPixel(Graphics g, int x, int y) {
             g.drawLine(x, y, x, y);
         }
-        
+
         @Override
         public Dimension getPreferredSize() {
             Insets insets = getInsets();
             return new Dimension(imageWidth + insets.left + insets.right, imageHeight + insets.top + insets.bottom);
         }
-        
+
         @Override
         public Dimension getMaximumSize() {
             return getPreferredSize();
@@ -480,23 +490,23 @@ public class ImageViewer extends javax.swing.JFrame {
     private void btnGoToAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGoToAddressActionPerformed
         goToAddress();
     }//GEN-LAST:event_btnGoToAddressActionPerformed
-    
+
     private void btnGoToGEActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGoToGEActionPerformed
         goToBufferInfo(Modules.sceDisplayModule.getBufferInfoGe());
     }//GEN-LAST:event_btnGoToGEActionPerformed
-    
+
     private void btnGoToFBActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGoToFBActionPerformed
         goToBufferInfo(Modules.sceDisplayModule.getBufferInfoFb());
     }//GEN-LAST:event_btnGoToFBActionPerformed
-    
+
     private void keyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_keyPressed
         if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
-            refreshImage();
+            RefreshImage();
         }
     }//GEN-LAST:event_keyPressed
-    
+
     private void changeImageActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_changeImageActionPerformed
-        refreshImage();
+        RefreshImage();
     }//GEN-LAST:event_changeImageActionPerformed
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField addressField;

@@ -327,11 +327,11 @@ public class Emulator implements Runnable {
             }
 
             if (State.memoryViewer != null) {
-                State.memoryViewer.RefreshMemory();
+                State.memoryViewer.SafeRefreshMemory();
             }
 
             if (State.imageViewer != null) {
-                State.imageViewer.refreshImage();
+                State.imageViewer.SafeRefreshImage();
             }
 
             StepLogger.flush();

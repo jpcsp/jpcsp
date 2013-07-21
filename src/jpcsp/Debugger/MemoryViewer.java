@@ -16,7 +16,6 @@
  */
 package jpcsp.Debugger;
 
-import java.awt.Point;
 import java.awt.event.KeyEvent;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -24,6 +23,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -35,27 +35,27 @@ import jpcsp.util.Utilities;
  * @author George
  */
 public class MemoryViewer extends javax.swing.JFrame {
-    
+
     private static final long serialVersionUID = 1L;
     private int visiblelines = 0;
     private int startaddress;
-    
+
     public MemoryViewer() {
         //this.cpu = c;
         startaddress = Emulator.getProcessor().cpu.pc;
         initComponents();
         RefreshMemory();
-        
+
         WindowPropSaver.loadWindowProperties(this);
     }
-    
+
     public static char converttochar(int character) {
         if (character < 0x020 || character >= 0x07f && character <= 0x0a0 || character == 0x0ad) {
             return '.';
         }
         return (char) (character & 0x0ff);
     }
-    
+
     private static byte safeRead8(Memory mem, int address) {
         byte value = 0;
         if (Memory.isAddressGood(address)) {
@@ -63,15 +63,15 @@ public class MemoryViewer extends javax.swing.JFrame {
         }
         return value;
     }
-    
+
     public static String getMemoryView(int addr) {
         byte[] line = new byte[16];
         Memory mem = Memory.getInstance();
-        
+
         for (int i = 0; i < line.length; i++) {
             line[i] = safeRead8(mem, addr + i);
         }
-        
+
         return String.format("%08x : %02x %02x %02x %02x %02x %02x "
                 + "%02x %02x %02x %02x %02x %02x %02x %02x "
                 + "%02x %02x %c %c %c %c %c %c %c %c %c %c %c %c %c %c %c %c", addr,
@@ -86,10 +86,19 @@ public class MemoryViewer extends javax.swing.JFrame {
                 converttochar(line[12]), converttochar(line[13]),
                 converttochar(line[14]), converttochar(line[15]));
     }
-    
+
+    public void SafeRefreshMemory() {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                RefreshMemory();
+            }
+        });
+    }
+
     public void RefreshMemory() {
         int addr = startaddress;
-        taMemoryView.setText(""); // NOI18N
+        taMemoryView.setText("");
 
         visiblelines = taMemoryView.getHeight() / taMemoryView.getFontMetrics(taMemoryView.getFont()).getHeight();
         for (int y = 0; y < visiblelines; y++) {
@@ -247,11 +256,11 @@ private void taMemoryViewKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:ev
             RefreshMemory();
         }
 }//GEN-LAST:event_taMemoryViewKeyPressed
-    
+
 private void btnGoToAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGoToAddressActionPerformed
         GoToAddress();
 }//GEN-LAST:event_btnGoToAddressActionPerformed
-    
+
     private void GoToAddress() {
         String gettext = AddressField.getText();
         int value;
@@ -265,7 +274,7 @@ private void btnGoToAddressActionPerformed(java.awt.event.ActionEvent evt) {//GE
         AddressField.setText(String.format("0x%08x", value));
         RefreshMemory();
     }
-    
+
 private void taMemoryViewMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FIRST:event_taMemoryViewMouseWheelMoved
         if (evt.getWheelRotation() > 0) {
             startaddress += 16;
@@ -277,14 +286,14 @@ private void taMemoryViewMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//
             RefreshMemory();
         }
 }//GEN-LAST:event_taMemoryViewMouseWheelMoved
-    
+
 private void btnGoToSPActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGoToSPActionPerformed
         startaddress = Emulator.getProcessor().cpu._sp;
         RefreshMemory();
 }//GEN-LAST:event_btnGoToSPActionPerformed
-    
+
 private void btnDumpRawRamActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDumpRawRamActionPerformed
-        File f = new File("ramdump.bin"); // NOI18N
+        File f = new File("ramdump.bin");
         BufferedWriter out = null;
         try {
             out = new BufferedWriter(new FileWriter(f));
@@ -298,25 +307,25 @@ private void btnDumpRawRamActionPerformed(java.awt.event.ActionEvent evt) {//GEN
             Utilities.close(out);
         }
 }//GEN-LAST:event_btnDumpRawRamActionPerformed
-    
+
 private void onKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_onKeyPressed
         if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
             GoToAddress();
         }
 }//GEN-LAST:event_onKeyPressed
-    
+
 private void btnGoToVRAMActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGoToVRAMActionPerformed
         startaddress = 0x04000000;
         RefreshMemory();
 }//GEN-LAST:event_btnGoToVRAMActionPerformed
-    
+
     private void jPanel1ComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_jPanel1ComponentResized
         // this is needed to override the size of the TextArea with text already present
         taMemoryView.setMinimumSize(jPanel1.getMinimumSize());
         taMemoryView.setMaximumSize(jPanel1.getMaximumSize());
         RefreshMemory();
     }//GEN-LAST:event_jPanel1ComponentResized
-    
+
     @Override
     public void dispose() {
         Emulator.getMainGUI().endWindowDialog();
