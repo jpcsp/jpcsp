@@ -107,11 +107,15 @@ import org.apache.log4j.xml.DOMConfigurator;
 
 import com.jidesoft.plaf.LookAndFeelFactory;
 import java.awt.AWTEvent;
+import java.awt.Component;
 import java.awt.Toolkit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
+import javax.swing.JMenu;
+import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import jpcsp.Debugger.FileLogger.FileLoggerFrame;
 
@@ -151,6 +155,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     private JComponent fillerTop;
     private JComponent fillerBottom;
     private static boolean jideInitialized;
+    // map to hold action listeners for menu entries in fullscreen mode
+    private HashMap<KeyStroke, ActionListener[]> actionListenerMap;
 
     @Override
     public DisplayMode getDisplayMode() {
@@ -163,6 +169,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     public MainGUI() {
         DOMConfigurator.configure("LogSettings.xml");
         System.setOut(new PrintStream(new LoggingOutputStream(Logger.getLogger("emu"), Level.INFO)));
+
+        actionListenerMap = new HashMap<KeyStroke, ActionListener[]>();
 
         // create log window in a local variable - see explanation further down
         LogWindow logwin = new LogWindow();
@@ -1132,7 +1140,9 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
      * interface, the popup menu is composed of the entries from the toolbar and
      * from the menu bar.
      *
-     * Accelerators are only working when the popup menu is displayed.
+     * Accelerators do not work natively as the popup menu must have focus for
+     * them to work. Therefore the accelerators are copied and handled in the
+     * KeyListener related code of MainGUI for fullscreen mode.
      */
     private void makeFullScreenMenu() {
         fullScreenMenu = new JPopupMenu();
@@ -1169,17 +1179,32 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         fullScreenMenu.add(popupMenuItemReset);
         fullScreenMenu.addSeparator();
 
-        // Add all the menu entries from the MenuBar to the full screen menu
+        // add all the menu entries from the MenuBar to the full screen menu
         while (MenuBar.getMenuCount() > 0) {
-            fullScreenMenu.add(MenuBar.getMenu(0));
+            JMenu menu = MenuBar.getMenu(0);
+
+            // copy accelerators to actionListenerMap to have them handled in
+            // MainGUI using the keyPressed event
+            for (Component comp : menu.getMenuComponents()) {
+                if (comp instanceof JMenuItem) {
+                    JMenuItem item = (JMenuItem) comp;
+
+                    // only check if the accelerator exists (i.e. is not null)
+                    // if no ActionListeners exist, an empty array is returned
+                    if (item.getAccelerator() != null) {
+                        actionListenerMap.put(item.getAccelerator(), item.getActionListeners());
+                    }
+                }
+            }
+            fullScreenMenu.add(menu);
         }
 
-        // Move the "Exit" menu item from the File menu
-        // to the end of the full screen menu for convenience.
+        // move the 'Exit' menu item from the 'File' menu
+        // to the end of the full screen menu for convenience
         fullScreenMenu.addSeparator();
         fullScreenMenu.add(ExitEmu);
 
-        // The resize menu is not relevant in full screen mode
+        // the 'Resize' menu is not relevant in full screen mode
         VideoOpt.remove(ResizeMenu);
     }
 
@@ -2909,6 +2934,14 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     @Override
     public void keyPressed(KeyEvent event) {
         State.controller.keyPressed(event);
+
+        // check if the stroke is a known accelerator and call the associated ActionListener(s)
+        KeyStroke stroke = KeyStroke.getKeyStroke(event.getKeyCode(), event.getModifiers());
+        if (actionListenerMap.containsKey(stroke)) {
+            for (ActionListener al : actionListenerMap.get(stroke)) {
+                al.actionPerformed(new ActionEvent(event.getSource(), event.getID(), ""));
+            }
+        }
     }
 
     @Override
