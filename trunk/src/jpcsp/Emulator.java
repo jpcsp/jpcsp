@@ -315,6 +315,10 @@ public class Emulator implements Runnable {
         if (run && !pause) {
             pause = true;
 
+            if (hasStatus) {
+                StepLogger.setStatus(status);
+            }
+
             gui.RefreshButtons();
 
             if (State.debugger != null) {
@@ -330,9 +334,6 @@ public class Emulator implements Runnable {
                 State.imageViewer.refreshImage();
             }
 
-            if (hasStatus) {
-                StepLogger.setStatus(status);
-            }
             StepLogger.flush();
         }
     }
