@@ -124,9 +124,14 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                         CpuState cpu = Emulator.getProcessor().cpu;
                         switch (row) {
                             case 0:
-                                cpu.pc = value;
-                                DebuggerPC = value;
-                                changedPC = true;
+                                if (value % 4 == 0) {
+                                    // PC value is valid - perform change
+                                    cpu.pc = value;
+                                    changedPC = true;
+                                } else {
+                                    // reset entry to current PC - no change
+                                    gprTable.setValueAt(cpu.pc, row, 1);
+                                }
                                 break;
                             case 1:
                                 cpu.setHi(value);
@@ -151,10 +156,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 }
             }
         });
-
-        addKeyAction(btnStepInto, "F5");
-        addKeyAction(btnStepOver, "F6");
-        addKeyAction(btnStepOut, "F7");
 
         ViewTooltips.register(disasmList);
         disasmList.setCellRenderer(new StyledListCellRenderer() {
@@ -302,13 +303,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         int pc;
 
         if (moveToPC) {
-            DebuggerPC = cpu.pc;
-
-            // happens if a breakpoint is hitting - so set the selected PC to the
-            // current PC to have the hightlighting working
-            if (disasmList.getSelectedIndex() == -1) {
-                SelectedPC = DebuggerPC;
-            }
+            SelectedPC = DebuggerPC = cpu.pc;
         }
 
         ViewTooltips.unregister(disasmList);
@@ -1312,6 +1307,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
 private void disasmListKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_disasmListKeyPressed
         int keyCode = evt.getKeyCode();
+        int numVisibleRows = disasmList.getHeight() / disasmList.getFixedCellHeight();
 
         switch (keyCode) {
             case java.awt.event.KeyEvent.VK_DOWN:
@@ -1329,14 +1325,14 @@ private void disasmListKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:even
                 break;
 
             case java.awt.event.KeyEvent.VK_PAGE_UP:
-                DebuggerPC -= 0x00000094;
+                DebuggerPC -= numVisibleRows * 0x00000004;
                 RefreshDebuggerDisassembly(false);
                 updateSelectedIndex();
                 evt.consume();
                 break;
 
             case java.awt.event.KeyEvent.VK_PAGE_DOWN:
-                DebuggerPC += 0x00000094;
+                DebuggerPC += numVisibleRows * 0x00000004;
                 RefreshDebuggerDisassembly(false);
                 updateSelectedIndex();
                 evt.consume();
@@ -1359,7 +1355,8 @@ private void disasmListMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GE
 }//GEN-LAST:event_disasmListMouseWheelMoved
 
     private void updateSelectedIndex() {
-        if (SelectedPC >= DebuggerPC && SelectedPC < DebuggerPC + 0x00000094) {
+        int numVisibleRows = disasmList.getHeight() / disasmList.getFixedCellHeight();
+        if (SelectedPC >= DebuggerPC && SelectedPC < DebuggerPC + numVisibleRows * 0x00000004) {
             disasmList.setSelectedIndex((SelectedPC - DebuggerPC) / 4);
         }
     }
