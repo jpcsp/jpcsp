@@ -68,6 +68,7 @@ import com.jidesoft.swing.StyledLabel;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import jpcsp.Debugger.MemoryBreakpoints.MemoryBreakpointsDialog;
+import jpcsp.Debugger.StepLogger;
 import jpcsp.WindowPropSaver;
 import jpcsp.memory.DebuggerMemory;
 import jpcsp.util.Constants;
@@ -105,6 +106,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         listmodel = new DefaultListModel();
 
         initComponents();
+        RefreshButtons();
 
         // calculate the fixed cell height and width based on a dummy string
         disasmList.setPrototypeCellValue("PROTOTYPE");
@@ -486,6 +488,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         btnDumpDebugState = new javax.swing.JButton();
         txtSearch = new javax.swing.JTextField();
         lblSearch = new javax.swing.JLabel();
+        statusPanel = new javax.swing.JPanel();
+        statusLabel = new javax.swing.JLabel();
         mbMain = new javax.swing.JMenuBar();
         mFile = new javax.swing.JMenu();
         miClose = new javax.swing.JMenuItem();
@@ -1102,6 +1106,13 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         disasmTabs.addTab(bundle.getString("DisassemblerFrame.miscPanel.TabConstraints.tabTitle"), miscPanel); // NOI18N
 
+        statusPanel.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.LOWERED));
+        statusPanel.setLayout(new javax.swing.BoxLayout(statusPanel, javax.swing.BoxLayout.LINE_AXIS));
+
+        statusLabel.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
+        statusLabel.setText("ready"); // NOI18N
+        statusPanel.add(statusLabel);
+
         mFile.setText(bundle.getString("DisassemblerFrame.mFile.text")); // NOI18N
 
         miClose.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/CloseIcon.png"))); // NOI18N
@@ -1263,14 +1274,18 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(disasmList, javax.swing.GroupLayout.DEFAULT_SIZE, 505, Short.MAX_VALUE))
-                    .addGroup(layout.createSequentialGroup()
                         .addComponent(tbDisasm, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(tbBreakpoints, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(disasmTabs, javax.swing.GroupLayout.PREFERRED_SIZE, 265, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(tbBreakpoints, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(statusPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(disasmList, javax.swing.GroupLayout.DEFAULT_SIZE, 500, Short.MAX_VALUE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(disasmTabs, javax.swing.GroupLayout.PREFERRED_SIZE, 265, javax.swing.GroupLayout.PREFERRED_SIZE)))))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -1282,7 +1297,9 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(disasmTabs, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(disasmList, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(disasmList, javax.swing.GroupLayout.DEFAULT_SIZE, 647, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(statusPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
 
@@ -1655,13 +1672,22 @@ private void PauseDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
         Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_PAUSE);
 }//GEN-LAST:event_PauseDebuggerActionPerformed
 
-    public void RefreshButtons() {
+    public final void RefreshButtons() {
         // Called from Emulator
         RunDebugger.setSelected(Emulator.run && !Emulator.pause);
         PauseDebugger.setSelected(Emulator.run && Emulator.pause);
 
         btnCapture.setSelected(State.captureGeNextFrame);
         btnReplay.setSelected(State.replayGeNextFrame);
+
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp");
+        if (Emulator.run && !Emulator.pause) {
+            statusLabel.setText(bundle.getString("DisassemblerFrame.strEmuRunning.text"));
+        } else if (Emulator.run && Emulator.pause) {
+            statusLabel.setText(bundle.getString("DisassemblerFrame.strEmuHalted.text") + " (" + StepLogger.getStatusString() + ").");
+        } else {
+            statusLabel.setText(bundle.getString("DisassemblerFrame.strEmuNotRunning.text"));
+        }
     }
 
     private boolean isCellChecked(JTable table) {
@@ -2039,6 +2065,8 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     private javax.swing.JMenuItem miStepOut;
     private javax.swing.JMenuItem miStepOver;
     private javax.swing.JPanel miscPanel;
+    private javax.swing.JLabel statusLabel;
+    private javax.swing.JPanel statusPanel;
     private javax.swing.JToolBar tbBreakpoints;
     private javax.swing.JToolBar tbDisasm;
     private javax.swing.JTextField txtSearch;
