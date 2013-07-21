@@ -42,7 +42,7 @@ import jpcsp.Debugger.MemoryBreakpoints.MemoryBreakpoint.AccessType;
 import jpcsp.util.Constants;
 
 public class MemoryBreakpointsDialog extends javax.swing.JDialog {
-
+    
     private List<MemoryBreakpoint> memoryBreakpoints;
     private MemoryBreakpointsModel memoryBreakpointsModel;
     private final int COL_STARTADDRESS = 0;
@@ -51,32 +51,32 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
     private final int COL_ACTIVE = 3;
     private final int COL_LAST = 4;
     private static final Font tableFont = new Font("Courier new", Font.PLAIN, 12);
-
+    
     public MemoryBreakpointsDialog(java.awt.Frame parent) {
         super(parent);
-
+        
         memoryBreakpoints = ((DebuggerMemory) Memory.getInstance()).getMemoryBreakpoints();
         memoryBreakpointsModel = new MemoryBreakpointsModel();
-
+        
         initComponents();
-
+        
         TableColumn accessType = tblBreakpoints.getColumnModel().getColumn(COL_ACCESSTYPE);
         JComboBox combo = new JComboBox();
         combo.addItem("READ");
         combo.addItem("WRITE");
         combo.addItem("READWRITE");
         accessType.setCellEditor(new DefaultCellEditor(combo));
-
+        
         tblBreakpoints.getColumnModel().getColumn(COL_STARTADDRESS).setCellEditor(new AddressCellEditor());
         tblBreakpoints.getColumnModel().getColumn(COL_ENDADDRESS).setCellEditor(new AddressCellEditor());
-
+        
         tblBreakpoints.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
                 btnRemove.setEnabled(!((ListSelectionModel) e.getSource()).isSelectionEmpty());
             }
         });
-
+        
         tblBreakpoints.getModel().addTableModelListener(new TableModelListener() {
             @Override
             public void tableChanged(TableModelEvent tme) {
@@ -88,7 +88,7 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
                     for (int i = tme.getFirstRow(); i <= tme.getLastRow(); i++) {
                         int start = Integer.decode(mbpm.getValueAt(i, COL_STARTADDRESS).toString());
                         int end = Integer.decode(mbpm.getValueAt(i, COL_ENDADDRESS).toString());
-
+                        
                         if (tme.getColumn() == COL_STARTADDRESS && start > end) {
                             mbpm.setValueAt(new Integer(start), i, COL_ENDADDRESS);
                         }
@@ -103,36 +103,38 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
         // copy trace settings to UI
         updateTraceSettings();
     }
-
+    
     private void updateTraceSettings() {
         DebuggerMemory dbgmem = ((DebuggerMemory) Memory.getInstance());
-
+        
         cbTraceRead.setSelected(dbgmem.traceMemoryRead);
         cbTraceRead8.setSelected(dbgmem.traceMemoryRead8);
         cbTraceRead16.setSelected(dbgmem.traceMemoryRead16);
         cbTraceRead32.setSelected(dbgmem.traceMemoryRead32);
-
+        
         cbTraceWrite.setSelected(dbgmem.traceMemoryWrite);
         cbTraceWrite8.setSelected(dbgmem.traceMemoryWrite8);
         cbTraceWrite16.setSelected(dbgmem.traceMemoryWrite16);
         cbTraceWrite32.setSelected(dbgmem.traceMemoryWrite32);
+        
+        chkPauseOnHit.setSelected(dbgmem.pauseEmulatorOnMemoryBreakpoint);
     }
-
+    
     private class AddressCellEditor extends DefaultCellEditor {
-
+        
         private static final long serialVersionUID = 1L;
-
+        
         public AddressCellEditor() {
             super(new JTextField());
             final JTextField tf = ((JTextField) getComponent());
             tf.setFont(tableFont);
         }
-
+        
         @Override
         public Object getCellEditorValue() {
             return ((JTextField) getComponent()).getText();
         }
-
+        
         @Override
         public Component getTableCellEditorComponent(
                 final JTable table, final Object value,
@@ -152,9 +154,9 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
             return tf;
         }
     }
-
+    
     private class MemoryBreakpointsModel extends AbstractTableModel {
-
+        
         @Override
         public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
             MemoryBreakpoint mbp = memoryBreakpoints.get(rowIndex);
@@ -174,7 +176,7 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
                     } else {
                         throw new IllegalArgumentException("only String or Integer values allowed");
                     }
-
+                    
                     if (columnIndex == COL_STARTADDRESS) {
                         mbp.setStartAddress(address);
                     } else if (columnIndex == COL_ENDADDRESS) {
@@ -200,13 +202,13 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
             }
             fireTableCellUpdated(rowIndex, columnIndex);
         }
-
+        
         @Override
         public boolean isCellEditable(int rowIndex, int columnIndex) {
             // all cells are editable
             return true;
         }
-
+        
         @Override
         public Class<?> getColumnClass(int columnIndex) {
             switch (columnIndex) {
@@ -220,7 +222,7 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
                     throw new IllegalArgumentException("column out of range: " + columnIndex);
             }
         }
-
+        
         @Override
         public String getColumnName(int column) {
             java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
@@ -237,17 +239,17 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
                     throw new IllegalArgumentException("column out of range: " + column);
             }
         }
-
+        
         @Override
         public int getRowCount() {
             return memoryBreakpoints.size();
         }
-
+        
         @Override
         public int getColumnCount() {
             return COL_LAST;
         }
-
+        
         @Override
         public Object getValueAt(int rowIndex, int columnIndex) {
             MemoryBreakpoint mbp = memoryBreakpoints.get(rowIndex);
@@ -497,17 +499,17 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
     private void btnCloseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCloseActionPerformed
         setVisible(false);
     }//GEN-LAST:event_btnCloseActionPerformed
-
+    
     private void chkPauseOnHitItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_chkPauseOnHitItemStateChanged
         ((DebuggerMemory) Memory.getInstance()).pauseEmulatorOnMemoryBreakpoint = chkPauseOnHit.isSelected();
     }//GEN-LAST:event_chkPauseOnHitItemStateChanged
-
+    
     private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddActionPerformed
         MemoryBreakpoint mbp = new MemoryBreakpoint();
         memoryBreakpoints.add(mbp);
         memoryBreakpointsModel.fireTableRowsInserted(memoryBreakpoints.size() - 1, memoryBreakpoints.size() - 1);
     }//GEN-LAST:event_btnAddActionPerformed
-
+    
     private void btnRemoveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRemoveActionPerformed
         int row = tblBreakpoints.getSelectedRow();
         MemoryBreakpoint mbp = memoryBreakpoints.remove(row);
@@ -519,39 +521,39 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
         // after removal no item is selected - so disable the button once again
         btnRemove.setEnabled(false);
     }//GEN-LAST:event_btnRemoveActionPerformed
-
+    
     private void cbTraceReadItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_cbTraceReadItemStateChanged
         ((DebuggerMemory) Memory.getInstance()).traceMemoryRead = cbTraceRead.isSelected();
     }//GEN-LAST:event_cbTraceReadItemStateChanged
-
+    
     private void cbTraceRead8ItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_cbTraceRead8ItemStateChanged
         ((DebuggerMemory) Memory.getInstance()).traceMemoryRead8 = cbTraceRead8.isSelected();
     }//GEN-LAST:event_cbTraceRead8ItemStateChanged
-
+    
     private void cbTraceRead16ItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_cbTraceRead16ItemStateChanged
         ((DebuggerMemory) Memory.getInstance()).traceMemoryRead16 = cbTraceRead16.isSelected();
     }//GEN-LAST:event_cbTraceRead16ItemStateChanged
-
+    
     private void cbTraceRead32ItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_cbTraceRead32ItemStateChanged
         ((DebuggerMemory) Memory.getInstance()).traceMemoryRead32 = cbTraceRead32.isSelected();
     }//GEN-LAST:event_cbTraceRead32ItemStateChanged
-
+    
     private void cbTraceWriteItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_cbTraceWriteItemStateChanged
         ((DebuggerMemory) Memory.getInstance()).traceMemoryWrite = cbTraceWrite.isSelected();
     }//GEN-LAST:event_cbTraceWriteItemStateChanged
-
+    
     private void cbTraceWrite8ItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_cbTraceWrite8ItemStateChanged
         ((DebuggerMemory) Memory.getInstance()).traceMemoryWrite8 = cbTraceWrite8.isSelected();
     }//GEN-LAST:event_cbTraceWrite8ItemStateChanged
-
+    
     private void cbTraceWrite16ItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_cbTraceWrite16ItemStateChanged
         ((DebuggerMemory) Memory.getInstance()).traceMemoryWrite16 = cbTraceWrite16.isSelected();
     }//GEN-LAST:event_cbTraceWrite16ItemStateChanged
-
+    
     private void cbTraceWrite32ItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_cbTraceWrite32ItemStateChanged
         ((DebuggerMemory) Memory.getInstance()).traceMemoryWrite32 = cbTraceWrite32.isSelected();
     }//GEN-LAST:event_cbTraceWrite32ItemStateChanged
-
+    
     private void btnExportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExportActionPerformed
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp");
         final JFileChooser fc = new JFileChooser();
@@ -560,7 +562,7 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
         fc.setCurrentDirectory(new java.io.File("."));
         fc.addChoosableFileFilter(Constants.fltMemoryBreakpointFiles);
         fc.setFileFilter(Constants.fltMemoryBreakpointFiles);
-
+        
         if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             File f = fc.getSelectedFile();
             if (f.exists()) {
@@ -570,7 +572,7 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
                         bundle.getString("ConsoleWindow.strFileExistsTitle.text"),
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.WARNING_MESSAGE);
-
+                
                 if (rc != JOptionPane.YES_OPTION) {
                     return;
                 }
@@ -578,7 +580,7 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
             ((DebuggerMemory) Memory.getInstance()).exportBreakpoints(fc.getSelectedFile());
         }
     }//GEN-LAST:event_btnExportActionPerformed
-
+    
     private void btnImportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnImportActionPerformed
         final JFileChooser fc = new JFileChooser();
         fc.setDialogTitle(java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp").getString("MemoryBreakpointsDialog.dlgImport.title"));
@@ -586,7 +588,7 @@ public class MemoryBreakpointsDialog extends javax.swing.JDialog {
         fc.setCurrentDirectory(new java.io.File("."));
         fc.addChoosableFileFilter(Constants.fltMemoryBreakpointFiles);
         fc.setFileFilter(Constants.fltMemoryBreakpointFiles);
-
+        
         if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             ((DebuggerMemory) Memory.getInstance()).importBreakpoints(fc.getSelectedFile());
         }

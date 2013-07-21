@@ -19,6 +19,7 @@ package jpcsp.Debugger.DisassemblerModule;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -27,6 +28,7 @@ import javax.swing.DefaultCellEditor;
 import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellRenderer;
@@ -36,6 +38,7 @@ public class RegisterTable extends JTable {
 
     private static final long serialVersionUID = 1L;
     private static final Font tableFont = new Font("Courier new", Font.PLAIN, 12);
+    private HashMap<String, Color> highlights;
 
     private class Register {
 
@@ -43,6 +46,7 @@ public class RegisterTable extends JTable {
             this.name = name;
             value = 0;
             changed = false;
+            highlights = new HashMap<String, Color>();
         }
         public String name;
         public int value;
@@ -57,8 +61,11 @@ public class RegisterTable extends JTable {
     public RegisterTable(String[] regnames) {
         super();
         setFont(tableFont);
+        setDefaultRenderer(String.class, new RegisterNameRenderer());
         setDefaultRenderer(Register.class, new RegisterValueRenderer());
         setDefaultEditor(Register.class, new RegisterValueEditor());
+
+        setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         setRegisters(regnames);
     }
@@ -66,12 +73,29 @@ public class RegisterTable extends JTable {
     public RegisterTable() {
         super();
         setFont(tableFont);
+        setDefaultRenderer(String.class, new RegisterNameRenderer());
         setDefaultRenderer(Register.class, new RegisterValueRenderer());
         setDefaultEditor(Register.class, new RegisterValueEditor());
+
+        setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     }
 
     final public void setRegisters(String[] regnames) {
         setModel(new RegisterTableModel(regnames));
+    }
+
+    public void highlightRegister(String regname, Color color) {
+        // strip leading '$'
+        if (regname.startsWith("$")) {
+            regname = regname.substring(1);
+        }
+        highlights.put(regname.toLowerCase(), color);
+        repaint();
+    }
+
+    public void clearRegisterHighlights() {
+        highlights.clear();
+        repaint();
     }
 
     @Override
@@ -88,6 +112,41 @@ public class RegisterTable extends JTable {
 
     public int getAddressAt(int rowIndex) {
         return ((Register) ((RegisterTableModel) getModel()).getValueAt(rowIndex, 1)).value;
+    }
+
+    private class RegisterNameRenderer extends JLabel implements TableCellRenderer {
+
+        private static final long serialVersionUID = 1L;
+
+        public RegisterNameRenderer() {
+            super();
+            setFont(tableFont);
+            setBackground(selectionBackground);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            String reg = (String) table.getModel().getValueAt(row, column);
+            setText(reg);
+
+            reg = reg.toLowerCase();
+            if (highlights.containsKey(reg)) {
+                // shade the highlight color on selection
+                if (isSelected) {
+                    setBackground(highlights.get(reg).darker());
+                } else {
+                    setBackground(highlights.get(reg));
+                }
+
+                // always display the colour
+                setOpaque(true);
+            } else {
+                // handle regular selection
+                setBackground(selectionBackground);
+                setOpaque(isSelected);
+            }
+            return this;
+        }
     }
 
     class RegisterValueEditor extends DefaultCellEditor {

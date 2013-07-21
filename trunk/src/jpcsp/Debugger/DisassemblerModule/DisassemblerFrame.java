@@ -59,7 +59,6 @@ import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Debugger.DumpDebugState;
-import jpcsp.settings.Settings;
 import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.Utilities;
 
@@ -256,6 +255,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         // register highlighting
         int lastfind = 0;
+
         // find register in disassembly
         while ((lastfind = text.indexOf("$", lastfind)) != -1) {
 
@@ -301,6 +301,12 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         if (moveToPC) {
             DebuggerPC = cpu.pc;
+        }
+
+        // happens if a breakpoint is hitting - so set the selected PC to the
+        // current PC to have the hightlighting working
+        if (disasmList.getSelectedIndex() == -1) {
+            SelectedPC = DebuggerPC;
         }
 
         ViewTooltips.unregister(disasmList);
@@ -378,7 +384,10 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             selectedAddress = text.substring(find + 3, find + 3 + 8);
         }
 
-        selectedRegCount = 0; // clear tracked registers
+        // clear tracked registers and reset table highlighting
+        selectedRegCount = 0;
+        gprTable.clearRegisterHighlights();
+
         int lastFind = 0;
         while ((lastFind = text.indexOf("$", lastFind)) != -1 && selectedRegCount < selectedRegColors.length) {
 
@@ -394,9 +403,13 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                     found = regName.startsWith(selectedRegNames[j]);
                 }
 
-                // start tracking this register
+                // start tracking this register and update the highlighting
+                // of the table
                 if (!found) {
                     selectedRegNames[selectedRegCount] = gprNames[i];
+                    gprTable.highlightRegister(
+                            selectedRegNames[selectedRegCount],
+                            selectedRegColors[selectedRegCount]);
                     selectedRegCount++;
                 }
                 break;
@@ -424,7 +437,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         CopyValue = new javax.swing.JMenuItem();
         tbDisasm = new javax.swing.JToolBar();
         RunDebugger = new javax.swing.JToggleButton();
-        PauseDebugger = new javax.swing.JButton();
+        PauseDebugger = new javax.swing.JToggleButton();
         jSeparator1 = new javax.swing.JToolBar.Separator();
         btnStepInto = new javax.swing.JButton();
         btnStepOver = new javax.swing.JButton();
@@ -1961,7 +1974,7 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     private javax.swing.JButton ImportBreaks;
     private javax.swing.JButton JumpToAddress;
     private javax.swing.JButton ManageMemBreaks;
-    private javax.swing.JButton PauseDebugger;
+    private javax.swing.JToggleButton PauseDebugger;
     private javax.swing.JPopupMenu RegMenu;
     private javax.swing.JButton ResetToPCbutton;
     private javax.swing.JToggleButton RunDebugger;
