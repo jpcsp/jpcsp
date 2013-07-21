@@ -107,6 +107,9 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="miRun">
               <Properties>
+                <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
+                  <KeyStroke key="F8"/>
+                </Property>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
                   <Image iconType="3" name="/jpcsp/icons/PlayIcon.png"/>
                 </Property>
@@ -114,9 +117,15 @@
                   <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="DisassemblerFrame.miRun.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
                 </Property>
               </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="RunDebuggerActionPerformed"/>
+              </Events>
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="miPause">
               <Properties>
+                <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
+                  <KeyStroke key="F9"/>
+                </Property>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
                   <Image iconType="3" name="/jpcsp/icons/PauseIcon.png"/>
                 </Property>
@@ -179,6 +188,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="miResetToPC">
               <Properties>
+                <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
+                  <KeyStroke key="Ctrl+P"/>
+                </Property>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
                   <Image iconType="3" name="/jpcsp/icons/ResetToPc.png"/>
                 </Property>
@@ -192,6 +204,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="miJumpTo">
               <Properties>
+                <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
+                  <KeyStroke key="Ctrl+J"/>
+                </Property>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
                   <Image iconType="3" name="/jpcsp/icons/JumpTo.png"/>
                 </Property>
@@ -214,6 +229,9 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="miNewBreakpoint">
               <Properties>
+                <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
+                  <KeyStroke key="Ctrl+B"/>
+                </Property>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
                   <Image iconType="3" name="/jpcsp/icons/NewBreakpointIcon.png"/>
                 </Property>
@@ -281,6 +299,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="miManageMemoryBreakpoints">
               <Properties>
+                <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
+                  <KeyStroke key="Ctrl+M"/>
+                </Property>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
                   <Image iconType="3" name="/jpcsp/icons/SettingsIcon.png"/>
                 </Property>
@@ -303,6 +324,9 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="miDumpCode">
               <Properties>
+                <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
+                  <KeyStroke key="Ctrl+D"/>
+                </Property>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
                   <Image iconType="3" name="/jpcsp/icons/Dump.png"/>
                 </Property>
@@ -407,7 +431,6 @@
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
               <Image iconType="3" name="/jpcsp/icons/PlayIcon.png"/>
             </Property>
-            <Property name="mnemonic" type="int" value="82"/>
             <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
               <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="DisassemblerFrame.miRun.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
             </Property>
@@ -425,7 +448,6 @@
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
               <Image iconType="3" name="/jpcsp/icons/PauseIcon.png"/>
             </Property>
-            <Property name="mnemonic" type="int" value="80"/>
             <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
               <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="DisassemblerFrame.miPause.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
             </Property>
@@ -499,7 +521,6 @@
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
               <Image iconType="3" name="/jpcsp/icons/ResetToPc.png"/>
             </Property>
-            <Property name="mnemonic" type="int" value="80"/>
             <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
               <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="DisassemblerFrame.miResetToPC.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
             </Property>
@@ -517,7 +538,6 @@
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
               <Image iconType="3" name="/jpcsp/icons/JumpTo.png"/>
             </Property>
-            <Property name="mnemonic" type="int" value="74"/>
             <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
               <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="DisassemblerFrame.miJumpTo.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
             </Property>
@@ -537,7 +557,6 @@
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
               <Image iconType="3" name="/jpcsp/icons/Dump.png"/>
             </Property>
-            <Property name="mnemonic" type="int" value="87"/>
             <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
               <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="DisassemblerFrame.miDumpCode.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
             </Property>
@@ -566,7 +585,6 @@
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
               <Image iconType="3" name="/jpcsp/icons/NewBreakpointIcon.png"/>
             </Property>
-            <Property name="mnemonic" type="int" value="65"/>
             <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
               <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="DisassemblerFrame.miNewBreakpoint.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
             </Property>
@@ -584,7 +602,6 @@
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
               <Image iconType="3" name="/jpcsp/icons/DeleteBreakpointIcon.png"/>
             </Property>
-            <Property name="mnemonic" type="int" value="68"/>
             <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
               <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="DisassemblerFrame.miDeleteBreakpoint.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
             </Property>
@@ -603,7 +620,6 @@
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
               <Image iconType="3" name="/jpcsp/icons/DeleteAllBreakpointsIcon.png"/>
             </Property>
-            <Property name="mnemonic" type="int" value="69"/>
             <Property name="toolTipText" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
               <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="DisassemblerFrame.miDeleteAllBreakpoints.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
             </Property>

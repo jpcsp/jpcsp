@@ -303,12 +303,12 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         if (moveToPC) {
             DebuggerPC = cpu.pc;
-        }
 
-        // happens if a breakpoint is hitting - so set the selected PC to the
-        // current PC to have the hightlighting working
-        if (disasmList.getSelectedIndex() == -1) {
-            SelectedPC = DebuggerPC;
+            // happens if a breakpoint is hitting - so set the selected PC to the
+            // current PC to have the hightlighting working
+            if (disasmList.getSelectedIndex() == -1) {
+                SelectedPC = DebuggerPC;
+            }
         }
 
         ViewTooltips.unregister(disasmList);
@@ -565,7 +565,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         tbDisasm.setOpaque(false);
 
         RunDebugger.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png"))); // NOI18N
-        RunDebugger.setMnemonic('R');
         RunDebugger.setToolTipText(bundle.getString("DisassemblerFrame.miRun.text")); // NOI18N
         RunDebugger.setFocusable(false);
         RunDebugger.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -579,7 +578,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         tbDisasm.add(RunDebugger);
 
         PauseDebugger.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PauseIcon.png"))); // NOI18N
-        PauseDebugger.setMnemonic('P');
         PauseDebugger.setToolTipText(bundle.getString("DisassemblerFrame.miPause.text")); // NOI18N
         PauseDebugger.setFocusable(false);
         PauseDebugger.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -635,7 +633,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         tbDisasm.add(jSeparator2);
 
         ResetToPCbutton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/ResetToPc.png"))); // NOI18N
-        ResetToPCbutton.setMnemonic('P');
         ResetToPCbutton.setToolTipText(bundle.getString("DisassemblerFrame.miResetToPC.text")); // NOI18N
         ResetToPCbutton.setFocusable(false);
         ResetToPCbutton.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -649,7 +646,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         tbDisasm.add(ResetToPCbutton);
 
         JumpToAddress.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/JumpTo.png"))); // NOI18N
-        JumpToAddress.setMnemonic('J');
         JumpToAddress.setToolTipText(bundle.getString("DisassemblerFrame.miJumpTo.text")); // NOI18N
         JumpToAddress.setFocusable(false);
         JumpToAddress.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -664,7 +660,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         tbDisasm.add(jSeparator4);
 
         DumpCodeToText.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/Dump.png"))); // NOI18N
-        DumpCodeToText.setMnemonic('W');
         DumpCodeToText.setToolTipText(bundle.getString("DisassemblerFrame.miDumpCode.text")); // NOI18N
         DumpCodeToText.setFocusable(false);
         DumpCodeToText.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -682,7 +677,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         tbBreakpoints.setOpaque(false);
 
         AddBreakpoint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/NewBreakpointIcon.png"))); // NOI18N
-        AddBreakpoint.setMnemonic('A');
         AddBreakpoint.setToolTipText(bundle.getString("DisassemblerFrame.miNewBreakpoint.text")); // NOI18N
         AddBreakpoint.setFocusable(false);
         AddBreakpoint.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -696,7 +690,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         tbBreakpoints.add(AddBreakpoint);
 
         DeleteBreakpoint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/DeleteBreakpointIcon.png"))); // NOI18N
-        DeleteBreakpoint.setMnemonic('D');
         DeleteBreakpoint.setToolTipText(bundle.getString("DisassemblerFrame.miDeleteBreakpoint.text")); // NOI18N
         DeleteBreakpoint.setFocusable(false);
         DeleteBreakpoint.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -711,7 +704,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         tbBreakpoints.add(DeleteBreakpoint);
 
         DeleteAllBreakpoints.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/DeleteAllBreakpointsIcon.png"))); // NOI18N
-        DeleteAllBreakpoints.setMnemonic('E');
         DeleteAllBreakpoints.setToolTipText(bundle.getString("DisassemblerFrame.miDeleteAllBreakpoints.text")); // NOI18N
         DeleteAllBreakpoints.setFocusable(false);
         DeleteAllBreakpoints.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -1133,10 +1125,17 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         });
 
+        miRun.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F8, 0));
         miRun.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png"))); // NOI18N
         miRun.setText(bundle.getString("DisassemblerFrame.miRun.text")); // NOI18N
+        miRun.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                RunDebuggerActionPerformed(evt);
+            }
+        });
         mDebug.add(miRun);
 
+        miPause.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F9, 0));
         miPause.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PauseIcon.png"))); // NOI18N
         miPause.setText(bundle.getString("DisassemblerFrame.miPause.text")); // NOI18N
         miPause.addActionListener(new java.awt.event.ActionListener() {
@@ -1173,6 +1172,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         mDebug.add(miStepOut);
         mDebug.add(jSeparator10);
 
+        miResetToPC.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_P, java.awt.event.InputEvent.CTRL_MASK));
         miResetToPC.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/ResetToPc.png"))); // NOI18N
         miResetToPC.setText(bundle.getString("DisassemblerFrame.miResetToPC.text")); // NOI18N
         miResetToPC.addActionListener(new java.awt.event.ActionListener() {
@@ -1182,6 +1182,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         });
         mDebug.add(miResetToPC);
 
+        miJumpTo.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_J, java.awt.event.InputEvent.CTRL_MASK));
         miJumpTo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/JumpTo.png"))); // NOI18N
         miJumpTo.setText(bundle.getString("DisassemblerFrame.miJumpTo.text")); // NOI18N
         miJumpTo.addActionListener(new java.awt.event.ActionListener() {
@@ -1195,6 +1196,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         mBreakpoints.setText(bundle.getString("DisassemblerFrame.mBreakpoints.text")); // NOI18N
 
+        miNewBreakpoint.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_B, java.awt.event.InputEvent.CTRL_MASK));
         miNewBreakpoint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/NewBreakpointIcon.png"))); // NOI18N
         miNewBreakpoint.setText(bundle.getString("DisassemblerFrame.miNewBreakpoint.text")); // NOI18N
         miNewBreakpoint.addActionListener(new java.awt.event.ActionListener() {
@@ -1241,6 +1243,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         mBreakpoints.add(miExportBreakpoints);
         mBreakpoints.add(jSeparator11);
 
+        miManageMemoryBreakpoints.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_M, java.awt.event.InputEvent.CTRL_MASK));
         miManageMemoryBreakpoints.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/SettingsIcon.png"))); // NOI18N
         miManageMemoryBreakpoints.setText(bundle.getString("DisassemblerFrame.miManageMemoryBreakpoints.text")); // NOI18N
         miManageMemoryBreakpoints.addActionListener(new java.awt.event.ActionListener() {
@@ -1254,6 +1257,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         mDisassembler.setText(bundle.getString("DisassemblerFrame.mDisassembler.text")); // NOI18N
 
+        miDumpCode.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_D, java.awt.event.InputEvent.CTRL_MASK));
         miDumpCode.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/Dump.png"))); // NOI18N
         miDumpCode.setText(bundle.getString("DisassemblerFrame.miDumpCode.text")); // NOI18N
         miDumpCode.addActionListener(new java.awt.event.ActionListener() {
@@ -1394,6 +1398,7 @@ private void JumpToAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN
         try {
             int value = Utilities.parseAddress(input);
             DebuggerPC = value;
+            SelectedPC = value;
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, bundle.getString("MemoryViewer.strInvalidAddress.text"));
             return;
@@ -1825,7 +1830,7 @@ private void ExportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
                 int res = JOptionPane.showConfirmDialog(
                         this,
                         bundle.getString("ConsoleWindow.strFileExists.text"),
-                        bundle.getString("DisassemblerFrame.dlgExportBP.title"),
+                        bundle.getString("DisassemblerFrame.miExportBreakpoints.text"),
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.WARNING_MESSAGE);
 
@@ -1851,6 +1856,7 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp");
         JFileChooser fc = new JFileChooser();
         fc.setDialogTitle(bundle.getString("DisassemblerFrame.miImportBreakpoints.text"));
+        fc.setSelectedFile(new File(State.discId + ".brk"));
         fc.setCurrentDirectory(new java.io.File("."));
         fc.addChoosableFileFilter(Constants.fltBreakpointFiles);
         fc.setFileFilter(Constants.fltBreakpointFiles);
@@ -1868,7 +1874,7 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
                 JOptionPane.showMessageDialog(
                         this,
                         bundle.getString("DisassemblerFrame.strInvalidBRKFile.text"),
-                        bundle.getString("DisassemblerFrame.dlgImportBP.title"),
+                        bundle.getString("DisassemblerFrame.miImportBreakpoints.text"),
                         JOptionPane.ERROR_MESSAGE);
 
                 return;
