@@ -116,6 +116,7 @@ import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import javax.swing.JMenu;
 import javax.swing.KeyStroke;
+import javax.swing.MenuElement;
 import javax.swing.SwingUtilities;
 import jpcsp.Debugger.FileLogger.FileLoggerFrame;
 
@@ -1181,22 +1182,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         // add all the menu entries from the MenuBar to the full screen menu
         while (MenuBar.getMenuCount() > 0) {
-            JMenu menu = MenuBar.getMenu(0);
-
-            // copy accelerators to actionListenerMap to have them handled in
-            // MainGUI using the keyPressed event
-            for (Component comp : menu.getMenuComponents()) {
-                if (comp instanceof JMenuItem) {
-                    JMenuItem item = (JMenuItem) comp;
-
-                    // only check if the accelerator exists (i.e. is not null)
-                    // if no ActionListeners exist, an empty array is returned
-                    if (item.getAccelerator() != null) {
-                        actionListenerMap.put(item.getAccelerator(), item.getActionListeners());
-                    }
-                }
-            }
-            fullScreenMenu.add(menu);
+            fullScreenMenu.add(MenuBar.getMenu(0));
         }
 
         // move the 'Exit' menu item from the 'File' menu
@@ -1206,6 +1192,37 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         // the 'Resize' menu is not relevant in full screen mode
         VideoOpt.remove(ResizeMenu);
+
+        // copy accelerators to actionListenerMap to have them handled in
+        // MainGUI using the keyPressed event
+        globalAccelFromMenu(fullScreenMenu);
+    }
+
+    /**
+     * Add accelerators to the global action map of MainGUI.
+     *
+     * This function will traverse a MenuElement tree to find all JMenuItems and
+     * to add accelerators if available for the given menu item.
+     *
+     * The element tree is traversed in a recursive manner.
+     *
+     * @param me The root menu element to start.
+     */
+    private void globalAccelFromMenu(MenuElement me) {
+        for (MenuElement element : me.getSubElements()) {
+            // check for JMenu before JMenuItem, as JMenuItem is derived from JMenu
+            if ((element instanceof JPopupMenu) || (element instanceof JMenu)) {
+                // recursively do the same for underlying menus
+                globalAccelFromMenu(element);
+            } else if (element instanceof JMenuItem) {
+                JMenuItem item = (JMenuItem) element;
+                // only check if the accelerator exists (i.e. is not null)
+                // if no ActionListeners exist, an empty array is returned
+                if (item.getAccelerator() != null) {
+                    actionListenerMap.put(item.getAccelerator(), item.getActionListeners());
+                }
+            }
+        }
     }
 
     public static Dimension getFullScreenDimension() {
