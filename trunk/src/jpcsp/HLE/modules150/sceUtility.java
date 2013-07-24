@@ -102,6 +102,7 @@ import jpcsp.HLE.kernel.types.pspCharInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.sceCtrl;
 import jpcsp.HLE.modules.sceNetApctl;
+import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.format.PSF;
 import jpcsp.graphics.RE.IRenderingEngine;
@@ -1304,8 +1305,13 @@ public class sceUtility extends HLEModule {
                                     int entryAddr = saveFileSecureEntriesAddr + saveFileSecureNumEntries * 80;
                                     if (stat != null) {
                                         mem.write32(entryAddr + 0, stat.mode);
-                                        // Write size of decrypted file
-                                        mem.write64(entryAddr + 8, ((stat.size + 0xF) & ~0xF) - 0x10);
+                                        // Write the file size
+                                        long fileSize = stat.size;
+                                        if (CryptoEngine.getSavedataCryptoStatus()) {
+                                        	// Write the size of the decrypted file
+                                        	fileSize = ((fileSize + 0xF) & ~0xF) - 0x10;
+                                        }
+                                        mem.write64(entryAddr + 8, fileSize);
                                         stat.ctime.write(mem, entryAddr + 16);
                                         stat.atime.write(mem, entryAddr + 32);
                                         stat.mtime.write(mem, entryAddr + 48);

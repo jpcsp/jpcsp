@@ -814,6 +814,42 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
     	return false;
     }
 
+    /**
+     * Check if the PARAM.SFO file has been created before r3306.
+     * 
+     * @return true if the PARAM.SFO exists and has been created before r3306.
+     *         false otherwise.
+     */
+    private boolean isPreR3306() {
+		SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(getBasePath() + paramSfoFileName);
+		if (stat == null) {
+			return false;
+		}
+    	ScePspDateTime mtime = stat.mtime;
+    	if (mtime == null) {
+    		return false;
+    	}
+
+    	// r3306 has been released on Jul 12, 2013
+    	if (mtime.year < 2013) {
+    		return true;
+    	}
+    	if (mtime.year > 2013) {
+    		return false;
+    	}
+    	// mtime.year == 2013
+
+    	if (mtime.month < 7) {
+    		return true;
+    	}
+    	if (mtime.month > 7) {
+    		return false;
+    	}
+    	// mtime.year == 2013 && mtime.month == 7
+
+    	return mtime.day < 12;
+    }
+
     public boolean isSecureFile(String fileName) {
     	PSF psf = null;
     	try {
@@ -826,7 +862,14 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
     	}
 
     	Object savedataFileList = psf.get("SAVEDATA_FILE_LIST");
-    	if (savedataFileList == null || !(savedataFileList instanceof byte[])) {
+    	if (savedataFileList == null) {
+    		if (isPreR3306()) {
+    			// Before r3306, there was no SAVEDATA_FILE_LIST and all files were considered as secure.
+    			return true;
+    		}
+    		return false;
+    	}
+    	if (!(savedataFileList instanceof byte[])) {
     		return false;
     	}
 
