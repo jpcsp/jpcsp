@@ -107,7 +107,6 @@ import org.apache.log4j.xml.DOMConfigurator;
 
 import com.jidesoft.plaf.LookAndFeelFactory;
 import java.awt.AWTEvent;
-import java.awt.Component;
 import java.awt.Toolkit;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -2480,7 +2479,8 @@ private void ControlsConfActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 }//GEN-LAST:event_ControlsConfActionPerformed
 
 private void MuteOptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MuteOptActionPerformed
-        Audio.setMuted(MuteOpt.isSelected());
+        Audio.setMuted(!Audio.isMuted());
+        MuteOpt.setSelected(Audio.isMuted());
 }//GEN-LAST:event_MuteOptActionPerformed
 
 private void ClockSpeedNormalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClockSpeedNormalActionPerformed
