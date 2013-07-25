@@ -1372,7 +1372,7 @@ public class sceUtility extends HLEModule {
                     // Split saving version.
                     // Write system data files (encrypted or not).
                     try {
-                        savedataParams.save(mem);
+                        savedataParams.save(mem, savedataParams.mode == SceUtilitySavedataParam.MODE_MAKEDATASECURE);
                         savedataParams.base.result = checkMultipleCallStatus();
                     } catch (IOException e) {
                         savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
@@ -1422,7 +1422,7 @@ public class sceUtility extends HLEModule {
                     // Sub-types of mode SAVE.
                     // Writes data and can be called multiple times for updating.
                     try {
-                        savedataParams.save(mem);
+                        savedataParams.save(mem, savedataParams.mode == SceUtilitySavedataParam.MODE_WRITESECURE);
                         savedataParams.base.result = checkMultipleCallStatus();
                     } catch (IOException e) {
                         if (!savedataParams.isGameDirectoryPresent()) {
