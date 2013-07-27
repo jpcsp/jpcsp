@@ -261,9 +261,9 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
     		byte[] fileNameBytes = fileName.getBytes();
     		System.arraycopy(fileNameBytes, 0, buffer, offset, fileNameBytes.length);
     		if (fileNameBytes.length < FILENAME_LENGTH) {
-    			Arrays.fill(buffer, fileNameBytes.length, FILENAME_LENGTH, (byte) 0);
+    			Arrays.fill(buffer, offset + fileNameBytes.length, offset + FILENAME_LENGTH, (byte) 0);
     		}
-    		System.arraycopy(key, 0, buffer, FILENAME_LENGTH, key.length);
+    		System.arraycopy(key, 0, buffer, offset + FILENAME_LENGTH, key.length);
     	}
 
     	public boolean read(byte[] buffer, int offset) {
@@ -536,10 +536,10 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         } else {
             dataSize = loadFile(mem, path, fileName, dataBuf, dataBufSize);
         }
-        
+
         // Read ICON0.PNG
         safeLoad(mem, icon0FileName, icon0FileData);
-        
+
         // Check and read ICON1.PMF or ICON1.PNG
         if (icon1FileData.buf == 0) {
         	icon1FileData.size = 0;
@@ -552,16 +552,16 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	        }
 	        safeLoad(mem, icon1FileName, icon1FileData);
         }
-        
+
         // Read PIC1.PNG
         safeLoad(mem, pic1FileName, pic1FileData);
-        
+
         // Read SND0.AT3
         safeLoad(mem, snd0FileName, snd0FileData);
-        
+
         // Read PARAM.SFO
         loadPsf(mem, path, paramSfoFileName, sfoParam);
-        
+
         bind = BIND_IS_OK;
         abortStatus = 0;
     }
