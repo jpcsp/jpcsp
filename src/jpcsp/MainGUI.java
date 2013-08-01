@@ -1448,7 +1448,7 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private String pspifyFilename(String pcfilename) {
         // Files relative to ms0 directory
         if (pcfilename.startsWith("ms0")) {
-            return "ms0:" + pcfilename.substring(3).replaceAll("\\\\", "/");
+            return "ms0:" + pcfilename.substring(3).replaceAll("\\\\", "/").toUpperCase();
         }
 
         // Files with absolute path but also in ms0 directory
