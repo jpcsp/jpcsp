@@ -490,7 +490,6 @@ public class ModuleMgrForUser extends HLEModule {
             return 0; // Fake success.
         }
 
-        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         if (Memory.isAddressGood(sceModule.module_stop_func)) {
             int priority = 0x20;
             if (smOption != null && smOption.priority > 0) {
@@ -511,14 +510,23 @@ public class ModuleMgrForUser extends HLEModule {
                 attribute = smOption.attribute;
             }
 
+            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+            SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+
             SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStop",
                     sceModule.module_stop_func, priority,
                     stackSize, attribute, 0);
+
             thread.moduleid = sceModule.modid;
             // Store the thread exit status into statusAddr when the thread terminates
             thread.exitStatusAddr = statusAddr;
             sceModule.stop();
+
+            // Start the "stop" thread...
             threadMan.hleKernelStartThread(thread, argSize, argp.getAddress(), sceModule.gp_value);
+
+            // ...and wait for its end.
+            threadMan.hleKernelWaitThreadEnd(currentThread, thread.uid, TPointer32.NULL, false, false);
         } else if (sceModule.module_stop_func == 0) {
             log.info("sceKernelStopModule - module has no stop function");
             sceModule.stop();
