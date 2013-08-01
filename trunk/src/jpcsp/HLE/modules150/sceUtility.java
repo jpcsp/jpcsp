@@ -406,7 +406,9 @@ public class sceUtility extends HLEModule {
         }
 
         public int executeGetStatus() {
-            if (Modules.sceUtilityModule.startedDialogState != null && Modules.sceUtilityModule.startedDialogState != this) {
+        	// Return ERROR_UTILITY_WRONG_TYPE if no sceUtilityXXXInitStart is active or
+        	// if a different type of dialog is active.
+            if (Modules.sceUtilityModule.startedDialogState == null || Modules.sceUtilityModule.startedDialogState != this) {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("%sGetStatus returning ERROR_UTILITY_WRONG_TYPE", name));
                 }
@@ -435,7 +437,7 @@ public class sceUtility extends HLEModule {
         }
 
         public int executeShutdownStart() {
-            if (Modules.sceUtilityModule.startedDialogState != null && Modules.sceUtilityModule.startedDialogState != this) {
+            if (Modules.sceUtilityModule.startedDialogState == null || Modules.sceUtilityModule.startedDialogState != this) {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("%ShutdownStart returning ERROR_UTILITY_WRONG_TYPE", name));
                 }
@@ -460,7 +462,7 @@ public class sceUtility extends HLEModule {
          * @return
          */
         public final int executeUpdate(int drawSpeed) {
-            if (Modules.sceUtilityModule.startedDialogState != null && Modules.sceUtilityModule.startedDialogState != this) {
+            if (Modules.sceUtilityModule.startedDialogState == null || Modules.sceUtilityModule.startedDialogState != this) {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("%Update returning ERROR_UTILITY_WRONG_TYPE", name));
                 }
@@ -512,7 +514,7 @@ public class sceUtility extends HLEModule {
         public void abort(Processor processor) {
             CpuState cpu = processor.cpu;
 
-            if (Modules.sceUtilityModule.startedDialogState != null && Modules.sceUtilityModule.startedDialogState != this) {
+            if (Modules.sceUtilityModule.startedDialogState == null || Modules.sceUtilityModule.startedDialogState != this) {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("%sAbort returning ERROR_UTILITY_WRONG_TYPE", name));
                 }
