@@ -843,7 +843,7 @@ public class sceFont extends HLEModule {
         fontInfoPtr.setValue8(263, (byte) 0); // Padding.
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceFontGetFontInfo returning maxGlyphWidthI=%d, maxGlyphHeightI=%d, maxGlyphAscenderI=%d, maxGlyphDescenderI=%d, maxGlyphLeftXI=%d, maxGlyphBaseYI=%d, minGlyphCenterXI=%d, maxGlyphTopYI=%d, maxGlyphAdvanceXI=%d, maxGlyphAdvanceYI=%d, fontStyle=[%s]", maxGlyphWidthI, maxGlyphHeightI, maxGlyphAscenderI, maxGlyphDescenderI, maxGlyphLeftXI, maxGlyphBaseYI, minGlyphCenterXI, maxGlyphTopYI, maxGlyphAdvanceXI, maxGlyphAdvanceYI, fontStyle));
+            log.debug(String.format("sceFontGetFontInfo returning maxGlyphWidthI=%d, maxGlyphHeightI=%d, maxGlyphAscenderI=%d, maxGlyphDescenderI=%d, maxGlyphLeftXI=%d, maxGlyphBaseYI=%d, minGlyphCenterXI=%d, maxGlyphTopYI=%d, maxGlyphAdvanceXI=%d, maxGlyphAdvanceYI=%d, fontStyle=[%s]%s", maxGlyphWidthI, maxGlyphHeightI, maxGlyphAscenderI, maxGlyphDescenderI, maxGlyphLeftXI, maxGlyphBaseYI, minGlyphCenterXI, maxGlyphTopYI, maxGlyphAdvanceXI, maxGlyphAdvanceYI, fontStyle, Utilities.getMemoryDump(fontInfoPtr.getAddress(), 264)));
         }
 
         return 0;
@@ -872,7 +872,7 @@ public class sceFont extends HLEModule {
         pspCharInfo.write(charInfoPtr);    
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceFontGetCharInfo returning %s", pspCharInfo));
+        	log.debug(String.format("sceFontGetCharInfo returning %s%s", pspCharInfo, Utilities.getMemoryDump(charInfoPtr.getAddress(), pspCharInfo.sizeof())));
         }
 
         return 0;
