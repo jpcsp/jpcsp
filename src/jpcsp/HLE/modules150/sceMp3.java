@@ -213,11 +213,9 @@ public class sceMp3 extends HLEModule {
             mp3InputBufWritePos = mp3InputFileReadPos;
             mp3InputBufSize = 0;
 
-            // In the JpcspTrace log of "Downstream Panic! - ULUS10322",
-            // the PSP is returning 0x1200 bytes at each sceMp3Decode call.
-            // Is this maybe depending on the MP3 file itself?
-            final int maxSampleBytes = 0x1200;
-            mp3MaxSamples = Math.min(mp3PcmBufSize, maxSampleBytes) / 4;
+            // We do not know yet the number of channels, assume 2.
+            // This will be overwritten as soon as we parse the MP3 header
+            initMp3MaxSamples(2);
 
             // Set default properties.
             mp3LoopNum = PSP_MP3_LOOP_NUM_INFINITE;
@@ -232,6 +230,14 @@ public class sceMp3 extends HLEModule {
             mp3PcmBuffer = new byte[mp3PcmBufSize];
         }
 
+        private void initMp3MaxSamples(int mp3Channels) {
+            // In the JpcspTrace log of "Downstream Panic! - ULUS10322",
+            // the PSP is returning 0x1200 bytes at each sceMp3Decode call.
+            // Is this maybe depending on the MP3 file itself?
+            final int maxSampleBytes = mp3Channels == 1 ? 0x900 : 0x1200;
+            mp3MaxSamples = Math.min(mp3PcmBufSize, maxSampleBytes) / 4;
+        }
+
         private void parseMp3FrameHeader() {
             Memory mem = Memory.getInstance();
             // Skip the ID3 tags, the MP3 stream starts at mp3StreamStart.
@@ -239,43 +245,72 @@ public class sceMp3 extends HLEModule {
             if (log.isDebugEnabled()) {
             	log.debug(String.format("Mp3 header: 0x%08X", header));
             }
-            mp3Channels = calculateMp3Channels((header >> 6) & 0x3);
-            mp3SampleRate = calculateMp3SampleRate((header >> 10) & 0x3);
-            mp3BitRate = calculateMp3Bitrate((header >> 12) & 0xF);
             mp3Version = (header >> 19) & 0x3;
+            int mp3Layer = (header >> 17) & 0x3;
+            mp3Channels = calculateMp3Channels((header >> 6) & 0x3);
+            mp3SampleRate = calculateMp3SampleRate((header >> 10) & 0x3, mp3Version);
+            mp3BitRate = calculateMp3Bitrate((header >> 12) & 0xF, mp3Version, mp3Layer);
+
+            // Now, we know the real number of channels, update the max samples
+            initMp3MaxSamples(mp3Channels);
         }
 
-        private int calculateMp3Bitrate(int bitVal) {
-            switch (bitVal) {
-                case 0: return 0;  // Variable Bitrate.
-                case 1: return 32;
-                case 2: return 40;
-                case 3: return 48;
-                case 4: return 56;
-                case 5: return 64;
-                case 6: return 80;
-                case 7: return 96;
-                case 8: return 112;
-                case 9: return 128;
-                case 10: return 160;
-                case 11: return 192;
-                case 12: return 224;
-                case 13: return 256;
-                case 14: return 320;
-                default: return -1;
-            }
+        private int calculateMp3Bitrate(int bitVal, int mp3Version, int mp3Layer) {
+        	int[] valueMapping = null;
+        	switch (mp3Version) {
+        		case 3: // MPEG Version 1
+        			switch (mp3Layer) {
+	        			case 3: // Layer I
+	        				valueMapping = new int[] { 0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, -1 };
+	        				break;
+	        			case 2: // Layer II
+	        				valueMapping = new int[] { 0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384, -1 };
+	        				break;
+	        			case 1: // Layer III
+	        				valueMapping = new int[] { 0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, -1 };
+	        				break;
+        			}
+        			break;
+        		case 2: // MPEG Version 2
+        		case 0: // MPEG Version 2.5
+        			switch (mp3Layer) {
+	        			case 3: // Layer I
+	        				valueMapping = new int[] { 0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256, -1 };
+	        				break;
+	        			case 2: // Layer II
+	        			case 1: // Layer III
+	        				valueMapping = new int[] { 0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, -1 };
+	        				break;
+	    			}
+        			break;
+        	}
+
+        	if (valueMapping == null) {
+        		return -1;
+        	}
+
+        	return valueMapping[bitVal];
         }
 
-        private int calculateMp3SampleRate(int bitVal) {
-            if (bitVal == 0) {
-                return 44100;
-            } else if (bitVal == 1) {
-                return 48000;
-            } else if (bitVal == 2) {
-                return 32000;
-            } else {
-                return 0;
-            }
+        private int calculateMp3SampleRate(int bitVal, int mp3Version) {
+        	int[] valueMapping = null;
+        	switch (mp3Version) {
+        		case 3: // MPEG Version 1
+        			valueMapping = new int[] { 44100, 48000, 32000, -1 };
+        			break;
+        		case 2: // MPEG Version 2
+        			valueMapping = new int[] { 22050, 24000, 16000, -1 };
+        			break;
+        		case 0: // MPEG Version 2.5
+        			valueMapping = new int[] { 11025, 12000, 8000, -1 };
+        			break;
+        	}
+
+        	if (valueMapping == null) {
+        		return 0;
+        	}
+
+        	return valueMapping[bitVal];
         }
 
         private int calculateMp3Channels(int bitVal) {
@@ -356,7 +391,8 @@ public class sceMp3 extends HLEModule {
 
         private boolean checkMediaEngineChannel() {
         	if (checkMediaEngineState()) {
-            	if (mp3Channel.length() < ME_READ_AHEAD) {
+        		int minimumChannelLength = (int) Math.min(ME_READ_AHEAD, mp3StreamEnd - mp3StreamStart);
+            	if (mp3Channel.length() < minimumChannelLength) {
             		int neededLength = ME_READ_AHEAD - mp3Channel.length();
             		consumeRead(neededLength);
             		return false;
@@ -398,7 +434,7 @@ public class sceMp3 extends HLEModule {
             		if (me.getContainer() == null) {
 	            		me.init(mp3Channel, false, true, 0, 0);
 	            	}
-            		me.stepAudio(getMp3MaxSamples() * getBytesPerSample(), getMp3ChannelNum());
+            		me.stepAudio(getMp3MaxSamples() * getBytesPerSample(), getMp3DecodeNumberOfChannels());
 	                mp3DecodedBytes = copySamplesToMem(decodeBuffer, decodeBufferSize, mp3PcmBuffer);
 	                if (log.isTraceEnabled()) {
 	                	log.trace(String.format("decoded %d samples: %s", mp3DecodedBytes, Utilities.getMemoryDump(decodeBuffer, mp3DecodedBytes)));
@@ -425,8 +461,8 @@ public class sceMp3 extends HLEModule {
         }
 
         public int getBytesPerSample() {
-        	// 2 Bytes per channel
-        	return getMp3ChannelNum() * 2;
+        	// 2 Bytes per decoded channel
+        	return getMp3DecodeNumberOfChannels() * 2;
         }
 
         public boolean isStreamDataNeeded() {
@@ -517,6 +553,11 @@ public class sceMp3 extends HLEModule {
 
         public int getMp3ChannelNum() {
             return mp3Channels;
+        }
+
+        public int getMp3DecodeNumberOfChannels() {
+        	// Always return 2 channels from decoding
+        	return 2;
         }
 
         public int getMp3SamplingRate() {
@@ -610,6 +651,9 @@ public class sceMp3 extends HLEModule {
 
     @HLEFunction(nid = 0x8F450998, version = 150, checkInsideInterrupt = true)
     public int sceMp3GetSamplingRate(Mp3Stream mp3Stream) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceMp3GetSamplingRate returning 0x%X", mp3Stream.getMp3SamplingRate()));
+    	}
         return mp3Stream.getMp3SamplingRate();
     }
 
@@ -692,6 +736,9 @@ public class sceMp3 extends HLEModule {
     
     @HLEFunction(nid = 0x87C263D1, version = 150, checkInsideInterrupt = true)
     public int sceMp3GetMaxOutputSample(Mp3Stream mp3Stream) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceMp3GetMaxOutputSample returning 0x%X", mp3Stream.getMp3MaxSamples()));
+    	}
         return mp3Stream.getMp3MaxSamples();
     }
 
