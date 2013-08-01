@@ -44,7 +44,7 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
         dataUpperBound = data + packets * ringbufferPacketSize;
         semaID = -1;
         mpeg = 0;
-        buffer = new pspFileBuffer(data, dataUpperBound - data);
+        initBuffer();
 
         if (dataUpperBound > data + size) {
             dataUpperBound = data + size;
@@ -57,10 +57,16 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
     private SceMpegRingbuffer() {
     }
 
+    private void initBuffer() {
+        buffer = new pspFileBuffer(data, dataUpperBound - data);
+        // No check on file size for MPEG.
+        buffer.setFileMaxSize(Integer.MAX_VALUE);
+    }
+
     public static SceMpegRingbuffer fromMem(TPointer address) {
         SceMpegRingbuffer ringbuffer = new SceMpegRingbuffer();
         ringbuffer.read(address);
-        ringbuffer.buffer = new pspFileBuffer(ringbuffer.data, ringbuffer.dataUpperBound - ringbuffer.data);
+        ringbuffer.initBuffer();
 
         return ringbuffer;
     }
@@ -211,6 +217,6 @@ public class SceMpegRingbuffer extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	public String toString() {
-		return String.format("SceMpegRingbuffer(packets=%d, packetsRead=%d, packetsWritten=%d, packetsFree=%d, packetSize=%d)", packets, packetsRead, packetsWritten, getFreePackets(), packetSize);
+		return String.format("SceMpegRingbuffer(packets=0x%X, packetsRead=0x%X, packetsWritten=0x%X, packetsFree=0x%X, packetSize=0x%X, buffer=%s)", packets, packetsRead, packetsWritten, getFreePackets(), packetSize, buffer);
 	}
 }

@@ -133,6 +133,6 @@ public class pspFileBuffer {
 
 	@Override
 	public String toString() {
-		return String.format("pspFileBuffer(addr=0x%08X, maxSize=0x%X, currentSize=0x%X, filePosition=0x%X)", getAddr(), getMaxSize(), currentSize, getFilePosition());
+		return String.format("pspFileBuffer(addr=0x%08X, maxSize=0x%X, currentSize=0x%X, readPosition=0x%X, writePosition=0x%X, filePosition=0x%X, fileMaxSize=0x%X)", getAddr(), getMaxSize(), currentSize, readPosition, writePosition, getFilePosition(), fileMaxSize);
 	}
 }

@@ -29,7 +29,7 @@ import jpcsp.util.Utilities;
  * Common interface for PSMF/MPEG -> Media Engine communication.
  *
  */
-public class PacketChannel extends FIFOByteBuffer implements IURLProtocolHandler {
+public class PacketChannel extends FIFOByteBuffer implements IMediaChannel {
 	private static Logger log = Logger.getLogger("PacketChannel");
 	private int readLength;
 	private int totalStreamSize;
@@ -52,10 +52,12 @@ public class PacketChannel extends FIFOByteBuffer implements IURLProtocolHandler
     	return 0;
 	}
 
+    @Override
 	public int getReadLength() {
 		return readLength;
 	}
 
+    @Override
 	public void setReadLength(int readLength) {
 		this.readLength = readLength;
 	}
