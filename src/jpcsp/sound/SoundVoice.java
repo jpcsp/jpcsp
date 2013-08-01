@@ -160,6 +160,8 @@ public class SoundVoice {
 	public void setVAG(int address, int size) {
 		vagAddress = address;
 		vagSize = size;
+		atracId = null;
+		pcmAddress = 0;
 		onVoiceChanged();
 	}
 
@@ -247,12 +249,16 @@ public class SoundVoice {
 
 	public void setAtracId(AtracID atracId) {
 		this.atracId = atracId;
+		pcmAddress = 0;
+		vagAddress = 0;
 		onVoiceChanged();
 	}
 
 	public void setPCM(int address, int size) {
 		pcmAddress = address;
 		pcmSize = size;
+		atracId = null;
+		vagAddress = 0;
 		onVoiceChanged();
 	}
 
