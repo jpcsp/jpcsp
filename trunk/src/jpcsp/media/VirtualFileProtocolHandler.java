@@ -20,11 +20,10 @@ import org.apache.log4j.Logger;
 
 import jpcsp.HLE.VFS.IVirtualFile;
 
-import com.xuggle.xuggler.io.IURLProtocolHandler;
-
-public class VirtualFileProtocolHandler implements IURLProtocolHandler {
+public class VirtualFileProtocolHandler implements IMediaChannel {
 	private static Logger log = Logger.getLogger("VirtualFileProtocolHandler");
 	private IVirtualFile vFile;
+	private int readLength;
 
 	public VirtualFileProtocolHandler(IVirtualFile vFile) {
 		this.vFile = vFile;
@@ -72,6 +71,8 @@ public class VirtualFileProtocolHandler implements IURLProtocolHandler {
 		if (result < 0) {
 			return -1;
 		}
+
+		readLength += result;
 
 		return result;
 	}
@@ -130,5 +131,15 @@ public class VirtualFileProtocolHandler implements IURLProtocolHandler {
 		}
 
 		return result;
+	}
+
+	@Override
+	public int getReadLength() {
+		return readLength;
+	}
+
+	@Override
+	public void setReadLength(int readLength) {
+		this.readLength = readLength;
 	}
 }
