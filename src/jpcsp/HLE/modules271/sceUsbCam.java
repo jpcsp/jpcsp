@@ -244,7 +244,11 @@ public class sceUsbCam extends HLEModule {
 			if (image == null && videoConverter != null) {
 				IVideoPicture eventPicture = event.getPicture();
 				videoResampler.resample(videoPicture, eventPicture);
-				image = videoConverter.toImage(videoPicture);
+				try {
+					image = videoConverter.toImage(videoPicture);
+				} catch (RuntimeException e) {
+					log.error("VideoListener.onVideoPicture", e);
+				}
 			}
 
 			if (log.isDebugEnabled()) {
