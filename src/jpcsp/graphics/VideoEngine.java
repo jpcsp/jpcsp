@@ -234,8 +234,8 @@ public class VideoEngine {
     private short[] clut_buffer16 = new short[4096];
     private boolean listHasEnded;
     private PspGeList currentList; // The currently executing list
-    private static final int drawBufferSize = 1536 * 1024;
-    private static final int indexDrawBufferSize = 512 * 1024;
+    private static final int drawBufferSizeInBytes = 2048 * 1024;
+    private static final int indexDrawBufferSizeInBytes = 512 * 1024;
     private int bufferId;
     private int nativeBufferId;
     private int indexBufferId;
@@ -399,7 +399,7 @@ public class VideoEngine {
         multiDrawFirst = ByteBuffer.allocateDirect(maxMultiDrawElements * 4).order(ByteOrder.nativeOrder()).asIntBuffer();
         multiDrawCount = ByteBuffer.allocateDirect(maxMultiDrawElements * 4).order(ByteOrder.nativeOrder()).asIntBuffer();
         if (avoidDrawElementsWithNonZeroIndexOffset) {
-            indexByteBuffer = ByteBuffer.allocateDirect(indexDrawBufferSize).order(ByteOrder.nativeOrder());
+            indexByteBuffer = ByteBuffer.allocateDirect(indexDrawBufferSizeInBytes).order(ByteOrder.nativeOrder());
         }
     }
 
@@ -593,10 +593,10 @@ public class VideoEngine {
 
         deletePendingBuffers();
 
-        bufferId = bufferManager.genBuffer(IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_FLOAT, drawBufferSize / SIZEOF_FLOAT, IRenderingEngine.RE_STREAM_DRAW);
-        nativeBufferId = bufferManager.genBuffer(IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_BYTE, drawBufferSize, IRenderingEngine.RE_STREAM_DRAW);
-        indexBufferId = bufferManager.genBuffer(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, IRenderingEngine.RE_UNSIGNED_BYTE, indexDrawBufferSize, IRenderingEngine.RE_STREAM_DRAW);
-        floatBufferArray = new float[drawBufferSize / SIZEOF_FLOAT];
+        bufferId = bufferManager.genBuffer(IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_FLOAT, drawBufferSizeInBytes / SIZEOF_FLOAT, IRenderingEngine.RE_STREAM_DRAW);
+        nativeBufferId = bufferManager.genBuffer(IRenderingEngine.RE_ARRAY_BUFFER, IRenderingEngine.RE_BYTE, drawBufferSizeInBytes, IRenderingEngine.RE_STREAM_DRAW);
+        indexBufferId = bufferManager.genBuffer(IRenderingEngine.RE_ELEMENT_ARRAY_BUFFER, IRenderingEngine.RE_UNSIGNED_BYTE, indexDrawBufferSizeInBytes, IRenderingEngine.RE_STREAM_DRAW);
+        floatBufferArray = new float[drawBufferSizeInBytes / SIZEOF_FLOAT];
 
         if (useAsyncVertexCache) {
             AsyncVertexCache.getInstance().setUseVertexArray(re.isVertexArrayAvailable());
@@ -997,11 +997,18 @@ public class VideoEngine {
     }
 
     private boolean executeListPaused() {
-        waitSignalStatistics.start();
         if (isLogDebugEnabled) {
             log.debug(String.format("FINISH / SIGNAL / END reached, waiting for Sync (%s)", currentList.toString()));
         }
         currentList.status = PSP_GE_LIST_END_REACHED;
+
+        // No need to wait of the END command for a FINISH.
+        if (currentList.isFinished()) {
+        	listHasEnded = true;
+        	return true;
+        }
+
+        waitSignalStatistics.start();
         long startWaitClockMillis = Emulator.getClock().milliTime();
         if (!currentList.waitForSync(10)) {
             long endWaitClockMillis = Emulator.getClock().milliTime();
