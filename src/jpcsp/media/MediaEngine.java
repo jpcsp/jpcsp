@@ -432,7 +432,7 @@ public class MediaEngine {
     }
 
     public void changeAudioChannel(int audioChannel) {
-    	if (container == null) {
+    	if (container == null || audioChannel < 0) {
     		return;
     	}
 
@@ -486,7 +486,7 @@ public class MediaEngine {
     }
 
     public void changeVideoChannel(int videoChannel) {
-    	if (container == null) {
+    	if (container == null || videoChannel < 0) {
     		return;
     	}
 
@@ -964,7 +964,9 @@ public class MediaEngine {
     public void writeVideoImage(int dest_addr, int frameWidth, int videoPixelMode) {
         final int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
 
-        // Tell the display that we are updating the given address
+    	Modules.sceDisplayModule.waitForRenderingCompletion(dest_addr);
+
+    	// Tell the display that we are updating the given address
         Modules.sceDisplayModule.write(dest_addr);
 
         // Get the current generated image, convert it to pixels and write it
