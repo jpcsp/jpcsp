@@ -121,11 +121,13 @@ public class AtracCodec {
     }
 
     public void setAtracMaxSamples(int atracMaxSamples) {
-    	this.atracMaxSamples = atracMaxSamples;
-    	if (useMediaEngine()) {
-    		me.setAudioSamplesSize(atracMaxSamples);
+    	if (this.atracMaxSamples != atracMaxSamples) {
+	    	this.atracMaxSamples = atracMaxSamples;
+	    	if (useMediaEngine()) {
+	    		me.setAudioSamplesSize(atracMaxSamples);
+	    	}
+	    	createBuffers();
     	}
-    	createBuffers();
     }
 
     private void createBuffers() {
