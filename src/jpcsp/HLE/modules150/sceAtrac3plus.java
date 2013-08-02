@@ -729,6 +729,8 @@ public class sceAtrac3plus extends HLEModule {
                 // If we could not decode all the requested samples, request more data
             	id.getInputBuffer().notifyReadAll();
             	remainFrames = 0;
+            } else if (id.getAtracCodec().getChannelLength() >= id.getInputFileSize()) {
+            	// The media engine has already received the whole file
             } else if (id.getAtracCodec().getChannelLength() < 32768 && id.getAtracCurrentSample() > 0) {
             	// The media engine is reading chunks of 32768 bytes from the channel.
                 // If the channel contains less than one chunk, request more data,
@@ -750,7 +752,7 @@ public class sceAtrac3plus extends HLEModule {
         atrac3plusMaxIDsCount = newAT3plusIdCount;
     }
 
-    protected int hleCreateAtracID(int codecType) {
+    public int hleCreateAtracID(int codecType) {
     	// "Patapon 2" expects the ID to be signed 8bit
     	int atracID = SceUidManager.getNewId(idPurpose, 0, 255);
         AtracCodec atracCodec = new AtracCodec();
@@ -760,6 +762,10 @@ public class sceAtrac3plus extends HLEModule {
             return atracID;
         }
         return SceKernelErrors.ERROR_ATRAC_NO_ID;
+    }
+
+    public AtracID hleGetAtracID(int atID) {
+    	return atracIDs.get(atID);
     }
 
     protected int hleSetHalfwayBufferAndGetID(TPointer buffer, int readSize, int bufferSize, boolean isMonoOutput) {
@@ -895,7 +901,17 @@ public class sceAtrac3plus extends HLEModule {
         	result = SceKernelErrors.ERROR_ATRAC_BUFFER_IS_EMPTY;
         	end = false;
         } else if (atracCodec != null) {
-            samples = atracCodec.atracDecodeData(atID, samplesAddr.getAddress(), id.getAtracOutputChannels());
+        	// The PSP is returning a lower number of samples at the very first sceAtracDecodeData.
+        	// Not sure how many samples should be returned in that case. Different values
+        	// have been observed on PSP. Take here half the number of maximum samples
+        	// (this is a wrong assumption, but what else?).
+        	if (id.getAtracCurrentSample() == 0) {
+        		atracCodec.setAtracMaxSamples(id.getMaxSamples() >> 1);
+        	} else {
+        		atracCodec.setAtracMaxSamples(id.getMaxSamples());
+        	}
+
+        	samples = atracCodec.atracDecodeData(atID, samplesAddr.getAddress(), id.getAtracOutputChannels());
             if (samples < 0) {
                 // Not using decoded data.
                 if (log.isDebugEnabled()) {
