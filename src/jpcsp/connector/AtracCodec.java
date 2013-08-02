@@ -123,7 +123,7 @@ public class AtracCodec {
     public void setAtracMaxSamples(int atracMaxSamples) {
     	if (this.atracMaxSamples != atracMaxSamples) {
 	    	this.atracMaxSamples = atracMaxSamples;
-	    	if (useMediaEngine()) {
+	    	if (useMediaEngine() && me != null) {
 	    		me.setAudioSamplesSize(atracMaxSamples);
 	    	}
 	    	createBuffers();
