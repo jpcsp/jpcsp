@@ -725,7 +725,7 @@ public class CompilerContext implements ICompilerContext {
         mv.visitFieldInsn(Opcodes.PUTFIELD, cpuInternalName, "pc", "I");
     }
 
-    private void visitContinueToAddress(int returnAddress) {
+    private void visitContinueToAddress(int returnAddress, boolean returnOnUnknownAddress) {
         //      if (x != returnAddress) {
         //          RuntimeContext.jump(x, returnAddress);
         //      }
@@ -736,9 +736,13 @@ public class CompilerContext implements ICompilerContext {
         loadImm(returnAddress);
         visitJump(Opcodes.IF_ICMPEQ, isReturnAddress);
 
-        loadImm(returnAddress);
-        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "jump", "(II)V");
-        mv.visitJumpInsn(Opcodes.GOTO, continueLabel);
+        if (returnOnUnknownAddress) {
+        	visitJump();
+        } else {
+	        loadImm(returnAddress);
+	        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "jump", "(II)V");
+	        mv.visitJumpInsn(Opcodes.GOTO, continueLabel);
+        }
 
         mv.visitLabel(isReturnAddress);
         mv.visitInsn(Opcodes.POP);
@@ -781,7 +785,7 @@ public class CompilerContext implements ICompilerContext {
         }
     }
 
-    public void visitCall(int address, int returnAddress, int returnRegister, boolean returnRegisterModified) {
+    public void visitCall(int address, int returnAddress, int returnRegister, boolean returnRegisterModified, boolean returnOnUnknownAddress) {
     	flushInstructionCount(false, false);
 
         if (preparedCallNativeCodeBlock != null) {
@@ -797,7 +801,7 @@ public class CompilerContext implements ICompilerContext {
     		}
     	} else {
 	        mv.visitMethodInsn(Opcodes.INVOKESTATIC, getClassName(address, instanceIndex), getStaticExecMethodName(), getStaticExecMethodDesc());
-	        visitContinueToAddress(returnAddress);
+	        visitContinueToAddress(returnAddress, returnOnUnknownAddress);
     	}
 
         preparedCallNativeCodeBlock = null;
@@ -809,7 +813,7 @@ public class CompilerContext implements ICompilerContext {
             storeRegister(returnRegister, returnAddress);
         }
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "call", "(I)I");
-        visitContinueToAddress(returnAddress);
+        visitContinueToAddress(returnAddress, false);
     }
 
     public void visitCall(int address, String methodName) {
