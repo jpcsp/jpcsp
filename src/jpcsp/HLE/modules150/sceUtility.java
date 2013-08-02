@@ -406,8 +406,8 @@ public class sceUtility extends HLEModule {
         }
 
         public int executeGetStatus() {
-        	// Return ERROR_UTILITY_WRONG_TYPE if no sceUtilityXXXInitStart is active or
-        	// if a different type of dialog is active.
+        	// Return ERROR_UTILITY_WRONG_TYPE if no sceUtilityXXXInitStart has ever been started or
+        	// if a different type of dialog was started.
             if (Modules.sceUtilityModule.startedDialogState == null || Modules.sceUtilityModule.startedDialogState != this) {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("%sGetStatus returning ERROR_UTILITY_WRONG_TYPE", name));
@@ -428,10 +428,11 @@ public class sceUtility extends HLEModule {
                 // Move from INIT to VISIBLE
                 status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
                 startVisibleTimeMillis = Emulator.getClock().currentTimeMillis();
-            } else if (status == PSP_UTILITY_DIALOG_STATUS_NONE && Modules.sceUtilityModule.startedDialogState == this) {
-                // Clear the started dialog after returning once status PSP_UTILITY_DIALOG_STATUS_NONE
-                Modules.sceUtilityModule.startedDialogState = null;
             }
+
+            // After moving to status NONE, subsequent calls of sceUtilityXXXGetStatus
+            // keep returning status NONE (if of the same type) and not ERROR_UTILITY_WRONG_TYPE.
+            // Keep the current value in Modules.sceUtilityModule.startedDialogState for this purpose.
 
             return previousStatus;
         }
