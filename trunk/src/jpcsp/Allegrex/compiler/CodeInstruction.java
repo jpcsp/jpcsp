@@ -311,7 +311,7 @@ public class CodeInstruction {
     private int getBranchingOpcodeCall0(CompilerContext context, MethodVisitor mv) {
         context.prepareCall(getBranchingTo(), getAddress() + 8, _ra);
         compileDelaySlot(context, mv);
-        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, isDelaySlotWritingRegister(context, _ra));
+        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, isDelaySlotWritingRegister(context, _ra), false);
 
         return Opcodes.NOP;
     }
@@ -341,7 +341,7 @@ public class CodeInstruction {
         compileDelaySlot(context, mv);
         CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
         context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction);
-        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, isDelaySlotWritingRegister(context, _ra));
+        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, isDelaySlotWritingRegister(context, _ra), true);
 
         return Opcodes.NOP;
     }
@@ -352,7 +352,7 @@ public class CodeInstruction {
         CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
         context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction);
         compileDelaySlot(context, mv);
-        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, isDelaySlotWritingRegister(context, _ra));
+        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, isDelaySlotWritingRegister(context, _ra), true);
 
         return Opcodes.NOP;
     }
