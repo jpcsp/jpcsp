@@ -1097,7 +1097,7 @@ public class sceAtrac3plus extends HLEModule {
     public int sceAtracGetNextSample(@CheckArgument("checkAtracID") int atID, TPointer32 nbrSamplesAddr) {
     	AtracID id = atracIDs.get(atID);
         int samples = id.getMaxSamples();
-        if (id.getInputBuffer().isEmpty()) {
+        if (id.getInputBuffer().isEmpty() && id.getAtracCodec().getChannelLength() <= 0) {
             samples = 0; // No more data available in input buffer
         }
         if (log.isDebugEnabled()) {
