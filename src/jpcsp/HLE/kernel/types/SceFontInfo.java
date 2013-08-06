@@ -32,9 +32,9 @@ public class SceFontInfo {
     public static final int FONT_PGF_BMP_H_ROWS = 0x01;
     public static final int FONT_PGF_BMP_V_ROWS = 0x02;
     public static final int FONT_PGF_BMP_OVERLAY = 0x03;
-    public static final int FONT_PGF_METRIC_FLAG1 = 0x04;
-    public static final int FONT_PGF_METRIC_FLAG2 = 0x08;
-    public static final int FONT_PGF_METRIC_FLAG3 = 0x10;
+    public static final int FONT_PGF_METRIC_DIMENSION_INDEX = 0x04;
+    public static final int FONT_PGF_METRIC_BEARING_X_INDEX = 0x08;
+    public static final int FONT_PGF_METRIC_BEARING_Y_INDEX = 0x10;
     public static final int FONT_PGF_CHARGLYPH = 0x20;
     public static final int FONT_PGF_SHADOWGLYPH = 0x40;
 
@@ -215,51 +215,74 @@ public class SceFontInfo {
             glyph.shadowID = getBits(9, fontdata, charPtr);
             charPtr += 9;
 
-            int dimensionIndex = getBits(8, fontdata, charPtr);
-            charPtr += 8;
+            if (glyph.hasFlag(FONT_PGF_METRIC_DIMENSION_INDEX)) {
+                int dimensionIndex = getBits(8, fontdata, charPtr);
+                charPtr += 8;
+                if (dimensionIndex < fontFile.getDimensionTableLength()) {
+                    int[][] dimensionTable = fontFile.getDimensionTable();
+                    glyph.dimensionWidth = dimensionTable[0][dimensionIndex];
+                    glyph.dimensionHeight = dimensionTable[1][dimensionIndex];
+                }
 
-            int xAdjustIndex = getBits(8, fontdata, charPtr);
-            charPtr += 8;
+                if (dimensionIndex == 0 && isIncorrectFont(fontFile)) {
+                	// Fonts created by ttf2pgf do not contain complete Glyph information.
+                	// Provide default values.
+                	glyph.dimensionWidth = glyph.w << 6;
+                	glyph.dimensionHeight = glyph.h << 6;
+                }
+            } else {
+            	glyph.dimensionWidth = getBits(32, fontdata, charPtr);
+            	charPtr += 32;
+            	glyph.dimensionHeight = getBits(32, fontdata, charPtr);
+            	charPtr += 32;
+            }
 
-            int yAdjustIndex = getBits(8, fontdata, charPtr);
-            charPtr += 8;
+            if (glyph.hasFlag(FONT_PGF_METRIC_BEARING_X_INDEX)) {
+                int xAdjustIndex = getBits(8, fontdata, charPtr);
+                charPtr += 8;
+                if (xAdjustIndex < fontFile.getXAdjustTableLength()) {
+                    int[][] xAdjustTable = fontFile.getXAdjustTable();
+                    glyph.xAdjustH = xAdjustTable[0][xAdjustIndex];
+                    glyph.xAdjustV = xAdjustTable[1][xAdjustIndex];
+                }
 
-            charPtr += (glyph.hasFlag(FONT_PGF_METRIC_FLAG1) ? 0 : 56) +
-                       (glyph.hasFlag(FONT_PGF_METRIC_FLAG2) ? 0 : 56) +
-                       (glyph.hasFlag(FONT_PGF_METRIC_FLAG3) ? 0 : 56);
+                if (xAdjustIndex == 0 && isIncorrectFont(fontFile)) {
+                	// Fonts created by ttf2pgf do not contain complete Glyph information.
+                	// Provide default values.
+                	glyph.xAdjustH = glyph.left << 6;
+                	glyph.xAdjustV = glyph.left << 6;
+                }
+            } else {
+            	glyph.xAdjustH = getBits(32, fontdata, charPtr);
+            	charPtr += 32;
+            	glyph.xAdjustV = getBits(32, fontdata, charPtr);
+            	charPtr += 32;
+            }
+
+            if (glyph.hasFlag(FONT_PGF_METRIC_BEARING_Y_INDEX)) {
+                int yAdjustIndex = getBits(8, fontdata, charPtr);
+                charPtr += 8;
+                if (yAdjustIndex < fontFile.getYAdjustTableLength()) {
+                    int[][] yAdjustTable = fontFile.getYAdjustTable();
+                    glyph.yAdjustH = yAdjustTable[0][yAdjustIndex];
+                    glyph.yAdjustV = yAdjustTable[1][yAdjustIndex];
+                }
+
+                if (yAdjustIndex == 0 && isIncorrectFont(fontFile)) {
+                	// Fonts created by ttf2pgf do not contain complete Glyph information.
+                	// Provide default values.
+                	glyph.yAdjustH = glyph.top << 6;
+                	glyph.yAdjustV = glyph.top << 6;
+                }
+            } else {
+            	glyph.yAdjustH = getBits(32, fontdata, charPtr);
+            	charPtr += 32;
+            	glyph.yAdjustV = getBits(32, fontdata, charPtr);
+            	charPtr += 32;
+            }
 
         	int advanceIndex = getBits(8, fontdata, charPtr);
             charPtr += 8;
-
-            if (dimensionIndex < fontFile.getDimensionTableLength()) {
-                int[][] dimensionTable = fontFile.getDimensionTable();
-                glyph.dimensionWidth = dimensionTable[0][dimensionIndex];
-                glyph.dimensionHeight = dimensionTable[1][dimensionIndex];
-            }
-
-            if (xAdjustIndex < fontFile.getXAdjustTableLength()) {
-                int[][] xAdjustTable = fontFile.getXAdjustTable();
-                glyph.xAdjustH = xAdjustTable[0][xAdjustIndex];
-                glyph.xAdjustV = xAdjustTable[1][xAdjustIndex];
-            }
-
-            if (yAdjustIndex < fontFile.getYAdjustTableLength()) {
-                int[][] yAdjustTable = fontFile.getYAdjustTable();
-                glyph.yAdjustH = yAdjustTable[0][yAdjustIndex];
-                glyph.yAdjustV = yAdjustTable[1][yAdjustIndex];
-            }
-
-            if (dimensionIndex == 0 && xAdjustIndex == 0 && yAdjustIndex == 0 && isIncorrectFont(fontFile)) {
-            	// Fonts created by ttf2pgf do not contain complete Glyph information.
-            	// Provide default values.
-            	glyph.dimensionWidth = glyph.w << 6;
-            	glyph.dimensionHeight = glyph.h << 6;
-            	glyph.xAdjustH = glyph.left << 6;
-            	glyph.xAdjustV = glyph.left << 6;
-            	glyph.yAdjustH = glyph.top << 6;
-            	glyph.yAdjustV = glyph.top << 6;
-            }
-
             if (advanceIndex < fontFile.getAdvanceTableLength()) {
             	int[][] advanceTable = fontFile.getAdvanceTable();
                 glyph.advanceH = advanceTable[0][advanceIndex];
@@ -425,6 +448,7 @@ public class SceFontInfo {
     	charInfo.bitmapTop = glyph.top;
     	charInfo.sfp26Width = glyph.dimensionWidth;
     	charInfo.sfp26Height = glyph.dimensionHeight;
+    	// TODO the Ascender and Descender values are still not matching the PSP.
     	charInfo.sfp26Ascender = glyph.top << 6;
     	charInfo.sfp26Descender = (glyph.h - glyph.top) << 6;
     	charInfo.sfp26BearingHX = glyph.xAdjustH;
