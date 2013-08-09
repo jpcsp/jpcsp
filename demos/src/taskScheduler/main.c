@@ -82,6 +82,36 @@ int sleepingThread(SceSize args, void *argp)
 	return 0;
 }
 
+int threadPrio_1(SceSize args, void *argp)
+{
+	strcat(msg, "2 ");
+	return 0;
+}
+
+int threadPrio_2(SceSize args, void *argp)
+{
+	strcat(msg, "3 ");
+	return 0;
+}
+
+int threadPrio_3(SceSize args, void *argp)
+{
+	strcat(msg, "3 ");
+	return 0;
+}
+
+int threadPrio_4(SceSize args, void *argp)
+{
+	strcat(msg, "2 ");
+	return 0;
+}
+
+int threadHello(SceSize args, void *argp)
+{
+	strcat(msg, "Hello ");
+	return 0;
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -101,6 +131,8 @@ int main(int argc, char *argv[])
 	pspDebugScreenInit();
 	pspDebugScreenPrintf("Press Cross to start the Task Scheduler Test\n");
 	pspDebugScreenPrintf("Press Circle to start the CpuSuspendIntr/CpuResumeIntr Test\n");
+	pspDebugScreenPrintf("Press Square to start the Task with thread of same priority\n");
+	pspDebugScreenPrintf("Press Left to start the Task Dispatcher Test\n");
 	pspDebugScreenPrintf("Press Triangle to Exit\n");
 
 	while(!done)
@@ -190,6 +222,67 @@ int main(int argc, char *argv[])
 
 		if (buttonDown & PSP_CTRL_SQUARE)
 		{
+			msg = buffer;
+			strcpy(msg, "");
+			// Two threads having the same priority
+			SceUID thread1 = sceKernelCreateThread("Thread 1", threadPrio_1, sceKernelGetThreadCurrentPriority(), 0x1000, 0, 0);
+			SceUID thread2 = sceKernelCreateThread("Thread 2", threadPrio_2, sceKernelGetThreadCurrentPriority(), 0x1000, 0, 0);
+			// Test that thread1 will be scheduled before thread2
+			sceKernelStartThread(thread1, 0, 0);
+			sceKernelStartThread(thread2, 0, 0);
+			strcat(msg, "1 ");
+			sceKernelDelayThread(10000);
+			strcat(msg, "4");
+			sceKernelWaitThreadEnd(thread1, NULL);
+			sceKernelWaitThreadEnd(thread2, NULL);
+			pspDebugScreenPrintf("Starting 2 threads at same priority: %s\n", msg);
+
+			// Now with a different order for create & start
+			strcpy(msg, "");
+			SceUID thread3 = sceKernelCreateThread("Thread 3", threadPrio_3, sceKernelGetThreadCurrentPriority(), 0x1000, 0, 0);
+			SceUID thread4 = sceKernelCreateThread("Thread 4", threadPrio_4, sceKernelGetThreadCurrentPriority(), 0x1000, 0, 0);
+			// Test that thread4 will be scheduled before thread3
+			sceKernelStartThread(thread4, 0, 0);
+			sceKernelStartThread(thread3, 0, 0);
+			strcat(msg, "1 ");
+			sceKernelDelayThread(10000);
+			strcat(msg, "4");
+			sceKernelWaitThreadEnd(thread3, NULL);
+			sceKernelWaitThreadEnd(thread4, NULL);
+			pspDebugScreenPrintf("Starting 2 threads with a different order create/start: %s\n", msg);
+		}
+
+		if (buttonDown & PSP_CTRL_LEFT)
+		{
+			msg = buffer;
+			strcpy(msg, "");
+			int state = sceKernelSuspendDispatchThread();
+			// High priority thread
+			SceUID thread = sceKernelCreateThread("Thread 1", threadHello, 0x10, 0x1000, 0, 0);
+			strcat(msg, "1 ");
+			// sceKernelStartThread resumes the thread dispatcher
+			sceKernelStartThread(thread, 0, 0);
+			strcat(msg, "2 ");
+			sceKernelDelayThread(10000);
+			strcat(msg, "3 ");
+			sceKernelResumeDispatchThread(state);
+			sceKernelWaitThreadEnd(thread, NULL);
+			pspDebugScreenPrintf("Starting high prio thread with a disabled dispatcher (state=0x%X): %s\n", state, msg);
+
+			msg = buffer;
+			strcpy(msg, "");
+			state = sceKernelSuspendDispatchThread();
+			// Low priority thread
+			thread = sceKernelCreateThread("Thread 1", threadHello, 0x70, 0x1000, 0, 0);
+			strcat(msg, "1 ");
+			// sceKernelStartThread resumes the thread dispatcher
+			sceKernelStartThread(thread, 0, 0);
+			strcat(msg, "2 ");
+			sceKernelDelayThread(10000);
+			strcat(msg, "3 ");
+			sceKernelResumeDispatchThread(state);
+			sceKernelWaitThreadEnd(thread, NULL);
+			pspDebugScreenPrintf("Starting low prio thread with a disabled dispatcher (state=0x%X): %s\n", state, msg);
 		}
 
 		if (buttonDown & PSP_CTRL_TRIANGLE)
