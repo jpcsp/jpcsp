@@ -1050,13 +1050,13 @@ public class Loader {
 
                 if (stubHeader.hasVStub()) {
                     if (log.isDebugEnabled()) {
-                    	log.debug(String.format("'%s' has size %d: %s", stubHeader.getModuleNamez(), stubHeader.getSize(), Utilities.getMemoryDump(stubHeadersAddress, stubHeader.getSize() * 4, 4, 16)));
+                    	log.debug(String.format("'%s': Header with VStub has size %d: %s", stubHeader.getModuleNamez(), stubHeader.getSize(), Utilities.getMemoryDump(stubHeadersAddress, stubHeader.getSize() * 4, 4, 16)));
                     }
                 	int vStub = (int) stubHeader.getVStub();
                 	if (vStub != 0) {
                     	int vStubSize = stubHeader.getVStubSize();
                 		if (log.isDebugEnabled()) {
-                			log.debug(String.format("Vstub has size %d: %s", vStubSize, Utilities.getMemoryDump(vStub, vStubSize * 8, 4, 16)));
+                			log.debug(String.format("VStub has size %d: %s", vStubSize, Utilities.getMemoryDump(vStub, vStubSize * 8, 4, 16)));
                 		}
                 		IMemoryReader vstubReader = MemoryReader.getMemoryReader(vStub, vStubSize * 8, 4);
                     	for (int j = 0; j < vStubSize; j++) {
@@ -1109,7 +1109,6 @@ public class Loader {
 	                	int nid = nidReader.readNext();
 	                	int importAddress = (int) (stubHeader.getOffsetText() + j * 8);
 	                    DeferredStub deferredStub = new DeferredStub(module, stubHeader.getModuleNamez(), importAddress, nid);
-	                    module.unresolvedImports.add(deferredStub);
 
 	                    // Add a 0xfffff syscall so we can detect if an unresolved import is called
 	                    deferredStub.unresolve(mem);
@@ -1156,10 +1155,10 @@ public class Loader {
                 }
 
                 if (entHeader.getSize() > 4) {
-                    entHeadersAddress += entHeader.getSize() * 4;
                     if (log.isDebugEnabled()) {
-                    	log.debug(String.format("'%s' has size %d", entHeader.getModuleNamez(), entHeader.getSize()));
+                    	log.debug(String.format("'%s': Header has size %d: %s", entHeader.getModuleNamez(), entHeader.getSize(), Utilities.getMemoryDump(entHeadersAddress, entHeader.getSize() * 4, 4, 16)));
                     }
+                    entHeadersAddress += entHeader.getSize() * 4;
                 } else {
                     entHeadersAddress += Elf32EntHeader.sizeof();
                 }

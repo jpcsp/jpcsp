@@ -38,8 +38,14 @@ public class Elf32EntHeader
     private short vcount;
     private int fcount;
     private long resident;
+    private int vcountNew;
+    private int unknown1;
+    private int unknown2;
 
-    public static int sizeof() { return 16; }
+    public static int sizeof() {
+    	return 16;
+    }
+
     public Elf32EntHeader(ByteBuffer f) throws IOException
     {
         modulenamez = "";
@@ -51,6 +57,11 @@ public class Elf32EntHeader
         vcount = readUByte(f);
         fcount = readUHalf(f);
         resident = readUWord(f);
+        if (size >= 5) {
+        	vcountNew = readUHalf(f);
+        	unknown1 = readUByte(f);
+        	unknown2 = readUByte(f);
+        }
     }
 
     public Elf32EntHeader(Memory mem, int address)
@@ -64,6 +75,11 @@ public class Elf32EntHeader
         vcount = (short)mem.read8(address + 9);
         fcount = mem.read16(address + 10);
         resident = mem.read32(address + 12);
+        if (size >= 5) {
+        	vcountNew = mem.read16(address + 16);
+        	unknown1 = mem.read8(address + 18);
+        	unknown2 = mem.read8(address + 19);
+        }
     }
 
     @Override
@@ -79,6 +95,11 @@ public class Elf32EntHeader
         str.append("vcount" + "\t\t" +  formatString("byte", Long.toHexString(vcount & 0xFFFF).toUpperCase()) + "\n");
         str.append("fcount" + "\t\t" +  formatString("short", Long.toHexString(fcount & 0xFFFF).toUpperCase()) + "\n");
         str.append("resident" + "\t\t" +  formatString("long", Long.toHexString(resident & 0xFFFFFFFFL).toUpperCase()) + "\n");
+        if (size >= 5) {
+            str.append(String.format("vcountNew\t\t0x%04X\n", vcountNew));
+            str.append(String.format("unknown1\t\t0x%02X\n", unknown1));
+            str.append(String.format("unknown2\t\t0x%02X\n", unknown2));
+        }
         return str.toString();
     }
 
@@ -107,7 +128,12 @@ public class Elf32EntHeader
     }
 
     public int getVariableCount() {
-        return vcount;
+    	if (size <= 4) {
+    		return vcount;
+    	}
+
+    	// A new vcount value has been introduced for size >= 5.
+    	return Math.max(vcount, vcountNew);
     }
 
     public int getFunctionCount() {
