@@ -54,7 +54,7 @@ public class SceFontInfoBW extends SceFontInfo {
 
 	@Override
 	public void printFont(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int clipX, int clipY, int clipWidth, int clipHeight, int pixelformat, int charCode, int altCharCode, int glyphType) {
-		if (glyphType != FONT_PGF_CHARGLYPH) {
+		if (glyphType != FONT_PGF_GLYPH_TYPE_CHAR) {
 			return;
 		}
 
@@ -80,7 +80,7 @@ public class SceFontInfoBW extends SceFontInfo {
 	@Override
 	public pspCharInfo getCharInfo(int charCode, int glyphType) {
     	pspCharInfo charInfo = new pspCharInfo();
-    	if (glyphType != FONT_PGF_CHARGLYPH) {
+    	if (glyphType != FONT_PGF_GLYPH_TYPE_CHAR) {
     		return charInfo;
     	}
 
