@@ -16,8 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules620;
 
+import static jpcsp.util.Utilities.alignUp;
+
+import java.util.HashMap;
+
 import jpcsp.Emulator;
-import jpcsp.Memory;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.CanBeNull;
 import jpcsp.HLE.CheckArgument;
@@ -30,13 +33,12 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
-import jpcsp.HLE.modules150.SysMemUserForUser;
-import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
-import jpcsp.util.Utilities;
+import jpcsp.HLE.kernel.types.SceKernelTls;
 
 @HLELogging
 public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
-    protected final static int PSP_ATTR_ADDR_HIGH = 0x4000;
+    public final static int PSP_ATTR_ADDR_HIGH = 0x4000;
+    protected HashMap<Integer, SceKernelTls> tlsMap;
 
 	private static class AfterSceKernelExtendThreadStackAction implements IAction {
 		private SceKernelThreadInfo thread;
@@ -70,6 +72,12 @@ public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
 		}
 	}
 
+	@Override
+	public void start() {
+		tlsMap = new HashMap<Integer, SceKernelTls>();
+		super.start();
+	}
+
 	public int checkStackSize(int size) {
 		if (size < 0x200) {
         	throw new SceKernelErrorException(SceKernelErrors.ERROR_KERNEL_ILLEGAL_STACK_SIZE);
@@ -77,6 +85,10 @@ public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
 
 		// Size is rounded up to a multiple of 256
 		return (size + 0xFF) & ~0xFF;
+	}
+
+	public SceKernelTls getKernelTls(int uid) {
+		return tlsMap.get(uid);
 	}
 
 	@HLEFunction(nid = 0xBC80EC7C, version = 620, checkInsideInterrupt = true)
@@ -97,14 +109,8 @@ public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
     }
 
 	@HLEFunction(nid = 0x8DAFF657, version = 620)
-	public int ThreadManForUser_8DAFF657(PspString name, int partitionid, int attr, int blockSize, int numberBlocks, @CanBeNull TPointer optionsAddr) {
-		// Similar to sceKernelAllocPartitionMemory?
-		int type = SysMemUserForUser.PSP_SMEM_LowAligned;
-		if ((attr & PSP_ATTR_ADDR_HIGH) != 0) {
-			type = SysMemUserForUser.PSP_SMEM_HighAligned;
-		}
-
-		int alignment = 4;
+	public int ThreadManForUser_8DAFF657(PspString name, int partitionId, int attr, int blockSize, int numberBlocks, @CanBeNull TPointer optionsAddr) {
+		int alignment = 0;
 		if (optionsAddr.isNotNull()) {
 			int length = optionsAddr.getValue32(0);
 			if (length >= 8) {
@@ -112,31 +118,36 @@ public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
 			}
 		}
 
-		blockSize = Utilities.alignUp(blockSize, 3);
-		int size = blockSize * numberBlocks;
-		SysMemInfo info = Modules.SysMemUserForUserModule.malloc(partitionid, name.getString(), type, size, alignment);
-		if (info == null) {
-			return -1;
+		int alignedBlockSize = alignUp(blockSize, 3);
+		if (alignment != 0) {
+			if ((alignment & (alignment - 1)) != 0) {
+				return SceKernelErrors.ERROR_KERNEL_ILLEGAL_ARGUMENT;
+			}
+			alignment = Math.max(alignment, 4);
+			alignedBlockSize = alignUp(alignedBlockSize, alignment - 1);
 		}
+
+		SceKernelTls tls = new SceKernelTls(name.getString(), partitionId, attr, blockSize, alignedBlockSize, numberBlocks, alignment);
+		if (tls.getBaseAddress() == 0) {
+			return SceKernelErrors.ERROR_OUT_OF_MEMORY;
+		}
+		tlsMap.put(tls.uid, tls);
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("ThreadManForUser_8DAFF657 allocated addr 0x%08X, returning 0x%X", info.addr, info.uid));
+			log.debug(String.format("ThreadManForUser_8DAFF657 returning 0x%X, baseAddress=0x%08X", tls.uid, tls.getBaseAddress()));
 		}
 
-		return info.uid;
+		return tls.uid;
 	}
 
 	@HLEFunction(nid = 0x32BF938E, version = 620)
 	public int ThreadManForUser_32BF938E(int uid) {
-		// Similar to sceKernelFreePartitionMemory?
-		SysMemInfo info = Modules.SysMemUserForUserModule.getSysMemInfo(uid);
-		if (info == null) {
+		SceKernelTls tls = tlsMap.remove(uid);
+		if (tls == null) {
 			return -1;
 		}
 
-		// Clear the memory and free it
-		Memory.getInstance().memset(info.addr, (byte) 0, info.size);
-		Modules.SysMemUserForUserModule.free(info);
+		tls.free();
 
 		return 0;
 	}
