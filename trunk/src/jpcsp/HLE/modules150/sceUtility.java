@@ -2276,9 +2276,9 @@ public class sceUtility extends HLEModule {
 
             fontInfo.printFont(textAddr, textWidth / 2, textWidth, textHeight, x - textX + charInfo.bitmapLeft, y - textY + baseAscender - charInfo.bitmapTop, 0, 0, textWidth, textHeight, PSP_FONT_PIXELFORMAT_4, c, ' ', glyphType);
 
-            if (glyphType != SceFontInfo.FONT_PGF_CHARGLYPH) {
+            if (glyphType != SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR) {
                 // Take the advanceH from the character, not from the shadow
-                charInfo = fontInfo.getCharInfo(c, SceFontInfo.FONT_PGF_CHARGLYPH);
+                charInfo = fontInfo.getCharInfo(c, SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR);
             }
             x += charInfo.sfp26AdvanceH >> 6;
         }
@@ -2294,7 +2294,7 @@ public class sceUtility extends HLEModule {
         }
 
         protected int getTextLength(SceFontInfo fontInfo, char c) {
-            pspCharInfo charInfo = fontInfo.getCharInfo(c, SceFontInfo.FONT_PGF_CHARGLYPH);
+            pspCharInfo charInfo = fontInfo.getCharInfo(c, SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR);
             if (charInfo == null) {
                 return 0;
             }
@@ -2314,8 +2314,8 @@ public class sceUtility extends HLEModule {
         }
 
         protected void drawTextWithShadow(int textX, int textY, int textWidth, int textHeight, int textLineHeight, SceFontInfo fontInfo, int baseAscender, int textColor, int shadowColor, float scale, String s) {
-            drawText(textX, textY, textWidth, textHeight, textLineHeight, fontInfo, baseAscender, scale, shadowColor, s, SceFontInfo.FONT_PGF_SHADOWGLYPH);
-            drawText(textX, textY, textWidth, textHeight, textLineHeight, fontInfo, baseAscender, scale, textColor, s, SceFontInfo.FONT_PGF_CHARGLYPH);
+            drawText(textX, textY, textWidth, textHeight, textLineHeight, fontInfo, baseAscender, scale, shadowColor, s, SceFontInfo.FONT_PGF_GLYPH_TYPE_SHADOW);
+            drawText(textX, textY, textWidth, textHeight, textLineHeight, fontInfo, baseAscender, scale, textColor, s, SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR);
         }
 
         protected void setSoftShadows(boolean softShadows) {
@@ -2366,7 +2366,7 @@ public class sceUtility extends HLEModule {
                 int alpha = (i << 4) | i;
 
                 // Reduce alpha by factor 2 if soft shadows are required (MsgDialog)
-                if (softShadows && glyphType == SceFontInfo.FONT_PGF_SHADOWGLYPH) {
+                if (softShadows && glyphType == SceFontInfo.FONT_PGF_GLYPH_TYPE_SHADOW) {
                     alpha >>= 1;
                 }
 
@@ -2623,9 +2623,9 @@ public class sceUtility extends HLEModule {
             gu.sceGuDrawRectangle(0, 0, Screen.width, 22, 0x80605C54);
 
             // Draw dialog title in top rectangle
-            drawText(30, 4, 128, 32, 20, getDefaultFontInfo(), 15, 0.82f, 0xFFFFFF, title, SceFontInfo.FONT_PGF_CHARGLYPH);
+            drawText(30, 4, 128, 32, 20, getDefaultFontInfo(), 15, 0.82f, 0xFFFFFF, title, SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR);
             // Draw filled circle just before dialog title
-            drawText(9, 5, 32, 32, 20, getDefaultFontInfo(), 15, 0.65f, 0xFFFFFF, new String(Character.toChars(0x25CF)), SceFontInfo.FONT_PGF_CHARGLYPH);
+            drawText(9, 5, 32, 32, 20, getDefaultFontInfo(), 15, 0.65f, 0xFFFFFF, new String(Character.toChars(0x25CF)), SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR);
         }
 
         protected void drawYesNo(int xYes, int xNo, int y) {

@@ -319,7 +319,7 @@ public class sceFont extends HLEModule {
                 x += linePrefix.length() * jpcsp.util.Debug.Font.charWidth;
         	}
 
-        	fontInfo.printFont(addr, fontBpl, fontBufWidth, fontBufHeight, x, y, 0, 0, fontBufWidth, fontBufHeight, fontPixelFormat, charCode, ' ', SceFontInfo.FONT_PGF_CHARGLYPH);
+        	fontInfo.printFont(addr, fontBpl, fontBufWidth, fontBufHeight, x, y, 0, 0, fontBufWidth, fontBufHeight, fontPixelFormat, charCode, ' ', SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR);
 
             x += maxGlyphWidth;
             if (x + maxGlyphWidth > fontBufWidth) {
@@ -858,7 +858,7 @@ public class sceFont extends HLEModule {
 
         pspCharInfo pspCharInfo = null;
         if (!getUseDebugFont()) {
-            pspCharInfo = font.fontInfo.getCharInfo(charCode, SceFontInfo.FONT_PGF_CHARGLYPH);
+            pspCharInfo = font.fontInfo.getCharInfo(charCode, SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR);
         }
         if (pspCharInfo == null) {
             pspCharInfo = new pspCharInfo();
@@ -904,7 +904,7 @@ public class sceFont extends HLEModule {
                     buffer, bytesPerLine, bufWidth, bufHeight,
                     xPosI, yPosI,
                     0, 0, bufWidth, bufHeight,
-                    pixelFormat, charCode, font.fontLib.getAltCharCode(), SceFontInfo.FONT_PGF_CHARGLYPH);
+                    pixelFormat, charCode, font.fontLib.getAltCharCode(), SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR);
         } else {
             // Font adjustment.
             // TODO: Instead of using the loaded PGF, figure out
@@ -1044,7 +1044,7 @@ public class sceFont extends HLEModule {
                     buffer, bytesPerLine, bufWidth, bufHeight,
                     xPosI, yPosI,
                     clipXPos, clipYPos, clipWidth, clipHeight,
-                    pixelFormat, charCode, font.fontLib.getAltCharCode(), SceFontInfo.FONT_PGF_CHARGLYPH);
+                    pixelFormat, charCode, font.fontLib.getAltCharCode(), SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR);
         } else {
             // Font adjustment.
             // TODO: Instead of using the loaded PGF, figure out
@@ -1099,7 +1099,7 @@ public class sceFont extends HLEModule {
     @HLEFunction(nid = 0x5C3E4A9E, version = 150, checkInsideInterrupt = true)
     public int sceFontGetCharImageRect(int fontHandle, int charCode, TPointer16 charRectPtr) {
         Font font = getFont(fontHandle, false);
-        pspCharInfo charInfo = font.fontInfo.getCharInfo(charCode, SceFontInfo.FONT_PGF_CHARGLYPH);
+        pspCharInfo charInfo = font.fontInfo.getCharInfo(charCode, SceFontInfo.FONT_PGF_GLYPH_TYPE_CHAR);
 
         // This function retrieves the dimensions of a specific char.
         if (charInfo != null) {
