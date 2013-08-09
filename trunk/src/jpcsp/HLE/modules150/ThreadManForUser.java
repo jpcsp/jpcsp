@@ -144,6 +144,7 @@ import jpcsp.HLE.CheckArgument;;
  * - the clock precision when interrupting a RUNNING thread is about 200 microseconds.
  *   i.e., it can take up to 200us when a high priority thread moves to the READY
  *   state before it changes to the RUNNING state.
+ * - sceKernelStartThread is always resuming the thread dispatching.
  *
  * Thread scheduling on Jpcsp:
  * - the rules for moving between states are implemented in hleChangeThreadState()
@@ -1729,6 +1730,12 @@ public class ThreadManForUser extends HLEModule {
         // Execute the event in the context of the starting thread
         triggerThreadEvent(thread, thread, THREAD_EVENT_START);
 
+        // sceKernelStartThread is always resuming the thread dispatching (tested on PSP using taskScheduler.prx).
+        // Assuming here that the other syscalls starting a thread
+        // (sceKernelStartModule, sceKernelStopModule, sceNetAdhocctlInit...)
+        // have the same behavior.
+        hleKernelResumeDispatchThread();
+
         RuntimeContext.onThreadStart(thread);
 
         if (thread.currentPriority < currentThread.currentPriority) {
@@ -1891,6 +1898,13 @@ public class ThreadManForUser extends HLEModule {
 
     private int getDispatchThreadState() {
         return dispatchThreadEnabled ? SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED : SCE_KERNEL_DISPATCHTHREAD_STATE_DISABLED;
+    }
+
+    private void hleKernelResumeDispatchThread() {
+    	if (!dispatchThreadEnabled) {
+	        dispatchThreadEnabled = true;
+	        hleRescheduleCurrentThread();
+    	}
     }
 
     /** Registers a callback on the thread that created the callback.
@@ -3268,8 +3282,7 @@ public class ThreadManForUser extends HLEModule {
         boolean isInterruptsDisabled = Interrupts.isInterruptsDisabled(); 
 
         if (state == SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED) {
-            dispatchThreadEnabled = true;
-            hleRescheduleCurrentThread();
+        	hleKernelResumeDispatchThread();
         }
 
         if (isInterruptsDisabled) {
