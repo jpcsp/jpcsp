@@ -19,18 +19,22 @@ package jpcsp.HLE.modules620;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
+import jpcsp.HLE.kernel.types.SceKernelTls;
 
 @HLELogging
 public class Kernel_Library extends jpcsp.HLE.modules380.Kernel_Library {
 	@HLEFunction(nid = 0xFA835CDE, version = 620)
 	public int sceKernel_FA835CDE(int uid) {
-		// Similar to sceKernelGetBlockHeadAddr?
-		SysMemInfo info = Modules.SysMemUserForUserModule.getSysMemInfo(uid);
-		if (info == null) {
+		SceKernelTls tls = Modules.ThreadManForUserModule.getKernelTls(uid);
+		if (tls == null) {
 			return 0;
 		}
 
-		return info.addr;
+		int addr = tls.getTlsAddress();
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceKernel_FA835CDE returning 0x%08X", addr));
+		}
+
+		return addr;
 	}
 }
