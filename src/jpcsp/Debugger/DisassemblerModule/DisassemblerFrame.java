@@ -44,7 +44,6 @@ import javax.swing.JFileChooser;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
-import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
@@ -67,6 +66,8 @@ import com.jidesoft.swing.StyleRange;
 import com.jidesoft.swing.StyledLabel;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 import jpcsp.Debugger.MemoryBreakpoints.MemoryBreakpointsDialog;
 import jpcsp.Debugger.StepLogger;
 import jpcsp.WindowPropSaver;
@@ -95,8 +96,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     private String[] selectedRegNames = new String[selectedRegColors.length];
     private final Color selectedAddressColor = new Color(255, 128, 255);
     private String selectedAddress;
-    private int srcounter;
     private MemoryBreakpointsDialog mbpDialog;
+    private SearchTask searchTask;
 
     /**
      * Creates new form DisassemblerFrame
@@ -196,12 +197,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         RefreshDebugger(true);
 
         WindowPropSaver.loadWindowProperties(this);
-    }
-
-    private void addKeyAction(JButton button, String key) {
-        final String actionName = "click";
-        button.getInputMap(JButton.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(key), actionName);
-        button.getActionMap().put(actionName, new ClickAction(button));
     }
 
     private void customizeStyledLabel(StyledLabel label, String text) {
@@ -483,6 +478,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         btnDumpDebugState = new javax.swing.JButton();
         txtSearch = new javax.swing.JTextField();
         lblSearch = new javax.swing.JLabel();
+        prgBarSearch = new javax.swing.JProgressBar();
+        btnCancelSearch = new javax.swing.JButton();
         statusPanel = new javax.swing.JPanel();
         statusLabel = new javax.swing.JLabel();
         mbMain = new javax.swing.JMenuBar();
@@ -995,8 +992,21 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 txtSearchActionPerformed(evt);
             }
         });
+        txtSearch.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                txtSearchFocusGained(evt);
+            }
+        });
 
         lblSearch.setText(bundle.getString("DisassemblerFrame.lblSearch.text")); // NOI18N
+
+        btnCancelSearch.setText(bundle.getString("DisassemblerFrame.btnCancelSearch.text")); // NOI18N
+        btnCancelSearch.setEnabled(false);
+        btnCancelSearch.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCancelSearchActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout miscPanelLayout = new javax.swing.GroupLayout(miscPanel);
         miscPanel.setLayout(miscPanelLayout);
@@ -1044,7 +1054,9 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                     .addComponent(lblDumpState)
                     .addComponent(btnDumpDebugState, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(btnCapture, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(btnReplay, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(btnReplay, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(prgBarSearch, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnCancelSearch, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
         miscPanelLayout.setVerticalGroup(
@@ -1088,7 +1100,11 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 .addComponent(lblSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 11, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(txtSearch, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(288, Short.MAX_VALUE))
+                .addGap(0, 0, 0)
+                .addComponent(prgBarSearch, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(btnCancelSearch)
+                .addContainerGap(243, Short.MAX_VALUE))
         );
 
         disasmTabs.addTab(bundle.getString("DisassemblerFrame.miscPanel.TabConstraints.tabTitle"), miscPanel); // NOI18N
@@ -1905,26 +1921,88 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         setVisible(false);
     }//GEN-LAST:event_CloseActionPerformed
 
-    private void txtSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtSearchActionPerformed
+    private class SearchTask extends javax.swing.SwingWorker {
 
-        //Basic text-based search function
-        //TODO: Figure out an effective method of optimizing the search and avoid
-        //hogging the emulator
+        private String search = "";
+        private int position;
 
-        String text = txtSearch.getText();
-        String current = "";
-
-        disasmList.setSelectedIndex(srcounter);
-
-        while (!current.contains(text)) {
-            DebuggerPC += 4;
-            SelectedPC = DebuggerPC;
-            RefreshDebugger(false);
-            updateSelectedIndex();
-
-            current = (String) disasmListGetSelectedValue();
-            srcounter++;
+        public SearchTask(String search, int startAt) {
+            this.search = search;
+            this.position = startAt;
         }
+
+        @Override
+        protected void done() {
+            try {
+                final Integer address = (Integer) get();
+                if (address != null) {
+                    SwingUtilities.invokeLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            // jump to the finding and select it
+                            DebuggerPC = address;
+                            SelectedPC = address;
+                            RefreshDebuggerDisassembly(false);
+                        }
+                    });
+                }
+            } catch (CancellationException ex) {
+                // do nothing
+            } catch (InterruptedException ex) {
+                // do nothing
+            } catch (ExecutionException ex) {
+                // do nothing
+            }
+
+            prgBarSearch.setIndeterminate(false);
+            txtSearch.setEnabled(true);
+            btnCancelSearch.setEnabled(false);
+
+            // if the search entry is visible change the focus back to allow
+            // continous search
+            if (txtSearch.isVisible()) {
+                txtSearch.requestFocus();
+            }
+        }
+
+        @Override
+        protected Object doInBackground() throws Exception {
+            if (search.isEmpty()) {
+                return null;
+            }
+
+            while (Memory.isAddressGood(position)) {
+                int opcode = Memory.getInstance().read32(position);
+                Instruction insn = Decoder.instruction(opcode);
+
+                // just use the text portion here
+                if (insn.disasm(position, opcode).contains(search)) {
+                    return new Integer(position);
+                }
+                position += 4;
+
+                // check if the user requested a cancellation
+                if (isCancelled()) {
+                    break;
+                }
+            }
+            return null;
+        }
+    }
+
+    private void txtSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtSearchActionPerformed
+        if (txtSearch.getText().isEmpty()) {
+            return;
+        }
+
+        // we do not know when the string will be found
+        prgBarSearch.setIndeterminate(true);
+        txtSearch.setEnabled(false);
+        btnCancelSearch.setEnabled(true);
+
+        // add 4 to the selected address to avoid stopping on the current entry
+        searchTask = new SearchTask(txtSearch.getText(), SelectedPC + 4);
+        searchTask.execute();
     }//GEN-LAST:event_txtSearchActionPerformed
 
     private void btnDumpDebugStateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDumpDebugStateActionPerformed
@@ -1981,6 +2059,15 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         State.replayGeNextFrame = btnReplay.isSelected();
     }//GEN-LAST:event_btnReplayActionPerformed
 
+    private void btnCancelSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCancelSearchActionPerformed
+        // request cancellation of the search thread
+        searchTask.cancel(false);
+    }//GEN-LAST:event_btnCancelSearchActionPerformed
+
+    private void txtSearchFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_txtSearchFocusGained
+        txtSearch.selectAll();
+    }//GEN-LAST:event_txtSearchFocusGained
+
     @Override
     public void dispose() {
         if (mbpDialog != null) {
@@ -2008,6 +2095,7 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     private javax.swing.JButton ResetToPCbutton;
     private javax.swing.JToggleButton RunDebugger;
     private javax.swing.JMenuItem SetPCToCursor;
+    private javax.swing.JButton btnCancelSearch;
     private javax.swing.JToggleButton btnCapture;
     private javax.swing.JButton btnDumpDebugState;
     private javax.swing.JToggleButton btnReplay;
@@ -2068,6 +2156,7 @@ private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     private javax.swing.JMenuItem miStepOut;
     private javax.swing.JMenuItem miStepOver;
     private javax.swing.JPanel miscPanel;
+    private javax.swing.JProgressBar prgBarSearch;
     private javax.swing.JLabel statusLabel;
     private javax.swing.JPanel statusPanel;
     private javax.swing.JToolBar tbBreakpoints;
