@@ -956,6 +956,8 @@
                           <Component id="btnDumpDebugState" alignment="0" max="32767" attributes="0"/>
                           <Component id="btnCapture" alignment="0" max="32767" attributes="0"/>
                           <Component id="btnReplay" max="32767" attributes="0"/>
+                          <Component id="prgBarSearch" max="32767" attributes="0"/>
+                          <Component id="btnCancelSearch" max="32767" attributes="0"/>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
                   </Group>
@@ -1006,7 +1008,11 @@
                       <Component id="lblSearch" min="-2" pref="11" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="txtSearch" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace pref="288" max="32767" attributes="0"/>
+                      <EmptySpace min="0" pref="0" max="-2" attributes="0"/>
+                      <Component id="prgBarSearch" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="btnCancelSearch" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace pref="243" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -1242,6 +1248,7 @@
             <Component class="javax.swing.JTextField" name="txtSearch">
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="txtSearchActionPerformed"/>
+                <EventHandler event="focusGained" listener="java.awt.event.FocusListener" parameters="java.awt.event.FocusEvent" handler="txtSearchFocusGained"/>
               </Events>
             </Component>
             <Component class="javax.swing.JLabel" name="lblSearch">
@@ -1250,6 +1257,19 @@
                   <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="DisassemblerFrame.lblSearch.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
                 </Property>
               </Properties>
+            </Component>
+            <Component class="javax.swing.JProgressBar" name="prgBarSearch">
+            </Component>
+            <Component class="javax.swing.JButton" name="btnCancelSearch">
+              <Properties>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.i18n.form.FormI18nStringEditor">
+                  <ResourceString bundle="jpcsp/languages/jpcsp.properties" key="DisassemblerFrame.btnCancelSearch.text" replaceFormat="java.util.ResourceBundle.getBundle(&quot;{bundleNameSlashes}&quot;).getString(&quot;{key}&quot;)"/>
+                </Property>
+                <Property name="enabled" type="boolean" value="false"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnCancelSearchActionPerformed"/>
+              </Events>
             </Component>
           </SubComponents>
         </Container>
