@@ -29,6 +29,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -395,8 +396,8 @@ public class Settings {
         return m;
     }
 
-    public HashMap<keyCode, String> loadController() {
-        HashMap<keyCode, String> m = new HashMap<keyCode, String>(22);
+    public Map<keyCode, String> loadController() {
+        Map<keyCode, String> m = new EnumMap<keyCode, String>(keyCode.class);
 
         m.put(keyCode.UP, readController("up"));
         m.put(keyCode.DOWN, readController("down"));
@@ -437,7 +438,7 @@ public class Settings {
         return m;
     }
 
-    public void writeKeys(HashMap<Integer, keyCode> keys) {
+    public void writeKeys(Map<Integer, keyCode> keys) {
         for (Map.Entry<Integer, keyCode> entry : keys.entrySet()) {
             keyCode key = entry.getValue();
             int value = entry.getKey();
@@ -528,7 +529,7 @@ public class Settings {
         writeSettings();
     }
 
-    public void writeController(HashMap<keyCode, String> keys) {
+    public void writeController(Map<keyCode, String> keys) {
         for (Map.Entry<keyCode, String> entry : keys.entrySet()) {
             keyCode key = entry.getKey();
             String value = entry.getValue();
@@ -649,7 +650,7 @@ public class Settings {
 
         @Override
         @SuppressWarnings({"unchecked", "rawtypes"})
-        public synchronized Enumeration keys() {
+        public synchronized Enumeration<Object> keys() {
             Enumeration keysEnum = super.keys();
             List keyList = Collections.list(keysEnum);
             Collections.sort(keyList);
@@ -671,9 +672,9 @@ public class Settings {
 
     @SuppressWarnings("unchecked")
     public void writeRecent(String cat, List<RecentElement> recent) {
-        Enumeration<String> keys = loadedSettings.keys();
+        Enumeration<Object> keys = loadedSettings.keys();
         while (keys.hasMoreElements()) {
-            String key = keys.nextElement();
+            String key = (String) keys.nextElement();
             if (key.startsWith("gui.recent." + cat)) {
                 loadedSettings.remove(key);
             }

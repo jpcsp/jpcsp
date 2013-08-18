@@ -20,7 +20,7 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
 import javax.swing.JTextField;
@@ -44,22 +44,22 @@ import net.java.games.input.Component.Identifier.Axis;
 import net.java.games.input.Component.Identifier.Button;
 
 public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
-    
+
     private static final long serialVersionUID = -732715495873159718L;
     public static final String identifierForConfig = "controlsGUI";
     private boolean getKey = false;
     private JTextField sender;
     private keyCode targetKey;
-    private HashMap<Integer, keyCode> currentKeys;
-    private HashMap<keyCode, Integer> revertKeys;
-    private HashMap<keyCode, String> currentController;
+    private Map<Integer, keyCode> currentKeys;
+    private Map<keyCode, Integer> revertKeys;
+    private Map<keyCode, String> currentController;
     private ControllerPollThread controllerPollThread;
     private static final int maxControllerFieldValueLength = 9;
-    
+
     private class ControllerPollThread extends Thread {
-        
+
         volatile protected boolean exit = false;
-        
+
         @Override
         public void run() {
             while (!exit) {
@@ -81,11 +81,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
             }
         }
     }
-    
+
     public ControlsGUI() {
         initComponents();
         loadKeys();
-        
+
         Controller controller = jpcsp.Controller.getInstance().getInputController();
         if (controller != null) {
             for (int i = 0; i < controllerBox.getItemCount(); i++) {
@@ -96,7 +96,7 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
             }
         }
         setFields();
-        
+
         fieldCircle.addKeyListener(this);
         fieldCross.addKeyListener(this);
         fieldDown.addKeyListener(this);
@@ -119,22 +119,22 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         fieldAnalogDown.addKeyListener(this);
         fieldAnalogLeft.addKeyListener(this);
         fieldAnalogRight.addKeyListener(this);
-        
+
         controllerBox.addItemListener(new ItemListener() {
             @Override
             public void itemStateChanged(ItemEvent e) {
                 onControllerChange();
             }
         });
-        
+
         controllerPollThread = new ControllerPollThread();
         controllerPollThread.setName("Controller Poll Thread");
         controllerPollThread.setDaemon(true);
         controllerPollThread.start();
-        
+
         WindowPropSaver.loadWindowProperties(this);
     }
-    
+
     @Override
     public void dispose() {
         if (controllerPollThread != null) {
@@ -143,11 +143,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         Emulator.getMainGUI().endWindowDialog();
         super.dispose();
     }
-    
+
     private void onControllerChange() {
         setFields();
     }
-    
+
     private Controller getSelectedController() {
         if (controllerBox != null) {
             int controllerIndex = controllerBox.getSelectedIndex();
@@ -157,21 +157,21 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
                 return controllers[controllerIndex];
             }
         }
-        
+
         return null;
     }
-    
+
     private void loadKeys() {
         currentKeys = Settings.getInstance().loadKeys();
-        revertKeys = new HashMap<keyCode, Integer>(22);
-        
+        revertKeys = new EnumMap<keyCode, Integer>(keyCode.class);
+
         for (Map.Entry<Integer, keyCode> entry : currentKeys.entrySet()) {
             revertKeys.put(entry.getValue(), entry.getKey());
         }
-        
+
         currentController = Settings.getInstance().loadController();
     }
-    
+
     private void setFieldValue(keyCode key, String value) {
         switch (key) {
             case DOWN:
@@ -198,7 +198,7 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
             case LANRIGHT:
                 fieldAnalogRight.setText(value);
                 break;
-            
+
             case TRIANGLE:
                 fieldTriangle.setText(value);
                 break;
@@ -223,7 +223,7 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
             case SELECT:
                 fieldSelect.setText(value);
                 break;
-            
+
             case HOME:
                 fieldHome.setText(value);
                 break;
@@ -246,7 +246,7 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
                 break;
         }
     }
-    
+
     private void setFields() {
         if (jpcsp.Controller.isKeyboardController(getSelectedController())) {
             for (Map.Entry<Integer, keyCode> entry : currentKeys.entrySet()) {
@@ -259,85 +259,85 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
             }
         }
     }
-    
+
     @Override
     public void keyTyped(KeyEvent arg0) {
     }
-    
+
     @Override
     public void keyReleased(KeyEvent arg0) {
     }
-    
+
     @Override
     public void keyPressed(KeyEvent arg0) {
         if (!getKey) {
             return;
         }
         getKey = false;
-        
+
         int pressedKey = arg0.getKeyCode();
         keyCode k = currentKeys.get(pressedKey);
-        
+
         if (k != null) {
             Emulator.log.warn("Key already used for " + k);
             sender.setText(KeyEvent.getKeyText(revertKeys.get(targetKey)));
             return;
         }
-        
+
         int oldMapping = revertKeys.get(targetKey);
         revertKeys.remove(targetKey);
         currentKeys.remove(oldMapping);
-        
+
         currentKeys.put(pressedKey, targetKey);
         revertKeys.put(targetKey, pressedKey);
         sender.setText(KeyEvent.getKeyText(pressedKey));
-        
+
         getKey = false;
     }
-    
+
     private void setKey(JTextField sender, keyCode targetKey) {
         if (getKey) {
             this.sender.setText(KeyEvent.getKeyText(revertKeys.get(this.targetKey)));
         }
         sender.setText("PressKey");
         getKey = true;
-        
+
         this.sender = sender;
         this.targetKey = targetKey;
     }
-    
+
     private void setControllerMapping(keyCode targetKey, String identifierName, JTextField field) {
         currentController.put(targetKey, identifierName);
         field.setText(getControllerFieldText(identifierName));
         getKey = false;
     }
-    
+
     private Component getControllerComponent(String identifierName) {
         Controller controller = getSelectedController();
         if (controller == null) {
             return null;
         }
-        
+
         Component[] components = controller.getComponents();
         if (components == null) {
             return null;
         }
-        
+
         for (int i = 0; i < components.length; i++) {
             if (identifierName.equals(components[i].getIdentifier().getName())) {
                 return components[i];
             }
         }
-        
+
         return null;
     }
-    
+
     private String getControllerFieldText(String identifierName) {
         Component component = getControllerComponent(identifierName);
         if (component == null) {
             return identifierName;
         }
-        
+
         String name = component.getName();
         if (name == null) {
             // Use the Identifier name if the component has no name
@@ -347,20 +347,20 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
             // into the display field
             name = identifierName;
         }
-        
+
         return name;
     }
-    
+
     private void onControllerEvent(Event event) {
         if (!getKey) {
             return;
         }
-        
+
         Component component = event.getComponent();
         float value = event.getValue();
         Identifier identifier = component.getIdentifier();
         String identifierName = identifier.getName();
-        
+
         if (identifier instanceof Button && value == 1.f) {
             setControllerMapping(targetKey, identifierName, sender);
         } else if (identifier == Axis.POV) {
@@ -412,7 +412,7 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
             }
         }
     }
-    
+
     public ComboBoxModel makeControllerComboBoxModel() {
         MutableComboBoxModel comboBox = new DefaultComboBoxModel();
         ControllerEnvironment ce = ControllerEnvironment.getDefaultEnvironment();
@@ -948,98 +948,98 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
             }
         }
         Settings.getInstance().writeString("controller.controllerNameIndex", String.valueOf(controllerNameIndex));
-        
+
         State.controller.setInputControllerIndex(controllerBox.getSelectedIndex());
         State.controller.loadKeyConfig(currentKeys);
         State.controller.loadControllerConfig(currentController);
-        
+
         setVisible(false);
 }//GEN-LAST:event_jButtonOKActionPerformed
-    
+
 private void fieldAnalogRightMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldAnalogRightMouseClicked
         setKey(fieldAnalogRight, keyCode.LANRIGHT);
 }//GEN-LAST:event_fieldAnalogRightMouseClicked
-    
+
 private void fieldAnalogLeftMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldAnalogLeftMouseClicked
         setKey(fieldAnalogLeft, keyCode.LANLEFT);
 }//GEN-LAST:event_fieldAnalogLeftMouseClicked
-    
+
 private void fieldAnalogDownMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldAnalogDownMouseClicked
         setKey(fieldAnalogDown, keyCode.LANDOWN);
 }//GEN-LAST:event_fieldAnalogDownMouseClicked
-    
+
 private void fieldAnalogUpMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldAnalogUpMouseClicked
         setKey(fieldAnalogUp, keyCode.LANUP);
 }//GEN-LAST:event_fieldAnalogUpMouseClicked
-    
+
 private void fieldMusicMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldMusicMouseClicked
         setKey(fieldMusic, keyCode.MUSIC);
 }//GEN-LAST:event_fieldMusicMouseClicked
-    
+
 private void fieldScreenMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldScreenMouseClicked
         setKey(fieldScreen, keyCode.SCREEN);
 }//GEN-LAST:event_fieldScreenMouseClicked
-    
+
 private void fieldRTriggerMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldRTriggerMouseClicked
         setKey(fieldRTrigger, keyCode.R1);
 }//GEN-LAST:event_fieldRTriggerMouseClicked
-    
+
 private void fieldLTriggerMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldLTriggerMouseClicked
         setKey(fieldLTrigger, keyCode.L1);
 }//GEN-LAST:event_fieldLTriggerMouseClicked
-    
+
 private void fieldVolPlusMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldVolPlusMouseClicked
         setKey(fieldVolPlus, keyCode.VOLPLUS);
 }//GEN-LAST:event_fieldVolPlusMouseClicked
-    
+
 private void fieldVolMinMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldVolMinMouseClicked
         setKey(fieldVolMin, keyCode.VOLMIN);
 }//GEN-LAST:event_fieldVolMinMouseClicked
-    
+
 private void fieldHomeMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldHomeMouseClicked
         setKey(fieldHome, keyCode.HOME);
 }//GEN-LAST:event_fieldHomeMouseClicked
-    
+
 private void fieldHoldMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldHoldMouseClicked
         setKey(fieldHold, keyCode.HOLD);
 }//GEN-LAST:event_fieldHoldMouseClicked
-    
+
 private void fieldDownMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldDownMouseClicked
         setKey(fieldDown, keyCode.DOWN);
 }//GEN-LAST:event_fieldDownMouseClicked
-    
+
 private void fieldLeftMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldLeftMouseClicked
         setKey(fieldLeft, keyCode.LEFT);
 }//GEN-LAST:event_fieldLeftMouseClicked
-    
+
 private void fieldUpMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldUpMouseClicked
         setKey(fieldUp, keyCode.UP);
 }//GEN-LAST:event_fieldUpMouseClicked
-    
+
 private void fieldRightMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldRightMouseClicked
         setKey(fieldRight, keyCode.RIGHT);
 }//GEN-LAST:event_fieldRightMouseClicked
-    
+
 private void fieldSquareMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldSquareMouseClicked
         setKey(fieldSquare, keyCode.SQUARE);
 }//GEN-LAST:event_fieldSquareMouseClicked
-    
+
 private void fieldTriangleMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldTriangleMouseClicked
         setKey(fieldTriangle, keyCode.TRIANGLE);
 }//GEN-LAST:event_fieldTriangleMouseClicked
-    
+
 private void fieldCircleMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldCircleMouseClicked
         setKey(fieldCircle, keyCode.CIRCLE);
 }//GEN-LAST:event_fieldCircleMouseClicked
-    
+
 private void fieldCrossMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldCrossMouseClicked
         setKey(fieldCross, keyCode.CROSS);
 }//GEN-LAST:event_fieldCrossMouseClicked
-    
+
 private void fieldSelectMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldSelectMouseClicked
         setKey(fieldSelect, keyCode.SELECT);
 }//GEN-LAST:event_fieldSelectMouseClicked
-    
+
 private void fieldStartMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldStartMouseClicked
         setKey(fieldStart, keyCode.START);
 }//GEN-LAST:event_fieldStartMouseClicked
