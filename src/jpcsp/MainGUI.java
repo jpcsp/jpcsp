@@ -107,9 +107,11 @@ import org.apache.log4j.xml.DOMConfigurator;
 
 import com.jidesoft.plaf.LookAndFeelFactory;
 import java.awt.AWTEvent;
+import java.awt.Component;
 import java.awt.Toolkit;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
@@ -1391,7 +1393,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         for (RecentElement umd : recentUMD) {
             JMenuItem item = new JMenuItem(umd.toString());
-            item.addActionListener(new RecentElementActionListener(RecentElementActionListener.TYPE_UMD, umd.path));
+            item.addActionListener(new RecentElementActionListener(this, RecentElementActionListener.TYPE_UMD, umd.path));
             RecentMenu.add(item);
         }
 
@@ -1401,7 +1403,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         for (RecentElement file : recentFile) {
             JMenuItem item = new JMenuItem(file.toString());
-            item.addActionListener(new RecentElementActionListener(RecentElementActionListener.TYPE_FILE, file.path));
+            item.addActionListener(new RecentElementActionListener(this, RecentElementActionListener.TYPE_FILE, file.path));
             RecentMenu.add(item);
         }
     }
@@ -1589,6 +1591,19 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         populateRecentMenu();
     }
 
+    private void removeRecentFile(String file) {
+        // use Iterator to safely remove elements while traversing
+        Iterator<RecentElement> it = recentFile.iterator();
+        while (it.hasNext()) {
+            RecentElement re = it.next();
+            if (re.path.equals(file)) {
+                it.remove();
+            }
+        }
+        Settings.getInstance().writeRecent("file", recentFile);
+        populateRecentMenu();
+    }
+
     private void addRecentUMD(File file, String title) {
         try {
             String s = file.getCanonicalPath();
@@ -1606,6 +1621,19 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void removeRecentUMD(String file) {
+        // use Iterator to safely remove elements while traversing
+        Iterator<RecentElement> it = recentUMD.iterator();
+        while (it.hasNext()) {
+            RecentElement re = it.next();
+            if (re.path.equals(file)) {
+                it.remove();
+            }
+        }
+        Settings.getInstance().writeRecent("umd", recentUMD);
+        populateRecentMenu();
     }
 
 private void PauseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseButtonActionPerformed
@@ -1698,7 +1726,7 @@ private void OpenMemStickActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 
 private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
         // this is only needed for the main screen, as it can be closed without
-        // being deactivated first    
+        // being deactivated first
         WindowPropSaver.saveWindowProperties(this);
         exitEmu();
 }//GEN-LAST:event_formWindowClosing
@@ -2989,10 +3017,12 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
 
         public static final int TYPE_UMD = 0;
         public static final int TYPE_FILE = 1;
-        int type;
-        String path;
+        private int type;
+        private String path;
+        private Component parent;
 
-        public RecentElementActionListener(int type, String path) {
+        public RecentElementActionListener(Component parent, int type, String path) {
+            this.parent = parent;
             this.path = path;
             this.type = type;
         }
@@ -3007,6 +3037,16 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                     loadFile(file);
                 }
                 loadAndRun();
+            } else {
+                ResourceBundle bundle = ResourceBundle.getBundle("jpcsp/languages/jpcsp");
+                String messageFormat = bundle.getString("MainGUI.RecentFileNotFound.text");
+                String message = MessageFormat.format(messageFormat, path);
+                JpcspDialogManager.showError(parent, message);
+                if (type == TYPE_UMD) {
+                    removeRecentUMD(path);
+                } else {
+                    removeRecentFile(path);
+                }
             }
         }
     }
