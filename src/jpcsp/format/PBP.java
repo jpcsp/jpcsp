@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class PBP {
-
     private static final long PBP_MAGIC = 0x50425000L;
     private static final String PBP_UNPACK_PATH_PREFIX = "unpacked-pbp/";
     private String info;
@@ -38,21 +37,21 @@ public class PBP {
     private int size_snd0_at3;
     private int size_psp_data;
     private int size_psar_data;
-    private long p_magic;
-    private long p_version;
-    private long p_offset_param_sfo;
-    private long p_offset_icon0_png;
-    private long p_offset_icon1_pmf;
-    private long p_offset_pic0_png;
-    private long p_offset_pic1_png;
-    private long p_offset_snd0_at3;
-    private long p_offset_psp_data;
-    private long p_offset_psar_data;
+    private int p_magic;
+    private int p_version;
+    private int p_offset_param_sfo;
+    private int p_offset_icon0_png;
+    private int p_offset_icon1_pmf;
+    private int p_offset_pic0_png;
+    private int p_offset_pic1_png;
+    private int p_offset_snd0_at3;
+    private int p_offset_psp_data;
+    private int p_offset_psar_data;
     private Elf32 elf32;
     private PSF psf;
 
     public boolean isValid() {
-        return (size_pbp != 0 && (p_magic & 0xFFFFFFFFL) == PBP_MAGIC);
+        return size_pbp != 0 && p_magic == PBP_MAGIC;
     }
 
     public void setElf32(Elf32 elf) {
@@ -92,14 +91,14 @@ public class PBP {
             p_offset_psp_data = readUWord(f);
             p_offset_psar_data = readUWord(f);
 
-            size_param_sfo = (int) (p_offset_icon0_png - p_offset_param_sfo);
-            size_icon0_png = (int) (p_offset_icon1_pmf - p_offset_icon0_png);
-            size_icon1_pmf = (int) (p_offset_pic0_png - p_offset_icon1_pmf);
-            size_pic0_png = (int) (p_offset_pic1_png - p_offset_pic0_png);
-            size_pic1_png = (int) (p_offset_snd0_at3 - p_offset_pic1_png);
-            size_snd0_at3 = (int) (p_offset_psp_data - p_offset_snd0_at3);
-            size_psp_data = (int) (p_offset_psar_data - p_offset_psp_data);
-            size_psar_data = (int) (size_pbp - p_offset_psar_data);
+            size_param_sfo = p_offset_icon0_png - p_offset_param_sfo;
+            size_icon0_png = p_offset_icon1_pmf - p_offset_icon0_png;
+            size_icon1_pmf = p_offset_pic0_png - p_offset_icon1_pmf;
+            size_pic0_png = p_offset_pic1_png - p_offset_pic0_png;
+            size_pic1_png = p_offset_snd0_at3 - p_offset_pic1_png;
+            size_snd0_at3 = p_offset_psp_data - p_offset_snd0_at3;
+            size_psp_data = p_offset_psar_data - p_offset_psp_data;
+            size_psar_data = size_pbp - p_offset_psar_data;
 
             info = toString();
         }
@@ -107,7 +106,7 @@ public class PBP {
 
     public PSF readPSF(ByteBuffer f) throws IOException {
         if (p_offset_param_sfo > 0) {
-            f.position((int) p_offset_param_sfo);
+            f.position(p_offset_param_sfo);
             psf = new PSF(p_offset_param_sfo);
             psf.read(f);
             return psf;
@@ -132,43 +131,43 @@ public class PBP {
         return str.toString();
     }
 
-    public long getMagic() {
+    public int getMagic() {
         return p_magic;
     }
 
-    public long getVersion() {
+    public int getVersion() {
         return p_version;
     }
 
-    public long getOffsetParam() {
+    public int getOffsetParam() {
         return p_offset_param_sfo;
     }
 
-    public long getOffsetIcon0() {
+    public int getOffsetIcon0() {
         return p_offset_icon0_png;
     }
 
-    public long getOffsetIcon1() {
+    public int getOffsetIcon1() {
         return p_offset_icon1_pmf;
     }
 
-    public long getOffsetPic0() {
+    public int getOffsetPic0() {
         return p_offset_pic0_png;
     }
 
-    public long getOffsetPic1() {
+    public int getOffsetPic1() {
         return p_offset_pic1_png;
     }
 
-    public long getOffsetSnd0() {
+    public int getOffsetSnd0() {
         return p_offset_snd0_at3;
     }
 
-    public long getOffsetPspData() {
+    public int getOffsetPspData() {
         return p_offset_psp_data;
     }
 
-    public long getOffsetPsarData() {
+    public int getOffsetPsarData() {
         return p_offset_psar_data;
     }
 
@@ -198,7 +197,7 @@ public class PBP {
         }
         if (pbp.size_psp_data > 0) {
             byte[] data = new byte[pbp.size_psp_data];
-            f.position((int) pbp.p_offset_psp_data);
+            f.position(pbp.p_offset_psp_data);
             f.get(data);
             
             ByteBuffer d = ByteBuffer.wrap(data);
@@ -223,7 +222,7 @@ public class PBP {
         dir.mkdir();
         if (pbp.size_param_sfo > 0) {
             byte[] data = new byte[pbp.size_param_sfo];
-            f.position((int) pbp.p_offset_param_sfo);
+            f.position(pbp.p_offset_param_sfo);
             f.get(data);
             FileOutputStream f1 = new FileOutputStream(PBP_UNPACK_PATH_PREFIX + "param.sfo");
             f1.write(data);
@@ -231,7 +230,7 @@ public class PBP {
         }
         if (pbp.size_icon0_png > 0) {
             byte[] data = new byte[pbp.size_icon0_png];
-            f.position((int) pbp.p_offset_icon0_png);
+            f.position(pbp.p_offset_icon0_png);
             f.get(data);
             FileOutputStream f1 = new FileOutputStream(PBP_UNPACK_PATH_PREFIX + "icon0.png");
             f1.write(data);
@@ -239,7 +238,7 @@ public class PBP {
         }
         if (pbp.size_icon1_pmf > 0) {
             byte[] data = new byte[pbp.size_icon1_pmf];
-            f.position((int) pbp.p_offset_icon1_pmf);
+            f.position(pbp.p_offset_icon1_pmf);
             f.get(data);
             FileOutputStream f1 = new FileOutputStream(PBP_UNPACK_PATH_PREFIX + "icon1.pmf");
             f1.write(data);
@@ -247,7 +246,7 @@ public class PBP {
         }
         if (pbp.size_pic0_png > 0) {
             byte[] data = new byte[pbp.size_pic0_png];
-            f.position((int) pbp.p_offset_pic0_png);
+            f.position(pbp.p_offset_pic0_png);
             f.get(data);
             FileOutputStream f1 = new FileOutputStream(PBP_UNPACK_PATH_PREFIX + "pic0.png");
             f1.write(data);
@@ -255,7 +254,7 @@ public class PBP {
         }
         if (pbp.size_pic1_png > 0) {
             byte[] data = new byte[pbp.size_pic1_png];
-            f.position((int) pbp.p_offset_pic1_png);
+            f.position(pbp.p_offset_pic1_png);
             f.get(data);
             FileOutputStream f1 = new FileOutputStream(PBP_UNPACK_PATH_PREFIX + "pic1.png");
             f1.write(data);
@@ -263,7 +262,7 @@ public class PBP {
         }
         if (pbp.size_snd0_at3 > 0) {
             byte[] data = new byte[pbp.size_snd0_at3];
-            f.position((int) pbp.p_offset_snd0_at3);
+            f.position(pbp.p_offset_snd0_at3);
             f.get(data);
             FileOutputStream f1 = new FileOutputStream(PBP_UNPACK_PATH_PREFIX + "snd0.at3");
             f1.write(data);
@@ -271,7 +270,7 @@ public class PBP {
         }
         if (pbp.size_psp_data > 0) {
             byte[] data = new byte[pbp.size_psp_data];
-            f.position((int) pbp.p_offset_psp_data);
+            f.position(pbp.p_offset_psp_data);
             f.get(data);
             FileOutputStream f1 = new FileOutputStream(PBP_UNPACK_PATH_PREFIX + "data.psp");
             f1.write(data);
@@ -279,7 +278,7 @@ public class PBP {
         }
         if (pbp.size_psar_data > 0) {
             byte[] data = new byte[pbp.size_psar_data];
-            f.position((int) pbp.p_offset_psar_data);
+            f.position(pbp.p_offset_psar_data);
             f.get(data);
             FileOutputStream f1 = new FileOutputStream(PBP_UNPACK_PATH_PREFIX + "data.psar");
             f1.write(data);

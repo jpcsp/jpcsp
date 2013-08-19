@@ -26,7 +26,6 @@ import jpcsp.Emulator;
 import jpcsp.util.Utilities;
 
 public class Elf32 {
-
     // File offset
     private int elfOffset;
 
@@ -51,8 +50,7 @@ public class Elf32 {
         }
     }
 
-    private void loadHeader(ByteBuffer f) throws IOException
-    {
+    private void loadHeader(ByteBuffer f) throws IOException {
         header = new Elf32Header(f);
         ElfInfo = header.toString();
     }
@@ -62,7 +60,7 @@ public class Elf32 {
         StringBuilder sb = new StringBuilder();
 
         for (int i = 0; i < header.getE_phnum(); i++) {
-            f.position((int)(elfOffset + header.getE_phoff() + (i * header.getE_phentsize())));
+            f.position(elfOffset + header.getE_phoff() + (i * header.getE_phentsize()));
             Elf32ProgramHeader phdr = new Elf32ProgramHeader(f);
 
             // Save loaded header
@@ -90,7 +88,7 @@ public class Elf32 {
         // - save headers
         // - find .shstrtab
         for (int i = 0; i < header.getE_shnum(); i++) {
-            f.position((int)(elfOffset + header.getE_shoff() + (i * header.getE_shentsize())));
+            f.position(elfOffset + header.getE_shoff() + (i * header.getE_shentsize()));
             Elf32SectionHeader shdr = new Elf32SectionHeader(f);
 
             // Save loaded header
@@ -116,7 +114,7 @@ public class Elf32 {
         StringBuilder sb = new StringBuilder();
         int SectionCounter = 0;
         for (Elf32SectionHeader shdr : sectionHeaderList) {
-            int position = (int)(elfOffset + shstrtab.getSh_offset() + shdr.getSh_name());
+            int position = elfOffset + shstrtab.getSh_offset() + shdr.getSh_name();
             f.position(position); // removed past end of file check (fiveofhearts 18/10/08)
 
             // Number the section

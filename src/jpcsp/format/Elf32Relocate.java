@@ -21,12 +21,9 @@ import static jpcsp.util.Utilities.readUWord;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import jpcsp.util.Utilities;
-
 public class Elf32Relocate {
-
-    private long r_offset;
-    private long r_info;
+    private int r_offset;
+    private int r_info;
 
     public static int sizeof() {
         return 8;
@@ -40,24 +37,24 @@ public class Elf32Relocate {
     @Override
 	public String toString() {
         StringBuilder str = new StringBuilder();
-        str.append("r_offset " + "\t " + Utilities.formatString("long", Long.toHexString(getR_offset() & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("r_info " + "\t\t " + Utilities.formatString("long", Long.toHexString(getR_info() & 0xFFFFFFFFL).toUpperCase()) + "\n");
+        str.append(String.format("r_offset \t 0x%08X\n", getR_offset()));
+        str.append(String.format("r_info \t\t 0x%08X\n", getR_info()));
         return str.toString();
     }
 
-    public long getR_offset() {
+    public int getR_offset() {
         return r_offset;
     }
 
-    public void setR_offset(long r_offset) {
+    public void setR_offset(int r_offset) {
         this.r_offset = r_offset;
     }
 
-    public long getR_info() {
+    public int getR_info() {
         return r_info;
     }
 
-    public void setR_info(long r_info) {
+    public void setR_info(int r_info) {
         this.r_info = r_info;
     }
 }

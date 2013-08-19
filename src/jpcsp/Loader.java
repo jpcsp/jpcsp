@@ -752,9 +752,10 @@ public class Loader {
      * @param f        The position of this buffer must be at the start of a
      *                 list of Elf32Rel structs.
      * @param RelCount The number of Elf32Rel structs to read and process.
+     * @param pspRelocationFormat true if the relocation are in the PSP specific format,
+     *                            false if the relocation is in standard ELF format.
      */
-    private void relocateFromBuffer(ByteBuffer f, SceModule module, int baseAddress,
-        Elf32 elf, int RelCount) throws IOException {
+    private void relocateFromBuffer(ByteBuffer f, SceModule module, int baseAddress, Elf32 elf, int RelCount, boolean pspRelocationFormat) throws IOException {
 
     	Elf32Relocate rel = new Elf32Relocate();
         int AHL = 0; // (AHI << 16) | (ALO & 0xFFFF)
@@ -764,19 +765,30 @@ public class Loader {
         for (int i = 0; i < RelCount; i++) {
             rel.read(f);
 
-            int R_TYPE    = (int)( rel.getR_info()        & 0xFF);
-            int OFS_BASE  = (int)((rel.getR_info() >>  8) & 0xFF);
-            int ADDR_BASE = (int)((rel.getR_info() >> 16) & 0xFF);
-            long R_OFFSET = rel.getR_offset();
-            if (log.isTraceEnabled()) {
-            	log.trace(String.format("Relocation #%d type=%d, Offset PH#%d, Base Offset PH#%d, Offset 0x%08X", i, R_TYPE, OFS_BASE, ADDR_BASE, R_OFFSET));
+            int phOffset;
+            int phBaseOffset;
+
+            int R_OFFSET = rel.getR_offset();
+            int R_TYPE = rel.getR_info() & 0xFF;
+            if (pspRelocationFormat) {
+	            int OFS_BASE  = (rel.getR_info() >>  8) & 0xFF;
+	            int ADDR_BASE = (rel.getR_info() >> 16) & 0xFF;
+	            if (log.isTraceEnabled()) {
+	            	log.trace(String.format("Relocation #%d type=%d, Offset PH#%d, Base Offset PH#%d, Offset 0x%08X", i, R_TYPE, OFS_BASE, ADDR_BASE, R_OFFSET));
+	            }
+
+	            phOffset = elf.getProgramHeader(OFS_BASE).getP_vaddr();
+	            phBaseOffset = elf.getProgramHeader(ADDR_BASE).getP_vaddr();
+            } else {
+            	phOffset = 0;
+            	phBaseOffset = 0;
+	            if (log.isTraceEnabled()) {
+	            	log.trace(String.format("Relocation #%d type=%d, Symbol 0x%06X, Offset 0x%08X", i, R_TYPE, rel.getR_info() >> 8, R_OFFSET));
+	            }
             }
 
-            int phOffset     = (int)elf.getProgramHeader(OFS_BASE).getP_vaddr();
-            int phBaseOffset = (int)elf.getProgramHeader(ADDR_BASE).getP_vaddr();
-
             // Address of data to relocate
-            int data_addr = (int)(baseAddress + R_OFFSET + phOffset);
+            int data_addr = baseAddress + R_OFFSET + phOffset;
             // Value of data to relocate
             int data = readUnaligned32(mem, data_addr);
             long result = 0; // Used to hold the result of relocation, OR this back into data
@@ -788,9 +800,9 @@ public class Loader {
             int rel16 = data & 0x0000FFFF;
 
             int A = 0; // addend
-            int S = (int) baseAddress + phBaseOffset;
-            int GP_ADDR = (int) baseAddress + (int) R_OFFSET;
-            int GP_OFFSET = GP_ADDR - ((int) baseAddress & 0xFFFF0000);
+            int S = baseAddress + phBaseOffset;
+            int GP_ADDR = baseAddress + R_OFFSET;
+            int GP_OFFSET = GP_ADDR - (baseAddress & 0xFFFF0000);
 
             switch (R_TYPE) {
                 case 0: //R_MIPS_NONE
@@ -882,7 +894,7 @@ public class Loader {
                         log.warn("Relocation overflow (R_MIPS_GPREL16)");
                     }
                     data &= ~0x0000FFFF;
-                    data |= (int) (result & 0x0000FFFF);
+                    data |= result & 0x0000FFFF;
                     if (log.isTraceEnabled()) {
                 		log.trace(String.format("R_MIPS_GPREL16 addr=%08X before=%08X after=%08X", data_addr, word32, data));
                     }
@@ -898,6 +910,24 @@ public class Loader {
         }
     }
 
+    private boolean mustRelocate(Elf32 elf, Elf32SectionHeader shdr) {
+    	if (shdr.getSh_type() == Elf32SectionHeader.SHT_PRXREL) {
+    		// PSP PRX relocation section
+    		return true;
+    	}
+
+    	if (shdr.getSh_type() == Elf32SectionHeader.SHT_REL) {
+    		// Standard ELF relocation section
+    		Elf32SectionHeader relatedShdr = elf.getSectionHeader(shdr.getSh_info());
+    		// No relocation required for a debug section (sh_flags==SHF_NONE)
+    		if (relatedShdr != null && relatedShdr.getSh_flags() != Elf32SectionHeader.SHF_NONE) {
+    			return true;
+    		}
+    	}
+
+    	return false;
+    }
+
     /** Uses info from the elf program headers and elf section headers to
      * relocate a PRX. */
     private void relocateFromHeaders(ByteBuffer f, SceModule module, int baseAddress,
@@ -907,13 +937,13 @@ public class Loader {
         int i = 0;
         for (Elf32ProgramHeader phdr : elf.getProgramHeaderList()) {
             if (phdr.getP_type() == 0x700000A0L) {
-                int RelCount = (int)phdr.getP_filesz() / Elf32Relocate.sizeof();
+                int RelCount = phdr.getP_filesz() / Elf32Relocate.sizeof();
                 if (log.isDebugEnabled()) {
                 	log.debug("PH#" + i + ": relocating " + RelCount + " entries");
                 }
 
-                f.position((int)(elfOffset + phdr.getP_offset()));
-                relocateFromBuffer(f, module, baseAddress, elf, RelCount);
+                f.position(elfOffset + phdr.getP_offset());
+                relocateFromBuffer(f, module, baseAddress, elf, RelCount, true);
                 return;
             } else if (phdr.getP_type() == 0x700000A1L) {
                 log.warn("Unimplemented:PH#" + i + ": relocate type 0x700000A1");
@@ -923,18 +953,14 @@ public class Loader {
 
         // Relocate from section headers
         for (Elf32SectionHeader shdr : elf.getSectionHeaderList()) {
-            if (shdr.getSh_type() == Elf32SectionHeader.SHT_REL) {
-                log.warn(shdr.getSh_namez() + ": not relocating section");
-            }
-
-            if (shdr.getSh_type() == Elf32SectionHeader.SHT_PRXREL) {
-                int RelCount = (int)shdr.getSh_size() / Elf32Relocate.sizeof();
+            if (mustRelocate(elf, shdr)) {
+                int RelCount = shdr.getSh_size() / Elf32Relocate.sizeof();
                 if (log.isDebugEnabled()) {
                 	log.debug(shdr.getSh_namez() + ": relocating " + RelCount + " entries");
                 }
 
-                f.position((int)(elfOffset + shdr.getSh_offset()));
-                relocateFromBuffer(f, module, baseAddress, elf, RelCount);
+                f.position(elfOffset + shdr.getSh_offset());
+                relocateFromBuffer(f, module, baseAddress, elf, RelCount, shdr.getSh_type() != Elf32SectionHeader.SHT_REL);
             }
         }
     }

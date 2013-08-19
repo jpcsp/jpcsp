@@ -26,27 +26,25 @@ import java.nio.ByteBuffer;
 
 import jpcsp.Memory;
 
-public class Elf32StubHeader
-{
+public class Elf32StubHeader {
     // Resolved version of s_modulename in a Java String
     private String s_modulenamez;
 
-    private long s_modulename;
+    private int s_modulename;
     private int s_version;
     private int s_flags;
     private int s_size;
     private int s_vstub_size;
     private int s_imports;
-    private long s_nid;
-    private long s_text;
-    private long s_vstub;
+    private int s_nid;
+    private int s_text;
+    private int s_vstub;
 
     public static int sizeof() {
     	return 20;
     }
 
-    public Elf32StubHeader(ByteBuffer f) throws IOException
-    {
+    public Elf32StubHeader(ByteBuffer f) throws IOException {
         s_modulenamez = "";
 
         s_modulename = readUWord(f);
@@ -62,8 +60,7 @@ public class Elf32StubHeader
         }
     }
 
-    public Elf32StubHeader(Memory mem, int address)
-    {
+    public Elf32StubHeader(Memory mem, int address) {
         s_modulenamez = "";
 
         s_modulename = mem.read32(address);
@@ -80,8 +77,7 @@ public class Elf32StubHeader
     }
 
     @Override
-	public String toString()
-    {
+	public String toString() {
         StringBuilder str = new StringBuilder();
         if (s_modulenamez != null && s_modulenamez.length() > 0)
             str.append(s_modulenamez + "\n");
@@ -106,7 +102,7 @@ public class Elf32StubHeader
         s_modulenamez = moduleName;
     }
 
-    public long getOffsetModuleName() {
+    public int getOffsetModuleName() {
         return s_modulename;
     }
 
@@ -131,15 +127,15 @@ public class Elf32StubHeader
         return s_imports;
     }
 
-    public long getOffsetNid() {
+    public int getOffsetNid() {
         return s_nid;
     }
 
-    public long getOffsetText() {
+    public int getOffsetText() {
         return s_text;
     }
 
-    public long getVStub() {
+    public int getVStub() {
     	return s_vstub;
     }
 

@@ -23,7 +23,6 @@ import java.util.Hashtable;
  * @author hli
  */
 class Module {
-
     private final String m_name;
     private Hashtable<String, String> m_functions;
 

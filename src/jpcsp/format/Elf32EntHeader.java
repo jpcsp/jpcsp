@@ -26,18 +26,17 @@ import java.nio.ByteBuffer;
 
 import jpcsp.Memory;
 
-public class Elf32EntHeader
-{
+public class Elf32EntHeader {
     // Resolved version of modulename and in a Java String
     private String modulenamez;
 
-    private long modulename;
+    private int modulename;
     private int version;
     private int attr;
-    private short size;
-    private short vcount;
+    private int size;
+    private int vcount;
     private int fcount;
-    private long resident;
+    private int resident;
     private int vcountNew;
     private int unknown1;
     private int unknown2;
@@ -46,8 +45,7 @@ public class Elf32EntHeader
     	return 16;
     }
 
-    public Elf32EntHeader(ByteBuffer f) throws IOException
-    {
+    public Elf32EntHeader(ByteBuffer f) throws IOException {
         modulenamez = "";
 
         modulename = readUWord(f);
@@ -64,15 +62,14 @@ public class Elf32EntHeader
         }
     }
 
-    public Elf32EntHeader(Memory mem, int address)
-    {
+    public Elf32EntHeader(Memory mem, int address) {
         modulenamez = "";
 
         modulename = mem.read32(address);
         version = mem.read16(address + 4);
         attr = mem.read16(address + 6);
-        size = (short)mem.read8(address + 8);
-        vcount = (short)mem.read8(address + 9);
+        size = mem.read8(address + 8);
+        vcount = mem.read8(address + 9);
         fcount = mem.read16(address + 10);
         resident = mem.read32(address + 12);
         if (size >= 5) {
@@ -83,11 +80,11 @@ public class Elf32EntHeader
     }
 
     @Override
-	public String toString()
-    {
+	public String toString() {
         StringBuilder str = new StringBuilder();
-        if (modulenamez != null && modulenamez.length() > 0)
+        if (modulenamez != null && modulenamez.length() > 0) {
             str.append(modulenamez + "\n");
+        }
         str.append("modulename" + "\t" +  formatString("long", Long.toHexString(modulename & 0xFFFFFFFFL).toUpperCase()) + "\n");
         str.append("version" + "\t\t" +  formatString("short", Long.toHexString(version & 0xFFFF).toUpperCase()) + "\n");
         str.append("attr" + "\t\t" +  formatString("short", Long.toHexString(attr & 0xFFFF).toUpperCase()) + "\n");
@@ -111,7 +108,7 @@ public class Elf32EntHeader
         modulenamez = moduleName;
     }
 
-    public long getOffsetModuleName() {
+    public int getOffsetModuleName() {
         return modulename;
     }
 
@@ -140,7 +137,7 @@ public class Elf32EntHeader
         return fcount;
     }
 
-    public long getOffsetResident() {
+    public int getOffsetResident() {
         return resident;
     }
 }
