@@ -52,8 +52,8 @@ public class PSF {
     public final static int PSF_DATA_TYPE_STRING = 2;
     public final static int PSF_DATA_TYPE_INT32 = 4;
 
-    public PSF(long psfOffset) {
-        this.psfOffset = (int)psfOffset;
+    public PSF(int psfOffset) {
+        this.psfOffset = psfOffset;
         size = 0;
 
         sizeDirty = true;
@@ -74,17 +74,17 @@ public class PSF {
     public void read(ByteBuffer f) throws IOException {
         psfOffset = f.position();
 
-        ident = (int)readUWord(f);
+        ident = readUWord(f);
         if (ident != PSF_IDENT) {
             System.out.println("Not a valid PSF file (ident=" + String.format("%08X", ident) + ")");
             return;
         }
 
         // header
-        version = (int)readUWord(f); // 0x0101
-        keyTableOffset = (int)readUWord(f);
-        valueTableOffset = (int)readUWord(f);
-        indexEntryCount = (int)readUWord(f);
+        version = readUWord(f); // 0x0101
+        keyTableOffset = readUWord(f);
+        valueTableOffset = readUWord(f);
+        indexEntryCount = readUWord(f);
 
         // index table
         for (int i = 0; i < indexEntryCount; i++) {
@@ -121,7 +121,7 @@ public class PSF {
                     break;
 
                 case PSF_DATA_TYPE_INT32:
-                    pair.data = (int)readUWord(f);
+                    pair.data = readUWord(f);
 
                     //System.out.println(String.format("offset=%08X key='%s' int32 %08X %d [len=%d]",
                     //    keyTableOffset + pair.keyOffset, pair.key, pair.data, pair.data, pair.dataSize));
@@ -451,9 +451,9 @@ public class PSF {
             keyOffset = readUHalf(f);
             unknown1 = readUByte(f);
             dataType = readUByte(f);
-            dataSize = (int)readUWord(f);
-            dataSizePadded = (int)readUWord(f);
-            valueOffset = (int)readUWord(f);
+            dataSize = readUWord(f);
+            dataSizePadded = readUWord(f);
+            valueOffset = readUWord(f);
         }
 
         /** only writes the index entry, since this class has doesn't know about the psf/key/value offsets */

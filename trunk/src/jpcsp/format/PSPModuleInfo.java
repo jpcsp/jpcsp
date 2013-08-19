@@ -28,11 +28,11 @@ public class PSPModuleInfo extends pspAbstractMemoryMappedStructure {
 	private static final int NAME_LENGTH = 28;
     private int m_attr;
     private int m_version;
-    private long m_gp;
-    private long m_exports;
-    private long m_exp_end;
-    private long m_imports;
-    private long m_imp_end;
+    private int m_gp;
+    private int m_exports;
+    private int m_exp_end;
+    private int m_imports;
+    private int m_imp_end;
     private String m_namez = ""; // String version of m_name
 
     public void read(ByteBuffer f) throws IOException {
@@ -72,11 +72,11 @@ public class PSPModuleInfo extends pspAbstractMemoryMappedStructure {
 		write16((short) m_attr);
 		write16((short) m_version);
 		writeStringNZ(NAME_LENGTH, m_namez);
-		write32((int) m_gp);
-		write32((int) m_exports);
-		write32((int) m_exp_end);
-		write32((int) m_imports);
-		write32((int) m_imp_end);
+		write32(m_gp);
+		write32(m_exports);
+		write32(m_exp_end);
+		write32(m_imports);
+		write32(m_imp_end);
 	}
 
 	public int getM_attr() {
@@ -87,23 +87,23 @@ public class PSPModuleInfo extends pspAbstractMemoryMappedStructure {
         return m_version;
     }
 
-    public long getM_gp() {
+    public int getM_gp() {
         return m_gp;
     }
 
-    public long getM_exports() {
+    public int getM_exports() {
         return m_exports;
     }
 
-    public long getM_exp_end() {
+    public int getM_exp_end() {
         return m_exp_end;
     }
 
-    public long getM_imports() {
+    public int getM_imports() {
         return m_imports;
     }
 
-    public long getM_imp_end() {
+    public int getM_imp_end() {
         return m_imp_end;
     }
 

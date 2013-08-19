@@ -27,18 +27,38 @@ import java.nio.ByteBuffer;
 import jpcsp.Memory;
 
 public class Elf32SectionHeader {
+    // Flags
+    public static final int SHF_NONE        = 0x00000000;
+    public static final int SHF_WRITE       = 0x00000001;
+    public static final int SHF_ALLOCATE    = 0x00000002;
+    public static final int SHF_EXECUTE     = 0x00000004;
+
+    // Types
+    public static final int SHT_NULL        = 0x00000000;
+    public static final int SHT_PROGBITS    = 0x00000001;
+    public static final int SHT_SYMTAB      = 0x00000002;
+    public static final int SHT_STRTAB      = 0x00000003;
+    public static final int SHT_RELA        = 0x00000004;
+    public static final int SHT_HASH        = 0x00000005;
+    public static final int SHT_DYNAMIC     = 0x00000006;
+    public static final int SHT_NOTE        = 0x00000007;
+    public static final int SHT_NOBITS      = 0x00000008;
+    public static final int SHT_REL         = 0x00000009;
+    public static final int SHT_SHLIB       = 0x0000000A;
+    public static final int SHT_DYNSYM      = 0x0000000B;
+    public static final int SHT_PRXREL      = 0x700000A0;
 
     private String sh_namez = "";
-    private long sh_name;
+    private int sh_name;
     private int sh_type;
     private int sh_flags;
-    private long sh_addr;
-    private long sh_offset;
-    private long sh_size;
+    private int sh_addr;
+    private int sh_offset;
+    private int sh_size;
     private int sh_link;
     private int sh_info;
     private int sh_addralign;
-    private long sh_entsize;
+    private int sh_entsize;
 
     public static int sizeof() {
         return 40;
@@ -97,7 +117,7 @@ public class Elf32SectionHeader {
         this.sh_namez = sh_namez;
     }
 
-    public long getSh_name() {
+    public int getSh_name() {
         return sh_name;
     }
 
@@ -109,15 +129,15 @@ public class Elf32SectionHeader {
         return sh_flags;
     }
 
-    public long getSh_addr() {
+    public int getSh_addr() {
         return sh_addr;
     }
 
-    public long getSh_offset() {
+    public int getSh_offset() {
         return sh_offset;
     }
 
-    public long getSh_size() {
+    public int getSh_size() {
         return sh_size;
     }
 
@@ -133,28 +153,7 @@ public class Elf32SectionHeader {
         return sh_addralign;
     }
 
-    public long getSh_entsize() {
+    public int getSh_entsize() {
         return sh_entsize;
     }
-
-    // Flags
-    public static final int SHF_NONE        = 0x00000000;
-    public static final int SHF_WRITE       = 0x00000001;
-    public static final int SHF_ALLOCATE    = 0x00000002;
-    public static final int SHF_EXECUTE     = 0x00000004;
-
-    // Types
-    public static final int SHT_NULL        = 0x00000000;
-    public static final int SHT_PROGBITS    = 0x00000001;
-    public static final int SHT_SYMTAB      = 0x00000002;
-    public static final int SHT_STRTAB      = 0x00000003;
-    public static final int SHT_RELA        = 0x00000004;
-    public static final int SHT_HASH        = 0x00000005;
-    public static final int SHT_DYNAMIC     = 0x00000006;
-    public static final int SHT_NOTE        = 0x00000007;
-    public static final int SHT_NOBITS      = 0x00000008;
-    public static final int SHT_REL         = 0x00000009;
-    public static final int SHT_SHLIB       = 0x0000000A;
-    public static final int SHT_DYNSYM      = 0x0000000B;
-    public static final int SHT_PRXREL      = 0x700000A0;
 }

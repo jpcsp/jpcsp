@@ -16,6 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format;
 
+import static jpcsp.util.Utilities.readStringNZ;
+import static jpcsp.util.Utilities.readUByte;
+import static jpcsp.util.Utilities.readUHalf;
+import static jpcsp.util.Utilities.readWord;
+
 import java.io.IOException;
 import java.io.File;
 import java.io.RandomAccessFile;
@@ -78,65 +83,65 @@ public class PSP {
             return;
         }
 
-        magic = Utilities.readWord(f);
-        mod_attr = Utilities.readUHalf(f);
-        comp_mod_attr = Utilities.readUHalf(f);
-        mod_ver_lo = Utilities.readUByte(f);
-        mod_ver_hi = Utilities.readUByte(f);
-        modname = Utilities.readStringNZ(f, 28);
-        mod_version = Utilities.readUByte(f);
-        nsegments = Utilities.readUByte(f);
-        elf_size = Utilities.readWord(f);
-        psp_size = Utilities.readWord(f);
-        boot_entry = Utilities.readWord(f);
-        modinfo_offset = Utilities.readWord(f);
-        bss_size = Utilities.readWord(f);
-        seg_align[0] = Utilities.readUHalf(f);
-        seg_align[1] = Utilities.readUHalf(f);
-        seg_align[2] = Utilities.readUHalf(f);
-        seg_align[3] = Utilities.readUHalf(f);
-        seg_address[0] = Utilities.readWord(f);
-        seg_address[1] = Utilities.readWord(f);
-        seg_address[2] = Utilities.readWord(f);
-        seg_address[3] = Utilities.readWord(f);
-        seg_size[0] = Utilities.readWord(f);
-        seg_size[1] = Utilities.readWord(f);
-        seg_size[2] = Utilities.readWord(f);
-        seg_size[3] = Utilities.readWord(f);
-        reserved[0] = Utilities.readWord(f);
-        reserved[1] = Utilities.readWord(f);
-        reserved[2] = Utilities.readWord(f);
-        reserved[3] = Utilities.readWord(f);
-        reserved[4] = Utilities.readWord(f);
-        devkit_version = Utilities.readWord(f);
-        dec_mode = Utilities.readUByte(f);
-        pad = Utilities.readUByte(f);
-        overlap_size = Utilities.readUHalf(f);
+        magic = readWord(f);
+        mod_attr = readUHalf(f);
+        comp_mod_attr = readUHalf(f);
+        mod_ver_lo = readUByte(f);
+        mod_ver_hi = readUByte(f);
+        modname = readStringNZ(f, 28);
+        mod_version = readUByte(f);
+        nsegments = readUByte(f);
+        elf_size = readWord(f);
+        psp_size = readWord(f);
+        boot_entry = readWord(f);
+        modinfo_offset = readWord(f);
+        bss_size = readWord(f);
+        seg_align[0] = readUHalf(f);
+        seg_align[1] = readUHalf(f);
+        seg_align[2] = readUHalf(f);
+        seg_align[3] = readUHalf(f);
+        seg_address[0] = readWord(f);
+        seg_address[1] = readWord(f);
+        seg_address[2] = readWord(f);
+        seg_address[3] = readWord(f);
+        seg_size[0] = readWord(f);
+        seg_size[1] = readWord(f);
+        seg_size[2] = readWord(f);
+        seg_size[3] = readWord(f);
+        reserved[0] = readWord(f);
+        reserved[1] = readWord(f);
+        reserved[2] = readWord(f);
+        reserved[3] = readWord(f);
+        reserved[4] = readWord(f);
+        devkit_version = readWord(f);
+        dec_mode = readUByte(f);
+        pad = readUByte(f);
+        overlap_size = readUHalf(f);
         for (int i = 0; i < 16; i++) {
-            aes_key[i] = Utilities.readUByte(f);
+            aes_key[i] = readUByte(f);
         }
         for (int i = 0; i < 16; i++) {
-            cmac_key[i] = Utilities.readUByte(f);
+            cmac_key[i] = readUByte(f);
         }
         for (int i = 0; i < 16; i++) {
-            cmac_header_hash[i] = Utilities.readUByte(f);
+            cmac_header_hash[i] = readUByte(f);
         }
-        comp_size = Utilities.readWord(f);
-        comp_offset = Utilities.readWord(f);
-        unk1 = Utilities.readWord(f);
-        unk2 = Utilities.readWord(f);
+        comp_size = readWord(f);
+        comp_offset = readWord(f);
+        unk1 = readWord(f);
+        unk2 = readWord(f);
         for (int i = 0; i < 16; i++) {
-            cmac_data_hash[i] = Utilities.readUByte(f);
+            cmac_data_hash[i] = readUByte(f);
         }
-        tag = Utilities.readWord(f);
+        tag = readWord(f);
         for (int i = 0; i < 88; i++) {
-            sig_check[i] = Utilities.readUByte(f);
+            sig_check[i] = readUByte(f);
         }
         for (int i = 0; i < 20; i++) {
-            sha1_hash[i] = Utilities.readUByte(f);
+            sha1_hash[i] = readUByte(f);
         }
         for (int i = 0; i < 16; i++) {
-            key_data[i] = Utilities.readUByte(f);
+            key_data[i] = readUByte(f);
         }
     }
 
@@ -173,6 +178,6 @@ public class PSP {
     }
 
     public boolean isValid() {
-        return ((magic & PSP_MAGIC) == PSP_MAGIC); // ~PSP
+        return (magic & PSP_MAGIC) == PSP_MAGIC; // ~PSP
     }
 }

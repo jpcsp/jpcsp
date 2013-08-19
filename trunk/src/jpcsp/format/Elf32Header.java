@@ -27,20 +27,18 @@ import jpcsp.MemoryMap;
 import jpcsp.util.Utilities;
 
 public class Elf32Header {
-
-
-    private long e_magic;
+    private int e_magic;
     private int e_class;
     private int e_data;
     private int e_idver;
     private byte[] e_pad = new byte[9];
     private int e_type;
     private int e_machine;
-    private long e_version;
-    private long e_entry;
-    private long e_phoff;
-    private long e_shoff;
-    private long e_flags;
+    private int e_version;
+    private int e_entry;
+    private int e_phoff;
+    private int e_shoff;
+    private int e_flags;
     private int e_ehsize;
     private int e_phentsize;
     private int e_phnum;
@@ -49,13 +47,14 @@ public class Elf32Header {
     private int e_shstrndx;
 
     private void read(ByteBuffer f) throws IOException {
-        if (f.capacity() == 0)
+        if (f.capacity() == 0) {
             return;
+        }
         e_magic = readUWord(f);
         e_class = readUByte(f);
         e_data = readUByte(f);
         e_idver = readUByte(f);
-        f.get(getE_pad());         //can raise EOF exception
+        f.get(getE_pad());         // can raise EOF exception
         e_type = readUHalf(f);
         e_machine = readUHalf(f);
         e_version = readUWord(f);
@@ -77,19 +76,19 @@ public class Elf32Header {
     }
 
      public boolean isValid(){
-        return (Long.toHexString( getE_magic() & 0xFFFFFFFFL).toUpperCase().equals("464C457F"));
+        return getE_magic() == 0x464C457F;
      }
 
      public boolean isMIPSExecutable(){
-        return (Integer.toHexString(getE_machine() & 0xFFFF).equals("8"));
+        return getE_machine() == 0x0008;
      }
 
      public boolean isPRXDetected(){
-        return ((getE_type() & 0xFFFF) == 0xFFA0);
+        return getE_type() == 0xFFA0;
      }
 
      public boolean requiresRelocation(){
-        return (isPRXDetected() || (getE_entry() < MemoryMap.START_RAM));
+        return isPRXDetected() || getE_entry() < MemoryMap.START_RAM;
      }
 
     @Override
@@ -117,7 +116,7 @@ public class Elf32Header {
         return str.toString();
     }
 
-    public long getE_magic() {
+    public int getE_magic() {
         return e_magic;
     }
 
@@ -145,23 +144,23 @@ public class Elf32Header {
         return e_machine;
     }
 
-    public long getE_version() {
+    public int getE_version() {
         return e_version;
     }
 
-    public long getE_entry() {
+    public int getE_entry() {
         return e_entry;
     }
 
-    public long getE_phoff() {
+    public int getE_phoff() {
         return e_phoff;
     }
 
-    public long getE_shoff() {
+    public int getE_shoff() {
         return e_shoff;
     }
 
-    public long getE_flags() {
+    public int getE_flags() {
         return e_flags;
     }
 

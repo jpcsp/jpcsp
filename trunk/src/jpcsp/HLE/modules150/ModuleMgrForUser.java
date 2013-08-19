@@ -303,6 +303,9 @@ public class ModuleMgrForUser extends HLEModule {
                 } else if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
                     module.addAllocatedMemory(moduleInfo);
                     result = module.modid;
+                	if (log.isDebugEnabled()) {
+                		log.debug(String.format("hleKernelLoadModule returning uid=0x%X", result));
+                	}
                 } else {
                     // The Loader class now manages the module's memory footprint, it won't allocate if it failed to load
                     return -1;
@@ -316,7 +319,7 @@ public class ModuleMgrForUser extends HLEModule {
             return -1;
         }
 
-        return result;
+    	return result;
 	}
 
     protected int getSelfModuleId() {

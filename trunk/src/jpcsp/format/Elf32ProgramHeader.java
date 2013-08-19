@@ -23,15 +23,14 @@ import java.nio.ByteBuffer;
 import jpcsp.util.Utilities;
 
 public class Elf32ProgramHeader {
-
-    private long p_type;
-    private long p_offset;
-    private long p_vaddr;
-    private long p_paddr;
-    private long p_filesz;
-    private long p_memsz;
-    private long p_flags; // Bits: 0x1=executable, 0x2=writable, 0x4=readable, demo PRX's were found to be not writable
-    private long p_align;
+    private int p_type;
+    private int p_offset;
+    private int p_vaddr;
+    private int p_paddr;
+    private int p_filesz;
+    private int p_memsz;
+    private int p_flags; // Bits: 0x1=executable, 0x2=writable, 0x4=readable, demo PRX's were found to be not writable
+    private int p_align;
 
     public static int sizeof() {
         return 32;
@@ -66,35 +65,35 @@ public class Elf32ProgramHeader {
         return str.toString();
     }
 
-    public long getP_type() {
+    public int getP_type() {
         return p_type;
     }
 
-    public long getP_offset() {
+    public int getP_offset() {
         return p_offset;
     }
 
-    public long getP_vaddr() {
+    public int getP_vaddr() {
         return p_vaddr;
     }
 
-    public long getP_paddr() {
+    public int getP_paddr() {
         return p_paddr;
     }
 
-    public long getP_filesz() {
+    public int getP_filesz() {
         return p_filesz;
     }
 
-    public long getP_memsz() {
+    public int getP_memsz() {
         return p_memsz;
     }
 
-    public long getP_flags() {
+    public int getP_flags() {
         return p_flags;
     }
 
-    public long getP_align() {
+    public int getP_align() {
         return p_align;
     }
 }

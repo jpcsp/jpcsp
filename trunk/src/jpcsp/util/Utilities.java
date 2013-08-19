@@ -213,15 +213,15 @@ public class Utilities {
         buf.put((byte) 0);
     }
 
-    public static short getUnsignedByte(ByteBuffer bb) throws IOException {
-        return ((short) (bb.get() & 0xff));
+    public static int getUnsignedByte(ByteBuffer bb) throws IOException {
+        return bb.get() & 0xFF;
     }
 
     public static void putUnsignedByte(ByteBuffer bb, int value) {
         bb.put((byte) (value & 0xFF));
     }
 
-    public static short readUByte(ByteBuffer buf) throws IOException {
+    public static int readUByte(ByteBuffer buf) throws IOException {
         return getUnsignedByte(buf);
     }
 
@@ -229,20 +229,20 @@ public class Utilities {
         return getUnsignedByte(buf) | (getUnsignedByte(buf) << 8);
     }
 
-    public static long readUWord(ByteBuffer buf) throws IOException {
-        long l = (getUnsignedByte(buf) | (getUnsignedByte(buf) << 8) | (getUnsignedByte(buf) << 16) | (getUnsignedByte(buf) << 24));
-        return (l & 0xFFFFFFFFL);
+    public static int readUWord(ByteBuffer buf) throws IOException {
+    	// No difference between signed and unsigned word (32-bit value)
+    	return readWord(buf);
     }
 
     public static int readWord(ByteBuffer buf) throws IOException {
-        return (getUnsignedByte(buf) | (getUnsignedByte(buf) << 8) | (getUnsignedByte(buf) << 16) | (getUnsignedByte(buf) << 24));
+        return getUnsignedByte(buf) | (getUnsignedByte(buf) << 8) | (getUnsignedByte(buf) << 16) | (getUnsignedByte(buf) << 24);
     }
 
-    public static void writeWord(ByteBuffer buf, long value) {
-        putUnsignedByte(buf, (int) (value >> 0));
-        putUnsignedByte(buf, (int) (value >> 8));
-        putUnsignedByte(buf, (int) (value >> 16));
-        putUnsignedByte(buf, (int) (value >> 24));
+    public static void writeWord(ByteBuffer buf, int value) {
+        putUnsignedByte(buf, value >> 0);
+        putUnsignedByte(buf, value >> 8);
+        putUnsignedByte(buf, value >> 16);
+        putUnsignedByte(buf, value >> 24);
     }
 
     public static void writeHalf(ByteBuffer buf, int value) {

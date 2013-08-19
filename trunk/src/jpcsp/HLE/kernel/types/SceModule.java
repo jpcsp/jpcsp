@@ -21,6 +21,7 @@ import java.util.List;
 
 import jpcsp.Loader;
 import jpcsp.Memory;
+import jpcsp.NIDMapper;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
@@ -137,6 +138,7 @@ public class SceModule {
     }
 
     public void unload() {
+    	// Unresolve all the stubs resolved by an entry in this module
     	if (!resolvedImports.isEmpty()) {
 	    	Memory mem = Memory.getInstance();
 	    	for (DeferredStub deferredStub : resolvedImports) {
@@ -144,6 +146,9 @@ public class SceModule {
 	    	}
 	    	resolvedImports.clear();
     	}
+
+    	// Remove all the NID's mapped from this module
+    	NIDMapper.getInstance().removeModuleNids(modname);
 
     	isLoaded = false;
         free();
