@@ -535,8 +535,8 @@ struct Light
 };
 #define NUM_LIGHTS	4
 struct Light lights[NUM_LIGHTS];
-char *lightTypeNames[] = { "Directional", "Point", "Spot" };
-char *lightKindNames[] = { "Ambient & Diffuse", "Diffuse & Specular", "Unknown1", "Unknown2" };
+char *lightTypeNames[] = { "Directional", "Point", "Spot", "Unknown3" };
+char *lightKindNames[] = { "Ambient & Diffuse", "Diffuse & Specular", "Power Diffuse Specular", "Unknown3" };
 int lightMode = 0;
 char *lightModeNames[] = { "Single Color", "Separate Specular Color" };
 
@@ -597,6 +597,13 @@ float texOffsetV2 = 0.0;
 char *texWrapNames[] = { "GU_REPEAT", "GU_CLAMP" };
 ScePspIMatrix4 ditherMatrix;
 
+int texMapMode1 = GU_TEXTURE_COORDS;
+int texMapMode2 = GU_TEXTURE_COORDS;
+char *texMapModeNames[] = { "GU_TEXTURE_COORDS", "GU_TEXTURE_MATRIX", "GU_ENVIRONMENT_MAP", "Unknown3" };
+int texProjMode1 = GU_POSITION;
+int texProjMode2 = GU_POSITION;
+char *texProjModeNames[] = { "GU_POSITION", "GU_UV", "GU_NORMALIZED_NORMAL", "GU_NORMAL" };
+
 u16 zTestPixelDepth;
 u32 geTestPixelValue;
 
@@ -627,7 +634,7 @@ int addLightAttribute(int index, struct Light *plight, int x, int y)
 	char *label = malloc(100);
 	sprintf(label, "Light %d", index + 1);
 
-	addAttribute(label, &plight->type, NULL, x, y, 0, 2, 1, NULL);
+	addAttribute(label, &plight->type, NULL, x, y, 0, 3, 1, NULL);
 	setAttributeValueNames(&lightTypeNames[0]);
 	addAttribute(", Kind", &plight->kind, NULL, x + 20, y, 0, 3, 1, NULL);
 	setAttributeValueNames(&lightKindNames[0]);
@@ -1134,6 +1141,14 @@ void drawRectangles()
 	sceGumMatrixMode(GU_VIEW);
 	sceGumLoadIdentity();
 
+	sceGumMatrixMode(GU_TEXTURE);
+	sceGumLoadIdentity();
+	ScePspFVector3 textureMatrixScale;
+	textureMatrixScale.x = 0.5f;
+	textureMatrixScale.y = 0.5f;
+	textureMatrixScale.z = 0.5f;
+	sceGumScale(&textureMatrixScale);
+
 	sceGuDepthMask(depthMask);
 	sceGuDepthFunc(depthFunc);
 	sceGuAlphaFunc(alphaFunc, alphaReference, 0xFF);
@@ -1224,6 +1239,8 @@ void drawRectangles()
 	sceGuTexWrap(texWrapU1, texWrapV1);
 	sceGuTexScale(texScaleU1 / textureScale, texScaleV1 / textureScale);
 	sceGuTexOffset(texOffsetU1, texOffsetV1);
+	sceGuTexMapMode(texMapMode1, 0, 0);
+	sceGuTexProjMapMode(texProjMode1);
 
 	sceGumMatrixMode(GU_VIEW);
 	sceGumLoadIdentity();
@@ -1354,6 +1371,8 @@ void drawRectangles()
 	sceGuTexWrap(texWrapU2, texWrapV2);
 	sceGuTexScale(texScaleU2 / textureScale, texScaleV2 / textureScale);
 	sceGuTexOffset(texOffsetU2, texOffsetV2);
+	sceGuTexMapMode(texMapMode2, 0, 0);
+	sceGuTexProjMapMode(texProjMode2);
 
 	sceGumMatrixMode(GU_VIEW);
 	sceGumLoadIdentity();
@@ -1792,6 +1811,13 @@ void init()
 	addAttribute("Texture Buffer Width", &textureBufferWidth1, NULL, x + 6, y, 0, TEXTURE_WIDTH, 1, NULL);
 	y++;
 
+	addAttribute("Texture Map Mode", &texMapMode1, NULL, x + 6, y, 0, 3, 1, NULL);
+	setAttributeValueNames(&texMapModeNames[0]);
+	y++;
+	addAttribute("Texture Projection Mode", &texProjMode1, NULL, x + 6, y, 0, 3, 1, NULL);
+	setAttributeValueNames(&texProjModeNames[0]);
+	y++;
+
 	rectangle2VertexColor.r = 0xFF;
 	rectangle2VertexColor.g = 0x00;
 	rectangle2VertexColor.b = 0x00;
@@ -1881,6 +1907,13 @@ void init()
 	y++;
 
 	addAttribute("Texture Buffer Width", &textureBufferWidth2, NULL, x + 6, y, 0, TEXTURE_WIDTH, 1, NULL);
+	y++;
+
+	addAttribute("Texture Map Mode", &texMapMode2, NULL, x + 6, y, 0, 3, 1, NULL);
+	setAttributeValueNames(&texMapModeNames[0]);
+	y++;
+	addAttribute("Texture Projection Mode", &texProjMode2, NULL, x + 6, y, 0, 3, 1, NULL);
+	setAttributeValueNames(&texProjModeNames[0]);
 	y++;
 
 	addAttribute("Use Vertex Color", &vertexColorFlag, NULL, x, y, 0, 1, 1, NULL);
