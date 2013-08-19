@@ -4142,6 +4142,11 @@ public class VideoEngine {
             lightingChanged = true;
         }
 
+        if (context.light_type[lnum] == LIGHT_TYPE_UNKNOWN) {
+        	// Confirmed by testing with 3DStudio: light type 3 is equivalent to light type 2.
+        	context.light_type[lnum] = LIGHT_SPOT;
+        }
+
         switch (context.light_type[lnum]) {
             case LIGHT_DIRECTIONAL:
                 context.light_pos[lnum][3] = 0.f;
@@ -4154,12 +4159,12 @@ public class VideoEngine {
                 context.light_pos[lnum][3] = 1.f;
                 break;
             default:
-                error("Unknown light type : " + normalArgument);
+                error(String.format("Unknown light type: 0x%06X", normalArgument));
         }
         re.setLightType(lnum, context.light_type[lnum], context.light_kind[lnum]);
 
         if (isLogDebugEnabled) {
-            log.debug("Light " + lnum + " type " + (normalArgument >> 8) + " kind " + (normalArgument & 3));
+            log.debug(String.format("Light #%d: type %d, kind %d", lnum, (normalArgument >> 8) & 3, normalArgument & 3));
         }
     }
 
@@ -4475,11 +4480,10 @@ public class VideoEngine {
         }
 
         if (context.tex_map_mode == TMAP_TEXTURE_MAP_MODE_UNKNOW) {
-            if (isLogWarnEnabled) {
-                log.warn(String.format("sceGuTexMapMode unknown mode=%d, assuming TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV", context.tex_map_mode));
-            }
+        	// Confirmed by testing with 3DStudio: map mode 3 is equivalent to map mode 0
             context.tex_map_mode = TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
         }
+
         if (isLogDebugEnabled) {
             log("sceGuTexMapMode(mode=" + context.tex_map_mode + ", X, X)");
             log("sceGuTexProjMapMode(mode=" + context.tex_proj_map_mode + ")");

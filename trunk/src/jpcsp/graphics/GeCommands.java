@@ -179,11 +179,12 @@ public class GeCommands {
         public final static int LIGHT_DIRECTIONAL = 0x00;
         public final static int LIGHT_POINT = 0x01;
         public final static int LIGHT_SPOT = 0x02;
+        public final static int LIGHT_TYPE_UNKNOWN = 0x03;
         //LIGHT COMPONENT
         public final static int LIGHT_AMBIENT_DIFFUSE = 0X00;
         public final static int LIGHT_DIFFUSE_SPECULAR = 0X01;
         public final static int LIGHT_POWER_DIFFUSE_SPECULAR = 0X02;
-        public final static int LIGHT_UNKNOW2 = 0X03;
+        public final static int LIGHT_KIND_UNKNOW = 0X03;
     //END SERVES
     public final static int LXP0 = 0x63;// 	LXP0 	Light X Position 0
     public final static int LYP0 = 0x64;// 	LYP0 	Light Y Position 0
