@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JTable;
@@ -47,15 +48,15 @@ import jpcsp.util.Constants;
  * @author Orphis, gid15
  */
 public class UmdBrowser extends javax.swing.JDialog {
-    
+
     private static final long serialVersionUID = 7788144302296106541L;
-    
+
     private final class MemStickTableModel extends AbstractTableModel {
-        
+
         private static final long serialVersionUID = -1675488447176776560L;
         private UmdInfoLoader umdInfoLoader;
         private String pathPrefix;
-        
+
         public MemStickTableModel(File[] paths) {
             // Default values in case we return an error
             umdInfoLoaded = new boolean[0];
@@ -246,10 +247,12 @@ public class UmdBrowser extends javax.swing.JDialog {
      */
     public UmdBrowser(MainGUI gui, File[] paths) {
         super(gui);
-        
+
         this.gui = gui;
         this.paths = paths;
-        
+
+        initPNG();
+
         initComponents();
 
         // set blinking border for ICON0
@@ -294,12 +297,25 @@ public class UmdBrowser extends javax.swing.JDialog {
         
         WindowPropSaver.loadWindowProperties(this);
     }
-    
+
+    private void initPNG() {
+        // Invoke
+        //    sun.awt.image.PNGImageDecoder.setCheckCRC(false)
+        // to avoid an exception "PNGImageDecoder$PNGException: crc corruption" when reading incorrect PNG files.
+        // As this is a class in the "sun" package, be careful as this class could disappear in a later JDK version:
+        // do not statically reference this class and invoke the method using reflection.
+        try {
+        	getClass().getClassLoader().loadClass("sun.awt.image.PNGImageDecoder").getMethod("setCheckCRC", boolean.class).invoke(null, false);
+        } catch (Throwable e) {
+        	Emulator.log.info(e);
+        }
+    }
+
     private String getUmdBrowseCacheDirectory(String name) {
         // Return "tmp/UmdBrowserCache/<name>/"
         return String.format("%1$s%2$cUmdBrowserCache%2$c%3$s%2$c", Settings.getInstance().readString("emu.tmppath"), File.separatorChar, name);
     }
-    
+
     private void writeUmdBrowseCacheFile(String cacheDirectory, String name, byte[] content) {
         try {
             OutputStream os = new FileOutputStream(cacheDirectory + name);
@@ -339,7 +355,7 @@ public class UmdBrowser extends javax.swing.JDialog {
                     is.close();
                     psfs[rowIndex] = new PSF();
                     psfs[rowIndex].read(ByteBuffer.wrap(sfo));
-                    
+
                     File icon0File = new File(cacheDirectory + "ICON0.PNG");
                     if (icon0File.canRead()) {
                         icons[rowIndex] = new ImageIcon(icon0File.getPath());
@@ -352,9 +368,9 @@ public class UmdBrowser extends javax.swing.JDialog {
 
                     // Create the UmdBrowse Cache directories
                     new File(cacheDirectory).mkdirs();
-                    
+
                     UmdIsoReader iso = new UmdIsoReader(programs[rowIndex].getPath());
-                    
+
                     UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
                     byte[] sfo = new byte[(int) paramSfo.length()];
                     paramSfo.read(sfo);
@@ -363,7 +379,7 @@ public class UmdBrowser extends javax.swing.JDialog {
                     ByteBuffer buf = ByteBuffer.wrap(sfo);
                     psfs[rowIndex] = new PSF();
                     psfs[rowIndex].read(buf);
-                    
+
                     UmdIsoFile icon0umd = iso.getFile("PSP_GAME/ICON0.PNG");
                     byte[] icon0 = new byte[(int) icon0umd.length()];
                     icon0umd.read(icon0);
