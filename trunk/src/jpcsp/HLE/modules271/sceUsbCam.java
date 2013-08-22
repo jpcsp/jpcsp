@@ -247,7 +247,7 @@ public class sceUsbCam extends HLEModule {
 				try {
 					image = videoConverter.toImage(videoPicture);
 				} catch (RuntimeException e) {
-					log.error("VideoListener.onVideoPicture", e);
+					log.error(String.format("VideoListener.onVideoPicture: %s", videoPicture), e);
 				}
 			}
 
