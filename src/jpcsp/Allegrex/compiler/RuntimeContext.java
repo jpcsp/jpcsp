@@ -713,9 +713,12 @@ public class RuntimeContext {
     	} catch (StopThreadException e) {
     		// Ignore Exception
     	} catch (Throwable e) {
-    		// Log error in log file and command box
-    		log.error("Catched Throwable in RuntimeThread:", e);
-    		e.printStackTrace();
+    		// Do not spam exceptions when exiting...
+        	if (!Modules.ThreadManForUserModule.exitCalled) {
+	    		// Log error in log file and command box
+	    		log.error("Catched Throwable in RuntimeThread:", e);
+	    		e.printStackTrace();
+        	}
 		}
 
 		SceKernelThreadInfo threadInfo = thread.getThreadInfo();
