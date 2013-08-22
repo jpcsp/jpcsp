@@ -16,14 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules260;
 
-import jpcsp.Processor;
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 
 @HLELogging
 public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
 	@HLEFunction(nid = 0x4928BD96, version = 260)
-	public void sceUtilityMsgDialogAbort(Processor processor) {
-		msgDialogState.abort(processor);
+	public int sceUtilityMsgDialogAbort() {
+		return msgDialogState.executeAbort();
 	}
 }

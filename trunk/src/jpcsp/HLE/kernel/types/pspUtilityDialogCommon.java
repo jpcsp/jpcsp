@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import jpcsp.Memory;
+import jpcsp.HLE.TPointer;
 
 public class pspUtilityDialogCommon extends pspAbstractMemoryMappedStructureVariableLength {
 	public int language;
@@ -53,6 +54,12 @@ public class pspUtilityDialogCommon extends pspAbstractMemoryMappedStructureVari
 		write32(soundThread);
 		write32(result);
 		writeUnknown(16);
+	}
+
+	public void writeResult(TPointer baseAddress) {
+		if (baseAddress != null) {
+			writeResult(baseAddress.getMemory(), baseAddress.getAddress());
+		}
 	}
 
 	public void writeResult(Memory mem) {
