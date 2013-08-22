@@ -1047,6 +1047,10 @@ public class sceAtrac3plus extends HLEModule {
 
         posAddr.setValue(id.getAtracCurrentSample());
 
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceAtracGetNextDecodePosition returning pos=%d", posAddr.getValue()));
+        }
+
         return 0;
     }
 
