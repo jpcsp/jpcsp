@@ -78,7 +78,6 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.State;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.VFS.IVirtualFile;
 import jpcsp.HLE.VFS.IVirtualFileSystem;
@@ -239,12 +238,11 @@ public class sceUtility extends HLEModule {
     private static final int numberNetConfigurations = 1;
 
     protected abstract static class UtilityDialogState {
-
         protected String name;
         protected pspAbstractMemoryMappedStructure params;
+        protected pspUtilityDialogCommon paramsCommon;
         protected TPointer paramsAddr;
         protected int status;
-        protected int result;
         protected UtilityDialog dialog;
         protected int drawSpeed;
         protected int minimumVisibleDurationMillis;
@@ -255,7 +253,6 @@ public class sceUtility extends HLEModule {
         protected boolean isYesSelected;
 
         protected static enum DialogState {
-
             init,
             display,
             confirmation,
@@ -268,7 +265,6 @@ public class sceUtility extends HLEModule {
         public UtilityDialogState(String name) {
             this.name = name;
             status = PSP_UTILITY_DIALOG_STATUS_NONE;
-            result = PSP_UTILITY_DIALOG_RESULT_OK;
             dialogState = DialogState.init;
             setButtonPressed(SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_INVALID);
         }
@@ -340,10 +336,22 @@ public class sceUtility extends HLEModule {
             }
         }
 
+        private void setResult(int result) {
+        	if (paramsCommon != null) {
+        		paramsCommon.result = result;
+    			paramsCommon.writeResult(paramsAddr);
+        	}
+        }
+
         protected void quitDialog() {
             closeDialog();
             status = PSP_UTILITY_DIALOG_STATUS_QUIT;
             dialogState = DialogState.quit;
+        }
+
+        protected void quitDialog(int result) {
+        	quitDialog();
+            setResult(result);
         }
 
         public int getButtonPressed() {
@@ -512,41 +520,32 @@ public class sceUtility extends HLEModule {
             return 0;
         }
 
-        public void abort(Processor processor) {
-            CpuState cpu = processor.cpu;
-
+        public int executeAbort() {
             if (Modules.sceUtilityModule.startedDialogState == null || Modules.sceUtilityModule.startedDialogState != this) {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("%sAbort returning ERROR_UTILITY_WRONG_TYPE", name));
                 }
-                cpu._v0 = SceKernelErrors.ERROR_UTILITY_WRONG_TYPE;
-                return;
+                return SceKernelErrors.ERROR_UTILITY_WRONG_TYPE;
             }
 
             if (status != PSP_UTILITY_DIALOG_STATUS_VISIBLE) {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("%sAbort returning ERROR_UTILITY_INVALID_STATUS", name));
                 }
-                cpu._v0 = SceKernelErrors.ERROR_UTILITY_INVALID_STATUS;
-                return;
+                return SceKernelErrors.ERROR_UTILITY_INVALID_STATUS;
             }
 
             if (log.isDebugEnabled()) {
                 log.debug(String.format("%sAbort", name));
             }
 
-            if (dialog != null) {
-                dialog.dispose();
-            }
-            status = PSP_UTILITY_DIALOG_STATUS_QUIT;
-            result = PSP_UTILITY_DIALOG_RESULT_ABORTED;
+            quitDialog(PSP_UTILITY_DIALOG_RESULT_ABORTED);
 
-            cpu._v0 = 0;
+            return 0;
         }
 
         public void cancel() {
-            status = PSP_UTILITY_DIALOG_STATUS_FINISHED;
-            result = PSP_UTILITY_DIALOG_RESULT_CANCELED;
+        	quitDialog(PSP_UTILITY_DIALOG_RESULT_CANCELED);
         }
 
         protected abstract boolean executeUpdateVisible();
@@ -655,6 +654,7 @@ public class sceUtility extends HLEModule {
         @Override
         protected pspAbstractMemoryMappedStructure createParams() {
             savedataParams = new SceUtilitySavedataParam();
+            paramsCommon = savedataParams.base;
             return savedataParams;
         }
 
@@ -743,9 +743,7 @@ public class sceUtility extends HLEModule {
                             if (!isDialogActive()) {
                                 if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK || isNoSelected()) {
                                     // The dialog has been cancelled or the user did not want to load.
-                                    // The PSP is not returning an error code in these cases, but the value 1.
-                                    savedataParams.base.result = 1;
-                                    quitDialog();
+                                	cancel();
                                 } else {
                                     closeDialog();
                                     dialogState = DialogState.inProgress;
@@ -814,18 +812,18 @@ public class sceUtility extends HLEModule {
                         case display: {
                             if (!isDialogActive()) {
                                 if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
+                                	int result;
                                     if (saveListEmpty) {
                                         // No data available
-                                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
+                                        result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
                                     } else {
                                         // Dialog cancelled
-                                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_BAD_PARAMS;
+                                        result = SceKernelErrors.ERROR_SAVEDATA_LOAD_BAD_PARAMS;
                                     }
-                                    quitDialog();
+                                    quitDialog(result);
                                 } else if (saveListSelection == null) {
                                     log.warn("Savedata MODE_LISTLOAD no save selected");
-                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_BAD_PARAMS;
-                                    quitDialog();
+                                    quitDialog(SceKernelErrors.ERROR_SAVEDATA_LOAD_BAD_PARAMS);
                                 } else {
                                     closeDialog();
                                     dialogState = DialogState.inProgress;
@@ -917,9 +915,7 @@ public class sceUtility extends HLEModule {
                             if (!isDialogActive()) {
                                 if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK || isNoSelected()) {
                                     // The dialog has been cancelled or the user did not want to save.
-                                    // The PSP is not returning an error code in these cases, but the value 1.
-                                    savedataParams.base.result = 1;
-                                    quitDialog();
+                                	cancel();
                                 } else {
                                     closeDialog();
                                     dialogState = DialogState.inProgress;
@@ -971,12 +967,10 @@ public class sceUtility extends HLEModule {
                                 closeDialog();
                                 if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
                                     // Dialog cancelled
-                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_BAD_PARAMS;
-                                    quitDialog();
+                                    quitDialog(SceKernelErrors.ERROR_SAVEDATA_SAVE_BAD_PARAMS);
                                 } else if (saveListSelection == null) {
                                     log.warn("Savedata MODE_LISTSAVE no save selected");
-                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_BAD_PARAMS;
-                                    quitDialog();
+                                    quitDialog(SceKernelErrors.ERROR_SAVEDATA_SAVE_BAD_PARAMS);
                                 } else {
                                     savedataParams.saveName = saveListSelection;
                                     savedataParams.write(mem);
@@ -999,9 +993,7 @@ public class sceUtility extends HLEModule {
                             if (!isDialogActive()) {
                                 if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK || isNoSelected()) {
                                     // The dialog has been cancelled or the user did not want to save.
-                                    // The PSP is not returning an error code in these cases, but the value 1.
-                                    savedataParams.base.result = 1;
-                                    quitDialog();
+                                	cancel();
                                 } else {
                                     closeDialog();
                                     dialogState = DialogState.inProgress;
@@ -1078,22 +1070,23 @@ public class sceUtility extends HLEModule {
                             GuSavedataDialog gu = new GuSavedataDialog(savedataParams, this, validNames.toArray(new String[validNames.size()]));
                             openDialog(gu);
                         } else if (!isDialogActive()) {
+                        	int result;
                             if (getButtonPressed() != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
                                 // Dialog cancelled
-                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
+                                result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
                             } else if (saveListSelection == null) {
                                 log.warn("Savedata MODE_DELETE no save selected");
-                                savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
+                                result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
                             } else {
                                 String dirName = savedataParams.getBasePath(saveListSelection);
                                 if (Modules.IoFileMgrForUserModule.rmdir(dirName, true)) {
                                     log.debug("Savedata MODE_DELETE deleting " + dirName);
-                                    savedataParams.base.result = 0;
+                                    result = 0;
                                 } else {
-                                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_ACCESS_ERROR;
+                                    result = SceKernelErrors.ERROR_SAVEDATA_DELETE_ACCESS_ERROR;
                                 }
                             }
-                            quitDialog();
+                            quitDialog(result);
                         } else {
                             updateDialog();
                         }
@@ -1550,9 +1543,8 @@ public class sceUtility extends HLEModule {
                     break;
 
                 default:
-                    log.warn("Savedata - Unsupported mode " + savedataParams.mode);
-                    savedataParams.base.result = -1;
-                    quitDialog();
+                    log.warn(String.format("Savedata - Unsupported mode %d", savedataParams.mode));
+                    quitDialog(-1);
                     break;
             }
 
@@ -1584,7 +1576,6 @@ public class sceUtility extends HLEModule {
     }
 
     protected static class MsgDialogUtilityDialogState extends UtilityDialogState {
-
         protected SceUtilityMsgDialogParams msgDialogParams;
 
         public MsgDialogUtilityDialogState(String name) {
@@ -1611,9 +1602,8 @@ public class sceUtility extends HLEModule {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("sceUtilityMsgDialog returning buttonPressed=%d", msgDialogParams.buttonPressed));
                 }
-                msgDialogParams.base.result = 0;
+                quitDialog(0);
                 msgDialogParams.write(mem);
-                quitDialog();
             } else {
                 updateDialog();
             }
@@ -1624,6 +1614,7 @@ public class sceUtility extends HLEModule {
         @Override
         protected pspAbstractMemoryMappedStructure createParams() {
             msgDialogParams = new SceUtilityMsgDialogParams();
+            paramsCommon = msgDialogParams.base;
             return msgDialogParams;
         }
     }
@@ -1654,9 +1645,8 @@ public class sceUtility extends HLEModule {
                     oskParams.oskData.outText = oskDialog.textField.getText();
                     log.info("hleUtilityOskDisplay cancelled");
                 }
-                oskParams.base.result = 0;
+                quitDialog(0);
                 oskParams.write(mem);
-                quitDialog();
             } else {
                 oskDialog.checkController();
                 updateDialog();
@@ -1668,6 +1658,7 @@ public class sceUtility extends HLEModule {
         @Override
         protected pspAbstractMemoryMappedStructure createParams() {
             oskParams = new SceUtilityOskParams();
+            paramsCommon = oskParams.base;
             return oskParams;
         }
     }
@@ -1689,6 +1680,7 @@ public class sceUtility extends HLEModule {
         @Override
         protected pspAbstractMemoryMappedStructure createParams() {
             gameSharingParams = new SceUtilityGameSharingParams();
+            paramsCommon = gameSharingParams.base;
             return gameSharingParams;
         }
 
@@ -1752,6 +1744,7 @@ public class sceUtility extends HLEModule {
         @Override
         protected pspAbstractMemoryMappedStructure createParams() {
             netconfParams = new SceUtilityNetconfParams();
+            paramsCommon = netconfParams.base;
             return netconfParams;
         }
     }
@@ -1797,6 +1790,7 @@ public class sceUtility extends HLEModule {
         @Override
         protected pspAbstractMemoryMappedStructure createParams() {
             screenshotParams = new SceUtilityScreenshotParams();
+            paramsCommon = screenshotParams.base;
             return screenshotParams;
         }
 
@@ -1817,6 +1811,7 @@ public class sceUtility extends HLEModule {
         @Override
         protected pspAbstractMemoryMappedStructure createParams() {
             gamedataInstallParams = new SceUtilityGamedataInstallParams();
+            paramsCommon = gamedataInstallParams.base;
             return gamedataInstallParams;
         }
 
@@ -1894,6 +1889,7 @@ public class sceUtility extends HLEModule {
         @Override
         protected pspAbstractMemoryMappedStructure createParams() {
             npSigninParams = new SceUtilityNpSigninParams();
+            paramsCommon = npSigninParams.base;
             return npSigninParams;
         }
 
@@ -1925,6 +1921,7 @@ public class sceUtility extends HLEModule {
         @Override
         protected pspAbstractMemoryMappedStructure createParams() {
             htmlViewerParams = new SceUtilityHtmlViewerParams();
+            paramsCommon = htmlViewerParams.base;
             return htmlViewerParams;
         }
 
@@ -3249,7 +3246,7 @@ public class sceUtility extends HLEModule {
                         drawEnter();
                     }
                     drawBack();
-                } else {
+                } else if ((msgDialogParams.options & SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_MASK) != SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_NONE) {
                     drawEnter();
                 }
             }
@@ -3265,6 +3262,11 @@ public class sceUtility extends HLEModule {
         @Override
         protected boolean canCancel() {
             return (msgDialogParams.options & SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_DISABLE_CANCEL) == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_ENABLE_CANCEL;
+        }
+
+        @Override
+        protected boolean canConfirm() {
+            return (msgDialogParams.options & SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_MASK) != SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_NONE;
         }
 
         @Override
