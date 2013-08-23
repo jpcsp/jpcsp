@@ -16,9 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules271;
 
+import static jpcsp.HLE.modules271.sceJpeg.clamp8bit;
+
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import javax.imageio.ImageIO;
 
@@ -37,6 +41,7 @@ import com.xuggle.mediatool.event.IVideoPictureEvent;
 import com.xuggle.xuggler.ICodec;
 import com.xuggle.xuggler.IContainer;
 import com.xuggle.xuggler.IContainerFormat;
+import com.xuggle.xuggler.IPixelFormat.Type;
 import com.xuggle.xuggler.IStream;
 import com.xuggle.xuggler.IStreamCoder;
 import com.xuggle.xuggler.IVideoPicture;
@@ -58,6 +63,7 @@ import jpcsp.memory.MemoryWriter;
 @HLELogging
 public class sceUsbCam extends HLEModule {
     public static Logger log = Modules.getLogger("sceUsbCam");
+    private static final boolean dumpJpeg = false;
 
 	@Override
 	public String getName() {
@@ -247,7 +253,11 @@ public class sceUsbCam extends HLEModule {
 				try {
 					image = videoConverter.toImage(videoPicture);
 				} catch (RuntimeException e) {
-					log.error(String.format("VideoListener.onVideoPicture: %s", videoPicture), e);
+					if (videoPicture.getPixelType() == Type.YUYV422) {
+						image = convertYUYV422toRGB(videoPicture.getWidth(), videoPicture.getHeight(), videoPicture.getByteBuffer());
+					} else {
+						log.error(String.format("VideoListener.onVideoPicture: %s", videoPicture), e);
+					}
 				}
 			}
 
@@ -293,6 +303,42 @@ public class sceUsbCam extends HLEModule {
 		33, // PSP_USBCAM_FRAMERATE_30_FPS
 		17 // PSP_USBCAM_FRAMERATE_60_FPS
 	};
+
+	protected static int convertYUVtoRGB(int y, int u, int v) {
+		// based on http://en.wikipedia.org/wiki/Yuv#Y.27UV444_to_RGB888_conversion
+		int c = y - 16;
+		int d = u - 128;
+		int e = v - 128;
+		int r = clamp8bit((298 * c + 409 * e + 128) >> 8);
+		int g = clamp8bit((298 * c - 100 * d - 208 * e + 128) >> 8);
+		int b = clamp8bit((298 * c + 516 * d + 128) >> 8);
+
+		return (r << 16) | (g << 8) | b;
+	}
+
+	protected BufferedImage convertYUYV422toRGB(int width, int height, ByteBuffer buffer) {
+		byte[] input = new byte[width * height * 2];
+		buffer.get(input);
+
+		int[] output = new int[width * height];
+		int i = 0;
+		int j = 0;
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x += 2) {
+				int y0 = input[i++] & 0xFF;
+				int u = input[i++] & 0xFF;
+				int y1 = input[i++] & 0xFF;
+				int v = input[i++] & 0xFF;
+				output[j++] = convertYUVtoRGB(y0, u, v);
+				output[j++] = convertYUVtoRGB(y1, u, v);
+			}
+		}
+
+		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+		image.setRGB(0, 0, width, height, output, 0, width);
+
+		return image;
+	}
 
 	/**
 	 * Convert a value PSP_USBCAM_RESOLUTION_EX_*
@@ -411,6 +457,12 @@ public class sceUsbCam extends HLEModule {
 					memoryWriter.writeNext(bytes[i] & 0xFF);
 				}
 				memoryWriter.flush();
+
+				if (dumpJpeg) {
+					FileOutputStream dumpFile = new FileOutputStream("dumpUsbCam.jpeg");
+					dumpFile.write(bytes);
+					dumpFile.close();
+				}
 			}
 		} catch (IOException e) {
 			log.error("writeCurrentVideoImage", e);
