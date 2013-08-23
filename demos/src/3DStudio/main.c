@@ -604,6 +604,11 @@ int texProjMode1 = GU_POSITION;
 int texProjMode2 = GU_POSITION;
 char *texProjModeNames[] = { "GU_POSITION", "GU_UV", "GU_NORMALIZED_NORMAL", "GU_NORMAL" };
 
+int logicOp1 = GU_COPY;
+int logicOp2 = GU_COPY;
+char *logicOpNames[] = { "GU_CLEAR", "GU_AND", "GU_AND_REVERSE", "GU_COPY", "GU_AND_INVERTED", "GU_NOOP", "GU_XOR", "GU_OR",
+                         "GU_NOR", "GU_EQUIV", "GU_INVERTED", "GU_OR_REVERSE", "GU_COPY_INVERTED", "GU_OR_INVERTED", "GU_NAND", "GU_SET" };
+
 u16 zTestPixelDepth;
 u32 geTestPixelValue;
 
@@ -1241,6 +1246,7 @@ void drawRectangles()
 	sceGuTexOffset(texOffsetU1, texOffsetV1);
 	sceGuTexMapMode(texMapMode1, 0, 0);
 	sceGuTexProjMapMode(texProjMode1);
+	sceGuLogicalOp(logicOp1);
 
 	sceGumMatrixMode(GU_VIEW);
 	sceGumLoadIdentity();
@@ -1373,6 +1379,7 @@ void drawRectangles()
 	sceGuTexOffset(texOffsetU2, texOffsetV2);
 	sceGuTexMapMode(texMapMode2, 0, 0);
 	sceGuTexProjMapMode(texProjMode2);
+	sceGuLogicalOp(logicOp2);
 
 	sceGumMatrixMode(GU_VIEW);
 	sceGumLoadIdentity();
@@ -1818,6 +1825,10 @@ void init()
 	setAttributeValueNames(&texProjModeNames[0]);
 	y++;
 
+	addAttribute("Logical Operation", &logicOp1, NULL, x + 6, y, 0, 15, 1, NULL);
+	setAttributeValueNames(&logicOpNames[0]);
+	y++;
+
 	rectangle2VertexColor.r = 0xFF;
 	rectangle2VertexColor.g = 0x00;
 	rectangle2VertexColor.b = 0x00;
@@ -1914,6 +1925,10 @@ void init()
 	y++;
 	addAttribute("Texture Projection Mode", &texProjMode2, NULL, x + 6, y, 0, 3, 1, NULL);
 	setAttributeValueNames(&texProjModeNames[0]);
+	y++;
+
+	addAttribute("Logical Operation", &logicOp2, NULL, x + 6, y, 0, 15, 1, NULL);
+	setAttributeValueNames(&logicOpNames[0]);
 	y++;
 
 	addAttribute("Use Vertex Color", &vertexColorFlag, NULL, x, y, 0, 1, 1, NULL);
