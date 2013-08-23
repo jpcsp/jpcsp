@@ -609,6 +609,14 @@ int logicOp2 = GU_COPY;
 char *logicOpNames[] = { "GU_CLEAR", "GU_AND", "GU_AND_REVERSE", "GU_COPY", "GU_AND_INVERTED", "GU_NOOP", "GU_XOR", "GU_OR",
                          "GU_NOR", "GU_EQUIV", "GU_INVERTED", "GU_OR_REVERSE", "GU_COPY_INVERTED", "GU_OR_INVERTED", "GU_NAND", "GU_SET" };
 
+int colorTestFunc1 = GU_ALWAYS;
+int colorTestFunc2 = GU_ALWAYS;
+char *colorTestFuncNames[] = { "GU_NEVER", "GU_ALWAYS", "GU_EQUAL", "GU_NOTEQUAL" };
+struct Color colorTestRef1;
+struct Color colorTestRef2;
+struct Color colorTestMask1;
+struct Color colorTestMask2;
+
 u16 zTestPixelDepth;
 u32 geTestPixelValue;
 
@@ -1174,9 +1182,9 @@ void drawRectangles()
 	if (materialDiffuseFlag ) materialFlags |= GU_DIFFUSE;
 	if (materialSpecularFlag) materialFlags |= GU_SPECULAR;
 	sceGuColorMaterial(materialFlags);
-	sceGuMaterial(GU_AMBIENT , getColor(&materialAmbient ));
+	sceGuMaterial(GU_AMBIENT , getColor(&materialAmbient));
 	sendCommandi(88, (getColor(&materialAmbient) >> 24) & 0xFF);
-	sceGuMaterial(GU_DIFFUSE , getColor(&materialDiffuse ));
+	sceGuMaterial(GU_DIFFUSE , getColor(&materialDiffuse));
 	sceGuMaterial(GU_SPECULAR, getColor(&materialSpecular));
 	if (materialEmissiveFlag)
 	{
@@ -1247,6 +1255,7 @@ void drawRectangles()
 	sceGuTexMapMode(texMapMode1, 0, 0);
 	sceGuTexProjMapMode(texProjMode1);
 	sceGuLogicalOp(logicOp1);
+	sceGuColorFunc(colorTestFunc1, getColor(&colorTestRef1), getColor(&colorTestMask1));
 
 	sceGumMatrixMode(GU_VIEW);
 	sceGumLoadIdentity();
@@ -1380,6 +1389,7 @@ void drawRectangles()
 	sceGuTexMapMode(texMapMode2, 0, 0);
 	sceGuTexProjMapMode(texProjMode2);
 	sceGuLogicalOp(logicOp2);
+	sceGuColorFunc(colorTestFunc2, getColor(&colorTestRef2), getColor(&colorTestMask2));
 
 	sceGumMatrixMode(GU_VIEW);
 	sceGumLoadIdentity();
@@ -1747,6 +1757,10 @@ void init()
 	rectangle1normal.x = 0;
 	rectangle1normal.y = 0;
 	rectangle1normal.z = 1;
+	colorTestMask1.r = colorTestMask1.g = colorTestMask1.b = 0xFF;
+	colorTestRef1.r = 0x00;
+	colorTestRef1.g = 0xFF;
+	colorTestRef1.b = 0x00;
 
 	addAttribute("Rect1 pos X", NULL, &rectangle1translation.x, x, y, -10, 10, 0.1, NULL);
 	addAttribute(", Y", NULL, &rectangle1translation.y, x + 17, y, -10, 10, 0.1, NULL);
@@ -1829,6 +1843,14 @@ void init()
 	setAttributeValueNames(&logicOpNames[0]);
 	y++;
 
+	addAttribute("Color Test Function", &colorTestFunc1, NULL, x + 6, y, 0, 3, 1, NULL);
+	setAttributeValueNames(&colorTestFuncNames[0]);
+	y++;
+	addColorAttribute("Color Test Reference R", &colorTestRef1, x + 6, y, 0, 0x10);
+	y++;
+	addColorAttribute("Color Test Mask R", &colorTestMask1, x + 6, y, 0, 0x10);
+	y++;
+
 	rectangle2VertexColor.r = 0xFF;
 	rectangle2VertexColor.g = 0x00;
 	rectangle2VertexColor.b = 0x00;
@@ -1849,6 +1871,10 @@ void init()
 	rectangle2normal.x = 0;
 	rectangle2normal.y = 0;
 	rectangle2normal.z = 1;
+	colorTestMask2.r = colorTestMask2.g = colorTestMask2.b = 0xFF;
+	colorTestRef2.r = 0xFF;
+	colorTestRef2.g = 0x00;
+	colorTestRef2.b = 0x00;
 
 	addAttribute("Rect2 pos X", NULL, &rectangle2translation.x,  x, y, -10, 10, 0.1, NULL);
 	addAttribute(", Y", NULL, &rectangle2translation.y, x + 17, y, -10, 10, 0.1, NULL);
@@ -1929,6 +1955,14 @@ void init()
 
 	addAttribute("Logical Operation", &logicOp2, NULL, x + 6, y, 0, 15, 1, NULL);
 	setAttributeValueNames(&logicOpNames[0]);
+	y++;
+
+	addAttribute("Color Test Function", &colorTestFunc2, NULL, x + 6, y, 0, 3, 1, NULL);
+	setAttributeValueNames(&colorTestFuncNames[0]);
+	y++;
+	addColorAttribute("Color Test Reference", &colorTestRef2, x + 6, y, 0, 0x10);
+	y++;
+	addColorAttribute("Color Test Mask R", &colorTestMask2, x + 6, y, 0, 0x10);
 	y++;
 
 	addAttribute("Use Vertex Color", &vertexColorFlag, NULL, x, y, 0, 1, 1, NULL);
