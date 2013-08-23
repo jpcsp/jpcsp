@@ -18,8 +18,6 @@ package jpcsp.HLE.modules271;
 
 import static jpcsp.graphics.GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 import static jpcsp.graphics.RE.IRenderingEngine.sizeOfTextureType;
-import static jpcsp.graphics.RE.software.ImageWriter.color8888to4444;
-import static jpcsp.memory.ImageReader.color4444to8888;
 import static jpcsp.memory.ImageReader.colorARGBtoABGR;
 
 import java.awt.image.BufferedImage;
@@ -47,6 +45,7 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.software.PixelColor;
 import jpcsp.hardware.Screen;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
@@ -58,77 +57,6 @@ import jpcsp.util.Utilities;
 @HLELogging
 public class sceJpeg extends HLEModule {
     public static Logger log = Modules.getLogger("sceJpeg");
-
-    private static class MemoryWriter2Bits implements IMemoryWriter {
-    	private final IMemoryWriter memoryWriter;
-    	private int index;
-    	private int byteValue;
-
-    	public MemoryWriter2Bits(int address) {
-    		memoryWriter = MemoryWriter.getMemoryWriter(address, 1);
-    	}
-
-    	@Override
-		public void writeNext(int value) {
-    		byteValue |= (value & 0x03) << index;
-    		index += 2;
-
-    		if (index == 8) {
-    			memoryWriter.writeNext(byteValue);
-    			byteValue = 0;
-    			index = 0;
-    		}
-		}
-
-		@Override
-		public void skip(int n) {
-			memoryWriter.skip(n);
-		}
-
-		@Override
-		public void flush() {
-			memoryWriter.flush();
-			index = 0;
-			byteValue = 0;
-		}
-
-		@Override
-		public int getCurrentAddress() {
-			return memoryWriter.getCurrentAddress();
-		}
-    }
-
-    private static class MemoryReader2Bits implements IMemoryReader {
-    	private final IMemoryReader memoryReader;
-    	private int index;
-    	private int byteValue;
-
-    	public MemoryReader2Bits(int address) {
-    		memoryReader = MemoryReader.getMemoryReader(address, 1);
-    	}
-
-		@Override
-		public int readNext() {
-			if (index == 0) {
-				byteValue = memoryReader.readNext();
-			}
-			int value = (byteValue >> index) & 0x03;
-			index = (index + 2) & 7;
-
-			return value;
-		}
-
-		@Override
-		public void skip(int n) {
-			memoryReader.skip(n);
-			index = 0;
-		}
-
-		@Override
-		public int getCurrentAddress() {
-			return memoryReader.getCurrentAddress();
-		}
-    }
 
     @Override
     public String getName() {
@@ -156,12 +84,44 @@ public class sceJpeg extends HLEModule {
         super.stop();
     }
 
-    private static int colorYCbCrToABGR(int yCbCr) {
-    	return color4444to8888(yCbCr) | 0xFF000000;
+    private static int clamp(float value) {
+    	return clamp8bit((int) value);
+    }
+
+    public static int clamp8bit(int value) {
+    	return Math.min(0xFF, Math.max(0, value));
+    }
+
+    private static int colorYCbCrToABGR(int y, int cb, int cr) {
+		// based on http://en.wikipedia.org/wiki/Yuv#Y.27UV444_to_RGB888_conversion
+    	cb -= 128;
+    	cr -= 128;
+		int r = clamp8bit(y + cr + (cr >> 2) + (cr >> 3) + (cr >> 5));
+		int g = clamp8bit(y - ((cb >> 2) + (cb >> 4) + (cb >> 5)) - ((cr >> 1) + (cr >> 3) + (cr >> 4) + (cr >> 5)));
+		int b = clamp8bit(y + cb + (cb >> 1) + (cb >> 2) + (cb >> 6));
+    	return PixelColor.getColorBGR(b, g, r) | 0xFF000000;
     }
 
     private static int colorARGBToYCbCr(int argb) {
-    	return color8888to4444(colorARGBtoABGR(argb & 0x00FFFFFF));
+    	int r = (argb >> 16) & 0xFF;
+    	int g = (argb >> 8) & 0xFF;
+    	int b = argb & 0xFF;
+    	int y = clamp(0.299f * r + 0.587f * g + 0.114f * b);
+    	int cb = clamp(-0.169f * r - 0.331f * g + 0.499f * b + 128f);
+    	int cr = clamp(0.499f * r - 0.418f * g - 0.0813f * b + 128f);
+    	return PixelColor.getColorBGR(y, cb, cr);
+    }
+
+    private static int getY(int ycbcr) {
+    	return PixelColor.getBlue(ycbcr);
+    }
+
+    private static int getCb(int ycbcr) {
+    	return PixelColor.getGreen(ycbcr);
+    }
+
+    private static int getCr(int ycbcr) {
+    	return PixelColor.getRed(ycbcr);
     }
 
     protected static BufferedImage readJpegImage(TPointer jpegBuffer, int jpegBufferSize) {
@@ -252,27 +212,39 @@ public class sceJpeg extends HLEModule {
         int width = bufferedImage.getWidth();
         int height = bufferedImage.getHeight();
 
-        int address1 = yCbCrBuffer.getAddress();
-        int address2 = address1 + width * height;
-        int address3 = address2 + ((width * height) >> 2);
+        int sizeY = width * height;
+        int sizeCb = sizeY >> 2;
+        int addressY = yCbCrBuffer.getAddress();
+        int addressCb = addressY + sizeY;
+        int addressCr = addressCb + sizeCb;
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("hleJpegDecodeYCbCr 0x%08X, 0x%08X, 0x%08X", address1, address2, address3));
+        	log.debug(String.format("hleJpegDecodeYCbCr 0x%08X, 0x%08X, 0x%08X", addressY, addressCb, addressCr));
         }
-        IMemoryWriter imageWriter1 = MemoryWriter.getMemoryWriter(address1, yCbCrBufferSize, 1);
-        IMemoryWriter imageWriter2 = new MemoryWriter2Bits(address2);
-        IMemoryWriter imageWriter3 = new MemoryWriter2Bits(address3);
+        IMemoryWriter imageWriterY = MemoryWriter.getMemoryWriter(addressY, sizeY, 1);
+        IMemoryWriter imageWriterCb = MemoryWriter.getMemoryWriter(addressCb, sizeCb, 1);
+        IMemoryWriter imageWriterCr = MemoryWriter.getMemoryWriter(addressCr, sizeCb, 1);
     	for (int y = 0; y < height; y++) {
-    		for (int x = 0; x < width; x++) {
-                int argb = bufferedImage.getRGB(x, y);
-                int yCbCr = colorARGBToYCbCr(argb);
-                imageWriter1.writeNext(yCbCr & 0xFF);
-                imageWriter2.writeNext(yCbCr >> 8);
-                imageWriter3.writeNext(yCbCr >> 10);
+    		for (int x = 0; x < width; x += 4) {
+                int argb0 = bufferedImage.getRGB(x, y);
+                int yCbCr0 = colorARGBToYCbCr(argb0);
+                int argb1 = bufferedImage.getRGB(x + 1, y);
+                int yCbCr1 = colorARGBToYCbCr(argb1);
+                int argb2 = bufferedImage.getRGB(x + 2, y);
+                int yCbCr2 = colorARGBToYCbCr(argb2);
+                int argb3 = bufferedImage.getRGB(x + 3, y);
+                int yCbCr3 = colorARGBToYCbCr(argb3);
+                imageWriterY.writeNext(getY(yCbCr0));
+                imageWriterY.writeNext(getY(yCbCr1));
+                imageWriterY.writeNext(getY(yCbCr2));
+                imageWriterY.writeNext(getY(yCbCr3));
+                // Take Cb/Cr from first pixel
+                imageWriterCb.writeNext(getCb(yCbCr0));
+                imageWriterCr.writeNext(getCr(yCbCr0));
     		}
     	}
-    	imageWriter1.flush();
-    	imageWriter2.flush();
-    	imageWriter3.flush();
+    	imageWriterY.flush();
+    	imageWriterCb.flush();
+    	imageWriterCr.flush();
     	
         return getWidthHeight(width, height);
     }
@@ -298,24 +270,37 @@ public class sceJpeg extends HLEModule {
         int imageSizeInBytes = height * bufferWidth * bytesPerPixel;
         IMemoryWriter imageWriter = MemoryWriter.getMemoryWriter(imageBuffer.getAddress(), imageSizeInBytes, bytesPerPixel);
 
-        int address1 = yCbCrBuffer.getAddress();
-        int address2 = address1 + width * height;
-        int address3 = address2 + ((width * height) >> 2);
+        int sizeY = width * height;
+        int sizeCb = sizeY >> 2;
+        int addressY = yCbCrBuffer.getAddress();
+        int addressCb = addressY + sizeY;
+        int addressCr = addressCb + sizeCb;
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("hleJpegCsc 0x%08X, 0x%08X, 0x%08X", address1, address2, address3));
+        	log.debug(String.format("hleJpegCsc 0x%08X, 0x%08X, 0x%08X", addressY, addressCb, addressCr));
         }
-        IMemoryReader imageReader1 = MemoryReader.getMemoryReader(address1, 1);
-        IMemoryReader imageReader2 = new MemoryReader2Bits(address2);
-        IMemoryReader imageReader3 = new MemoryReader2Bits(address3);
+        IMemoryReader imageReaderY = MemoryReader.getMemoryReader(addressY, sizeY, 1);
+        IMemoryReader imageReaderCb = MemoryReader.getMemoryReader(addressCb, sizeCb, 1);
+        IMemoryReader imageReaderCr = MemoryReader.getMemoryReader(addressCr, sizeCb, 1);
         for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-            	int yCbCr = imageReader1.readNext() | (imageReader2.readNext() << 8) | (imageReader3.readNext() << 10);
+            for (int x = 0; x < width; x += 4) {
+            	int y0 = imageReaderY.readNext();
+            	int y1 = imageReaderY.readNext();
+            	int y2 = imageReaderY.readNext();
+            	int y3 = imageReaderY.readNext();
+            	int cb = imageReaderCb.readNext();
+            	int cr = imageReaderCr.readNext();
 
             	// Convert yCbCr to ABGR
-            	int abgr = colorYCbCrToABGR(yCbCr);
+            	int abgr0 = colorYCbCrToABGR(y0, cb, cr);
+            	int abgr1 = colorYCbCrToABGR(y1, cb, cr);
+            	int abgr2 = colorYCbCrToABGR(y2, cb, cr);
+            	int abgr3 = colorYCbCrToABGR(y3, cb, cr);
 
             	// Write ABGR
-                imageWriter.writeNext(abgr);
+                imageWriter.writeNext(abgr0);
+                imageWriter.writeNext(abgr1);
+                imageWriter.writeNext(abgr2);
+                imageWriter.writeNext(abgr3);
             }
             imageWriter.skip(skipEndOfLine);
         }
