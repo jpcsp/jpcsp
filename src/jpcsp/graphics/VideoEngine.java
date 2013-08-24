@@ -206,6 +206,7 @@ public class VideoEngine {
     private boolean isLogWarnEnabled;
     private boolean isGeProfilerEnabled;
     private int primCount;
+    private int nopCount;
     private boolean viewportChanged;
     public MatrixUpload projectionMatrixUpload;
     public MatrixUpload modelMatrixUpload;
@@ -790,6 +791,7 @@ public class VideoEngine {
         maxSpriteHeight = 0;
         maxSpriteWidth = 0;
         primCount = 0;
+        nopCount = 0;
 
         // Reset all the values
         for (int i = 0; i < currentListCMDValues.length; i++) {
@@ -2079,6 +2081,10 @@ public class VideoEngine {
                     }
                     break;
                 }
+            } else if (cmd == NOP) {
+                if (isLogDebugEnabled) {
+                    log.debug(String.format("%s 0x%06X integrated in MultiDrawArrays", helper.getCommandString(cmd), intArgument(instruction)));
+                }
             } else if (GeCommands.pureStateCommands[cmd]) {
                 if (cmd == FFACE) {
                     // Some applications generate the following sequence:
@@ -3355,10 +3361,17 @@ public class VideoEngine {
             log(helper.getCommandString(NOP));
         }
 
-        // Check if we are not reading from an invalid memory region.
-        // Abort the list if this is the case.
-        // This is only done in the NOP command to not impact performance.
-        checkCurrentListPc();
+        nopCount++;
+        if (nopCount > 1000) {
+        	// More than 1000 NOP instructions executed during this list,
+        	// something must be wrong...
+        	error(String.format("Too many NOP instructions executed (%d) at 0x%08X", nopCount, currentList.getPc()));
+        } else {
+	        // Check if we are not reading from an invalid memory region.
+	        // Abort the list if this is the case.
+	        // This is only done in the NOP command to not impact performance.
+	        checkCurrentListPc();
+        }
     }
 
     private void executeCommandVADDR() {
@@ -3438,16 +3451,22 @@ public class VideoEngine {
         int oldPc = currentList.getPc();
         currentList.callRelativeOffset(normalArgument);
         int newPc = currentList.getPc();
-        if (cachedInstructions.containsKey(newPc)) {
-            int[] instructions = cachedInstructions.get(newPc);
-            if (instructions != null) {
-                int memorySize = instructions.length << 2;
-                if (isLogInfoEnabled) {
-                    log.info(String.format("call using cached instructions 0x%08X-0x%08X", newPc, newPc + memorySize));
-                }
-                IMemoryReader memoryReader = MemoryReader.getMemoryReader(instructions, 0, memorySize);
-                currentList.setMemoryReader(memoryReader);
-            }
+        if (!Memory.isAddressGood(newPc)) {
+        	error(String.format("Call instruction to invalid address 0x%08X", newPc));
+        	// Return immediately
+        	currentList.ret();
+        } else {
+	        if (cachedInstructions.containsKey(newPc)) {
+	            int[] instructions = cachedInstructions.get(newPc);
+	            if (instructions != null) {
+	                int memorySize = instructions.length << 2;
+	                if (isLogInfoEnabled) {
+	                    log.info(String.format("call using cached instructions 0x%08X-0x%08X", newPc, newPc + memorySize));
+	                }
+	                IMemoryReader memoryReader = MemoryReader.getMemoryReader(instructions, 0, memorySize);
+	                currentList.setMemoryReader(memoryReader);
+	            }
+	        }
         }
 
         if (isLogDebugEnabled) {

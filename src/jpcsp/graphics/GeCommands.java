@@ -733,7 +733,7 @@ public class GeCommands {
         for (int i = 0; i < pureStateCommands.length; i++) {
         	pureStateCommands[i] = false;
         }
-        pureStateCommands[NOP] = true;
+        pureStateCommands[NOP] = false; // Perform error checking during NOP
         pureStateCommands[BASE] = true;
         pureStateCommands[VTYPE] = true;
         pureStateCommands[REGION1] = true;
