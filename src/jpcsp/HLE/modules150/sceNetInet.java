@@ -85,8 +85,9 @@ public class sceNetInet extends HLEModule {
     public static final int SOCK_STREAM = 1; // Stream socket
     public static final int SOCK_DGRAM = 2; // Datagram socket
     public static final int SOCK_RAW = 3; // Raw socket
+    public static final int SOCK_STREAM_UNKNOWN_10 = 10; // Looks like a SOCK_STREAM, but specifics unknown
     private static final String[] socketTypeNames = new String[] {
-    	"Unknown0", "SOCK_STREAM", "SOCK_DGRAM", "SOCK_RAW"
+    	"Unknown0", "SOCK_STREAM", "SOCK_DGRAM", "SOCK_RAW", "Unknown4", "Unknown5", "Unknown6", "Unknown7", "Unknown8", "Unknown9", "SOCK_STREAM_UNKNOWN_10"
     };
 
     public static final int SOL_SOCKET = 0xFFFF; // Socket level
@@ -2053,6 +2054,8 @@ public class sceNetInet extends HLEModule {
     		inetSocket = new pspInetDatagramSocket(uid);
     	} else if (type == SOCK_RAW) {
     		inetSocket = new pspInetRawSocket(uid, protocol);
+    	} else if (type == SOCK_STREAM_UNKNOWN_10) {
+    		inetSocket = new pspInetStreamSocket(uid);
     	}
     	sockets.put(uid, inetSocket);
 
@@ -2882,7 +2885,7 @@ public class sceNetInet extends HLEModule {
 	}
 
 	@HLEFunction(nid = 0x5BE8D595, version = 150)
-	public int sceNetInetSelect(int numberSockets, TPointer readSocketsAddr, TPointer writeSocketsAddr, TPointer outOfBandSocketsAddr, TPointer32 timeoutAddr) {
+	public int sceNetInetSelect(int numberSockets, @CanBeNull TPointer readSocketsAddr, @CanBeNull TPointer writeSocketsAddr, @CanBeNull TPointer outOfBandSocketsAddr, @CanBeNull TPointer32 timeoutAddr) {
 		int result = 0;
 		numberSockets = Math.min(numberSockets, 256);
 
@@ -3060,7 +3063,7 @@ public class sceNetInet extends HLEModule {
 			log.warn(String.format("sceNetInetSocket unsupported domain=0x%X, type=0x%X(%s), protocol=0x%X", domain, type, getSocketTypeNameString(type), protocol));
 			return -1;
 		}
-		if (type != SOCK_DGRAM && type != SOCK_STREAM && type != SOCK_RAW) {
+		if (type != SOCK_DGRAM && type != SOCK_STREAM && type != SOCK_RAW && type != SOCK_STREAM_UNKNOWN_10) {
 			log.warn(String.format("sceNetInetSocket unsupported type=0x%X(%s), domain=0x%X, protocol=0x%X", type, getSocketTypeNameString(type), domain, protocol));
 			return -1;
 		}
