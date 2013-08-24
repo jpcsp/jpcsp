@@ -473,21 +473,23 @@ public class sceUtility extends HLEModule {
         public final int executeUpdate(int drawSpeed) {
             if (Modules.sceUtilityModule.startedDialogState == null || Modules.sceUtilityModule.startedDialogState != this) {
                 if (log.isDebugEnabled()) {
-                    log.debug(String.format("%Update returning ERROR_UTILITY_WRONG_TYPE", name));
+                    log.debug(String.format("%sUpdate returning ERROR_UTILITY_WRONG_TYPE", name));
                 }
                 return SceKernelErrors.ERROR_UTILITY_WRONG_TYPE;
             }
 
-            if (log.isDebugEnabled()) {
-                log.debug(name + "Update drawSpeed=" + drawSpeed);
-            }
+            // PSP is returning ERROR_UTILITY_INVALID_STATUS when not in STATUS_VISIBLE
+            int result = SceKernelErrors.ERROR_UTILITY_INVALID_STATUS;
 
             if (status == PSP_UTILITY_DIALOG_STATUS_INIT && isReadyForVisible()) {
                 // Move from INIT to VISIBLE
                 status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
                 startVisibleTimeMillis = Emulator.getClock().currentTimeMillis();
             } else if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE) {
-                // Some games reach sceUtilitySavedataInitStart with empty params which only
+                // PSP is returning 0 only in STATUS_VISIBLE
+            	result = 0;
+
+            	// Some games reach sceUtilitySavedataInitStart with empty params which only
                 // get filled with a subsequent call to sceUtilitySavedataUpdate (eg.: To Love-Ru).
                 // This is why we have to re-read the params here.
                 params.read(paramsAddr);
@@ -517,7 +519,10 @@ public class sceUtility extends HLEModule {
                 }
             }
 
-            return 0;
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("%sUpdate returning 0x%08X", name, result));
+            }
+            return result;
         }
 
         public int executeAbort() {
