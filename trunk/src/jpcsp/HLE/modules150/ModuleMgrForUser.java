@@ -703,6 +703,10 @@ public class ModuleMgrForUser extends HLEModule {
         moduleInfo.copy(sceModule);
         moduleInfo.write(infoAddr);
 
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceKernelQueryModuleInfo returning %s", Utilities.getMemoryDump(infoAddr.getAddress(), infoAddr.getValue32())));
+        }
+
         return 0;
     }
 
