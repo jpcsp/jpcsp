@@ -489,7 +489,6 @@ public class Loader {
         Memory mem = Memory.getInstance();
 
         int i = 0;
-        module.bss_size = 0;
         for (Elf32ProgramHeader phdr : programHeaderList) {
         	if (log.isTraceEnabled()) {
         		log.trace(String.format("ELF Program Header: %s", phdr.toString()));
@@ -539,10 +538,9 @@ public class Loader {
                     }
                 }
 
-                if (log.isTraceEnabled()) {
-                	log.trace(String.format("PH#%d: contributes %08X to bss size", i, (int)(phdr.getP_memsz() - phdr.getP_filesz())));
-                }
-                module.bss_size += (int)(phdr.getP_memsz() - phdr.getP_filesz());
+                module.segmentaddr[module.nsegment] = memOffset;
+                module.segmentsize[module.nsegment] = memLen;
+                module.nsegment++;
             }
             i++;
         }
@@ -553,11 +551,14 @@ public class Loader {
     }
 
     /** Load some sections into memory */
-    private void LoadELFSections(ByteBuffer f, SceModule module, int baseAddress,
-        Elf32 elf, int elfOffset, boolean analyzeOnly) throws IOException {
-
+    private void LoadELFSections(ByteBuffer f, SceModule module, int baseAddress, Elf32 elf, int elfOffset, boolean analyzeOnly) throws IOException {
         List<Elf32SectionHeader> sectionHeaderList = elf.getSectionHeaderList();
         Memory mem = Memory.getInstance();
+
+        module.text_addr = baseAddress;
+        module.text_size = 0;
+        module.data_size = 0;
+        module.bss_size = 0;
 
         for (Elf32SectionHeader shdr : sectionHeaderList) {
         	if (log.isTraceEnabled()) {
@@ -600,6 +601,18 @@ public class Loader {
 	                            log.warn(String.format("%s: section allocates more than program %08X - %08X", shdr.getSh_namez(), memOffset, (memOffset + len)));
 	                            module.loadAddressHigh = memOffset + len;
 	                        }
+
+	                        if ((flags & SHF_WRITE) != 0) {
+	                        	module.data_size += len;
+	                        	if (log.isTraceEnabled()) {
+	                        		log.trace(String.format("Section Header as data, len=0x%08X, data_size=0x%08X", len, module.data_size));
+	                        	}
+	                        } else {
+	                        	module.text_size += len;
+	                        	if (log.isTraceEnabled()) {
+	                        		log.trace(String.format("Section Header as text, len=0x%08X, text_size=0x%08X", len, module.text_size));
+	                        	}
+	                        }
                         }
                         break;
                     }
@@ -634,6 +647,8 @@ public class Loader {
                                 	log.debug(String.format("%s: new loadAddressHigh %08X (+%08X)", shdr.getSh_namez(), module.loadAddressHigh, len));
                                 }
                             }
+
+                            module.bss_size += len;
                         }
                         break;
                     }
@@ -641,50 +656,9 @@ public class Loader {
             }
         }
 
-        // Save the address/size of some sections for SceModule
-        Elf32SectionHeader shdr = elf.getSectionHeader(".text");
-        if (shdr != null) {
-        	if (log.isTraceEnabled()) {
-        		log.trace(String.format("SH: Storing text size %08X %d", shdr.getSh_size(), shdr.getSh_size()));
-        	}
-            module.text_addr = (int)(baseAddress + shdr.getSh_addr());
-            module.text_size = (int)shdr.getSh_size();
-        }
-
-        shdr = elf.getSectionHeader(".data");
-        if (shdr != null) {
-        	if (log.isTraceEnabled()) {
-        		log.trace(String.format("SH: Storing data size %08X %d", shdr.getSh_size(), shdr.getSh_size()));
-        	}
-            module.data_size = (int)shdr.getSh_size();
-        }
-
-        shdr = elf.getSectionHeader(".bss");
-        if (shdr != null && shdr.getSh_size() != 0) {
-        	if (log.isTraceEnabled()) {
-        		log.trace(String.format("SH: Storing bss size %08X %d", shdr.getSh_size(), shdr.getSh_size()));
-        	}
-
-            if (module.bss_size == (int)shdr.getSh_size()) {
-            	if (log.isTraceEnabled()) {
-            		log.trace("SH: Same bss size already set");
-            	}
-            } else if (module.bss_size > (int)shdr.getSh_size()) {
-            	if (log.isTraceEnabled()) {
-            		log.trace(String.format("SH: Larger bss size already set (%08X > %08X)", module.bss_size, shdr.getSh_size()));
-            	}
-            } else if (module.bss_size != 0) {
-                log.warn(String.format("SH: Overwriting bss size %08X with %08X", module.bss_size, shdr.getSh_size()));
-                module.bss_size = (int)shdr.getSh_size();
-            } else {
-                log.info("SH: bss size not already set");
-                module.bss_size = (int)shdr.getSh_size();
-            }
-        }
-
-        module.nsegment += 1;
-        module.segmentaddr[0] = module.loadAddressLow;
-        module.segmentsize[0] = module.loadAddressHigh - module.loadAddressLow;
+        if (log.isTraceEnabled()) {
+    		log.trace(String.format("Storing module info: text addr 0x%08X, text_size 0x%08X, data_size 0x%08X, bss_size 0x%08X", module.text_addr, module.text_size, module.data_size, module.bss_size));
+    	}
     }
 
     private void LoadELFReserveMemory(SceModule module) {
