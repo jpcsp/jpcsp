@@ -208,6 +208,39 @@ public class sceJpeg extends HLEModule {
         return ((bufferedImage.getWidth() * bufferedImage.getHeight()) >> 1) * 3;
     }
 
+    /**
+     * Convert an image to YUV420p format.
+     *
+     * See http://en.wikipedia.org/wiki/Yuv#Y.27UV420p_.28and_Y.27V12_or_YV12.29_to_RGB888_conversion
+     * for the description of the YUV420p format:
+     *
+     * "Y'UV420p is a planar format, meaning that the Y', U, and V values are grouped together instead of interspersed.
+     *  The reason for this is that by grouping the U and V values together, the image becomes much more compressible.
+     *  When given an array of an image in the Y'UV420p format, all the Y' values come first,
+     *  followed by all the U values, followed finally by all the V values.
+     *  
+     *  As with most Y'UV formats, there are as many Y' values as there are pixels.
+     *  Where X equals the height multiplied by the width,
+     *  the first X indices in the array are Y' values that correspond to each individual pixel.
+     *  However, there are only one fourth as many U and V values.
+     *  The U and V values correspond to each 2 by 2 block of the image,
+     *  meaning each U and V entry applies to four pixels. After the Y' values,
+     *  the next X/4 indices are the U values for each 2 by 2 block,
+     *  and the next X/4 indices after that are the V values that also apply to each 2 by 2 block.
+     *
+     *		size.total = size.width * size.height;
+     *		y = yuv[position.y * size.width + position.x];
+     *		u = yuv[(position.y / 2) * (size.width / 2) + (position.x / 2) + size.total];
+     *		v = yuv[(position.y / 2) * (size.width / 2) + (position.x / 2) + size.total + (size.total / 4)];
+     *		rgb = Y'UV444toRGB888(y, u, v);
+     * "
+     *
+     * @param bufferedImage		the source image.
+     * @param yCbCrBuffer		the destination image in YUV420p format.
+     * @param yCbCrBufferSize	the size of the destination buffer.
+     * @param dhtMode			unknown.
+     * @return					the width & height of the image.
+     */
     public int hleJpegDecodeYCbCr(BufferedImage bufferedImage, TPointer yCbCrBuffer, int yCbCrBufferSize, int dhtMode) {
         int width = bufferedImage.getWidth();
         int height = bufferedImage.getHeight();
@@ -220,29 +253,36 @@ public class sceJpeg extends HLEModule {
         if (log.isDebugEnabled()) {
         	log.debug(String.format("hleJpegDecodeYCbCr 0x%08X, 0x%08X, 0x%08X", addressY, addressCb, addressCr));
         }
+
+        // Store all the Cb and Cr values into an array as they will not be accessed sequentially.
+        int[] bufferCb = new int[sizeCb];
+        int[] bufferCr = new int[sizeCb];
         IMemoryWriter imageWriterY = MemoryWriter.getMemoryWriter(addressY, sizeY, 1);
-        IMemoryWriter imageWriterCb = MemoryWriter.getMemoryWriter(addressCb, sizeCb, 1);
-        IMemoryWriter imageWriterCr = MemoryWriter.getMemoryWriter(addressCr, sizeCb, 1);
     	for (int y = 0; y < height; y++) {
-    		for (int x = 0; x < width; x += 4) {
+        	int indexCb = (y >> 1) * (width >> 1);
+    		for (int x = 0; x < width; x += 2, indexCb++) {
                 int argb0 = bufferedImage.getRGB(x, y);
                 int yCbCr0 = colorARGBToYCbCr(argb0);
                 int argb1 = bufferedImage.getRGB(x + 1, y);
                 int yCbCr1 = colorARGBToYCbCr(argb1);
-                int argb2 = bufferedImage.getRGB(x + 2, y);
-                int yCbCr2 = colorARGBToYCbCr(argb2);
-                int argb3 = bufferedImage.getRGB(x + 3, y);
-                int yCbCr3 = colorARGBToYCbCr(argb3);
                 imageWriterY.writeNext(getY(yCbCr0));
                 imageWriterY.writeNext(getY(yCbCr1));
-                imageWriterY.writeNext(getY(yCbCr2));
-                imageWriterY.writeNext(getY(yCbCr3));
-                // Take Cb/Cr from first pixel
-                imageWriterCb.writeNext(getCb(yCbCr0));
-                imageWriterCr.writeNext(getCr(yCbCr0));
+
+                bufferCb[indexCb] += getCb(yCbCr0);
+                bufferCb[indexCb] += getCb(yCbCr1);
+                bufferCr[indexCb] += getCr(yCbCr0);
+                bufferCr[indexCb] += getCr(yCbCr1);
     		}
     	}
     	imageWriterY.flush();
+
+    	IMemoryWriter imageWriterCb = MemoryWriter.getMemoryWriter(addressCb, sizeCb, 1);
+        IMemoryWriter imageWriterCr = MemoryWriter.getMemoryWriter(addressCr, sizeCb, 1);
+        for (int i = 0; i < sizeCb; i++) {
+        	// 4 pixel values have been written for each Cb and Cr value, average them.
+        	imageWriterCb.writeNext(bufferCb[i] >> 2);
+        	imageWriterCr.writeNext(bufferCr[i] >> 2);
+        }
     	imageWriterCb.flush();
     	imageWriterCr.flush();
     	
@@ -259,6 +299,39 @@ public class sceJpeg extends HLEModule {
         return hleJpegDecodeYCbCr(bufferedImage, yCbCrBuffer, yCbCrBufferSize, dhtMode);
     }
 
+    /**
+     * Convert an image in YUV420p format to ABGR8888.
+     *
+     * See http://en.wikipedia.org/wiki/Yuv#Y.27UV420p_.28and_Y.27V12_or_YV12.29_to_RGB888_conversion
+     * for the description of the YUV420p format:
+     *
+     * "Y'UV420p is a planar format, meaning that the Y', U, and V values are grouped together instead of interspersed.
+     *  The reason for this is that by grouping the U and V values together, the image becomes much more compressible.
+     *  When given an array of an image in the Y'UV420p format, all the Y' values come first,
+     *  followed by all the U values, followed finally by all the V values.
+     *  
+     *  As with most Y'UV formats, there are as many Y' values as there are pixels.
+     *  Where X equals the height multiplied by the width,
+     *  the first X indices in the array are Y' values that correspond to each individual pixel.
+     *  However, there are only one fourth as many U and V values.
+     *  The U and V values correspond to each 2 by 2 block of the image,
+     *  meaning each U and V entry applies to four pixels. After the Y' values,
+     *  the next X/4 indices are the U values for each 2 by 2 block,
+     *  and the next X/4 indices after that are the V values that also apply to each 2 by 2 block.
+     *
+     *		size.total = size.width * size.height;
+     *		y = yuv[position.y * size.width + position.x];
+     *		u = yuv[(position.y / 2) * (size.width / 2) + (position.x / 2) + size.total];
+     *		v = yuv[(position.y / 2) * (size.width / 2) + (position.x / 2) + size.total + (size.total / 4)];
+     *		rgb = Y'UV444toRGB888(y, u, v);
+     * "
+     *
+     * @param imageBuffer	output image in ABGR8888 format.
+     * @param yCbCrBuffer   input image in YUV420p format.
+     * @param widthHeight   width & height of the image
+     * @param bufferWidth   buffer width of the image
+     * @return               0
+     */
     protected int hleJpegCsc(TPointer imageBuffer, TPointer yCbCrBuffer, int widthHeight, int bufferWidth) {
         int height = getHeight(widthHeight);
         int width = getWidth(widthHeight);
@@ -278,29 +351,33 @@ public class sceJpeg extends HLEModule {
         if (log.isDebugEnabled()) {
         	log.debug(String.format("hleJpegCsc 0x%08X, 0x%08X, 0x%08X", addressY, addressCb, addressCr));
         }
-        IMemoryReader imageReaderY = MemoryReader.getMemoryReader(addressY, sizeY, 1);
+
+        // Read all the Cb and Cr values into an array as they will not be accessed sequentially.
+        int[] bufferCb = new int[sizeCb];
+        int[] bufferCr = new int[sizeCb];
         IMemoryReader imageReaderCb = MemoryReader.getMemoryReader(addressCb, sizeCb, 1);
         IMemoryReader imageReaderCr = MemoryReader.getMemoryReader(addressCr, sizeCb, 1);
+        for (int i = 0; i < sizeCb; i++) {
+        	bufferCb[i] = imageReaderCb.readNext();
+        	bufferCr[i] = imageReaderCr.readNext();
+        }
+
+        IMemoryReader imageReaderY = MemoryReader.getMemoryReader(addressY, sizeY, 1);
         for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x += 4) {
+        	int indexCb = (y >> 1) * (width >> 1);
+            for (int x = 0; x < width; x += 2, indexCb++) {
             	int y0 = imageReaderY.readNext();
             	int y1 = imageReaderY.readNext();
-            	int y2 = imageReaderY.readNext();
-            	int y3 = imageReaderY.readNext();
-            	int cb = imageReaderCb.readNext();
-            	int cr = imageReaderCr.readNext();
+            	int cb = bufferCb[indexCb];
+            	int cr = bufferCr[indexCb];
 
             	// Convert yCbCr to ABGR
             	int abgr0 = colorYCbCrToABGR(y0, cb, cr);
             	int abgr1 = colorYCbCrToABGR(y1, cb, cr);
-            	int abgr2 = colorYCbCrToABGR(y2, cb, cr);
-            	int abgr3 = colorYCbCrToABGR(y3, cb, cr);
 
             	// Write ABGR
                 imageWriter.writeNext(abgr0);
                 imageWriter.writeNext(abgr1);
-                imageWriter.writeNext(abgr2);
-                imageWriter.writeNext(abgr3);
             }
             imageWriter.skip(skipEndOfLine);
         }
