@@ -102,6 +102,11 @@ public class MutexManager {
             // decrement numWaitThreads
             removeWaitingThread(thread);
         }
+        for (SceKernelMutexInfo info : mutexMap.values()) {
+        	if (info.threadid == thread.uid) {
+        		log.info(String.format("onThreadDeleted: thread %s owning mutex %s", thread, info));
+        	}
+        }
     }
 
     private void onMutexDeletedCancelled(int mid, int result) {
