@@ -2177,6 +2177,17 @@ public class VideoEngine {
             return;
         }
 
+        if (context.textureFlag.isEnabled() && !context.clearMode) {
+        	int textureAddr = context.texture_base_pointer[0] & Memory.addressMask;
+        	if (textureAddr > MemoryMap.END_VRAM && textureAddr < MemoryMap.START_VRAM + 0x800000) {
+        		if (isLogWarnEnabled) {
+        			log.warn(String.format("Texture in swizzled VRAM not supported 0x%08X", textureAddr));
+        		}
+        		endRendering(numberOfVertex);
+        		return;
+        	}
+        }
+
         if (type == GeCommands.PRIM_CONTINUE_PREVIOUS_PRIM) {
             // The PSP is continuing the previous PRIM command.
             // If the previous PRIM was a strip or a fan, the strip/fan is
@@ -2199,6 +2210,7 @@ public class VideoEngine {
             if (isLogDebugEnabled) {
                 log.debug(String.format("%s type %d unsufficient number of vertex %d", helper.getCommandString(PRIM), type, numberOfVertex));
             }
+            endRendering(numberOfVertex);
             return;
         }
 
@@ -3074,12 +3086,18 @@ public class VideoEngine {
 
         memoryForGEUpdated();
 
-        if (display.isGeAddress(context.textureTx_sourceAddress)) {
-            re.waitForRenderingCompletion();
-            display.copyGeToMemory(true);
+        boolean transferUsingMemcpy = false;
+        if (!display.isGeAddress(context.textureTx_destinationAddress) || bpp != bppGe || display.isUsingSoftwareRenderer()) {
+        	transferUsingMemcpy = true;
         }
 
-        if (!display.isGeAddress(context.textureTx_destinationAddress) || bpp != bppGe || display.isUsingSoftwareRenderer()) {
+        if (display.isGeAddress(context.textureTx_sourceAddress)) {
+            re.waitForRenderingCompletion();
+            // Force a copy to the memory if performing the transfer using memcpy
+            display.copyGeToMemory(true, transferUsingMemcpy);
+        }
+
+        if (transferUsingMemcpy) {
             if (isLogDebugEnabled) {
                 if (bpp != bppGe) {
                     log(helper.getCommandString(TRXKICK) + " BPP not compatible with GE");
@@ -5703,7 +5721,7 @@ public class VideoEngine {
             // If the texture is the current GE
             // first save the GE to memory before loading the texture.
             if (tex_addr == (context.fbp | MemoryMap.START_VRAM) && context.texture_storage == context.psm && context.texture_buffer_width[0] == context.fbw) {
-                display.copyGeToMemory(true);
+                display.copyGeToMemory(true, false);
                 // Re-bind the texture to be loaded, as the bind might have been changed during the GE copy.
                 re.bindTexture(context.currentTextureId);
             }

@@ -1156,7 +1156,7 @@ public class sceDisplay extends HLEModule {
         boolean loadGEToScreen = !isUsingSoftwareRenderer() && !VideoEngine.getInstance().isSkipThisFrame();
 
         if (copyGEToMemory && (ge.getTopAddr() != topaddr || ge.getPixelFormat() != pixelformat)) {
-            copyGeToMemory(false);
+            copyGeToMemory(false, false);
             loadGEToScreen = true;
         }
 
@@ -1503,7 +1503,7 @@ public class sceDisplay extends HLEModule {
         }
     }
 
-    public void copyGeToMemory(boolean preserveScreen) {
+    public void copyGeToMemory(boolean preserveScreen, boolean forceCopyToMemory) {
         if (isUsingSoftwareRenderer()) {
             // GE is already in memory when using the software renderer
             return;
@@ -1521,6 +1521,10 @@ public class sceDisplay extends HLEModule {
             GETexture geTexture = GETextureManager.getInstance().getGETexture(re, ge.getTopAddr(), ge.getBufferWidth(), ge.getWidth(), ge.getHeight(), ge.getPixelFormat(), true);
             geTexture.copyScreenToTexture(re);
         } else {
+        	forceCopyToMemory = true;
+        }
+
+        if (forceCopyToMemory) {
             // Set texFb as the current texture
             re.bindTexture(resizedTexFb);
             re.setTextureFormat(ge.getPixelFormat(), false);
