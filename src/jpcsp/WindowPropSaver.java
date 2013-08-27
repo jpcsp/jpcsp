@@ -91,6 +91,11 @@ public class WindowPropSaver implements AWTEventListener {
 
         String identifierForConfig = window.getClass().getSimpleName();
 
+        // do not load positions for standard dialogs (like file open)
+        if (identifierForConfig.equals("JDialog")) {
+            return;
+        }
+
         // MainGUI needs special handling due to being able to go fullscreen
         if (identifierForConfig.equals("MainGUI") && Emulator.getMainGUI().isFullScreen()) {
             return;
@@ -132,6 +137,11 @@ public class WindowPropSaver implements AWTEventListener {
 
         if (Settings.getInstance().readBool("gui.saveWindowPos")) {
             String identifierForConfig = window.getClass().getSimpleName();
+
+            // do not save positions for standard dialogs (like file open)
+            if (identifierForConfig.equals("JDialog")) {
+                return;
+            }
 
             // MainGUI needs special handling due to being able to go fullscreen
             if (identifierForConfig.equals("MainGUI") && Emulator.getMainGUI().isFullScreen()) {
