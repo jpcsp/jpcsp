@@ -432,7 +432,8 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
-        jButtonOK = new javax.swing.JButton();
+        controllerLabel = new javax.swing.JLabel();
+        controllerBox = new javax.swing.JComboBox();
         keyPanel = new javax.swing.JPanel();
         fgPanel = new javax.swing.JPanel();
         fieldStart = new javax.swing.JTextField();
@@ -458,21 +459,18 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         fieldAnalogLeft = new javax.swing.JTextField();
         fieldAnalogRight = new javax.swing.JTextField();
         bgLabel1 = new javax.swing.JLabel();
-        controllerBox = new javax.swing.JComboBox();
-        controllerLabel = new javax.swing.JLabel();
+        jButtonOK = new javax.swing.JButton();
         cancelButton = new jpcsp.GUI.CancelButton();
 
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("jpcsp/languages/jpcsp"); // NOI18N
         setTitle(bundle.getString("ControlsGUI.title")); // NOI18N
         setResizable(false);
 
-        jButtonOK.setText(bundle.getString("OkButton.text")); // NOI18N
-        jButtonOK.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonOKActionPerformed(evt);
-            }
-        });
+        controllerLabel.setText(bundle.getString("ControlsGUI.controllerLabel.text")); // NOI18N
 
+        controllerBox.setModel(makeControllerComboBoxModel());
+
+        keyPanel.setBackground(new java.awt.Color(255, 255, 255));
         keyPanel.setMinimumSize(new java.awt.Dimension(1, 1));
         keyPanel.setLayout(new java.awt.GridBagLayout());
 
@@ -481,10 +479,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         fgPanel.setPreferredSize(new java.awt.Dimension(614, 312));
 
         fieldStart.setEditable(false);
+        fieldStart.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldStart.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldStart.setText("Enter"); // NOI18N
         fieldStart.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldStart.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldStart.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldStart.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldStartMouseClicked(evt);
@@ -492,10 +491,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldSelect.setEditable(false);
+        fieldSelect.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldSelect.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldSelect.setText("Space"); // NOI18N
         fieldSelect.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldSelect.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldSelect.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldSelect.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldSelectMouseClicked(evt);
@@ -503,10 +503,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldCross.setEditable(false);
+        fieldCross.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldCross.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldCross.setText("S"); // NOI18N
         fieldCross.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldCross.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldCross.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldCross.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldCrossMouseClicked(evt);
@@ -514,10 +515,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldCircle.setEditable(false);
+        fieldCircle.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldCircle.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldCircle.setText("D"); // NOI18N
         fieldCircle.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldCircle.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldCircle.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldCircle.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldCircleMouseClicked(evt);
@@ -525,10 +527,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldTriangle.setEditable(false);
+        fieldTriangle.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldTriangle.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldTriangle.setText("W"); // NOI18N
         fieldTriangle.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldTriangle.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldTriangle.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldTriangle.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldTriangleMouseClicked(evt);
@@ -536,10 +539,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldSquare.setEditable(false);
+        fieldSquare.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldSquare.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldSquare.setText("A"); // NOI18N
         fieldSquare.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldSquare.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldSquare.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldSquare.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldSquareMouseClicked(evt);
@@ -547,10 +551,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldRight.setEditable(false);
+        fieldRight.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldRight.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldRight.setText("Right"); // NOI18N
         fieldRight.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldRight.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldRight.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldRight.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldRightMouseClicked(evt);
@@ -558,10 +563,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldUp.setEditable(false);
+        fieldUp.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldUp.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldUp.setText("Up"); // NOI18N
         fieldUp.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldUp.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldUp.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldUp.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldUpMouseClicked(evt);
@@ -569,10 +575,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldLeft.setEditable(false);
+        fieldLeft.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldLeft.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldLeft.setText("Left"); // NOI18N
         fieldLeft.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldLeft.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldLeft.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldLeft.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldLeftMouseClicked(evt);
@@ -580,10 +587,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldDown.setEditable(false);
+        fieldDown.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldDown.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldDown.setText("Down"); // NOI18N
         fieldDown.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldDown.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldDown.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldDown.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldDownMouseClicked(evt);
@@ -591,10 +599,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldHold.setEditable(false);
+        fieldHold.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldHold.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldHold.setText("O"); // NOI18N
         fieldHold.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldHold.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldHold.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldHold.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldHoldMouseClicked(evt);
@@ -602,10 +611,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldHome.setEditable(false);
+        fieldHome.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldHome.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldHome.setText("H"); // NOI18N
         fieldHome.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldHome.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldHome.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldHome.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldHomeMouseClicked(evt);
@@ -613,10 +623,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldVolMin.setEditable(false);
+        fieldVolMin.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldVolMin.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldVolMin.setText("-"); // NOI18N
         fieldVolMin.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldVolMin.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldVolMin.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldVolMin.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldVolMinMouseClicked(evt);
@@ -624,10 +635,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldVolPlus.setEditable(false);
+        fieldVolPlus.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldVolPlus.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldVolPlus.setText("+"); // NOI18N
         fieldVolPlus.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldVolPlus.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldVolPlus.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldVolPlus.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldVolPlusMouseClicked(evt);
@@ -635,10 +647,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldLTrigger.setEditable(false);
+        fieldLTrigger.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldLTrigger.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldLTrigger.setText("Q"); // NOI18N
         fieldLTrigger.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldLTrigger.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldLTrigger.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 0, 0), 1, true));
         fieldLTrigger.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldLTriggerMouseClicked(evt);
@@ -646,10 +659,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldRTrigger.setEditable(false);
+        fieldRTrigger.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldRTrigger.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldRTrigger.setText("E"); // NOI18N
         fieldRTrigger.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldRTrigger.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldRTrigger.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldRTrigger.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldRTriggerMouseClicked(evt);
@@ -657,10 +671,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldScreen.setEditable(false);
+        fieldScreen.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldScreen.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldScreen.setText("S"); // NOI18N
+        fieldScreen.setText("N"); // NOI18N
         fieldScreen.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldScreen.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldScreen.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldScreen.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldScreenMouseClicked(evt);
@@ -668,10 +683,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldMusic.setEditable(false);
+        fieldMusic.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldMusic.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        fieldMusic.setText("N"); // NOI18N
+        fieldMusic.setText("M"); // NOI18N
         fieldMusic.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldMusic.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldMusic.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldMusic.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldMusicMouseClicked(evt);
@@ -679,10 +695,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldAnalogUp.setEditable(false);
+        fieldAnalogUp.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldAnalogUp.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldAnalogUp.setText("I"); // NOI18N
         fieldAnalogUp.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldAnalogUp.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldAnalogUp.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldAnalogUp.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldAnalogUpMouseClicked(evt);
@@ -690,10 +707,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldAnalogDown.setEditable(false);
+        fieldAnalogDown.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldAnalogDown.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldAnalogDown.setText("K"); // NOI18N
         fieldAnalogDown.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldAnalogDown.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldAnalogDown.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldAnalogDown.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldAnalogDownMouseClicked(evt);
@@ -701,10 +719,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldAnalogLeft.setEditable(false);
+        fieldAnalogLeft.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldAnalogLeft.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldAnalogLeft.setText("J"); // NOI18N
         fieldAnalogLeft.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldAnalogLeft.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldAnalogLeft.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldAnalogLeft.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldAnalogLeftMouseClicked(evt);
@@ -712,10 +731,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         });
 
         fieldAnalogRight.setEditable(false);
+        fieldAnalogRight.setFont(new java.awt.Font("Courier New", 1, 12)); // NOI18N
         fieldAnalogRight.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldAnalogRight.setText("L"); // NOI18N
         fieldAnalogRight.setToolTipText(bundle.getString("ControlsGUI.fieldPutKey.text")); // NOI18N
-        fieldAnalogRight.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
+        fieldAnalogRight.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 1, true));
         fieldAnalogRight.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldAnalogRightMouseClicked(evt);
@@ -727,117 +747,104 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         fgPanelLayout.setHorizontalGroup(
             fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fgPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(fieldDown, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 484, Short.MAX_VALUE)
-                .addComponent(fieldCross, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
-            .addGroup(fgPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(fieldLTrigger, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 484, Short.MAX_VALUE)
-                .addComponent(fieldRTrigger, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fgPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(fieldLeft, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 484, Short.MAX_VALUE)
-                .addComponent(fieldCircle, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
-            .addGroup(fgPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(fieldRight, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 484, Short.MAX_VALUE)
-                .addComponent(fieldSquare, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fgPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(fieldUp, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 484, Short.MAX_VALUE)
-                .addComponent(fieldTriangle, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fgPanelLayout.createSequentialGroup()
-                .addContainerGap(547, Short.MAX_VALUE)
-                .addComponent(fieldHold, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fgPanelLayout.createSequentialGroup()
                 .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(fgPanelLayout.createSequentialGroup()
-                        .addGap(29, 29, 29)
-                        .addComponent(fieldAnalogUp, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 71, Short.MAX_VALUE)
-                        .addComponent(fieldHome, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(fieldVolPlus, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(48, 48, 48))
                     .addGroup(javax.swing.GroupLayout.Alignment.LEADING, fgPanelLayout.createSequentialGroup()
-                        .addComponent(fieldAnalogLeft, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(fieldAnalogLeft, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(fieldAnalogRight, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(76, 76, 76)
-                        .addComponent(fieldVolMin, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(fieldAnalogRight, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addGroup(fgPanelLayout.createSequentialGroup()
+                        .addGap(35, 35, 35)
+                        .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(fgPanelLayout.createSequentialGroup()
+                                .addComponent(fieldAnalogDown, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(135, 135, 135)
+                                .addComponent(fieldVolMin, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(fieldAnalogUp, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGroup(fgPanelLayout.createSequentialGroup()
+                                    .addGap(103, 103, 103)
+                                    .addComponent(fieldHome, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addGap(32, 32, 32)
+                                    .addComponent(fieldVolPlus, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 23, Short.MAX_VALUE)))
                 .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(fgPanelLayout.createSequentialGroup()
-                        .addGap(44, 44, 44)
-                        .addComponent(fieldMusic, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(19, 19, 19)
-                        .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(fgPanelLayout.createSequentialGroup()
-                                .addGap(81, 81, 81)
-                                .addComponent(fieldStart, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(fgPanelLayout.createSequentialGroup()
-                                .addGap(38, 38, 38)
-                                .addComponent(fieldSelect, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                    .addGroup(fgPanelLayout.createSequentialGroup()
-                        .addGap(11, 11, 11)
-                        .addComponent(fieldScreen, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addGap(43, 43, 43))
+                        .addGap(53, 53, 53)
+                        .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(fieldScreen, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(fieldMusic, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(194, 194, 194))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fgPanelLayout.createSequentialGroup()
+                        .addComponent(fieldSelect, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap())))
             .addGroup(fgPanelLayout.createSequentialGroup()
-                .addGap(29, 29, 29)
-                .addComponent(fieldAnalogDown, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(528, Short.MAX_VALUE))
+                .addContainerGap()
+                .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fgPanelLayout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addComponent(fieldHold, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap())
+                    .addGroup(fgPanelLayout.createSequentialGroup()
+                        .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fgPanelLayout.createSequentialGroup()
+                                .addComponent(fieldDown, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(fieldCross, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(fgPanelLayout.createSequentialGroup()
+                                .addComponent(fieldLTrigger, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(fieldRTrigger, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fgPanelLayout.createSequentialGroup()
+                                .addComponent(fieldLeft, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(fieldCircle, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(fgPanelLayout.createSequentialGroup()
+                                .addComponent(fieldRight, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(fieldSquare, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fgPanelLayout.createSequentialGroup()
+                                .addComponent(fieldUp, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(fieldTriangle, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addContainerGap())))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fgPanelLayout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(fieldStart, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
         );
         fgPanelLayout.setVerticalGroup(
             fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(fgPanelLayout.createSequentialGroup()
-                .addGap(70, 70, 70)
-                .addComponent(fieldTriangle, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(41, 41, 41)
-                .addComponent(fieldCross, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(fieldMusic, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(fieldScreen, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(37, 37, 37))
-            .addGroup(fgPanelLayout.createSequentialGroup()
+                .addGap(7, 7, 7)
+                .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(fieldLTrigger, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(fieldRTrigger, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(fgPanelLayout.createSequentialGroup()
-                        .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addGroup(fgPanelLayout.createSequentialGroup()
-                                .addGap(41, 41, 41)
-                                .addComponent(fieldRight, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(fgPanelLayout.createSequentialGroup()
-                                .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(fieldLTrigger, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(fieldRTrigger, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(fieldSquare, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(9, 9, 9)
-                        .addComponent(fieldUp, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(11, 11, 11)
-                        .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(fieldCircle, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(fieldLeft, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(18, 18, 18)
+                        .addComponent(fieldRight, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(14, 14, 14)
+                        .addComponent(fieldUp, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(fgPanelLayout.createSequentialGroup()
                         .addGap(24, 24, 24)
+                        .addComponent(fieldSquare, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(fieldTriangle, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(fieldLeft, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(fieldCircle, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(fgPanelLayout.createSequentialGroup()
                         .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(fgPanelLayout.createSequentialGroup()
-                                .addGap(95, 95, 95)
-                                .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(fieldAnalogUp, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(fieldVolPlus, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(fieldHome, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                .addGap(12, 12, 12)
+                                .addComponent(fieldDown, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(82, 82, 82)
+                                .addComponent(fieldAnalogUp, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(fgPanelLayout.createSequentialGroup()
-                                .addGap(29, 29, 29)
+                                .addGap(50, 50, 50)
                                 .addComponent(fieldHold, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(18, 18, 18)
                                 .addComponent(fieldStart, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -845,25 +852,32 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
                                 .addComponent(fieldSelect, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(fgPanelLayout.createSequentialGroup()
-                                .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(fieldAnalogRight, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(fieldAnalogLeft, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(fieldAnalogDown, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(fieldVolMin, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(fieldAnalogRight, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(fieldHome, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(fieldVolPlus, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(fieldAnalogLeft, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(fieldAnalogDown, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(fieldVolMin, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addContainerGap(31, Short.MAX_VALUE))
                     .addGroup(fgPanelLayout.createSequentialGroup()
-                        .addGap(126, 126, 126)
-                        .addComponent(fieldDown, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGap(13, 13, 13)
+                        .addComponent(fieldCross, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(fieldMusic, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(fieldScreen, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(31, 31, 31))))
         );
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.weighty = 1.0;
+        gridBagConstraints.ipadx = 10;
+        gridBagConstraints.ipady = 12;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
         keyPanel.add(fgPanel, gridBagConstraints);
 
         bgLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -872,14 +886,15 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.weighty = 1.0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
         keyPanel.add(bgLabel1, gridBagConstraints);
 
-        controllerBox.setModel(makeControllerComboBoxModel());
-
-        controllerLabel.setText(bundle.getString("ControlsGUI.controllerLabel.text")); // NOI18N
+        jButtonOK.setText(bundle.getString("OkButton.text")); // NOI18N
+        jButtonOK.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonOKActionPerformed(evt);
+            }
+        });
 
         cancelButton.setText(bundle.getString("CancelButton.text")); // NOI18N
         cancelButton.setParent(this);
@@ -889,22 +904,22 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap(221, Short.MAX_VALUE)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addComponent(controllerLabel)
-                        .addGap(10, 10, 10)
-                        .addComponent(controllerBox, javax.swing.GroupLayout.PREFERRED_SIZE, 209, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(98, 98, 98))
-                    .addComponent(jButtonOK, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(158, Short.MAX_VALUE)
+                .addComponent(controllerLabel)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(controllerBox, javax.swing.GroupLayout.PREFERRED_SIZE, 209, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(193, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jButtonOK, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(cancelButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
             .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(layout.createSequentialGroup()
-                    .addGap(0, 49, Short.MAX_VALUE)
-                    .addComponent(keyPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 614, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGap(0, 50, Short.MAX_VALUE)))
+                    .addContainerGap()
+                    .addComponent(keyPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addContainerGap()))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -915,14 +930,14 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
                     .addComponent(controllerLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 343, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButtonOK)
-                    .addComponent(cancelButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(cancelButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jButtonOK))
                 .addContainerGap())
             .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(layout.createSequentialGroup()
-                    .addGap(0, 49, Short.MAX_VALUE)
+                    .addGap(46, 46, 46)
                     .addComponent(keyPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGap(0, 50, Short.MAX_VALUE)))
+                    .addGap(46, 46, 46)))
         );
 
         pack();
