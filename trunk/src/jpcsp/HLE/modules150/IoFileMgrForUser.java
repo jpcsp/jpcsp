@@ -166,7 +166,7 @@ public class IoFileMgrForUser extends HLEModule {
     protected VirtualFileSystemManager vfsManager;
     protected Map<String, String> assignedDevices;
 
-    protected static enum IoOperation {
+    public static enum IoOperation {
         open(5), close(1), seek(1), ioctl(20), remove, rename, mkdir, dread, iodevctl(2),
         // Duration of read operation: approx. 4 ms per 0x10000 bytes (tested on real PSP)
         read(4, 0x10000),
@@ -215,6 +215,10 @@ public class IoFileMgrForUser extends HLEModule {
         	// Return a delay based on the given size.
         	// Return at least the delayMillis.
         	return Math.max((int) (((long) delayMillis) * size / sizeUnit), delayMillis);
+        }
+
+        public void setDelayMillis(int delayMillis) {
+        	this.delayMillis = delayMillis;
         }
     }
 
@@ -1183,7 +1187,9 @@ public class IoFileMgrForUser extends HLEModule {
 
     public void setfilepath(String filepath) {
         filepath = filepath.replaceAll("\\\\", "/");
-        log.info("pspiofilemgr - filepath " + filepath);
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("filepath set to '%s'", filepath));
+        }
         this.filepath = filepath;
     }
 
@@ -1884,6 +1890,8 @@ public class IoFileMgrForUser extends HLEModule {
                 } else if ((dataAddr.getAddress() < MemoryMap.START_RAM) && (dataAddr.getAddress() + size > MemoryMap.END_RAM)) {
                     log.warn("hleIoWrite - id " + Integer.toHexString(id) + " data is outside of ram 0x" + Integer.toHexString(dataAddr.getAddress()) + " - 0x" + Integer.toHexString(dataAddr.getAddress() + size));
                     result = -1;
+                } else if ((info.flags & PSP_O_RDWR) == PSP_O_RDONLY) {
+                	result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
                 } else if (info.vFile != null) {
                     if ((info.flags & PSP_O_APPEND) == PSP_O_APPEND) {
                         info.vFile.ioLseek(info.vFile.length());
@@ -1980,6 +1988,8 @@ public class IoFileMgrForUser extends HLEModule {
                 } else if ((data_addr < MemoryMap.START_RAM) && (data_addr + size > MemoryMap.END_RAM)) {
                     log.warn("hleIoRead - id " + Integer.toHexString(id) + " data is outside of ram 0x" + Integer.toHexString(data_addr) + " - 0x" + Integer.toHexString(data_addr + size));
                     result = ERROR_KERNEL_FILE_READ_ERROR;
+                } else if ((info.flags & PSP_O_RDWR) == PSP_O_WRONLY) {
+                	result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
                 } else if (info.vFile != null) {
                     if (info.sectorBlockMode) {
                         // In sectorBlockMode, the size is a number of sectors
@@ -2135,7 +2145,8 @@ public class IoFileMgrForUser extends HLEModule {
                             result /= UmdIsoFile.sectorLength;
                         }
                     } else {
-                    	result = ERROR_INVALID_ARGUMENT;
+                    	// PSP returns -1 for this case
+                    	result = -1;
                     }
                 } else if (info.readOnlyFile == null) {
                     // Ignore empty handles.
@@ -2150,7 +2161,8 @@ public class IoFileMgrForUser extends HLEModule {
                         case PSP_SEEK_SET:
                             if (offset < 0) {
                                 log.warn("SEEK_SET id " + Integer.toHexString(id) + " filename:'" + info.filename + "' offset=0x" + Long.toHexString(offset) + " (less than 0!)");
-                                result = ERROR_INVALID_ARGUMENT;
+                            	// PSP returns -1 for this case
+                            	result = -1;
                                 for (IIoListener ioListener : ioListeners) {
                                     ioListener.sceIoSeek64(ERROR_INVALID_ARGUMENT, id, offset, whence);
                                 }
@@ -2165,7 +2177,8 @@ public class IoFileMgrForUser extends HLEModule {
                         case PSP_SEEK_CUR:
                             if (info.position + offset < 0) {
                                 log.warn("SEEK_CUR id " + Integer.toHexString(id) + " filename:'" + info.filename + "' newposition=0x" + Long.toHexString(info.position + offset) + " (less than 0!)");
-                                result = ERROR_INVALID_ARGUMENT;
+                            	// PSP returns -1 for this case
+                            	result = -1;
                                 for (IIoListener ioListener : ioListeners) {
                                     ioListener.sceIoSeek64(ERROR_INVALID_ARGUMENT, id, offset, whence);
                                 }
@@ -2180,7 +2193,8 @@ public class IoFileMgrForUser extends HLEModule {
                         case PSP_SEEK_END:
                             if (info.readOnlyFile.length() + offset < 0) {
                                 log.warn("SEEK_END id " + Integer.toHexString(id) + " filename:'" + info.filename + "' newposition=0x" + Long.toHexString(info.position + offset) + " (less than 0!)");
-                                result = ERROR_INVALID_ARGUMENT;
+                            	// PSP returns -1 for this case
+                            	result = -1;
                                 for (IIoListener ioListener : ioListeners) {
                                     ioListener.sceIoSeek64(ERROR_INVALID_ARGUMENT, id, offset, whence);
                                 }
@@ -3247,7 +3261,11 @@ public class IoFileMgrForUser extends HLEModule {
                 if (file.delete()) {
                 	result = 0;
                 } else {
-                	result = -1;
+                	if (file.exists()) {
+                		result = -1;
+                	} else {
+                		result = ERROR_ERRNO_FILE_NOT_FOUND;
+                	}
                 }
             }
         } else {
@@ -3568,7 +3586,11 @@ public class IoFileMgrForUser extends HLEModule {
                 	result = 0;
                 } else {
                 	log.warn(String.format("sceIoRename failed: %s(%s) to %s(%s)", oldFileName, oldpcfilename, newFileName, newpcfilename));
-                	result = -1;
+                	if (file.exists()) {
+                		result = -1;
+                	} else {
+                		result = ERROR_ERRNO_FILE_NOT_FOUND;
+                	}
                 }
             }
         } else {
@@ -4063,7 +4085,12 @@ public class IoFileMgrForUser extends HLEModule {
     public int sceIoAssign(PspString alias, PspString physicalDev, PspString filesystemDev, int mode, int arg_addr, int argSize) {
         int result = 0;
 
-        assignedDevices.put(alias.getString().replace(":", ""), filesystemDev.getString().replace(":", ""));
+        // Do not assign "disc0:".
+        // Example from "Ridge Racer UCES00002":
+        //   sceIoAssign alias=0x0899F1E0('disc0:'), physicalDev=0x0899F1D0('umd0:'), filesystemDev=0x0899F1D8('isofs0:'), mode=0x1, arg_addr=0x0, argSize=0x0
+        if (!alias.getString().equals("disc0:")) {
+        	assignedDevices.put(alias.getString().replace(":", ""), filesystemDev.getString().replace(":", ""));
+        }
 
         for (IIoListener ioListener : ioListeners) {
             ioListener.sceIoAssign(result, alias.getAddress(), alias.getString(), physicalDev.getAddress(), physicalDev.getString(), filesystemDev.getAddress(), filesystemDev.getString(), mode, arg_addr, argSize);

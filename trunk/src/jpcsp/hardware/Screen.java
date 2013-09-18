@@ -28,6 +28,7 @@ public class Screen {
     public static final int width = 480;
     public static final int height = 272;
     private static long lastPowerTick;
+    private static boolean hasScreen = true;
 
     public static void hleKernelPowerTick() {
     	lastPowerTick = getClockMillis();
@@ -94,4 +95,12 @@ public class Screen {
 			}
 		}
     }
+
+	public static boolean hasScreen() {
+		return hasScreen;
+	}
+
+	public static void setHasScreen(boolean hasScreen) {
+		Screen.hasScreen = hasScreen;
+	}
 }
