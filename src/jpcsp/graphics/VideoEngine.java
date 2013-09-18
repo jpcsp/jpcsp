@@ -979,7 +979,7 @@ public class VideoEngine {
             // This avoids aborting the first list enqueued.
             int maxStallCount = maxWaitForSyncCount;
             if (currentList.getPc() == currentList.list_addr) {
-                maxStallCount *= 15;
+                maxStallCount *= 60; // Waiting for 60 seconds...
             }
             if (isLogDebugEnabled) {
                 maxStallCount = Integer.MAX_VALUE;
