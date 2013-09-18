@@ -447,7 +447,6 @@ public class sceDisplay extends HLEModule {
     private boolean saveStencilToMemory = false;
     private static final boolean useDebugGL = false;
     private static final int internalTextureFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
-    static public boolean ignoreLWJGLError = false;
     private static final String resizeScaleFactorSettings = "emu.graphics.resizeScaleFactor";
     // sceDisplayModes enum
     public static final int PSP_DISPLAY_MODE_LCD = 0;
@@ -550,9 +549,6 @@ public class sceDisplay extends HLEModule {
         @Override
         protected void settingsValueChanged(boolean value) {
             setUseSoftwareRenderer(value);
-            if (isStarted) {
-                resetDisplaySettings = true;
-            }
         }
     }
 
@@ -637,11 +633,20 @@ public class sceDisplay extends HLEModule {
 
         @Override
         protected void doDisplay() {
-            IRenderingEngine re = Modules.sceDisplayModule.getRenderingEngine();
-            if (re != null && VideoEngine.getInstance().hasDrawLists()) {
-                re.startDisplay();
-                VideoEngine.getInstance().update();
-                re.endDisplay();
+            if (VideoEngine.getInstance().hasDrawLists()) {
+                IRenderingEngine re = Modules.sceDisplayModule.getRenderingEngine();
+
+                if (re == null && !Screen.hasScreen()) {
+            		re = RenderingEngineFactory.createRenderingEngine();
+                    Modules.sceDisplayModule.setRenderingEngine(re);
+                    VideoEngine.getInstance().start();
+            	}
+
+            	if (re != null) {
+                    re.startDisplay();
+                    VideoEngine.getInstance().update();
+                    re.endDisplay();
+                }
             }
         }
     }
@@ -916,9 +921,7 @@ public class sceDisplay extends HLEModule {
 
         if (!initGLcalled && !calledFromCommandLine) {
             // Some problem occurred during the OpenGL/LWJGL initialization...
-            if (!ignoreLWJGLError) {
-                throw new RuntimeException("Jpcsp cannot display.\nThe cause could be that you are using an old graphic card driver (try to update it)\nor your display format is not compatible with Jpcsp (try to change your display format, Jpcsp requires 32 bit color depth)\nor the anti-aliasing settings is not supported by your display (leave the Jpcsp anti-aliasing to its default setting)");
-            }
+            throw new RuntimeException("Jpcsp cannot display.\nThe cause could be that you are using an old graphic card driver (try to update it)\nor your display format is not compatible with Jpcsp (try to change your display format, Jpcsp requires 32 bit color depth)\nor the anti-aliasing settings is not supported by your display (leave the Jpcsp anti-aliasing to its default setting)");
         }
 
         // Reset the FB and GE settings only when not called from a syscall.
@@ -1061,6 +1064,10 @@ public class sceDisplay extends HLEModule {
 
     public IRenderingEngine getRenderingEngine() {
         return re;
+    }
+
+    public void setRenderingEngine(IRenderingEngine re) {
+    	this.re = re;
     }
 
     public void setGeDirty(boolean dirty) {
@@ -1211,17 +1218,17 @@ public class sceDisplay extends HLEModule {
         log.info(String.format("Save Stencil To Memory: %b", saveStencilToMemory));
     }
 
-    private void setUseSoftwareRenderer(boolean useSoftwareRenderer) {
+    public void setUseSoftwareRenderer(boolean useSoftwareRenderer) {
         this.useSoftwareRenderer = useSoftwareRenderer;
 
         // Start/stop the software rendering display thread
         if (useSoftwareRenderer) {
-            if (softwareRenderingDisplayThread == null) {
-//    			softwareRenderingDisplayThread = new SoftwareRenderingDisplayThread();
-//    			softwareRenderingDisplayThread.setDaemon(true);
-//    			softwareRenderingDisplayThread.setName("Software Rendering Display Thread");
-//    			softwareRenderingDisplayThread.start();
-//    			log.debug("Starting Software Rendering Display Thread");
+            if (!Screen.hasScreen() && softwareRenderingDisplayThread == null) {
+    			softwareRenderingDisplayThread = new SoftwareRenderingDisplayThread();
+    			softwareRenderingDisplayThread.setDaemon(true);
+    			softwareRenderingDisplayThread.setName("GUI");
+    			softwareRenderingDisplayThread.start();
+    			log.debug("Starting Software Rendering Display Thread");
             }
         } else {
             if (softwareRenderingDisplayThread != null) {
@@ -1229,6 +1236,10 @@ public class sceDisplay extends HLEModule {
                 softwareRenderingDisplayThread.exit();
                 softwareRenderingDisplayThread = null;
             }
+        }
+
+        if (isStarted) {
+            resetDisplaySettings = true;
         }
     }
 

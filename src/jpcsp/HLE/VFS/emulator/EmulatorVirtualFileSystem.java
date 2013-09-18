@@ -16,16 +16,30 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.VFS.emulator;
 
+import static jpcsp.HLE.modules150.sceDisplay.getPixelFormatBytes;
+
+import java.io.IOException;
+import java.nio.Buffer;
+
+import jpcsp.Memory;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.VFS.AbstractVirtualFileSystem;
+import jpcsp.HLE.modules150.sceDisplay.BufferInfo;
 import jpcsp.autotests.AutoTestsOutput;
+import jpcsp.graphics.capture.CaptureImage;
+import jpcsp.hardware.Screen;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 
 public class EmulatorVirtualFileSystem extends AbstractVirtualFileSystem {
-	public static final int EMULATOR_DEVCTL_GET_HAS_DISPLAY = 1;
-	public static final int EMULATOR_DEVCTL_SEND_OUTPUT = 2;
-	public static final int EMULATOR_DEVCTL_IS_EMULATOR = 3;
+	public static final int EMULATOR_DEVCTL_GET_HAS_DISPLAY = 0x01;
+	public static final int EMULATOR_DEVCTL_SEND_OUTPUT = 0x02;
+	public static final int EMULATOR_DEVCTL_IS_EMULATOR = 0x03;
+	public static final int EMULATOR_DEVCTL_SEND_CTRLDATA = 0x10;
+	public static final int EMULATOR_DEVCTL_EMIT_SCREENSHOT = 0x20;
+	private static String screenshotFileName = "testResult.bmp";
+	private static String screenshotFormat = "bmp";
 
 	@Override
 	public int ioDevctl(String deviceName, int command, TPointer inputPointer, int inputLength, TPointer outputPointer, int outputLength) {
@@ -34,7 +48,7 @@ public class EmulatorVirtualFileSystem extends AbstractVirtualFileSystem {
 				if (!outputPointer.isAddressGood() || outputLength < 4) {
 					return super.ioDevctl(deviceName, command, inputPointer, inputLength, outputPointer, outputLength);
 				}
-				outputPointer.setValue32(1);
+				outputPointer.setValue32(Screen.hasScreen());
 				break;
 			case EMULATOR_DEVCTL_SEND_OUTPUT:
 				byte[] input = new byte[inputLength];
@@ -42,9 +56,28 @@ public class EmulatorVirtualFileSystem extends AbstractVirtualFileSystem {
 				for (int i = 0; i < inputLength; i++) {
 					input[i] = (byte) memoryReader.readNext();
 				}
-				AutoTestsOutput.appendString(new String(input));
+				String outputString = new String(input);
+				if (log.isDebugEnabled()) {
+					log.debug(outputString);
+				}
+				AutoTestsOutput.appendString(outputString);
 				break;
 			case EMULATOR_DEVCTL_IS_EMULATOR:
+				break;
+			case EMULATOR_DEVCTL_EMIT_SCREENSHOT:
+				BufferInfo fb = Modules.sceDisplayModule.getBufferInfoFb();
+	            Buffer buffer = Memory.getInstance().getBuffer(fb.topAddr, fb.bufferWidth * fb.height * getPixelFormatBytes(fb.pixelFormat));
+	            CaptureImage captureImage = new CaptureImage(fb.topAddr, 0, buffer, fb.width, fb.height, fb.bufferWidth,fb.pixelFormat, false, 0, false, true, null);
+	            captureImage.setFileName(getScreenshotFileName());
+	            captureImage.setFileFormat(getScreenshotFormat());
+	            try {
+	            	captureImage.write();
+	            	if (log.isDebugEnabled()) {
+	            		log.debug(String.format("Screenshot 0x%08X-0x%08X saved under '%s'", fb.topAddr, fb.bottomAddr, captureImage.getFileName()));
+	            	}
+	            } catch (IOException e) {
+	            	log.error("Emit Screenshot", e);
+	            }
 				break;
 			default:
 				// Unknown command
@@ -52,5 +85,21 @@ public class EmulatorVirtualFileSystem extends AbstractVirtualFileSystem {
 		}
 
     	return 0;
+	}
+
+	public static String getScreenshotFileName() {
+		return screenshotFileName;
+	}
+
+	public static void setScreenshotFileName(String screenshotFileName) {
+		EmulatorVirtualFileSystem.screenshotFileName = screenshotFileName;
+	}
+
+	public static String getScreenshotFormat() {
+		return screenshotFormat;
+	}
+
+	public static void setScreenshotFormat(String screenshotFormat) {
+		EmulatorVirtualFileSystem.screenshotFormat = screenshotFormat;
 	}
 }

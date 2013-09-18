@@ -201,7 +201,7 @@ public class Emulator implements Runnable {
         }
     }
 
-    private void initNewPsp(boolean fromSyscall) {
+    public void initNewPsp(boolean fromSyscall) {
         moduleLoaded = false;
 
         HLEModuleManager.getInstance().stopModules();

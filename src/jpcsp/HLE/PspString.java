@@ -46,7 +46,7 @@ public class PspString {
 
 	public String getString() {
 		if (string == null) {
-			if (canBeNull && address == 0) {
+			if (canBeNull && isNull()) {
 				string = "";
 			} else {
 				string = Utilities.readStringNZ(address, maxLength);
@@ -57,6 +57,10 @@ public class PspString {
 
 	public int getAddress() {
 		return address;
+	}
+
+	public boolean isNull() {
+		return address == 0;
 	}
 
 	@Override

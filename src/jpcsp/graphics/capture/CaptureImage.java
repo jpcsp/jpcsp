@@ -133,6 +133,10 @@ public class CaptureImage {
 		return fileName;
 	}
 
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
+	}
+
 	public boolean fileExists() {
 		return new File(getFileName()).exists();
 	}

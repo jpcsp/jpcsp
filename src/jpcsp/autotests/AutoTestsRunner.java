@@ -1,3 +1,19 @@
+/*
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package jpcsp.autotests;
 
 import java.awt.DisplayMode;
@@ -8,6 +24,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -15,20 +32,25 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.apache.log4j.SimpleLayout;
-import org.apache.log4j.WriterAppender;
+import org.apache.log4j.xml.DOMConfigurator;
 
 import jpcsp.Emulator;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.GUI.IMainGUI;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.VFS.emulator.EmulatorVirtualFileSystem;
 import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.modules.sceDisplay;
+import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
+import jpcsp.hardware.Screen;
+import jpcsp.log.LoggingOutputStream;
 
 public class AutoTestsRunner {
 	Emulator emulator;
-	
+	private static final String rootDirectory = "../pspautotests";
+	private static final Logger log = Logger.getLogger("pspautotests");
+	private static final int FAIL_TIMEOUT = 10; // in seconds
+
 	class DummyGUI implements IMainGUI {
 		@Override public void setMainTitle(String title) { }
 		@Override public void RefreshButtons() { }
@@ -53,10 +75,11 @@ public class AutoTestsRunner {
 	}
 	
 	public void run() {
-		Logger.getRootLogger().addAppender(new WriterAppender(new SimpleLayout(), System.out));
-		//Logger.getRootLogger().setLevel(Level.WARN);
-		//Logger.getRootLogger().setLevel(Level.INFO);
-		Logger.getRootLogger().setLevel(Level.ERROR);
+        DOMConfigurator.configure("LogSettings.xml");
+        System.setOut(new PrintStream(new LoggingOutputStream(Logger.getLogger("emu"), Level.INFO)));
+        Screen.setHasScreen(false);
+        IoFileMgrForUser.IoOperation.iodevctl.setDelayMillis(0);
+        Modules.sceDisplayModule.setCalledFromCommandLine();
 
 		try {
 			runImpl();
@@ -66,66 +89,79 @@ public class AutoTestsRunner {
 		
 		System.exit(0);
 	}
-	
+
 	protected void runImpl() throws Throwable {
-		runTestFolder("pspautotests/tests");
-		//runTest("pspautotests/tests/rtc/rtc");
+		runTestFolder(rootDirectory + "/tests");
+//		runTest(rootDirectory + "/tests/gpu/reflection/reflection");
 	}
-	
+
 	protected void runTestFolder(String folderPath) throws Throwable {
 		for (File file : new File(folderPath).listFiles()) {
-			if (file.getName().charAt(0) == '.') continue;
-			//System.out.println(file);
+			if (file.getName().charAt(0) == '.') {
+				continue;
+			}
 			if (file.isDirectory()) {
-				runTestFolder(file.getAbsolutePath());
+				runTestFolder(file.getPath());
 			} else if (file.isFile()) {
-				String name = file.getAbsolutePath();
+				String name = file.getPath();
 				if (name.substring(name.length() - 9).equals(".expected")) {
 					runTest(name.substring(0, name.length() - 9));
 				}
 			}
 		}
 	}
-	
+
 	protected boolean isWindows() {
 		return (System.getProperty("os.name").toLowerCase().indexOf("win") >= 0);
 	}
-	
-	protected void buildFile(String fileName) throws IOException, InterruptedException {
-		String command;
-		if (isWindows()) {
-			command = "pspautotests/tests/build.bat";
-		} else {
-			command = "pspautotests/tests/build.sh";
-		}
-		Runtime.getRuntime().exec(new String[] { command, fileName }).waitFor();
-	}
-	
+
 	protected void runTest(String baseFileName) throws Throwable {
+		new File(EmulatorVirtualFileSystem.getScreenshotFileName()).delete();
+
+		boolean timeout = false;
 		try {
-			buildFile(baseFileName + ".elf");
-			runFile(baseFileName + ".elf");
-			checkOutput(baseFileName + ".expected");
+			runFile(baseFileName + ".prx");
 		} catch (TimeoutException toe) {
-			System.out.println("FAIL:TIMEOUT");
+			timeout = true;
 		}
+		checkOutput(baseFileName, baseFileName + ".expected", timeout);
 	}
 	
-	protected void checkOutput(String fileName) throws IOException {
+	protected void checkOutput(String baseFileName, String fileName, boolean timeout) throws IOException {
 		String actualOutput = AutoTestsOutput.getOutput().trim();
 		String expectedOutput = readFileAsString(fileName).trim();
 		if (actualOutput.equals(expectedOutput)) {
-			System.out.println("OK");
+			log.info(String.format("%s: OK", baseFileName));
 		} else {
-			System.out.println("FAIL");
+			if (timeout) {
+				log.error(String.format("%s: FAIL, TIMEOUT", baseFileName));
+			} else {
+				log.error(String.format("%s: FAIL", baseFileName));
+			}
 			diff(expectedOutput, actualOutput);
 		}
+
+		File screenshotExpected = new File(fileName + ".bmp");
+		if (screenshotExpected.canRead()) {
+			File screenshotResult = new File(EmulatorVirtualFileSystem.getScreenshotFileName());
+			if (screenshotResult.canRead()) {
+				File savedScreenshotResult = new File(baseFileName + ".result.bmp");
+				savedScreenshotResult.delete();
+				if (screenshotResult.renameTo(savedScreenshotResult)) {
+					log.info(String.format("%s: saved screenshot under '%s'", baseFileName, savedScreenshotResult));
+				} else {
+					log.error(String.format("%s: cannot save screenshot from '%s' to '%s'", baseFileName, screenshotResult, savedScreenshotResult));
+				}
+			} else {
+				log.error(String.format("%s: FAIL, no result screenshot found", baseFileName));
+			}
+		}
 	}
-	
+
 	public static void diff(String x, String y) {
 		diff(x.split("\\n"), y.split("\\n"));
 	}
-	
+
     public static void diff(String[] x, String[] y) {
         // number of lines of each file
         int M = x.length;
@@ -148,37 +184,38 @@ public class AutoTestsRunner {
         int i = 0, j = 0;
         while (i < M && j < N) {
             if (x[i].equals(y[j])) {
-                System.out.println("  " + x[i]);
+                log.debug("  " + x[i]);
                 i++;
                 j++;
+            } else if (opt[i+1][j] >= opt[i][j+1]) {
+            	log.info("- " + x[i++]);
+            } else {
+            	log.info("+ " + y[j++]);
             }
-            else if (opt[i+1][j] >= opt[i][j+1]) System.out.println("- " + x[i++]);
-            else                                 System.out.println("+ " + y[j++]);
         }
 
         // dump out one remainder of one string if the other is exhausted
-        while(i < M || j < N) {
-            if      (i == M) System.out.println("- " + y[j++]);
-            else if (j == N) System.out.println("+ " + x[i++]);
+        while (i < M || j < N) {
+            if (i == M) {
+            	log.info("+ " + y[j++]);
+            } else if (j == N) {
+            	log.info("- " + x[i++]);
+            }
         }
     }
     
     protected void reset() {
 		AutoTestsOutput.clearOutput();
-		
+
 		Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_PAUSE);
-		RuntimeContext.reset();
-		HLEModuleManager.getInstance().stopModules();
+		Emulator.getInstance().initNewPsp(false);
     }
 	
 	protected void runFile(String fileName) throws Throwable {
 		File file = new File(fileName);
-		
-		reset();
-		sceDisplay.ignoreLWJGLError = true;
 
-		//SceModule module;
-		
+		reset();
+
 		try {
 	        RandomAccessFile raf = new RandomAccessFile(file, "r");
 	        try {
@@ -197,38 +234,34 @@ public class AutoTestsRunner {
 	        }
 		} catch (FileNotFoundException fileNotFoundException) {
 		}
-		
+
 		RuntimeContext.setIsHomebrew(true);
-		
-		UmdIsoReader umdIsoReader = new UmdIsoReader("pspautotests/input/cube.cso");
+
+		UmdIsoReader umdIsoReader = new UmdIsoReader(rootDirectory + "/input/cube.cso");
         Modules.IoFileMgrForUserModule.setIsoReader(umdIsoReader);
         jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(umdIsoReader);
-        Modules.IoFileMgrForUserModule.setfilepath(file.getPath());
-        
-        //System.out.printf("Started\n");
-		System.out.print(String.format("Running: %s...", fileName));
+        Modules.IoFileMgrForUserModule.setfilepath(file.getParent());
+
+		log.debug(String.format("Running: %s...", fileName));
         {
             RuntimeContext.setIsHomebrew(false);
-            //Modules.SysMemUserForUserModule.setMemory64MB(true);
 
             HLEModuleManager.getInstance().startModules(false);
+            Modules.sceDisplayModule.setUseSoftwareRenderer(true);
             {
 				emulator.RunEmu();
 
 				long startTime = System.currentTimeMillis(); 
 				while (!Emulator.pause) {
-					if (System.currentTimeMillis() - startTime > 5 * 1000) {
+					Modules.sceDisplayModule.step();
+					if (System.currentTimeMillis() - startTime > FAIL_TIMEOUT * 1000) {
 						throw(new TimeoutException());
 					}
 					Thread.sleep(1);
 				}
             }
 			HLEModuleManager.getInstance().stopModules();
-
         }
-        
-        //reset();
-        // System.out.printf("Ended\n");
 	}
 	
 	private static String readFileAsString(String filePath) throws java.io.IOException{
