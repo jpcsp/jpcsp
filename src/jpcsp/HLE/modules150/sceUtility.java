@@ -190,6 +190,7 @@ public class sceUtility extends HLEModule {
     public static final int PSP_UTILITY_DIALOG_STATUS_VISIBLE = 2;
     public static final int PSP_UTILITY_DIALOG_STATUS_QUIT = 3;
     public static final int PSP_UTILITY_DIALOG_STATUS_FINISHED = 4;
+    public static final int PSP_UTILITY_DIALOG_STATUS_SCREENSHOT_UNKNOWN = 5;
     public static final int PSP_UTILITY_DIALOG_RESULT_OK = 0;
     public static final int PSP_UTILITY_DIALOG_RESULT_CANCELED = 1;
     public static final int PSP_UTILITY_DIALOG_RESULT_ABORTED = 2;
@@ -485,7 +486,7 @@ public class sceUtility extends HLEModule {
                 // Move from INIT to VISIBLE
                 status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
                 startVisibleTimeMillis = Emulator.getClock().currentTimeMillis();
-            } else if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE) {
+            } else if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE || status == PSP_UTILITY_DIALOG_STATUS_SCREENSHOT_UNKNOWN) {
                 // PSP is returning 0 only in STATUS_VISIBLE
             	result = 0;
 
@@ -1764,7 +1765,11 @@ public class sceUtility extends HLEModule {
 
         @Override
         protected boolean executeUpdateVisible() {
-            // TODO to be implemented
+        	if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE) {
+        		status = PSP_UTILITY_DIALOG_STATUS_SCREENSHOT_UNKNOWN;
+        	}
+
+        	// TODO to be implemented
             return false;
         }
 
@@ -1776,7 +1781,11 @@ public class sceUtility extends HLEModule {
             // be initialized with sceUtilityScreenshotInitStart and the startupType
             // parameter has to be PSP_UTILITY_SCREENSHOT_TYPE_CONT_AUTO, otherwise, an
             // error is returned.
-            this.paramsAddr = paramsAddr;
+        	if (status != PSP_UTILITY_DIALOG_STATUS_SCREENSHOT_UNKNOWN) {
+        		return SceKernelErrors.ERROR_UTILITY_INVALID_STATUS;
+        	}
+
+        	this.paramsAddr = paramsAddr;
             this.params = createParams();
             params.read(paramsAddr);
             if (log.isInfoEnabled()) {
@@ -1787,8 +1796,9 @@ public class sceUtility extends HLEModule {
                 return SceKernelErrors.ERROR_SCREENSHOT_CONT_MODE_NOT_INIT;
             }
 
-            // Start with INIT
-            status = PSP_UTILITY_DIALOG_STATUS_INIT;
+            // PSP is moving to status QUIT
+            status = PSP_UTILITY_DIALOG_STATUS_QUIT;
+
             return 0;
         }
 
