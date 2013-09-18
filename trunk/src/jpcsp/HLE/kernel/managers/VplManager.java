@@ -35,9 +35,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.PspString;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelVplInfo;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
@@ -56,8 +58,8 @@ public class VplManager {
     public final static int PSP_VPL_ATTR_PRIORITY = 0x100;
     private final static int PSP_VPL_ATTR_PASS =     0x200;   // Allow threads that want to allocate small memory blocks to bypass the waiting queue (less memory goes first).
     public final static int PSP_VPL_ATTR_ADDR_HIGH =  0x4000;   // Create the VPL in high memory.
-    public final static int PSP_VPL_ATTR_EXT =        0x8000;   // Automatically extend the VPL's memory area (when allocating a block from the VPL and the remaining size is too small, this flag tells the VPL to automatically attempt to extend it's memory area).
-    public final static int PSP_VPL_ATTR_MASK = PSP_VPL_ATTR_EXT | PSP_VPL_ATTR_ADDR_HIGH | PSP_VPL_ATTR_PASS | PSP_VPL_ATTR_PRIORITY | 0xFF; // Anything outside this mask is an illegal attr.
+    //public final static int PSP_VPL_ATTR_EXT =        0x8000;   // Automatically extend the VPL's memory area (when allocating a block from the VPL and the remaining size is too small, this flag tells the VPL to automatically attempt to extend it's memory area).
+    public final static int PSP_VPL_ATTR_MASK = PSP_VPL_ATTR_ADDR_HIGH | PSP_VPL_ATTR_PASS | PSP_VPL_ATTR_PRIORITY | 0xFF; // Anything outside this mask is an illegal attr.
 
     public void reset() {
         vplMap = new HashMap<Integer, SceKernelVplInfo>();
@@ -178,8 +180,13 @@ public class VplManager {
         return uid;
     }
 
-    public int sceKernelCreateVpl(String name, int partitionid, int attr, int size, TPointer option) {
-        if (option.isNotNull()) {
+    public int sceKernelCreateVpl(PspString name, int partitionid, int attr, int size, TPointer option) {
+    	if (name.isNull()) {
+    		// PSP is returning this error is case of a NULL name
+    		return SceKernelErrors.ERROR_KERNEL_ERROR;
+    	}
+
+    	if (option.isNotNull()) {
             int optionSize = option.getValue32();
             log.warn(String.format("sceKernelCreateVpl option at %s, size=%d", option, optionSize));
         }
@@ -193,11 +200,14 @@ public class VplManager {
             log.warn("sceKernelCreateVpl bad attr value 0x" + Integer.toHexString(attr));
             return ERROR_KERNEL_ILLEGAL_ATTR;
         }
-        if (size <= 0) {
+        if (size == 0) {
         	return ERROR_KERNEL_ILLEGAL_MEMSIZE;
         }
+        if (size < 0) {
+        	return ERROR_KERNEL_NO_MEMORY;
+        }
 
-        SceKernelVplInfo info = SceKernelVplInfo.tryCreateVpl(name, partitionid, attr, size, memType);
+        SceKernelVplInfo info = SceKernelVplInfo.tryCreateVpl(name.getString(), partitionid, attr, size, memType);
         if (info == null) {
         	return ERROR_KERNEL_NO_MEMORY;
         }

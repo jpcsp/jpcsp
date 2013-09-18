@@ -51,6 +51,12 @@ public class SceKernelVplInfo extends pspAbstractMemoryMappedStructureVariableLe
     private SceKernelVplInfo(String name, int partitionid, int attr, int size, int memType) {
         this.name = name;
         this.attr = attr;
+
+        // Strange, the PSP is allocating a size of 0x1000 when requesting a size lower than 0x30...
+        if (size <= 0x30) {
+        	size = 0x1000;
+        }
+
         poolSize = size - vplHeaderSize; // 32 bytes overhead per VPL
 
         freeSize = poolSize;

@@ -95,6 +95,7 @@ import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
 import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.PspString;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.StringInfo;
 import jpcsp.HLE.TPointer;
@@ -1621,7 +1622,7 @@ public class ThreadManForUser extends HLEModule {
     public int checkAlarmID(int uid) {
         if (!alarms.containsKey(uid)) {
             log.warn(String.format("checkAlarmID unknown uid=0x%x", uid));
-            return ERROR_KERNEL_NOT_FOUND_ALARM;
+            throw new SceKernelErrorException(ERROR_KERNEL_NOT_FOUND_ALARM);
         }
 
         return uid;
@@ -1633,6 +1634,23 @@ public class ThreadManForUser extends HLEModule {
     	}
 
     	return uid;
+    }
+
+    public int checkPartitionID(int id) {
+    	if (id < 1  || id > 9 || id == 7) {
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_KERNEL_ILLEGAL_ARGUMENT);
+    	}
+
+    	if (id == 6) {
+    		// Partition ID 6 is accepted by the PSP...
+    		id = SysMemUserForUser.USER_PARTITION_ID;
+    	}
+
+    	if (id != SysMemUserForUser.USER_PARTITION_ID) {
+    		throw new SceKernelErrorException(SceKernelErrors.ERROR_KERNEL_ILLEGAL_PERMISSION);
+    	}
+
+    	return id;
     }
 
     public SceKernelThreadInfo hleKernelCreateThread(String name, int entry_addr,
@@ -1827,13 +1845,17 @@ public class ThreadManForUser extends HLEModule {
             thread.wait.microTimeTimeout = 0;
             thread.wait.waitTimeoutAction = null;
         } else {
+            if (micros < THREAD_DELAY_MINIMUM_MICROS) {
+            	micros = THREAD_DELAY_MINIMUM_MICROS * 2;
+            }
+
             long longMicros = ((long) micros) & 0xFFFFFFFFL;
             thread.wait.microTimeTimeout = Emulator.getClock().microTime() + longMicros;
             thread.wait.waitTimeoutAction = new TimeoutThreadAction(thread);
             thread.wait.waitStateChecker = timeoutThreadWaitStateChecker;
         }
 
-        if (LOG_CONTEXT_SWITCHING && Modules.log.isDebugEnabled() && !isIdleThread(thread)) {
+        if (LOG_CONTEXT_SWITCHING && log.isDebugEnabled() && !isIdleThread(thread)) {
             log.debug("-------------------- hleKernelThreadWait micros=" + micros + " forever:" + forever + " thread:'" + thread.name + "' caller:" + getCallingFunction());
         }
     }
@@ -2051,6 +2073,8 @@ public class ThreadManForUser extends HLEModule {
     public void cancelAlarm(SceKernelAlarmInfo sceKernelAlarmInfo) {
         Scheduler.getInstance().removeAction(sceKernelAlarmInfo.schedule, sceKernelAlarmInfo.alarmInterruptAction);
         sceKernelAlarmInfo.schedule = 0;
+        sceKernelAlarmInfo.delete();
+        alarms.remove(sceKernelAlarmInfo.uid);
     }
 
     public void rescheduleAlarm(SceKernelAlarmInfo sceKernelAlarmInfo, int delay) {
@@ -2656,7 +2680,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0x56C039B5, version = 150, checkInsideInterrupt = true)
-    public int sceKernelCreateVpl(String name, int partitionid, int attr, int size, @CanBeNull TPointer option) {
+    public int sceKernelCreateVpl(PspString name, @CheckArgument("checkPartitionID") int partitionid, int attr, int size, @CanBeNull TPointer option) {
         return Managers.vpl.sceKernelCreateVpl(name, partitionid, attr, size, option);
     }
 
@@ -2696,7 +2720,7 @@ public class ThreadManForUser extends HLEModule {
     }
 
     @HLEFunction(nid = 0xC07BB470, version = 150, checkInsideInterrupt = true)
-    public int sceKernelCreateFpl(String name, int partitionid, int attr, int blocksize, int blocks, @CanBeNull TPointer option) {
+    public int sceKernelCreateFpl(@CanBeNull PspString name, @CheckArgument("checkPartitionID") int partitionid, int attr, int blocksize, int blocks, @CanBeNull TPointer option) {
         return Managers.fpl.sceKernelCreateFpl(name, partitionid, attr, blocksize, blocks, option);
     }
 
