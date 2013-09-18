@@ -23,7 +23,6 @@ import org.apache.log4j.Logger;
 
 import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.HLELogging;
-import jpcsp.HLE.HLEUnimplemented;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.modules.HLEModule;
@@ -88,35 +87,43 @@ public class sceMd5 extends HLEModule {
 		}
 	}
 
-	@HLEUnimplemented
+	@HLELogging(level="info")
 	@HLEFunction(nid = 0x19884A15, version = 150)
-    public int sceMd5_19884A15(TPointer unknown) {
+    public int sceMd5BlockInit(TPointer contextAddr) {
     	md5.reset();
+
+    	// size of context seems to be 32 + 64 bytes
+    	contextAddr.setValue32(0, 0x67452301);
+    	contextAddr.setValue32(4, 0xEFCDAB89);
+    	contextAddr.setValue32(8, 0x98BADCFE);
+    	contextAddr.setValue32(12, 0x10325476);
+    	contextAddr.setValue16(20, (short) 0);
+    	contextAddr.setValue16(22, (short) 0);
+    	contextAddr.setValue32(24, 0);
+    	contextAddr.setValue32(28, 0);
+    	// followed by 64 bytes, not being initialized here (probably the data block being processed).
 
     	return 0;
     }
 
-	@HLEUnimplemented
     @HLEFunction(nid = 0xA30206C2, version = 150)
-    public int sceMd5_A30206C2(TPointer unknown1, TPointer sourceAddr, int size) {
+    public int sceMd5BlockUpdate(TPointer contextAddr, TPointer sourceAddr, int size) {
     	byte[] source = getMemoryBytes(sourceAddr.getAddress(), size);
     	md5.update(source);
 
     	return 0;
     }
 
-	@HLEUnimplemented
     @HLEFunction(nid = 0x4876AFFF, version = 150)
-    public int sceMd5_4876AFFF(TPointer unknown1, TPointer resultAddr) {
+    public int sceMd5BlockResult(TPointer contextAddr, TPointer resultAddr) {
     	byte[] result = md5.digest();
     	writeMd5Digest(resultAddr.getAddress(), result);
 
     	return 0;
     }
 
-	@HLEUnimplemented
     @HLEFunction(nid = 0x98E31A9E, version = 150)
-    public int sceMd5_98E31A9E(TPointer sourceAddr, int size, TPointer resultAddr) {
+    public int sceMd5Digest(TPointer sourceAddr, int size, TPointer resultAddr) {
     	byte[] source = getMemoryBytes(sourceAddr.getAddress(), size);
 		md5.reset();
 		byte[] result = md5.digest(source);
