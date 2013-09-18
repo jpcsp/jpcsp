@@ -393,7 +393,9 @@ public abstract class pspAbstractMemoryMappedStructure {
 
     protected void writeStringNZ(int n, String s) {
         if (offset < maxSize) {
-            Utilities.writeStringNZ(mem, baseAddress + offset, n, s);
+            Utilities.writeStringNZ(mem, baseAddress + offset, n - 1, s);
+            // Write always a NULL-byte at the end of the string.
+            mem.write8(baseAddress + offset + n - 1, (byte) 0);
         }
         offset += n;
     }

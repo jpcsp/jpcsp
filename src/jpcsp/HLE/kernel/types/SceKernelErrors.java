@@ -121,6 +121,7 @@ public class SceKernelErrors {
     public final static int ERROR_ERRNO_INVALID_FILE_SIZE                       = 0x8001B003;
     public final static int ERROR_ERRNO_INVALID_FLAG                            = 0x8001B004;
 
+    public final static int ERROR_KERNEL_ERROR                                  = 0x80020001;
     public final static int ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT        = 0x80020064;
     public final static int ERROR_KERNEL_INVALID_INTR_NUMBER                    = 0x80020065;
     public final static int ERROR_KERNEL_INTERRUPTS_ALREADY_DISABLED            = 0x80020066;

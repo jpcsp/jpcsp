@@ -35,15 +35,18 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.PspString;
 import jpcsp.HLE.SceKernelErrorException;
 import jpcsp.HLE.TPointer;
 import jpcsp.HLE.TPointer32;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelFplInfo;
 import jpcsp.HLE.kernel.types.SceKernelFplOptParam;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -189,8 +192,13 @@ public class FplManager {
         return uid;
     }
 
-    public int sceKernelCreateFpl(String name, int partitionid, int attr, int blocksize, int blocks, TPointer option) {
-        int memType = PSP_SMEM_Low;
+    public int sceKernelCreateFpl(PspString name, int partitionid, int attr, int blocksize, int blocks, TPointer option) {
+    	if (name.isNull()) {
+    		// PSP is returning this error in case of NULL name
+    		return SceKernelErrors.ERROR_KERNEL_NO_MEMORY;
+    	}
+
+    	int memType = PSP_SMEM_Low;
         if ((attr & PSP_FPL_ATTR_ADDR_HIGH) == PSP_FPL_ATTR_ADDR_HIGH) {
             memType = PSP_SMEM_High;
         }
@@ -203,8 +211,10 @@ public class FplManager {
             if ((optionSize >= 4) && (optionSize <= 8)) {
                 SceKernelFplOptParam optParams = new SceKernelFplOptParam();
                 optParams.read(option);
-                if (optParams.align > 0) {
-                    memAlign = optParams.align;
+                memAlign = optParams.align;
+                if (!Utilities.isPower2(memAlign)) {
+                	// The alignment has to be a power of 2.
+                	return SceKernelErrors.ERROR_KERNEL_ILLEGAL_ARGUMENT;
                 }
                 if (log.isDebugEnabled()) {
                 	log.debug(String.format("sceKernelCreateFpl options: struct size=%d, alignment=0x%X", optParams.sizeof(), optParams.align));
@@ -217,12 +227,23 @@ public class FplManager {
             log.warn(String.format("sceKernelCreateFpl bad attr value 0x%X", attr));
             return ERROR_KERNEL_ILLEGAL_ATTR;
         }
-        if (blocksize == 0) {
-            log.warn("sceKernelCreateFpl bad blocksize, cannot be 0");
+        if (blocksize <= 0) {
+            log.warn(String.format("sceKernelCreateFpl bad blocksize %d", blocksize));
             return ERROR_KERNEL_ILLEGAL_MEMSIZE;
         }
+        if (blocks <= 0) {
+            log.warn(String.format("sceKernelCreateFpl bad number of blocks %d", blocks));
+            return ERROR_KERNEL_ILLEGAL_MEMSIZE;
+        }
+        if (blocks * blocksize < 0) {
+            return ERROR_KERNEL_NO_MEMORY;
+        }
+        if (blocks * blocksize != blocks * (long) blocksize) {
+            return ERROR_KERNEL_ILLEGAL_MEMSIZE;
+        }
+        
 
-        SceKernelFplInfo info = SceKernelFplInfo.tryCreateFpl(name, partitionid, attr, blocksize, blocks, memType, memAlign);
+        SceKernelFplInfo info = SceKernelFplInfo.tryCreateFpl(name.getString(), partitionid, attr, blocksize, blocks, memType, memAlign);
         if (info == null) {
         	return ERROR_KERNEL_NO_MEMORY;
         }

@@ -328,6 +328,17 @@ public class Utilities {
         return ++n;
     }
 
+    /**
+     * Check if a value is a power of 2, i.e. a value that be can computed as (1 << x).
+     * 
+     * @param n      value to be checked
+     * @return       true if the value is a power of 2,
+     *               false otherwise.
+     */
+    public static boolean isPower2(int n) {
+    	return (n & (n - 1)) == 0;
+    }
+
     public static void readFully(SeekableDataInput input, int address, int length) throws IOException {
         final int blockSize = 16 * UmdIsoFile.sectorLength;  // 32Kb
         byte[] buffer = null;

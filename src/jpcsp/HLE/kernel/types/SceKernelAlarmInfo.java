@@ -22,6 +22,7 @@ import jpcsp.scheduler.AlarmInterruptAction;
 import jpcsp.scheduler.AlarmInterruptResultAction;
 
 public class SceKernelAlarmInfo extends pspAbstractMemoryMappedStructureVariableLength {
+	private static final String uidPurpose = "ThreadMan-Alarm";
 	public long schedule;
 	public int handlerAddress;
 	public int handlerArgument;
@@ -36,7 +37,7 @@ public class SceKernelAlarmInfo extends pspAbstractMemoryMappedStructureVariable
 		this.handlerAddress = handlerAddress;
 		this.handlerArgument = handlerArgument;
 
-		uid = SceUidManager.getNewUid("ThreadMan-Alarm");
+		uid = SceUidManager.getNewUid(uidPurpose);
 		alarmInterruptHandler = new AlarmInterruptHandler(handlerAddress, handlerArgument);
 		alarmInterruptAction = new AlarmInterruptAction(this);
 		alarmInterruptResultAction = new AlarmInterruptResultAction(this);
@@ -56,5 +57,9 @@ public class SceKernelAlarmInfo extends pspAbstractMemoryMappedStructureVariable
 		write64(schedule);
 		write32(handlerAddress);
 		write32(handlerArgument);
+	}
+
+	public void delete() {
+		SceUidManager.releaseUid(uid, uidPurpose);
 	}
 }
