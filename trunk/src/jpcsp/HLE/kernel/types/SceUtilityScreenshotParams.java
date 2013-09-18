@@ -16,9 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-
 public class SceUtilityScreenshotParams extends pspAbstractMemoryMappedStructure {
-
     public pspUtilityDialogCommon base;
     public int startupType;
         public final static int PSP_UTILITY_SCREENSHOT_TYPE_GUI = 0;
@@ -263,7 +261,7 @@ public class SceUtilityScreenshotParams extends pspAbstractMemoryMappedStructure
     }
 
     public boolean isContModeOn() {
-        return ((startupType & PSP_UTILITY_SCREENSHOT_TYPE_CONT_AUTO) == PSP_UTILITY_SCREENSHOT_TYPE_CONT_AUTO);
+        return (startupType & 0x7) == PSP_UTILITY_SCREENSHOT_TYPE_CONT_AUTO;
     }
 
     @Override
