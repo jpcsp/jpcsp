@@ -5589,7 +5589,7 @@ public class VideoEngine {
         return bufferWidth;
     }
 
-    private static int readLittleEndianShort(InputStream is) throws IOException {
+    public static int readLittleEndianShort(InputStream is) throws IOException {
         byte[] buffer = new byte[2];
         if (is.read(buffer) != buffer.length) {
             return -1;
@@ -5598,7 +5598,7 @@ public class VideoEngine {
         return (buffer[0] & 0xFF) | ((buffer[1] & 0xFF) << 8);
     }
 
-    private static int readLittleEndianInt(InputStream is) throws IOException {
+    public static int readLittleEndianInt(InputStream is) throws IOException {
         byte[] buffer = new byte[4];
         if (is.read(buffer) != buffer.length) {
             return -1;
