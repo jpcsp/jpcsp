@@ -20,6 +20,7 @@ import static jpcsp.Allegrex.Common.Instruction.FLAGS_BRANCH_INSTRUCTION;
 import static jpcsp.Allegrex.Common.Instruction.FLAGS_LINK_INSTRUCTION;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_CANNOT_BE_SPLIT;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_COMPILED_PFX;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_CONSUMES_VFPU_PFXT;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_ENDS_BLOCK;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_HAS_DELAY_SLOT;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_JUMPING;
@@ -6604,7 +6605,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVDVSVT("vslt", 1+one+(two<<1), vd, vs, vt);
 }
 };
-public static final Instruction VMOV = new Instruction(169, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD | FLAG_COMPILED_PFX) {
+public static final Instruction VMOV = new Instruction(169, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD | FLAG_CONSUMES_VFPU_PFXT | FLAG_COMPILED_PFX) {
 
 @Override
 public final String name() { return "VMOV"; }
@@ -9286,11 +9287,11 @@ public void compile(ICompilerContext context, int insn) {
 	final int vsize = 1;
 	final int vd = context.getVtRegisterIndex(); // vd index stored as vt
 	final int imm16 = context.getImm16(false);
-	float value = VfpuState.halffloatToFloat(imm16);
+	int value = VfpuState.halffloatToFloat(imm16);
 	context.startPfxCompiled();
-	context.prepareVdForStore(vsize, vd, 0);
-	context.getMethodVisitor().visitLdcInsn(value);
-	context.storeVd(vsize, vd, 0);
+	context.prepareVdForStoreInt(vsize, vd, 0);
+	context.loadImm(value);
+	context.storeVdInt(vsize, vd, 0);
 	context.endPfxCompiled();
 }
 @Override
