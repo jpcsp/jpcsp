@@ -16,19 +16,28 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.autotests;
 
+import static jpcsp.graphics.VideoEngine.readLittleEndianInt;
+import static jpcsp.graphics.VideoEngine.readLittleEndianShort;
+
 import java.awt.DisplayMode;
 import java.awt.Rectangle;
 import java.awt.Window;
+import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.TimeoutException;
+
+import javax.imageio.ImageIO;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -92,7 +101,8 @@ public class AutoTestsRunner {
 
 	protected void runImpl() throws Throwable {
 		runTestFolder(rootDirectory + "/tests");
-//		runTest(rootDirectory + "/tests/gpu/reflection/reflection");
+//		runTest(rootDirectory + "/tests/cpu/vfpu/vector");
+//		runTestFolder(rootDirectory + "/tests/cpu");
 	}
 
 	protected void runTestFolder(String folderPath) throws Throwable {
@@ -126,7 +136,84 @@ public class AutoTestsRunner {
 		}
 		checkOutput(baseFileName, baseFileName + ".expected", timeout);
 	}
-	
+
+	protected BufferedImage readBmp(File imageFile) throws IOException {
+        InputStream is = new BufferedInputStream(new FileInputStream(imageFile));
+
+        // Reading file header
+        int magic = readLittleEndianShort(is);
+        int fileSize = readLittleEndianInt(is);
+        is.skip(4);
+        int dataOffset = readLittleEndianInt(is);
+
+        // Reading DIB header
+        int dibHeaderLength = readLittleEndianInt(is);
+        int imageWidth = readLittleEndianInt(is);
+        int imageHeight = readLittleEndianInt(is);
+        int numberPlanes = readLittleEndianShort(is);
+        int bitsPerPixel = readLittleEndianShort(is);
+
+        // Skip rest of DIB header until data start
+        is.skip(dataOffset - 14 - 16);
+
+        BufferedImage img = null;
+        if (magic == (('M' << 8) | 'B') && dibHeaderLength >= 16 && fileSize >= dataOffset && numberPlanes == 1 && bitsPerPixel == 32) {
+        	img = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_ARGB);
+        	for (int y = imageHeight - 1; y >= 0; y--) {
+        		for (int x = 0; x < imageWidth; x++) {
+                    int argb = readLittleEndianInt(is);
+                    img.setRGB(x, y, argb);
+        		}
+        	}
+        }
+
+        is.close();
+
+		return img;
+	}
+
+	protected boolean areColorsEqual(int color1, int color2) {
+		return (color1 & 0x00FFFFFF) == (color2 & 0x00FFFFFF);
+	}
+
+	protected boolean compareScreenshots(File expected, File result, File compare) {
+		boolean equals = false;
+
+		try {
+			BufferedImage expectedImg = ImageIO.read(expected);
+
+			BufferedImage resultImg;
+			try {
+				resultImg = ImageIO.read(result);
+			} catch (RuntimeException e) {
+				// java.lang.RuntimeException: New BMP version not implemented yet.
+				resultImg = readBmp(result);
+			}
+
+			int width = Math.min(expectedImg.getWidth(), resultImg.getWidth());
+			int height = Math.min(expectedImg.getHeight(), resultImg.getHeight());
+			BufferedImage compareImg = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+			equals = true;
+			for (int y = 0; y < height; y++) {
+				for (int x = 0; x < width; x++) {
+					int expectedColor = expectedImg.getRGB(x, y);
+					int resultColor = resultImg.getRGB(x, y);
+					if (areColorsEqual(expectedColor, resultColor)) {
+						compareImg.setRGB(x, y, 0x000000);
+					} else {
+						compareImg.setRGB(x, y, 0xFF0000);
+						equals = false;
+					}
+				}
+			}
+			ImageIO.write(compareImg, "bmp", compare);
+		} catch (IOException e) {
+			log.error("comparing screenshots", e);
+		}
+
+		return equals;
+	}
+
 	protected void checkOutput(String baseFileName, String fileName, boolean timeout) throws IOException {
 		String actualOutput = AutoTestsOutput.getOutput().trim();
 		String expectedOutput = readFileAsString(fileName).trim();
@@ -149,6 +236,13 @@ public class AutoTestsRunner {
 				savedScreenshotResult.delete();
 				if (screenshotResult.renameTo(savedScreenshotResult)) {
 					log.info(String.format("%s: saved screenshot under '%s'", baseFileName, savedScreenshotResult));
+
+					File compareScreenshot = new File(baseFileName + ".compare.bmp");
+					if (compareScreenshots(screenshotExpected, savedScreenshotResult, compareScreenshot)) {
+						log.info(String.format("%s: screenshots are identical", baseFileName));
+					} else {
+						log.error(String.format("%s: screenshots differ, see '%s'", baseFileName, compareScreenshot));
+					}
 				} else {
 					log.error(String.format("%s: cannot save screenshot from '%s' to '%s'", baseFileName, screenshotResult, savedScreenshotResult));
 				}
@@ -263,16 +357,30 @@ public class AutoTestsRunner {
 			HLEModuleManager.getInstance().stopModules();
         }
 	}
-	
-	private static String readFileAsString(String filePath) throws java.io.IOException{
-	    byte[] buffer = new byte[(int) new File(filePath).length()];
-	    BufferedInputStream f = null;
+
+	private static String readFileAsString(String filePath) throws IOException {
+		StringBuilder s = new StringBuilder();
+	    BufferedReader f = null;
 	    try {
-	        f = new BufferedInputStream(new FileInputStream(filePath));
-	        f.read(buffer);
+	        f = new BufferedReader(new FileReader(filePath));
+	        // Read line by line to exclude all carriage returns ('\r')
+	        while (true) {
+	        	String line = f.readLine();
+	        	if (line == null) {
+	        		break;
+	        	}
+	        	s.append(line);
+	        	s.append('\n');
+	        }
 	    } finally {
-	        if (f != null) try { f.close(); } catch (IOException ignored) { }
+	        if (f != null) {
+	        	try {
+	        		f.close();
+        		} catch (IOException ignored) {
+        		}
+	        }
 	    }
-	    return new String(buffer);
+
+	    return s.toString();
 	}
 }
